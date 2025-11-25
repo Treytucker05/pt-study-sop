@@ -1,19 +1,22 @@
 # PT Study SOP - releases and docs
 
 **Latest package:** v8 (`releases/v8/PT_Study_SOP_v8.zip`)
-**Included docs:** v8 module folder (`releases/v8/PT_Study_SOP_v8/`), v7.4 runtime prompt (V7.4), v7.2 core docs (sop_v7_core.md, methods_index.md)
+**Included docs:** v8 module folder (`releases/v8/PT_Study_SOP_v8/`), legacy prompts/docs (`legacy/`)
 **Last Updated:** November 25, 2025
 
 ---
 
-## What's here
+## Repo map
 
 - `releases/v8/PT_Study_SOP_v8/`: complete v8 package with Runtime Prompt, Master Index, and Modules 1-6.
-- `V7.4`: v7.4 single-session runtime prompt (legacy).
-- `sop_v7_core.md`, `methods_index.md`: v7.2 core SOP and methods index (legacy reference).
-- `changelog.md`: version history.
-- `v7.3`: prior prompt/version artifact.
 - `USAGE.md`: step-by-step instructions for loading v8 into a Custom GPT.
+- `changelog.md`: version history.
+- `legacy/`: v7.4 single-session prompt, v7.3, and v7.2 core SOP/methods (historical reference).
+
+## What's here
+
+- `releases/v8/PT_Study_SOP_v8/`: latest v8 modules.
+- `legacy/`: historical files (v7.4, v7.3, v7.2 core SOP, methods index).
 
 The sections below summarize the older v7.x documentation. For current usage, start with `releases/v8/` and read `USAGE.md`.
 
