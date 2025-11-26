@@ -1,4 +1,4 @@
-# PT Study SOP v8.0 — Master Index
+# PT Study SOP v8.1 — Master Index
 
 ## What Changed from v7.4 to v8.0
 
@@ -25,8 +25,23 @@ PT_Study_SOP_v8/
 ├── Module_3_Framework_Selector.md   ← Pull when choosing frameworks
 ├── Module_4_Session_Recap_Template.md   ← Pull when generating outputs
 ├── Module_5_Troubleshooting.md  ← Pull when stuck
-└── Module_6_Framework_Library.md    ← Pull for framework details
+├── Module_6_Framework_Library.md    ← Pull for framework details
+└── Module_7_Meta_Revision_Log.md    ← Pull for cross-session meta notes
 ```
+
+---
+
+## Module Triggers (When to Pull Which Module)
+
+| Trigger phrase / situation                                 | Module | Purpose                                                   |
+| ---------------------------------------------------------- | ------ | --------------------------------------------------------- |
+| Runtime prompt needs SOP context                           | 1      | Core protocol always in memory                            |
+| Calibrate depth based on time and knowledge                | 2      | Select mode (Recall Only, Compressed MAP, Fast LOOP, etc.) |
+| Need frameworks and rationale                              | 3      | Choose best-fit frameworks                                |
+| Ready to generate recap at WRAP                            | 4      | Session recap template                                    |
+| Stuck, confused, or flow broken                            | 5      | Troubleshooting steps                                     |
+| Want detailed framework definitions                        | 6      | Framework library                                         |
+| “Log meta notes”, “Update meta log”, end-of-day reflection | 7      | Capture cross-session lessons to adjust future sessions    |
 
 ---
 
@@ -123,6 +138,7 @@ WRAP
 - [ ] Module_4_Session_Recap_Template.md — complete
 - [ ] Module_5_Troubleshooting.md — complete
 - [ ] Module_6_Framework_Library.md — complete (all 21 frameworks)
+- [ ] Module_7_Meta_Revision_Log.md — meta-revision template and usage notes
 
 ---
 
@@ -130,8 +146,9 @@ WRAP
 
 | Version | Date | Changes |
 |---------|------|---------|
-| v7.4 | Prior | Monolithic SOP |
+| v8.1 | 2025-12-05 | Response QA, note prompts, Surface-Then-Structure rule, meta-revision log, flow critique |
 | v8.0 | 2025-11-25 | Modular restructure, triage system, 4-level explanations, framework selector, improved recap template |
+| v7.4 | Prior | Monolithic SOP |
 
 ---
 

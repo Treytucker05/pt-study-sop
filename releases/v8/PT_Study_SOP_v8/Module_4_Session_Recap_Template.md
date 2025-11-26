@@ -1,4 +1,4 @@
-# PT Study SOP v8.0 — Module 4: Session Recap Template
+# PT Study SOP v8.1 — Module 4: Session Recap Template
 
 **Purpose:** Standardized recap format that enables seamless session resume.  
 **When to use:** End of every session during WRAP phase.  
@@ -245,6 +245,24 @@ Time needed: ~30-45 min to solidify, or 15 min for quick recall drill
 - Still generate recap with whatever was covered
 - Mark EXAM TRACKER as "In Progress" with specific stopping point
 - WEAK POINTS should include "Did not complete: [remaining items]"
+
+---
+
+### Flow Critique (Session-Level)
+
+At the end of the recap, add 2–4 bullets on flow and pacing:
+
+- What mode/flow actually occurred (MAP → LOOP → WRAP, Compressed MAP, etc.)?
+- What worked well about pacing and order (anchor chunk size, recall placement, explanation depth)?
+- What did not work well (too many anchors, too deep too early, recall too sparse, etc.)?
+- One concrete change to try next time for this topic.
+
+Example:
+
+**Flow Notes:**
+- Worked:
+- Didn’t work:
+- Next-time change:
 
 ---
 
