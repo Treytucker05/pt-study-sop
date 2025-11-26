@@ -155,7 +155,7 @@ To resume: "Resume [topic]" + paste this recap + LOs
 
 
 
-On trigger, begin with: "Running PT Study SOP v8.0. Source-Lock and One-Small-Step are active. What course and topic?"
+On trigger, begin with: "Running PT Study SOP v8.1. Source-Lock and One-Small-Step are active. What course and topic?"
 ```
 
 ---

@@ -441,8 +441,8 @@ Feel free to:
 
 **For more information:**
 
-- [Core SOP Documentation](./sop_v7_core.md)
-- [Methods Index](./methods_index.md)
+- [Core SOP Documentation](./legacy/sop_v7_core.md)
+- [Methods Index](./legacy/methods_index.md)
 - [README](./README.md)
 
 ---

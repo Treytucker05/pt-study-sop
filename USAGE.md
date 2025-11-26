@@ -3,17 +3,19 @@
 This repo is organized so you can drop the v8 package into a Custom GPT and keep it source-locked. Use the files below and follow the instructions to ensure the agent reads only what you provide and runs the correct flow.
 
 ## Files to upload to your Custom GPT
-Upload these eight v8 files (from `releases/v8/PT_Study_SOP_v8/`):
-1) `Runtime_Prompt.md` (the ready-to-run system/runtime prompt)
-2) `Master_Index.md` (table of contents)
-3) `Module_1_Core_Protocol.md`
-4) `Module_2_Triage_Rules.md`
-5) `Module_3_Framework_Selector.md`
-6) `Module_4_Session_Recap_Template.md`
-7) `Module_5_Troubleshooting.md`
-8) `Module_6_Framework_Library.md`
+Upload these nine v8 files (from `releases/v8/PT_Study_SOP_v8/`):
+1) `Module_1_Core_Protocol.md`
+2) `Module_2_Triage_Rules.md`
+3) `Module_3_Framework_Selector.md`
+4) `Module_4_Session_Recap_Template.md`
+5) `Module_5_Troubleshooting.md`
+6) `Module_6_Framework_Library.md`
+7) `Module_7_Meta_Revision_Log.md`
+8) `Master_Index.md` (table of contents)
+9) `Runtime_Prompt.md` (the ready-to-run system/runtime prompt)
 
 Optional historical context (do not upload unless you need v7 references):
+- `Module_7_Meta_Revision_Log.md` (cross-session meta notes - upload if you want to track pacing/flow adjustments across days)
 - `V7.4`
 - `sop_v7_core.md`
 - `methods_index.md`

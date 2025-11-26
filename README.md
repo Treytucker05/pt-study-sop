@@ -25,7 +25,7 @@ The sections below summarize the older v7.x documentation. For current usage, st
 
 For day-to-day studying or Custom GPT setup, follow these steps:
 
-1. Extract/upload the 8 v8 files listed in `USAGE.md` (`Runtime_Prompt.md`, `Master_Index.md`, Modules 1-6).
+1. Extract/upload the 9 v8 files listed in `USAGE.md` (`Runtime_Prompt.md`, `Master_Index.md`, Modules 1-7).
 2. Apply the Source-Lock/system instructions from `USAGE.md` so the GPT reads only those files.
 3. Run sessions in this order: Entry → Triage (Module_2) → MAP/LOOP/WRAP (Module_1 with Modules 3 & 6) → Troubleshooting (Module_5) → Recap (Module_4).
 4. Keep v7.4/v7.2 files only for historical reference unless you need the older prompts.

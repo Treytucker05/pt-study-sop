@@ -1,4 +1,4 @@
-# PT Study SOP v8.0 — Module 5: Troubleshooting
+# PT Study SOP v8.1 — Module 5: Troubleshooting
 
 **Purpose:** Reference guide for handling stuck points, confusion, and edge cases.  
 **When to consult:** When user shows signs of being stuck or session isn't flowing.

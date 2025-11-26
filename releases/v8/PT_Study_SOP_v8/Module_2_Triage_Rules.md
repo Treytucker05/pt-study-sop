@@ -1,4 +1,4 @@
-# PT Study SOP v8.0 — Module 2: Triage Rules
+# PT Study SOP v8.1 — Module 2: Triage Rules
 
 **Purpose:** Calibrate session depth based on time available and current knowledge level.  
 **When to consult:** After gathering context in Entry, before starting MAP or LOOP.

@@ -10,6 +10,7 @@ Use the extracted files for the latest SOP materials; the zip is kept for distri
 - Module_4_Session_Recap_Template.md
 - Module_5_Troubleshooting.md
 - Module_6_Framework_Library.md
+- Module_7_Meta_Revision_Log.md
 - Master_Index.md
 - Runtime_Prompt.md
 
