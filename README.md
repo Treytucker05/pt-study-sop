@@ -11,14 +11,11 @@
 - `releases/v8/PT_Study_SOP_v8/`: complete v8 package with Runtime Prompt, Master Index, and Modules 1-6.
 - `USAGE.md`: step-by-step instructions for loading v8 into a Custom GPT.
 - `changelog.md`: version history.
-- `legacy/`: v7.4 single-session prompt ([legacy/V7.4/](./legacy/V7.4/)), v7.3 package ([legacy/v7.3/](./legacy/v7.3/)), and v7.2 core SOP/methods ([legacy/sop_v7_core.md](./legacy/sop_v7_core.md), [legacy/methods_index.md](./legacy/methods_index.md)).
-- `legacy/`: v7.4 single-session prompt (`V7.4.md`), v7.3 (`v7.3.md`), and v7.2 core SOP/methods (historical reference).
+- `legacy/`: archival v7.x docs—v7.4 prompt ([legacy/V7.4/](./legacy/V7.4/)), v7.3 package ([legacy/v7.3/](./legacy/v7.3/)), and v7.2 core SOP/methods ([legacy/sop_v7_core.md](./legacy/sop_v7_core.md), [legacy/methods_index.md](./legacy/methods_index.md)). Use v8 in `releases/v8/` as the current source.
 
 ## What's here
 
 - `releases/v8/PT_Study_SOP_v8/`: latest v8 modules.
-- `legacy/`: historical files ([legacy/V7.4/](./legacy/V7.4/)), [legacy/v7.3/](./legacy/v7.3/), [legacy/sop_v7_core.md](./legacy/sop_v7_core.md), [legacy/methods_index.md](./legacy/methods_index.md).
-- `legacy/`: historical files (`V7.4.md`, `v7.3.md`, v7.2 core SOP, methods index).
 
 The sections below summarize the older v7.x documentation. For current usage, start with `releases/v8/` and read `USAGE.md`.
 
