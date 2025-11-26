@@ -11,12 +11,12 @@
 - `releases/v8/PT_Study_SOP_v8/`: complete v8 package with Runtime Prompt, Master Index, and Modules 1-6.
 - `USAGE.md`: step-by-step instructions for loading v8 into a Custom GPT.
 - `changelog.md`: version history.
-- `legacy/`: v7.4 single-session prompt, v7.3, and v7.2 core SOP/methods (historical reference).
+- `legacy/`: v7.4 single-session prompt (`V7.4.md`), v7.3 (`v7.3.md`), and v7.2 core SOP/methods (historical reference).
 
 ## What's here
 
 - `releases/v8/PT_Study_SOP_v8/`: latest v8 modules.
-- `legacy/`: historical files (v7.4, v7.3, v7.2 core SOP, methods index).
+- `legacy/`: historical files (`V7.4.md`, `v7.3.md`, v7.2 core SOP, methods index).
 
 The sections below summarize the older v7.x documentation. For current usage, start with `releases/v8/` and read `USAGE.md`.
 

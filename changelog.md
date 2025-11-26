@@ -17,6 +17,8 @@
 ### Notes
 - v7.x documentation is archived under `legacy/` (V7.4 prompt, sop_v7_core.md, methods_index.md).
 - Use the v8 package in `releases/v8/` for the latest materials; keep `legacy/` for historical reference.
+- v7.x documentation remains in the root (V7.4.md prompt, sop_v7_core.md, methods_index.md).
+- Use the v8 package for the latest materials; keep v7.x for historical reference.
 
 ---
 
