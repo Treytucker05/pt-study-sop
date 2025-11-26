@@ -15,8 +15,8 @@
 - Includes Module_1_Core_Protocol.md, Module_2_Triage_Rules.md, Module_3_Framework_Selector.md, Module_4_Session_Recap_Template.md, Module_5_Troubleshooting.md, Module_6_Framework_Library.md, Master_Index.md, and Runtime_Prompt.md.
 
 ### Notes
-- v7.x documentation remains in the root (V7.4 prompt, sop_v7_core.md, methods_index.md).
-- Use the v8 package for the latest materials; keep v7.x for historical reference.
+- v7.x documentation is archived under `legacy/` (V7.4 prompt, sop_v7_core.md, methods_index.md).
+- Use the v8 package in `releases/v8/` for the latest materials; keep `legacy/` for historical reference.
 
 ---
 
