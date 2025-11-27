@@ -197,6 +197,8 @@ AI: "Perfect! We'll use 'support staff' as your hook."
 
 | Version | Release Date | Key Features | Major Changes |
 |---------|--------------|--------------|---------------|
+| **8.1** | Dec 5, 2025 | QA checklist, note prompts, meta-revision log | Flow/pacing refinements and self-checks |
+| **8.0** | Nov 25, 2025 | Modular SOP, triage, framework selector | Restructured into modules with runtime prompt |
 | **7.2** | Nov 24, 2025 | NMMF, HIR, PES | Systematic hook creation, mandatory reuse, user personalization |
 | **7.1** | Prior to Nov 2025 | MAP → LOOP → WRAP, active recall, frameworks | Established core SOP structure |
 | **7.0 and earlier** | Historical | Various iterations | Foundation development |
@@ -346,12 +348,12 @@ NMMF, HIR, and PES are **additions**, not replacements.
 
 ### Current Support
 
-- **v7.2:** Fully supported, recommended for all users
-- **v7.1:** Supported, but v7.2 is preferred
+- **v8.1:** Fully supported, recommended for all users
+- **v8.0:** Supported; upgrade to v8.1 for refinements
 
 ### Deprecated
 
-- **v7.0 and earlier:** No longer supported
+- **v7.x and earlier:** No longer supported
 
 ---
 

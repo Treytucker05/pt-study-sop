@@ -52,6 +52,7 @@ PT_Study_SOP_v8/
 | Stuck, confused, or flow broken | 5 | Troubleshooting steps |
 | Want detailed framework definitions | 6 | Framework library |
 | “Log meta notes”, “Update meta log”, end-of-day reflection | 7 | Capture cross-session lessons to adjust future sessions |
+| “Story version”, “analogy”, “build a metaphor”, narrative/visual learning | 7 (Storyframe) | Switch to narrative/metaphor learning mode |
 ---
 
 ## How to Use This System
@@ -148,6 +149,7 @@ WRAP
 - [ ] Module_5_Troubleshooting.md — complete
 - [ ] Module_6_Framework_Library.md — complete (all 21 frameworks)
 - [ ] Module_7_Meta_Revision_Log.md — meta-revision template and usage notes
+- [ ] Module_7_Storyframe_Protocol.md — optional narrative-learning extension
 
 ---
 
