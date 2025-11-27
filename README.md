@@ -8,14 +8,14 @@
 
 ## Repo map
 
-- `releases/v8/PT_Study_SOP_v8/`: complete v8.1 package with Runtime Prompt, Master Index, and Modules 1-6.
-- `USAGE.md`: step-by-step instructions for loading v8.1 into a Custom GPT.
+- `releases/v8/PT_Study_SOP_v8/`: complete v8 package with Runtime Prompt, Master Index, Modules 1-7 (Core Protocol, Triage Rules, Framework Selector, Session Recap Template, Troubleshooting, Framework Library, Meta Revision Log), and optional Module_7_Storyframe_Protocol.
+- `USAGE.md`: step-by-step instructions for loading v8 into a Custom GPT.
 - `changelog.md`: version history.
 - `legacy/`: archival v7.x docs—v7.4 prompt ([legacy/V7.4/](./legacy/V7.4/)), v7.3 package ([legacy/v7.3/](./legacy/v7.3/)), and v7.2 core SOP/methods ([legacy/sop_v7_core.md](./legacy/sop_v7_core.md), [legacy/methods_index.md](./legacy/methods_index.md)). Use v8.1 in `releases/v8/` as the current source.
 
 ## What's here
 
-- `releases/v8/PT_Study_SOP_v8/`: latest v8.1 modules.
+- `releases/v8/PT_Study_SOP_v8/`: latest v8 modules — Runtime Prompt, Master Index, Modules 1-7, and optional Module_7_Storyframe_Protocol.
 
 The sections below summarize the older v7.x documentation. For current usage, start with `releases/v8/` and read `USAGE.md`.
 
