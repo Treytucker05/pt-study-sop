@@ -1,8 +1,8 @@
 # PT Study SOP - releases and docs
 
-**Latest package:** v8 (`releases/v8/PT_Study_SOP_v8.zip`)
-**Included docs:** v8 module folder (`releases/v8/PT_Study_SOP_v8/`), legacy prompts/docs (`legacy/`)
-**Last Updated:** November 25, 2025
+**Latest package:** v8.1 (`releases/v8/PT_Study_SOP_v8.zip`)
+**Included docs:** v8.1 module folder (`releases/v8/PT_Study_SOP_v8/`), legacy prompts/docs (`legacy/`)
+**Last Updated:** December 5, 2025
 
 ---
 
@@ -11,7 +11,7 @@
 - `releases/v8/PT_Study_SOP_v8/`: complete v8 package with Runtime Prompt, Master Index, Modules 1-7 (Core Protocol, Triage Rules, Framework Selector, Session Recap Template, Troubleshooting, Framework Library, Meta Revision Log), and optional Module_7_Storyframe_Protocol.
 - `USAGE.md`: step-by-step instructions for loading v8 into a Custom GPT.
 - `changelog.md`: version history.
-- `legacy/`: archival v7.x docs—v7.4 prompt ([legacy/V7.4/](./legacy/V7.4/)), v7.3 package ([legacy/v7.3/](./legacy/v7.3/)), and v7.2 core SOP/methods ([legacy/sop_v7_core.md](./legacy/sop_v7_core.md), [legacy/methods_index.md](./legacy/methods_index.md)). Use v8 in `releases/v8/` as the current source.
+- `legacy/`: archival v7.x docs—v7.4 prompt ([legacy/V7.4/](./legacy/V7.4/)), v7.3 package ([legacy/v7.3/](./legacy/v7.3/)), and v7.2 core SOP/methods ([legacy/sop_v7_core.md](./legacy/sop_v7_core.md), [legacy/methods_index.md](./legacy/methods_index.md)). Use v8.1 in `releases/v8/` as the current source.
 
 ## What's here
 
@@ -21,11 +21,11 @@ The sections below summarize the older v7.x documentation. For current usage, st
 
 ---
 
-## Using PT Study SOP v8
+## Using PT Study SOP v8.1
 
 For day-to-day studying or Custom GPT setup, follow these steps:
 
-1. Extract/upload the 9 v8 files listed in `USAGE.md` (`Runtime_Prompt.md`, `Master_Index.md`, Modules 1-7).
+1. Extract/upload the 9 v8.1 files listed in `USAGE.md` (`Runtime_Prompt.md`, `Master_Index.md`, Modules 1-7).
 2. Apply the Source-Lock/system instructions from `USAGE.md` so the GPT reads only those files.
 3. Run sessions in this order: Entry → Triage (Module_2) → MAP/LOOP/WRAP (Module_1 with Modules 3 & 6) → Troubleshooting (Module_5) → Recap (Module_4).
 4. Keep v7.4/v7.2 files only for historical reference unless you need the older prompts.
@@ -36,7 +36,7 @@ See `USAGE.md` for full details, pacing rules, and confirmation steps.
 
 ## Project Overview *(Legacy v7.2 summary)*
 
-Welcome to the **PT Study SOP** repository. The current release is v8 (see above). The remaining sections capture the v7.2 documentation set for archival/reference purposes.
+Welcome to the **PT Study SOP** repository. The current release is v8.1 (see above). The remaining sections capture the v7.2 documentation set for archival/reference purposes.
 
 The system is built around a simple, repeatable framework:
 
