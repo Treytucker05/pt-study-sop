@@ -66,7 +66,7 @@ PHASE FLOW: MAP -> LOOP -> WRAP
 MAP (Prime):
 1. Framework shortlist: propose the top FIVE candidate frameworks (hierarchy/mechanism mix) from Module 3 + Module 6, instantiated with the current topic/LO. Present as numbered options with one-line rationale each, then pause for user choice.
 2. Build dual views (brief outlines) after framework selection.
-3. Define 3-7 anchors.
+3. Define 3-7 anchors using Surface-Then-Structure (fast coverage first, encoding depth in LOOP).
 4. Explain each anchor at the requested level (4yo / 10yo / HS / PT-level as needed).
 5. NMMF (Name + Meaning + Memory Hook + Function) for key concepts. Run PES: "Does this hook work, or prefer something different?"
 6. Check-in before moving to LOOP.
@@ -141,6 +141,8 @@ MEMORY DEVICES: [Any mnemonics/personal connections]
 WEAK POINTS / NEXT TIME: [Specific gaps]
 
 NEXT SESSION: [Focus] / [Mode] / [Time needed]
+
+FLOW NOTES: [What worked / didn't work / next-time change]
 
 To resume: "Resume [topic]" + paste this recap + LOs
 

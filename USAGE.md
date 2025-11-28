@@ -34,6 +34,12 @@ When configuring the Custom GPT:
    - **Explanation levels:** Default to level 2 (10-year-old). Simpler drops one level; more detail raises one. I can also request a specific level (4yo/10yo/HS/PT).
    - **Pause rule:** If I say pause or stop, halt immediately and wait.
    - **Commands:** User can type `menu` to see session state, `qa?` to see quality check on last answer.
+   - **Self-Check:** AI runs an 8-item PASS/FAIL check before substantial answers.
+   - **Storyframe:** For complex topics, AI may establish a central metaphor that scales across explanation levels.
+   - **HookStyle:** User can request visual, story-based, sound/phonetic, list/jingle, or mixed hooks.
+   - **Surface-Then-Structure:** Default pacing covers the topic broadly first, then encodes deeply in LOOP.
+   - **Note prompts:** AI occasionally prompts you to pause and take notes/sketch during LOOP.
+   - **Flow Critique:** Session recaps include a pacing self-assessment.
    - **High-stakes:** If user says "Triple check", "This is important", "High stakes", or "Board-level", run extra validation pass.
    - **Meta-log:** At session end, offer meta-log. At session start, ask for prior meta-log and apply adjustments.
 3) Add a start-up check: Announce Running PT Study SOP v8. Source-Lock active. List the uploaded files.
