@@ -1,12 +1,36 @@
 # PT Study SOP - Changelog
 
 **Repository:** PT Study SOP  
-**Current Version:** 8.1  
-**Last Updated:** December 5, 2025
+**Current Version:** 8.1.1
+**Last Updated:** November 28, 2025
 
 ---
 
-## Version 8.1 (Current)
+## Version 8.1.1 (Current)
+
+**Release Date:** November 28, 2025
+
+### Major Additions
+
+1. **Prime Mode** — Pure priming, no encoding. Scan, name, group, move on. (15-20 min/module)
+2. **Sprint Mode** — Fast coverage with basic hooks. (20-30 min/topic)
+3. **Step-by-Step Entry Menus** — Replace Q&A with structured mode selection
+4. **Hook Autonomy Rule** — No censorship of user-created hooks
+5. **Hook Design Rule** — List all elements before building hooks
+6. **Quiz Delivery Rules** — One question at a time, no embedded answers, LO-only scope
+7. **PERO System Alignment** — Explicit mapping to Justin Sung's framework
+8. **Interleaving Explicit** — Renamed Connect & Expand to Connect, Interleave & Expand
+9. **Strength Labeling Clarified** — Pasted notes ≠ independent recall
+
+### Files Modified
+- Module_1_Core_Protocol.md (major updates)
+- Module_2_Triage_Rules.md (new modes)
+- Module_4_Session_Recap_Template.md (new templates)
+- Runtime_Prompt.md (aligned)
+- Master_Index.md (updated)
+- changelog.md (this file)
+
+## Version 8.1
 
 **Release Date:** December 5, 2025
 
@@ -78,8 +102,9 @@
 ## Version Support
 
 ### Current Support
-- **v8.1:** Fully supported, recommended for all users
-- **v8.0:** Supported, but v8.1 is preferred
+- **v8.1.1:** Fully supported, recommended for all users
+- **v8.1:** Supported
+- **v8.0:** Supported, but v8.1+ is preferred
 
 ### Deprecated
 - **v7.x and earlier:** No longer supported
@@ -90,6 +115,7 @@
 
 | Version | Release Date | Key Features | Major Changes |
 |---------|--------------|--------------|---------------|
+| **8.1.1** | Nov 28, 2025 | Prime/Sprint modes, step-by-step entry menus, hook autonomy/design, quiz delivery rules, PERO alignment | Coverage + retrieval discipline, explicit priming/interleaving |
 | **8.1** | Dec 5, 2025 | HUD/menu, Self-Check QA, Storyframe, HookStyle, Surface-Then-Structure, meta-log flow | Refinements for control, reliability, and encoding |
 | **8.0** | Nov 25, 2025 | Modular SOP, triage, framework selector | Complete restructure from monolithic |
 | **7.2** | Nov 24, 2025 | NMMF, HIR, PES | Systematic hook creation |

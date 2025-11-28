@@ -1,10 +1,71 @@
-# PT Study SOP v8.1 - Module 4: Session Recap Template
+# PT Study SOP v8.1.1 - Module 4: Session Recap Template
 
-**Purpose:** Standardized recap format that enables seamless session resume.  
-**When to use:** End of every session during WRAP phase.  
+**Purpose:** Standardized recap formats for wrapping sessions and resuming smoothly.
+**When to use:** End of every session during WRAP phase.
 **Time to complete:** ~60 seconds (AI generates, user saves)
 
 ---
+
+## PRIME MAP TEMPLATE (Prime Mode Output)
+
+```
+═══════════════════════════════════════════════════════════
+PRIME MAP: [Module Name]
+Date: [YYYY-MM-DD]
+Time: [X] min
+═══════════════════════════════════════════════════════════
+
+GROUP 1: [Category Name]
+  • [Topic] — [1-sentence description]
+  • [Topic] — [1-sentence description]
+  • [Topic] — [1-sentence description]
+  
+GROUP 2: [Category Name]
+  • [Topic] — [1-sentence description]
+  • [Topic] — [1-sentence description]
+
+GROUP 3: [Category Name]
+  • [Topic] — [1-sentence description]
+  • [Topic] — [1-sentence description]
+
+QUICK HOOKS (hard names only):
+  • [Term] — [phonetic or visual hook]
+  • [Term] — [phonetic or visual hook]
+
+═══════════════════════════════════════════════════════════
+STATUS: Primed. Ready for encoding.
+NEXT SESSION: Encoding pass (~[estimated time])
+═══════════════════════════════════════════════════════════
+```
+
+## SPRINT RECAP TEMPLATE (Sprint Mode Output)
+
+```
+═══════════════════════════════════════════════════════════
+SPRINT RECAP: [Topic]
+Date: [YYYY-MM-DD]
+Time: [X] min
+═══════════════════════════════════════════════════════════
+
+ANCHORS:
+  1. [Anchor] — [S/M/W]
+  2. [Anchor] — [S/M/W]
+  3. [Anchor] — [S/M/W]
+
+HOOKS:
+  • [Anchor] → [Hook]
+  • [Anchor] → [Hook]
+  • [Anchor] → [Hook]
+
+NEEDS DEPTH (flag for next session):
+  • [Specific item that needs more work]
+  • [Specific item that needs more work]
+
+═══════════════════════════════════════════════════════════
+STATUS: Surface pass complete.
+NEXT SESSION: Encoding + Recall (~[estimated time])
+═══════════════════════════════════════════════════════════
+```
 
 ## RECAP TEMPLATE
 
@@ -59,7 +120,7 @@ WEAK POINTS / NEXT TIME
 
 NEXT SESSION PLAN
 Recommended focus: [What to do next time based on weak points]
-Suggested mode: [Recall Only / Compressed / Fast LOOP / Full / Depth]
+Suggested mode: [Prime / Sprint / Recall Only / Compressed MAP / Fast LOOP / Full Protocol / Depth + Mastery]
 Time needed: [Estimated time for recommended work]
 
 FLOW CRITIQUE (Session-Level)

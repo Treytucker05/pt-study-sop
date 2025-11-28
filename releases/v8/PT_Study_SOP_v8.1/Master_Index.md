@@ -1,18 +1,20 @@
-# PT Study SOP v8.1 - Master Index
+# PT Study SOP v8.1.1 - Master Index
 
 ---
 
-## What Changed from v7.4 to v8.0
+## What Changed from v8.1 to v8.1.1
 
-| Issue in v7.4 | Fix in v8.0 |
-|---------------|-------------|
-| Monolithic document + AI drifts, hard to update | Modular system + 6 separate modules + runtime prompt |
-| No time/knowledge calibration | Triage Rules (Module 2) + 5 distinct modes |
-| 21 frameworks with no selection guidance | Framework Selector (Module 3) + decision logic by topic type |
-| Resume mode didn't work in practice | Session Recap Template (Module 4) + 60-second artifact with exam tracker |
-| "10-year-old" only explanation level | 4 explanation levels (4yo + 10yo + HS + PT) |
-| Troubleshooting buried in main doc | Dedicated Troubleshooting module (Module 5) |
-| Same approach for all topics | Triage adapts depth to time + knowledge |
+| Issue in v8.1 | Fix in v8.1.1 |
+|---------------|---------------|
+| No pure Priming mode | Added Prime Mode (15-20 min/module, scan only) |
+| No fast coverage mode | Added Sprint Mode (20-30 min/topic, hooks + 1 recall) |
+| Entry was Q&A interrogation | Replaced with Step-by-Step Option Menus |
+| Quiz delivered multiple questions | Added Quiz Delivery Rules (1 at a time, no hints) |
+| GPT censored user hooks | Added Hook Autonomy Rule (no censorship) |
+| Hooks built without listing elements | Added Hook Design Rule (list first, build second) |
+| PERO system implicit | Made explicit with PERO alignment section |
+| Interleaving unnamed | Renamed to "Connect, Interleave & Expand" |
+| Strong label given for pasted notes | Clarified strength requires INDEPENDENT recall |
 
 ---
 
@@ -29,6 +31,18 @@ PT_Study_SOP_v8/
 |- Module_6_Framework_Library.md    <- Pull for framework details
 `- Module_7_Meta_Revision_Log.md    <- Pull for cross-session meta notes
 ```
+
+---
+
+## PERO System Alignment
+
+| PERO Stage | SOP Location |
+|------------|--------------|
+| **P — Priming** | Prime Mode, Sprint Mode, MAP surface pass |
+| **E — Encoding** | NMMF, Hooks, Storyframe, Frameworks |
+| **R — Reference** | Anki cards, Recaps, NotebookLM |
+| **R — Retrieval** | Brain Dump, Teach-Back, Quiz |
+| **O — Overlearning** | Depth + Mastery, Anki spaced repetition |
 
 ---
 
@@ -89,15 +103,17 @@ PT_Study_SOP_v8/
 
 ---
 
-## Quick Reference: The Five Modes
+## Quick Reference: The Seven Modes
 
-| Mode | Time | Knowledge | What Happens |
-|------|------|-----------|--------------|
-| **Recall Only** | 5-20 min | Any | No teaching, drill existing anchors |
-| **Compressed MAP** | 45-90 min | None/Low | 3-5 anchors, limited NMMF, quick to recall |
-| **Fast LOOP** | 45-90 min | Mod/High | Minimal MAP, straight to recall/connect/quiz |
-| **Full Protocol** | 90+ min | None/Low | Complete MAP + LOOP + WRAP |
-| **Depth + Mastery** | 90+ min | Mod/High | Quick MAP, extended connect, harder cases |
+| Mode | Time | PERO Stage | What Happens |
+|------|------|------------|--------------|
+| **Prime Mode** | 15-20 min/module | Priming | Scan, names, groups, no depth |
+| **Sprint Mode** | 20-30 min/topic | Priming + Light Encoding | Quick anchors, hooks, 1 recall |
+| **Recall Only** | 15-30 min | Retrieval | No teaching, drill existing |
+| **Compressed MAP** | 45-60 min | Encoding + Retrieval | 3-5 anchors, essential hooks |
+| **Fast LOOP** | 45-60 min | Encoding + Retrieval | Minimal MAP, straight to recall |
+| **Full Protocol** | 90+ min | Full PERO | Complete MAP → LOOP → WRAP |
+| **Depth + Mastery** | 90+ min | Full PERO + Overlearning | Extended connect, hard cases |
 
 ---
 
@@ -106,7 +122,7 @@ PT_Study_SOP_v8/
 ```
 ENTRY
   |
-  Gather: course/topic, time, knowledge level, source material, prior recap/meta-log
+  Step-by-step menu: acknowledge version -> course/topic -> mode selection -> materials -> prior recap/meta-log
   |
 TRIAGE
   |
@@ -118,7 +134,7 @@ MAP (if not Recall Only)
   |
 LOOP
   |
-  Learn & Clarify + Active Recall (S/M/W) + Connect & Expand + Quiz & Coverage
+  Learn & Clarify + Active Recall (S/M/W) + Connect, Interleave & Expand + Quiz & Coverage
   |
 WRAP
   |
@@ -144,6 +160,7 @@ WRAP
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v8.1.1 | 2025-11-28 | Prime + Sprint modes, step-by-step entry menus, hook autonomy/design rules, quiz delivery discipline, PERO alignment |
 | v8.1 | 2025-12-05 | HUD/menu, Self-Check (8-item QA + `qa?` command), high-stakes triggers, Storyframe integration, HookStyle control, Surface-Then-Structure, note prompts, Flow Critique, meta-log flow |
 | v8.0 | 2025-11-25 | Modular restructure, triage system, 4-level explanations, framework selector, improved recap template |
 | v7.4 | Prior | Monolithic SOP |

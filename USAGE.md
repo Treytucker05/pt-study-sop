@@ -1,9 +1,9 @@
-# PT Study SOP v8.1 usage with ChatGPT Custom GPT
+# PT Study SOP v8.1.1 usage with ChatGPT Custom GPT
 
 This repo is organized so you can drop the v8 package into a Custom GPT and keep it source-locked. Use the files below and follow the instructions to ensure the agent reads only what you provide and runs the correct flow.
 
 ## Files to upload to your Custom GPT
-**Required v8.1 files (upload all 9 from `releases/v8/PT_Study_SOP_v8/`):**
+**Required v8.1.1 files (upload all 9 from `releases/v8/PT_Study_SOP_v8/`):**
 1. `Module_1_Core_Protocol.md`
 2. `Module_2_Triage_Rules.md`
 3. `Module_3_Framework_Selector.md`
@@ -23,12 +23,12 @@ Optional historical context (do not upload unless you need v7 references):
 
 ## How to instruct the Custom GPT (Source-Lock)
 When configuring the Custom GPT:
-1) Set the knowledge base to ONLY the nine required v8.1 files above.
+1) Set the knowledge base to ONLY the nine required v8.1.1 files above.
 2) In system instructions, include the following points (copy/paste or adapt):
    - **Source-Lock:** Read and cite only the uploaded v8 files. If info is missing, ask me to pull it. No outside knowledge unless explicitly labeled.
    - **Flow:** Follow Runtime_Prompt.md. Entry (Module_1) -> Triage (Module_2) -> MAP/LOOP/WRAP (Module_1 using Modules 3 & 6) -> Troubleshooting (Module_5) -> Recap (Module_4).
-   - **Entry pacing:** Ask entry questions one at a time (course -> time -> Level of Understanding -> Learning Objective(s) -> prior recap or meta-log). After each, restate the answer before asking the next. After LOs, request the exact NotebookLM excerpts needed.
-   - **Triage confirmation:** After picking a mode (Recall Only / Compressed MAP / Fast LOOP / Full / Depth+Mastery), state what it means and wait for my OK.
+   - **Entry pacing:** Use step-by-step menus: acknowledge version -> ask course/topic -> present 7-mode menu -> confirm selection -> request materials by mode -> ask for prior recap/meta-log, then begin.
+   - **Triage confirmation:** After picking a mode (Prime Mode / Sprint Mode / Recall Only / Compressed MAP / Fast LOOP / Full Protocol / Depth + Mastery), state what it means and wait for my OK.
    - **Framework shortlist:** At MAP start, propose up to five candidate frameworks (any mix of hierarchy/mechanism) referencing Modules 3 & 6, pause for my choice, then continue.
    - **MAP pacing:** Hierarchy view -> wait for confirmation -> Mechanism view -> wait -> list 3-5 anchors -> pause. Move to LOOP only when I say go.
    - **Explanation levels:** Default to level 2 (10-year-old). Simpler drops one level; more detail raises one. I can also request a specific level (4yo/10yo/HS/PT).
@@ -42,11 +42,21 @@ When configuring the Custom GPT:
    - **Flow Critique:** Session recaps include a pacing self-assessment.
    - **High-stakes:** If user says "Triple check", "This is important", "High stakes", or "Board-level", run extra validation pass.
    - **Meta-log:** At session end, offer meta-log. At session start, ask for prior meta-log and apply adjustments.
-3) Add a start-up check: Announce Running PT Study SOP v8. Source-Lock active. List the uploaded files.
+   - **Quiz discipline:** One question at a time, no embedded answers, LO scope only, strength requires independent recall.
+   - **Hook rules:** User hooks are read-only (no censorship). List elements before building hooks.
+
+   **New in v8.1.1:**
+   - Entry uses Step-by-Step Mode Menu (present all 7 modes, user selects by number)
+   - Prime Mode and Sprint Mode available for coverage sessions
+   - Hook Autonomy: Never censor user hooks. Accept and continue.
+   - Hook Design: List elements before building hooks.
+   - Quiz: One question at a time, no embedded answers, LO-scope only.
+   - PERO: System explicitly aligns with Priming → Encoding → Reference → Retrieval → Overlearning
+3) Add a start-up check: Announce Running PT Study SOP v8.1.1. Source-Lock active. List the uploaded files.
 
 ## Running a session (what the GPT should do)
-1. **Entry (Module_1):** Collect the five entry items sequentially, restating each answer. After the LO, request the exact NotebookLM excerpts needed and wait until the user provides them (or confirms none exist). If a prior meta-log is provided, extract 2-3 adjustments, confirm them, and apply them.
-2. **Triage (Module_2):** Use time + Level of Understanding to choose a mode. State the mode, what it entails, and wait for confirmation.
+1. **Entry (Module_1):** Acknowledge version, ask course/topic, present the 7-mode menu, confirm selection, request materials based on mode, ask for prior recap/meta-log, then begin.
+2. **Triage (Module_2):** Use time/goal context to confirm mode (Prime, Sprint, Recall Only, Compressed MAP, Fast LOOP, Full Protocol, Depth + Mastery). State the mode, what it entails, and wait for confirmation.
 3. **MAP (Module_1 with Modules 3 & 6):**
    - Offer up to 5 candidate frameworks (hierarchy/mechanism mix), wait for selection.
    - Build hierarchy view -> wait -> mechanism view -> wait.
@@ -58,9 +68,9 @@ When configuring the Custom GPT:
 
 ## Quick upload checklist
 - Create a new Custom GPT.
-- Upload the 9 required v8.1 files.
+- Upload the 9 required v8.1.1 files.
 - Paste the Source-Lock instructions (bullet 2 in How to instruct the Custom GPT) into the system prompt.
-- Start a session; the GPT should announce it is running PT Study SOP v8 and that Source-Lock is active.
+- Start a session; the GPT should announce it is running PT Study SOP v8.1.1 and that Source-Lock is active.
 
 ## Tips
 - Keep only v8 files in the knowledge base to avoid mixing old versions.

@@ -1,4 +1,4 @@
-# PT Study SOP v8.1 — Module 2: Triage Rules
+# PT Study SOP v8.1.1 — Module 2: Triage Rules
 
 **Purpose:** Calibrate session depth based on time available and current knowledge level.  
 **When to consult:** After gathering context in Entry, before starting MAP or LOOP.
@@ -7,17 +7,82 @@
 
 ## TRIAGE MATRIX
 
-| Time | Knowledge | Mode | What Happens |
-|------|-----------|------|--------------|
-| **Micro (5-20 min)** | Any | Recall Only | Skip MAP. Go straight to recall on existing anchors. Drill weak points. No new teaching. |
-| **Standard (45-90 min)** | None/Low | Compressed MAP | Full MAP but: 3-5 anchors max, NMMF on hardest 2-3 only, move to recall quickly |
-| **Standard (45-90 min)** | Moderate/High | Fast LOOP | Minimal MAP (quick anchor review), straight to recall → connect → quiz |
-| **Long (90+ min)** | None/Low | Full Protocol | Complete MAP with all anchors, full NMMF, thorough LOOP, comprehensive WRAP |
-| **Long (90+ min)** | Moderate/High | Depth + Mastery | Quick MAP, extended Connect & Expand, harder cases, mastery-level quiz |
+| Time | Goal | Mode | What Happens |
+|------|------|------|--------------|
+| **15-20 min/module** | Coverage | **Prime Mode** | Scan, names, groups. No depth. |
+| **20-30 min/topic** | Coverage + Basic Hooks | **Sprint Mode** | Quick anchors, 1 hook each, 1 recall pass |
+| **15-30 min** | Retrieval Practice | **Recall Only** | No teaching, drill existing anchors |
+| **45-60 min** | Learning (Low Knowledge) | **Compressed MAP** | 3-5 anchors, essential NMMF, quick recall |
+| **45-60 min** | Learning (Mod/High Knowledge) | **Fast LOOP** | Minimal MAP, straight to recall → quiz |
+| **90+ min** | Deep Learning | **Full Protocol** | Complete MAP → LOOP → WRAP |
+| **90+ min** | Mastery | **Depth + Mastery** | Quick MAP, extended connect, hard cases |
 
 ---
 
 ## DETAILED MODE DESCRIPTIONS
+
+### Prime Mode (NEW)
+
+**Trigger:** "Prime mode" / "Just priming" / "Coverage mode" / Multiple modules to scan
+
+**Time:** 15-20 minutes per module (hard stop)
+
+**PERO Stage:** Priming only
+
+**What Happens:**
+1. Scan LOs + outline
+2. List all major topics with 1-sentence descriptions (Level 1)
+3. Group into 3-5 logical clusters
+4. Optional: quick phonetic/visual hooks for hard names only
+5. Output Prime Map
+6. Move to next module
+
+**What Does NOT Happen:**
+- No NMMF
+- No recall or quizzes
+- No depth beyond Level 1
+- No Anki cards
+- No detailed hooks
+
+**Output:** Prime Map (topic list with groupings, ready for encoding later)
+
+**Use When:**
+- First exposure to new content
+- Multiple modules to cover in one session
+- Tonight = breadth, tomorrow = depth
+
+---
+
+### Sprint Mode (NEW)
+
+**Trigger:** "Sprint mode" / "Fast coverage" / "Quick pass"
+
+**Time:** 20-30 minutes per topic (hard stop)
+
+**PERO Stage:** Priming + Light Encoding
+
+**What Happens:**
+1. Quick MAP: 3-5 anchors, Level 2 explanations
+2. Fast hooks: 1 per anchor (simple, user-preferred)
+3. One Brain Dump: single recall pass, mark S/M/W
+4. Sprint Recap: 5 bullets + hooks + "needs depth" flags
+5. Move on
+
+**What Does NOT Happen:**
+- Full NMMF process
+- Multiple recall passes
+- Connect, Interleave & Expand phase
+- Detailed quizzes
+- Perfectionism
+
+**Output:** Sprint Recap (anchors, hooks, weak flags)
+
+**Use When:**
+- Many topics, limited time
+- Need hooks but not mastery
+- Exam approaching, first pass through material
+
+---
 
 ### Recall Only (Micro Sessions)
 **Time:** 5-20 minutes  
@@ -47,7 +112,7 @@
 3. Multi-level explanation for each anchor (start at level 2)
 4. NMMF only on 2-3 hardest/most abstract concepts
 5. Move to recall within first 25-30 minutes
-6. Connect & Expand only if time remains after Quiz
+6. Connect, Interleave & Expand only if time remains after Quiz
 
 **AI behavior:**
 - "With your time and starting point, let's focus on the 4 most important anchors and build strong foundations."
@@ -64,7 +129,7 @@
 1. Quick MAP: Rapid anchor review (confirm user recognizes them)
 2. Skip detailed explanations — user already knows basics
 3. Go straight to Brain Dump / Teach-Back
-4. Spend more time on Connect & Expand
+4. Spend more time on Connect, Interleave & Expand
 5. Harder quiz questions (application, not just recall)
 
 **AI behavior:**
@@ -84,7 +149,7 @@
 3. NMMF for all key concepts
 4. PES for every hook (personalization matters for retention)
 5. Multiple recall passes
-6. Full Connect & Expand with mini-maps and cases
+6. Full Connect, Interleave & Expand with mini-maps and cases
 7. Comprehensive quiz covering every anchor
 8. Complete WRAP with cards and detailed recap
 
@@ -102,7 +167,7 @@
 **Flow:**
 1. Abbreviated MAP (confirm structure, maybe add nuance)
 2. Focus on mechanisms and edge cases, not basics
-3. Extended Connect & Expand:
+3. Extended Connect, Interleave & Expand:
    - Cross-topic bridges
    - "What if" scenarios
    - Differential reasoning
