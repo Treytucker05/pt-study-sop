@@ -1,6 +1,6 @@
 # PT Study SOP v8.1 — Module 3: Framework Selector
 
-**Purpose:** Help AI select 1-2 appropriate frameworks based on topic type.  
+**Purpose:** Help AI select the single best framework based on topic type.
 **When to consult:** During MAP phase, before building dual views.
 
 ---
@@ -116,17 +116,12 @@ Hybrid: Capability → Limitation → Adaptation → Optimization
 
 ## PRESENTATION FORMAT
 
-**AI presents options like this:**
+**AI delivers an executive decision like this:**
 
-> "Based on this topic (anterior thigh muscles — structure-heavy), I recommend:
-> 
-> **Hierarchy option:** Structure → Function → Behavior → Outcome  
+> "Based on this topic (anterior thigh muscles — structure-heavy), use **Structure → Function → Behavior → Outcome**.
 > *What each muscle IS → what it DOES → how it ACTS during movement → clinical OUTCOME if impaired*
-> 
-> **Mechanism option:** Macro → Meso → Micro  
-> *Whole thigh region → muscle groups → individual muscles and attachments*
-> 
-> Which fits how your brain wants to organize this? Or should I suggest alternatives?"
+>
+> This is the SINGLE best framework recommendation to be used in the MAP "Silver Platter" step."
 
 ---
 

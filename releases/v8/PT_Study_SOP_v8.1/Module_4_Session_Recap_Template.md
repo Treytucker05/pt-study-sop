@@ -6,75 +6,29 @@
 
 ---
 
-## PRIME MAP TEMPLATE (Prime Mode Output)
+## SPRINT/DRILL RECAP
 
 ```
 ═══════════════════════════════════════════════════════════
-PRIME MAP: [Module Name]
-Date: [YYYY-MM-DD]
-Time: [X] min
-Situation: CRUNCH
-Mode: Prime
-═══════════════════════════════════════════════════════════
-
-GROUP 1: [Category Name]
-  • [Topic] — [1-sentence description]
-  • [Topic] — [1-sentence description]
-  • [Topic] — [1-sentence description]
-
-GROUP 2: [Category Name]
-  • [Topic] — [1-sentence description]
-  • [Topic] — [1-sentence description]
-
-GROUP 3: [Category Name]
-  • [Topic] — [1-sentence description]
-  • [Topic] — [1-sentence description]
-
-QUICK HOOKS (hard names only):
-  • [Term] — [phonetic or visual hook]
-  • [Term] — [phonetic or visual hook]
-
-═══════════════════════════════════════════════════════════
-STATUS: Primed. Ready for encoding.
-NEXT: Encoding session (Compressed MAP or Full Protocol recommended)
-═══════════════════════════════════════════════════════════
-```
-
-## SPRINT RECAP TEMPLATE (Sprint Mode Output)
-
-```
-═══════════════════════════════════════════════════════════
-SPRINT RECAP: [Topic]
-Date: [YYYY-MM-DD]
-Time: [X] min
-Situation: CRUNCH
-Mode: Sprint
-═══════════════════════════════════════════════════════════
-
-ANCHORS:
-  1. [Anchor] — [Hook] — [S/M/W]
-  2. [Anchor] — [Hook] — [S/M/W]
-  3. [Anchor] — [Hook] — [S/M/W]
-
-HOOKS SUMMARY:
-  • [Anchor] → [Hook]
-  • [Anchor] → [Hook]
-  • [Anchor] → [Hook]
-
-NEEDS DEPTH (flag for next session):
+SPRINT/DRILL RECAP
+Topic: [Topic]
+Mode: [Sprint / Drill]
+Anchors:
+  • [Anchor] — [Hook] — [S/M/W]
+  • [Anchor] — [Hook] — [S/M/W]
+  • [Anchor] — [Hook] — [S/M/W]
+Weak Points:
   • [Specific item that needs more work]
   • [Specific item that needs more work]
-
 ═══════════════════════════════════════════════════════════
-STATUS: Surface pass complete.
-NEXT: Encoding + Recall session (Compressed MAP or Full Protocol)
+NEXT: [Recommend Sprint / Core / Drill based on weak points]
 ═══════════════════════════════════════════════════════════
 ```
 
-## RECAP TEMPLATE
+## CORE MODE RECAP
 
 ```
-SESSION RECAP
+CORE MODE RECAP
 [Course] - [Module] - [Topic]
 Date: [YYYY-MM-DD]
 
@@ -124,15 +78,8 @@ WEAK POINTS / NEXT TIME
 
 NEXT SESSION PLAN
 Recommended focus: [What to do next time based on weak points]
-Suggested mode: [Prime / Sprint / Recall Only / Compressed MAP / Fast LOOP / Full Protocol / Depth + Mastery]
+Suggested mode: [Sprint / Core / Drill]
 Time needed: [Estimated time for recommended work]
-
-FLOW CRITIQUE (Session-Level)
-Flow Notes:
-- Mode/flow used: [What actually happened - MAP -> LOOP -> WRAP, Compressed, etc.]
-- Worked well: [Pacing, chunk size, hook styles, storyframe effectiveness]
-- Didn't work: [Too deep too early, too many anchors, recall too sparse, etc.]
-- Next-time change: [One concrete adjustment]
 
 To resume: Say "Resume [Course - Topic]" and paste this recap + current LOs
 ```
@@ -274,14 +221,14 @@ Secondary: Macro + Meso + Micro
 
 **Guidelines:**
 - Based on weak points, recommend specific focus
-- Suggest appropriate triage mode
+- Suggest appropriate triage mode (Sprint / Core / Drill)
 - Estimate time needed
 
 **Example:**
 ```
 Recommended focus: Sartorius actions + RF hip flexion mechanism + clinical reasoning for quad weakness
-Suggested mode: Fast LOOP (you know the basics, need recall + application practice)
-Time needed: ~30-45 min to solidify, or 15 min for quick recall drill
+Suggested mode: Drill (you know the basics, need recall + application practice)
+Time needed: ~30-45 min to solidify, or 15 min for quick drill block
 ```
 
 ---
@@ -295,8 +242,8 @@ Date: [YYYY-MM-DD]
 Anchors Covered: [List]  
 Strong / Moderate / Weak Summary  
 Top 3 Hooks or Analogies  
-Next Focus: [Next anchor or recall goal]  
-Mode: [Recall Only / Fast LOOP / etc.]
+Next Focus: [Next anchor or recall goal]
+Mode: [Sprint / Core / Drill]
 
 **Purpose:** Keep daily continuity between sessions; ideal for multi-day topics.
 
@@ -316,39 +263,6 @@ Mode: [Recall Only / Fast LOOP / etc.]
 - Still generate recap with whatever was covered
 - Mark EXAM TRACKER as "In Progress" with specific stopping point
 - WEAK POINTS should include "Did not complete: [remaining items]"
-
----
-
-### Flow Critique (Session-Level)
-
-At the end of the recap, add 2-4 bullets:
-
-**Flow Notes:**
-- **Mode/flow used:** [What actually happened - MAP -> LOOP -> WRAP, Compressed, etc.]
-- **Worked well:** [Pacing, chunk size, hook styles, storyframe effectiveness]
-- **Didn't work:** [Too deep too early, too many anchors, recall too sparse, etc.]
-- **Next-time change:** [One concrete adjustment]
-
-### Meta-Log Offer
-
-After generating the recap, ask once:
-
-> "Do you want a quick meta-log for how this session went?"
-
-If yes, output:
-```
-[Meta-Log - Session Notes]
-What worked well:
-- [1-2 bullets]
-
-What didn't work well:
-- [1-2 bullets]
-
-Changes for next time:
-- [1-2 bullets]
-```
-
-Keep total to 3-5 bullets. Remind user they can paste this into notes and bring it back next session.
 
 ---
 
