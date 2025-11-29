@@ -2,13 +2,13 @@
 
 **Repository:** PT Study SOP  
 **Current Version:** 8.1.1
-**Last Updated:** November 28, 2025
+**Last Updated:** December 5, 2025
 
 ---
 
 ## Version 8.1.1 (Current)
 
-**Release Date:** November 28, 2025
+**Release Date:** December 5, 2025
 
 ### Major Additions
 
@@ -34,7 +34,7 @@
 
 ## Version 8.1
 
-**Release Date:** December 5, 2025
+**Release Date:** November 28, 2025
 
 ### New Features
 
@@ -95,7 +95,7 @@
 
 **Release Date:** November 25, 2025
 
-- Added v8 package in `releases/v8/PT_Study_SOP_v8/` (extracted folder).
+- Added v8 package in `releases/v8/PT_Study_SOP_v8.1/` (extracted folder).
 - Includes Module_1_Core_Protocol.md, Module_2_Triage_Rules.md, Module_3_Framework_Selector.md, Module_4_Session_Recap_Template.md, Module_5_Troubleshooting.md, Module_6_Framework_Library.md, Master_Index.md, and Runtime_Prompt.md.
 - v7.x documentation lives in `legacy/` for reference.
 
@@ -117,8 +117,8 @@
 
 | Version | Release Date | Key Features | Major Changes |
 |---------|--------------|--------------|---------------|
-| **8.1.1** | Nov 28, 2025 | Prime/Sprint modes, step-by-step entry menus, hook autonomy/design, quiz delivery rules, PERO alignment | Coverage + retrieval discipline, explicit priming/interleaving |
-| **8.1** | Dec 5, 2025 | HUD/menu, Self-Check QA, Storyframe, HookStyle, Surface-Then-Structure, meta-log flow | Refinements for control, reliability, and encoding |
+| **8.1.1** | Dec 5, 2025 | Prime/Sprint modes, step-by-step entry menus, hook autonomy/design, quiz delivery rules, PERO alignment | Coverage + retrieval discipline, explicit priming/interleaving |
+| **8.1** | Nov 28, 2025 | HUD/menu, Self-Check QA, Storyframe, HookStyle, Surface-Then-Structure, meta-log flow | Refinements for control, reliability, and encoding |
 | **8.0** | Nov 25, 2025 | Modular SOP, triage, framework selector | Complete restructure from monolithic |
 | **7.2** | Nov 24, 2025 | NMMF, HIR, PES | Systematic hook creation |
 | **7.1** | Prior | MAP + LOOP + WRAP, active recall | Established core structure |

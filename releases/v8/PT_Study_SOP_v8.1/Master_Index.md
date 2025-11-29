@@ -20,7 +20,7 @@
 
 ## Module Structure
 ```
-PT_Study_SOP_v8/
+PT_Study_SOP_v8.1/
 ├── Master_Index.md          ← You are here
 ├── Custom_GPT_Instructions.md  ← Instructions for Custom GPT setup
 ├── Runtime_Prompt.md        ← Copy-paste to start any new chat

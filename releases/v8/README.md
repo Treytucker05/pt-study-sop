@@ -1,6 +1,6 @@
-# PT Study SOP v8.1 Package
+# PT Study SOP v8.1.1 Package
 
-This folder contains the v8.1 release files.
+This folder contains the v8.1.1 release files.
 
 ## Contents (9 files for Custom GPT upload)
 
@@ -18,7 +18,8 @@ Located in `PT_Study_SOP_v8.1/`:
 
 ## Version History
 
-- v8.1 (Dec 5, 2025): HUD/menu, Self-Check QA, Storyframe integration, HookStyle, Surface-Then-Structure, meta-log flow
+- v8.1.1 (Dec 5, 2025): Prime/Sprint modes, step-by-step entry menus, hook autonomy/design, quiz delivery rules, PERO alignment
+- v8.1 (Nov 28, 2025): HUD/menu, Self-Check QA, Storyframe integration, HookStyle, Surface-Then-Structure, meta-log flow
 - v8.0 (Nov 25, 2025): Modular restructure from monolithic v7.x
 
 ## Notes
