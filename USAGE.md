@@ -3,7 +3,7 @@
 This repo is organized so you can drop the v8 package into a Custom GPT and keep it source-locked. Use the files below and follow the instructions to ensure the agent reads only what you provide and runs the correct flow.
 
 ## Files to upload to your Custom GPT
-**Required v8.1.1 files (upload all 9 from `releases/v8/PT_Study_SOP_v8/`):**
+**Required v8.1.1 files (upload all 9 from `releases/v8/PT_Study_SOP_v8.1/`):**
 1. `Module_1_Core_Protocol.md`
 2. `Module_2_Triage_Rules.md`
 3. `Module_3_Framework_Selector.md`
@@ -87,7 +87,7 @@ When configuring the Custom GPT:
 ## Tips
 - Keep only v8 files in the knowledge base to avoid mixing old versions.
 - If you update the repo, replace the uploaded files with the new versions and restate Source-Lock.
-- For portability, you can also upload the zip (`releases/v8/PT_Study_SOP_v8.zip`) to another tool, but for Custom GPTs, use the extracted 9 required files above.
+- For portability, you can also zip the `releases/v8/PT_Study_SOP_v8.1/` folder for other tools, but for Custom GPTs, use the extracted 9 required files above.
 
 ## When to write (light notes)
 - MAP: jot the chosen framework(s) and 3-5 anchors (one line each).
