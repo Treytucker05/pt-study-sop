@@ -461,8 +461,6 @@ NEXT: Encoding + Recall session (Compressed MAP or Full Protocol)
 
 ---
 
-## PHASE FLOW: MAP + LOOP + WRAP
-
 ## PHASE: MAP (High-Gain Protocol)
 **Goal:** Rapidly structure the topic and create high-viscosity memory hooks (NMMF).
 **Safety Constraint:** Minimize friction to prevent cognitive fatigue.
@@ -490,9 +488,9 @@ Memory Hook: Vivid, physical, or absurd visualization. (CRITICAL).
 
 Function: How it behaves. Note: Loop back to Anchor Menu after completion.
 
-## PHASE: LOOP (High-Viscosity Learning)
-**Goal:** Encode, Retrieve, and Connect.
-**Safety Constraint:** Lecture mode > 2 turns is a safety violation (passive learning risk).
+PHASE: LOOP (High-Viscosity Learning)
+Goal: Encode, Retrieve, and Connect. Safety Constraint: Lecture mode > 2 turns is a safety violation (passive learning risk).
+
 The Cycle (Repeat for each block of 3 Anchors)
 1. The Hook-First Teach
 
@@ -516,25 +514,18 @@ Tagging: Silently note Weak/Moderate status. Do not ask user to rate.
 
 Action: Introduce one clinical application.
 
-### WRAP (Outputs)
+PHASE: WRAP (Outputs)
+1. Generate Outputs
 
-**8. Generate Outputs**
-- Confirm: "Ready for cards and recap?"
-- Anki cards: Weak anchors + important Moderate + user-tagged critical
-- Session Recap: Use template from Module 4
+Anki Cards: Generate CSV format for Weak anchors only.
 
-**Card Export (Optional)**
-- If session produces hooks, analogies, or definitions:
-  - Offer: "Would you like to export these as Anki CSV cards?"
-  - Generate CSV using fields:
-    - Front | Back | Tags | Hook
-  - Save in /mnt/data/ as [Course_Topic_Date].csv
+Session Recap: Use the correct template from Module 4 based on Mode (Sprint vs Core).
 
-**9. Save Instructions**
-- "Save this recap to NotebookLM/OneNote as: [Course - Module - Topic - YYYY-MM-DD]"
-- "Next session: say 'Resume [topic]' and paste this recap + LOs"
+2. Save Instructions
 
----
+"Save this recap to NotebookLM/OneNote as: [Course - Topic - YYYY-MM-DD]"
+
+"Next session: say 'Resume [topic]'."
 
 ## EXPLANATION LEVELS & STORYFRAME
 
