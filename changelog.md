@@ -1,12 +1,22 @@
 # PT Study SOP - Changelog
 
-**Repository:** PT Study SOP  
-**Current Version:** 8.1.1
-**Last Updated:** November 28, 2025
+**Repository:** PT Study SOP
+**Current Version:** 8.2
+**Last Updated:** Updated for v8.2 release
 
 ---
 
-## Version 8.1.1 (Current)
+## Version 8.2 (Current)
+
+**Release Date:** TBD
+
+### Summary
+
+v8.2 (Current): Major Refactor. Removed Modules 5 & 7. Consolidated Triage into Sprint/Core/Drill. Implemented "Silver Platter" MAP protocol (no waiting). Added "Safety Override" to Custom Instructions to prevent bureaucracy.
+
+---
+
+## Version 8.1.1 (Previous)
 
 **Release Date:** November 28, 2025
 
@@ -104,7 +114,8 @@
 ## Version Support
 
 ### Current Support
-- **v8.1.1:** Fully supported, recommended for all users
+- **v8.2:** Fully supported, High-Speed refactor
+- **v8.1.1:** Supported
 - **v8.1:** Supported
 - **v8.0:** Supported, but v8.1+ is preferred
 
@@ -117,6 +128,7 @@
 
 | Version | Release Date | Key Features | Major Changes |
 |---------|--------------|--------------|---------------|
+| **8.2** | TBD | High-Speed refactor, Safety Override, Silver Platter MAP, Sprint/Core/Drill triage | Removed Modules 5 & 7, streamlined triage into three modes |
 | **8.1.1** | Nov 28, 2025 | Prime/Sprint modes, step-by-step entry menus, hook autonomy/design, quiz delivery rules, PERO alignment | Coverage + retrieval discipline, explicit priming/interleaving |
 | **8.1** | Dec 5, 2025 | HUD/menu, Self-Check QA, Storyframe, HookStyle, Surface-Then-Structure, meta-log flow | Refinements for control, reliability, and encoding |
 | **8.0** | Nov 25, 2025 | Modular SOP, triage, framework selector | Complete restructure from monolithic |
