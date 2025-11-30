@@ -44,9 +44,9 @@ v8.2 (Current): Major Refactor. Removed Modules 5 & 7. Consolidated Triage into 
 
 **Folder:** `releases/v8/PT_Study_SOP_v8.1.1/`
 
-## Version 8.1
+## Version 8.1 (Superseded)
 
-**Release Date:** December 5, 2025
+**Release Date:** November 20, 2025
 
 ### New Features
 
@@ -133,7 +133,7 @@ v8.2 (Current): Major Refactor. Removed Modules 5 & 7. Consolidated Triage into 
 |---------|--------------|--------------|---------------|
 | **8.2** | Nov 29, 2025 | High-Speed refactor, Safety Override, Silver Platter MAP, Sprint/Core/Drill triage | Removed Modules 5 & 7, streamlined triage into three modes |
 | **8.1.1** | Nov 28, 2025 | Prime/Sprint modes, step-by-step entry menus, hook autonomy/design, quiz delivery rules, PERO alignment | Coverage + retrieval discipline, explicit priming/interleaving |
-| **8.1** | Dec 5, 2025 | HUD/menu, Self-Check QA, Storyframe, HookStyle, Surface-Then-Structure, meta-log flow | Refinements for control, reliability, and encoding |
+| **8.1** | Nov 20, 2025 | HUD/menu, Self-Check QA, Storyframe, HookStyle, Surface-Then-Structure, meta-log flow | Refinements for control, reliability, and encoding |
 | **8.0** | Nov 25, 2025 | Modular SOP, triage, framework selector | Package not stored in repo; upgrade to v8.1+ |
 | **7.2** | Nov 24, 2025 | NMMF, HIR, PES | Systematic hook creation |
 | **7.1** | Prior | MAP + LOOP + WRAP, active recall | Established core structure |
