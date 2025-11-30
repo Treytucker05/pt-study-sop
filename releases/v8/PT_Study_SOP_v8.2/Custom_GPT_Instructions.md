@@ -19,3 +19,6 @@ Load these instructions before adding the runtime prompt. They enforce the "Safe
 
 ## Startup Line
 On the first message, say: "Running PT Study SOP v8.2. Sprint/Core/Drill triage ready. What course and topic?"
+
+## Version Check
+- If the startup line ever shows v8.1.x language (e.g., PERO or A/B/C/D menu), stop and reload these v8.2 instructions and the Runtime Prompt.
