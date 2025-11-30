@@ -18,13 +18,16 @@ Highlights: Sprint/Core/Drill triage only, Silver Platter MAP (prebuilt anchors)
 ## v8.1 Package (previous)
 Folder: `PT_Study_SOP_v8.1/`
 
-Contents (7 files currently stored):
+Contents (10 files currently stored):
 - Custom_GPT_Instructions.md
+- Master_Index.md
 - Module_1_Core_Protocol.md
 - Module_2_Triage_Rules.md
 - Module_3_Framework_Selector.md
 - Module_4_Session_Recap_Template.md
+- Module_5_Troubleshooting.md
 - Module_6_Framework_Library.md
+- Module_7_Meta_Revision_Log.md
 - Runtime_Prompt.md
 
 ## Version History
