@@ -1,4 +1,4 @@
-# Module 3: Framework Selector (v8.3 Smart Menu)
+# Module 3: Framework Selector (v8.4 Smart Menu)
 
 **Goal:** Select the perfect mental model for the topic.
 

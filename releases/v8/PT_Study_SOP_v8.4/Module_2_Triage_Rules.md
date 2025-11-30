@@ -1,4 +1,4 @@
-# Module 2: Triage Rules (v8.3 Neuro-Edition)
+# Module 2: Triage Rules (v8.4 Neuro-Edition)
 
 Choose one gear and stay lightweight. Switch on request or when the context demands.
 

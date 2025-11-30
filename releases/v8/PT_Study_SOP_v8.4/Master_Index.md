@@ -1,4 +1,4 @@
-# Master Index — PT Study SOP v8.3 Package
+# Master Index — PT Study SOP v8.4 Package
 
 Use this index to load the right files for a session or to rebuild the Custom GPT package.
 
@@ -17,6 +17,6 @@ Use this index to load the right files for a session or to rebuild the Custom GP
 3. Keep the modules handy for reference when adjusting the flow.
 
 ## Version Notes
-- v8.3 removes Modules 5 and 7; triage is now Sprint/Core/Drill only.
+- v8.4 removes Modules 5 and 7; triage is now Sprint/Core/Drill only.
 - Silver Platter MAP: propose anchors immediately—no waiting for outlines.
 - Safety Override: when in doubt, choose the fastest safe help path and explain briefly.

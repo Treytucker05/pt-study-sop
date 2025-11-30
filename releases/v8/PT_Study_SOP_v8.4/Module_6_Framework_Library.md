@@ -1,4 +1,4 @@
-# Module 6: Framework Library (v8.3 Full Arsenal)
+# Module 6: Framework Library (v8.4 Full Arsenal)
 
 Use these codes to structure the "Silver Platter" MAP.
 **Default Logic:** If unsure, use **Y1** (Structure) or **M2** (Mechanism).

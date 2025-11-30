@@ -1,4 +1,4 @@
-# Module 1: Core Protocol (v8.3 Hybrid Teamwork)
+# Module 1: Core Protocol (v8.4 Hybrid Teamwork)
 
 **Philosophy:** The AI is the Architect (Structure/Priming); The User is the Builder (Encoding/Recall).
 
