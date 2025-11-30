@@ -1,6 +1,6 @@
 # PT Study SOP v8.2 - Usage Guide
 Quick Start
-Copy the text from Runtime_Prompt.md.
+Copy the text from `releases/v8/PT_Study_SOP_v8.2/Runtime_Prompt.md`.
 
 Paste it into a new ChatGPT session.
 
