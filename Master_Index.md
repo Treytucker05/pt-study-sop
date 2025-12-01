@@ -1,18 +1,28 @@
-# Master Index — PT Study SOP v8.5.1 (Spotter Prime)
+# Master Index — v8.6 (Active Architect)
 
-## Version
-- Current: v8.5.1 (Spotter Prime)
-- Notes: Upgrades to Spotter Prime: Seed-Lock, Molding Logic, Phonetic Bridge, and Function-First Defaults.
+Version
+Current: v8.6 (Active Architect)
 
-## Production Files (Root)
-- Custom_GPT_Instructions.md
-- Module_1_Core_Protocol.md
-- Module_6_Framework_Library.md
-- Runtime_Prompt.md
+Notes: Restored tutor infrastructure (modes, maps, levels) with strict Spotter-style active construction. Upgrades: Seed-Lock, Gated Platter, Phonetic Override, Priming First, runtime start script, and example flows (Gated Platter, Sprint, Core walkthrough, cues).
 
-## Legacy
-- v8.4 Tutor Edition archive: legacy/v8.4_Tutor_Edition/
-- Pre-safe-deploy v8.5.1 archive: legacy/v8.5.1_pre_safe_deploy/
+File Map (Root)
+Custom_GPT_Instructions.md — Persona and global rules (Phonetic Override, Gated Platter, Priming).
 
-## Releases
-- releases/v8/PT_Study_SOP_v8.5.1/
+Module_1_Core_Protocol.md — Prime → Encode → Gate → Build workflow with level gating.
+
+Module_2_Modes.md — Diagnostic Sprint (fail-first), Core Mode, Drill Mode.
+
+Module_4_Recap_Engine.md — WRAP recap with operator script and collaborative Anki creation.
+
+Module_5_Example_Flows.md — Gated Platter, Diagnostic Sprint, Core Mode walkthrough, and command cheat sheet.
+
+Module_6_Framework_Library.md — Quick-reference cues plus H-Series (Priming Tools) and M-Series (Encoding Tools) with 4-10-HS-PT levels.
+
+Runtime_Prompt.md — Standardized session-start script with scope check and stall fallbacks.
+
+Master_Index.md — This map.
+
+Legacy
+v8.5.1 Spotter Prime archive: legacy/v8.5.1_Spotter_Prime/
+
+v8.4 Tutor Edition archive: legacy/v8.4_Tutor_Edition/

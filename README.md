@@ -1,28 +1,28 @@
-# PT Study SOP v8.4 (Neuro-Hybrid Edition)
+# PT Study SOP — v8.6 (Active Architect)
 
-**Current Stable Release:** v8.4
-**Location:** `releases/v8/PT_Study_SOP_v8.4/`
+This repository hosts the PT Study SOP packages. The root contains the **current release v8.6 (Active Architect)**, and `legacy/` stores prior versions for reference.
 
-This is the production-ready Neuro-Hybrid system. It integrates "Guarded Boat" Priming, Jim Kwik's Active Recall, and High-Velocity Triage.
+## 📦 Current Release (root)
+The v8.6 package is ready to paste into GPT tools and session chats. Files in the root:
 
-## 📂 System Manifest
+- `Custom_GPT_Instructions.md` — Persona and global rules (Phonetic Override, Gated Platter, Priming).
+- `Runtime_Prompt.md` — Session-start script with scope check, stall fallbacks, and operating rules.
+- `Module_1_Core_Protocol.md` — Prime → Encode → Gate → Build workflow with level gating.
+- `Module_2_Modes.md` — Diagnostic Sprint (fail-first), Core Mode, Drill Mode.
+- `Module_4_Recap_Engine.md` — WRAP recap with operator script and collaborative Anki creation.
+- `Module_5_Example_Flows.md` — Gated Platter, Diagnostic Sprint, Core walkthrough, and command cheat sheet.
+- `Module_6_Framework_Library.md` — Quick-reference cues plus H-Series (Priming) and M-Series (Encoding) tools with 4-10-HS-PT levels.
+- `Master_Index.md` — Map of all root assets.
 
-### 🧠 The Brain
-* **`Custom_GPT_Instructions.md`** — The "Prime Directive." Paste into Custom GPT Config. Controls safety, tone, and the "Neuro-Learning Check" startup.
-* **`Runtime_Prompt.md`** — The "Ignition Key." Paste into the chat to start a session. Enforces "Architect/Builder" teamwork.
+### Quick Start
+1. Load **Custom_GPT_Instructions.md** into your GPT/custom instructions.
+2. Begin a session with **Runtime_Prompt.md**.
+3. Use Modules 1, 2, 4, 5, and 6 during facilitation; reference **Master_Index.md** as a guide.
 
-### 📚 The Knowledge Modules (Upload to GPT)
-* **`Module_1_Core_Protocol.md`** — **The Engine.** MAP (Seed/Storyframe) -> LOOP (Escalation) -> WRAP.
-* **`Module_2_Triage_Rules.md`** — **The Gears.** Sprint (Hook-First), Core (Hybrid), Drill (Validation).
-* **`Module_3_Framework_Selector.md`** — **The Menu.** Selects H-Series, M-Series, or Y-Series frameworks.
-* **`Module_4_Session_Recap_Template.md`** — **The Save File.** Standard output for Anki/Notes.
-* **`Module_6_Framework_Library.md`** — **The Arsenal.** Full library of mental models + "4-10-HS-PT" levels.
+## 🗂️ Legacy Packages
+Older versions remain in `legacy/` for comparison and rollback needs:
 
-### 🗺️ Master Index
-* **`Master_Index.md`** — Deployment guide and version notes.
+- `legacy/v8.5.1_Spotter_Prime/` — Spotter Prime and prior v8.x archives (v8.5.1, v8.4, v8.3, v8.1.1).
+- Additional historical docs (v7.x series) and indices.
 
-## 🚀 How to Deploy
-1. Go to `releases/v8/PT_Study_SOP_v8.4/`.
-2. Copy text from **Instructions** -> Paste to GPT Configuration.
-3. Upload **Modules 1, 2, 3, 4, 6** to GPT Knowledge.
-4. Start chat with **Runtime Prompt**.
+Use the legacy materials only if you need historical behavior; v8.6 in the root is the production build.
