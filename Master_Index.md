@@ -5,7 +5,7 @@ Current: v8.6 (Active Architect)
 
 Notes: Restored tutor infrastructure (modes, maps, levels) with strict Spotter-style active construction. Upgrades: Seed-Lock, Gated Platter, Phonetic Override, Priming First, runtime start script, and example flows (Gated Platter, Sprint, Core walkthrough, cues).
 
-File Map (Package)
+File Map (Root)
 Custom_GPT_Instructions.md — Persona and global rules (Phonetic Override, Gated Platter, Priming).
 
 Module_1_Core_Protocol.md — Prime → Encode → Gate → Build workflow with level gating.

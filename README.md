@@ -1,9 +1,9 @@
 # PT Study SOP — v8.6 (Active Architect)
 
-This repository hosts the PT Study SOP packages. The **current release v8.6 (Active Architect)** lives in `releases/v8/PT_Study_SOP_v8.6/`. Legacy versions remain under `legacy/`.
+This repository hosts the PT Study SOP packages. The root contains the **current release v8.6 (Active Architect)**, and `legacy/` stores prior versions for reference.
 
-## 📦 Current Release (releases/v8/PT_Study_SOP_v8.6)
-The v8.6 package is ready to paste into GPT tools and session chats. Files in the package folder:
+## 📦 Current Release (root)
+The v8.6 package is ready to paste into GPT tools and session chats. Files in the root:
 
 - `Custom_GPT_Instructions.md` — Persona and global rules (Phonetic Override, Gated Platter, Priming).
 - `Runtime_Prompt.md` — Session-start script with scope check, stall fallbacks, and operating rules.
@@ -12,7 +12,7 @@ The v8.6 package is ready to paste into GPT tools and session chats. Files in th
 - `Module_4_Recap_Engine.md` — WRAP recap with operator script and collaborative Anki creation.
 - `Module_5_Example_Flows.md` — Gated Platter, Diagnostic Sprint, Core walkthrough, and command cheat sheet.
 - `Module_6_Framework_Library.md` — Quick-reference cues plus H-Series (Priming) and M-Series (Encoding) tools with 4-10-HS-PT levels.
-- `Master_Index.md` — Map of all package assets.
+- `Master_Index.md` — Map of all root assets.
 
 ### Quick Start
 1. Load **Custom_GPT_Instructions.md** into your GPT/custom instructions.
@@ -25,4 +25,4 @@ Older versions remain in `legacy/` for comparison and rollback needs:
 - `legacy/v8.5.1_Spotter_Prime/` — Spotter Prime and prior v8.x archives (v8.5.1, v8.4, v8.3, v8.1.1).
 - Additional historical docs (v7.x series) and indices.
 
-Use the legacy materials only if you need historical behavior; v8.6 in `releases/v8/PT_Study_SOP_v8.6/` is the production build.
+Use the legacy materials only if you need historical behavior; v8.6 in the root is the production build.
