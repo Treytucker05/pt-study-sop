@@ -241,23 +241,21 @@ _INDEX_HTML = r"""
   <title>PT Study Brain Dashboard</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --card: #1f2937;
-      --accent: #38bdf8;
-      --accent-2: #a855f7;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --success: #34d399;
-      --error: #f87171;
+      --bg: #0a0e27;
+      --panel: #0d1117;
+      --card: #161b22;
+      --accent: #1f6feb;
+      --accent-2: #58a6ff;
+      --text: #c9d1d9;
+      --muted: #6e7681;
+      --success: #3fb950;
+      --error: #f85149;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 20% 20%, #1e293b, #0b1223 45%),
-                  radial-gradient(circle at 80% 0%, #0ea5e9, transparent 35%),
-                  var(--bg);
+      background: linear-gradient(135deg, #0a0e27 0%, #0d1117 50%, #0f1419 100%);
       color: var(--text);
       min-height: 100vh;
     }
@@ -271,10 +269,11 @@ _INDEX_HTML = r"""
     .cards { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
     .card {
       background: var(--card);
-      border: 1px solid #1f2a44;
+      border: 1px solid #21262d;
       border-radius: 12px;
       padding: 14px 16px;
-      box-shadow: 0 14px 40px rgba(0,0,0,0.25);
+      box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
     }
     .card h3 { margin: 0 0 6px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted);}
     .card .big { font-size: 28px; font-weight: 700; }
@@ -282,8 +281,8 @@ _INDEX_HTML = r"""
       display: inline-block;
       padding: 3px 10px;
       border-radius: 999px;
-      background: rgba(56,189,248,0.1);
-      color: var(--accent);
+      background: rgba(31,111,235,0.15);
+      color: var(--accent-2);
       font-size: 12px;
       margin-left: 6px;
     }
@@ -291,9 +290,10 @@ _INDEX_HTML = r"""
       margin-top: 22px;
       background: var(--panel);
       border-radius: 14px;
-      border: 1px solid #1f2a44;
+      border: 1px solid #21262d;
       padding: 16px 18px;
-      box-shadow: 0 18px 55px rgba(0,0,0,0.28);
+      box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
     }
     .section h2 { margin: 0 0 10px; font-size: 18px; display: flex; align-items: center; gap: 8px;}
     .muted { color: var(--muted); font-size: 14px; }
@@ -306,7 +306,7 @@ _INDEX_HTML = r"""
     .weak { color: var(--error); }
     .strong { color: var(--success); }
     .bar {
-      background: #0b1223;
+      background: #0d1117;
       border-radius: 999px;
       height: 10px;
       position: relative;
@@ -318,33 +318,34 @@ _INDEX_HTML = r"""
       border-radius: 999px;
     }
     .flex { display: flex; gap: 12px; flex-wrap: wrap; }
-    .chip { padding: 6px 10px; border-radius: 12px; background: rgba(255,255,255,0.06); font-size: 13px; }
+    .chip { padding: 6px 10px; border-radius: 12px; background: rgba(31,111,235,0.1); font-size: 13px; }
     .upload {
-      border: 2px dashed #1e293b;
+      border: 2px dashed #30363d;
       border-radius: 12px;
       padding: 18px;
       text-align: center;
-      background: rgba(255,255,255,0.02);
+      background: rgba(31,111,235,0.05);
       cursor: pointer;
       transition: border-color 0.2s, background 0.2s;
     }
-    .upload:hover { border-color: var(--accent); background: rgba(56,189,248,0.05); }
+    .upload:hover { border-color: var(--accent-2); background: rgba(31,111,235,0.1); }
     button {
       background: linear-gradient(120deg, var(--accent), var(--accent-2));
-      color: #0b1020;
+      color: #ffffff;
       border: none;
       border-radius: 10px;
       padding: 10px 14px;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 10px 24px rgba(56,189,248,0.28);
+      box-shadow: 0 6px 20px rgba(31,111,235,0.3);
       transition: transform 0.1s ease, box-shadow 0.1s ease;
     }
     button:hover { transform: translateY(-1px); }
     pre {
-      background: #0b1220;
+      background: #0d1117;
       padding: 12px;
       border-radius: 10px;
+      border: 1px solid #21262d;
       overflow-x: auto;
       font-size: 13px;
       max-height: 360px;

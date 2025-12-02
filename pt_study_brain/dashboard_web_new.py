@@ -262,25 +262,25 @@ _INDEX_HTML = r"""
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f8fafc;
-      --sidebar-bg: #ffffff;
-      --card-bg: #ffffff;
-      --text-primary: #1e293b;
-      --text-secondary: #64748b;
-      --text-muted: #94a3b8;
-      --border: #e2e8f0;
-      --accent: #3b82f6;
-      --accent-light: #dbeafe;
-      --success: #22c55e;
-      --success-light: #dcfce7;
-      --warning: #f59e0b;
-      --warning-light: #fef3c7;
-      --error: #ef4444;
-      --error-light: #fee2e2;
-      --purple: #8b5cf6;
-      --purple-light: #ede9fe;
-      --cyan: #06b6d4;
-      --cyan-light: #cffafe;
+      --bg: #0a0e27;
+      --sidebar-bg: #0d1117;
+      --card-bg: #161b22;
+      --text-primary: #c9d1d9;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --border: #21262d;
+      --accent: #1f6feb;
+      --accent-light: #388bfd;
+      --success: #3fb950;
+      --success-light: #238636;
+      --warning: #d29922;
+      --warning-light: #9e6a03;
+      --error: #f85149;
+      --error-light: #da3633;
+      --purple: #bc8ef9;
+      --purple-light: #8957e5;
+      --cyan: #58a6ff;
+      --cyan-light: #1f6feb;
     }
     
     * { 
