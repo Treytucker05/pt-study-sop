@@ -238,9 +238,12 @@ _INDEX_HTML = r"""
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
   <title>PT Study Brain Dashboard</title>
   <style>
     :root {
+      color-scheme: dark;
       --bg: #0a0e27;
       --panel: #0d1117;
       --card: #161b22;

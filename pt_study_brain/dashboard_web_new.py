@@ -172,7 +172,11 @@ def build_stats():
 
 @app.route("/")
 def index():
-    return Response(_INDEX_HTML, mimetype="text/html")
+    response = Response(_INDEX_HTML, mimetype="text/html")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @app.route("/api/stats")
@@ -258,10 +262,12 @@ _INDEX_HTML = r"""
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark" />
   <title>PT Study Brain</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
+      color-scheme: dark;
       --bg: #0a0e27;
       --sidebar-bg: #0d1117;
       --card-bg: #161b22;
@@ -283,18 +289,25 @@ _INDEX_HTML = r"""
       --cyan-light: #1f6feb;
     }
     
-    * { 
-      box-sizing: border-box; 
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
+      color-scheme: dark;
     }
-    
+
+    html {
+      color-scheme: dark !important;
+      background: #0a0e27 !important;
+    }
+
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--text-primary);
+      background: var(--bg) !important;
+      color: var(--text-primary) !important;
       min-height: 100vh;
       line-height: 1.5;
+      color-scheme: dark !important;
     }
 
     /* Navigation */
