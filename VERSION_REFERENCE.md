@@ -35,10 +35,11 @@
 
 ### v8.3 — High-Speed refactor (changelog-only)
 - **What’s documented:** High-Speed refactor removing Modules 5 & 7, consolidating triage into Sprint/Core/Drill, and adding Safety Override to the Custom Instructions. Entry is Silver Platter MAP (immediate scaffolding, no waiting) with Sprint/Core/Drill routing; package folder noted but absent in repo. 【F:archive/legacy/changelog.md†L9-L18】
-- **Operational note:** Treat as 8.4 minus Modules 5/7 and minus stored files; if recreating, reuse 8.4’s Sprint/Core/Drill triage and Safety Override while omitting troubleshooting/meta modules.
+- **Operational reconstruction:** Start with 8.4’s Sprint/Core/Drill triage prompts and Safety Override guardrail; apply Silver Platter MAP by delivering a Level 1 metaphor + Level 2 scaffold without waiting for a seed, then lock and mold via Sprint/Core depending on urgency; omit Modules 5/7 (troubleshooting/meta-log) and keep one-step tutoring from 8.4. 【F:archive/legacy/v8.4_Tutor_Edition/Module_2_Triage_Rules.md†L1-L37】【F:archive/legacy/v8.4_Tutor_Edition/Module_1_Core_Protocol.md†L1-L29】【F:archive/legacy/changelog.md†L9-L18】
 
 ### v8.2 — Renamed to v8.3 (changelog-only)
 - **What’s documented:** Same High-Speed refactor (Safety Override, Silver Platter MAP, Sprint/Core/Drill) on release day; version was renamed to v8.3, and no distinct artifacts remain. 【F:archive/legacy/changelog.md†L21-L29】
+- **Operational reconstruction:** Mirror v8.3’s steps: Silver Platter MAP (seedless Level 1 + Level 2 scaffold, then lock), Safety Override, and Sprint/Core/Drill routing lifted from 8.4; exclude Modules 5/7 and keep 8.4’s one-step tutoring tone. 【F:archive/legacy/changelog.md†L21-L29】【F:archive/legacy/v8.4_Tutor_Edition/Module_2_Triage_Rules.md†L1-L37】
 
 ### v8.1.1 — Prime/Sprint menus
 - **Modes & Timing:** Prime Mode (15–20 min/module, scan-only priming), Sprint Mode (20–30 min/topic, hooks + single recall), plus Recall Only, Compressed MAP, Fast LOOP, Full Protocol, and Depth + Mastery. HUD shows Phase, Mode, Framework, HookStyle, Level, and Anchor progress. 【F:archive/legacy/v8.1_archive/Master_Index.md†L22-L78】【F:archive/legacy/v8.1_archive/Master_Index.md†L92-L112】
@@ -55,6 +56,13 @@
 - **What’s documented:** Prior modular SOP with triage and framework selector before the v8.1 overhaul; repository never stored the folder. Use v8.1+ for runnable assets. 【F:archive/legacy/changelog.md†L122-L128】
 
 ## v7.x Series
+
+### Cross-version comparison (7.x)
+- **Guardrails:** 7.4/7.3 enforce Source-Lock + Ask-Don’t-Guess + One-Small-Step; 7.2 adds Hook Integration and Personal Encoding steps to MAP/LOOP/WRAP; 7.1 is the baseline Source-Lock + One-Small-Step model. 【F:archive/legacy/V7.4.md†L9-L24】【F:archive/legacy/v7.3.md†L49-L117】【F:archive/legacy/Concise Study SOP 7.1.txt†L22-L196】【F:archive/legacy/Concise and Full Study SOP 7.1.txt†L1-L118】
+- **Entry:** 7.4/7.3 prompt for course/topic/time/LoU, pull NotebookLM sources, and handle fresh vs resume flows; 7.2/7.1 run a shorter setup focused on context + source-lock before Smart Prime. 【F:archive/legacy/V7.4.md†L26-L142】【F:archive/legacy/v7.3.md†L49-L117】【F:archive/legacy/Concise Study SOP 7.1.txt†L22-L196】
+- **Prime & Hooks:** 7.4 Smart Prime builds hierarchy + mechanism + NMMF/PES hooks with forced user ownership; 7.3 mirrors that with a checklist; 7.2 introduces NMMF + Hook Integration rules; 7.1 uses 3–7 anchors with 10yo + short explanations. 【F:archive/legacy/V7.4.md†L138-L236】【F:archive/legacy/v7.3.md†L1-L45】【F:archive/legacy/Concise Study SOP 7.1.txt†L22-L196】【F:archive/legacy/Concise and Full Study SOP 7.1.txt†L1-L118】
+- **LOOP/Recall:** 7.4/7.3 enforce S/M/W labeling and interleaved recall with cases; 7.2 mandates hook reuse across teaching/recall/cards/recap; 7.1 cycles teach 2–4 anchors then brain dump/teach-back. 【F:archive/legacy/V7.4.md†L26-L71】【F:archive/legacy/v7.3.md†L1-L45】【F:archive/legacy/Concise Study SOP 7.1.txt†L22-L196】【F:archive/legacy/Concise and Full Study SOP 7.1.txt†L1-L118】
+- **WRAP/Output:** 7.4/7.3 produce weak-point Anki + recap and save/resume; 7.2 ties recap/cards to user hooks; 7.1 connects/quizzes then outputs weak-point cards and recap/save steps. 【F:archive/legacy/V7.4.md†L26-L142】【F:archive/legacy/v7.3.md†L1-L45】【F:archive/legacy/Concise Study SOP 7.1.txt†L22-L196】【F:archive/legacy/Concise and Full Study SOP 7.1.txt†L1-L118】
 
 ### v7.4 — Single-Session SOP
 - **Guardrails:** Source-Lock & Ask-Don’t-Guess plus One-Small-Step enforced at session start; non-PT knowledge allowed only with user permission and labeling. 【F:archive/legacy/V7.4.md†L9-L24】
