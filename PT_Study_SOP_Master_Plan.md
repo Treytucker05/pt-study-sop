@@ -8,11 +8,13 @@
 ### Working Set (as of Dec 4, 2025)
 | # | Item | Owner | Status | Target |
 |---|------|-------|--------|--------|
-| 1 | Complete Module 3 (LOOP state machine, timing, spaced repetition scheduling) | Trey | In Progress | Dec 24, 2025 |
+| 1 | Module 3 merged into Modules 1/2/WRAP (no standalone module) | Trey | Closed/Merged | n/a |
 | 2 | Active testing campaign (15 sessions logged to Brain) | Trey | Not Started | Dec 24, 2025 |
 | 3 | Resume template refinement (standardize Role & Rules section) | Trey | Not Started | Dec 10, 2025 |
 | 4 | Dashboard enhancements (retention/time-saved charts, gap visualization) | Trey | Not Started | Dec 17, 2025 |
 | 5 | Weekly cadence: 3 sessions/week → ingest → generate_resume → dashboard review | Trey | Start Now | Weekly |
+
+Note (Dec 4, 2025): Session_Log_Template.md is a Brain ingestion helper for logging/dashboard continuity. It is not part of the v8.6 SOP content set.
 
 ### Immediate Operational Priorities (Audit)
 - **Finish LOOP orchestration**: lock the Module 3 state machine with timing/spaced-repetition hooks so encoding cycles can be exercised end-to-end.
@@ -117,7 +119,7 @@ WRAP (Reflection & Optimization)
 |--------|------|--------|---------------|
 | Module 1 | Time & Objectives |  Complete | Timeframe analysis, goal setting, constraint mapping |
 | Module 2 | Material Assessment |  Complete | Content prioritization, high-yield identification |
-| Module 3 | LOOP Orchestration |  In Progress | Core learning cycles (80% complete) |
+| Module 3 | (Merged in v8.6) |  Merged | LOOP orchestration folded into Modules 1/2 and WRAP; no standalone module tracked |
 | Module 4 | Diagnostic Sprint |  Complete | Rapid problem-solving mode for targeted gaps |
 | Module 5 | Reflection Engine |  Complete | Performance analysis, strategy optimization |
 | Module 6 | Frameworks Library |  Complete | Mental models, thinking structures, clinical reasoning |
