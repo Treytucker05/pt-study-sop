@@ -1,6 +1,6 @@
 # PT Study SOP — v8.6 (Active Architect)
 
-This repository hosts the PT Study SOP packages. The `current/` directory contains the **current release v8.6 (Active Architect)**, and `legacy/` stores prior versions for reference.
+This repository hosts the PT Study SOP packages. The `current/` directory contains the **current release v8.6 (Active Architect)**, and prior versions are archived under `archive/legacy/` for reference.
 
 ## Current Release (`current/v8.6/`)
 The v8.6 package is ready to paste into GPT tools and session chats. Contents are grouped for quick navigation:
@@ -21,12 +21,13 @@ The v8.6 package is ready to paste into GPT tools and session chats. Contents ar
 3. Use Modules 1, 2, 4, 5, and 6 during facilitation; reference **Master_Index.md** as a guide.
 
 ## Legacy Packages
-Older versions remain in `legacy/` for comparison and rollback needs:
+Older versions remain in `archive/legacy/` for comparison and rollback needs:
 
-- `legacy/v8.5.1_Spotter_Prime/` — Spotter Prime and prior v8.x archives (v8.5.1, v8.4, v8.3, v8.1.1).
+- `archive/legacy/v8.5.1_Spotter_Prime/` — Spotter Prime and prior v8.x archives (v8.5.1, v8.4, v8.3, v8.1.1).
 - Additional historical docs (v7.x series) and indices.
 
-Use the legacy materials only if you need historical behavior; v8.6 in `current/v8.6/` is the production build.
+Use the legacy materials only if you need historical behavior; v8.6 in `current/v8.6/` is the production build. A full zip
+snapshot of the repo is stored at `archive/archive_backup_2025-12-04.zip` for cold storage.
 
 ## Quick Run & Ingest Checklist (Brain System)
 - Launch dashboard: `python Run_PT_Study_Brain_AllInOne.py` then open http://127.0.0.1:5000

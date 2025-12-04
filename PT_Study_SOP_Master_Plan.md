@@ -14,6 +14,12 @@
 | 4 | Dashboard enhancements (retention/time-saved charts, gap visualization) | Trey | Not Started | Dec 17, 2025 |
 | 5 | Weekly cadence: 3 sessions/week → ingest → generate_resume → dashboard review | Trey | Start Now | Weekly |
 
+### Immediate Operational Priorities (Audit)
+- **Finish LOOP orchestration**: lock the Module 3 state machine with timing/spaced-repetition hooks so encoding cycles can be exercised end-to-end.
+- **Run the 15-session test sprint**: create and ingest logs into `pt_study_brain/session_logs/`, then generate resumes to validate continuity.
+- **Upgrade dashboards**: add retention/time-saved charts plus gap visualizations in `dashboard.py`/`dashboard_web.py` to surface MAP→LOOP→WRAP performance.
+- **Resume template hardening**: standardize the "Role & Rules" header in the resume generator to prevent prompt drift across tools.
+
 ---
 
 ## 1. Executive Summary
