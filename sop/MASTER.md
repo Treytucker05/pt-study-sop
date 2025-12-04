@@ -290,6 +290,12 @@ Always state the job/outcome first, then list the parts that accomplish it.
 
 ## Brain Integration
 
+### Current Gaps to Fix (from repo audit)
+- **Session log ingestion misses template fields** — Add storage + parsing for **Drawing Used**, **Anchors Locked**, and **Next Session Priority** so qualitative hooks and next steps persist through analytics.
+- **`db_setup.py` fails without `data/` directory** — Create the folder before initializing SQLite to match the web app behavior and avoid first-run errors.
+- **Markdown ingestion allows out-of-range scores** — Enforce 1–5 bounds (like the web quick-session endpoint) to keep ratings consistent.
+- **Web ingestion endpoints lack auth/CSRF** — Add authentication and request protection for `/api/upload`, `/api/quick_session`, and related routes before multi-user or shared-host use.
+
 After each session:
 1. Copy session log template from `brain/session_logs/TEMPLATE.md`
 2. Fill in session data
