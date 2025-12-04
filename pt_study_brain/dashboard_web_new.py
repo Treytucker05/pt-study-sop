@@ -318,13 +318,10 @@ _INDEX_HTML = r"""
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<<<<<<< HEAD
   <meta name="color-scheme" content="dark" />
-=======
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
->>>>>>> 29e11b76751bb1119b72c00b4f28171c392f9496
   <title>PT Study Brain</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -365,13 +362,10 @@ _INDEX_HTML = r"""
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-<<<<<<< HEAD
-      background: var(--bg) !important;
-      color: var(--text-primary) !important;
-=======
       background: linear-gradient(135deg, #0a0e27 0%, #0d1117 50%, #0f1419 100%);
       color: var(--text-primary);
->>>>>>> 29e11b76751bb1119b72c00b4f28171c392f9496
+      background: linear-gradient(135deg, #0a0e27 0%, #0d1117 50%, #0f1419 100%);
+      color: var(--text-primary);
       min-height: 100vh;
       line-height: 1.5;
       color-scheme: dark !important;
@@ -913,7 +907,7 @@ _INDEX_HTML = r"""
     }
     
     .learnings-column li::before {
-      content: "•";
+      content: "-";
       position: absolute;
       left: 0;
       color: var(--text-muted);
@@ -1036,7 +1030,7 @@ _INDEX_HTML = r"""
   <!-- Navigation -->
   <nav class="navbar">
     <a href="/" class="logo">
-      <div class="logo-icon">🧠</div>
+      <div class="logo-icon">PT</div>
       <span>PT Study Brain</span>
     </a>
     
@@ -1051,7 +1045,7 @@ _INDEX_HTML = r"""
       <button class="profile-btn">
         <div class="avatar">TT</div>
         <span style="font-size: 14px; font-weight: 500;">Profile</span>
-        <span style="font-size: 12px; color: var(--text-muted);">▼</span>
+          <span style="font-size: 12px; color: var(--text-muted);">v</span>
       </button>
     </div>
   </nav>
@@ -1063,21 +1057,21 @@ _INDEX_HTML = r"""
     <!-- Stats Cards -->
     <div class="stats-grid" id="stats-grid">
       <div class="stat-card">
-        <div class="icon blue">📊</div>
+        <div class="icon blue">OV</div>
         <div class="label">Total Sessions</div>
         <div class="value" id="total-sessions">-</div>
         <div class="subtitle" id="sessions-subtitle">Last 30 days</div>
       </div>
       
       <div class="stat-card">
-        <div class="icon purple">⏱️</div>
+        <div class="icon purple">TM</div>
         <div class="label">Total Study Time</div>
         <div class="value" id="total-time">-</div>
         <div class="subtitle" id="time-subtitle">Avg. -/day</div>
       </div>
       
       <div class="stat-card">
-        <div class="icon cyan">📈</div>
+        <div class="icon cyan">TR</div>
         <div class="label">Average Session Score</div>
         <div class="score-container">
           <div class="progress-ring">
@@ -1099,7 +1093,7 @@ _INDEX_HTML = r"""
       </div>
       
       <div class="stat-card">
-        <div class="icon green">🃏</div>
+        <div class="icon green">AK</div>
         <div class="label">Anki Cards Reviewed</div>
         <div class="value" id="anki-cards">-</div>
         <div class="subtitle" id="anki-subtitle">Due today: -</div>
@@ -1184,7 +1178,7 @@ _INDEX_HTML = r"""
         <h2 class="card-title">Upload Session Log</h2>
       </div>
       <div class="upload-zone" id="dropzone">
-        <div class="icon">📁</div>
+        <div class="icon">DB</div>
         <div class="text"><strong>Drag & drop</strong> a markdown session log here, or click to choose a file.</div>
         <div class="text" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">Accepted: .md / .markdown / .txt</div>
         <input type="file" id="file-input" style="display:none;" accept=".md,.markdown,.txt" />
@@ -1484,13 +1478,13 @@ _INDEX_HTML = r"""
         const data = await res.json();
         
         if (data.ok) {
-          uploadStatus.innerHTML = `<div class="upload-status success">✓ ${data.message} (${data.filename})</div>`;
+          uploadStatus.innerHTML = `<div class="upload-status success">[OK] ${data.message} (${data.filename})</div>`;
           loadStats();
         } else {
-          uploadStatus.innerHTML = `<div class="upload-status error">✕ ${data.message}</div>`;
+          uploadStatus.innerHTML = `<div class="upload-status error">[ERROR] ${data.message}</div>`;
         }
       } catch (error) {
-        uploadStatus.innerHTML = `<div class="upload-status error">✕ Upload failed: ${error.message}</div>`;
+        uploadStatus.innerHTML = `<div class="upload-status error">[ERROR] Upload failed: ${error.message}</div>`;
       }
     }
 
@@ -1548,14 +1542,14 @@ _INDEX_HTML = r"""
         const result = await res.json();
 
         if (result.ok) {
-          quickSessionStatus.innerHTML = '<div class="upload-status success">✓ Session saved successfully!</div>';
+          quickSessionStatus.innerHTML = '<div class="upload-status success">[OK] Session saved successfully!</div>';
           resetQuickForm();
           loadStats(); // Refresh the dashboard
         } else {
-          quickSessionStatus.innerHTML = `<div class="upload-status error">✕ ${result.message}</div>`;
+          quickSessionStatus.innerHTML = `<div class="upload-status error">[ERROR] ${result.message}</div>`;
         }
       } catch (error) {
-        quickSessionStatus.innerHTML = `<div class="upload-status error">✕ Network error: ${error.message}</div>`;
+        quickSessionStatus.innerHTML = `<div class="upload-status error">[ERROR] Network error: ${error.message}</div>`;
       }
     });
 

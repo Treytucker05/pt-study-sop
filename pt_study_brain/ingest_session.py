@@ -150,19 +150,19 @@ def insert_session(data):
         
         conn.commit()
         session_id = cursor.lastrowid
-        print(f"✓ Session ingested successfully!")
+        print("[OK] Session ingested successfully!")
         print(f"  ID: {session_id}")
         print(f"  Date: {data['session_date']} {data['session_time']}")
         print(f"  Topic: {data['topic']}")
         print(f"  Mode: {data['study_mode']}")
         
     except sqlite3.IntegrityError:
-        print(f"✗ Error: A session with this date/time/topic already exists.")
+        print("[ERROR] A session with this date/time/topic already exists.")
         print(f"  Date: {data['session_date']} {data['session_time']}")
         print(f"  Topic: {data['topic']}")
         sys.exit(1)
     except Exception as e:
-        print(f"✗ Error inserting session: {e}")
+        print(f"[ERROR] Error inserting session: {e}")
         sys.exit(1)
     finally:
         conn.close()
@@ -179,10 +179,10 @@ def main():
     
     # Check if file exists
     if not Path(file_path).exists():
-        print(f"✗ Error: File not found: {file_path}")
+        print(f"[ERROR] File not found: {file_path}")
         sys.exit(1)
     
-    print(f"📖 Reading session log: {file_path}")
+    print(f"[INFO] Reading session log: {file_path}")
     
     try:
         # Parse the markdown file
@@ -192,11 +192,11 @@ def main():
         insert_session(data)
         
     except ValueError as e:
-        print(f"✗ Parsing error: {e}")
+        print(f"[ERROR] Parsing error: {e}")
         print("\nMake sure your session log follows the expected markdown format.")
         sys.exit(1)
     except Exception as e:
-        print(f"✗ Unexpected error: {e}")
+        print(f"[ERROR] Unexpected error: {e}")
         sys.exit(1)
 
 

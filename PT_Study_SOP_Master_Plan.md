@@ -5,6 +5,15 @@
 **Current Version:** v8.6 "Active Architect"  
 **Status:** Production Ready - Active Testing Phase  
 
+### Working Set (as of Dec 4, 2025)
+| # | Item | Owner | Status | Target |
+|---|------|-------|--------|--------|
+| 1 | Complete Module 3 (LOOP state machine, timing, spaced repetition scheduling) | Trey | In Progress | Dec 24, 2025 |
+| 2 | Active testing campaign (15 sessions logged to Brain) | Trey | Not Started | Dec 24, 2025 |
+| 3 | Resume template refinement (standardize Role & Rules section) | Trey | Not Started | Dec 10, 2025 |
+| 4 | Dashboard enhancements (retention/time-saved charts, gap visualization) | Trey | Not Started | Dec 17, 2025 |
+| 5 | Weekly cadence: 3 sessions/week → ingest → generate_resume → dashboard review | Trey | Start Now | Weekly |
+
 ---
 
 ## 1. Executive Summary
@@ -18,7 +27,7 @@ The system uniquely blends:
 
 ### Current Achievement
 Version 8.6 represents a **production-ready** system featuring:
-- Complete MAP→LOOP→WRAP workflow orchestration
+- Complete MAPLOOPWRAP workflow orchestration
 - Gated Platter mechanism for controlled progression
 - Diagnostic Sprint mode for rapid problem-solving
 - 5 of 6 core modules fully implemented
@@ -32,7 +41,7 @@ Traditional studying is passive, fragmented, and optimized for short-term recall
 ## 2. The 10/10 Vision
 
 ### Vision Statement
-**"A lifelong learning companion that transforms any learner into a master architect of knowledge—adaptive, persistent, and exponentially more effective than traditional study methods."**
+**"A lifelong learning companion that transforms any learner into a master architect of knowledgeadaptive, persistent, and exponentially more effective than traditional study methods."**
 
 ### The 10/10 Experience (What Success Looks Like)
 
@@ -46,12 +55,12 @@ Traditional studying is passive, fragmented, and optimized for short-term recall
 #### For His Kids (Long-term Legacy)
 - **Early Advantage:** Start building effective learning habits from elementary school
 - **Subject Agnostic:** Use the same system for math, history, languages, or coding
-- **Meta-Learning:** They don't just learn content—they learn *how to learn*
+- **Meta-Learning:** They don't just learn contentthey learn *how to learn*
 - **Compounding Growth:** Each year of use makes them exponentially more effective
 - **Lifelong Tool:** A system they carry through college, careers, and personal growth
 
 #### System Characteristics (The 10/10 Standards)
-1. **Adaptive Intelligence:** Adjusts to any timeframe (1-day cram → 6-month mastery)
+1. **Adaptive Intelligence:** Adjusts to any timeframe (1-day cram  6-month mastery)
 2. **Memory Persistence:** Never loses context between sessions (Brain Storage System)
 3. **Zero Drift:** Maintains prompt integrity across conversations and versions
 4. **Diagnostic Power:** Identifies gaps and weaknesses automatically
@@ -78,34 +87,34 @@ Traditional studying is passive, fragmented, and optimized for short-term recall
 #### Core Workflow Architecture
 ```
 MAP (Strategic Planning)
- ├─ Time analysis and objective setting
- ├─ Material assessment and prioritization
- ├─ Resource allocation and schedule generation
- └─ OUTPUT: Personalized Master Action Plan (MAP)
+  Time analysis and objective setting
+  Material assessment and prioritization
+  Resource allocation and schedule generation
+  OUTPUT: Personalized Master Action Plan (MAP)
 
 LOOP (Active Learning Cycles)
- ├─ Gated Platter System (controlled progression)
- ├─ PERRO-driven encoding sessions
- ├─ Diagnostic Sprint mode (rapid problem-solving)
- ├─ Spaced repetition scheduling
- └─ OUTPUT: Encoded knowledge + practice results
+  Gated Platter System (controlled progression)
+  PERRO-driven encoding sessions
+  Diagnostic Sprint mode (rapid problem-solving)
+  Spaced repetition scheduling
+  OUTPUT: Encoded knowledge + practice results
 
 WRAP (Reflection & Optimization)
- ├─ Performance analysis
- ├─ Gap identification
- ├─ Strategy refinement
- └─ OUTPUT: Updated MAP + learning insights
+  Performance analysis
+  Gap identification
+  Strategy refinement
+  OUTPUT: Updated MAP + learning insights
 ```
 
 #### Module Status
 | Module | Name | Status | Functionality |
 |--------|------|--------|---------------|
-| Module 1 | Time & Objectives | ✅ Complete | Timeframe analysis, goal setting, constraint mapping |
-| Module 2 | Material Assessment | ✅ Complete | Content prioritization, high-yield identification |
-| Module 3 | LOOP Orchestration | 🔨 In Progress | Core learning cycles (80% complete) |
-| Module 4 | Diagnostic Sprint | ✅ Complete | Rapid problem-solving mode for targeted gaps |
-| Module 5 | Reflection Engine | ✅ Complete | Performance analysis, strategy optimization |
-| Module 6 | Frameworks Library | ✅ Complete | Mental models, thinking structures, clinical reasoning |
+| Module 1 | Time & Objectives |  Complete | Timeframe analysis, goal setting, constraint mapping |
+| Module 2 | Material Assessment |  Complete | Content prioritization, high-yield identification |
+| Module 3 | LOOP Orchestration |  In Progress | Core learning cycles (80% complete) |
+| Module 4 | Diagnostic Sprint |  Complete | Rapid problem-solving mode for targeted gaps |
+| Module 5 | Reflection Engine |  Complete | Performance analysis, strategy optimization |
+| Module 6 | Frameworks Library |  Complete | Mental models, thinking structures, clinical reasoning |
 
 #### Key Features Operational
 - **Gated Platter Mechanism:** Prevents overwhelming the learner; controls information flow
@@ -119,21 +128,21 @@ WRAP (Reflection & Optimization)
 #### Architecture
 ```
 Brain Storage System (Python + SQLite)
- ├─ ingest_session.py
- │   └─ Captures: session metadata, objectives, outcomes, insights
- │
- ├─ generate_resume.py
- │   └─ Creates: AI-ready context summaries for new conversations
- │
- ├─ dashboard.py
- │   └─ Provides: analytics, progress tracking, pattern analysis
- │
- └─ study_sessions.db
-     └─ Stores: complete project memory across all sessions
+  ingest_session.py
+     Captures: session metadata, objectives, outcomes, insights
+ 
+  generate_resume.py
+     Creates: AI-ready context summaries for new conversations
+ 
+  dashboard.py
+     Provides: analytics, progress tracking, pattern analysis
+ 
+  study_sessions.db
+      Stores: complete project memory across all sessions
 ```
 
 #### What It Solves
-- **Problem #2 (Memory Persistence):** AI never forgets—every session logged and retrievable
+- **Problem #2 (Memory Persistence):** AI never forgetsevery session logged and retrievable
 - **Problem #1 (AI on Track):** Generated resumes keep AI aligned with project vision
 - **Problem #4 (Metadata Tracking):** Complete version history, decision logs, feature evolution
 
@@ -163,11 +172,11 @@ Brain Storage System (Python + SQLite)
 **Challenge:** AI assistants drift off-topic, forget project goals, or provide generic advice instead of SOP-aligned guidance.
 
 **Solutions Implemented:**
-- ✅ Brain Storage System with context generation (`generate_resume.py`)
-- ✅ Standardized session structure (MAP→LOOP→WRAP)
-- ✅ This Master Plan document as canonical reference
-- ✅ Version-specific prompts with explicit role definitions
-- 🔄 **Next:** Resume templates with "Role & Rules" section for AI initialization
+-  Brain Storage System with context generation (`generate_resume.py`)
+-  Standardized session structure (MAPLOOPWRAP)
+-  This Master Plan document as canonical reference
+-  Version-specific prompts with explicit role definitions
+-  **Next:** Resume templates with "Role & Rules" section for AI initialization
 
 **Status:** 85% Solved
 
@@ -177,10 +186,10 @@ Brain Storage System (Python + SQLite)
 **Challenge:** Each new conversation starts from zero; AI has no memory of previous sessions, decisions, or progress.
 
 **Solutions Implemented:**
-- ✅ SQLite database (`study_sessions.db`) logging all sessions
-- ✅ `generate_resume.py` creates AI-readable context summaries
-- ✅ Metadata tracking for versions, decisions, outcomes
-- 🔄 **Next:** Auto-resume feature (AI loads last 3 sessions on startup)
+-  SQLite database (`study_sessions.db`) logging all sessions
+-  `generate_resume.py` creates AI-readable context summaries
+-  Metadata tracking for versions, decisions, outcomes
+-  **Next:** Auto-resume feature (AI loads last 3 sessions on startup)
 
 **Status:** 90% Solved
 
@@ -190,11 +199,11 @@ Brain Storage System (Python + SQLite)
 **Challenge:** Long conversations degrade prompt effectiveness; version updates lose context and refinements.
 
 **Solutions Implemented:**
-- ✅ Gated progression prevents runaway conversations
-- ✅ Version changelog in Brain Storage System
-- ✅ Modular prompt architecture (each module = separate prompt)
-- ✅ Session boundary enforcement (MAP→LOOP→WRAP structure)
-- 🔄 **Next:** Prompt version control in Git with diff tracking
+-  Gated progression prevents runaway conversations
+-  Version changelog in Brain Storage System
+-  Modular prompt architecture (each module = separate prompt)
+-  Session boundary enforcement (MAPLOOPWRAP structure)
+-  **Next:** Prompt version control in Git with diff tracking
 
 **Status:** 80% Solved
 
@@ -204,11 +213,11 @@ Brain Storage System (Python + SQLite)
 **Challenge:** No systematic way to track what changed between versions, why decisions were made, or what features evolved.
 
 **Solutions Implemented:**
-- ✅ Brain Storage System captures all session metadata
-- ✅ Version field in database tracks feature evolution
-- ✅ Dashboard analytics for pattern recognition
-- ✅ Insights field logs AI recommendations and outcomes
-- 🔄 **Next:** Feature flag system for A/B testing approaches
+-  Brain Storage System captures all session metadata
+-  Version field in database tracks feature evolution
+-  Dashboard analytics for pattern recognition
+-  Insights field logs AI recommendations and outcomes
+-  **Next:** Feature flag system for A/B testing approaches
 
 **Status:** 85% Solved
 
@@ -218,11 +227,11 @@ Brain Storage System (Python + SQLite)
 **Challenge:** Scattered ideas, unclear priorities, no systematic approach to development and refinement.
 
 **Solutions Implemented:**
-- ✅ This Master Plan document provides central organization
-- ✅ Roadmap section defines short/medium/long-term priorities
-- ✅ Brain Storage System creates institutional memory
-- ✅ Testing plan provides structured experimentation framework
-- 🔄 **Next:** Decision log template for major architectural choices
+-  This Master Plan document provides central organization
+-  Roadmap section defines short/medium/long-term priorities
+-  Brain Storage System creates institutional memory
+-  Testing plan provides structured experimentation framework
+-  **Next:** Decision log template for major architectural choices
 
 **Status:** 75% Solved
 
@@ -237,7 +246,7 @@ Brain Storage System (Python + SQLite)
 - Incremental development (80% complete)
 - Gated Platter as simplified interim solution
 - Diagnostic Sprint for targeted learning
-- 🔄 **Next:** Complete state machine for LOOP transitions
+-  **Next:** Complete state machine for LOOP transitions
 
 #### Problem 7: Measurability
 **Challenge:** Hard to quantify "learning effectiveness" in real-time.
@@ -246,7 +255,7 @@ Brain Storage System (Python + SQLite)
 - Performance tracking in Brain Storage
 - Self-reported confidence ratings
 - Practice question accuracy
-- 🔄 **Next:** Spaced repetition success rates, retrieval speed metrics
+-  **Next:** Spaced repetition success rates, retrieval speed metrics
 
 #### Problem 8: User Experience Friction
 **Challenge:** System requires manual session logging, AI re-initialization.
@@ -254,7 +263,7 @@ Brain Storage System (Python + SQLite)
 **Current Approach:**
 - Python scripts minimize manual effort
 - Dashboard provides quick visibility
-- 🔄 **Next:** CLI wrapper for one-command session start/end
+-  **Next:** CLI wrapper for one-command session start/end
 
 ---
 
@@ -263,40 +272,40 @@ Brain Storage System (Python + SQLite)
 ### High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    PT STUDY SOP SYSTEM                       │
-│                     (Version 8.6)                            │
-└─────────────────────────────────────────────────────────────┘
-                             │
-                             ▼
-        ┌────────────────────────────────────────┐
-        │      User Interface Layer              │
-        │  (AI Assistant + Command Line)         │
-        └────────────────────────────────────────┘
-                             │
-                ┌────────────┴────────────┐
-                ▼                         ▼
-    ┌──────────────────────┐   ┌──────────────────────┐
-    │   Learning Engine    │   │  Brain Storage       │
-    │   (MAP/LOOP/WRAP)    │◄──┤  System (Python)     │
-    └──────────────────────┘   └──────────────────────┘
-                │                          │
-                ▼                          ▼
-    ┌──────────────────────┐   ┌──────────────────────┐
-    │   Module Library     │   │   SQLite Database    │
-    │   (1,2,4,5,6)        │   │   (study_sessions.db)│
-    └──────────────────────┘   └──────────────────────┘
-                │
-                ▼
-    ┌──────────────────────────────────────┐
-    │        Learning Resources            │
-    │  (Textbooks, Lectures, Questions)    │
-    └──────────────────────────────────────┘
+
+                    PT STUDY SOP SYSTEM                       
+                     (Version 8.6)                            
+
+                             
+                             
+        
+              User Interface Layer              
+          (AI Assistant + Command Line)         
+        
+                             
+                
+                                         
+       
+       Learning Engine         Brain Storage       
+       (MAP/LOOP/WRAP)      System (Python)     
+       
+                                          
+                                          
+       
+       Module Library           SQLite Database    
+       (1,2,4,5,6)              (study_sessions.db)
+       
+                
+                
+    
+            Learning Resources            
+      (Textbooks, Lectures, Questions)    
+    
 ```
 
 ### Component Descriptions
 
-#### Learning Engine (MAP→LOOP→WRAP)
+#### Learning Engine (MAPLOOPWRAP)
 **Purpose:** Core orchestration layer that manages learning flow
 
 **MAP Phase:**
@@ -358,34 +367,34 @@ Brain Storage System (Python + SQLite)
 
 ```
 User starts study session
-         │
-         ▼
+         
+         
 AI executes MAP Phase (analyzes time, materials, goals)
-         │
-         ▼
+         
+         
 AI generates Master Action Plan
-         │
-         ▼
+         
+         
 User enters LOOP Phase (active learning)
-         │
-         ├─► Gated Platter controls content flow
-         ├─► PERRO method encodes knowledge
-         ├─► Diagnostic Sprint addresses gaps
-         └─► Performance tracked in real-time
-         │
-         ▼
+         
+          Gated Platter controls content flow
+          PERRO method encodes knowledge
+          Diagnostic Sprint addresses gaps
+          Performance tracked in real-time
+         
+         
 AI executes WRAP Phase (reflection & optimization)
-         │
-         ▼
+         
+         
 User runs `ingest_session.py` to log session
-         │
-         ▼
+         
+         
 Data stored in study_sessions.db
-         │
-         ▼
+         
+         
 Next session: User runs `generate_resume.py`
-         │
-         ▼
+         
+         
 AI loads context and continues seamlessly
 ```
 
@@ -397,11 +406,11 @@ AI loads context and continues seamlessly
 - **Structure:**
   ```
   pt-study-sop/
-  ├── modules/          # Individual module prompts
-  ├── brain_storage/    # Python scripts + database
-  ├── docs/             # Documentation, guides
-  ├── examples/         # Sample sessions, templates
-  └── README.md         # Project overview
+   modules/          # Individual module prompts
+   brain_storage/    # Python scripts + database
+   docs/             # Documentation, guides
+   examples/         # Sample sessions, templates
+   README.md         # Project overview
   ```
 
 #### Local Development
@@ -420,7 +429,7 @@ AI loads context and continues seamlessly
 
 ### Short-Term Priorities (Next 4 Weeks)
 
-#### 1. Complete Module 3 (LOOP Orchestration) ⚡ CRITICAL
+#### 1. Complete Module 3 (LOOP Orchestration)  CRITICAL
 **Why:** Core learning engine; needed for full workflow
 **Tasks:**
 - [ ] Design state machine for LOOP transitions
@@ -429,11 +438,11 @@ AI loads context and continues seamlessly
 - [ ] Add spaced repetition scheduling
 - [ ] Test with real study material
 
-**Success Criteria:** Can run complete MAP→LOOP→WRAP session without manual intervention
+**Success Criteria:** Can run complete MAPLOOPWRAP session without manual intervention
 
 ---
 
-#### 2. Active Testing Campaign 🧪 CRITICAL
+#### 2. Active Testing Campaign  CRITICAL
 **Why:** Validate v8.6 works in real-world conditions
 **Tasks:**
 - [ ] Run 15 study sessions using v8.6
@@ -446,7 +455,7 @@ AI loads context and continues seamlessly
 
 ---
 
-#### 3. Resume Template Refinement 📋
+#### 3. Resume Template Refinement 
 **Why:** Solves Problem #1 (keeping AI on track)
 **Tasks:**
 - [ ] Create standardized resume format
@@ -459,7 +468,7 @@ AI loads context and continues seamlessly
 
 ---
 
-#### 4. Dashboard Enhancements 📊
+#### 4. Dashboard Enhancements 
 **Why:** Need visibility into learning patterns
 **Tasks:**
 - [ ] Add retention rate calculations
@@ -474,7 +483,7 @@ AI loads context and continues seamlessly
 
 ### Medium-Term Goals (2-3 Months)
 
-#### 5. CLI Wrapper Tool 🛠️
+#### 5. CLI Wrapper Tool 
 **Purpose:** Reduce friction in session management
 **Features:**
 - One-command session start: `ptsop start`
@@ -484,7 +493,7 @@ AI loads context and continues seamlessly
 
 ---
 
-#### 6. Spaced Repetition Integration 🔄
+#### 6. Spaced Repetition Integration 
 **Purpose:** Automate long-term retention scheduling
 **Features:**
 - Algorithm: SuperMemo 2 or Anki-style
@@ -494,7 +503,7 @@ AI loads context and continues seamlessly
 
 ---
 
-#### 7. Mobile Companion App 📱
+#### 7. Mobile Companion App 
 **Purpose:** Study anywhere, log on-the-go
 **Features:**
 - Quick-capture insights
@@ -504,7 +513,7 @@ AI loads context and continues seamlessly
 
 ---
 
-#### 8. Framework Library Expansion 📚
+#### 8. Framework Library Expansion 
 **Purpose:** More mental models for diverse subjects
 **Current Frameworks:**
 - Causal Chain Analysis
@@ -520,7 +529,7 @@ AI loads context and continues seamlessly
 
 ### Long-Term Vision (6-12 Months)
 
-#### 9. Multi-User Support 👨‍👩‍👧‍👦
+#### 9. Multi-User Support 
 **Purpose:** Trey's kids can each have their own instance
 **Features:**
 - User profiles with isolated databases
@@ -530,7 +539,7 @@ AI loads context and continues seamlessly
 
 ---
 
-#### 10. Subject-Specific Optimization 🎯
+#### 10. Subject-Specific Optimization 
 **Purpose:** Tailored approaches for different domains
 **Subjects:**
 - **PT/Medical:** Clinical reasoning emphasis
@@ -540,7 +549,7 @@ AI loads context and continues seamlessly
 
 ---
 
-#### 11. AI Tutor Mode 🤖
+#### 11. AI Tutor Mode 
 **Purpose:** Socratic questioning, not just guidance
 **Features:**
 - Asks probing questions to test understanding
@@ -550,7 +559,7 @@ AI loads context and continues seamlessly
 
 ---
 
-#### 12. Community Sharing Platform 🌐
+#### 12. Community Sharing Platform 
 **Purpose:** Learn from other users' strategies
 **Features:**
 - Share anonymized session data
@@ -577,11 +586,11 @@ AI loads context and continues seamlessly
 - JSON file storage (rejected: hard to query)
 - Notion API (rejected: external dependency)
 
-**Result:** ✅ Working well; sufficient for current needs
+**Result:**  Working well; sufficient for current needs
 
 ---
 
-#### Decision 2: MAP→LOOP→WRAP Structure
+#### Decision 2: MAPLOOPWRAP Structure
 **Date:** [Early v8.x]  
 **Rationale:**
 - Natural flow matches learning science
@@ -593,7 +602,7 @@ AI loads context and continues seamlessly
 - Single continuous session (rejected: too chaotic)
 - Pre-defined rigid schedule (rejected: not adaptive)
 
-**Result:** ✅ Core innovation of the system
+**Result:**  Core innovation of the system
 
 ---
 
@@ -609,7 +618,7 @@ AI loads context and continues seamlessly
 - Free-form study (rejected: no structure)
 - Time-boxed only (rejected: ignores comprehension)
 
-**Result:** ✅ Major UX improvement
+**Result:**  Major UX improvement
 
 ---
 
@@ -623,7 +632,7 @@ AI loads context and continues seamlessly
 **Alternatives Considered:**
 - Complete Module 3 first (rejected: delays value delivery)
 
-**Result:** ✅ Pragmatic; enabled real studying while building
+**Result:**  Pragmatic; enabled real studying while building
 
 ---
 
@@ -639,7 +648,7 @@ AI loads context and continues seamlessly
 - Notion-only (rejected: version control weak)
 - Google Drive (rejected: not code-friendly)
 
-**Result:** ✅ Right choice for technical project
+**Result:**  Right choice for technical project
 
 ---
 
@@ -653,7 +662,7 @@ AI loads context and continues seamlessly
 - Complementary, not redundant
 - Both evidence-based approaches
 
-**Result:** ✅ Core differentiation of the system
+**Result:**  Core differentiation of the system
 
 ---
 
@@ -665,7 +674,7 @@ AI loads context and continues seamlessly
 - Preserves cognitive load (desirable difficulty)
 - User maintains agency and understanding
 
-**Result:** ✅ Prevents passive consumption trap
+**Result:**  Prevents passive consumption trap
 
 ---
 
@@ -677,7 +686,7 @@ AI loads context and continues seamlessly
 - Easier to abstract from specific to general
 - Ensures practical utility, not theoretical
 
-**Result:** ✅ Grounded development approach
+**Result:**  Grounded development approach
 
 ---
 
@@ -791,29 +800,29 @@ Each session should:
 
 ### Immediate Actions (This Week)
 
-#### 1. Test v8.6 with Real Study Material ⚡
-**Action:** Run 3 study sessions using MAP→LOOP→WRAP
+#### 1. Test v8.6 with Real Study Material 
+**Action:** Run 3 study sessions using MAPLOOPWRAP
 **Materials:** Current PT coursework
 **Purpose:** Validate production readiness
 **Success:** Complete sessions without major blockers
 
 ---
 
-#### 2. Log Sessions to Brain Storage 📝
+#### 2. Log Sessions to Brain Storage 
 **Action:** Use `ingest_session.py` after each session
 **Purpose:** Build dataset for analysis
 **Success:** Database contains 3+ session records
 
 ---
 
-#### 3. Refine Resume Generation 🔧
+#### 3. Refine Resume Generation 
 **Action:** Review output of `generate_resume.py`, improve formatting
 **Purpose:** Ensure AI can consume context effectively
 **Success:** Resume includes all critical context in <2000 words
 
 ---
 
-#### 4. Document Failure Modes 🐛
+#### 4. Document Failure Modes 
 **Action:** Create failure_log.md for issue tracking
 **Purpose:** Systematic improvement process
 **Success:** Can categorize and prioritize issues
@@ -822,28 +831,28 @@ Each session should:
 
 ### This Month
 
-#### 5. Complete 15-Session Testing Campaign 🧪
+#### 5. Complete 15-Session Testing Campaign 
 **Action:** Execute full testing plan (Section 8)
 **Purpose:** Validate 10/10 vision achievement
 **Success:** Meet all "Must-Have" success criteria
 
 ---
 
-#### 6. Finalize Module 3 Design 🏗️
+#### 6. Finalize Module 3 Design 
 **Action:** Architect state machine for LOOP orchestration
 **Purpose:** Eliminate gaps in core workflow
 **Success:** Design doc approved, ready for implementation
 
 ---
 
-#### 7. Create CLI Wrapper Prototype 💻
+#### 7. Create CLI Wrapper Prototype 
 **Action:** Build basic `ptsop` command-line tool
 **Purpose:** Reduce session management friction
 **Success:** Can start/log sessions with one command
 
 ---
 
-#### 8. Dashboard Iteration 📊
+#### 8. Dashboard Iteration 
 **Action:** Add retention rate and time-saved metrics
 **Purpose:** Quantify learning effectiveness
 **Success:** Can visualize progress over time
@@ -852,28 +861,28 @@ Each session should:
 
 ### Next Quarter
 
-#### 9. Build Module 3 (LOOP Orchestration) 🚀
+#### 9. Build Module 3 (LOOP Orchestration) 
 **Action:** Implement complete LOOP Phase logic
 **Purpose:** Fully automated learning cycles
-**Success:** MAP→LOOP→WRAP runs end-to-end without manual intervention
+**Success:** MAPLOOPWRAP runs end-to-end without manual intervention
 
 ---
 
-#### 10. Spaced Repetition Integration 🔄
+#### 10. Spaced Repetition Integration 
 **Action:** Add SuperMemo-style review scheduling
 **Purpose:** Long-term retention automation
 **Success:** System auto-generates review sessions
 
 ---
 
-#### 11. Mobile App Prototype 📱
+#### 11. Mobile App Prototype 
 **Action:** Build simple iOS/Android app for session logging
 **Purpose:** Study-anywhere capability
 **Success:** Can log sessions from phone
 
 ---
 
-#### 12. Framework Library Expansion 📚
+#### 12. Framework Library Expansion 
 **Action:** Add 5 new mental models to Module 6
 **Purpose:** Support diverse learning scenarios
 **Success:** Frameworks tested in real sessions
@@ -937,7 +946,7 @@ Next Actions:
 **Example Questions:**
 - "Are we studying today, or working on system development?"
 - "Which module or feature do you want to focus on?"
-- "Do you need a study session (MAP→LOOP→WRAP) or a planning session?"
+- "Do you need a study session (MAPLOOPWRAP) or a planning session?"
 - "Any specific problems or questions from recent sessions?"
 
 ---
@@ -945,22 +954,22 @@ Next Actions:
 #### STEP 4: Adopt Your Role
 **Choose the appropriate mode:**
 
-**🎓 Study Session Mode (Most Common)**
+** Study Session Mode (Most Common)**
 - You are Trey's study partner and PERRO method guide
-- Facilitate MAP→LOOP→WRAP workflow
+- Facilitate MAPLOOPWRAP workflow
 - Apply Gated Platter mechanism
 - Use Jim Kwik memory techniques
 - Reference Module 6 frameworks when relevant
 - Keep sessions structured and goal-focused
 
-**🛠️ Development Mode**
+** Development Mode**
 - You are a software architect and UX designer
 - Help refine modules, features, and workflows
 - Brainstorm solutions to problems
 - Review code for Brain Storage System
 - Contribute to roadmap planning
 
-**📊 Analysis Mode**
+** Analysis Mode**
 - You are a data analyst and learning scientist
 - Interpret Brain Storage dashboard metrics
 - Identify patterns in session history
@@ -984,7 +993,7 @@ Next Actions:
    - What material are you studying? (chapters, lectures, etc.)
    - Have you done MAP Phase yet, or should we start there?
 
-Once I have that context, I'll guide you through an effective study session using the MAP→LOOP→WRAP workflow."
+Once I have that context, I'll guide you through an effective study session using the MAPLOOPWRAP workflow."
 
 ---
 
@@ -1005,7 +1014,7 @@ Then we can pick up exactly where we left off. Are we continuing with LOOP Phase
 **User (Trey):** "I want to work on improving Module 3."
 
 **You (AI):**
-"Perfect timing—Module 3 (LOOP Orchestration) is a short-term priority on the roadmap. Let me pull up the current state:
+"Perfect timingModule 3 (LOOP Orchestration) is a short-term priority on the roadmap. Let me pull up the current state:
 
 **Module 3 Status:** 80% complete, in progress
 
@@ -1031,10 +1040,10 @@ What feels most valuable right now?"
 
 ### Rules of Engagement (AI Instructions)
 
-#### ✅ DO:
+####  DO:
 - **Reference this Master Plan** when uncertain about project context
 - **Use the 10/10 Vision** as your North Star for recommendations
-- **Respect the MAP→LOOP→WRAP structure** (don't skip phases)
+- **Respect the MAPLOOPWRAP structure** (don't skip phases)
 - **Apply Gated Platter** (don't overwhelm with too much at once)
 - **Log insights** and recommend Trey captures them in Brain Storage
 - **Stay focused** on PT Study SOP methodology (not generic study advice)
@@ -1042,15 +1051,15 @@ What feels most valuable right now?"
 - **Celebrate wins** when Trey reports success or progress
 - **Challenge weak spots** when you notice gaps in understanding (Socratic method)
 
-#### ❌ DON'T:
-- **Generic study advice** ("just make flashcards") — use SOP principles
-- **Forget context** — always request resume if you don't have recent history
-- **Skip MAP Phase** — it's critical for effective sessions
-- **Overload information** — Gated Platter exists for a reason
-- **Assume previous conversation memory** — explicitly load context
-- **Deviate from PERRO method** — it's the core methodology
-- **Ignore the roadmap** — align suggestions with prioritized next steps
-- **Let Trey drift off-task** — gently redirect to session objectives
+####  DON'T:
+- **Generic study advice** ("just make flashcards")  use SOP principles
+- **Forget context**  always request resume if you don't have recent history
+- **Skip MAP Phase**  it's critical for effective sessions
+- **Overload information**  Gated Platter exists for a reason
+- **Assume previous conversation memory**  explicitly load context
+- **Deviate from PERRO method**  it's the core methodology
+- **Ignore the roadmap**  align suggestions with prioritized next steps
+- **Let Trey drift off-task**  gently redirect to session objectives
 
 ---
 
@@ -1079,7 +1088,7 @@ What feels most valuable right now?"
 
 #### If Trey Seems Frustrated:
 1. **Validate:** "I hear that this isn't working as expected."
-2. **Diagnose:** "Let's identify the specific issue—is it [X], [Y], or [Z]?"
+2. **Diagnose:** "Let's identify the specific issueis it [X], [Y], or [Z]?"
 3. **Document:** "This is valuable feedback. We should log this in Brain Storage."
 4. **Pivot:** "Would it help to try [alternative approach] instead?"
 
@@ -1098,33 +1107,33 @@ What feels most valuable right now?"
 **Structure:**
 ```
 pt-study-sop/
-├── README.md                          # Project overview, quick start
-├── MASTER_PLAN.md                     # This document (canonical reference)
-├── modules/
-│   ├── module_1_time_objectives.md    # MAP: Timeframe & goals
-│   ├── module_2_material_assessment.md # MAP: Content prioritization
-│   ├── module_3_loop_orchestration.md  # LOOP: Core learning cycles [IN PROGRESS]
-│   ├── module_4_diagnostic_sprint.md   # LOOP: Rapid problem-solving
-│   ├── module_5_reflection_engine.md   # WRAP: Performance analysis
-│   └── module_6_frameworks_library.md  # Mental models & thinking structures
-├── brain_storage/
-│   ├── ingest_session.py              # Log study sessions to database
-│   ├── generate_resume.py             # Create AI-ready context summaries
-│   ├── dashboard.py                   # Analytics and progress visualization
-│   ├── study_sessions.db              # SQLite database (session history)
-│   └── schema.sql                     # Database schema definition
-├── docs/
-│   ├── getting_started.md             # User onboarding guide
-│   ├── perro_method.md                # PERRO methodology deep-dive
-│   ├── jim_kwik_techniques.md         # Memory technique reference
-│   └── troubleshooting.md             # Common issues and solutions
-├── examples/
-│   ├── sample_session_map.md          # Example MAP output
-│   ├── sample_session_loop.md         # Example LOOP session
-│   └── sample_session_wrap.md         # Example WRAP analysis
-└── templates/
-    ├── session_log_template.txt       # For manual logging
-    └── resume_template.md             # Format for AI context loading
+ README.md                          # Project overview, quick start
+ MASTER_PLAN.md                     # This document (canonical reference)
+ modules/
+    module_1_time_objectives.md    # MAP: Timeframe & goals
+    module_2_material_assessment.md # MAP: Content prioritization
+    module_3_loop_orchestration.md  # LOOP: Core learning cycles [IN PROGRESS]
+    module_4_diagnostic_sprint.md   # LOOP: Rapid problem-solving
+    module_5_reflection_engine.md   # WRAP: Performance analysis
+    module_6_frameworks_library.md  # Mental models & thinking structures
+ brain_storage/
+    ingest_session.py              # Log study sessions to database
+    generate_resume.py             # Create AI-ready context summaries
+    dashboard.py                   # Analytics and progress visualization
+    study_sessions.db              # SQLite database (session history)
+    schema.sql                     # Database schema definition
+ docs/
+    getting_started.md             # User onboarding guide
+    perro_method.md                # PERRO methodology deep-dive
+    jim_kwik_techniques.md         # Memory technique reference
+    troubleshooting.md             # Common issues and solutions
+ examples/
+    sample_session_map.md          # Example MAP output
+    sample_session_loop.md         # Example LOOP session
+    sample_session_wrap.md         # Example WRAP analysis
+ templates/
+     session_log_template.txt       # For manual logging
+     resume_template.md             # Format for AI context loading
 ```
 
 ---
@@ -1288,7 +1297,7 @@ LIMIT 5;
 
 | Version | Date | Key Changes | Status |
 |---------|------|-------------|--------|
-| v8.0 | [Earlier] | Initial MAP→LOOP→WRAP structure | Deprecated |
+| v8.0 | [Earlier] | Initial MAPLOOPWRAP structure | Deprecated |
 | v8.1-8.5 | [Earlier] | Iterative refinements | Deprecated |
 | **v8.6** | **Nov 2025** | **Active Architect: Gated Platter, Diagnostic Sprint, Module 6, Brain Storage** | **PRODUCTION** |
 | v9.0 | [Future] | Complete Module 3, spaced repetition, CLI wrapper | Planned |
@@ -1329,7 +1338,7 @@ LIMIT 5;
 - [ ] Request latest `generate_resume.py` output
 - [ ] Clarify Trey's current objective (study vs. development)
 - [ ] Adopt appropriate role (Study Partner, Developer, Analyst)
-- [ ] Apply SOP principles (MAP→LOOP→WRAP, Gated Platter, PERRO)
+- [ ] Apply SOP principles (MAPLOOPWRAP, Gated Platter, PERRO)
 - [ ] Stay aligned with roadmap priorities
 - [ ] Recommend logging insights at session end
 
@@ -1362,7 +1371,7 @@ This Master Plan is a **living document**. As the PT Study SOP evolves, this doc
 ---
 
 **Version:** 1.0  
-**Status:** ✅ Production Ready  
+**Status:**  Production Ready  
 **Purpose:** Continuity, alignment, and seamless collaboration across conversations and contributors
 
-🚀 Let's build the ultimate learning system together.
+ Let's build the ultimate learning system together.

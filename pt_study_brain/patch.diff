@@ -1,0 +1,38 @@
+*** Begin Patch
+*** Update File: ingest_session.py
+@@
+-        print(f"û Session ingested successfully!")
+-        print(f"  ID: {session_id}")
+-        print(f"  Date: {data['session_date']} {data['session_time']}")
+-        print(f"  Topic: {data['topic']}")
+-        print(f"  Mode: {data['study_mode']}")
++        print("[OK] Session ingested successfully!")
++        print(f"  ID: {session_id}")
++        print(f"  Date: {data['session_date']} {data['session_time']}")
++        print(f"  Topic: {data['topic']}")
++        print(f"  Mode: {data['study_mode']}")
+@@
+-        print(f"? Error: A session with this date/time/topic already exists.")
+-        print(f"  Date: {data['session_date']} {data['session_time']}")
+-        print(f"  Topic: {data['topic']}")
++        print("[ERROR] A session with this date/time/topic already exists.")
++        print(f"  Date: {data['session_date']} {data['session_time']}")
++        print(f"  Topic: {data['topic']}")
+@@
+-        print(f"? Error inserting session: {e}")
++        print(f"[ERROR] Error inserting session: {e}")
+@@
+-        print(f"? Error: File not found: {file_path}")
++        print(f"[ERROR] File not found: {file_path}")
+@@
+-    print(f"?? Reading session log: {file_path}")
++    print(f"[INFO] Reading session log: {file_path}")
+@@
+-        print(f"? Parsing error: {e}")
+-        print("\nMake sure your session log follows the expected markdown format.")
++        print(f"[ERROR] Parsing error: {e}")
++        print("\nMake sure your session log follows the expected markdown format.")
+@@
+-        print(f"? Unexpected error: {e}")
++        print(f"[ERROR] Unexpected error: {e}")
+*** End Patch

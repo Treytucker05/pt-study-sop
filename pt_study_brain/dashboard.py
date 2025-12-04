@@ -80,7 +80,7 @@ def print_progress_bar(value, max_value=5, width=20, label=""):
         percentage = value / max_value
     
     filled = int(width * percentage)
-    bar = '█' * filled + '░' * (width - filled)
+    bar = '#' * filled + '.' * (width - filled)
     
     print(f"{label:<25} {bar} {value:.1f}/{max_value}")
 
@@ -89,7 +89,7 @@ def display_overview(sessions):
     """
     Display overall statistics.
     """
-    print_section("📊 OVERVIEW")
+    print_section("OVERVIEW")
     
     if not sessions:
         print("No sessions recorded yet.")
@@ -124,7 +124,7 @@ def display_performance_metrics(sessions):
     """
     Display performance metrics with visual bars.
     """
-    print_section("📈 PERFORMANCE METRICS")
+    print_section("PERFORMANCE METRICS")
     
     understanding_scores = [s['understanding_level'] for s in sessions if s['understanding_level']]
     retention_scores = [s['retention_confidence'] for s in sessions if s['retention_confidence']]
@@ -154,7 +154,7 @@ def display_performance_metrics(sessions):
         score_dist = Counter(understanding_scores)
         for score in range(5, 0, -1):
             count = score_dist.get(score, 0)
-            bar = '▪' * count
+            bar = '#' * count
             print(f"    {score}/5: {bar} ({count})")
 
 
@@ -162,7 +162,7 @@ def display_study_patterns(sessions):
     """
     Display study patterns and habits.
     """
-    print_section("🎯 STUDY PATTERNS")
+    print_section("STUDY PATTERNS")
     
     # Study modes
     modes = Counter(s['study_mode'] for s in sessions)
@@ -202,7 +202,7 @@ def display_topic_analysis(sessions):
     """
     Display topic-based analysis.
     """
-    print_section("📚 TOPIC ANALYSIS")
+    print_section("TOPIC ANALYSIS")
     
     # Topics by understanding level
     weak_topics = []
@@ -216,28 +216,28 @@ def display_topic_analysis(sessions):
                 strong_topics.append((s['topic'], s['understanding_level'], s['session_date']))
     
     if weak_topics:
-        print("\n  ⚠️  Topics Needing Review (Score ≤ 3):")
+        print("\n  Topics Needing Review (Score <= 3):")
         for topic, score, date in sorted(weak_topics, key=lambda x: x[1])[:5]:
-            print(f"    • {topic:<40} {score}/5  ({date})")
+            print(f"    - {topic:<40} {score}/5  ({date})")
     
     if strong_topics:
-        print("\n  ✅ Well-Understood Topics (Score ≥ 4):")
+        print("\n  Well-Understood Topics (Score >= 4):")
         for topic, score, date in sorted(strong_topics, key=lambda x: x[1], reverse=True)[:5]:
-            print(f"    • {topic:<40} {score}/5  ({date})")
+            print(f"    - {topic:<40} {score}/5  ({date})")
     
     # Most studied topics
     topic_counts = Counter(s['topic'] for s in sessions)
     if len(topic_counts) > 1:
         print("\n  Most Studied Topics:")
         for topic, count in topic_counts.most_common(5):
-            print(f"    • {topic:<40} {count} sessions")
+            print(f"    - {topic:<40} {count} sessions")
 
 
 def display_time_breakdown(sessions):
     """
     Display time-based breakdown.
     """
-    print_section("⏱️  TIME BREAKDOWN")
+    print_section("TIME BREAKDOWN")
     
     # Time by study mode
     time_by_mode = {}
@@ -266,7 +266,7 @@ def display_trends(sessions):
     """
     Display trends over time.
     """
-    print_section("📊 TRENDS")
+    print_section("TRENDS")
     
     if len(sessions) < 2:
         print("  Not enough data to show trends (need at least 2 sessions).")
@@ -287,7 +287,7 @@ def display_trends(sessions):
     
     if recent_understanding and older_understanding:
         diff = recent_understanding - older_understanding
-        trend = "📈 Improving" if diff > 0.3 else "📉 Declining" if diff < -0.3 else "➡️  Stable"
+        trend = "Improving" if diff > 0.3 else "Declining" if diff < -0.3 else "Stable"
         print(f"\n  Understanding Level:  {trend}")
         print(f"    Earlier avg: {older_understanding:.1f}/5")
         print(f"    Recent avg:  {recent_understanding:.1f}/5")
@@ -298,7 +298,7 @@ def display_trends(sessions):
     
     if recent_retention and older_retention:
         diff = recent_retention - older_retention
-        trend = "📈 Improving" if diff > 0.3 else "📉 Declining" if diff < -0.3 else "➡️  Stable"
+        trend = "Improving" if diff > 0.3 else "Declining" if diff < -0.3 else "Stable"
         print(f"\n  Retention Confidence: {trend}")
         print(f"    Earlier avg: {older_retention:.1f}/5")
         print(f"    Recent avg:  {recent_retention:.1f}/5")
@@ -309,7 +309,7 @@ def display_trends(sessions):
     
     if recent_performance and older_performance:
         diff = recent_performance - older_performance
-        trend = "📈 Improving" if diff > 0.3 else "📉 Declining" if diff < -0.3 else "➡️  Stable"
+        trend = "Improving" if diff > 0.3 else "Declining" if diff < -0.3 else "Stable"
         print(f"\n  System Performance:   {trend}")
         print(f"    Earlier avg: {older_performance:.1f}/5")
         print(f"    Recent avg:  {recent_performance:.1f}/5")
@@ -319,7 +319,7 @@ def display_insights(sessions):
     """
     Display actionable insights.
     """
-    print_section("💡 INSIGHTS & RECOMMENDATIONS")
+    print_section("INSIGHTS & RECOMMENDATIONS")
     
     if not sessions:
         return
@@ -331,18 +331,18 @@ def display_insights(sessions):
     if understanding_scores:
         avg_understanding = sum(understanding_scores) / len(understanding_scores)
         if avg_understanding < 3.5:
-            insights.append("⚠️  Average understanding is below 3.5/5. Consider reviewing difficult topics more frequently.")
+            insights.append("Average understanding is below 3.5/5. Consider reviewing difficult topics more frequently.")
     
     # Check for weak topics
     weak_count = sum(1 for s in sessions if s['understanding_level'] and s['understanding_level'] <= WEAK_THRESHOLD)
     if weak_count > len(sessions) * 0.3:
-        insights.append(f"⚠️  {weak_count} sessions had low understanding scores. Focus on addressing weak areas.")
+        insights.append(f"{weak_count} sessions had low understanding scores. Focus on addressing weak areas.")
     
     # Check WRAP completion rate
     wrap_yes = sum(1 for s in sessions if s['wrap_phase_reached'] == 'Yes')
     wrap_rate = (wrap_yes / len(sessions)) * 100 if sessions else 0
     if wrap_rate < 50:
-        insights.append(f"💡 Only {wrap_rate:.0f}% of sessions reached WRAP phase. Try to complete the full workflow.")
+        insights.append(f"Only {wrap_rate:.0f}% of sessions reached WRAP phase. Try to complete the full workflow.")
     
     # Check session frequency
     if len(sessions) >= 2:
@@ -351,18 +351,18 @@ def display_insights(sessions):
         if days_span > 0:
             sessions_per_week = (len(sessions) / days_span) * 7
             if sessions_per_week < 3:
-                insights.append(f"📅 Current pace: {sessions_per_week:.1f} sessions/week. Consider increasing frequency for better retention.")
+                insights.append(f"Current pace: {sessions_per_week:.1f} sessions/week. Consider increasing frequency for better retention.")
     
     # Check for Anki card creation
     cards_per_session = sum(s['anki_cards_count'] or 0 for s in sessions) / len(sessions) if sessions else 0
     if cards_per_session < 5:
-        insights.append(f"📇 Average {cards_per_session:.1f} Anki cards per session. Creating more cards can improve retention.")
+        insights.append(f"Average {cards_per_session:.1f} Anki cards per session. Creating more cards can improve retention.")
     
     if insights:
         for insight in insights:
             print(f"\n  {insight}")
     else:
-        print("\n  ✅ Great job! Your study patterns look solid. Keep up the good work!")
+        print("\n  Great job! Your study patterns look solid. Keep up the good work!")
 
 
 def main():
@@ -373,7 +373,7 @@ def main():
     sessions = get_all_sessions()
     
     if not sessions:
-        print("\n⚠️  No sessions found in the database.")
+        print("\nNo sessions found in the database.")
         print("\nTo get started:")
         print("  1. Create a session log following the markdown template")
         print("  2. Run: python ingest_session.py session_logs/your_session.md")
@@ -390,7 +390,7 @@ def main():
     display_insights(sessions)
     
     print("\n" + "="*70)
-    print(f"\n✓ Dashboard generated successfully!")
+    print(f"\nDashboard generated successfully!")
     print(f"  Total sessions analyzed: {len(sessions)}")
 
 

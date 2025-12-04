@@ -138,21 +138,21 @@ def generate_resume_markdown(sessions, analysis):
     md.append(f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}*\n")
     
     # Overview
-    md.append("## 📊 Overview")
+    md.append("## Overview")
     md.append(f"- **Total Sessions Analyzed:** {analysis['total_sessions']}")
     md.append(f"- **Total Study Time:** {analysis['total_time']} minutes ({analysis['total_time']//60}h {analysis['total_time']%60}m)")
     md.append(f"- **Total Anki Cards Created:** {analysis['total_anki_cards']}")
     md.append("")
     
     # Performance Metrics
-    md.append("## 📈 Performance Metrics")
+    md.append("## Performance Metrics")
     md.append(f"- **Average Understanding Level:** {analysis['avg_understanding']:.1f}/5")
     md.append(f"- **Average Retention Confidence:** {analysis['avg_retention']:.1f}/5")
     md.append(f"- **Average System Performance:** {analysis['avg_performance']:.1f}/5")
     md.append("")
     
     # Study patterns
-    md.append("## 🎯 Study Patterns")
+    md.append("## Study Patterns")
     md.append("### Study Modes Used")
     for mode, count in analysis['study_modes'].most_common():
         md.append(f"- **{mode}:** {count} sessions")
@@ -165,28 +165,28 @@ def generate_resume_markdown(sessions, analysis):
         md.append("")
     
     # Recent topics
-    md.append("## 📚 Recent Topics Covered")
+    md.append("## Recent Topics Covered")
     for i, topic_info in enumerate(analysis['topics_covered'][:10], 1):
         md.append(f"{i}. **{topic_info['topic']}** ({topic_info['date']}) - *{topic_info['mode']} mode*")
     md.append("")
     
     # Weak areas
     if analysis['weak_areas']:
-        md.append("## ⚠️ Areas Needing Review (Understanding ≤ 3)")
+        md.append("## Areas Needing Review (Understanding <= 3)")
         for area in analysis['weak_areas'][:5]:
             md.append(f"- **{area['topic']}** (Score: {area['understanding']}/5, Date: {area['date']})")
         md.append("")
     
     # Strong areas
     if analysis['strong_areas']:
-        md.append("## ✅ Strong Areas (Understanding ≥ 4)")
+        md.append("## Strong Areas (Understanding >= 4)")
         for area in analysis['strong_areas'][:5]:
             md.append(f"- **{area['topic']}** (Score: {area['understanding']}/5, Date: {area['date']})")
         md.append("")
     
     # What's working
     if analysis['what_worked_list']:
-        md.append("## 💡 What's Working Well")
+        md.append("## What's Working Well")
         # Get the most recent insights
         for insight in analysis['what_worked_list'][:3]:
             if insight.strip():
@@ -198,7 +198,7 @@ def generate_resume_markdown(sessions, analysis):
     
     # Common issues
     if analysis['common_issues']:
-        md.append("## 🔧 Common Issues to Address")
+        md.append("## Common Issues to Address")
         # Get the most recent issues
         for issue in analysis['common_issues'][:3]:
             if issue.strip():
@@ -208,7 +208,7 @@ def generate_resume_markdown(sessions, analysis):
         md.append("")
     
     # Recent session details
-    md.append("## 📝 Last 3 Session Details")
+    md.append("## Last 3 Session Details")
     for i, session in enumerate(sessions[:3], 1):
         md.append(f"\n### Session {i}: {session['topic']}")
         md.append(f"- **Date:** {session['session_date']} {session['session_time']}")
@@ -242,7 +242,7 @@ def main():
         except ValueError:
             print(f"Invalid limit value. Using default: {RECENT_SESSIONS_COUNT}")
     
-    print(f"🧠 Generating session resume (analyzing last {limit} sessions)...\n")
+    print(f"[INFO] Generating session resume (analyzing last {limit} sessions)...\n")
     
     # Get recent sessions
     sessions = get_recent_sessions(limit)
@@ -267,7 +267,7 @@ def main():
     with open(output_file, 'w') as f:
         f.write(resume)
     
-    print(f"\n✓ Resume saved to: {output_file}")
+    print(f"\n[OK] Resume saved to: {output_file}")
     print(f"\nYou can now copy this resume and paste it into your AI chat!")
 
 
