@@ -1,275 +1,319 @@
 #!/usr/bin/env python3
 """
-Session Resume Generator for PT Study Brain.
-Generates a formatted summary of recent sessions for AI context.
+Generate a session resume for pasting into GPT at the start of a new session.
+Provides context on recent sessions, progress, and recommended focus areas.
 """
 
-import sys
 import sqlite3
+import os
 from datetime import datetime, timedelta
-from collections import Counter, defaultdict
-from db_setup import get_connection
-from config import RECENT_SESSIONS_COUNT, WEAK_THRESHOLD, STRONG_THRESHOLD
+from collections import defaultdict
 
+DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'pt_study.db')
+OUTPUT_PATH = os.path.join(os.path.dirname(__file__), 'output', 'session_resume.md')
 
-def get_recent_sessions(limit=RECENT_SESSIONS_COUNT):
-    """
-    Get recent sessions from the database.
-    """
+def get_connection():
+    return sqlite3.connect(DB_PATH)
+
+def get_recent_sessions(limit=10):
+    """Get the most recent sessions."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT * FROM sessions 
+        ORDER BY session_date DESC, session_time DESC 
+        LIMIT ?
+    ''', (limit,))
+    
+    sessions = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return sessions
+
+def get_topic_coverage():
+    """Get topic coverage with recency."""
     conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute('''
-        SELECT * FROM sessions
-        ORDER BY session_date DESC, session_time DESC
-        LIMIT ?
-    ''', (limit,))
+        SELECT main_topic, 
+               MAX(session_date) as last_studied,
+               COUNT(*) as session_count,
+               AVG(understanding_level) as avg_understanding,
+               AVG(retention_confidence) as avg_confidence
+        FROM sessions
+        GROUP BY main_topic
+        ORDER BY last_studied DESC
+    ''')
     
-    columns = [description[0] for description in cursor.description]
-    sessions = []
-    for row in cursor.fetchall():
-        sessions.append(dict(zip(columns, row)))
-    
+    topics = cursor.fetchall()
     conn.close()
-    return sessions
+    return topics
 
+def get_anatomy_coverage():
+    """Get anatomy-specific coverage."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT region_covered,
+               MAX(session_date) as last_studied,
+               COUNT(*) as session_count,
+               GROUP_CONCAT(DISTINCT landmarks_mastered) as all_landmarks,
+               GROUP_CONCAT(DISTINCT muscles_attached) as all_muscles
+        FROM sessions
+        WHERE region_covered IS NOT NULL AND region_covered != ''
+        GROUP BY region_covered
+        ORDER BY last_studied DESC
+    ''')
+    
+    regions = cursor.fetchall()
+    conn.close()
+    return regions
 
-def analyze_sessions(sessions):
+def get_weak_areas():
+    """Identify weak areas based on ratings and patterns."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Topics with low understanding or confidence
+    cursor.execute('''
+        SELECT main_topic,
+               AVG(understanding_level) as avg_understanding,
+               AVG(retention_confidence) as avg_confidence,
+               MAX(session_date) as last_studied
+        FROM sessions
+        WHERE understanding_level IS NOT NULL
+        GROUP BY main_topic
+        HAVING avg_understanding < 4 OR avg_confidence < 4
+        ORDER BY avg_understanding ASC
+    ''')
+    
+    weak = cursor.fetchall()
+    conn.close()
+    return weak
+
+def get_rollback_patterns():
+    """Get topics/regions where rollbacks occurred."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT main_topic, region_covered, session_date, rollback_events
+        FROM sessions
+        WHERE rollback_events LIKE '%Yes%'
+        ORDER BY session_date DESC
+        LIMIT 5
+    ''')
+    
+    rollbacks = cursor.fetchall()
+    conn.close()
+    return rollbacks
+
+def calculate_readiness_score(exam_topics=None):
     """
-    Analyze sessions and extract insights.
+    Calculate an overall readiness score (0-100).
+    Based on coverage, recency, and confidence.
     """
-    if not sessions:
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Get all sessions from last 30 days
+    thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    
+    cursor.execute('''
+        SELECT COUNT(DISTINCT main_topic) as topics_covered,
+               AVG(understanding_level) as avg_understanding,
+               AVG(retention_confidence) as avg_confidence,
+               COUNT(*) as total_sessions
+        FROM sessions
+        WHERE session_date >= ?
+    ''', (thirty_days_ago,))
+    
+    result = cursor.fetchone()
+    conn.close()
+    
+    if not result or result[3] == 0:
+        return 0, "No recent sessions"
+    
+    topics, understanding, confidence, sessions = result
+    
+    # Simple scoring formula
+    # - Topics covered: up to 40 points
+    # - Understanding: up to 30 points
+    # - Confidence: up to 30 points
+    
+    topic_score = min(topics * 4, 40)  # 10 topics = 40 points
+    understanding_score = (understanding / 5) * 30 if understanding else 0
+    confidence_score = (confidence / 5) * 30 if confidence else 0
+    
+    total = topic_score + understanding_score + confidence_score
+    
+    return round(total), f"{topics} topics, {sessions} sessions in 30 days"
+
+def days_since(date_str):
+    """Calculate days since a date string."""
+    if not date_str:
         return None
-    
-    analysis = {
-        'total_sessions': len(sessions),
-        'topics_covered': [],
-        'study_modes': Counter(),
-        'frameworks_used': Counter(),
-        'total_time': 0,
-        'total_anki_cards': 0,
-        'avg_understanding': 0,
-        'avg_retention': 0,
-        'avg_performance': 0,
-        'weak_areas': [],
-        'strong_areas': [],
-        'common_issues': [],
-        'what_worked_list': [],
-    }
-    
-    understanding_scores = []
-    retention_scores = []
-    performance_scores = []
-    
-    for session in sessions:
-        # Topics
-        analysis['topics_covered'].append({
-            'topic': session['topic'],
-            'date': session['session_date'],
-            'mode': session['study_mode']
-        })
-        
-        # Study modes
-        analysis['study_modes'][session['study_mode']] += 1
-        
-        # Frameworks
-        if session['frameworks_used']:
-            frameworks = [f.strip() for f in session['frameworks_used'].split(',')]
-            for fw in frameworks:
-                if fw:
-                    analysis['frameworks_used'][fw] += 1
-        
-        # Time and cards
-        analysis['total_time'] += session['time_spent_minutes']
-        analysis['total_anki_cards'] += session['anki_cards_count'] or 0
-        
-        # Scores
-        if session['understanding_level']:
-            understanding_scores.append(session['understanding_level'])
-        if session['retention_confidence']:
-            retention_scores.append(session['retention_confidence'])
-        if session['system_performance']:
-            performance_scores.append(session['system_performance'])
-        
-        # Weak areas (low understanding or retention)
-        if session['understanding_level'] and session['understanding_level'] <= WEAK_THRESHOLD:
-            analysis['weak_areas'].append({
-                'topic': session['topic'],
-                'understanding': session['understanding_level'],
-                'date': session['session_date']
-            })
-        
-        # Strong areas
-        if session['understanding_level'] and session['understanding_level'] >= STRONG_THRESHOLD:
-            analysis['strong_areas'].append({
-                'topic': session['topic'],
-                'understanding': session['understanding_level'],
-                'date': session['session_date']
-            })
-        
-        # Issues
-        if session['what_needs_fixing']:
-            analysis['common_issues'].append(session['what_needs_fixing'])
-        
-        # What worked
-        if session['what_worked']:
-            analysis['what_worked_list'].append(session['what_worked'])
-    
-    # Calculate averages
-    if understanding_scores:
-        analysis['avg_understanding'] = sum(understanding_scores) / len(understanding_scores)
-    if retention_scores:
-        analysis['avg_retention'] = sum(retention_scores) / len(retention_scores)
-    if performance_scores:
-        analysis['avg_performance'] = sum(performance_scores) / len(performance_scores)
-    
-    return analysis
+    try:
+        date = datetime.strptime(date_str, '%Y-%m-%d')
+        return (datetime.now() - date).days
+    except:
+        return None
 
+def generate_resume():
+    """Generate the full resume document."""
+    lines = []
+    
+    lines.append("# Session Resume")
+    lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    lines.append("")
+    
+    # Readiness Score
+    score, details = calculate_readiness_score()
+    lines.append("## Readiness Score")
+    lines.append(f"**{score}/100** ({details})")
+    lines.append("")
+    
+    # Recent Sessions
+    lines.append("## Recent Sessions")
+    sessions = get_recent_sessions(5)
+    if sessions:
+        for s in sessions:
+            days = days_since(s['session_date'])
+            days_str = f"{days}d ago" if days is not None else ""
+            mode = s.get('study_mode', '?')
+            understanding = s.get('understanding_level', '?')
+            confidence = s.get('retention_confidence', '?')
+            
+            lines.append(f"- **{s['main_topic']}** ({s['session_date']}, {days_str})")
+            lines.append(f"  - Mode: {mode} | Understanding: {understanding}/5 | Confidence: {confidence}/5")
+            
+            if s.get('region_covered'):
+                lines.append(f"  - Region: {s['region_covered']}")
+            if s.get('landmarks_mastered'):
+                landmarks = s['landmarks_mastered'][:80] + "..." if len(s.get('landmarks_mastered', '')) > 80 else s['landmarks_mastered']
+                lines.append(f"  - Landmarks: {landmarks}")
+    else:
+        lines.append("No sessions logged yet.")
+    lines.append("")
+    
+    # Topic Coverage
+    lines.append("## Topic Coverage")
+    topics = get_topic_coverage()
+    if topics:
+        for t in topics:
+            topic, last_date, count, understanding, confidence = t
+            days = days_since(last_date)
+            
+            # Freshness indicator
+            if days is None:
+                freshness = "?"
+            elif days <= 7:
+                freshness = "FRESH"
+            elif days <= 14:
+                freshness = "FADING"
+            else:
+                freshness = "STALE"
+            
+            understanding_str = f"{understanding:.1f}" if understanding else "?"
+            confidence_str = f"{confidence:.1f}" if confidence else "?"
+            
+            lines.append(f"- **{topic}**: {count} sessions, last {days}d ago [{freshness}]")
+            lines.append(f"  - Avg Understanding: {understanding_str}/5 | Avg Confidence: {confidence_str}/5")
+    else:
+        lines.append("No topics covered yet.")
+    lines.append("")
+    
+    # Anatomy Coverage
+    regions = get_anatomy_coverage()
+    if regions:
+        lines.append("## Anatomy Coverage")
+        for r in regions:
+            region, last_date, count, landmarks, muscles = r
+            days = days_since(last_date)
+            
+            lines.append(f"- **{region}**: {count} sessions, last {days}d ago")
+            if landmarks:
+                # Deduplicate and limit
+                unique_landmarks = list(set([l.strip() for l in landmarks.split(',') if l.strip()]))[:5]
+                lines.append(f"  - Landmarks: {', '.join(unique_landmarks)}")
+            if muscles:
+                unique_muscles = list(set([m.strip() for m in muscles.split(',') if m.strip()]))[:5]
+                lines.append(f"  - Muscles: {', '.join(unique_muscles)}")
+        lines.append("")
+    
+    # Weak Areas
+    lines.append("## Areas Needing Attention")
+    weak = get_weak_areas()
+    if weak:
+        for w in weak:
+            topic, understanding, confidence, last_date = w
+            days = days_since(last_date)
+            lines.append(f"- **{topic}**: Understanding {understanding:.1f}/5, Confidence {confidence:.1f}/5 (last: {days}d ago)")
+    else:
+        lines.append("No weak areas identified. Keep it up!")
+    lines.append("")
+    
+    # Rollback Events
+    rollbacks = get_rollback_patterns()
+    if rollbacks:
+        lines.append("## Recent Rollbacks")
+        lines.append("*(Topics where OIAN failed and returned to landmarks)*")
+        for r in rollbacks:
+            topic, region, date, details = r
+            lines.append(f"- {date}: {topic}" + (f" ({region})" if region else ""))
+        lines.append("")
+    
+    # Recommendations
+    lines.append("## Recommended Focus")
+    
+    # Stale topics
+    stale_topics = [t for t in topics if days_since(t[1]) and days_since(t[1]) > 7]
+    if stale_topics:
+        lines.append("**Due for review:**")
+        for t in stale_topics[:3]:
+            lines.append(f"- {t[0]} (last studied {days_since(t[1])}d ago)")
+    
+    # Low confidence areas
+    if weak:
+        lines.append("**Needs strengthening:**")
+        for w in weak[:3]:
+            lines.append(f"- {w[0]} (confidence: {w[2]:.1f}/5)")
+    
+    lines.append("")
+    lines.append("---")
+    lines.append("*Paste this at the start of your session for context.*")
+    
+    return '\n'.join(lines)
 
-def generate_resume_markdown(sessions, analysis):
-    """
-    Generate a markdown-formatted resume for AI context.
-    """
-    if not sessions:
-        return "# PT Study SOP - Session Resume\n\nNo sessions found in the database.\n"
+def save_resume(content):
+    """Save resume to output file."""
+    output_dir = os.path.dirname(OUTPUT_PATH)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     
-    md = []
-    md.append("# PT Study SOP - Session Resume")
-    md.append(f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}*\n")
+    with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
+        f.write(content)
     
-    # Overview
-    md.append("## Overview")
-    md.append(f"- **Total Sessions Analyzed:** {analysis['total_sessions']}")
-    md.append(f"- **Total Study Time:** {analysis['total_time']} minutes ({analysis['total_time']//60}h {analysis['total_time']%60}m)")
-    md.append(f"- **Total Anki Cards Created:** {analysis['total_anki_cards']}")
-    md.append("")
-    
-    # Performance Metrics
-    md.append("## Performance Metrics")
-    md.append(f"- **Average Understanding Level:** {analysis['avg_understanding']:.1f}/5")
-    md.append(f"- **Average Retention Confidence:** {analysis['avg_retention']:.1f}/5")
-    md.append(f"- **Average System Performance:** {analysis['avg_performance']:.1f}/5")
-    md.append("")
-    
-    # Study patterns
-    md.append("## Study Patterns")
-    md.append("### Study Modes Used")
-    for mode, count in analysis['study_modes'].most_common():
-        md.append(f"- **{mode}:** {count} sessions")
-    md.append("")
-    
-    if analysis['frameworks_used']:
-        md.append("### Frameworks Used")
-        for framework, count in analysis['frameworks_used'].most_common(5):
-            md.append(f"- **{framework}:** {count} times")
-        md.append("")
-    
-    # Recent topics
-    md.append("## Recent Topics Covered")
-    for i, topic_info in enumerate(analysis['topics_covered'][:10], 1):
-        md.append(f"{i}. **{topic_info['topic']}** ({topic_info['date']}) - *{topic_info['mode']} mode*")
-    md.append("")
-    
-    # Weak areas
-    if analysis['weak_areas']:
-        md.append("## Areas Needing Review (Understanding <= 3)")
-        for area in analysis['weak_areas'][:5]:
-            md.append(f"- **{area['topic']}** (Score: {area['understanding']}/5, Date: {area['date']})")
-        md.append("")
-    
-    # Strong areas
-    if analysis['strong_areas']:
-        md.append("## Strong Areas (Understanding >= 4)")
-        for area in analysis['strong_areas'][:5]:
-            md.append(f"- **{area['topic']}** (Score: {area['understanding']}/5, Date: {area['date']})")
-        md.append("")
-    
-    # What's working
-    if analysis['what_worked_list']:
-        md.append("## What's Working Well")
-        # Get the most recent insights
-        for insight in analysis['what_worked_list'][:3]:
-            if insight.strip():
-                # Take first line or sentence
-                first_line = insight.split('\n')[0].strip('- ').strip()
-                if first_line:
-                    md.append(f"- {first_line}")
-        md.append("")
-    
-    # Common issues
-    if analysis['common_issues']:
-        md.append("## Common Issues to Address")
-        # Get the most recent issues
-        for issue in analysis['common_issues'][:3]:
-            if issue.strip():
-                first_line = issue.split('\n')[0].strip('- ').strip()
-                if first_line:
-                    md.append(f"- {first_line}")
-        md.append("")
-    
-    # Recent session details
-    md.append("## Last 3 Session Details")
-    for i, session in enumerate(sessions[:3], 1):
-        md.append(f"\n### Session {i}: {session['topic']}")
-        md.append(f"- **Date:** {session['session_date']} {session['session_time']}")
-        md.append(f"- **Mode:** {session['study_mode']}")
-        md.append(f"- **Time:** {session['time_spent_minutes']} minutes")
-        md.append(f"- **Scores:** Understanding {session['understanding_level']}/5, "
-                 f"Retention {session['retention_confidence']}/5, "
-                 f"System {session['system_performance']}/5")
-        if session['frameworks_used']:
-            md.append(f"- **Frameworks:** {session['frameworks_used']}")
-        if session['anki_cards_count']:
-            md.append(f"- **Anki Cards:** {session['anki_cards_count']}")
-        if session['notes_insights']:
-            # Show first sentence of notes
-            first_note = session['notes_insights'].split('\n')[0].strip('- ').strip()
-            if first_note:
-                md.append(f"- **Key Insight:** {first_note}")
-    
-    md.append("\n---")
-    md.append("*Use this context to help guide the next study session and address weak areas.*")
-    
-    return '\n'.join(md)
-
-
-def main():
-    # Check for optional limit argument
-    limit = RECENT_SESSIONS_COUNT
-    if len(sys.argv) > 1:
-        try:
-            limit = int(sys.argv[1])
-        except ValueError:
-            print(f"Invalid limit value. Using default: {RECENT_SESSIONS_COUNT}")
-    
-    print(f"[INFO] Generating session resume (analyzing last {limit} sessions)...\n")
-    
-    # Get recent sessions
-    sessions = get_recent_sessions(limit)
-    
-    if not sessions:
-        print("No sessions found in the database.")
-        print("Run 'python ingest_session.py <session_log.md>' to add sessions first.")
-        sys.exit(0)
-    
-    # Analyze sessions
-    analysis = analyze_sessions(sessions)
-    
-    # Generate resume
-    resume = generate_resume_markdown(sessions, analysis)
-    
-    # Print to console
-    print(resume)
-    print("\n" + "="*60)
-    
-    # Optionally save to file
-    output_file = 'session_resume.md'
-    with open(output_file, 'w') as f:
-        f.write(resume)
-    
-    print(f"\n[OK] Resume saved to: {output_file}")
-    print(f"\nYou can now copy this resume and paste it into your AI chat!")
-
+    return OUTPUT_PATH
 
 if __name__ == '__main__':
-    main()
+    print("Generating session resume...")
+    
+    if not os.path.exists(DB_PATH):
+        print(f"[ERROR] Database not found at: {DB_PATH}")
+        print("Run db_setup.py first to initialize the database.")
+        exit(1)
+    
+    resume = generate_resume()
+    
+    # Print to console
+    print("\n" + "=" * 60)
+    print(resume)
+    print("=" * 60 + "\n")
+    
+    # Save to file
+    filepath = save_resume(resume)
+    print(f"[OK] Resume saved to: {filepath}")

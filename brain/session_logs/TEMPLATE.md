@@ -1,4 +1,4 @@
-# Session Log Template
+# Session Log Template v9.1
 
 Copy this template for each study session.
 Save as: `brain/session_logs/YYYY-MM-DD_topic.md`
@@ -11,28 +11,47 @@ Then run: `python brain/ingest_session.py brain/session_logs/YYYY-MM-DD_topic.md
 ## Session Info
 - Date: YYYY-MM-DD
 - Time: HH:MM
-- Topic: [Main topic studied]
+- Duration: [X] minutes
 - Study Mode: [Core / Sprint / Drill]
-- Time Spent: [X] minutes
+
+## Planning Phase
+- Target Exam/Block: [e.g., Anatomy Final - Lower Limb]
+- Source-Lock: [List specific materials used, e.g., "Lab PDF p.2-6, Hip slides, LO list"]
+- Plan of Attack: [3-5 steps planned]
+
+## Topic Coverage
+- Main Topic: [Primary subject studied]
+- Subtopics: [Comma-separated list of specific areas]
 
 ## Execution Details
 - Frameworks Used: [H1, M2, etc. — comma separated]
 - Gated Platter Triggered: [Yes / No]
 - WRAP Phase Reached: [Yes / No]
 - Anki Cards Created: [Number]
+
+## Anatomy-Specific (if applicable)
+- Region Covered: [e.g., Posterior Hip, Anterior Thigh, Knee]
+- Landmarks Mastered: [List landmarks you can now identify and locate]
+- Muscles Attached: [List muscles you mapped to those landmarks]
+- OIAN Completed For: [List muscles where you finished full OIAN]
+- Rollback Events: [Yes / No — if yes, describe what triggered rollback]
 - Drawing Used: [Yes / No]
+- Drawings Completed: [List structures you drew]
 
 ## Ratings (1-5 scale)
 - Understanding Level: [1-5]
 - Retention Confidence: [1-5]
 - System Performance: [1-5]
+- Calibration Check: [How accurate was your confidence vs actual performance?]
 
 ## Anchors Locked
 [List the Seeds/hooks you created during this session]
 
-1. [Topic]: [Your hook/metaphor]
-2. [Topic]: [Your hook/metaphor]
-3. [Topic]: [Your hook/metaphor]
+1. [Topic/Term]: [Your hook/metaphor]
+2. [Topic/Term]: [Your hook/metaphor]
+3. [Topic/Term]: [Your hook/metaphor]
+4. [Topic/Term]: [Your hook/metaphor]
+5. [Topic/Term]: [Your hook/metaphor]
 
 ## Reflection
 
@@ -42,11 +61,16 @@ Then run: `python brain/ingest_session.py brain/session_logs/YYYY-MM-DD_topic.md
 ### What Needs Fixing
 [What was confusing, frustrating, or ineffective?]
 
+### Gaps Identified
+[What do you still not understand? What needs more work?]
+
 ### Notes/Insights
 [Any other observations, connections, or ideas]
 
 ## Next Session Priority
-[What should you tackle next time?]
+- Topic: [What to tackle next]
+- Focus: [Specific area or weakness to address]
+- Materials Needed: [What to gather before next session]
 
 ---
 
@@ -72,3 +96,9 @@ Then run: `python brain/ingest_session.py brain/session_logs/YYYY-MM-DD_topic.md
 - 3 = System worked okay, room for improvement
 - 4 = System worked well, minor tweaks needed
 - 5 = System worked perfectly, highly effective
+
+### Calibration Check
+- "Overconfident" = Thought I knew more than I did
+- "Underconfident" = Knew more than I expected
+- "Well-calibrated" = Confidence matched actual knowledge
+- "Uncertain" = Hard to tell
