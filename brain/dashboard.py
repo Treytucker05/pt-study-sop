@@ -11,6 +11,76 @@ from db_setup import get_connection
 from config import WEAK_THRESHOLD, STRONG_THRESHOLD
 
 
+def session_datetime(session):
+    """
+    Return a datetime object for a session using its date and optional time.
+    Defaults to 00:00 when a time is missing or malformed.
+    """
+    date_part = session.get('session_date', '') or ''
+    time_part = session.get('session_time', '') or '00:00'
+    for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(f"{date_part} {time_part}".strip(), fmt)
+        except ValueError:
+            continue
+    return datetime.min
+
+
+def sort_sessions_chronologically(sessions):
+    """
+    Sort sessions from oldest to newest using date and time.
+    """
+    return sorted(sessions, key=session_datetime)
+
+
+def calculate_window_trend(sorted_sessions, key, window):
+    metric_values = [s for s in sorted_sessions if s.get(key)]
+    if len(metric_values) < window * 2:
+        return None
+
+    def avg_score(session_list):
+        scores = [s[key] for s in session_list if s[key]]
+        return sum(scores) / len(scores) if scores else 0
+
+    recent_window = metric_values[-window:]
+    previous_window = metric_values[-2 * window:-window]
+
+    recent_avg = avg_score(recent_window)
+    previous_avg = avg_score(previous_window)
+    if not recent_avg or not previous_avg:
+        return None
+
+    diff = recent_avg - previous_avg
+    trend = "Improving" if diff > 0.3 else "Declining" if diff < -0.3 else "Stable"
+    return trend, previous_avg, recent_avg
+
+
+def run_trend_sanity_checks():
+    """
+    Lightweight assertions that confirm trend calculations respect chronological order.
+    """
+    sample_sessions = [
+        {"session_date": "2024-05-04", "session_time": "14:00", "understanding_level": 4, "retention_confidence": 4, "system_performance": 4},
+        {"session_date": "2024-05-01", "session_time": "09:00", "understanding_level": 2, "retention_confidence": 2, "system_performance": 3},
+        {"session_date": "2024-05-03", "session_time": "08:30", "understanding_level": 3, "retention_confidence": 3, "system_performance": 3},
+        {"session_date": "2024-05-05", "session_time": "07:45", "understanding_level": 5, "retention_confidence": 5, "system_performance": 4},
+    ]
+
+    sorted_sample = sort_sessions_chronologically(sample_sessions)
+    window = 2
+
+    trend_result = calculate_window_trend(sorted_sample, 'understanding_level', window)
+    assert trend_result is not None, "Trend calculation should work with sufficient data"
+    trend, previous_avg, recent_avg = trend_result
+    assert trend == "Improving", "Later sessions with higher scores should show improvement"
+    assert previous_avg < recent_avg, "Recent average should be higher when later sessions improve"
+
+    # Ensure ordering fixes out-of-order input
+    reordered = list(reversed(sample_sessions))
+    reordered_result = calculate_window_trend(sort_sessions_chronologically(reordered), 'understanding_level', window)
+    assert reordered_result == trend_result, "Sorting should normalize out-of-order inputs for trends"
+
+
 def get_all_sessions():
     """
     Get all sessions from the database.
@@ -267,52 +337,40 @@ def display_trends(sessions):
     Display trends over time.
     """
     print_section("TRENDS")
-    
+
     if len(sessions) < 2:
         print("  Not enough data to show trends (need at least 2 sessions).")
         return
-    
-    # Split into first half and second half
-    mid = len(sessions) // 2
-    recent_half = sessions[:mid]
-    older_half = sessions[mid:]
-    
-    def avg_score(session_list, key):
-        scores = [s[key] for s in session_list if s[key]]
-        return sum(scores) / len(scores) if scores else 0
-    
+
+    sorted_sessions = sort_sessions_chronologically(sessions)
+    window = min(5, len(sorted_sessions) // 2) or 1
+    window_note = f"Comparing rolling averages over the last {window} sessions versus the previous {window}."
+
+    print(f"  {window_note}")
+
     # Understanding trend
-    recent_understanding = avg_score(recent_half, 'understanding_level')
-    older_understanding = avg_score(older_half, 'understanding_level')
-    
-    if recent_understanding and older_understanding:
-        diff = recent_understanding - older_understanding
-        trend = "Improving" if diff > 0.3 else "Declining" if diff < -0.3 else "Stable"
+    understanding_trend = calculate_window_trend(sorted_sessions, 'understanding_level', window)
+    if understanding_trend:
+        trend, older_avg, recent_avg = understanding_trend
         print(f"\n  Understanding Level:  {trend}")
-        print(f"    Earlier avg: {older_understanding:.1f}/5")
-        print(f"    Recent avg:  {recent_understanding:.1f}/5")
-    
+        print(f"    Earlier avg: {older_avg:.1f}/5")
+        print(f"    Recent avg:  {recent_avg:.1f}/5")
+
     # Retention trend
-    recent_retention = avg_score(recent_half, 'retention_confidence')
-    older_retention = avg_score(older_half, 'retention_confidence')
-    
-    if recent_retention and older_retention:
-        diff = recent_retention - older_retention
-        trend = "Improving" if diff > 0.3 else "Declining" if diff < -0.3 else "Stable"
+    retention_trend = calculate_window_trend(sorted_sessions, 'retention_confidence', window)
+    if retention_trend:
+        trend, older_avg, recent_avg = retention_trend
         print(f"\n  Retention Confidence: {trend}")
-        print(f"    Earlier avg: {older_retention:.1f}/5")
-        print(f"    Recent avg:  {recent_retention:.1f}/5")
-    
+        print(f"    Earlier avg: {older_avg:.1f}/5")
+        print(f"    Recent avg:  {recent_avg:.1f}/5")
+
     # System performance trend
-    recent_performance = avg_score(recent_half, 'system_performance')
-    older_performance = avg_score(older_half, 'system_performance')
-    
-    if recent_performance and older_performance:
-        diff = recent_performance - older_performance
-        trend = "Improving" if diff > 0.3 else "Declining" if diff < -0.3 else "Stable"
+    performance_trend = calculate_window_trend(sorted_sessions, 'system_performance', window)
+    if performance_trend:
+        trend, older_avg, recent_avg = performance_trend
         print(f"\n  System Performance:   {trend}")
-        print(f"    Earlier avg: {older_performance:.1f}/5")
-        print(f"    Recent avg:  {recent_performance:.1f}/5")
+        print(f"    Earlier avg: {older_avg:.1f}/5")
+        print(f"    Recent avg:  {recent_avg:.1f}/5")
 
 
 def display_insights(sessions):
@@ -368,7 +426,10 @@ def display_insights(sessions):
 def main():
     print_header("PT STUDY BRAIN - ANALYTICS DASHBOARD")
     print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
+
+    # Quick self-checks to ensure trend logic handles unordered inputs.
+    run_trend_sanity_checks()
+
     # Get all sessions
     sessions = get_all_sessions()
     
