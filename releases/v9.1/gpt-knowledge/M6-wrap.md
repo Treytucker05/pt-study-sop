@@ -1,194 +1,164 @@
-# M6: Wrap — Session Close and Continuity
+# M6 — Wrap Phase
 
 ## Purpose
-Close the session properly: review what was learned, create retention tools (cards), and log for the Brain system. Set up next session.
-
----
-
-## Why Wrap Matters
-
-Without proper wrap:
-- No record of what was covered
-- Cards generated without user input
-- No continuity between sessions
-- Missed insights and patterns
-
-With wrap:
-- User sees their own anchors
-- Cards use user's specific hooks (better retention)
-- Brain captures data for analytics
-- Clear next steps
+Close the session properly. Review anchors, create cards, generate log in exact Brain format.
 
 ---
 
 ## Wrap Protocol
 
-### Step 1: Pause and Announce
-```
-"Session pausing. Let's wrap up."
-```
+### Step 1: Anchor Review
+List all Seeds/hooks created during the session.
 
-### Step 2: Anchor Review
-List all Seeds/hooks the user generated during the session:
+**Say:** "Here are the anchors we locked today: [list them]"
 
-```
-"Here are your locked anchors from today:
+### Step 2: Rate the Session
+Ask user for ratings:
+- Understanding Level (1-5)
+- Retention Confidence (1-5)  
+- System Performance (1-5)
 
-1. [Topic A]: [User's hook/metaphor]
-2. [Topic B]: [User's hook/metaphor]
-3. [Topic C]: [User's phonetic hook]
-4. [Topic D]: [User's metaphor]
+### Step 3: Quick Reflection
+Ask:
+- "What worked well today?"
+- "What needs fixing?"
+- "Any gaps still open?"
 
-These are YOUR words, not mine."
-```
+### Step 4: Card Selection
+Identify concepts that should become Anki cards.
+Co-create card content with user approval.
 
-### Step 3: Card Selection
-User decides which anchors become Anki cards:
+### Step 5: Next Session Priority
+Ask:
+- "What topic next time?"
+- "What's the specific focus?"
 
-```
-"Which of these are shaky and need cards? I'll only make cards for the ones you select."
-```
-
-**Don't make cards for:**
-- Things user feels solid on
-- Every single anchor
-- AI-generated content user didn't adopt
-
-### Step 4: Card Co-Creation
-For each selected anchor, draft a card WITH user input:
-
-```
-"Card draft for [Topic A]:
-
-FRONT: [Question]
-BACK: [User's specific hook/answer]
-
-Confirm or edit?"
-```
-
-**Card principles:**
-- Use user's exact words/hooks
-- Keep answers concise
-- Test retrieval, not recognition
-- Include phonetic hooks where applicable
-
-### Step 5: Session Summary
-Generate a brief summary for logging:
-
-```
-SESSION SUMMARY
---------------
-Date: [Today]
-Duration: [Approximate time]
-Topic: [Main topic]
-Mode: [Core/Sprint/Drill]
-
-Buckets Covered:
-- [Bucket 1]: [X items encoded]
-- [Bucket 2]: [Y items encoded]
-
-Anchors Locked: [Count]
-Cards Created: [Count]
-
-Weak Areas Identified:
-- [Any gaps or struggles noted]
-
-Next Priority:
-- [What to tackle next time]
-```
-
-### Step 6: Brain Logging Prompt
-```
-"To log this session:
-1. Copy the template from brain/session_logs/TEMPLATE.md
-2. Fill in the session data
-3. Save as brain/session_logs/YYYY-MM-DD_[topic].md
-4. Run: python brain/ingest_session.py [your file]"
-```
+### Step 6: Generate Session Log
+**Output the EXACT format below** — user copies this directly to their log file.
 
 ---
 
-## Card Creation Rules
+## SESSION LOG OUTPUT FORMAT
 
-### DO Create Cards For:
-- Items user selected as "shaky"
-- Phonetic hooks user generated
-- Key function/mechanism pairs
-- Common test question topics
+When user says "wrap", generate this exact format:
 
-### DON'T Create Cards For:
-- Items user says they know well
-- Pure definitions without hooks
-- Everything just because it was mentioned
-- AI-generated metaphors user didn't adopt
-
-### Card Format
 ```
-FRONT: [Retrieval prompt — make them PRODUCE the answer]
-BACK: [User's hook + key fact]
-```
-
-**Example:**
-```
-FRONT: What ligament prevents anterior tibial translation? (Think: "A-C-Lock")
-BACK: ACL — "Anterior-C-Lock" locks the tibia from sliding forward
-```
-
----
-
-## Session Log Template Reference
-
-The Brain expects this format:
-
-```markdown
-# Session Log - YYYY-MM-DD
+# Session Log - [TODAY'S DATE]
 
 ## Session Info
-- Date: YYYY-MM-DD
-- Time: HH:MM
-- Topic: [Main topic]
-- Study Mode: [Core/Sprint/Drill]
-- Time Spent: [X] minutes
+- Date: [YYYY-MM-DD]
+- Time: [HH:MM]
+- Duration: [X] minutes
+- Study Mode: [Core / Sprint / Drill]
+
+## Planning Phase
+- Target Exam/Block: [from planning phase]
+- Source-Lock: [materials used]
+- Plan of Attack: [the plan we made]
+
+## Topic Coverage
+- Main Topic: [primary subject]
+- Subtopics: [comma-separated list]
 
 ## Execution Details
 - Frameworks Used: [H1, M2, etc.]
-- Gated Platter Triggered: [Yes/No]
-- WRAP Phase Reached: [Yes/No]
-- Anki Cards Created: [Count]
+- Gated Platter Triggered: [Yes / No]
+- WRAP Phase Reached: Yes
+- Anki Cards Created: [number]
 
-## Ratings
-- Understanding Level: [1-5]
-- Retention Confidence: [1-5]
-- System Performance: [1-5]
+## Anatomy-Specific (if applicable)
+- Region Covered: [region or "N/A"]
+- Landmarks Mastered: [list or "N/A"]
+- Muscles Attached: [list or "N/A"]
+- OIAN Completed For: [list or "N/A"]
+- Rollback Events: [Yes / No]
+- Drawing Used: [Yes / No]
+- Drawings Completed: [list or "N/A"]
+
+## Ratings (1-5 scale)
+- Understanding Level: [user's rating]
+- Retention Confidence: [user's rating]
+- System Performance: [user's rating]
+- Calibration Check: [user's assessment]
+
+## Anchors Locked
+1. [Term]: [User's hook]
+2. [Term]: [User's hook]
+3. [Term]: [User's hook]
 
 ## Reflection
 
 ### What Worked
-[Free text]
+[user's response]
 
 ### What Needs Fixing
-[Free text]
+[user's response]
+
+### Gaps Identified
+[any gaps noted]
 
 ### Notes/Insights
-[Free text]
+[any additional notes]
+
+## Next Session Priority
+- Topic: [user's answer]
+- Focus: [user's answer]
+- Materials Needed: [if mentioned]
 ```
 
 ---
 
-## Exit Condition
-- Anchors reviewed with user
-- Selected cards co-created
-- Session summary generated
-- Next priority identified
-- User knows how to log to Brain
-
----
-
-## Quick Commands
+## Wrap Commands
 
 | Command | Action |
 |---------|--------|
-| `wrap` | Begin wrap sequence |
-| `cards` | Jump to card creation |
-| `summary` | Generate session summary |
-| `log` | Show Brain logging instructions |
+| `wrap` | Start wrap phase |
+| `log` | Output session log format |
+| `cards` | Review card candidates |
+| `done` | End session |
+
+---
+
+## Important
+
+**The log format must be EXACT** — the Brain ingest script parses these fields. 
+
+Do not:
+- Change field names
+- Skip sections (use "N/A" if not applicable)
+- Add extra formatting
+- Use different date formats (must be YYYY-MM-DD)
+
+---
+
+## Example Wrap Sequence
+
+**User:** wrap
+
+**GPT:** 
+"Let's close out this session.
+
+**Anchors we locked today:**
+1. Gluteus maximus: "butt cape" — tent stake to tent pole
+2. Piriformis: "pear in the doorway" blocking sciatic nerve
+3. Greater trochanter: "hip's door knob" — lateral bump you can palpate
+
+**Quick ratings (1-5):**
+- Understanding level?
+- Retention confidence?
+- How did the system work for you?
+
+**Reflection:**
+- What worked well?
+- What needs fixing?
+- Any gaps still open?
+
+**Next session:**
+- What topic?
+- Specific focus?"
+
+**User:** [provides ratings and answers]
+
+**GPT:** "Here's your session log — copy this to `brain/session_logs/2025-12-05_posterior-hip.md`:"
+
+[Outputs exact format above with all fields filled in]
