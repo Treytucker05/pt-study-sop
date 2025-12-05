@@ -7,6 +7,7 @@ AI-assisted active learning system for DPT students. Enforces structured protoco
 1. **Set up CustomGPT:** Copy `sop/gpt-instructions.md` into your GPT's system prompt
 2. **Start a session:** Paste `sop/runtime-prompt.md` at the beginning of each conversation
 3. **Log sessions:** Use `brain/session_logs/TEMPLATE.md` after each study session
+4. **Run tests (optional):** From the repo root, install pytest (`pip install pytest`) and execute `pytest`
 
 ## Structure
 
