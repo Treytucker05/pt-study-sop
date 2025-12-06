@@ -25,6 +25,15 @@ Open your CustomGPT and say: "Let's study"
 
 ---
 
+## Where to Find Roadmap & Tasks
+
+- **Open gaps:** See the project-level roadmap in [`GAP_ANALYSIS.md`](../../GAP_ANALYSIS.md).
+- **Active to-do list:** Immediate/short/medium-term work is tracked in [`NEXT_STEPS.md`](../../NEXT_STEPS.md).
+
+Use these two documents to align feature work (e.g., dashboard, new engines, tests) with the packaged release.
+
+---
+
 ## Folder Contents
 
 ```

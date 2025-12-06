@@ -44,6 +44,8 @@ If user provided a metaphor in M3, it serves as L1. If not:
 "What's a metaphor or image for this?"
 ```
 
+If the user already knows the muscle and can name its role, bypass L1 and jump to the L2 teach-back; that L2 response becomes the gate to L4. For familiar items, the teach-back can replace the metaphor requirement.
+
 ### Step 3: L2 Teach-Back (Required Gate)
 ```
 "Explain this like you're teaching a 10-year-old. Go."
@@ -75,6 +77,15 @@ Only after successful L2 teach-back:
 ```
 "Understanding locked at L[X]. Moving to next item or bucket."
 ```
+
+---
+
+### Fast-Core Example: Familiar Glute Max/Med
+- Function-first prompt: "Glute max — what does it DO for you during a sit-to-stand?"
+- User gives quick take → Jump to L2 teach-back: "Explain it like you're teaching a 10-year-old." (serves as gate)
+- Immediate OIAN: "Origin — back of ilium/sacrum; Insert — IT band + gluteal tuberosity; Action — extends and externally rotates hip; Nerve — inferior gluteal."
+- Quick checkpoint question: "When would you cue glute med instead of max during gait?"
+- Switch to glute med the same way: function-first → single L2 teach-back → OIAN → checkpoint ("How does glute med stop the hip from dropping when you step?").
 
 ---
 
