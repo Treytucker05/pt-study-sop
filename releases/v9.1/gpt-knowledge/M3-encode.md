@@ -35,12 +35,16 @@ Apply M-Series framework (default M2: Trigger → Mechanism → Result):
 If user knows: validate and build  
 If user doesn't know: provide function, then proceed
 
-### Step 3: Phonetic Override
-For any unfamiliar term, capture sound-alike BEFORE meaning:
+### Step 3: Phonetic Override (Only if Unfamiliar)
+First, check if the user flags the term as unfamiliar. If yes, capture a sound-alike before meaning:
 
 ```
-"What does [term] sound like?"
+"Is [term] unfamiliar? If so, what does it sound like?"
 ```
+
+**Guidance:**
+- Familiar muscles proceed without phonetic hooks unless the user explicitly wants one.
+- Phonetics can be revisited later if attachments or landmarks create confusion.
 
 **Example:**
 - "Supraspinatus" → "Super spine-atus" → "Super spine muscle"
