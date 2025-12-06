@@ -166,6 +166,9 @@ def generate_resume():
     """Generate the full resume document."""
     lines = []
     
+    def fmt_score(val):
+        return "n/a" if val is None else str(val)
+    
     lines.append("# Session Resume")
     lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     lines.append("")
@@ -184,8 +187,8 @@ def generate_resume():
             days = days_since(s['session_date'])
             days_str = f"{days}d ago" if days is not None else ""
             mode = s.get('study_mode', '?')
-            understanding = s.get('understanding_level', '?')
-            confidence = s.get('retention_confidence', '?')
+            understanding = fmt_score(s.get('understanding_level'))
+            confidence = fmt_score(s.get('retention_confidence'))
             
             lines.append(f"- **{s['main_topic']}** ({s['session_date']}, {days_str})")
             lines.append(f"  - Mode: {mode} | Understanding: {understanding}/5 | Confidence: {confidence}/5")
@@ -217,8 +220,8 @@ def generate_resume():
             else:
                 freshness = "STALE"
             
-            understanding_str = f"{understanding:.1f}" if understanding else "?"
-            confidence_str = f"{confidence:.1f}" if confidence else "?"
+            understanding_str = f"{understanding:.1f}" if understanding else "n/a"
+            confidence_str = f"{confidence:.1f}" if confidence else "n/a"
             
             lines.append(f"- **{topic}**: {count} sessions, last {days}d ago [{freshness}]")
             lines.append(f"  - Avg Understanding: {understanding_str}/5 | Avg Confidence: {confidence_str}/5")

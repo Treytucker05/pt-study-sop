@@ -13,6 +13,8 @@ Then open http://127.0.0.1:5000 in your browser.
 """
 
 import os
+import re
+from collections import Counter
 from pathlib import Path
 from datetime import datetime, timedelta
 from flask import (
@@ -34,12 +36,8 @@ from config import (
     SCORE_MAX,
 )
 from db_setup import init_database, get_connection
-from ingest_session import parse_markdown_session
-from generate_resume import (
-    get_recent_sessions,
-    analyze_sessions,
-    generate_resume_markdown,
-)
+from ingest_session import parse_session_log, validate_session_data, insert_session
+from generate_resume import generate_resume
 from dashboard import get_all_sessions
 
 # -----------------------------------------------------------------------------
@@ -66,51 +64,107 @@ def allowed_file(filename: str) -> bool:
 
 def insert_session_data(data):
     """
-    Insert session data into the database.
+    Validate and insert using the v9.1 ingest pipeline.
     Returns (ok: bool, message: str).
     """
-    conn = get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            """
-            INSERT INTO sessions (
-                session_date, session_time, topic, study_mode, time_spent_minutes,
-                frameworks_used, gated_platter_triggered, wrap_phase_reached,
-                anki_cards_count, understanding_level, retention_confidence,
-                system_performance, what_worked, what_needs_fixing, notes_insights,
-                created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                data["session_date"],
-                data["session_time"],
-                data["topic"],
-                data["study_mode"],
-                data["time_spent_minutes"],
-                data.get("frameworks_used", ""),
-                data.get("gated_platter_triggered", "No"),
-                data.get("wrap_phase_reached", "No"),
-                data.get("anki_cards_count", 0),
-                data.get("understanding_level"),
-                data.get("retention_confidence"),
-                data.get("system_performance"),
-                data.get("what_worked", ""),
-                data.get("what_needs_fixing", ""),
-                data.get("notes_insights", ""),
-                data.get("created_at") or datetime.now().isoformat(),
-            ),
-        )
-        conn.commit()
-        return True, "Session ingested successfully."
-    except Exception as exc:
-        return False, f"Failed to insert session: {exc}"
-    finally:
-        conn.close()
+    is_valid, error = validate_session_data(data)
+    if not is_valid:
+        return False, f"Validation failed: {error}"
+    return insert_session(data)
+
+
+def analyze_sessions(sessions):
+    """
+    Lightweight analytics for dashboard cards (v9.1 schema).
+    """
+    if not sessions:
+        return {}
+
+    def average(key):
+        vals = [s[key] for s in sessions if s.get(key) is not None]
+        return sum(vals) / len(vals) if vals else 0
+
+    avg_understanding = average("understanding_level")
+    avg_retention = average("retention_confidence")
+    avg_performance = average("system_performance")
+
+    # Study modes
+    mode_counts = Counter(s["study_mode"] for s in sessions if s.get("study_mode"))
+
+    # Frameworks
+    frameworks = Counter()
+    for s in sessions:
+        fw = s.get("frameworks_used") or ""
+        for token in re.split(r"[;,/]", fw):
+            token = token.strip()
+            if token:
+                frameworks[token] += 1
+
+    # Topics with recency
+    topics = {}
+    for s in sessions:
+        topic = s.get("topic") or s.get("main_topic")
+        if not topic:
+            continue
+        date = s.get("session_date") or ""
+        if topic not in topics or date > topics[topic]:
+            topics[topic] = date
+    topics_covered = sorted(
+        ({"topic": t, "date": d} for t, d in topics.items()),
+        key=lambda x: x["date"],
+        reverse=True,
+    )
+
+    # Weak / strong topics
+    weak = []
+    strong = []
+    for topic in topics:
+        t_sessions = [
+            s for s in sessions
+            if (s.get("topic") or s.get("main_topic")) == topic
+            and s.get("understanding_level") is not None
+        ]
+        if not t_sessions:
+            continue
+        avg_u = sum(s["understanding_level"] for s in t_sessions) / len(t_sessions)
+        last_date = max(s.get("session_date") or "" for s in t_sessions)
+        entry = {"topic": topic, "understanding": round(avg_u, 2), "date": last_date}
+        if avg_u < WEAK_THRESHOLD:
+            weak.append(entry)
+        if avg_u >= STRONG_THRESHOLD:
+            strong.append(entry)
+
+    weak = sorted(weak, key=lambda x: x["understanding"])
+    strong = sorted(strong, key=lambda x: x["understanding"], reverse=True)
+
+    what_worked_list = [s["what_worked"] for s in sessions if s.get("what_worked")]
+    common_issues = [s["what_needs_fixing"] for s in sessions if s.get("what_needs_fixing")]
+
+    return {
+        "avg_understanding": avg_understanding,
+        "avg_retention": avg_retention,
+        "avg_performance": avg_performance,
+        "study_modes": mode_counts,
+        "frameworks_used": frameworks,
+        "topics_covered": topics_covered,
+        "weak_areas": weak,
+        "strong_areas": strong,
+        "what_worked_list": what_worked_list,
+        "common_issues": common_issues,
+    }
 
 
 def build_stats():
-    sessions = get_all_sessions()
+    raw_sessions = get_all_sessions()
+
+    # Normalize field names to UI expectations
+    sessions = []
+    for s in raw_sessions:
+        d = dict(s)
+        d["topic"] = d.get("main_topic") or d.get("topic") or ""
+        d["time_spent_minutes"] = d.get("duration_minutes") or d.get("time_spent_minutes") or 0
+        sessions.append(d)
+
     analysis = analyze_sessions(sessions) if sessions else None
 
     def avg(val):
@@ -118,21 +172,26 @@ def build_stats():
 
     # Calculate 30-day stats
     thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-    recent_sessions = [s for s in sessions if s["session_date"] >= thirty_days_ago] if sessions else []
-    
-    total_minutes = sum(s["time_spent_minutes"] for s in sessions) if sessions else 0
-    recent_minutes = sum(s["time_spent_minutes"] for s in recent_sessions) if recent_sessions else 0
-    
-    # Calculate days with sessions for average
-    unique_days = len(set(s["session_date"] for s in recent_sessions)) if recent_sessions else 1
-    avg_daily_minutes = recent_minutes // unique_days if unique_days > 0 else 0
+    recent_sessions = [s for s in sessions if s.get("session_date", "") >= thirty_days_ago] if sessions else []
 
-    # Calculate mode frequencies
+    total_minutes = sum(s.get("time_spent_minutes", 0) for s in sessions)
+    recent_minutes = sum(s.get("time_spent_minutes", 0) for s in recent_sessions)
+
+    unique_days = len(set(s.get("session_date") for s in recent_sessions if s.get("session_date")))
+    avg_daily_minutes = recent_minutes // unique_days if unique_days else 0
+
     mode_counts = analysis["study_modes"] if analysis else {}
-    total_mode_count = sum(mode_counts.values()) if mode_counts else 1
-    mode_percentages = {k: round((v / total_mode_count) * 100) for k, v in mode_counts.items()} if mode_counts else {}
+    total_mode_count = sum(mode_counts.values()) if mode_counts else 0
+    mode_percentages = (
+        {k: round((v / total_mode_count) * 100) for k, v in mode_counts.items()} if total_mode_count else {}
+    )
 
-    stats = {
+    avg_u = avg(analysis["avg_understanding"]) if analysis else 0
+    avg_r = avg(analysis["avg_retention"]) if analysis else 0
+    avg_p = avg(analysis["avg_performance"]) if analysis else 0
+    overall_pct = round(((avg_u + avg_r + avg_p) / 15) * 100, 1) if analysis else 0
+
+    return {
         "counts": {
             "sessions": len(sessions),
             "sessions_30d": len(recent_sessions),
@@ -142,18 +201,16 @@ def build_stats():
             "avg_daily_minutes": avg_daily_minutes,
         },
         "range": {
-            "first_date": min((s["session_date"] for s in sessions), default=None),
-            "last_date": max((s["session_date"] for s in sessions), default=None),
+            "first_date": min((s.get("session_date") for s in sessions), default=None),
+            "last_date": max((s.get("session_date") for s in sessions), default=None),
         },
         "averages": {
-            "understanding": avg(analysis["avg_understanding"]) if analysis else 0,
-            "retention": avg(analysis["avg_retention"]) if analysis else 0,
-            "performance": avg(analysis["avg_performance"]) if analysis else 0,
-            "overall": round((avg(analysis["avg_understanding"] if analysis else 0) + 
-                            avg(analysis["avg_retention"] if analysis else 0) + 
-                            avg(analysis["avg_performance"] if analysis else 0)) / 3 * 20, 1) if analysis else 0,
+            "understanding": avg_u,
+            "retention": avg_r,
+            "performance": avg_p,
+            "overall": overall_pct,
         },
-        "modes": analysis["study_modes"] if analysis else {},
+        "modes": mode_counts,
         "mode_percentages": mode_percentages,
         "frameworks": analysis["frameworks_used"].most_common(5) if analysis else [],
         "recent_topics": analysis["topics_covered"][:10] if analysis else [],
@@ -164,7 +221,6 @@ def build_stats():
         "recent_sessions": sessions[:5],
         "thresholds": {"weak": WEAK_THRESHOLD, "strong": STRONG_THRESHOLD},
     }
-    return stats
 
 
 # -----------------------------------------------------------------------------
@@ -188,27 +244,17 @@ def api_stats():
 
 @app.route("/api/resume")
 def api_resume():
-    try:
-        limit = int(request.args.get("limit", RECENT_SESSIONS_COUNT))
-    except ValueError:
-        limit = RECENT_SESSIONS_COUNT
-
-    sessions = get_recent_sessions(limit)
-    if not sessions:
+    resume_md = generate_resume()
+    if not resume_md:
         return Response("No sessions found.", mimetype="text/plain")
-
-    analysis = analyze_sessions(sessions)
-    resume_md = generate_resume_markdown(sessions, analysis)
     return Response(resume_md, mimetype="text/plain")
 
 
 @app.route("/api/resume/download")
 def api_resume_download():
-    sessions = get_recent_sessions(RECENT_SESSIONS_COUNT)
-    if not sessions:
+    resume_md = generate_resume()
+    if not resume_md:
         return Response("No sessions found.", mimetype="text/plain")
-    analysis = analyze_sessions(sessions)
-    resume_md = generate_resume_markdown(sessions, analysis)
 
     temp_path = Path("session_resume.md")
     temp_path.write_text(resume_md, encoding="utf-8")
@@ -242,7 +288,7 @@ def api_upload():
         return jsonify({"ok": False, "message": f"Failed to save file: {exc}"}), 500
 
     try:
-        data = parse_markdown_session(dest_path)
+        data = parse_session_log(dest_path)
     except Exception as exc:
         return (
             jsonify({"ok": False, "message": f"Parse error: {exc}"}),
@@ -271,24 +317,49 @@ def api_quick_session():
             if field not in data or data[field] in [None, ""]:
                 return jsonify({"ok": False, "message": f"Missing required field: {field}"}), 400
 
-        # Set defaults for optional fields
+        main_topic = (data.get("topic") or data.get("main_topic") or "").strip()
+        duration_val = data.get("time_spent_minutes") or data.get("duration_minutes")
+        if not main_topic:
+            return jsonify({"ok": False, "message": "Missing required field: topic"}), 400
+        if duration_val in [None, ""]:
+            return jsonify({"ok": False, "message": "Missing required field: time_spent_minutes"}), 400
+
+        # Map to v9.1 schema fields
         session_data = {
             "session_date": data.get("session_date", datetime.now().strftime("%Y-%m-%d")),
             "session_time": data.get("session_time", datetime.now().strftime("%H:%M")),
-            "topic": data["topic"].strip(),
+            "duration_minutes": int(duration_val),
             "study_mode": data["study_mode"],
-            "time_spent_minutes": int(data["time_spent_minutes"]),
+            "target_exam": data.get("target_exam", "").strip(),
+            "source_lock": data.get("source_lock", "").strip(),
+            "plan_of_attack": data.get("plan_of_attack", "").strip(),
+            "main_topic": main_topic,
+            "subtopics": data.get("subtopics", "").strip(),
             "frameworks_used": data.get("frameworks_used", "").strip(),
             "gated_platter_triggered": data.get("gated_platter_triggered", "No"),
             "wrap_phase_reached": data.get("wrap_phase_reached", "No"),
             "anki_cards_count": int(data.get("anki_cards_count", 0)),
+            "region_covered": data.get("region_covered", "").strip(),
+            "landmarks_mastered": data.get("landmarks_mastered", "").strip(),
+            "muscles_attached": data.get("muscles_attached", "").strip(),
+            "oian_completed_for": data.get("oian_completed_for", "").strip(),
+            "rollback_events": data.get("rollback_events", "").strip(),
+            "drawing_used": data.get("drawing_used", "").strip(),
+            "drawings_completed": data.get("drawings_completed", "").strip(),
             "understanding_level": int(data["understanding_level"]),
             "retention_confidence": int(data.get("retention_confidence", 3)),
             "system_performance": int(data.get("system_performance", 3)),
+            "calibration_check": data.get("calibration_check", "").strip(),
+            "anchors_locked": data.get("anchors_locked", "").strip(),
             "what_worked": data.get("what_worked", "").strip(),
             "what_needs_fixing": data.get("what_needs_fixing", "").strip(),
+            "gaps_identified": data.get("gaps_identified", "").strip(),
             "notes_insights": data.get("notes_insights", "").strip(),
+            "next_topic": data.get("next_topic", "").strip(),
+            "next_focus": data.get("next_focus", "").strip(),
+            "next_materials": data.get("next_materials", "").strip(),
             "created_at": datetime.now().isoformat(),
+            "schema_version": "9.1",
         }
 
         # Validate score ranges
