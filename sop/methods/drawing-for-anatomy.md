@@ -1,131 +1,150 @@
-# Drawing for Anatomy — Visual Sketch Protocol
+# Drawing for Anatomy — Build-Your-Own Protocol
 
 ## Purpose
-Generate simple, clean reference images that the user can sketch from to build spatial understanding of anatomy.
+Guide user to BUILD their own anatomical drawings step-by-step using simple shapes. No AI images. User constructs the mental map by drawing it themselves.
 
 ---
 
-## How It Works
+## Core Principle
 
-When user says "draw" or requests a drawing:
+**YOU draw. One step at a time. Simple shapes.**
 
-1. **Generate an image** using DALL-E — simple, clean line drawing style
-2. **Display the image** for user to reference
-3. **Provide sketch instructions** — step-by-step what to draw
-4. **Label together** — user adds labels as they draw
+The GPT:
+1. Tells you what shape to draw
+2. Tells you where to put it
+3. Waits for you to confirm "done"
+4. Adds the next piece
+5. Builds up to complete structure with all landmarks
 
 ---
 
-## Image Generation Prompt Template
+## Shape Vocabulary
 
-When generating anatomy drawings, use this style:
+Use only simple shapes the user can easily draw:
+
+| Shape | Use For |
+|-------|---------|
+| Rectangle | Sacrum, vertebral bodies |
+| Triangle | Scapula, pelvis wings |
+| Oval/Circle | Femoral head, landmarks |
+| Dot | Attachment points, bony landmarks |
+| Line | Bone shafts, borders, ligaments |
+| Curved line | Bone contours, muscle bellies |
+| X | Important points to remember |
+
+---
+
+## Drawing Session Flow
 
 ```
-Simple black and white line drawing for medical education. 
-Clean, minimal style like a textbook diagram. 
-White background. 
-No shading, no color, just outlines.
-[SPECIFIC STRUCTURE] shown from [VIEW/ANGLE].
-Key landmarks clearly visible.
-Simple and easy to sketch by hand.
+GPT: "Draw a [shape] for [structure]. Place it [location]."
+     ↓
+User: Draws it
+     ↓
+User: "Done"
+     ↓
+GPT: "Good. Now label it [name]. This is where [function]."
+     ↓
+GPT: "Next — draw [next shape] for [next structure]..."
+     ↓
+Repeat until complete
+     ↓
+GPT: "Now let's review. Point to [landmark]. What attaches there?"
 ```
 
 ---
 
-## Example: Rotator Cuff
+## Rules for GPT
 
-**User:** "Draw the rotator cuff"
-
-**GPT Action:**
-1. Generate image with prompt:
-   "Simple black and white line drawing for medical education. Clean, minimal style like a textbook diagram. White background. No shading, no color, just outlines. Posterior view of scapula and humerus showing rotator cuff muscle attachment sites. Key landmarks clearly visible: spine of scapula, acromion, greater tubercle, lesser tubercle. Simple and easy to sketch by hand."
-
-2. Display the image
-
-3. Provide instructions:
-   "Here's your reference. Sketch along with me:
-   
-   **Step 1: Scapula outline**
-   - Draw a triangle for the scapula body
-   - Add the spine running across horizontally
-   - Add the acromion hooking over the top
-   
-   **Step 2: Humerus**
-   - Draw a cylinder coming off laterally
-   - Mark the greater tubercle (lateral bump)
-   - Mark the lesser tubercle (anterior bump)
-   
-   **Step 3: Mark attachment sites**
-   - Supraspinatus fossa (above spine)
-   - Infraspinatus fossa (below spine)  
-   - Subscapularis fossa (anterior surface)
-   - Teres minor area (lateral border)
-   
-   **Step 4: Draw muscle lines**
-   - Supraspinatus: fossa → greater tubercle (top)
-   - Infraspinatus: fossa → greater tubercle (middle)
-   - Teres minor: lateral border → greater tubercle (bottom)
-   - Subscapularis: anterior scapula → lesser tubercle
-   
-   **Step 5: Label**
-   - Label each muscle
-   - Label O and I points
-   - Add action arrows if helpful"
+1. **ONE step at a time** — never give multiple drawing steps at once
+2. **Wait for "done"** — don't proceed until user confirms
+3. **Simple shapes only** — rectangle, triangle, oval, dot, line
+4. **Explain as you go** — "This is the [X], it's where [Y] attaches"
+5. **Build landmarks first** — before any muscles
+6. **Check understanding** — after key landmarks, ask "what attaches here?"
 
 ---
 
-## Image Style Requirements
+## Example: Posterior Pelvis
 
-**DO:**
-- Simple line drawings
-- Black on white
-- Clear landmarks
-- Anatomically accurate but simplified
-- Easy to replicate by hand
+### Step 1
+**GPT:** "Let's build the posterior pelvis. Start with the sacrum.
 
-**DON'T:**
-- Photorealistic images
-- Complex shading
-- Color (unless specifically requested)
-- Too much detail
-- 3D rendered images
+Draw a **rectangle** in the center of your page — about 2 inches tall, 1 inch wide. This is the sacrum.
+
+Draw it, then say 'done'."
+
+**User:** "Done"
+
+### Step 2
+**GPT:** "Good. Label it 'SACRUM' on the side.
+
+Now draw **two diagonal lines** going UP and OUT from the top corners of the rectangle — like a V opening upward. Make each line about 2 inches long. These are the iliac wings.
+
+Say 'done' when ready."
+
+**User:** "Done"
+
+### Step 3
+**GPT:** "Now put a **dot** at the top end of each diagonal line. These are your **PSIS** — posterior superior iliac spine. The 'dimples' you can feel on your low back.
+
+Label them 'PSIS'. Done?"
+
+**User:** "Done"
+
+### Step 4
+**GPT:** "Draw a **small oval** at the bottom corner of each iliac wing, below and lateral to the sacrum. These are the **ischial tuberosities** — your 'sit bones.'
+
+Label them 'Ischial tuberosity'. Done?"
+
+**User:** "Done"
+
+### Step 5
+**GPT:** "Put a **dot** between the sacrum and the ischial tuberosity on each side. This is the **ischial spine** — a small bony point.
+
+Label it 'Ischial spine'. Done?"
+
+**User:** "Done"
+
+### Step 6
+**GPT:** "Now draw a **circle** out to the side, about 2 inches lateral to the ischial tuberosity. This is the **greater trochanter** — the bony bump on the side of your hip.
+
+Label it 'Greater trochanter'. Done?"
+
+**User:** "Done"
+
+### Step 7
+**GPT:** "Connect the greater trochanter to the pelvis with a **line going up and medially** — this represents the femoral neck.
+
+Add a **small circle** where the neck meets the pelvis — this is the **femoral head** sitting in the acetabulum.
+
+Done?"
+
+**User:** "Done"
+
+### Checkpoint
+**GPT:** "Let's check your landmarks. Point to each one and tell me:
+
+1. Where is the PSIS?
+2. Where is the ischial tuberosity?
+3. Where is the ischial spine?
+4. Where is the greater trochanter?
+
+Now — which of these is where the hamstrings originate?"
 
 ---
 
-## Views to Use
+## After Landmarks: Add Muscles
 
-| Structure | Best View |
-|-----------|-----------|
-| Rotator cuff | Posterior scapula |
-| Hip muscles | Posterior pelvis |
-| Knee ligaments | Anterior knee, flexed |
-| Ankle | Lateral and medial views |
-| Spine | Lateral view |
-| Brachial plexus | Anterior neck/shoulder |
+Once landmarks are solid, layer muscles the same way:
 
----
+**GPT:** "Now let's add piriformis.
 
-## Workflow
+Draw a **line from the anterior sacrum** (front of your rectangle) going **laterally to the greater trochanter** (your lateral circle).
 
-```
-User: "draw [structure]"
-     ↓
-GPT: Generates simple line drawing image
-     ↓
-GPT: Displays image
-     ↓
-GPT: "Here's your reference. Sketch along:"
-     ↓
-GPT: Step-by-step instructions (5-6 steps)
-     ↓
-User: Sketches while looking at image
-     ↓
-GPT: "Now label: [list key structures]"
-     ↓
-User: Adds labels
-     ↓
-GPT: "What does [structure] do?" (Seed-Lock)
-```
+This is piriformis — it runs from sacrum to greater trochanter.
+
+Draw it, then tell me: what does piriformis do?"
 
 ---
 
@@ -133,30 +152,33 @@ GPT: "What does [structure] do?" (Seed-Lock)
 
 | Command | Action |
 |---------|--------|
-| `draw [structure]` | Generate image + sketch instructions |
-| `another view` | Generate different angle |
-| `simpler` | Regenerate with less detail |
-| `label` | Get labeling checklist |
+| `draw [region]` | Start step-by-step drawing session |
+| `done` | Confirm step complete, get next instruction |
+| `wait` | Pause, need more time |
+| `show me` | Repeat current step |
+| `back` | Go back one step |
+| `check` | Review landmarks so far |
 
 ---
 
-## Integration with Anatomy Engine
+## What NOT To Do
 
-Drawing happens during **M4 Build** phase, after landmarks are mapped:
-
-1. Bones identified ✓
-2. Landmarks located ✓
-3. **→ Draw the region** (you are here)
-4. Attachments mapped on your drawing
-5. OIAN layered on
-6. Clinical patterns added
-
-The drawing becomes YOUR mental atlas — not a picture you looked at, but one you created.
+- ❌ Don't generate AI images
+- ❌ Don't give multiple steps at once
+- ❌ Don't use complex shapes
+- ❌ Don't proceed without "done" confirmation
+- ❌ Don't skip landmark labeling
+- ❌ Don't add muscles before landmarks are set
 
 ---
 
-## Key Principle
+## Why This Works
 
-**You must draw it yourself.** 
+1. **Active construction** — you build it, you own it
+2. **Spatial encoding** — drawing creates mental map
+3. **Chunked learning** — one piece at a time
+4. **Immediate feedback** — check after each step
+5. **Landmark-first** — matches anatomy engine protocol
+6. **Retrieval practice** — "what attaches here?" questions
 
-The generated image is a REFERENCE, not a replacement. Looking at an image ≠ learning. Sketching it yourself = spatial encoding + memory + ownership.
+The goal: after drawing it yourself, you can visualize the structure with your eyes closed and "read off" the attachments from your mental image.
