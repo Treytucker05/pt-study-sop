@@ -1,131 +1,120 @@
-# Drawing for Anatomy — Visual Sketch Protocol
+# Drawing for Anatomy — Progressive Build Protocol
 
 ## Purpose
-Generate simple, clean reference images that the user can sketch from to build spatial understanding of anatomy.
+AI generates simple schematic images step-by-step, user copies each step onto paper. Images build progressively — each new image includes everything from before plus one new element.
 
 ---
 
 ## How It Works
 
-When user says "draw" or requests a drawing:
-
-1. **Generate an image** using DALL-E — simple, clean line drawing style
-2. **Display the image** for user to reference
-3. **Provide sketch instructions** — step-by-step what to draw
-4. **Label together** — user adds labels as they draw
+1. **AI generates image** — simple schematic showing current step
+2. **AI provides instruction** — "Copy this onto your paper. This is the [structure]."
+3. **User draws it** — copies the AI image onto paper
+4. **User says "done"**
+5. **AI generates NEXT image** — shows previous content + new addition
+6. **AI provides next instruction**
+7. **Repeat** — until complete structure with all landmarks is built
 
 ---
 
-## Image Generation Prompt Template
+## Image Requirements
 
-When generating anatomy drawings, use this style:
+**Style:**
+- Simple schematic/diagrammatic (NOT realistic anatomy)
+- Black lines on white background
+- Clean, minimal, easy to copy
+- Labels directly on the image
+
+**AI decides the best representation:**
+- What shape represents each structure
+- How to show landmarks clearly
+- What proportions work best
+- How to label clearly
+
+**Each image must:**
+- Include ALL previous steps
+- Add ONE new element highlighted or indicated
+- Have labels on the image itself
+- Be simple enough to sketch quickly
+
+---
+
+## Prompt Template for AI Image Generation
 
 ```
-Simple black and white line drawing for medical education. 
-Clean, minimal style like a textbook diagram. 
-White background. 
-No shading, no color, just outlines.
-[SPECIFIC STRUCTURE] shown from [VIEW/ANGLE].
-Key landmarks clearly visible.
-Simple and easy to sketch by hand.
+Simple black and white schematic diagram for anatomy education.
+NOT realistic — use basic geometric shapes.
+White background, black lines only.
+This is step [X] of building [REGION].
+
+Show: [ALL PREVIOUS ELEMENTS]
+Add: [NEW ELEMENT FOR THIS STEP]
+Label: [WHAT TO LABEL]
+
+Style: Clean, minimal, easy to hand-copy. Labels on image.
 ```
 
 ---
 
-## Example: Rotator Cuff
+## Example Sequence: Posterior Pelvis
 
-**User:** "Draw the rotator cuff"
+### Step 1 — Sacrum
+**AI generates:** Simple shape representing sacrum (centered)
+**AI says:** "Copy this onto your paper. This is the sacrum — the base of our pelvis drawing."
+**User:** Draws it, says "done"
 
-**GPT Action:**
-1. Generate image with prompt:
-   "Simple black and white line drawing for medical education. Clean, minimal style like a textbook diagram. White background. No shading, no color, just outlines. Posterior view of scapula and humerus showing rotator cuff muscle attachment sites. Key landmarks clearly visible: spine of scapula, acromion, greater tubercle, lesser tubercle. Simple and easy to sketch by hand."
+### Step 2 — Iliac Wings
+**AI generates:** Previous sacrum + two wing shapes extending up and lateral
+**AI says:** "Now add the iliac wings extending from the sacrum. Copy what you see."
+**User:** Draws it, says "done"
 
-2. Display the image
+### Step 3 — PSIS
+**AI generates:** Previous drawing + dots/markers at the top of each iliac wing, labeled "PSIS"
+**AI says:** "Add the PSIS — posterior superior iliac spine — at the top of each wing. These are the 'dimples' of your low back."
+**User:** Draws it, says "done"
 
-3. Provide instructions:
-   "Here's your reference. Sketch along with me:
-   
-   **Step 1: Scapula outline**
-   - Draw a triangle for the scapula body
-   - Add the spine running across horizontally
-   - Add the acromion hooking over the top
-   
-   **Step 2: Humerus**
-   - Draw a cylinder coming off laterally
-   - Mark the greater tubercle (lateral bump)
-   - Mark the lesser tubercle (anterior bump)
-   
-   **Step 3: Mark attachment sites**
-   - Supraspinatus fossa (above spine)
-   - Infraspinatus fossa (below spine)  
-   - Subscapularis fossa (anterior surface)
-   - Teres minor area (lateral border)
-   
-   **Step 4: Draw muscle lines**
-   - Supraspinatus: fossa → greater tubercle (top)
-   - Infraspinatus: fossa → greater tubercle (middle)
-   - Teres minor: lateral border → greater tubercle (bottom)
-   - Subscapularis: anterior scapula → lesser tubercle
-   
-   **Step 5: Label**
-   - Label each muscle
-   - Label O and I points
-   - Add action arrows if helpful"
+### Step 4 — Ischial Tuberosity
+**AI generates:** Previous drawing + oval shapes at the bottom, labeled "Ischial tuberosity"
+**AI says:** "Add the ischial tuberosities — your sit bones — at the inferior part of the pelvis."
+**User:** Draws it, says "done"
 
----
+### Step 5 — Ischial Spine
+**AI generates:** Previous drawing + small markers between sacrum and ischial tuberosity, labeled "Ischial spine"
+**AI says:** "Add the ischial spine — a small bony projection between the sacrum and sit bone."
+**User:** Draws it, says "done"
 
-## Image Style Requirements
+### Step 6 — Greater Trochanter
+**AI generates:** Previous drawing + circles lateral to pelvis, labeled "Greater trochanter"
+**AI says:** "Add the greater trochanter — the bony bump on the lateral hip."
+**User:** Draws it, says "done"
 
-**DO:**
-- Simple line drawings
-- Black on white
-- Clear landmarks
-- Anatomically accurate but simplified
-- Easy to replicate by hand
+### Step 7 — Femoral Head/Neck
+**AI generates:** Previous drawing + femoral head in acetabulum with neck connecting to greater trochanter
+**AI says:** "Add the femoral head sitting in the hip socket, with the neck connecting to the greater trochanter."
+**User:** Draws it, says "done"
 
-**DON'T:**
-- Photorealistic images
-- Complex shading
-- Color (unless specifically requested)
-- Too much detail
-- 3D rendered images
+### Checkpoint
+**AI says:** "Your landmark drawing is complete. Point to each landmark on your paper:
+- PSIS
+- Ischial tuberosity  
+- Ischial spine
+- Greater trochanter
+
+Now tell me: where do the hamstrings originate?"
 
 ---
 
-## Views to Use
+## After Landmarks: Add Muscles
 
-| Structure | Best View |
-|-----------|-----------|
-| Rotator cuff | Posterior scapula |
-| Hip muscles | Posterior pelvis |
-| Knee ligaments | Anterior knee, flexed |
-| Ankle | Lateral and medial views |
-| Spine | Lateral view |
-| Brachial plexus | Anterior neck/shoulder |
+Continue the same process, layering muscles onto the landmark drawing:
 
----
+### Step 8 — Piriformis
+**AI generates:** Previous drawing + line from sacrum to greater trochanter, labeled "Piriformis"
+**AI says:** "Add piriformis — runs from the anterior sacrum to the greater trochanter. This is your key reference muscle for the deep gluteal region."
+**User:** Draws it, says "done"
 
-## Workflow
-
-```
-User: "draw [structure]"
-     ↓
-GPT: Generates simple line drawing image
-     ↓
-GPT: Displays image
-     ↓
-GPT: "Here's your reference. Sketch along:"
-     ↓
-GPT: Step-by-step instructions (5-6 steps)
-     ↓
-User: Sketches while looking at image
-     ↓
-GPT: "Now label: [list key structures]"
-     ↓
-User: Adds labels
-     ↓
-GPT: "What does [structure] do?" (Seed-Lock)
-```
+### Step 9 — Next muscle...
+(Continue building)
 
 ---
 
@@ -133,30 +122,49 @@ GPT: "What does [structure] do?" (Seed-Lock)
 
 | Command | Action |
 |---------|--------|
-| `draw [structure]` | Generate image + sketch instructions |
-| `another view` | Generate different angle |
-| `simpler` | Regenerate with less detail |
-| `label` | Get labeling checklist |
+| `draw [region]` | Start progressive drawing session |
+| `done` | Confirm step complete, get next image |
+| `wait` | Pause, need more time |
+| `again` | Regenerate current step image |
+| `back` | Go back one step |
+| `check` | Review what we've built so far |
+| `finish` | Show final complete image |
 
 ---
 
-## Integration with Anatomy Engine
+## Rules for GPT
 
-Drawing happens during **M4 Build** phase, after landmarks are mapped:
-
-1. Bones identified ✓
-2. Landmarks located ✓
-3. **→ Draw the region** (you are here)
-4. Attachments mapped on your drawing
-5. OIAN layered on
-6. Clinical patterns added
-
-The drawing becomes YOUR mental atlas — not a picture you looked at, but one you created.
+1. **Generate a new image for EACH step** — every step gets its own image
+2. **Each image includes all previous content** — progressive building
+3. **ONE new element per step** — don't add multiple things at once
+4. **Wait for "done"** — don't proceed until user confirms
+5. **Labels on the image** — not just in text
+6. **AI chooses best representation** — decide what shapes work best
+7. **Landmarks before muscles** — always
+8. **Check understanding** — ask "what attaches here?" after key landmarks
 
 ---
 
-## Key Principle
+## What NOT To Do
 
-**You must draw it yourself.** 
+- ❌ Don't give text-only instructions without an image
+- ❌ Don't show the complete drawing all at once
+- ❌ Don't use realistic/complex anatomy images
+- ❌ Don't proceed without "done" confirmation
+- ❌ Don't add multiple elements in one step
+- ❌ Don't skip labeling on the image
+- ❌ Don't add muscles before landmarks are complete
 
-The generated image is a REFERENCE, not a replacement. Looking at an image ≠ learning. Sketching it yourself = spatial encoding + memory + ownership.
+---
+
+## Why This Works
+
+1. **Progressive construction** — builds piece by piece
+2. **Visual reference** — you see exactly what to draw
+3. **Active copying** — you're drawing, not just looking
+4. **Spatial encoding** — you build the mental map
+5. **Chunked learning** — one element at a time
+6. **Cumulative images** — each step reinforces previous steps
+7. **Labeled landmarks** — attachment points are explicit
+
+The final result: you have a hand-drawn schematic with all landmarks labeled, AND you built it yourself so you understand the spatial relationships.
