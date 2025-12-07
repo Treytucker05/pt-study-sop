@@ -38,6 +38,11 @@ All notable changes to the PT Study SOP.
 - ❌ NO clinical patterns before OIAN stable
 - ❌ NO muscle-first approaches for anatomy
 
+### Removed
+- Deleted duplicate `brain/dashboard_web_new.py` in favor of the primary dashboard entry point.
+- Removed redundant `archive/v8.6_backup/` snapshot and old archive ZIP to reduce clutter.
+- Trimmed archived session log PDFs, keeping the markdown sources only.
+
 ---
 
 ## [9.0] - 2025-12-05 "Structured Architect"
