@@ -11,8 +11,10 @@ Everything you need to set up and run the PT Study Tutor system (general-first; 
 **Knowledge files:** Upload ALL 14 files from the `gpt-knowledge/` folder.
 
 ### 2. Set Up Brain (Session Tracking)
+Use the root-level `brain/` (authoritative copy) for ingesting session logs and running the dashboard.
+
 ```powershell
-cd releases/v9.1/brain
+cd brain
 python db_setup.py
 ```
 
@@ -46,16 +48,6 @@ v9.1/
     M-series.md
     levels.md
     drawing-for-anatomy.md
-- brain/                     # Session tracking system
-    config.py
-    db_setup.py
-    ingest_session.py
-    generate_resume.py
-    README.md
-    session_logs/
-        TEMPLATE.md
-    data/                    # Database goes here
-    output/                  # Resume output goes here
 README.md (this file)
 ```
 
