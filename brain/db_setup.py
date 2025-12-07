@@ -29,8 +29,10 @@ def init_database():
             -- Session Info
             session_date TEXT NOT NULL,
             session_time TEXT NOT NULL,
-            duration_minutes INTEGER NOT NULL,
+            time_spent_minutes INTEGER NOT NULL DEFAULT 0,
+            duration_minutes INTEGER DEFAULT 0,
             study_mode TEXT NOT NULL,
+            topic TEXT,
             
             -- Planning Phase (v9.1)
             target_exam TEXT,
@@ -38,7 +40,7 @@ def init_database():
             plan_of_attack TEXT,
             
             -- Topic Coverage
-            main_topic TEXT NOT NULL,
+            main_topic TEXT,
             subtopics TEXT,
             
             -- Execution Details
@@ -95,6 +97,10 @@ def init_database():
         cursor.execute("ALTER TABLE sessions ADD COLUMN source_snippets_used TEXT")
     if 'weak_anchors' not in columns:
         cursor.execute("ALTER TABLE sessions ADD COLUMN weak_anchors TEXT")
+    if 'topic' not in columns:
+        cursor.execute("ALTER TABLE sessions ADD COLUMN topic TEXT")
+    if 'time_spent_minutes' not in columns:
+        cursor.execute("ALTER TABLE sessions ADD COLUMN time_spent_minutes INTEGER DEFAULT 0")
     
     # Create indexes for common queries
     cursor.execute('''

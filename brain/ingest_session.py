@@ -8,9 +8,60 @@ import sqlite3
 import os
 import re
 import sys
+from pathlib import Path
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'pt_study.db')
+
+def parse_markdown_session(filepath):
+    """
+    Lightweight parser for the simplified session markdown used in tests.
+    Accepts mixed casing on labels and normalizes Yes/No and study mode casing.
+    Raises ValueError when a required field (Date) is missing.
+    """
+    text = Path(filepath).read_text(encoding="utf-8")
+
+    def grab(pattern, default=""):
+        match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+        return match.group(1).strip() if match else default
+
+    def grab_block(pattern, default=""):
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        return match.group(1).strip() if match else default
+
+    def grab_int(pattern):
+        val = grab(pattern, "")
+        return int(val) if val.isdigit() else 0
+
+    def normalize_yes_no(val):
+        val = val.strip()
+        if not val:
+            return ""
+        return "Yes" if val.lower().startswith("y") else "No" if val.lower().startswith("n") else val
+
+    session_date = grab(r"-\s*Date:\s*(.+)")
+    if not session_date:
+        raise ValueError("Date not found in session log")
+
+    data = {
+        "session_date": session_date,
+        "session_time": grab(r"-\s*Time:\s*(.+)"),
+        "topic": grab(r"-\s*Topic:\s*(.+)"),
+        "study_mode": grab(r"-\s*Study\s+Mode:\s*(.+)").title(),
+        "time_spent_minutes": grab_int(r"-\s*Time\s+Spent:\s*(\d+)"),
+        "frameworks_used": grab(r"-\s*Frameworks\s+Used:\s*(.+)"),
+        "gated_platter_triggered": normalize_yes_no(grab(r"-\s*Gated\s+Platter\s+Triggered:\s*(.+)")),
+        "wrap_phase_reached": normalize_yes_no(grab(r"-\s*WRAP\s+Phase\s+Reached:\s*(.+)")),
+        "anki_cards_count": grab_int(r"-\s*Anki\s+Cards\s+Created:\s*(\d+)"),
+        "understanding_level": grab_int(r"-\s*Understanding\s+Level:\s*(\d+)"),
+        "retention_confidence": grab_int(r"-\s*Retention\s+Confidence:\s*(\d+)"),
+        "system_performance": grab_int(r"-\s*System\s+Performance:\s*(\d+)"),
+        "what_worked": grab_block(r"###\s*What Worked\s*(.+?)(?=###|$)", ""),
+        "what_needs_fixing": grab_block(r"###\s*What Needs Fixing\s*(.+?)(?=###|$)", ""),
+        "notes_insights": grab_block(r"###\s*Notes/Insights\s*(.+?)(?=###|$)", ""),
+    }
+
+    return data
 
 def parse_session_log(filepath):
     """
@@ -52,6 +103,7 @@ def parse_session_log(filepath):
     
     duration_str = extract_field(r'-\s*Duration:\s*(\d+)', content)
     data['duration_minutes'] = int(duration_str) if duration_str else 0
+    data['time_spent_minutes'] = data['duration_minutes']
     
     data['study_mode'] = extract_field(r'-\s*Study Mode:\s*(.+)', content)
     
@@ -62,6 +114,7 @@ def parse_session_log(filepath):
     
     # Topic Coverage
     data['main_topic'] = extract_field(r'-\s*Main Topic:\s*(.+)', content)
+    data['topic'] = data.get('main_topic') or ''
     data['subtopics'] = extract_field(r'-\s*Subtopics:\s*(.+)', content)
     
     # Execution Details
@@ -138,7 +191,18 @@ def validate_session_data(data):
     Validate required fields are present.
     Returns (is_valid, error_message).
     """
-    required = ['session_date', 'main_topic', 'study_mode']
+    # Normalize aliases/fallbacks
+    if not data.get('topic') and data.get('main_topic'):
+        data['topic'] = data['main_topic']
+    if not data.get('main_topic') and data.get('topic'):
+        data['main_topic'] = data['topic']
+    if 'time_spent_minutes' not in data and 'duration_minutes' in data:
+        data['time_spent_minutes'] = data.get('duration_minutes', 0)
+    # Normalize study mode casing
+    if data.get('study_mode'):
+        data['study_mode'] = data['study_mode'].title()
+
+    required = ['session_date', 'topic', 'study_mode']
     missing = [f for f in required if not data.get(f)]
     
     if missing:
@@ -181,30 +245,31 @@ def insert_session(data):
     cursor = conn.cursor()
     
     try:
-        placeholders = ", ".join(["?"] * 37)
-        cursor.execute(f'''
-            INSERT INTO sessions (
-                session_date, session_time, duration_minutes, study_mode,
-                target_exam, source_lock, plan_of_attack,
-                main_topic, subtopics,
-                frameworks_used, gated_platter_triggered, wrap_phase_reached, anki_cards_count,
-                off_source_drift, source_snippets_used,
-                region_covered, landmarks_mastered, muscles_attached, oian_completed_for,
-                rollback_events, drawing_used, drawings_completed,
-                understanding_level, retention_confidence, system_performance, calibration_check,
-                anchors_locked, weak_anchors,
-                what_worked, what_needs_fixing, gaps_identified, notes_insights,
-                next_topic, next_focus, next_materials,
-                created_at, schema_version
-            ) VALUES ({placeholders})
-        ''', (
+        columns = [
+            'session_date', 'session_time', 'time_spent_minutes', 'duration_minutes', 'study_mode',
+            'target_exam', 'source_lock', 'plan_of_attack',
+            'topic', 'main_topic', 'subtopics',
+            'frameworks_used', 'gated_platter_triggered', 'wrap_phase_reached', 'anki_cards_count',
+            'off_source_drift', 'source_snippets_used',
+            'region_covered', 'landmarks_mastered', 'muscles_attached', 'oian_completed_for',
+            'rollback_events', 'drawing_used', 'drawings_completed',
+            'understanding_level', 'retention_confidence', 'system_performance', 'calibration_check',
+            'anchors_locked', 'weak_anchors',
+            'what_worked', 'what_needs_fixing', 'gaps_identified', 'notes_insights',
+            'next_topic', 'next_focus', 'next_materials',
+            'created_at', 'schema_version'
+        ]
+        placeholders = ", ".join(["?"] * len(columns))
+        values = (
             data.get('session_date'),
             data.get('session_time', ''),
-            data.get('duration_minutes', 0),
+            data.get('time_spent_minutes', data.get('duration_minutes', 0)),
+            data.get('duration_minutes', data.get('time_spent_minutes', 0)),
             data.get('study_mode'),
             data.get('target_exam', ''),
             data.get('source_lock', ''),
             data.get('plan_of_attack', ''),
+            data.get('topic'),
             data.get('main_topic'),
             data.get('subtopics', ''),
             data.get('frameworks_used', ''),
@@ -235,7 +300,8 @@ def insert_session(data):
             data.get('next_materials', ''),
             data.get('created_at'),
             data.get('schema_version', '9.1')
-        ))
+        )
+        cursor.execute(f'''INSERT INTO sessions ({", ".join(columns)}) VALUES ({placeholders})''', values)
         
         conn.commit()
         session_id = cursor.lastrowid

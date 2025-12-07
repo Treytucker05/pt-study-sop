@@ -98,6 +98,11 @@ pt-study-sop/
 
 ---
 
+## Housekeeping (safe deletes)
+- `__pycache__/`, `.pytest_cache/` (auto-regenerated)
+- `brain/data/`, `brain/output/`, `brain/session_logs/` (generated; back up logs before deleting)
+- `archive/*.zip` are cold-storage copies of old versions; unzip only if you need them.
+
 ## Links
 
 - **GitHub:** https://github.com/Treytucker05/pt-study-sop

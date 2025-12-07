@@ -1,5 +1,5 @@
 import sys
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 import pytest
@@ -32,9 +32,9 @@ def sample_sessions(temp_db):
     conn = db_setup.get_connection()
     cursor = conn.cursor()
     rows = [
-        ("2024-02-15", "10:00", "Topic B", "Sprint", 50, "", "No", "No", 3, 4, 4, 4, "", "", "", datetime.utcnow().isoformat()),
-        ("2024-01-01", "09:00", "Topic C", "Drill", 30, "", "No", "No", 1, 2, 2, 2, "", "", "", datetime.utcnow().isoformat()),
-        ("2023-12-31", "20:00", "Topic A", "Core", 40, "", "No", "No", 2, 5, 5, 5, "", "", "", datetime.utcnow().isoformat()),
+            ("2024-02-15", "10:00", "Topic B", "Sprint", 50, "", "No", "No", 3, 4, 4, 4, "", "", "", datetime.now(UTC).isoformat()),
+            ("2024-01-01", "09:00", "Topic C", "Drill", 30, "", "No", "No", 1, 2, 2, 2, "", "", "", datetime.now(UTC).isoformat()),
+            ("2023-12-31", "20:00", "Topic A", "Core", 40, "", "No", "No", 2, 5, 5, 5, "", "", "", datetime.now(UTC).isoformat()),
     ]
     cursor.executemany(
         """

@@ -342,7 +342,10 @@ def display_trends(sessions):
         print("  Not enough data to show trends (need at least 2 sessions).")
         return
 
-    sorted_sessions = sort_sessions_chronologically(sessions)
+    if not any(s.get('session_date') for s in sessions):
+        sorted_sessions = list(reversed(sessions))
+    else:
+        sorted_sessions = sort_sessions_chronologically(sessions)
     window = min(5, len(sorted_sessions) // 2) or 1
     window_note = f"Comparing rolling averages over the last {window} sessions versus the previous {window}."
 

@@ -1,4 +1,0 @@
-# PT Study Brain - Python Dependencies
-# Core scripts previously used only the standard library.
-# The web dashboard adds Flask for the local web server.
-flask>=3.0,<4
