@@ -29,6 +29,13 @@ python generate_resume.py
 # Paste output into GPT for context
 ```
 
+### Dashboard
+```powershell
+python dashboard_web.py
+# Then open http://127.0.0.1:5000 in your browser
+```
+Launch from this folder to ensure the release database and config are used.
+
 ---
 
 ## Directory Structure
