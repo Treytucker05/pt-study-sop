@@ -90,6 +90,7 @@ pt-study-sop/
 |----------|---------|
 | `releases/v9.1/README.md` | Setup and usage guide |
 | `sop/MASTER.md` | Complete system reference |
+| `MASTER_PLAN_PT_STUDY.md` | Stable North Star vision/invariants/contracts |
 | `CHANGELOG.md` | Version history |
 | `GAP_ANALYSIS.md` | Known gaps and future work |
 | `RESEARCH_TOPICS.md` | Learning science research topics |
