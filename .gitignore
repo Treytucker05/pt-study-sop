@@ -1,5 +1,7 @@
 # Python
 __pycache__/
+**/__pycache__/
+.pytest_cache/
 *.py[cod]
 *$py.class
 *.so
@@ -22,6 +24,8 @@ wheels/
 
 # Virtual Environment
 venv/
+.venv/
+.venv*/
 ENV/
 env/
 
@@ -40,6 +44,9 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+brain/data/
+brain/output/
+brain/session_logs/
 
 # Logs
 *.log
