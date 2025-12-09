@@ -32,6 +32,13 @@ Purpose: End-of-session consolidation in 2–10 minutes: recall, error capture, 
 - Ignored outputs → surface wrap notes at next session start; set reminders.
 - Fatigue → if tired, do one recall + schedule next review, then stop.
 
+## Known Pitfalls to Capture in Error Log
+- Jumping ahead before confirming imagery.
+- Image not tied to meaning/function.
+- Orbicularis Oris recall weakness (resolved, watch for relapse).
+- Missing “word + meaning together” step.
+- Jim Kwik Sound → Function → Image → Lock flow not followed.
+
 ## Exit Condition
 - Cards created for misses/weak anchors; next review scheduled; glossary entries captured; errors logged; confidence vs performance checked.
 

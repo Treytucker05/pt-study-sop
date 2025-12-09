@@ -23,7 +23,9 @@ What changed in v9.2 (dev)
 - Manual image drill flow (unlabeled → identify → reveal; misses → cards); live fetch deferred.
 - Glossary capture in Wrap (1–2 sentence defs per region).
 - Runtime prompt and modules M0/M2/M3/M4/M5/M6 updated; anatomy engine updated.
+- Process corrections: Word+Meaning before imagery, Jim Kwik Sound→Function→Image→Lock, one-step gating with resonance confirmation, function-first ordering, mandatory resonance check; Seed-Lock now requires resonance confirmation.
 - Added concept-engine (non-anatomy default), /fade scaffolding, glossary scan, role-switching, calibration check.
 - Added expanded H-series (H1–H8), M-series (M2/M6/M8 + M-SRL/ADDIE/STAR), and Y-series (Y1–Y4).
 - Combined bundle regenerated: PT_Study_SOP_v9.2_DEV.md.
 - Tests: `python -m pytest brain/tests` (pass).
+

@@ -25,6 +25,20 @@ Purpose: Turn mapped buckets into understanding using function-first framing and
 - Misconceptions → immediate feedback; for high-precision facts, correct quickly.
 - Illusion of knowing → require recall/teach-back; spaced rechecks.
 
+## Process Corrections (v9.2)
+- Word + Meaning together before imagery to trigger accurate hooks.
+- Jim Kwik flow enforced: Sound → Function → Image → Lock (matches M3 dual code).
+- One-step gating: do not advance without user approval on Sound, Function, Image, Resonance, Lock.
+- Function-first ordering: image creation only after true action is stated.
+- Resonance check: user confirms the hook “sounds right” and “feels right” before locking.
+
+### Enforcement Checklist
+1) Capture phonetic seed (sound-alike).  
+2) State true function/action.  
+3) Build imagery tied to that function.  
+4) User resonance confirm.  
+5) Lock (card/hook logged) before next step.
+
 ## Default Framework
 - Use M2 (Trigger → Mechanism → Result → Implication) unless another M-series fits better; always function before structure.
 

@@ -216,6 +216,7 @@ All landmark learning is VISUAL-FIRST:
 
 ### Seed-Lock
 User must supply their own hook/metaphor/connection before AI builds further. Prevents passive consumption.
+Seed-Lock now requires resonance confirmation before advancement.
 
 ### Gated Platter
 If user stalls and can't produce a Seed:
