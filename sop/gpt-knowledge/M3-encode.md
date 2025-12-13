@@ -27,6 +27,7 @@ Purpose: Turn mapped buckets into understanding using function-first framing and
 
 ## Process Corrections (v9.2)
 - Word + Meaning together before imagery to trigger accurate hooks.
+- When creating memory hooks, runtime may invoke the KWIK Core Learning Module (Sound → Function → Image → Resonance → Lock) as the canonical flow.
 - Jim Kwik flow enforced: Sound → Function → Image → Lock (matches M3 dual code).
 - One-step gating: do not advance without user approval on Sound, Function, Image, Resonance, Lock.
 - Function-first ordering: image creation only after true action is stated.
