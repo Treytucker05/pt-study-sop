@@ -9,10 +9,12 @@
 
 | File | Purpose |
 |------|---------|
+| `MASTER.md` | Template/index for the PT Study SOP set |
 | `gpt-instructions.md` | CustomGPT system prompt (paste into GPT settings) |
 | `runtime-prompt.md` | Session start script (paste at beginning of each session) |
-| `modules/M0-M6` | Protocol steps in sequence |
-| `modules/anatomy-engine.md` | Specialized anatomy learning protocol |
+| Core Learning Modules (`PERRO.md`, `KWIK.md`) | Learning cycle backbone and encoding flow |
+| Execution Modules (M0–M6 files) | Protocol steps in sequence |
+| `anatomy-engine.md` | Specialized anatomy learning protocol |
 | `frameworks/` | H-Series, M-Series, Y-Series reference |
 | `methods/` | Learning science foundations |
 | `examples/` | Dialogue examples and command reference |
@@ -177,7 +179,7 @@ M0 (Planning) → Anatomy Engine → M6 (Wrap)
 
 ## Anatomy Learning Engine
 
-> **See full documentation:** `modules/anatomy-engine.md`
+> **See full documentation:** `anatomy-engine.md`
 
 ### Primary Goal for Anatomy
 Build a **clean mental atlas** of every exam-relevant bone landmark, where each landmark sits in space, and what muscles attach to that landmark — BEFORE trying to memorize OIAN lists.
@@ -340,7 +342,9 @@ sop/
 ├── MASTER.md              ← You are here
 ├── gpt-instructions.md    ← CustomGPT system prompt
 ├── runtime-prompt.md      ← Session start script
-├── modules/
+├── PERRO.md               ← Core Learning Module: learning cycle
+├── KWIK.md                ← Core Learning Module: encoding flow
+├── Execution Modules/
 │   ├── M0-planning.md     ← NEW: Planning phase
 │   ├── M1-entry.md
 │   ├── M2-prime.md
@@ -352,6 +356,7 @@ sop/
 ├── frameworks/
 │   ├── H-series.md
 │   ├── M-series.md
+│   ├── Y-series.md
 │   └── levels.md
 ├── methods/
 │   ├── desirable-difficulties.md
@@ -366,6 +371,6 @@ sop/
 ```
 
 ## Versioning / Canonical Source
-- Canonical frameworks and modes now live in sop/ (H-series, M-series, levels, modules).
+- Canonical frameworks and modes now live in sop/ (H-series, M-series, Y-series, levels, execution modules M0–M6).
 - Releases/v9.1 gpt-knowledge and archive/v8.* files are kept only for historical reference; content has been merged forward.
 
