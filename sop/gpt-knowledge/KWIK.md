@@ -32,3 +32,20 @@ The Kwik method anchors memory hooks by moving from a phonetic cue through funct
 - When encountering complex or new terms that need a sound-alike hook before meaning.
 - Whenever a Seed-Lock or card is being created and must be gated through resonance.
 - When enforcing function-first, dual-code encoding that requires imagery tied to meaning.
+
+# Scope & Boundaries
+- Use KWIK to encode difficult terms, labels, anatomy, or symbols that need durable recall.
+- Require meaning/function before imagery; imagery must stay tied to the confirmed function.
+- Combine verbal and visual cues to create retrieval anchors.
+- Apply KWIK only during Encode.
+- Motivation or state-setting is allowed only when brief and directly tied to Encode.
+- Mnemonics are allowed only after understanding is demonstrated.
+- Speed-reading techniques are for Prepare previewing, not for deep Encode steps.
+- Do not use KWIK to memorize without understanding.
+- Do not create imagery during Retrieve or testing phases.
+- Do not use motivation rituals or inspirational content as substitutes for study.
+- Avoid over-elaborate mnemonic construction that delays learning progress.
+
+## Evidence Signals
+- Helping: fast, meaningful recall where imagery triggers the correct function.
+- Hurting: recalling an image without meaning, confusing similar items, or feeling confident without retrieval success.
