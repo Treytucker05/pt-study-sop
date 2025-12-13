@@ -19,6 +19,15 @@
 
 ---
 
+## Core Learning Modules
+
+- PERRO — Core Learning Module
+- KWIK — Core Learning Module
+
+These modules are foundational and are wrapped by the execution modules and engines.
+
+---
+
 ## System Overview
 
 ### What This Is
