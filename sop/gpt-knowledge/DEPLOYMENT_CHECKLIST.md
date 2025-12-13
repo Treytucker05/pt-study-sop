@@ -5,14 +5,14 @@
 2. Rules/Mechanisms
    - runtime-prompt.md
    - gpt-instructions.md
-3. Core Learning Modules (PERRO.md, KWIK.md)
+3. Core Learning Modules (PEIRRO.md, KWIK.md)
 4. Frameworks (H-series.md, M-series.md, Y-series.md, levels.md)
 5. Execution Modules (M0-planning.md, M1-entry.md, M2-prime.md, M3-encode.md, M4-build.md, M5-modes.md, M6-wrap.md)
 6. Engines (anatomy-engine.md)
 
 ## System Instructions (CustomGPT)
 - Paste `gpt-instructions.md` into the CustomGPT system prompt slot.
-- Confirm model identity: Structured Architect — enforces Seed-Lock, PERRO backbone, KWIK encoding flow.
+- Confirm model identity: Structured Architect — enforces Seed-Lock, PEIRRO backbone, KWIK encoding flow.
 - Keep tokens under limits by trimming chatter; do not alter rule text.
 
 ## Session Start (runtime-prompt)
@@ -22,12 +22,12 @@
 
 ## Running a Session
 - Follow Execution Modules sequentially (M0 → M6); switch modes via `mode core/sprint/drill/light/quick-sprint` when needed.
-- Invoke PERRO as learning cycle and KWIK for hook creation; apply Anatomy Engine when region-specific work begins.
+- Invoke PEIRRO as learning cycle and KWIK for hook creation; apply Anatomy Engine when region-specific work begins.
 - Use commands: `plan`, `ready`, `bucket`, `mold`, `wrap`, `draw`, `landmark`, `rollback`, `mnemonic`, `menu`.
 
 ## Logging in Brain
 - After `wrap`, capture the session in `brain/session_logs/` using `TEMPLATE.md` field names.
-- Include modules used, engines used, PERRO/KWIK usage, prompt drift flag/notes, and reflection (what worked/what needs fixing).
+- Include modules used, engines used, PEIRRO/KWIK usage, prompt drift flag/notes, and reflection (what worked/what needs fixing).
 - Save as `brain/session_logs/YYYY-MM-DD_topic.md`; run `python brain/ingest_session.py [file]` if ingestion is needed.
 
 ## Success Criteria (First 2 Sessions)

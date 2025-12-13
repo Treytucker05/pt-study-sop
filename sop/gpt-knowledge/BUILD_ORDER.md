@@ -5,8 +5,8 @@
 2. Rules/Mechanisms
    - runtime-prompt.md
    - gpt-instructions.md
-3. Core Learning Modules (PERRO, KWIK)
-   - PERRO.md
+3. Core Learning Modules (PEIRRO, KWIK)
+   - PEIRRO.md
    - KWIK.md
 4. Frameworks (H-series, M-series, Y-series, levels)
    - H-series.md

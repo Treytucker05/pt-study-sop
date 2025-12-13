@@ -73,4 +73,4 @@ Purpose: Define how AI behavior changes by mode and give quick presets for short
 - Seed-Lock: user supplies hook/metaphor; AI rejects passive acceptance.
 - Function before structure; mark unverified if no source.
 - Insert breaks when accuracy drops/fatigue shows; Light/Quick Sprint are time-boxed by design.
-- Sprint and Drill still run inside the PERRO cycle and may call KWIK for encoding steps when hooks need reinforcement.
+- Sprint and Drill still run inside the PEIRRO cycle and may call KWIK for encoding steps when hooks need reinforcement.

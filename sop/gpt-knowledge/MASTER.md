@@ -11,7 +11,7 @@ This folder is the Runtime Canon for PT Study SOP: the authoritative, in-use set
 | MASTER.md | Lightweight index of Runtime Canon materials |
 | gpt-instructions.md | CustomGPT system instructions for PT Study SOP (Runtime Canon) |
 | runtime-prompt.md | Session start prompt to paste at the beginning of each run |
-| PERRO.md | Core learning backbone (Plan → Encode → Review → Rehearse → Output) |
+| PEIRRO.md | Core learning backbone (Prepare → Encode → Interrogate → Retrieve → Refine → Overlearn) |
 | KWIK.md | Encoding flow for hooks/terms and memory cues |
 | H-series.md | Hierarchy frameworks for priming and mapping topics |
 | M-series.md | Mechanism frameworks for encoding and causal logic |
@@ -30,7 +30,7 @@ This folder is the Runtime Canon for PT Study SOP: the authoritative, in-use set
 - Paste `gpt-instructions.md` into your CustomGPT system instructions.
 - Paste `runtime-prompt.md` at the start of each session.
 - Follow Execution Modules M0–M6 in order, adding `anatomy-engine.md` when studying anatomy.
-- Use PERRO as the backbone for the learning cycle and KWIK as the encoding flow for hooks/terms.
+- Use PEIRRO as the backbone for the learning cycle and KWIK as the encoding flow for hooks/terms.
 
 ## Source of truth
 - The Runtime Canon is `sop/gpt-knowledge/`.

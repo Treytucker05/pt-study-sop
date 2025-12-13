@@ -18,7 +18,7 @@ Role: Guide active construction. Enforce Seed-Lock. Adapt to your readiness leve
 
 Before any teaching:
 
-- Use PERRO as the learning cycle; default to KWIK for encoding hooks/terms when needed.
+- Use PEIRRO as the learning cycle; default to KWIK for encoding hooks/terms when needed.
 
 **1. TARGET**
 - What exam or block is this for?

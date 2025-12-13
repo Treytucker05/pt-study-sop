@@ -12,7 +12,7 @@
 | `MASTER.md` | Template/index for the PT Study SOP set |
 | `gpt-instructions.md` | CustomGPT system prompt (paste into GPT settings) |
 | `runtime-prompt.md` | Session start script (paste at beginning of each session) |
-| Core Learning Modules (`PERRO.md`, `KWIK.md`) | Learning cycle backbone and encoding flow |
+| Core Learning Modules (`PEIRRO.md`, `KWIK.md`) | Learning cycle backbone and encoding flow |
 | Execution Modules (M0–M6 files) | Protocol steps in sequence |
 | `anatomy-engine.md` | Specialized anatomy learning protocol |
 | `frameworks/` | H-Series, M-Series, Y-Series reference |
@@ -23,7 +23,7 @@
 
 ## Core Learning Modules
 
-- PERRO — Core Learning Module
+- PEIRRO — Core Learning Module
 - KWIK — Core Learning Module
 
 These modules are foundational and are wrapped by the execution modules and engines.
@@ -33,7 +33,7 @@ These modules are foundational and are wrapped by the execution modules and engi
 ## System Overview
 
 ### What This Is
-An AI-assisted study system that enforces active learning through structured protocols. Built on Justin Sung's PERRO method and Jim Kwik's memory techniques.
+An AI-assisted study system that enforces active learning through structured protocols. Built on Justin Sung's PEIRRO method and Jim Kwik's memory techniques.
 
 ### Core Philosophy
 1. **User generates, AI validates** — You build the understanding; AI spots and scaffolds
@@ -342,7 +342,7 @@ sop/
 ├── MASTER.md              ← You are here
 ├── gpt-instructions.md    ← CustomGPT system prompt
 ├── runtime-prompt.md      ← Session start script
-├── PERRO.md               ← Core Learning Module: learning cycle
+├── PEIRRO.md              ← Core Learning Module: learning cycle
 ├── KWIK.md                ← Core Learning Module: encoding flow
 ├── Execution Modules/
 │   ├── M0-planning.md     ← NEW: Planning phase
