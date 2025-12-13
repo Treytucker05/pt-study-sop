@@ -33,5 +33,6 @@ This folder is the Runtime Canon for PT Study SOP: the authoritative, in-use set
 - Use PEIRRO as the backbone for the learning cycle and KWIK as the encoding flow for hooks/terms.
 
 ## Source of truth
-- The Runtime Canon is `sop/gpt-knowledge/`.
-- If conflicts exist elsewhere, this folder wins.
+- Runtime Canon = `sop/gpt-knowledge/`.
+- Release snapshots are frozen copies.
+- If conflict: Runtime Canon wins.

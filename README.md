@@ -2,6 +2,12 @@
 > If this document conflicts with Runtime Canon, Runtime Canon wins.
 > This README points to releases; runtime canon is in sop/gpt-knowledge/
 
+## Repository Authority Chain
+
+- Runtime Canon = `sop/gpt-knowledge/`.
+- Release snapshots are frozen copies.
+- If conflict: Runtime Canon wins.
+
 # PT Study SOP
 
 A structured study system for Doctor of Physical Therapy coursework, powered by the PERRIO protocol.
@@ -23,6 +29,8 @@ A structured study system for Doctor of Physical Therapy coursework, powered by 
 5. Start studying
 
 **One-click launcher:** Run `Run_Brain_All.bat` (repo root) to sync logs, regenerate resume, start the dashboard server, and open http://127.0.0.1:5000 automatically. Keep the new "PT Study Brain Dashboard" window open while using the site.
+
+**Release preparation:** Before cutting a new release, run `python scripts/release_check.py` and follow `docs/release/RELEASE_PROCESS.md`.
 
 ---
 
@@ -59,7 +67,7 @@ pt-study-sop/
 | **Level Gating** | Prove understanding at L2 (teach-back) before advancing |
 | **Gated Platter** | If stuck, GPT offers raw metaphor you must personalize |
 | **Planning First** | No teaching until target + sources + plan established |
-| **Anatomy Order** | Bones â†’ Landmarks â†’ Attachments â†’ OIAN â†’ Clinical |
+| **Anatomy Order** | Bones -> Landmarks -> Attachments -> OIAN -> Clinical |
 
 ---
 

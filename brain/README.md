@@ -1,4 +1,4 @@
-﻿# PT Study Brain v9.1
+# PT Study Brain v9.1
 
 Session tracking and analytics system for the PT Study SOP.
 
@@ -35,17 +35,17 @@ python generate_resume.py
 
 ```
 brain/
-â”œâ”€â”€ config.py              â† Configuration settings
-â”œâ”€â”€ db_setup.py            â† Database initialization
-â”œâ”€â”€ ingest_session.py      â† Parse logs â†’ database
-â”œâ”€â”€ generate_resume.py     â† Generate session resume
-â”œâ”€â”€ README.md              â† This file
-â”œâ”€â”€ session_logs/          â† Your session logs
-â”‚   â””â”€â”€ TEMPLATE.md        â† Copy this for each session
-â”œâ”€â”€ data/                  â† Database storage
-â”‚   â””â”€â”€ pt_study.db        â† SQLite database
-â””â”€â”€ output/                â† Generated files
-    â””â”€â”€ session_resume.md  â† Resume for GPT context
+|-- config.py              -> Configuration settings
+|-- db_setup.py            -> Database initialization
+|-- ingest_session.py      -> Parse logs -> database
+|-- generate_resume.py     -> Generate session resume
+|-- README.md              -> This file
+|-- session_logs/          -> Your session logs
+|   `-- TEMPLATE.md        -> Copy this for each session
+|-- data/                  -> Database storage
+|   `-- pt_study.db        -> SQLite database
+`-- output/                -> Generated files
+    `-- session_resume.md  -> Resume for GPT context
 ```
 
 ---
@@ -116,8 +116,8 @@ The resume generator provides:
 ## Database Schema (v9.1)
 
 Key fields added in v9.1:
-- `target_exam` â€” Exam/block being studied for
-- `source_lock` â€” Materials used in session
+- `target_exam` - Exam/block being studied for
+- `source_lock` - Materials used in session
 - `plan_of_attack` - Session plan
 - `region_covered` - Anatomy region
 - `landmarks_mastered` - Landmarks learned
@@ -140,8 +140,8 @@ Key fields added in v9.1:
 | `python ingest_session.py <file>` | Add session to database |
 | `python generate_resume.py` | Generate resume for next session |
 | `python config.py` | Show configuration |
-| `../Run_Brain_Sync.bat` |Run_Brain_Sync.bat | One-click daily sync: move stray logs + ingest all + regenerate resume |
-| ../Run_Brain_All.bat | One-click: sync + resume + start dashboard and open browser (http://127.0.0.1:5000) |
+| `../Run_Brain_Sync.bat` | One-click daily sync: move stray logs + ingest all + regenerate resume |
+| `../Run_Brain_All.bat` | One-click: sync + resume + start dashboard and open browser (http://127.0.0.1:5000) |
 
 ---
 
@@ -154,4 +154,3 @@ python db_setup.py
 ```
 
 Old data is preserved in `sessions_v8` table.
-
