@@ -50,12 +50,17 @@ def parse_markdown_session(filepath):
         "study_mode": grab(r"-\s*Study\s+Mode:\s*(.+)").title(),
         "time_spent_minutes": grab_int(r"-\s*Time\s+Spent:\s*(\d+)"),
         "frameworks_used": grab(r"-\s*Frameworks\s+Used:\s*(.+)"),
+        "sop_modules_used": grab(r"-\s*SOP\s+Modules\s+Used:\s*(.+)"),
+        "engines_used": grab(r"-\s*Engines\s+Used:\s*(.+)"),
+        "core_learning_modules_used": grab(r"-\s*Core\s+Learning\s+Modules\s+Used:\s*(.+)"),
         "gated_platter_triggered": normalize_yes_no(grab(r"-\s*Gated\s+Platter\s+Triggered:\s*(.+)")),
         "wrap_phase_reached": normalize_yes_no(grab(r"-\s*WRAP\s+Phase\s+Reached:\s*(.+)")),
         "anki_cards_count": grab_int(r"-\s*Anki\s+Cards\s+Created:\s*(\d+)"),
         "understanding_level": grab_int(r"-\s*Understanding\s+Level:\s*(\d+)"),
         "retention_confidence": grab_int(r"-\s*Retention\s+Confidence:\s*(\d+)"),
         "system_performance": grab_int(r"-\s*System\s+Performance:\s*(\d+)"),
+        "prompt_drift": normalize_yes_no(grab(r"-\s*Prompt\s+Drift\?\s*\(Y/N\):\s*(.+)")),
+        "prompt_drift_notes": grab(r"-\s*Prompt\s+Drift\s+Notes:\s*(.+)"),
         "what_worked": grab_block(r"###\s*What Worked\s*(.+?)(?=###|$)", ""),
         "what_needs_fixing": grab_block(r"###\s*What Needs Fixing\s*(.+?)(?=###|$)", ""),
         "notes_insights": grab_block(r"###\s*Notes/Insights\s*(.+?)(?=###|$)", ""),
@@ -119,13 +124,18 @@ def parse_session_log(filepath):
     
     # Execution Details
     data['frameworks_used'] = extract_field(r'-\s*Frameworks Used:\s*(.+)', content)
+    data['sop_modules_used'] = extract_field(r'-\s*SOP Modules Used:\s*(.+)', content)
+    data['engines_used'] = extract_field(r'-\s*Engines Used:\s*(.+)', content)
+    data['core_learning_modules_used'] = extract_field(r'-\s*Core Learning Modules Used:\s*(.+)', content)
     data['gated_platter_triggered'] = extract_field(r'-\s*Gated Platter Triggered:\s*(.+)', content)
     data['wrap_phase_reached'] = extract_field(r'-\s*WRAP Phase Reached:\s*(.+)', content)
-    
+
     cards_str = extract_field(r'-\s*Anki Cards Created:\s*(\d+)', content)
     data['anki_cards_count'] = int(cards_str) if cards_str else 0
     data['off_source_drift'] = extract_field(r'-\s*Off-source drift\?\s*\(Y/N\):\s*(.+)', content)
     data['source_snippets_used'] = extract_field(r'-\s*Source snippets used\?\s*\(Y/N\):\s*(.+)', content)
+    data['prompt_drift'] = extract_field(r'-\s*Prompt Drift\?\s*\(Y/N\):\s*(.+)', content)
+    data['prompt_drift_notes'] = extract_field(r'-\s*Prompt Drift Notes:\s*(.+)', content)
     
     # Anatomy-Specific
     data['region_covered'] = extract_field(r'-\s*Region Covered:\s*(.+)', content)
@@ -249,8 +259,8 @@ def insert_session(data):
             'session_date', 'session_time', 'time_spent_minutes', 'duration_minutes', 'study_mode',
             'target_exam', 'source_lock', 'plan_of_attack',
             'topic', 'main_topic', 'subtopics',
-            'frameworks_used', 'gated_platter_triggered', 'wrap_phase_reached', 'anki_cards_count',
-            'off_source_drift', 'source_snippets_used',
+            'frameworks_used', 'sop_modules_used', 'engines_used', 'core_learning_modules_used', 'gated_platter_triggered', 'wrap_phase_reached', 'anki_cards_count',
+            'off_source_drift', 'source_snippets_used', 'prompt_drift', 'prompt_drift_notes',
             'region_covered', 'landmarks_mastered', 'muscles_attached', 'oian_completed_for',
             'rollback_events', 'drawing_used', 'drawings_completed',
             'understanding_level', 'retention_confidence', 'system_performance', 'calibration_check',
@@ -273,11 +283,16 @@ def insert_session(data):
             data.get('main_topic'),
             data.get('subtopics', ''),
             data.get('frameworks_used', ''),
+            data.get('sop_modules_used', ''),
+            data.get('engines_used', ''),
+            data.get('core_learning_modules_used', ''),
             data.get('gated_platter_triggered', ''),
             data.get('wrap_phase_reached', ''),
             data.get('anki_cards_count', 0),
             data.get('off_source_drift', ''),
             data.get('source_snippets_used', ''),
+            data.get('prompt_drift', ''),
+            data.get('prompt_drift_notes', ''),
             data.get('region_covered', ''),
             data.get('landmarks_mastered', ''),
             data.get('muscles_attached', ''),

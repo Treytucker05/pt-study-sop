@@ -45,11 +45,16 @@ def init_database():
             
             -- Execution Details
             frameworks_used TEXT,
+            sop_modules_used TEXT,
+            engines_used TEXT,
+            core_learning_modules_used TEXT,
             gated_platter_triggered TEXT,
             wrap_phase_reached TEXT,
             anki_cards_count INTEGER,
             off_source_drift TEXT,
             source_snippets_used TEXT,
+            prompt_drift TEXT,
+            prompt_drift_notes TEXT,
             
             -- Anatomy-Specific (v9.1)
             region_covered TEXT,
@@ -95,6 +100,16 @@ def init_database():
         cursor.execute("ALTER TABLE sessions ADD COLUMN off_source_drift TEXT")
     if 'source_snippets_used' not in columns:
         cursor.execute("ALTER TABLE sessions ADD COLUMN source_snippets_used TEXT")
+    if 'sop_modules_used' not in columns:
+        cursor.execute("ALTER TABLE sessions ADD COLUMN sop_modules_used TEXT")
+    if 'engines_used' not in columns:
+        cursor.execute("ALTER TABLE sessions ADD COLUMN engines_used TEXT")
+    if 'core_learning_modules_used' not in columns:
+        cursor.execute("ALTER TABLE sessions ADD COLUMN core_learning_modules_used TEXT")
+    if 'prompt_drift' not in columns:
+        cursor.execute("ALTER TABLE sessions ADD COLUMN prompt_drift TEXT")
+    if 'prompt_drift_notes' not in columns:
+        cursor.execute("ALTER TABLE sessions ADD COLUMN prompt_drift_notes TEXT")
     if 'weak_anchors' not in columns:
         cursor.execute("ALTER TABLE sessions ADD COLUMN weak_anchors TEXT")
     if 'topic' not in columns:

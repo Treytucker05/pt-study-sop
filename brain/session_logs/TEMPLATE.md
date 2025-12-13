@@ -25,11 +25,16 @@ Then run: `python brain/ingest_session.py brain/session_logs/YYYY-MM-DD_topic.md
 
 ## Execution Details
 - Frameworks Used: [H1, M2, etc.; comma separated]
+- SOP Modules Used: [e.g., M0,M1,M2,M3,M4,M5,M6]
+- Engines Used: [e.g., Anatomy Engine, Concept Engine]
+- Core Learning Modules Used: [PERRO, KWIK]
 - Gated Platter Triggered: [Yes / No]
 - WRAP Phase Reached: [Yes / No]
 - Anki Cards Created: [Number]
 - Off-source drift? (Y/N): [Yes/No]
 - Source snippets used? (Y/N): [Yes/No]
+- Prompt Drift? (Y/N):
+- Prompt Drift Notes:
 
 ## Anatomy-Specific (if applicable)
 - Region Covered: [e.g., Posterior Hip, Anterior Thigh, Knee]

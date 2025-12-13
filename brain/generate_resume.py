@@ -7,7 +7,7 @@ Provides context on recent sessions, progress, and recommended focus areas.
 import sqlite3
 import os
 from datetime import datetime, timedelta
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'pt_study.db')
 OUTPUT_PATH = os.path.join(os.path.dirname(__file__), 'output', 'session_resume.md')
@@ -111,6 +111,53 @@ def get_rollback_patterns():
     conn.close()
     return rollbacks
 
+def get_drift_and_usage_stats():
+    """Summarize prompt drift and SOP usage for the last 30 days."""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    cursor.execute(
+        '''
+        SELECT prompt_drift, off_source_drift, sop_modules_used, engines_used, core_learning_modules_used
+        FROM sessions
+        WHERE session_date >= ?
+        ''',
+        (thirty_days_ago,),
+    )
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    prompt_drift_yes = sum(1 for r in rows if (r['prompt_drift'] or '').strip().lower().startswith('y'))
+    off_source_yes = sum(1 for r in rows if (r['off_source_drift'] or '').strip().lower().startswith('y'))
+
+    module_counter = Counter()
+    engine_counter = Counter()
+    core_counter = Counter()
+
+    def update_counter(value, counter):
+        if not value:
+            return
+        parts = [p.strip() for p in value.replace(';', ',').split(',')]
+        for part in parts:
+            if part:
+                counter[part] += 1
+
+    for row in rows:
+        update_counter(row['sop_modules_used'], module_counter)
+        update_counter(row['engines_used'], engine_counter)
+        update_counter(row['core_learning_modules_used'], core_counter)
+
+    return {
+        'prompt_drift_yes': prompt_drift_yes,
+        'off_source_yes': off_source_yes,
+        'sop_modules': module_counter,
+        'engines': engine_counter,
+        'core_modules': core_counter,
+    }
+
 def calculate_readiness_score(exam_topics=None):
     """
     Calculate an overall readiness score (0-100).
@@ -165,9 +212,16 @@ def days_since(date_str):
 def generate_resume():
     """Generate the full resume document."""
     lines = []
-    
+
     def fmt_score(val):
         return "n/a" if val is None else str(val)
+
+    def format_top(counter):
+        if not counter:
+            return "n/a"
+        items = counter.most_common()
+        formatted = [f"{name} ({count})" for name, count in items[:3]]
+        return ', '.join(formatted)
     
     lines.append("# Session Resume")
     lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
@@ -178,7 +232,17 @@ def generate_resume():
     lines.append("## Readiness Score")
     lines.append(f"**{score}/100** ({details})")
     lines.append("")
-    
+
+    # Drift and SOP usage
+    stats = get_drift_and_usage_stats()
+    lines.append("## Drift + SOP Usage (last 30d)")
+    lines.append(f"- Prompt Drift flagged: {stats['prompt_drift_yes']}")
+    lines.append(f"- Off-source drift flagged: {stats['off_source_yes']}")
+    lines.append(f"- Common SOP Modules: {format_top(stats['sop_modules'])}")
+    lines.append(f"- Common Engines: {format_top(stats['engines'])}")
+    lines.append(f"- Common Core Learning Modules: {format_top(stats['core_modules'])}")
+    lines.append("")
+
     # Recent Sessions
     lines.append("## Recent Sessions")
     sessions = get_recent_sessions(5)
