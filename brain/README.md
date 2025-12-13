@@ -2,6 +2,8 @@
 
 Session tracking and analytics system for the PT Study SOP.
 
+Brain logs and WRAP activities map to the PEIRRO learning cycle (Prepare, Encode, Refine, Overlearn) for documentation clarity only.
+
 ---
 
 ## Quick Start

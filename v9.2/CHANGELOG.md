@@ -96,7 +96,7 @@
 - v8.5.1 Spotter Prime
 - v8.4 Tutor Edition
 - v8.1 Archive
-- Progressive development of PERRIO protocol
+- Progressive development of PEIRRO learning cycle
 
 ---
 

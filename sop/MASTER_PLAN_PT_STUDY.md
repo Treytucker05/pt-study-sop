@@ -32,6 +32,12 @@ Build a personal AI study OS that:
 - Observability: tool calls and gating decisions are recorded (log/resume/dashboard).
 - Security/Privacy: local-first; external APIs are opt-in per tool.
 
+### MAP/PEIRRO alignment (documentation note)
+- MAP → LOOP → WRAP is the execution lifecycle; PEIRRO is the learning cycle backbone.
+- MAP aligns primarily with Prepare.
+- LOOP spans Encode, Interrogate, Retrieve.
+- WRAP covers Refine and Overlearn.
+
 ---
 
 ## 3) System architecture (stable components)
