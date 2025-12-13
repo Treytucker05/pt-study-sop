@@ -1,4 +1,8 @@
-﻿# PT Study SOP
+> Runtime Canon is sop/gpt-knowledge/
+> If this document conflicts with Runtime Canon, Runtime Canon wins.
+> This README points to releases; runtime canon is in sop/gpt-knowledge/
+
+# PT Study SOP
 
 A structured study system for Doctor of Physical Therapy coursework, powered by the PERRIO protocol.
 

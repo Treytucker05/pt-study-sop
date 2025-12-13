@@ -1,4 +1,8 @@
-﻿# Concept Engine (universal, non-anatomy)
+> Runtime Canon is sop/gpt-knowledge/
+> If this document conflicts with Runtime Canon, Runtime Canon wins.
+> This is a non-canonical reference; canonical engine lives in sop/gpt-knowledge/
+
+# Concept Engine (universal, non-anatomy)
 
 Purpose: Default flow for abstract/non-spatial topics (law, coding, history, etc.). Aligns with Gagné/Merrill to move from identity → context → mechanism → boundary → application.
 

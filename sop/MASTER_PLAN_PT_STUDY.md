@@ -1,4 +1,8 @@
-﻿# PT Study SOP - Master Plan (Stable North Star)
+> Runtime Canon is sop/gpt-knowledge/
+> If this document conflicts with Runtime Canon, Runtime Canon wins.
+> This is a blueprint/design doc.
+
+# PT Study SOP - Master Plan (Stable North Star)
 **Owner:** Trey Tucker  
 **Purpose:** Version-agnostic blueprint; only change when invariants or contracts change.
 

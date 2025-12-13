@@ -1,3 +1,7 @@
+> Runtime Canon is sop/gpt-knowledge/
+> If this document conflicts with Runtime Canon, Runtime Canon wins.
+> This is a non-canonical reference; canonical engine lives in sop/gpt-knowledge/
+
 # Anatomy Learning Engine
 
 ## Purpose
