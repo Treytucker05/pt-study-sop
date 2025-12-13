@@ -1,4 +1,4 @@
-﻿# Runtime Prompt – PT Study SOP v9.2 (dev)
+# Runtime Prompt – PT Study SOP Runtime Canon
 
 **Paste this at the start of each study session.**
 
