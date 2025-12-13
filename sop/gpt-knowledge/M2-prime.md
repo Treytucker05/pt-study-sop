@@ -1,6 +1,6 @@
 ﻿# M2: Prime (v9.2 dev)
 
-Purpose: Map the territory before encoding. Build buckets; don’t memorize yet.
+ Purpose: Map the territory before encoding. Build buckets; don’t memorize yet. The session’s learning cycle follows the PERRO Core Learning Module (Prepare → Encode → Retrieve → Reflect → Optimize) as the conceptual backbone.
 
 ---
 ## Protocol (fast)

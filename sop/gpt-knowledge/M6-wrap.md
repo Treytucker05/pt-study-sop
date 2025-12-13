@@ -1,6 +1,6 @@
 ﻿# M6: Wrap (v9.2 dev)
 
-Purpose: End-of-session consolidation in 2–10 minutes: recall, error capture, cards, and next-review plan.
+ Purpose: End-of-session consolidation in 2–10 minutes: recall, error capture, cards, and next-review plan. Reflection and optimization align with the PERRO Core Learning Module’s Reflect and Optimize phases.
 
 ---
 ## Wrap Toolkit (pick 2–3 actions)
