@@ -7,7 +7,7 @@ PEIRRO provides structure for deep learning architecture through its Prepare, En
 
 # Steps
 1. Prepare – Orient attention by clarifying scope, relevance, and expectations before learning begins.
-2. Encode – PEIRRO method encodes knowledge.
+2. Encode – Actively construct durable, cued schemas by linking new material to prior maps and meaning before drilling details. Combine function-first context (e.g., how a structure works) with names later, especially in anatomy. Use multimodal cues (imagery + meaning; KWIK fits here) to create retrievable anchors. Encode precedes retrieval practice and is more than passive exposure.
 3. Interrogate – Unspecified in source.
 4. Retrieve – Unspecified in source.
 5. Refine – Unspecified in source.
