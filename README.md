@@ -2,17 +2,11 @@
 
 A structured study system for Doctor of Physical Therapy coursework, powered by the PEIRRO protocol.
 
-## Source of Truth
+## Source of Truth / Authority Chain
 
-- Runtime Canon: `sop/gpt-knowledge/`.
-- If any document conflicts with the Runtime Canon, the Runtime Canon wins.
-- Packaged bundle present in this repo: `v9.2/` (development snapshot). Runtime Canon remains authoritative when versions diverge.
-
-## Repository Authority Chain
-
-- Runtime Canon = `sop/gpt-knowledge/`.
-- Release snapshots (for example, `v9.2/`) are frozen copies when present.
-- If conflict: Runtime Canon wins.
+- Runtime Canon: `sop/gpt-knowledge/` (authoritative for all instructions).
+- Packaged bundle present in this repo: `v9.2/` (development snapshot). If anything conflicts, the Runtime Canon wins.
+- Release snapshots are frozen copies when present; they remain subordinate to the Runtime Canon.
 
 **Master Plan (North Star):** See `sop/MASTER_PLAN_PT_STUDY.md` for the stable vision, invariants, and contracts every release must honor.
 
@@ -20,13 +14,11 @@ A structured study system for Doctor of Physical Therapy coursework, powered by 
 
 ## Quick Start
 
-**Runtime canon lives in:** `sop/gpt-knowledge/`
-
-1. Open `sop/gpt-knowledge/README.md` for setup instructions
-2. From the repo root, run `python brain/db_setup.py` (Brain lives in the root repo; it is **not packaged** inside releases)
-3. Copy `sop/gpt-knowledge/gpt-instructions.md` into your CustomGPT system instructions
-4. Upload `sop/gpt-knowledge/` following `BUILD_ORDER.md`, and paste `runtime-prompt.md` at session start
-5. Start studying
+1. Read `sop/gpt-knowledge/README.md`.
+2. Paste `sop/gpt-knowledge/gpt-instructions.md` into your Custom GPT system instructions.
+3. Upload `sop/gpt-knowledge/` files in the order listed in `BUILD_ORDER.md`.
+4. Paste `sop/gpt-knowledge/runtime-prompt.md` at the start of each session.
+5. Run `python brain/db_setup.py` (or `Run_Brain_All.bat`) from the repo root for Brain setup.
 
 **One-click launcher:** Run `Run_Brain_All.bat` (repo root) to sync logs, regenerate resume, start the dashboard server, and open http://127.0.0.1:5000 automatically. Keep the new "PT Study Brain Dashboard" window open while using the site.
 
@@ -39,10 +31,10 @@ A structured study system for Doctor of Physical Therapy coursework, powered by 
 ## Repository Structure
 
 pt-study-sop/
-- v9.2/ (current development bundle)
+- v9.2/ (development snapshot bundle)
 - sop/ (source / development; Runtime Canon in `sop/gpt-knowledge/`)
   - MASTER_PLAN_PT_STUDY.md
-  - RESEARCH_TOPICS.md
+  - RESEARCH_INDEX.md
   - modules/
   - frameworks/
   - methods/
@@ -83,7 +75,7 @@ pt-study-sop/
 
 ---
 
-## Highlights from v9.1 snapshot
+## Highlights from the current canon (v9.2 development snapshot)
 
 - **Planning Phase (M0):** Mandatory target/sources/plan before teaching
 - **Anatomy Engine:** Bone-first protocol with visual landmark recognition
@@ -99,10 +91,10 @@ pt-study-sop/
 | Document | Purpose |
 |----------|---------|
 | `sop/gpt-knowledge/README.md` | Setup and usage guide (Runtime Canon) |
-| `sop/MASTER.md` | Complete system reference |
+| `sop/gpt-knowledge/MASTER.md` | Complete system reference |
 | `sop/MASTER_PLAN_PT_STUDY.md` | Stable North Star vision/invariants/contracts |
-| `sop/CHANGELOG.md` | Version history |
-| `sop/RESEARCH_TOPICS.md` | Learning science research topics |
+| `sop/MASTER_REFERENCE_v9.2.md` | Detailed reference for the v9.2 development snapshot |
+| `sop/RESEARCH_INDEX.md` | Learning science research topics and sourcing |
 | `sop/working/ROADMAP.md` | Current gaps and next steps |
 
 ---
@@ -113,7 +105,7 @@ pt-study-sop/
 
 ## Links
 - GitHub: https://github.com/Treytucker05/pt-study-sop
-- Current Development Bundle: v9.2/
+- Development snapshot bundle: v9.2/
 
 
 
