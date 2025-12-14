@@ -22,9 +22,8 @@ jobs:
             pip install -r requirements.txt
           elif [ -f brain/requirements.txt ]; then
             pip install -r brain/requirements.txt
-          else
-            pip install pytest
           fi
+          pip install pytest
 
       - name: Run tests
-        run: pytest brain/tests
+        run: python -m pytest brain/tests

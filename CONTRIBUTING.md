@@ -11,8 +11,9 @@ This repository centers on the Runtime Canon in `sop/gpt-knowledge/`. Keep chang
 Run these commands from the repository root:
 - Unit tests: `python -m pytest brain/tests`
 - Brain smoke check (creates/updates local SQLite): `python brain/db_setup.py`
+- CI runs `python -m pytest brain/tests` on pushes and pull requests.
 
-If you add dependencies, document how to install them alongside these commands.
+If you add dependencies, document how to install them alongside these commands. When in doubt, align wording and behavior to the Runtime Canon in `sop/gpt-knowledge/`.
 
 ## Pull Request Expectations
 - Keep Runtime Canon edits in their own commits or PR sections so reviewers can audit them separately.
