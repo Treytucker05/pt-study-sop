@@ -32,6 +32,8 @@ A structured study system for Doctor of Physical Therapy coursework, powered by 
 
 **Release preparation:** Before cutting a new release, run `python scripts/release_check.py` and follow `docs/release/RELEASE_PROCESS.md`.
 
+**Validation:** Run `python -m pytest brain/tests` from the repo root; CI runs the same command on pushes and pull requests.
+
 ---
 
 ## Repository Structure
