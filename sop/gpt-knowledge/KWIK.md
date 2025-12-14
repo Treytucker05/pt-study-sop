@@ -34,18 +34,21 @@ The Kwik method anchors memory hooks by moving from a phonetic cue through funct
 - When enforcing function-first, dual-code encoding that requires imagery tied to meaning.
 
 # Scope & Boundaries
-- Use KWIK to encode difficult terms, labels, anatomy, or symbols that need durable recall.
-- Require meaning/function before imagery; imagery must stay tied to the confirmed function.
-- Combine verbal and visual cues to create retrieval anchors.
-- Apply KWIK only during Encode.
-- Motivation or state-setting is allowed only when brief and directly tied to Encode.
-- Mnemonics are allowed only after understanding is demonstrated.
-- Speed-reading techniques are for Prepare previewing, not for deep Encode steps.
-- Do not use KWIK to memorize without understanding.
-- Do not create imagery during Retrieve or testing phases.
-- Do not use motivation rituals or inspirational content as substitutes for study.
-- Avoid over-elaborate mnemonic construction that delays learning progress.
+- INCLUDE: Use KWIK to encode difficult terms, labels, anatomy structures, and symbols.
+- INCLUDE: Require meaning/function before imagery.
+- INCLUDE: Use multimodal cues (verbal + visual) to create retrieval anchors.
+- INCLUDE: Use KWIK during Encode only.
+- LIMIT: State-setting and focus aids are allowed only if brief and directly tied to starting Encode.
+- LIMIT: Mnemonics allowed only after basic understanding is demonstrated.
+- LIMIT: Speed-reading techniques allowed only for Prepare/preview, not deep encoding.
+- EXCLUDE: Memorizing without understanding.
+- EXCLUDE: Creating imagery during Retrieve or testing phases.
+- EXCLUDE: Motivational or inspirational rituals not tied to immediate study action.
+- EXCLUDE: Over-elaborate mnemonic construction that delays progress.
 
 ## Evidence Signals
-- Helping: fast, meaningful recall where imagery triggers the correct function.
-- Hurting: recalling an image without meaning, confusing similar items, or feeling confident without retrieval success.
+- Helping: Fast recall with correct meaning.
+- Helping: Imagery reliably triggers function/context.
+- Hurting: Image recalled but meaning forgotten.
+- Hurting: Confusion between similar items.
+- Hurting: Overconfidence without retrieval success.
