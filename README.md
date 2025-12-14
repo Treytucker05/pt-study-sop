@@ -83,7 +83,7 @@ pt-study-sop/
 
 ---
 
-## Highlights from the current canon (v9.2 development snapshot)
+## Highlights from v9.1 snapshot
 
 - **Planning Phase (M0):** Mandatory target/sources/plan before teaching
 - **Anatomy Engine:** Bone-first protocol with visual landmark recognition

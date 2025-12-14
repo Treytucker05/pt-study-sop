@@ -18,4 +18,3 @@ If you add dependencies, document how to install them alongside these commands.
 - Keep Runtime Canon edits in their own commits or PR sections so reviewers can audit them separately.
 - Update documentation when terminology or version messaging changes.
 - Include before/after notes for any SOP-facing text so reviewers can spot intent quickly.
-- The CI workflow runs `python -m pytest brain/tests` on pushes and pull requests; keep tests green before merging.
