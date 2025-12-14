@@ -1,20 +1,18 @@
-> Runtime Canon is sop/gpt-knowledge/
-> If this document conflicts with Runtime Canon, Runtime Canon wins.
-> This README mirrors the Runtime Canon stored in `sop/gpt-knowledge/`.
-
-## Repository Authority Chain
-
-- Runtime Canon = `sop/gpt-knowledge/`.
-- Release snapshots are frozen copies when present.
-- If conflict: Runtime Canon wins.
-
 # PT Study SOP
 
 A structured study system for Doctor of Physical Therapy coursework, powered by the PEIRRO protocol.
 
-## Current Version: 9.1 "Structured Architect + Anatomy Engine" (development tag)
+## Source of Truth
 
-Version numbers track the development state of the SOP. Packaged release bundles may lag behind, and when in doubt the Runtime Canon in `sop/gpt-knowledge/` is the source of truth.
+- Runtime Canon: `sop/gpt-knowledge/`.
+- If any document conflicts with the Runtime Canon, the Runtime Canon wins.
+- Packaged bundle present in this repo: `v9.2/` (development snapshot). Runtime Canon remains authoritative when versions diverge.
+
+## Repository Authority Chain
+
+- Runtime Canon = `sop/gpt-knowledge/`.
+- Release snapshots (for example, `v9.2/`) are frozen copies when present.
+- If conflict: Runtime Canon wins.
 
 **Master Plan (North Star):** See `sop/MASTER_PLAN_PT_STUDY.md` for the stable vision, invariants, and contracts every release must honor.
 
@@ -26,8 +24,8 @@ Version numbers track the development state of the SOP. Packaged release bundles
 
 1. Open `sop/gpt-knowledge/README.md` for setup instructions
 2. From the repo root, run `python brain/db_setup.py` (Brain lives in the root repo; it is **not packaged** inside releases)
-3. Copy `GPT-INSTRUCTIONS.md` into your CustomGPT
-4. Upload all files from `sop/gpt-knowledge/` to GPT Knowledge (or upload the combined bundle in the same directory)
+3. Copy `sop/gpt-knowledge/gpt-instructions.md` into your CustomGPT system instructions
+4. Upload `sop/gpt-knowledge/` following `BUILD_ORDER.md`, and paste `runtime-prompt.md` at session start
 5. Start studying
 
 **One-click launcher:** Run `Run_Brain_All.bat` (repo root) to sync logs, regenerate resume, start the dashboard server, and open http://127.0.0.1:5000 automatically. Keep the new "PT Study Brain Dashboard" window open while using the site.
@@ -83,7 +81,7 @@ pt-study-sop/
 
 ---
 
-## What's New in v9.1
+## Highlights from the current canon (v9.2 development snapshot)
 
 - **Planning Phase (M0):** Mandatory target/sources/plan before teaching
 - **Anatomy Engine:** Bone-first protocol with visual landmark recognition
