@@ -12,6 +12,8 @@ Purpose: Establish clear targets, gather materials, and create a plan before any
 2) POSITION: What's covered vs remaining... Weak spots...
 3) MATERIALS: LOs, slides, labs, practice Qs, notes.
 4) SOURCE-LOCK: Which specific materials today... (list pages/links)
+   - NotebookLM Source Packet: satisfies SOURCE-LOCK when provided with excerpts and citations.
+   - No factual teaching without a Source Packet or explicit listed sources/excerpts.
 5) Plan: 3-5 steps for this session.
 5b) Glossary Scan: list top 5 jargon terms for this session; define at L2 before proceeding.
 6) PRIME: Run 1-3 pre-questions or a 60-120s brain dump on today's target.

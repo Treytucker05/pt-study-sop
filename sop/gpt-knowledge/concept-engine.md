@@ -1,4 +1,5 @@
-> DEPRECATED: Canonical version lives at sop/gpt-knowledge/concept-engine.md
+> Runtime Canon copy
+> Use this version in the Custom GPT.
 
 > Runtime Canon is sop/gpt-knowledge/
 > If this document conflicts with Runtime Canon, Runtime Canon wins.

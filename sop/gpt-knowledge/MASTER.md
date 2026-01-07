@@ -25,10 +25,14 @@ This folder is the Runtime Canon for PT Study SOP: the authoritative, in-use set
 | M5-modes.md | Execution Module M5: operating modes and modifiers |
 | M6-wrap.md | Execution Module M6: wrapping, reflection, and next steps |
 | anatomy-engine.md | Anatomy-specific engine integrated with Execution Modules |
+| concept-engine.md | Concept engine for non-anatomy topics |
+| notebooklm-bridge.md | NotebookLM source packet rules and prompt template |
+| brain-session-log-template.md | Canonical Brain session log template (ingestor compatible) |
 
 ## How to use
 - Paste `gpt-instructions.md` into your CustomGPT system instructions.
 - Paste `runtime-prompt.md` at the start of each session.
+- When factual teaching is needed, paste a NotebookLM Source Packet (see `notebooklm-bridge.md`) to satisfy Source-Lock.
 - Follow Execution Modules M0-M6 in order, adding `anatomy-engine.md` when studying anatomy.
 - Use PEIRRO as the backbone for the learning cycle and KWIK as the encoding flow for hooks/terms.
 
