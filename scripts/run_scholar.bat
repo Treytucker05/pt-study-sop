@@ -43,14 +43,16 @@ echo   1) Run Scholar (no web search)
 echo   2) Run Scholar (with web search + DANGEROUS bypass)
 echo   3) Open scholar\outputs
 echo   4) Toggle DEBUG (currently !DEBUG!)
-echo   5) Exit
-set /p choice=Enter choice (1-5): 
+echo   5) Run Scholar UNATTENDED (codex exec, web search + YOLO)
+echo   6) Exit
+set /p choice=Enter choice (1-6): 
 
 if "%choice%"=="1" goto run_noweb
 if "%choice%"=="2" goto run_web
 if "%choice%"=="3" goto open_outputs
 if "%choice%"=="4" goto toggle_debug
-if "%choice%"=="5" goto end
+if "%choice%"=="5" goto run_unattended
+if "%choice%"=="6" goto end
 
 echo Invalid choice.
 goto menu
@@ -103,6 +105,60 @@ set "INIT_PROMPT=Open %PROMPT_REL% and follow it exactly. Start by asking any cl
 
 start "The Scholar (Codex)" cmd /k ^
 "cd /d "%REPO_ROOT%" ^&^& echo CWD: %%CD%% ^&^& echo Orchestrator: %PROMPT_REL% ^&^& codex --cd "%REPO_ROOT%" --search --yolo "%INIT_PROMPT%" ^& echo. ^& echo Codex exit code: %%errorlevel%% ^& echo. ^& pause"
+goto menu
+
+:run_unattended
+echo.
+echo Running Scholar UNATTENDED (codex exec, web search + YOLO)...
+echo WARNING: This bypasses approvals/sandbox. Do not leave it unattended unless you trust this repo state.
+echo.
+set "PROMPT_ABS=%REPO_ROOT%\scholar\workflows\orchestrator_run_prompt.md"
+if not exist "%PROMPT_ABS%" (
+  echo ERROR: Prompt file not found: "%PROMPT_ABS%"
+  pause
+  goto menu
+)
+
+for /f "tokens=1-3 delims=/- " %%a in ("%date%") do set "YYYYMMDD=%%c-%%a-%%b"
+for /f "tokens=1-3 delims=:." %%h in ("%time%") do set "HHMMSS=%%h%%i%%j"
+set "RUN_DIR=%REPO_ROOT%\scholar\outputs\orchestrator_runs"
+if not exist "%RUN_DIR%" mkdir "%RUN_DIR%"
+
+set "LOG_PATH=%RUN_DIR%\unattended_%YYYYMMDD%_%HHMMSS%.log"
+set "FINAL_PATH=%RUN_DIR%\unattended_final_%YYYYMMDD%_%HHMMSS%.md"
+set "TMP_PROMPT=%RUN_DIR%\unattended_prompt_%YYYYMMDD%_%HHMMSS%.txt"
+set "QUESTIONS_PATH=%RUN_DIR%\questions_needed_%YYYYMMDD%_%HHMMSS%.md"
+
+echo Creating unattended prompt: "%TMP_PROMPT%"
+(
+  echo UNATTENDED MODE OVERRIDE:
+  echo - You are running non-interactively via `codex exec`. Do NOT ask questions in the terminal.
+  echo - Default scope: process M0-M6 cycle + bridges first.
+  echo - If you need clarification, write questions to: %QUESTIONS_PATH%
+  echo - Continue with best-effort defaults unless blocked. If blocked or looping ^> 60 minutes, stop and write a blocker summary to orchestrator_runs.
+  echo - Write outputs ONLY under scholar/outputs/. Do NOT modify sop/, brain/, or dist/.
+  echo - Do NOT generate Promotion Queue artifacts unless the orchestrator explicitly allows it without human approval.
+  echo ---
+) > "%TMP_PROMPT%"
+type "%PROMPT_ABS%" >> "%TMP_PROMPT%"
+
+echo.
+echo Launching codex exec...
+echo Log:   "%LOG_PATH%"
+echo Final: "%FINAL_PATH%"
+echo Questions: "%QUESTIONS_PATH%"
+echo.
+
+codex --search exec --cd "%REPO_ROOT%" --yolo --output-last-message "%FINAL_PATH%" - < "%TMP_PROMPT%" >> "%LOG_PATH%" 2>&1
+set "EC=%ERRORLEVEL%"
+
+echo.
+echo Codex exit code: %EC%
+echo --- Last message written to: %FINAL_PATH%
+echo --- Full log written to: %LOG_PATH%
+echo --- Any questions for you: %QUESTIONS_PATH%
+echo.
+pause
 goto menu
 
 :debug_dump
