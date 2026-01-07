@@ -37,7 +37,7 @@ if errorlevel 1 (
 echo.
 echo Choose:
 echo   1) Run Scholar (no web search)
-echo   2) Run Scholar (with web search)
+echo   2) Run Scholar (with web search + DANGEROUS bypass)
 echo   3) Open scholar\outputs
 echo   4) Exit
 set /p choice=Enter choice (1-4): 
@@ -58,24 +58,40 @@ goto menu
 echo.
 echo Running Codex CLI (no web search)...
 echo.
-codex -m "%REPO_ROOT%\scholar\workflows\orchestrator_run_prompt.md"
-if errorlevel 1 (
-  echo Codex returned an error.
-)
+call :run_codex_noweb
 pause
 goto menu
 
 :run_web
 echo.
-echo Running Codex CLI (with web search)...
-echo NOTE: If Codex CLI does not support --search on this install, it will run without it.
+echo Running Codex CLI (web search + DANGEROUS bypass)...
+echo WARNING: No sandbox; no approvals. Use only if you understand the risk.
 echo.
-codex --search -m "%REPO_ROOT%\scholar\workflows\orchestrator_run_prompt.md"
-if errorlevel 1 (
-  echo Codex returned an error.
-)
+call :run_codex_web_danger
 pause
 goto menu
+
+:run_codex_noweb
+set "PROMPT_FILE=%REPO_ROOT%\scholar\workflows\orchestrator_run_prompt.md"
+echo Using prompt: "%PROMPT_FILE%"
+echo Method 1: codex -m
+codex -m "%PROMPT_FILE%"
+if errorlevel 1 (
+  echo Method 1 failed. Method 2: piping prompt into codex via stdin
+  type "%PROMPT_FILE%" | codex
+)
+exit /b 0
+
+:run_codex_web_danger
+set "PROMPT_FILE=%REPO_ROOT%\scholar\workflows\orchestrator_run_prompt.md"
+echo Using prompt: "%PROMPT_FILE%"
+echo Method 1: codex --search --dangerously-bypass-approvals-and-sandbox -m
+codex --search --dangerously-bypass-approvals-and-sandbox -m "%PROMPT_FILE%"
+if errorlevel 1 (
+  echo Method 1 failed. Method 2: piping prompt into codex via stdin
+  type "%PROMPT_FILE%" | codex --search --dangerously-bypass-approvals-and-sandbox
+)
+exit /b 0
 
 :end
 endlocal
