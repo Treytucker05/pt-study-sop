@@ -1,0 +1,27 @@
+{
+  "tutor_paths": [
+    "sop/gpt-knowledge/gpt-instructions.md",
+    "sop/gpt-knowledge/runtime-prompt.md",
+    "sop/gpt-knowledge/PEIRRO.md",
+    "sop/gpt-knowledge/KWIK.md",
+    "sop/gpt-knowledge/levels.md",
+    "sop/gpt-knowledge/H-series.md",
+    "sop/gpt-knowledge/M-series.md",
+    "sop/gpt-knowledge/Y-series.md",
+    "sop/gpt-knowledge/M0-planning.md",
+    "sop/gpt-knowledge/M1-entry.md",
+    "sop/gpt-knowledge/M2-prime.md",
+    "sop/gpt-knowledge/M3-encode.md",
+    "sop/gpt-knowledge/M4-build.md",
+    "sop/gpt-knowledge/M5-modes.md",
+    "sop/gpt-knowledge/M6-wrap.md",
+    "sop/gpt-knowledge/anatomy-engine.md",
+    "sop/gpt-knowledge/concept-engine.md",
+    "sop/gpt-knowledge/notebooklm-bridge.md",
+    "sop/gpt-knowledge/brain-session-log-template.md"
+  ],
+  "brain_paths": [
+    "brain/session_logs/",
+    "brain/session_logs/TEMPLATE.md"
+  ]
+}
