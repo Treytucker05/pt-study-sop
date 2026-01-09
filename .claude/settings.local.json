@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 3 python:*)",
+      "Bash(python:*)",
+      "Bash(tasklist /FI \"IMAGENAME eq python.exe\" /FO LIST)",
+      "Bash(powershell:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

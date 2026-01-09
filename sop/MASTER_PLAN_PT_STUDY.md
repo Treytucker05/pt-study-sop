@@ -87,19 +87,24 @@ Build a personal AI study OS that:
 
 ---
 
-## 8) Current alignment (v9.1)
-- Session logging/ingest/resume: working.
-- Card bridge: working; needs strict source-tag gating.
-- Dashboard: basic; needs coverage/spacing visuals.
-- Content pipeline: downloads/transcode/transcribe not automated.
-- RAG: design decided; implementation pending.
+## 8) Current alignment (v9.2+)
+- Session logging/ingest/resume: ✅ working.
+- Dashboard: ✅ implemented with stats, syllabus intake, calendar API, Tutor stubs, Scholar integration.
+- Dashboard spacing/coverage visuals: ⏳ basic stats exist; advanced visualizations deferred.
+- RAG: ✅ module exists (`brain/rag_notes.py`) with CLI; dashboard integration deferred.
+- Tutor API: ⚠️ stub endpoints exist; full RAG-integrated implementation deferred.
+- Card bridge: ⏳ working; needs strict source-tag gating and dashboard integration.
+- Content pipeline: ⏳ downloads/transcode/transcribe not automated.
 
 ## 9) Next targets (without changing the North Star)
-- Finish downloads + transcode/transcribe + RAG ingest (rungs 1–2).
-- Wire SOP to use RAG for answers/cards (rung 3).
-- Harden card dedupe/queue/tagging with source refs (rung 4).
-- Add spacing/coverage visuals to dashboard (rung 5).
+- ✅ Brain planning tables and basic endpoints (rung 1) - COMPLETE.
+- ⚠️ RAG dashboard integration (rung 2) - module exists, UI integration needed.
+- ⏳ Wire SOP to use RAG for answers/cards (rung 3) - Tutor stubs exist, full implementation needed.
+- ⏳ Harden card dedupe/queue/tagging with source refs (rung 4).
+- ⏳ Add spacing/coverage visuals to dashboard (rung 5) - basic stats exist, advanced visuals needed.
+- ⏳ Finish downloads + transcode/transcribe + RAG ingest (rungs 1–2) - RAG module exists, content pipeline automation needed.
 
 ## 10) Update log
 - 2025-12-06: Initial Master Plan created for PT Study SOP (applies to all future versions).
 - 2025-12-08: Clarified RAG-first/citation-first, roadmap ladder, and current alignment.
+- 2026-01-09: Updated current alignment to reflect v9.2+ dashboard implementation, RAG module, Tutor stubs, and roadmap progress.

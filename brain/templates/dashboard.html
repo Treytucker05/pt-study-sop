@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<!-- PT Study Brain Dashboard v2.0 - Updated: 2026-01-09 - Professional UI -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>PT Study Brain v2.0.2</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=2.1">
+  
+  <script src="/static/js/dashboard.js?v=2.1" defer></script>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="#overview" class="logo">
+      <div class="logo-icon">PT</div>
+      <span>PT Study Brain</span>
+    </a>
+
+    <!-- Tabs in Navbar -->
+    <div class="nav-links">
+      <button class="tab-button active" onclick="openTab(event, 'overview')" data-tab="overview" type="button">Overview</button>
+      <button class="tab-button" onclick="openTab(event, 'sessions')" data-tab="sessions" type="button">Sessions</button>
+      <button class="tab-button" onclick="openTab(event, 'syllabus')" data-tab="syllabus" type="button">Syllabus</button>
+      <button class="tab-button" onclick="openTab(event, 'scholar')" data-tab="scholar" type="button">Scholar</button>
+      <button class="tab-button" onclick="openTab(event, 'tutor')" data-tab="tutor" type="button">Tutor</button>
+    </div>
+
+    <div class="profile-section">
+      <button class="profile-btn">
+        <div class="avatar">TT</div>
+        <span style="font-size: 14px; font-weight: 500;">Profile</span>
+          <span style="font-size: 12px; color: var(--text-muted);">v</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main">
+    
+    <!-- Overview Tab -->
+    <section id="tab-overview" class="tab-panel active">
+      <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Dashboard Overview</h2>
+      
+      <!-- Stats Cards -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="icon blue">OV</div>
+        <div class="label">Total Sessions</div>
+        <div class="value" id="total-sessions">-</div>
+        <div class="subtitle" id="sessions-subtitle">Last 30 days</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="icon purple">TM</div>
+        <div class="label">Total Study Time</div>
+        <div class="value" id="total-time">-</div>
+        <div class="subtitle" id="time-subtitle">Avg. -/day</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="icon cyan">TR</div>
+        <div class="label">Average Session Score</div>
+        <div class="score-container">
+          <div class="progress-ring">
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <circle class="bg" cx="32" cy="32" r="26"></circle>
+              <circle class="progress" cx="32" cy="32" r="26" 
+                stroke-dasharray="163.36" 
+                stroke-dashoffset="163.36"
+                id="progress-circle"></circle>
+            </svg>
+            <div class="percentage" id="avg-score">-%</div>
+          </div>
+          <div class="score-breakdown">
+            <div class="score-item">U: <span id="avg-u">-</span></div>
+            <div class="score-item">R: <span id="avg-r">-</span></div>
+            <div class="score-item">S: <span id="avg-s">-</span></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="icon green">AK</div>
+        <div class="label">Anki Cards Reviewed</div>
+        <div class="value" id="anki-cards">-</div>
+        <div class="subtitle" id="anki-subtitle">Due today: -</div>
+      </div>
+    </div>
+
+    <!-- Patterns & Insights -->
+      <div class="card" id="patterns">
+        <div class="card-header">
+          <h2 class="card-title">Patterns & Insights</h2>
+        </div>
+        
+        <div class="patterns-grid">
+          <!-- Mode Frequencies -->
+          <div>
+            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Mode Frequencies</h4>
+            <div class="chart-container">
+              <canvas id="modeChart" width="120" height="120"></canvas>
+              <div class="chart-legend" id="mode-legend"></div>
+            </div>
+          </div>
+          
+          <!-- Top Frameworks -->
+          <div>
+            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Top Frameworks</h4>
+            <div class="frameworks-list" id="frameworks-list">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Weak/Strong Topics -->
+        <div class="topics-card" style="margin-top: 20px;">
+          <h4 class="weak">Weak:</h4>
+          <div class="topics-list" id="weak-topics">-</div>
+          <h4 class="strong" style="margin-top: 12px;">Strong:</h4>
+          <div class="topics-list" id="strong-topics">-</div>
+        </div>
+        
+        <!-- Key Learnings -->
+        <div style="margin-top: 20px;">
+          <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Key Learnings</h4>
+          <div class="learnings-grid">
+            <div class="learnings-column">
+              <h4>What Worked</h4>
+              <ul id="what-worked"></ul>
+            </div>
+            <div class="learnings-column issues">
+              <h4>Issues</h4>
+              <ul id="issues-list"></ul>
+            </div>
+          </div>
+        </div>
+    </div>
+
+
+    <!-- Upload Section -->
+    <div class="card upload-section">
+      <div class="card-header">
+        <h2 class="card-title">Upload Session Log</h2>
+      </div>
+      <div class="upload-zone" id="dropzone">
+        <div class="icon">DB</div>
+        <div class="text"><strong>Drag & drop</strong> a markdown session log here, or click to choose a file.</div>
+        <div class="text" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">Accepted: .md / .markdown / .txt</div>
+        <input type="file" id="file-input" style="display:none;" accept=".md,.markdown,.txt" />
+      </div>
+      <div id="upload-status"></div>
+    </div>
+    </section>
+    
+    <!-- Sessions Tab -->
+    <section id="tab-sessions" class="tab-panel">
+      <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Study Sessions</h2>
+      
+      <!-- Latest Study Sessions -->
+      <div class="card" id="sessions">
+        <div class="card-header">
+          <h2 class="card-title">Latest Study Sessions</h2>
+        </div>
+        <table class="sessions-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Mode</th>
+              <th>Topic</th>
+              <th>Duration</th>
+              <th>Score (U/R/S)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="sessions-tbody">
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Quick Session Entry -->
+      <div class="card" style="margin-top: 24px;">
+        <div class="card-header">
+          <h2 class="card-title">Quick Session Entry</h2>
+          <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Document what worked, what didn't, or quick session notes directly.</p>
+        </div>
+        <form id="quick-session-form" class="form-section">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="topic" class="form-label">Topic *</label>
+              <input type="text" id="topic" class="form-input" required placeholder="e.g., Cardiovascular Physiology">
+            </div>
+            <div class="form-group">
+              <label for="study_mode" class="form-label">Study Mode</label>
+              <select id="study_mode" class="form-select">
+                <option value="Core">Core</option>
+                <option value="Sprint">Sprint</option>
+                <option value="Drill">Drill</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="time_spent_minutes" class="form-label">Time (minutes) *</label>
+              <input type="number" id="time_spent_minutes" class="form-input" required min="1" placeholder="30">
+            </div>
+            <div class="form-group">
+              <label for="understanding_level" class="form-label">Understanding * (1-5)</label>
+              <input type="number" id="understanding_level" class="form-input" required min="1" max="5" placeholder="3">
+            </div>
+            <div class="form-group">
+              <label for="retention_confidence" class="form-label">Retention (1-5)</label>
+              <input type="number" id="retention_confidence" class="form-input" min="1" max="5" placeholder="3">
+            </div>
+            <div class="form-group">
+              <label for="system_performance" class="form-label">System Performance (1-5)</label>
+              <input type="number" id="system_performance" class="form-input" min="1" max="5" placeholder="3">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="what_worked" class="form-label">What Worked / What You Liked</label>
+            <textarea id="what_worked" class="form-textarea" rows="3" placeholder="e.g., 'The gated platter really helped me focus', 'Love how it broke down the complex topic'"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="what_needs_fixing" class="form-label">What Needs Fixing / What It Didn't Do</label>
+            <textarea id="what_needs_fixing" class="form-textarea" rows="3" placeholder="e.g., 'It didn't explain the concept clearly', 'Need more examples on this topic'"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="notes_insights" class="form-label">Additional Notes & Insights</label>
+            <textarea id="notes_insights" class="form-textarea" rows="2" placeholder="Any other observations..."></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Session</button>
+            <button type="button" class="btn btn-secondary" onclick="resetQuickForm()">Clear Form</button>
+          </div>
+        </form>
+        <div id="quick-session-status"></div>
+      </div>
+
+      <!-- Session Resume -->
+      <div class="card resume-section" id="resume">
+        <div class="card-header">
+          <h2 class="card-title">Session Resume</h2>
+          <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+            Generate a concise summary for your next GPT session.
+          </p>
+        </div>
+        <div class="resume-actions">
+          <button type="button" class="btn btn-primary" id="btn-resume">Generate Resume</button>
+          <a class="btn btn-secondary" href="/api/resume/download" target="_blank" rel="noopener">Download</a>
+        </div>
+        <pre class="resume-preview" id="resume-box">Click "Generate Resume" to fetch the latest summary.</pre>
+      </div>
+    </section>
+    
+    <!-- Syllabus Tab -->
+    <section id="tab-syllabus" class="tab-panel">
+      <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Syllabus & Calendar</h2>
+      
+      <div class="card resume-section" id="syllabus">
+      <div class="card-header">
+        <h2 class="card-title">Syllabus Intake (MVP)</h2>
+      </div>
+      <form id="syllabus-form" class="form-section">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="course_name">Course Name *</label>
+            <input id="course_name" class="form-input" type="text" placeholder="PT Anatomy I" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="course_code">Course Code</label>
+            <input id="course_code" class="form-input" type="text" placeholder="PTA101">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="course_term">Term</label>
+            <input id="course_term" class="form-input" type="text" placeholder="Spring 2026">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="course_instructor">Instructor</label>
+            <input id="course_instructor" class="form-input" type="text" placeholder="Dr. Smith">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="course_mode">Default Study Mode</label>
+            <select id="course_mode" class="form-select">
+              <option value="Core">Core</option>
+              <option value="Sprint">Sprint</option>
+              <option value="Drill">Drill</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="course_time_budget">Minutes per week</label>
+            <input id="course_time_budget" class="form-input" type="number" min="0" placeholder="900">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="event_title">Event Title *</label>
+          <input id="event_title" class="form-input" type="text" placeholder="Exam 1 – Pelvis &amp; Hip" required>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="event_type">Event Type</label>
+            <select id="event_type" class="form-select">
+              <option value="lecture">Lecture</option>
+              <option value="reading">Reading</option>
+              <option value="quiz">Quiz</option>
+              <option value="exam">Exam</option>
+              <option value="assignment">Assignment</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="event_date">Date</label>
+            <input id="event_date" class="form-input" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="event_due_date">Due Date</label>
+            <input id="event_due_date" class="form-input" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="event_weight">Weight (0–1)</label>
+            <input id="event_weight" class="form-input" type="number" step="0.01" min="0" max="1" placeholder="0.30">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="event_raw_text">Details (chapters, slides, notes)</label>
+          <textarea id="event_raw_text" class="form-textarea" rows="2" placeholder="Covers weeks 1–3, Chapters 1–5; Slides 01–03."></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Course + Event</button>
+        </div>
+      </form>
+      <div id="syllabus-status"></div>
+    </div>
+    <!-- Syllabus Part 2 (ChatGPT & Calendar) -->
+
+    <!-- Syllabus via ChatGPT (Prompt + JSON Import) -->
+    <div class="card resume-section" id="syllabus-chatgpt">
+      <div class="card-header">
+        <h2 class="card-title">Syllabus via ChatGPT (JSON Import)</h2>
+      </div>
+      <div class="form-section">
+        <div class="form-group">
+          <label class="form-label" for="syllabus_prompt_template">1) Copy this prompt into ChatGPT</label>
+          <button type="button" class="btn" id="btn-syllabus-prompt-copy" style="margin-top: 6px; margin-bottom: 6px;">Copy Prompt</button>
+          <textarea id="syllabus_prompt_template" class="form-textarea" rows="12" readonly>
+You are helping me convert a course syllabus into a JSON format for my PT Study Brain app.
+
+### Goal
+
+Given the raw syllabus text I provide, output a SINGLE JSON object in this exact shape:
+
+{
+  "name": "COURSE NAME",
+  "code": "COURSE CODE OR SHORT LABEL",
+  "term": "TERM (e.g., Spring 2026)",
+  "instructor": "INSTRUCTOR NAME (if known)",
+  "default_study_mode": "Core",
+  "time_budget_per_week_minutes": 900,
+  "events": [
+    {
+      "type": "lecture | reading | quiz | exam | assignment | other",
+      "title": "Short, clear title",
+      "date": "YYYY-MM-DD or null",
+      "due_date": "YYYY-MM-DD or null",
+      "weight": 0.0,
+      "raw_text": "Short description: chapters, slides, topics, etc."
+    }
+  ]
+}
+
+### Rules
+
+1. Only output JSON. No commentary, no markdown, no backticks.
+2. Use these rules for events:
+   - Create ONE event per meaningful item in the syllabus (lecture, reading block, quiz, exam, assignment).
+   - type: lecture, reading, quiz, exam, assignment, or other.
+   - title: short but specific (include week or topic where helpful).
+   - date: calendar date if present, otherwise null.
+   - due_date: for quizzes/exams/assignments, usually same as date; otherwise null.
+   - weight: 0.0 if not clearly stated; or 0.3 if the syllabus says “30%”.
+   - raw_text: the most useful details (chapters, pages, slides, topics), under ~200 characters.
+3. If the syllabus spans multiple courses, process ONLY ONE course per run.
+4. If term, instructor, or course code are not obvious, use null for those fields.
+5. Dates must be in "YYYY-MM-DD" format if you can infer them; otherwise null.
+
+Now say: “Paste your syllabus text here (one course at a time).” Then wait for me, and after I paste the syllabus, respond ONLY with the JSON object.</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="syllabus_json_input">2) Paste ChatGPT JSON here and import</label>
+          <textarea id="syllabus_json_input" class="form-textarea" rows="8" placeholder='{"name": "PT Anatomy I", "code": "PTA101", ...}'></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="btn-syllabus-json-import">Import JSON</button>
+        </div>
+      </div>
+      <div id="syllabus-json-status"></div>
+    </div>
+
+    <!-- Calendar View with Filters -->
+    <div class="card resume-section" id="calendar-view">
+      <div class="card-header">
+        <h2 class="card-title">Study Calendar</h2>
+      </div>
+      
+      <!-- Filters -->
+      <div style="margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <div class="form-group" style="margin: 0; min-width: 150px;">
+          <label class="form-label" style="font-size: 12px;">Course</label>
+          <select id="calendar-filter-course" class="form-select" style="font-size: 13px;">
+            <option value="">All Courses</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin: 0; min-width: 120px;">
+          <label class="form-label" style="font-size: 12px;">Event Type</label>
+          <select id="calendar-filter-type" class="form-select" style="font-size: 13px;">
+            <option value="">All Types</option>
+            <option value="lecture">Lectures</option>
+            <option value="quiz">Quizzes</option>
+            <option value="exam">Exams</option>
+            <option value="assignment">Assignments</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin: 0; min-width: 100px;">
+          <label class="form-label" style="font-size: 12px;">View</label>
+          <select id="calendar-view-range" class="form-select" style="font-size: 13px;">
+            <option value="month">This Month</option>
+            <option value="2months">2 Months</option>
+            <option value="3months">3 Months</option>
+          </select>
+        </div>
+        <button id="btn-refresh-calendar" class="btn" style="margin-top: 20px;">Refresh</button>
+      </div>
+
+      <!-- Calendar Navigation -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <button id="btn-calendar-prev" class="btn" style="padding: 6px 12px;">← Prev</button>
+        <h3 id="calendar-month-year" style="margin: 0; font-size: 18px; font-weight: 600;">Loading...</h3>
+        <button id="btn-calendar-next" class="btn" style="padding: 6px 12px;">Next →</button>
+      </div>
+
+      <!-- Calendar Grid -->
+      <div id="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 20px;">
+        <!-- Calendar will be rendered here by JavaScript -->
+      </div>
+
+      <!-- Legend -->
+      <div style="display: flex; gap: 16px; flex-wrap: wrap; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="width: 16px; height: 16px; border-radius: 4px; background: rgba(31, 111, 235, 0.3); border: 1px solid var(--accent);"></div>
+          <span>Course Event</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="width: 16px; height: 16px; border-radius: 4px; background: rgba(63, 185, 80, 0.3); border: 1px solid var(--success);"></div>
+          <span>Study Session</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="width: 16px; height: 16px; border-radius: 4px; background: rgba(188, 142, 249, 0.3); border: 1px solid var(--purple);"></div>
+          <span>Planned Repetition</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="width: 16px; height: 16px; border-radius: 4px; background: rgba(248, 81, 73, 0.3); border: 1px solid var(--error);"></div>
+          <span>Exam/Quiz</span>
+        </div>
+      </div>
+
+      <!-- Quick Add Planned Session -->
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+        <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Plan Spaced Repetition Session</h4>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <div class="form-group" style="margin: 0; min-width: 140px;">
+            <label class="form-label" style="font-size: 12px;">Date</label>
+            <input type="date" id="plan-session-date" class="form-input" style="font-size: 13px;">
+          </div>
+          <div class="form-group" style="margin: 0; min-width: 100px;">
+            <label class="form-label" style="font-size: 12px;">Minutes</label>
+            <input type="number" id="plan-session-minutes" class="form-input" value="60" min="15" step="15" style="font-size: 13px;">
+          </div>
+          <div class="form-group" style="margin: 0; flex: 1; min-width: 200px;">
+            <label class="form-label" style="font-size: 12px;">Course</label>
+            <select id="plan-session-course" class="form-select" style="font-size: 13px;">
+              <option value="">Optional</option>
+            </select>
+          </div>
+          <button id="btn-add-planned-session" class="btn btn-primary" style="margin-top: 20px;">Add Planned Session</button>
+        </div>
+        <div id="plan-session-status" style="margin-top: 8px; font-size: 12px;"></div>
+      </div>
+    </div>
+    </section>
+    
+    <!-- Scholar Tab -->
+    <section id="tab-scholar" class="tab-panel">
+      <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Scholar Research</h2>
+      
+      <!-- Scholar Section -->
+      <div class="card resume-section" id="scholar">
+        <div class="card-header">
+          <h2 class="card-title">Scholar Research Dashboard</h2>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+            Research progress, questions, and next steps
+          </p>
+        </div>
+
+        <!-- API Key Configuration -->
+        <div style="margin-bottom: 24px; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h4 style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0;">Scholar API Key</h4>
+            <button id="btn-toggle-api-key" class="btn" style="padding: 6px 10px; font-size: 12px;">Configure</button>
+          </div>
+          <div id="api-key-status" style="font-size: 12px; color: var(--text-muted);">Loading API key status...</div>
+          <div id="api-key-config" style="display: none; margin-top: 12px;">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="api-provider-select">Provider</label>
+                <select id="api-provider-select" class="form-select">
+                  <option value="openrouter">OpenRouter</option>
+                  <option value="openai">OpenAI</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="api-key-input">API Key</label>
+                <input id="api-key-input" class="form-input" type="password" placeholder="Paste your API key">
+              </div>
+            </div>
+            <div class="form-actions" style="margin-top: 8px;">
+              <button type="button" class="btn btn-primary" id="btn-save-api-key">Save Key</button>
+              <button type="button" class="btn" id="btn-test-api-key">Test</button>
+            </div>
+            <div id="api-key-test-result" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);"></div>
+          </div>
+        </div>
+
+        <!-- Scholar Status -->
+        <div style="margin-bottom: 24px;">
+        <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+          <div style="padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 150px;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Status</div>
+            <div id="scholar-status" style="font-size: 16px; font-weight: 600; color: var(--text-primary);">-</div>
+          </div>
+          <div style="padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 150px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Safe Mode</div>
+                <div id="scholar-safe-mode" style="font-size: 16px; font-weight: 600; color: var(--text-primary);">-</div>
+              </div>
+              <button id="btn-toggle-safe-mode" class="btn" style="padding: 4px 8px; font-size: 12px;">Toggle</button>
+            </div>
+          </div>
+          <div style="padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 150px;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Last Updated</div>
+            <div id="scholar-last-updated" style="font-size: 16px; font-weight: 600; color: var(--text-primary);">-</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Run Scholar Section -->
+      <div style="margin-bottom: 24px; padding: 16px; background: rgba(31, 111, 235, 0.1); border: 1px solid var(--accent); border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">Run Scholar</h4>
+          <button id="btn-run-scholar" class="btn btn-primary" style="margin: 0;">Start Run</button>
+        </div>
+        <div id="scholar-run-status" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+          Click "Start Run" to execute Scholar orchestrator
+        </div>
+        <div id="scholar-run-log" style="margin-top: 12px; padding: 12px; background: var(--bg); border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; display: none;">
+        </div>
+      </div>
+      
+      <!-- Questions Section -->
+      <div style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">
+            Questions Needing Answers
+            <span id="scholar-questions-count" style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">(0)</span>
+          </h4>
+          <button id="btn-save-answers" class="btn btn-primary" style="display: none;">Save Answers</button>
+        </div>
+        <div id="scholar-questions" style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-height: 60px;">
+          <div style="color: var(--text-muted); font-size: 13px;">Loading questions...</div>
+        </div>
+      </div>
+      
+      <!-- Coverage Checklist -->
+      <div style="margin-bottom: 24px;">
+        <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">
+          Coverage Progress
+          <span id="scholar-coverage-summary" style="font-size: 12px; color: var(--text-muted); margin-left: 8px;"></span>
+        </h4>
+        <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+          <div style="flex: 1; padding: 12px; background: rgba(63, 185, 80, 0.1); border: 1px solid var(--success); border-radius: 8px;">
+            <div style="font-size: 12px; color: var(--success); margin-bottom: 4px;">Complete</div>
+            <div id="scholar-coverage-complete" style="font-size: 24px; font-weight: 700; color: var(--success);">0</div>
+          </div>
+          <div style="flex: 1; padding: 12px; background: rgba(218, 54, 51, 0.1); border: 1px solid var(--warning); border-radius: 8px;">
+            <div style="font-size: 12px; color: var(--warning); margin-bottom: 4px;">In Progress</div>
+            <div id="scholar-coverage-progress" style="font-size: 24px; font-weight: 700; color: var(--warning);">0</div>
+          </div>
+          <div style="flex: 1; padding: 12px; background: rgba(139, 148, 158, 0.1); border: 1px solid var(--text-muted); border-radius: 8px;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Not Started</div>
+            <div id="scholar-coverage-not-started" style="font-size: 24px; font-weight: 700; color: var(--text-muted);">0</div>
+          </div>
+        </div>
+        <div id="scholar-coverage-list" style="max-height: 300px; overflow-y: auto; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
+          <div style="color: var(--text-muted); font-size: 13px;">Loading coverage checklist...</div>
+        </div>
+      </div>
+      
+      <!-- Next Steps -->
+      <div style="margin-bottom: 24px;">
+        <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">Next Steps</h4>
+        <div id="scholar-next-steps" style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-height: 60px;">
+          <div style="color: var(--text-muted); font-size: 13px;">Loading next steps...</div>
+        </div>
+      </div>
+      
+      <!-- Latest Run Summary -->
+      <div>
+        <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">Latest Run Summary</h4>
+        <div id="scholar-latest-run" style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
+          <div style="color: var(--text-muted);">Loading latest run...</div>
+        </div>
+      </div>
+    </div>
+    </section>
+    
+    <!-- Tutor Tab -->
+    <section id="tab-tutor" class="tab-panel">
+      <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Tutor</h2>
+      
+      <!-- Tutor Tab (skeleton) -->
+    <div class="card resume-section" id="tutor">
+      <div class="card-header">
+        <h2 class="card-title">Tutor (Dashboard Prototype)</h2>
+      </div>
+      <div class="form-section">
+        <div class="form-group">
+          <label for="tutor-question" class="form-label">Ask a question</label>
+          <textarea id="tutor-question" class="form-textarea" rows="3" placeholder="e.g., 'Walk me through the main landmarks of the gluteal region.'"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="btn-tutor-send">Send to Tutor</button>
+        </div>
+      </div>
+      <pre class="resume-preview" id="tutor-answer-box">Tutor stub is ready. Type a question and click "Send to Tutor".</pre>
+    </div>
+    </section>
+  </main>
+
+  
+</body>
+</html>

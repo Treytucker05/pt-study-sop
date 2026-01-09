@@ -11,7 +11,7 @@ brain_dir = ROOT / "brain"
 if str(brain_dir) not in sys.path:
     sys.path.append(str(brain_dir))
 
-import dashboard
+from dashboard import cli as dashboard
 import db_setup
 
 

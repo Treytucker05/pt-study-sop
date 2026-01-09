@@ -17,6 +17,9 @@ OUTPUT_DIR = os.path.join(BASE_DIR, 'output')
 # Database
 DB_PATH = os.path.join(DATA_DIR, 'pt_study.db')
 
+# API Configuration
+API_CONFIG_PATH = os.path.join(DATA_DIR, 'api_config.json')
+
 # Study modes
 STUDY_MODES = ['Sprint', 'Core', 'Drill']
 

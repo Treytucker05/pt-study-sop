@@ -46,7 +46,6 @@ Thumbs.db
 *.sqlite3
 brain/data/
 brain/output/
-brain/session_logs/
 
 # Logs
 *.log

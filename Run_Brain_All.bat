@@ -4,24 +4,51 @@ rem One-click: sync logs -> regenerate resume -> start dashboard -> open browser
 
 cd /d "%~dp0"
 
-echo [1/4] Syncing logs and regenerating resume...
-powershell -ExecutionPolicy Bypass -File brain\sync_all.ps1
-
-echo [2/4] Starting dashboard server (window titled 'PT Study Brain Dashboard')...
-set SERVER_DIR=%~dp0brain
-start "PT Study Brain Dashboard" cmd /k "cd /d \"%SERVER_DIR%\" && python dashboard_web.py"
-
-echo [3/4] Waiting for server to come up on http://127.0.0.1:5000 ...
-powershell -Command "for($i=1;$i -le 10;$i++){ if(Test-NetConnection -ComputerName 127.0.0.1 -Port 5000 -InformationLevel Quiet){ exit 0 }; Start-Sleep -Seconds 2 }; exit 1"
-if %errorlevel% EQU 0 (
-    echo Server is up.
-    goto OPEN_BROWSER
+rem Resolve Python (prefer python, fallback to py -3)
+set "PYEXE="
+for %%I in (python py) do (
+    where %%I >nul 2>nul && set "PYEXE=%%I" && goto :PYFOUND
 )
-echo [WARN] Server did not respond after 10 attempts. Check the 'PT Study Brain Dashboard' window for errors or port conflicts.
+echo [ERROR] Python was not found on PATH. Install Python 3 or add it to PATH.
+echo         If you use the Python Launcher, install it so `py -3` works.
 goto END
 
+:PYFOUND
+if /I "%PYEXE%"=="py" set "PYEXE=py -3"
+
+echo [1/5] Ensuring Brain database is initialized...
+cd /d "%~dp0brain"
+if not exist "db_setup.py" (
+    echo [ERROR] Could not find brain\db_setup.py from %~dp0.
+    goto END
+)
+python db_setup.py
+if %errorlevel% NEQ 0 (
+    echo [ERROR] Failed to initialize database. Check Python installation and brain\db_setup.py.
+    goto END
+)
+
+cd /d "%~dp0"
+echo [2/5] Syncing logs and regenerating resume...
+if not exist "brain\sync_all.ps1" (
+    echo [ERROR] Could not find brain\sync_all.ps1 from %~dp0.
+    goto END
+)
+powershell -ExecutionPolicy Bypass -File brain\sync_all.ps1
+
+echo [3/5] Starting dashboard server (window titled 'PT Study Brain Dashboard')...
+set "SERVER_DIR=%~dp0brain"
+if not exist "%SERVER_DIR%\dashboard_web.py" (
+    echo [ERROR] Could not find brain\dashboard_web.py from %~dp0.
+    goto END
+)
+start "PT Study Brain Dashboard" cmd /k cd /d "%SERVER_DIR%" ^& python dashboard_web.py
+
+echo [4/5] Giving the server a few seconds to start...
+timeout /t 5 /nobreak >nul
+
 :OPEN_BROWSER
-echo [4/4] Opening dashboard in browser...
+echo [5/5] Opening dashboard in browser...
 start "" http://127.0.0.1:5000
 
 :END

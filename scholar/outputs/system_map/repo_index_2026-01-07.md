@@ -1,0 +1,357 @@
+# Repo Index - 2026-01-07
+- Generated: 2026-01-07 19:10:54
+- Scope: sop/, scholar/, brain/
+
+## Modules and Engines
+### Modules (sop/modules)
+- sop/modules/M0-planning.md
+- sop/modules/M1-entry.md
+- sop/modules/M2-prime.md
+- sop/modules/M3-encode.md
+- sop/modules/M4-build.md
+- sop/modules/M5-modes.md
+- sop/modules/M6-wrap.md
+
+### Modules (sop/gpt-knowledge)
+- sop/gpt-knowledge/M0-planning.md
+- sop/gpt-knowledge/M1-entry.md
+- sop/gpt-knowledge/M2-prime.md
+- sop/gpt-knowledge/M3-encode.md
+- sop/gpt-knowledge/M4-build.md
+- sop/gpt-knowledge/M5-modes.md
+- sop/gpt-knowledge/M6-wrap.md
+
+### Engines (sop/engines)
+- sop/engines/anatomy-engine.md
+- sop/engines/concept-engine.md
+- sop/engines/README.md
+
+### Frameworks (sop/frameworks)
+- sop/frameworks/H-series.md
+- sop/frameworks/levels.md
+- sop/frameworks/M-series.md
+- sop/frameworks/README.md
+
+### Other gpt-knowledge documents
+- sop/gpt-knowledge/anatomy-engine.md
+- sop/gpt-knowledge/ARCHIVE_MASTER_FULL.md
+- sop/gpt-knowledge/brain-session-log-template.md
+- sop/gpt-knowledge/BUILD_ORDER.md
+- sop/gpt-knowledge/concept-engine.md
+- sop/gpt-knowledge/DEPLOYMENT_CHECKLIST.md
+- sop/gpt-knowledge/gpt-instructions.md
+- sop/gpt-knowledge/H-series.md
+- sop/gpt-knowledge/KWIK.md
+- sop/gpt-knowledge/levels.md
+- sop/gpt-knowledge/MASTER.md
+- sop/gpt-knowledge/M-series.md
+- sop/gpt-knowledge/notebooklm-bridge.md
+- sop/gpt-knowledge/PEIRRO.md
+- sop/gpt-knowledge/README.md
+- sop/gpt-knowledge/runtime-prompt.md
+- sop/gpt-knowledge/Y-series.md
+
+## Full File Index
+### sop/
+- sop\engines\anatomy-engine.md
+- sop\engines\concept-engine.md
+- sop\engines\README.md
+- sop\engines\templates\anatomy-engine_template.md
+- sop\engines\templates\engine_template.md
+- sop\examples\commands.md
+- sop\examples\gated-platter.md
+- sop\examples\README.md
+- sop\examples\sprint-dialogue.md
+- sop\examples\v8.6_example_flows.md
+- sop\frameworks\H-series.md
+- sop\frameworks\levels.md
+- sop\frameworks\M-series.md
+- sop\frameworks\README.md
+- sop\gpt-knowledge\anatomy-engine.md
+- sop\gpt-knowledge\ARCHIVE_MASTER_FULL.md
+- sop\gpt-knowledge\brain-session-log-template.md
+- sop\gpt-knowledge\BUILD_ORDER.md
+- sop\gpt-knowledge\concept-engine.md
+- sop\gpt-knowledge\DEPLOYMENT_CHECKLIST.md
+- sop\gpt-knowledge\gpt-instructions.md
+- sop\gpt-knowledge\H-series.md
+- sop\gpt-knowledge\KWIK.md
+- sop\gpt-knowledge\levels.md
+- sop\gpt-knowledge\M0-planning.md
+- sop\gpt-knowledge\M1-entry.md
+- sop\gpt-knowledge\M2-prime.md
+- sop\gpt-knowledge\M3-encode.md
+- sop\gpt-knowledge\M4-build.md
+- sop\gpt-knowledge\M5-modes.md
+- sop\gpt-knowledge\M6-wrap.md
+- sop\gpt-knowledge\MASTER.md
+- sop\gpt-knowledge\M-series.md
+- sop\gpt-knowledge\notebooklm-bridge.md
+- sop\gpt-knowledge\PEIRRO.md
+- sop\gpt-knowledge\README.md
+- sop\gpt-knowledge\runtime-prompt.md
+- sop\gpt-knowledge\Y-series.md
+- sop\legacy\LEGACY VERSIONS\Audit_Study_SOP_and_Brain.md
+- sop\legacy\LEGACY VERSIONS\changelog.md
+- sop\legacy\LEGACY VERSIONS\methods_index.md
+- sop\legacy\LEGACY VERSIONS\PT_Study_SOP_Master_Plan_v8.md
+- sop\legacy\LEGACY VERSIONS\README.md
+- sop\legacy\LEGACY VERSIONS\Run_PT_Study_Brain_AllInOne.py
+- sop\legacy\LEGACY VERSIONS\SERVER_GUIDE.md
+- sop\legacy\LEGACY VERSIONS\stop_server.py
+- sop\legacy\LEGACY VERSIONS\USAGE.md
+- sop\legacy\LEGACY VERSIONS\v7\Concise and Full Study SOP 7.1.txt
+- sop\legacy\LEGACY VERSIONS\v7\Concise Study SOP 7.1.txt
+- sop\legacy\LEGACY VERSIONS\v7\PT Study SOP -é-É-ú Single-Session v7.3.txt
+- sop\legacy\LEGACY VERSIONS\v7\PT_Study_SOP_v7.4.md
+- sop\legacy\LEGACY VERSIONS\v7\sop_v7_core.md
+- sop\legacy\LEGACY VERSIONS\v7\v7.3.md
+- sop\legacy\LEGACY VERSIONS\v7\V7.4.md
+- sop\legacy\LEGACY VERSIONS\v8.1\Concepts_and_Systems_Review.md
+- sop\legacy\LEGACY VERSIONS\v8.1\Master_Index.md
+- sop\legacy\LEGACY VERSIONS\v8.1\Module_5_Troubleshooting.md
+- sop\legacy\LEGACY VERSIONS\v8.1\Module_7_Meta_Revision_Log.md
+- sop\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Custom_GPT_Instructions.md
+- sop\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Master_Index.md
+- sop\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_1_Core_Protocol.md
+- sop\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_2_Triage_Rules.md
+- sop\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_3_Framework_Selector.md
+- sop\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_4_Session_Recap_Template.md
+- sop\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_6_Framework_Library.md
+- sop\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Runtime_Prompt.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_pre_safe_deploy\Custom_GPT_Instructions.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_pre_safe_deploy\Master_Index.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_pre_safe_deploy\Module_1_Core_Protocol.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_pre_safe_deploy\Module_6_Framework_Library.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_pre_safe_deploy\Runtime_Prompt.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\Custom_GPT_Instructions.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\Master_Index.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\Module_1_Core_Protocol.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\Module_6_Framework_Library.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\README.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Custom_GPT_Instructions.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Master_Index.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Module_1_Core_Protocol.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Module_2_Triage_Rules.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Module_3_Framework_Selector.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Module_4_Session_Recap_Template.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Module_5_Troubleshooting.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Module_6_Framework_Library.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Module_7_Meta_Revision_Log.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Runtime_Prompt.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.3\Custom_GPT_Instructions.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.3\Master_Index.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.3\Module_1_Core_Protocol.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.3\Module_2_Triage_Rules.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.3\Module_3_Framework_Selector.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.3\Module_4_Session_Recap_Template.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.3\Module_6_Framework_Library.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.3\Runtime_Prompt.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Custom_GPT_Instructions.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Master_Index.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_1_Core_Protocol.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_2_Triage_Rules.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_3_Framework_Selector.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_4_Session_Recap_Template.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_6_Framework_Library.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Runtime_Prompt.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.5.1\Custom_GPT_Instructions.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.5.1\Master_Index.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.5.1\Module_1_Core_Protocol.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.5.1\Module_6_Framework_Library.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.5.1\Runtime_Prompt.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\README.md
+- sop\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\Runtime_Prompt.md
+- sop\legacy\LEGACY VERSIONS\VERSION_REFERENCE.md
+- sop\legacy\v9.1\CHANGELOG.md
+- sop\legacy\v9.1\engines\templates\anatomy-engine_template.md
+- sop\legacy\v9.1\engines\templates\engine_template.md
+- sop\legacy\v9.1\GPT-INSTRUCTIONS.md
+- sop\legacy\v9.1\gpt-knowledge\anatomy-engine.md
+- sop\legacy\v9.1\gpt-knowledge\gpt-instructions.md
+- sop\legacy\v9.1\gpt-knowledge\H-series.md
+- sop\legacy\v9.1\gpt-knowledge\levels.md
+- sop\legacy\v9.1\gpt-knowledge\M0-planning.md
+- sop\legacy\v9.1\gpt-knowledge\M1-entry.md
+- sop\legacy\v9.1\gpt-knowledge\M2-prime.md
+- sop\legacy\v9.1\gpt-knowledge\M3-encode.md
+- sop\legacy\v9.1\gpt-knowledge\M4-build.md
+- sop\legacy\v9.1\gpt-knowledge\M5-modes.md
+- sop\legacy\v9.1\gpt-knowledge\M6-wrap.md
+- sop\legacy\v9.1\gpt-knowledge\MASTER.md
+- sop\legacy\v9.1\gpt-knowledge\M-series.md
+- sop\legacy\v9.1\gpt-knowledge\runtime-prompt.md
+- sop\legacy\v9.1\MASTER.md
+- sop\legacy\v9.1\MASTER_PLAN_PT_STUDY.md
+- sop\legacy\v9.1\PT_Study_SOP_v9.1_ALL.md
+- sop\legacy\v9.1\README.md
+- sop\legacy\v9.1\RESEARCH_TOPICS.md
+- sop\legacy\versions\changelog_legacy.md
+- sop\legacy\versions\v8.6\Custom_GPT_Instructions.md
+- sop\legacy\versions\v8.6\Runtime_Prompt.md
+- sop\library\ARCHIVE_NOTES.md
+- sop\library\mechanisms\README.md
+- sop\library\mechanisms\v7.md
+- sop\library\mechanisms\v8.1_concepts_systems.md
+- sop\library\mechanisms\v8.1_troubleshooting.md
+- sop\library\mechanisms\v8.6.md
+- sop\library\methods\desirable-difficulties.md
+- sop\library\methods\drawing-for-anatomy.md
+- sop\library\methods\elaborative-interrogation.md
+- sop\library\methods\metacognition.md
+- sop\library\methods\retrieval-practice.md
+- sop\library\modes\README.md
+- sop\library\modes\v8.4.md
+- sop\library\modes\v8.6.md
+- sop\library\prompts\README.md
+- sop\library\prompts\v7.md
+- sop\library\prompts\v8.4_custom_instructions.md
+- sop\library\prompts\v8.4_runtime_prompt.md
+- sop\library\prompts\v8.5.1_custom_instructions.md
+- sop\library\prompts\v8.5.1_pre_custom_instructions.md
+- sop\library\prompts\v8.5.1_pre_runtime_prompt.md
+- sop\library\prompts\v8.5.1_runtime_prompt.md
+- sop\library\prompts\v8.6_custom_instructions.md
+- sop\library\prompts\v8.6_runtime_prompt.md
+- sop\library\protocols\README.md
+- sop\library\protocols\v7_core.md
+- sop\library\protocols\v8.4.md
+- sop\library\protocols\v8.5.1.md
+- sop\library\protocols\v8.5.1_pre.md
+- sop\library\protocols\v8.6.md
+- sop\library\research\ACTIVE_RESEARCH_LOG.md
+- sop\library\research\M0-planning-research.md
+- sop\library\research\M2-prime-research.md
+- sop\library\research\M3-encode-research.md
+- sop\library\research\M4-build-research.md
+- sop\library\research\M5-modes-research.md
+- sop\library\research\M6-wrap-research.md
+- sop\library\v7.md
+- sop\library\v8.4_library.md
+- sop\library\v8.4_selector.md
+- sop\library\v8.5.1.md
+- sop\library\v8.5.1_pre.md
+- sop\library\v8.6_library.md
+- sop\library\v8.6_recap_engine.md
+- sop\library\versions\v8.6\Module_1_Core_Protocol.md
+- sop\library\versions\v8.6\Module_2_Modes.md
+- sop\library\versions\v8.6\Module_4_Recap_Engine.md
+- sop\library\versions\v8.6\Module_5_Example_Flows.md
+- sop\library\versions\v8.6\Module_6_Framework_Library.md
+- sop\library\versions\v9.1\anatomy-engine.md
+- sop\library\versions\v9.1\M0-planning.md
+- sop\library\versions\v9.1\M1-entry.md
+- sop\library\versions\v9.1\M2-prime.md
+- sop\library\versions\v9.1\M3-encode.md
+- sop\library\versions\v9.1\M4-build.md
+- sop\library\versions\v9.1\M5-modes.md
+- sop\library\versions\v9.1\M6-wrap.md
+- sop\library\working\ORG_AUDIT.md
+- sop\library\working\PLAN_v9.2_dev.md
+- sop\library\working\ROADMAP.md
+- sop\library\working\STRUCTURE_v9.2.md
+- sop\library\working\v9.2_CHECKLIST.md
+- sop\MASTER_PLAN_PT_STUDY.md
+- sop\MASTER_REFERENCE_v9.2.md
+- sop\modules\M0-planning.md
+- sop\modules\M1-entry.md
+- sop\modules\M2-prime.md
+- sop\modules\M3-encode.md
+- sop\modules\M4-build.md
+- sop\modules\M5-modes.md
+- sop\modules\M6-wrap.md
+- sop\research\PEIRRO_encode_research.md
+- sop\research\RESEARCH_TOPICS.md
+- sop\RESEARCH_INDEX.md
+
+### scholar/
+- scholar\CHARTER.md
+- scholar\inputs\audit_manifest.json
+- scholar\knowledge\log_analysis.md
+- scholar\knowledge\pedagogy_audit.md
+- scholar\outputs\gap_analysis\gap_analysis_2026-01-07.md
+- scholar\outputs\module_dossiers\brain-session-log-template_dossier_2026-01-07.md
+- scholar\outputs\module_dossiers\M0-planning_dossier_2026-01-07.md
+- scholar\outputs\module_dossiers\M1-entry_dossier_2026-01-07.md
+- scholar\outputs\module_dossiers\M2-prime_dossier_2026-01-07.md
+- scholar\outputs\module_dossiers\M3-encode_dossier_2026-01-07.md
+- scholar\outputs\module_dossiers\M4-build_dossier_2026-01-07.md
+- scholar\outputs\module_dossiers\M5-modes_dossier_2026-01-07.md
+- scholar\outputs\module_dossiers\M6-wrap_dossier_2026-01-07.md
+- scholar\outputs\module_dossiers\notebooklm-bridge_dossier_2026-01-07.md
+- scholar\outputs\orchestrator_runs\coverage_report_2026-01-07.md
+- scholar\outputs\orchestrator_runs\diagnostic_brief_2026-01-07_183027.md
+- scholar\outputs\orchestrator_runs\questions_backlog_2026-01-07.md
+- scholar\outputs\orchestrator_runs\run_2026-01-07_example.md
+- scholar\outputs\orchestrator_runs\run_2026-01-07_M0-M6-bridge.md
+- scholar\outputs\orchestrator_runs\unattended_final_07-Wed-01_175409.md
+- scholar\outputs\promotion_queue\change_proposal_mastery_count_2026-01-07.md
+- scholar\outputs\promotion_queue\change_proposal_probe_first_2026-01-07.md
+- scholar\outputs\promotion_queue\change_proposal_semantic_kwik_2026-01-07.md
+- scholar\outputs\promotion_queue\experiment_mastery_count_2026-01-07.md
+- scholar\outputs\promotion_queue\experiment_probe_first_2026-01-07.md
+- scholar\outputs\promotion_queue\experiment_semantic_kwik_2026-01-07.md
+- scholar\outputs\proposals\change_proposal_core_mode_probe_refine_lock_2026-01-07.md
+- scholar\outputs\proposals\experiment_core_mode_probe_refine_lock_2026-01-07.md
+- scholar\outputs\reports\audit_2025-12-11_geriatrics.md
+- scholar\outputs\reports\module_audit_M0-M6-bridge_2026-01-07.md
+- scholar\outputs\reports\module_audit_M2-prime_2026-01-07.md
+- scholar\outputs\reports\synthesis_recent_logs_2026-01-07.md
+- scholar\outputs\research_notebook\M0_research_2026-01-07_pretesting.md
+- scholar\outputs\research_notebook\M1_research_2026-01-07_sleepiness.md
+- scholar\outputs\research_notebook\M3_research_2026-01-07_dualcoding.md
+- scholar\outputs\research_notebook\M4_research_2026-01-07_cogload.md
+- scholar\outputs\research_notebook\M4_research_2026-01-07_successive_relearning.md
+- scholar\outputs\research_notebook\M6_research_2026-01-07_spacedrep.md
+- scholar\outputs\system_map\coverage_checklist_2026-01-07.md
+- scholar\outputs\system_map\dossier_backlog_2026-01-07.md
+- scholar\outputs\system_map\glossary_2026-01-07.md
+- scholar\outputs\system_map\repo_index_2026-01-07.md
+- scholar\outputs\system_map\system_map_2026-01-07.md
+- scholar\README.md
+- scholar\TEMPLATES\audit_report.md
+- scholar\TEMPLATES\change_proposal.md
+- scholar\TEMPLATES\experiment_design.md
+- scholar\TEMPLATES\gap_analysis.md
+- scholar\TEMPLATES\module_dossier.md
+- scholar\TEMPLATES\patch_draft.md
+- scholar\TEMPLATES\research_note.md
+- scholar\TEMPLATES\system_map.md
+- scholar\workflows\audit_module.md
+- scholar\workflows\audit_session.md
+- scholar\workflows\build_system_map.md
+- scholar\workflows\generate_module_dossier.md
+- scholar\workflows\orchestrator_loop.md
+- scholar\workflows\orchestrator_run_prompt.md
+- scholar\workflows\promotion_pipeline.md
+- scholar\workflows\run_gap_analysis.md
+- scholar\workflows\weekly_cycle.md
+
+### brain/
+- brain\__init__.py
+- brain\config.py
+- brain\dashboard.py
+- brain\dashboard\README.md
+- brain\dashboard_web.py
+- brain\db_setup.py
+- brain\generate_resume.py
+- brain\ingest_session.py
+- brain\new_session.py
+- brain\README.md
+- brain\session_logs\2025_12_05_session_2_module_9.md
+- brain\session_logs\2025-02-06_glute_recap.md
+- brain\session_logs\2025-12-05_Anatomy_gluteal_region.md
+- brain\session_logs\2025-12-05_Anatomy_gluteal_region_session2.md
+- brain\session_logs\2025-12-05_session_3_wrap.md
+- brain\session_logs\2025-12-08_assistant_help.md
+- brain\session_logs\2025-12-08_lower_limb_anatomy.md
+- brain\session_logs\2025-12-08_week11_face_encoding.md
+- brain\session_logs\2025-12-09_assistant_help.md
+- brain\session_logs\2025-12-10_exam3_final_prep.md
+- brain\session_logs\2025-12-11_geriatrics_normal_vs_common_abnormal.md
+- brain\session_logs\SAMPLE_SESSION_v0.md
+- brain\session_logs\TEMPLATE.md
+- brain\sync_all.ps1
+- brain\tests\test_ingest_session.py
+- brain\tests\test_trends.py
+

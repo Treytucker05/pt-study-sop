@@ -1,0 +1,3 @@
+﻿- Should PEIRRO's Overlearn step always hand off to M6 scheduling, or is there a required in-session spacing rule for Overlearn itself?
+- What is the canonical error-typing schema for Refine (if any) so remediation can be standardized (e.g., Recall vs Conceptual vs Procedure)?
+- Where should KWIK locks be stored by default (brain log only, cards only, or both), and is there a required minimum metadata schema?

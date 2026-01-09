@@ -1,10 +1,26 @@
-# Dashboard (Deferred)
 
-This dashboard is **not implemented yet**. See `docs/roadmap/DEFERRED_FEATURES.md` for the current deferment reasons and dependencies.
+# Brain Dashboard Package
 
-When work resumes, use this directory for:
-- Data access layer and API for session metrics
-- UI prototypes (web or app) for progress tracking and insights
-- Shared dashboard utilities (e.g., query helpers, visualization config)
+This directory contains the modularized Flask application for the PT Study Brain Dashboard.
 
-Add an architecture outline and initial entry point here (e.g., `app.py` or `frontend/`) once implementation starts.
+## Structure
+
+- `__init__.py`: Package initialization.
+- `app.py`: Flask application factory.
+- `routes.py`: Flask Blueprint validation and route definitions.
+- `stats.py`: Dashboard statistics and analytics logic.
+- `scholar.py`: Scholar integration (orchestrator, questions, API).
+- `syllabus.py`: Syllabus and Course Event management logic.
+- `calendar.py`: Calendar data aggregation logic.
+- `utils.py`: Utility functions and configuration helpers.
+- `cli.py`: CLI tools (formerly `dashboard.py`).
+
+## Usage
+
+The application is run via the entry point `dashboard_web.py` in the `brain/` root directory:
+
+```bash
+python dashboard_web.py
+```
+
+Or via the `Run_Brain_All.bat` launcher.
