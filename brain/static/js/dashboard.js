@@ -43,6 +43,7 @@ function openTab(evt, tabName) {
 let allCourses = [];
 let currentCalendarDate = new Date();
 let calendarData = { events: [], sessions: [], planned: [] };
+let currentScholarQuestions = [];
 
 // DOM Elements
 const totalSessions = document.getElementById('total-sessions');
@@ -544,6 +545,7 @@ function renderScholar(data) {
   const questionsContainer = document.getElementById('scholar-questions');
   const questionsCount = document.getElementById('scholar-questions-count');
   const questions = data.questions || [];
+  currentScholarQuestions = questions;
   questionsCount.textContent = `(${questions.length})`;
   const saveAnswersBtn = document.getElementById('btn-save-answers');
 
@@ -557,49 +559,68 @@ function renderScholar(data) {
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
               <div style="font-size: 13px; color: var(--text-primary); font-weight: 600; flex: 1;">Q${i + 1}: ${q}</div>
               <div style="display: flex; gap: 4px; margin-left: 8px;">
-                <button 
-                  class="btn" 
+                <button
+                  class="btn"
                   style="font-size: 11px; padding: 4px 8px;"
-                  onclick="toggleChat(${i})"
+                  onclick="openScholarChat(${i}, 'clarify')"
                   id="btn-chat-${i}"
-                  title="Discuss this question with AI"
+                  title="Chat to clarify or refine"
                 >
-                  💬 Chat / Clarify
+                  💬 Chat
                 </button>
-                <button 
-                  class="btn" 
+                <button
+                  class="btn"
                   style="font-size: 11px; padding: 4px 8px;"
-                  onclick="generateAnswer(${i}, '${q.replace(/'/g, "\\'")}')"
+                  onclick="openScholarChat(${i}, 'generate', true)"
                   id="btn-generate-${i}"
-                  title="Generate an answer"
+                  title="Generate a draft via chat"
                 >
-                  ✨ Generate
+                  ✨ Generate (Chat)
                 </button>
               </div>
             </div>
             
             <!-- Chat Panel -->
             <div id="chat-panel-${i}" style="display: none; padding: 12px; background: rgba(31, 111, 235, 0.05); border-left: 3px solid var(--accent); border-radius: 4px; margin-bottom: 8px;">
+               <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;">
+                 <span style="font-size: 11px; color: var(--text-muted);">Mode:</span>
+                 <button
+                   class="btn"
+                   id="chat-mode-clarify-${i}"
+                   style="font-size: 10px; padding: 3px 8px;"
+                   onclick="setChatMode(${i}, 'clarify')"
+                 >
+                   Clarify
+                 </button>
+                 <button
+                   class="btn"
+                   id="chat-mode-generate-${i}"
+                   style="font-size: 10px; padding: 3px 8px;"
+                   onclick="setChatMode(${i}, 'generate')"
+                 >
+                   Generate
+                 </button>
+               </div>
                <div id="chat-history-${i}" style="max-height: 200px; overflow-y: auto; margin-bottom: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
-                   <!-- History Items -->
+                    <!-- History Items -->
                </div>
                
                <textarea 
                  id="chat-input-${i}" 
                  class="form-textarea" 
                  rows="2" 
-                 placeholder="Ask clarifying question or discuss..."
-                 style="width: 100%; font-size: 12px; margin-bottom: 6px;"
-               ></textarea>
+                  placeholder="Ask a follow-up or request a draft answer..."
+                  style="width: 100%; font-size: 12px; margin-bottom: 6px;"
+                ></textarea>
                
                <div style="display: flex; gap: 6px;">
                  <button 
                    class="btn btn-primary" 
                    style="font-size: 11px; padding: 4px 10px;"
-                   onclick="sendChatMessage(${i}, '${q.replace(/'/g, "\\'")}')"
-                 >
-                   Send
-                 </button>
+                    onclick="sendChatMessage(${i})"
+                  >
+                    Send
+                  </button>
                  <button 
                    class="btn" 
                    style="font-size: 11px; padding: 4px 10px;"
@@ -611,9 +632,9 @@ function renderScholar(data) {
             </div>
 
             <div id="generated-answer-${i}" style="display: none; margin-bottom: 8px; padding: 8px; background: var(--bg-alt); border: 1px dashed var(--accent);">
-                <div style="font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 4px;">Generated Answer:</div>
+                <div style="font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 4px;">Last AI Reply:</div>
                 <div id="generated-text-${i}" style="font-size: 13px; white-space: pre-wrap; margin-bottom: 6px;"></div>
-                <button class="btn" style="font-size: 10px;" onclick="useGeneratedAnswer(${i})">Use This Answer</button>
+                <button class="btn" style="font-size: 10px;" onclick="useGeneratedAnswer(${i})">Use Reply</button>
             </div>
 
             <textarea 
@@ -695,7 +716,7 @@ const btnRunScholar = document.getElementById('btn-run-scholar');
 const scholarRunStatus = document.getElementById('scholar-run-status');
 const scholarRunLog = document.getElementById('scholar-run-log');
 
-btnRunScholar.addEventListener('click', async () => {
+if (btnRunScholar && scholarRunStatus && scholarRunLog) btnRunScholar.addEventListener('click', async () => {
   // Check for unanswered questions first
   const questions = document.querySelectorAll('#scholar-questions textarea[id^="answer-"]');
   const unansweredCount = Array.from(questions).filter(ta => !ta.value.trim()).length;
@@ -836,8 +857,9 @@ async function checkRunStatus(runId) {
 
 // Safe mode toggle
 const btnToggleSafeMode = document.getElementById('btn-toggle-safe-mode');
-btnToggleSafeMode.addEventListener('click', async () => {
-  const currentMode = document.getElementById('scholar-safe-mode').getAttribute('data-safe-mode') === 'true';
+if (btnToggleSafeMode) btnToggleSafeMode.addEventListener('click', async () => {
+  const safeModeEl = document.getElementById('scholar-safe-mode');
+  const currentMode = safeModeEl && safeModeEl.getAttribute('data-safe-mode') === 'true';
   const newMode = !currentMode;
 
   btnToggleSafeMode.disabled = true;
@@ -874,8 +896,9 @@ btnToggleSafeMode.addEventListener('click', async () => {
 
 // Save answers handling
 const saveAnswersBtn = document.getElementById('btn-save-answers');
-saveAnswersBtn.addEventListener('click', async () => {
+if (saveAnswersBtn) saveAnswersBtn.addEventListener('click', async () => {
   const questionsContainer = document.getElementById('scholar-questions');
+  if (!questionsContainer) return;
   const textareas = questionsContainer.querySelectorAll('textarea[id^="answer-"]');
   const answers = Array.from(textareas).map(ta => ta.value.trim());
 
@@ -928,6 +951,7 @@ const apiKeyTestResult = document.getElementById('api-key-test-result');
 const apiProviderSelect = document.getElementById('api-provider-select');
 
 async function loadApiKeyStatus() {
+  if (!apiKeyStatus) return;
   try {
     const res = await fetch('/api/scholar/api-key');
     const data = await res.json();
@@ -945,7 +969,7 @@ async function loadApiKeyStatus() {
   }
 }
 
-btnToggleApiKey.addEventListener('click', () => {
+if (btnToggleApiKey && apiKeyConfig && apiKeyInput) btnToggleApiKey.addEventListener('click', () => {
   const isVisible = apiKeyConfig.style.display !== 'none';
   apiKeyConfig.style.display = isVisible ? 'none' : 'block';
   btnToggleApiKey.textContent = isVisible ? 'Configure' : 'Cancel';
@@ -954,7 +978,7 @@ btnToggleApiKey.addEventListener('click', () => {
   }
 });
 
-btnSaveApiKey.addEventListener('click', async () => {
+if (btnSaveApiKey && apiKeyInput && apiKeyStatus) btnSaveApiKey.addEventListener('click', async () => {
   const apiKey = apiKeyInput.value.trim();
   if (!apiKey) {
     alert('Please enter an API key');
@@ -996,7 +1020,7 @@ btnSaveApiKey.addEventListener('click', async () => {
   }
 });
 
-btnTestApiKey.addEventListener('click', async () => {
+if (btnTestApiKey && apiKeyInput && apiKeyTestResult) btnTestApiKey.addEventListener('click', async () => {
   const apiKey = apiKeyInput.value.trim();
   if (!apiKey) {
     alert('Please enter an API key first');
@@ -1008,13 +1032,19 @@ btnTestApiKey.addEventListener('click', async () => {
   apiKeyTestResult.innerHTML = 'Testing API key...';
 
   try {
-    // Test by generating a simple answer
+    const apiProvider = apiProviderSelect ? apiProviderSelect.value : 'openrouter';
+    const model = apiProvider === 'openrouter' ? 'zai-ai/glm-4.7' : 'gpt-4o-mini';
+
+    // Test by generating a simple answer with the provided key (no save)
     const res = await fetch('/api/scholar/questions/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         question: 'Test question: What is PEIRRO?',
-        context: 'Testing API key connectivity.'
+        context: 'Testing API key connectivity.',
+        api_key: apiKey,
+        api_provider: apiProvider,
+        model: model
       })
     });
 
@@ -1033,38 +1063,9 @@ btnTestApiKey.addEventListener('click', async () => {
 });
 
 // Answer generation functions (global scope for onclick handlers)
-window.generateAnswer = async function (questionIndex, questionText) {
-  const btn = document.getElementById(`btn-generate-${questionIndex}`);
-  const generatedDiv = document.getElementById(`generated-answer-${questionIndex}`);
-  const generatedText = document.getElementById(`generated-text-${questionIndex}`);
-
-  btn.disabled = true;
-  btn.textContent = 'Generating...';
-  generatedDiv.style.display = 'none';
-
-  try {
-    const res = await fetch('/api/scholar/questions/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question: questionText,
-        question_index: questionIndex
-      })
-    });
-
-    const data = await res.json();
-    if (data.ok) {
-      generatedText.textContent = data.answer;
-      generatedDiv.style.display = 'block';
-    } else {
-      alert(`Error generating answer: ${data.message}`);
-    }
-  } catch (error) {
-    alert(`Network error: ${error.message}`);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '✨ Generate';
-  }
+window.generateAnswer = function (questionIndex) {
+  // Backwards-compatible entry point: open chat in generate mode and auto-send the question.
+  window.openScholarChat(questionIndex, 'generate', true);
 };
 
 window.useGeneratedAnswer = function (questionIndex) {
@@ -1403,29 +1404,110 @@ function initDashboard() {
 
 
 // Chat System for Scholar
-window.toggleChat = function (index) {
+window.openScholarChat = function (index, mode = 'clarify', autoSend = false) {
   const panel = document.getElementById(`chat-panel-${index}`);
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-  if (panel.style.display === 'block') {
-    document.getElementById(`chat-input-${index}`).focus();
+  const inputEl = document.getElementById(`chat-input-${index}`);
+  if (!panel || !inputEl) return;
+
+  chatModes[index] = mode;
+  updateChatModeUI(index, mode);
+  renderChatHistory(index, mode);
+
+  panel.style.display = 'block';
+  inputEl.focus();
+
+  if (autoSend) {
+    const history = getChatHistory(index, mode);
+    const scholarQuestion = (currentScholarQuestions[index] || '').trim();
+    if (history.length === 0 && scholarQuestion) {
+      inputEl.value = scholarQuestion;
+      window.sendChatMessage(index);
+    }
   }
 };
 
-// Store chat history in memory (simple session storage)
-const chatHistories = {}; // index -> [{role: 'user'|'assistant', content: str}]
+window.toggleChat = function (index) {
+  const panel = document.getElementById(`chat-panel-${index}`);
+  if (!panel) return;
+  if (panel.style.display === 'none' || panel.style.display === '') {
+    window.openScholarChat(index, chatModes[index] || 'clarify', false);
+  } else {
+    panel.style.display = 'none';
+  }
+};
 
-window.sendChatMessage = async function (index, scholarQuestion) {
+window.setChatMode = function (index, mode) {
+  chatModes[index] = mode;
+  updateChatModeUI(index, mode);
+  renderChatHistory(index, mode);
+  const inputEl = document.getElementById(`chat-input-${index}`);
+  if (inputEl) inputEl.focus();
+};
+
+// Store chat history in memory (simple session storage)
+const chatHistories = {}; // index -> { clarify: [{role, content}], generate: [{role, content}] }
+const chatModes = {}; // index -> 'clarify' | 'generate'
+
+function getChatHistory(index, mode) {
+  if (!chatHistories[index]) {
+    chatHistories[index] = { clarify: [], generate: [] };
+  }
+  if (!chatHistories[index][mode]) {
+    chatHistories[index][mode] = [];
+  }
+  return chatHistories[index][mode];
+}
+
+function updateChatModeUI(index, mode) {
+  const clarifyBtn = document.getElementById(`chat-mode-clarify-${index}`);
+  const generateBtn = document.getElementById(`chat-mode-generate-${index}`);
+  if (!clarifyBtn || !generateBtn) return;
+
+  const activeStyle = 'background: var(--accent); color: #fff; border-color: var(--accent);';
+  const inactiveStyle = 'background: var(--card-bg); color: var(--text-secondary); border-color: var(--border);';
+
+  if (mode === 'generate') {
+    generateBtn.style.cssText = generateBtn.style.cssText + ';' + activeStyle;
+    clarifyBtn.style.cssText = clarifyBtn.style.cssText + ';' + inactiveStyle;
+  } else {
+    clarifyBtn.style.cssText = clarifyBtn.style.cssText + ';' + activeStyle;
+    generateBtn.style.cssText = generateBtn.style.cssText + ';' + inactiveStyle;
+  }
+}
+
+function renderChatHistory(index, mode) {
+  const historyEl = document.getElementById(`chat-history-${index}`);
+  if (!historyEl) return;
+
+  historyEl.innerHTML = '';
+  const history = getChatHistory(index, mode);
+  history.forEach((msg) => {
+    const div = document.createElement('div');
+    if (msg.role === 'user') {
+      div.style.cssText = "align-self: flex-end; background: var(--accent-light); color: var(--accent); padding: 6px 10px; border-radius: 12px 12px 0 12px; max-width: 85%;";
+    } else {
+      div.style.cssText = "align-self: flex-start; background: var(--bg); border: 1px solid var(--border); padding: 6px 10px; border-radius: 12px 12px 12px 0; max-width: 85%;";
+    }
+    div.textContent = msg.content;
+    historyEl.appendChild(div);
+  });
+  historyEl.scrollTop = historyEl.scrollHeight;
+}
+
+window.sendChatMessage = async function (index) {
   const inputEl = document.getElementById(`chat-input-${index}`);
   const historyEl = document.getElementById(`chat-history-${index}`);
+  if (!inputEl || !historyEl) return;
   const msg = inputEl.value.trim();
 
   if (!msg) return;
 
-  // Init history if needed
-  if (!chatHistories[index]) chatHistories[index] = [];
+  const mode = chatModes[index] || 'clarify';
+  const history = getChatHistory(index, mode);
+  const scholarQuestion = (currentScholarQuestions[index] || '').trim();
 
   // Add User Message
-  chatHistories[index].push({ role: 'user', content: msg });
+  history.push({ role: 'user', content: msg });
 
   // Render user message
   const userDiv = document.createElement('div');
@@ -1444,27 +1526,45 @@ window.sendChatMessage = async function (index, scholarQuestion) {
   historyEl.scrollTop = historyEl.scrollHeight;
 
   try {
-    const res = await fetch('/api/scholar/questions/clarify', {
+    const endpoint = mode === 'generate'
+      ? '/api/scholar/questions/generate'
+      : '/api/scholar/questions/clarify';
+    const payload = mode === 'generate'
+      ? {
+          question: msg,
+          context: scholarQuestion ? `Primary Scholar Question: ${scholarQuestion}` : '',
+          messages: history
+        }
+      : {
+          scholar_question: scholarQuestion,
+          clarifying_question: msg, // Legacy
+          messages: history
+        };
+
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        scholar_question: scholarQuestion,
-        clarifying_question: msg, // Legacy
-        messages: chatHistories[index] // New conversational context
-      })
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
 
     historyEl.removeChild(loadingDiv); // Remove loading
 
     if (data.ok) {
-      const answer = data.clarification;
-      chatHistories[index].push({ role: 'assistant', content: answer });
+      const answer = data.answer || data.clarification || '';
+      history.push({ role: 'assistant', content: answer });
 
       const aiDiv = document.createElement('div');
       aiDiv.style.cssText = "align-self: flex-start; background: var(--bg); border: 1px solid var(--border); padding: 6px 10px; border-radius: 12px 12px 12px 0; max-width: 85%;";
       aiDiv.textContent = answer;
       historyEl.appendChild(aiDiv);
+
+      const generatedDiv = document.getElementById(`generated-answer-${index}`);
+      const generatedText = document.getElementById(`generated-text-${index}`);
+      if (generatedDiv && generatedText && answer) {
+        generatedText.textContent = answer;
+        generatedDiv.style.display = 'block';
+      }
     } else {
       alert('Error: ' + data.message);
     }

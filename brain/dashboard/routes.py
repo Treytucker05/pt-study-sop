@@ -242,7 +242,17 @@ def api_scholar_generate_answer():
              if history_str:
                  full_context += f"\n\nPrevious Conversation:\n{history_str}"
         
-        answer, error = generate_ai_answer(question, full_context)
+        api_key_override = data.get("api_key")
+        api_provider_override = data.get("api_provider")
+        model_override = data.get("model")
+
+        answer, error = generate_ai_answer(
+            question,
+            full_context,
+            api_key_override=api_key_override,
+            api_provider_override=api_provider_override,
+            model_override=model_override,
+        )
         
         if error:
             return jsonify({"ok": False, "message": error}), 400

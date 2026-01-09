@@ -15,24 +15,25 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
-def generate_ai_answer(question, context=""):
+def generate_ai_answer(question, context="", api_key_override=None, api_provider_override=None, model_override=None):
     """
-    Generate an answer to a Scholar question using OpenRouter API (GLM 4.7).
+    Generate an answer to a Scholar question using OpenRouter or OpenAI.
+    Optional overrides allow testing a key/provider without persisting it.
     """
     if not REQUESTS_AVAILABLE:
         return None, "requests library not installed. Install with: pip install requests"
     
     config = load_api_config()
-    api_provider = config.get("api_provider", "openrouter")
+    api_provider = api_provider_override or config.get("api_provider", "openrouter")
     
     if api_provider == "openrouter":
-        api_key = config.get("openrouter_api_key", "").strip()
-        model = config.get("model", "zai-ai/glm-4.7")
+        api_key = (api_key_override or config.get("openrouter_api_key", "")).strip()
+        model = model_override or config.get("model", "zai-ai/glm-4.7")
         api_url = "https://openrouter.ai/api/v1/chat/completions"
     else:
         # Fallback to OpenAI
-        api_key = config.get("openai_api_key", "").strip()
-        model = config.get("model", "gpt-4o-mini")
+        api_key = (api_key_override or config.get("openai_api_key", "")).strip()
+        model = model_override or config.get("model", "gpt-4o-mini")
         api_url = "https://api.openai.com/v1/chat/completions"
     
     if not api_key:

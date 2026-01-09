@@ -6,13 +6,19 @@ echo.
 
 cd /d "%~dp0"
 
-echo [1/5] Checking if Python is available...
-where python >nul 2>&1
-if %errorlevel% NEQ 0 (
-    echo [ERROR] Python not found!
-    goto END
+rem Resolve Python (prefer python, fallback to py -3)
+set "PYEXE="
+set "PYEXE_ARGS="
+for %%I in (python py) do (
+    where %%I >nul 2>nul && set "PYEXE=%%I" && goto :PYFOUND
 )
-echo [OK] Python found
+echo [ERROR] Python not found!
+goto END
+:PYFOUND
+if /I "%PYEXE%"=="py" set "PYEXE_ARGS=-3"
+
+echo [1/5] Checking if Python is available...
+echo [OK] Python found: %PYEXE% %PYEXE_ARGS%
 
 echo.
 echo [2/5] Checking dashboard_web.py file...
@@ -25,7 +31,7 @@ echo [OK] dashboard_web.py exists
 echo.
 echo [3/5] Verifying changes in file...
 cd brain
-python verify_changes.py
+"%PYEXE%" %PYEXE_ARGS% -c "from pathlib import Path; html=Path('templates/dashboard.html').read_text(encoding='utf-8'); css=Path('static/css/dashboard.css').read_text(encoding='utf-8'); js=Path('static/js/dashboard.js').read_text(encoding='utf-8'); print('=== VERIFICATION RESULTS ==='); print('Has v2.0:', 'v2.0' in html); print('Has new colors:', '#1a1d2e' in css); print('Has tabs:', 'data-tab' in html); print('JS loaded:', 'Dashboard JS' in js)"
 cd ..
 
 echo.
@@ -36,7 +42,7 @@ timeout /t 2 /nobreak >nul
 echo.
 echo [5/5] Testing if server can start...
 cd brain
-start "Test Dashboard" cmd /k "python dashboard_web.py"
+start "Test Dashboard" cmd /k "%PYEXE%" %PYEXE_ARGS% dashboard_web.py
 echo Waiting 5 seconds for server to start...
 timeout /t 5 /nobreak >nul
 

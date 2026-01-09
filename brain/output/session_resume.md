@@ -1,5 +1,5 @@
 # Session Resume
-Generated: 2026-01-09 09:33
+Generated: 2026-01-09 10:03
 
 ## Readiness Score
 **59/100** (2 topics, 2 sessions in 30 days)
@@ -57,16 +57,16 @@ Generated: 2026-01-09 09:33
   - Muscles: N/A
 - **Gluteal region; posterior/anterior/medial thigh; lower leg; foot (layers 1–4); head & neck (cranial base, Circle of Willis, dural sinuses)**: 1 sessions, last 30d ago
   - Landmarks: Greater trochanter attachment map; ischial tuberosity attachment map; femoral triangle borders; adductor canal borders; plantar surface layers; skull base foramina
-  - Muscles: AbH, interossei), Gluteus maximus/medius/minimus; hamstrings; obturators; piriformis; quadratus femoris; foot layer muscles (FDB, AbDM, lumbricals
+  - Muscles: AbDM, AbH, lumbricals, QP, Gluteus maximus/medius/minimus; hamstrings; obturators; piriformis; quadratus femoris; foot layer muscles (FDB
 - **Face — expression musculature**: 1 sessions, last 32d ago
   - Landmarks: NA
   - Muscles: NA
 - **Thigh, Leg, Foot**: 1 sessions, last 32d ago
-  - Landmarks: greater trochanter, AIIS, ASIS, linea aspera, lesser trochanter
-  - Muscles: tibialis anterior, plantaris, Rectus femoris, EHL, FHL
+  - Landmarks: adductor tubercle, linea aspera, medial/lateral condyles, AIIS, pectineal line
+  - Muscles: all plantar layer muscles, EHL, quads, plantaris, gastroc
 - **Gluteal region and posterior thigh**: 2 sessions, last 35d ago
   - Landmarks: ischial tuberosity; ischial spine; greater trochanter; pelvic map flag shape, Not recorded
-  - Muscles: piriformis; superior gemellus; obturator internus tendon; inferior gemellus, quadratus femoris; piriformis; superior gemellus (review); obturator internus tendon (context)
+  - Muscles: quadratus femoris; piriformis; superior gemellus (review); obturator internus tendon (context), piriformis; superior gemellus; obturator internus tendon; inferior gemellus
 - **Gluteal region, posterior thigh, popliteal fossa**: 1 sessions, last 35d ago
   - Landmarks: popliteal fossa borders; BF tendon lateral edge; semimembranosus bed; semitendinosus rope; pes anserinus
   - Muscles: semimembranosus; semitendinosus; biceps femoris long head; biceps femoris short head; adductor magnus
