@@ -16,7 +16,7 @@ def extract_assets():
     
     start_idx = content.find(start_marker)
     if start_idx == -1:
-        print("Error: HTML start marker not found")
+        print("dashboard_web.py no longer embeds HTML; assets already live in brain/templates and brain/static.")
         return
     
     start_idx += len(start_marker)

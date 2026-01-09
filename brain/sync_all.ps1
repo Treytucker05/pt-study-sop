@@ -16,6 +16,20 @@ $root       = Split-Path $brainDir -Parent
 $logsDir    = Join-Path $brainDir 'session_logs'
 $oldLogsDir = Join-Path (Split-Path $root) 'DrCodePT-Swarm\pt-study-sop\logs'
 
+$pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+$pythonArgs = @()
+if (-not $pythonCmd) {
+    $pythonCmd = Get-Command py -ErrorAction SilentlyContinue
+    if ($pythonCmd) {
+        $pythonArgs = @('-3')
+    }
+}
+if (-not $pythonCmd) {
+    Write-Host "Python not found. Install Python 3 or ensure py launcher is available." -ForegroundColor Red
+    exit 1
+}
+$pythonExe = $pythonCmd.Source
+
 Write-Host "== DrCodePT Brain Sync ==" -ForegroundColor Cyan
 
 # Step 1: pull any stray logs from the old folder (if it exists)
@@ -49,11 +63,11 @@ if (-not $logFiles) {
 Write-Host "Ingesting $($logFiles.Count) log(s)..."
 foreach ($file in $logFiles) {
     Write-Host " - $($file.Name)"
-    & python $ingest $file.FullName
+    & $pythonExe @pythonArgs $ingest $file.FullName
 }
 
 # Step 3: regenerate resume
 Write-Host "Regenerating session resume..."
-& python $resume
+& $pythonExe @pythonArgs $resume
 
 Write-Host "Done."

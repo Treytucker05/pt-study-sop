@@ -6,6 +6,7 @@ cd /d "%~dp0"
 
 rem Resolve Python (prefer python, fallback to py -3)
 set "PYEXE="
+set "PYEXE_ARGS="
 for %%I in (python py) do (
     where %%I >nul 2>nul && set "PYEXE=%%I" && goto :PYFOUND
 )
@@ -14,7 +15,7 @@ echo         If you use the Python Launcher, install it so `py -3` works.
 goto END
 
 :PYFOUND
-if /I "%PYEXE%"=="py" set "PYEXE=py -3"
+if /I "%PYEXE%"=="py" set "PYEXE_ARGS=-3"
 
 echo [1/5] Ensuring Brain database is initialized...
 cd /d "%~dp0brain"
@@ -22,7 +23,7 @@ if not exist "db_setup.py" (
     echo [ERROR] Could not find brain\db_setup.py from %~dp0.
     goto END
 )
-python db_setup.py
+"%PYEXE%" %PYEXE_ARGS% db_setup.py
 if %errorlevel% NEQ 0 (
     echo [ERROR] Failed to initialize database. Check Python installation and brain\db_setup.py.
     goto END
@@ -42,7 +43,7 @@ if not exist "%SERVER_DIR%\dashboard_web.py" (
     echo [ERROR] Could not find brain\dashboard_web.py from %~dp0.
     goto END
 )
-start "PT Study Brain Dashboard" cmd /k cd /d "%SERVER_DIR%" ^& python dashboard_web.py
+start "PT Study Brain Dashboard" cmd /k cd /d "%SERVER_DIR%" ^& "%PYEXE%" %PYEXE_ARGS% dashboard_web.py
 
 echo [4/5] Giving the server a few seconds to start...
 timeout /t 5 /nobreak >nul
