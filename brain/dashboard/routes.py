@@ -50,6 +50,7 @@ from dashboard.scholar import (
     generate_ai_answer, 
     run_scholar_orchestrator,
     generate_weekly_digest,
+    get_latest_insights,
     MAX_CONTEXT_CHARS,
 )
 from dashboard.syllabus import fetch_all_courses_and_events, attach_event_analytics
@@ -105,6 +106,13 @@ def api_scholar():
 def api_scholar_digest():
     """Generate weekly digest of Scholar outputs from the past 7 days."""
     result = generate_weekly_digest(days=7)
+    return jsonify(result)
+
+
+@dashboard_bp.route("/api/scholar/insights")
+def api_scholar_insights():
+    """Get key Scholar insights for dashboard overview display."""
+    result = get_latest_insights()
     return jsonify(result)
 
 
@@ -1475,6 +1483,174 @@ def api_syllabus_events():
             },
         }
     )
+
+
+# Default color palette for courses (12 professional colors)
+COURSE_COLOR_PALETTE = [
+    "#EF4444",  # Red
+    "#F97316",  # Orange
+    "#F59E0B",  # Amber
+    "#84CC16",  # Lime
+    "#10B981",  # Emerald
+    "#06B6D4",  # Cyan
+    "#3B82F6",  # Blue
+    "#6366F1",  # Indigo
+    "#8B5CF6",  # Violet
+    "#EC4899",  # Pink
+    "#64748B",  # Slate
+    "#78716C",  # Stone
+]
+
+
+@dashboard_bp.route("/api/syllabus/course/<int:course_id>/color", methods=["PATCH"])
+def api_update_course_color(course_id):
+    """Update the color of a course."""
+    payload = request.get_json() or {}
+    color = payload.get("color", "").strip()
+    
+    # Validate hex color format
+    if color and not (color.startswith("#") and len(color) == 7):
+        return jsonify({"ok": False, "message": "Invalid color format. Use #RRGGBB"}), 400
+    
+    init_database()
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    # Check course exists
+    cur.execute("SELECT id FROM courses WHERE id = ?", (course_id,))
+    if not cur.fetchone():
+        conn.close()
+        return jsonify({"ok": False, "message": "Course not found"}), 404
+    
+    # Update color
+    cur.execute("UPDATE courses SET color = ? WHERE id = ?", (color or None, course_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"ok": True, "message": "Course color updated", "color": color or None})
+
+
+@dashboard_bp.route("/api/syllabus/event/<int:event_id>/status", methods=["PATCH"])
+def api_update_event_status(event_id):
+    """Update the status of a course event (pending/completed/cancelled)."""
+    payload = request.get_json() or {}
+    status = payload.get("status", "").strip().lower()
+    
+    valid_statuses = ["pending", "completed", "cancelled"]
+    if status not in valid_statuses:
+        return jsonify({
+            "ok": False, 
+            "message": f"Invalid status. Use one of: {', '.join(valid_statuses)}"
+        }), 400
+    
+    init_database()
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    # Check event exists
+    cur.execute("SELECT id, course_id, title FROM course_events WHERE id = ?", (event_id,))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"ok": False, "message": "Event not found"}), 404
+    
+    event_title = row[2]
+    
+    # Update status
+    cur.execute("UPDATE course_events SET status = ? WHERE id = ?", (status, event_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        "ok": True, 
+        "message": f"Event '{event_title}' marked as {status}",
+        "status": status
+    })
+
+
+@dashboard_bp.route("/api/syllabus/event/<int:event_id>/schedule_reviews", methods=["POST"])
+def api_schedule_m6_reviews(event_id):
+    """
+    Schedule M6-based spaced repetition reviews for a course event.
+    Creates study_tasks at: +1 day, +3 days, +7 days from today.
+    """
+    payload = request.get_json() or {}
+    base_date_str = payload.get("base_date")  # Optional: start from this date
+    
+    init_database()
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    # Get event details
+    cur.execute(
+        "SELECT id, course_id, title FROM course_events WHERE id = ?", 
+        (event_id,)
+    )
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"ok": False, "message": "Event not found"}), 404
+    
+    _, course_id, event_title = row
+    
+    # Determine base date
+    if base_date_str:
+        try:
+            base_date = datetime.strptime(base_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            conn.close()
+            return jsonify({"ok": False, "message": "Invalid date format (use YYYY-MM-DD)"}), 400
+    else:
+        base_date = datetime.now().date()
+    
+    # M6-wrap intervals: 1 day, 3 days, 7 days
+    intervals = [
+        (1, 10, "Review 1: Quick recall (24h)"),
+        (3, 15, "Review 2: Mixed questions (3 days)"),
+        (7, 20, "Review 3: Self-test/teach-back (7 days)"),
+    ]
+    
+    now = datetime.now().isoformat(timespec="seconds")
+    created_tasks = []
+    
+    for days_offset, minutes, note_template in intervals:
+        scheduled_date = (base_date + timedelta(days=days_offset)).isoformat()
+        notes = f"{note_template} - {event_title}"
+        
+        cur.execute(
+            """
+            INSERT INTO study_tasks (
+                course_id, course_event_id, scheduled_date, 
+                planned_minutes, status, notes, created_at
+            )
+            VALUES (?, ?, ?, ?, 'pending', ?, ?)
+            """,
+            (course_id, event_id, scheduled_date, minutes, notes, now)
+        )
+        created_tasks.append({
+            "id": cur.lastrowid,
+            "scheduled_date": scheduled_date,
+            "planned_minutes": minutes,
+            "notes": notes,
+        })
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({
+        "ok": True,
+        "message": f"Scheduled {len(created_tasks)} M6 review sessions for '{event_title}'",
+        "tasks": created_tasks,
+    })
+
+
+@dashboard_bp.route("/api/syllabus/colors/palette")
+def api_color_palette():
+    """Return the default color palette for courses."""
+    return jsonify({
+        "ok": True,
+        "palette": COURSE_COLOR_PALETTE,
+    })
 
 
 @dashboard_bp.route("/api/calendar/data")

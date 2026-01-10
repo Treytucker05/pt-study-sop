@@ -269,6 +269,16 @@ def init_database():
     """
     )
 
+    # Additive migration for courses table (color column for UI)
+    cursor.execute("PRAGMA table_info(courses)")
+    course_cols = {col[1] for col in cursor.fetchall()}
+    if "color" not in course_cols:
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN color TEXT")
+            print("[INFO] Added 'color' column to courses table")
+        except sqlite3.OperationalError:
+            pass
+
     # Additive migration for newer RAG features (safe on existing DBs)
     cursor.execute("PRAGMA table_info(rag_docs)")
     rag_cols = {col[1] for col in cursor.fetchall()}

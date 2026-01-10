@@ -913,3 +913,172 @@ def generate_weekly_digest(days: int = 7) -> dict:
         "period": f"{start_date} to {end_date}",
         "runs_count": len(runs_info),
     }
+
+
+def get_latest_insights():
+    """
+    Get key Scholar insights for dashboard display.
+    Returns alerts, proposals, recent findings, and pending question count.
+    """
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    scholar_outputs = repo_root / "scholar" / "outputs"
+    
+    result = {
+        "alerts": [],
+        "proposals": [],
+        "recent_findings": [],
+        "questions_pending": 0,
+    }
+    
+    # 1. Scan STATUS.md for current state and coverage
+    status_file = scholar_outputs / "STATUS.md"
+    if status_file.exists():
+        try:
+            content = status_file.read_text(encoding="utf-8")
+            
+            # Check for questions_needed non-empty indicator
+            if "questions_needed:" in content and "(Current: non-empty)" in content:
+                result["alerts"].append({
+                    "type": "warning",
+                    "message": "Scholar has questions awaiting your input"
+                })
+            
+            # Extract coverage counts for alerts
+            for line in content.split("\n"):
+                if "Coverage counts:" in line:
+                    try:
+                        parts = line.split("|")
+                        for part in parts:
+                            if "Not started=" in part:
+                                not_started = int(part.split("=")[1].strip())
+                                if not_started > 5:
+                                    result["alerts"].append({
+                                        "type": "info",
+                                        "message": f"Coverage audit: {not_started} modules not yet reviewed"
+                                    })
+                    except:
+                        pass
+                    break
+        except Exception:
+            pass
+    
+    # 2. Scan promotion_queue for proposals
+    promotion_queue = scholar_outputs / "promotion_queue"
+    if promotion_queue.exists():
+        try:
+            proposal_files = list(promotion_queue.glob("*.md"))
+            for pf in proposal_files:
+                try:
+                    name = pf.stem
+                    # Parse proposal type from filename
+                    if "change_proposal" in name:
+                        title = name.replace("change_proposal_", "").replace("_", " ").title()
+                        proposal_type = "change"
+                    elif "experiment" in name:
+                        title = name.replace("experiment_", "").replace("_", " ").title()
+                        proposal_type = "experiment"
+                    else:
+                        title = name.replace("_", " ").title()
+                        proposal_type = "other"
+                    
+                    # Try to extract status from file content
+                    status = "draft"
+                    try:
+                        content = pf.read_text(encoding="utf-8")[:500]
+                        if "Status: " in content:
+                            for line in content.split("\n"):
+                                if line.strip().startswith("- Status:"):
+                                    status = line.split(":")[-1].strip().lower()
+                                    break
+                    except:
+                        pass
+                    
+                    result["proposals"].append({
+                        "title": title,
+                        "type": proposal_type,
+                        "status": status,
+                        "file": pf.name
+                    })
+                except Exception:
+                    continue
+        except Exception:
+            pass
+    
+    # 3. Count pending questions
+    orchestrator_runs = scholar_outputs / "orchestrator_runs"
+    if orchestrator_runs.exists():
+        try:
+            question_files = sorted(
+                orchestrator_runs.glob("questions_needed_*.md"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True
+            )
+            for qf in question_files[:3]:
+                try:
+                    content = qf.read_text(encoding="utf-8-sig").strip()
+                    if not content or content == "(none)":
+                        continue
+                    
+                    # Count Q: lines without answered A: lines
+                    lines = content.split("\n")
+                    for i, line in enumerate(lines):
+                        if line.strip().startswith("Q:"):
+                            # Check if next meaningful line is an answer
+                            has_answer = False
+                            for j in range(i + 1, min(i + 3, len(lines))):
+                                next_line = lines[j].strip()
+                                if next_line.startswith("A:"):
+                                    answer = next_line.replace("A:", "").strip()
+                                    if answer and answer.lower() not in ["(pending)", "(none)", ""]:
+                                        has_answer = True
+                                    break
+                                elif next_line.startswith("Q:"):
+                                    break
+                            if not has_answer:
+                                result["questions_pending"] += 1
+                    break  # Only check most recent file with questions
+                except Exception:
+                    continue
+        except Exception:
+            pass
+    
+    # 4. Extract recent findings from latest unattended_final files
+    if orchestrator_runs.exists():
+        try:
+            final_files = sorted(
+                orchestrator_runs.glob("unattended_final_*.md"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True
+            )
+            for ff in final_files[:3]:
+                try:
+                    content = ff.read_text(encoding="utf-8")
+                    # Skip placeholder files
+                    if "TO EXECUTE:" in content or len(content) < 100:
+                        continue
+                    
+                    # Extract first meaningful bullet or sentence
+                    lines = content.split("\n")
+                    for line in lines:
+                        line = line.strip()
+                        # Skip headers and empty lines
+                        if not line or line.startswith("#") or line.startswith("Scholar execution"):
+                            continue
+                        # Clean up bullet points
+                        if line.startswith("-"):
+                            finding = line.lstrip("- ").strip()
+                        else:
+                            finding = line
+                        
+                        if len(finding) > 20 and len(finding) < 200:
+                            result["recent_findings"].append(finding)
+                            if len(result["recent_findings"]) >= 3:
+                                break
+                    if len(result["recent_findings"]) >= 3:
+                        break
+                except Exception:
+                    continue
+        except Exception:
+            pass
+    
+    return result

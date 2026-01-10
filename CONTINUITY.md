@@ -1,33 +1,55 @@
 Goal (incl. success criteria):
-- Refactor Scholar orchestrator prompt for focus and better outputs.
+- Enhance Syllabus page with professional UI features.
 - Success criteria:
-  1. Add explicit output format (5-bullet summary, ⚡ actions, ⚠️ warnings). ✓
-  2. Consolidate into 3 phases (Audit, Research, Synthesize). ✓
-  3. Add high-utility technique checklist (Dunlosky research). ✓
-  4. Add weekly digest trigger. ✓
-  5. Add probe-before-teach rule. ✓
-  6. Reduce verbosity (1-2 page dossiers, 5-10 bullet notes). ✓
+  1. Color-coded classes (each course has a distinct color).
+  2. User can change/pick course colors via UI.
+  3. Events can be marked complete/pending via checkboxes.
+  4. Calendar integrates with M6-wrap spacing logic for study planning.
+  5. Professional, polished UI design.
 
 Constraints/Assumptions:
-- Keep unattended mode instructions at top.
-- Keep safety guardrails (never modify code).
-- Target ~100 lines.
+- Keep existing schema additive (add color column to courses).
+- course_events.status already exists (pending/completed/cancelled).
+- M6-wrap defines spacing: 24h -> 3 days -> 7 days -> successive relearning.
+- Use ASCII and minimal diffs.
+- Follow existing code patterns in routes.py and dashboard.js.
 
 Key decisions:
-- Replaced multi-step execution cycle with 3 clear phases.
-- Added Dunlosky technique table for quick reference.
-- Weekly digest triggers on Friday+ or 7+ days since last.
+- Add `color` column to courses table (hex string, nullable).
+- Create default color palette for auto-assignment.
+- Add PATCH /api/syllabus/course/<id>/color endpoint.
+- Add PATCH /api/syllabus/event/<id>/status endpoint.
+- Connect calendar to study_tasks for M6-based scheduling.
 
 State:
-  - Done: Orchestrator prompt refactored.
-  - Now: Complete.
-  - Next: User validation.
+  - Done:
+    - Analyzed current syllabus.py, routes.py, dashboard.js.
+    - Reviewed db_setup.py schema (courses, course_events, study_tasks).
+    - Reviewed M6-wrap for spacing intervals.
+    - Added color column migration to courses table in db_setup.py.
+    - Updated fetch_all_courses_and_events to include color field.
+    - Added PATCH /api/syllabus/course/<id>/color endpoint.
+    - Added PATCH /api/syllabus/event/<id>/status endpoint.
+    - Added POST /api/syllabus/event/<id>/schedule_reviews endpoint (M6 spacing).
+    - Added GET /api/syllabus/colors/palette endpoint.
+    - Updated renderSyllabusList with checkboxes, color badges, type icons, M6 button.
+    - Updated calendar rendering to use course colors.
+    - Added Course Color Manager UI section.
+    - Added CSS for color manager, hover effects, course badges.
+    - Updated loadSyllabusDashboard to populate color manager.
+  - Now:
+    - Ready for testing.
+  - Next:
+    - Test the dashboard and verify all features work.
+    - Optional: Add Google Calendar integration for syncing.
 
 Open questions (UNCONFIRMED if needed):
-- None.
+- None currently.
 
 Working set (files/ids/commands):
-- scholar/workflows/orchestrator_run_prompt.md
-
-Notes:
-- Study RAG directory can be overridden via env var PT_STUDY_RAG_DIR (currently set in Run_Brain_All.bat to C:\Users\treyt\OneDrive\Desktop\PT School)
+- brain/db_setup.py (add color column)
+- brain/dashboard/routes.py (add PATCH endpoints)
+- brain/static/js/dashboard.js (UI updates)
+- brain/templates/dashboard.html (UI updates)
+- brain/static/css/dashboard.css (styling)
+- sop/gpt-knowledge/M6-wrap.md (spacing intervals)

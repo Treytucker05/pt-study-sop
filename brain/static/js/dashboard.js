@@ -178,6 +178,91 @@ async function loadStats() {
   }
 }
 
+// Load and render Scholar insights on Overview tab
+async function loadScholarInsights() {
+  try {
+    const res = await fetch('/api/scholar/insights');
+    const data = await res.json();
+    renderScholarInsights(data);
+  } catch (error) {
+    console.error('Failed to load Scholar insights:', error);
+  }
+}
+
+function renderScholarInsights(data) {
+  const card = document.getElementById('scholar-insights-card');
+  const alertsList = document.getElementById('scholar-alerts-list');
+  const proposalsCount = document.getElementById('scholar-proposals-count');
+  const questionsCount = document.getElementById('scholar-questions-count');
+  const findingsList = document.getElementById('scholar-findings-list');
+  
+  if (!card) return;
+  
+  // Check if there's any content to show
+  const hasAlerts = data.alerts && data.alerts.length > 0;
+  const hasProposals = data.proposals && data.proposals.length > 0;
+  const hasQuestions = data.questions_pending && data.questions_pending > 0;
+  const hasFindings = data.recent_findings && data.recent_findings.length > 0;
+  
+  const hasContent = hasAlerts || hasProposals || hasQuestions || hasFindings;
+  
+  // Show/hide the card based on content
+  card.style.display = hasContent ? 'block' : 'none';
+  
+  if (!hasContent) return;
+  
+  // Render alerts
+  if (alertsList) {
+    if (hasAlerts) {
+      alertsList.innerHTML = data.alerts.map(a => {
+        const icon = a.type === 'warning' ? '⚠️' : 'ℹ️';
+        const color = a.type === 'warning' ? '#f59e0b' : '#3b82f6';
+        return `<div style="display:flex; align-items:start; gap:8px; margin-bottom:8px; cursor:pointer;" onclick="openTab(null, 'scholar')">
+          <span style="color:${color};">${icon}</span>
+          <span style="color:#e2e8f0;">${a.message}</span>
+        </div>`;
+      }).join('');
+    } else {
+      alertsList.innerHTML = '<div style="color:#64748b;">No alerts</div>';
+    }
+  }
+  
+  // Render proposals count
+  if (proposalsCount) {
+    const count = data.proposals ? data.proposals.length : 0;
+    if (count > 0) {
+      proposalsCount.innerHTML = `<span style="color:#a855f7; font-weight:600;">${count} proposal${count !== 1 ? 's' : ''}</span>
+        <span style="color:#64748b; font-size:0.8rem;"> awaiting review</span>`;
+    } else {
+      proposalsCount.innerHTML = '<span style="color:#64748b;">0 proposals</span>';
+    }
+  }
+  
+  // Render questions count
+  if (questionsCount) {
+    const count = data.questions_pending || 0;
+    if (count > 0) {
+      questionsCount.innerHTML = `<span style="color:#ef4444; font-weight:600;">${count} question${count !== 1 ? 's' : ''}</span>
+        <span style="color:#64748b; font-size:0.8rem;"> need answers</span>`;
+    } else {
+      questionsCount.innerHTML = '<span style="color:#64748b;">0 questions</span>';
+    }
+  }
+  
+  // Render recent findings
+  if (findingsList) {
+    if (hasFindings) {
+      findingsList.innerHTML = data.recent_findings.slice(0, 3).map(f => {
+        // Truncate long findings
+        const text = f.length > 80 ? f.substring(0, 77) + '...' : f;
+        return `<li style="margin-bottom:6px; color:#94a3b8;">• ${text}</li>`;
+      }).join('');
+    } else {
+      findingsList.innerHTML = '<li style="color:#64748b;">No recent findings</li>';
+    }
+  }
+}
+
 function renderStats(data) {
   // Total Sessions
   if (totalSessions) totalSessions.textContent = formatNumber(data.counts.sessions);
@@ -2045,6 +2130,77 @@ async function loadCalendar() {
   }
 }
 
+// Type icons for syllabus events
+const EVENT_TYPE_ICONS = {
+  'lecture': '📚',
+  'reading': '📖',
+  'quiz': '✏️',
+  'exam': '📝',
+  'assignment': '📋',
+  'other': '📌'
+};
+
+// Default color palette for courses
+const COURSE_COLOR_PALETTE = [
+  "#EF4444", "#F97316", "#F59E0B", "#84CC16", 
+  "#10B981", "#06B6D4", "#3B82F6", "#6366F1", 
+  "#8B5CF6", "#EC4899", "#64748B", "#78716C"
+];
+
+// Get color for a course (from course data or auto-assign)
+function getCourseColor(course, index) {
+  if (course && course.color) return course.color;
+  return COURSE_COLOR_PALETTE[index % COURSE_COLOR_PALETTE.length];
+}
+
+// Toggle event status (pending <-> completed)
+async function toggleEventStatus(eventId, currentStatus) {
+  const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+  try {
+    const res = await fetch(`/api/syllabus/event/${eventId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      // Update local state
+      const ev = syllabusEvents.find(e => e.id === eventId);
+      if (ev) ev.status = newStatus;
+      renderSyllabusList();
+    } else {
+      console.error('Failed to update status:', data.message);
+    }
+  } catch (error) {
+    console.error('Error updating event status:', error);
+  }
+}
+
+// Schedule M6 reviews for an event
+async function scheduleM6Reviews(eventId, eventTitle) {
+  if (!confirm(`Schedule M6 spaced reviews for "${eventTitle}"?\n\nThis will create 3 study tasks:\n• Review 1: Tomorrow (10 min)\n• Review 2: In 3 days (15 min)\n• Review 3: In 7 days (20 min)`)) {
+    return;
+  }
+  try {
+    const res = await fetch(`/api/syllabus/event/${eventId}/schedule_reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert(`✓ ${data.message}`);
+      // Refresh calendar if visible
+      if (syllabusViewMode === 'calendar') loadCalendar();
+    } else {
+      alert(`Error: ${data.message}`);
+    }
+  } catch (error) {
+    console.error('Error scheduling reviews:', error);
+    alert('Failed to schedule reviews.');
+  }
+}
+
 function renderSyllabusList() {
   if (!syllabusListBody || !syllabusListEmpty) return;
 
@@ -2064,19 +2220,49 @@ function renderSyllabusList() {
     return ad.localeCompare(bd);
   });
 
+  // Build course index for colors
+  const courseById = {};
+  allCourses.forEach((c, idx) => {
+    courseById[c.id] = { ...c, _idx: idx };
+  });
+
   syllabusListBody.innerHTML = filtered.map(ev => {
     const dateDisplay = ev.date || ev.due_date || '';
-    const weightDisplay = (ev.weight || 0).toFixed(2);
-    const courseName = (ev.course || {}).name || '';
+    const weightDisplay = ev.weight ? `${(ev.weight * 100).toFixed(0)}%` : '—';
+    const course = courseById[ev.course_id] || ev.course || {};
+    const courseName = course.code || course.name || '—';
+    const courseColor = getCourseColor(course, course._idx || 0);
+    const typeIcon = EVENT_TYPE_ICONS[(ev.type || '').toLowerCase()] || '📌';
+    const isCompleted = (ev.status || '').toLowerCase() === 'completed';
+    const statusClass = isCompleted ? 'completed' : 'pending';
+    const rowClass = isCompleted ? 'style="opacity: 0.6;"' : '';
+    const titleStyle = isCompleted ? 'text-decoration: line-through; color: var(--text-muted);' : '';
+    
     return `
-      <tr>
+      <tr ${rowClass}>
+        <td style="text-align: center;">
+          <input type="checkbox" 
+                 ${isCompleted ? 'checked' : ''} 
+                 onchange="toggleEventStatus(${ev.id}, '${ev.status || 'pending'}')"
+                 title="${isCompleted ? 'Mark as pending' : 'Mark as completed'}"
+                 style="width: 18px; height: 18px; cursor: pointer;">
+        </td>
         <td>${dateDisplay || '—'}</td>
-        <td>${courseName || '—'}</td>
-        <td>${ev.type || ''}</td>
-        <td>${ev.title || ''}</td>
-        <td>${weightDisplay}</td>
-        <td>${ev.status || 'pending'}</td>
-        <td>${ev.raw_text || ''}</td>
+        <td>
+          <span class="course-badge" style="background: ${courseColor}20; color: ${courseColor}; border: 1px solid ${courseColor}40; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">
+            ${courseName}
+          </span>
+        </td>
+        <td><span title="${ev.type || 'other'}">${typeIcon}</span> ${ev.type || ''}</td>
+        <td style="${titleStyle}">${ev.title || ''}</td>
+        <td style="text-align: center;">${weightDisplay}</td>
+        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${(ev.raw_text || '').replace(/"/g, '&quot;')}">${ev.raw_text || ''}</td>
+        <td>
+          <button class="btn" style="font-size: 11px; padding: 4px 8px;" 
+                  onclick="scheduleM6Reviews(${ev.id}, '${(ev.title || '').replace(/'/g, "\\'")}')">
+            📅 M6
+          </button>
+        </td>
       </tr>
     `;
   }).join('');
@@ -2134,6 +2320,17 @@ function renderCalendar() {
   const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   grid.innerHTML = weekdays.map(w => `<div class="calendar-weekday">${w}</div>`).join('');
 
+  // Build course lookup for colors
+  const courseById = {};
+  allCourses.forEach((c, idx) => {
+    courseById[c.id] = { ...c, _idx: idx };
+  });
+  // Also index by code for calendar events
+  const courseByCode = {};
+  allCourses.forEach((c, idx) => {
+    if (c.code) courseByCode[c.code] = { ...c, _idx: idx };
+  });
+
   // Empty cells for days before month starts
   for (let i = 0; i < startingDayOfWeek; i++) {
     grid.innerHTML += '<div class="calendar-day other-month"></div>';
@@ -2153,10 +2350,17 @@ function renderCalendar() {
     let html = `<div class="calendar-day ${isToday ? 'today' : ''}">`;
     html += `<div class="calendar-day-header"><span class="calendar-day-number">${day}</span></div>`;
 
-    // Render events (exams/quizzes highlighted)
+    // Render events with course colors
     dayEvents.forEach(ev => {
       const isExamQuiz = ['exam', 'quiz'].includes((ev.event_type || '').toLowerCase());
-      html += `<div class="calendar-event ${isExamQuiz ? 'exam-quiz' : 'course-event'}" title="${ev.title}">${ev.title}</div>`;
+      // Find course by code or id
+      let course = courseByCode[ev.course_code] || null;
+      const color = course ? getCourseColor(course, course._idx) : '#3B82F6';
+      const bgColor = isExamQuiz ? 'rgba(248, 81, 73, 0.3)' : `${color}30`;
+      const borderColor = isExamQuiz ? 'var(--error)' : color;
+      const typeIcon = EVENT_TYPE_ICONS[(ev.event_type || '').toLowerCase()] || '';
+      
+      html += `<div class="calendar-event" style="background: ${bgColor}; border-left: 3px solid ${borderColor};" title="${ev.course_code || ''}: ${ev.title}">${typeIcon} ${ev.title}</div>`;
     });
 
     // Render study sessions
@@ -2164,9 +2368,11 @@ function renderCalendar() {
       html += `<div class="calendar-event study-session" title="${sess.topic}">${sess.topic || 'Session'}</div>`;
     });
 
-    // Render planned sessions
+    // Render planned sessions with course colors
     dayPlanned.forEach(plan => {
-      html += `<div class="calendar-event planned" title="Planned: ${plan.notes || 'Review'}">📅 Review</div>`;
+      const course = courseByCode[plan.course_code] || null;
+      const color = course ? getCourseColor(course, course._idx) : '#8B5CF6';
+      html += `<div class="calendar-event planned" style="background: ${color}20; border-left: 3px solid ${color};" title="Planned: ${plan.notes || 'Review'}">📅 ${plan.planned_minutes || ''}m</div>`;
     });
 
     html += '</div>';
@@ -2229,26 +2435,111 @@ if (syllabusListSearch) syllabusListSearch.addEventListener('input', () => {
   window._syllabusSearchTimer = setTimeout(renderSyllabusList, 150);
 });
 
-// Load courses for filters
+// Load courses for filters with colors
 async function loadCoursesForCalendar() {
   try {
     const res = await fetch('/api/syllabus/courses');
     const data = await res.json();
     if (data.courses) {
       allCourses = data.courses;
+      
+      // Build options with color indicators
+      const buildCourseOptions = (courses, includeEmpty = true, emptyLabel = 'All Courses') => {
+        let html = includeEmpty ? `<option value="">${emptyLabel}</option>` : '';
+        html += courses.map((c, idx) => {
+          const color = getCourseColor(c, idx);
+          return `<option value="${c.id}" style="border-left: 4px solid ${color};">● ${c.code || c.name}</option>`;
+        }).join('');
+        return html;
+      };
+      
+      // Calendar filter
       const courseSelect = document.getElementById('calendar-filter-course');
-      const planCourseSelect = document.getElementById('plan-session-course');
       if (courseSelect) {
-        courseSelect.innerHTML = '<option value="">All Courses</option>' +
-          data.courses.map(c => `<option value="${c.id}">${c.code || c.name}</option>`).join('');
+        courseSelect.innerHTML = buildCourseOptions(data.courses, true, 'All Courses');
       }
+      
+      // Plan session course
+      const planCourseSelect = document.getElementById('plan-session-course');
       if (planCourseSelect) {
-        planCourseSelect.innerHTML = '<option value="">Optional</option>' +
-          data.courses.map(c => `<option value="${c.id}">${c.code || c.name}</option>`).join('');
+        planCourseSelect.innerHTML = buildCourseOptions(data.courses, true, 'Optional');
       }
+      
+      // Syllabus list filter
+      if (syllabusListCourse) {
+        syllabusListCourse.innerHTML = buildCourseOptions(data.courses, true, 'All Courses');
+      }
+      
+      // Render course color manager if container exists
+      renderCourseColorManager();
     }
   } catch (error) {
     console.error('Failed to load courses:', error);
+  }
+}
+
+// Update course color
+async function updateCourseColor(courseId, newColor) {
+  try {
+    const res = await fetch(`/api/syllabus/course/${courseId}/color`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ color: newColor })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      // Update local state
+      const course = allCourses.find(c => c.id === courseId);
+      if (course) course.color = newColor;
+      // Re-render affected components
+      renderCourseColorManager();
+      renderSyllabusList();
+      if (syllabusViewMode === 'calendar') loadCalendar();
+    }
+  } catch (error) {
+    console.error('Failed to update course color:', error);
+  }
+}
+
+// Render course color manager
+function renderCourseColorManager() {
+  const container = document.getElementById('course-color-manager');
+  if (!container || !allCourses || allCourses.length === 0) return;
+  
+  container.innerHTML = allCourses.map((c, idx) => {
+    const color = getCourseColor(c, idx);
+    return `
+      <div class="course-color-item" style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+          <div class="color-swatch" 
+               style="width: 24px; height: 24px; border-radius: 6px; background: ${color}; cursor: pointer; border: 2px solid rgba(255,255,255,0.2);"
+               onclick="showColorPicker(${c.id}, '${color}')"
+               title="Click to change color">
+          </div>
+          <span style="font-weight: 500;">${c.code || c.name}</span>
+          <span style="color: var(--text-muted); font-size: 12px;">${c.name !== c.code ? c.name : ''}</span>
+        </div>
+        <div style="display: flex; gap: 4px;">
+          ${COURSE_COLOR_PALETTE.map(pc => `
+            <div class="color-option" 
+                 style="width: 16px; height: 16px; border-radius: 4px; background: ${pc}; cursor: pointer; border: ${pc === color ? '2px solid white' : '1px solid rgba(255,255,255,0.1)'};"
+                 onclick="updateCourseColor(${c.id}, '${pc}')"
+                 title="${pc}">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Show color picker modal (for custom colors)
+function showColorPicker(courseId, currentColor) {
+  const color = prompt(`Enter hex color for this course (current: ${currentColor}):`, currentColor);
+  if (color && /^#[0-9A-Fa-f]{6}$/.test(color)) {
+    updateCourseColor(courseId, color);
+  } else if (color !== null) {
+    alert('Invalid color format. Use #RRGGBB (e.g., #3B82F6)');
   }
 }
 
@@ -2318,6 +2609,7 @@ function initDashboard() {
   loadStats();
   loadTrends();
   loadScholar();
+  loadScholarInsights();  // Load Scholar insights for Overview tab
   if (typeof loadApiKeyStatus === 'function') loadApiKeyStatus();
   loadCoursesForCalendar();
   loadCalendar();
@@ -2588,7 +2880,7 @@ window.loadSyllabusDashboard = async function () {
     const coursesData = await resCourses.json();
     if (coursesData.courses) {
       allCourses = coursesData.courses;
-      // Populate calendar filter courses
+      // Populate calendar filter courses with color indicators
       const calCourseSelect = document.getElementById('calendar-filter-course');
       const planCourseSelect = document.getElementById('plan-session-course');
       const listCourseSelect = document.getElementById('syllabus-list-course');
@@ -2598,11 +2890,15 @@ window.loadSyllabusDashboard = async function () {
         select.innerHTML = select.id === 'plan-session-course'
           ? '<option value="">Optional</option>'
           : '<option value="">All Courses</option>';
-        coursesData.courses.forEach(c => {
-          select.innerHTML += `<option value="${c.id}">${c.name || 'Course'}${c.term ? ' (' + c.term + ')' : ''}</option>`;
+        coursesData.courses.forEach((c, idx) => {
+          const color = getCourseColor(c, idx);
+          select.innerHTML += `<option value="${c.id}">● ${c.code || c.name}${c.term ? ' (' + c.term + ')' : ''}</option>`;
         });
         if (current) select.value = current; // preserve selection if possible
       });
+      
+      // Render course color manager
+      renderCourseColorManager();
     }
 
     // Events for list view

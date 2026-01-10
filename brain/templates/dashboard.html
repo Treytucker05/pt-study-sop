@@ -179,6 +179,48 @@
             </div>
           </div>
 
+          <!-- Scholar Insights Panel -->
+          <div class="d-card" id="scholar-insights-card" style="grid-column: span 4; display: none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:16px;">
+              <h3 style="margin:0; font-size:1.1rem;">📚 Scholar Insights</h3>
+              <button class="btn" style="font-size: 0.75rem; padding: 4px 10px;" onclick="openTab(null, 'scholar')">View All →</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+              <!-- Alerts Section -->
+              <div id="scholar-alerts-section">
+                <h4 style="font-size:0.75rem; text-transform:uppercase; color:#94a3b8; margin-bottom:10px;">Alerts</h4>
+                <div id="scholar-alerts-list" style="font-size:0.9rem;">
+                  <div style="color:#64748b;">No alerts</div>
+                </div>
+              </div>
+              
+              <!-- Proposals Section -->
+              <div>
+                <h4 style="font-size:0.75rem; text-transform:uppercase; color:#94a3b8; margin-bottom:10px;">Pending Proposals</h4>
+                <div id="scholar-proposals-count" style="font-size:0.9rem; cursor: pointer;" onclick="openTab(null, 'scholar')">
+                  <span style="color:#64748b;">0 proposals</span>
+                </div>
+              </div>
+              
+              <!-- Questions Section -->
+              <div>
+                <h4 style="font-size:0.75rem; text-transform:uppercase; color:#94a3b8; margin-bottom:10px;">Pending Questions</h4>
+                <div id="scholar-questions-count" style="font-size:0.9rem; cursor: pointer;" onclick="openTab(null, 'scholar')">
+                  <span style="color:#64748b;">0 questions</span>
+                </div>
+              </div>
+              
+              <!-- Recent Findings Section -->
+              <div style="grid-column: span 1;">
+                <h4 style="font-size:0.75rem; text-transform:uppercase; color:#94a3b8; margin-bottom:10px;">Recent Findings</h4>
+                <ul id="scholar-findings-list" style="padding-left:0; margin:0; list-style:none; font-size:0.85rem; color:#94a3b8;">
+                  <li style="color:#64748b;">No recent findings</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <div class="d-card hero" id="patterns">
             <div style="border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px; margin-bottom:20px;">
               <h3 style="margin:0; font-size:1.1rem;">Patterns & Insights</h3>
@@ -501,6 +543,22 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
       <div id="syllabus-json-status"></div>
     </div>
 
+    <!-- Course Color Manager -->
+    <div class="card resume-section" id="course-colors-section">
+      <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <h2 class="card-title" style="margin: 0;">🎨 Course Colors</h2>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Click a color swatch to pick a custom color, or use the quick-select palette.</p>
+        </div>
+        <button class="btn" type="button" onclick="document.getElementById('course-color-manager').style.display = document.getElementById('course-color-manager').style.display === 'none' ? 'block' : 'none';">
+          Toggle
+        </button>
+      </div>
+      <div id="course-color-manager" style="padding: 8px 0; display: none;">
+        <div style="color: var(--text-muted); font-size: 13px;">Loading courses...</div>
+      </div>
+    </div>
+
     <!-- Calendar/List Toggle -->
     <div class="card resume-section" id="calendar-view">
       <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
@@ -626,16 +684,17 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         </div>
 
         <div style="overflow-x: auto;">
-          <table class="sessions-table" style="min-width: 800px;">
+          <table class="sessions-table" style="min-width: 900px;">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Course</th>
-                <th>Type</th>
+                <th style="width: 50px; text-align: center;">Done</th>
+                <th style="width: 100px;">Date</th>
+                <th style="width: 120px;">Course</th>
+                <th style="width: 100px;">Type</th>
                 <th>Title</th>
-                <th>Weight</th>
-                <th>Status</th>
-                <th>Details</th>
+                <th style="width: 60px; text-align: center;">Weight</th>
+                <th style="max-width: 200px;">Details</th>
+                <th style="width: 60px;">Actions</th>
               </tr>
             </thead>
             <tbody id="syllabus-list-body">

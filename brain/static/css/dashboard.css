@@ -383,6 +383,12 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .calendar-event:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .calendar-event.course-event {
@@ -417,6 +423,48 @@
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
+    }
+
+    /* Course Color Manager */
+    .course-color-item {
+      transition: background 0.15s ease;
+    }
+
+    .course-color-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .color-swatch {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    }
+
+    .color-option {
+      transition: transform 0.1s ease;
+    }
+
+    .color-option:hover {
+      transform: scale(1.2);
+    }
+
+    /* Course Badge */
+    .course-badge {
+      display: inline-block;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    /* Event row styling */
+    .sessions-table tr.completed {
+      opacity: 0.6;
+    }
+
+    .sessions-table input[type="checkbox"] {
+      accent-color: var(--success);
     }
 
     /* Content Grid - Two Column Layout */

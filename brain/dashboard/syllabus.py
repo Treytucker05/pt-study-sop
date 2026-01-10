@@ -19,11 +19,11 @@ def fetch_all_courses_and_events():
     conn = get_connection()
     cur = conn.cursor()
 
-    # Courses
+    # Courses (include color column)
     cur.execute(
         """
         SELECT id, name, code, term, instructor,
-               default_study_mode, time_budget_per_week_minutes
+               default_study_mode, time_budget_per_week_minutes, color
         FROM courses
         ORDER BY COALESCE(term, '') DESC, name ASC
         """
@@ -38,6 +38,7 @@ def fetch_all_courses_and_events():
             "instructor": row[4],
             "default_study_mode": row[5],
             "time_budget_per_week_minutes": row[6],
+            "color": row[7] if len(row) > 7 else None,
         }
         for row in course_rows
     ]

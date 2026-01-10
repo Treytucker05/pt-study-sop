@@ -1,5 +1,5 @@
 # Session Resume
-Generated: 2026-01-09 22:29
+Generated: 2026-01-09 22:53
 
 ## Readiness Score
 **59/100** (2 topics, 2 sessions in 30 days)
@@ -57,13 +57,13 @@ Generated: 2026-01-09 22:29
   - Muscles: N/A
 - **Gluteal region; posterior/anterior/medial thigh; lower leg; foot (layers 1–4); head & neck (cranial base, Circle of Willis, dural sinuses)**: 1 sessions, last 30d ago
   - Landmarks: Greater trochanter attachment map; ischial tuberosity attachment map; femoral triangle borders; adductor canal borders; plantar surface layers; skull base foramina
-  - Muscles: AbDM, QP, interossei), lumbricals, Gluteus maximus/medius/minimus; hamstrings; obturators; piriformis; quadratus femoris; foot layer muscles (FDB
+  - Muscles: Gluteus maximus/medius/minimus; hamstrings; obturators; piriformis; quadratus femoris; foot layer muscles (FDB, AbDM, interossei), lumbricals, AbH
 - **Face — expression musculature**: 1 sessions, last 32d ago
   - Landmarks: NA
   - Muscles: NA
 - **Thigh, Leg, Foot**: 1 sessions, last 32d ago
-  - Landmarks: medial/lateral condyles, ASIS, adductor tubercle, lesser trochanter, pectineal line
-  - Muscles: fibularis longus/brevis, EHL, TP, FDL, soleus
+  - Landmarks: medial/lateral condyles, ASIS, AIIS, adductor tubercle, pectineal line
+  - Muscles: quads, EHL, EDL, fibularis longus/brevis, gastroc
 - **Gluteal region and posterior thigh**: 2 sessions, last 35d ago
   - Landmarks: Not recorded, ischial tuberosity; ischial spine; greater trochanter; pelvic map flag shape
   - Muscles: piriformis; superior gemellus; obturator internus tendon; inferior gemellus, quadratus femoris; piriformis; superior gemellus (review); obturator internus tendon (context)
