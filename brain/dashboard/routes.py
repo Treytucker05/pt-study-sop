@@ -1,6 +1,10 @@
 
 import os
+import re
 import json
+import sqlite3
+import subprocess
+import tempfile
 from pathlib import Path
 from datetime import datetime, timedelta
 from flask import (
@@ -15,6 +19,7 @@ from werkzeug.utils import secure_filename
 
 from config import (
     DATA_DIR,
+    STUDY_RAG_DIR,
     SESSION_LOGS_DIR,
     SCORE_MIN,
     SCORE_MAX,
@@ -23,12 +28,19 @@ from config import (
     WEAK_THRESHOLD,
     STRONG_THRESHOLD,
 )
-from db_setup import init_database, get_connection
+from db_setup import DB_PATH, init_database, get_connection
 # Use import directly for items in brain/ folder (root of execution)
 from ingest_session import parse_session_log, validate_session_data, insert_session
 from generate_resume import generate_resume
 from tutor_api_types import TutorQueryV1, TutorSourceSelector, TutorTurnResponse
+from tutor_engine import process_tutor_turn, log_tutor_turn, create_card_draft_from_turn
 from import_syllabus import upsert_course, import_events
+from rag_notes import (
+    ingest_document,
+    ingest_url_document,
+    sync_folder_to_rag,
+    sync_runtime_catalog,
+)
 
 # Dashboard modules
 from dashboard.utils import allowed_file, load_api_config, save_api_config
@@ -36,7 +48,8 @@ from dashboard.stats import build_stats
 from dashboard.scholar import (
     build_scholar_stats, 
     generate_ai_answer, 
-    run_scholar_orchestrator
+    run_scholar_orchestrator,
+    MAX_CONTEXT_CHARS,
 )
 from dashboard.syllabus import fetch_all_courses_and_events, attach_event_analytics
 from dashboard.calendar import get_calendar_data
@@ -48,6 +61,12 @@ dashboard_bp = Blueprint('dashboard', __name__)
 # We can do it here just to be safe if blueprint is imported
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(SESSION_LOGS_DIR, exist_ok=True)
+
+PROJECT_FILES_DIR = Path(DATA_DIR) / "project_files"
+os.makedirs(PROJECT_FILES_DIR, exist_ok=True)
+
+STUDY_RAG_PATH = Path(STUDY_RAG_DIR)
+os.makedirs(STUDY_RAG_PATH, exist_ok=True)
 
 
 def insert_session_data(data):
@@ -176,9 +195,15 @@ def api_scholar_clarify_question():
         
         full_prompt = user_message
         if history:
-            history_text = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in history[:-1]]) # exclude last if it became user_message
+            # Limit history to last 10 messages and truncate each message
+            history_limited = history[-11:-1] if len(history) > 10 else history[:-1]
+            history_text = "\\n".join([f"{m['role'].upper()}: {m['content'][:500]}" for m in history_limited])
             if history_text:
-                full_prompt = f"Conversation History:\n{history_text}\n\nCurrent Question: {user_message}"
+                full_prompt = f"Conversation History:\\n{history_text}\\n\\nCurrent Question: {user_message}"
+        
+        # Truncate system_context if too long
+        if len(system_context) > MAX_CONTEXT_CHARS:
+            system_context = system_context[:MAX_CONTEXT_CHARS] + "\\n[... truncated ...]"
 
         answer, error = generate_ai_answer(full_prompt, system_context)
         
@@ -235,12 +260,18 @@ def api_scholar_generate_answer():
         
         full_context = context + additional_context
         
-        # Append history to context if available
+        # Append history to context if available (limit to last 10 messages to avoid overflow)
         if messages:
              history_msgs = messages[:-1] if messages[-1].get("role") == "user" else messages
-             history_str = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in history_msgs])
+             # Limit history to avoid token overflow
+             history_msgs = history_msgs[-10:] if len(history_msgs) > 10 else history_msgs
+             history_str = "\\n".join([f"{m['role'].upper()}: {m['content'][:500]}" for m in history_msgs])
              if history_str:
-                 full_context += f"\n\nPrevious Conversation:\n{history_str}"
+                 full_context += f"\\n\\nPrevious Conversation:\\n{history_str}"
+        
+        # Truncate total context if too long
+        if len(full_context) > MAX_CONTEXT_CHARS:
+            full_context = full_context[:MAX_CONTEXT_CHARS] + "\\n[... truncated ...]"
         
         api_key_override = data.get("api_key")
         api_provider_override = data.get("api_provider")
@@ -359,7 +390,21 @@ def api_scholar_answer_questions():
                         answered_content.append(f"A: (pending)")
                     answered_content.append("")
         
-        latest_questions_file.write_text("\n".join(answered_content), encoding="utf-8")
+        # Atomic write: temp file + rename to prevent corruption on crash
+        content = "\n".join(answered_content)
+        fd, tmp_path = tempfile.mkstemp(suffix='.md', dir=str(latest_questions_file.parent))
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as tmp_file:
+                tmp_file.write(content)
+            # Atomic rename (on same filesystem)
+            os.replace(tmp_path, str(latest_questions_file))
+        except Exception:
+            # Clean up temp file if rename failed
+            try:
+                os.unlink(tmp_path)
+            except Exception:
+                pass
+            raise
         
         return jsonify({"ok": True, "message": f"Answers saved to {latest_questions_file.name}"})
     except Exception as e:
@@ -382,6 +427,46 @@ def api_scholar_run_status(run_id):
     
     log_path = run_dir / f"unattended_{run_id}.log"
     final_path = run_dir / f"unattended_final_{run_id}.md"
+    pid_path = run_dir / f"unattended_{run_id}.pid"
+
+    def _read_tail_text(path: Path, max_bytes: int = 12000) -> str:
+        try:
+            with open(path, "rb") as f:
+                try:
+                    f.seek(0, 2)
+                    size = f.tell()
+                    f.seek(max(0, size - max_bytes), 0)
+                except Exception:
+                    pass
+                data = f.read()
+            return data.decode("utf-8", errors="replace")
+        except Exception:
+            return ""
+
+    def _pid_is_running(pid: int) -> bool:
+        if pid <= 0:
+            return False
+        if os.name == "nt":
+            try:
+                # tasklist returns header + row when PID exists
+                proc = subprocess.run(
+                    ["tasklist", "/FI", f"PID eq {pid}"],
+                    capture_output=True,
+                    text=True,
+                    timeout=3,
+                )
+                out = (proc.stdout or "")
+                # When not found, tasklist prints: "INFO: No tasks are running which match the specified criteria."
+                if "No tasks are running" in out:
+                    return False
+                return re.search(rf"\b{re.escape(str(pid))}\b", out) is not None
+            except Exception:
+                return False
+        try:
+            os.kill(pid, 0)
+            return True
+        except Exception:
+            return False
     
     status = {
         "run_id": run_id,
@@ -390,17 +475,74 @@ def api_scholar_run_status(run_id):
         "has_final": final_path.exists(),
         "log_size": 0,
         "log_tail": "",
+        "log_mtime": None,
+        "seconds_since_log_update": None,
+        "pid": None,
+        "pid_stale": False,
+        "stalled": False,
+        "error": False,
+        "error_message": None,
     }
-    
+
     if log_path.exists():
-        status["log_size"] = log_path.stat().st_size
         try:
-            with open(log_path, "r", encoding="utf-8") as f:
-                content = f.read()
-                status["log_tail"] = content[-500:] if len(content) > 500 else content
-                status["running"] = "Scholar Run Completed" not in content and "ERROR:" not in content[-1000:]
-                status["completed"] = "Scholar Run Completed" in content or final_path.exists()
-        except:
+            st = log_path.stat()
+            status["log_size"] = st.st_size
+            status["log_mtime"] = datetime.fromtimestamp(st.st_mtime).isoformat()
+            status["seconds_since_log_update"] = int((datetime.now() - datetime.fromtimestamp(st.st_mtime)).total_seconds())
+        except Exception:
+            pass
+        status["log_tail"] = _read_tail_text(log_path, max_bytes=16000)
+        
+        # Detect error marker in log
+        if "===== SCHOLAR RUN ERROR =====" in status["log_tail"]:
+            status["error"] = True
+            status["running"] = False
+            # Extract error message
+            try:
+                error_start = status["log_tail"].find("===== SCHOLAR RUN ERROR =====")
+                error_section = status["log_tail"][error_start:error_start + 500]
+                for line in error_section.split("\n"):
+                    if line.startswith("Error:"):
+                        status["error_message"] = line.replace("Error:", "").strip()
+                        break
+            except Exception:
+                pass
+
+    # Prefer PID-based running detection when available
+    if pid_path.exists():
+        try:
+            pid_txt = pid_path.read_text(encoding="utf-8").strip()
+            pid = int(pid_txt)
+            status["pid"] = pid
+            status["running"] = _pid_is_running(pid)
+            if not status["running"]:
+                status["pid_stale"] = True
+        except Exception:
+            pass
+
+    # Completion detection
+    tail = status.get("log_tail", "") or ""
+    if "===== Scholar Run Completed" in tail or final_path.exists():
+        status["completed"] = True
+        status["running"] = False
+    elif status["log_tail"]:
+        # Fallback heuristic when no PID available
+        if status["pid"] is None:
+            status["running"] = ("ERROR:" not in tail)
+
+    # Stalled signal for UI (no log changes for 10+ minutes while running)
+    if status.get("running") and isinstance(status.get("seconds_since_log_update"), int):
+        status["stalled"] = status["seconds_since_log_update"] >= 600
+
+    # If PID is stale and we have neither completion marker nor final, this likely exited unexpectedly.
+    # Clear stale PID file so UI doesn't keep presenting a "running" affordance.
+    if status.get("pid_stale") and (not status.get("completed")) and (not final_path.exists()):
+        try:
+            pid_path.unlink()
+            status["pid_stale"] = False
+            status["pid"] = None
+        except Exception:
             pass
     
     if final_path.exists():
@@ -413,6 +555,73 @@ def api_scholar_run_status(run_id):
             pass
     
     return jsonify(status)
+
+
+@dashboard_bp.route("/api/scholar/run/latest-final")
+def api_scholar_latest_final():
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
+    final_files = sorted(run_dir.glob("unattended_final_*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not final_files:
+        return jsonify({"ok": False, "message": "No unattended_final file found"}), 404
+    path = final_files[0]
+    try:
+        content = path.read_text(encoding="utf-8")
+    except Exception:
+        content = path.read_text(encoding="utf-8", errors="replace")
+    # Keep payload bounded
+    max_chars = 120000
+    if len(content) > max_chars:
+        content = content[:max_chars] + "\n\n[... truncated ...]"
+    return jsonify({
+        "ok": True,
+        "file": str(path.relative_to(repo_root)).replace("\\", "/"),
+        "modified": datetime.fromtimestamp(path.stat().st_mtime).isoformat(),
+        "content": content,
+    })
+
+
+@dashboard_bp.route("/api/scholar/run/cancel/<run_id>", methods=["POST"])
+def api_scholar_cancel_run(run_id):
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
+    pid_path = run_dir / f"unattended_{run_id}.pid"
+    if not pid_path.exists():
+        # Treat as a successful no-op: either the run finished/stopped already, or it was started
+        # before PID tracking existed, or the PID file was cleaned up after detecting staleness.
+        return jsonify({
+            "ok": True,
+            "message": "No PID file found for this run (it likely already finished/stopped).",
+        })
+    try:
+        pid = int(pid_path.read_text(encoding="utf-8").strip())
+    except Exception:
+        return jsonify({"ok": False, "message": "Invalid PID file."}), 400
+
+    try:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, text=True, timeout=5)
+        else:
+            os.kill(pid, 15)
+        try:
+            pid_path.unlink()
+        except Exception:
+            pass
+        return jsonify({"ok": True, "message": f"Cancel requested for PID {pid}."})
+    except Exception as e:
+        # If it's already gone, treat cancel as a cleanup.
+        try:
+            if os.name == "nt":
+                proc = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], capture_output=True, text=True, timeout=3)
+                if "No tasks are running" in (proc.stdout or ""):
+                    try:
+                        pid_path.unlink()
+                    except Exception:
+                        pass
+                    return jsonify({"ok": True, "message": f"PID {pid} is not running; cleared stale PID file."})
+        except Exception:
+            pass
+        return jsonify({"ok": False, "message": f"Failed to cancel run: {e}"}), 500
 
 
 @dashboard_bp.route("/api/scholar/safe-mode", methods=["POST"])
@@ -621,17 +830,341 @@ def api_quick_session():
 
 @dashboard_bp.route("/api/tutor/session/start", methods=["POST"])
 def api_tutor_session_start():
+    """Start a new Tutor session."""
     payload = request.get_json() or {}
     session_id = payload.get("session_id") or datetime.now().strftime(
         "sess-%Y%m%d-%H%M%S"
     )
-    return jsonify({"ok": True, "session_id": session_id})
+    mode = payload.get("mode", "Core")
+    course_id = payload.get("course_id")
+    
+    return jsonify({
+        "ok": True, 
+        "session_id": session_id,
+        "mode": mode,
+        "course_id": course_id,
+        "message": f"Tutor session started in {mode} mode"
+    })
+
+
+@dashboard_bp.route("/api/tutor/rag-docs", methods=["GET"])
+def api_tutor_list_rag_docs():
+    """List RAG documents for Source-Lock selection in the Tutor UI."""
+    init_database()
+    limit = int(request.args.get("limit") or 200)
+    limit = max(1, min(limit, 1000))
+    search = (request.args.get("search") or "").strip()
+    doc_type = (request.args.get("doc_type") or "").strip()
+    corpus = (request.args.get("corpus") or "").strip().lower()
+
+    conditions: list[str] = []
+    params: list[object] = []
+
+    if doc_type:
+        conditions.append("doc_type = ?")
+        params.append(doc_type)
+
+    if corpus:
+        conditions.append("COALESCE(corpus, 'runtime') = ?")
+        params.append(corpus)
+
+    if search:
+        like = f"%{search}%"
+        conditions.append("(source_path LIKE ? OR topic_tags LIKE ? OR content LIKE ?)")
+        params.extend([like, like, like])
+
+    where_clause = " AND ".join(conditions) if conditions else "1=1"
+
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        f"""
+        SELECT id, source_path, doc_type, topic_tags, course_id, created_at, updated_at,
+               COALESCE(corpus, 'runtime') as corpus, COALESCE(folder_path, '') as folder_path,
+               COALESCE(enabled, 1) as enabled
+        FROM rag_docs
+        WHERE {where_clause}
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (*params, limit),
+    )
+    rows = cur.fetchall()
+    conn.close()
+
+    docs = [
+        {
+            "id": int(r["id"]),
+            "source_path": r["source_path"],
+            "doc_type": r["doc_type"],
+            "topic_tags": r["topic_tags"] or "",
+            "course_id": r["course_id"],
+            "created_at": r["created_at"],
+            "updated_at": r["updated_at"],
+            "corpus": r["corpus"],
+            "folder_path": r["folder_path"],
+            "enabled": int(r["enabled"]),
+        }
+        for r in rows
+    ]
+
+    return jsonify({"ok": True, "docs": docs})
+
+
+@dashboard_bp.route("/api/tutor/project-files/upload", methods=["POST"])
+def api_tutor_upload_project_file():
+    """Deprecated: file uploads are disabled (Study RAG is folder-synced)."""
+    return jsonify({
+        "ok": False,
+        "message": "File uploads are disabled. Drop files into brain/data/study_rag and click Sync. Use 'Add Link' for YouTube/URLs.",
+    }), 410
+
+
+@dashboard_bp.route("/api/tutor/study/sync", methods=["POST"])
+def api_tutor_sync_study_folder():
+    """Sync the Study RAG drop-folder (brain/data/study_rag) into rag_docs."""
+    try:
+        result = sync_folder_to_rag(str(STUDY_RAG_PATH), corpus="study")
+        return jsonify({
+            "ok": True,
+            "root": result.get("root"),
+            "processed": result.get("processed", 0),
+            "errors": result.get("errors", []),
+            "message": f"Synced Study folder. Files processed: {result.get('processed', 0)}",
+        })
+    except Exception as exc:
+        return jsonify({"ok": False, "message": f"Study sync failed: {exc}"}), 500
+
+
+@dashboard_bp.route("/api/tutor/study/folders", methods=["GET"])
+def api_tutor_list_study_folders():
+    """List Study RAG folders (relative) with enabled status and doc counts."""
+    init_database()
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT COALESCE(folder_path, '') as folder_path,
+               COUNT(*) as doc_count,
+               MIN(COALESCE(enabled, 1)) as enabled
+        FROM rag_docs
+        WHERE COALESCE(corpus, 'runtime') = 'study'
+        GROUP BY COALESCE(folder_path, '')
+        ORDER BY folder_path
+        """
+    )
+    rows = cur.fetchall()
+    conn.close()
+    folders = [
+        {
+            "folder_path": r["folder_path"],
+            "doc_count": int(r["doc_count"]),
+            "enabled": int(r["enabled"]),
+        }
+        for r in rows
+    ]
+    return jsonify({"ok": True, "root": str(STUDY_RAG_PATH), "folders": folders})
+
+
+@dashboard_bp.route("/api/tutor/study/folders/set", methods=["POST"])
+def api_tutor_set_study_folder_enabled():
+    """Enable/disable a Study folder (applies recursively)."""
+    payload = request.get_json() or {}
+    folder_path = (payload.get("folder_path") or "").strip().replace("\\", "/")
+    enabled = 1 if payload.get("enabled") in (True, 1, "1", "true", "True") else 0
+
+    init_database()
+    conn = sqlite3.connect(str(DB_PATH))
+    cur = conn.cursor()
+
+    if folder_path:
+        like_prefix = folder_path.rstrip("/") + "/%"
+        cur.execute(
+            """
+            UPDATE rag_docs
+            SET enabled = ?, updated_at = ?
+            WHERE COALESCE(corpus, 'runtime') = 'study'
+              AND (COALESCE(folder_path, '') = ? OR COALESCE(folder_path, '') LIKE ?)
+            """,
+            (enabled, datetime.now().isoformat(timespec="seconds"), folder_path, like_prefix),
+        )
+    else:
+        cur.execute(
+            """
+            UPDATE rag_docs
+            SET enabled = ?, updated_at = ?
+            WHERE COALESCE(corpus, 'runtime') = 'study'
+            """,
+            (enabled, datetime.now().isoformat(timespec="seconds")),
+        )
+
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "message": f"Study folder '{folder_path or '[root]'}' set to enabled={enabled}"})
+
+
+@dashboard_bp.route("/api/tutor/runtime/items", methods=["GET"])
+def api_tutor_list_runtime_items():
+    """List Runtime catalog items (systems/engines) with enable toggles."""
+    init_database()
+
+    # Ensure runtime catalog exists at least once
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT COUNT(*) as n
+        FROM rag_docs
+        WHERE COALESCE(corpus, 'runtime') = 'runtime'
+          AND source_path LIKE 'runtime://%'
+        """
+    )
+    n = int(cur.fetchone()["n"])
+    conn.close()
+    if n == 0:
+        try:
+            sync_runtime_catalog(str(repo_root))
+        except Exception:
+            # If it fails, still return an empty list.
+            pass
+
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT id, source_path, folder_path, content, COALESCE(enabled, 1) as enabled
+        FROM rag_docs
+        WHERE COALESCE(corpus, 'runtime') = 'runtime'
+          AND source_path LIKE 'runtime://%'
+        ORDER BY COALESCE(folder_path, ''), source_path
+        """
+    )
+    rows = cur.fetchall()
+    conn.close()
+
+    items = []
+    for r in rows:
+        source_path = r["source_path"] or ""
+        key = source_path.replace("runtime://", "", 1)
+        content = (r["content"] or "").strip()
+        # description = second paragraph-ish; for UI keep short
+        desc = ""
+        parts = [p.strip() for p in content.split("\n\n") if p.strip()]
+        if len(parts) >= 2:
+            desc = parts[1]
+        elif parts:
+            desc = parts[0]
+        if len(desc) > 240:
+            desc = desc[:237].rstrip() + "..."
+        items.append({
+            "id": int(r["id"]),
+            "key": key,
+            "group": (r["folder_path"] or "Runtime"),
+            "enabled": int(r["enabled"]),
+            "description": desc,
+        })
+
+    return jsonify({"ok": True, "items": items})
+
+
+@dashboard_bp.route("/api/tutor/runtime/items/set", methods=["POST"])
+def api_tutor_set_runtime_item_enabled():
+    payload = request.get_json() or {}
+    try:
+        doc_id = int(payload.get("id"))
+    except Exception:
+        return jsonify({"ok": False, "message": "id must be an integer"}), 400
+    enabled = 1 if payload.get("enabled") in (True, 1, "1", "true", "True") else 0
+
+    init_database()
+    conn = sqlite3.connect(str(DB_PATH))
+    cur = conn.cursor()
+    cur.execute(
+        """
+        UPDATE rag_docs
+        SET enabled = ?, updated_at = ?
+        WHERE id = ?
+          AND COALESCE(corpus, 'runtime') = 'runtime'
+        """,
+        (enabled, datetime.now().isoformat(timespec="seconds"), doc_id),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "message": f"Runtime item {doc_id} set to enabled={enabled}"})
+
+
+@dashboard_bp.route("/api/tutor/links/add", methods=["POST"])
+def api_tutor_add_link_doc():
+    """Add a URL (e.g., YouTube link) into rag_docs for Source-Lock selection."""
+    payload = request.get_json() or {}
+    url = (payload.get("url") or "").strip()
+    if not url:
+        return jsonify({"ok": False, "message": "url is required"}), 400
+    if not (url.startswith("http://") or url.startswith("https://")):
+        return jsonify({"ok": False, "message": "url must start with http:// or https://"}), 400
+
+    doc_type = (payload.get("doc_type") or "youtube").strip().lower() or "youtube"
+    allowed_doc_types = {
+        "note",
+        "textbook",
+        "transcript",
+        "slide",
+        "other",
+        "powerpoint",
+        "pdf",
+        "txt",
+        "mp4",
+        "youtube",
+    }
+    if doc_type not in allowed_doc_types:
+        doc_type = "youtube"
+
+    raw_tags = (payload.get("tags") or "").strip()
+    tags: list[str] = ["link"]
+    if raw_tags:
+        tags.extend([t.strip() for t in re.split(r"[,\n]", raw_tags) if t.strip()])
+
+    course_id_raw = (payload.get("course_id") or "").strip()
+    course_id = None
+    if course_id_raw:
+        try:
+            course_id = int(course_id_raw)
+        except ValueError:
+            return jsonify({"ok": False, "message": "course_id must be an integer"}), 400
+
+    try:
+        doc_id = ingest_url_document(
+            url=url,
+            doc_type=doc_type,
+            course_id=course_id,
+            topic_tags=tags,
+            content=(payload.get("content") or "").strip(),
+            corpus="study",
+            folder_path="links",
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "message": f"Ingest failed: {exc}"}), 500
+
+    return jsonify({
+        "ok": True,
+        "doc_id": doc_id,
+        "doc_type": doc_type,
+        "tags": tags,
+        "message": f"Added link and ingested as RAG doc {doc_id}",
+    })
 
 
 @dashboard_bp.route("/api/tutor/session/turn", methods=["POST"])
 def api_tutor_session_turn():
+    """Process a Tutor conversation turn using Codex + RAG."""
     payload = request.get_json() or {}
     try:
+        # Build source selector from payload
         sources = TutorSourceSelector(
             allowed_doc_ids=payload.get("sources", {}).get("allowed_doc_ids", []),
             allowed_kinds=payload.get("sources", {}).get("allowed_kinds", []),
@@ -639,6 +1172,8 @@ def api_tutor_session_turn():
                 "disallowed_doc_ids", []
             ),
         )
+        
+        # Build query object
         query = TutorQueryV1(
             user_id=payload.get("user_id", "default"),
             session_id=payload.get("session_id"),
@@ -650,28 +1185,74 @@ def api_tutor_session_turn():
             sources=sources,
             notes_context_ids=payload.get("notes_context_ids", []),
         )
+        
+        if not query.question.strip():
+            return jsonify({"ok": False, "message": "Question cannot be empty"}), 400
+        
     except Exception as exc:
         return jsonify({"ok": False, "message": f"Invalid TutorQuery payload: {exc}"}), 400
 
-    # Stub answer for now.
-    answer_text = (
-        "Tutor stub is running.\n\n"
-        f"- Mode: {query.mode}\n"
-        f"- Course ID: {query.course_id}\n"
-        f"- Topic ID: {query.topic_id}\n"
-        f"- Question: {query.question}\n\n"
-        "RAG + Brain integration will replace this stub response."
-    )
-    resp = TutorTurnResponse(session_id=query.session_id or "adhoc", answer=answer_text, unverified=True)
-    return jsonify(
-        {
+    # Process the turn through the Tutor engine
+    try:
+        response = process_tutor_turn(query)
+        
+        # Log the turn to database
+        turn_id = log_tutor_turn(query, response)
+        
+        # Convert citations to dict format
+        citations_list = [
+            {
+                "doc_id": c.doc_id,
+                "source_path": c.source_path,
+                "doc_type": c.doc_type,
+                "snippet": c.snippet
+            }
+            for c in response.citations
+        ]
+        
+        return jsonify({
             "ok": True,
-            "session_id": resp.session_id,
-            "answer": resp.answer,
-            "citations": [],
-            "unverified": resp.unverified,
-        }
-    )
+            "session_id": response.session_id,
+            "turn_id": turn_id,
+            "answer": response.answer,
+            "citations": citations_list,
+            "unverified": response.unverified,
+            "summary": json.loads(response.summary_json) if response.summary_json else None
+        })
+        
+    except Exception as exc:
+        return jsonify({
+            "ok": False, 
+            "message": f"Tutor error: {exc}",
+            "session_id": query.session_id or "error"
+        }), 500
+
+
+@dashboard_bp.route("/api/tutor/card-draft", methods=["POST"])
+def api_tutor_create_card_draft():
+    """Create a card draft from a Tutor turn."""
+    payload = request.get_json() or {}
+    
+    turn_id = payload.get("turn_id")
+    front = payload.get("front", "").strip()
+    back = payload.get("back", "").strip()
+    hook = payload.get("hook", "").strip() or None
+    tags = payload.get("tags", "").strip() or None
+    
+    if not turn_id:
+        return jsonify({"ok": False, "message": "turn_id is required"}), 400
+    if not front or not back:
+        return jsonify({"ok": False, "message": "front and back are required"}), 400
+    
+    try:
+        card_id = create_card_draft_from_turn(turn_id, front, back, hook, tags)
+        return jsonify({
+            "ok": True,
+            "card_id": card_id,
+            "message": "Card draft created"
+        })
+    except Exception as exc:
+        return jsonify({"ok": False, "message": f"Error creating card: {exc}"}), 500
 
 
 @dashboard_bp.route("/api/syllabus/import", methods=["POST"])

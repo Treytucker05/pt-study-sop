@@ -146,27 +146,27 @@ python rag_notes.py search "gluteal region landmarks" --limit 5
 ## Database Schema (v9.1 + planning/RAG extensions)
 
 Core session logging uses the v9.1 `sessions` table. Key fields include:
-- `target_exam` – Exam/block being studied for
-- `source_lock` – Materials used in session
-- `plan_of_attack` – Session plan
-- `region_covered` – Anatomy region
-- `landmarks_mastered` – Landmarks learned
-- `muscles_attached` – Muscles mapped
-- `oian_completed_for` – Full OIAN completed
-- `rollback_events` – Whether rollback occurred
-- `drawing_used` – Whether drawing was used
-- `calibration_check` – Confidence vs actual performance
-- `off_source_drift` – Whether you left declared sources
-- `source_snippets_used` – Whether source snippets were captured
-- `weak_anchors` – Anchors needing cards in WRAP
+- `target_exam` - Exam/block being studied for
+- `source_lock` - Materials used in session
+- `plan_of_attack` - Session plan
+- `region_covered` - Anatomy region
+- `landmarks_mastered` - Landmarks learned
+- `muscles_attached` - Muscles mapped
+- `oian_completed_for` - Full OIAN completed
+- `rollback_events` - Whether rollback occurred
+- `drawing_used` - Whether drawing was used
+- `calibration_check` - Confidence vs actual performance
+- `off_source_drift` - Whether you left declared sources
+- `source_snippets_used` - Whether source snippets were captured
+- `weak_anchors` - Anchors needing cards in WRAP
 
 Planning and RAG tables are **additive** and do not change the v9.1 session schema:
 
-- `courses` – high-level course metadata (name, code, term, instructor, weekly time budget).
-- `course_events` – syllabus events (lectures, readings, quizzes, exams, assignments) with dates, due dates, weight, and raw syllabus text.
-- `topics` – conceptual topics tied to courses, with `source_lock`, default frameworks, and optional RAG doc IDs.
-- `study_tasks` – concrete study tasks scheduled on specific days, linked to courses, topics, and (once complete) `sessions.id`.
-- `rag_docs` – text-normalized RAG documents (notes, textbooks, transcripts, slides) with metadata and content stored locally for retrieval.
+- `courses` - high-level course metadata (name, code, term, instructor, weekly time budget).
+- `course_events` - syllabus events (lectures, readings, quizzes, exams, assignments) with dates, due dates, weight, and raw syllabus text.
+- `topics` - conceptual topics tied to courses, with `source_lock`, default frameworks, and optional RAG doc IDs.
+- `study_tasks` - concrete study tasks scheduled on specific days, linked to courses, topics, and (once complete) `sessions.id`.
+- `rag_docs` - text-normalized RAG documents (notes, textbooks, transcripts, slides) with metadata and content stored locally for retrieval.
 
 Brain remains the **single source of truth** for sessions, planning, and RAG document metadata; higher-level tools (Tutor API, Scholar) read from these tables but do not mutate schema.
 
@@ -193,9 +193,13 @@ The web dashboard (`dashboard_web.py`) provides a modern UI for managing your st
   - Plan spaced repetition sessions directly from calendar
 - **Course Events**: Track lectures, quizzes, exams, assignments with dates, weights, and coverage analytics
 
-### Tutor (Stub)
-- **Tutor Tab**: Basic chat UI connected to Tutor API stubs
-- Currently returns placeholder responses; full RAG-integrated implementation planned
+### Tutor (Codex-Powered)
+- **Tutor Tab**: Chat UI connected to Codex CLI via RAG
+- **Mode-Specific Behavior**: Core (teaching), Sprint (testing), Drill (deep practice)
+- **RAG Search**: Searches ingested SOP knowledge files with source-lock filtering
+- **Citations**: Returns source references for verified answers
+- **Unverified Banner**: Marks answers not backed by course materials
+- **Card Drafts**: Create flashcard drafts from Tutor interactions
 
 ### Scholar Integration
 - View Scholar status, toggle safe mode, run orchestrator
@@ -219,8 +223,9 @@ The dashboard exposes REST API endpoints:
 | `/api/syllabus/events` | GET | List course events with coverage analytics |
 | `/api/calendar/data` | GET | Get calendar data (events, sessions, planned) |
 | `/api/calendar/plan_session` | POST | Create planned spaced repetition session |
-| `/api/tutor/session/start` | POST | Start Tutor session (stub) |
-| `/api/tutor/session/turn` | POST | Tutor turn/query (stub) |
+| `/api/tutor/session/start` | POST | Start Tutor session |
+| `/api/tutor/session/turn` | POST | Process Tutor conversation turn |
+| `/api/tutor/card-draft` | POST | Create card draft from Tutor turn |
 | `/api/scholar` | GET | Scholar status and metadata |
 | `/api/scholar/questions` | POST | Submit answers to Scholar questions |
 | `/api/scholar/run` | POST | Start Scholar orchestrator run |
@@ -236,6 +241,8 @@ The dashboard exposes REST API endpoints:
 | `python dashboard_web.py` | Start web dashboard server |
 | `python rag_notes.py ingest <file>` | Ingest markdown note into RAG |
 | `python rag_notes.py search <query>` | Search RAG notes |
+| `python ingest_knowledge.py` | Ingest SOP knowledge files into RAG |
+| `python tutor_engine.py <question>` | Test Tutor engine from CLI |
 | `../Run_Brain_Sync.bat` | One-click daily sync: move stray logs + ingest all + regenerate resume |
 | `python dedupe_course_events.py [--course-id N] --apply` | Remove duplicate syllabus events (dry-run without --apply) |
 | `../Run_Brain_All.bat` | One-click: sync + resume + start dashboard and open browser (http://127.0.0.1:5000) |

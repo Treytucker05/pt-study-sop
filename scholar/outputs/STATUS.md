@@ -1,12 +1,12 @@
 ﻿# Scholar Status
 
-Updated: 2026-01-09 09:08:35
+Updated: 2026-01-09 21:38:59
 Repo: C:\Users\treyt\OneDrive\Desktop\pt-study-sop
 
 ## Latest Run
-- unattended_final: C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_040752.md (01/09/2026 04:07:52)
-- questions_needed: C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\questions_needed_2026-01-09_032316.md (01/09/2026 03:23:16)
-- unattended_log: C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\unattended_2026-01-09_040752.log (01/09/2026 04:07:52)
+- unattended_final: C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_185053.md (01/09/2026 18:50:53)
+- questions_needed: C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\questions_needed_2026-01-09_024933.md (01/09/2026 18:50:46)
+- unattended_log: C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\unattended_2026-01-09_213751.log (01/09/2026 21:38:58)
 - verification_report: C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\verification_report_2026-01-08_100826.md (01/08/2026 10:09:15)
 
 ## Progress Snapshot
@@ -21,7 +21,7 @@ Repo: C:\Users\treyt\OneDrive\Desktop\pt-study-sop
 
 ## What to do now
 1) Open the latest unattended_final.
-2) If questions_needed is non-empty, answer it. (Current: empty)
+2) If questions_needed is non-empty, answer it. (Current: non-empty)
 3) Ignore everything else.
 
 ## Counts Snapshot

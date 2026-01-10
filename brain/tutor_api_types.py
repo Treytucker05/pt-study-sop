@@ -21,6 +21,19 @@ from typing import List, Literal, Optional, Sequence
 
 TutorMode = Literal["Core", "Sprint", "Drill", "Diagnostic Sprint", "Teaching Sprint"]
 
+TutorDocType = Literal[
+    "note",
+    "textbook",
+    "transcript",
+    "slide",
+    "other",
+    "powerpoint",
+    "pdf",
+    "txt",
+    "mp4",
+    "youtube",
+]
+
 
 @dataclass
 class TutorSourceSelector:
@@ -35,7 +48,7 @@ class TutorSourceSelector:
     """
 
     allowed_doc_ids: Sequence[int] = field(default_factory=list)
-    allowed_kinds: Sequence[Literal["note", "textbook", "transcript", "slide"]] = field(
+    allowed_kinds: Sequence[TutorDocType] = field(
         default_factory=list
     )
     disallowed_doc_ids: Sequence[int] = field(default_factory=list)
@@ -83,7 +96,7 @@ class TutorCitation:
 
     doc_id: int
     source_path: str
-    doc_type: Literal["note", "textbook", "transcript", "slide", "other"]
+    doc_type: TutorDocType
     snippet: str
 
 

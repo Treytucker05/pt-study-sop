@@ -59,6 +59,109 @@ def _checksum(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _checksum_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _upsert_rag_doc(
+    *,
+    source_path: str,
+    doc_type: str,
+    course_id: Optional[int],
+    topic_tags: str,
+    content: str,
+    checksum: str,
+    metadata: dict,
+    corpus: str = "runtime",
+    folder_path: str = "",
+    enabled: int = 1,
+) -> int:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn = _connect()
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT id, checksum FROM rag_docs WHERE source_path = ? AND COALESCE(corpus, 'runtime') = ?",
+        (source_path, corpus),
+    )
+    row = cur.fetchone()
+
+    if row:
+        existing_id = int(row["id"])
+        if (row["checksum"] or "") == checksum:
+            conn.close()
+            return existing_id
+
+        cur.execute(
+            """
+            UPDATE rag_docs
+            SET course_id = ?,
+                topic_tags = ?,
+                content = ?,
+                doc_type = ?,
+                checksum = ?,
+                metadata_json = ?,
+                corpus = ?,
+                folder_path = ?,
+                enabled = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                course_id,
+                topic_tags,
+                content,
+                doc_type,
+                checksum,
+                str(metadata),
+                corpus,
+                folder_path,
+                enabled,
+                now,
+                existing_id,
+            ),
+        )
+        conn.commit()
+        conn.close()
+        return existing_id
+
+    cur.execute(
+        """
+        INSERT INTO rag_docs (
+            source_path,
+            course_id,
+            topic_tags,
+            doc_type,
+            content,
+            checksum,
+            metadata_json,
+            corpus,
+            folder_path,
+            enabled,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            source_path,
+            course_id,
+            topic_tags,
+            doc_type,
+            content,
+            checksum,
+            str(metadata),
+            corpus,
+            folder_path,
+            enabled,
+            now,
+        ),
+    )
+    doc_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return doc_id
+
+
 def _extract_front_matter(text: str) -> dict:
     """
     Parse a very simple YAML-style front matter block at the top of the file:
@@ -216,6 +319,265 @@ def _ingest_document(
     conn.commit()
     conn.close()
     return note_id
+
+
+def ingest_document(
+    path: str,
+    doc_type: str,
+    course_id: Optional[int] = None,
+    topic_tags: Optional[Iterable[str]] = None,
+    *,
+    corpus: str = "runtime",
+    folder_path: str = "",
+    enabled: int = 1,
+) -> int:
+    """Public ingestion API for any RAG document.
+
+    - For text-backed docs, stores full content for retrieval.
+    - For binary docs (e.g., pdf/powerpoint/mp4), stores metadata-only (content empty).
+    """
+    binary_types = {"pdf", "powerpoint", "mp4"}
+    if doc_type in binary_types:
+        file_path = Path(path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        # Still compute a checksum so updates are detected.
+        checksum = _checksum_bytes(file_path.read_bytes())
+        tags = ", ".join(t.strip() for t in (topic_tags or []) if t.strip())
+        metadata = {
+            "binary": True,
+            "ingest_source": "rag_notes.py",
+            "ingested_at": datetime.now().isoformat(timespec="seconds"),
+            "note": "Binary file stored; content not indexed (v1).",
+        }
+        return _upsert_rag_doc(
+            source_path=str(file_path),
+            doc_type=doc_type,
+            course_id=course_id,
+            topic_tags=tags,
+            content="",
+            checksum=checksum,
+            metadata=metadata,
+            corpus=corpus,
+            folder_path=folder_path,
+            enabled=enabled,
+        )
+
+    # Text-backed docs
+    doc_id = _ingest_document(path, doc_type, course_id=course_id, topic_tags=topic_tags)
+    # Ensure corpus/folder/enabled are set for this doc_id
+    try:
+        now = datetime.now().isoformat(timespec="seconds")
+        conn = _connect()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE rag_docs
+            SET corpus = ?, folder_path = ?, enabled = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (corpus, folder_path, enabled, now, doc_id),
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+    return doc_id
+
+
+def ingest_url_document(
+    url: str,
+    doc_type: str,
+    course_id: Optional[int] = None,
+    topic_tags: Optional[Iterable[str]] = None,
+    content: str = "",
+    *,
+    corpus: str = "study",
+    folder_path: str = "links",
+    enabled: int = 1,
+) -> int:
+    """Ingest a URL as a RAG doc (metadata-first).
+
+    Used for things like YouTube links. Content can be added later (e.g., transcript).
+    """
+    tags = ", ".join(t.strip() for t in (topic_tags or []) if t.strip())
+    checksum = _checksum(url + "\n" + content + "\n" + tags)
+    metadata = {
+        "url": True,
+        "ingest_source": "rag_notes.py",
+        "ingested_at": datetime.now().isoformat(timespec="seconds"),
+        "note": "URL record stored; content may be empty until transcript/notes are added.",
+    }
+    return _upsert_rag_doc(
+        source_path=url,
+        doc_type=doc_type,
+        course_id=course_id,
+        topic_tags=tags,
+        content=content,
+        checksum=checksum,
+        metadata=metadata,
+        corpus=corpus,
+        folder_path=folder_path,
+        enabled=enabled,
+    )
+
+
+def _infer_doc_type_from_suffix(suffix: str) -> str:
+    s = suffix.lower()
+    if s in {".md", ".markdown"}:
+        return "transcript"
+    if s == ".txt":
+        return "txt"
+    if s in {".ppt", ".pptx"}:
+        return "powerpoint"
+    if s == ".pdf":
+        return "pdf"
+    if s == ".mp4":
+        return "mp4"
+    return "other"
+
+
+def sync_folder_to_rag(
+    root_dir: str,
+    *,
+    corpus: str = "study",
+    allowed_exts: Optional[set[str]] = None,
+    exclude_dir_names: Optional[set[str]] = None,
+) -> dict:
+    """Sync a folder tree into rag_docs.
+
+    Intended for the Study RAG drop-folder: add files to the folder, then
+    call sync to ingest/update. (Deletes are not removed from DB in v1.)
+    """
+    root = Path(root_dir)
+    if not root.exists() or not root.is_dir():
+        raise FileNotFoundError(f"Folder not found: {root}")
+
+    if allowed_exts is None:
+        allowed_exts = {".md", ".markdown", ".txt", ".pdf", ".ppt", ".pptx", ".mp4"}
+    if exclude_dir_names is None:
+        exclude_dir_names = {".git", ".venv", "__pycache__"}
+
+    processed = 0
+    errors: list[str] = []
+    ingested_ids: list[int] = []
+
+    for dirpath, dirnames, filenames in os.walk(str(root)):
+        # Prune excluded dirs
+        dirnames[:] = [d for d in dirnames if d not in exclude_dir_names]
+        for filename in filenames:
+            file_path = Path(dirpath) / filename
+            if file_path.suffix.lower() not in allowed_exts:
+                continue
+
+            rel_folder = os.path.relpath(str(file_path.parent), str(root)).replace("\\", "/")
+            if rel_folder == ".":
+                rel_folder = ""
+
+            doc_type = _infer_doc_type_from_suffix(file_path.suffix)
+            try:
+                doc_id = ingest_document(
+                    path=str(file_path),
+                    doc_type=doc_type,
+                    course_id=None,
+                    topic_tags=["study-folder"],
+                    corpus=corpus,
+                    folder_path=rel_folder,
+                    enabled=1,
+                )
+                ingested_ids.append(int(doc_id))
+                processed += 1
+            except Exception as exc:
+                errors.append(f"{file_path}: {exc}")
+
+    return {
+        "ok": len(errors) == 0,
+        "root": str(root),
+        "processed": processed,
+        "errors": errors,
+        "doc_ids": ingested_ids,
+    }
+
+
+def _extract_brief_description(markdown_text: str, max_chars: int = 240) -> str:
+    lines = [ln.rstrip() for ln in markdown_text.splitlines()]
+    # find first heading
+    start = 0
+    for i, ln in enumerate(lines):
+        if ln.strip().startswith("#"):
+            start = i + 1
+            break
+    # first non-empty paragraph-ish
+    buf: list[str] = []
+    for ln in lines[start:]:
+        s = ln.strip()
+        if not s:
+            if buf:
+                break
+            continue
+        if s.startswith("#"):
+            if buf:
+                break
+            continue
+        buf.append(s)
+        if sum(len(x) for x in buf) > max_chars:
+            break
+    desc = " ".join(buf).strip()
+    if len(desc) > max_chars:
+        desc = desc[: max_chars - 3].rstrip() + "..."
+    return desc
+
+
+def sync_runtime_catalog(repo_root: str) -> dict:
+    """Generate a compact Runtime catalog (systems/engines) into rag_docs.
+
+    This is intentionally brief: each item becomes a small RAG doc users can
+    toggle on/off for Runtime guidance.
+    """
+    root = Path(repo_root)
+    gk = root / "sop" / "gpt-knowledge"
+    if not gk.exists():
+        raise FileNotFoundError(f"Missing runtime canon folder: {gk}")
+
+    md_files = sorted(gk.glob("*.md"))
+    processed = 0
+    errors: list[str] = []
+
+    for f in md_files:
+        try:
+            text = f.read_text(encoding="utf-8")
+            title = f.stem
+            desc = _extract_brief_description(text)
+
+            name = f.name.lower()
+            if name.endswith("-engine.md") or "engine" in name:
+                group = "Engines"
+            elif re.match(r"^m\d+-", name):
+                group = "Modules"
+            elif name.endswith("-series.md"):
+                group = "Series"
+            else:
+                group = "Runtime"
+
+            content = f"{title}\n\n{desc}\n\nSource file: {f.as_posix()}"
+            _upsert_rag_doc(
+                source_path=f"runtime://{f.stem}",
+                doc_type="other",
+                course_id=None,
+                topic_tags=f"runtime, {group.lower()}, sop",
+                content=content,
+                checksum=_checksum(content),
+                metadata={"source_file": str(f), "kind": "runtime_catalog"},
+                corpus="runtime",
+                folder_path=group,
+                enabled=1,
+            )
+            processed += 1
+        except Exception as exc:
+            errors.append(f"{f}: {exc}")
+
+    return {"ok": len(errors) == 0, "processed": processed, "errors": errors}
 
 
 def ingest_markdown_note(

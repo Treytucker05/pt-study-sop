@@ -15,6 +15,81 @@ try:
 except ImportError:
     REQUESTS_AVAILABLE = False
 
+# Maximum context size to send to API (approx 30k tokens = ~120k chars)
+MAX_CONTEXT_CHARS = 100000
+
+
+def cleanup_stale_pids() -> int:
+    """
+    Scan orchestrator_runs for *.pid files and remove any where the process is no longer running.
+    Returns count of cleaned up files.
+    """
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
+    
+    if not run_dir.exists():
+        return 0
+    
+    cleaned = 0
+    for pid_file in run_dir.glob("*.pid"):
+        try:
+            pid_txt = pid_file.read_text(encoding="utf-8").strip()
+            pid = int(pid_txt)
+            
+            # Check if process is running
+            is_running = False
+            if pid > 0:
+                if os.name == "nt":
+                    try:
+                        proc = subprocess.run(
+                            ["tasklist", "/FI", f"PID eq {pid}"],
+                            capture_output=True,
+                            text=True,
+                            timeout=3,
+                        )
+                        out = (proc.stdout or "")
+                        if "No tasks are running" not in out:
+                            is_running = re.search(rf"\b{re.escape(str(pid))}\b", out) is not None
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        os.kill(pid, 0)
+                        is_running = True
+                    except Exception:
+                        pass
+            
+            if not is_running:
+                pid_file.unlink()
+                cleaned += 1
+        except Exception:
+            # If we can't read or parse the PID file, try to delete it
+            try:
+                pid_file.unlink()
+                cleaned += 1
+            except Exception:
+                pass
+    
+    return cleaned
+
+
+def _truncate_context(context: str, max_chars: int = MAX_CONTEXT_CHARS) -> str:
+    """
+    Truncate context to fit within token limits.
+    Keeps the beginning (most important context) and truncates the end.
+    """
+    if not context or len(context) <= max_chars:
+        return context
+    
+    # Truncate and add indicator
+    truncated = context[:max_chars]
+    # Try to cut at a natural boundary (newline or sentence)
+    last_newline = truncated.rfind('\n', max_chars - 500, max_chars)
+    if last_newline > max_chars - 1000:
+        truncated = truncated[:last_newline]
+    
+    return truncated + "\n\n[... context truncated due to length ...]"
+
 def generate_ai_answer(question, context="", api_key_override=None, api_provider_override=None, model_override=None):
     """
     Generate an answer to a Scholar question using OpenRouter or OpenAI.
@@ -62,9 +137,12 @@ Provide concise, actionable answers (2-4 sentences) that:
 - Explain the trade-offs considered
 - Reference relevant system constraints or research when applicable"""
         
+        # Truncate context to avoid API token limits
+        safe_context = _truncate_context(context) if context else ""
+        
         user_prompt = f"""Question: {question}
 
-{context if context else "Answer based on the PEIRRO/KWIK system design and learning science principles."}
+{safe_context if safe_context else "Answer based on the PEIRRO/KWIK system design and learning science principles."}
 
 Provide a clear, concise answer (2-4 sentences) that addresses the question directly."""
         
@@ -113,6 +191,12 @@ def build_scholar_stats():
     Build Scholar status and progress data for dashboard.
     Reads from scholar/outputs/STATUS.md and related files.
     """
+    # Clean up stale PID files whenever Scholar tab loads
+    try:
+        cleanup_stale_pids()
+    except Exception:
+        pass
+    
     # Assuming this file is brain/dashboard/scholar.py
     # Repo root is ../../
     repo_root = Path(__file__).parent.parent.parent.resolve()
@@ -372,6 +456,7 @@ def run_scholar_orchestrator():
     log_path = run_dir / f"unattended_{timestamp}.log"
     final_path = run_dir / f"unattended_final_{timestamp}.md"
     questions_path = run_dir / f"questions_needed_{timestamp}.md"
+    pid_path = run_dir / f"unattended_{timestamp}.pid"
     
     preserved_count = len(existing_questions_to_preserve)
     preserved_questions_file = None
@@ -382,23 +467,34 @@ def run_scholar_orchestrator():
             encoding="utf-8"
         )
     
-    try:
-        result = subprocess.run(
-            ["codex", "--version"],
-            capture_output=True,
-            timeout=5,
-            cwd=str(repo_root),
-        )
-        codex_available = result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        codex_available = False
+    # Check for Codex CLI availability - use full path from npm global
+    codex_cmd = None
+    npm_path = Path(os.environ.get("APPDATA", "")) / "npm" / "codex.cmd"
     
-    if not codex_available:
+    if npm_path.exists():
+        codex_cmd = str(npm_path)
+    else:
+        # Try to find codex in PATH
+        try:
+            result = subprocess.run(
+                ["where.exe", "codex"],
+                capture_output=True,
+                timeout=5,
+                text=True,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                codex_cmd = result.stdout.strip().split('\n')[0]
+        except:
+            pass
+    
+    if not codex_cmd:
+        # Codex not found
         with open(log_path, "w", encoding="utf-8") as f:
             f.write(f"Scholar Run Requested: {datetime.now().isoformat()}\n")
             f.write(f"Run ID: {timestamp}\n\n")
-            f.write("NOTE: 'codex' command not found in PATH.\n")
-            f.write("Scholar can still be executed via Cursor IDE's AI assistant.\n\n")
+            f.write("NOTE: 'codex' command not found.\n")
+            f.write("Install with: npm install -g @openai/codex\n")
+            f.write("Or Scholar can be executed via Cursor IDE's AI assistant.\n\n")
             if preserved_count > 0:
                 f.write(f"Preserved {preserved_count} unanswered question(s) from previous run.\n")
                 f.write(f"Questions saved to: {preserved_questions_file.name if preserved_questions_file else 'N/A'}\n\n")
@@ -436,17 +532,24 @@ def run_scholar_orchestrator():
         try:
             with open(log_path, "w", encoding="utf-8") as log_file:
                 log_file.write(f"Scholar Run Started: {datetime.now().isoformat()}\n")
+                log_file.write(f"Using Codex: {codex_cmd}\n")
+                log_file.write(f"Prompt file: {prompt_file}\n\n")
+                log_file.flush()
+                
+                # Read prompt content to pass via stdin (like the batch script does)
                 with open(prompt_file, "r", encoding="utf-8") as prompt:
                     prompt_content = prompt.read()
                 
                 try:
+                    # Use codex exec with stdin (the '-' argument means read from stdin)
+                    # This matches the batch script: codex exec ... - < prompt_file
                     process = subprocess.Popen(
                         [
-                            "codex", "--search", "exec",
-                            "--cd", str(repo_root),
+                            codex_cmd, "exec",
                             "--dangerously-bypass-approvals-and-sandbox",
+                            "-C", str(repo_root),
                             "--output-last-message", str(final_path),
-                            "-"
+                            "-"  # Read prompt from stdin
                         ],
                         stdin=subprocess.PIPE,
                         stdout=log_file,
@@ -455,12 +558,35 @@ def run_scholar_orchestrator():
                         encoding="utf-8",
                         text=True,
                     )
-                    process.communicate(input=prompt_content)
+                    try:
+                        pid_path.write_text(str(process.pid), encoding="utf-8")
+                        log_file.write(f"\n[dashboard] PID: {process.pid}\n")
+                        log_file.flush()
+                    except Exception:
+                        pass
+                    
+                    # Write prompt to stdin and close it
+                    process.stdin.write(prompt_content)
+                    process.stdin.close()
+                    
+                    process.wait()  # Wait for completion
+
+                    try:
+                        if pid_path.exists():
+                            pid_path.unlink()
+                    except Exception:
+                        pass
                     
                     log_file.write(f"\n===== Scholar Run Completed at {datetime.now().isoformat()} =====\n")
+                    log_file.write(f"Exit code: {process.returncode}\n")
                 except Exception as e:
                     log_file.write(f"\nERROR: {str(e)}\n")
                     final_path.write_text(f"Run failed: {e}", encoding="utf-8")
+                    try:
+                        if pid_path.exists():
+                            pid_path.unlink()
+                    except Exception:
+                        pass
             
             # Post-run cleanup (preservation)
             # This logic mimics the original script, simplified
@@ -490,7 +616,19 @@ def run_scholar_orchestrator():
                 pass
                 
         except Exception as e:
-            pass
+            # Write error marker to log so status endpoint can detect it
+            error_msg = f"\n\n===== SCHOLAR RUN ERROR =====\nError: {str(e)}\nTime: {datetime.now().isoformat()}\n"
+            try:
+                with open(log_path, 'a', encoding='utf-8') as f:
+                    f.write(error_msg)
+            except:
+                pass
+            # Clean up PID file
+            try:
+                if pid_path.exists():
+                    pid_path.unlink()
+            except:
+                pass
 
     thread = threading.Thread(target=_run_scholar_thread, daemon=True)
     thread.start()

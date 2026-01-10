@@ -270,6 +270,35 @@ def init_database():
     """
     )
 
+    # Additive migration for newer RAG features (safe on existing DBs)
+    cursor.execute("PRAGMA table_info(rag_docs)")
+    rag_cols = {col[1] for col in cursor.fetchall()}
+
+    # NOTE: Keep defaults loose to avoid NOT NULL migration issues.
+    if "corpus" not in rag_cols:
+        try:
+            cursor.execute("ALTER TABLE rag_docs ADD COLUMN corpus TEXT")
+        except sqlite3.OperationalError:
+            pass
+    if "folder_path" not in rag_cols:
+        try:
+            cursor.execute("ALTER TABLE rag_docs ADD COLUMN folder_path TEXT")
+        except sqlite3.OperationalError:
+            pass
+    if "enabled" not in rag_cols:
+        try:
+            cursor.execute("ALTER TABLE rag_docs ADD COLUMN enabled INTEGER DEFAULT 1")
+        except sqlite3.OperationalError:
+            pass
+
+    # Backfill corpus/enabled defaults for older rows.
+    try:
+        cursor.execute("UPDATE rag_docs SET corpus = COALESCE(corpus, 'runtime')")
+        cursor.execute("UPDATE rag_docs SET enabled = COALESCE(enabled, 1)")
+    except sqlite3.OperationalError:
+        # Column might not exist in some edge cases; ignore.
+        pass
+
     # Indexes for common queries on sessions
     cursor.execute(
         """
@@ -351,6 +380,29 @@ def init_database():
         ON rag_docs(source_path)
     """
     )
+
+    # Indexes for new corpus/folder toggles
+    try:
+        cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_rag_docs_corpus
+            ON rag_docs(corpus)
+        """
+        )
+        cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_rag_docs_folder
+            ON rag_docs(folder_path)
+        """
+        )
+        cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_rag_docs_enabled
+            ON rag_docs(enabled)
+        """
+        )
+    except sqlite3.OperationalError:
+        pass
     cursor.execute(
         """
         CREATE INDEX IF NOT EXISTS idx_rag_docs_course

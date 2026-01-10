@@ -1,5 +1,5 @@
-﻿# Repo Index - 2026-01-09
-- Generated: 2026-01-09 02:51:52
+# Repo Index - 2026-01-09
+- Generated: 2026-01-09 22:01:53
 - Scope: sop/, scholar/, brain/
 
 ## Modules and Engines
@@ -43,8 +43,8 @@
 - sop\gpt-knowledge\H-series.md
 - sop\gpt-knowledge\KWIK.md
 - sop\gpt-knowledge\levels.md
-- sop\gpt-knowledge\MASTER.md
 - sop\gpt-knowledge\M-series.md
+- sop\gpt-knowledge\MASTER.md
 - sop\gpt-knowledge\notebooklm-bridge.md
 - sop\gpt-knowledge\PEIRRO.md
 - sop\gpt-knowledge\README.md
@@ -77,6 +77,7 @@
 - sop\gpt-knowledge\H-series.md
 - sop\gpt-knowledge\KWIK.md
 - sop\gpt-knowledge\levels.md
+- sop\gpt-knowledge\M-series.md
 - sop\gpt-knowledge\M0-planning.md
 - sop\gpt-knowledge\M1-entry.md
 - sop\gpt-knowledge\M2-prime.md
@@ -85,7 +86,6 @@
 - sop\gpt-knowledge\M5-modes.md
 - sop\gpt-knowledge\M6-wrap.md
 - sop\gpt-knowledge\MASTER.md
-- sop\gpt-knowledge\M-series.md
 - sop\gpt-knowledge\notebooklm-bridge.md
 - sop\gpt-knowledge\PEIRRO.md
 - sop\gpt-knowledge\README.md
@@ -173,6 +173,7 @@
 - sop\legacy\v9.1\gpt-knowledge\gpt-instructions.md
 - sop\legacy\v9.1\gpt-knowledge\H-series.md
 - sop\legacy\v9.1\gpt-knowledge\levels.md
+- sop\legacy\v9.1\gpt-knowledge\M-series.md
 - sop\legacy\v9.1\gpt-knowledge\M0-planning.md
 - sop\legacy\v9.1\gpt-knowledge\M1-entry.md
 - sop\legacy\v9.1\gpt-knowledge\M2-prime.md
@@ -181,7 +182,6 @@
 - sop\legacy\v9.1\gpt-knowledge\M5-modes.md
 - sop\legacy\v9.1\gpt-knowledge\M6-wrap.md
 - sop\legacy\v9.1\gpt-knowledge\MASTER.md
-- sop\legacy\v9.1\gpt-knowledge\M-series.md
 - sop\legacy\v9.1\gpt-knowledge\runtime-prompt.md
 - sop\legacy\v9.1\MASTER.md
 - sop\legacy\v9.1\MASTER_PLAN_PT_STUDY.md
@@ -268,7 +268,11 @@
 - sop\RESEARCH_INDEX.md
 
 ### scholar/
+- scholar\__pycache__\brain_reader.cpython-314.pyc
+- scholar\__pycache__\friction_alerts.cpython-314.pyc
+- scholar\brain_reader.py
 - scholar\CHARTER.md
+- scholar\friction_alerts.py
 - scholar\inputs\audit_manifest.json
 - scholar\knowledge\log_analysis.md
 - scholar\knowledge\pedagogy_audit.md
@@ -284,13 +288,17 @@
 - scholar\outputs\module_dossiers\M5-modes_dossier_2026-01-07.md
 - scholar\outputs\module_dossiers\M6-wrap_dossier_2026-01-07.md
 - scholar\outputs\module_dossiers\notebooklm-bridge_dossier_2026-01-07.md
+- scholar\outputs\module_dossiers\peirro-kwik_dossier_2026-01-09.md
 - scholar\outputs\module_dossiers\runtime-prompt_dossier_2026-01-07.md
 - scholar\outputs\orchestrator_runs\coverage_report_2026-01-07.md
 - scholar\outputs\orchestrator_runs\diagnostic_brief_2026-01-07_183027.md
 - scholar\outputs\orchestrator_runs\launcher_codex.log
 - scholar\outputs\orchestrator_runs\questions_backlog_2026-01-07.md
+- scholar\outputs\orchestrator_runs\questions_needed_2026-01-09.md
 - scholar\outputs\orchestrator_runs\questions_needed_2026-01-09_024155.md
 - scholar\outputs\orchestrator_runs\questions_needed_2026-01-09_024933.md
+- scholar\outputs\orchestrator_runs\questions_needed_2026-01-09_032259.md
+- scholar\outputs\orchestrator_runs\questions_needed_2026-01-09_032316.md
 - scholar\outputs\orchestrator_runs\run_2026-01-07.md
 - scholar\outputs\orchestrator_runs\run_2026-01-07_example.md
 - scholar\outputs\orchestrator_runs\run_2026-01-07_M0-M6-bridge.md
@@ -300,10 +308,35 @@
 - scholar\outputs\orchestrator_runs\unattended_2026-01-07_190803.log
 - scholar\outputs\orchestrator_runs\unattended_2026-01-08_095705.log
 - scholar\outputs\orchestrator_runs\unattended_2026-01-09_024846.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_032259.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_032316.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_033743.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_040513.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_040752.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_185053.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_185419.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_202210.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_210402.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_210923.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_213457.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_213522.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_213751.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_214837.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_215321.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_215341.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_215556.log
+- scholar\outputs\orchestrator_runs\unattended_2026-01-09_215556.pid
 - scholar\outputs\orchestrator_runs\unattended_final_07-Wed-01_175409.md
 - scholar\outputs\orchestrator_runs\unattended_final_2026-01-07_190803.md
 - scholar\outputs\orchestrator_runs\unattended_final_2026-01-08_095705.md
 - scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_024155.md
+- scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_024846.md
+- scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_032259.md
+- scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_032316.md
+- scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_033743.md
+- scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_040513.md
+- scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_040752.md
+- scholar\outputs\orchestrator_runs\unattended_final_2026-01-09_185053.md
 - scholar\outputs\orchestrator_runs\verification_report_2026-01-08_100826.md
 - scholar\outputs\orchestrator_runs\what_to_review_2026-01-08_102203.md
 - scholar\outputs\promotion_queue\change_proposal_mastery_count_2026-01-07.md
@@ -333,6 +366,7 @@
 - scholar\outputs\system_map\glossary_2026-01-07.md
 - scholar\outputs\system_map\repo_index_2026-01-07.md
 - scholar\outputs\system_map\repo_index_2026-01-08.md
+- scholar\outputs\system_map\repo_index_2026-01-09.md
 - scholar\outputs\system_map\system_map_2026-01-07.md
 - scholar\README.md
 - scholar\TEMPLATES\audit_report.md
@@ -359,28 +393,64 @@
 ### brain/
 - brain\__init__.py
 - brain\__pycache__\__init__.cpython-314.pyc
+- brain\__pycache__\anki_sync.cpython-314.pyc
+- brain\__pycache__\card_dedupe.cpython-314.pyc
+- brain\__pycache__\clear_data.cpython-314.pyc
 - brain\__pycache__\config.cpython-314.pyc
 - brain\__pycache__\dashboard.cpython-314.pyc
 - brain\__pycache__\dashboard_web.cpython-314.pyc
 - brain\__pycache__\db_setup.cpython-314.pyc
+- brain\__pycache__\dedupe_course_events.cpython-314.pyc
+- brain\__pycache__\extract_assets.cpython-314.pyc
 - brain\__pycache__\generate_resume.cpython-314.pyc
+- brain\__pycache__\import_syllabus.cpython-314.pyc
+- brain\__pycache__\ingest_knowledge.cpython-314.pyc
 - brain\__pycache__\ingest_session.cpython-314.pyc
 - brain\__pycache__\new_session.cpython-314.pyc
+- brain\__pycache__\rag_notes.cpython-314.pyc
+- brain\__pycache__\tutor_api_types.cpython-314.pyc
+- brain\__pycache__\tutor_engine.cpython-314.pyc
+- brain\__pycache__\update_backend.cpython-314.pyc
+- brain\anki_sync.py
+- brain\card_dedupe.py
 - brain\clear_data.py
 - brain\config.py
-- brain\dashboard.py
+- brain\dashboard\__init__.py
+- brain\dashboard\__pycache__\__init__.cpython-314.pyc
+- brain\dashboard\__pycache__\app.cpython-314.pyc
+- brain\dashboard\__pycache__\calendar.cpython-314.pyc
+- brain\dashboard\__pycache__\cli.cpython-314.pyc
+- brain\dashboard\__pycache__\gcal.cpython-314.pyc
+- brain\dashboard\__pycache__\routes.cpython-314.pyc
+- brain\dashboard\__pycache__\scholar.cpython-314.pyc
+- brain\dashboard\__pycache__\stats.cpython-314.pyc
+- brain\dashboard\__pycache__\syllabus.cpython-314.pyc
+- brain\dashboard\__pycache__\utils.cpython-314.pyc
+- brain\dashboard\app.py
+- brain\dashboard\calendar.py
+- brain\dashboard\cli.py
+- brain\dashboard\gcal.py
 - brain\dashboard\README.md
+- brain\dashboard\routes.py
+- brain\dashboard\scholar.py
+- brain\dashboard\stats.py
+- brain\dashboard\syllabus.py
+- brain\dashboard\utils.py
 - brain\dashboard_web.py
+- brain\data\api_config.json
 - brain\data\pt_study.db
 - brain\db_setup.py
+- brain\dedupe_course_events.py
+- brain\extract_assets.py
 - brain\generate_resume.py
 - brain\import_syllabus.py
+- brain\ingest_knowledge.py
 - brain\ingest_session.py
 - brain\new_session.py
 - brain\output\session_resume.md
 - brain\rag_notes.py
 - brain\README.md
-- brain\session_logs\2025_12_05_session_2_module_9.md
+- brain\server_test.log
 - brain\session_logs\2025-02-06_glute_recap.md
 - brain\session_logs\2025-12-05_Anatomy_gluteal_region.md
 - brain\session_logs\2025-12-05_Anatomy_gluteal_region_session2.md
@@ -391,14 +461,19 @@
 - brain\session_logs\2025-12-09_assistant_help.md
 - brain\session_logs\2025-12-10_exam3_final_prep.md
 - brain\session_logs\2025-12-11_geriatrics_normal_vs_common_abnormal.md
+- brain\session_logs\2025_12_05_session_2_module_9.md
 - brain\session_logs\SAMPLE_SESSION_v0.md
 - brain\session_logs\TEMPLATE.md
+- brain\static\css\dashboard.css
+- brain\static\js\dashboard.js
 - brain\sync_all.ps1
-- brain\tests\__pycache__\test_ingest_session.cpython-314.pyc
+- brain\templates\dashboard.html
 - brain\tests\__pycache__\test_ingest_session.cpython-314-pytest-9.0.2.pyc
-- brain\tests\__pycache__\test_trends.cpython-314.pyc
+- brain\tests\__pycache__\test_ingest_session.cpython-314.pyc
 - brain\tests\__pycache__\test_trends.cpython-314-pytest-9.0.2.pyc
+- brain\tests\__pycache__\test_trends.cpython-314.pyc
 - brain\tests\test_ingest_session.py
 - brain\tests\test_trends.py
 - brain\tutor_api_types.py
-
+- brain\tutor_engine.py
+- brain\update_backend.py

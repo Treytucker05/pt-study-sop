@@ -4,6 +4,9 @@ rem One-click: sync logs -> regenerate resume -> start dashboard -> open browser
 
 cd /d "%~dp0"
 
+rem Configure Study RAG drop-folder (used by Tutor -> Study sync)
+set "PT_STUDY_RAG_DIR=C:\Users\treyt\OneDrive\Desktop\PT School"
+
 rem Resolve Python (prefer python, fallback to py -3)
 set "PYEXE="
 set "PYEXE_ARGS="

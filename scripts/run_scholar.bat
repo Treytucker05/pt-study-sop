@@ -1,12 +1,16 @@
 @echo off
+REM ============================================================================
+REM Scholar Launcher - runs Scholar the same way as the Dashboard
+REM No specific git branch required. Works from any branch.
+REM See also: brain/dashboard/scholar.py run_scholar_orchestrator()
+REM ============================================================================
 setlocal EnableExtensions EnableDelayedExpansion
 set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%..") do set "REPO_ROOT=%%~fI"
 cd /d "%REPO_ROOT%"
 
-where git >nul 2>&1 || (echo ERROR: git not found & pause & exit /b 1)
-git rev-parse --verify scholar-orchestrator-loop >nul 2>&1 || (echo ERROR: branch scholar-orchestrator-loop not found. Create it first. & pause & exit /b 1)
-git checkout scholar-orchestrator-loop >nul 2>&1 || (echo ERROR: failed to checkout branch & pause & exit /b 1)
+REM Branch check removed - Scholar now works from any branch (unified with dashboard behavior)
+REM Previously required: scholar-orchestrator-loop branch
 
 set "RUN_DIR=%REPO_ROOT%\scholar\outputs\orchestrator_runs"
 if not exist "%RUN_DIR%" mkdir "%RUN_DIR%"
@@ -107,7 +111,8 @@ if not exist "%PROMPT_FILE%" (
   exit /b 1
 )
 
-codex --search exec --cd "%REPO_ROOT%" --dangerously-bypass-approvals-and-sandbox --output-last-message "%FINAL_PATH%" - < "%PROMPT_FILE%" >> "%LOG_PATH%" 2>&1
+REM Unified with dashboard: use 'codex exec' (no --search flag)
+codex exec --cd "%REPO_ROOT%" --dangerously-bypass-approvals-and-sandbox --output-last-message "%FINAL_PATH%" - < "%PROMPT_FILE%" >> "%LOG_PATH%" 2>&1
 set "EC=%ERRORLEVEL%"
 
 echo.

@@ -14,7 +14,7 @@
 | Engines | Anatomy Engine | [x] Dossier complete | [x] | [ ] | NO | READ-ONLY |
 | Engines | Concept Engine | [x] Dossier complete | [x] | [ ] | NO | READ-ONLY |
 | Frameworks | PEIRRO, KWIK | [x] Dossier complete | [x] | [ ] | NO | READ-ONLY |
-| Frameworks | Levels, H/M/Y | [ ] Not started | [ ] | [ ] | NO | READ-ONLY |
+| Frameworks | Levels, H/M/Y | [x] Dossier complete | [x] | [ ] | NO | READ-ONLY |
 | Bridge | notebooklm-bridge | [x] Dossier complete | [x] | [ ] | NO | READ-ONLY |
 | Telemetry | brain-log-template | [x] Dossier complete | [x] | [x] | NO | READ-ONLY |
 

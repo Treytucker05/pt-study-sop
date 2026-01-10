@@ -14,6 +14,11 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 SESSION_LOGS_DIR = os.path.join(BASE_DIR, 'session_logs')
 OUTPUT_DIR = os.path.join(BASE_DIR, 'output')
 
+# Study RAG (drop files here; no upload needed)
+_DEFAULT_STUDY_RAG_DIR = os.path.join(DATA_DIR, 'study_rag')
+STUDY_RAG_DIR = os.environ.get('PT_STUDY_RAG_DIR', _DEFAULT_STUDY_RAG_DIR)
+STUDY_RAG_DIR = os.path.abspath(os.path.expanduser(os.path.expandvars(STUDY_RAG_DIR)))
+
 # Database
 DB_PATH = os.path.join(DATA_DIR, 'pt_study.db')
 
@@ -86,7 +91,7 @@ READINESS_WEIGHTS = {
 # Ensure directories exist
 def ensure_directories():
     """Create required directories if they don't exist."""
-    for dir_path in [DATA_DIR, SESSION_LOGS_DIR, OUTPUT_DIR]:
+    for dir_path in [DATA_DIR, SESSION_LOGS_DIR, OUTPUT_DIR, STUDY_RAG_DIR]:
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
             print(f"Created directory: {dir_path}")

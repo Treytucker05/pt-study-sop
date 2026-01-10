@@ -1,43 +1,48 @@
 Goal (incl. success criteria):
-- Implement Tutor/Scholar/Brain integration (Phases 1-5) from 17-agent autonomous plan.
-- Success: New tables (tutor_turns, card_drafts), Anki sync module, Scholar brain_reader, friction alerts, card draft API endpoints.
+- Execute Scholar Orchestrator unattended runbook for pt-study-sop.
+- Success criteria:
+  1. Read `scholar/workflows/orchestrator_loop.md` and `scholar/inputs/audit_manifest.json`.
+  2. Initialize run paths and empty questions file.
+  3. Refresh repo index and coverage checklist.
+  4. Select scope per Coverage Selection Policy and produce at least one required artifact outside `orchestrator_runs/`.
+  5. Log actions to `scholar/outputs/orchestrator_runs/run_<YYYY-MM-DD>.md` and update checklist status.
 
 Constraints/Assumptions:
-- Runtime Canon in sop/gpt-knowledge/ is authoritative.
-- Master Plan in sop/MASTER_PLAN_PT_STUDY.md defines invariants.
-- Preserve folder structure (sop/, brain/, scripts/, docs/, dist/). No destructive commands without approval.
-- Phase 6 (Google Calendar sync) deferred - user requested skip.
+- Unattended, non-interactive; do not ask questions in terminal.
+- Read-only for `sop/`, `brain/`, and `dist/`.
+- Use defaults: module group M0–M6 cycle + bridges; no Promotion Queue unless authorized and safe_mode true.
+- If clarification needed, write to `scholar/outputs/orchestrator_runs/questions_needed_<run>.md` and continue.
+- Safe mode: do not generate Promotion Queue artifacts when `safe_mode` is false.
 
 Key decisions:
-- Card draft workflow: Tutor creates draft -> User approves/edits -> Sync to Anki via Anki Connect.
-- Scholar reads Brain data via READ-ONLY brain_reader.py (never writes to Brain DB).
-- Friction alerts detect: high unverified ratio, short/long sessions, low understanding, missing WRAP, repeated topic struggles.
-- Deduplication uses SequenceMatcher with 0.85 threshold for fuzzy matching.
+- `audit_manifest.json` safe_mode=false; do not create Promotion Queue artifacts.
+- Run date set to 2026-01-09.
 
 State:
-- Done:
-  - Added tutor_turns table to db_setup.py (12 columns)
-  - Added card_drafts table to db_setup.py (14 columns)
-  - Created brain/anki_sync.py (Anki Connect integration ~500 lines)
-  - Created brain/card_dedupe.py (fuzzy deduplication ~400 lines)
-  - Created scholar/brain_reader.py (READ-ONLY DB access ~500 lines)
-  - Created scholar/friction_alerts.py (friction detection ~450 lines)
-  - Added card draft endpoints to routes.py (POST/GET/PATCH /api/cards/*)
-- Now:
-  - Run db_setup.py to create new tables
-  - Verify no import errors
-- Next:
-  - Run tests (pytest brain/tests)
-  - Update documentation
+  - Done:
+    - Read required inputs (`orchestrator_loop.md`, `audit_manifest.json`).
+    - Created `scholar/outputs/orchestrator_runs/questions_needed_2026-01-09.md` (empty).
+    - Refreshed `scholar/outputs/system_map/repo_index_2026-01-09.md` from sop/, scholar/, brain/ scan.
+    - Updated `scholar/outputs/system_map/coverage_checklist_2026-01-09.md` and marked Frameworks (Levels, H/M/Y) complete.
+    - Created dossier `scholar/outputs/module_dossiers/frameworks_levels_hmy_dossier_2026-01-09.md`.
+    - Appended run summary to `scholar/outputs/orchestrator_runs/run_2026-01-09.md`.
+  - Now:
+    - Await next unattended run or additional scope.
+  - Next:
+    - If run continues, process remaining in-progress item (Infrastructure: gpt-instructions).
 
 Open questions (UNCONFIRMED if needed):
-- None currently
+- None.
 
 Working set (files/ids/commands):
-- brain/db_setup.py (modified)
-- brain/anki_sync.py (created)
-- brain/card_dedupe.py (created)
-- brain/dashboard/routes.py (modified)
-- scholar/brain_reader.py (created)
-- scholar/friction_alerts.py (created)
+- CONTINUITY.md
+- scholar/workflows/orchestrator_loop.md
+- scholar/inputs/audit_manifest.json
+- scholar/outputs/orchestrator_runs/questions_needed_2026-01-09.md
+- scholar/outputs/system_map/repo_index_2026-01-09.md
+- scholar/outputs/system_map/coverage_checklist_2026-01-09.md
+- scholar/outputs/module_dossiers/frameworks_levels_hmy_dossier_2026-01-09.md
+- scholar/outputs/orchestrator_runs/run_2026-01-09.md
 
+Notes:
+- Study RAG directory can be overridden via env var PT_STUDY_RAG_DIR (currently set in Run_Brain_All.bat to C:\Users\treyt\OneDrive\Desktop\PT School)

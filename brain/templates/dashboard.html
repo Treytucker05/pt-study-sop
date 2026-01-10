@@ -11,7 +11,8 @@
   <title>PT Study Brain v2.0.2</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/dashboard.css?v=2.1">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=2.2">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <script src="/static/js/dashboard.js?v=2.1" defer></script>
 </head>
@@ -47,116 +48,100 @@
     
     <!-- Overview Tab -->
     <section id="tab-overview" class="tab-panel active">
-      <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Dashboard Overview</h2>
-      
-      <!-- Stats Cards -->
-    <div class="stats-grid" id="stats-grid">
-      <div class="stat-card">
-        <div class="icon blue">OV</div>
-        <div class="label">Total Sessions</div>
-        <div class="value" id="total-sessions">-</div>
-        <div class="subtitle" id="sessions-subtitle">Last 30 days</div>
+      <div class="overview-header" style="margin-bottom: 24px;">
+        <h2 class="page-title" style="margin:0; font-size: 1.5rem; color: var(--text-primary);">Dashboard Overview</h2>
       </div>
-      
-      <div class="stat-card">
-        <div class="icon purple">TM</div>
-        <div class="label">Total Study Time</div>
-        <div class="value" id="total-time">-</div>
-        <div class="subtitle" id="time-subtitle">Avg. -/day</div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="icon cyan">TR</div>
-        <div class="label">Average Session Score</div>
-        <div class="score-container">
-          <div class="progress-ring">
-            <svg width="64" height="64" viewBox="0 0 64 64">
-              <circle class="bg" cx="32" cy="32" r="26"></circle>
-              <circle class="progress" cx="32" cy="32" r="26" 
-                stroke-dasharray="163.36" 
-                stroke-dashoffset="163.36"
-                id="progress-circle"></circle>
-            </svg>
-            <div class="percentage" id="avg-score">-%</div>
-          </div>
-          <div class="score-breakdown">
-            <div class="score-item">U: <span id="avg-u">-</span></div>
-            <div class="score-item">R: <span id="avg-r">-</span></div>
-            <div class="score-item">S: <span id="avg-s">-</span></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="stat-card">
-        <div class="icon green">AK</div>
-        <div class="label">Anki Cards Reviewed</div>
-        <div class="value" id="anki-cards">-</div>
-        <div class="subtitle" id="anki-subtitle">Due today: -</div>
-      </div>
-    </div>
 
-    <!-- Patterns & Insights -->
-      <div class="card" id="patterns">
-        <div class="card-header">
-          <h2 class="card-title">Patterns & Insights</h2>
-        </div>
-        
-        <div class="patterns-grid">
-          <!-- Mode Frequencies -->
+      <div class="bento-grid">
+        <div class="stat-card mini">
+          <div class="stat-icon blue">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
           <div>
-            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Mode Frequencies</h4>
-            <div class="chart-container">
-              <canvas id="modeChart" width="120" height="120"></canvas>
-              <div class="chart-legend" id="mode-legend"></div>
-            </div>
+            <div class="stat-value" id="total-sessions">-</div>
+            <div class="stat-label">Total Sessions</div>
+            <div class="stat-sub" id="sessions-subtitle">Last 30 days</div>
           </div>
-          
-          <!-- Top Frameworks -->
+        </div>
+
+        <div class="stat-card mini">
+          <div class="stat-icon purple">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
           <div>
-            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Top Frameworks</h4>
-            <div class="frameworks-list" id="frameworks-list">
+            <div class="stat-value" id="total-time">-</div>
+            <div class="stat-label">Total Time</div>
+            <div class="stat-sub" id="time-subtitle">Avg. -/day</div>
+          </div>
+        </div>
+
+        <div class="stat-card mini">
+          <div class="stat-icon cyan">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          </div>
+          <div style="display:flex; gap:12px; align-items:center;">
+            <div class="progress-ring small" style="position:relative; width:48px; height:48px;">
+              <svg width="48" height="48" viewBox="0 0 64 64" style="transform: rotate(-90deg);">
+                <circle cx="32" cy="32" r="26" stroke="var(--surface-3)" stroke-width="6" fill="none"></circle>
+                <circle id="progress-circle" cx="32" cy="32" r="26" stroke="var(--primary)" stroke-width="6" fill="none" stroke-dasharray="163.36" stroke-dashoffset="163.36"></circle>
+              </svg>
+              <div id="avg-score" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); font-size:10px; font-weight:bold; color:var(--text-primary);">-%</div>
+            </div>
+            <div class="score-details" style="font-size:10px; color:var(--text-secondary);">
+              <div>U: <span id="avg-u" style="color:var(--text-primary)">-</span></div>
+              <div>R: <span id="avg-r" style="color:var(--text-primary)">-</span></div>
+              <div>S: <span id="avg-s" style="color:var(--text-primary)">-</span></div>
             </div>
           </div>
         </div>
-        
-        <!-- Weak/Strong Topics -->
-        <div class="topics-card" style="margin-top: 20px;">
-          <h4 class="weak">Weak:</h4>
-          <div class="topics-list" id="weak-topics">-</div>
-          <h4 class="strong" style="margin-top: 12px;">Strong:</h4>
-          <div class="topics-list" id="strong-topics">-</div>
+
+        <div class="stat-card mini">
+          <div class="stat-icon green">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+          </div>
+          <div>
+            <div class="stat-value" id="anki-cards">-</div>
+            <div class="stat-label">Cards Reviewed</div>
+            <div class="stat-sub" id="anki-subtitle">Due today: -</div>
+          </div>
         </div>
-        
-        <!-- Key Learnings -->
-        <div style="margin-top: 20px;">
-          <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Key Learnings</h4>
-          <div class="learnings-grid">
-            <div class="learnings-column">
-              <h4>What Worked</h4>
-              <ul id="what-worked"></ul>
+
+        <div class="glass-card hero-section" id="patterns">
+          <div class="insights-grid">
+            <div class="insight-col center">
+              <div style="height:120px; width:120px; position:relative;">
+                <canvas id="modeChart"></canvas>
+              </div>
             </div>
-            <div class="learnings-column issues">
-              <h4>Issues</h4>
-              <ul id="issues-list"></ul>
+            <div class="insight-col">
+              <h4 style="font-size:0.75rem; font-weight:bold; color:var(--text-tertiary); text-transform:uppercase; mb-2">Top Frameworks</h4>
+              <div id="frameworks-list" class="framework-chips"></div>
+            </div>
+            <div class="insight-col">
+              <h4 style="font-size:0.75rem; font-weight:bold; color:var(--text-tertiary); text-transform:uppercase; mb-2">Focus Areas</h4>
+              <div class="topic-group"><span class="text-error" style="font-size:0.75rem;">Weak:</span> <span id="weak-topics" style="font-size:0.875rem;">-</span></div>
+              <div class="topic-group mt-2"><span class="text-success" style="font-size:0.75rem;">Strong:</span> <span id="strong-topics" style="font-size:0.875rem;">-</span></div>
+            </div>
+            <div class="insight-col">
+              <h4 style="font-size:0.75rem; font-weight:bold; color:var(--text-tertiary); text-transform:uppercase; mb-2">Retrospective</h4>
+              <div class="mb-2"><span class="text-muted" style="font-size:0.75rem;">Worked:</span> <ul id="what-worked" class="bullet-list success"></ul></div>
+              <div><span class="text-muted" style="font-size:0.75rem;">Issues:</span> <ul id="issues-list" class="bullet-list error"></ul></div>
             </div>
           </div>
         </div>
-    </div>
 
-
-    <!-- Upload Section -->
-    <div class="card upload-section">
-      <div class="card-header">
-        <h2 class="card-title">Upload Session Log</h2>
+        <div class="glass-card upload-slim" id="dropzone">
+          <div class="flex items-center gap-4">
+            <div class="icon-box">DB</div>
+            <div>
+              <h4 class="text-sm font-bold text-white">Upload Session Log</h4>
+              <p class="text-xs text-muted">Drag & drop markdown files here</p>
+            </div>
+          </div>
+          <div id="upload-status" class="text-xs"></div>
+          <input type="file" id="file-input" style="display:none;" accept=".md,.markdown,.txt" />
+        </div>
       </div>
-      <div class="upload-zone" id="dropzone">
-        <div class="icon">DB</div>
-        <div class="text"><strong>Drag & drop</strong> a markdown session log here, or click to choose a file.</div>
-        <div class="text" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">Accepted: .md / .markdown / .txt</div>
-        <input type="file" id="file-input" style="display:none;" accept=".md,.markdown,.txt" />
-      </div>
-      <div id="upload-status"></div>
-    </div>
     </section>
     
     <!-- Sessions Tab -->
@@ -625,7 +610,17 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         <div id="scholar-run-status" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
           Click "Start Run" to execute Scholar orchestrator
         </div>
-        <div id="scholar-run-log" style="margin-top: 12px; padding: 12px; background: var(--bg); border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; display: none;">
+        <div id="scholar-run-progress" class="scholar-progress" style="display:none; margin-top: 10px;">
+          <div class="scholar-progress-bar" id="scholar-run-progress-bar"></div>
+        </div>
+        <div id="scholar-run-meta" style="display:none; margin-top: 8px; font-size: 12px; color: var(--text-muted);"></div>
+        <div id="scholar-run-actions" style="display:none; margin-top: 10px; gap: 8px; flex-wrap: wrap;">
+          <button id="btn-scholar-refresh" class="btn" type="button">Refresh Status</button>
+          <button id="btn-scholar-open-final" class="btn" type="button">Open Latest Final</button>
+          <button id="btn-scholar-cancel" class="btn" type="button">Cancel Run</button>
+        </div>
+        <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">Tip: drag the bottom edge to resize.</div>
+        <div id="scholar-run-log" class="scholar-run-log" style="display: none;">
         </div>
       </div>
       
@@ -689,23 +684,138 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
     <!-- Tutor Tab -->
     <section id="tab-tutor" class="tab-panel">
       <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Tutor</h2>
-      
-      <!-- Tutor Tab (skeleton) -->
-    <div class="card resume-section" id="tutor">
-      <div class="card-header">
-        <h2 class="card-title">Tutor (Dashboard Prototype)</h2>
-      </div>
-      <div class="form-section">
-        <div class="form-group">
-          <label for="tutor-question" class="form-label">Ask a question</label>
-          <textarea id="tutor-question" class="form-textarea" rows="3" placeholder="e.g., 'Walk me through the main landmarks of the gluteal region.'"></textarea>
+
+      <!-- Tutor Settings -->
+      <div class="card" id="tutor-settings" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h2 class="card-title">Tutor Settings</h2>
+          <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Choose mode and Source-Lock rules (optional).</p>
         </div>
-        <div class="form-actions">
-          <button type="button" class="btn btn-primary" id="btn-tutor-send">Send to Tutor</button>
+        <div class="form-section">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="tutor-mode" class="form-label">Mode</label>
+              <select id="tutor-mode" class="form-select">
+                <option value="Core">Core</option>
+                <option value="Sprint">Sprint</option>
+                <option value="Drill">Drill</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Allowed Source Types</label>
+              <div style="display: flex; flex-wrap: wrap; gap: 10px; padding-top: 6px;">
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-note" checked> note</label>
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-textbook" checked> textbook</label>
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-transcript" checked> transcript</label>
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-slide" checked> slide</label>
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-other" checked> other</label>
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-powerpoint" checked> powerpoint</label>
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-pdf" checked> pdf</label>
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-txt" checked> txt</label>
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-mp4" checked> mp4</label>
+                <label style="display: flex; align-items: center; gap: 6px;"><input type="checkbox" id="tutor-kind-youtube" checked> youtube</label>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">If you uncheck everything, Tutor will default to all types.</div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="btn-tutor-new-session">New Session</button>
+          </div>
         </div>
       </div>
-      <pre class="resume-preview" id="tutor-answer-box">Tutor stub is ready. Type a question and click "Send to Tutor".</pre>
-    </div>
+
+      <!-- Study RAG (folder-synced) + Runtime RAG (toggle catalog) -->
+      <div class="card" id="tutor-knowledge" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h2 class="card-title">RAG Sources</h2>
+          <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+            Study RAG and Runtime RAG are separate. Add Study materials by dropping files into a folder, then Sync. Uploads are only used for YouTube/URL links.
+          </p>
+        </div>
+
+        <!-- Study RAG -->
+        <div class="form-section">
+          <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">Study RAG (your materials)</h4>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+            Drop files/folders into <span style="font-family: monospace;">brain/data/study_rag</span> and click Sync. Then enable/disable folders below.
+          </div>
+          <div class="form-actions" style="margin-bottom: 10px;">
+            <button type="button" class="btn btn-primary" id="btn-tutor-study-sync">Sync Study Folder</button>
+            <button type="button" class="btn btn-secondary" id="btn-tutor-study-refresh">Refresh Folders</button>
+          </div>
+          <div id="tutor-study-status"></div>
+          <div id="tutor-study-folders" style="max-height: 220px; overflow-y: auto; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
+            <div style="color: var(--text-muted); font-size: 13px;">Loading Study folders...</div>
+          </div>
+        </div>
+
+        <!-- Runtime RAG -->
+        <div class="form-section" style="padding-top: 0;">
+          <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">Runtime RAG (systems/engines)</h4>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+            These are compact descriptions of systems/engines that shape Tutor behavior. Toggle them on/off.
+          </div>
+          <div class="form-actions" style="margin-bottom: 10px;">
+            <button type="button" class="btn btn-secondary" id="btn-tutor-runtime-refresh">Refresh Runtime Items</button>
+          </div>
+          <div id="tutor-runtime-items" style="max-height: 220px; overflow-y: auto; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
+            <div style="color: var(--text-muted); font-size: 13px;">Loading Runtime items...</div>
+          </div>
+        </div>
+
+        <!-- YouTube / URL links (only upload-style input) -->
+        <div class="form-section" style="padding-top: 0;">
+          <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 10px;">YouTube / URL Links</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="tutor-link-url" class="form-label">Add a YouTube / URL</label>
+              <input type="text" id="tutor-link-url" class="form-input" placeholder="https://www.youtube.com/watch?v=..." />
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Stored as a Study RAG record (content may be empty until transcript/notes are added).</div>
+            </div>
+            <div class="form-group">
+              <label for="tutor-link-doc-type" class="form-label">Link Type</label>
+              <select id="tutor-link-doc-type" class="form-select">
+                <option value="youtube">youtube</option>
+                <option value="other">other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="btn-tutor-add-link">Add Link</button>
+          </div>
+          <div id="tutor-upload-status"></div>
+        </div>
+      </div>
+
+      <!-- Tutor Chat -->
+      <div class="card" id="tutor-chat" style="margin-bottom: 24px;">
+        <div class="card-header">
+          <h2 class="card-title">Ask Tutor</h2>
+        </div>
+        <div class="form-section">
+          <div class="form-group">
+            <label for="tutor-question" class="form-label">Question</label>
+            <textarea id="tutor-question" class="form-textarea" rows="3" placeholder="e.g., 'Walk me through the main landmarks of the gluteal region.'"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-primary" id="btn-tutor-send">Send to Tutor</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tutor Output -->
+      <div class="card" id="tutor-output">
+        <div class="card-header">
+          <h2 class="card-title">Answer & Citations</h2>
+        </div>
+        <pre class="resume-preview" id="tutor-answer-box">Tutor is ready. Sync your Study folder and ask a question.</pre>
+        <div style="margin-top: 12px;">
+          <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Citations</div>
+          <div id="tutor-citations" style="padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 240px; overflow-y: auto; color: var(--text-secondary);">
+            No citations yet.
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 

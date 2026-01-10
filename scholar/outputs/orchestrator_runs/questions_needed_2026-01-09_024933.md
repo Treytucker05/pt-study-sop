@@ -1,3 +1,14 @@
-﻿- Should PEIRRO's Overlearn step always hand off to M6 scheduling, or is there a required in-session spacing rule for Overlearn itself?
-- What is the canonical error-typing schema for Refine (if any) so remediation can be standardized (e.g., Recall vs Conceptual vs Procedure)?
-- Where should KWIK locks be stored by default (brain log only, cards only, or both), and is there a required minimum metadata schema?
+Q: ﻿- Should PEIRRO's Overlearn step always hand off to M6 scheduling, or is there a required in-session spacing rule for Overlearn itself?
+A: **PEIRRO's Overlearn step should hand off to M6 scheduling rather than requiring in-session spacing rules.** 
+
+The research evidence is clear: continuing practice within a single session beyond initial mastery shows minimal long-term retention benefits ([eric.ed.gov](https://files.eric.ed.gov/fulltext/ED505642.pdf) found no effect of tripling practice problems in one session), while distributed practice across sessions nearly doubled 4-week retention. The optimal approach from [nature.com](https://www.nature.com/articles/s41539-020-00074-4) supports scheduling the next retrieval when recall probability drops to ~0.86-0.94, which M6's ~24-hour first review accomplishes—not same-session drilling. Once mastery is demonstrated during Retrieve/Refine, Overlearn's role is to confirm readiness and hand off to M6's spaced review schedule.
+
+Q: What is the canonical error-typing schema for Refine (if any) so remediation can be standardized (e.g., Recall vs Conceptual vs Procedure)?
+A: ## How to Answer This Question
+
+**Answer:** There is currently **no canonical error-typing schema** defined in the PT Study Tutor system. The M6-wrap.md mentions "tag for re-quiz" in Error Log entries, but doesn't specify what tags to use, and PEIRRO's Refine step describes error correction without categorizing error types.
+
+**Recommendation:** Adopt a simple three-category schema—**Recall** (retrieval failure despite prior encoding), **Conceptual** (misunderstanding of underlying principle), and **Procedural** (incorrect application or sequence)—as this aligns with learning science research showing each type benefits from different remediation strategies [springer.com](https://link.springer.com/article/10.3758/s13423-021-02022-8). This schema should be explicitly added to M6-wrap's Error Log tagging requirements and PEIRRO's Refine phase to standardize remediation decisions across sessions.
+
+Q: Where should KWIK locks be stored by default (brain log only, cards only, or both), and is there a required minimum metadata schema?
+A: KWIK locks should be stored **by default in both places, with the brain log as the canonical source of truth and cards carrying only references**: the brain log owns lock state, rationale, lifecycle, and auditability, while cards merely respect locks during execution (e.g., skip edits or regeneration) without duplicating state. Each lock in the brain log must include a minimum metadata schema—`lock_id`, `scope`, `target_id`, `lock_type`, `reason`, `created_at`, `created_by`, `expires_at` (nullable), and `status`—to ensure clarity, enforcement, and traceability; cards, if needed, should only store an array of `kwik_lock_refs` pointing to existing locks and never own or redefine lock metadata.

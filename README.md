@@ -105,7 +105,7 @@ pt-study-sop/
 
 ---
 
-## PT Study OS – Direction of Travel (Brain, RAG, Tutor, Scholar)
+## PT Study OS - Direction of Travel (Brain, RAG, Tutor, Scholar)
 
 This repo is evolving into a **personal AI study OS**, with four long-term pillars:
 
@@ -116,32 +116,32 @@ This repo is evolving into a **personal AI study OS**, with four long-term pilla
 
 Planned implementation ladder (stable high-level plan):
 
-1. **Brain planning** ✅ **COMPLETE**  
-   - ✅ Additive tables for `courses`, `course_events`, `topics`, and `study_tasks` in `brain/db_setup.py`.  
-   - ✅ Syllabus intake UI (single event form + bulk JSON import via ChatGPT).  
-   - ✅ Calendar API endpoints (`/api/calendar/data`, `/api/calendar/plan_session`) for visualizing course events, study sessions, and planned spaced repetition.  
-   - ✅ Syllabus API endpoints (`/api/syllabus/courses`, `/api/syllabus/events`) with coverage analytics.  
-   - ⏳ Plan overview endpoints (`/api/plan/today`, `/api/plan/overview`) - **Future enhancement** for today's focus and at-risk topics.
+1. **Brain planning** [DONE] **COMPLETE**  
+  - [DONE] Additive tables for `courses`, `course_events`, `topics`, and `study_tasks` in `brain/db_setup.py`.  
+  - [DONE] Syllabus intake UI (single event form + bulk JSON import via ChatGPT).  
+  - [DONE] Calendar API endpoints (`/api/calendar/data`, `/api/calendar/plan_session`) for visualizing course events, study sessions, and planned spaced repetition.  
+  - [DONE] Syllabus API endpoints (`/api/syllabus/courses`, `/api/syllabus/events`) with coverage analytics.  
+  - [WIP] Plan overview endpoints (`/api/plan/today`, `/api/plan/overview`) - **Future enhancement** for today's focus and at-risk topics.
 
-2. **Local-first RAG (starting with notes)** ⚠️ **PARTIAL**  
-   - ✅ `rag_docs` table in the Brain DB to track RAG documents: notes, textbooks, transcripts, slides.  
-   - ✅ Minimal `rag` module (`brain/rag_notes.py`) that can ingest markdown notes as first-class docs (linked to courses/topics) and support local search with citations.  
-   - ⏳ RAG dashboard integration - **Future enhancement** for search UI and ingestion interface.
+2. **Local-first RAG (starting with notes)** [!] **PARTIAL**  
+  - [DONE] `rag_docs` table in the Brain DB to track RAG documents: notes, textbooks, transcripts, slides.  
+  - [DONE] Minimal `rag` module (`brain/rag_notes.py`) that can ingest markdown notes as first-class docs (linked to courses/topics) and support local search with citations.  
+  - [WIP] RAG dashboard integration - **Future enhancement** for search UI and ingestion interface.
 
 3. **Extend RAG to textbooks and transcripts**  
    - Add ingestion scripts for textbooks (PDF/text) and class transcripts, attaching rich metadata (course, lecture date, sections, topic tags).  
    - Standardize chunking and metadata so retrieval works well for long-form sources while keeping everything local-first.
 
-4. **Tutor API and in-dashboard Tutor tab** ⚠️ **PARTIAL**  
-   - ✅ `TutorQuery_v1` contract defined (`brain/tutor_api_types.py`) with course/topic, mode, question, plan snapshot, allowed sources.  
-   - ✅ Tutor API stub endpoints (`/api/tutor/session/start`, `/api/tutor/session/turn`) exist in dashboard.  
-   - ✅ **Tutor** tab in dashboard with basic chat UI wired to stub endpoints.  
-   - ⏳ Full Tutor implementation - **Future enhancement** to connect to Brain + RAG under strict **Source-Lock** with real SOP execution.
+4. **Tutor API and in-dashboard Tutor tab** [!] **PARTIAL**  
+  - [DONE] `TutorQuery_v1` contract defined (`brain/tutor_api_types.py`) with course/topic, mode, question, plan snapshot, allowed sources.  
+  - [DONE] Tutor API stub endpoints (`/api/tutor/session/start`, `/api/tutor/session/turn`) exist in dashboard.  
+  - [DONE] **Tutor** tab in dashboard with basic chat UI wired to stub endpoints.  
+  - [WIP] Full Tutor implementation - **Future enhancement** to connect to Brain + RAG under strict **Source-Lock** with real SOP execution.
 
-5. **Scholar audits (planning + RAG + pedagogy)** ⚠️ **PARTIAL**  
-   - ✅ Scholar dashboard integration with status, questions, and orchestrator runs.  
-   - ✅ Scholar workflows exist for session/module audits (`scholar/workflows/`).  
-   - ⏳ Extended Scholar workflows - **Future enhancement** to audit:  
+5. **Scholar audits (planning + RAG + pedagogy)** [!] **PARTIAL**  
+  - [DONE] Scholar dashboard integration with status, questions, and orchestrator runs.  
+  - [DONE] Scholar workflows exist for session/module audits (`scholar/workflows/`).  
+  - [WIP] Extended Scholar workflows - **Future enhancement** to audit:  
      - Planning adherence (Brain vs syllabus).  
      - RAG coverage and Source-Lock adherence.  
      - Note quality and note utilization during tutoring.  
