@@ -28,9 +28,13 @@ from config import (
     WEAK_THRESHOLD,
     STRONG_THRESHOLD,
 )
-from db_setup import DB_PATH, init_database, get_connection
+from db_setup import DB_PATH, init_database, get_connection, remove_ingested_file
 # Use import directly for items in brain/ folder (root of execution)
 from ingest_session import parse_session_log, validate_session_data, insert_session
+
+# NOTE: session_sync.py provides sync_session_to_file() for writing DB changes back to .md files.
+# Import will be done lazily in the PUT route to avoid circular import issues at startup.
+# from session_sync import sync_session_to_file
 from generate_resume import generate_resume
 from tutor_api_types import TutorQueryV1, TutorSourceSelector, TutorTurnResponse
 from tutor_engine import process_tutor_turn, log_tutor_turn, create_card_draft_from_turn
@@ -1825,3 +1829,204 @@ def api_sync_cards_to_anki():
         }), 500
     except Exception as exc:
         return jsonify({"ok": False, "message": f"Sync failed: {exc}"}), 400
+
+
+# ==================================================================
+# Session CRUD API Routes
+# ==================================================================
+
+@dashboard_bp.route("/api/sessions/<int:session_id>", methods=["GET"])
+def api_get_session(session_id):
+    """
+    Fetch a single session by ID.
+    
+    Returns:
+        JSON with all session fields, or 404 if not found.
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT * FROM sessions WHERE id = ?", (session_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            conn.close()
+            return jsonify({"ok": False, "message": "Session not found"}), 404
+        
+        columns = [description[0] for description in cursor.description]
+        session = dict(zip(columns, row))
+        
+        # Also fetch the source file path from ingested_files table
+        cursor.execute(
+            "SELECT filepath FROM ingested_files WHERE session_id = ?",
+            (session_id,)
+        )
+        source_row = cursor.fetchone()
+        session["source_path"] = source_row[0] if source_row else None
+        
+        conn.close()
+        return jsonify({"ok": True, "session": session})
+        
+    except Exception as exc:
+        return jsonify({"ok": False, "message": f"Failed to fetch session: {exc}"}), 500
+
+
+@dashboard_bp.route("/api/sessions/<int:session_id>", methods=["PUT"])
+def api_update_session(session_id):
+    """
+    Update a session by ID.
+    
+    Accepts JSON body with editable fields (topic, summary, friction_points,
+    wins, focus_rating, energy_rating, comprehension_rating, notes, etc.).
+    
+    After updating the DB, calls sync_session_to_file() to write changes
+    back to the source .md file.
+    
+    Returns:
+        Updated session JSON, or 404 if not found.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"ok": False, "message": "Missing JSON body"}), 400
+        
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Check if session exists
+        cursor.execute("SELECT id FROM sessions WHERE id = ?", (session_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({"ok": False, "message": "Session not found"}), 404
+        
+        # Define editable fields (subset of session columns that make sense to edit)
+        editable_fields = [
+            "topic", "main_topic", "subtopics", "summary",
+            "target_exam", "source_lock", "plan_of_attack",
+            "frameworks_used", "sop_modules_used", "engines_used",
+            "core_learning_modules_used", "anki_cards_count",
+            "region_covered", "landmarks_mastered", "muscles_attached",
+            "oian_completed_for", "rollback_events",
+            "drawing_used", "drawings_completed",
+            "understanding_level", "retention_confidence", "system_performance",
+            "calibration_check", "anchors_locked", "weak_anchors",
+            "what_worked", "what_needs_fixing", "gaps_identified", "notes_insights",
+            "next_topic", "next_focus", "next_materials",
+            "time_spent_minutes", "duration_minutes", "study_mode",
+            # Additional fields for dashboard editing
+            "friction_points", "wins", "focus_rating", "energy_rating",
+            "comprehension_rating", "notes",
+        ]
+        
+        # Build UPDATE query with only provided fields
+        update_fields = []
+        update_values = []
+        for field in editable_fields:
+            if field in data:
+                update_fields.append(f"{field} = ?")
+                update_values.append(data[field])
+        
+        if not update_fields:
+            conn.close()
+            return jsonify({"ok": False, "message": "No valid fields to update"}), 400
+        
+        update_values.append(session_id)
+        update_sql = f"UPDATE sessions SET {', '.join(update_fields)} WHERE id = ?"
+        cursor.execute(update_sql, update_values)
+        conn.commit()
+        
+        # Fetch updated session
+        cursor.execute("SELECT * FROM sessions WHERE id = ?", (session_id,))
+        row = cursor.fetchone()
+        columns = [description[0] for description in cursor.description]
+        session = dict(zip(columns, row))
+        
+        # Get source path
+        cursor.execute(
+            "SELECT filepath FROM ingested_files WHERE session_id = ?",
+            (session_id,)
+        )
+        source_row = cursor.fetchone()
+        session["source_path"] = source_row[0] if source_row else None
+        
+        conn.close()
+        
+        # Sync changes back to .md file
+        # NOTE: session_sync.py must provide sync_session_to_file(session_id)
+        try:
+            from session_sync import sync_session_to_file
+            sync_result = sync_session_to_file(session_id)
+            session["sync_result"] = sync_result
+        except ImportError:
+            session["sync_result"] = {"ok": False, "message": "session_sync module not available"}
+        except Exception as sync_exc:
+            session["sync_result"] = {"ok": False, "message": f"Sync failed: {sync_exc}"}
+        
+        return jsonify({"ok": True, "session": session})
+        
+    except Exception as exc:
+        return jsonify({"ok": False, "message": f"Failed to update session: {exc}"}), 500
+
+
+@dashboard_bp.route("/api/sessions/<int:session_id>", methods=["DELETE"])
+def api_delete_session(session_id):
+    """
+    Delete a session by ID.
+    
+    - Gets the session's source_path from ingested_files table
+    - Deletes the DB record from sessions table
+    - Deletes the .md file from disk
+    - Removes from ingested_files table
+    
+    Returns:
+        {"success": true, "message": "Session deleted"} or 404 if not found.
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Check if session exists
+        cursor.execute("SELECT id FROM sessions WHERE id = ?", (session_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({"ok": False, "message": "Session not found"}), 404
+        
+        # Get source file path from ingested_files
+        cursor.execute(
+            "SELECT filepath FROM ingested_files WHERE session_id = ?",
+            (session_id,)
+        )
+        source_row = cursor.fetchone()
+        source_path = source_row[0] if source_row else None
+        
+        # Delete from sessions table
+        cursor.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+        
+        # Remove from ingested_files table
+        if source_path:
+            remove_ingested_file(conn, source_path)
+        
+        conn.commit()
+        conn.close()
+        
+        # Delete the .md file from disk
+        deleted_file = False
+        if source_path and os.path.exists(source_path):
+            try:
+                os.remove(source_path)
+                deleted_file = True
+            except OSError as file_exc:
+                # Log but don't fail - DB record is already deleted
+                print(f"[WARN] Could not delete source file {source_path}: {file_exc}")
+        
+        return jsonify({
+            "success": True,
+            "ok": True,
+            "message": "Session deleted",
+            "source_path": source_path,
+            "file_deleted": deleted_file
+        })
+        
+    except Exception as exc:
+        return jsonify({"ok": False, "message": f"Failed to delete session: {exc}"}), 500

@@ -3,6 +3,7 @@
 Database setup and schema initialization for PT Study Brain v9.1.
 """
 
+import hashlib
 import sqlite3
 import os
 from datetime import datetime
@@ -511,6 +512,36 @@ def init_database():
         except sqlite3.OperationalError:
             pass  # Column might already exist
 
+    # ------------------------------------------------------------------
+    # Ingested files tracking table (checksums to detect changes)
+    # ------------------------------------------------------------------
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ingested_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filepath TEXT NOT NULL UNIQUE,
+            checksum TEXT NOT NULL,
+            session_id INTEGER,
+            ingested_at TEXT NOT NULL,
+            FOREIGN KEY(session_id) REFERENCES sessions(id)
+        )
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_ingested_files_filepath
+        ON ingested_files(filepath)
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_ingested_files_session
+        ON ingested_files(session_id)
+    """
+    )
+
     conn.commit()
     conn.close()
 
@@ -572,6 +603,92 @@ def get_connection():
     Get a database connection.
     """
     return sqlite3.connect(DB_PATH)
+
+
+# ------------------------------------------------------------------
+# Ingested files helper functions
+# ------------------------------------------------------------------
+
+def compute_file_checksum(filepath: str) -> str:
+    """
+    Compute MD5 hex digest of file contents.
+    
+    Args:
+        filepath: Full path to the file.
+    
+    Returns:
+        MD5 hex digest string.
+    """
+    hasher = hashlib.md5()
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def is_file_ingested(conn, filepath: str) -> tuple:
+    """
+    Check if a file has been ingested and return its checksum.
+    
+    Args:
+        conn: SQLite connection.
+        filepath: Full path to the file.
+    
+    Returns:
+        (True, checksum) if file exists in ingested_files table,
+        (False, None) otherwise.
+    """
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT checksum FROM ingested_files WHERE filepath = ?",
+        (filepath,)
+    )
+    row = cursor.fetchone()
+    if row:
+        return (True, row[0])
+    return (False, None)
+
+
+def mark_file_ingested(conn, filepath: str, checksum: str, session_id: int = None):
+    """
+    Insert or update an ingested_files record.
+    
+    Args:
+        conn: SQLite connection.
+        filepath: Full path to the file.
+        checksum: MD5 hex digest of file contents.
+        session_id: Optional session ID to link (foreign key to sessions.id).
+    """
+    cursor = conn.cursor()
+    now = datetime.now().isoformat()
+    cursor.execute(
+        """
+        INSERT INTO ingested_files (filepath, checksum, session_id, ingested_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(filepath) DO UPDATE SET
+            checksum = excluded.checksum,
+            session_id = excluded.session_id,
+            ingested_at = excluded.ingested_at
+        """,
+        (filepath, checksum, session_id, now)
+    )
+    conn.commit()
+
+
+def remove_ingested_file(conn, filepath: str):
+    """
+    Remove an ingested_files record (e.g., when source .md is deleted).
+    
+    Args:
+        conn: SQLite connection.
+        filepath: Full path to the file to remove from tracking.
+    """
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM ingested_files WHERE filepath = ?",
+        (filepath,)
+    )
+    conn.commit()
 
 def get_schema_version():
     """

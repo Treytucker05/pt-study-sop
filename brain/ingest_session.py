@@ -2,14 +2,25 @@
 """
 Ingest session log markdown files into the PT Study Brain database.
 Parses v9.1 template format.
+
+Supports checksum-based tracking to skip unchanged files on re-run.
+Use --force to bypass the tracking check and re-ingest anyway.
 """
 
+import argparse
 import sqlite3
 import os
 import re
 import sys
 from pathlib import Path
 from datetime import datetime
+
+from db_setup import (
+    compute_file_checksum,
+    is_file_ingested,
+    mark_file_ingested,
+    remove_ingested_file,
+)
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'pt_study.db')
 
@@ -246,12 +257,15 @@ def validate_session_data(data):
 
     return True, None
 
-def insert_session(data):
+def insert_session(data, conn=None):
     """
     Insert a session record into the database.
-    Returns (success, message).
+    Returns (success, message, session_id).
     """
-    conn = sqlite3.connect(DB_PATH)
+    close_conn = False
+    if conn is None:
+        conn = sqlite3.connect(DB_PATH)
+        close_conn = True
     cursor = conn.cursor()
     
     try:
@@ -320,40 +334,96 @@ def insert_session(data):
         
         conn.commit()
         session_id = cursor.lastrowid
-        conn.close()
-        return True, f"Session ingested successfully (ID: {session_id})"
+        if close_conn:
+            conn.close()
+        return True, f"Session ingested successfully (ID: {session_id})", session_id
         
     except sqlite3.IntegrityError as e:
-        conn.close()
+        if close_conn:
+            conn.close()
         if 'UNIQUE constraint' in str(e):
-            return True, "Session already exists (skipped duplicate)"
-        return False, f"Database error: {e}"
+            return True, "Session already exists (skipped duplicate)", None
+        return False, f"Database error: {e}", None
     except Exception as e:
-        conn.close()
-        return False, f"Error: {e}"
+        if close_conn:
+            conn.close()
+        return False, f"Error: {e}", None
 
-def ingest_file(filepath):
+def ingest_file(filepath, force=False):
     """
     Main function to ingest a session log file.
+    
+    Args:
+        filepath: Path to the session log markdown file.
+        force: If True, bypass checksum tracking and re-ingest anyway.
+    
+    Returns:
+        (success: bool, status: str) where status is 'new', 'updated', 'skipped', or 'error'.
     """
+    filename = os.path.basename(filepath)
+    abs_path = os.path.abspath(filepath)
+    
     print(f"\n[INFO] Processing: {filepath}")
     
     if not os.path.exists(filepath):
         print(f"[ERROR] File not found: {filepath}")
-        return False
+        return False, 'error'
+    
+    # Compute checksum and check ingestion status
+    checksum = compute_file_checksum(abs_path)
+    conn = sqlite3.connect(DB_PATH)
+    
+    ingested, old_checksum = is_file_ingested(conn, abs_path)
+    
+    if ingested and not force:
+        if checksum == old_checksum:
+            print(f"[SKIP] Already ingested: {filename}")
+            conn.close()
+            return True, 'skipped'
+        else:
+            # File changed - delete old session record and re-ingest
+            print(f"[INFO] File changed, re-ingesting: {filename}")
+            cursor = conn.cursor()
+            # Get session_id linked to this file
+            cursor.execute(
+                "SELECT session_id FROM ingested_files WHERE filepath = ?",
+                (abs_path,)
+            )
+            row = cursor.fetchone()
+            if row and row[0]:
+                cursor.execute("DELETE FROM sessions WHERE id = ?", (row[0],))
+                conn.commit()
+                print(f"[INFO] Deleted old session record (ID: {row[0]})")
+            remove_ingested_file(conn, abs_path)
+    elif force and ingested:
+        print(f"[INFO] Force re-ingesting: {filename}")
+        # Delete old session record if exists
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT session_id FROM ingested_files WHERE filepath = ?",
+            (abs_path,)
+        )
+        row = cursor.fetchone()
+        if row and row[0]:
+            cursor.execute("DELETE FROM sessions WHERE id = ?", (row[0],))
+            conn.commit()
+            print(f"[INFO] Deleted old session record (ID: {row[0]})")
+        remove_ingested_file(conn, abs_path)
     
     # Parse the file
     try:
         data = parse_session_log(filepath)
     except Exception as e:
         print(f"[ERROR] Failed to parse file: {e}")
-        return False
+        conn.close()
+        return False, 'error'
     
     # Validate
     is_valid, error = validate_session_data(data)
     if not is_valid:
         print(f"[ERROR] Validation failed: {error}")
-        return False
+        conn.close()
+        return False, 'error'
     
     # Preview parsed data
     print(f"[INFO] Parsed session:")
@@ -369,20 +439,54 @@ def ingest_file(filepath):
         print(f"       Landmarks: {data['landmarks_mastered'][:50]}...")
     
     # Insert
-    success, message = insert_session(data)
+    success, message, session_id = insert_session(data, conn)
     if success:
-        print(f"[OK] {message}")
+        status = 'updated' if ingested else 'new'
+        if session_id:
+            # Mark file as ingested with the new session_id
+            mark_file_ingested(conn, abs_path, checksum, session_id)
+            print(f"[OK] {message}")
+        else:
+            # Duplicate detected by UNIQUE constraint (fallback dedup)
+            print(f"[SKIP] {message}")
+            status = 'skipped'
     else:
         print(f"[ERROR] {message}")
+        status = 'error'
     
-    return success
+    conn.close()
+    return success, status
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Usage: python ingest_session.py <session_log.md>")
-        print("       python ingest_session.py brain/session_logs/2025-12-04_anatomy.md")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description='Ingest session log markdown files into the PT Study Brain database.',
+        epilog='Example: python ingest_session.py brain/session_logs/2025-12-04_anatomy.md'
+    )
+    parser.add_argument(
+        'files',
+        nargs='+',
+        help='Session log markdown file(s) to ingest'
+    )
+    parser.add_argument(
+        '--force', '-f',
+        action='store_true',
+        help='Force re-ingestion even if file already tracked (bypass checksum check)'
+    )
     
-    filepath = sys.argv[1]
-    success = ingest_file(filepath)
-    sys.exit(0 if success else 1)
+    args = parser.parse_args()
+    
+    results = {'new': 0, 'updated': 0, 'skipped': 0, 'error': 0}
+    
+    for filepath in args.files:
+        success, status = ingest_file(filepath, force=args.force)
+        results[status] += 1
+    
+    # Print summary
+    print("\n" + "=" * 50)
+    print(f"Ingestion complete:")
+    print(f"  New:     {results['new']}")
+    print(f"  Updated: {results['updated']}")
+    print(f"  Skipped: {results['skipped']}")
+    print(f"  Errors:  {results['error']}")
+    
+    sys.exit(0 if results['error'] == 0 else 1)
