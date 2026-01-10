@@ -1,29 +1,30 @@
 Goal (incl. success criteria):
-- Dashboard UI/UX improvements complete.
-- Success criteria met: collapsible sections, session CRUD, syllabus editing, Brain tab, Scholar digest save, Tutor reordered.
+- Dashboard UI/UX improvements complete with collapsible sections across all tabs.
+- Success criteria met: ✅ collapsible sections, ✅ session CRUD, ✅ syllabus editing, ✅ Brain tab, ✅ Scholar digest save, ✅ Tutor collapsible.
 
 Constraints/Assumptions:
 - Follow AGENTS.md and maintain this Continuity Ledger each turn.
 - Spaced repetition integration deferred to separate RFC (not UI work).
 
 Key decisions:
-- Collapsible pattern added: `.collapsible-section`, `.collapsible-header`, `.collapsible-content`.
+- Collapsible pattern: `.collapsible-section`, `.collapsible-header`, `.collapsible-content`, `toggleCollapsible()`, `initCollapsibles()`.
 - Session View uses inline expand, Delete endpoint added.
 - Event editing via modal with PATCH endpoint.
 - New Brain tab with database stats and mastery overview.
 - Scholar digest saves to `scholar/outputs/digests/`.
-- Tutor layout: chat at top, answer/citations next, RAG sources collapsible.
+- Tutor layout: RAG sources, chat, answer/citations - all collapsible.
+- Fast Entry now uses JSON format for reliable parsing.
 
 State:
-  - Done: All 6 tabs updated, tests pass (4/4).
-  - Now: Ready for manual smoke test.
-  - Next: User verifies functionality via `Run_Brain_All.bat` → `http://127.0.0.1:5000`.
+  - Done: All collapsible wrappers. Sessions tab renamed to "Brain" with Fast Entry. JSON prompts and parser.
+  - Now: Dashboard v2.7 deployed with JSON-based Fast Entry.
+  - Next: User tests Fast Entry with JSON output from tutor.
 
 Open questions (UNCONFIRMED if needed):
 - None.
 
 Working set (files/ids/commands):
-- brain/static/css/dashboard.css (collapsible CSS)
-- brain/static/js/dashboard.js (collapsible JS, CRUD functions, Brain/Scholar/Tutor functions)
-- brain/templates/dashboard.html (all tabs updated with collapsibles, Brain tab added)
-- brain/dashboard/routes.py (DELETE session, PATCH event, Brain status, Scholar digest save endpoints)
+- brain/static/css/dashboard.css (collapsible CSS at lines 1098+)
+- brain/static/js/dashboard.js (FAST_ENTRY_PROMPTS, parseFastEntry w/ JSON support)
+- brain/templates/dashboard.html (v2.7 cache bust)
+- brain/dashboard/routes.py (POST /api/sessions with created_at)

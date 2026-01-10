@@ -1,8 +1,8 @@
 # Session Resume
-Generated: 2026-01-10 02:07
+Generated: 2026-01-10 15:12
 
 ## Readiness Score
-**58/100** (1 topics, 1 sessions in 30 days)
+**59/100** (2 topics, 2 sessions in 30 days)
 
 ## Drift + SOP Usage (last 30d)
 - Prompt Drift flagged: 0
@@ -12,6 +12,8 @@ Generated: 2026-01-10 02:07
 - Common Core Learning Modules: n/a
 
 ## Recent Sessions
+- **Neuroscience Introduction – The Neuron** (2026-01-10, 0d ago)
+  - Mode: Core | Understanding: 4/5 | Confidence: 4/5
 - **Normal vs Commonly Abnormal Aging** (2025-12-11, 30d ago)
   - Mode: Core | Understanding: 5/5 | Confidence: 4/5
   - Region: N/A
@@ -28,12 +30,10 @@ Generated: 2026-01-10 02:07
   - Mode: Core | Understanding: 3/5 | Confidence: 3/5
   - Region: Thigh, Leg, Foot
   - Landmarks: ASIS, AIIS, greater trochanter, lesser trochanter, linea aspera, pectineal line,...
-- **Anatomy - Gluteal Region & Posterior Thigh (wrap sprint + lab)** (2025-12-05, 36d ago)
-  - Mode: Sprint | Understanding: 3/5 | Confidence: 3/5
-  - Region: Gluteal region, posterior thigh, popliteal fossa
-  - Landmarks: popliteal fossa borders; BF tendon lateral edge; semimembranosus bed; semitendin...
 
 ## Topic Coverage
+- **Neuroscience Introduction – The Neuron**: 1 sessions, last 0d ago [FRESH]
+  - Avg Understanding: 4.0/5 | Avg Confidence: 4.0/5
 - **Normal vs Commonly Abnormal Aging**: 1 sessions, last 30d ago [STALE]
   - Avg Understanding: 5.0/5 | Avg Confidence: 4.0/5
 - **Comprehensive Anatomy exam prep (Dr. Ko)**: 1 sessions, last 31d ago [STALE]
@@ -57,16 +57,16 @@ Generated: 2026-01-10 02:07
   - Muscles: N/A
 - **Gluteal region; posterior/anterior/medial thigh; lower leg; foot (layers 1–4); head & neck (cranial base, Circle of Willis, dural sinuses)**: 1 sessions, last 31d ago
   - Landmarks: Greater trochanter attachment map; ischial tuberosity attachment map; femoral triangle borders; adductor canal borders; plantar surface layers; skull base foramina
-  - Muscles: Gluteus maximus/medius/minimus; hamstrings; obturators; piriformis; quadratus femoris; foot layer muscles (FDB, lumbricals, QP, AbH, interossei)
+  - Muscles: AbH, QP, lumbricals, AbDM, Gluteus maximus/medius/minimus; hamstrings; obturators; piriformis; quadratus femoris; foot layer muscles (FDB
 - **Face — expression musculature**: 1 sessions, last 33d ago
   - Landmarks: NA
   - Muscles: NA
 - **Thigh, Leg, Foot**: 1 sessions, last 33d ago
-  - Landmarks: pectineal line, adductor tubercle, medial/lateral condyles, ASIS, greater trochanter
-  - Muscles: soleus, TP, Rectus femoris, EDL, FHL
+  - Landmarks: lesser trochanter, medial/lateral condyles, linea aspera, ASIS, pectineal line
+  - Muscles: popliteus, gastroc, FDL, soleus, plantaris
 - **Gluteal region and posterior thigh**: 2 sessions, last 36d ago
-  - Landmarks: ischial tuberosity; ischial spine; greater trochanter; pelvic map flag shape, Not recorded
-  - Muscles: quadratus femoris; piriformis; superior gemellus (review); obturator internus tendon (context), piriformis; superior gemellus; obturator internus tendon; inferior gemellus
+  - Landmarks: Not recorded, ischial tuberosity; ischial spine; greater trochanter; pelvic map flag shape
+  - Muscles: piriformis; superior gemellus; obturator internus tendon; inferior gemellus, quadratus femoris; piriformis; superior gemellus (review); obturator internus tendon (context)
 - **Gluteal region, posterior thigh, popliteal fossa**: 1 sessions, last 36d ago
   - Landmarks: popliteal fossa borders; BF tendon lateral edge; semimembranosus bed; semitendinosus rope; pes anserinus
   - Muscles: semimembranosus; semitendinosus; biceps femoris long head; biceps femoris short head; adductor magnus

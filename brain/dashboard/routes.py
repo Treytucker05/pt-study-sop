@@ -999,6 +999,53 @@ def api_quick_session():
         return jsonify({"ok": False, "message": f"Server error: {e}"}), 500
 
 
+@dashboard_bp.route("/api/sessions", methods=["POST"])
+def api_create_session():
+    """Create a new session from JSON payload (Fast Entry)."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"ok": False, "error": "Missing JSON body"}), 400
+        
+        # Build session data from fast entry format
+        session_data = {
+            "session_date": data.get("date") or datetime.now().strftime("%Y-%m-%d"),
+            "time_of_day": data.get("time") or datetime.now().strftime("%H:%M"),
+            "study_mode": data.get("study_mode", "Core"),
+            "time_spent_minutes": int(data.get("time_spent_minutes", 30)),
+            "main_topic": data.get("topic", "General Study"),
+            "subtopics": data.get("subtopics", ""),
+            "understanding_level": int(data.get("understanding_level", 3)),
+            "retention_confidence": int(data.get("retention_confidence", 3)),
+            "system_performance": int(data.get("system_performance", 3)),
+            "frameworks_used": data.get("frameworks_used", ""),
+            "anchors_locked": data.get("anchors_locked", ""),
+            "what_worked": data.get("what_worked", ""),
+            "what_needs_fixing": data.get("what_needs_fixing", ""),
+            "notes_insights": data.get("notes_insights", ""),
+            "next_session_priority": data.get("next_session_priority", ""),
+            # Required metadata fields
+            "created_at": datetime.now().isoformat(),
+            "schema_version": "9.1",
+        }
+        
+        # Validate required fields
+        if not session_data["main_topic"]:
+            return jsonify({"ok": False, "error": "Topic is required"}), 400
+        
+        # Insert into database
+        ok, msg = insert_session_data(session_data)
+        if ok:
+            return jsonify({"ok": True, "message": msg})
+        else:
+            return jsonify({"ok": False, "error": msg}), 400
+            
+    except ValueError as e:
+        return jsonify({"ok": False, "error": f"Invalid value: {e}"}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Server error: {e}"}), 500
+
+
 @dashboard_bp.route("/api/sessions/<int:session_id>", methods=["DELETE"])
 def api_delete_session(session_id):
     """Delete a session by ID."""

@@ -28,6 +28,282 @@ function initCollapsibles() {
 // Call initCollapsibles on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', initCollapsibles);
 
+/* ===== Status Display Helper ===== */
+function showStatus(elementId, message, type = 'info') {
+  const el = document.getElementById(elementId);
+  if (!el) {
+    console.error('Status element not found:', elementId);
+    return;
+  }
+  
+  let bgColor, textColor;
+  switch (type) {
+    case 'success':
+      bgColor = 'rgba(63, 185, 80, 0.2)';
+      textColor = 'var(--success)';
+      break;
+    case 'error':
+      bgColor = 'rgba(248, 81, 73, 0.2)';
+      textColor = 'var(--error)';
+      break;
+    case 'warning':
+      bgColor = 'rgba(218, 165, 32, 0.2)';
+      textColor = 'var(--warning)';
+      break;
+    default:
+      bgColor = 'rgba(31, 111, 235, 0.2)';
+      textColor = 'var(--accent)';
+  }
+  
+  el.innerHTML = `<div style="padding: 8px 12px; border-radius: 6px; font-size: 13px; background: ${bgColor}; color: ${textColor};">${message}</div>`;
+}
+
+/* ===== Fast Entry (Paste from Tutor) ===== */
+const FAST_ENTRY_PROMPTS = {
+  'session-log': `At the end of our session, output a JSON session log I can paste into my study tracker. Use this exact format:
+
+\`\`\`json
+{
+  "date": "YYYY-MM-DD",
+  "topic": "Main topic we covered",
+  "mode": "Core",
+  "duration": 45,
+  "understanding": 4,
+  "retention": 4,
+  "system_performance": 5,
+  "what_worked": "Bullet points of what was effective, separated by semicolons",
+  "what_needs_fixing": "Bullet points of gaps or issues, separated by semicolons",
+  "anchors": "Key concepts/hooks created, separated by semicolons",
+  "notes": "Any additional insights or next steps"
+}
+\`\`\`
+
+Rules:
+- date: Use today's date in YYYY-MM-DD format
+- mode: One of "Core", "Sprint", or "Drill"
+- duration: Integer minutes
+- understanding/retention/system_performance: Integer 1-5
+- All text fields: Use semicolons to separate multiple items
+
+Generate this JSON at the end of our session.`,
+  
+  'quick-recap': `At the end of our session, give me a quick JSON recap:
+
+\`\`\`json
+{
+  "date": "YYYY-MM-DD",
+  "topic": "Topic",
+  "mode": "Core",
+  "duration": 30,
+  "understanding": 4,
+  "retention": 3,
+  "what_worked": "Brief summary",
+  "notes": "Key takeaway or next step"
+}
+\`\`\`
+`
+};
+
+function copyFastEntryPrompt() {
+  const select = document.getElementById('fast-entry-prompt-select');
+  const promptKey = select.value;
+  const displayDiv = document.getElementById('fast-entry-prompt-display');
+  const promptText = document.getElementById('fast-entry-prompt-text');
+  
+  if (!promptKey) {
+    displayDiv.style.display = 'none';
+    return;
+  }
+  
+  const prompt = FAST_ENTRY_PROMPTS[promptKey];
+  if (prompt) {
+    promptText.textContent = prompt;
+    displayDiv.style.display = 'block';
+    navigator.clipboard.writeText(prompt).then(() => {
+      showStatus('fast-entry-status', 'Prompt copied to clipboard!', 'success');
+    }).catch(() => {
+      showStatus('fast-entry-status', 'Select and copy the prompt manually', 'warning');
+    });
+  }
+}
+
+async function submitFastEntry() {
+  const pasteContent = document.getElementById('fast-entry-paste').value.trim();
+  if (!pasteContent) {
+    showStatus('fast-entry-status', 'Please paste session content first', 'error');
+    return;
+  }
+  
+  // Parse the pasted content
+  const parsed = parseFastEntry(pasteContent);
+  if (!parsed.topic) {
+    showStatus('fast-entry-status', 'Could not parse topic from pasted content. Make sure it includes "Topic:" line.', 'error');
+    return;
+  }
+  
+  showStatus('fast-entry-status', 'Ingesting session...', 'info');
+  
+  try {
+    const response = await fetch('/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(parsed)
+    });
+    
+    if (response.ok) {
+      showStatus('fast-entry-status', 'Session ingested successfully!', 'success');
+      document.getElementById('fast-entry-paste').value = '';
+      loadStats(); // Refresh session list
+      loadOverviewData(); // Refresh overview stats
+    } else {
+      const err = await response.json();
+      showStatus('fast-entry-status', 'Error: ' + (err.error || 'Unknown error'), 'error');
+    }
+  } catch (e) {
+    showStatus('fast-entry-status', 'Network error: ' + e.message, 'error');
+  }
+}
+
+function parseFastEntry(content) {
+  const result = {
+    topic: '',
+    study_mode: 'Core',
+    time_spent_minutes: 30,
+    understanding_level: 3,
+    retention_confidence: 3,
+    system_performance: 3,
+    what_worked: '',
+    what_needs_fixing: '',
+    notes_insights: ''
+  };
+  
+  // Try to parse as JSON first (preferred format)
+  try {
+    // Extract JSON from markdown code blocks if present
+    let jsonStr = content;
+    const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1];
+    } else {
+      // Try to find raw JSON object
+      const braceMatch = content.match(/\{[\s\S]*\}/);
+      if (braceMatch) {
+        jsonStr = braceMatch[0];
+      }
+    }
+    
+    const parsed = JSON.parse(jsonStr);
+    
+    // Map JSON fields to result
+    result.topic = parsed.topic || '';
+    result.study_mode = parsed.mode || 'Core';
+    result.time_spent_minutes = parseInt(parsed.duration) || 30;
+    result.understanding_level = parseInt(parsed.understanding) || 3;
+    result.retention_confidence = parseInt(parsed.retention) || 3;
+    result.system_performance = parseInt(parsed.system_performance) || 3;
+    result.what_worked = parsed.what_worked || '';
+    result.what_needs_fixing = parsed.what_needs_fixing || parsed.gaps || '';
+    result.notes_insights = parsed.notes || '';
+    
+    // Handle anchors - append to notes if present
+    if (parsed.anchors) {
+      result.notes_insights = result.notes_insights 
+        ? result.notes_insights + '\n\nAnchors: ' + parsed.anchors 
+        : 'Anchors: ' + parsed.anchors;
+    }
+    
+    return result;
+  } catch (e) {
+    // JSON parse failed, fall back to text parsing
+    console.log('JSON parse failed, trying text format:', e.message);
+  }
+  
+  // Fallback: Parse as structured text format
+  const lines = content.split('\n');
+  let currentSection = null;
+  let sectionContent = [];
+  let unstructuredLines = [];
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === '---' || trimmed.startsWith('```')) continue;
+    
+    // Check for key: value pairs
+    const kvMatch = trimmed.match(/^(Date|Topic|Subject|Mode|Duration|Time|Understanding|Retention|System Performance|What Worked|What Needs Fixing|Gaps|Anchors Locked|Anchors|Notes|Session):?\s*(.*)$/i);
+    if (kvMatch) {
+      // Save previous section if any
+      if (currentSection && sectionContent.length > 0) {
+        const text = sectionContent.join('\n').trim();
+        if (currentSection === 'what_worked') result.what_worked = text;
+        else if (currentSection === 'what_needs_fixing') result.what_needs_fixing = text;
+        else if (currentSection === 'notes') result.notes_insights = text;
+        sectionContent = [];
+      }
+      
+      const key = kvMatch[1].toLowerCase();
+      const val = kvMatch[2].trim();
+      
+      if (key === 'topic' || key === 'subject' || key === 'session') result.topic = val;
+      else if (key === 'mode') result.study_mode = val.includes('Sprint') ? 'Sprint' : val.includes('Drill') ? 'Drill' : 'Core';
+      else if (key === 'duration' || key === 'time') result.time_spent_minutes = parseInt(val) || 30;
+      else if (key === 'understanding') result.understanding_level = parseInt(val) || 3;
+      else if (key === 'retention') result.retention_confidence = parseInt(val) || 3;
+      else if (key === 'system performance') result.system_performance = parseInt(val) || 3;
+      else if (key === 'what worked') { currentSection = 'what_worked'; if (val) sectionContent.push(val); }
+      else if (key === 'what needs fixing' || key === 'gaps') { currentSection = 'what_needs_fixing'; if (val) sectionContent.push(val); }
+      else if (key === 'notes' || key === 'anchors locked' || key === 'anchors') { currentSection = 'notes'; if (val) sectionContent.push(val); }
+    } else if (currentSection && trimmed) {
+      sectionContent.push(trimmed);
+    } else if (trimmed) {
+      unstructuredLines.push(trimmed);
+    }
+  }
+  
+  // Capture final section
+  if (currentSection && sectionContent.length > 0) {
+    const text = sectionContent.join('\n').trim();
+    if (currentSection === 'what_worked') result.what_worked = text;
+    else if (currentSection === 'what_needs_fixing') result.what_needs_fixing = text;
+    else if (currentSection === 'notes') result.notes_insights = text;
+  }
+  // Fallback for unstructured content: use first line as topic, rest as notes
+  if (!result.topic && unstructuredLines.length > 0) {
+    // Try to find a meaningful first line (skip bullets)
+    let topicLine = unstructuredLines[0];
+    for (const line of unstructuredLines) {
+      if (!line.startsWith('*') && !line.startsWith('-') && line.length > 5) {
+        topicLine = line;
+        break;
+      }
+    }
+    // Clean up the topic line
+    result.topic = topicLine.replace(/^[\*\-\#\s]+/, '').substring(0, 100);
+    // Put all content as notes
+    result.notes_insights = unstructuredLines.join('\n');
+  }
+  
+  return result;
+}
+
+// Show prompt when dropdown changes
+document.addEventListener('DOMContentLoaded', () => {
+  const select = document.getElementById('fast-entry-prompt-select');
+  if (select) {
+    select.addEventListener('change', () => {
+      const displayDiv = document.getElementById('fast-entry-prompt-display');
+      const promptText = document.getElementById('fast-entry-prompt-text');
+      const promptKey = select.value;
+      
+      if (promptKey && FAST_ENTRY_PROMPTS[promptKey]) {
+        promptText.textContent = FAST_ENTRY_PROMPTS[promptKey];
+        displayDiv.style.display = 'block';
+      } else {
+        displayDiv.style.display = 'none';
+      }
+    });
+  }
+});
+
 function openTab(evt, tabName) {
   // 0. Check if switching AWAY from Scholar before hiding panels
   const currentActivePanel = document.querySelector('.tab-panel.active');
@@ -395,9 +671,14 @@ async function deleteSession(sessionId) {
     const resp = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
     const data = await resp.json();
     if (data.ok) {
-      loadStats(); // Refresh the sessions list
+      // Refresh both stats and session list
+      loadStats();
+      loadOverviewData();
+      // Also remove the row directly for immediate feedback
+      const row = document.querySelector(`tr[data-session-id="${sessionId}"]`);
+      if (row) row.remove();
     } else {
-      alert('Error: ' + data.message);
+      alert('Error: ' + (data.message || data.error || 'Unknown error'));
     }
   } catch (err) {
     alert('Error deleting session: ' + err.message);

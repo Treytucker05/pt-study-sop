@@ -11,10 +11,10 @@
   <title>PT Study Brain v2.0.2</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/dashboard.css?v=2.2">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=2.6">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
-  <script src="/static/js/dashboard.js?v=2.1" defer></script>
+  <script src="/static/js/dashboard.js?v=2.7" defer></script>
 </head>
 
 <body>
@@ -28,11 +28,11 @@
     <!-- Tabs in Navbar -->
     <div class="nav-links">
       <button class="tab-button active" onclick="openTab(event, 'overview')" data-tab="overview" type="button">Overview</button>
-      <button class="tab-button" onclick="openTab(event, 'sessions')" data-tab="sessions" type="button">Sessions</button>
+      <button class="tab-button" onclick="openTab(event, 'sessions')" data-tab="sessions" type="button">Brain</button>
       <button class="tab-button" onclick="openTab(event, 'syllabus')" data-tab="syllabus" type="button">Syllabus</button>
       <button class="tab-button" onclick="openTab(event, 'scholar')" data-tab="scholar" type="button">Scholar</button>
       <button class="tab-button" onclick="openTab(event, 'tutor')" data-tab="tutor" type="button">Tutor</button>
-      <button class="tab-button" onclick="openTab(event, 'brain')" data-tab="brain" type="button">Brain</button>
+      <button class="tab-button" onclick="openTab(event, 'brain')" data-tab="brain" type="button">Database</button>
     </div>
 
     <div class="profile-section">
@@ -298,9 +298,68 @@
       </div>
     </section>
     
-    <!-- Sessions Tab -->
+    <!-- Sessions Tab (renamed to Brain) -->
     <section id="tab-sessions" class="tab-panel">
-      <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Study Sessions</h2>
+      <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Brain</h2>
+      
+      <!-- Fast Entry from Tutor (Collapsible) -->
+      <div class="card collapsible-section" id="fast-entry-section" data-section="fast-entry" style="margin-bottom: 24px;">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <div>
+            <h2 class="card-title" style="margin: 0;">⚡ Fast Entry (Paste from Tutor)</h2>
+            <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Paste your tutor session output directly and ingest it.</p>
+          </div>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="collapsible-content">
+          
+          <!-- Prompt Dropdown -->
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Get the Format Prompt</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <select id="fast-entry-prompt-select" class="form-select" style="flex: 1;">
+                <option value="">Select a prompt to copy...</option>
+                <option value="session-log">Session Log Format</option>
+                <option value="quick-recap">Quick Recap Format</option>
+              </select>
+              <button type="button" class="btn btn-secondary" onclick="copyFastEntryPrompt()">Copy Prompt</button>
+            </div>
+          </div>
+          
+          <!-- Prompt Display -->
+          <div id="fast-entry-prompt-display" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 600; color: var(--text-primary);">Prompt to paste in ChatGPT/Tutor:</span>
+              <button type="button" class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="copyFastEntryPrompt()">Copy</button>
+            </div>
+            <pre id="fast-entry-prompt-text" style="font-size: 12px; white-space: pre-wrap; color: var(--text-secondary); margin: 0; max-height: 150px; overflow-y: auto;"></pre>
+          </div>
+          
+          <!-- Paste Area -->
+          <div class="form-group">
+            <label for="fast-entry-paste" class="form-label">Paste Tutor Output Here</label>
+            <textarea id="fast-entry-paste" class="form-textarea" rows="10" placeholder="Paste the formatted session output from your tutor here...
+
+Example format:
+---
+Date: 2026-01-10
+Topic: Cardiovascular Physiology
+Mode: Core
+Duration: 45 minutes
+Understanding: 4
+Retention: 3
+What Worked: Active recall with diagrams
+Gaps: Need to review valve mechanics
+---"></textarea>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn-primary" onclick="submitFastEntry()">Ingest Session</button>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('fast-entry-paste').value = ''">Clear</button>
+          </div>
+          <div id="fast-entry-status" style="margin-top: 8px;"></div>
+        </div>
+      </div>
       
       <!-- Latest Study Sessions -->
       <div class="card" id="sessions">
@@ -323,12 +382,16 @@
         </table>
       </div>
       
-      <!-- Quick Session Entry -->
-      <div class="card" style="margin-top: 24px;">
-        <div class="card-header">
-          <h2 class="card-title">Quick Session Entry</h2>
-          <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Document what worked, what didn't, or quick session notes directly.</p>
+      <!-- Quick Session Entry (Collapsible) -->
+      <div class="card collapsible-section" id="quick-session-section" data-section="quick-session" style="margin-top: 24px;">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <div>
+            <h2 class="card-title" style="margin: 0;">Quick Session Entry</h2>
+            <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Document what worked, what didn't, or quick session notes directly.</p>
+          </div>
+          <span class="chevron">▼</span>
         </div>
+        <div class="collapsible-content">
         <form id="quick-session-form" class="form-section">
           <div class="form-grid">
             <div class="form-group">
@@ -382,21 +445,25 @@
           </div>
         </form>
         <div id="quick-session-status"></div>
+        </div>
       </div>
 
-      <!-- Session Resume -->
-      <div class="card resume-section" id="resume">
-        <div class="card-header">
-          <h2 class="card-title">Session Resume</h2>
-          <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
-            Generate a concise summary for your next GPT session.
-          </p>
+      <!-- Session Resume (Collapsible) (Collapsible) -->
+      <div class="card resume-section collapsible-section" id="resume" data-section="session-resume">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <div>
+            <h2 class="card-title" style="margin: 0;">Session Resume</h2>
+            <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Generate a concise summary for your next GPT session.</p>
+          </div>
+          <span class="chevron">▼</span>
         </div>
+        <div class="collapsible-content">
         <div class="resume-actions">
           <button type="button" class="btn btn-primary" id="btn-resume">Generate Resume</button>
           <a class="btn btn-secondary" href="/api/resume/download" target="_blank" rel="noopener">Download</a>
         </div>
         <pre class="resume-preview" id="resume-box">Click "Generate Resume" to fetch the latest summary.</pre>
+        </div>
       </div>
     </section>
     
@@ -450,10 +517,14 @@
         </div>
       </div>
       
-      <div class="card resume-section" id="syllabus">
-      <div class="card-header">
-        <h2 class="card-title">Syllabus Intake (MVP)</h2>
-      </div>
+      <!-- Syllabus Intake (Collapsible) -->
+      <div class="collapsible-section" id="syllabus-intake-section" data-section="syllabus-intake">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>Syllabus Intake (MVP)</h3>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="collapsible-content">
+      <div class="card resume-section" id="syllabus" style="border: none; margin-bottom: 0;">
       <form id="syllabus-form" class="form-section">
         <div class="form-grid">
           <div class="form-group">
@@ -525,13 +596,18 @@
       </form>
       <div id="syllabus-status"></div>
     </div>
+        </div>
+      </div>
     <!-- Syllabus Part 2 (ChatGPT & Calendar) -->
 
-    <!-- Syllabus via ChatGPT (Prompt + JSON Import) -->
-    <div class="card resume-section" id="syllabus-chatgpt">
-      <div class="card-header">
-        <h2 class="card-title">Syllabus via ChatGPT (JSON Import)</h2>
+    <!-- ChatGPT JSON Import (Collapsible) -->
+    <div class="collapsible-section" id="json-import-section" data-section="json-import">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <h3>Syllabus via ChatGPT (JSON Import)</h3>
+        <span class="chevron">▼</span>
       </div>
+      <div class="collapsible-content">
+    <div class="card resume-section" id="syllabus-chatgpt" style="border: none; margin-bottom: 0;">
       <div class="form-section">
         <div class="form-group">
           <label class="form-label" for="syllabus_prompt_template">1) Copy this prompt into ChatGPT</label>
@@ -586,12 +662,19 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         <div class="form-actions">
           <button type="button" class="btn btn-primary" id="btn-syllabus-json-import">Import JSON</button>
         </div>
+        <div id="syllabus-json-status"></div>
       </div>
-      <div id="syllabus-json-status"></div>
+      </div>
     </div>
 
-    <!-- Course Color Manager -->
-    <div class="card resume-section" id="course-colors-section">
+    <!-- Course Color Manager (Collapsible) -->
+    <div class="collapsible-section" data-section="course-colors">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <h3>🎨 Course Colors</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="collapsible-content">
+    <div class="card resume-section" id="course-colors-section" style="border: none; margin-bottom: 0;">
       <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
         <div>
           <h2 class="card-title" style="margin: 0;">🎨 Course Colors</h2>
@@ -605,9 +688,18 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         <div style="color: var(--text-muted); font-size: 13px;">Loading courses...</div>
       </div>
     </div>
+      </div>
+    </div>
 
+    <!-- Calendar View (Collapsible) -->
+    <div class="collapsible-section" data-section="calendar-view">
+      <div class="collapsible-header" onclick="toggleCollapsible(this)">
+        <h3>📅 Study Calendar</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="collapsible-content">
     <!-- Calendar/List Toggle -->
-    <div class="card resume-section" id="calendar-view">
+    <div class="card resume-section" id="calendar-view" style="border: none; margin-bottom: 0;">
       <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
         <h2 class="card-title" style="margin: 0;">Study Calendar</h2>
         <div style="display: flex; gap: 8px;">
@@ -751,6 +843,8 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         <div id="syllabus-list-empty" style="display: none; color: var(--text-muted); font-size: 13px; padding: 12px 0;">No events match the filters.</div>
       </div>
     </div>
+      </div>
+    </div>
     </section>
     
     <!-- Scholar Tab -->
@@ -766,10 +860,16 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           </p>
         </div>
 
-        <!-- API Key Configuration -->
+        <!-- API Key Configuration (Collapsible) -->
+        <div class="collapsible-section" data-section="scholar-api-config">
+          <div class="collapsible-header" onclick="toggleCollapsible(this)">
+            <h3>Scholar API Key</h3>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="collapsible-content">
         <div style="margin-bottom: 24px; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h4 style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0;">Scholar API Key</h4>
+            <h4 style="font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 0;">Configuration</h4>
             <button id="btn-toggle-api-key" class="btn" style="padding: 6px 10px; font-size: 12px;">Configure</button>
           </div>
           <div id="api-key-status" style="font-size: 12px; color: var(--text-muted);">Loading API key status...</div>
@@ -794,7 +894,16 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
             <div id="api-key-test-result" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);"></div>
           </div>
         </div>
+          </div>
+        </div>
 
+        <!-- Run Scholar (Collapsible) -->
+        <div class="collapsible-section" data-section="scholar-run">
+          <div class="collapsible-header" onclick="toggleCollapsible(this)">
+            <h3>Run Scholar</h3>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="collapsible-content">
         <!-- Scholar Status -->
         <div style="margin-bottom: 24px;">
         <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
@@ -840,7 +949,16 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         <div id="scholar-run-log" class="scholar-run-log" style="display: none;">
         </div>
       </div>
+          </div>
+        </div>
       
+      <!-- Proposals (Collapsible) -->
+      <div class="collapsible-section" data-section="scholar-proposals">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>📝 Proposals & Questions</h3>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="collapsible-content">
       <!-- Questions Section -->
       <div style="margin-bottom: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -867,7 +985,16 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <div style="color: var(--text-muted); font-size: 13px;">Loading questions...</div>
         </div>
       </div>
+        </div>
+      </div>
       
+      <!-- System Health (Collapsible) -->
+      <div class="collapsible-section" data-section="scholar-health">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🔬 System Health & Research</h3>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="collapsible-content">
       <!-- System Health (formerly Coverage) -->
       <div style="margin-bottom: 24px;">
         <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
@@ -963,7 +1090,16 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <div style="color: var(--text-muted);">Loading latest run...</div>
         </div>
       </div>
+        </div>
+      </div>
       
+      <!-- AI Strategic Digest (Collapsible) -->
+      <div class="collapsible-section" data-section="scholar-digest">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>🧠 AI Strategic Digest</h3>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="collapsible-content">
       <!-- AI Weekly Digest Section -->
       <div style="margin-bottom: 24px; padding: 16px; background: linear-gradient(135deg, rgba(136, 46, 224, 0.1), rgba(63, 185, 80, 0.1)); border: 1px solid #a855f7; border-radius: 8px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -983,6 +1119,8 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <div id="scholar-digest-text" style="font-size: 13px; line-height: 1.7;"></div>
         </div>
       </div>
+        </div>
+      </div>
     </div>
     </section>
     
@@ -990,8 +1128,15 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
     <section id="tab-tutor" class="tab-panel">
       <h2 class="page-title" style="font-size: 20px; margin-bottom: 20px;">Tutor</h2>
 
+      <!-- RAG Sources (Collapsible) -->
+      <div class="collapsible-section" data-section="tutor-rag">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>📚 RAG Sources</h3>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="collapsible-content">
       <!-- Study RAG (folder-synced) + Runtime RAG (toggle catalog) -->
-      <div class="card" id="tutor-knowledge" style="margin-bottom: 24px;">
+      <div class="card" id="tutor-knowledge" style="margin-bottom: 24px; border: none;">
         <div class="card-header">
           <h2 class="card-title">RAG Sources</h2>
           <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
@@ -1072,9 +1217,18 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <div id="tutor-upload-status"></div>
         </div>
       </div>
+        </div>
+      </div>
 
+      <!-- Tutor Chat (Collapsible) -->
+      <div class="collapsible-section" data-section="tutor-chat">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>💬 Ask Tutor</h3>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="collapsible-content">
       <!-- Tutor Chat -->
-      <div class="card" id="tutor-chat" style="margin-bottom: 24px;">
+      <div class="card" id="tutor-chat" style="margin-bottom: 24px; border: none;">
         <div class="card-header">
           <h2 class="card-title">Ask Tutor</h2>
         </div>
@@ -1088,9 +1242,18 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           </div>
         </div>
       </div>
+        </div>
+      </div>
 
+      <!-- Tutor Output (Collapsible) -->
+      <div class="collapsible-section" data-section="tutor-output">
+        <div class="collapsible-header" onclick="toggleCollapsible(this)">
+          <h3>📝 Answer & Citations</h3>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="collapsible-content">
       <!-- Tutor Output -->
-      <div class="card" id="tutor-output">
+      <div class="card" id="tutor-output" style="border: none;">
         <div class="card-header">
           <h2 class="card-title">Answer & Citations</h2>
         </div>
@@ -1100,6 +1263,8 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <div id="tutor-citations" style="padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 240px; overflow-y: auto; color: var(--text-secondary);">
             No citations yet.
           </div>
+        </div>
+      </div>
         </div>
       </div>
     </section>
