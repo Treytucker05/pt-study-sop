@@ -3138,3 +3138,71 @@ def api_sync_cards_to_anki():
         }), 500
     except Exception as exc:
         return jsonify({"ok": False, "message": f"Sync failed: {exc}"}), 400
+
+
+# ============================================================================
+# GOOGLE CALENDAR INTEGRATION
+# ============================================================================
+
+@dashboard_bp.route('/api/gcal/status', methods=['GET'])
+def gcal_status():
+    """Check Google Calendar authentication status"""
+    from .gcal import check_auth_status
+    return jsonify(check_auth_status())
+
+
+@dashboard_bp.route('/api/gcal/auth/start', methods=['GET'])
+def gcal_auth_start():
+    """Start Google Calendar OAuth flow"""
+    from .gcal import get_auth_url
+    url, state = get_auth_url()
+    if url:
+        return jsonify({'auth_url': url, 'state': state})
+    else:
+        return jsonify({'error': state}), 400
+
+
+@dashboard_bp.route('/api/gcal/oauth/callback', methods=['GET'])
+def gcal_oauth_callback():
+    """Handle OAuth callback from Google"""
+    from .gcal import complete_oauth
+    code = request.args.get('code')
+    if not code:
+        return "Missing authorization code", 400
+    
+    success, message = complete_oauth(code)
+    if success:
+        # Return HTML that closes popup and notifies parent
+        return """
+        <html>
+        <body>
+        <script>
+            if (window.opener) {
+                window.opener.postMessage({type: 'gcal-auth-success'}, '*');
+            }
+            window.close();
+        </script>
+        <p>Successfully connected! You can close this window.</p>
+        </body>
+        </html>
+        """
+    else:
+        return f"<html><body><p>Error: {message}</p></body></html>", 400
+
+
+@dashboard_bp.route('/api/gcal/sync', methods=['POST'])
+def gcal_sync():
+    """Manually sync Google Calendar events to database"""
+    from .gcal import sync_to_database
+    data = request.get_json() or {}
+    course_id = data.get('course_id')
+    result = sync_to_database(course_id)
+    return jsonify(result)
+
+
+@dashboard_bp.route('/api/gcal/revoke', methods=['POST'])
+def gcal_revoke():
+    """Revoke Google Calendar authentication"""
+    from .gcal import revoke_auth
+    revoke_auth()
+    return jsonify({'success': True})

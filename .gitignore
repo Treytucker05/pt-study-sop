@@ -52,3 +52,7 @@ brain/output/
 
 # Environment variables
 .env
+
+# Google Calendar OAuth token (sensitive)
+gcal_token.json
+**/gcal_token.json

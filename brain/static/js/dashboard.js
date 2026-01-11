@@ -3173,8 +3173,236 @@ const EVENT_TYPE_ICONS = {
   'quiz': '✏️',
   'exam': '📝',
   'assignment': '📋',
+  'lab': '🔬',
+  'immersion': '🏥',
+  'checkoff': '✅',
+  'practical': '🩺',
+  'async': '💻',
   'other': '📌'
 };
+
+/**
+ * Parse time and location from raw_text field
+ * Expected format: "Time: 3:00 PM | Location: Room 204"
+ */
+function parseEventDetails(rawText) {
+  const result = { time: null, location: null };
+  if (!rawText) return result;
+
+  const timeMatch = rawText.match(/Time:\s*([^|]+)/i);
+  const locMatch = rawText.match(/Location:\s*([^|]+)/i);
+
+  if (timeMatch) result.time = timeMatch[1].trim();
+  if (locMatch) result.location = locMatch[1].trim();
+
+  return result;
+}
+
+/**
+ * Get icon for event type
+ */
+function getEventTypeIcon(type) {
+  const icons = {
+    exam: '📝',
+    quiz: '❓',
+    assignment: '📋',
+    lab: '🔬',
+    lecture: '🎓',
+    immersion: '🏥',
+    checkoff: '✅',
+    practical: '🩺',
+    async: '💻',
+    reading: '📖',
+    other: '📌'
+  };
+  return icons[type] || icons[(type || '').toLowerCase()] || '📌';
+}
+
+/**
+ * Render week view - 7-day list layout
+ */
+function renderWeekView() {
+  const container = document.getElementById('calendar-grid');
+  if (!container) return;
+
+  // Ensure calendarData has required arrays
+  if (!calendarData || !calendarData.events) {
+    calendarData = { events: [], sessions: [], planned: [] };
+  }
+  calendarData.events = calendarData.events || [];
+  calendarData.sessions = calendarData.sessions || [];
+
+  // Get current week (Sunday to Saturday)
+  const today = new Date(currentCalendarDate);
+  const dayOfWeek = today.getDay();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - dayOfWeek);
+
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const nowStr = new Date().toISOString().split('T')[0];
+  
+  let html = '<div class="week-view-container">';
+  
+  for (let i = 0; i < 7; i++) {
+    const currentDay = new Date(weekStart);
+    currentDay.setDate(weekStart.getDate() + i);
+    const dateStr = currentDay.toISOString().split('T')[0];
+    const isToday = dateStr === nowStr;
+    
+    // Filter events for this day
+    const dayEvents = calendarData.events.filter(e => e.date === dateStr);
+    const daySessions = calendarData.sessions.filter(s => s.date === dateStr);
+    
+    html += `
+      <div class="week-day-section ${isToday ? 'is-today' : ''}">
+        <div class="week-day-header">
+          <span class="week-day-name">${days[i]}</span>
+          <span class="week-day-date">${currentDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+        </div>
+        <div class="week-day-events">
+    `;
+    
+    if (dayEvents.length === 0 && daySessions.length === 0) {
+      html += '<div class="week-empty">No events</div>';
+    } else {
+      // Render events
+      dayEvents.forEach(event => {
+        const details = parseEventDetails(event.raw_text);
+        const typeIcon = getEventTypeIcon(event.type || event.event_type);
+        html += `
+          <div class="week-event-item event-type-${event.type || event.event_type}" onclick="openEventEditModal(${event.id})">
+            <span class="week-event-icon">${typeIcon}</span>
+            <span class="week-event-title">${event.title}</span>
+            ${details.time ? `<span class="week-event-time">${details.time}</span>` : ''}
+          </div>
+        `;
+      });
+      
+      // Render study sessions
+      daySessions.forEach(session => {
+        html += `
+          <div class="week-event-item session-item">
+            <span class="week-event-icon">📚</span>
+            <span class="week-event-title">${session.topic || 'Study Session'}</span>
+            <span class="week-event-time">${session.duration_minutes || 0}m</span>
+          </div>
+        `;
+      });
+    }
+    
+    html += '</div></div>';
+  }
+  
+  html += '</div>';
+  container.innerHTML = html;
+  
+  // Update header
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const headerEl = document.getElementById('calendar-month-year');
+  if (headerEl) {
+    headerEl.textContent = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }
+  
+  console.log('[Calendar] Week view rendered with', calendarData.events.length, 'events');
+}
+
+/**
+ * Render day view - single day detailed layout
+ */
+function renderDayView() {
+  const container = document.getElementById('calendar-grid');
+  if (!container) return;
+
+  // Ensure calendarData has required arrays
+  if (!calendarData || !calendarData.events) {
+    calendarData = { events: [], sessions: [], planned: [] };
+  }
+  calendarData.events = calendarData.events || [];
+  calendarData.sessions = calendarData.sessions || [];
+
+  const today = new Date(currentCalendarDate);
+  const dateStr = today.toISOString().split('T')[0];
+  const nowStr = new Date().toISOString().split('T')[0];
+  const isToday = dateStr === nowStr;
+  
+  // Filter events for this day
+  const dayEvents = calendarData.events.filter(e => e.date === dateStr);
+  const daySessions = calendarData.sessions.filter(s => s.date === dateStr);
+  
+  // Build course lookup
+  const courseById = {};
+  allCourses.forEach((c, idx) => {
+    courseById[c.id] = { ...c, _idx: idx };
+  });
+  
+  let html = `
+    <div class="day-view-container">
+      <div class="day-header ${isToday ? 'is-today' : ''}">
+        <h2>${today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</h2>
+        ${isToday ? '<span class="today-badge">Today</span>' : ''}
+      </div>
+      <div class="day-events-list">
+  `;
+  
+  if (dayEvents.length === 0 && daySessions.length === 0) {
+    html += '<div class="day-empty">No events scheduled for this day</div>';
+  } else {
+    // Sort events by time if available
+    const sortedEvents = [...dayEvents].sort((a, b) => {
+      const aTime = parseEventDetails(a.raw_text).time || '23:59';
+      const bTime = parseEventDetails(b.raw_text).time || '23:59';
+      return aTime.localeCompare(bTime);
+    });
+    
+    sortedEvents.forEach(event => {
+      const details = parseEventDetails(event.raw_text);
+      const typeIcon = getEventTypeIcon(event.type || event.event_type);
+      const course = courseById[event.course_id] || {};
+      const courseName = course.code || course.name || '';
+      
+      html += `
+        <div class="day-event-card event-type-${event.type || event.event_type}" onclick="openEventEditModal(${event.id})">
+          <div class="day-event-header">
+            <span class="day-event-icon">${typeIcon}</span>
+            <span class="day-event-type">${event.type || event.event_type || 'event'}</span>
+            ${details.time ? `<span class="day-event-time">⏰ ${details.time}</span>` : ''}
+          </div>
+          <h3 class="day-event-title">${event.title}</h3>
+          ${courseName ? `<div class="day-event-course">📚 ${courseName}</div>` : ''}
+          ${details.location ? `<div class="day-event-location">📍 ${details.location}</div>` : ''}
+          ${event.weight ? `<div class="day-event-weight">⚖️ Weight: ${(event.weight * 100).toFixed(0)}%</div>` : ''}
+        </div>
+      `;
+    });
+    
+    // Render study sessions
+    daySessions.forEach(session => {
+      html += `
+        <div class="day-event-card session-card">
+          <div class="day-event-header">
+            <span class="day-event-icon">📚</span>
+            <span class="day-event-type">Study Session</span>
+            <span class="day-event-time">${session.duration_minutes || 0} min</span>
+          </div>
+          <h3 class="day-event-title">${session.topic || 'Study Session'}</h3>
+          ${session.mode ? `<div class="day-event-mode">Mode: ${session.mode}</div>` : ''}
+        </div>
+      `;
+    });
+  }
+  
+  html += '</div></div>';
+  container.innerHTML = html;
+  
+  // Update header
+  const headerEl = document.getElementById('calendar-month-year');
+  if (headerEl) {
+    headerEl.textContent = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  
+  console.log('[Calendar] Day view rendered with', dayEvents.length, 'events,', daySessions.length, 'sessions');
+}
 
 // Default color palette for courses
 const COURSE_COLOR_PALETTE = [
@@ -3544,6 +3772,18 @@ function renderCalendar() {
     return;
   }
 
+  // Check view type and route to appropriate renderer
+  const viewRange = document.getElementById('calendar-view-range')?.value || 'month';
+  
+  if (viewRange === 'week') {
+    renderWeekView();
+    return;
+  } else if (viewRange === 'day') {
+    renderDayView();
+    return;
+  }
+
+  // Continue with month view logic...
   // Ensure calendarData has required arrays
   if (!calendarData || !calendarData.events) {
     console.warn('[Calendar] calendarData missing, initializing empty');
@@ -3807,12 +4047,26 @@ const filterType = document.getElementById('calendar-filter-type');
 const viewRange = document.getElementById('calendar-view-range');
 
 if (btnPrev) btnPrev.addEventListener('click', () => {
-  currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+  const viewRange = document.getElementById('calendar-view-range')?.value || 'month';
+  if (viewRange === 'week') {
+    currentCalendarDate.setDate(currentCalendarDate.getDate() - 7);
+  } else if (viewRange === 'day') {
+    currentCalendarDate.setDate(currentCalendarDate.getDate() - 1);
+  } else {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+  }
   loadCalendar();
 });
 
 if (btnNext) btnNext.addEventListener('click', () => {
-  currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+  const viewRange = document.getElementById('calendar-view-range')?.value || 'month';
+  if (viewRange === 'week') {
+    currentCalendarDate.setDate(currentCalendarDate.getDate() + 7);
+  } else if (viewRange === 'day') {
+    currentCalendarDate.setDate(currentCalendarDate.getDate() + 1);
+  } else {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+  }
   loadCalendar();
 });
 
@@ -5173,3 +5427,140 @@ async function clearSyncTracking() {
     alert('Error: ' + err.message);
   }
 }
+
+
+// ============================================================================
+// GOOGLE CALENDAR INTEGRATION
+// ============================================================================
+
+/**
+ * Check Google Calendar authentication status
+ */
+async function checkGCalStatus() {
+  try {
+    const response = await fetch('/api/gcal/status');
+    const data = await response.json();
+    
+    const badge = document.getElementById('gcal-status-badge');
+    const authSection = document.getElementById('gcal-auth-section');
+    const syncSection = document.getElementById('gcal-sync-section');
+    
+    if (!badge || !authSection || !syncSection) return;
+    
+    if (data.connected) {
+      badge.textContent = 'Connected';
+      badge.style.background = 'var(--success)';
+      badge.style.color = 'white';
+      authSection.style.display = 'none';
+      syncSection.style.display = 'block';
+      document.getElementById('gcal-user-email').textContent = data.email || data.id;
+    } else {
+      badge.textContent = 'Not Connected';
+      badge.style.background = 'var(--surface-3)';
+      badge.style.color = 'var(--text-secondary)';
+      authSection.style.display = 'block';
+      syncSection.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('GCal status check failed:', error);
+  }
+}
+
+/**
+ * Start Google Calendar OAuth flow
+ */
+async function connectGoogleCalendar() {
+  try {
+    const response = await fetch('/api/gcal/auth/start');
+    const data = await response.json();
+    
+    if (data.error) {
+      alert('Error: ' + data.error);
+      return;
+    }
+    
+    // Open OAuth popup
+    const popup = window.open(
+      data.auth_url,
+      'gcal-auth',
+      'width=500,height=600,menubar=no,toolbar=no'
+    );
+    
+    // Listen for auth completion
+    window.addEventListener('message', function handler(event) {
+      if (event.data?.type === 'gcal-auth-success') {
+        window.removeEventListener('message', handler);
+        checkGCalStatus();
+        if (typeof loadCalendar === 'function') loadCalendar(); // Refresh calendar
+      }
+    });
+  } catch (error) {
+    console.error('GCal connect failed:', error);
+    alert('Failed to start Google Calendar connection');
+  }
+}
+
+/**
+ * Manually sync Google Calendar events
+ */
+async function syncGoogleCalendar() {
+  const statusEl = document.getElementById('gcal-sync-status');
+  const btn = document.getElementById('btn-gcal-sync');
+  
+  if (!btn || !statusEl) return;
+  
+  btn.disabled = true;
+  btn.textContent = 'Syncing...';
+  statusEl.textContent = '';
+  
+  try {
+    const response = await fetch('/api/gcal/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      statusEl.textContent = `✓ Imported ${data.imported} events, skipped ${data.skipped} duplicates`;
+      statusEl.style.color = 'var(--success)';
+      if (typeof loadCalendar === 'function') loadCalendar(); // Refresh calendar
+    } else {
+      statusEl.textContent = '✗ ' + (data.error || 'Sync failed');
+      statusEl.style.color = 'var(--error)';
+    }
+  } catch (error) {
+    statusEl.textContent = '✗ Sync failed: ' + error.message;
+    statusEl.style.color = 'var(--error)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sync Now';
+  }
+}
+
+/**
+ * Disconnect Google Calendar
+ */
+async function disconnectGoogleCalendar() {
+  if (!confirm('Disconnect Google Calendar? Synced events will remain in the database.')) {
+    return;
+  }
+  
+  try {
+    await fetch('/api/gcal/revoke', { method: 'POST' });
+    checkGCalStatus();
+  } catch (error) {
+    console.error('GCal disconnect failed:', error);
+  }
+}
+
+// Initialize GCal UI on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Check GCal status
+  checkGCalStatus();
+  
+  // Attach event listeners
+  document.getElementById('btn-gcal-connect')?.addEventListener('click', connectGoogleCalendar);
+  document.getElementById('btn-gcal-sync')?.addEventListener('click', syncGoogleCalendar);
+  document.getElementById('btn-gcal-disconnect')?.addEventListener('click', disconnectGoogleCalendar);
+});

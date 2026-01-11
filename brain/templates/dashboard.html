@@ -11,7 +11,7 @@
   <title>PT Study Brain v2.0.2</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/dashboard.css?v=2.7">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=3.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <script src="/static/js/dashboard.js?v=2.8" defer></script>
@@ -21,8 +21,24 @@
   <!-- Navigation -->
   <nav class="navbar">
     <a href="#overview" class="logo">
-      <div class="logo-icon">PT</div>
-      <span>PT Study Brain</span>
+      <svg class="logo-icon" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0EA5E9"/>
+            <stop offset="100%" style="stop-color:#14B8A6"/>
+          </linearGradient>
+        </defs>
+        <circle cx="18" cy="18" r="16" stroke="url(#logoGrad)" stroke-width="2" fill="none"/>
+        <path d="M12 18c0-3.3 2.7-6 6-6s6 2.7 6 6-2.7 6-6 6" stroke="url(#logoGrad)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <circle cx="18" cy="12" r="2" fill="url(#logoGrad)"/>
+        <circle cx="24" cy="18" r="2" fill="url(#logoGrad)"/>
+        <circle cx="18" cy="24" r="2" fill="url(#logoGrad)"/>
+        <circle cx="12" cy="18" r="2" fill="url(#logoGrad)"/>
+      </svg>
+      <div class="logo-text">
+        <span class="logo-title">PT Study Brain</span>
+        <span class="logo-subtitle">Medical Education</span>
+      </div>
     </a>
 
     <!-- Tabs in Navbar -->
@@ -52,16 +68,17 @@
       <style>
         #overview-wrapper {
           /* Force Dark Theme & Font locally */
-          --bg-deep: #0b0c10;
+          --bg-deep: #0A0E17;
           --card-bg: rgba(30, 35, 45, 0.6);
           --border-color: rgba(255, 255, 255, 0.1);
           --text-main: #f1f5f9;
           --text-muted: #94a3b8;
-          --accent-red: #EF4444;
+          --accent-primary: #0EA5E9;
+          --accent-teal: #14B8A6;
           
-          /* Red/black gradient for Glassmorphism */
-          background: radial-gradient(circle at 15% 50%, rgba(239, 68, 68, 0.15), transparent 25%),
-                      radial-gradient(circle at 85% 30%, rgba(100, 116, 139, 0.15), transparent 25%),
+          /* Medical blue/teal gradient for Glassmorphism */
+          background: radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.12), transparent 25%),
+                      radial-gradient(circle at 85% 30%, rgba(20, 184, 166, 0.10), transparent 25%),
                       var(--bg-deep);
           
           color: var(--text-main);
@@ -102,7 +119,8 @@
         }
         .d-card.mini:hover {
           transform: translateY(-4px);
-          border-color: var(--accent-red);
+          border-color: var(--accent-primary);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 20px rgba(14, 165, 233, 0.2);
         }
 
         /* Spanning Cards */
@@ -141,7 +159,7 @@
         <div class="dashboard-grid">
           
           <div class="d-card mini">
-            <div class="d-icon" style="color:#EF4444;">
+            <div class="d-icon" style="color:#0EA5E9;">
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </div>
             <div>
@@ -151,7 +169,7 @@
           </div>
 
           <div class="d-card mini">
-            <div class="d-icon" style="color:#64748B;">
+            <div class="d-icon" style="color:#14B8A6;">
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
             </div>
             <div>
@@ -567,6 +585,46 @@ Gaps: Need to review valve mechanics
               <button id="btn-add-planned-session" class="btn btn-primary" style="margin-top: 20px;">Add Planned Session</button>
             </div>
             <div id="plan-session-status" style="margin-top: 8px; font-size: 12px;"></div>
+          </div>
+
+          <!-- Google Calendar Sync Section -->
+          <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h4 style="margin: 0; font-size: 15px;">Google Calendar Sync</h4>
+              <span id="gcal-status-badge" class="badge" style="padding: 4px 10px; border-radius: 12px; font-size: 12px;">Checking...</span>
+            </div>
+
+            <!-- Not Connected State -->
+            <div id="gcal-auth-section" style="display: none;">
+              <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+                Connect your Google Calendar to import events automatically.
+              </p>
+              <button id="btn-gcal-connect" class="btn btn-primary" style="width: 100%;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px; vertical-align: middle;">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Connect Google Calendar
+              </button>
+            </div>
+
+            <!-- Connected State -->
+            <div id="gcal-sync-section" style="display: none;">
+              <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 8px;">
+                Connected as: <strong id="gcal-user-email" style="color: var(--text-primary);">—</strong>
+              </p>
+              <div style="display: flex; gap: 8px;">
+                <button id="btn-gcal-sync" class="btn btn-primary" style="flex: 1;">
+                  Sync Now
+                </button>
+                <button id="btn-gcal-disconnect" class="btn" style="padding: 8px 12px;" title="Disconnect">
+                  ✕
+                </button>
+              </div>
+              <p id="gcal-sync-status" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);"></p>
+            </div>
           </div>
         </div>
 
