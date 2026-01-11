@@ -1,77 +1,37 @@
 Goal (incl. success criteria):
-- Implement 5-part Dashboard Enhancement: (1) fix duplicate course, (2) improve extraction prompt, (3) add week/day calendar views, (4) Google Calendar sync with login button, (5) UI redesign with medical color scheme.
-- Success: All 5 features working, no regressions, tests pass.
+- Dashboard Enhancement Round 3: Fix 6 issues from user feedback + add new pixel art logo.
+- Success: All features working, no regressions, tests pass.
 
 Constraints/Assumptions:
 - Follow AGENTS.md; update this Continuity Ledger each turn and on state changes.
 - Use parallel agents where no dependencies exist.
-- GCal uses OAuth2 with login button flow.
-- Calendar views: Month (existing) + Week + Day (new).
+- Week 1 of semester starts January 5, 2025.
+- Color scheme: Red (#DC2626), Grey (#9CA3AF), Black (#0A0A0A), White.
 
 Key decisions:
-- Parallel execution: Agents 1, 2, 5 run simultaneously (no dependencies).
-- Agents 3, 4 run after Agent 1 completes (need schema migration).
-- Agent 6 runs last for integration testing.
-- Calendar: Implement week/day views as new options (not 2months/3months).
-- GCal: Login button triggers OAuth popup flow.
+- Replace custom calendar rendering with embedded Google Calendar iframe option.
+- Add week selector with 1/2/3/4/8/all weeks display options.
+- Export modal functions to window scope for inline onclick handlers.
+- Replace SVG logo with user's pixel art brain image.
 
 State:
   - Done:
-    - Research phase complete: identified file locations, line numbers, current state.
-    - **Agent 1 COMPLETE**: Database cleanup and schema migration.
-    - **Agent 2 COMPLETE**: Extraction Prompt Template Enhancement.
-    - **Agent 5 COMPLETE**: UI Redesign with Medical Color Palette:
-      - Updated CSS variables: New medical professional palette (sky blue #0EA5E9 + teal #14B8A6)
-      - Added typography scale: .text-xs through .text-3xl, h1-h4 classes
-      - Enhanced navbar: backdrop-filter blur, gradient bottom border on active tabs
-      - Updated tab-button: ::after pseudo-element with gradient underline animation
-      - Enhanced btn-primary: gradient background, glow effects, hover transform
-      - Improved stat-card: primary color border on hover, glow shadow
-      - New logo: SVG brain circuit icon with gradient, two-line text layout
-      - Updated overview wrapper: Blue/teal radial gradients instead of red
-      - Cache version bumped: dashboard.css?v=3.0
-    - **Agent 3 COMPLETE**: Calendar Week/Day Views Implementation:
-      - Added parseEventDetails() helper function for parsing time/location from raw_text
-      - Added getEventTypeIcon() helper function with extended event type icons
-      - Added renderWeekView() function for 7-day list layout
-      - Added renderDayView() function for single day detailed layout
-      - Updated renderCalendar() to route to week/day views based on dropdown selection
-      - Updated navigation buttons (prev/next) to handle week (+/- 7 days) and day (+/- 1 day) views
-      - Added Week View CSS: .week-view-container, .week-day-section, .week-event-item, etc.
-      - Added Day View CSS: .day-view-container, .day-event-card, .today-badge, etc.
-      - Extended EVENT_TYPE_ICONS with lab, immersion, checkoff, practical, async types
-    - **Agent 4 COMPLETE**: Google Calendar Integration with OAuth2:
-      - Replaced gcal.py stub with full implementation (~270 lines):
-        - OAuth2 flow: get_auth_url(), complete_oauth(), save_token(), load_token()
-        - Auth management: check_auth_status(), revoke_auth(), get_calendar_service()
-        - Calendar sync: fetch_calendar_events(), parse_gcal_event(), sync_to_database()
-        - Event type detection from title keywords (exam, quiz, lab, lecture, assignment)
-      - Added 5 API routes to routes.py:
-        - GET /api/gcal/status - Check auth status
-        - GET /api/gcal/auth/start - Start OAuth flow
-        - GET /api/gcal/oauth/callback - Handle OAuth callback
-        - POST /api/gcal/sync - Manual sync events to DB
-        - POST /api/gcal/revoke - Disconnect Google Calendar
-      - Added UI section to dashboard.html after Plan Spaced Repetition:
-        - Status badge (Connected/Not Connected)
-        - Connect button with Google icon (opens OAuth popup)
-        - Connected state: user email, Sync Now button, disconnect button
-      - Added 4 JS functions to dashboard.js (~130 lines):
-        - checkGCalStatus(), connectGoogleCalendar(), syncGoogleCalendar(), disconnectGoogleCalendar()
-        - DOMContentLoaded listener for button bindings
-      - Updated api_config.json with google_calendar section
-      - Added gcal_token.json to .gitignore
+    - **Agent 1 REMOVED**: Google Calendar embed JavaScript - broken functions removed (handleCalendarSourceChange, loadGCalEmbed, setGCalEmbedUrl, initGCalEmbed, updateQuickConnectStatus, checkGCalStatusWithQuickBar, initCalendarSourceToggle)
+    - **Agent 2 COMPLETE**: Calendar background CSS fixes - #calendar-grid scoped backgrounds, week/day view transparent containers
+    - **Agent 3 COMPLETE**: Week selector - SEMESTER_START constant, populateWeekSelector(), getWeekStartDate(), updateWeekRangeLabel(), event listeners
+    - **Agent 4 COMPLETE**: Edit button fixes - window.openEventEditModal and related functions exported to global scope, month view onclick handlers
+    - **Agent 5 PARTIAL**: Logo HTML updated to use img tag, images directory created
   - Now:
-    - All implementation agents (1-5) complete.
+    - Cleanup complete - removed broken GCal embed code, kept core OAuth functions (checkGCalStatus, connectGoogleCalendar, syncGoogleCalendar, syncGoogleTasks, disconnectGoogleCalendar)
   - Next:
-    - Launch Agent 6 for integration testing.
+    - Integration testing
+    - Verify all features work in browser
 
 Open questions (UNCONFIRMED if needed):
-- None - user confirmed all 4 decisions.
+- User needs to manually save logo image file
 
 Working set (files/ids/commands):
-- Agent 1: brain/db_setup.py, brain/data/pt_study.db
-- Agent 2: C:\Users\treyt\Downloads\School_schedule_JSON\EXTRACTION_PROMPT_TEMPLATE.md
-- Agent 3: brain/templates/dashboard.html, brain/static/js/dashboard.js, brain/static/css/dashboard.css
-- Agent 4: brain/dashboard/gcal.py, brain/dashboard/routes.py, brain/data/api_config.json
-- Agent 5: brain/static/css/dashboard.css, brain/templates/dashboard.html
+- brain/static/js/dashboard.js - All JavaScript changes applied
+- brain/static/css/dashboard.css - Background CSS fixes applied
+- brain/templates/dashboard.html - Calendar embed UI + week selector + logo HTML
+- brain/static/images/ - Directory created, awaiting logo-brain.png

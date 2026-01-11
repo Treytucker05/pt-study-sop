@@ -3206,3 +3206,23 @@ def gcal_revoke():
     from .gcal import revoke_auth
     revoke_auth()
     return jsonify({'success': True})
+
+
+@dashboard_bp.route('/api/gtasks/sync', methods=['POST'])
+def gtasks_sync():
+    """Manually sync Google Tasks to database"""
+    from .gcal import sync_tasks_to_database
+    data = request.get_json() or {}
+    course_id = data.get('course_id')
+    result = sync_tasks_to_database(course_id)
+    return jsonify(result)
+
+
+@dashboard_bp.route('/api/gtasks/lists', methods=['GET'])
+def gtasks_lists():
+    """Get all Google Task lists"""
+    from .gcal import fetch_task_lists
+    lists, error = fetch_task_lists()
+    if error:
+        return jsonify({'error': error}), 400
+    return jsonify({'task_lists': lists})

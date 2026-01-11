@@ -1,52 +1,52 @@
 :root {
-  /* Surface Colors - Refined Dark Mode */
-  --surface-0: #0A0E17;
-  --surface-1: #141821;
-  --surface-2: #1E2533;
-  --surface-3: #2A3142;
-  --surface-4: #364157;
+  /* Surface Colors - Dark Theme */
+  --surface-0: #0A0A0A;
+  --surface-1: #121212;
+  --surface-2: #1A1A1A;
+  --surface-3: #242424;
+  --surface-4: #2E2E2E;
 
-  /* Brand Colors - Medical Professional */
-  --primary: #0EA5E9;        /* Sky blue - trust, calm */
-  --primary-hover: #0284C7;
-  --primary-dark: #0369A1;
-  --primary-rgb: 14, 165, 233;
-  --primary-glow: 0 0 20px rgba(14, 165, 233, 0.3);
-  --accent: #14B8A6;         /* Teal - medical, professional */
-  --accent-hover: #0D9488;
-  --accent-rgb: 20, 184, 166;
-  --accent-glow: 0 0 20px rgba(20, 184, 166, 0.3);
+  /* Brand Colors - Red/Grey Theme */
+  --primary: #DC2626;        /* Red - bold, action */
+  --primary-hover: #B91C1C;
+  --primary-dark: #991B1B;
+  --primary-rgb: 220, 38, 38;
+  --primary-glow: 0 0 20px rgba(220, 38, 38, 0.3);
+  --accent: #9CA3AF;         /* Grey - neutral, professional */
+  --accent-hover: #6B7280;
+  --accent-rgb: 156, 163, 175;
+  --accent-glow: 0 0 20px rgba(156, 163, 175, 0.2);
 
   /* Semantic Colors */
-  --success: #10B981;
-  --success-rgb: 16, 185, 129;
+  --success: #22C55E;
+  --success-rgb: 34, 197, 94;
   --warning: #F59E0B;
   --error: #EF4444;
-  --info: #6366F1;
+  --info: #6B7280;
 
   /* Study Mode Colors */
-  --mode-core: #3B82F6;
+  --mode-core: #DC2626;
   --mode-sprint: #F59E0B;
-  --mode-drill: #8B5CF6;
+  --mode-drill: #9CA3AF;
 
   /* Text Colors */
-  --text-primary: #F8FAFC;
-  --text-secondary: #94A3B8;
-  --text-muted: #64748B;
-  --text-tertiary: #64748B;
+  --text-primary: #FFFFFF;
+  --text-secondary: #A1A1A1;
+  --text-muted: #6B6B6B;
+  --text-tertiary: #6B6B6B;
 
   /* Border */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.15);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.2);
 
   /* Effects */
-  --shadow-glow-primary: 0 0 20px rgba(14, 165, 233, 0.3);
-  --shadow-glow-accent: 0 0 20px rgba(20, 184, 166, 0.3);
+  --shadow-glow-primary: 0 0 20px rgba(220, 38, 38, 0.3);
+  --shadow-glow-accent: 0 0 20px rgba(156, 163, 175, 0.2);
   --transition-base: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Legacy color variables (for compatibility) */
-  --purple: #8B5CF6;
-  --cyan: #0EA5E9;
+  --purple: #9CA3AF;
+  --cyan: #DC2626;
 
   /* Spacing & Layout */
   --radius-md: 12px;
@@ -400,9 +400,35 @@
       color: var(--text-primary);
     }
 
+    /* Calendar Container - scoped backgrounds */
+    #calendar-grid {
+      background: transparent !important;
+    }
+
+    /* Month view: grid has its own background */
+    #calendar-grid:has(.calendar-weekday) {
+      background: var(--surface-1) !important;
+      padding: 12px;
+      border-radius: 12px;
+    }
+
+    /* Week/Day views: container is transparent, children have backgrounds */
+    #calendar-grid:has(.week-view-container),
+    #calendar-grid:has(.day-view-container) {
+      background: transparent !important;
+      padding: 0;
+    }
+
+    /* Custom calendar view wrapper */
+    #custom-calendar-view {
+      background: transparent;
+    }
+
     /* Calendar Styles */
     .calendar-day {
       min-height: 100px;
+      max-height: 140px;
+      overflow-y: auto;
       padding: 8px;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -417,8 +443,69 @@
     }
 
     .calendar-day.today {
-      border-color: var(--accent);
-      background: rgba(31, 111, 235, 0.1);
+      border-color: var(--primary);
+      background: rgba(220, 38, 38, 0.1);
+    }
+
+    /* Week View - Larger day cells */
+    .calendar-day.week-view-day {
+      min-height: 200px;
+      padding: 12px;
+    }
+
+    .calendar-day.week-view-day .calendar-day-number {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .calendar-day.week-view-day.is-today {
+      border-color: var(--primary);
+      background: rgba(220, 38, 38, 0.1);
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+    }
+
+    .week-event {
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      background: var(--surface-2);
+      border-left: 3px solid var(--primary);
+    }
+
+    .week-event .event-icon {
+      font-size: 14px;
+    }
+
+    .week-event .event-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 4px;
+    }
+
+    .week-event .event-time {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .week-event.session-event {
+      border-left-color: var(--success);
+    }
+
+    .week-event.event-exam,
+    .week-event.event-quiz {
+      border-left-color: var(--error);
+      background: rgba(220, 38, 38, 0.15);
+    }
+
+    .no-events {
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 20px 0;
     }
 
     .calendar-day-header {
@@ -1377,6 +1464,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  background: transparent;
 }
 
 .week-day-section {
@@ -1465,6 +1553,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: transparent;
 }
 
 .day-header {

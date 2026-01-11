@@ -26,8 +26,11 @@ TOKEN_PATH = DATA_DIR / "gcal_token.json"
 CONFIG_PATH = DATA_DIR / "api_config.json"
 DB_PATH = DATA_DIR / "pt_study.db"
 
-# OAuth scopes - read-only access to calendar
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+# OAuth scopes - read-only access to calendar and tasks
+SCOPES = [
+    'https://www.googleapis.com/auth/calendar.readonly',
+    'https://www.googleapis.com/auth/tasks.readonly'
+]
 
 
 def load_gcal_config():
@@ -296,3 +299,120 @@ def sync_to_database(course_id=None):
     conn.close()
     
     return {'success': True, 'imported': imported, 'skipped': skipped}
+
+
+# ============================================================================
+# GOOGLE TASKS INTEGRATION
+# ============================================================================
+
+def get_tasks_service():
+    """Get authenticated Google Tasks service"""
+    if not GOOGLE_API_AVAILABLE:
+        return None
+    
+    creds = load_token()
+    if not creds or not creds.valid:
+        return None
+    
+    return build('tasks', 'v1', credentials=creds)
+
+
+def fetch_task_lists():
+    """Fetch all task lists from Google Tasks"""
+    service = get_tasks_service()
+    if not service:
+        return [], "Not authenticated"
+    
+    try:
+        results = service.tasklists().list(maxResults=100).execute()
+        return results.get('items', []), None
+    except Exception as e:
+        return [], str(e)
+
+
+def fetch_tasks(tasklist_id='@default'):
+    """Fetch tasks from a specific task list"""
+    service = get_tasks_service()
+    if not service:
+        return [], "Not authenticated"
+    
+    try:
+        results = service.tasks().list(
+            tasklist=tasklist_id,
+            showCompleted=False,
+            showHidden=False,
+            maxResults=100
+        ).execute()
+        return results.get('items', []), None
+    except Exception as e:
+        return [], str(e)
+
+
+def parse_google_task(task):
+    """Parse Google Task to Brain format"""
+    due_date = None
+    if task.get('due'):
+        # Google Tasks due date is in RFC 3339 format
+        due_str = task.get('due', '')[:10]
+        due_date = due_str if due_str else None
+    
+    return {
+        'google_task_id': task.get('id'),
+        'title': task.get('title', 'Untitled Task'),
+        'date': due_date,
+        'type': 'assignment',  # Tasks are treated as assignments
+        'raw_text': f"Notes: {task.get('notes', 'No notes')}",
+        'status': 'completed' if task.get('status') == 'completed' else 'pending'
+    }
+
+
+def sync_tasks_to_database(course_id=None):
+    """Sync Google Tasks to database"""
+    # Get all task lists
+    task_lists, error = fetch_task_lists()
+    if error:
+        return {'success': False, 'error': error, 'imported': 0, 'skipped': 0}
+    
+    imported = 0
+    skipped = 0
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    for tasklist in task_lists:
+        tasks, error = fetch_tasks(tasklist.get('id', '@default'))
+        if error:
+            continue
+            
+        for task in tasks:
+            parsed = parse_google_task(task)
+            
+            # Check for duplicate (using title + date as we don't have google_task_id column)
+            cursor.execute(
+                "SELECT id FROM course_events WHERE title = ? AND date = ? AND google_event_id = ?",
+                (parsed['title'], parsed['date'], f"task_{parsed['google_task_id']}")
+            )
+            if cursor.fetchone():
+                skipped += 1
+                continue
+            
+            # Insert new task as event
+            cursor.execute("""
+                INSERT INTO course_events (course_id, type, title, date, raw_text, status, google_event_id, google_synced_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                course_id,
+                parsed['type'],
+                parsed['title'],
+                parsed['date'],
+                parsed['raw_text'],
+                parsed['status'],
+                f"task_{parsed['google_task_id']}",
+                datetime.now().isoformat()
+            ))
+            imported += 1
+    
+    conn.commit()
+    conn.close()
+    
+    return {'success': True, 'imported': imported, 'skipped': skipped, 'source': 'tasks'}

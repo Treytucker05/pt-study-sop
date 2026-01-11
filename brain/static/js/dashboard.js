@@ -373,6 +373,11 @@ let currentCalendarDate = new Date();
 let calendarData = { events: [], sessions: [], planned: [] };
 let syllabusEvents = [];
 let syllabusViewMode = 'calendar';
+
+// Week Selector State (for Syllabus List view)
+const SEMESTER_START = new Date('2026-01-05'); // Week 1 starts here (Spring 2026)
+let listStartWeek = 1;
+let listWeekCount = 3; // number or 'all'
 let currentScholarQuestions = [];
 let currentScholarAnsweredQuestions = [];
 let answeredQuestionsExpanded = false;
@@ -3219,7 +3224,7 @@ function getEventTypeIcon(type) {
 }
 
 /**
- * Render week view - 7-day list layout
+ * Render week view - 7-day grid layout (like month but one week, bigger boxes)
  */
 function renderWeekView() {
   const container = document.getElementById('calendar-grid');
@@ -3238,11 +3243,18 @@ function renderWeekView() {
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() - dayOfWeek);
 
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const nowStr = new Date().toISOString().split('T')[0];
   
-  let html = '<div class="week-view-container">';
+  // Week view uses same grid as month but only 1 row of days
+  let html = '';
   
+  // Weekday headers
+  days.forEach(day => {
+    html += `<div class="calendar-weekday-header">${day}</div>`;
+  });
+  
+  // Day cells (larger for week view)
   for (let i = 0; i < 7; i++) {
     const currentDay = new Date(weekStart);
     currentDay.setDate(weekStart.getDate() + i);
@@ -3254,46 +3266,45 @@ function renderWeekView() {
     const daySessions = calendarData.sessions.filter(s => s.date === dateStr);
     
     html += `
-      <div class="week-day-section ${isToday ? 'is-today' : ''}">
-        <div class="week-day-header">
-          <span class="week-day-name">${days[i]}</span>
-          <span class="week-day-date">${currentDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-        </div>
-        <div class="week-day-events">
+      <div class="calendar-day week-view-day ${isToday ? 'is-today' : ''}" data-date="${dateStr}">
+        <div class="calendar-day-number">${currentDay.getDate()}</div>
+        <div class="calendar-day-events">
     `;
     
+    // Render events (show more detail in week view)
+    dayEvents.forEach(event => {
+      const details = parseEventDetails(event.raw_text);
+      const typeIcon = getEventTypeIcon(event.type || event.event_type);
+      const eventType = event.type || event.event_type || 'other';
+      html += `
+        <div class="calendar-event week-event event-${eventType}" onclick="openEventEditModal(${event.id})" title="${event.title}">
+          <span class="event-icon">${typeIcon}</span>
+          <span class="event-title">${event.title}</span>
+          ${details.time ? `<div class="event-time">${details.time}</div>` : ''}
+        </div>
+      `;
+    });
+    
+    // Render study sessions
+    daySessions.forEach(session => {
+      html += `
+        <div class="calendar-event week-event session-event" title="${session.topic || 'Study Session'}">
+          <span class="event-icon">📚</span>
+          <span class="event-title">${session.topic || 'Study'}</span>
+          <div class="event-time">${session.duration_minutes || 0}m</div>
+        </div>
+      `;
+    });
+    
     if (dayEvents.length === 0 && daySessions.length === 0) {
-      html += '<div class="week-empty">No events</div>';
-    } else {
-      // Render events
-      dayEvents.forEach(event => {
-        const details = parseEventDetails(event.raw_text);
-        const typeIcon = getEventTypeIcon(event.type || event.event_type);
-        html += `
-          <div class="week-event-item event-type-${event.type || event.event_type}" onclick="openEventEditModal(${event.id})">
-            <span class="week-event-icon">${typeIcon}</span>
-            <span class="week-event-title">${event.title}</span>
-            ${details.time ? `<span class="week-event-time">${details.time}</span>` : ''}
-          </div>
-        `;
-      });
-      
-      // Render study sessions
-      daySessions.forEach(session => {
-        html += `
-          <div class="week-event-item session-item">
-            <span class="week-event-icon">📚</span>
-            <span class="week-event-title">${session.topic || 'Study Session'}</span>
-            <span class="week-event-time">${session.duration_minutes || 0}m</span>
-          </div>
-        `;
-      });
+      html += '<div class="no-events">—</div>';
     }
     
     html += '</div></div>';
   }
   
-  html += '</div>';
+  // Update container style for week view (taller cells)
+  container.style.gridTemplateColumns = 'repeat(7, 1fr)';
   container.innerHTML = html;
   
   // Update header
@@ -3570,12 +3581,42 @@ async function scheduleM6Reviews(eventId, eventTitle) {
 
 // ===== Event Edit Modal Functions =====
 function openEventEditModal(eventId) {
-  const ev = syllabusEvents.find(e => e.id === eventId);
+  console.log('[EditModal] Opening for event:', eventId, 'syllabusEvents count:', syllabusEvents.length);
+  let ev = syllabusEvents.find(e => String(e.id) === String(eventId));
+  
   if (!ev) {
-    console.error('Event not found:', eventId);
+    // If not found locally, try to fetch from API
+    console.log('[EditModal] Event not in local state, fetching from API...');
+    fetch(`/api/syllabus/events`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok && data.events) {
+          ev = data.events.find(e => String(e.id) === String(eventId));
+          if (ev) {
+            // Update local state
+            syllabusEvents = data.events.map(ev => {
+              const course = allCourses.find(c => c.id === ev.course_id) || {};
+              return { ...ev, course };
+            });
+            populateEditModal(ev, eventId);
+          } else {
+            alert('Event not found. Please refresh the page and try again.');
+          }
+        } else {
+          alert('Failed to load events. Please refresh the page and try again.');
+        }
+      })
+      .catch(error => {
+        console.error('[EditModal] Error fetching events:', error);
+        alert('Error loading event. Please refresh the page and try again.');
+      });
     return;
   }
   
+  populateEditModal(ev, eventId);
+}
+
+function populateEditModal(ev, eventId) {
   document.getElementById('edit-event-id').value = eventId;
   document.getElementById('edit-event-title').value = ev.title || '';
   document.getElementById('edit-event-type').value = ev.type || ev.event_type || 'other';
@@ -3658,6 +3699,14 @@ async function saveEventEdit(e) {
   }
 }
 
+// Export event edit modal functions and syllabus helper functions to window scope for inline onclick handlers
+window.openEventEditModal = openEventEditModal;
+window.closeEventEditModal = closeEventEditModal;
+window.saveEventEdit = saveEventEdit;
+window.toggleEventStatus = toggleEventStatus;
+window.scheduleM6Reviews = scheduleM6Reviews;
+window.toggleWeekSection = toggleWeekSection;
+
 // Attach form submit handler for event edit form
 document.addEventListener('DOMContentLoaded', () => {
   const editForm = document.getElementById('event-edit-form');
@@ -3666,6 +3715,84 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+/**
+ * Get semester week number (Week 1 = Jan 5, 2025)
+ */
+function getSemesterWeekNumber(dateStr) {
+  if (!dateStr) return 0;
+  const date = new Date(dateStr + 'T00:00:00');
+  const diffMs = date - SEMESTER_START;
+  const diffDays = Math.floor(diffMs / 86400000);
+  const weekNum = Math.floor(diffDays / 7) + 1;
+  return weekNum;
+}
+
+/**
+ * Get week start date for a given semester week number
+ */
+function getWeekStartDate(weekNum) {
+  const date = new Date(SEMESTER_START);
+  date.setDate(date.getDate() + (weekNum - 1) * 7);
+  return date;
+}
+
+/**
+ * Populate the start week dropdown (Week 1 - Week 20)
+ */
+function populateWeekSelector() {
+  const startWeekSelect = document.getElementById('list-start-week');
+  if (!startWeekSelect) return;
+  
+  let html = '';
+  for (let w = 1; w <= 20; w++) {
+    const weekStart = getWeekStartDate(w);
+    const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    html += `<option value="${w}">Week ${w} (${label})</option>`;
+  }
+  startWeekSelect.innerHTML = html;
+  startWeekSelect.value = listStartWeek;
+}
+
+/**
+ * Update the week range label display
+ */
+function updateWeekRangeLabel() {
+  const label = document.getElementById('list-week-range-label');
+  if (!label) return;
+  
+  if (listWeekCount === 'all') {
+    label.textContent = 'All Weeks';
+  } else if (listWeekCount === 1) {
+    label.textContent = `Week ${listStartWeek}`;
+  } else {
+    const endWeek = listStartWeek + listWeekCount - 1;
+    label.textContent = `Week ${listStartWeek} - ${endWeek}`;
+  }
+}
+
+/**
+ * Get week number and date range for a given date
+ */
+function getWeekInfo(dateStr) {
+  if (!dateStr) return { weekNum: 0, weekLabel: 'No Date', weekStart: null };
+  
+  const date = new Date(dateStr + 'T00:00:00');
+  const startOfYear = new Date(date.getFullYear(), 0, 1);
+  const dayOfYear = Math.floor((date - startOfYear) / 86400000);
+  const weekNum = Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
+  
+  // Get week start (Sunday) and end (Saturday)
+  const dayOfWeek = date.getDay();
+  const weekStart = new Date(date);
+  weekStart.setDate(date.getDate() - dayOfWeek);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  
+  const weekLabel = `Week ${weekNum}: ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  
+  return { weekNum, weekLabel, weekStart, weekEnd, year: date.getFullYear() };
+}
+
 function renderSyllabusList() {
   if (!syllabusListBody || !syllabusListEmpty) return;
 
@@ -3673,12 +3800,24 @@ function renderSyllabusList() {
   const eventType = syllabusListType ? syllabusListType.value : '';
   const search = syllabusListSearch ? syllabusListSearch.value.toLowerCase() : '';
 
+  // Update week range label
+  updateWeekRangeLabel();
+
   const filtered = syllabusEvents.filter(ev => {
     const matchesCourse = !courseId || String(ev.course_id) === String(courseId);
     const matchesType = !eventType || (ev.type || '').toLowerCase() === eventType;
     const haystack = `${ev.title || ''} ${ev.raw_text || ''}`.toLowerCase();
     const matchesSearch = !search || haystack.includes(search);
-    return matchesCourse && matchesType && matchesSearch;
+    
+    // Week filter
+    let matchesWeek = true;
+    if (listWeekCount !== 'all') {
+      const dateStr = ev.date || ev.due_date || '';
+      const eventWeek = getSemesterWeekNumber(dateStr);
+      matchesWeek = eventWeek >= listStartWeek && eventWeek < listStartWeek + listWeekCount;
+    }
+    
+    return matchesCourse && matchesType && matchesSearch && matchesWeek;
   }).sort((a, b) => {
     const ad = a.date || a.due_date || '';
     const bd = b.date || b.due_date || '';
@@ -3691,53 +3830,115 @@ function renderSyllabusList() {
     courseById[c.id] = { ...c, _idx: idx };
   });
 
-  syllabusListBody.innerHTML = filtered.map(ev => {
-    const dateDisplay = ev.date || ev.due_date || '';
-    const weightDisplay = ev.weight ? `${(ev.weight * 100).toFixed(0)}%` : '—';
-    const course = courseById[ev.course_id] || ev.course || {};
-    const courseName = course.code || course.name || '—';
-    const courseColor = getCourseColor(course, course._idx || 0);
-    const typeIcon = EVENT_TYPE_ICONS[(ev.type || '').toLowerCase()] || '📌';
-    const isCompleted = (ev.status || '').toLowerCase() === 'completed';
-    const statusClass = isCompleted ? 'completed' : 'pending';
-    const rowClass = isCompleted ? 'style="opacity: 0.6;"' : '';
-    const titleStyle = isCompleted ? 'text-decoration: line-through; color: var(--text-muted);' : '';
+  // Group events by week
+  const weekGroups = {};
+  filtered.forEach(ev => {
+    const dateStr = ev.date || ev.due_date || '';
+    const weekInfo = getWeekInfo(dateStr);
+    const weekKey = dateStr ? `${weekInfo.year}-W${String(weekInfo.weekNum).padStart(2, '0')}` : 'no-date';
     
-    return `
-      <tr ${rowClass}>
-        <td style="text-align: center;">
-          <input type="checkbox" 
-                 ${isCompleted ? 'checked' : ''} 
-                 onchange="toggleEventStatus(${ev.id}, '${ev.status || 'pending'}')"
-                 title="${isCompleted ? 'Mark as pending' : 'Mark as completed'}"
-                 style="width: 18px; height: 18px; cursor: pointer;">
-        </td>
-        <td>${dateDisplay || '—'}</td>
-        <td>
-          <span class="course-badge" style="background: ${courseColor}20; color: ${courseColor}; border: 1px solid ${courseColor}40; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">
-            ${courseName}
-          </span>
-        </td>
-        <td><span title="${ev.type || 'other'}">${typeIcon}</span> ${ev.type || ''}</td>
-        <td style="${titleStyle}">${ev.title || ''}</td>
-        <td style="text-align: center;">${weightDisplay}</td>
-        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${(ev.raw_text || '').replace(/"/g, '&quot;')}">${ev.raw_text || ''}</td>
-        <td style="white-space: nowrap;">
-          <button class="btn" style="font-size: 11px; padding: 4px 8px; margin-right: 4px;" 
-                  onclick="openEventEditModal(${ev.id})"
-                  title="Edit event">
-            ✏️
-          </button>
-          <button class="btn" style="font-size: 11px; padding: 4px 8px;" 
-                  onclick="scheduleM6Reviews(${ev.id}, '${(ev.title || '').replace(/'/g, "\\'")}')">
-            📅 M6
-          </button>
+    if (!weekGroups[weekKey]) {
+      weekGroups[weekKey] = {
+        label: weekInfo.weekLabel,
+        events: [],
+        weekNum: weekInfo.weekNum,
+        year: weekInfo.year
+      };
+    }
+    weekGroups[weekKey].events.push(ev);
+  });
+
+  // Sort week keys
+  const sortedWeekKeys = Object.keys(weekGroups).sort();
+
+  // Render grouped by week with collapsible sections
+  let html = '';
+  sortedWeekKeys.forEach((weekKey, idx) => {
+    const group = weekGroups[weekKey];
+    const isExpanded = idx < 3; // First 3 weeks expanded by default
+    
+    html += `
+      <tr class="week-header-row" onclick="toggleWeekSection(this)" style="cursor: pointer; background: var(--surface-2);">
+        <td colspan="8" style="padding: 12px 16px; font-weight: 600; font-size: 14px; border-bottom: 2px solid var(--primary);">
+          <span class="week-chevron" style="display: inline-block; transition: transform 0.2s; margin-right: 8px;">${isExpanded ? '▼' : '▶'}</span>
+          ${group.label}
+          <span style="font-weight: 400; color: var(--text-muted); margin-left: 12px;">(${group.events.length} events)</span>
         </td>
       </tr>
     `;
-  }).join('');
+    
+    group.events.forEach(ev => {
+      const dateDisplay = ev.date || ev.due_date || '';
+      const weightDisplay = ev.weight ? `${(ev.weight * 100).toFixed(0)}%` : '—';
+      const course = courseById[ev.course_id] || ev.course || {};
+      const courseName = course.code || course.name || '—';
+      const courseColor = getCourseColor(course, course._idx || 0);
+      const typeIcon = EVENT_TYPE_ICONS[(ev.type || '').toLowerCase()] || '📌';
+      const isCompleted = (ev.status || '').toLowerCase() === 'completed';
+      const rowClass = isCompleted ? 'style="opacity: 0.6;"' : '';
+      const titleStyle = isCompleted ? 'text-decoration: line-through; color: var(--text-muted);' : '';
+      const displayStyle = isExpanded ? '' : 'display: none;';
+      
+      html += `
+        <tr class="week-event-row" data-week="${weekKey}" ${rowClass} style="${displayStyle}">
+          <td style="text-align: center;">
+            <input type="checkbox" 
+                   ${isCompleted ? 'checked' : ''} 
+                   onchange="toggleEventStatus(${ev.id}, '${ev.status || 'pending'}')"
+                   title="${isCompleted ? 'Mark as pending' : 'Mark as completed'}"
+                   style="width: 18px; height: 18px; cursor: pointer;">
+          </td>
+          <td>${dateDisplay || '—'}</td>
+          <td>
+            <span class="course-badge" style="background: ${courseColor}20; color: ${courseColor}; border: 1px solid ${courseColor}40; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">
+              ${courseName}
+            </span>
+          </td>
+          <td><span title="${ev.type || 'other'}">${typeIcon}</span> ${ev.type || ''}</td>
+          <td style="${titleStyle}">${ev.title || ''}</td>
+          <td style="text-align: center;">${weightDisplay}</td>
+          <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${(ev.raw_text || '').replace(/"/g, '&quot;')}">${ev.raw_text || ''}</td>
+          <td style="white-space: nowrap;">
+            <button class="btn" style="font-size: 11px; padding: 4px 8px; margin-right: 4px;" 
+                    onclick="openEventEditModal(${ev.id})"
+                    title="Edit event">
+              ✏️
+            </button>
+            <button class="btn" style="font-size: 11px; padding: 4px 8px;" 
+                    onclick="scheduleM6Reviews(${ev.id}, '${(ev.title || '').replace(/'/g, "\\'")}')">
+              📅 M6
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+  });
 
+  syllabusListBody.innerHTML = html;
   syllabusListEmpty.style.display = filtered.length ? 'none' : 'block';
+}
+
+/**
+ * Toggle week section collapse/expand
+ */
+function toggleWeekSection(headerRow) {
+  const chevron = headerRow.querySelector('.week-chevron');
+  const nextRows = [];
+  let sibling = headerRow.nextElementSibling;
+  
+  while (sibling && !sibling.classList.contains('week-header-row')) {
+    if (sibling.classList.contains('week-event-row')) {
+      nextRows.push(sibling);
+    }
+    sibling = sibling.nextElementSibling;
+  }
+  
+  const isExpanded = chevron.textContent === '▼';
+  chevron.textContent = isExpanded ? '▶' : '▼';
+  
+  nextRows.forEach(row => {
+    row.style.display = isExpanded ? 'none' : '';
+  });
 }
 
 function setSyllabusView(mode) {
@@ -3856,7 +4057,7 @@ function renderCalendar() {
       const borderColor = isExamQuiz ? 'var(--error)' : color;
       const typeIcon = EVENT_TYPE_ICONS[(ev.event_type || '').toLowerCase()] || '';
       
-      html += `<div class="calendar-event" style="background: ${bgColor}; border-left: 3px solid ${borderColor};" title="${ev.course_code || ''}: ${ev.title}">${typeIcon} ${ev.title}</div>`;
+      html += `<div class="calendar-event" style="background: ${bgColor}; border-left: 3px solid ${borderColor}; cursor: pointer;" onclick="openEventEditModal(${ev.id})" title="${ev.course_code || ''}: ${ev.title}">${typeIcon} ${ev.title}</div>`;
     });
 
     // Render study sessions
@@ -4099,6 +4300,54 @@ if (syllabusListSearch) syllabusListSearch.addEventListener('input', () => {
   clearTimeout(window._syllabusSearchTimer);
   window._syllabusSearchTimer = setTimeout(renderSyllabusList, 150);
 });
+
+// Week selector controls
+const listStartWeekSelect = document.getElementById('list-start-week');
+const listWeekCountSelect = document.getElementById('list-week-count');
+const btnListPrevWeek = document.getElementById('btn-list-prev-week');
+const btnListNextWeek = document.getElementById('btn-list-next-week');
+
+if (listStartWeekSelect) {
+  listStartWeekSelect.addEventListener('change', () => {
+    listStartWeek = parseInt(listStartWeekSelect.value, 10);
+    renderSyllabusList();
+  });
+}
+
+if (listWeekCountSelect) {
+  listWeekCountSelect.addEventListener('change', () => {
+    const val = listWeekCountSelect.value;
+    listWeekCount = val === 'all' ? 'all' : parseInt(val, 10);
+    renderSyllabusList();
+  });
+}
+
+if (btnListPrevWeek) {
+  btnListPrevWeek.addEventListener('click', () => {
+    if (listStartWeek > 1) {
+      listStartWeek--;
+      if (listStartWeekSelect) listStartWeekSelect.value = listStartWeek;
+      renderSyllabusList();
+    }
+  });
+}
+
+if (btnListNextWeek) {
+  btnListNextWeek.addEventListener('click', () => {
+    if (listStartWeek < 20) {
+      listStartWeek++;
+      if (listStartWeekSelect) listStartWeekSelect.value = listStartWeek;
+      renderSyllabusList();
+    }
+  });
+}
+
+// Initialize week selector when switching to list view
+const origSetSyllabusView = typeof setSyllabusView === 'function' ? setSyllabusView : null;
+if (origSetSyllabusView) {
+  // Populate week selector on page load
+  populateWeekSelector();
+}
 
 // Load courses for filters with colors
 async function loadCoursesForCalendar() {
@@ -5534,7 +5783,7 @@ async function syncGoogleCalendar() {
     statusEl.style.color = 'var(--error)';
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Sync Now';
+    btn.textContent = '📅 Sync Calendar';
   }
 }
 
@@ -5554,13 +5803,50 @@ async function disconnectGoogleCalendar() {
   }
 }
 
+/**
+ * Manually sync Google Tasks
+ */
+async function syncGoogleTasks() {
+  const statusEl = document.getElementById('gcal-sync-status');
+  const btn = document.getElementById('btn-gtasks-sync');
+  
+  btn.disabled = true;
+  btn.textContent = 'Syncing Tasks...';
+  statusEl.textContent = '';
+  
+  try {
+    const response = await fetch('/api/gtasks/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      statusEl.textContent = `✓ Imported ${data.imported} tasks, skipped ${data.skipped} duplicates`;
+      statusEl.style.color = 'var(--success)';
+      loadCalendar(); // Refresh calendar
+    } else {
+      statusEl.textContent = '✗ ' + (data.error || 'Tasks sync failed');
+      statusEl.style.color = 'var(--error)';
+    }
+  } catch (error) {
+    statusEl.textContent = '✗ Tasks sync failed: ' + error.message;
+    statusEl.style.color = 'var(--error)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Sync Tasks';
+  }
+}
+
 // Initialize GCal UI on page load
 document.addEventListener('DOMContentLoaded', function() {
   // Check GCal status
   checkGCalStatus();
   
-  // Attach event listeners
+  // Attach event listeners for main GCal panel
   document.getElementById('btn-gcal-connect')?.addEventListener('click', connectGoogleCalendar);
   document.getElementById('btn-gcal-sync')?.addEventListener('click', syncGoogleCalendar);
+  document.getElementById('btn-gtasks-sync')?.addEventListener('click', syncGoogleTasks);
   document.getElementById('btn-gcal-disconnect')?.addEventListener('click', disconnectGoogleCalendar);
 });

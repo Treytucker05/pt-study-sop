@@ -1,5 +1,5 @@
 # Session Resume
-Generated: 2026-01-10 21:53
+Generated: 2026-01-11 00:48
 
 ## Readiness Score
 **52/100** (1 topics, 1 sessions in 30 days)
@@ -12,11 +12,11 @@ Generated: 2026-01-10 21:53
 - Common Core Learning Modules: n/a
 
 ## Recent Sessions
-- **Neuroscience Introduction – The Neuron** (2026-01-10, 0d ago)
+- **Neuroscience Introduction – The Neuron** (2026-01-10, 1d ago)
   - Mode: Core | Understanding: 4/5 | Confidence: 4/5
 
 ## Topic Coverage
-- **Neuroscience Introduction – The Neuron**: 1 sessions, last 0d ago [FRESH]
+- **Neuroscience Introduction – The Neuron**: 1 sessions, last 1d ago [FRESH]
   - Avg Understanding: 4.0/5 | Avg Confidence: 4.0/5
 
 ## Areas Needing Attention
