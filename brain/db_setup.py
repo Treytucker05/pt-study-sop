@@ -575,6 +575,19 @@ def init_database():
         except sqlite3.OperationalError:
             pass  # Column might already exist
 
+    # Add google_synced_at column if not exists (for GCal sync timestamp)
+    if 'google_synced_at' not in ce_columns:
+        try:
+            cursor.execute("ALTER TABLE course_events ADD COLUMN google_synced_at TEXT")
+            print("[INFO] Added 'google_synced_at' column to course_events table")
+        except sqlite3.OperationalError:
+            pass  # Column might already exist
+
+    # Create index for google_event_id lookups
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_course_events_google_id ON course_events(google_event_id)"
+    )
+
     # ------------------------------------------------------------------
     # Scholar Digests table (strategic analysis documents)
     # ------------------------------------------------------------------
