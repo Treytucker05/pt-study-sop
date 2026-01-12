@@ -456,6 +456,15 @@ function openTab(evt, tabName) {
       });
   }
 
+  // Update aria-current for top nav accessibility
+  document.querySelectorAll('.top-nav-item').forEach(item => {
+    if (item.getAttribute('data-tab') === tabName) {
+      item.setAttribute('aria-current', 'page');
+    } else {
+      item.removeAttribute('aria-current');
+    }
+  });
+
   // 5. Update Hash
   // window.location.hash = tabName; // Optional, maybe skip to avoid jumping
 

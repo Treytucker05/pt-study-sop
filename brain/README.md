@@ -1,4 +1,4 @@
-# PT Study Brain v9.1
+# PT Study Brain v9.2 (Dev)
 
 Session tracking and analytics system for the PT Study SOP.
 
@@ -9,12 +9,14 @@ Brain logs and WRAP activities map to the PEIRRO learning cycle (Prepare, Encode
 ## Quick Start
 
 ### Initialize Database
+
 ```powershell
 cd brain
 python db_setup.py
 ```
 
 ### After a Study Session
+
 ```powershell
 # 1. Create log file from template
 cp session_logs/TEMPLATE.md session_logs/2025-12-05_topic.md
@@ -26,12 +28,14 @@ python ingest_session.py session_logs/2025-12-05_topic.md
 ```
 
 ### Before Next Session
+
 ```powershell
 python generate_resume.py
 # Paste output into GPT for context
 ```
 
 ### Launch Dashboard
+
 ```powershell
 # Option 1: One-click launcher (recommended)
 ../Run_Brain_All.bat
@@ -52,6 +56,9 @@ brain/
 |-- ingest_session.py      -> Parse logs -> database
 |-- generate_resume.py     -> Generate session resume
 |-- README.md              -> This file
+|-- dashboard/             -> Web application package
+|-- static/                -> JS/CSS/Images
+|-- templates/             -> HTML templates
 |-- session_logs/          -> Your session logs
 |   `-- TEMPLATE.md        -> Copy this for each session
 |-- data/                  -> Database storage
@@ -65,16 +72,19 @@ brain/
 ## Session Log Fields (v9.1)
 
 ### Required
+
 - Date, Time, Duration
 - Study Mode (Core / Diagnostic Sprint / Teaching Sprint / Drill)
 - Main Topic
 
 ### Planning Phase
+
 - Target Exam/Block
 - Source-Lock (materials used)
 - Plan of Attack
 
 ### Execution Details
+
 - Frameworks Used
 - Gated Platter Triggered (Yes/No)
 - WRAP Phase Reached (Yes/No)
@@ -83,6 +93,7 @@ brain/
 - Source snippets used? (Y/N)
 
 ### Anatomy-Specific
+
 - Region Covered
 - Landmarks Mastered
 - Muscles Attached
@@ -92,22 +103,26 @@ brain/
 - Drawings Completed
 
 ### Ratings (1-5)
+
 - Understanding Level
 - Retention Confidence
 - System Performance
 - Calibration Check
 
 ### Anchors
+
 - Anchors Locked
 - Weak Anchors (for WRAP cards)
 
 ### Reflection
+
 - What Worked
 - What Needs Fixing
 - Gaps Identified
 - Notes/Insights
 
 ### Next Session
+
 - Topic, Focus, Materials Needed
 
 ---
@@ -135,6 +150,7 @@ The RAG (Retrieval-Augmented Generation) system (`rag_notes.py`) provides local-
 - **CLI**: Command-line interface for ingest and search operations
 
 Example usage:
+
 ```powershell
 # Ingest a note
 python rag_notes.py ingest session_logs/my_note.md --course-id 1 --topic-tags "anatomy,gluteal"
@@ -146,6 +162,7 @@ python rag_notes.py search "gluteal region landmarks" --limit 5
 ## Database Schema (v9.1 + planning/RAG extensions)
 
 Core session logging uses the v9.1 `sessions` table. Key fields include:
+
 - `target_exam` - Exam/block being studied for
 - `source_lock` - Materials used in session
 - `plan_of_attack` - Session plan
@@ -177,23 +194,27 @@ Brain remains the **single source of truth** for sessions, planning, and RAG doc
 The web dashboard (`dashboard_web.py`) provides a modern UI for managing your study system:
 
 ### Core Features
+
 - **Stats Dashboard**: View session metrics, time tracking, scores, and analytics
 - **Session Management**: Upload session logs via drag-and-drop or quick entry form
 - **Resume Generation**: Generate and download AI resume for GPT context
 - **Analytics**: Topic coverage, weak/strong areas, study patterns
 
 ### Syllabus & Planning
-- **Syllabus Intake**: 
+
+- **Syllabus Intake**:
   - Single event form for quick entry of courses and events
   - Bulk JSON import: Use ChatGPT prompt to format syllabus, then paste JSON
+  - **Blackboard Scraper**: Run `python scripts/scrape_blackboard.py` to sync courses, events, and content files directly from Blackboard.
 - **Duplicate guard**: Bulk and single imports skip duplicate events for a course; use `python dedupe_course_events.py --apply` to clean existing duplicates if a syllabus was imported twice.
-- **Calendar View**: 
+- **Calendar View**:
   - Month-view calendar showing course events, study sessions, and planned spaced repetition
   - Filters by course, event type, and date range
   - Plan spaced repetition sessions directly from calendar
 - **Course Events**: Track lectures, quizzes, exams, assignments with dates, weights, and coverage analytics
 
 ### Tutor (Codex-Powered)
+
 - **Tutor Tab**: Chat UI connected to Codex CLI via RAG
 - **Mode-Specific Behavior**: Core (teaching), Sprint (testing), Drill (deep practice)
 - **RAG Search**: Searches ingested SOP knowledge files with source-lock filtering
@@ -202,6 +223,7 @@ The web dashboard (`dashboard_web.py`) provides a modern UI for managing your st
 - **Card Drafts**: Create flashcard drafts from Tutor interactions
 
 ### Scholar Integration
+
 - View Scholar status, toggle safe mode, run orchestrator
 - Answer Scholar's design questions
 - Track coverage progress
@@ -244,14 +266,16 @@ The dashboard exposes REST API endpoints:
 | `python ingest_knowledge.py` | Ingest SOP knowledge files into RAG |
 | `python tutor_engine.py <question>` | Test Tutor engine from CLI |
 | `../Run_Brain_Sync.bat` | One-click daily sync: move stray logs + ingest all + regenerate resume |
+| `python scripts/scrape_blackboard.py` | Sync courses/events/files from Blackboard |
 | `python dedupe_course_events.py [--course-id N] --apply` | Remove duplicate syllabus events (dry-run without --apply) |
-| `../Run_Brain_All.bat` | One-click: sync + resume + start dashboard and open browser (http://127.0.0.1:5000) |
+| `../Run_Brain_All.bat` | One-click: sync + resume + start dashboard and open browser (<http://127.0.0.1:5000>) |
 
 ---
 
 ## Migration from v8
 
 If you have existing v8 data, run:
+
 ```powershell
 python db_setup.py
 # Answer 'y' when prompted to migrate

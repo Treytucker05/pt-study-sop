@@ -14,6 +14,20 @@ The Scholar is a dedicated meta-system designed to audit, analyze, and optimize 
 - **Source:** Allowlisted Tutor modules (`sop/gpt-knowledge/*.md`).
 *Note: All paths must be explicitly listed in [audit_manifest.json](inputs/audit_manifest.json).*
 
+## Running the Scholar
+
+Use the included launcher script:
+
+```powershell
+scripts/run_scholar.bat
+```
+
+This interactive tool provides a menu to:
+
+1. **Interactive Audit**: Start a conversational session with the Scholar to audit a log or module.
+2. **Execute Orchestrator**: Run the autonomous orchestrator loop (safe mode or full).
+3. **Module Audit**: specialized flow for auditing SOP modules.
+
 ## Standard Workflows
 
 1. **[Audit a Session Log](workflows/audit_session.md):** Analyze telemetry for learning effectiveness and friction.

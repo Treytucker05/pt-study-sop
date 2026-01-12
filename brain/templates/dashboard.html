@@ -12,6 +12,7 @@
   <title>PT Study Brain v3.0</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="/static/css/dashboard.css?v=4.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -34,43 +35,43 @@
         <a href="#overview" class="top-nav-item active" onclick="openTab(event, 'overview')" data-tab="overview"
           aria-current="page">
           <div class="terminal-badge">
-            <img src="/static/images/icons/retro-nav-overview.png" alt="" class="nav-icon-img nav-icon-img--top" />
+            <img src="/static/images/icons/retro-nav-overview-clean.png" alt="" class="nav-icon-img nav-icon-img--top" />
             <span class="terminal-badge-label">VIEW</span>
           </div>
         </a>
         <a href="#sessions" class="top-nav-item" onclick="openTab(event, 'sessions')" data-tab="sessions">
           <div class="terminal-badge">
-            <img src="/static/images/icons/retro-nav-brain.png" alt="" class="nav-icon-img nav-icon-img--top" />
+            <img src="/static/images/icons/retro-nav-brain-clean.png" alt="" class="nav-icon-img nav-icon-img--top" />
             <span class="terminal-badge-label">BRAIN</span>
           </div>
         </a>
         <a href="#syllabus" class="top-nav-item" onclick="openTab(event, 'syllabus')" data-tab="syllabus">
           <div class="terminal-badge">
-            <img src="/static/images/icons/retro-nav-syllabus.png" alt="" class="nav-icon-img nav-icon-img--top" />
+            <img src="/static/images/icons/retro-nav-syllabus-clean.png" alt="" class="nav-icon-img nav-icon-img--top" />
             <span class="terminal-badge-label">LIST</span>
           </div>
         </a>
         <a href="#scholar" class="top-nav-item" onclick="openTab(event, 'scholar')" data-tab="scholar">
           <div class="terminal-badge">
-            <img src="/static/images/icons/retro-nav-scholar.png" alt="" class="nav-icon-img nav-icon-img--top" />
+            <img src="/static/images/icons/retro-nav-scholar-clean.png" alt="" class="nav-icon-img nav-icon-img--top" />
             <span class="terminal-badge-label">SCHOLAR</span>
           </div>
         </a>
         <a href="#tutor" class="top-nav-item" onclick="openTab(event, 'tutor')" data-tab="tutor">
           <div class="terminal-badge">
-            <img src="/static/images/icons/retro-nav-tutor.png" alt="" class="nav-icon-img nav-icon-img--top" />
+            <img src="/static/images/icons/retro-nav-tutor-clean.png" alt="" class="nav-icon-img nav-icon-img--top" />
             <span class="terminal-badge-label">TUTOR</span>
           </div>
         </a>
         <a href="#brain" class="top-nav-item" onclick="openTab(event, 'brain')" data-tab="brain">
           <div class="terminal-badge">
-            <img src="/static/images/icons/retro-nav-database.png" alt="" class="nav-icon-img nav-icon-img--top" />
+            <img src="/static/images/icons/retro-nav-database-clean.png" alt="" class="nav-icon-img nav-icon-img--top" />
             <span class="terminal-badge-label">DATA</span>
           </div>
         </a>
         <a href="#sync" class="top-nav-item" onclick="openTab(event, 'sync')" data-tab="sync">
           <div class="terminal-badge">
-            <img src="/static/images/icons/retro-nav-sync.png" alt="" class="nav-icon-img nav-icon-img--top" />
+            <img src="/static/images/icons/retro-nav-sync-clean.png" alt="" class="nav-icon-img nav-icon-img--top" />
             <span class="terminal-badge-label">SYNC</span>
           </div>
           <span id="sync-count-badge" class="badge-count" style="display: none;">0</span>
@@ -102,34 +103,34 @@
     <nav class="mobile-nav-panel" id="mobile-nav-panel" role="navigation" aria-label="Mobile navigation">
       <a href="#overview" class="mobile-nav-item active" onclick="openTab(event, 'overview'); closeMobileNav();"
         data-tab="overview">
-        <img src="/static/images/icons/retro-nav-overview.png" alt="Overview" class="nav-icon-img">
+        <img src="/static/images/icons/retro-nav-overview-clean.png" alt="Overview" class="nav-icon-img">
         <span class="nav-text">Overview</span>
       </a>
       <a href="#sessions" class="mobile-nav-item" onclick="openTab(event, 'sessions'); closeMobileNav();"
         data-tab="sessions">
-        <img src="/static/images/icons/retro-nav-brain.png" alt="Brain" class="nav-icon-img">
+        <img src="/static/images/icons/retro-nav-brain-clean.png" alt="Brain" class="nav-icon-img">
         <span class="nav-text">Brain</span>
       </a>
       <a href="#syllabus" class="mobile-nav-item" onclick="openTab(event, 'syllabus'); closeMobileNav();"
         data-tab="syllabus">
-        <img src="/static/images/icons/retro-nav-syllabus.png" alt="Syllabus" class="nav-icon-img">
+        <img src="/static/images/icons/retro-nav-syllabus-clean.png" alt="Syllabus" class="nav-icon-img">
         <span class="nav-text">Syllabus</span>
       </a>
       <a href="#scholar" class="mobile-nav-item" onclick="openTab(event, 'scholar'); closeMobileNav();"
         data-tab="scholar">
-        <img src="/static/images/icons/retro-nav-scholar.png" alt="Scholar" class="nav-icon-img">
+        <img src="/static/images/icons/retro-nav-scholar-clean.png" alt="Scholar" class="nav-icon-img">
         <span class="nav-text">Scholar</span>
       </a>
       <a href="#tutor" class="mobile-nav-item" onclick="openTab(event, 'tutor'); closeMobileNav();" data-tab="tutor">
-        <img src="/static/images/icons/retro-nav-tutor.png" alt="Tutor" class="nav-icon-img">
+        <img src="/static/images/icons/retro-nav-tutor-clean.png" alt="Tutor" class="nav-icon-img">
         <span class="nav-text">Tutor</span>
       </a>
       <a href="#brain" class="mobile-nav-item" onclick="openTab(event, 'brain'); closeMobileNav();" data-tab="brain">
-        <img src="/static/images/icons/retro-nav-database.png" alt="Database" class="nav-icon-img">
+        <img src="/static/images/icons/retro-nav-database-clean.png" alt="Database" class="nav-icon-img">
         <span class="nav-text">Database</span>
       </a>
       <a href="#sync" class="mobile-nav-item" onclick="openTab(event, 'sync'); closeMobileNav();" data-tab="sync">
-        <img src="/static/images/icons/retro-nav-sync.png" alt="Sync" class="nav-icon-img">
+        <img src="/static/images/icons/retro-nav-sync-clean.png" alt="Sync" class="nav-icon-img">
         <span class="nav-text">Sync Inbox</span>
       </a>
     </nav>
@@ -138,25 +139,25 @@
     <aside class="sidebar" id="sidebar" aria-hidden="true" style="display: none !important;">
       <nav class="sidebar-nav">
         <a href="#overview" class="nav-item active" onclick="openTab(event, 'overview')" data-tab="overview">
-          <img src="/static/images/icons/retro-nav-overview.png" alt="Overview" class="nav-icon-img">
+          <img src="/static/images/icons/retro-nav-overview-clean.png" alt="Overview" class="nav-icon-img">
         </a>
         <a href="#sessions" class="nav-item" onclick="openTab(event, 'sessions')" data-tab="sessions">
-          <img src="/static/images/icons/retro-nav-brain.png" alt="Brain" class="nav-icon-img">
+          <img src="/static/images/icons/retro-nav-brain-clean.png" alt="Brain" class="nav-icon-img">
         </a>
         <a href="#syllabus" class="nav-item" onclick="openTab(event, 'syllabus')" data-tab="syllabus">
-          <img src="/static/images/icons/retro-nav-syllabus.png" alt="Syllabus" class="nav-icon-img">
+          <img src="/static/images/icons/retro-nav-syllabus-clean.png" alt="Syllabus" class="nav-icon-img">
         </a>
         <a href="#scholar" class="nav-item" onclick="openTab(event, 'scholar')" data-tab="scholar">
-          <img src="/static/images/icons/retro-nav-scholar.png" alt="Scholar" class="nav-icon-img">
+          <img src="/static/images/icons/retro-nav-scholar-clean.png" alt="Scholar" class="nav-icon-img">
         </a>
         <a href="#tutor" class="nav-item" onclick="openTab(event, 'tutor')" data-tab="tutor">
-          <img src="/static/images/icons/retro-nav-tutor.png" alt="Tutor" class="nav-icon-img">
+          <img src="/static/images/icons/retro-nav-tutor-clean.png" alt="Tutor" class="nav-icon-img">
         </a>
         <a href="#brain" class="nav-item" onclick="openTab(event, 'brain')" data-tab="brain">
-          <img src="/static/images/icons/retro-nav-database.png" alt="Database" class="nav-icon-img">
+          <img src="/static/images/icons/retro-nav-database-clean.png" alt="Database" class="nav-icon-img">
         </a>
         <a href="#sync" class="nav-item" onclick="openTab(event, 'sync')" data-tab="sync">
-          <img src="/static/images/icons/retro-nav-sync.png" alt="Sync" class="nav-icon-img">
+          <img src="/static/images/icons/retro-nav-sync-clean.png" alt="Sync" class="nav-icon-img">
         </a>
       </nav>
     </aside>
@@ -369,7 +370,7 @@
               <summary>
                 <div class="summary-content">
                   <div class="terminal-badge wide">
-                    <img src="/static/images/icons/retro-header-insights.png" alt="" class="section-icon-img" />
+                    <img src="/static/images/icons/retro-header-insights-clean.png" alt="" class="section-icon-img" />
                     <span class="terminal-badge-label">SCHOLAR INSIGHTS</span>
                   </div>
                 </div>
@@ -429,7 +430,7 @@
               <summary>
                 <div class="summary-content">
                   <div class="terminal-badge wide">
-                    <img src="/static/images/icons/retro-header-patterns.png" alt="" class="section-icon-img" />
+                    <img src="/static/images/icons/retro-header-patterns-clean.png" alt="" class="section-icon-img" />
                     <span class="terminal-badge-label">PATTERNS & INSIGHTS</span>
                   </div>
                 </div>
@@ -471,7 +472,7 @@
               <summary>
                 <div class="summary-content">
                   <div class="terminal-badge wide">
-                    <img src="/static/images/icons/retro-header-trends.png" alt="" class="section-icon-img" />
+                    <img src="/static/images/icons/retro-header-trends-clean.png" alt="" class="section-icon-img" />
                     <span class="terminal-badge-label">STUDY TRENDS</span>
                   </div>
                 </div>
@@ -514,7 +515,7 @@
               <summary>
                 <div class="summary-content">
                   <div class="terminal-badge wide">
-                    <img src="/static/images/icons/retro-header-upload.png" alt="" class="section-icon-img" />
+                    <img src="/static/images/icons/retro-header-upload-clean.png" alt="" class="section-icon-img" />
                     <span class="terminal-badge-label">UPLOAD LOG</span>
                   </div>
                 </div>
@@ -561,7 +562,7 @@
             <summary>
               <div class="summary-content">
                 <div class="terminal-badge wide">
-                  <img src="/static/images/icons/retro-header-fast.png" alt="" class="section-icon-img" />
+                  <img src="/static/images/icons/retro-header-fast-clean.png" alt="" class="section-icon-img" />
                   <span class="terminal-badge-label">FAST ENTRY</span>
                 </div>
               </div>
@@ -627,7 +628,7 @@ Gaps: Need to review valve mechanics
             <summary>
               <div class="summary-content">
                 <div class="terminal-badge wide">
-                  <img src="/static/images/icons/retro-header-sessions.png" alt="" class="section-icon-img" />
+                  <img src="/static/images/icons/retro-header-sessions-clean.png" alt="" class="section-icon-img" />
                   <span class="terminal-badge-label">LATEST SESSIONS</span>
                 </div>
               </div>
@@ -668,7 +669,7 @@ Gaps: Need to review valve mechanics
             <summary>
               <div class="summary-content">
                 <div class="terminal-badge wide">
-                  <img src="/static/images/icons/retro-header-quick.png" alt="" class="section-icon-img" />
+                  <img src="/static/images/icons/retro-header-quick-clean.png" alt="" class="section-icon-img" />
                   <span class="terminal-badge-label">QUICK ENTRY</span>
                 </div>
               </div>
@@ -741,7 +742,7 @@ Gaps: Need to review valve mechanics
             <summary>
               <div class="summary-content">
                 <div class="terminal-badge wide">
-                  <img src="/static/images/icons/retro-header-resume.png" alt="" class="section-icon-img" />
+                  <img src="/static/images/icons/retro-header-resume-clean.png" alt="" class="section-icon-img" />
                   <span class="terminal-badge-label">SESSION RESUME</span>
                 </div>
               </div>
@@ -778,7 +779,7 @@ Gaps: Need to review valve mechanics
             <summary>
               <div class="summary-content">
                 <div class="terminal-badge wide">
-                  <img src="/static/images/icons/retro-header-calendar.png" alt="" class="section-icon-img" />
+                  <img src="/static/images/icons/retro-header-calendar-clean.png" alt="" class="section-icon-img" />
                   <span class="terminal-badge-label">STUDY CALENDAR</span>
                 </div>
               </div>

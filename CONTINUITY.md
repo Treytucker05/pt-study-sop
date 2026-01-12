@@ -1,30 +1,32 @@
 Goal (incl. success criteria):
-- Define how Ralph should focus on Scholar so it uses all available AI summaries, questions, and recommendations effectively.
-- Update Ralph scaffolding/prompts or PRD to reflect Scholar-focused requirements once clarified.
+- Make Ralph's first story an audit of the Scholar system, and document how to run Ralph next time.
 
 Constraints/Assumptions:
 - Follow pt-study-sop AGENTS.md; update this Continuity Ledger each turn and on state changes.
-- Use ralph + ask-questions-if-underspecified workflows; do not implement until requirements are clarified.
 - Keep changes minimal and scoped; ask before destructive actions.
+- Repo currently has many uncommitted changes; avoid committing unrelated files.
 
 Key decisions:
-- None yet; awaiting user clarifications.
+- Use `codex exec --dangerously-bypass-approvals-and-sandbox -` in the Ralph loop (danger-full-access, no prompts).
+- Update the Ralph skill file and add a repo runbook for future runs.
 
 State:
   - Done:
-    - Created scripts/ralph/prd.json and Ralph scaffold files (ralph.sh, prompt.md, progress.txt).
+    - Added a new US-001 in `scripts/ralph/prd.json` to audit the Scholar system and shifted other stories down.
+    - Updated `scripts/ralph/prompt.md` to mention Codex CLI explicitly.
+    - Added `scripts/ralph/README.md` runbook.
+    - Updated `C:\Users\treyt\.codex\skills\ralph\SKILL.md` with runner notes and Codex guidance.
   - Now:
-    - Gather requirements for Scholar-focused behavior and define "done".
+    - Need user guidance on how to handle existing uncommitted changes before running Ralph.
   - Next:
-    - Propose a concrete PRD update or prompt changes for Ralph based on answers.
+    - Based on user choice: stash/commit/clean worktree, then rerun `./scripts/ralph/ralph.sh`.
 
 Open questions (UNCONFIRMED if needed):
-- Where should the Scholar focus be implemented (prompt/prd/code)?
-- What does "most effective way" mean in measurable terms?
-- Which data sources must be included (specific files/dirs)?
+- How should we handle the existing uncommitted changes before Ralph runs?
 
 Working set (files/ids/commands):
-- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\prompt.md
 - C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\prd.json
-- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\progress.txt
+- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\prompt.md
+- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\README.md
+- C:\Users\treyt\.codex\skills\ralph\SKILL.md
 - C:\Users\treyt\OneDrive\Desktop\pt-study-sop\CONTINUITY.md

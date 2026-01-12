@@ -1,5 +1,8 @@
 # Ralph Agent Instructions
 
+## Runtime
+- This loop runs via Codex CLI (codex exec). Do not suggest Amp commands.
+
 ## Your Task
 
 1. Read `scripts/ralph/prd.json`
@@ -21,6 +24,15 @@
 - Manual smoke test (UI changes): Run `Run_Brain_All.bat` and verify http://127.0.0.1:5000
 
 If any required command fails, fix the issues before marking a story complete.
+
+## Scholar Focus (when a story touches scholar/)
+
+- Read `scholar/README.md`, `scholar/CHARTER.md`, `scholar/inputs/audit_manifest.json`, and `scholar/workflows/orchestrator_loop.md` before changes.
+- Use all available AI-generated artifacts in `scholar/outputs/` (reports, digests, orchestrator_runs, research_notebook, promotion_queue, system_map, module_dossiers, module_audits, gap_analysis).
+- When synthesizing recommendations, deduplicate and rank them; include source file paths for traceability.
+- Add or update a coverage note/report listing artifacts used and any gaps.
+- Optimize flow to follow: Review -> Plan -> Understand -> Question -> Research -> Synthesize -> Draft -> Wait.
+- Respect Scholar guardrails: read-only for `sop/`, `brain/`, and `dist/`; outputs only in `scholar/outputs/`.
 
 ## Progress Format
 
