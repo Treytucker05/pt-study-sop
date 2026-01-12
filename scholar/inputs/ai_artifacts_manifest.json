@@ -46,7 +46,11 @@
     },
     {
       "lane": "proposals",
-      "patterns": ["scholar/outputs/proposals/*.md"]
+      "patterns": [
+        "scholar/outputs/proposals/*.md",
+        "scholar/outputs/proposals/approved/*.md",
+        "scholar/outputs/proposals/rejected/*.md"
+      ]
     },
     {
       "lane": "orchestrator_runs",

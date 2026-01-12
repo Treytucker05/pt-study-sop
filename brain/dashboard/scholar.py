@@ -466,6 +466,11 @@ def build_scholar_stats():
         "questions": [],
         "answered_questions": [],
         "proposals": [],
+        "proposal_counts": {
+            "pending": 0,
+            "approved": 0,
+            "rejected": 0,
+        },
         "coverage": {
             "complete": 0,
             "in_progress": 0,
@@ -695,9 +700,11 @@ def build_scholar_stats():
     
     # Scan promotion_queue for proposals
     promotion_queue = scholar_outputs / "promotion_queue"
+    pending_count = 0
     if promotion_queue.exists():
         try:
             proposal_files = list(promotion_queue.glob("*.md"))
+            pending_count = len(proposal_files)
             for pf in proposal_files:
                 try:
                     name = pf.stem
@@ -734,6 +741,18 @@ def build_scholar_stats():
                     continue
         except Exception:
             pass
+
+    # Track approved/rejected proposals (counts only)
+    proposals_root = scholar_outputs / "proposals"
+    approved_dir = proposals_root / "approved"
+    rejected_dir = proposals_root / "rejected"
+    approved_count = len(list(approved_dir.glob("*.md"))) if approved_dir.exists() else 0
+    rejected_count = len(list(rejected_dir.glob("*.md"))) if rejected_dir.exists() else 0
+    result["proposal_counts"] = {
+        "pending": pending_count,
+        "approved": approved_count,
+        "rejected": rejected_count,
+    }
     
     # Scan research_notebook for active research topics
     research_notebook = scholar_outputs / "research_notebook"
@@ -1695,6 +1714,13 @@ def generate_weekly_digest(days: int = 7) -> dict:
                 proposals.append({"name": name, "summary": content[:500]})
             except:
                 pass
+
+    # --- 7b. Approved/Rejected proposals (recent) ---
+    proposals_root = scholar_outputs / "proposals"
+    approved_dir = proposals_root / "approved"
+    rejected_dir = proposals_root / "rejected"
+    approved_recent = get_recent_files(approved_dir, "*.md")
+    rejected_recent = get_recent_files(rejected_dir, "*.md")
     
     # --- Build context for AI ---
     context_parts = []
@@ -1711,6 +1737,14 @@ def generate_weekly_digest(days: int = 7) -> dict:
         for p in proposals[:5]:
             context_parts.append(f"- {p['name']}")
             context_parts.append(f"  {p['summary'][:200]}...")
+    if approved_recent:
+        context_parts.append(f"\n## Approved Proposals (recent: {len(approved_recent)}):")
+        for pf in approved_recent[:5]:
+            context_parts.append(f"- {pf.stem.replace('_', ' ').title()}")
+    if rejected_recent:
+        context_parts.append(f"\n## Rejected Proposals (recent: {len(rejected_recent)}):")
+        for pf in rejected_recent[:5]:
+            context_parts.append(f"- {pf.stem.replace('_', ' ').title()}")
     
     if improvement_candidates:
         context_parts.append(f"\n## Improvement Candidates ({len(improvement_candidates)}):")
@@ -1816,6 +1850,8 @@ Based on this data, provide:
     digest_parts.append("## 📊 Raw Data Summary")
     digest_parts.append(f"- **Orchestrator Runs:** {len(runs_info)}")
     digest_parts.append(f"- **Pending Proposals:** {len(proposals)}")
+    digest_parts.append(f"- **Approved Proposals (recent):** {len(approved_recent)}")
+    digest_parts.append(f"- **Rejected Proposals (recent):** {len(rejected_recent)}")
     digest_parts.append(f"- **Improvement Candidates:** {len(improvement_candidates)}")
     digest_parts.append(f"- **Identified Gaps:** {len(topics_to_review)}")
     digest_parts.append(f"- **Unanswered Questions:** {len(pending_questions)}")
@@ -1826,6 +1862,10 @@ Based on this data, provide:
     context_items = []
     if proposals:
         context_items.append(f"{len(proposals)} proposals")
+    if approved_recent:
+        context_items.append(f"{len(approved_recent)} approved")
+    if rejected_recent:
+        context_items.append(f"{len(rejected_recent)} rejected")
     if improvement_candidates:
         context_items.append(f"{len(improvement_candidates)} improvements")
     if topics_to_review:
