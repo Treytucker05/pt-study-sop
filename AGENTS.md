@@ -112,3 +112,6 @@ Where to add implementation notes:
 
 ## 9) Legacy notes (only if needed)
 - None.
+
+## 10) Learnings
+- Scholar inventories should list all output lanes plus `scholar/outputs/` root files using repo-relative paths.
