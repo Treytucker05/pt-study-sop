@@ -1,37 +1,34 @@
 Goal (incl. success criteria):
-- Dashboard Enhancement Round 3: Fix 6 issues from user feedback + add new pixel art logo.
-- Success: All features working, no regressions, tests pass.
+- Run the Ralph loop in pt-study-sop to execute the next story from scripts/ralph/prd.json and report results.
 
 Constraints/Assumptions:
-- Follow AGENTS.md; update this Continuity Ledger each turn and on state changes.
-- Use parallel agents where no dependencies exist.
-- Week 1 of semester starts January 5, 2025.
-- Color scheme: Red (#DC2626), Grey (#9CA3AF), Black (#0A0A0A), White.
+- Follow pt-study-sop AGENTS.md; update this Continuity Ledger each turn and on state changes.
+- Keep changes minimal and scoped; avoid destructive actions without confirmation.
+- Use scripts/ralph runbook; ensure branchName and iteration count are confirmed.
+- Required checks: python -m pytest brain/tests; python scripts/release_check.py; note failures if env lacks deps.
 
 Key decisions:
-- Replace custom calendar rendering with embedded Google Calendar iframe option.
-- Add week selector with 1/2/3/4/8/all weeks display options.
-- Export modal functions to window scope for inline onclick handlers.
-- Replace SVG logo with user's pixel art brain image.
+- Switched to Windows Python for required checks (user choice).
 
 State:
   - Done:
-    - **Agent 1 REMOVED**: Google Calendar embed JavaScript - broken functions removed (handleCalendarSourceChange, loadGCalEmbed, setGCalEmbedUrl, initGCalEmbed, updateQuickConnectStatus, checkGCalStatusWithQuickBar, initCalendarSourceToggle)
-    - **Agent 2 COMPLETE**: Calendar background CSS fixes - #calendar-grid scoped backgrounds, week/day view transparent containers
-    - **Agent 3 COMPLETE**: Week selector - SEMESTER_START constant, populateWeekSelector(), getWeekStartDate(), updateWeekRangeLabel(), event listeners
-    - **Agent 4 COMPLETE**: Edit button fixes - window.openEventEditModal and related functions exported to global scope, month view onclick handlers
-    - **Agent 5 PARTIAL**: Logo HTML updated to use img tag, images directory created
+    - Created scholar/outputs/audit_scholar_repo.md and updated its Additional Changes section.
+    - Updated AGENTS.md with Scholar output lane convention.
+    - Updated scripts/ralph/progress.txt (pattern + US-001 entries).
+    - Ran pytest in Windows: brain/tests passed (4 tests).
+    - Ran release_check.py in Windows: failed with SystemExit from _smoke_test.py during collection.
+    - US-001 left passes=false with blocking note in scripts/ralph/prd.json.
   - Now:
-    - Cleanup complete - removed broken GCal embed code, kept core OAuth functions (checkGCalStatus, connectGoogleCalendar, syncGoogleCalendar, syncGoogleTasks, disconnectGoogleCalendar)
+    - Decide how to handle release_check.py failure to complete US-001.
   - Next:
-    - Integration testing
-    - Verify all features work in browser
+    - If release_check is resolved or waived, set US-001 passes=true, commit feat: US-001, and continue Ralph loop.
 
 Open questions (UNCONFIRMED if needed):
-- User needs to manually save logo image file
+- Should I investigate/fix release_check.py (likely _smoke_test.py behavior), or should we accept the failure and proceed?
 
 Working set (files/ids/commands):
-- brain/static/js/dashboard.js - All JavaScript changes applied
-- brain/static/css/dashboard.css - Background CSS fixes applied
-- brain/templates/dashboard.html - Calendar embed UI + week selector + logo HTML
-- brain/static/images/ - Directory created, awaiting logo-brain.png
+- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\audit_scholar_repo.md
+- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\AGENTS.md
+- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\progress.txt
+- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\prd.json
+- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\CONTINUITY.md

@@ -47,3 +47,65 @@
 - Predict your score (0-100%) on today's target.
 - Answer one application question.
 - Compare prediction vs actual; if overconfident -> schedule sooner review (24h).
+
+---
+
+## Brain Prompt Generator — JSON Output (MANDATORY)
+
+At the end of every WRAP phase, you MUST output two JSON objects for Brain ingestion. Use the current system date automatically. Format all text fields as semicolon-separated lists (no line breaks).
+
+### 1️⃣ Tracker JSON (for study dashboards)
+Lightweight format for quick metrics and tracking:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "topic": "Main topic covered",
+  "mode": "Core",
+  "duration": 45,
+  "understanding": 4,
+  "retention": 4,
+  "system_performance": 5,
+  "what_worked": "Summarize effective methods; semicolon-separated",
+  "what_needs_fixing": "Summarize gaps; semicolon-separated",
+  "anchors": "Key concepts/hooks created; semicolon-separated",
+  "notes": "Any insights or next steps; semicolon-separated"
+}
+```
+
+### 2️⃣ Enhanced JSON (for canonical Brain archive)
+Comprehensive format capturing all runtime canon and WRAP protocol elements:
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "topic": "Main topic covered",
+  "mode": "Core",
+  "duration": 45,
+  "understanding": 4,
+  "retention": 4,
+  "system_performance": 5,
+  "what_worked": "Detailed notes on effective study methods and insights; semicolon-separated",
+  "what_needs_fixing": "Detailed list of knowledge gaps and process issues; semicolon-separated",
+  "anchors": "Key hooks, metaphors, or memory locks created during KWIK/Encode; semicolon-separated",
+  "anki_cards": "Anki cards created or planned; semicolon-separated",
+  "glossary": "New or critical term definitions added during session; semicolon-separated",
+  "runtime_notes": "Process or behavior notes (KWIK rule enforcement, Wrap meta-corrections, etc.); semicolon-separated",
+  "wrap_watchlist": "Recurring weak areas to revisit during spaced review; semicolon-separated",
+  "clinical_links": "Clinical or applied connections tied to session topic; semicolon-separated",
+  "next_session": "Next session plan, focus, or materials; semicolon-separated",
+  "spaced_reviews": "Review1=YYYY-MM-DD; Review2=YYYY-MM-DD; Review3=YYYY-MM-DD",
+  "notes": "Additional reflections, meta observations, or future tasks; semicolon-separated"
+}
+```
+
+### JSON Output Rules
+1. **Always generate both JSONs** at the end of M6 WRAP phase — no exceptions.
+2. **Use current system date** for the "date" field automatically.
+3. **Mode must match session mode:** Core, Sprint, or Drill.
+4. **Semicolon-separated lists** for all text fields (no line breaks within values).
+5. **Label outputs clearly** as "Tracker JSON" and "Enhanced JSON" in the output.
+6. **Include runtime behavior corrections** in Enhanced JSON when applicable (e.g., KWIK flow enforced, Seed-Lock triggered).
+7. **Include Anki integration notes** when cards were created or planned.
+8. **Spaced review dates** must be calculated: Review1=+1 day, Review2=+3 days, Review3=+7 days.
+9. **Maintain compatibility** with Brain Session Log ingestion scripts (field names must match schema v9.2).

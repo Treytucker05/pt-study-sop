@@ -21,6 +21,12 @@ A structured study system for Doctor of Physical Therapy coursework, powered by 
 5. Paste `sop/gpt-knowledge/runtime-prompt.md` at the start of each session.
 6. Run `python brain/db_setup.py` (or `Run_Brain_All.bat`) from the repo root for Brain setup.
 
+**Tools:**
+
+- **Dashboard:** `Run_Brain_All.bat` (starts server + browser).
+- **Scholar:** `scripts/run_scholar.bat` (interactive launcher).
+- **Scraper:** `python scripts/scrape_blackboard.py` (syncs Blackboard content).
+
 Upload-ready artifacts live in `dist/` (the PT_STUDY_*.md files).
 
 **One-click launcher:** Run `Run_Brain_All.bat` (repo root) to sync logs, regenerate resume, start the dashboard server, and open <http://127.0.0.1:5000> automatically. Keep the new "PT Study Brain Dashboard" window open while using the site.
@@ -46,7 +52,9 @@ pt-study-sop/
   - examples/
   - working/ (legacy dev notes, removed)
 - brain/ (brain system)
+  - dashboard/ (web application package)
   - data/, output/, session_logs/
+  - static/ (assets), templates/ (html)
   - tests/ (brain unit tests)
 - LEGACY VERSIONS/ (frozen legacy sets; referenced by SOP library)
 
@@ -117,35 +125,40 @@ This repo is evolving into a **personal AI study OS**, with four long-term pilla
 Planned implementation ladder (stable high-level plan):
 
 1. **Brain planning** [DONE] **COMPLETE**  
-  - [DONE] Additive tables for `courses`, `course_events`, `topics`, and `study_tasks` in `brain/db_setup.py`.  
-  - [DONE] Syllabus intake UI (single event form + bulk JSON import via ChatGPT).  
-  - [DONE] Calendar API endpoints (`/api/calendar/data`, `/api/calendar/plan_session`) for visualizing course events, study sessions, and planned spaced repetition.  
-  - [DONE] Syllabus API endpoints (`/api/syllabus/courses`, `/api/syllabus/events`) with coverage analytics.  
-  - [WIP] Plan overview endpoints (`/api/plan/today`, `/api/plan/overview`) - **Future enhancement** for today's focus and at-risk topics.
 
-2. **Local-first RAG (starting with notes)** [!] **PARTIAL**  
-  - [DONE] `rag_docs` table in the Brain DB to track RAG documents: notes, textbooks, transcripts, slides.  
-  - [DONE] Minimal `rag` module (`brain/rag_notes.py`) that can ingest markdown notes as first-class docs (linked to courses/topics) and support local search with citations.  
-  - [WIP] RAG dashboard integration - **Future enhancement** for search UI and ingestion interface.
+- [DONE] Additive tables for `courses`, `course_events`, `topics`, and `study_tasks` in `brain/db_setup.py`.  
+- [DONE] Syllabus intake UI (single event form + bulk JSON import via ChatGPT).  
+- [DONE] **Blackboard Scraper** (`scripts/scrape_blackboard.py`) for automated syllabus and content syncing.  
+- [DONE] Calendar API endpoints (`/api/calendar/data`, `/api/calendar/plan_session`) for visualizing course events, study sessions, and planned spaced repetition.  
+- [DONE] Syllabus API endpoints (`/api/syllabus/courses`, `/api/syllabus/events`) with coverage analytics.  
+- [WIP] Plan overview endpoints (`/api/plan/today`, `/api/plan/overview`) - **Future enhancement** for today's focus and at-risk topics.
 
-3. **Extend RAG to textbooks and transcripts**  
+1. **Local-first RAG (starting with notes)** [!] **PARTIAL**  
+
+- [DONE] `rag_docs` table in the Brain DB to track RAG documents: notes, textbooks, transcripts, slides.  
+- [DONE] Minimal `rag` module (`brain/rag_notes.py`) that can ingest markdown notes as first-class docs (linked to courses/topics) and support local search with citations.  
+- [WIP] RAG dashboard integration - **Future enhancement** for search UI and ingestion interface.
+
+1. **Extend RAG to textbooks and transcripts**  
    - Add ingestion scripts for textbooks (PDF/text) and class transcripts, attaching rich metadata (course, lecture date, sections, topic tags).  
    - Standardize chunking and metadata so retrieval works well for long-form sources while keeping everything local-first.
 
-4. **Tutor API and in-dashboard Tutor tab** [!] **PARTIAL**  
-  - [DONE] `TutorQuery_v1` contract defined (`brain/tutor_api_types.py`) with course/topic, mode, question, plan snapshot, allowed sources.  
-  - [DONE] Tutor API stub endpoints (`/api/tutor/session/start`, `/api/tutor/session/turn`) exist in dashboard.  
-  - [DONE] **Tutor** tab in dashboard with basic chat UI wired to stub endpoints.  
-  - [WIP] Full Tutor implementation - **Future enhancement** to connect to Brain + RAG under strict **Source-Lock** with real SOP execution.
+2. **Tutor API and in-dashboard Tutor tab** [!] **PARTIAL**  
 
-5. **Scholar audits (planning + RAG + pedagogy)** [!] **PARTIAL**  
-  - [DONE] Scholar dashboard integration with status, questions, and orchestrator runs.  
-  - [DONE] Scholar workflows exist for session/module audits (`scholar/workflows/`).  
-  - [WIP] Extended Scholar workflows - **Future enhancement** to audit:  
-     - Planning adherence (Brain vs syllabus).  
-     - RAG coverage and Source-Lock adherence.  
-     - Note quality and note utilization during tutoring.  
-   - Scholar writes change proposals into its promotion queue; the human architect manually promotes changes into `sop/` and Brain/Tutor code.
+- [DONE] `TutorQuery_v1` contract defined (`brain/tutor_api_types.py`) with course/topic, mode, question, plan snapshot, allowed sources.  
+- [DONE] Tutor API stub endpoints (`/api/tutor/session/start`, `/api/tutor/session/turn`) exist in dashboard.  
+- [DONE] **Tutor** tab in dashboard with basic chat UI wired to stub endpoints.  
+- [WIP] Full Tutor implementation - **Future enhancement** to connect to Brain + RAG under strict **Source-Lock** with real SOP execution.
+
+1. **Scholar audits (planning + RAG + pedagogy)** [!] **PARTIAL**  
+
+- [DONE] Scholar dashboard integration with status, questions, and orchestrator runs.  
+- [DONE] Scholar workflows exist for session/module audits (`scholar/workflows/`).  
+- [WIP] Extended Scholar workflows - **Future enhancement** to audit:  
+  - Planning adherence (Brain vs syllabus).  
+  - RAG coverage and Source-Lock adherence.  
+  - Note quality and note utilization during tutoring.  
+- Scholar writes change proposals into its promotion queue; the human architect manually promotes changes into `sop/` and Brain/Tutor code.
 
 ---
 

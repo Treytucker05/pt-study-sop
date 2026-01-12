@@ -23,10 +23,115 @@ function initCollapsibles() {
       }
     }
   });
+
+  // Also restore <details> state from localStorage
+  // Default: all sections start COLLAPSED unless explicitly opened by user this session
+  document.querySelectorAll('details.section-panel').forEach(details => {
+    const sectionId = details.id;
+
+    // Force collapsed on page load - user can expand as needed
+    details.removeAttribute('open');
+
+    // Listen for toggle events to save state (but don't restore on load)
+    details.addEventListener('toggle', () => {
+      if (details.id) {
+        localStorage.setItem('details_' + details.id, details.open ? 'open' : 'closed');
+      }
+    });
+  });
+}
+
+/* ===== Expand/Collapse All Sections ===== */
+function expandAllSections(tabId) {
+  const tab = document.getElementById(tabId);
+  if (!tab) return;
+
+  // Expand all <details> elements
+  tab.querySelectorAll('details.section-panel').forEach(details => {
+    details.setAttribute('open', '');
+    if (details.id) {
+      localStorage.setItem('details_' + details.id, 'open');
+    }
+  });
+
+  // Also expand .collapsible-section elements
+  tab.querySelectorAll('.collapsible-section').forEach(section => {
+    section.classList.remove('collapsed');
+    const sectionId = section.id || section.dataset.section;
+    if (sectionId) {
+      localStorage.setItem('collapse_' + sectionId, '0');
+    }
+  });
+}
+
+function collapseAllSections(tabId) {
+  const tab = document.getElementById(tabId);
+  if (!tab) return;
+
+  // Collapse all <details> elements
+  tab.querySelectorAll('details.section-panel').forEach(details => {
+    details.removeAttribute('open');
+    if (details.id) {
+      localStorage.setItem('details_' + details.id, 'closed');
+    }
+  });
+
+  // Also collapse .collapsible-section elements
+  tab.querySelectorAll('.collapsible-section').forEach(section => {
+    section.classList.add('collapsed');
+    const sectionId = section.id || section.dataset.section;
+    if (sectionId) {
+      localStorage.setItem('collapse_' + sectionId, '1');
+    }
+  });
 }
 
 // Call initCollapsibles on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', initCollapsibles);
+
+// Scroll to top on page load to show hero logo
+window.addEventListener('load', () => {
+  window.scrollTo({ top: 0, behavior: 'instant' });
+});
+
+/* ===== Mobile Navigation Toggle ===== */
+function toggleMobileNav() {
+  const isOpen = document.body.classList.toggle('mobile-nav-open');
+  const hamburger = document.getElementById('hamburger-btn');
+  if (hamburger) {
+    hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  const overlay = document.getElementById('mobile-nav-overlay');
+  if (overlay) {
+    overlay.style.display = isOpen ? 'block' : 'none';
+  }
+}
+
+function closeMobileNav() {
+  document.body.classList.remove('mobile-nav-open');
+  const hamburger = document.getElementById('hamburger-btn');
+  if (hamburger) {
+    hamburger.setAttribute('aria-expanded', 'false');
+  }
+  const overlay = document.getElementById('mobile-nav-overlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+}
+
+// Close mobile nav on Escape key
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && document.body.classList.contains('mobile-nav-open')) {
+    closeMobileNav();
+  }
+});
+
+// Close mobile nav when a nav item is clicked
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.mobile-nav-panel .nav-item').forEach(function (item) {
+    item.addEventListener('click', closeMobileNav);
+  });
+});
 
 /* ===== Status Display Helper ===== */
 function showStatus(elementId, message, type = 'info') {
@@ -35,7 +140,7 @@ function showStatus(elementId, message, type = 'info') {
     console.error('Status element not found:', elementId);
     return;
   }
-  
+
   let bgColor, textColor;
   switch (type) {
     case 'success':
@@ -54,7 +159,7 @@ function showStatus(elementId, message, type = 'info') {
       bgColor = 'rgba(31, 111, 235, 0.2)';
       textColor = 'var(--accent)';
   }
-  
+
   el.innerHTML = `<div style="padding: 8px 12px; border-radius: 6px; font-size: 13px; background: ${bgColor}; color: ${textColor};">${message}</div>`;
 }
 
@@ -86,7 +191,7 @@ Rules:
 - All text fields: Use semicolons to separate multiple items
 
 Generate this JSON at the end of our session.`,
-  
+
   'quick-recap': `At the end of our session, give me a quick JSON recap:
 
 \`\`\`json
@@ -109,12 +214,12 @@ function copyFastEntryPrompt() {
   const promptKey = select.value;
   const displayDiv = document.getElementById('fast-entry-prompt-display');
   const promptText = document.getElementById('fast-entry-prompt-text');
-  
+
   if (!promptKey) {
     displayDiv.style.display = 'none';
     return;
   }
-  
+
   const prompt = FAST_ENTRY_PROMPTS[promptKey];
   if (prompt) {
     promptText.textContent = prompt;
@@ -133,23 +238,23 @@ async function submitFastEntry() {
     showStatus('fast-entry-status', 'Please paste session content first', 'error');
     return;
   }
-  
+
   // Parse the pasted content
   const parsed = parseFastEntry(pasteContent);
   if (!parsed.topic) {
     showStatus('fast-entry-status', 'Could not parse topic from pasted content. Make sure it includes "Topic:" line.', 'error');
     return;
   }
-  
+
   showStatus('fast-entry-status', 'Ingesting session...', 'info');
-  
+
   try {
     const response = await fetch('/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(parsed)
     });
-    
+
     if (response.ok) {
       showStatus('fast-entry-status', 'Session ingested successfully!', 'success');
       document.getElementById('fast-entry-paste').value = '';
@@ -176,7 +281,7 @@ function parseFastEntry(content) {
     what_needs_fixing: '',
     notes_insights: ''
   };
-  
+
   // Try to parse as JSON first (preferred format)
   try {
     // Extract JSON from markdown code blocks if present
@@ -191,9 +296,9 @@ function parseFastEntry(content) {
         jsonStr = braceMatch[0];
       }
     }
-    
+
     const parsed = JSON.parse(jsonStr);
-    
+
     // Map JSON fields to result
     result.topic = parsed.topic || '';
     result.study_mode = parsed.mode || 'Core';
@@ -204,30 +309,30 @@ function parseFastEntry(content) {
     result.what_worked = parsed.what_worked || '';
     result.what_needs_fixing = parsed.what_needs_fixing || parsed.gaps || '';
     result.notes_insights = parsed.notes || '';
-    
+
     // Handle anchors - append to notes if present
     if (parsed.anchors) {
-      result.notes_insights = result.notes_insights 
-        ? result.notes_insights + '\n\nAnchors: ' + parsed.anchors 
+      result.notes_insights = result.notes_insights
+        ? result.notes_insights + '\n\nAnchors: ' + parsed.anchors
         : 'Anchors: ' + parsed.anchors;
     }
-    
+
     return result;
   } catch (e) {
     // JSON parse failed, fall back to text parsing
     console.log('JSON parse failed, trying text format:', e.message);
   }
-  
+
   // Fallback: Parse as structured text format
   const lines = content.split('\n');
   let currentSection = null;
   let sectionContent = [];
   let unstructuredLines = [];
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed === '---' || trimmed.startsWith('```')) continue;
-    
+
     // Check for key: value pairs
     const kvMatch = trimmed.match(/^(Date|Topic|Subject|Mode|Duration|Time|Understanding|Retention|System Performance|What Worked|What Needs Fixing|Gaps|Anchors Locked|Anchors|Notes|Session):?\s*(.*)$/i);
     if (kvMatch) {
@@ -239,10 +344,10 @@ function parseFastEntry(content) {
         else if (currentSection === 'notes') result.notes_insights = text;
         sectionContent = [];
       }
-      
+
       const key = kvMatch[1].toLowerCase();
       const val = kvMatch[2].trim();
-      
+
       if (key === 'topic' || key === 'subject' || key === 'session') result.topic = val;
       else if (key === 'mode') result.study_mode = val.includes('Sprint') ? 'Sprint' : val.includes('Drill') ? 'Drill' : 'Core';
       else if (key === 'duration' || key === 'time') result.time_spent_minutes = parseInt(val) || 30;
@@ -258,7 +363,7 @@ function parseFastEntry(content) {
       unstructuredLines.push(trimmed);
     }
   }
-  
+
   // Capture final section
   if (currentSection && sectionContent.length > 0) {
     const text = sectionContent.join('\n').trim();
@@ -281,7 +386,7 @@ function parseFastEntry(content) {
     // Put all content as notes
     result.notes_insights = unstructuredLines.join('\n');
   }
-  
+
   return result;
 }
 
@@ -293,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const displayDiv = document.getElementById('fast-entry-prompt-display');
       const promptText = document.getElementById('fast-entry-prompt-text');
       const promptKey = select.value;
-      
+
       if (promptKey && FAST_ENTRY_PROMPTS[promptKey]) {
         promptText.textContent = FAST_ENTRY_PROMPTS[promptKey];
         displayDiv.style.display = 'block';
@@ -305,6 +410,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function openTab(evt, tabName) {
+  if (evt && typeof evt.preventDefault === 'function') {
+    // Prevent hash navigation/auto-open behavior on tab links.
+    evt.preventDefault();
+  }
   // 0. Check if switching AWAY from Scholar before hiding panels
   const currentActivePanel = document.querySelector('.tab-panel.active');
   const wasScholarActive = currentActivePanel && currentActivePanel.id === 'tab-scholar';
@@ -323,11 +432,9 @@ function openTab(evt, tabName) {
     panels[i].classList.remove("active");
   }
 
-  // 2. Deactivate all buttons
-  const buttons = document.getElementsByClassName("tab-button");
-  for (let i = 0; i < buttons.length; i++) {
-    buttons[i].className = buttons[i].className.replace(" active", "");
-  }
+  // 2. Deactivate all tab controls (top nav, mobile, legacy, and any tab buttons)
+  document.querySelectorAll('.tab-button, .top-nav-item, .mobile-nav-item, .nav-item')
+    .forEach(item => item.classList.remove('active'));
 
   // 3. Show specific panel
   const panel = document.getElementById("tab-" + tabName);
@@ -337,16 +444,26 @@ function openTab(evt, tabName) {
   }
 
   // 4. Activate specific button
-  if (evt) {
-    evt.currentTarget.className += " active";
+  if (evt && evt.currentTarget) {
+    evt.currentTarget.classList.add("active");
   } else {
-    // Fallback: find button by data-tab
-    for (let i = 0; i < buttons.length; i++) {
-      if (buttons[i].getAttribute("data-tab") === tabName) {
-        buttons[i].className += " active";
-      }
-    }
+    // Fallback: find any nav item by data-tab
+    document.querySelectorAll('[data-tab]')
+      .forEach(item => {
+        if (item.getAttribute('data-tab') === tabName) {
+          item.classList.add('active');
+        }
+      });
   }
+
+  // Update aria-current for top nav accessibility
+  document.querySelectorAll('.top-nav-item').forEach(item => {
+    if (item.getAttribute('data-tab') === tabName) {
+      item.setAttribute('aria-current', 'page');
+    } else {
+      item.removeAttribute('aria-current');
+    }
+  });
 
   // 5. Update Hash
   // window.location.hash = tabName; // Optional, maybe skip to avoid jumping
@@ -365,6 +482,14 @@ function openTab(evt, tabName) {
   }
   if (tabName === 'tutor' && typeof loadTutor === 'function') loadTutor();
   if (tabName === 'brain' && typeof loadBrain === 'function') loadBrain();
+  if (tabName === 'sync' && typeof loadSyncPending === 'function') loadSyncPending();
+
+  // 7. Force all sections collapsed on tab switch, then scroll to top
+  const currentTab = document.getElementById('tab-' + tabName);
+  if (currentTab) {
+    currentTab.querySelectorAll('details.section-panel').forEach(d => d.removeAttribute('open'));
+  }
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 // Global State
@@ -473,10 +598,11 @@ const formatNumber = (n) => {
 
 const getModeClass = (mode) => {
   const m = (mode || '').toLowerCase();
-  if (m.includes('focus') || m.includes('deep')) return 'focus';
-  if (m.includes('pomodoro')) return 'pomodoro';
-  if (m.includes('review')) return 'review';
-  return 'focus';
+  // Map study modes to badge color classes
+  if (m.includes('core') || m.includes('focus') || m.includes('deep')) return 'badge-core';
+  if (m.includes('sprint') || m.includes('pomodoro')) return 'badge-sprint';
+  if (m.includes('drill') || m.includes('review')) return 'badge-drill';
+  return 'badge-neutral';
 };
 
 // Load and render stats
@@ -515,27 +641,27 @@ function renderScholarInsights(data) {
   const proposalsCount = document.getElementById('scholar-proposals-count');
   const questionsCount = document.getElementById('scholar-questions-count');
   const findingsList = document.getElementById('scholar-findings-list');
-  
+
   if (!card) return;
-  
+
   // Check if there's any content to show
   const hasAlerts = data.alerts && data.alerts.length > 0;
   const hasProposals = data.proposals && data.proposals.length > 0;
   const hasQuestions = data.questions_pending && data.questions_pending > 0;
   const hasFindings = data.recent_findings && data.recent_findings.length > 0;
-  
+
   const hasContent = hasAlerts || hasProposals || hasQuestions || hasFindings;
-  
+
   // Show/hide the card based on content
   card.style.display = hasContent ? 'block' : 'none';
-  
+
   if (!hasContent) return;
-  
+
   // Render alerts
   if (alertsList) {
     if (hasAlerts) {
       alertsList.innerHTML = data.alerts.map(a => {
-        const icon = a.type === 'warning' ? '⚠️' : 'ℹ️';
+        const icon = a.type === 'warning' ? '<i class="fas fa-exclamation-triangle"></i>️' : 'ℹ️';
         const color = a.type === 'warning' ? '#f59e0b' : '#3b82f6';
         return `<div style="display:flex; align-items:start; gap:8px; margin-bottom:8px; cursor:pointer;" onclick="openTab(null, 'scholar')">
           <span style="color:${color};">${icon}</span>
@@ -546,7 +672,7 @@ function renderScholarInsights(data) {
       alertsList.innerHTML = '<div style="color:#64748b;">No alerts</div>';
     }
   }
-  
+
   // Render proposals count
   if (proposalsCount) {
     const count = data.proposals ? data.proposals.length : 0;
@@ -557,7 +683,7 @@ function renderScholarInsights(data) {
       proposalsCount.innerHTML = '<span style="color:#64748b;">0 proposals</span>';
     }
   }
-  
+
   // Render questions count
   if (questionsCount) {
     const count = data.questions_pending || 0;
@@ -568,7 +694,7 @@ function renderScholarInsights(data) {
       questionsCount.innerHTML = '<span style="color:#64748b;">0 questions</span>';
     }
   }
-  
+
   // Render recent findings
   if (findingsList) {
     if (hasFindings) {
@@ -614,7 +740,7 @@ function renderStats(data) {
 
 function renderSessions(data) {
   if (!sessionsTbody) return; // Guard clause for new simplified HTML
-  
+
   const sessions = data.recent_sessions || [];
   sessionsTbody.innerHTML = sessions.map(s => {
     const modeClass = getModeClass(s.study_mode);
@@ -631,7 +757,7 @@ function renderSessions(data) {
     return `
           <tr data-session-id="${s.id}">
             <td>${s.session_date}<br><span style="font-size: 12px; color: var(--text-muted)">${s.session_time || ''}</span></td>
-            <td><span class="mode-badge ${modeClass}">${s.study_mode}</span></td>
+            <td class="badge-cell"><span class="badge ${modeClass}">${s.study_mode || 'N/A'}</span></td>
             <td>${s.topic}</td>
             <td>${formatMinutes(s.time_spent_minutes)}</td>
             <td>
@@ -709,7 +835,7 @@ async function openEditModal(sessionId) {
       return;
     }
     const s = data.session;
-    
+
     // Populate form fields
     document.getElementById('edit-session-id').value = s.id;
     document.getElementById('edit-date').value = s.session_date || '';
@@ -724,7 +850,7 @@ async function openEditModal(sessionId) {
     document.getElementById('edit-summary').value = s.notes_insights || '';
     document.getElementById('edit-wins').value = s.what_worked || '';
     document.getElementById('edit-friction').value = s.what_needs_fixing || '';
-    
+
     // Show modal
     document.getElementById('edit-session-modal').style.display = 'flex';
   } catch (err) {
@@ -735,7 +861,7 @@ async function openEditModal(sessionId) {
 // Save session edits
 async function saveSession(event) {
   event.preventDefault();
-  
+
   const sessionId = document.getElementById('edit-session-id').value;
   const data = {
     session_date: document.getElementById('edit-date').value,
@@ -751,11 +877,11 @@ async function saveSession(event) {
     what_worked: document.getElementById('edit-wins').value,
     what_needs_fixing: document.getElementById('edit-friction').value
   };
-  
+
   try {
     const resp = await fetch(`/api/sessions/${sessionId}`, {
       method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
     const result = await resp.json();
@@ -816,7 +942,7 @@ function renderPatterns(data) {
     const labels = Object.keys(modes);
     const dataValues = Object.values(modes);
     const colors = labels.map(m => modeColors[m] || '#64748b');
-    
+
     modeChartInstance.data.labels = labels;
     modeChartInstance.data.datasets[0].data = dataValues;
     modeChartInstance.data.datasets[0].backgroundColor = colors;
@@ -894,28 +1020,28 @@ async function loadTrends(days = 30) {
   const canvas = document.getElementById('trends-chart');
   const emptyMsg = document.getElementById('trends-empty');
   const legend = document.getElementById('trends-legend');
-  
+
   if (!canvas) return;
-  
+
   try {
     const res = await fetch(`/api/trends?days=${days}`);
     const data = await res.json();
     trendsChartData = data;
-    
+
     // Check if we have any data
     const hasData = data.dates && data.dates.length > 0;
-    
+
     if (!hasData) {
       canvas.style.display = 'none';
       if (emptyMsg) emptyMsg.style.display = 'block';
       if (legend) legend.style.display = 'none';
       return;
     }
-    
+
     canvas.style.display = 'block';
     if (emptyMsg) emptyMsg.style.display = 'none';
     if (legend) legend.style.display = 'flex';
-    
+
     drawTrendsChart(canvas, data);
   } catch (error) {
     console.error('Failed to load trends:', error);
@@ -925,34 +1051,34 @@ async function loadTrends(days = 30) {
 function drawTrendsChart(canvas, data) {
   const ctx = canvas.getContext('2d');
   const container = canvas.parentElement;
-  
+
   // Set canvas size for sharp rendering
   const dpr = window.devicePixelRatio || 1;
   const rect = container.getBoundingClientRect();
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
   ctx.scale(dpr, dpr);
-  
+
   const width = rect.width;
   const height = rect.height;
   const padding = { top: 20, right: 20, bottom: 40, left: 40 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  
+
   // Clear canvas
   ctx.clearRect(0, 0, width, height);
-  
+
   // Filter out null values and find min/max
   const understanding = data.understanding.map(v => v !== null ? v : NaN);
   const retention = data.retention.map(v => v !== null ? v : NaN);
-  
+
   const allValues = [...understanding, ...retention].filter(v => !isNaN(v));
   if (allValues.length === 0) return;
-  
+
   const minVal = Math.max(0, Math.floor(Math.min(...allValues) - 0.5));
   const maxVal = Math.min(5, Math.ceil(Math.max(...allValues) + 0.5));
   const valueRange = maxVal - minVal || 1;
-  
+
   // Draw grid lines and y-axis labels
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1;
@@ -960,26 +1086,26 @@ function drawTrendsChart(canvas, data) {
   ctx.font = '11px Inter, system-ui, sans-serif';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  
+
   const gridLines = 5;
   for (let i = 0; i <= gridLines; i++) {
     const y = padding.top + (chartHeight * i / gridLines);
     const value = maxVal - (valueRange * i / gridLines);
-    
+
     ctx.beginPath();
     ctx.moveTo(padding.left, y);
     ctx.lineTo(width - padding.right, y);
     ctx.stroke();
-    
+
     ctx.fillText(value.toFixed(1), padding.left - 8, y);
   }
-  
+
   // Draw x-axis labels (dates)
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   const dates = data.dates;
   const labelInterval = Math.ceil(dates.length / 7); // Show ~7 labels max
-  
+
   dates.forEach((date, i) => {
     if (i % labelInterval === 0 || i === dates.length - 1) {
       const x = padding.left + (chartWidth * i / (dates.length - 1 || 1));
@@ -989,23 +1115,23 @@ function drawTrendsChart(canvas, data) {
       ctx.fillText(label, x, height - padding.bottom + 8);
     }
   });
-  
+
   // Helper function to draw a line
   function drawLine(values, color) {
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    
+
     ctx.beginPath();
     let started = false;
-    
+
     values.forEach((val, i) => {
       if (isNaN(val)) return;
-      
+
       const x = padding.left + (chartWidth * i / (values.length - 1 || 1));
       const y = padding.top + chartHeight - ((val - minVal) / valueRange) * chartHeight;
-      
+
       if (!started) {
         ctx.moveTo(x, y);
         started = true;
@@ -1013,47 +1139,47 @@ function drawTrendsChart(canvas, data) {
         ctx.lineTo(x, y);
       }
     });
-    
+
     ctx.stroke();
-    
+
     // Draw dots
     values.forEach((val, i) => {
       if (isNaN(val)) return;
-      
+
       const x = padding.left + (chartWidth * i / (values.length - 1 || 1));
       const y = padding.top + chartHeight - ((val - minVal) / valueRange) * chartHeight;
-      
+
       ctx.beginPath();
       ctx.arc(x, y, 4, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
     });
   }
-  
+
   // Draw understanding line (purple)
   drawLine(understanding, '#a855f7');
-  
+
   // Draw retention line (blue)
   drawLine(retention, '#3b82f6');
-  
+
   // Add tooltip functionality
   canvas.onmousemove = (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     // Find closest data point
     const dataX = (x - padding.left) / chartWidth;
     const index = Math.round(dataX * (dates.length - 1));
-    
+
     if (index >= 0 && index < dates.length) {
       const u = understanding[index];
       const r = retention[index];
       const date = dates[index];
-      
+
       // Update cursor
       canvas.style.cursor = 'crosshair';
-      
+
       // Show tooltip (using title for simplicity)
       let tip = `${date}`;
       if (!isNaN(u)) tip += ` | Understanding: ${u}`;
@@ -1061,7 +1187,7 @@ function drawTrendsChart(canvas, data) {
       canvas.title = tip;
     }
   };
-  
+
   canvas.onmouseleave = () => {
     canvas.style.cursor = 'default';
     canvas.title = '';
@@ -1249,13 +1375,13 @@ let currentStudyRagRoot = '';
 function renderTutorStudyFolders(folders, root) {
   if (!tutorStudyFoldersBox) return;
   currentStudyRagRoot = root || '';
-  
+
   // Update the path display in the UI
   const pathDisplay = document.getElementById('study-rag-path-display');
   if (pathDisplay && root) {
     pathDisplay.textContent = root.replace(/\\/g, '/');
   }
-  
+
   if (!folders || folders.length === 0) {
     const pathHint = root ? root.replace(/\\/g, '/') : 'brain/data/study_rag';
     tutorStudyFoldersBox.innerHTML = `<div style="color: var(--text-muted); font-size: 13px;">No Study files ingested yet. Drop files into <span style="font-family: monospace;">${pathHint}</span> and click Sync.</div>`;
@@ -1412,7 +1538,7 @@ function renderTutorCitations(citations, messageId) {
     }
     return;
   }
-  
+
   // Legacy: update hidden citations box for backward compatibility
   if (!tutorCitationsBox) return;
   if (!citations || citations.length === 0) {
@@ -1584,7 +1710,7 @@ async function loadStudyRagConfig() {
       const pathDisplay = document.getElementById('study-rag-path-display');
       const pathInput = document.getElementById('study-rag-path-input');
       const normalizedPath = data.root.replace(/\\\\/g, '/').replace(/\\/g, '/');
-      
+
       if (pathDisplay) {
         pathDisplay.textContent = normalizedPath;
         if (!data.exists) {
@@ -1595,7 +1721,7 @@ async function loadStudyRagConfig() {
           pathDisplay.title = '';
         }
       }
-      
+
       // Also populate the input field
       if (pathInput) {
         pathInput.value = data.root;
@@ -1610,7 +1736,7 @@ async function loadStudyRagConfig() {
 async function saveStudyRagPath(newPath) {
   const statusEl = document.getElementById('study-rag-path-status');
   if (statusEl) statusEl.textContent = 'Saving...';
-  
+
   try {
     const res = await fetch('/api/tutor/study/config', {
       method: 'POST',
@@ -1618,10 +1744,10 @@ async function saveStudyRagPath(newPath) {
       body: JSON.stringify({ path: newPath })
     });
     const data = await res.json();
-    
+
     if (data.ok) {
       if (statusEl) {
-        statusEl.textContent = '✓ Saved!';
+        statusEl.textContent = '<i class="fas fa-check"></i> Saved!';
         statusEl.style.color = 'var(--success)';
       }
       // Reload the config to update display
@@ -1648,7 +1774,7 @@ function setupStudyRagPathControls() {
   const saveBtn = document.getElementById('btn-save-study-path');
   const pathInput = document.getElementById('study-rag-path-input');
   const folderPicker = document.getElementById('study-rag-folder-picker');
-  
+
   if (saveBtn && pathInput) {
     saveBtn.addEventListener('click', () => {
       const path = pathInput.value.trim();
@@ -1663,7 +1789,7 @@ function setupStudyRagPathControls() {
       }
     });
   }
-  
+
   // Handle folder picker (browser file dialog)
   if (folderPicker && pathInput) {
     folderPicker.addEventListener('change', (e) => {
@@ -1705,7 +1831,7 @@ function scrollChatToBottom() {
 function addChatMessage(sender, text, options = {}) {
   const container = getChatContainer();
   if (!container) return null;
-  
+
   const messageId = `msg-${++tutorMessageCounter}`;
   const isUser = sender === 'user';
   const senderLabel = isUser ? 'You' : 'Tutor';
@@ -1714,12 +1840,12 @@ function addChatMessage(sender, text, options = {}) {
   const bubbleColor = isUser ? '#fff' : 'var(--text-primary)';
   const bubbleRadius = isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px';
   const align = isUser ? 'flex-end' : 'flex-start';
-  
+
   const messageDiv = document.createElement('div');
   messageDiv.className = `chat-message ${sender}`;
   messageDiv.id = messageId;
   messageDiv.style.cssText = `align-self: ${align}; max-width: 85%;`;
-  
+
   let citationsHtml = '';
   if (!isUser && options.showCitationsToggle) {
     citationsHtml = `
@@ -1749,7 +1875,7 @@ function addChatMessage(sender, text, options = {}) {
       </div>
     `;
   }
-  
+
   // Handle unverified banner
   let displayText = text;
   let unverifiedBadge = '';
@@ -1765,7 +1891,7 @@ function addChatMessage(sender, text, options = {}) {
       margin-bottom: 6px;
     ">UNVERIFIED</span><br>`;
   }
-  
+
   messageDiv.innerHTML = `
     <div class="chat-sender" style="font-size: 11px; font-weight: 600; color: ${senderColor}; margin-bottom: 4px; text-align: ${isUser ? 'right' : 'left'};">${senderLabel}</div>
     <div class="chat-bubble" style="
@@ -1779,10 +1905,10 @@ function addChatMessage(sender, text, options = {}) {
     ">${unverifiedBadge}${escapeHtml(displayText)}</div>
     ${citationsHtml}
   `;
-  
+
   container.appendChild(messageDiv);
   scrollChatToBottom();
-  
+
   return messageId;
 }
 
@@ -1843,11 +1969,11 @@ if (btnTutorSend && tutorQuestion) {
     if (!question) {
       return;
     }
-    
+
     // Add user message to chat
     addChatMessage('user', question);
     tutorQuestion.value = '';
-    
+
     // Add thinking message
     const thinkingId = addChatMessage('tutor', 'Thinking...', { showCitationsToggle: false });
 
@@ -1893,26 +2019,26 @@ if (btnTutorSend && tutorQuestion) {
         return;
       }
       activeTutorSessionId = data.session_id;
-      
+
       // Remove thinking message and add real response with citations toggle
       const thinkingEl = document.getElementById(thinkingId);
       if (thinkingEl) thinkingEl.remove();
-      
+
       const responseId = addChatMessage('tutor', data.answer || '', {
         showCitationsToggle: true,
         unverified: data.unverified
       });
-      
+
       // Render citations into the collapsible section
       renderTutorCitations(data.citations || [], responseId);
-      
+
       // Also update legacy elements for compatibility
       if (tutorAnswerBox) {
         const unverifiedBanner = data.unverified ? '[UNVERIFIED]\n\n' : '';
         tutorAnswerBox.textContent = unverifiedBanner + (data.answer || '');
       }
       renderTutorCitations(data.citations || []);
-      
+
     } catch (error) {
       updateChatMessage(thinkingId, `Failed to contact Tutor: ${error.message}`);
     }
@@ -2050,17 +2176,30 @@ function renderScholar(data) {
   const safeModeEl = document.getElementById('scholar-safe-mode');
   safeModeEl.textContent = data.safe_mode ? 'True (proposals allowed)' : 'False (research only)';
   safeModeEl.setAttribute('data-safe-mode', data.safe_mode ? 'true' : 'false');
+  const multiAgentEl = document.getElementById('scholar-multi-agent');
+  if (multiAgentEl) {
+    const enabled = !!data.multi_agent_enabled;
+    const conc = data.multi_agent_max_concurrency || 4;
+    multiAgentEl.textContent = enabled
+      ? `True (max ${conc})`
+      : 'False (single agent)';
+    multiAgentEl.setAttribute('data-multi-agent', enabled ? 'true' : 'false');
+  }
+  const multiAgentSelect = document.getElementById('scholar-multi-agent-max');
+  if (multiAgentSelect) {
+    multiAgentSelect.value = String(data.multi_agent_max_concurrency || 4);
+  }
   document.getElementById('scholar-last-updated').textContent = data.last_updated || 'Never';
 
   // Proposals section
   const proposalsContainer = document.getElementById('scholar-proposals-list');
   const proposalsCount = document.getElementById('scholar-proposals-section-count');
   const proposals = data.proposals || [];
-  
+
   if (proposalsCount) {
     proposalsCount.textContent = `(${proposals.length})`;
   }
-  
+
   if (proposalsContainer) {
     if (proposals.length === 0) {
       proposalsContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">No proposals pending review.</div>';
@@ -2165,7 +2304,7 @@ function renderScholar(data) {
                   id="btn-submit-answer-${i}"
                   title="Submit this answer"
                 >
-                  ✓ Submit
+                  <i class="fas fa-check"></i> Submit
                 </button>
               </div>
             </div>
@@ -2178,11 +2317,11 @@ function renderScholar(data) {
   const answeredSectionCount = document.getElementById('scholar-answered-section-count');
   const answeredQuestions = data.answered_questions || [];
   currentScholarAnsweredQuestions = answeredQuestions;
-  
+
   if (answeredSectionCount) {
     answeredSectionCount.textContent = `(${answeredQuestions.length})`;
   }
-  
+
   if (answeredContainer) {
     if (answeredQuestions.length === 0) {
       answeredContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">No answered questions yet.</div>';
@@ -2190,7 +2329,7 @@ function renderScholar(data) {
       answeredContainer.innerHTML = answeredQuestions.map((item, i) => `
         <div style="padding: 12px; margin-bottom: 8px; background: rgba(63, 185, 80, 0.05); border: 1px solid rgba(63, 185, 80, 0.2); border-radius: 8px;">
           <div style="font-size: 13px; color: var(--text-primary); font-weight: 500; margin-bottom: 8px;">
-            <span style="color: var(--success);">✓</span> ${item.question}
+            <span style="color: var(--success);"><i class="fas fa-check"></i></span> ${item.question}
           </div>
           <div style="font-size: 12px; color: var(--text-secondary); padding-left: 16px; border-left: 2px solid var(--success);">
             ${item.answer}
@@ -2205,7 +2344,7 @@ function renderScholar(data) {
   const completeCount = coverage.complete || 0;
   const progressCount = coverage.in_progress || 0;
   const notStartedCount = coverage.not_started || 0;
-  
+
   document.getElementById('scholar-coverage-complete').textContent = completeCount;
   document.getElementById('scholar-coverage-progress').textContent = progressCount;
   document.getElementById('scholar-coverage-not-started').textContent = notStartedCount;
@@ -2214,7 +2353,7 @@ function renderScholar(data) {
   const pct = total > 0 ? Math.round((completeCount / total) * 100) : 0;
   const progressPct = total > 0 ? Math.round((progressCount / total) * 100) : 0;
   document.getElementById('scholar-coverage-summary').textContent = `${pct}% complete • ${total} modules`;
-  
+
   // Update progress bar
   const barComplete = document.getElementById('scholar-coverage-bar-complete');
   const barProgress = document.getElementById('scholar-coverage-bar-progress');
@@ -2232,14 +2371,14 @@ function renderScholar(data) {
       let statusIcon = '○';
       let bgColor = 'transparent';
       const statusLower = (item.status || '').toLowerCase();
-      
+
       if (statusLower.includes('complete') || statusLower.includes('[x]')) {
         statusColor = 'var(--success)';
-        statusIcon = '✓';
+        statusIcon = '<i class="fas fa-check"></i>';
         bgColor = 'rgba(63, 185, 80, 0.1)';
       } else if (statusLower.includes('progress') || statusLower.includes('[/]')) {
         statusColor = 'var(--warning)';
-        statusIcon = '⏳';
+        statusIcon = '<i class="fas fa-spinner fa-spin"></i>';
         bgColor = 'rgba(218, 165, 32, 0.1)';
       }
       return `
@@ -2266,7 +2405,7 @@ function renderScholar(data) {
       const stepText = typeof step === 'string' ? step : (step.text || '');
       const action = typeof step === 'object' ? step.action : null;
       const actionLabel = typeof step === 'object' ? step.action_label : null;
-      
+
       let actionBtn = '';
       if (action === 'open_final') {
         actionBtn = '<button class="btn btn-primary" style="font-size: 11px; padding: 6px 12px;" type="button" onclick="openScholarLatestFinal()">📄 Open Latest Run</button>';
@@ -2441,8 +2580,8 @@ async function cancelScholarRun() {
       const msg = (data.message || '').toLowerCase();
       const alreadyStopped = msg.includes('no pid file') || msg.includes('already');
       scholarRunStatus.innerHTML = alreadyStopped
-        ? `<span style="color: var(--warning);">⚠ Run not running (nothing to cancel)</span>`
-        : `<span style="color: var(--warning);">⚠ Cancel requested</span>`;
+        ? `<span style="color: var(--warning);"><i class="fas fa-exclamation-triangle"></i> Run not running (nothing to cancel)</span>`
+        : `<span style="color: var(--warning);"><i class="fas fa-exclamation-triangle"></i> Cancel requested</span>`;
       scholarRunLog.style.display = 'block';
       scholarRunLog.textContent = (scholarRunLog.textContent || '') + `\n\n[dashboard] ${data.message}`;
       setTimeout(() => checkRunStatus(currentRunId), 1000);
@@ -2493,12 +2632,12 @@ if (btnRunScholar && scholarRunStatus && scholarRunLog) btnRunScholar.addEventLi
       const methodNote = data.method === 'batch_script' ? ' (via batch script)' : '';
       let preservedNote = '';
       if (data.preserved_questions > 0) {
-        preservedNote = `\n✓ Preserved ${data.preserved_questions} unanswered question(s) from previous run`;
+        preservedNote = `\n<i class="fas fa-check"></i> Preserved ${data.preserved_questions} unanswered question(s) from previous run`;
       }
 
       if (data.requires_manual_execution) {
         // Scholar requires manual execution via Cursor
-        scholarRunStatus.innerHTML = `<span style="color: var(--warning);">⚠ Manual execution required (ID: ${data.run_id})${preservedNote}</span>`;
+        scholarRunStatus.innerHTML = `<span style="color: var(--warning);"><i class="fas fa-exclamation-triangle"></i> Manual execution required (ID: ${data.run_id})${preservedNote}</span>`;
         let instructionsMsg = `Scholar run queued. Manual execution via Cursor required.\n\n`;
         instructionsMsg += `HOW TO EXECUTE:\n`;
         if (data.instructions && data.instructions.steps) {
@@ -2526,7 +2665,7 @@ if (btnRunScholar && scholarRunStatus && scholarRunLog) btnRunScholar.addEventLi
         }, 500);
       } else {
         // Normal execution (codex available)
-        scholarRunStatus.innerHTML = `<span style="color: var(--success);">✓ Run started${methodNote} (ID: ${data.run_id})${preservedNote}</span>`;
+        scholarRunStatus.innerHTML = `<span style="color: var(--success);"><i class="fas fa-check"></i> Run started${methodNote} (ID: ${data.run_id})${preservedNote}</span>`;
         btnRunScholar.textContent = 'Running...';
         if (data.warning) {
           scholarRunLog.textContent = `WARNING: ${data.warning}\n\nLog file: ${data.log_file}\nFinal file: ${data.final_file}\n\nWaiting for output...`;
@@ -2588,7 +2727,7 @@ async function checkRunStatus(runId) {
       let meta = `Log: ${kb} KB`;
       if (since != null) meta += ` • Last output: ${_fmtSeconds(since)} ago`;
       if (status.pid) meta += ` • PID: ${status.pid}`;
-      if (stalled) meta += ' • ⚠ No new output (may be stuck)';
+      if (stalled) meta += ' • <i class="fas fa-exclamation-triangle"></i> No new output (may be stuck)';
       scholarRunMeta.textContent = meta;
     }
 
@@ -2614,10 +2753,10 @@ async function checkRunStatus(runId) {
       _setRunUiActive(false);
 
       if (status.final_summary) {
-        scholarRunStatus.innerHTML = `<span style="color: var(--success);">✓ Run completed successfully</span>`;
+        scholarRunStatus.innerHTML = `<span style="color: var(--success);"><i class="fas fa-check"></i> Run completed successfully</span>`;
         scholarRunLog.textContent = 'RUN COMPLETED\n\n' + status.final_summary + '\n\n' + (status.log_tail || '');
       } else {
-        scholarRunStatus.innerHTML = `<span style="color: var(--warning);">⚠ Run completed (check logs)</span>`;
+        scholarRunStatus.innerHTML = `<span style="color: var(--warning);"><i class="fas fa-exclamation-triangle"></i> Run completed (check logs)</span>`;
       }
 
       // Reload Scholar data and stats
@@ -2627,7 +2766,7 @@ async function checkRunStatus(runId) {
       }, 1000);
     } else if (status.running) {
       btnRunScholar.textContent = 'Running...';
-      scholarRunStatus.innerHTML = `<span style="color: var(--accent);">⏳ Running... (${(status.log_size / 1024).toFixed(1)} KB logged)${status.stalled ? ' • ⚠ No new output' : ''}</span>`;
+      scholarRunStatus.innerHTML = `<span style="color: var(--accent);"><i class="fas fa-spinner fa-spin"></i> Running... (${(status.log_size / 1024).toFixed(1)} KB logged)${status.stalled ? ' • <i class="fas fa-exclamation-triangle"></i> No new output' : ''}</span>`;
     } else {
       // Not running and not completed: likely exited unexpectedly or PID became stale.
       clearScholarRunState();
@@ -2635,7 +2774,7 @@ async function checkRunStatus(runId) {
       btnRunScholar.textContent = 'Start Run';
 
       const staleNote = (status.pid_stale || status.pid) ? ' (process not detected — may have stopped)' : '';
-      scholarRunStatus.innerHTML = `<span style="color: var(--warning);">⚠ Run not running${staleNote}. Use Refresh/Open Final or start a new run.</span>`;
+      scholarRunStatus.innerHTML = `<span style="color: var(--warning);"><i class="fas fa-exclamation-triangle"></i> Run not running${staleNote}. Use Refresh/Open Final or start a new run.</span>`;
       // Keep actions visible so user can Open Latest Final / Refresh
       _setRunUiActive(true);
     }
@@ -2666,7 +2805,7 @@ if (btnToggleSafeMode) btnToggleSafeMode.addEventListener('click', async () => {
     if (data.ok) {
       // Reload Scholar data to reflect change
       loadScholar();
-      btnToggleSafeMode.textContent = '✓ Updated';
+      btnToggleSafeMode.textContent = '<i class="fas fa-check"></i> Updated';
       setTimeout(() => {
         btnToggleSafeMode.textContent = 'Toggle';
         btnToggleSafeMode.disabled = false;
@@ -2681,6 +2820,73 @@ if (btnToggleSafeMode) btnToggleSafeMode.addEventListener('click', async () => {
     btnToggleSafeMode.disabled = false;
     btnToggleSafeMode.textContent = 'Toggle';
   }
+});
+
+function getMultiAgentEnabled() {
+  const multiAgentEl = document.getElementById('scholar-multi-agent');
+  return multiAgentEl && multiAgentEl.getAttribute('data-multi-agent') === 'true';
+}
+
+function getMultiAgentMax() {
+  const select = document.getElementById('scholar-multi-agent-max');
+  return select ? parseInt(select.value, 10) : 4;
+}
+
+async function updateMultiAgentConfig(payload) {
+  const btn = document.getElementById('btn-toggle-multi-agent');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+  }
+
+  try {
+    const res = await fetch('/api/scholar/multi-agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      loadScholar();
+      if (btn) {
+        btn.textContent = '<i class="fas fa-check"></i> Updated';
+        setTimeout(() => {
+          btn.textContent = 'Toggle';
+          btn.disabled = false;
+        }, 1000);
+      }
+    } else {
+      alert(`Error updating multi-agent: ${data.message}`);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Toggle';
+      }
+    }
+  } catch (error) {
+    alert(`Network error: ${error.message}`);
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Toggle';
+    }
+  }
+}
+
+// Multi-agent toggle
+const btnToggleMultiAgent = document.getElementById('btn-toggle-multi-agent');
+if (btnToggleMultiAgent) btnToggleMultiAgent.addEventListener('click', async () => {
+  const current = getMultiAgentEnabled();
+  const newMode = !current;
+  const maxConcurrency = getMultiAgentMax();
+  await updateMultiAgentConfig({ enabled: newMode, max_concurrency: maxConcurrency });
+});
+
+// Multi-agent max concurrency select
+const multiAgentMaxSelect = document.getElementById('scholar-multi-agent-max');
+if (multiAgentMaxSelect) multiAgentMaxSelect.addEventListener('change', async () => {
+  const enabled = getMultiAgentEnabled();
+  const maxConcurrency = getMultiAgentMax();
+  await updateMultiAgentConfig({ enabled: enabled, max_concurrency: maxConcurrency });
 });
 
 // Weekly Digest generation
@@ -2700,21 +2906,21 @@ if (btnGenerateDigest) btnGenerateDigest.addEventListener('click', async () => {
     // Use AbortController for timeout (2 minutes for Codex)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120000);
-    
+
     const res = await fetch('/api/scholar/digest', { signal: controller.signal });
     clearTimeout(timeoutId);
-    
+
     if (!res.ok) {
       throw new Error(`Server error: ${res.status} ${res.statusText}`);
     }
-    
+
     const data = await res.json();
 
     if (data.ok) {
       const aiPowered = data.ai_powered ? '🧠 AI Analysis' : '📊 Summary';
       const contextInfo = data.context_summary || '';
       if (scholarDigestStatus) {
-        scholarDigestStatus.innerHTML = `<span style="color: #3fb950;">✓</span> ${aiPowered} complete • ${contextInfo}`;
+        scholarDigestStatus.innerHTML = `<span style="color: #3fb950;"><i class="fas fa-check"></i></span> ${aiPowered} complete • ${contextInfo}`;
       }
       if (scholarDigestContent && scholarDigestText) {
         // Enhanced markdown to HTML conversion for AI responses
@@ -2736,12 +2942,12 @@ if (btnGenerateDigest) btnGenerateDigest.addEventListener('click', async () => {
           .replace(/`([^`]+)`/g, '<code style="background: var(--bg-secondary); padding: 1px 4px; border-radius: 3px; font-size: 12px;">$1</code>')
           // Line breaks
           .replace(/\n\n/g, '<div style="margin-bottom: 12px;"></div>');
-        
+
         // Add AI indicator badge at top
         if (data.ai_powered) {
           html = '<div style="display: inline-block; background: linear-gradient(135deg, #a855f7, #6366f1); color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 16px;">🧠 AI-POWERED ANALYSIS</div>' + html;
         }
-        
+
         scholarDigestText.innerHTML = html;
         scholarDigestContent.style.display = 'block';
       }
@@ -2773,36 +2979,36 @@ async function submitSingleAnswer(questionIndex) {
   const answerTextarea = document.getElementById(`answer-${questionIndex}`);
   const submitBtn = document.getElementById(`btn-submit-answer-${questionIndex}`);
   const statusSpan = document.getElementById(`answer-status-${questionIndex}`);
-  
+
   if (!answerTextarea) return;
-  
+
   const answer = answerTextarea.value.trim();
   if (!answer) {
     if (statusSpan) statusSpan.innerHTML = '<span style="color: var(--warning);">Please enter an answer</span>';
     answerTextarea.focus();
     return;
   }
-  
+
   // Disable UI
   if (submitBtn) {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Saving...';
   }
   if (statusSpan) statusSpan.innerHTML = '<span style="color: var(--text-muted);">Saving...</span>';
-  
+
   try {
     const res = await fetch('/api/scholar/questions/answer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question_index: questionIndex, answer: answer })
     });
-    
+
     const data = await res.json();
-    
+
     if (data.ok) {
-      if (statusSpan) statusSpan.innerHTML = '<span style="color: var(--success);">✓ Saved!</span>';
+      if (statusSpan) statusSpan.innerHTML = '<span style="color: var(--success);"><i class="fas fa-check"></i> Saved!</span>';
       if (submitBtn) {
-        submitBtn.textContent = '✓ Saved';
+        submitBtn.textContent = '<i class="fas fa-check"></i> Saved';
         submitBtn.style.background = 'var(--success)';
       }
       // Animate and remove the answered question card
@@ -2820,14 +3026,14 @@ async function submitSingleAnswer(questionIndex) {
       if (statusSpan) statusSpan.innerHTML = `<span style="color: var(--error);">✗ ${data.message}</span>`;
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.textContent = '✓ Submit';
+        submitBtn.textContent = '<i class="fas fa-check"></i> Submit';
       }
     }
   } catch (error) {
     if (statusSpan) statusSpan.innerHTML = `<span style="color: var(--error);">✗ Network error</span>`;
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = '✓ Submit';
+      submitBtn.textContent = '<i class="fas fa-check"></i> Submit';
     }
   }
 }
@@ -2837,11 +3043,11 @@ window.submitSingleAnswer = submitSingleAnswer;
 function toggleAnsweredQuestions() {
   const container = document.getElementById('scholar-answered-questions');
   const chevron = document.getElementById('answered-questions-chevron');
-  
+
   if (!container) return;
-  
+
   answeredQuestionsExpanded = !answeredQuestionsExpanded;
-  
+
   if (answeredQuestionsExpanded) {
     container.style.display = 'block';
     if (chevron) chevron.textContent = '▼';
@@ -2877,7 +3083,7 @@ if (saveAnswersBtn) saveAnswersBtn.addEventListener('click', async () => {
     const data = await res.json();
 
     if (data.ok) {
-      saveAnswersBtn.textContent = '✓ Saved';
+      saveAnswersBtn.textContent = '<i class="fas fa-check"></i> Saved';
       setTimeout(() => {
         saveAnswersBtn.textContent = 'Save Answers';
         saveAnswersBtn.disabled = false;
@@ -2913,7 +3119,7 @@ async function loadApiKeyStatus() {
     const data = await res.json();
     if (data.has_key) {
       const providerName = data.api_provider === 'openrouter' ? 'OpenRouter' : 'OpenAI';
-      apiKeyStatus.innerHTML = `<span style="color: var(--success);">✓ API key configured (${providerName}, ${data.model}) - ${data.key_preview}</span>`;
+      apiKeyStatus.innerHTML = `<span style="color: var(--success);"><i class="fas fa-check"></i> API key configured (${providerName}, ${data.model}) - ${data.key_preview}</span>`;
       if (apiProviderSelect) {
         apiProviderSelect.value = data.api_provider || 'openrouter';
       }
@@ -2961,7 +3167,7 @@ if (btnSaveApiKey && apiKeyInput && apiKeyStatus) btnSaveApiKey.addEventListener
     const data = await res.json();
     if (data.ok) {
       const providerName = data.api_provider === 'openrouter' ? 'OpenRouter' : 'OpenAI';
-      apiKeyStatus.innerHTML = `<span style="color: var(--success);">✓ API key saved (${providerName}, ${data.model}) - ${data.key_preview}</span>`;
+      apiKeyStatus.innerHTML = `<span style="color: var(--success);"><i class="fas fa-check"></i> API key saved (${providerName}, ${data.model}) - ${data.key_preview}</span>`;
       apiKeyConfig.style.display = 'none';
       btnToggleApiKey.textContent = 'Configure';
       apiKeyInput.value = '';
@@ -3006,7 +3212,7 @@ if (btnTestApiKey && apiKeyInput && apiKeyTestResult) btnTestApiKey.addEventList
 
     const data = await res.json();
     if (data.ok) {
-      apiKeyTestResult.innerHTML = `<span style="color: var(--success);">✓ API key works! Generated answer preview: ${data.answer.substring(0, 50)}...</span>`;
+      apiKeyTestResult.innerHTML = `<span style="color: var(--success);"><i class="fas fa-check"></i> API key works! Generated answer preview: ${data.answer.substring(0, 50)}...</span>`;
     } else {
       apiKeyTestResult.innerHTML = `<span style="color: var(--error);">✗ ${data.message}</span>`;
     }
@@ -3165,7 +3371,7 @@ async function loadCalendar() {
     // Ensure calendarData has empty arrays so renderCalendar works
     calendarData = { events: [], sessions: [], planned: [], ok: true };
   }
-  
+
   // Always render calendar grid (even if empty)
   console.log('[Calendar] Rendering calendar with data:', calendarData);
   renderCalendar();
@@ -3245,46 +3451,46 @@ function renderWeekView() {
 
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const nowStr = new Date().toISOString().split('T')[0];
-  
+
   // Week view uses same grid as month but only 1 row of days
   let html = '';
-  
+
   // Weekday headers
   days.forEach(day => {
     html += `<div class="calendar-weekday-header">${day}</div>`;
   });
-  
+
   // Day cells (larger for week view)
   for (let i = 0; i < 7; i++) {
     const currentDay = new Date(weekStart);
     currentDay.setDate(weekStart.getDate() + i);
     const dateStr = currentDay.toISOString().split('T')[0];
     const isToday = dateStr === nowStr;
-    
+
     // Filter events for this day
     const dayEvents = calendarData.events.filter(e => e.date === dateStr);
     const daySessions = calendarData.sessions.filter(s => s.date === dateStr);
-    
+
     html += `
       <div class="calendar-day week-view-day ${isToday ? 'is-today' : ''}" data-date="${dateStr}">
         <div class="calendar-day-number">${currentDay.getDate()}</div>
         <div class="calendar-day-events">
     `;
-    
+
     // Render events (show more detail in week view)
     dayEvents.forEach(event => {
       const details = parseEventDetails(event.raw_text);
       const typeIcon = getEventTypeIcon(event.type || event.event_type);
       const eventType = event.type || event.event_type || 'other';
       html += `
-        <div class="calendar-event week-event event-${eventType}" onclick="openEventEditModal(${event.id})" title="${event.title}">
+        <div class="calendar-event week-event event-${eventType}" onclick="openEventEditModal('${event.id}')" title="${event.title}">
           <span class="event-icon">${typeIcon}</span>
           <span class="event-title">${event.title}</span>
           ${details.time ? `<div class="event-time">${details.time}</div>` : ''}
         </div>
       `;
     });
-    
+
     // Render study sessions
     daySessions.forEach(session => {
       html += `
@@ -3295,18 +3501,18 @@ function renderWeekView() {
         </div>
       `;
     });
-    
+
     if (dayEvents.length === 0 && daySessions.length === 0) {
       html += '<div class="no-events">—</div>';
     }
-    
+
     html += '</div></div>';
   }
-  
+
   // Update container style for week view (taller cells)
   container.style.gridTemplateColumns = 'repeat(7, 1fr)';
   container.innerHTML = html;
-  
+
   // Update header
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
@@ -3314,7 +3520,7 @@ function renderWeekView() {
   if (headerEl) {
     headerEl.textContent = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   }
-  
+
   console.log('[Calendar] Week view rendered with', calendarData.events.length, 'events');
 }
 
@@ -3336,17 +3542,17 @@ function renderDayView() {
   const dateStr = today.toISOString().split('T')[0];
   const nowStr = new Date().toISOString().split('T')[0];
   const isToday = dateStr === nowStr;
-  
+
   // Filter events for this day
   const dayEvents = calendarData.events.filter(e => e.date === dateStr);
   const daySessions = calendarData.sessions.filter(s => s.date === dateStr);
-  
+
   // Build course lookup
   const courseById = {};
   allCourses.forEach((c, idx) => {
     courseById[c.id] = { ...c, _idx: idx };
   });
-  
+
   let html = `
     <div class="day-view-container">
       <div class="day-header ${isToday ? 'is-today' : ''}">
@@ -3355,7 +3561,7 @@ function renderDayView() {
       </div>
       <div class="day-events-list">
   `;
-  
+
   if (dayEvents.length === 0 && daySessions.length === 0) {
     html += '<div class="day-empty">No events scheduled for this day</div>';
   } else {
@@ -3365,15 +3571,15 @@ function renderDayView() {
       const bTime = parseEventDetails(b.raw_text).time || '23:59';
       return aTime.localeCompare(bTime);
     });
-    
+
     sortedEvents.forEach(event => {
       const details = parseEventDetails(event.raw_text);
       const typeIcon = getEventTypeIcon(event.type || event.event_type);
       const course = courseById[event.course_id] || {};
       const courseName = course.code || course.name || '';
-      
+
       html += `
-        <div class="day-event-card event-type-${event.type || event.event_type}" onclick="openEventEditModal(${event.id})">
+        <div class="day-event-card event-type-${event.type || event.event_type}" onclick="openEventEditModal('${event.id}')">
           <div class="day-event-header">
             <span class="day-event-icon">${typeIcon}</span>
             <span class="day-event-type">${event.type || event.event_type || 'event'}</span>
@@ -3386,7 +3592,7 @@ function renderDayView() {
         </div>
       `;
     });
-    
+
     // Render study sessions
     daySessions.forEach(session => {
       html += `
@@ -3402,23 +3608,23 @@ function renderDayView() {
       `;
     });
   }
-  
+
   html += '</div></div>';
   container.innerHTML = html;
-  
+
   // Update header
   const headerEl = document.getElementById('calendar-month-year');
   if (headerEl) {
     headerEl.textContent = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   }
-  
+
   console.log('[Calendar] Day view rendered with', dayEvents.length, 'events,', daySessions.length, 'sessions');
 }
 
 // Default color palette for courses
 const COURSE_COLOR_PALETTE = [
-  "#EF4444", "#F97316", "#F59E0B", "#84CC16", 
-  "#10B981", "#06B6D4", "#3B82F6", "#6366F1", 
+  "#EF4444", "#F97316", "#F59E0B", "#84CC16",
+  "#10B981", "#06B6D4", "#3B82F6", "#6366F1",
   "#8B5CF6", "#EC4899", "#64748B", "#78716C"
 ];
 
@@ -3438,19 +3644,19 @@ async function viewProposalFile(filename) {
   const titleEl = document.getElementById('proposal-modal-title');
   const metaEl = document.getElementById('proposal-modal-meta');
   const contentEl = document.getElementById('proposal-modal-content');
-  
+
   if (!overlay) return;
-  
+
   // Show modal
   overlay.style.display = 'flex';
   titleEl.textContent = 'Loading...';
   metaEl.textContent = '';
   contentEl.textContent = 'Fetching proposal content...';
-  
+
   try {
     const res = await fetch(`/api/scholar/proposal/${encodeURIComponent(filename)}`);
     const data = await res.json();
-    
+
     if (data.ok) {
       // Parse title from filename
       let title = filename.replace('.md', '').replace(/_/g, ' ');
@@ -3463,7 +3669,7 @@ async function viewProposalFile(filename) {
       } else {
         metaEl.innerHTML = '<span style="color: #64748b;">Proposal</span>';
       }
-      
+
       titleEl.textContent = title;
       contentEl.textContent = data.content;
     } else {
@@ -3488,13 +3694,13 @@ function closeProposalModal() {
 // Handle proposal approve/reject
 async function handleProposalAction(action) {
   if (!currentProposalFile) return;
-  
-  const confirmMsg = action === 'approve' 
+
+  const confirmMsg = action === 'approve'
     ? 'Approve this proposal? It will be moved to the approved folder.'
     : 'Reject this proposal? It will be moved to the rejected folder.';
-  
+
   if (!confirm(confirmMsg)) return;
-  
+
   try {
     const res = await fetch(`/api/scholar/proposal/${encodeURIComponent(currentProposalFile)}/action`, {
       method: 'POST',
@@ -3502,13 +3708,13 @@ async function handleProposalAction(action) {
       body: JSON.stringify({ action })
     });
     const data = await res.json();
-    
+
     if (data.ok) {
       closeProposalModal();
       // Refresh Scholar tab to update proposal list
       loadScholar();
       // Show success message
-      alert(`✓ ${data.message}`);
+      alert(`<i class="fas fa-check"></i> ${data.message}`);
     } else {
       alert('Error: ' + (data.message || 'Failed to process proposal'));
     }
@@ -3567,7 +3773,7 @@ async function scheduleM6Reviews(eventId, eventTitle) {
     });
     const data = await res.json();
     if (data.ok) {
-      alert(`✓ ${data.message}`);
+      alert(`<i class="fas fa-check"></i> ${data.message}`);
       // Refresh calendar if visible
       if (syllabusViewMode === 'calendar') loadCalendar();
     } else {
@@ -3581,9 +3787,14 @@ async function scheduleM6Reviews(eventId, eventTitle) {
 
 // ===== Event Edit Modal Functions =====
 function openEventEditModal(eventId) {
+  // Handle string IDs from calendar (e.g., "event_123")
+  if (typeof eventId === 'string' && eventId.startsWith('event_')) {
+    eventId = eventId.replace('event_', '');
+  }
+
   console.log('[EditModal] Opening for event:', eventId, 'syllabusEvents count:', syllabusEvents.length);
   let ev = syllabusEvents.find(e => String(e.id) === String(eventId));
-  
+
   if (!ev) {
     // If not found locally, try to fetch from API
     console.log('[EditModal] Event not in local state, fetching from API...');
@@ -3612,7 +3823,7 @@ function openEventEditModal(eventId) {
       });
     return;
   }
-  
+
   populateEditModal(ev, eventId);
 }
 
@@ -3625,21 +3836,61 @@ function populateEditModal(ev, eventId) {
   document.getElementById('edit-event-due-date').value = ev.due_date || '';
   document.getElementById('edit-event-weight').value = ev.weight || '';
   document.getElementById('edit-event-details').value = ev.raw_text || '';
-  
-  document.getElementById('event-edit-modal').style.display = 'block';
+
+  const modal = document.getElementById('event-edit-modal');
+  modal.style.display = 'flex';
+  // Small delay to allow display change to render before adding active class for transition
+  setTimeout(() => modal.classList.add('active'), 10);
 }
 
 function closeEventEditModal() {
-  document.getElementById('event-edit-modal').style.display = 'none';
-  document.getElementById('event-edit-status').textContent = '';
+  const modal = document.getElementById('event-edit-modal');
+  modal.classList.remove('active');
+  setTimeout(() => {
+    modal.style.display = 'none';
+    document.getElementById('event-edit-status').textContent = '';
+  }, 200); // Wait for transition
+}
+
+async function deleteEvent() {
+  const eventId = document.getElementById('edit-event-id').value;
+  if (!eventId) return;
+
+  if (!confirm('Are you sure you want to delete this event?')) return;
+
+  const statusEl = document.getElementById('event-edit-status');
+  statusEl.textContent = 'Deleting...';
+
+  try {
+    const res = await fetch(`/api/syllabus/event/${eventId}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      // Remove from local state
+      syllabusEvents = syllabusEvents.filter(e => String(e.id) !== String(eventId));
+
+      closeEventEditModal();
+      renderSyllabusList();
+      if (typeof loadCalendar === 'function') loadCalendar();
+    } else {
+      statusEl.textContent = `Error: ${data.message}`;
+      statusEl.style.color = 'var(--error)';
+    }
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    statusEl.textContent = 'Failed to delete event';
+    statusEl.style.color = 'var(--error)';
+  }
 }
 
 async function saveEventEdit(e) {
   if (e) e.preventDefault();
-  
+
   const eventId = document.getElementById('edit-event-id').value;
   const statusEl = document.getElementById('event-edit-status');
-  
+
   const payload = {
     title: document.getElementById('edit-event-title').value.trim(),
     event_type: document.getElementById('edit-event-type').value,
@@ -3649,27 +3900,27 @@ async function saveEventEdit(e) {
     weight: parseFloat(document.getElementById('edit-event-weight').value) || null,
     raw_text: document.getElementById('edit-event-details').value.trim()
   };
-  
+
   // Remove null/empty fields
   Object.keys(payload).forEach(k => {
     if (payload[k] === null || payload[k] === '') delete payload[k];
   });
-  
+
   try {
     statusEl.textContent = 'Saving...';
     statusEl.style.color = 'var(--text-muted)';
-    
+
     const res = await fetch(`/api/syllabus/event/${eventId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     const data = await res.json();
-    
+
     if (data.ok) {
-      statusEl.textContent = '✓ Event updated successfully';
+      statusEl.textContent = '<i class="fas fa-check"></i> Event updated successfully';
       statusEl.style.color = 'var(--success)';
-      
+
       // Update local state
       const ev = syllabusEvents.find(e => e.id === parseInt(eventId));
       if (ev) {
@@ -3681,7 +3932,7 @@ async function saveEventEdit(e) {
         if (payload.weight) ev.weight = payload.weight;
         if (payload.raw_text) ev.raw_text = payload.raw_text;
       }
-      
+
       // Close modal and refresh list after brief delay
       setTimeout(() => {
         closeEventEditModal();
@@ -3703,6 +3954,7 @@ async function saveEventEdit(e) {
 window.openEventEditModal = openEventEditModal;
 window.closeEventEditModal = closeEventEditModal;
 window.saveEventEdit = saveEventEdit;
+window.deleteEvent = deleteEvent;
 window.toggleEventStatus = toggleEventStatus;
 window.scheduleM6Reviews = scheduleM6Reviews;
 window.toggleWeekSection = toggleWeekSection;
@@ -3742,7 +3994,7 @@ function getWeekStartDate(weekNum) {
 function populateWeekSelector() {
   const startWeekSelect = document.getElementById('list-start-week');
   if (!startWeekSelect) return;
-  
+
   let html = '';
   for (let w = 1; w <= 20; w++) {
     const weekStart = getWeekStartDate(w);
@@ -3759,7 +4011,7 @@ function populateWeekSelector() {
 function updateWeekRangeLabel() {
   const label = document.getElementById('list-week-range-label');
   if (!label) return;
-  
+
   if (listWeekCount === 'all') {
     label.textContent = 'All Weeks';
   } else if (listWeekCount === 1) {
@@ -3775,21 +4027,21 @@ function updateWeekRangeLabel() {
  */
 function getWeekInfo(dateStr) {
   if (!dateStr) return { weekNum: 0, weekLabel: 'No Date', weekStart: null };
-  
+
   const date = new Date(dateStr + 'T00:00:00');
   const startOfYear = new Date(date.getFullYear(), 0, 1);
   const dayOfYear = Math.floor((date - startOfYear) / 86400000);
   const weekNum = Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
-  
+
   // Get week start (Sunday) and end (Saturday)
   const dayOfWeek = date.getDay();
   const weekStart = new Date(date);
   weekStart.setDate(date.getDate() - dayOfWeek);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
-  
+
   const weekLabel = `Week ${weekNum}: ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-  
+
   return { weekNum, weekLabel, weekStart, weekEnd, year: date.getFullYear() };
 }
 
@@ -3808,7 +4060,7 @@ function renderSyllabusList() {
     const matchesType = !eventType || (ev.type || '').toLowerCase() === eventType;
     const haystack = `${ev.title || ''} ${ev.raw_text || ''}`.toLowerCase();
     const matchesSearch = !search || haystack.includes(search);
-    
+
     // Week filter
     let matchesWeek = true;
     if (listWeekCount !== 'all') {
@@ -3816,7 +4068,7 @@ function renderSyllabusList() {
       const eventWeek = getSemesterWeekNumber(dateStr);
       matchesWeek = eventWeek >= listStartWeek && eventWeek < listStartWeek + listWeekCount;
     }
-    
+
     return matchesCourse && matchesType && matchesSearch && matchesWeek;
   }).sort((a, b) => {
     const ad = a.date || a.due_date || '';
@@ -3836,7 +4088,7 @@ function renderSyllabusList() {
     const dateStr = ev.date || ev.due_date || '';
     const weekInfo = getWeekInfo(dateStr);
     const weekKey = dateStr ? `${weekInfo.year}-W${String(weekInfo.weekNum).padStart(2, '0')}` : 'no-date';
-    
+
     if (!weekGroups[weekKey]) {
       weekGroups[weekKey] = {
         label: weekInfo.weekLabel,
@@ -3856,7 +4108,7 @@ function renderSyllabusList() {
   sortedWeekKeys.forEach((weekKey, idx) => {
     const group = weekGroups[weekKey];
     const isExpanded = idx < 3; // First 3 weeks expanded by default
-    
+
     html += `
       <tr class="week-header-row" onclick="toggleWeekSection(this)" style="cursor: pointer; background: var(--surface-2);">
         <td colspan="8" style="padding: 12px 16px; font-weight: 600; font-size: 14px; border-bottom: 2px solid var(--primary);">
@@ -3866,7 +4118,7 @@ function renderSyllabusList() {
         </td>
       </tr>
     `;
-    
+
     group.events.forEach(ev => {
       const dateDisplay = ev.date || ev.due_date || '';
       const weightDisplay = ev.weight ? `${(ev.weight * 100).toFixed(0)}%` : '—';
@@ -3878,7 +4130,7 @@ function renderSyllabusList() {
       const rowClass = isCompleted ? 'style="opacity: 0.6;"' : '';
       const titleStyle = isCompleted ? 'text-decoration: line-through; color: var(--text-muted);' : '';
       const displayStyle = isExpanded ? '' : 'display: none;';
-      
+
       html += `
         <tr class="week-event-row" data-week="${weekKey}" ${rowClass} style="${displayStyle}">
           <td style="text-align: center;">
@@ -3925,17 +4177,17 @@ function toggleWeekSection(headerRow) {
   const chevron = headerRow.querySelector('.week-chevron');
   const nextRows = [];
   let sibling = headerRow.nextElementSibling;
-  
+
   while (sibling && !sibling.classList.contains('week-header-row')) {
     if (sibling.classList.contains('week-event-row')) {
       nextRows.push(sibling);
     }
     sibling = sibling.nextElementSibling;
   }
-  
+
   const isExpanded = chevron.textContent === '▼';
   chevron.textContent = isExpanded ? '▶' : '▼';
-  
+
   nextRows.forEach(row => {
     row.style.display = isExpanded ? 'none' : '';
   });
@@ -3975,7 +4227,7 @@ function renderCalendar() {
 
   // Check view type and route to appropriate renderer
   const viewRange = document.getElementById('calendar-view-range')?.value || 'month';
-  
+
   if (viewRange === 'week') {
     renderWeekView();
     return;
@@ -4056,8 +4308,8 @@ function renderCalendar() {
       const bgColor = isExamQuiz ? 'rgba(248, 81, 73, 0.3)' : `${color}30`;
       const borderColor = isExamQuiz ? 'var(--error)' : color;
       const typeIcon = EVENT_TYPE_ICONS[(ev.event_type || '').toLowerCase()] || '';
-      
-      html += `<div class="calendar-event" style="background: ${bgColor}; border-left: 3px solid ${borderColor}; cursor: pointer;" onclick="openEventEditModal(${ev.id})" title="${ev.course_code || ''}: ${ev.title}">${typeIcon} ${ev.title}</div>`;
+
+      html += `<div class="calendar-event" style="background: ${bgColor}; border-left: 3px solid ${borderColor}; cursor: pointer;" onclick="openEventEditModal('${ev.id}')" title="${ev.course_code || ''}: ${ev.title}">${typeIcon} ${ev.title}</div>`;
     });
 
     // Render study sessions
@@ -4082,7 +4334,7 @@ function renderCalendar() {
   for (let i = 0; i < remainingCells; i++) {
     grid.innerHTML += '<div class="calendar-day other-month"></div>';
   }
-  
+
   console.log('[Calendar] Calendar rendered successfully with', calendarData.events.length, 'events,', calendarData.sessions.length, 'sessions,', calendarData.planned.length, 'planned');
 }
 
@@ -4094,18 +4346,18 @@ async function loadStudyTasks() {
   const listEl = document.getElementById('study-tasks-list');
   const filterEl = document.getElementById('study-tasks-filter');
   if (!listEl) return;
-  
+
   const filter = filterEl ? filterEl.value : 'active';
-  
+
   try {
     const res = await fetch(`/api/syllabus/study-tasks?filter=${filter}`);
     const data = await res.json();
-    
+
     if (!data.ok) {
       listEl.innerHTML = `<div style="color: var(--error); padding: 20px;">Error: ${data.message}</div>`;
       return;
     }
-    
+
     // Update stats
     const stats = data.stats || {};
     const pendingEl = document.getElementById('tasks-pending-count');
@@ -4113,13 +4365,13 @@ async function loadStudyTasks() {
     const completedEl = document.getElementById('tasks-completed-count');
     const progressBar = document.getElementById('tasks-progress-bar');
     const progressPct = document.getElementById('tasks-progress-pct');
-    
+
     if (pendingEl) pendingEl.textContent = stats.pending || 0;
     if (inProgressEl) inProgressEl.textContent = stats.in_progress || 0;
     if (completedEl) completedEl.textContent = stats.completed || 0;
     if (progressBar) progressBar.style.width = `${stats.progress_pct || 0}%`;
     if (progressPct) progressPct.textContent = `${stats.progress_pct || 0}%`;
-    
+
     // Render tasks
     const tasks = data.tasks || [];
     if (tasks.length === 0) {
@@ -4128,12 +4380,12 @@ async function loadStudyTasks() {
       </div>`;
       return;
     }
-    
+
     let html = '';
     tasks.forEach(task => {
       const isCompleted = task.status === 'completed';
       const courseColor = task.course_color || '#6366F1';
-      
+
       // Status styling
       let statusBadge = '';
       let rowStyle = '';
@@ -4146,7 +4398,7 @@ async function loadStudyTasks() {
       } else if (isCompleted) {
         rowStyle = 'border-left: 3px solid var(--success); opacity: 0.7;';
       }
-      
+
       // Date range display
       let dateDisplay = '';
       if (task.start_date && task.end_date) {
@@ -4156,7 +4408,7 @@ async function loadStudyTasks() {
       } else if (task.start_date) {
         dateDisplay = `From: ${task.start_date}`;
       }
-      
+
       // Days remaining
       let daysDisplay = '';
       if (!isCompleted && task.days_remaining !== null) {
@@ -4170,7 +4422,7 @@ async function loadStudyTasks() {
           daysDisplay = `<span style="color: var(--text-muted);">${task.days_remaining}d left</span>`;
         }
       }
-      
+
       html += `
         <div class="study-task-item" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; ${rowStyle}">
           <input type="checkbox" 
@@ -4197,9 +4449,9 @@ async function loadStudyTasks() {
         </div>
       `;
     });
-    
+
     listEl.innerHTML = html;
-    
+
   } catch (error) {
     console.error('Failed to load study tasks:', error);
     listEl.innerHTML = `<div style="color: var(--error); padding: 20px;">Failed to load study tasks: ${error.message}</div>`;
@@ -4356,7 +4608,7 @@ async function loadCoursesForCalendar() {
     const data = await res.json();
     if (data.courses) {
       allCourses = data.courses;
-      
+
       // Build options with color indicators
       const buildCourseOptions = (courses, includeEmpty = true, emptyLabel = 'All Courses') => {
         let html = includeEmpty ? `<option value="">${emptyLabel}</option>` : '';
@@ -4366,24 +4618,24 @@ async function loadCoursesForCalendar() {
         }).join('');
         return html;
       };
-      
+
       // Calendar filter
       const courseSelect = document.getElementById('calendar-filter-course');
       if (courseSelect) {
         courseSelect.innerHTML = buildCourseOptions(data.courses, true, 'All Courses');
       }
-      
+
       // Plan session course
       const planCourseSelect = document.getElementById('plan-session-course');
       if (planCourseSelect) {
         planCourseSelect.innerHTML = buildCourseOptions(data.courses, true, 'Optional');
       }
-      
+
       // Syllabus list filter
       if (syllabusListCourse) {
         syllabusListCourse.innerHTML = buildCourseOptions(data.courses, true, 'All Courses');
       }
-      
+
       // Render course color manager if container exists
       renderCourseColorManager();
     }
@@ -4419,7 +4671,7 @@ async function updateCourseColor(courseId, newColor) {
 function renderCourseColorManager() {
   const container = document.getElementById('course-color-manager');
   if (!container || !allCourses || allCourses.length === 0) return;
-  
+
   container.innerHTML = allCourses.map((c, idx) => {
     const color = getCourseColor(c, idx);
     return `
@@ -4525,7 +4777,7 @@ async function initDashboard() {
   loadScholar();
   loadScholarInsights();  // Load Scholar insights for Overview tab
   if (typeof loadApiKeyStatus === 'function') loadApiKeyStatus();
-  
+
   // Load courses first, then calendar (courses needed for color rendering)
   await loadCoursesForCalendar();
   loadCalendar();
@@ -4540,6 +4792,13 @@ async function initDashboard() {
     // but safe to ensure sync)
     openTab(null, 'overview');
   }
+
+  // Force all sections collapsed after initial data load
+  // This ensures any panels opened by data loading are closed
+  setTimeout(() => {
+    document.querySelectorAll('details.section-panel').forEach(d => d.removeAttribute('open'));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, 100);
 }
 
 
@@ -4604,47 +4863,47 @@ const chatModes = {}; // index -> 'clarify' | 'generate'
 const scholarChatHistories = {}; // index -> [{role, content}]
 
 // Simplified Scholar question chat function
-window.askScholarQuestion = async function(index) {
+window.askScholarQuestion = async function (index) {
   const inputEl = document.getElementById(`chat-input-${index}`);
   const responseEl = document.getElementById(`chat-response-${index}`);
   const askBtn = document.getElementById(`btn-ask-${index}`);
   if (!inputEl || !responseEl) return;
-  
+
   const userMessage = inputEl.value.trim();
   if (!userMessage) return;
-  
+
   const scholarQuestion = (currentScholarQuestions[index] || '').trim();
-  
+
   // Initialize history for this question if needed
   if (!scholarChatHistories[index]) {
     scholarChatHistories[index] = [];
   }
   const history = scholarChatHistories[index];
-  
+
   // Clear placeholder if this is first message
   if (history.length === 0) {
     responseEl.innerHTML = '';
   }
-  
+
   // Add user message to UI and history
   history.push({ role: 'user', content: userMessage });
   const userDiv = document.createElement('div');
   userDiv.style.cssText = "align-self: flex-end; background: var(--accent); color: #fff; padding: 8px 12px; border-radius: 12px 12px 4px 12px; max-width: 85%; font-size: 13px;";
   userDiv.textContent = userMessage;
   responseEl.appendChild(userDiv);
-  
+
   // Clear input and disable while loading
   inputEl.value = '';
   inputEl.disabled = true;
   if (askBtn) askBtn.disabled = true;
-  
+
   // Show loading indicator
   const loadingDiv = document.createElement('div');
   loadingDiv.style.cssText = "align-self: flex-start; color: var(--text-muted); font-size: 12px; padding: 8px;";
-  loadingDiv.textContent = '⏳ Thinking...';
+  loadingDiv.textContent = '<i class="fas fa-spinner fa-spin"></i> Thinking...';
   responseEl.appendChild(loadingDiv);
   responseEl.scrollTop = responseEl.scrollHeight;
-  
+
   try {
     const res = await fetch('/api/scholar/questions/clarify', {
       method: 'POST',
@@ -4656,14 +4915,14 @@ window.askScholarQuestion = async function(index) {
       })
     });
     const data = await res.json();
-    
+
     // Remove loading indicator
     responseEl.removeChild(loadingDiv);
-    
+
     if (data.ok) {
       const answer = data.clarification || data.answer || 'No response received.';
       history.push({ role: 'assistant', content: answer });
-      
+
       const aiDiv = document.createElement('div');
       aiDiv.style.cssText = "align-self: flex-start; background: var(--bg-alt, #1e293b); border: 1px solid var(--border); padding: 8px 12px; border-radius: 12px 12px 12px 4px; max-width: 85%; font-size: 13px; white-space: pre-wrap;";
       aiDiv.textContent = answer;
@@ -4681,7 +4940,7 @@ window.askScholarQuestion = async function(index) {
     errorDiv.textContent = '❌ Network error: ' + error.message;
     responseEl.appendChild(errorDiv);
   }
-  
+
   // Re-enable input
   inputEl.disabled = false;
   if (askBtn) askBtn.disabled = false;
@@ -4901,7 +5160,7 @@ async function loadBrainMastery() {
     const data = await resp.json();
     const container = document.getElementById('brain-mastery-list');
     if (data.mastery && data.mastery.length > 0) {
-      container.innerHTML = data.mastery.map(m => 
+      container.innerHTML = data.mastery.map(m =>
         `<div class="mastery-item" style="padding: 8px 0; border-bottom: 1px solid var(--border);">
           <strong style="color: var(--text-primary);">${m.topic}</strong>: 
           <span style="color: ${m.level === 'Strong' ? 'var(--success)' : m.level === 'Weak' ? 'var(--error)' : 'var(--text-secondary)'};">${m.level}</span> 
@@ -4936,14 +5195,14 @@ async function loadAnkiStatus() {
   const statusEl = document.getElementById('anki-status');
   const statusText = document.getElementById('anki-status-text');
   const syncBtn = document.getElementById('anki-sync-btn');
-  
+
   if (!statusEl) return;
-  
+
   try {
     // Try to check if anki sync endpoint is reachable
     const resp = await fetch('/api/cards/drafts/pending');
     const data = await resp.json();
-    
+
     if (data.ok) {
       ankiConnected = true;
       statusEl.className = 'status-indicator connected';
@@ -4970,11 +5229,11 @@ async function loadAnkiStatus() {
 async function loadAnkiPendingCount() {
   const badge = document.getElementById('anki-pending-count');
   if (!badge) return;
-  
+
   try {
     const resp = await fetch('/api/cards/drafts/pending');
     const data = await resp.json();
-    
+
     if (data.ok) {
       const count = data.pending_count || 0;
       badge.textContent = count;
@@ -4993,59 +5252,59 @@ async function loadAnkiDrafts(statusFilter = '') {
   const tbody = document.getElementById('anki-drafts-body');
   const emptyMsg = document.getElementById('anki-drafts-empty');
   const statusEl = document.getElementById('anki-drafts-status');
-  
+
   if (!tbody) return;
-  
+
   // Show loading state
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Loading drafts...</td></tr>';
   if (emptyMsg) emptyMsg.style.display = 'none';
-  
+
   try {
     let url = '/api/cards/drafts?limit=100';
     if (statusFilter) {
       url += `&status=${encodeURIComponent(statusFilter)}`;
     }
-    
+
     const resp = await fetch(url);
     const data = await resp.json();
-    
+
     if (!data.ok) {
       throw new Error(data.message || 'Failed to load drafts');
     }
-    
+
     const drafts = data.drafts || [];
-    
+
     if (drafts.length === 0) {
       tbody.innerHTML = '';
       if (emptyMsg) {
         emptyMsg.style.display = 'block';
-        emptyMsg.textContent = statusFilter 
+        emptyMsg.textContent = statusFilter
           ? `No ${statusFilter} cards found.`
           : 'No card drafts yet. Create cards from Tutor sessions or use the form below.';
       }
       return;
     }
-    
+
     if (emptyMsg) emptyMsg.style.display = 'none';
-    
+
     tbody.innerHTML = drafts.map(draft => {
       const frontPreview = (draft.front || '').substring(0, 60) + ((draft.front || '').length > 60 ? '...' : '');
       const backPreview = (draft.back || '').substring(0, 60) + ((draft.back || '').length > 60 ? '...' : '');
-      
+
       const statusClass = {
         'pending': 'badge-warning',
         'approved': 'badge-success',
         'rejected': 'badge-error',
         'synced': 'badge-info'
       }[draft.status] || 'badge-default';
-      
-      const actionButtons = draft.status === 'pending' 
-        ? `<button class="btn btn-sm btn-success" onclick="approveCard(${draft.id})" title="Approve">✓</button>
+
+      const actionButtons = draft.status === 'pending'
+        ? `<button class="btn btn-sm btn-success" onclick="approveCard(${draft.id})" title="Approve"><i class="fas fa-check"></i></button>
            <button class="btn btn-sm btn-error" onclick="rejectCard(${draft.id})" title="Reject">✗</button>`
         : draft.status === 'approved'
           ? `<button class="btn btn-sm" onclick="rejectCard(${draft.id})" title="Reject">✗</button>`
           : '';
-      
+
       return `<tr data-card-id="${draft.id}">
         <td style="max-width: 200px;" title="${(draft.front || '').replace(/"/g, '&quot;')}">${frontPreview}</td>
         <td style="max-width: 200px;" title="${(draft.back || '').replace(/"/g, '&quot;')}">${backPreview}</td>
@@ -5054,12 +5313,12 @@ async function loadAnkiDrafts(statusFilter = '') {
         <td class="actions-cell">${actionButtons}</td>
       </tr>`;
     }).join('');
-    
+
     // Update status
     if (statusEl) {
       statusEl.textContent = `Showing ${drafts.length} drafts`;
     }
-    
+
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--error);">Error: ${err.message}</td></tr>`;
     console.error('Failed to load Anki drafts:', err);
@@ -5076,9 +5335,9 @@ async function approveCard(cardId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'approved' })
     });
-    
+
     const data = await resp.json();
-    
+
     if (data.ok) {
       showStatus('anki-drafts-status', 'Card approved!', 'success');
       loadAnkiDrafts();
@@ -5099,16 +5358,16 @@ async function rejectCard(cardId) {
   if (!confirm('Reject this card draft? It will not be synced to Anki.')) {
     return;
   }
-  
+
   try {
     const resp = await fetch(`/api/cards/drafts/${cardId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'rejected' })
     });
-    
+
     const data = await resp.json();
-    
+
     if (data.ok) {
       showStatus('anki-drafts-status', 'Card rejected.', 'warning');
       loadAnkiDrafts();
@@ -5128,36 +5387,36 @@ async function rejectCard(cardId) {
 async function syncToAnki(dryRun = false) {
   const syncBtn = document.getElementById('anki-sync-btn');
   const statusEl = document.getElementById('anki-sync-status');
-  
+
   if (syncBtn) {
     syncBtn.disabled = true;
     syncBtn.textContent = dryRun ? 'Previewing...' : 'Syncing...';
   }
-  
+
   showStatus('anki-sync-status', dryRun ? 'Checking cards...' : 'Syncing to Anki...', 'info');
-  
+
   try {
     const resp = await fetch('/api/cards/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dry_run: dryRun })
     });
-    
+
     const data = await resp.json();
-    
+
     if (data.ok) {
       const syncedCount = data.synced_count || 0;
       const errors = data.errors || [];
-      
+
       if (dryRun) {
         showStatus('anki-sync-status', `Preview: ${syncedCount} cards ready to sync`, 'info');
       } else if (syncedCount > 0) {
-        showStatus('anki-sync-status', `✓ Synced ${syncedCount} cards to Anki!`, 'success');
+        showStatus('anki-sync-status', `<i class="fas fa-check"></i> Synced ${syncedCount} cards to Anki!`, 'success');
         loadAnkiDrafts();
         loadAnkiPendingCount();
         loadBrainStatus();
       } else if (errors.length > 0) {
-        showStatus('anki-sync-status', `⚠ Sync completed with errors: ${errors.join(', ')}`, 'warning');
+        showStatus('anki-sync-status', `<i class="fas fa-exclamation-triangle"></i> Sync completed with errors: ${errors.join(', ')}`, 'warning');
       } else {
         showStatus('anki-sync-status', 'No approved cards to sync.', 'info');
       }
@@ -5180,31 +5439,31 @@ async function syncToAnki(dryRun = false) {
  */
 async function createCardDraft(event) {
   if (event) event.preventDefault();
-  
+
   const form = document.getElementById('anki-create-form');
   if (!form) return;
-  
+
   const frontEl = document.getElementById('anki-card-front');
   const backEl = document.getElementById('anki-card-back');
   const typeEl = document.getElementById('anki-card-type');
   const deckEl = document.getElementById('anki-card-deck');
   const courseEl = document.getElementById('anki-card-course');
   const tagsEl = document.getElementById('anki-card-tags');
-  
+
   const front = (frontEl?.value || '').trim();
   const back = (backEl?.value || '').trim();
   const cardType = typeEl?.value || 'basic';
   const deckName = (deckEl?.value || '').trim() || 'PT Study::Default';
   const courseId = courseEl?.value ? parseInt(courseEl.value) : null;
   const tags = (tagsEl?.value || '').trim();
-  
+
   if (!front || !back) {
     showStatus('anki-create-status', 'Front and Back are required.', 'error');
     return;
   }
-  
+
   showStatus('anki-create-status', 'Creating card draft...', 'info');
-  
+
   try {
     const payload = {
       front,
@@ -5214,17 +5473,17 @@ async function createCardDraft(event) {
       tags
     };
     if (courseId) payload.course_id = courseId;
-    
+
     const resp = await fetch('/api/cards/draft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    
+
     const data = await resp.json();
-    
+
     if (data.ok) {
-      showStatus('anki-create-status', `✓ Card draft created (ID: ${data.card_id})`, 'success');
+      showStatus('anki-create-status', `<i class="fas fa-check"></i> Card draft created (ID: ${data.card_id})`, 'success');
       // Clear form
       if (frontEl) frontEl.value = '';
       if (backEl) backEl.value = '';
@@ -5259,25 +5518,25 @@ function initAnkiSection() {
   if (form) {
     form.addEventListener('submit', createCardDraft);
   }
-  
+
   // Sync button
   const syncBtn = document.getElementById('anki-sync-btn');
   if (syncBtn) {
     syncBtn.addEventListener('click', () => syncToAnki(false));
   }
-  
+
   // Preview sync button
   const previewBtn = document.getElementById('anki-preview-btn');
   if (previewBtn) {
     previewBtn.addEventListener('click', () => syncToAnki(true));
   }
-  
+
   // Filter dropdown
   const filterEl = document.getElementById('anki-filter-status');
   if (filterEl) {
     filterEl.addEventListener('change', filterAnkiDrafts);
   }
-  
+
   // Refresh button
   const refreshBtn = document.getElementById('anki-refresh-btn');
   if (refreshBtn) {
@@ -5287,7 +5546,7 @@ function initAnkiSection() {
       loadAnkiPendingCount();
     });
   }
-  
+
   // Observe when Anki section becomes visible (for lazy loading)
   const ankiSection = document.getElementById('anki-cards-section');
   if (ankiSection) {
@@ -5300,7 +5559,7 @@ function initAnkiSection() {
         }
       });
     }, { threshold: 0.1 });
-    
+
     observer.observe(ankiSection);
   }
 }
@@ -5323,7 +5582,7 @@ async function saveStrategicDigest() {
     alert('Digest is empty. Please generate a digest first.');
     return;
   }
-  
+
   try {
     const resp = await fetch('/api/scholar/digest/save', {
       method: 'POST',
@@ -5352,30 +5611,30 @@ async function saveStrategicDigest() {
 async function loadSavedDigests() {
   const listContainer = document.getElementById('saved-digests-list');
   const countEl = document.getElementById('saved-digests-count');
-  
+
   if (!listContainer) return;
-  
+
   listContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">Loading saved digests...</div>';
-  
+
   try {
     const res = await fetch('/api/scholar/digests');
     const data = await res.json();
-    
+
     if (!data.ok) {
       listContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">Failed to load digests.</div>';
       return;
     }
-    
+
     const digests = data.digests || [];
     if (countEl) {
       countEl.textContent = `(${digests.length})`;
     }
-    
+
     if (digests.length === 0) {
       listContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">No saved digests yet. Generate and save a digest to see it here.</div>';
       return;
     }
-    
+
     // Render digests as a table
     listContainer.innerHTML = `
       <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
@@ -5389,9 +5648,9 @@ async function loadSavedDigests() {
         </thead>
         <tbody>
           ${digests.map(d => {
-            const date = d.created_at ? new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown';
-            const typeLabel = d.digest_type === 'strategic' ? '🧠 Strategic' : d.digest_type || 'Other';
-            return `
+      const date = d.created_at ? new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown';
+      const typeLabel = d.digest_type === 'strategic' ? '🧠 Strategic' : d.digest_type || 'Other';
+      return `
               <tr style="border-bottom: 1px solid var(--border);">
                 <td style="padding: 10px 12px;">
                   <div style="color: var(--text-primary); font-weight: 500; cursor: pointer;" onclick="viewDigest(${d.id})">${escapeHtml(d.title || 'Untitled')}</div>
@@ -5407,7 +5666,7 @@ async function loadSavedDigests() {
                 </td>
               </tr>
             `;
-          }).join('')}
+    }).join('')}
         </tbody>
       </table>
     `;
@@ -5421,27 +5680,27 @@ async function viewDigest(digestId) {
   const modal = document.getElementById('digest-viewer-modal');
   const titleEl = document.getElementById('digest-viewer-title');
   const contentEl = document.getElementById('digest-viewer-content');
-  
+
   if (!modal || !titleEl || !contentEl) {
     alert('Digest viewer not available');
     return;
   }
-  
+
   // Show modal with loading state
   modal.style.display = 'flex';
   titleEl.textContent = 'Loading...';
   contentEl.textContent = 'Loading digest content...';
-  
+
   try {
     const res = await fetch(`/api/scholar/digests/${digestId}`);
     const data = await res.json();
-    
+
     if (!data.ok) {
       titleEl.textContent = 'Error';
       contentEl.textContent = data.message || 'Failed to load digest.';
       return;
     }
-    
+
     const digest = data.digest;
     titleEl.textContent = digest.title || 'Untitled Digest';
     contentEl.textContent = digest.content || '(No content)';
@@ -5463,13 +5722,13 @@ async function deleteDigest(digestId, title) {
   if (!confirm(`Are you sure you want to delete "${title}"? This will remove the file from disk.`)) {
     return;
   }
-  
+
   try {
     const res = await fetch(`/api/scholar/digests/${digestId}`, {
       method: 'DELETE'
     });
     const data = await res.json();
-    
+
     if (data.ok) {
       // Refresh the list
       loadSavedDigests();
@@ -5483,7 +5742,7 @@ async function deleteDigest(digestId, title) {
 }
 
 // Close modal when clicking outside
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
   const modal = document.getElementById('digest-viewer-modal');
   if (modal && e.target === modal) {
     closeDigestViewer();
@@ -5491,7 +5750,7 @@ document.addEventListener('click', function(e) {
 });
 
 // Close modal with Escape key
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     closeDigestViewer();
   }
@@ -5505,7 +5764,7 @@ window.loadSyllabusDashboard = async function () {
     if (typeof loadStudyTasks === 'function') {
       loadStudyTasks();
     }
-    
+
     // Courses
     const resCourses = await fetch('/api/syllabus/courses');
     const coursesData = await resCourses.json();
@@ -5527,7 +5786,7 @@ window.loadSyllabusDashboard = async function () {
         });
         if (current) select.value = current; // preserve selection if possible
       });
-      
+
       // Render course color manager
       renderCourseColorManager();
     }
@@ -5599,7 +5858,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (dropzone && fileInput) {
     dropzone.addEventListener('click', () => fileInput.click());
   }
-  
+
   // 4. Load sync status on page load
   loadSyncStatus();
 });
@@ -5616,7 +5875,7 @@ async function loadSyncStatus() {
     const filesEl = document.getElementById('sync-files-count');
     const sessionsEl = document.getElementById('sync-sessions-count');
     const timeEl = document.getElementById('sync-last-time');
-    
+
     if (filesEl) filesEl.textContent = data.files_tracked || 0;
     if (sessionsEl) sessionsEl.textContent = data.valid_sessions || 0;
     if (timeEl) timeEl.textContent = data.last_sync || 'Never';
@@ -5628,20 +5887,20 @@ async function loadSyncStatus() {
 async function runSync(force = false) {
   const msgEl = document.getElementById('sync-message');
   if (!msgEl) return;
-  
+
   msgEl.textContent = force ? 'Force re-syncing all files...' : 'Syncing...';
   msgEl.style.color = 'var(--text-muted)';
-  
+
   try {
     const resp = await fetch('/api/sync/run', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({force: force})
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ force: force })
     });
     const data = await resp.json();
-    
+
     if (data.ok) {
-      msgEl.textContent = `✓ Done: ${data.ingested || 0} ingested, ${data.skipped || 0} skipped`;
+      msgEl.textContent = `<i class="fas fa-check"></i> Done: ${data.ingested || 0} ingested, ${data.skipped || 0} skipped`;
       msgEl.style.color = 'var(--success)';
       // Refresh status and stats
       loadSyncStatus();
@@ -5662,9 +5921,9 @@ async function clearSyncTracking() {
   if (!confirm('Clear all ingestion tracking? This will cause all files to be re-processed on next sync.')) {
     return;
   }
-  
+
   try {
-    const resp = await fetch('/api/sync/clear-tracking', {method: 'POST'});
+    const resp = await fetch('/api/sync/clear-tracking', { method: 'POST' });
     const data = await resp.json();
     if (data.ok) {
       alert('Tracking cleared. Run sync to re-ingest all files.');
@@ -5689,13 +5948,13 @@ async function checkGCalStatus() {
   try {
     const response = await fetch('/api/gcal/status');
     const data = await response.json();
-    
+
     const badge = document.getElementById('gcal-status-badge');
     const authSection = document.getElementById('gcal-auth-section');
     const syncSection = document.getElementById('gcal-sync-section');
-    
+
     if (!badge || !authSection || !syncSection) return;
-    
+
     if (data.connected) {
       badge.textContent = 'Connected';
       badge.style.background = 'var(--success)';
@@ -5722,19 +5981,19 @@ async function connectGoogleCalendar() {
   try {
     const response = await fetch('/api/gcal/auth/start');
     const data = await response.json();
-    
+
     if (data.error) {
       alert('Error: ' + data.error);
       return;
     }
-    
+
     // Open OAuth popup
     const popup = window.open(
       data.auth_url,
       'gcal-auth',
       'width=500,height=600,menubar=no,toolbar=no'
     );
-    
+
     // Listen for auth completion
     window.addEventListener('message', function handler(event) {
       if (event.data?.type === 'gcal-auth-success') {
@@ -5755,13 +6014,13 @@ async function connectGoogleCalendar() {
 async function syncGoogleCalendar() {
   const statusEl = document.getElementById('gcal-sync-status');
   const btn = document.getElementById('btn-gcal-sync');
-  
+
   if (!btn || !statusEl) return;
-  
+
   btn.disabled = true;
   btn.textContent = 'Syncing...';
   statusEl.textContent = '';
-  
+
   try {
     const response = await fetch('/api/gcal/sync', {
       method: 'POST',
@@ -5769,9 +6028,9 @@ async function syncGoogleCalendar() {
       body: JSON.stringify({})
     });
     const data = await response.json();
-    
+
     if (data.success) {
-      statusEl.textContent = `✓ Imported ${data.imported} events, skipped ${data.skipped} duplicates`;
+      statusEl.textContent = `<i class="fas fa-check"></i> Imported ${data.imported} events, skipped ${data.skipped} duplicates`;
       statusEl.style.color = 'var(--success)';
       if (typeof loadCalendar === 'function') loadCalendar(); // Refresh calendar
     } else {
@@ -5794,7 +6053,7 @@ async function disconnectGoogleCalendar() {
   if (!confirm('Disconnect Google Calendar? Synced events will remain in the database.')) {
     return;
   }
-  
+
   try {
     await fetch('/api/gcal/revoke', { method: 'POST' });
     checkGCalStatus();
@@ -5809,11 +6068,11 @@ async function disconnectGoogleCalendar() {
 async function syncGoogleTasks() {
   const statusEl = document.getElementById('gcal-sync-status');
   const btn = document.getElementById('btn-gtasks-sync');
-  
+
   btn.disabled = true;
   btn.textContent = 'Syncing Tasks...';
   statusEl.textContent = '';
-  
+
   try {
     const response = await fetch('/api/gtasks/sync', {
       method: 'POST',
@@ -5821,9 +6080,9 @@ async function syncGoogleTasks() {
       body: JSON.stringify({})
     });
     const data = await response.json();
-    
+
     if (data.success) {
-      statusEl.textContent = `✓ Imported ${data.imported} tasks, skipped ${data.skipped} duplicates`;
+      statusEl.textContent = `<i class="fas fa-check"></i> Imported ${data.imported} tasks, skipped ${data.skipped} duplicates`;
       statusEl.style.color = 'var(--success)';
       loadCalendar(); // Refresh calendar
     } else {
@@ -5840,13 +6099,177 @@ async function syncGoogleTasks() {
 }
 
 // Initialize GCal UI on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   // Check GCal status
   checkGCalStatus();
-  
+
   // Attach event listeners for main GCal panel
   document.getElementById('btn-gcal-connect')?.addEventListener('click', connectGoogleCalendar);
   document.getElementById('btn-gcal-sync')?.addEventListener('click', syncGoogleCalendar);
   document.getElementById('btn-gtasks-sync')?.addEventListener('click', syncGoogleTasks);
   document.getElementById('btn-gcal-disconnect')?.addEventListener('click', disconnectGoogleCalendar);
 });
+
+async function runBlackboardScraper() {
+  const btn = document.getElementById('btn-run-scraper');
+  if (!btn) return;
+
+  if (!confirm('Run the Blackboard scraper now? This may take 1-2 minutes to complete.')) return;
+
+  const originalText = btn.textContent;
+  btn.textContent = 'Starting...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/scraper/run', { method: 'POST' });
+    const data = await res.json();
+
+    if (data.ok) {
+      btn.textContent = 'Running...';
+      showStatus('sync-count-badge', 'Scraper started', 'success'); // Hack reuse badge or just alert
+      alert('Scraper started in background. The Sync Inbox will update automatically when items arrive.');
+
+      // Timeout to restore button
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }, 5000);
+
+    } else {
+      alert('Error: ' + data.message);
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  } catch (e) {
+    alert('Network error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+// ============================================
+// SYNC INBOX LOGIC (Restored)
+// ============================================
+
+// Sync Inbox Polling
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof updateSyncCount === 'function') {
+    updateSyncCount();
+    setInterval(updateSyncCount, 60000); // Check every minute
+  }
+});
+
+async function loadSyncPending() {
+  const tbody = document.getElementById('sync-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading pending items...</td></tr>';
+
+  try {
+    const res = await fetch('/api/sync/pending');
+    const data = await res.json();
+
+    if (data.ok && data.items.length > 0) {
+      renderSyncItems(data.items);
+      updateSyncCount(data.items.length);
+    } else {
+      tbody.innerHTML = `
+        <tr class="empty-row">
+          <td colspan="6">
+            <div class="empty-state">
+              <span class="empty-state-icon">📥</span>
+              <h3 class="empty-state-title">Your inbox is empty</h3>
+              <p class="empty-state-hint">New scraped items will appear here for verification.</p>
+            </div>
+          </td>
+        </tr>`;
+      updateSyncCount(0);
+    }
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--error);">Error loading inbox: ${e.message}</td></tr>`;
+  }
+}
+
+function renderSyncItems(items) {
+  const tbody = document.getElementById('sync-tbody');
+  tbody.innerHTML = items.map(item => {
+    let typeClass = 'badge-neutral';
+    if (item.type === 'assignment' || item.type === 'quiz') typeClass = 'badge-drill';
+    if (item.type === 'material') typeClass = 'badge-core';
+    if (item.type === 'announcement') typeClass = 'badge-sprint';
+
+    return `
+      <tr id="sync-row-${item.id}">
+        <td><span class="badge ${typeClass}">${item.type}</span></td>
+        <td><span style="font-weight:600;">${item.course_name}</span></td>
+        <td>${item.title}</td>
+        <td style="font-size:12px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${item.raw_text || ''}">
+          ${item.raw_text || (item.source_url ? `<a href="${item.source_url}" target="_blank">View File</a>` : 'No details')}
+        </td>
+        <td style="font-size:12px;">
+          ${item.date ? `<div>On: ${item.date}</div>` : ''}
+          ${item.due_date ? `<div style="color:var(--error);">Due: ${item.due_date}</div>` : ''}
+          <div style="font-size:10px; color:var(--text-muted);">Scraped: ${new Date(item.scraped_at).toLocaleDateString()}</div>
+        </td>
+        <td>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="resolveSyncItem(${item.id}, 'approve')" style="font-size:11px; padding:4px 8px;">Approve</button>
+            <button class="btn" onclick="resolveSyncItem(${item.id}, 'ignore')" style="font-size:11px; padding:4px 8px;">Ignore</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function resolveSyncItem(id, action) {
+  const row = document.getElementById(`sync-row-${id}`);
+  if (row) row.style.opacity = '0.5';
+
+  try {
+    const res = await fetch('/api/sync/resolve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, action })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      if (row) row.remove();
+      const tbody = document.getElementById('sync-tbody');
+      if (tbody && tbody.children.length === 0) {
+        loadSyncPending();
+      } else {
+        updateSyncCount();
+      }
+    } else {
+      alert('Error: ' + data.message);
+      if (row) row.style.opacity = '1';
+    }
+  } catch (e) {
+    alert('Network error: ' + e.message);
+    if (row) row.style.opacity = '1';
+  }
+}
+
+async function updateSyncCount(countOverride = null) {
+  const badge = document.getElementById('sync-count-badge');
+  if (!badge) return;
+
+  let count = countOverride;
+  if (count === null) {
+    try {
+      const res = await fetch('/api/sync/pending');
+      const data = await res.json();
+      count = data.items ? data.items.length : 0;
+    } catch (e) {
+      return;
+    }
+  }
+
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = 'inline-flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}

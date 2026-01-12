@@ -1,0 +1,26 @@
+# Ralph Progress Log
+Started: 2026-01-12
+
+## Codebase Patterns
+- Scholar outputs: keep artifacts organized under scholar/outputs by lane (reports, module_audits, module_dossiers, gap_analysis, digests, orchestrator_runs, research_notebook, promotion_queue, system_map).
+- Migrations: Use IF NOT EXISTS
+- Types: Export from actions.ts
+
+## Key Files
+- brain/README.md
+- scripts/release_check.py
+---
+## 2026-01-12 - US-001
+- What was implemented: Created Scholar audit report with inventory, connections map, expected vs actual behavior, gaps/risks, and open questions.
+- Files changed: scholar/outputs/audit_scholar_repo.md; AGENTS.md; scripts/ralph/progress.txt.
+- **Learnings:**
+  - Scholar outputs are organized by lane under scholar/outputs; document deviations when they occur.
+  - Gotchas encountered: WSL missing python/pip/pytest; python -m pytest failed; python3 -m pytest failed (pytest missing); pip/ensurepip unavailable; python3 scripts/release_check.py timed out and exited nonzero.
+---
+## 2026-01-12 - US-001 (update)
+- What was implemented: Ran required checks using Windows Python.
+- Files changed: none.
+- **Learnings:**
+  - pytest brain/tests passed (4 tests) with Python 3.14.0.
+  - release_check.py failed with SystemExit from _smoke_test.py during collection.
+---

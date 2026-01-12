@@ -35,6 +35,7 @@ Then run: `python brain/ingest_session.py brain/session_logs/YYYY-MM-DD_topic.md
 - Source snippets used? (Y/N): [Yes/No]
 - Prompt Drift? (Y/N):
 - Prompt Drift Notes:
+- Runtime Notes: [Meta-notes about process, SOP adherence, workflow friction]
 
 ## Anatomy-Specific (if applicable)
 - Region Covered: [e.g., Posterior Hip, Anterior Thigh, Knee]
@@ -64,6 +65,31 @@ Then run: `python brain/ingest_session.py brain/session_logs/YYYY-MM-DD_topic.md
 - Weak anchor: [Term] because [reason]; needs card in WRAP.
 - Weak anchor: [Term] because [reason]; needs card in WRAP.
 
+## Anki Cards
+[List card titles or Q-A pairs created this session]
+
+1. Q: [Question] → A: [Answer]
+2. Q: [Question] → A: [Answer]
+3. [Card title or cloze]
+
+## Glossary
+[New terms defined this session - term = definition format]
+
+- [Term] = [Definition]
+- [Term] = [Definition]
+
+## Errors / Misconceptions
+[Track errors for targeted review and WRAP card generation]
+
+### Conceptual
+- [Concept misunderstood and correct understanding]
+
+### Discrimination (X vs Y)
+- [Confusion pair: what you mixed up and how to distinguish]
+
+### Recall
+- [What you failed to recall and the correct answer]
+
 ## Reflection
 
 ### What Worked
@@ -78,10 +104,32 @@ Then run: `python brain/ingest_session.py brain/session_logs/YYYY-MM-DD_topic.md
 ### Notes/Insights
 [Any other observations, connections, or ideas]
 
-## Next Session Priority
+## Wrap Watchlist
+[Recurring confusions or weak points to track across sessions]
+
+- [ ] [Confusion pattern or recurring error]
+- [ ] [Weak discrimination that keeps appearing]
+
+## Clinical Links
+[Clinical correlations and applications discovered]
+
+- [Anatomy/concept] → [Clinical relevance or pathology]
+- [Structure] → [Injury, condition, or test]
+
+## Spaced Reviews
+[Schedule for spaced repetition review of this session's content]
+
+- Review1: [Date - 1 day after]
+- Review2: [Date - 3 days after]
+- Review3: [Date - 7 days after]
+
+## Next Session
+[Planning and continuity for upcoming session]
+
 - Topic: [What to tackle next]
 - Focus: [Specific area or weakness to address]
 - Materials Needed: [What to gather before next session]
+- Continuity Notes: [What to remember from this session, open threads]
 
 ---
 

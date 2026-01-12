@@ -1,0 +1,2 @@
+- Should the session log template require a "Pre-probe attempted? Y/N + evidence" field to enforce probe-before-teach documentation?
+- Should technique checklist coverage be explicitly captured in session logs (checkboxes) instead of inferred from reflections?

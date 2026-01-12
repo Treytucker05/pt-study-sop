@@ -115,6 +115,36 @@ def build_stats():
     unique_days = len(set(s.get("session_date") for s in recent_sessions if s.get("session_date")))
     avg_daily_minutes = recent_minutes // unique_days if unique_days else 0
 
+    # WRAP v9.2 metrics
+    wrap_fields = ["anki_cards_text", "glossary_entries", "wrap_watchlist", "clinical_links", "spaced_reviews"]
+    
+    # Count sessions with errors logged
+    sessions_with_errors = sum(
+        1 for s in sessions
+        if any(s.get(f) for f in ["errors_conceptual", "errors_discrimination", "errors_recall"])
+    )
+    
+    # Count glossary entries (semicolon or newline separated)
+    total_glossary_terms = 0
+    for s in sessions:
+        glossary = s.get("glossary_entries") or ""
+        if glossary.strip():
+            # Count entries separated by semicolons, newlines, or bullet points
+            entries = re.split(r"[;\n]", glossary)
+            total_glossary_terms += sum(1 for e in entries if e.strip() and not e.strip().startswith("#"))
+    
+    # Count sessions with spaced reviews scheduled
+    sessions_with_spaced_reviews = sum(
+        1 for s in sessions if s.get("spaced_reviews") and s.get("spaced_reviews").strip()
+    )
+    
+    # Calculate average WRAP completeness percentage
+    wrap_completeness_scores = []
+    for s in sessions:
+        filled = sum(1 for f in wrap_fields if s.get(f) and str(s.get(f)).strip())
+        wrap_completeness_scores.append((filled / len(wrap_fields)) * 100)
+    avg_wrap_completeness = round(sum(wrap_completeness_scores) / len(wrap_completeness_scores), 1) if wrap_completeness_scores else 0
+
     mode_counts = analysis["study_modes"] if analysis else {}
     total_mode_count = sum(mode_counts.values()) if mode_counts else 0
     mode_percentages = (
@@ -134,6 +164,13 @@ def build_stats():
             "anki_cards": sum(s.get("anki_cards_count") or 0 for s in sessions),
             "total_minutes": total_minutes,
             "avg_daily_minutes": avg_daily_minutes,
+            "glossary_terms": total_glossary_terms,
+            "sessions_with_errors": sessions_with_errors,
+            "sessions_with_spaced_reviews": sessions_with_spaced_reviews,
+        },
+        "wrap_metrics": {
+            "avg_completeness": avg_wrap_completeness,
+            "spaced_review_compliance": round((sessions_with_spaced_reviews / len(sessions)) * 100, 1) if sessions else 0,
         },
         "range": {
             "first_date": min((s.get("session_date") for s in sessions), default=None),
@@ -324,6 +361,178 @@ def get_trend_data(days=30):
     
     except Exception as e:
         print(f"[WARN] Error fetching trend data: {e}")
+    finally:
+        conn.close()
+    
+    return results
+
+
+def get_wrap_analytics():
+    """
+    Get comprehensive WRAP v9.2 analytics including error patterns,
+    completeness scoring, glossary counts, and spaced review compliance.
+    
+    Returns:
+        dict with:
+        - error_tracking: Sessions with errors and recurring error terms
+        - wrap_completeness: Breakdown of completeness by session
+        - glossary_stats: Total terms and top entries
+        - spaced_review_stats: Compliance metrics
+    """
+    import sqlite3
+    from db_setup import DB_PATH
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    results = {
+        "error_tracking": {
+            "sessions_with_errors": 0,
+            "total_sessions": 0,
+            "error_rate": 0,
+            "conceptual_errors": [],
+            "discrimination_errors": [],
+            "recall_errors": [],
+            "recurring_terms": [],
+        },
+        "wrap_completeness": {
+            "avg_completeness": 0,
+            "fully_complete": 0,
+            "partially_complete": 0,
+            "empty": 0,
+            "field_fill_rates": {},
+        },
+        "glossary_stats": {
+            "total_terms": 0,
+            "sessions_with_glossary": 0,
+            "avg_terms_per_session": 0,
+        },
+        "spaced_review_stats": {
+            "sessions_scheduled": 0,
+            "sessions_not_scheduled": 0,
+            "compliance_rate": 0,
+        },
+    }
+    
+    wrap_fields = ["anki_cards_text", "glossary_entries", "wrap_watchlist", "clinical_links", "spaced_reviews"]
+    
+    try:
+        # Fetch all sessions with WRAP fields
+        cursor.execute(
+            """
+            SELECT id, session_date, main_topic,
+                   anki_cards_text, glossary_entries, wrap_watchlist,
+                   clinical_links, spaced_reviews,
+                   errors_conceptual, errors_discrimination, errors_recall
+            FROM sessions
+            ORDER BY session_date DESC
+            """
+        )
+        rows = cursor.fetchall()
+        total_sessions = len(rows)
+        results["error_tracking"]["total_sessions"] = total_sessions
+        
+        if not rows:
+            return results
+        
+        # Error tracking
+        sessions_with_errors = 0
+        all_error_terms = Counter()
+        conceptual_list = []
+        discrimination_list = []
+        recall_list = []
+        
+        for row in rows:
+            has_error = False
+            for error_field, error_list in [
+                ("errors_conceptual", conceptual_list),
+                ("errors_discrimination", discrimination_list),
+                ("errors_recall", recall_list),
+            ]:
+                error_text = row[error_field] or ""
+                if error_text.strip():
+                    has_error = True
+                    error_list.append({
+                        "session_date": row["session_date"],
+                        "topic": row["main_topic"],
+                        "error": error_text.strip()[:200],  # Truncate for display
+                    })
+                    # Extract terms for frequency analysis
+                    for term in re.split(r"[;,\n]", error_text):
+                        term = term.strip().lower()
+                        if term and len(term) > 3:
+                            all_error_terms[term] += 1
+            
+            if has_error:
+                sessions_with_errors += 1
+        
+        results["error_tracking"]["sessions_with_errors"] = sessions_with_errors
+        results["error_tracking"]["error_rate"] = round((sessions_with_errors / total_sessions) * 100, 1) if total_sessions else 0
+        results["error_tracking"]["conceptual_errors"] = conceptual_list[:10]
+        results["error_tracking"]["discrimination_errors"] = discrimination_list[:10]
+        results["error_tracking"]["recall_errors"] = recall_list[:10]
+        results["error_tracking"]["recurring_terms"] = all_error_terms.most_common(10)
+        
+        # WRAP completeness scoring
+        completeness_scores = []
+        field_fill_counts = {f: 0 for f in wrap_fields}
+        fully_complete = 0
+        partially_complete = 0
+        empty = 0
+        
+        for row in rows:
+            filled = 0
+            for field in wrap_fields:
+                if row[field] and str(row[field]).strip():
+                    filled += 1
+                    field_fill_counts[field] += 1
+            
+            score = (filled / len(wrap_fields)) * 100
+            completeness_scores.append(score)
+            
+            if filled == len(wrap_fields):
+                fully_complete += 1
+            elif filled > 0:
+                partially_complete += 1
+            else:
+                empty += 1
+        
+        results["wrap_completeness"]["avg_completeness"] = round(sum(completeness_scores) / len(completeness_scores), 1) if completeness_scores else 0
+        results["wrap_completeness"]["fully_complete"] = fully_complete
+        results["wrap_completeness"]["partially_complete"] = partially_complete
+        results["wrap_completeness"]["empty"] = empty
+        results["wrap_completeness"]["field_fill_rates"] = {
+            field: round((count / total_sessions) * 100, 1) if total_sessions else 0
+            for field, count in field_fill_counts.items()
+        }
+        
+        # Glossary stats
+        total_glossary_terms = 0
+        sessions_with_glossary = 0
+        
+        for row in rows:
+            glossary = row["glossary_entries"] or ""
+            if glossary.strip():
+                sessions_with_glossary += 1
+                entries = re.split(r"[;\n]", glossary)
+                term_count = sum(1 for e in entries if e.strip() and not e.strip().startswith("#"))
+                total_glossary_terms += term_count
+        
+        results["glossary_stats"]["total_terms"] = total_glossary_terms
+        results["glossary_stats"]["sessions_with_glossary"] = sessions_with_glossary
+        results["glossary_stats"]["avg_terms_per_session"] = round(total_glossary_terms / sessions_with_glossary, 1) if sessions_with_glossary else 0
+        
+        # Spaced review compliance
+        sessions_scheduled = sum(1 for row in rows if row["spaced_reviews"] and row["spaced_reviews"].strip())
+        sessions_not_scheduled = total_sessions - sessions_scheduled
+        
+        results["spaced_review_stats"]["sessions_scheduled"] = sessions_scheduled
+        results["spaced_review_stats"]["sessions_not_scheduled"] = sessions_not_scheduled
+        results["spaced_review_stats"]["compliance_rate"] = round((sessions_scheduled / total_sessions) * 100, 1) if total_sessions else 0
+        
+    except Exception as e:
+        print(f"[WARN] Error fetching WRAP analytics: {e}")
     finally:
         conn.close()
     

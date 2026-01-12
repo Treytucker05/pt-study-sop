@@ -97,6 +97,7 @@ Where to add implementation notes:
 - Keep filenames and paths stable; do not rename canon files casually.
 - Study modes: Core, Sprint, Drill (use exact casing).
 - Syllabus event types: lecture, reading, quiz, exam, assignment, other.
+- Scholar outputs should live under `scholar/outputs/` and be organized by lane (reports, module_audits, module_dossiers, gap_analysis, digests, orchestrator_runs, research_notebook, promotion_queue, system_map); document any deviations.
 
 ## 7) Safety and data handling
 - Do not store or paste API keys or secrets in docs.
