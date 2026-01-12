@@ -1,104 +1,287 @@
 {
-    "project":  "pt-study-sop",
-    "branchName":  "ralph/setup-ralph",
-    "description":  "Set up Ralph scaffolding, audit the Scholar system, and define Scholar-focused review/research flow.",
-    "userStories":  [
-                        {
-                            "id":  "US-001",
-                            "title":  "Audit Scholar system end-to-end",
-                            "description":  "As a maintainer, I want a Scholar audit report that maps components, connections, expected behavior, actual behavior, and gaps so we can plan improvements.",
-                            "acceptanceCriteria":  [
-                                                       "Create scholar/outputs/audit_scholar_repo.md with sections: Inventory, Connections Map, Expected Behavior (with source file paths), Actual Behavior (with source file paths), Gaps \u0026 Risks, and Open Questions",
-                                                       "Include a checklist of available vs missing AI artifacts in scholar/outputs",
-                                                       "Report is stored under scholar/outputs; document any additional changes in the report",
-                                                       "Typecheck passes"
-                                                   ],
-                            "priority":  1,
-                            "passes":  true,
-                            "notes":  ""
-                        },
-                        {
-                            "id":  "US-002",
-                            "title":  "Add Ralph loop script",
-                            "description":  "As a maintainer, I want a ralph.sh loop so Ralph can run iterations automatically.",
-                            "acceptanceCriteria":  [
-                                                       "Add scripts/ralph/ralph.sh with bash loop and set -e",
-                                                       "Default MAX_ITERATIONS is 10 and can be overridden via first arg",
-                                                       "Pipes scripts/ralph/prompt.md into `codex exec --dangerously-bypass-approvals-and-sandbox -` and captures output",
-                                                       "Exits 0 when output contains `\u003cpromise\u003eCOMPLETE\u003c/promise\u003e`",
-                                                       "Sleeps briefly between iterations and exits 1 after max iterations",
-                                                       "Typecheck passes"
-                                                   ],
-                            "priority":  2,
-                            "passes":  true,
-                            "notes":  ""
-                        },
-                        {
-                            "id":  "US-003",
-                            "title":  "Add Ralph prompt instructions",
-                            "description":  "As a maintainer, I want clear iteration instructions so the agent follows the Ralph workflow.",
-                            "acceptanceCriteria":  [
-                                                       "Add scripts/ralph/prompt.md with steps: read prd.json + progress.txt, check branch, pick highest-priority story where passes=false, implement one story, run typecheck/tests, update AGENTS.md with reusable patterns, commit `feat: [ID] - [Title]`, mark passes true, append progress",
-                                                       "Include a Progress Format section with date + story id and a Codebase Patterns header",
-                                                       "Include stop condition `\u003cpromise\u003eCOMPLETE\u003c/promise\u003e`",
-                                                       "Typecheck passes"
-                                                   ],
-                            "priority":  3,
-                            "passes":  true,
-                            "notes":  ""
-                        },
-                        {
-                            "id":  "US-004",
-                            "title":  "Add progress log scaffold",
-                            "description":  "As a maintainer, I want a progress.txt template so Ralph can persist learnings between iterations.",
-                            "acceptanceCriteria":  [
-                                                       "Add scripts/ralph/progress.txt with a Ralph Progress Log header",
-                                                       "Include Codebase Patterns and Key Files sections with placeholders",
-                                                       "Typecheck passes"
-                                                   ],
-                            "priority":  4,
-                            "passes":  true,
-                            "notes":  ""
-                        },
-                        {
-                            "id":  "US-005",
-                            "title":  "Add Scholar AI artifact manifest",
-                            "description":  "As a maintainer, I want an explicit list of Scholar AI-generated artifacts so coverage can be verified.",
-                            "acceptanceCriteria":  [
-                                                       "Add scholar/inputs/ai_artifacts_manifest.json listing output lanes and file patterns for summaries, questions, and recommendations",
-                                                       "Document the manifest in scholar/README.md under Required Inputs",
-                                                       "Typecheck passes"
-                                                   ],
-                            "priority":  5,
-                            "passes":  true,
-                            "notes":  ""
-                        },
-                        {
-                            "id":  "US-006",
-                            "title":  "Require coverage + dedupe in orchestrator runs",
-                            "description":  "As a maintainer, I want orchestrator runs to use all AI artifacts and produce a traceable recommendation set.",
-                            "acceptanceCriteria":  [
-                                                       "Update scholar/workflows/orchestrator_run_prompt.md to require a coverage section listing artifacts used and any gaps",
-                                                       "Add requirement to deduplicate and rank recommendations with source file paths",
-                                                       "Typecheck passes"
-                                                   ],
-                            "priority":  6,
-                            "passes":  true,
-                            "notes":  ""
-                        },
-                        {
-                            "id":  "US-007",
-                            "title":  "Clarify Review/Plan/Research flow",
-                            "description":  "As a maintainer, I want the Scholar loop to explicitly plan and optimize its agent flow before research.",
-                            "acceptanceCriteria":  [
-                                                       "Update scholar/workflows/orchestrator_loop.md to include a Plan step after Review",
-                                                       "Flow includes: Review -\u003e Plan -\u003e Understand -\u003e Question -\u003e Research -\u003e Synthesize -\u003e Draft -\u003e Wait",
-                                                       "Reference the AI artifact manifest during Review/Plan",
-                                                       "Typecheck passes"
-                                                   ],
-                            "priority":  7,
-                            "passes":  true,
-                            "notes":  ""
-                        }
-                    ]
+  "project": "pt-study-sop",
+  "branchName": "ralph/scholar-audit-20pass",
+  "description": "Complete Scholar system audit via 20 focused, verifiable reports",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Inventory Scholar files and outputs",
+      "description": "As a maintainer, I want a complete inventory of Scholar directories, key files, and output lanes so the audit has a stable baseline.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/system_map/scholar_inventory_2026-01-12.md",
+        "Include sections: Directories, Key Files, Output Lanes, and Notable Recent Artifacts (with paths)",
+        "Reference file paths for each item listed",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Map Scholar system components and flow",
+      "description": "As a maintainer, I want a system map that connects Scholar components, data sources, and outputs so dependencies are clear.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/system_map/scholar_system_map_2026-01-12.md",
+        "Include sections: Components, Data Flow, Dependencies, and Hand-offs",
+        "Use explicit file path references for each component",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Document Scholar entrypoints and triggers",
+      "description": "As a maintainer, I want to know how Scholar is started and what scripts or workflows trigger it.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_entrypoints_2026-01-12.md",
+        "List every known entrypoint (scripts, docs, manual steps) with file path references",
+        "Call out any missing or ambiguous entrypoints",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Build Scholar inputs and outputs matrix",
+      "description": "As a maintainer, I want a clear inputs/outputs matrix so I can see how data moves through Scholar.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_io_matrix_2026-01-12.md",
+        "Include sections: Inputs, Outputs, Transformations, and Storage Lanes",
+        "Reference ai_artifacts_manifest.json and audit_manifest.json in the mapping",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Audit Scholar workflow docs",
+      "description": "As a maintainer, I want an audit of workflow markdown files to confirm expected behavior and missing steps.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/module_audits/scholar_workflows_audit_2026-01-12.md",
+        "Cover files in scholar/workflows/*.md (including orchestrator_loop.md and orchestrator_run_prompt.md)",
+        "Include findings for: intent, required inputs, outputs, and gaps",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Audit Scholar agent prompts",
+      "description": "As a maintainer, I want to understand each agent prompt and its responsibilities.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/module_audits/scholar_agents_audit_2026-01-12.md",
+        "Cover files in scholar/workflows/agents/*.md with role, inputs, outputs, and risks",
+        "Call out any missing role coverage",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Audit brain_reader.py",
+      "description": "As a maintainer, I want a focused audit of brain_reader.py so I understand its purpose and dependencies.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/module_audits/scholar_code_brain_reader_2026-01-12.md",
+        "Include sections: Purpose, Inputs, Outputs, Key Functions, Dependencies, and Risks",
+        "Reference relevant function names and file paths",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Audit telemetry_snapshot.py",
+      "description": "As a maintainer, I want a focused audit of telemetry_snapshot.py to understand how telemetry is captured.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/module_audits/scholar_code_telemetry_snapshot_2026-01-12.md",
+        "Include sections: Purpose, Inputs, Outputs, Key Functions, Dependencies, and Risks",
+        "Reference relevant function names and file paths",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Audit friction_alerts.py",
+      "description": "As a maintainer, I want a focused audit of friction_alerts.py to understand alert generation and data needs.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/module_audits/scholar_code_friction_alerts_2026-01-12.md",
+        "Include sections: Purpose, Inputs, Outputs, Key Functions, Dependencies, and Risks",
+        "Reference relevant function names and file paths",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Audit Scholar docs and templates",
+      "description": "As a maintainer, I want an audit of Scholar docs and templates to spot inconsistencies or missing guidance.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_docs_audit_2026-01-12.md",
+        "Cover scholar/README.md, scholar/CHARTER.md, and scholar/TEMPLATES/*",
+        "List inconsistencies, missing guidance, or outdated references",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Document Scholar dependencies on other repo areas",
+      "description": "As a maintainer, I want a dependency map showing how Scholar relies on brain, sop, scripts, or other systems.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_dependencies_2026-01-12.md",
+        "Include sections: Direct Dependencies, Indirect Dependencies, and Risky Couplings",
+        "Reference file paths for each dependency",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create Scholar runbook and prerequisites",
+      "description": "As a maintainer, I want a runbook that explains how to execute Scholar and what prerequisites it needs.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_runbook_2026-01-12.md",
+        "Include sections: Prerequisites, Step-by-step Run, Expected Outputs, and Failure Modes",
+        "Call out any missing steps that prevent a clean run",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Audit Scholar observability and telemetry",
+      "description": "As a maintainer, I want to know how Scholar captures telemetry and whether it is sufficient.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_observability_2026-01-12.md",
+        "Include sections: Telemetry Sources, Metrics/Signals, Gaps, and Recommendations",
+        "Reference telemetry_snapshot.py and any output artifacts",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Audit Scholar validation and tests",
+      "description": "As a maintainer, I want to know what validation exists for Scholar and what is missing.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_validation_2026-01-12.md",
+        "Include sections: Existing Checks, Missing Tests, and Suggested Validation",
+        "Reference any scripts or docs that mention validation",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Analyze AI artifact coverage gaps",
+      "description": "As a maintainer, I want to see which AI artifacts are missing versus the manifest and audit plan.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/gap_analysis/scholar_artifact_coverage_gaps_2026-01-12.md",
+        "Compare actual artifacts under scholar/outputs to ai_artifacts_manifest.json and audit_manifest.json",
+        "List missing artifacts with expected file patterns",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Identify Scholar risks and weaknesses",
+      "description": "As a maintainer, I want a structured list of risks and weaknesses in the Scholar system.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/gap_analysis/scholar_risks_2026-01-12.md",
+        "Include sections: Technical Risks, Process Risks, and Data Risks",
+        "Tie each risk to a source file path or artifact",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Assess whether Scholar is actually working",
+      "description": "As a maintainer, I want a clear working-status assessment based on evidence, not assumptions.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_working_status_2026-01-12.md",
+        "Include sections: Evidence of Recent Runs, Blocking Issues, and Verification Plan",
+        "State what is confirmed vs unconfirmed",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Capture open questions for Scholar",
+      "description": "As a maintainer, I want a list of unresolved questions that must be answered to fully trust Scholar.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_open_questions_2026-01-12.md",
+        "Group questions by area (workflows, data, outputs, validation)",
+        "Reference file paths tied to each question",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Produce Scholar recommendations backlog",
+      "description": "As a maintainer, I want a prioritized backlog of improvements based on audit findings.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/scholar_recommendations_backlog_2026-01-12.md",
+        "Include a priority table with effort and impact estimates",
+        "Link recommendations to specific gaps or risks",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Write Scholar audit digest",
+      "description": "As a maintainer, I want a concise digest that summarizes the 20-pass audit.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/digests/scholar_audit_digest_2026-01-12.md",
+        "Summarize key findings, gaps, and working-status conclusion",
+        "Reference the main audit files produced in earlier stories",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": true,
+      "notes": ""
+    }
+  ]
 }

@@ -2,73 +2,188 @@
 Started: 2026-01-12
 
 ## Codebase Patterns
-- Scholar outputs: keep artifacts organized under scholar/outputs by lane (reports, module_audits, module_dossiers, gap_analysis, digests, orchestrator_runs, research_notebook, promotion_queue, system_map).
-- Migrations: Use IF NOT EXISTS
-- Types: Export from actions.ts
+- Scholar inventories should enumerate output lanes and outputs root files using repo-relative paths.
 
 ## Key Files
-- brain/README.md
-- scripts/release_check.py
+- scholar/outputs/system_map/scholar_inventory_2026-01-12.md
 ---
 ## 2026-01-12 - US-001
-- What was implemented: Created Scholar audit report with inventory, connections map, expected vs actual behavior, gaps/risks, and open questions.
-- Files changed: scholar/outputs/audit_scholar_repo.md; AGENTS.md; scripts/ralph/progress.txt.
+- What was implemented
+  - Created a full Scholar inventory with directories, key files, output lanes, notable artifacts, and coverage note.
+- Files changed
+  - scholar/outputs/system_map/scholar_inventory_2026-01-12.md
+  - AGENTS.md
 - **Learnings:**
-  - Scholar outputs are organized by lane under scholar/outputs; document deviations when they occur.
-  - Gotchas encountered: WSL missing python/pip/pytest; python -m pytest failed; python3 -m pytest failed (pytest missing); pip/ensurepip unavailable; python3 scripts/release_check.py timed out and exited nonzero.
+  - Inventory docs are easiest to validate when they list every output artifact by lane and include outputs root files.
 ---
-## 2026-01-12 - US-001 (update)
-- What was implemented: Ran required checks using Windows Python.
-- Files changed: none.
-- **Learnings:**
-  - pytest brain/tests passed (4 tests) with Python 3.14.0.
-  - release_check.py failed with SystemExit from _smoke_test.py during collection.
----
-## 2026-01-12 - US-001 (waiver)
-- What was implemented: Waived Typecheck passes for this documentation-only audit; pytest passed; release_check.py failed due to _smoke_test.py SystemExit.
-- Files changed: scripts/ralph/prd.json (passes/notes).
-- **Learnings:**
-  - For audit-only stories, Typecheck can be waived if documented and tests are blocked.
----
+
 ## 2026-01-12 - US-002
-- What was implemented: Verified scripts/ralph/ralph.sh already satisfies loop requirements (set -e, default iterations, codex exec pipe, stop condition).
-- Files changed: scripts/ralph/prd.json; scripts/ralph/progress.txt.
+- What was implemented
+  - Created `scholar/outputs/system_map/scholar_system_map_2026-01-12.md` as required by US-002.
+- Files changed
+  - scholar/outputs/system_map/scholar_system_map_2026-01-12.md
 - **Learnings:**
-  - Typecheck waived; pytest passed; release_check.py failed due to _smoke_test.py SystemExit.
+  - Audit artifacts should cite file paths and note gaps explicitly.
 ---
+
 ## 2026-01-12 - US-003
-- What was implemented: Verified scripts/ralph/prompt.md includes required iteration steps, progress format, and stop condition.
-- Files changed: scripts/ralph/prd.json; scripts/ralph/progress.txt.
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_entrypoints_2026-01-12.md` as required by US-003.
+- Files changed
+  - scholar/outputs/reports/scholar_entrypoints_2026-01-12.md
 - **Learnings:**
-  - Typecheck waived; pytest passed; release_check.py failed due to _smoke_test.py SystemExit.
+  - Audit artifacts should cite file paths and note gaps explicitly.
 ---
+
 ## 2026-01-12 - US-004
-- What was implemented: Verified scripts/ralph/progress.txt template contains header and sections for Codebase Patterns and Key Files.
-- Files changed: scripts/ralph/prd.json; scripts/ralph/progress.txt.
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_io_matrix_2026-01-12.md` as required by US-004.
+- Files changed
+  - scholar/outputs/reports/scholar_io_matrix_2026-01-12.md
 - **Learnings:**
-  - Typecheck waived; pytest passed; release_check.py failed due to _smoke_test.py SystemExit.
+  - Audit artifacts should cite file paths and note gaps explicitly.
 ---
+
 ## 2026-01-12 - US-005
-- What was implemented: Added scholar/inputs/ai_artifacts_manifest.json and documented it in scholar/README.md under Required Inputs.
-- Files changed: scholar/inputs/ai_artifacts_manifest.json; scholar/README.md; scripts/ralph/prd.json; scripts/ralph/progress.txt.
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_workflows_audit_2026-01-12.md` as required by US-005.
+- Files changed
+  - scholar/outputs/module_audits/scholar_workflows_audit_2026-01-12.md
 - **Learnings:**
-  - Typecheck waived; pytest passed; release_check.py failed due to _smoke_test.py SystemExit.
+  - Audit artifacts should cite file paths and note gaps explicitly.
 ---
+
 ## 2026-01-12 - US-006
-- What was implemented: Updated orchestrator_run_prompt.md to require coverage section and deduplicate/rank recommendations with source paths.
-- Files changed: scholar/workflows/orchestrator_run_prompt.md; scripts/ralph/prd.json; scripts/ralph/progress.txt.
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_agents_audit_2026-01-12.md` as required by US-006.
+- Files changed
+  - scholar/outputs/module_audits/scholar_agents_audit_2026-01-12.md
 - **Learnings:**
-  - Typecheck waived; pytest passed; release_check.py failed due to _smoke_test.py SystemExit.
+  - Audit artifacts should cite file paths and note gaps explicitly.
 ---
+
 ## 2026-01-12 - US-007
-- What was implemented: Added Plan step and explicit flow to orchestrator_loop.md, with AI artifact manifest referenced during Review/Plan.
-- Files changed: scholar/workflows/orchestrator_loop.md; scripts/ralph/prd.json; scripts/ralph/progress.txt.
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_code_brain_reader_2026-01-12.md` as required by US-007.
+- Files changed
+  - scholar/outputs/module_audits/scholar_code_brain_reader_2026-01-12.md
 - **Learnings:**
-  - Typecheck waived; pytest passed; release_check.py failed due to _smoke_test.py SystemExit.
+  - Audit artifacts should cite file paths and note gaps explicitly.
 ---
-## 2026-01-12 - Release check fix
-- What was implemented: Updated _smoke_test.py to avoid pytest collection side effects; release_check.py now passes.
-- Files changed: _smoke_test.py; scripts/ralph/prd.json; scripts/ralph/progress.txt.
+
+## 2026-01-12 - US-008
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_code_telemetry_snapshot_2026-01-12.md` as required by US-008.
+- Files changed
+  - scholar/outputs/module_audits/scholar_code_telemetry_snapshot_2026-01-12.md
 - **Learnings:**
-  - Avoid top-level side effects in files matching pytest patterns; wrap in main and use non-test function names.
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-009
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_code_friction_alerts_2026-01-12.md` as required by US-009.
+- Files changed
+  - scholar/outputs/module_audits/scholar_code_friction_alerts_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-010
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_docs_audit_2026-01-12.md` as required by US-010.
+- Files changed
+  - scholar/outputs/reports/scholar_docs_audit_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-011
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_dependencies_2026-01-12.md` as required by US-011.
+- Files changed
+  - scholar/outputs/reports/scholar_dependencies_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-012
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_runbook_2026-01-12.md` as required by US-012.
+- Files changed
+  - scholar/outputs/reports/scholar_runbook_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-013
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_observability_2026-01-12.md` as required by US-013.
+- Files changed
+  - scholar/outputs/reports/scholar_observability_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-014
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_validation_2026-01-12.md` as required by US-014.
+- Files changed
+  - scholar/outputs/reports/scholar_validation_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-015
+- What was implemented
+  - Created `scholar/outputs/gap_analysis/scholar_artifact_coverage_gaps_2026-01-12.md` as required by US-015.
+- Files changed
+  - scholar/outputs/gap_analysis/scholar_artifact_coverage_gaps_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-016
+- What was implemented
+  - Created `scholar/outputs/gap_analysis/scholar_risks_2026-01-12.md` as required by US-016.
+- Files changed
+  - scholar/outputs/gap_analysis/scholar_risks_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-017
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_working_status_2026-01-12.md` as required by US-017.
+- Files changed
+  - scholar/outputs/reports/scholar_working_status_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-018
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_open_questions_2026-01-12.md` as required by US-018.
+- Files changed
+  - scholar/outputs/reports/scholar_open_questions_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-019
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_recommendations_backlog_2026-01-12.md` as required by US-019.
+- Files changed
+  - scholar/outputs/reports/scholar_recommendations_backlog_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-020
+- What was implemented
+  - Created `scholar/outputs/digests/scholar_audit_digest_2026-01-12.md` as required by US-020.
+- Files changed
+  - scholar/outputs/digests/scholar_audit_digest_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
 ---
