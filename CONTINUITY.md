@@ -1,32 +1,32 @@
 Goal (incl. success criteria):
-- Make Ralph's first story an audit of the Scholar system, and document how to run Ralph next time.
+- Execute Ralph loop for US-001: produce Scholar audit report in `scholar/outputs/`, run required checks, update AGENTS.md learnings, commit `feat: US-001 - Audit Scholar system end-to-end`, mark story pass, append progress entry.
 
 Constraints/Assumptions:
-- Follow pt-study-sop AGENTS.md; update this Continuity Ledger each turn and on state changes.
-- Keep changes minimal and scoped; ask before destructive actions.
-- Repo currently has many uncommitted changes; avoid committing unrelated files.
+- Follow pt-study-sop AGENTS.md and user-provided Ralph instructions; update this ledger each turn and on state changes.
+- Do not stage unrelated changes; stage only story files.
+- Run checks: `python -m pytest brain/tests`, `python scripts/release_check.py`, and UI smoke test if UI changes.
+- Approval policy never; proceed without asking for command approvals.
 
 Key decisions:
-- Use `codex exec --dangerously-bypass-approvals-and-sandbox -` in the Ralph loop (danger-full-access, no prompts).
-- Update the Ralph skill file and add a repo runbook for future runs.
+- None yet.
 
 State:
   - Done:
-    - Added a new US-001 in `scripts/ralph/prd.json` to audit the Scholar system and shifted other stories down.
-    - Updated `scripts/ralph/prompt.md` to mention Codex CLI explicitly.
-    - Added `scripts/ralph/README.md` runbook.
-    - Updated `C:\Users\treyt\.codex\skills\ralph\SKILL.md` with runner notes and Codex guidance.
+    - Read and updated `CONTINUITY.md` with current Ralph execution goal.
+    - Read `scripts/ralph/prd.json` and `scripts/ralph/progress.txt`.
+    - Checked out `ralph/setup-ralph` branch (was on `main`).
+    - Read Scholar prerequisites: `scholar/README.md`, `scholar/CHARTER.md`, `scholar/inputs/audit_manifest.json`, `scholar/workflows/orchestrator_loop.md`.
   - Now:
-    - Need user guidance on how to handle existing uncommitted changes before running Ralph.
+    - Inventory and review `scholar/outputs/` artifacts to inform the audit report.
+    - Draft `scholar/outputs/audit_scholar_repo.md` with required sections and artifact checklist.
   - Next:
-    - Based on user choice: stash/commit/clean worktree, then rerun `./scripts/ralph/ralph.sh`.
+    - Update AGENTS.md learnings, run required checks, commit, update `prd.json` and `progress.txt`.
 
 Open questions (UNCONFIRMED if needed):
-- How should we handle the existing uncommitted changes before Ralph runs?
+- None.
 
 Working set (files/ids/commands):
-- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\prd.json
-- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\prompt.md
-- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\README.md
-- C:\Users\treyt\.codex\skills\ralph\SKILL.md
-- C:\Users\treyt\OneDrive\Desktop\pt-study-sop\CONTINUITY.md
+- /mnt/c/Users/treyt/OneDrive/Desktop/pt-study-sop/CONTINUITY.md
+- /mnt/c/Users/treyt/OneDrive/Desktop/pt-study-sop/scripts/ralph/prd.json
+- /mnt/c/Users/treyt/OneDrive/Desktop/pt-study-sop/scripts/ralph/progress.txt
+- /mnt/c/Users/treyt/OneDrive/Desktop/pt-study-sop/scholar/outputs/audit_scholar_repo.md

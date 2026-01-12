@@ -17,6 +17,10 @@
 9. Update prd.json: `passes: true`
 10. Append learnings to progress.txt
 
+## Git Hygiene (dirty working tree)
+- If "git status -sb" shows unrelated changes, do NOT stage them.
+- Stage only files touched for the current story (avoid "git add -A").
+- If you cannot safely isolate changes for the story, stop and report in progress.txt instead of committing.
 ## Repo Checks
 
 - Typecheck: `python -m pytest brain/tests`

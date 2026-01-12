@@ -1477,7 +1477,7 @@ h4,
 .tab-panel::before {
   content: '';
   display: block;
-  height: 55vh;
+  height: 12px;
   width: 100%;
 }
 
@@ -3145,6 +3145,12 @@ details.section-panel .dashboard-grid {
   flex-shrink: 0;
 }
 
+.top-nav-brand .brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
 .top-nav-brand .logo-icon {
   width: 64px;
   height: 64px;
@@ -3490,6 +3496,18 @@ body.mobile-nav-open .mobile-nav-panel {
 .mobile-nav-panel .mobile-nav-item.active .nav-icon {
   color: var(--primary);
   opacity: 1;
+}
+
+.mobile-nav-panel .nav-text {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mobile-nav-panel .nav-icon-img {
+  width: 32px;
+  height: 32px;
 }
 
 /* Mobile nav divider */
@@ -4324,16 +4342,16 @@ body.mobile-nav-open .mobile-nav-panel {
    - */
 
 .nav-icon-img {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
   vertical-align: middle;
   transition: transform 0.2s ease;
 }
 
 .terminal-badge .nav-icon-img {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   margin-bottom: 4px;
 }
 
@@ -4344,10 +4362,11 @@ body.mobile-nav-open .mobile-nav-panel {
 }
 
 .section-icon-img {
-  width: 72px;
-  height: 72px;
+  width: 88px;
+  height: 88px;
   object-fit: contain;
   vertical-align: middle;
+  filter: drop-shadow(0 0 12px rgba(220, 38, 38, 0.25));
 }
 
 /* Ensure header container is large enough */
@@ -4438,6 +4457,7 @@ body.mobile-nav-open .mobile-nav-panel {
 .terminal-badge.wide {
   flex-direction: row;
   width: 100%;
+  min-height: 88px;
   height: auto;
   padding: 12px 16px;
   gap: 12px;
