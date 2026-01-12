@@ -29,6 +29,10 @@ This interactive tool provides a menu to:
 2. **Execute Orchestrator**: Run the autonomous orchestrator loop (safe mode or full).
 3. **Module Audit**: specialized flow for auditing SOP modules.
 
+Safe mode is controlled by `scholar/inputs/audit_manifest.json`:
+- `safe_mode: false` = proposals allowed, but no patch drafts
+- `safe_mode: true` = proposals allowed + patch drafts permitted
+
 ## Standard Workflows
 
 1. **[Audit a Session Log](workflows/audit_session.md):** Analyze telemetry for learning effectiveness and friction.

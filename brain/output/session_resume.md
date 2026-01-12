@@ -1,8 +1,8 @@
 # Session Resume
-Generated: 2026-01-11 19:22
+Generated: 2026-01-12 14:41
 
 ## Readiness Score
-**56/100** (2 topics, 2 sessions in 30 days)
+**67/100** (4 topics, 4 sessions in 30 days)
 
 ## Drift + SOP Usage (last 30d)
 - Prompt Drift flagged: 0
@@ -12,15 +12,23 @@ Generated: 2026-01-11 19:22
 - Common Core Learning Modules: n/a
 
 ## Recent Sessions
-- **Myelin & Glial Cells** (2026-01-11, 0d ago)
+- **Week 1 Neuroscience – Glial Cells and Demyelination (MS & GBS)** (2026-01-12, 0d ago)
+  - Mode: Core | Understanding: 5/5 | Confidence: 4/5
+- **Glial Cells – Astrocyte, Microglia, Ependymal** (2026-01-12, 0d ago)
+  - Mode: Core | Understanding: 5/5 | Confidence: 4/5
+- **Myelin & Glial Cells** (2026-01-11, 1d ago)
   - Mode: Core | Understanding: 4/5 | Confidence: 4/5
-- **Neuroscience Introduction – The Neuron** (2026-01-10, 1d ago)
+- **Neuroscience Introduction – The Neuron** (2026-01-10, 2d ago)
   - Mode: Core | Understanding: 4/5 | Confidence: 4/5
 
 ## Topic Coverage
-- **Myelin & Glial Cells**: 1 sessions, last 0d ago [FRESH]
+- **Glial Cells – Astrocyte, Microglia, Ependymal**: 1 sessions, last 0d ago [FRESH]
+  - Avg Understanding: 5.0/5 | Avg Confidence: 4.0/5
+- **Week 1 Neuroscience – Glial Cells and Demyelination (MS & GBS)**: 1 sessions, last 0d ago [FRESH]
+  - Avg Understanding: 5.0/5 | Avg Confidence: 4.0/5
+- **Myelin & Glial Cells**: 1 sessions, last 1d ago [FRESH]
   - Avg Understanding: 4.0/5 | Avg Confidence: 4.0/5
-- **Neuroscience Introduction – The Neuron**: 1 sessions, last 1d ago [FRESH]
+- **Neuroscience Introduction – The Neuron**: 1 sessions, last 2d ago [FRESH]
   - Avg Understanding: 4.0/5 | Avg Confidence: 4.0/5
 
 ## Areas Needing Attention

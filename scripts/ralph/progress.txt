@@ -41,3 +41,96 @@ Started: 2026-01-12
   - Patterns discovered: Proposal approvals are routed through the dashboard API, which updates markdown Status, moves files into approved/rejected folders, and records them in `brain/data/pt_study.db`.
   - Gotchas encountered: `scholar/inputs/ai_artifacts_manifest.json` only targets `scholar/outputs/proposals/*.md`, so approved/rejected subfolders are not tracked unless patterns are expanded.
 ---
+---
+## 2026-01-12 - US-006
+- What was implemented: Authored digests lifecycle report covering generation, storage, usage, and gaps.
+- Files changed: `scholar/outputs/reports/digests_lifecycle_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Patterns discovered: Digest save flow writes to `scholar/outputs/digests/` and also creates plan_updates + proposal_seeds plus a DB record in `scholar_digests`.
+  - Gotchas encountered: Digest generation and digest saving are separate endpoints; plan updates only happen on save.
+---
+## 2026-01-12 - US-007
+- What was implemented: Mapped the lifecycle from gaps to improvement candidates with evidence and current disconnects.
+- Files changed: `scholar/outputs/reports/gaps_improvements_lifecycle_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Gap analyses and module dossiers are the main sources of improvement candidates.
+  - Prioritization is mostly manual and routed through digests/plan updates.
+---
+## 2026-01-12 - US-008
+- What was implemented: Documented how system health and research outputs feed questions and plans in the loop.
+- Files changed: `scholar/outputs/reports/health_research_loop_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Health and research artifacts influence questions and digests but require manual plan edits.
+---
+## 2026-01-12 - US-009
+- What was implemented: Mapped Tutor-to-Brain ingestion and Scholar consumption with identified gaps.
+- Files changed: `scholar/outputs/reports/brain_tutor_ingest_map_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Session logs are manually ingested; missing logs are a critical audit risk.
+---
+## 2026-01-12 - US-010
+- What was implemented: Documented multi-agent operations, configuration, and verification steps.
+- Files changed: `scholar/outputs/reports/multi_agent_operations_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Multi-agent runs are controlled via audit_manifest and route through the dashboard APIs.
+---
+## 2026-01-12 - US-011
+- What was implemented: Defined a no-input research protocol to keep Scholar generating questions.
+- Files changed: `scholar/outputs/research_notebook/research_protocol_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Research notes should produce new questions tied to specific gaps.
+---
+## 2026-01-12 - US-012
+- What was implemented: Created a rubric for generating consistent, actionable questions.
+- Files changed: `scholar/outputs/reports/question_generation_rubric_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Questions must be evidence-based and tied to system gaps to be useful.
+---
+## 2026-01-12 - US-013
+- What was implemented: Built a wiring checklist showing what artifacts are displayed vs used in the loop.
+- Files changed: `scholar/outputs/reports/dashboard_wiring_checklist_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Several artifacts are display-only unless digests are explicitly saved.
+---
+## 2026-01-12 - US-014
+- What was implemented: Compiled loop integration gaps grouped by system with evidence.
+- Files changed: `scholar/outputs/gap_analysis/scholar_loop_integration_gaps_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - The biggest gaps are in Tutor mastery tracking, ingest automation, and digest persistence.
+---
+## 2026-01-12 - US-015
+- What was implemented: Created a prioritized improvement candidates backlog tied to gaps.
+- Files changed: `scholar/outputs/reports/scholar_improvement_candidates_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Candidate backlog provides a bridge from gap discovery to proposals.
+---
+## 2026-01-12 - US-016
+- What was implemented: Created the Scholar upgrade plan file integrating system summaries, gaps, and planned improvements.
+- Files changed: `scholar/outputs/plans/scholar_upgrade_plan.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - The plan file is the central artifact tying together gaps, proposals, and evidence.
+---
+## 2026-01-12 - US-017
+- What was implemented: Built a plan evidence index mapping plan sections to artifacts.
+- Files changed: `scholar/outputs/reports/scholar_plan_evidence_index_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Evidence indexing makes plan sections auditable and highlights missing links.
+---
+## 2026-01-12 - US-018
+- What was implemented: Drafted a proposal pack for loop integration fixes.
+- Files changed: `scholar/outputs/promotion_queue/proposal_2026-01-12_scholar_loop_integration.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Proposals are ready for manual approval and can feed implementation bundles.
+---
+## 2026-01-12 - US-019
+- What was implemented: Defined a run cadence plan with daily/weekly triggers and mode guidance.
+- Files changed: `scholar/outputs/reports/scholar_run_cadence_plan_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Cadence ties runs to session log ingestion and weekly digest requirements.
+---
+## 2026-01-12 - US-020
+- What was implemented: Wrote a loop integration digest summarizing gaps and planned improvements.
+- Files changed: `scholar/outputs/digests/scholar_loop_integration_digest_2026-01-12.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `CONTINUITY.md`
+- **Learnings:**
+  - Digest references the upgrade plan and proposal pack for actionability.
+  - Checks run: python -m pytest brain/tests; python scripts/release_check.py.

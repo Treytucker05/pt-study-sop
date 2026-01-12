@@ -1,33 +1,24 @@
 Goal (incl. success criteria):
-- For the Ralph loop, pick the highest priority story in `scripts/ralph/prd.json` with `passes: false`, implement it, run required checks, update `AGENTS.md`, `scripts/ralph/prd.json`, and `scripts/ralph/progress.txt`, then commit `feat: [ID] - [Title]`.
+- Complete the remaining Ralph stories (US-006..US-020) for the Scholar loop integration run, producing the required reports/artifacts and keeping the loop wired to improvements.
 
 Constraints/Assumptions:
-- Follow `AGENTS.md` and Ralph instructions; update this ledger each turn and on state changes.
-- Stay on current branch; do not stage unrelated changes; prefer minimal ASCII edits.
-- Required checks: `python -m pytest brain/tests`, `python scripts/release_check.py`, manual smoke if UI changes.
-- If touching `scholar/`, it is read-only for `sop/`, `brain/`, `dist/` and outputs only in `scholar/outputs/`.
+- Follow `AGENTS.md` and keep changes minimal.
+- Required checks: `python -m pytest brain/tests`, `python scripts/release_check.py`.
+- Checks run (US-007..US-020): `python -m pytest brain/tests`, `python scripts/release_check.py`.
+- Stay on current branch; avoid staging unrelated changes.
 
 Key decisions:
-- Use `scripts/ralph/prd.json` as the authoritative story list and `scripts/ralph/progress.txt` for patterns/learnings.
-- Keep commits isolated to the current story (no unrelated staging).
-- Run required checks via Windows `cmd.exe` because WSL `python` is unavailable.
+- Proceeded in the recommended order and completed US-007..US-020.
 
 State:
   - Done:
-    - US-001 complete: `scholar/outputs/reports/scholar_loop_contract_2026-01-12.md`; commit `feat: US-001 - Define Scholar loop contract`.
-    - US-002 complete: `scholar/outputs/reports/system_health_schema_2026-01-12.md`; commit `feat: US-002 - Specify system health schema`.
-    - US-003 complete: `scholar/outputs/reports/system_health_2026-01-12.md`; commit `feat: US-003 - Produce system health report`.
-    - Required checks run for completed stories via Windows Python.
-    - Patched `scripts/ralph/ralph.sh`/`scripts/ralph/prompt.md` to avoid premature loop stop.
-    - US-004 report drafted: `scholar/outputs/reports/questions_lifecycle_2026-01-12.md`.
-    - Checks run: `cmd.exe /c "python -m pytest brain/tests"` and `cmd.exe /c "python scripts/release_check.py"`.
-    - Commit: `feat: US-004 - Map questions lifecycle`.
-    - Drafted US-005 report: `scholar/outputs/reports/proposals_lifecycle_2026-01-12.md`.
-    - US-005 checks run: `cmd.exe /c "python -m pytest brain/tests"` and `cmd.exe /c "python scripts/release_check.py"`.
+    - US-001..US-005 completed (contracts/health/questions/proposals mapping).
+    - US-006 completed (digests lifecycle report).
+    - US-007..US-020 completed (loop lifecycle, gaps, plan, proposals, cadence, digest).
   - Now:
-    - Stage and commit only US-005 files.
+    - Review the generated artifacts and decide next implementation steps.
   - Next:
-    - Update the ledger after commit and proceed to the next failing story.
+    - Approve proposals and schedule implementation changes if desired.
 
 Open questions (UNCONFIRMED if needed):
 - None.
@@ -35,10 +26,9 @@ Open questions (UNCONFIRMED if needed):
 Working set (files/ids/commands):
 - `scripts/ralph/prd.json`
 - `scripts/ralph/progress.txt`
-- `AGENTS.md`
+- `scholar/outputs/reports/`
+- `scholar/outputs/gap_analysis/`
+- `scholar/outputs/plans/scholar_upgrade_plan.md`
+- `scholar/outputs/promotion_queue/proposal_2026-01-12_scholar_loop_integration.md`
+- `scholar/outputs/digests/scholar_loop_integration_digest_2026-01-12.md`
 - `CONTINUITY.md`
-- `git status -sb`
-- `scholar/outputs/reports/questions_lifecycle_2026-01-12.md`
-- `scholar/outputs/reports/proposals_lifecycle_2026-01-12.md`
-- `brain/db_setup.py`
-- `brain/dashboard/routes.py`

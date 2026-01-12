@@ -1,0 +1,3 @@
+- 1) Should fallback audits be used when the 7-day window is empty, or should the run log stop at "no data"?
+- 2) Is Probe-Before-Teach required even with zero prior exposure, or is teach-first acceptable in that case?
+- 3) Should template-only session logs be excluded from audit windows and blocked at ingest?

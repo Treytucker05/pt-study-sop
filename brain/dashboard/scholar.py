@@ -856,6 +856,161 @@ def _get_latest_file(folder: Path, pattern: str) -> Optional[Path]:
     return files[0] if files else None
 
 
+def _is_questions_nonempty(path: Path) -> bool:
+    if not path or not path.exists():
+        return False
+    try:
+        content = path.read_text(encoding="utf-8").strip()
+    except Exception:
+        content = path.read_text(encoding="utf-8", errors="replace").strip()
+    return bool(content and content != "(none)")
+
+
+def _recent_files(folder: Path, pattern: str, since_ts: float) -> List[Path]:
+    if not folder.exists():
+        return []
+    files = []
+    for f in folder.glob(pattern):
+        try:
+            if f.stat().st_mtime >= since_ts:
+                files.append(f)
+        except Exception:
+            continue
+    return sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def _extract_section_bullets(content: str, headers: List[str]) -> List[str]:
+    if not content:
+        return []
+    bullets = []
+    in_section = False
+    for line in content.splitlines():
+        stripped = line.strip()
+        if not in_section:
+            for header in headers:
+                if header.lower() in stripped.lower():
+                    in_section = True
+                    break
+            if in_section:
+                continue
+        else:
+            if not stripped:
+                continue
+            if stripped.startswith("#") or stripped.startswith("---"):
+                break
+            if stripped.startswith("-"):
+                bullets.append(stripped.lstrip("-").strip())
+            elif stripped.startswith("⚡") or stripped.startswith("⚠"):
+                bullets.append(stripped.lstrip("⚡⚠").strip())
+    return bullets
+
+
+def _ensure_plan_update(run_id: str, repo_root: Path, run_dir: Path, final_path: Path) -> Optional[Path]:
+    plan_updates = repo_root / "scholar" / "outputs" / "plan_updates"
+    plan_updates.mkdir(parents=True, exist_ok=True)
+    try:
+        run_start = datetime.strptime(run_id, "%Y-%m-%d_%H%M%S")
+    except Exception:
+        run_start = datetime.now()
+    recent = _recent_files(plan_updates, "*.md", run_start.timestamp())
+    if recent:
+        return recent[0]
+
+    content = _read_text_safe(final_path, limit=20000)
+    actions = _extract_section_bullets(content, ["Action Items", "Next Steps"])
+    warnings = _extract_section_bullets(content, ["Warnings", "Blockers"])
+
+    plan_path = plan_updates / f"plan_update_{run_id}.md"
+    lines = [
+        f"# Plan Update Draft - {run_id}",
+        "",
+        f"Source Run: {final_path.name}",
+        f"Created: {datetime.now().isoformat()}",
+        "",
+        "## Priority Actions (from run)",
+    ]
+    if actions:
+        lines.extend([f"- {item}" for item in actions])
+    else:
+        lines.append("- (none found)")
+    lines.extend([
+        "",
+        "## System Health Notes (from run)",
+    ])
+    if warnings:
+        lines.extend([f"- {item}" for item in warnings])
+    else:
+        lines.append("- (none found)")
+    lines.extend([
+        "",
+        "## Improvement Questions",
+        "- What single change would most improve the Tutor loop next run?",
+        "- What bottleneck is causing the most friction in sessions?",
+        "- Which module has the weakest evidence coverage?",
+        "",
+        "## Plan Targets",
+        "- `sop/MASTER_PLAN_PT_STUDY.md`",
+        "- `sop/gpt-knowledge/M0-planning.md`",
+        "",
+        "## Draft Plan Edits (human-in-the-loop)",
+        "- (fill in concrete edits to plan files, then apply manually)",
+        "",
+    ])
+    plan_path.write_text("\n".join(lines), encoding="utf-8")
+    return plan_path
+
+
+def _write_verification_report(run_id: str, repo_root: Path, run_dir: Path, questions_path: Path) -> Optional[Path]:
+    try:
+        run_start = datetime.strptime(run_id, "%Y-%m-%d_%H%M%S")
+    except Exception:
+        run_start = datetime.now()
+    since_ts = run_start.timestamp()
+
+    plan_updates = repo_root / "scholar" / "outputs" / "plan_updates"
+    research_notebook = repo_root / "scholar" / "outputs" / "research_notebook"
+    promotion_queue = repo_root / "scholar" / "outputs" / "promotion_queue"
+    proposals_root = repo_root / "scholar" / "outputs" / "proposals"
+
+    plan_updates_recent = _recent_files(plan_updates, "*.md", since_ts)
+    research_recent = _recent_files(research_notebook, "*.md", since_ts)
+    proposals_recent = _recent_files(promotion_queue, "*.md", since_ts)
+    proposals_recent += _recent_files(proposals_root, "*.md", since_ts)
+    proposals_recent += _recent_files(proposals_root / "approved", "*.md", since_ts)
+    proposals_recent += _recent_files(proposals_root / "rejected", "*.md", since_ts)
+
+    questions_required = _is_questions_nonempty(questions_path)
+    answered_recent = []
+    if questions_required:
+        answered_recent = _recent_files(run_dir, f"questions_answered_{run_id}*.md", since_ts)
+        if not answered_recent:
+            answered_recent = _recent_files(run_dir, "questions_answered_*.md", since_ts)
+
+    report_lines = [
+        f"# Verification Report - {run_id}",
+        "",
+        f"Run ID: {run_id}",
+        f"Checked: {datetime.now().isoformat()}",
+        "",
+        "## Required Artifacts",
+        f"- plan_update: {'OK' if plan_updates_recent else 'MISSING'}",
+        f"- questions_answered: {'OK' if (not questions_required or answered_recent) else 'MISSING'}",
+        f"- research_notes: {'OK' if (not questions_required or research_recent) else 'MISSING'}",
+        f"- proposals_drafted: {'OK' if proposals_recent else 'MISSING'}",
+        "",
+        "## Details",
+        f"- questions_required: {questions_required}",
+        f"- plan_updates_recent: {len(plan_updates_recent)}",
+        f"- questions_answered_recent: {len(answered_recent)}",
+        f"- research_notes_recent: {len(research_recent)}",
+        f"- proposals_recent: {len(proposals_recent)}",
+    ]
+
+    verification_path = run_dir / f"verification_report_{run_id}.md"
+    verification_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
+    return verification_path
+
+
 def _compose_agent_prompt(template_path: Path, header_lines: List[str], context_blocks: List[str]) -> str:
     try:
         template = template_path.read_text(encoding="utf-8")
@@ -1170,6 +1325,14 @@ def run_scholar_orchestrator_multi(manifest: Dict[str, Any]) -> Dict[str, Any]:
                     )
             except Exception:
                 pass
+            try:
+                _ensure_plan_update(timestamp, repo_root, run_dir, final_path)
+            except Exception:
+                pass
+            try:
+                _write_verification_report(timestamp, repo_root, run_dir, questions_path)
+            except Exception:
+                pass
 
     thread = threading.Thread(target=_run_multi_agent_thread, daemon=True)
     thread.start()
@@ -1412,7 +1575,17 @@ def run_scholar_orchestrator():
                     )
             except:
                 pass
-                
+
+            # Verification report (post-run gate checks)
+            try:
+                _ensure_plan_update(timestamp, repo_root, run_dir, final_path)
+            except Exception:
+                pass
+            try:
+                _write_verification_report(timestamp, repo_root, run_dir, questions_path)
+            except Exception:
+                pass
+
         except Exception as e:
             # Write error marker to log so status endpoint can detect it
             error_msg = f"\n\n===== SCHOLAR RUN ERROR =====\nError: {str(e)}\nTime: {datetime.now().isoformat()}\n"

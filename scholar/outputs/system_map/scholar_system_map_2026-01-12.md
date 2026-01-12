@@ -72,3 +72,54 @@
 ## Coverage Note
 - Artifacts used: all files under `scholar/outputs/` as enumerated in `scholar/outputs/system_map/scholar_inventory_2026-01-12.md` (148 files across lanes), plus the representative lane examples listed above.
 - Gaps: none observed vs `scholar/inputs/ai_artifacts_manifest.json` lanes.
+
+## Addendum: Detailed Runtime Map (2026-01-12)
+### Entry points (exact)
+- CLI launcher: `scripts/run_scholar.bat` (menu-based runner that calls `codex exec` and updates STATUS).
+- Dashboard trigger: `POST /api/scholar/run` in `brain/dashboard/routes.py` -> `run_scholar_orchestrator()` in `brain/dashboard/scholar.py`.
+
+### Orchestrator execution
+- Prompt source: `scholar/workflows/orchestrator_run_prompt.md` (unattended runbook + output contract).
+- Loop definition: `scholar/workflows/orchestrator_loop.md` (review -> plan -> understand -> question -> research -> synthesize -> draft -> wait).
+- Default scope: M0-M6 + bridges (from prompt), with `safe_mode` gating promotion queue.
+
+### Single-agent run (default)
+- Preserves unanswered questions from latest `questions_needed_*.md` into `_preserved_questions_*.txt`.
+- If Codex CLI missing, writes instructions into `unattended_final_*.md` and stops (manual execution required).
+- If Codex CLI present, runs `codex exec` with stdin prompt; writes:
+  - `scholar/outputs/orchestrator_runs/unattended_<timestamp>.log`
+  - `scholar/outputs/orchestrator_runs/unattended_final_<timestamp>.md`
+  - `scholar/outputs/orchestrator_runs/questions_needed_<timestamp>.md`
+- Post-run: appends preserved questions and refreshes `scholar/outputs/STATUS.md`.
+
+### Multi-agent run (optional)
+- Controlled by `scholar/inputs/audit_manifest.json` -> `multi_agent.enabled`.
+- Uses agent prompts in `scholar/workflows/agents/`:
+  - `telemetry_audit.md`, `sop_audit.md`, `pedagogy_questioner.md`, `research_scout.md`, `supervisor_synthesis.md`.
+- Runs concurrent Codex jobs (bounded by `max_concurrency`), then synthesizes results into the run log.
+- Injects telemetry snapshot context and latest `questions_resolved_*.md` into agent prompts.
+
+### Question lifecycle
+1. Orchestrator emits open questions to `questions_needed_<run>.md`.
+2. Dashboard answers via:
+   - `POST /api/scholar/questions` (bulk answers).
+   - `POST /api/scholar/questions/answer` (single answer by index).
+3. Answer endpoints update the `questions_needed_*.md` file and emit `questions_resolved_<timestamp>.md`.
+4. Next run reads the latest `questions_resolved_*.md` and avoids re-asking answered items.
+
+### Proposal lifecycle
+1. Discover improvement candidates from reports/dossiers/gap analysis.
+2. Draft RFC + experiment using `scholar/TEMPLATES/`.
+3. Stage in `scholar/outputs/promotion_queue/` (ONE change, ONE variable).
+4. Human review required; approved items can be moved to `scholar/outputs/proposals/` (manual step).
+
+### Digests and storage
+- Weekly digest trigger is defined in `scholar/workflows/orchestrator_run_prompt.md`.
+- Dashboard endpoints:
+  - `POST /api/scholar/digest` calls `generate_weekly_digest(days=7)` and assembles a markdown digest from recent outputs.
+  - `POST /api/scholar/digest/save` writes to `scholar/outputs/digests/` and stores metadata in DB table `scholar_digests`.
+  - `GET /api/scholar/digests`, `GET /api/scholar/digests/<id>`, `DELETE /api/scholar/digests/<id>` manage saved digests.
+
+### Status and health signals
+- `scripts/update_status.ps1` rolls up latest artifacts into `scholar/outputs/STATUS.md`.
+- Dashboard reads `STATUS.md` to show alerts, coverage, questions pending, and next steps.

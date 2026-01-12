@@ -46,6 +46,7 @@ function Format-FileEntry {
 $latestFinal = Get-LatestFile $orchestratorRuns "unattended_final_*.md"
 $latestQuestions = Get-LatestFile $orchestratorRuns "questions_needed_*.md"
 $latestResolved = Get-LatestFile $orchestratorRuns "questions_resolved_*.md"
+$latestAnswered = Get-LatestFile $orchestratorRuns "questions_answered_*.md"
 $latestLog = Get-LatestFile $orchestratorRuns "unattended_*.log"
 $latestVerification = Get-LatestFile $orchestratorRuns "verification_report_*.md"
 
@@ -105,6 +106,7 @@ $linesOut += "## Latest Run"
 $linesOut += (Format-FileEntry "unattended_final" $latestFinal)
 $linesOut += (Format-FileEntry "questions_needed" $latestQuestions)
 $linesOut += (Format-FileEntry "questions_resolved" $latestResolved)
+$linesOut += (Format-FileEntry "questions_answered" $latestAnswered)
 $linesOut += (Format-FileEntry "unattended_log" $latestLog)
 if ($latestVerification) {
   $linesOut += (Format-FileEntry "verification_report" $latestVerification)

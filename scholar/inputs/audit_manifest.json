@@ -1,7 +1,7 @@
 {
   "safe_mode": false,
   "multi_agent": {
-    "enabled": false,
+    "enabled": true,
     "max_concurrency": 4
   },
   "telemetry_snapshot": {

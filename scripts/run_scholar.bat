@@ -79,8 +79,8 @@ echo    - Open run folder (debug/raw logs).
 echo 7) Exit
 echo    - Exit.
 echo.
-echo Reminder: safe_mode False = Scholar documents/researches only (no new proposals).
-echo Reminder: safe_mode True = Scholar may draft one change package (RFC + experiment + patch draft) for approval.
+echo Reminder: safe_mode False = proposals allowed, but no patch drafts.
+echo Reminder: safe_mode True = proposals allowed + patch drafts permitted.
 echo.
 set "CHOICE="
 set /p "CHOICE=Select option [1-7] (default 1): "

@@ -10,7 +10,13 @@ Role: Scholar Meta-System — continuous improvement loop for Tutor/SOP.
 - Write questions to `scholar/outputs/orchestrator_runs/questions_needed_<run>.md` and continue.
 - Before generating new questions, read the latest `scholar/outputs/orchestrator_runs/questions_resolved_*.md` (if present). Treat those as answered and do **NOT** re-ask them.
 - Only include **open** items in `questions_needed_<run>.md`; answered items belong in `questions_resolved_*.md`.
-- Use defaults: Module group M0–M6 + bridges. No Promotion Queue unless `safe_mode: true` in `audit_manifest.json`.
+- Use defaults: Module group M0–M6 + bridges.
+- Always produce a plan update: `scholar/outputs/plan_updates/plan_update_<run>.md` (required every run).
+- If questions exist, **research + answers are mandatory**:
+  - Create research notes in `scholar/outputs/research_notebook/`.
+  - Write `scholar/outputs/orchestrator_runs/questions_answered_<run>.md` with Q → A → evidence links.
+  - If you cannot answer, mark the run **BLOCKED** and explain why.
+- Always draft proposals when improvement candidates exist. `safe_mode` only controls whether patch drafts are allowed.
 
 ---
 
@@ -35,16 +41,24 @@ List artifacts used (with file paths) and any gaps vs `scholar/inputs/ai_artifac
 
 ## EXECUTION PHASES
 
+### Phase 0: PLAN (required)
+1. Define scope + targets for this run.
+2. Write `scholar/outputs/plan_updates/plan_update_<run>.md` with:
+   - System summary (1 short paragraph)
+   - Improvement questions (how to make the system better)
+   - Planned improvements + rationale
+   - Draft plan edits (target files)
+
 ### Phase 1: AUDIT
 1. Read recent session logs from `brain/session_logs/` (last 7 days or since last run).
 2. Check for friction patterns: confusion, rework, low ratings, skipped steps.
 3. Apply the **Probe-Before-Teach Rule**: When auditing Tutor sessions, verify that retrieval was attempted BEFORE explanation was given. Flag violations.
 4. Apply the **High-Utility Technique Checklist** (see below). Flag sessions missing these.
 
-### Phase 2: RESEARCH (Skip if no questions)
+### Phase 2: RESEARCH (required if questions exist)
 1. If audit reveals unknowns or gaps, research them (web search).
 2. Produce a research note: `scholar/outputs/research_notebook/note_<topic>.md` (5–10 bullets, not essays).
-3. If no research needed, skip to Phase 3.
+3. If questions exist and research is not completed, mark the run BLOCKED.
 
 ### Phase 3: SYNTHESIZE
 1. Produce **ONE** artifact with clear recommendations. Choose from:
@@ -54,6 +68,13 @@ List artifacts used (with file paths) and any gaps vs `scholar/inputs/ai_artifac
 2. Update run log: `scholar/outputs/orchestrator_runs/run_<YYYY-MM-DD>.md`
 3. Deduplicate and rank recommendations; include source file paths for traceability.
 4. If artifact not produced, write blocker summary explaining why.
+
+### Phase 4: ANSWER QUESTIONS (required if questions exist)
+1. Write `scholar/outputs/orchestrator_runs/questions_answered_<run>.md`.
+2. For each question, include:
+   - Q: <question>
+   - A: <answer>
+   - Evidence: link to research note(s) or source paths
 
 ---
 

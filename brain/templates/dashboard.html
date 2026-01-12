@@ -31,82 +31,81 @@
       <div class="chaos-accent chaos-accent-3"></div>
       <div class="chaos-accent chaos-accent-4"></div>
 
-      <!-- Brand (Left) -->
-      <a href="#overview" class="top-nav-brand" onclick="openTab(event, 'overview'); return false;"
-        title="Trey's Study System">
-        <img src="/static/images/logo-brain-new.jpg" alt="Trey's Study System" class="logo-icon">
-      </a>
+      <!-- Brand (Left) - Neural Core Logo -->
+      <div class="hero-logo-frame" onclick="openTab(event, 'overview'); return false;" style="cursor: pointer;">
+        <div class="inner">
+          <img src="/static/images/logo-brain-new.jpg" alt="Neural Core">
+        </div>
+        <div class="status-badge">
+          <span>SYSTEM_LINK_STABLE</span>
+        </div>
+      </div>
 
       <div class="top-nav-center">
         <div class="top-nav-title">
-          TREY'S <span>STUDY SYSTEM</span>
+          TREY'S <span>STUDY</span>
         </div>
 
-        <!-- Navigation Menu (Center - Desktop) -->
-        <nav class="top-nav-menu" role="navigation" aria-label="Main navigation">
-          <a href="#overview" class="top-nav-item active" onclick="openTab(event, 'overview')" data-tab="overview"
-            aria-current="page">
-            <div class="terminal-badge">
-              <img src="/static/images/icons/neo-nav-overview.svg" alt="" class="nav-icon-img nav-icon-img--top" />
+        <!-- Navigation Menu (Center - Desktop) - Arcade Style -->
+        <nav class="top-nav-menu" role="navigation" aria-label="Main navigation" style="display: flex; gap: 16px; justify-content: center;">
+          <a href="#overview" class="arcade-nav-btn active" onclick="openTab(event, 'overview')" data-tab="overview" aria-current="page">
+            <div class="btn-face">
+              <img src="/static/images/icons/neo-nav-overview.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
-            <span class="terminal-badge-label">VIEW</span>
+            <span class="btn-label">DASHBOARD</span>
           </a>
-          <a href="#sessions" class="top-nav-item" onclick="openTab(event, 'sessions')" data-tab="sessions">
-            <div class="terminal-badge">
-              <img src="/static/images/icons/neo-nav-brain.svg" alt="" class="nav-icon-img nav-icon-img--top" />
+          <a href="#sessions" class="arcade-nav-btn" onclick="openTab(event, 'sessions')" data-tab="sessions">
+            <div class="btn-face">
+              <img src="/static/images/icons/neo-nav-brain.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
-            <span class="terminal-badge-label">BRAIN</span>
+            <span class="btn-label">BRAIN</span>
           </a>
-          <a href="#syllabus" class="top-nav-item" onclick="openTab(event, 'syllabus')" data-tab="syllabus">
-            <div class="terminal-badge">
-              <img src="/static/images/icons/neo-nav-syllabus.svg" alt="" class="nav-icon-img nav-icon-img--top" />
+          <a href="#syllabus" class="arcade-nav-btn" onclick="openTab(event, 'syllabus')" data-tab="syllabus">
+            <div class="btn-face">
+              <img src="/static/images/icons/neo-nav-syllabus.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
-            <span class="terminal-badge-label">LIST</span>
+            <span class="btn-label">SYLLABUS</span>
           </a>
-          <a href="#scholar" class="top-nav-item" onclick="openTab(event, 'scholar')" data-tab="scholar">
-            <div class="terminal-badge">
-              <img src="/static/images/icons/neo-nav-scholar.svg" alt="" class="nav-icon-img nav-icon-img--top" />
+          <a href="#scholar" class="arcade-nav-btn" onclick="openTab(event, 'scholar')" data-tab="scholar">
+            <div class="btn-face">
+              <img src="/static/images/icons/neo-nav-scholar.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
-            <span class="terminal-badge-label">SCHOLAR</span>
+            <span class="btn-label">SCHOLAR</span>
           </a>
-          <a href="#tutor" class="top-nav-item" onclick="openTab(event, 'tutor')" data-tab="tutor">
-            <div class="terminal-badge">
-              <img src="/static/images/icons/neo-nav-tutor.svg" alt="" class="nav-icon-img nav-icon-img--top" />
+          <a href="#tutor" class="arcade-nav-btn" onclick="openTab(event, 'tutor')" data-tab="tutor">
+            <div class="btn-face">
+              <img src="/static/images/icons/neo-nav-tutor.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
-            <span class="terminal-badge-label">TUTOR</span>
+            <span class="btn-label">TUTOR</span>
           </a>
-          <a href="#brain" class="top-nav-item" onclick="openTab(event, 'brain')" data-tab="brain">
-            <div class="terminal-badge">
-              <img src="/static/images/icons/neo-nav-database.svg" alt="" class="nav-icon-img nav-icon-img--top" />
+          <a href="#sync" class="arcade-nav-btn" onclick="openTab(event, 'sync')" data-tab="sync" style="position: relative;">
+            <div class="btn-face">
+              <img src="/static/images/icons/neo-nav-sync.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
-            <span class="terminal-badge-label">DATA</span>
-          </a>
-          <a href="#sync" class="top-nav-item" onclick="openTab(event, 'sync')" data-tab="sync">
-            <div class="terminal-badge">
-              <img src="/static/images/icons/neo-nav-sync.svg" alt="" class="nav-icon-img nav-icon-img--top" />
-              <span id="sync-count-badge" class="badge-count" style="display: none;">0</span>
+            <span class="btn-label">SYNC_LINK</span>
+            <div class="sync-counter-badge" id="sync-count-badge" style="display: none;">
+              <span>0</span>
             </div>
-            <span class="terminal-badge-label">SYNC</span>
           </a>
         </nav>
       </div>
 
-      <!-- Right Section -->
-      <div class="top-nav-right">
+      <!-- Right Section (Hidden for cleaner arcade look) -->
+      <div class="top-nav-right" style="display: none;">
         <span class="top-nav-page-title" id="current-page-title">Overview</span>
         <span class="top-nav-version">v3.0</span>
         <button class="top-nav-profile" id="profile-btn" aria-label="Profile" title="Profile">
           <span style="font-size: 13px; font-weight: 600;">TT</span>
         </button>
-
-        <!-- Hamburger Button (Mobile) -->
-        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Toggle menu"
-          aria-expanded="false" aria-controls="mobile-nav-panel">
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-        </button>
       </div>
+
+      <!-- Hamburger Button (Mobile) -->
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Toggle menu"
+        aria-expanded="false" aria-controls="mobile-nav-panel">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
     </header>
 
     <!-- Mobile Navigation Overlay -->
@@ -310,10 +309,10 @@
               <!-- Expand/Collapse All Controls -->
               <div class="tab-controls">
                 <div class="btn-group">
-                  <button type="button" class="btn btn-ghost" onclick="expandAllSections('tab-overview')">
+                  <button type="button" class="arcade-btn" onclick="expandAllSections('tab-overview')">
                     <span style="font-size: 10px;">▼</span> Expand All
                   </button>
-                  <button type="button" class="btn btn-ghost" onclick="collapseAllSections('tab-overview')">
+                  <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-overview')">
                     <span style="font-size: 10px;">▲</span> Collapse All
                   </button>
                 </div>
@@ -323,58 +322,28 @@
             <!-- Quick Stats Section (Always visible, not collapsible) -->
             <div class="dashboard-grid" style="margin-bottom: 24px;">
 
-              <div class="d-card mini">
-                <div class="d-icon" style="color:#0EA5E9;">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-size:1.5rem; font-weight:700;" id="total-sessions">0</div>
-                  <div style="font-size:0.85rem; color:#94a3b8;">Total Sessions</div>
-                </div>
+              <div class="metal-stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-label">SESSIONS</div>
+                <div class="stat-value" id="total-sessions">0</div>
               </div>
 
-              <div class="d-card mini">
-                <div class="d-icon" style="color:#14B8A6;">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-size:1.5rem; font-weight:700;" id="total-time">0h</div>
-                  <div style="font-size:0.85rem; color:#94a3b8;">Study Time</div>
-                </div>
+              <div class="metal-stat-card">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-label">UPTIME</div>
+                <div class="stat-value" id="total-time">0h</div>
               </div>
 
-              <div class="d-card mini">
-                <div class="d-icon" style="color:#10b981;">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                    </path>
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-size:1.5rem; font-weight:700;" id="avg-score">-%</div>
-                  <div style="font-size:0.85rem; color:#94a3b8;">Avg. Score</div>
-                </div>
+              <div class="metal-stat-card">
+                <div class="stat-icon">🏅</div>
+                <div class="stat-label">RANK</div>
+                <div class="stat-value" id="avg-score">-%</div>
               </div>
 
-              <div class="d-card mini">
-                <div class="d-icon" style="color:#f59e0b;">
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                    </path>
-                  </svg>
-                </div>
-                <div>
-                  <div style="font-size:1.5rem; font-weight:700;" id="anki-cards">0</div>
-                  <div style="font-size:0.85rem; color:#94a3b8;">Cards Due</div>
-                </div>
+              <div class="metal-stat-card">
+                <div class="stat-icon">🃏</div>
+                <div class="stat-label">CARDS</div>
+                <div class="stat-value" id="anki-cards">0</div>
               </div>
             </div>
 
@@ -432,7 +401,7 @@
                   </div>
                 </div>
                 <div style="margin-top: 16px; text-align: right;">
-                  <button class="btn" style="font-size: 0.75rem; padding: 4px 10px;"
+                  <button class="arcade-btn arcade-btn-primary" style="font-size: 0.75rem; padding: 4px 10px;"
                     onclick="openTab(null, 'scholar')">View All →</button>
                 </div>
               </div>
@@ -500,13 +469,21 @@
                     <option value="30" selected>Last 30 days</option>
                   </select>
                 </div>
-                <div id="trends-container" style="position: relative; width: 100%; height: 200px;">
-                  <canvas id="trends-chart" style="width: 100%; height: 100%;"></canvas>
-                  <div id="trends-empty"
-                    style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #94a3b8; text-align: center;">
-                    <div style="font-size: 2rem; margin-bottom: 8px;">📊</div>
-                    <div>No trend data yet</div>
-                    <div style="font-size: 0.85rem;">Complete some study sessions to see your progress</div>
+                <div class="diagnostic-panel">
+                  <div class="panel-header">
+                    <div class="panel-icon">📈</div>
+                    <div class="panel-title">PERFORMANCE METRICS</div>
+                  </div>
+                  <div class="panel-content">
+                    <div id="trends-container" style="position: relative; width: 100%; height: 200px;">
+                      <canvas id="trends-chart" style="width: 100%; height: 100%;"></canvas>
+                      <div id="trends-empty"
+                        style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #94a3b8; text-align: center;">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">📊</div>
+                        <div>No trend data yet</div>
+                        <div style="font-size: 0.85rem;">Complete some study sessions to see your progress</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div id="trends-legend"
@@ -535,18 +512,12 @@
                 <span class="summary-chevron">▼</span>
               </summary>
               <div class="section-panel-content">
-                <div class="d-card upload" id="dropzone" style="margin: 0;">
-                  <div style="display:flex; align-items:center; justify-content:space-between;">
-                    <div style="display:flex; align-items:center; gap:15px;">
-                      <div class="d-icon"><i class="fas fa-folder-open" style="font-size: 24px;"></i></div>
-                      <div>
-                        <div style="font-weight:bold;">Drop files here or click to browse</div>
-                        <div style="font-size:0.75rem; color:#94a3b8;">Supports .md session log files</div>
-                      </div>
-                    </div>
-                    <div id="upload-status" style="font-size:0.75rem;"></div>
-                    <input type="file" id="file-input" style="display:none;" />
-                  </div>
+                <div class="retro-upload-zone" id="dropzone">
+                  <div class="upload-icon">💾</div>
+                  <div class="upload-label">Drop files here or click to browse</div>
+                  <div class="upload-hint">Supports .md session log files</div>
+                  <div id="upload-status" style="font-size:0.75rem; margin-top: 12px;"></div>
+                  <input type="file" id="file-input" style="display:none;" />
                 </div>
               </div>
             </details>
@@ -560,10 +531,10 @@
             <h2 class="page-title">Brain</h2>
             <div class="tab-controls">
               <div class="btn-group">
-                <button type="button" class="btn btn-ghost" onclick="expandAllSections('tab-sessions')">
+                <button type="button" class="arcade-btn" onclick="expandAllSections('tab-sessions')">
                   <span style="font-size: 10px;">▼</span> Expand All
                 </button>
-                <button type="button" class="btn btn-ghost" onclick="collapseAllSections('tab-sessions')">
+                <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-sessions')">
                   <span style="font-size: 10px;">▲</span> Collapse All
                 </button>
               </div>
@@ -592,7 +563,7 @@
                     <option value="session-log">Session Log Format</option>
                     <option value="quick-recap">Quick Recap Format</option>
                   </select>
-                  <button type="button" class="btn btn-secondary" onclick="copyFastEntryPrompt()">Copy Prompt</button>
+                  <button type="button" class="arcade-btn" onclick="copyFastEntryPrompt()">Copy Prompt</button>
                 </div>
               </div>
 
@@ -628,8 +599,8 @@ Gaps: Need to review valve mechanics
               </div>
 
               <div class="form-actions">
-                <button type="button" class="btn btn-primary" onclick="submitFastEntry()">Ingest Session</button>
-                <button type="button" class="btn btn-secondary"
+                <button type="button" class="arcade-btn arcade-btn-primary" onclick="submitFastEntry()">Ingest Session</button>
+                <button type="button" class="arcade-btn"
                   onclick="document.getElementById('fast-entry-paste').value = ''">Clear</button>
               </div>
               <div id="fast-entry-status" style="margin-top: 8px;"></div>
@@ -742,8 +713,8 @@ Gaps: Need to review valve mechanics
                 </div>
 
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Save Session</button>
-                  <button type="button" class="btn btn-secondary" onclick="resetQuickForm()">Clear Form</button>
+                  <button type="submit" class="arcade-btn arcade-btn-primary">Save Session</button>
+                  <button type="button" class="arcade-btn" onclick="resetQuickForm()">Clear Form</button>
                 </div>
               </form>
               <div id="quick-session-status"></div>
@@ -763,8 +734,8 @@ Gaps: Need to review valve mechanics
             </summary>
             <div class="section-panel-content" id="resume">
               <div class="resume-actions" style="margin-bottom: 16px;">
-                <button type="button" class="btn btn-primary" id="btn-resume">Generate Resume</button>
-                <a class="btn btn-secondary" href="/api/resume/download" target="_blank" rel="noopener">Download</a>
+                <button type="button" class="arcade-btn arcade-btn-primary" id="btn-resume">Generate Resume</button>
+                <a class="arcade-btn" href="/api/resume/download" target="_blank" rel="noopener">Download</a>
               </div>
               <pre class="resume-preview" id="resume-box">Click "Generate Resume" to fetch the latest summary.</pre>
             </div>
@@ -777,10 +748,10 @@ Gaps: Need to review valve mechanics
             <h2 class="page-title">Syllabus & Calendar</h2>
             <div class="tab-controls">
               <div class="btn-group">
-                <button type="button" class="btn btn-ghost" onclick="expandAllSections('tab-syllabus')">
+                <button type="button" class="arcade-btn" onclick="expandAllSections('tab-syllabus')">
                   <span style="font-size: 10px;">▼</span> Expand All
                 </button>
-                <button type="button" class="btn btn-ghost" onclick="collapseAllSections('tab-syllabus')">
+                <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-syllabus')">
                   <span style="font-size: 10px;">▲</span> Collapse All
                 </button>
               </div>
@@ -800,8 +771,8 @@ Gaps: Need to review valve mechanics
             </summary>
             <div class="section-panel-content" id="calendar-section">
               <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                <button id="btn-view-calendar" class="btn btn-primary" type="button">Calendar</button>
-                <button id="btn-view-list" class="btn" type="button">List</button>
+                <button id="btn-view-calendar" class="arcade-btn arcade-btn-primary" type="button">Calendar</button>
+                <button id="btn-view-list" class="arcade-btn" type="button">List</button>
               </div>
 
               <div id="syllabus-calendar-container">
@@ -831,14 +802,14 @@ Gaps: Need to review valve mechanics
                       <option value="day">Day View</option>
                     </select>
                   </div>
-                  <button id="btn-refresh-calendar" class="btn" style="margin-top: 20px;">Refresh</button>
+                  <button id="btn-refresh-calendar" class="arcade-btn" style="margin-top: 20px;">Refresh</button>
                 </div>
 
                 <!-- Calendar Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                  <button id="btn-calendar-prev" class="btn" style="padding: 6px 12px;">← Prev</button>
+                  <button id="btn-calendar-prev" class="arcade-btn" style="padding: 6px 12px;">← Prev</button>
                   <h3 id="calendar-month-year" style="margin: 0; font-size: 18px; font-weight: 600;">Loading...</h3>
-                  <button id="btn-calendar-next" class="btn" style="padding: 6px 12px;">Next →</button>
+                  <button id="btn-calendar-next" class="arcade-btn" style="padding: 6px 12px;">Next →</button>
                 </div>
 
                 <!-- Calendar Grid -->
@@ -896,7 +867,7 @@ Gaps: Need to review valve mechanics
                         <option value="">Optional</option>
                       </select>
                     </div>
-                    <button id="btn-add-planned-session" class="btn btn-primary" style="margin-top: 20px;">Add Planned
+                    <button id="btn-add-planned-session" class="arcade-btn arcade-btn-primary" style="margin-top: 20px;">Add Planned
                       Session</button>
                   </div>
                   <div id="plan-session-status" style="margin-top: 8px; font-size: 12px;"></div>
@@ -915,7 +886,7 @@ Gaps: Need to review valve mechanics
                     <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
                       Connect your Google Calendar to import events automatically.
                     </p>
-                    <button id="btn-gcal-connect" class="btn btn-primary" style="width: 100%;">
+                    <button id="btn-gcal-connect" class="arcade-btn arcade-btn-primary" style="width: 100%;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"
                         style="margin-right: 8px; vertical-align: middle;">
                         <path
@@ -937,15 +908,15 @@ Gaps: Need to review valve mechanics
                       Connected as: <strong id="gcal-user-email" style="color: var(--text-primary);">—</strong>
                     </p>
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                      <button id="btn-gcal-sync" class="btn btn-primary" style="flex: 1;">
+                      <button id="btn-gcal-sync" class="arcade-btn arcade-btn-primary" style="flex: 1;">
                         📅 Sync Calendar
                       </button>
-                      <button id="btn-gtasks-sync" class="btn btn-primary" style="flex: 1;">
+                      <button id="btn-gtasks-sync" class="arcade-btn arcade-btn-primary" style="flex: 1;">
                         ✅ Sync Tasks
                       </button>
                     </div>
                     <div style="display: flex; gap: 8px;">
-                      <button id="btn-gcal-disconnect" class="btn" style="flex: 1; padding: 8px 12px;"
+                      <button id="btn-gcal-disconnect" class="arcade-btn" style="flex: 1; padding: 8px 12px;"
                         title="Disconnect">
                         Disconnect
                       </button>
@@ -982,11 +953,11 @@ Gaps: Need to review valve mechanics
                       </div>
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
-                      <button id="btn-list-prev-week" class="btn" style="padding: 6px 12px;">← Earlier</button>
+                      <button id="btn-list-prev-week" class="arcade-btn" style="padding: 6px 12px;">← Earlier</button>
                       <span id="list-week-range-label"
                         style="font-size: 13px; color: var(--text-secondary); min-width: 150px; text-align: center;">Week
                         1 - 3</span>
-                      <button id="btn-list-next-week" class="btn" style="padding: 6px 12px;">Later →</button>
+                      <button id="btn-list-next-week" class="arcade-btn" style="padding: 6px 12px;">Later →</button>
                     </div>
                   </div>
                 </div>
@@ -1016,7 +987,7 @@ Gaps: Need to review valve mechanics
                     <input id="syllabus-list-search" class="form-input" type="text" placeholder="Search events..."
                       style="font-size: 13px;">
                   </div>
-                  <button id="btn-refresh-syllabus-list" class="btn" style="margin-top: 20px;">Refresh</button>
+                  <button id="btn-refresh-syllabus-list" class="arcade-btn" style="margin-top: 20px;">Refresh</button>
                 </div>
 
                 <div class="table-wrapper">
@@ -1065,7 +1036,7 @@ Gaps: Need to review valve mechanics
                   <option value="all">All</option>
                   <option value="completed">Completed</option>
                 </select>
-                <button id="btn-refresh-study-tasks" class="btn" type="button">Refresh</button>
+                <button id="btn-refresh-study-tasks" class="arcade-btn" type="button">Refresh</button>
               </div>
 
               <!-- Task Stats -->
@@ -1188,7 +1159,7 @@ Gaps: Need to review valve mechanics
                     placeholder="Covers weeks 1–3, Chapters 1–5; Slides 01–03."></textarea>
                 </div>
                 <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Save Course + Event</button>
+                  <button type="submit" class="arcade-btn arcade-btn-primary">Save Course + Event</button>
                 </div>
               </form>
               <div id="syllabus-status"></div>
@@ -1211,7 +1182,7 @@ Gaps: Need to review valve mechanics
               <div class="form-section">
                 <div class="form-group">
                   <label class="form-label" for="syllabus_prompt_template">1) Copy this prompt into ChatGPT</label>
-                  <button type="button" class="btn" id="btn-syllabus-prompt-copy"
+                  <button type="button" class="arcade-btn" id="btn-syllabus-prompt-copy"
                     style="margin-top: 6px; margin-bottom: 6px;">Copy Prompt</button>
                   <textarea id="syllabus_prompt_template" class="form-textarea" rows="12" readonly>
 You are helping me convert a course syllabus into a JSON format for my PT Study Brain app.
@@ -1262,7 +1233,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                     placeholder='{"name": "PT Anatomy I", "code": "PTA101", ...}'></textarea>
                 </div>
                 <div class="form-actions">
-                  <button type="button" class="btn btn-primary" id="btn-syllabus-json-import">Import JSON</button>
+                  <button type="button" class="arcade-btn arcade-btn-primary" id="btn-syllabus-json-import">Import JSON</button>
                 </div>
                 <div id="syllabus-json-status"></div>
               </div>
@@ -1292,14 +1263,18 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
 
         <!-- Scholar Tab -->
         <section id="tab-scholar" class="tab-panel">
+          <div class="scholar-banner" style="margin-bottom: 20px;">
+            <div class="banner-title">🔬 SCHOLAR RESEARCH</div>
+            <div class="banner-subtitle">AI-powered system analysis, research, and improvements</div>
+          </div>
           <div class="tab-header">
             <h2 class="page-title">Scholar Research</h2>
             <div class="tab-controls">
               <div class="btn-group">
-                <button type="button" class="btn btn-ghost" onclick="expandAllSections('tab-scholar')">
+                <button type="button" class="arcade-btn" onclick="expandAllSections('tab-scholar')">
                   <span style="font-size: 10px;">▼</span> Expand All
                 </button>
-                <button type="button" class="btn btn-ghost" onclick="collapseAllSections('tab-scholar')">
+                <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-scholar')">
                   <span style="font-size: 10px;">▲</span> Collapse All
                 </button>
               </div>
@@ -1344,8 +1319,8 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                     </div>
                   </div>
                   <div class="form-actions" style="margin-top: 8px;">
-                    <button type="button" class="btn btn-primary" id="btn-save-api-key">Save Key</button>
-                    <button type="button" class="btn" id="btn-test-api-key">Test</button>
+                    <button type="button" class="arcade-btn arcade-btn-primary" id="btn-save-api-key">Save Key</button>
+                    <button type="button" class="arcade-btn" id="btn-test-api-key">Test</button>
                   </div>
                   <div id="api-key-test-result" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">
                   </div>
@@ -1427,7 +1402,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                 style="margin-bottom: 24px; padding: 16px; background: rgba(31, 111, 235, 0.1); border: 1px solid var(--accent); border-radius: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                   <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">Run Scholar</h4>
-                  <button id="btn-run-scholar" class="btn btn-primary" style="margin: 0;">Start Run</button>
+                  <button id="btn-run-scholar" class="arcade-btn arcade-btn-primary" style="margin: 0;">Start Run</button>
                 </div>
                 <div id="scholar-run-status" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
                   Click "Start Run" to execute Scholar orchestrator
@@ -1438,13 +1413,19 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                 <div id="scholar-run-meta"
                   style="display:none; margin-top: 8px; font-size: 12px; color: var(--text-muted);"></div>
                 <div id="scholar-run-actions" style="display:none; margin-top: 10px; gap: 8px; flex-wrap: wrap;">
-                  <button id="btn-scholar-refresh" class="btn" type="button">Refresh Status</button>
-                  <button id="btn-scholar-open-final" class="btn" type="button">Open Latest Final</button>
-                  <button id="btn-scholar-cancel" class="btn" type="button">Cancel Run</button>
+                  <button id="btn-scholar-refresh" class="arcade-btn" type="button">Refresh Status</button>
+                  <button id="btn-scholar-open-final" class="arcade-btn" type="button">Open Latest Final</button>
+                  <button id="btn-scholar-cancel" class="arcade-btn" type="button">Cancel Run</button>
                 </div>
                 <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">Tip: drag the bottom edge to
                   resize.</div>
-                <div id="scholar-run-log" class="scholar-run-log" style="display: none;">
+                <div class="terminal-window" style="display: none; margin-top: 12px;" id="scholar-run-log-container">
+                  <div class="terminal-window-header">
+                    <div class="led"></div>
+                    <div class="title">SCHOLAR OUTPUT</div>
+                  </div>
+                  <div class="terminal-window-body" id="scholar-run-log" style="max-height: 300px; overflow-y: auto;">
+                  </div>
                 </div>
               </div>
             </div>
@@ -1486,7 +1467,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                     <span id="scholar-questions-section-count"
                       style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">(0)</span>
                   </h4>
-                  <button id="btn-save-answers" class="btn btn-primary" style="display: none;">Save Answers</button>
+                  <button id="btn-save-answers" class="arcade-btn arcade-btn-primary" style="display: none;">Save Answers</button>
                 </div>
                 <div id="scholar-questions"
                   style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-height: 60px;">
@@ -1673,9 +1654,9 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                         style="font-size: 10px; padding: 2px 6px; background: #a855f7; color: white; border-radius: 4px; margin-left: 8px;">AI-Powered</span>
                     </h4>
                   </div>
-                  <button id="btn-generate-digest" class="btn btn-primary"
+                  <button id="btn-generate-digest" class="arcade-btn arcade-btn-primary"
                     style="margin: 0; background: #a855f7;">Generate Analysis</button>
-                  <button class="btn" style="margin: 0;" onclick="saveStrategicDigest()">Save Digest</button>
+                  <button class="arcade-btn" style="margin: 0;" onclick="saveStrategicDigest()">Save Digest</button>
                 </div>
                 <div id="scholar-digest-status"
                   style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
@@ -1709,7 +1690,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                     <span id="saved-digests-count"
                       style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">(0)</span>
                   </h4>
-                  <button class="btn btn-secondary" onclick="loadSavedDigests()"
+                  <button class="arcade-btn" onclick="loadSavedDigests()"
                     style="font-size: 12px;">Refresh</button>
                 </div>
                 <div id="saved-digests-list"
@@ -1749,10 +1730,10 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
             <h2 class="page-title">Tutor</h2>
             <div class="tab-controls">
               <div class="btn-group">
-                <button type="button" class="btn btn-ghost" onclick="expandAllSections('tab-tutor')">
+                <button type="button" class="arcade-btn" onclick="expandAllSections('tab-tutor')">
                   <span style="font-size: 10px;">▼</span> Expand All
                 </button>
-                <button type="button" class="btn btn-ghost" onclick="collapseAllSections('tab-tutor')">
+                <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-tutor')">
                   <span style="font-size: 10px;">▲</span> Collapse All
                 </button>
               </div>
@@ -1771,9 +1752,10 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
               </div>
               <span class="summary-chevron">▼</span>
             </summary>
-            <div class="section-panel-content" id="tutor-chat">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <div style="display: flex; gap: 12px; align-items: center;">
+            <div class="section-panel-content chat-workspace" id="tutor-chat">
+              <div class="chat-workspace-header">
+                <div class="title">AI STUDY TUTOR</div>
+                <div class="meta">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <label for="tutor-mode-select"
                       style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Mode:</label>
@@ -1783,25 +1765,14 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                       <option value="Drill">Drill</option>
                     </select>
                   </div>
-                  <button type="button" class="btn btn-secondary" id="btn-tutor-new-session" style="font-size: 13px;">
+                  <button type="button" class="arcade-btn" id="btn-tutor-new-session" style="font-size: 13px;">
                     🔄 New Session
                   </button>
                 </div>
               </div>
 
               <!-- Chat Messages Container -->
-              <div id="tutor-chat-messages" style="
-          height: 400px;
-          overflow-y: auto;
-          padding: 16px;
-          background: var(--surface-0);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          margin-bottom: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        ">
+              <div id="tutor-chat-messages" class="chat-messages">
                 <div class="chat-message tutor" style="align-self: flex-start; max-width: 85%;">
                   <div class="chat-sender"
                     style="font-size: 11px; font-weight: 600; color: var(--primary); margin-bottom: 4px;">Tutor</div>
@@ -1817,18 +1788,16 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
               </div>
 
               <!-- Chat Input -->
-              <div class="form-section" style="margin: 0;">
-                <div style="display: flex; gap: 12px; align-items: flex-end;">
-                  <div style="flex: 1;">
-                    <textarea id="tutor-question" class="form-textarea" rows="2"
-                      placeholder="Type your question... (Enter to send, Shift+Enter for new line)"
-                      style="resize: none;"></textarea>
-                  </div>
-                  <button type="button" class="btn btn-primary" id="btn-tutor-send"
-                    style="height: 50px; padding: 0 24px;">
-                    Send
-                  </button>
+              <div class="chat-input-area">
+                <div style="flex: 1;">
+                  <textarea id="tutor-question" class="form-textarea" rows="2"
+                    placeholder="Type your question... (Enter to send, Shift+Enter for new line)"
+                    style="resize: none;"></textarea>
                 </div>
+                <button type="button" class="arcade-btn arcade-btn-primary" id="btn-tutor-send"
+                  style="height: 50px; padding: 0 24px;">
+                  Send
+                </button>
               </div>
             </div>
           </details>
@@ -1874,7 +1843,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                     style="display: none;" />
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                  <button type="button" class="btn btn-primary" id="btn-save-study-path" style="font-size: 12px;">Save
+                  <button type="button" class="arcade-btn arcade-btn-primary" id="btn-save-study-path" style="font-size: 12px;">Save
                     Path</button>
                   <span id="study-rag-path-status" style="font-size: 12px; color: var(--text-muted);"></span>
                 </div>
@@ -1889,8 +1858,8 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                   style="font-family: monospace; color: var(--text-primary);">Loading...</span>
               </div>
               <div class="form-actions" style="margin-bottom: 10px;">
-                <button type="button" class="btn btn-primary" id="btn-tutor-study-sync">Sync Study Folder</button>
-                <button type="button" class="btn btn-secondary" id="btn-tutor-study-refresh">Refresh Folders</button>
+                <button type="button" class="arcade-btn arcade-btn-primary" id="btn-tutor-study-sync">Sync Study Folder</button>
+                <button type="button" class="arcade-btn" id="btn-tutor-study-refresh">Refresh Folders</button>
               </div>
               <div id="tutor-study-status"></div>
               <div id="tutor-study-folders"
@@ -1906,7 +1875,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                 These are compact descriptions of systems/engines that shape Tutor behavior. Toggle them on/off.
               </div>
               <div class="form-actions" style="margin-bottom: 10px;">
-                <button type="button" class="btn btn-secondary" id="btn-tutor-runtime-refresh">Refresh Runtime
+                <button type="button" class="arcade-btn" id="btn-tutor-runtime-refresh">Refresh Runtime
                   Items</button>
               </div>
               <div id="tutor-runtime-items"
@@ -1935,7 +1904,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                 </div>
               </div>
               <div class="form-actions">
-                <button type="button" class="btn btn-secondary" id="btn-tutor-add-link">Add Link</button>
+                <button type="button" class="arcade-btn" id="btn-tutor-add-link">Add Link</button>
               </div>
               <div id="tutor-upload-status"></div>
             </div>
@@ -1953,10 +1922,10 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         <h2 class="page-title">Brain Database</h2>
         <div class="tab-controls">
           <div class="btn-group">
-            <button type="button" class="btn btn-ghost" onclick="expandAllSections('tab-brain')">
+            <button type="button" class="arcade-btn" onclick="expandAllSections('tab-brain')">
               <span style="font-size: 10px;">▼</span> Expand All
             </button>
-            <button type="button" class="btn btn-ghost" onclick="collapseAllSections('tab-brain')">
+            <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-brain')">
               <span style="font-size: 10px;">▲</span> Collapse All
             </button>
           </div>
@@ -1976,29 +1945,32 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <span class="summary-chevron">▼</span>
         </summary>
         <div class="section-panel-content" id="brain-stats-section">
-          <div id="brain-stats-grid" class="stats-grid">
-            <div class="stat-card">
-              <div class="label">Sessions</div>
-              <div class="value" id="brain-session-count" style="color: var(--accent);">--</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Syllabus Events</div>
-              <div class="value" id="brain-event-count" style="color: var(--success);">--</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">RAG Documents</div>
-              <div class="value" id="brain-rag-count" style="color: var(--purple);">--</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">Pending Cards</div>
-              <div class="value" id="brain-pending-cards" style="color: var(--warning);">--</div>
-            </div>
-            <div class="stat-card">
-              <div class="label">DB Size (MB)</div>
-              <div class="value" id="brain-db-size">--</div>
-            </div>
+          <div class="core-status-panel">
+            <div class="panel-title">SYSTEM STATUS</div>
+            <ul class="core-status-list">
+              <li>
+                <span class="status-label">Sessions</span>
+                <span class="status-value info" id="brain-session-count">--</span>
+              </li>
+              <li>
+                <span class="status-label">Syllabus Events</span>
+                <span class="status-value positive" id="brain-event-count">--</span>
+              </li>
+              <li>
+                <span class="status-label">RAG Documents</span>
+                <span class="status-value info" id="brain-rag-count">--</span>
+              </li>
+              <li>
+                <span class="status-label">Pending Cards</span>
+                <span class="status-value" id="brain-pending-cards" style="color: var(--warning);">--</span>
+              </li>
+              <li>
+                <span class="status-label">DB Size (MB)</span>
+                <span class="status-value" id="brain-db-size">--</span>
+              </li>
+            </ul>
           </div>
-          <button class="btn" onclick="loadBrainStatus()" style="margin-top: 12px;">Refresh</button>
+          <button class="arcade-btn" onclick="loadBrainStatus()" style="margin-top: 12px;">Refresh</button>
         </div>
       </details>
 
@@ -2044,8 +2016,8 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                   style="color: var(--text-muted);">-</span></p>
             </div>
             <div style="display: flex; gap: 8px; margin-top: 16px;">
-              <button class="btn btn-primary" onclick="runSync(false)">Sync Now</button>
-              <button class="btn btn-secondary" onclick="runSync(true)">Force Re-sync All</button>
+              <button class="arcade-btn arcade-btn-primary" onclick="runSync(false)">Sync Now</button>
+              <button class="arcade-btn" onclick="runSync(true)">Force Re-sync All</button>
             </div>
             <div id="sync-message" style="margin-top: 12px; font-size: 13px;"></div>
           </div>
@@ -2080,11 +2052,11 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                 </span>
               </div>
               <div style="display: flex; gap: 8px;">
-                <button id="anki-sync-btn" class="btn btn-primary" onclick="syncAnkiCards()"
+                <button id="anki-sync-btn" class="arcade-btn arcade-btn-primary" onclick="syncAnkiCards()"
                   style="display: flex; align-items: center; gap: 6px;">
                   <span>🔄</span> Sync to Anki
                 </button>
-                <button class="btn" onclick="refreshAnkiDrafts()">Refresh</button>
+                <button class="arcade-btn" onclick="refreshAnkiDrafts()">Refresh</button>
               </div>
             </div>
           </div>
@@ -2156,8 +2128,8 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                 </div>
               </div>
               <div class="form-actions" style="display: flex; gap: 8px;">
-                <button type="submit" class="btn btn-primary">Add Card Draft</button>
-                <button type="reset" class="btn btn-secondary">Clear</button>
+                <button type="submit" class="arcade-btn arcade-btn-primary">Add Card Draft</button>
+                <button type="reset" class="arcade-btn">Clear</button>
               </div>
               <div id="anki-create-status" style="margin-top: 8px; font-size: 13px;"></div>
             </form>
@@ -2168,9 +2140,12 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
     </section>
     <!-- Sync Inbox Tab -->
     <section id="tab-sync" class="tab-panel">
-      <div class="tab-header">
-        <h2 class="page-title">Sync Inbox</h2>
-        <button class="btn btn-secondary" onclick="loadSyncPending()">Refresh</button>
+      <div class="sync-inbox-header">
+        <div class="header-content">
+          <div class="title">📥 SYNC INBOX</div>
+          <div class="subtitle">Review and approve incoming data from scrapers and imports</div>
+        </div>
+        <button class="scraper-btn" onclick="loadSyncPending()">REFRESH</button>
       </div>
 
       <div class="section-panel" style="padding: 20px;">
@@ -2436,11 +2411,14 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
 
     <!-- Sync Inbox Tab -->
     <section id="tab-sync" class="tab-panel">
-      <div class="tab-header">
-        <h2 class="page-title">Sync Inbox</h2>
+      <div class="sync-inbox-header">
+        <div class="header-content">
+          <div class="title">📥 SYNC INBOX</div>
+          <div class="subtitle">Review and approve incoming data from scrapers and imports</div>
+        </div>
         <div style="display: flex; gap: 10px;">
-          <button class="btn btn-primary" onclick="runBlackboardScraper()" id="btn-run-scraper">Run Scraper</button>
-          <button class="btn btn-secondary" onclick="loadSyncPending()">Refresh</button>
+          <button class="scraper-btn" onclick="runBlackboardScraper()" id="btn-run-scraper">RUN SCRAPER</button>
+          <button class="scraper-btn" onclick="loadSyncPending()">REFRESH</button>
         </div>
       </div>
 
@@ -2509,8 +2487,8 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         titleEl.textContent = titles[tabName];
       }
 
-      // Update active nav item (top nav, mobile, legacy)
-      document.querySelectorAll('.nav-item, .top-nav-item, .mobile-nav-item').forEach(item => {
+      // Update active nav item (top nav, mobile, legacy, arcade)
+      document.querySelectorAll('.nav-item, .top-nav-item, .mobile-nav-item, .arcade-nav-btn').forEach(item => {
         item.classList.remove('active');
         if (item.dataset.tab === tabName) {
           item.classList.add('active');
