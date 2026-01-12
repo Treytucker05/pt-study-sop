@@ -188,6 +188,41 @@ def parse_session_log(filepath):
     data['gaps_identified'] = extract_section('Gaps Identified', content)
     data['notes_insights'] = extract_section('Notes/Insights', content)
     
+    # WRAP v9.2 Fields - parse both inline and section formats
+    # Anki Cards text (distinct from anki_cards_count)
+    data['anki_cards_text'] = extract_field(r'-\s*Anki Cards:\s*(.+)', content) or extract_section('Anki Cards', content) or None
+    
+    # Glossary entries
+    data['glossary_entries'] = extract_field(r'-\s*Glossary:\s*(.+)', content) or extract_section('Glossary', content) or None
+    
+    # Wrap Watchlist
+    data['wrap_watchlist'] = extract_field(r'-\s*Wrap Watchlist:\s*(.+)', content) or extract_section('Wrap Watchlist', content) or None
+    
+    # Clinical Links
+    data['clinical_links'] = extract_field(r'-\s*Clinical Links:\s*(.+)', content) or extract_section('Clinical Links', content) or None
+    
+    # Next Session Plan (full plan text, distinct from next_topic/next_focus)
+    data['next_session_plan'] = extract_field(r'-\s*Next Session:\s*(.+)', content) or extract_section('Next Session', content) or None
+    
+    # Spaced Reviews
+    data['spaced_reviews'] = extract_field(r'-\s*Spaced Reviews:\s*(.+)', content) or extract_section('Spaced Reviews', content) or None
+    
+    # Runtime Notes
+    data['runtime_notes'] = extract_field(r'-\s*Runtime Notes:\s*(.+)', content) or extract_section('Runtime Notes', content) or None
+    
+    # Error tracking fields - look for sub-items under Errors section
+    errors_section = extract_section('Errors', content)
+    if errors_section:
+        # Parse sub-fields from Errors section
+        data['errors_conceptual'] = extract_field(r'-\s*Conceptual:\s*(.+)', errors_section) or None
+        data['errors_discrimination'] = extract_field(r'-\s*Discrimination:\s*(.+)', errors_section) or None
+        data['errors_recall'] = extract_field(r'-\s*Recall:\s*(.+)', errors_section) or None
+    else:
+        # Try inline format directly
+        data['errors_conceptual'] = extract_field(r'-\s*Conceptual:\s*(.+)', content) or None
+        data['errors_discrimination'] = extract_field(r'-\s*Discrimination:\s*(.+)', content) or None
+        data['errors_recall'] = extract_field(r'-\s*Recall:\s*(.+)', content) or None
+    
     # Next Session Priority
     data['next_topic'] = extract_field(r'-\s*Topic:\s*(.+)', content.split('## Next Session')[-1] if '## Next Session' in content else '')
     data['next_focus'] = extract_field(r'-\s*Focus:\s*(.+)', content.split('## Next Session')[-1] if '## Next Session' in content else '')
@@ -358,7 +393,11 @@ def insert_session(data):
             'anchors_locked', 'weak_anchors',
             'what_worked', 'what_needs_fixing', 'gaps_identified', 'notes_insights',
             'next_topic', 'next_focus', 'next_materials',
-            'created_at', 'schema_version', 'source_path'
+            'created_at', 'schema_version', 'source_path',
+            # WRAP v9.2 fields
+            'anki_cards_text', 'glossary_entries', 'wrap_watchlist', 'clinical_links',
+            'next_session_plan', 'spaced_reviews', 'runtime_notes',
+            'errors_conceptual', 'errors_discrimination', 'errors_recall'
         ]
         placeholders = ", ".join(["?"] * len(columns))
         values = (
@@ -405,8 +444,19 @@ def insert_session(data):
             data.get('next_focus', ''),
             data.get('next_materials', ''),
             data.get('created_at'),
-            data.get('schema_version', '9.1'),
-            data.get('source_path', '')
+            data.get('schema_version', '9.2'),
+            data.get('source_path', ''),
+            # WRAP v9.2 fields
+            data.get('anki_cards_text'),
+            data.get('glossary_entries'),
+            data.get('wrap_watchlist'),
+            data.get('clinical_links'),
+            data.get('next_session_plan'),
+            data.get('spaced_reviews'),
+            data.get('runtime_notes'),
+            data.get('errors_conceptual'),
+            data.get('errors_discrimination'),
+            data.get('errors_recall')
         )
         cursor.execute(f'''INSERT INTO sessions ({", ".join(columns)}) VALUES ({placeholders})''', values)
         

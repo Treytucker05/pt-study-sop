@@ -1,5 +1,13 @@
 {
   "safe_mode": false,
+  "multi_agent": {
+    "enabled": false,
+    "max_concurrency": 4
+  },
+  "telemetry_snapshot": {
+    "enabled": true,
+    "days_recent": 30
+  },
   "repo_paths": [
     "sop/",
     "scholar/",
@@ -7,6 +15,7 @@
     "dist/"
   ],
   "tutor_paths": [
+    "sop/MASTER_PLAN_PT_STUDY.md",
     "sop/gpt-knowledge/gpt-instructions.md",
     "sop/gpt-knowledge/runtime-prompt.md",
     "sop/gpt-knowledge/PEIRRO.md",

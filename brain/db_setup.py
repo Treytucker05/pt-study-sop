@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Database setup and schema initialization for PT Study Brain v9.1.
+Database setup and schema initialization for PT Study Brain v9.2.
 """
 
 import sqlite3
@@ -10,7 +10,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "data", "pt_study.db")
 
 def init_database():
     """
-    Initialize the SQLite database with the sessions table (v9.1 schema)
+    Initialize the SQLite database with the sessions table (v9.2 schema)
     plus additive planning/RAG tables.
     """
     # Ensure data directory exists
@@ -22,7 +22,7 @@ def init_database():
     cursor = conn.cursor()
 
     # ------------------------------------------------------------------
-    # Core sessions table (v9.1 schema – unchanged)
+    # Core sessions table (v9.2 schema)
     # ------------------------------------------------------------------
     cursor.execute(
         """
@@ -91,8 +91,20 @@ def init_database():
 
             -- Metadata
             created_at TEXT NOT NULL,
-            schema_version TEXT DEFAULT '9.1',
+            schema_version TEXT DEFAULT '9.2',
             source_path TEXT,  -- Path to the source markdown file
+
+            -- WRAP Enhancement v9.2 fields
+            anki_cards_text TEXT,          -- Semicolon-separated card titles or key Q-A pairs
+            glossary_entries TEXT,         -- Short definitions of new or complex terms
+            wrap_watchlist TEXT,           -- Specific recurring confusions to target in next reviews
+            clinical_links TEXT,           -- Clinical correlations added during session
+            next_session_plan TEXT,        -- Planned focus or materials for continuity
+            spaced_reviews TEXT,           -- Explicit dates for 24h, 3d, 7d reviews
+            runtime_notes TEXT,            -- Meta-notes about study behavior, KWIK rules, SOP adherence
+            errors_conceptual TEXT,        -- List of conceptual errors
+            errors_discrimination TEXT,    -- List of X vs Y confusions
+            errors_recall TEXT,            -- List of recall failures
 
             UNIQUE(session_date, session_time, main_topic)
         )
@@ -148,8 +160,19 @@ def init_database():
         "next_focus": "TEXT",
         "next_materials": "TEXT",
         "created_at": "TEXT NOT NULL",
-        "schema_version": "TEXT DEFAULT '9.1'",
+        "schema_version": "TEXT DEFAULT '9.2'",
         "source_path": "TEXT",
+        # WRAP Enhancement v9.2 fields
+        "anki_cards_text": "TEXT",
+        "glossary_entries": "TEXT",
+        "wrap_watchlist": "TEXT",
+        "clinical_links": "TEXT",
+        "next_session_plan": "TEXT",
+        "spaced_reviews": "TEXT",
+        "runtime_notes": "TEXT",
+        "errors_conceptual": "TEXT",
+        "errors_discrimination": "TEXT",
+        "errors_recall": "TEXT",
     }
     
     # Add missing columns (skip id and constraints that can't be added via ALTER TABLE)
@@ -162,8 +185,8 @@ def init_database():
                     sql_type = "INTEGER DEFAULT 0"
                 else:
                     sql_type = "INTEGER"
-            elif "DEFAULT '9.1'" in col_type:
-                sql_type = "TEXT DEFAULT '9.1'"
+            elif "DEFAULT '9.2'" in col_type:
+                sql_type = "TEXT DEFAULT '9.2'"
             else:
                 sql_type = "TEXT"
             
@@ -202,7 +225,7 @@ def init_database():
         CREATE TABLE IF NOT EXISTS course_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             course_id INTEGER NOT NULL,
-            type TEXT NOT NULL, -- lecture/reading/quiz/exam/assignment/other
+            type TEXT NOT NULL, -- lecture/reading/quiz/exam/assignment/announcement/other
             title TEXT NOT NULL,
             date TEXT,          -- primary calendar date (e.g., lecture date)
             due_date TEXT,      -- for quizzes/exams/assignments
@@ -210,6 +233,28 @@ def init_database():
             raw_text TEXT,      -- syllabus snippet or notes
             status TEXT DEFAULT 'pending', -- pending/completed/cancelled
             created_at TEXT NOT NULL,
+            source_url TEXT,
+            google_event_id TEXT,
+            google_synced_at TEXT,
+            FOREIGN KEY(course_id) REFERENCES courses(id)
+        )
+    """
+    )
+
+    # Staging area for scraped data before verification
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scraped_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER NOT NULL,
+            type TEXT NOT NULL, 
+            title TEXT NOT NULL,
+            date TEXT,
+            due_date TEXT,
+            raw_text TEXT,
+            source_url TEXT,
+            scraped_at TEXT NOT NULL,
+            status TEXT DEFAULT 'new', -- new/conflict/matched/ignored/approved
             FOREIGN KEY(course_id) REFERENCES courses(id)
         )
     """
@@ -294,6 +339,13 @@ def init_database():
         try:
             cursor.execute("ALTER TABLE courses ADD COLUMN color TEXT")
             print("[INFO] Added 'color' column to courses table")
+        except sqlite3.OperationalError:
+            pass
+    
+    if "last_scraped_at" not in course_cols:
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN last_scraped_at TEXT")
+            print("[INFO] Added 'last_scraped_at' column to courses table")
         except sqlite3.OperationalError:
             pass
 

@@ -191,6 +191,51 @@ User can switch modes mid-session with: `mode core` / `mode sprint` / `mode dril
 "Session complete. Log this to Brain for tracking."
 ```
 
+**MANDATORY JSON OUTPUT:** At the end of WRAP, you MUST output two JSON objects:
+
+1️⃣ **Tracker JSON** (lightweight for dashboards):
+```json
+{
+  "date": "YYYY-MM-DD",
+  "topic": "Main topic covered",
+  "mode": "Core",
+  "duration": 45,
+  "understanding": 4,
+  "retention": 4,
+  "system_performance": 5,
+  "what_worked": "Effective methods; semicolon-separated",
+  "what_needs_fixing": "Gaps; semicolon-separated",
+  "anchors": "Key hooks created; semicolon-separated",
+  "notes": "Insights or next steps; semicolon-separated"
+}
+```
+
+2️⃣ **Enhanced JSON** (full canonical archive):
+```json
+{
+  "date": "YYYY-MM-DD",
+  "topic": "Main topic covered",
+  "mode": "Core",
+  "duration": 45,
+  "understanding": 4,
+  "retention": 4,
+  "system_performance": 5,
+  "what_worked": "Detailed effective methods; semicolon-separated",
+  "what_needs_fixing": "Detailed gaps and process issues; semicolon-separated",
+  "anchors": "KWIK hooks and memory locks; semicolon-separated",
+  "anki_cards": "Cards created or planned; semicolon-separated",
+  "glossary": "Term definitions added; semicolon-separated",
+  "runtime_notes": "Process notes (KWIK enforcement, corrections); semicolon-separated",
+  "wrap_watchlist": "Recurring weak areas; semicolon-separated",
+  "clinical_links": "Clinical connections; semicolon-separated",
+  "next_session": "Next session plan; semicolon-separated",
+  "spaced_reviews": "Review1=+1d; Review2=+3d; Review3=+7d",
+  "notes": "Additional reflections; semicolon-separated"
+}
+```
+
+**Rules:** Use current date automatically. Mode = Core/Sprint/Drill. All text fields semicolon-separated. Label outputs clearly. Include runtime corrections and Anki notes when applicable.
+
 ---
 
 ## Drawing Instructions Format

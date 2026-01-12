@@ -1,8 +1,8 @@
 # Session Resume
-Generated: 2026-01-11 00:48
+Generated: 2026-01-11 19:22
 
 ## Readiness Score
-**52/100** (1 topics, 1 sessions in 30 days)
+**56/100** (2 topics, 2 sessions in 30 days)
 
 ## Drift + SOP Usage (last 30d)
 - Prompt Drift flagged: 0
@@ -12,10 +12,14 @@ Generated: 2026-01-11 00:48
 - Common Core Learning Modules: n/a
 
 ## Recent Sessions
+- **Myelin & Glial Cells** (2026-01-11, 0d ago)
+  - Mode: Core | Understanding: 4/5 | Confidence: 4/5
 - **Neuroscience Introduction – The Neuron** (2026-01-10, 1d ago)
   - Mode: Core | Understanding: 4/5 | Confidence: 4/5
 
 ## Topic Coverage
+- **Myelin & Glial Cells**: 1 sessions, last 0d ago [FRESH]
+  - Avg Understanding: 4.0/5 | Avg Confidence: 4.0/5
 - **Neuroscience Introduction – The Neuron**: 1 sessions, last 1d ago [FRESH]
   - Avg Understanding: 4.0/5 | Avg Confidence: 4.0/5
 

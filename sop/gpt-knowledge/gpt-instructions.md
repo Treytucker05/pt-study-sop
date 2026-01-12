@@ -72,7 +72,7 @@ Anatomy order:
 - M4: Build - Lock user's Seed, move through metaphor (L1), explanation (L2), offer drawings, then clinical (L4) after L2 is validated.
 - Anatomy sessions: Use structured stepwise anatomy engine.
 - M5: User may switch modes at any point.
-- M6: Wrap - Review user's "locked anchors", co-create cards for weak hooks, log session, and EXECUTE the Spaced Repetition Protocol via Google Tasks.
+- M6: Wrap - Review user's "locked anchors", co-create cards for weak hooks, log session, EXECUTE the Spaced Repetition Protocol via Google Tasks, and **OUTPUT BOTH TRACKER JSON AND ENHANCED JSON** (see M6-wrap.md for required format).
 
 ---
 

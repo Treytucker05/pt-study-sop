@@ -2,11 +2,13 @@
 import os
 import re
 import json
+import sys
+import time
 import threading
 import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, List, Any
 from dashboard.utils import load_api_config
 
 # Check if requests library is available
@@ -198,8 +200,145 @@ def _truncate_context(context: str, max_chars: int = MAX_CONTEXT_CHARS) -> str:
     last_newline = truncated.rfind('\n', max_chars - 500, max_chars)
     if last_newline > max_chars - 1000:
         truncated = truncated[:last_newline]
-    
+
     return truncated + "\n\n[... context truncated due to length ...]"
+
+
+def load_audit_manifest() -> Dict[str, Any]:
+    """
+    Load scholar/inputs/audit_manifest.json if available.
+    Returns empty dict on failure.
+    """
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    manifest_path = repo_root / "scholar" / "inputs" / "audit_manifest.json"
+    if not manifest_path.exists():
+        return {}
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def build_telemetry_snapshot(run_id: str, manifest: Dict[str, Any], log_file=None) -> Optional[Path]:
+    """
+    Run scholar/telemetry_snapshot.py to create a telemetry snapshot file.
+    Returns the output path if created, else None.
+    """
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    snapshot_cfg = (manifest or {}).get("telemetry_snapshot", {}) if manifest else {}
+    enabled = snapshot_cfg.get("enabled", True)
+    days_recent = int(snapshot_cfg.get("days_recent", 30)) if snapshot_cfg else 30
+    if not enabled:
+        return None
+
+
+def extract_questions_from_text(text: str) -> List[str]:
+    """
+    Extract questions from a markdown section headed by 'Questions Needed'.
+    Falls back to any lines starting with 'Q:' if no section is found.
+    """
+    if not text:
+        return []
+    questions: List[str] = []
+    in_section = False
+    for line in text.splitlines():
+        line_stripped = line.strip()
+        if line_stripped.lower().startswith("## questions needed"):
+            in_section = True
+            continue
+        if in_section:
+            if line_stripped.startswith("## "):
+                break
+            if line_stripped.startswith("-"):
+                q = line_stripped.lstrip("-").strip()
+                if q:
+                    questions.append(q)
+    if questions:
+        return questions
+    for line in text.splitlines():
+        line_stripped = line.strip()
+        if line_stripped.startswith("Q:"):
+            q = line_stripped.replace("Q:", "").strip()
+            if q:
+                questions.append(q)
+    return questions
+
+
+def collect_unanswered_questions(run_dir: Path) -> List[str]:
+    """
+    Collect unanswered questions from the most recent questions_needed_*.md.
+    """
+    questions: List[str] = []
+    question_files = sorted(
+        run_dir.glob("questions_needed_*.md"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not question_files:
+        return questions
+    try:
+        latest = question_files[0].read_text(encoding="utf-8").strip()
+    except Exception:
+        return questions
+
+    if not latest or latest == "(none)":
+        return questions
+
+    if "Q:" in latest:
+        lines = latest.split("\n")
+        current_q = None
+        current_a = None
+        for line in lines:
+            line_stripped = line.strip()
+            if line_stripped.startswith("Q:"):
+                if current_q and (not current_a or current_a.lower() in ["(pending)", "(none)", ""]):
+                    questions.append(current_q)
+                current_q = line_stripped.replace("Q:", "").strip()
+                current_a = None
+            elif line_stripped.startswith("A:"):
+                current_a = line_stripped.replace("A:", "").strip()
+                if current_q and current_a and current_a.lower() not in ["(pending)", "(none)", ""]:
+                    current_q = None
+                    current_a = None
+            elif current_q and line_stripped and not line_stripped.startswith("A:"):
+                current_q += " " + line_stripped
+            elif not line_stripped and current_q and current_a is None:
+                questions.append(current_q)
+                current_q = None
+        if current_q and (not current_a or current_a.lower() in ["(pending)", "(none)", ""]):
+            questions.append(current_q)
+    else:
+        for line in latest.split("\n"):
+            line = line.strip()
+            if line and not line.startswith("#") and line != "(none)" and not line.startswith("A:"):
+                clean_line = re.sub(r"^[-*]\s*", "", line)
+                clean_line = re.sub(r"^\d+\.\s*", "", clean_line)
+                if clean_line and not clean_line.startswith("Q:"):
+                    questions.append(clean_line)
+
+    return questions
+
+    script_path = repo_root / "scholar" / "telemetry_snapshot.py"
+    if not script_path.exists():
+        if log_file:
+            log_file.write("[WARN] telemetry_snapshot.py not found; skipping.\n")
+        return None
+
+    try:
+        args = [sys.executable, str(script_path), "--run-id", run_id, "--days", str(days_recent)]
+        proc = subprocess.run(args, capture_output=True, text=True, cwd=str(repo_root), timeout=60)
+        if log_file:
+            if proc.stdout:
+                log_file.write(proc.stdout.strip() + "\n")
+            if proc.stderr:
+                log_file.write(proc.stderr.strip() + "\n")
+        out_path = repo_root / "scholar" / "outputs" / "telemetry" / f"telemetry_snapshot_{run_id}.md"
+        return out_path if out_path.exists() else None
+    except Exception as exc:
+        if log_file:
+            log_file.write(f"[WARN] telemetry snapshot failed: {exc}\n")
+        return None
 
 def generate_ai_answer(question, context="", api_key_override=None, api_provider_override=None, model_override=None):
     """
@@ -312,11 +451,18 @@ def build_scholar_stats():
     # Repo root is ../../
     repo_root = Path(__file__).parent.parent.parent.resolve()
     scholar_outputs = repo_root / "scholar" / "outputs"
-    
+
+    manifest = load_audit_manifest()
+    multi_agent_cfg = (manifest or {}).get("multi_agent", {}) if manifest else {}
+    multi_agent_enabled = bool(multi_agent_cfg.get("enabled", False))
+    multi_agent_max = int(multi_agent_cfg.get("max_concurrency", 4)) if multi_agent_cfg else 4
+
     result = {
         "status": "unknown",
         "last_updated": None,
         "safe_mode": False,
+        "multi_agent_enabled": multi_agent_enabled,
+        "multi_agent_max_concurrency": multi_agent_max,
         "questions": [],
         "answered_questions": [],
         "proposals": [],
@@ -671,11 +817,340 @@ def build_scholar_stats():
     result["status"] = "active" if result["last_updated"] else "inactive"
     return result
 
+
+def _read_text_safe(path: Path, limit: int = 20000) -> str:
+    if not path or not path.exists():
+        return ""
+    try:
+        content = path.read_text(encoding="utf-8")
+    except Exception:
+        content = path.read_text(encoding="utf-8", errors="replace")
+    if len(content) > limit:
+        return content[:limit] + "\n\n[... truncated ...]"
+    return content
+
+
+def _compose_agent_prompt(template_path: Path, header_lines: List[str], context_blocks: List[str]) -> str:
+    try:
+        template = template_path.read_text(encoding="utf-8")
+    except Exception:
+        template = template_path.read_text(encoding="utf-8", errors="replace")
+    parts = []
+    if header_lines:
+        parts.append("\n".join(header_lines))
+    parts.append("\n---\n")
+    parts.append(template)
+    if context_blocks:
+        parts.append("\n---\n")
+        parts.append("\n\n".join(context_blocks))
+    full = "\n".join(parts)
+    return _truncate_context(full)
+
+
+def run_scholar_orchestrator_multi(manifest: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Trigger a multi-agent Scholar orchestrator run (supervisor + specialists).
+    Returns result dict (not jsonify).
+    """
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    log_path = run_dir / f"unattended_{timestamp}.log"
+    final_path = run_dir / f"unattended_final_{timestamp}.md"
+    questions_path = run_dir / f"questions_needed_{timestamp}.md"
+    running_marker = run_dir / f"unattended_{timestamp}.running"
+
+    preserved_questions = collect_unanswered_questions(run_dir)
+    preserved_count = len(preserved_questions)
+
+    codex_cmd = find_codex_cli()
+    if not codex_cmd:
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write(f"Scholar Multi-Agent Run Requested: {datetime.now().isoformat()}\n")
+            f.write(f"Run ID: {timestamp}\n\n")
+            f.write("NOTE: 'codex' command not found.\n")
+            f.write("Install with: npm install -g @openai/codex\n")
+            f.write("Fallback: run scripts\\run_scholar.bat\n")
+        final_path.write_text(
+            "Scholar run queued, but Codex CLI not available. Use scripts\\run_scholar.bat.\n",
+            encoding="utf-8",
+        )
+        return {
+            "ok": True,
+            "message": "Scholar run queued (requires Codex CLI)",
+            "run_id": timestamp,
+            "log_file": str(log_path.relative_to(repo_root)),
+            "final_file": str(final_path.relative_to(repo_root)),
+            "preserved_questions": preserved_count,
+            "requires_manual_execution": True,
+        }
+
+    # Agent templates
+    agent_templates = {
+        "telemetry": repo_root / "scholar" / "workflows" / "agents" / "telemetry_audit.md",
+        "sop": repo_root / "scholar" / "workflows" / "agents" / "sop_audit.md",
+        "pedagogy": repo_root / "scholar" / "workflows" / "agents" / "pedagogy_questioner.md",
+        "research": repo_root / "scholar" / "workflows" / "agents" / "research_scout.md",
+        "supervisor": repo_root / "scholar" / "workflows" / "agents" / "supervisor_synthesis.md",
+    }
+
+    for key, path in agent_templates.items():
+        if not path.exists():
+            return {"ok": False, "message": f"Agent template missing: {path}"}
+
+    safe_mode = bool((manifest or {}).get("safe_mode", False))
+    max_conc = int((manifest or {}).get("multi_agent", {}).get("max_concurrency", 4))
+    max_conc = max(1, min(max_conc, 6))
+
+    def _run_multi_agent_thread():
+        running_marker.write_text("running", encoding="utf-8")
+        try:
+            with open(log_path, "w", encoding="utf-8") as log_file:
+                log_file.write(f"Scholar Multi-Agent Run Started: {datetime.now().isoformat()}\n")
+                log_file.write(f"Run ID: {timestamp}\n")
+                log_file.write(f"Safe mode: {safe_mode}\n")
+                log_file.write(f"Max concurrency: {max_conc}\n\n")
+
+                telemetry_path = build_telemetry_snapshot(timestamp, manifest, log_file=log_file)
+                telemetry_content = _read_text_safe(telemetry_path, limit=24000) if telemetry_path else ""
+
+                sop_allowlist = (manifest or {}).get("tutor_paths", [])
+                sop_list = "\n".join([f"- {p}" for p in sop_allowlist]) if sop_allowlist else "(none)"
+
+                header_common = [
+                    f"Run ID: {timestamp}",
+                    f"Safe mode: {safe_mode}",
+                    "READ-ONLY. Do not modify files.",
+                    "Your response will be saved as the output file.",
+                ]
+
+                jobs = []
+                # Telemetry Auditor
+                jobs.append({
+                    "name": "telemetry",
+                    "template": agent_templates["telemetry"],
+                    "output": run_dir / f"agent_telemetry_{timestamp}.md",
+                    "log": run_dir / f"agent_telemetry_{timestamp}.log",
+                    "context": [
+                        "## Telemetry Snapshot (truncated)",
+                        telemetry_content or "(no telemetry snapshot available)",
+                    ],
+                    "header": header_common + [f"Agent: Telemetry Auditor"],
+                })
+                # SOP Auditor
+                jobs.append({
+                    "name": "sop",
+                    "template": agent_templates["sop"],
+                    "output": run_dir / f"agent_sop_{timestamp}.md",
+                    "log": run_dir / f"agent_sop_{timestamp}.log",
+                    "context": [
+                        "## SOP Allowlist",
+                        sop_list,
+                        "## Master Plan",
+                        "sop/MASTER_PLAN_PT_STUDY.md",
+                    ],
+                    "header": header_common + [f"Agent: SOP Auditor"],
+                })
+                # Pedagogy Questioner
+                jobs.append({
+                    "name": "pedagogy",
+                    "template": agent_templates["pedagogy"],
+                    "output": run_dir / f"agent_pedagogy_{timestamp}.md",
+                    "log": run_dir / f"agent_pedagogy_{timestamp}.log",
+                    "context": [
+                        "## Telemetry Snapshot (truncated)",
+                        telemetry_content or "(no telemetry snapshot available)",
+                        "## Pedagogy Rubric",
+                        "scholar/knowledge/pedagogy_audit.md",
+                    ],
+                    "header": header_common + [f"Agent: Pedagogy Questioner"],
+                })
+                # Research Scout
+                jobs.append({
+                    "name": "research",
+                    "template": agent_templates["research"],
+                    "output": run_dir / f"agent_research_{timestamp}.md",
+                    "log": run_dir / f"agent_research_{timestamp}.log",
+                    "context": [
+                        "## Telemetry Snapshot (truncated)",
+                        telemetry_content or "(no telemetry snapshot available)",
+                    ],
+                    "header": header_common + [f"Agent: Research Scout"],
+                })
+
+                def _start_job(job):
+                    log_file.write(f"[agent] start {job['name']} -> {job['output'].name}\n")
+                    log_file.flush()
+                    prompt = _compose_agent_prompt(job["template"], job["header"], job["context"])
+                    agent_log = open(job["log"], "w", encoding="utf-8")
+                    proc = subprocess.Popen(
+                        [
+                            codex_cmd, "exec",
+                            "--dangerously-bypass-approvals-and-sandbox",
+                            "-C", str(repo_root),
+                            "--output-last-message", str(job["output"]),
+                            "-",
+                        ],
+                        stdin=subprocess.PIPE,
+                        stdout=agent_log,
+                        stderr=subprocess.STDOUT,
+                        cwd=str(repo_root),
+                        encoding="utf-8",
+                        text=True,
+                    )
+                    try:
+                        proc.stdin.write(prompt)
+                        proc.stdin.close()
+                    except Exception:
+                        pass
+                    return {"proc": proc, "log": agent_log, "job": job}
+
+                running = []
+                completed = []
+                for job in jobs:
+                    while len(running) >= max_conc:
+                        still_running = []
+                        for item in running:
+                            if item["proc"].poll() is None:
+                                still_running.append(item)
+                            else:
+                                code = item["proc"].returncode
+                                item["log"].close()
+                                completed.append(item["job"]["name"])
+                                log_file.write(f"[agent] done {item['job']['name']} (exit {code})\n")
+                                log_file.flush()
+                        running = still_running
+                        time.sleep(0.5)
+                    running.append(_start_job(job))
+
+                while running:
+                    still_running = []
+                    for item in running:
+                        if item["proc"].poll() is None:
+                            still_running.append(item)
+                        else:
+                            code = item["proc"].returncode
+                            item["log"].close()
+                            completed.append(item["job"]["name"])
+                            log_file.write(f"[agent] done {item['job']['name']} (exit {code})\n")
+                            log_file.flush()
+                    running = still_running
+                    time.sleep(0.5)
+
+                # Supervisor synthesis
+                agent_outputs = []
+                for job in jobs:
+                    content = _read_text_safe(job["output"], limit=18000)
+                    agent_outputs.append(f"## {job['name'].title()} Output\n{content}")
+
+                supervisor_header = header_common + ["Agent: Supervisor (Synthesis)"]
+                supervisor_context = []
+                if telemetry_content:
+                    supervisor_context.append("## Telemetry Snapshot (truncated)\n" + telemetry_content)
+                supervisor_context.append("## Specialist Outputs\n" + "\n\n".join(agent_outputs))
+
+                supervisor_prompt = _compose_agent_prompt(
+                    agent_templates["supervisor"],
+                    supervisor_header,
+                    supervisor_context,
+                )
+
+                log_file.write("[agent] start supervisor -> unattended_final\n")
+                log_file.flush()
+                proc = subprocess.Popen(
+                    [
+                        codex_cmd, "exec",
+                        "--dangerously-bypass-approvals-and-sandbox",
+                        "-C", str(repo_root),
+                        "--output-last-message", str(final_path),
+                        "-",
+                    ],
+                    stdin=subprocess.PIPE,
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                    cwd=str(repo_root),
+                    encoding="utf-8",
+                    text=True,
+                )
+                try:
+                    proc.stdin.write(supervisor_prompt)
+                    proc.stdin.close()
+                except Exception:
+                    pass
+                proc.wait()
+                log_file.write(f"[agent] done supervisor (exit {proc.returncode})\n")
+
+                # Extract questions from final output
+                final_text = _read_text_safe(final_path, limit=20000)
+                questions = extract_questions_from_text(final_text)
+                if questions:
+                    q_lines = []
+                    for q in questions:
+                        q_lines.append(f"Q: {q}")
+                        q_lines.append("A: (pending)")
+                    questions_path.write_text("\n".join(q_lines) + "\n", encoding="utf-8")
+                else:
+                    questions_path.write_text("(none)\n", encoding="utf-8")
+
+                # Preserve prior questions if any
+                if preserved_questions:
+                    preserved_block = "\n".join([f"- {q}" for q in preserved_questions])
+                    try:
+                        existing = questions_path.read_text(encoding="utf-8")
+                        questions_path.write_text(
+                            existing + "\n\n# Preserved:\n" + preserved_block + "\n",
+                            encoding="utf-8",
+                        )
+                    except Exception:
+                        pass
+
+                log_file.write(f"\n===== Scholar Run Completed at {datetime.now().isoformat()} =====\n")
+        except Exception as exc:
+            try:
+                with open(log_path, "a", encoding="utf-8") as log_file:
+                    log_file.write(f"\n\n===== SCHOLAR RUN ERROR =====\nError: {exc}\nTime: {datetime.now().isoformat()}\n")
+            except Exception:
+                pass
+        finally:
+            try:
+                if running_marker.exists():
+                    running_marker.unlink()
+            except Exception:
+                pass
+            try:
+                status_script = repo_root / "scripts" / "update_status.ps1"
+                if status_script.exists():
+                    subprocess.run(
+                        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(status_script)],
+                        cwd=str(repo_root),
+                        capture_output=True,
+                        timeout=30,
+                    )
+            except Exception:
+                pass
+
+    thread = threading.Thread(target=_run_multi_agent_thread, daemon=True)
+    thread.start()
+
+    return {
+        "ok": True,
+        "message": "Scholar multi-agent run started",
+        "run_id": timestamp,
+        "log_file": str(log_path.relative_to(repo_root)),
+        "final_file": str(final_path.relative_to(repo_root)),
+        "preserved_questions": preserved_count,
+    }
+
 def run_scholar_orchestrator():
     """
     Trigger a Scholar orchestrator run.
     Returns result dict (not jsonify).
     """
+    manifest = load_audit_manifest()
+    if manifest.get("multi_agent", {}).get("enabled"):
+        return run_scholar_orchestrator_multi(manifest)
     repo_root = Path(__file__).parent.parent.parent.resolve()
     prompt_file = repo_root / "scholar" / "workflows" / "orchestrator_run_prompt.md"
     run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"

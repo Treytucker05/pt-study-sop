@@ -168,6 +168,97 @@ def api_brain_status():
     })
 
 
+@dashboard_bp.route("/api/sync/pending", methods=["GET"])
+def api_sync_pending():
+    """List all staged events from Blackboard scraper and syllabus imports."""
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+        SELECT s.id, s.course_id, c.name as course_name, s.type, s.title, s.date, s.due_date, s.raw_text, s.source_url, s.scraped_at, s.status
+        FROM scraped_events s
+        JOIN courses c ON s.course_id = c.id
+        WHERE s.status NOT IN ('approved', 'ignored')
+        ORDER BY s.scraped_at DESC
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    
+    pending = [
+        {
+            "id": r[0],
+            "course_id": r[1],
+            "course_name": r[2],
+            "type": r[3],
+            "title": r[4],
+            "date": r[5],
+            "due_date": r[6],
+            "raw_text": r[7],
+            "source_url": r[8],
+            "scraped_at": r[9],
+            "status": r[10]
+        } for r in rows
+    ]
+    return jsonify({"ok": True, "items": pending})
+
+
+@dashboard_bp.route("/api/sync/resolve", methods=["POST"])
+def api_sync_resolve():
+    """Approve, Ignore, or Update a staged item."""
+    data = request.get_json() or {}
+    staged_id = data.get("id")
+    action = data.get("action") # 'approve', 'ignore'
+    
+    if not staged_id or not action:
+        return jsonify({"ok": False, "message": "Missing staged_id or action"}), 400
+        
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    try:
+        if action == "ignore":
+            cur.execute("UPDATE scraped_events SET status='ignored' WHERE id=?", (staged_id,))
+        elif action == "approve":
+            # Get the staged item
+            cur.execute("SELECT * FROM scraped_events WHERE id=?", (staged_id,))
+            item = cur.fetchone()
+            if not item:
+                return jsonify({"ok": False, "message": "Staged item not found"}), 404
+            
+            # Map columns by index (see CREATE TABLE in db_setup)
+            # 0=id, 1=course_id, 2=type, 3=title, 4=date, 5=due_date, 6=raw_text, 7=source_url, 8=scraped_at, 9=status
+            c_id, e_type, title, e_date, d_date, r_text, s_url = item[1], item[2], item[3], item[4], item[5], item[6], item[7]
+            
+            if e_type == 'material':
+                # Create as Topic
+                cur.execute("INSERT INTO topics (course_id, name, created_at) VALUES (?, ?, ?)",
+                            (c_id, title, datetime.now().isoformat()))
+                topic_id = cur.lastrowid
+                # Add to RAG Docs if URL exists
+                if s_url:
+                    cur.execute("""
+                        INSERT INTO rag_docs (source_path, course_id, doc_type, content, created_at, enabled)
+                        VALUES (?, ?, 'web_link', ?, ?, 1)
+                    """, (s_url, c_id, f"Title: {title}", datetime.now().isoformat()))
+            else:
+                # Create as Course Event
+                cur.execute("""
+                    INSERT INTO course_events (course_id, type, title, date, due_date, raw_text, created_at, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+                """, (c_id, e_type, title, e_date, d_date, r_text, datetime.now().isoformat()))
+            
+            # Mark staged item as approved
+            cur.execute("UPDATE scraped_events SET status='approved' WHERE id=?", (staged_id,))
+            
+        conn.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"ok": False, "message": str(e)}), 500
+    finally:
+        conn.close()
+
+
 @dashboard_bp.route("/api/scholar/digest/save", methods=["POST"])
 def api_scholar_save_digest():
     """Save AI Strategic Digest to scholar outputs and database."""
@@ -846,6 +937,7 @@ def api_scholar_run_status(run_id):
     log_path = run_dir / f"unattended_{run_id}.log"
     final_path = run_dir / f"unattended_final_{run_id}.md"
     pid_path = run_dir / f"unattended_{run_id}.pid"
+    running_marker = run_dir / f"unattended_{run_id}.running"
 
     def _read_tail_text(path: Path, max_bytes: int = 12000) -> str:
         try:
@@ -938,6 +1030,10 @@ def api_scholar_run_status(run_id):
                 status["pid_stale"] = True
         except Exception:
             pass
+
+    # Multi-agent marker (no PID file)
+    if running_marker.exists():
+        status["running"] = True
 
     # Completion detection
     tail = status.get("log_tail", "") or ""
@@ -1070,6 +1166,48 @@ def api_scholar_safe_mode():
         })
     except Exception as e:
         return jsonify({"ok": False, "message": f"Error updating safe_mode: {e}"}), 500
+
+
+@dashboard_bp.route("/api/scholar/multi-agent", methods=["POST"])
+def api_scholar_multi_agent():
+    try:
+        data = request.get_json() or {}
+        if "enabled" not in data:
+            return jsonify({"ok": False, "message": "Missing 'enabled' field"}), 400
+
+        repo_root = Path(__file__).parent.parent.parent.resolve()
+        manifest_path = repo_root / "scholar" / "inputs" / "audit_manifest.json"
+
+        if not manifest_path.exists():
+            return jsonify({"ok": False, "message": "audit_manifest.json not found"}), 404
+
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        if "multi_agent" not in manifest:
+            manifest["multi_agent"] = {}
+
+        manifest["multi_agent"]["enabled"] = bool(data["enabled"])
+
+        if "max_concurrency" in data:
+            try:
+                max_conc = int(data["max_concurrency"])
+                max_conc = max(1, min(max_conc, 6))
+                manifest["multi_agent"]["max_concurrency"] = max_conc
+            except Exception:
+                return jsonify({"ok": False, "message": "Invalid max_concurrency"}), 400
+
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2)
+
+        return jsonify({
+            "ok": True,
+            "message": f"Multi-agent set to {manifest['multi_agent']['enabled']}",
+            "enabled": manifest["multi_agent"]["enabled"],
+            "max_concurrency": manifest["multi_agent"].get("max_concurrency", 4),
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": f"Error updating multi_agent: {e}"}), 500
 
 
 @dashboard_bp.route("/api/scholar/proposal/<filename>")
@@ -1418,8 +1556,19 @@ def api_quick_session():
             "next_topic": data.get("next_topic", "").strip(),
             "next_focus": data.get("next_focus", "").strip(),
             "next_materials": data.get("next_materials", "").strip(),
+            # WRAP v9.2 fields
+            "anki_cards_text": data.get("anki_cards_text", "").strip(),
+            "glossary_entries": data.get("glossary_entries", "").strip(),
+            "wrap_watchlist": data.get("wrap_watchlist", "").strip(),
+            "clinical_links": data.get("clinical_links", "").strip(),
+            "next_session_plan": data.get("next_session_plan", "").strip(),
+            "spaced_reviews": data.get("spaced_reviews", "").strip(),
+            "runtime_notes": data.get("runtime_notes", "").strip(),
+            "errors_conceptual": data.get("errors_conceptual", "").strip(),
+            "errors_discrimination": data.get("errors_discrimination", "").strip(),
+            "errors_recall": data.get("errors_recall", "").strip(),
             "created_at": datetime.now().isoformat(),
-            "schema_version": "9.1",
+            "schema_version": "9.2",
         }
 
         # Validate score ranges
@@ -1464,9 +1613,20 @@ def api_create_session():
             "what_needs_fixing": data.get("what_needs_fixing", ""),
             "notes_insights": data.get("notes_insights", ""),
             "next_session_priority": data.get("next_session_priority", ""),
+            # WRAP v9.2 fields
+            "anki_cards_text": data.get("anki_cards_text", ""),
+            "glossary_entries": data.get("glossary_entries", ""),
+            "wrap_watchlist": data.get("wrap_watchlist", ""),
+            "clinical_links": data.get("clinical_links", ""),
+            "next_session_plan": data.get("next_session_plan", ""),
+            "spaced_reviews": data.get("spaced_reviews", ""),
+            "runtime_notes": data.get("runtime_notes", ""),
+            "errors_conceptual": data.get("errors_conceptual", ""),
+            "errors_discrimination": data.get("errors_discrimination", ""),
+            "errors_recall": data.get("errors_recall", ""),
             # Required metadata fields
             "created_at": datetime.now().isoformat(),
-            "schema_version": "9.1",
+            "schema_version": "9.2",
         }
         
         # Validate required fields
@@ -1528,7 +1688,11 @@ def api_update_session(session_id):
         'engines_used', 'region_covered', 'landmarks_mastered', 'muscles_attached',
         'understanding_level', 'retention_confidence', 'system_performance',
         'what_worked', 'what_needs_fixing', 'gaps_identified', 'notes_insights',
-        'next_topic', 'next_focus', 'next_materials'
+        'next_topic', 'next_focus', 'next_materials',
+        # WRAP v9.2 fields
+        'anki_cards_text', 'glossary_entries', 'wrap_watchlist', 'clinical_links',
+        'next_session_plan', 'spaced_reviews', 'runtime_notes',
+        'errors_conceptual', 'errors_discrimination', 'errors_recall'
     ]
     
     updates = []
@@ -3236,3 +3400,32 @@ def gtasks_lists():
     if error:
         return jsonify({'error': error}), 400
     return jsonify({'task_lists': lists})
+
+@dashboard_bp.route('/api/scraper/run', methods=['POST'])
+def api_scraper_run():
+    """
+    Triggers the Blackboard scraper as a subprocess.
+    Returns immediately with a status message, as scraping takes time.
+    """
+    try:
+        # Resolve path to script: ../../scripts/scrape_blackboard.py relative to routes.py
+        # Actually routes.py is in brain/dashboard/, scripts/ is at root/scripts/
+        # base_dir (brain/) -> parent (root/) -> scripts/
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        brain_dir = os.path.dirname(current_dir)
+        root_dir = os.path.dirname(brain_dir)
+        script_path = os.path.join(root_dir, 'scripts', 'scrape_blackboard.py')
+        
+        if not os.path.exists(script_path):
+            return jsonify({'ok': False, 'message': f'Script not found at {script_path}'}), 404
+            
+        # Run in separate process (fire and forget for this simple implementation)
+        # We could use Popen to let it run in background
+        subprocess.Popen([sys.executable, script_path], cwd=root_dir, shell=True)
+        
+        return jsonify({
+            'ok': True, 
+            'message': 'Scraper started in background. Check Sync Inbox in a few minutes.'
+        })
+    except Exception as e:
+        return jsonify({'ok': False, 'message': str(e)}), 500

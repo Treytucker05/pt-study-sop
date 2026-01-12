@@ -1,0 +1,11 @@
+# Ralph Progress Log
+Started: 2026-01-12
+
+## Codebase Patterns
+- Migrations: Use IF NOT EXISTS
+- Types: Export from actions.ts
+
+## Key Files
+- brain/README.md
+- scripts/release_check.py
+---

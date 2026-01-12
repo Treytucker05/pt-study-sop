@@ -1,0 +1,50 @@
+{
+  "project": "pt-study-sop",
+  "branchName": "ralph/setup-ralph",
+  "description": "Set up Ralph autonomous coding loop scaffolding for pt-study-sop.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add Ralph loop script",
+      "description": "As a maintainer, I want a ralph.sh loop so Ralph can run iterations automatically.",
+      "acceptanceCriteria": [
+        "Add scripts/ralph/ralph.sh with bash loop and set -e",
+        "Default MAX_ITERATIONS is 10 and can be overridden via first arg",
+        "Pipes scripts/ralph/prompt.md into `amp --dangerously-allow-all` and captures output",
+        "Exits 0 when output contains `<promise>COMPLETE</promise>`",
+        "Sleeps briefly between iterations and exits 1 after max iterations",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Add Ralph prompt instructions",
+      "description": "As a maintainer, I want clear iteration instructions so the agent follows the Ralph workflow.",
+      "acceptanceCriteria": [
+        "Add scripts/ralph/prompt.md with steps: read prd.json + progress.txt, check branch, pick highest-priority story where passes=false, implement one story, run typecheck/tests, update AGENTS.md with reusable patterns, commit `feat: [ID] - [Title]`, mark passes true, append progress",
+        "Include a Progress Format section with date + story id and a Codebase Patterns header",
+        "Include stop condition `<promise>COMPLETE</promise>`",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Add progress log scaffold",
+      "description": "As a maintainer, I want a progress.txt template so Ralph can persist learnings between iterations.",
+      "acceptanceCriteria": [
+        "Add scripts/ralph/progress.txt with a Ralph Progress Log header",
+        "Include Codebase Patterns and Key Files sections with placeholders",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
