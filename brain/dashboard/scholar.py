@@ -485,6 +485,7 @@ def build_scholar_stats():
         "next_steps": [],
         "latest_artifacts": {},
         "latest_run": None,
+        "readiness": {},
     }
     
     # Read STATUS.md
@@ -834,6 +835,16 @@ def build_scholar_stats():
         except Exception:
             pass
     
+    try:
+        result["readiness"] = get_scholar_run_readiness(repo_root)
+    except Exception:
+        result["readiness"] = {
+            "ready": False,
+            "reasons": ["readiness_error"],
+            "latest_session_log": None,
+            "latest_orchestrator_run": None,
+        }
+
     result["status"] = "active" if result["last_updated"] else "inactive"
     return result
 
@@ -855,6 +866,67 @@ def _get_latest_file(folder: Path, pattern: str) -> Optional[Path]:
         return None
     files = sorted(folder.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
     return files[0] if files else None
+
+
+def _describe_file_timestamp(path: Optional[Path], repo_root: Path) -> Optional[Dict[str, Any]]:
+    if not path or not path.exists():
+        return None
+    try:
+        ts = path.stat().st_mtime
+    except Exception:
+        return None
+    try:
+        rel_path = str(path.relative_to(repo_root))
+    except Exception:
+        rel_path = str(path)
+    return {
+        "file": path.name,
+        "path": rel_path,
+        "timestamp": datetime.fromtimestamp(ts).isoformat(),
+        "epoch": ts,
+    }
+
+
+def get_scholar_run_readiness(repo_root: Optional[Path] = None) -> Dict[str, Any]:
+    repo_root = repo_root or Path(__file__).parent.parent.parent.resolve()
+    session_logs_dir = repo_root / "brain" / "session_logs"
+    run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
+
+    latest_session = _get_latest_file(session_logs_dir, "*.md")
+    latest_runs = []
+    if run_dir.exists():
+        for pattern in ("unattended_final_*.md", "run_*.md"):
+            for path in run_dir.glob(pattern):
+                if pattern == "run_*.md" and "example" in path.name.lower():
+                    continue
+                if path.is_file():
+                    latest_runs.append(path)
+    latest_run = max(latest_runs, key=lambda p: p.stat().st_mtime) if latest_runs else None
+
+    reasons = []
+    ready = False
+
+    if not latest_session:
+        reasons.append("no_session_logs")
+    else:
+        session_ts = latest_session.stat().st_mtime
+        if not latest_run:
+            reasons.append("no_previous_run")
+            ready = True
+        else:
+            run_ts = latest_run.stat().st_mtime
+            if session_ts > run_ts:
+                reasons.append("new_session_logs")
+                ready = True
+            else:
+                reasons.append("no_new_session_logs")
+
+    return {
+        "ready": ready,
+        "reasons": reasons,
+        "latest_session_log": _describe_file_timestamp(latest_session, repo_root),
+        "latest_orchestrator_run": _describe_file_timestamp(latest_run, repo_root),
+    }
 
 
 def _is_questions_nonempty(path: Path) -> bool:

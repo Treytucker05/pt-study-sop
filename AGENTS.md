@@ -120,3 +120,4 @@ Where to add implementation notes:
 - System health reports should include a coverage note that cites representative artifacts per lane and references the latest scholar inventory.
 - Questions lifecycle artifacts live in `scholar/outputs/orchestrator_runs/questions_needed_*.md`, with `scholar/outputs/STATUS.md` pointing to the latest questions file.
 - Proposal approvals move files from `scholar/outputs/promotion_queue/` into `scholar/outputs/proposals/approved` or `scholar/outputs/proposals/rejected` and are tracked in `brain/data/pt_study.db` (`scholar_proposals`).
+- Scholar readiness can be derived by comparing `brain/session_logs` mtimes to `scholar/outputs/orchestrator_runs` (exclude `run_*_example.md`).

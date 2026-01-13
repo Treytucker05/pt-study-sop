@@ -228,6 +228,7 @@ The web dashboard (`dashboard_web.py`) provides a modern UI for managing your st
 - View Scholar status, toggle safe mode, run orchestrator
 - Answer Scholar's design questions
 - Track coverage progress
+- Readiness status (latest session log and run timestamps) is included in `/api/scholar`
 
 ## API Endpoints
 
