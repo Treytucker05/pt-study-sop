@@ -12,10 +12,11 @@ State:
   - Done:
     - Implemented SLIP-001..SLIP-004 changes (mastery column, M0 interleave step, digest auto-save, data freshness warnings).
     - Tests passed: `python -m pytest brain/tests` and `python scripts/release_check.py`.
+    - Committed and pushed all modified files to main (commit 3eccb5c).
   - Now:
-    - Commit and push all modified files to main.
+    - Verify repo status and report summary.
   - Next:
-    - Provide commit hash and summary.
+    - None.
 
 Open questions (UNCONFIRMED if needed):
 - None.
