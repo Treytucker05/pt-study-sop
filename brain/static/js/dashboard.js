@@ -432,8 +432,8 @@ function openTab(evt, tabName) {
     panels[i].classList.remove("active");
   }
 
-  // 2. Deactivate all tab controls (top nav, mobile, legacy, and any tab buttons)
-  document.querySelectorAll('.tab-button, .top-nav-item, .mobile-nav-item, .nav-item')
+  // 2. Deactivate all tab controls (top nav, mobile, legacy, arcade, and any tab buttons)
+  document.querySelectorAll('.tab-button, .top-nav-item, .mobile-nav-item, .nav-item, .arcade-nav-btn')
     .forEach(item => item.classList.remove('active'));
 
   // 3. Show specific panel
@@ -584,6 +584,10 @@ const syllabusListSearch = document.getElementById('syllabus-list-search');
 const syllabusListBody = document.getElementById('syllabus-list-body');
 const syllabusListEmpty = document.getElementById('syllabus-list-empty');
 const btnRefreshSyllabusList = document.getElementById('btn-refresh-syllabus-list');
+const btnListCollapse = document.getElementById('btn-list-collapse');
+const btnListExpand = document.getElementById('btn-list-expand');
+const courseSortMode = document.getElementById('course-sort-mode');
+const courseDedupToggle = document.getElementById('course-dedup-toggle');
 
 // Helpers
 const formatMinutes = (m) => {
@@ -1026,12 +1030,26 @@ async function loadTrends(days = 30) {
   try {
     const res = await fetch(`/api/trends?days=${days}`);
     const data = await res.json();
-    trendsChartData = data;
 
-    // Check if we have any data
-    const hasData = data.dates && data.dates.length > 0;
+    // Normalize API shape (new fields first, fallback to legacy keys)
+    const normalized = {
+      dates: data.dates || [],
+      understanding: data.avg_understanding_per_day || data.understanding || [],
+      retention: data.avg_retention_per_day || data.retention || [],
+      sessionsPerDay: data.sessions_per_day || data.session_count || [],
+      avgDurationPerDay: data.avg_duration_per_day || data.duration_avg || [],
+    };
 
-    if (!hasData) {
+    trendsChartData = normalized;
+
+    const hasMetricData = (
+      (normalized.understanding || []).some(v => v !== null && !isNaN(v)) ||
+      (normalized.retention || []).some(v => v !== null && !isNaN(v)) ||
+      (normalized.sessionsPerDay || []).some(v => v > 0)
+    );
+    const hasDates = normalized.dates && normalized.dates.length > 0;
+
+    if (!hasDates || !hasMetricData) {
       canvas.style.display = 'none';
       if (emptyMsg) emptyMsg.style.display = 'block';
       if (legend) legend.style.display = 'none';
@@ -1042,7 +1060,7 @@ async function loadTrends(days = 30) {
     if (emptyMsg) emptyMsg.style.display = 'none';
     if (legend) legend.style.display = 'flex';
 
-    drawTrendsChart(canvas, data);
+    drawTrendsChart(canvas, normalized);
   } catch (error) {
     console.error('Failed to load trends:', error);
   }
@@ -1068,10 +1086,11 @@ function drawTrendsChart(canvas, data) {
   // Clear canvas
   ctx.clearRect(0, 0, width, height);
 
-  // Filter out null values and find min/max
-  const understanding = data.understanding.map(v => v !== null ? v : NaN);
-  const retention = data.retention.map(v => v !== null ? v : NaN);
+  const understanding = (data.understanding || []).map(v => v !== null ? v : NaN);
+  const retention = (data.retention || []).map(v => v !== null ? v : NaN);
+  const sessions = data.sessionsPerDay || data.session_count || [];
 
+  // Filter out null values and find min/max for the line chart
   const allValues = [...understanding, ...retention].filter(v => !isNaN(v));
   if (allValues.length === 0) return;
 
@@ -1175,6 +1194,7 @@ function drawTrendsChart(canvas, data) {
     if (index >= 0 && index < dates.length) {
       const u = understanding[index];
       const r = retention[index];
+      const count = sessions[index];
       const date = dates[index];
 
       // Update cursor
@@ -1184,6 +1204,7 @@ function drawTrendsChart(canvas, data) {
       let tip = `${date}`;
       if (!isNaN(u)) tip += ` | Understanding: ${u}`;
       if (!isNaN(r)) tip += ` | Retention: ${r}`;
+      if (typeof count === 'number') tip += ` | Sessions: ${count}`;
       canvas.title = tip;
     }
   };
@@ -3436,6 +3457,14 @@ function renderWeekView() {
   const container = document.getElementById('calendar-grid');
   if (!container) return;
 
+  container.style.display = 'block';
+  container.style.gridTemplateColumns = '1fr';
+  container.classList.add('single-day-grid');
+
+  container.style.display = 'grid';
+  container.style.gridTemplateColumns = 'repeat(7, 1fr)';
+  container.classList.remove('single-day-grid');
+
   // Ensure calendarData has required arrays
   if (!calendarData || !calendarData.events) {
     calendarData = { events: [], sessions: [], planned: [] };
@@ -3829,6 +3858,12 @@ function openEventEditModal(eventId) {
 
 function populateEditModal(ev, eventId) {
   document.getElementById('edit-event-id').value = eventId;
+  const courseSelect = document.getElementById('edit-event-course');
+  if (courseSelect) {
+    const coursesForModal = getSortedDedupedCourses([ev.course_id]);
+    courseSelect.innerHTML = buildCourseOptions(coursesForModal, true, 'Select course');
+    courseSelect.value = ev.course_id || '';
+  }
   document.getElementById('edit-event-title').value = ev.title || '';
   document.getElementById('edit-event-type').value = ev.type || ev.event_type || 'other';
   document.getElementById('edit-event-status').value = ev.status || 'pending';
@@ -3836,6 +3871,10 @@ function populateEditModal(ev, eventId) {
   document.getElementById('edit-event-due-date').value = ev.due_date || '';
   document.getElementById('edit-event-weight').value = ev.weight || '';
   document.getElementById('edit-event-details').value = ev.raw_text || '';
+  const recurrenceSelect = document.getElementById('edit-event-repeat');
+  const recurrenceUntil = document.getElementById('edit-event-repeat-until');
+  if (recurrenceSelect) recurrenceSelect.value = 'none';
+  if (recurrenceUntil) recurrenceUntil.value = '';
 
   const modal = document.getElementById('event-edit-modal');
   modal.style.display = 'flex';
@@ -3901,6 +3940,18 @@ async function saveEventEdit(e) {
     raw_text: document.getElementById('edit-event-details').value.trim()
   };
 
+  const selectedCourse = document.getElementById('edit-event-course')?.value;
+  if (selectedCourse) payload.course_id = parseInt(selectedCourse, 10) || null;
+
+  const recurrencePattern = document.getElementById('edit-event-repeat')?.value || 'none';
+  const recurrenceUntil = document.getElementById('edit-event-repeat-until')?.value || '';
+  if (recurrencePattern !== 'none' || recurrenceUntil) {
+    payload.recurrence_plan = {
+      pattern: recurrencePattern,
+      until: recurrenceUntil || null
+    };
+  }
+
   // Remove null/empty fields
   Object.keys(payload).forEach(k => {
     if (payload[k] === null || payload[k] === '') delete payload[k];
@@ -3931,6 +3982,7 @@ async function saveEventEdit(e) {
         if (payload.due_date) ev.due_date = payload.due_date;
         if (payload.weight) ev.weight = payload.weight;
         if (payload.raw_text) ev.raw_text = payload.raw_text;
+        if (payload.course_id) ev.course_id = payload.course_id;
       }
 
       // Close modal and refresh list after brief delay
@@ -4193,6 +4245,30 @@ function toggleWeekSection(headerRow) {
   });
 }
 
+function collapseAllWeekSections() {
+  document.querySelectorAll('.week-header-row').forEach(header => {
+    const chevron = header.querySelector('.week-chevron');
+    if (chevron) chevron.textContent = '▶';
+    let sibling = header.nextElementSibling;
+    while (sibling && !sibling.classList.contains('week-header-row')) {
+      if (sibling.classList.contains('week-event-row')) sibling.style.display = 'none';
+      sibling = sibling.nextElementSibling;
+    }
+  });
+}
+
+function expandAllWeekSections() {
+  document.querySelectorAll('.week-header-row').forEach(header => {
+    const chevron = header.querySelector('.week-chevron');
+    if (chevron) chevron.textContent = '▼';
+    let sibling = header.nextElementSibling;
+    while (sibling && !sibling.classList.contains('week-header-row')) {
+      if (sibling.classList.contains('week-event-row')) sibling.style.display = '';
+      sibling = sibling.nextElementSibling;
+    }
+  });
+}
+
 function setSyllabusView(mode) {
   syllabusViewMode = mode;
   const calendarBox = document.getElementById('syllabus-calendar-container');
@@ -4202,13 +4278,13 @@ function setSyllabusView(mode) {
     listBox.style.display = mode === 'list' ? 'block' : 'none';
   }
   if (btnViewCalendar && btnViewList) {
-    if (mode === 'calendar') {
-      btnViewCalendar.classList.add('btn-primary');
-      btnViewList.classList.remove('btn-primary');
-    } else {
-      btnViewList.classList.add('btn-primary');
-      btnViewCalendar.classList.remove('btn-primary');
-    }
+    const calendarActive = mode === 'calendar';
+    btnViewCalendar.classList.toggle('arcade-btn-primary', calendarActive);
+    btnViewCalendar.classList.toggle('active', calendarActive);
+    btnViewCalendar.setAttribute('aria-pressed', calendarActive ? 'true' : 'false');
+    btnViewList.classList.toggle('arcade-btn-primary', !calendarActive);
+    btnViewList.classList.toggle('active', !calendarActive);
+    btnViewList.setAttribute('aria-pressed', calendarActive ? 'false' : 'true');
   }
   if (mode === 'calendar') {
     loadCalendar();
@@ -4224,6 +4300,10 @@ function renderCalendar() {
     console.warn('[Calendar] calendar-grid element not found');
     return;
   }
+
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+  grid.classList.remove('single-day-grid');
 
   // Check view type and route to appropriate renderer
   const viewRange = document.getElementById('calendar-view-range')?.value || 'month';
@@ -4552,6 +4632,8 @@ if (syllabusListSearch) syllabusListSearch.addEventListener('input', () => {
   clearTimeout(window._syllabusSearchTimer);
   window._syllabusSearchTimer = setTimeout(renderSyllabusList, 150);
 });
+if (btnListCollapse) btnListCollapse.addEventListener('click', collapseAllWeekSections);
+if (btnListExpand) btnListExpand.addEventListener('click', expandAllWeekSections);
 
 // Week selector controls
 const listStartWeekSelect = document.getElementById('list-start-week');
@@ -4594,11 +4676,108 @@ if (btnListNextWeek) {
   });
 }
 
+// Course sorting/deduping controls
+if (courseSortMode) {
+  courseSortMode.addEventListener('change', () => {
+    refreshCourseSelectors();
+    renderSyllabusList();
+    if (syllabusViewMode === 'calendar') loadCalendar();
+  });
+}
+
+if (courseDedupToggle) {
+  courseDedupToggle.addEventListener('change', () => {
+    refreshCourseSelectors();
+    renderSyllabusList();
+    if (syllabusViewMode === 'calendar') loadCalendar();
+  });
+}
+
 // Initialize week selector when switching to list view
 const origSetSyllabusView = typeof setSyllabusView === 'function' ? setSyllabusView : null;
 if (origSetSyllabusView) {
   // Populate week selector on page load
   populateWeekSelector();
+}
+
+function getSortedDedupedCourses(forceIds = []) {
+  let courses = Array.isArray(allCourses) ? [...allCourses] : [];
+  const dedupe = courseDedupToggle?.checked;
+  if (dedupe) {
+    const seen = new Set();
+    courses = courses.filter(c => {
+      const key = `${(c.code || '').toLowerCase()}|${(c.term || '').toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  // Ensure forced ids remain even if deduped away
+  forceIds.forEach(fid => {
+    if (!courses.find(c => c.id === fid)) {
+      const found = allCourses.find(c => c.id === fid);
+      if (found) courses.push(found);
+    }
+  });
+
+  const mode = courseSortMode?.value || 'term';
+  if (mode === 'name') {
+    courses.sort((a, b) => {
+      const nameCmp = (a.name || '').localeCompare(b.name || '');
+      if (nameCmp !== 0) return nameCmp;
+      return (a.code || '').localeCompare(b.code || '');
+    });
+  } else {
+    courses.sort((a, b) => {
+      const termCmp = (b.term || '').localeCompare(a.term || '');
+      if (termCmp !== 0) return termCmp;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }
+  return courses;
+}
+
+function buildCourseOptions(courses, includeEmpty = true, emptyLabel = 'All Courses') {
+  let html = includeEmpty ? `<option value="">${emptyLabel}</option>` : '';
+  html += courses.map((c, idx) => {
+    const color = getCourseColor(c, idx);
+    return `<option value="${c.id}" style="border-left: 4px solid ${color};">● ${c.code || c.name}${c.term ? ' (' + c.term + ')' : ''}</option>`;
+  }).join('');
+  return html;
+}
+
+function refreshCourseSelectors(forceIds = []) {
+  const visible = getSortedDedupedCourses(forceIds);
+
+  const calendarSelect = document.getElementById('calendar-filter-course');
+  if (calendarSelect) {
+    const prev = calendarSelect.value;
+    calendarSelect.innerHTML = buildCourseOptions(visible, true, 'All Courses');
+    if (prev) calendarSelect.value = prev;
+  }
+
+  const planCourseSelect = document.getElementById('plan-session-course');
+  if (planCourseSelect) {
+    const prev = planCourseSelect.value;
+    planCourseSelect.innerHTML = buildCourseOptions(visible, true, 'Optional');
+    if (prev) planCourseSelect.value = prev;
+  }
+
+  if (syllabusListCourse) {
+    const prev = syllabusListCourse.value;
+    syllabusListCourse.innerHTML = buildCourseOptions(visible, true, 'All Courses');
+    if (prev) syllabusListCourse.value = prev;
+  }
+
+  const editCourseSelect = document.getElementById('edit-event-course');
+  if (editCourseSelect) {
+    const prev = editCourseSelect.value;
+    editCourseSelect.innerHTML = buildCourseOptions(visible, true, 'Select course');
+    if (prev) editCourseSelect.value = prev;
+  }
+
+  renderCourseColorManager();
 }
 
 // Load courses for filters with colors
@@ -4608,36 +4787,7 @@ async function loadCoursesForCalendar() {
     const data = await res.json();
     if (data.courses) {
       allCourses = data.courses;
-
-      // Build options with color indicators
-      const buildCourseOptions = (courses, includeEmpty = true, emptyLabel = 'All Courses') => {
-        let html = includeEmpty ? `<option value="">${emptyLabel}</option>` : '';
-        html += courses.map((c, idx) => {
-          const color = getCourseColor(c, idx);
-          return `<option value="${c.id}" style="border-left: 4px solid ${color};">● ${c.code || c.name}</option>`;
-        }).join('');
-        return html;
-      };
-
-      // Calendar filter
-      const courseSelect = document.getElementById('calendar-filter-course');
-      if (courseSelect) {
-        courseSelect.innerHTML = buildCourseOptions(data.courses, true, 'All Courses');
-      }
-
-      // Plan session course
-      const planCourseSelect = document.getElementById('plan-session-course');
-      if (planCourseSelect) {
-        planCourseSelect.innerHTML = buildCourseOptions(data.courses, true, 'Optional');
-      }
-
-      // Syllabus list filter
-      if (syllabusListCourse) {
-        syllabusListCourse.innerHTML = buildCourseOptions(data.courses, true, 'All Courses');
-      }
-
-      // Render course color manager if container exists
-      renderCourseColorManager();
+      refreshCourseSelectors();
     }
   } catch (error) {
     console.error('Failed to load courses:', error);
@@ -4672,7 +4822,9 @@ function renderCourseColorManager() {
   const container = document.getElementById('course-color-manager');
   if (!container || !allCourses || allCourses.length === 0) return;
 
-  container.innerHTML = allCourses.map((c, idx) => {
+  const visibleCourses = getSortedDedupedCourses();
+
+  container.innerHTML = visibleCourses.map((c, idx) => {
     const color = getCourseColor(c, idx);
     return `
       <div class="course-color-item" style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border);">
@@ -5770,25 +5922,7 @@ window.loadSyllabusDashboard = async function () {
     const coursesData = await resCourses.json();
     if (coursesData.courses) {
       allCourses = coursesData.courses;
-      // Populate calendar filter courses with color indicators
-      const calCourseSelect = document.getElementById('calendar-filter-course');
-      const planCourseSelect = document.getElementById('plan-session-course');
-      const listCourseSelect = document.getElementById('syllabus-list-course');
-      [calCourseSelect, planCourseSelect, listCourseSelect].forEach(select => {
-        if (!select) return;
-        const current = select.value;
-        select.innerHTML = select.id === 'plan-session-course'
-          ? '<option value="">Optional</option>'
-          : '<option value="">All Courses</option>';
-        coursesData.courses.forEach((c, idx) => {
-          const color = getCourseColor(c, idx);
-          select.innerHTML += `<option value="${c.id}">● ${c.code || c.name}${c.term ? ' (' + c.term + ')' : ''}</option>`;
-        });
-        if (current) select.value = current; // preserve selection if possible
-      });
-
-      // Render course color manager
-      renderCourseColorManager();
+      refreshCourseSelectors();
     }
 
     // Events for list view

@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Dict, List, Any
+from config import FRESH_DAYS
 from dashboard.utils import load_api_config
 
 # Check if requests library is available
@@ -1635,7 +1636,28 @@ def generate_weekly_digest(days: int = 7) -> dict:
     cutoff = datetime.now() - timedelta(days=days)
     end_date = datetime.now().strftime("%Y-%m-%d")
     start_date = cutoff.strftime("%Y-%m-%d")
-    
+
+    session_logs_dir = repo_root / "brain" / "session_logs"
+    latest_session = None
+    if session_logs_dir.exists():
+        session_files = [p for p in session_logs_dir.glob("*.md") if p.is_file()]
+        if session_files:
+            latest_session = max(session_files, key=lambda p: p.stat().st_mtime)
+
+    freshness_warning = None
+    if latest_session:
+        last_session_dt = datetime.fromtimestamp(latest_session.stat().st_mtime)
+        days_since = (datetime.now() - last_session_dt).days
+        if days_since > FRESH_DAYS:
+            freshness_warning = (
+                "Data freshness warning: last session log updated "
+                f"{last_session_dt.strftime('%Y-%m-%d')} ({days_since} days ago)."
+            )
+    else:
+        freshness_warning = (
+            "Data freshness warning: no session logs found; digest may be stale."
+        )
+
     # Collectors
     runs_info = []          # (timestamp, completed, next_steps, blockers)
     improvement_candidates = []
@@ -2011,6 +2033,8 @@ Based on this data, provide:
     digest_parts.append(f"# 🧠 Scholar Weekly Digest")
     digest_parts.append(f"**Period:** {start_date} to {end_date}")
     digest_parts.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
+    if freshness_warning:
+        digest_parts.append(f"> {freshness_warning}\n")
     
     if ai_analysis and not ai_error:
         digest_parts.append("---\n")

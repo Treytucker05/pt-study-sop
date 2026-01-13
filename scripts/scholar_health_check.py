@@ -9,6 +9,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from brain.config import FRESH_DAYS
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -57,6 +58,7 @@ def main() -> None:
 
     session_logs_dir = REPO_ROOT / "brain" / "session_logs"
     brain_db = REPO_ROOT / "brain" / "data" / "pt_study.db"
+    latest_session = _latest_file(_list_files(session_logs_dir, "*.md"))
 
     lanes_from_manifest: list[str] = []
     for group in ("summaries", "questions", "recommendations"):
@@ -84,6 +86,21 @@ def main() -> None:
     lines.append(f"- ai_artifacts_manifest.json present: {'yes' if ai_manifest_path.exists() else 'no'}")
     lines.append(f"- brain/session_logs/ present: {'yes' if session_logs_dir.exists() else 'no'}")
     lines.append(f"- brain/data/pt_study.db present: {'yes' if brain_db.exists() else 'no'}")
+    lines.append("")
+    lines.append("## Data Freshness")
+    if latest_session:
+        last_dt = datetime.fromtimestamp(latest_session.stat().st_mtime)
+        days_since = (datetime.now() - last_dt).days
+        status = "fresh" if days_since <= FRESH_DAYS else "stale"
+        lines.append(
+            f"- Latest session log: {latest_session.as_posix()} "
+            f"(updated {last_dt.strftime('%Y-%m-%d')}, {days_since} days ago)"
+        )
+        lines.append(f"- Freshness status: {status} (threshold: {FRESH_DAYS} days)")
+        if status == "stale":
+            lines.append("- Warning: session log data older than freshness threshold.")
+    else:
+        lines.append("- No session logs found; freshness cannot be assessed.")
     lines.append("")
     lines.append("## Write Toggle (safe_mode)")
     if safe_mode is None:

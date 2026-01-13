@@ -54,7 +54,8 @@ def fetch_all_courses_and_events():
             date,
             due_date,
             weight,
-            raw_text
+            raw_text,
+            status
         FROM course_events
         ORDER BY
             COALESCE(date, due_date) ASC,
@@ -72,6 +73,7 @@ def fetch_all_courses_and_events():
             "due_date": row[5],
             "weight": row[6],
             "raw_text": row[7],
+            "status": row[8] if len(row) > 8 else None,
         }
         for row in event_rows
     ]

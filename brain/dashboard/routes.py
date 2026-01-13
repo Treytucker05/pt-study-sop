@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from datetime import datetime, timedelta
+from typing import List, Tuple
 from flask import (
     Blueprint,
     render_template,
@@ -110,6 +111,16 @@ def api_scholar():
 def api_scholar_digest():
     """Generate weekly digest of Scholar outputs from the past 7 days."""
     result = generate_weekly_digest(days=7)
+    save_param = request.args.get("save", "true").strip().lower()
+    should_save = save_param not in {"0", "false", "no"}
+    if result.get("ok") and result.get("digest") and should_save:
+        try:
+            saved = _save_digest_artifacts(result["digest"], digest_type="weekly")
+            result["saved"] = True
+            result.update(saved)
+        except Exception as e:
+            result["saved"] = False
+            result["save_error"] = str(e)
     return jsonify(result)
 
 
@@ -260,78 +271,77 @@ def api_sync_resolve():
         conn.close()
 
 
-@dashboard_bp.route("/api/scholar/digest/save", methods=["POST"])
-def api_scholar_save_digest():
-    """Save AI Strategic Digest to scholar outputs and database."""
-    import hashlib
-    from pathlib import Path
-    from datetime import datetime
-    from typing import List, Tuple
+DIGEST_BULLET_PREFIX_RE = re.compile(r'^\s*(?:[-*]|\u2022|\u00b7|\u00e2\u20ac\u00a2)\s*')
 
-    bullet_prefix_re = re.compile(r'^\s*(?:[-*]|\u2022|\u00b7|\u00e2\u20ac\u00a2)\s*')
 
-    def _extract_digest_bullets(content: str, labels: List[str]) -> List[str]:
-        lines = content.splitlines()
-        in_section = False
-        bullets = []
-        for line in lines:
-            stripped = line.strip()
-            if not in_section:
-                for label in labels:
-                    if label.lower() in stripped.lower():
-                        in_section = True
-                        break
-                if in_section:
-                    continue
+def _extract_digest_bullets(content: str, labels: List[str]) -> List[str]:
+    lines = content.splitlines()
+    in_section = False
+    bullets = []
+    for line in lines:
+        stripped = line.strip()
+        if not in_section:
+            for label in labels:
+                if label.lower() in stripped.lower():
+                    in_section = True
+                    break
+            if in_section:
+                continue
+        else:
+            if not stripped:
+                continue
+            if stripped.startswith("#") or stripped.startswith("---"):
+                break
+            if re.match(r'^\d+\.\s+', stripped) and not DIGEST_BULLET_PREFIX_RE.match(stripped):
+                break
+            if DIGEST_BULLET_PREFIX_RE.match(stripped):
+                bullets.append(DIGEST_BULLET_PREFIX_RE.sub("", stripped).strip())
+    return bullets
+
+
+def _parse_resolved_questions(content: str) -> List[Tuple[str, str]]:
+    resolved = []
+    current_q = None
+    current_a = None
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("Q:"):
+            if current_q and current_a:
+                resolved.append((current_q, current_a))
+            current_q = stripped.replace("Q:", "").strip()
+            current_a = None
+            continue
+        if stripped.startswith("A:"):
+            answer = stripped.replace("A:", "").strip()
+            if answer and answer.lower() not in ["(pending)", "(none)", ""]:
+                current_a = answer
             else:
-                if not stripped:
-                    continue
-                if stripped.startswith("#") or stripped.startswith("---"):
-                    break
-                if re.match(r'^\d+\.\s+', stripped) and not bullet_prefix_re.match(stripped):
-                    break
-                if bullet_prefix_re.match(stripped):
-                    bullets.append(bullet_prefix_re.sub("", stripped).strip())
-        return bullets
-
-    def _parse_resolved_questions(content: str) -> List[Tuple[str, str]]:
-        resolved = []
-        current_q = None
-        current_a = None
-        for line in content.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("Q:"):
-                if current_q and current_a:
-                    resolved.append((current_q, current_a))
-                current_q = stripped.replace("Q:", "").strip()
                 current_a = None
-                continue
-            if stripped.startswith("A:"):
-                answer = stripped.replace("A:", "").strip()
-                if answer and answer.lower() not in ["(pending)", "(none)", ""]:
-                    current_a = answer
-                else:
-                    current_a = None
-                continue
-            if current_q and current_a and stripped:
-                current_a += " " + stripped
-            elif current_q and not current_a and stripped and not stripped.startswith("A:"):
-                current_q += " " + stripped
-        if current_q and current_a:
-            resolved.append((current_q, current_a))
-        return resolved
+            continue
+        if current_q and current_a and stripped:
+            current_a += " " + stripped
+        elif current_q and not current_a and stripped and not stripped.startswith("A:"):
+            current_q += " " + stripped
+    if current_q and current_a:
+        resolved.append((current_q, current_a))
+    return resolved
 
-    payload = request.get_json() or {}
-    digest_content = payload.get("digest", "").strip()
-    if not digest_content:
-        return jsonify({"ok": False, "message": "No digest content"}), 400
-    
+
+def _save_digest_artifacts(digest_content: str, digest_type: str = "strategic") -> dict:
+    import hashlib
+
     repo_root = Path(__file__).parent.parent.parent.resolve()
     digests_dir = repo_root / "scholar" / "outputs" / "digests"
     digests_dir.mkdir(parents=True, exist_ok=True)
-    
+
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-    filename = f"strategic_digest_{timestamp}.md"
+    if digest_type == "weekly":
+        filename = f"weekly_digest_{timestamp}.md"
+    elif digest_type and digest_type != "strategic":
+        filename = f"{digest_type}_digest_{timestamp}.md"
+    else:
+        digest_type = "strategic"
+        filename = f"strategic_digest_{timestamp}.md"
     filepath = digests_dir / filename
     filepath.write_text(digest_content, encoding="utf-8")
 
@@ -364,7 +374,7 @@ def api_scholar_save_digest():
         f"# Plan Update Draft - {timestamp}",
         "",
         f"Source Digest: {filename}",
-        "Digest Type: strategic",
+        f"Digest Type: {digest_type}",
         f"Created: {datetime.now().isoformat()}",
         "",
         "## Priority Actions (from digest)",
@@ -449,18 +459,17 @@ def api_scholar_save_digest():
     proposal_seed_path.write_text("\n".join(seed_lines), encoding="utf-8")
 
     # Extract title from first markdown heading or first line
-    title = None
     heading_match = re.match(r'^#+ +(.+)', digest_content, re.MULTILINE)
     if heading_match:
         title = heading_match.group(1).strip()
     else:
         first_line = digest_content.split('\n')[0].strip()
         title = first_line[:100] if first_line else "Untitled Digest"
-    
+
     # Generate content hash (MD5)
     content_hash = hashlib.md5(digest_content.encode('utf-8')).hexdigest()
     created_at = datetime.now().isoformat()
-    
+
     # Store in database
     conn = get_connection()
     cur = conn.cursor()
@@ -469,19 +478,35 @@ def api_scholar_save_digest():
         INSERT INTO scholar_digests (filename, filepath, title, digest_type, created_at, content_hash)
         VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (filename, str(filepath.relative_to(repo_root)), title, 'strategic', created_at, content_hash)
+        (filename, str(filepath.relative_to(repo_root)), title, digest_type, created_at, content_hash)
     )
     conn.commit()
     digest_id = cur.lastrowid
     conn.close()
-    
-    return jsonify({
-        "ok": True,
+
+    return {
         "id": digest_id,
         "file": str(filepath.relative_to(repo_root)),
         "plan_update_file": str(plan_update_path.relative_to(repo_root)),
         "proposal_seed_file": str(proposal_seed_path.relative_to(repo_root)),
-        "message": f"Digest saved to {filename}"
+        "message": f"Digest saved to {filename}",
+        "digest_type": digest_type,
+    }
+
+
+@dashboard_bp.route("/api/scholar/digest/save", methods=["POST"])
+def api_scholar_save_digest():
+    """Save AI Strategic Digest to scholar outputs and database."""
+    payload = request.get_json() or {}
+    digest_content = payload.get("digest", "").strip()
+    digest_type = (payload.get("digest_type") or "strategic").strip().lower()
+    if not digest_content:
+        return jsonify({"ok": False, "message": "No digest content"}), 400
+
+    result = _save_digest_artifacts(digest_content, digest_type=digest_type)
+    return jsonify({
+        "ok": True,
+        **result,
     })
 
 
@@ -1852,6 +1877,7 @@ def api_quick_session():
             "system_performance": int(data.get("system_performance", 3)),
             "calibration_check": data.get("calibration_check", "").strip(),
             "anchors_locked": data.get("anchors_locked", "").strip(),
+            "anchors_mastery": data.get("anchors_mastery", "").strip(),
             "what_worked": data.get("what_worked", "").strip(),
             "what_needs_fixing": data.get("what_needs_fixing", "").strip(),
             "gaps_identified": data.get("gaps_identified", "").strip(),
@@ -1912,6 +1938,7 @@ def api_create_session():
             "system_performance": int(data.get("system_performance", 3)),
             "frameworks_used": data.get("frameworks_used", ""),
             "anchors_locked": data.get("anchors_locked", ""),
+            "anchors_mastery": data.get("anchors_mastery", ""),
             "what_worked": data.get("what_worked", ""),
             "what_needs_fixing": data.get("what_needs_fixing", ""),
             "notes_insights": data.get("notes_insights", ""),
@@ -3121,6 +3148,19 @@ def api_update_event(event_id):
             return jsonify({"ok": False, "message": f"Invalid event_type. Use one of: {', '.join(valid_types)}"}), 400
         update_fields.append("event_type = ?")
         update_values.append(payload["event_type"])
+    if "course_id" in payload:
+        try:
+            new_course_id = int(payload["course_id"])
+        except Exception:
+            conn.close()
+            return jsonify({"ok": False, "message": "Invalid course_id"}), 400
+        # Validate course exists
+        cur.execute("SELECT id FROM courses WHERE id = ?", (new_course_id,))
+        if not cur.fetchone():
+            conn.close()
+            return jsonify({"ok": False, "message": "Course not found"}), 404
+        update_fields.append("course_id = ?")
+        update_values.append(new_course_id)
     if "date" in payload:
         update_fields.append("date = ?")
         update_values.append(payload["date"])

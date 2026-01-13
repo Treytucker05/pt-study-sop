@@ -10,19 +10,21 @@ Purpose: Establish clear targets, gather materials, and create a plan before any
 ## Protocol (quick script)
 1) TARGET: What exam/block... How much time...
 2) POSITION: What's covered vs remaining... Weak spots...
-3) MATERIALS: LOs, slides, labs, practice Qs, notes.
-4) SOURCE-LOCK: Which specific materials today... (list pages/links)
+3) INTERLEAVE: Review weak anchors from the previous session (Wrap Watchlist / Weak Anchors) and select 1-2 to integrate.
+4) MATERIALS: LOs, slides, labs, practice Qs, notes.
+5) SOURCE-LOCK: Which specific materials today... (list pages/links)
    - NotebookLM Source Packet: satisfies SOURCE-LOCK when provided with excerpts and citations.
    - No factual teaching without a Source Packet or explicit listed sources/excerpts.
-5) Plan: 3-5 steps for this session.
-5b) Glossary Scan: list top 5 jargon terms for this session; define at L2 before proceeding.
-6) PRIME: Run 1-3 pre-questions or a 60-120s brain dump on today's target.
+6) Plan: 3-5 steps for this session.
+6b) Glossary Scan: list top 5 jargon terms for this session; define at L2 before proceeding.
+7) PRIME: Run 1-3 pre-questions or a 60-120s brain dump on today's target.
 
 ---
 ## Checklists
 **Session Inputs**
 - [ ] Target clear (exam/block + time)
 - [ ] Position known (covered vs remaining; weak spots)
+- [ ] Interleaving check complete (prior weak anchors reviewed)
 - [ ] Materials in hand (LOs/slides/labs/practice Qs/notes)
 - [ ] Source-Lock declared (specific pages/files for today)
 - [ ] Plan of attack (3-5 steps)

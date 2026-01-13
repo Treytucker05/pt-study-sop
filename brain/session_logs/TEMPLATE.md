@@ -53,13 +53,13 @@ Then run: `python brain/ingest_session.py brain/session_logs/YYYY-MM-DD_topic.md
 - Calibration Check: [How accurate was your confidence vs actual performance?]
 
 ## Anchors Locked
-[List the Seeds/hooks you created during this session]
+[List the Seeds/hooks you created during this session. Track mastery count (0-3) across sessions.]
 
-1. [Topic/Term]: [Your hook/metaphor]
-2. [Topic/Term]: [Your hook/metaphor]
-3. [Topic/Term]: [Your hook/metaphor]
-4. [Topic/Term]: [Your hook/metaphor]
-5. [Topic/Term]: [Your hook/metaphor]
+1. [Topic/Term] (mastery: 0/3): [Your hook/metaphor]
+2. [Topic/Term] (mastery: 0/3): [Your hook/metaphor]
+3. [Topic/Term] (mastery: 0/3): [Your hook/metaphor]
+4. [Topic/Term] (mastery: 0/3): [Your hook/metaphor]
+5. [Topic/Term] (mastery: 0/3): [Your hook/metaphor]
 
 ## Weak Anchors (for WRAP cards)
 - Weak anchor: [Term] because [reason]; needs card in WRAP.

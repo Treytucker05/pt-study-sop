@@ -766,6 +766,17 @@ h4,
   padding: 0;
 }
 
+#calendar-grid.single-day-grid {
+  display: block !important;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+#calendar-grid.single-day-grid .day-view-container {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
 /* Custom calendar view wrapper */
 #custom-calendar-view {
   background: transparent;

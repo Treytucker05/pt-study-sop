@@ -67,6 +67,7 @@ def parse_markdown_session(filepath):
         "what_worked": grab_block(r"###\s*What Worked\s*(.+?)(?=###|$)", ""),
         "what_needs_fixing": grab_block(r"###\s*What Needs Fixing\s*(.+?)(?=###|$)", ""),
         "notes_insights": grab_block(r"###\s*Notes/Insights\s*(.+?)(?=###|$)", ""),
+        "anchors_mastery": "",
     }
 
     return data
@@ -161,6 +162,24 @@ def parse_session_log(filepath):
     
     data['calibration_check'] = extract_field(r'-\s*Calibration Check:\s*(.+)', content)
     
+    def extract_anchor_mastery(anchors_text: str) -> str:
+        mastery_entries = []
+        for line in anchors_text.splitlines():
+            match = re.match(r'\d+\.\s*(.+)', line.strip())
+            if not match:
+                continue
+            entry = match.group(1).strip()
+            mastery_match = re.search(r'mastery[:\s]*([0-9]+)\s*/\s*([0-9]+)', entry, re.IGNORECASE)
+            if not mastery_match:
+                mastery_match = re.search(r'mastery[:\s]*([0-9]+)', entry, re.IGNORECASE)
+            if mastery_match:
+                count = mastery_match.group(1)
+                total = mastery_match.group(2) if mastery_match.lastindex and mastery_match.lastindex >= 2 else "3"
+                anchor_label = entry.split("(")[0].strip() if "(" in entry else entry
+                if anchor_label:
+                    mastery_entries.append(f"{anchor_label}: {count}/{total}")
+        return "\n".join(mastery_entries)
+
     # Anchors Locked - extract numbered list
     anchors_match = re.search(r'## Anchors Locked\s*\n(.*?)(?=\n##|\Z)', content, re.DOTALL)
     if anchors_match:
@@ -170,8 +189,10 @@ def parse_session_log(filepath):
         # Filter out placeholder items
         anchors = [a for a in anchors if not (a.startswith('[') and ']' in a)]
         data['anchors_locked'] = '\n'.join(anchors) if anchors else ''
+        data['anchors_mastery'] = extract_anchor_mastery(anchors_text)
     else:
         data['anchors_locked'] = ''
+        data['anchors_mastery'] = ''
 
     # Weak Anchors section
     weak_match = re.search(r'## Weak Anchors.*?\n(.*?)(?=\n##|\Z)', content, re.DOTALL | re.IGNORECASE)
@@ -390,7 +411,7 @@ def insert_session(data):
             'region_covered', 'landmarks_mastered', 'muscles_attached', 'oian_completed_for',
             'rollback_events', 'drawing_used', 'drawings_completed',
             'understanding_level', 'retention_confidence', 'system_performance', 'calibration_check',
-            'anchors_locked', 'weak_anchors',
+            'anchors_locked', 'weak_anchors', 'anchors_mastery',
             'what_worked', 'what_needs_fixing', 'gaps_identified', 'notes_insights',
             'next_topic', 'next_focus', 'next_materials',
             'created_at', 'schema_version', 'source_path',
@@ -436,6 +457,7 @@ def insert_session(data):
             data.get('calibration_check', ''),
             data.get('anchors_locked', ''),
             data.get('weak_anchors', ''),
+            data.get('anchors_mastery', ''),
             data.get('what_worked', ''),
             data.get('what_needs_fixing', ''),
             data.get('gaps_identified', ''),

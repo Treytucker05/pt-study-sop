@@ -176,6 +176,7 @@ Core session logging uses the v9.1 `sessions` table. Key fields include:
 - `off_source_drift` - Whether you left declared sources
 - `source_snippets_used` - Whether source snippets were captured
 - `weak_anchors` - Anchors needing cards in WRAP
+- `anchors_mastery` - Mastery counts for locked anchors (0-3)
 
 Planning and RAG tables are **additive** and do not change the v9.1 session schema:
 

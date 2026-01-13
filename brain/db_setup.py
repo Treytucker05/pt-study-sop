@@ -77,6 +77,7 @@ def init_database():
             -- Anchors
             anchors_locked TEXT,
             weak_anchors TEXT,
+            anchors_mastery TEXT,
 
             -- Reflection
             what_worked TEXT,
@@ -152,6 +153,7 @@ def init_database():
         "calibration_check": "TEXT",
         "anchors_locked": "TEXT",
         "weak_anchors": "TEXT",
+        "anchors_mastery": "TEXT",
         "what_worked": "TEXT",
         "what_needs_fixing": "TEXT",
         "gaps_identified": "TEXT",

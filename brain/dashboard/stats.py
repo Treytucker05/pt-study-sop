@@ -296,46 +296,44 @@ def get_mastery_stats():
 
 def get_trend_data(days=30):
     """
-    Get trend data for session metrics over time.
-    
-    Args:
-        days: Number of days to look back (default 30)
-    
-    Returns:
-        dict with:
-        - dates: List of date strings
-        - understanding: Daily average understanding levels
-        - retention: Daily average retention confidence
-        - session_count: Number of sessions per day
-        - duration_avg: Average session duration per day (minutes)
+    Build daily trend data for the last `days` from the sessions table.
+
+    Returns a dict keyed by:
+    - dates: ordered list of YYYY-MM-DD for the window
+    - sessions_per_day: daily session counts
+    - avg_understanding_per_day: daily avg understanding (null when no sessions)
+    - avg_retention_per_day: daily avg retention (null when no sessions)
+    - avg_duration_per_day: daily avg duration minutes (0 when no sessions)
+    Legacy aliases are kept for the chart helper: understanding, retention, session_count, duration_avg.
     """
     import sqlite3
     from db_setup import DB_PATH
-    
+
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
+
+    start_date = (datetime.now() - timedelta(days=days - 1)).date()
+    cutoff_date = start_date.strftime("%Y-%m-%d")
+
+    # Pre-fill the window so days with zero sessions are present in the chart
     results = {
         "dates": [],
-        "understanding": [],
-        "retention": [],
-        "session_count": [],
-        "duration_avg": [],
+        "sessions_per_day": [],
+        "avg_understanding_per_day": [],
+        "avg_retention_per_day": [],
+        "avg_duration_per_day": [],
     }
-    
+
     try:
-        cutoff_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-        
-        # Query daily aggregates from sessions table
         cursor.execute(
             """
             SELECT 
                 session_date,
-                COUNT(*) as session_count,
-                AVG(understanding_level) as avg_understanding,
-                AVG(retention_confidence) as avg_retention,
-                AVG(COALESCE(duration_minutes, time_spent_minutes, 0)) as avg_duration
+                COUNT(*) AS session_count,
+                AVG(understanding_level) AS avg_understanding,
+                AVG(retention_confidence) AS avg_retention,
+                AVG(COALESCE(duration_minutes, time_spent_minutes, 0)) AS avg_duration
             FROM sessions
             WHERE session_date >= ?
             GROUP BY session_date
@@ -343,27 +341,52 @@ def get_trend_data(days=30):
             """,
             (cutoff_date,)
         )
-        
+
         rows = cursor.fetchall()
-        
-        for row in rows:
-            results["dates"].append(row["session_date"])
-            results["understanding"].append(
-                round(row["avg_understanding"], 2) if row["avg_understanding"] else None
+        daily_map = {
+            row["session_date"]: {
+                "session_count": row["session_count"] or 0,
+                "avg_understanding": row["avg_understanding"],
+                "avg_retention": row["avg_retention"],
+                "avg_duration": row["avg_duration"],
+            }
+            for row in rows
+        }
+
+        for i in range(days):
+            current_date = start_date + timedelta(days=i)
+            date_str = current_date.strftime("%Y-%m-%d")
+            day_data = daily_map.get(date_str, {})
+
+            results["dates"].append(date_str)
+            results["sessions_per_day"].append(day_data.get("session_count", 0))
+            results["avg_understanding_per_day"].append(
+                round(day_data["avg_understanding"], 2)
+                if day_data.get("avg_understanding") is not None
+                else None
             )
-            results["retention"].append(
-                round(row["avg_retention"], 2) if row["avg_retention"] else None
+            results["avg_retention_per_day"].append(
+                round(day_data["avg_retention"], 2)
+                if day_data.get("avg_retention") is not None
+                else None
             )
-            results["session_count"].append(row["session_count"] or 0)
-            results["duration_avg"].append(
-                round(row["avg_duration"]) if row["avg_duration"] else 0
+            results["avg_duration_per_day"].append(
+                round(day_data["avg_duration"])
+                if day_data.get("avg_duration") is not None
+                else 0
             )
-    
+
     except Exception as e:
         print(f"[WARN] Error fetching trend data: {e}")
     finally:
         conn.close()
-    
+
+    # Backwards-compatible aliases for the existing chart helper
+    results["understanding"] = results["avg_understanding_per_day"]
+    results["retention"] = results["avg_retention_per_day"]
+    results["session_count"] = results["sessions_per_day"]
+    results["duration_avg"] = results["avg_duration_per_day"]
+
     return results
 
 

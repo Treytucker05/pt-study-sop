@@ -84,6 +84,7 @@ Build a personal AI study OS that:
 - RAG reachable; if offline, mark outputs as unverified.
 - One-command sync (downloads + ingest + resume).
 - Health checks: content fetch, RAG search, Anki connect, DB integrity.
+- Planning phase includes an interleaving check of prior weak anchors.
 
 ---
 
@@ -108,3 +109,4 @@ Build a personal AI study OS that:
 - 2025-12-06: Initial Master Plan created for PT Study SOP (applies to all future versions).
 - 2025-12-08: Clarified RAG-first/citation-first, roadmap ladder, and current alignment.
 - 2026-01-09: Updated current alignment to reflect v9.2+ dashboard implementation, RAG module, Tutor stubs, and roadmap progress.
+- 2026-01-12: Added interleaving check to M0 planning (prior weak anchors review).
