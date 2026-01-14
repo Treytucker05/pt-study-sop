@@ -1,31 +1,34 @@
 Goal (incl. success criteria):
-- Run a 100-iteration Ralph deep‑research loop on tutor systems (M0+ modules, engines, and integrations) with web research outputs in scholar/outputs/.
-
+- Execute Ralph loop: identify highest-priority failing story in `scripts/ralph/prd.json`, implement it, run required checks, update `AGENTS.md` + `scripts/ralph/progress.txt` + `scripts/ralph/prd.json`, and commit; or confirm all stories pass and return `<promise>COMPLETE</promise>`.
 Constraints/Assumptions:
-- Follow AGENTS.md and Ralph Agent instructions; keep edits minimal and ASCII.
-- Run required checks: `python -m pytest brain/tests` and `python scripts/release_check.py`.
-
+- Follow `AGENTS.md` and Ralph instructions; keep edits minimal and additive.
+- Stay on current branch; avoid staging unrelated changes.
+- Update `CONTINUITY.md` each time goal/state changes.
+- Approval policy is `never`; avoid commands needing escalation.
 Key decisions:
-- Keep commit `865d517`.
-
+- Target story: US-047 (Propose improvements for Scholar Orchestrator).
 State:
   - Done:
-    - Ralph iteration 1 completed US-001 and committed `865d517` (readiness helper).
-    - Tests attempted in WSL: `python -m pytest brain/tests` and `python3 scripts/release_check.py` failed (python/pytest missing).
-    - Investigated commit scope: with whitespace ignored, only small content changes remain (line-ending churn likely).
-    - Decision: keep commit `865d517`.
-    - Authored new 100-story research PRD and updated Ralph prompt to use Windows Python checks.
+    - Read `CONTINUITY.md`.
+    - Read `scripts/ralph/prd.json` and `scripts/ralph/progress.txt`.
+    - Checked branch status via git with explicit `GIT_DIR`/`GIT_WORK_TREE`.
+    - Read Scholar references: `scholar/README.md`, `scholar/CHARTER.md`, `scholar/inputs/audit_manifest.json`, `scholar/workflows/orchestrator_loop.md`.
+    - Reviewed orchestrator audit + research note evidence.
+    - Drafted `scholar/outputs/promotion_queue/scholar_orchestrator_proposal_seed_2026-01-12.md`.
+    - Ran `powershell.exe -Command "python -m pytest brain/tests"`.
+    - Ran `powershell.exe -Command "python scripts/release_check.py"`.
+    - Updated `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, and `AGENTS.md`.
   - Now:
-    - Sync new PRD/progress/prompt into the clean Ralph worktree and start the 100-iteration run.
+    - Commit story changes.
   - Next:
-    - Monitor the loop and review outputs when complete.
-
+    - None.
 Open questions (UNCONFIRMED if needed):
 - None.
-
 Working set (files/ids/commands):
+- `CONTINUITY.md`
 - `scripts/ralph/prd.json`
 - `scripts/ralph/progress.txt`
-- `scripts/ralph/archive/`
-- `CONTINUITY.md`
-- Commit `865d517`
+- `scholar/outputs/reports/scholar_orchestrator_audit_2026-01-12.md`
+- `scholar/outputs/research_notebook/scholar_orchestrator_research_2026-01-12.md`
+- `scholar/outputs/promotion_queue/scholar_orchestrator_proposal_seed_2026-01-12.md`
+- `AGENTS.md`

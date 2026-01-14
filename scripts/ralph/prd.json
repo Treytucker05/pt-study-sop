@@ -14,7 +14,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -27,7 +27,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -40,7 +40,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -53,7 +53,7 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -66,7 +66,7 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -79,7 +79,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -92,7 +92,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -105,7 +105,7 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -118,7 +118,7 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -131,7 +131,7 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -145,7 +145,7 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -158,7 +158,7 @@
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -171,7 +171,7 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -184,7 +184,7 @@
         "Typecheck passes"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -198,7 +198,7 @@
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -211,7 +211,7 @@
         "Typecheck passes"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -224,7 +224,7 @@
         "Typecheck passes"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -237,7 +237,7 @@
         "Typecheck passes"
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -251,7 +251,7 @@
         "Typecheck passes"
       ],
       "priority": 19,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -264,7 +264,7 @@
         "Typecheck passes"
       ],
       "priority": 20,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -277,7 +277,7 @@
         "Typecheck passes"
       ],
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -290,7 +290,7 @@
         "Typecheck passes"
       ],
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -304,7 +304,7 @@
         "Typecheck passes"
       ],
       "priority": 23,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -317,7 +317,7 @@
         "Typecheck passes"
       ],
       "priority": 24,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -330,7 +330,7 @@
         "Typecheck passes"
       ],
       "priority": 25,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -343,7 +343,7 @@
         "Typecheck passes"
       ],
       "priority": 26,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -357,7 +357,7 @@
         "Typecheck passes"
       ],
       "priority": 27,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -370,7 +370,7 @@
         "Typecheck passes"
       ],
       "priority": 28,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -383,7 +383,7 @@
         "Typecheck passes"
       ],
       "priority": 29,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -396,7 +396,7 @@
         "Typecheck passes"
       ],
       "priority": 30,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -410,7 +410,7 @@
         "Typecheck passes"
       ],
       "priority": 31,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -423,7 +423,7 @@
         "Typecheck passes"
       ],
       "priority": 32,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -436,7 +436,7 @@
         "Typecheck passes"
       ],
       "priority": 33,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -449,7 +449,7 @@
         "Typecheck passes"
       ],
       "priority": 34,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -463,7 +463,7 @@
         "Typecheck passes"
       ],
       "priority": 35,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -476,7 +476,7 @@
         "Typecheck passes"
       ],
       "priority": 36,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -489,7 +489,7 @@
         "Typecheck passes"
       ],
       "priority": 37,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -502,7 +502,7 @@
         "Typecheck passes"
       ],
       "priority": 38,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -516,7 +516,7 @@
         "Typecheck passes"
       ],
       "priority": 39,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -529,7 +529,7 @@
         "Typecheck passes"
       ],
       "priority": 40,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -542,7 +542,7 @@
         "Typecheck passes"
       ],
       "priority": 41,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -556,7 +556,7 @@
         "Typecheck passes"
       ],
       "priority": 42,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -569,7 +569,7 @@
         "Typecheck passes"
       ],
       "priority": 43,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -582,7 +582,7 @@
         "Typecheck passes"
       ],
       "priority": 44,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -596,7 +596,7 @@
         "Typecheck passes"
       ],
       "priority": 45,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -609,7 +609,7 @@
         "Typecheck passes"
       ],
       "priority": 46,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -622,7 +622,7 @@
         "Typecheck passes"
       ],
       "priority": 47,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -1346,6 +1346,126 @@
         "Typecheck passes"
       ],
       "priority": 100,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-101",
+      "title": "Research best practices for Anatomy Engine",
+      "description": "As a system owner, I want web research on best practices for the Anatomy Engine to guide improvements.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/research_notebook/anatomy_engine_research_2026-01-12.md",
+        "Include >=5 external sources with links",
+        "Include Key Takeaways section",
+        "Typecheck passes"
+      ],
+      "priority": 101,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-102",
+      "title": "Audit Anatomy Engine implementation",
+      "description": "As a system owner, I want an audit of the Anatomy Engine vs best practices to identify gaps.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/anatomy_engine_audit_2026-01-12.md",
+        "Include sections: Current Behavior, Evidence Paths, Gaps",
+        "Typecheck passes"
+      ],
+      "priority": 102,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-103",
+      "title": "Propose improvements for Anatomy Engine",
+      "description": "As a system owner, I want improvement proposals for the Anatomy Engine based on evidence.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/promotion_queue/anatomy_engine_proposal_seed_2026-01-12.md",
+        "List at least 3 proposals with rationale and sources",
+        "Typecheck passes"
+      ],
+      "priority": 103,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-104",
+      "title": "Research best practices for Concept Engine",
+      "description": "As a system owner, I want web research on best practices for the Concept Engine to guide improvements.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/research_notebook/concept_engine_research_2026-01-12.md",
+        "Include >=5 external sources with links",
+        "Include Key Takeaways section",
+        "Typecheck passes"
+      ],
+      "priority": 104,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-105",
+      "title": "Audit Concept Engine implementation",
+      "description": "As a system owner, I want an audit of the Concept Engine vs best practices to identify gaps.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/concept_engine_audit_2026-01-12.md",
+        "Include sections: Current Behavior, Evidence Paths, Gaps",
+        "Typecheck passes"
+      ],
+      "priority": 105,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-106",
+      "title": "Propose improvements for Concept Engine",
+      "description": "As a system owner, I want improvement proposals for the Concept Engine based on evidence.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/promotion_queue/concept_engine_proposal_seed_2026-01-12.md",
+        "List at least 3 proposals with rationale and sources",
+        "Typecheck passes"
+      ],
+      "priority": 106,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-107",
+      "title": "Research best practices for CustomGPT runtime prompt",
+      "description": "As a system owner, I want web research on best practices for CustomGPT runtime prompts and system instructions to guide improvements.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/research_notebook/customgpt_runtime_prompt_research_2026-01-12.md",
+        "Include >=5 external sources with links",
+        "Include Key Takeaways section",
+        "Typecheck passes"
+      ],
+      "priority": 107,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-108",
+      "title": "Audit CustomGPT runtime prompt implementation",
+      "description": "As a system owner, I want an audit of CustomGPT runtime prompt and system instructions vs best practices to identify gaps.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/reports/customgpt_runtime_prompt_audit_2026-01-12.md",
+        "Include sections: Current Behavior, Evidence Paths, Gaps",
+        "Typecheck passes"
+      ],
+      "priority": 108,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-109",
+      "title": "Propose improvements for CustomGPT runtime prompt",
+      "description": "As a system owner, I want improvement proposals for CustomGPT runtime prompts and system instructions based on evidence.",
+      "acceptanceCriteria": [
+        "Create scholar/outputs/promotion_queue/customgpt_runtime_prompt_proposal_seed_2026-01-12.md",
+        "List at least 3 proposals with rationale and sources",
+        "Typecheck passes"
+      ],
+      "priority": 109,
       "passes": false,
       "notes": ""
     }
