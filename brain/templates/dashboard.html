@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- PT Study Brain Dashboard v3.0 - Updated: 2026-01-11 - SaaS Professional UI -->
 <html lang="en">
 
@@ -43,42 +43,42 @@
 
       <div class="top-nav-center">
         <div class="top-nav-title">
-          TREY'S <span>STUDY</span>
+          TREY'S <span>STUDY SYSTEM</span>
         </div>
 
         <!-- Navigation Menu (Center - Desktop) - Arcade Style -->
-        <nav class="top-nav-menu" role="navigation" aria-label="Main navigation" style="display: flex; gap: 16px; justify-content: center;">
-          <a href="#overview" class="arcade-nav-btn active" onclick="openTab(event, 'overview')" data-tab="overview" aria-current="page">
+        <nav class="top-nav-menu" role="tablist" aria-label="Dashboard tabs" style="display: flex; gap: 16px; justify-content: center;">
+          <a href="#overview" class="arcade-nav-btn active" onclick="openTab(event, 'overview')" data-tab="overview" aria-current="page" role="tab" id="tab-overview-tab" aria-controls="tab-overview" aria-selected="true" tabindex="0">
             <div class="btn-face">
               <img src="/static/images/icons/neo-nav-overview.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
             <span class="btn-label">DASHBOARD</span>
           </a>
-          <a href="#sessions" class="arcade-nav-btn" onclick="openTab(event, 'sessions')" data-tab="sessions">
+          <a href="#sessions" class="arcade-nav-btn" onclick="openTab(event, 'sessions')" data-tab="sessions" role="tab" id="tab-sessions-tab" aria-controls="tab-sessions" aria-selected="false" tabindex="-1">
             <div class="btn-face">
               <img src="/static/images/icons/neo-nav-brain.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
             <span class="btn-label">BRAIN</span>
           </a>
-          <a href="#syllabus" class="arcade-nav-btn" onclick="openTab(event, 'syllabus')" data-tab="syllabus">
+          <a href="#syllabus" class="arcade-nav-btn" onclick="openTab(event, 'syllabus')" data-tab="syllabus" role="tab" id="tab-syllabus-tab" aria-controls="tab-syllabus" aria-selected="false" tabindex="-1">
             <div class="btn-face">
               <img src="/static/images/icons/neo-nav-syllabus.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
             <span class="btn-label">SYLLABUS</span>
           </a>
-          <a href="#scholar" class="arcade-nav-btn" onclick="openTab(event, 'scholar')" data-tab="scholar">
+          <a href="#scholar" class="arcade-nav-btn" onclick="openTab(event, 'scholar')" data-tab="scholar" role="tab" id="tab-scholar-tab" aria-controls="tab-scholar" aria-selected="false" tabindex="-1">
             <div class="btn-face">
               <img src="/static/images/icons/neo-nav-scholar.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
             <span class="btn-label">SCHOLAR</span>
           </a>
-          <a href="#tutor" class="arcade-nav-btn" onclick="openTab(event, 'tutor')" data-tab="tutor">
+          <a href="#tutor" class="arcade-nav-btn" onclick="openTab(event, 'tutor')" data-tab="tutor" role="tab" id="tab-tutor-tab" aria-controls="tab-tutor" aria-selected="false" tabindex="-1">
             <div class="btn-face">
               <img src="/static/images/icons/neo-nav-tutor.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
             <span class="btn-label">TUTOR</span>
           </a>
-          <a href="#sync" class="arcade-nav-btn" onclick="openTab(event, 'sync')" data-tab="sync" style="position: relative;">
+          <a href="#sync" class="arcade-nav-btn" onclick="openTab(event, 'sync')" data-tab="sync" role="tab" id="tab-sync-tab" aria-controls="tab-sync" aria-selected="false" tabindex="-1" style="position: relative;">
             <div class="btn-face">
               <img src="/static/images/icons/neo-nav-sync.svg" alt="" class="nav-icon-img" style="width: 32px; height: 32px;" />
             </div>
@@ -92,14 +92,9 @@
 
       <!-- Right Section (now visible with Custom GPT entry point) -->
       <div class="top-nav-right" style="display: flex; align-items: center; gap: 10px;">
-        <span class="top-nav-page-title" id="current-page-title">Overview</span>
-        <span class="top-nav-version">v3.0</span>
         <a class="arcade-btn" href="https://chatgpt.com/g/g-693763cbfa3c8191b22fc700b526f2f6-trey-s-study-sop-v9-2" target="_blank" rel="noopener" style="padding: 8px 12px; font-size: 12px; text-decoration: none;">
-          Open Trey’s Custom GPT
+          Open Treyâ€™s Custom GPT
         </a>
-        <button class="top-nav-profile" id="profile-btn" aria-label="Profile" title="Profile">
-          <span style="font-size: 13px; font-weight: 600;">TT</span>
-        </button>
       </div>
 
       <!-- Hamburger Button (Mobile) -->
@@ -115,36 +110,36 @@
     <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
 
     <!-- Mobile Navigation Panel -->
-    <nav class="mobile-nav-panel" id="mobile-nav-panel" role="navigation" aria-label="Mobile navigation">
+    <nav class="mobile-nav-panel" id="mobile-nav-panel" role="tablist" aria-label="Mobile tabs">
       <a href="#overview" class="mobile-nav-item active" onclick="openTab(event, 'overview'); closeMobileNav();"
-        data-tab="overview">
+        data-tab="overview" role="tab" id="tab-overview-tab-mobile" aria-controls="tab-overview" aria-selected="true" tabindex="0">
         <img src="/static/images/icons/neo-nav-overview.svg" alt="Overview" class="nav-icon-img">
         <span class="nav-text">Overview</span>
       </a>
       <a href="#sessions" class="mobile-nav-item" onclick="openTab(event, 'sessions'); closeMobileNav();"
-        data-tab="sessions">
+        data-tab="sessions" role="tab" id="tab-sessions-tab-mobile" aria-controls="tab-sessions" aria-selected="false" tabindex="-1">
         <img src="/static/images/icons/neo-nav-brain.svg" alt="Brain" class="nav-icon-img">
         <span class="nav-text">Brain</span>
       </a>
       <a href="#syllabus" class="mobile-nav-item" onclick="openTab(event, 'syllabus'); closeMobileNav();"
-        data-tab="syllabus">
+        data-tab="syllabus" role="tab" id="tab-syllabus-tab-mobile" aria-controls="tab-syllabus" aria-selected="false" tabindex="-1">
         <img src="/static/images/icons/neo-nav-syllabus.svg" alt="Syllabus" class="nav-icon-img">
         <span class="nav-text">Syllabus</span>
       </a>
       <a href="#scholar" class="mobile-nav-item" onclick="openTab(event, 'scholar'); closeMobileNav();"
-        data-tab="scholar">
+        data-tab="scholar" role="tab" id="tab-scholar-tab-mobile" aria-controls="tab-scholar" aria-selected="false" tabindex="-1">
         <img src="/static/images/icons/neo-nav-scholar.svg" alt="Scholar" class="nav-icon-img">
         <span class="nav-text">Scholar</span>
       </a>
-      <a href="#tutor" class="mobile-nav-item" onclick="openTab(event, 'tutor'); closeMobileNav();" data-tab="tutor">
+      <a href="#tutor" class="mobile-nav-item" onclick="openTab(event, 'tutor'); closeMobileNav();" data-tab="tutor" role="tab" id="tab-tutor-tab-mobile" aria-controls="tab-tutor" aria-selected="false" tabindex="-1">
         <img src="/static/images/icons/neo-nav-tutor.svg" alt="Tutor" class="nav-icon-img">
         <span class="nav-text">Tutor</span>
       </a>
-      <a href="#brain" class="mobile-nav-item" onclick="openTab(event, 'brain'); closeMobileNav();" data-tab="brain">
+      <a href="#brain" class="mobile-nav-item" onclick="openTab(event, 'brain'); closeMobileNav();" data-tab="brain" role="tab" id="tab-brain-tab-mobile" aria-controls="tab-brain" aria-selected="false" tabindex="-1">
         <img src="/static/images/icons/neo-nav-database.svg" alt="Database" class="nav-icon-img">
         <span class="nav-text">Database</span>
       </a>
-      <a href="#sync" class="mobile-nav-item" onclick="openTab(event, 'sync'); closeMobileNav();" data-tab="sync">
+      <a href="#sync" class="mobile-nav-item" onclick="openTab(event, 'sync'); closeMobileNav();" data-tab="sync" role="tab" id="tab-sync-tab-mobile" aria-controls="tab-sync" aria-selected="false" tabindex="-1">
         <img src="/static/images/icons/neo-nav-sync.svg" alt="Sync" class="nav-icon-img">
         <span class="nav-text">Sync Inbox</span>
       </a>
@@ -186,7 +181,7 @@
       <main class="main-content">
 
         <!-- Overview Tab -->
-        <section id="tab-overview" class="tab-panel active">
+        <section id="tab-overview" class="tab-panel active" role="tabpanel" aria-labelledby="tab-overview-tab" aria-hidden="false" tabindex="0">
           <style>
             #overview-wrapper {
               /* Neo-retro glass tokens for Overview */
@@ -313,10 +308,10 @@
               <div class="tab-controls">
                 <div class="btn-group">
                   <button type="button" class="arcade-btn" onclick="expandAllSections('tab-overview')">
-                    <span style="font-size: 10px;">▼</span> Expand All
+                    <span style="font-size: 10px;">â–¼</span> Expand All
                   </button>
                   <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-overview')">
-                    <span style="font-size: 10px;">▲</span> Collapse All
+                    <span style="font-size: 10px;">â–²</span> Collapse All
                   </button>
                 </div>
               </div>
@@ -326,25 +321,25 @@
             <div class="dashboard-grid" style="margin-bottom: 24px;">
 
               <div class="metal-stat-card">
-                <div class="stat-icon">📊</div>
+                <div class="stat-icon">ðŸ“Š</div>
                 <div class="stat-label">SESSIONS</div>
                 <div class="stat-value" id="total-sessions">0</div>
               </div>
 
               <div class="metal-stat-card">
-                <div class="stat-icon">⏳</div>
+                <div class="stat-icon">â³</div>
                 <div class="stat-label">UPTIME</div>
                 <div class="stat-value" id="total-time">0h</div>
               </div>
 
               <div class="metal-stat-card">
-                <div class="stat-icon">🏅</div>
+                <div class="stat-icon">ðŸ…</div>
                 <div class="stat-label">RANK</div>
                 <div class="stat-value" id="avg-score">-%</div>
               </div>
 
               <div class="metal-stat-card">
-                <div class="stat-icon">🃏</div>
+                <div class="stat-icon">ðŸƒ</div>
                 <div class="stat-label">CARDS</div>
                 <div class="stat-value" id="anki-cards">0</div>
               </div>
@@ -359,7 +354,7 @@
                     <span class="terminal-badge-label">SCHOLAR INSIGHTS</span>
                   </div>
                 </div>
-                <span class="summary-chevron">▼</span>
+                <span class="summary-chevron">â–¼</span>
               </summary>
               <div class="section-panel-content">
                 <div id="scholar-insights-card"
@@ -405,7 +400,7 @@
                 </div>
                 <div style="margin-top: 16px; text-align: right;">
                   <button class="arcade-btn arcade-btn-primary" style="font-size: 0.75rem; padding: 4px 10px;"
-                    onclick="openTab(null, 'scholar')">View All →</button>
+                    onclick="openTab(null, 'scholar')">View All â†’</button>
                 </div>
               </div>
             </details>
@@ -419,7 +414,7 @@
                     <span class="terminal-badge-label">PATTERNS & INSIGHTS</span>
                   </div>
                 </div>
-                <span class="summary-chevron">▼</span>
+                <span class="summary-chevron">â–¼</span>
               </summary>
               <div class="section-panel-content" id="patterns">
                 <div
@@ -434,9 +429,9 @@
                     <h4 style="font-size:0.75rem; text-transform:uppercase; color:#94a3b8; margin-bottom:8px;">Focus
                       Areas</h4>
                     <div style="font-size:0.9rem;">
-                      <div style="margin-bottom:5px;"><span style="color:#ef4444;">•</span> Weak: <span
+                      <div style="margin-bottom:5px;"><span style="color:#ef4444;">â€¢</span> Weak: <span
                           id="weak-topics">-</span></div>
-                      <div><span style="color:#10b981;">•</span> Strong: <span id="strong-topics">-</span></div>
+                      <div><span style="color:#10b981;">â€¢</span> Strong: <span id="strong-topics">-</span></div>
                     </div>
                   </div>
 
@@ -461,7 +456,7 @@
                     <span class="terminal-badge-label">STUDY TRENDS</span>
                   </div>
                 </div>
-                <span class="summary-chevron">▼</span>
+                <span class="summary-chevron">â–¼</span>
               </summary>
               <div class="section-panel-content">
                 <div style="display:flex; justify-content:flex-end; margin-bottom: 16px;">
@@ -474,7 +469,7 @@
                 </div>
                 <div class="diagnostic-panel">
                   <div class="panel-header">
-                    <div class="panel-icon">📈</div>
+                    <div class="panel-icon">ðŸ“ˆ</div>
                     <div class="panel-title">PERFORMANCE METRICS</div>
                   </div>
                   <div class="panel-content">
@@ -482,7 +477,7 @@
                       <canvas id="trends-chart" style="width: 100%; height: 100%;"></canvas>
                       <div id="trends-empty"
                         style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #94a3b8; text-align: center;">
-                        <div style="font-size: 2rem; margin-bottom: 8px;">📊</div>
+                        <div style="font-size: 2rem; margin-bottom: 8px;">ðŸ“Š</div>
                         <div>No trend data yet</div>
                         <div style="font-size: 0.85rem;">Complete some study sessions to see your progress</div>
                       </div>
@@ -512,11 +507,11 @@
                     <span class="terminal-badge-label">UPLOAD LOG</span>
                   </div>
                 </div>
-                <span class="summary-chevron">▼</span>
+                <span class="summary-chevron">â–¼</span>
               </summary>
               <div class="section-panel-content">
                 <div class="retro-upload-zone" id="dropzone">
-                  <div class="upload-icon">💾</div>
+                  <div class="upload-icon">ðŸ’¾</div>
                   <div class="upload-label">Drop files here or click to browse</div>
                   <div class="upload-hint">Supports .md session log files</div>
                   <div id="upload-status" style="font-size:0.75rem; margin-top: 12px;"></div>
@@ -529,16 +524,16 @@
         </section>
 
         <!-- Sessions Tab (renamed to Brain) -->
-        <section id="tab-sessions" class="tab-panel">
+        <section id="tab-sessions" class="tab-panel" role="tabpanel" aria-labelledby="tab-sessions-tab" aria-hidden="true" tabindex="0">
           <div class="tab-header">
             <h2 class="page-title">Brain</h2>
             <div class="tab-controls">
               <div class="btn-group">
                 <button type="button" class="arcade-btn" onclick="expandAllSections('tab-sessions')">
-                  <span style="font-size: 10px;">▼</span> Expand All
+                  <span style="font-size: 10px;">â–¼</span> Expand All
                 </button>
                 <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-sessions')">
-                  <span style="font-size: 10px;">▲</span> Collapse All
+                  <span style="font-size: 10px;">â–²</span> Collapse All
                 </button>
               </div>
             </div>
@@ -553,7 +548,7 @@
                   <span class="terminal-badge-label">FAST ENTRY</span>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content">
 
@@ -619,7 +614,7 @@ Gaps: Need to review valve mechanics
                   <span class="terminal-badge-label">LATEST SESSIONS</span>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content" id="sessions-section">
               <div class="table-wrapper">
@@ -660,7 +655,7 @@ Gaps: Need to review valve mechanics
                   <span class="terminal-badge-label">QUICK ENTRY</span>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content">
               <form id="quick-session-form" class="form-section">
@@ -733,7 +728,7 @@ Gaps: Need to review valve mechanics
                   <span class="terminal-badge-label">SESSION RESUME</span>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content" id="resume">
               <div class="resume-actions" style="margin-bottom: 16px;">
@@ -746,16 +741,16 @@ Gaps: Need to review valve mechanics
         </section>
 
         <!-- Syllabus Tab -->
-        <section id="tab-syllabus" class="tab-panel">
+        <section id="tab-syllabus" class="tab-panel" role="tabpanel" aria-labelledby="tab-syllabus-tab" aria-hidden="true" tabindex="0">
           <div class="tab-header">
             <h2 class="page-title">Syllabus & Calendar</h2>
             <div class="tab-controls">
               <div class="btn-group">
                 <button type="button" class="arcade-btn" onclick="expandAllSections('tab-syllabus')">
-                  <span style="font-size: 10px;">▼</span> Expand All
+                  <span style="font-size: 10px;">â–¼</span> Expand All
                 </button>
                 <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-syllabus')">
-                  <span style="font-size: 10px;">▲</span> Collapse All
+                  <span style="font-size: 10px;">â–²</span> Collapse All
                 </button>
               </div>
             </div>
@@ -770,7 +765,7 @@ Gaps: Need to review valve mechanics
                   <span class="terminal-badge-label">STUDY CALENDAR</span>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content" id="calendar-section">
               <div style="display: flex; gap: 8px; margin-bottom: 16px;">
@@ -827,9 +822,9 @@ Gaps: Need to review valve mechanics
 
                 <!-- Calendar Navigation -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                  <button id="btn-calendar-prev" class="arcade-btn" style="padding: 6px 12px;">← Prev</button>
+                  <button id="btn-calendar-prev" class="arcade-btn" style="padding: 6px 12px;">â† Prev</button>
                   <h3 id="calendar-month-year" style="margin: 0; font-size: 18px; font-weight: 600;">Loading...</h3>
-                  <button id="btn-calendar-next" class="arcade-btn" style="padding: 6px 12px;">Next →</button>
+                  <button id="btn-calendar-next" class="arcade-btn" style="padding: 6px 12px;">Next â†’</button>
                 </div>
 
                 <!-- Calendar Grid -->
@@ -925,14 +920,14 @@ Gaps: Need to review valve mechanics
                   <!-- Connected State -->
                   <div id="gcal-sync-section" style="display: none;">
                     <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 8px;">
-                      Connected as: <strong id="gcal-user-email" style="color: var(--text-primary);">—</strong>
+                      Connected as: <strong id="gcal-user-email" style="color: var(--text-primary);">â€”</strong>
                     </p>
                     <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                       <button id="btn-gcal-sync" class="arcade-btn arcade-btn-primary" style="flex: 1;">
-                        📅 Sync Calendar
+                        ðŸ“… Sync Calendar
                       </button>
                       <button id="btn-gtasks-sync" class="arcade-btn arcade-btn-primary" style="flex: 1;">
-                        ✅ Sync Tasks
+                        âœ… Sync Tasks
                       </button>
                     </div>
                     <div style="display: flex; gap: 8px;">
@@ -973,11 +968,11 @@ Gaps: Need to review valve mechanics
                       </div>
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
-                      <button id="btn-list-prev-week" class="arcade-btn" style="padding: 6px 12px;">← Earlier</button>
+                      <button id="btn-list-prev-week" class="arcade-btn" style="padding: 6px 12px;">â† Earlier</button>
                       <span id="list-week-range-label"
                         style="font-size: 13px; color: var(--text-secondary); min-width: 150px; text-align: center;">Week
                         1 - 3</span>
-                      <button id="btn-list-next-week" class="arcade-btn" style="padding: 6px 12px;">Later →</button>
+                      <button id="btn-list-next-week" class="arcade-btn" style="padding: 6px 12px;">Later â†’</button>
                       <button id="btn-list-collapse" class="arcade-btn" style="padding: 6px 12px;">Collapse All</button>
                       <button id="btn-list-expand" class="arcade-btn" style="padding: 6px 12px;">Expand All</button>
                     </div>
@@ -1031,7 +1026,7 @@ Gaps: Need to review valve mechanics
                   </table>
                 </div>
                 <div id="syllabus-list-empty" class="empty-state empty-state-compact" style="display: none;">
-                  <span class="empty-state-icon">🔍</span>
+                  <span class="empty-state-icon">ðŸ”</span>
                   <h3 class="empty-state-title">No events found</h3>
                   <p class="empty-state-hint">No events match the current filters. Try adjusting your search.</p>
                 </div>
@@ -1043,13 +1038,13 @@ Gaps: Need to review valve mechanics
           <details class="section-panel" id="study-tasks-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">📚</span>
+                <span class="summary-icon">ðŸ“š</span>
                 <div class="summary-text">
                   <h3>Study Tasks</h3>
                   <p>Readings, topics, and ongoing assignments. Check off as you complete.</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content" id="study-tasks-section">
               <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;">
@@ -1103,13 +1098,13 @@ Gaps: Need to review valve mechanics
           <details class="section-panel" id="syllabus-intake-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">📝</span>
+                <span class="summary-icon">ðŸ“</span>
                 <div class="summary-text">
                   <h3>Syllabus Intake (MVP)</h3>
                   <p>Manually add course and event information</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content" id="syllabus">
               <form id="syllabus-form" class="form-section">
@@ -1146,7 +1141,7 @@ Gaps: Need to review valve mechanics
 
                 <div class="form-group">
                   <label class="form-label" for="event_title">Event Title *</label>
-                  <input id="event_title" class="form-input" type="text" placeholder="Exam 1 – Pelvis &amp; Hip"
+                  <input id="event_title" class="form-input" type="text" placeholder="Exam 1 â€“ Pelvis &amp; Hip"
                     required>
                 </div>
                 <div class="form-grid">
@@ -1170,7 +1165,7 @@ Gaps: Need to review valve mechanics
                     <input id="event_due_date" class="form-input" type="date">
                   </div>
                   <div class="form-group">
-                    <label class="form-label" for="event_weight">Weight (0–1)</label>
+                    <label class="form-label" for="event_weight">Weight (0â€“1)</label>
                     <input id="event_weight" class="form-input" type="number" step="0.01" min="0" max="1"
                       placeholder="0.30">
                   </div>
@@ -1178,7 +1173,7 @@ Gaps: Need to review valve mechanics
                 <div class="form-group">
                   <label class="form-label" for="event_raw_text">Details (chapters, slides, notes)</label>
                   <textarea id="event_raw_text" class="form-textarea" rows="2"
-                    placeholder="Covers weeks 1–3, Chapters 1–5; Slides 01–03."></textarea>
+                    placeholder="Covers weeks 1â€“3, Chapters 1â€“5; Slides 01â€“03."></textarea>
                 </div>
                 <div class="form-actions">
                   <button type="submit" class="arcade-btn arcade-btn-primary">Save Course + Event</button>
@@ -1192,13 +1187,13 @@ Gaps: Need to review valve mechanics
           <details class="section-panel" id="json-import-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">🤖</span>
+                <span class="summary-icon">ðŸ¤–</span>
                 <div class="summary-text">
                   <h3>Syllabus via ChatGPT (JSON Import)</h3>
                   <p>Use ChatGPT to convert syllabus text to JSON format</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content" id="syllabus-chatgpt">
               <div class="form-section">
@@ -1241,13 +1236,13 @@ Given the raw syllabus text I provide, output a SINGLE JSON object in this exact
    - title: short but specific (include week or topic where helpful).
    - date: calendar date if present, otherwise null.
    - due_date: for quizzes/exams/assignments, usually same as date; otherwise null.
-   - weight: 0.0 if not clearly stated; or 0.3 if the syllabus says “30%”.
+   - weight: 0.0 if not clearly stated; or 0.3 if the syllabus says â€œ30%â€.
    - raw_text: the most useful details (chapters, pages, slides, topics), under ~200 characters.
 3. If the syllabus spans multiple courses, process ONLY ONE course per run.
 4. If term, instructor, or course code are not obvious, use null for those fields.
 5. Dates must be in "YYYY-MM-DD" format if you can infer them; otherwise null.
 
-Now say: “Paste your syllabus text here (one course at a time).” Then wait for me, and after I paste the syllabus, respond ONLY with the JSON object.</textarea>
+Now say: â€œPaste your syllabus text here (one course at a time).â€ Then wait for me, and after I paste the syllabus, respond ONLY with the JSON object.</textarea>
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="syllabus_json_input">2) Paste ChatGPT JSON here and import</label>
@@ -1266,13 +1261,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <details class="section-panel" id="course-colors-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">🎨</span>
+                <span class="summary-icon">ðŸŽ¨</span>
                 <div class="summary-text">
                   <h3>Course Colors</h3>
                   <p>Click a color swatch to pick a custom color</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content" id="course-colors-section">
               <div id="course-color-manager" style="padding: 8px 0;">
@@ -1284,9 +1279,9 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         </section>
 
         <!-- Scholar Tab -->
-        <section id="tab-scholar" class="tab-panel">
+        <section id="tab-scholar" class="tab-panel" role="tabpanel" aria-labelledby="tab-scholar-tab" aria-hidden="true" tabindex="0">
           <div class="scholar-banner" style="margin-bottom: 20px;">
-            <div class="banner-title">🔬 SCHOLAR RESEARCH</div>
+            <div class="banner-title">ðŸ”¬ SCHOLAR RESEARCH</div>
             <div class="banner-subtitle">AI-powered system analysis, research, and improvements</div>
           </div>
           <div class="tab-header">
@@ -1294,10 +1289,10 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
             <div class="tab-controls">
               <div class="btn-group">
                 <button type="button" class="arcade-btn" onclick="expandAllSections('tab-scholar')">
-                  <span style="font-size: 10px;">▼</span> Expand All
+                  <span style="font-size: 10px;">â–¼</span> Expand All
                 </button>
                 <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-scholar')">
-                  <span style="font-size: 10px;">▲</span> Collapse All
+                  <span style="font-size: 10px;">â–²</span> Collapse All
                 </button>
               </div>
             </div>
@@ -1307,13 +1302,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <details class="section-panel" id="scholar-api-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">🔑</span>
+                <span class="summary-icon">ðŸ”‘</span>
                 <div class="summary-text">
                   <h3>Scholar API Key</h3>
                   <p>Configure API access for Scholar features</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content">
               <div
@@ -1355,13 +1350,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <details class="section-panel" id="scholar-run-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">▶️</span>
+                <span class="summary-icon">â–¶ï¸</span>
                 <div class="summary-text">
                   <h3>Run Scholar</h3>
                   <p>Execute Scholar orchestrator and view status</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content">
               <!-- Scholar Status -->
@@ -1453,24 +1448,121 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
             </div>
           </details>
 
+          <!-- Ralph Research -->
+          <details class="section-panel" id="scholar-ralph-panel">
+            <summary>
+              <div class="summary-content">
+                <span class="summary-icon">ðŸ§­</span>
+                <div class="summary-text">
+                  <h3>Ralph Research</h3>
+                  <p>Ralph run status, progress log, and latest summary</p>
+                </div>
+              </div>
+              <span class="summary-chevron">â–¼</span>
+            </summary>
+            <div class="section-panel-content">
+              <div style="display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+                <div
+                  style="padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 180px;">
+                  <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">PRD Status</div>
+                  <div id="ralph-prd-status" style="font-size: 16px; font-weight: 600; color: var(--text-primary);">-</div>
+                  <div id="ralph-prd-next" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">-</div>
+                </div>
+                <div
+                  style="padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 180px;">
+                  <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Progress Log</div>
+                  <div id="ralph-progress-meta" style="font-size: 16px; font-weight: 600; color: var(--text-primary);">-</div>
+                  <div id="ralph-latest-story" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">-</div>
+                </div>
+                <div
+                  style="padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 180px;">
+                  <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Latest Summary</div>
+                  <div id="ralph-summary-meta" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">-</div>
+                  <div id="ralph-summary-file" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">-</div>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">Latest Run Summary</h4>
+                <button id="btn-ralph-refresh" class="arcade-btn" style="font-size: 12px;">Refresh</button>
+              </div>
+              <div id="ralph-summary-content"
+                style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; max-height: 260px; overflow-y: auto;">
+                <div style="color: var(--text-muted); font-size: 13px;">Loading Ralph summary...</div>
+              </div>
+            </div>
+          </details>
+
+          <!-- Proposal Running Sheet -->
+          <details class="section-panel" id="scholar-proposal-sheet-panel">
+            <summary>
+              <div class="summary-content">
+                <span class="summary-icon">ðŸ§¾</span>
+                <div class="summary-text">
+                  <h3>Proposal Running Sheet</h3>
+                  <p>Review proposals, record decisions, and run final checks</p>
+                </div>
+              </div>
+              <span class="summary-chevron">â–¼</span>
+            </summary>
+            <div class="section-panel-content">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">Proposal Running Sheet</h4>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button id="btn-proposal-sheet-refresh" class="arcade-btn" style="font-size: 12px;">Refresh</button>
+                  <button id="btn-proposal-sheet-final-check" class="arcade-btn arcade-btn-primary" style="font-size: 12px;">Final Check</button>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+                <div
+                  style="padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-width: 140px;">
+                  <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Proposals</div>
+                  <div id="proposal-sheet-total" style="font-size: 18px; font-weight: 600; color: var(--text-primary);">-</div>
+                </div>
+                <div
+                  style="padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-width: 140px;">
+                  <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Evidence Drift</div>
+                  <div id="proposal-sheet-drift" style="font-size: 18px; font-weight: 600; color: var(--warning);">-</div>
+                </div>
+                <div
+                  style="padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-width: 140px;">
+                  <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Missing Paths</div>
+                  <div id="proposal-sheet-missing" style="font-size: 18px; font-weight: 600; color: var(--text-muted);">-</div>
+                </div>
+                <div
+                  style="padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-width: 160px;">
+                  <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Last Generated</div>
+                  <div id="proposal-sheet-generated" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">-</div>
+                </div>
+              </div>
+
+              <div id="proposal-sheet-meta" style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">-</div>
+              <div id="proposal-sheet-content"
+                style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; max-height: 320px; overflow-y: auto;">
+                <div style="color: var(--text-muted); font-size: 13px;">Loading proposal running sheet...</div>
+              </div>
+            </div>
+          </details>
+
           <!-- Proposals & Questions -->
           <details class="section-panel" id="scholar-proposals-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">📝</span>
+                <span class="summary-icon">ðŸ“</span>
                 <div class="summary-text">
                   <h3>Proposals & Questions</h3>
                   <p>Review proposals and answer pending questions</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content">
               <!-- Proposals Section -->
               <div style="margin-bottom: 24px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                   <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">
-                    📝 Proposals Awaiting Review
+                    ðŸ“ Proposals Awaiting Review
                     <span id="scholar-proposals-section-count"
                       style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">(0)</span>
                   </h4>
@@ -1503,11 +1595,11 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                   style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: pointer;"
                   onclick="toggleAnsweredQuestions()">
                   <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">
-                    ✅ Answered Questions
+                    âœ… Answered Questions
                     <span id="scholar-answered-section-count"
                       style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">(0)</span>
                   </h4>
-                  <span id="answered-questions-chevron" style="font-size: 12px; color: var(--text-muted);">▶</span>
+                  <span id="answered-questions-chevron" style="font-size: 12px; color: var(--text-muted);">â–¶</span>
                 </div>
                 <div id="scholar-answered-questions"
                   style="display: none; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-height: 40px;">
@@ -1521,19 +1613,19 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <details class="section-panel" id="scholar-health-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">🔬</span>
+                <span class="summary-icon">ðŸ”¬</span>
                 <div class="summary-text">
                   <h3>System Health & Research</h3>
                   <p>Module status, research topics, and system gaps</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content">
               <!-- System Health (formerly Coverage) -->
               <div style="margin-bottom: 24px;">
                 <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
-                  🔬 System Health
+                  ðŸ”¬ System Health
                   <span id="scholar-coverage-summary"
                     style="font-size: 12px; color: var(--text-muted); margin-left: 8px;"></span>
                 </h4>
@@ -1589,7 +1681,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
               <!-- Research & Gaps -->
               <div style="margin-bottom: 24px;">
                 <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">
-                  📚 Research & Gap Analysis
+                  ðŸ“š Research & Gap Analysis
                 </h4>
                 <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
                   Pedagogy research, meta-analysis findings, and system gaps to address
@@ -1599,7 +1691,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                   <!-- Active Research -->
                   <div
                     style="padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
-                    <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">🔍
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">ðŸ”
                       Active Research Topics</div>
                     <div id="scholar-research-topics"
                       style="font-size: 13px; color: var(--text-secondary); min-height: 60px;">
@@ -1610,7 +1702,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                   <!-- Identified Gaps -->
                   <div
                     style="padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
-                    <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">⚠️
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">âš ï¸
                       Identified Gaps</div>
                     <div id="scholar-gaps" style="font-size: 13px; color: var(--text-secondary); min-height: 60px;">
                       Loading...
@@ -1621,7 +1713,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                 <!-- Improvement Candidates -->
                 <div
                   style="margin-top: 12px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
-                  <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">💡
+                  <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">ðŸ’¡
                     Improvement Candidates</div>
                   <div id="scholar-improvements"
                     style="font-size: 13px; color: var(--text-secondary); min-height: 40px;">
@@ -1632,7 +1724,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
 
               <!-- Next Steps -->
               <div style="margin-bottom: 24px;">
-                <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">📋 What
+                <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">ðŸ“‹ What
                   To Do Next</h4>
                 <div id="scholar-next-steps"
                   style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; min-height: 60px;">
@@ -1642,7 +1734,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
 
               <!-- Latest Run Summary -->
               <div style="margin-bottom: 24px;">
-                <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">📄
+                <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">ðŸ“„
                   Latest Run Summary</h4>
                 <div id="scholar-latest-run"
                   style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
@@ -1656,13 +1748,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <details class="section-panel" id="scholar-digest-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">🧠</span>
+                <span class="summary-icon">ðŸ§ </span>
                 <div class="summary-text">
                   <h3>AI Strategic Digest</h3>
                   <p>AI-powered analysis and strategic recommendations</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content">
               <!-- AI Weekly Digest Section -->
@@ -1671,7 +1763,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                   <div>
                     <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">
-                      🧠 AI Strategic Digest
+                      ðŸ§  AI Strategic Digest
                       <span
                         style="font-size: 10px; padding: 2px 6px; background: #a855f7; color: white; border-radius: 4px; margin-left: 8px;">AI-Powered</span>
                     </h4>
@@ -1696,19 +1788,19 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <details class="section-panel" id="scholar-saved-digests-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">📁</span>
+                <span class="summary-icon">ðŸ“</span>
                 <div class="summary-text">
                   <h3>Saved Digests</h3>
                   <p>View previously saved strategic digests</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content">
               <div style="margin-bottom: 24px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                   <h4 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0;">
-                    📁 Saved Digests
+                    ðŸ“ Saved Digests
                     <span id="saved-digests-count"
                       style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">(0)</span>
                   </h4>
@@ -1747,17 +1839,17 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         </section>
 
         <!-- Tutor Tab -->
-        <section id="tab-tutor" class="tab-panel">
+        <section id="tab-tutor" class="tab-panel" role="tabpanel" aria-labelledby="tab-tutor-tab" aria-hidden="true" tabindex="0">
           <div class="tab-header">
             <h2 class="page-title">Tutor</h2>
             <div class="tab-controls">
-              <a class="arcade-btn" href="https://chatgpt.com/g/g-693763cbfa3c8191b22fc700b526f2f6-trey-s-study-sop-v9-2" target="_blank" rel="noopener" style="font-size: 12px; text-decoration: none;">Open Trey’s Custom GPT</a>
+              <a class="arcade-btn" href="https://chatgpt.com/g/g-693763cbfa3c8191b22fc700b526f2f6-trey-s-study-sop-v9-2" target="_blank" rel="noopener" style="font-size: 12px; text-decoration: none;">Open Treyâ€™s Custom GPT</a>
               <div class="btn-group">
                 <button type="button" class="arcade-btn" onclick="expandAllSections('tab-tutor')">
-                  <span style="font-size: 10px;">▼</span> Expand All
+                  <span style="font-size: 10px;">â–¼</span> Expand All
                 </button>
                 <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-tutor')">
-                  <span style="font-size: 10px;">▲</span> Collapse All
+                  <span style="font-size: 10px;">â–²</span> Collapse All
                 </button>
               </div>
             </div>
@@ -1767,13 +1859,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <details class="section-panel" id="tutor-chat-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">💬</span>
+                <span class="summary-icon">ðŸ’¬</span>
                 <div class="summary-text">
                   <h3>Ask Tutor</h3>
                   <p>Chat with your AI tutor</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content chat-workspace" id="tutor-chat">
               <div class="chat-workspace-header">
@@ -1789,7 +1881,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                     </select>
                   </div>
                   <button type="button" class="arcade-btn" id="btn-tutor-new-session" style="font-size: 13px;">
-                    🔄 New Session
+                    ðŸ”„ New Session
                   </button>
                 </div>
               </div>
@@ -1829,13 +1921,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
           <details class="section-panel" id="tutor-rag-panel">
             <summary>
               <div class="summary-content">
-                <span class="summary-icon">📚</span>
+                <span class="summary-icon">ðŸ“š</span>
                 <div class="summary-text">
                   <h3>RAG Sources</h3>
                   <p>Manage Study RAG and Runtime RAG knowledge</p>
                 </div>
               </div>
-              <span class="summary-chevron">▼</span>
+              <span class="summary-chevron">â–¼</span>
             </summary>
             <div class="section-panel-content" id="tutor-knowledge">
               <p class="card-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
@@ -1860,7 +1952,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                     style="flex: 1; font-family: monospace; font-size: 12px;" />
                   <label for="study-rag-folder-picker" class="btn btn-secondary"
                     style="cursor: pointer; margin: 0; display: flex; align-items: center; gap: 4px;">
-                    📁 Browse
+                    ðŸ“ Browse
                   </label>
                   <input type="file" id="study-rag-folder-picker" webkitdirectory directory multiple
                     style="display: none;" />
@@ -1940,16 +2032,16 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
     </section>
 
     <!-- Database Tab -->
-    <section id="tab-brain" class="tab-panel">
+    <section id="tab-brain" class="tab-panel" role="tabpanel" aria-labelledby="tab-brain-tab-mobile" aria-hidden="true" tabindex="0">
       <div class="tab-header">
         <h2 class="page-title">Brain Database</h2>
         <div class="tab-controls">
           <div class="btn-group">
             <button type="button" class="arcade-btn" onclick="expandAllSections('tab-brain')">
-              <span style="font-size: 10px;">▼</span> Expand All
+              <span style="font-size: 10px;">â–¼</span> Expand All
             </button>
             <button type="button" class="arcade-btn" onclick="collapseAllSections('tab-brain')">
-              <span style="font-size: 10px;">▲</span> Collapse All
+              <span style="font-size: 10px;">â–²</span> Collapse All
             </button>
           </div>
         </div>
@@ -1959,13 +2051,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
       <details class="section-panel" id="brain-stats-panel">
         <summary>
           <div class="summary-content">
-            <span class="summary-icon">📊</span>
+            <span class="summary-icon">ðŸ“Š</span>
             <div class="summary-text">
               <h3>Database Statistics</h3>
               <p>Overview of stored sessions, events, and documents</p>
             </div>
           </div>
-          <span class="summary-chevron">▼</span>
+          <span class="summary-chevron">â–¼</span>
         </summary>
         <div class="section-panel-content" id="brain-stats-section">
           <div class="core-status-panel">
@@ -2001,13 +2093,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
       <details class="section-panel" id="brain-mastery-panel">
         <summary>
           <div class="summary-content">
-            <span class="summary-icon">🎯</span>
+            <span class="summary-icon">ðŸŽ¯</span>
             <div class="summary-text">
               <h3>Topic Mastery Overview</h3>
               <p>Track understanding and retention by topic</p>
             </div>
           </div>
-          <span class="summary-chevron">▼</span>
+          <span class="summary-chevron">â–¼</span>
         </summary>
         <div class="section-panel-content" id="brain-mastery-section">
           <div id="brain-mastery-list"
@@ -2020,13 +2112,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
       <details class="section-panel" id="brain-sync-panel">
         <summary>
           <div class="summary-content">
-            <span class="summary-icon">🔄</span>
+            <span class="summary-icon">ðŸ”„</span>
             <div class="summary-text">
               <h3>Ingestion Status</h3>
               <p>Session sync and file tracking status</p>
             </div>
           </div>
-          <span class="summary-chevron">▼</span>
+          <span class="summary-chevron">â–¼</span>
         </summary>
         <div class="section-panel-content" id="brain-sync-section">
           <div style="padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;">
@@ -2051,13 +2143,13 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
       <details class="section-panel" id="anki-cards-panel">
         <summary>
           <div class="summary-content">
-            <span class="summary-icon">🃏</span>
+            <span class="summary-icon">ðŸƒ</span>
             <div class="summary-text">
               <h3>Anki Cards</h3>
               <p>Manage flashcard drafts and sync to Anki</p>
             </div>
           </div>
-          <span class="summary-chevron">▼</span>
+          <span class="summary-chevron">â–¼</span>
         </summary>
         <div class="section-panel-content" id="anki-cards-section">
 
@@ -2077,7 +2169,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
               <div style="display: flex; gap: 8px;">
                 <button id="anki-sync-btn" class="arcade-btn arcade-btn-primary" onclick="syncAnkiCards()"
                   style="display: flex; align-items: center; gap: 6px;">
-                  <span>🔄</span> Sync to Anki
+                  <span>ðŸ”„</span> Sync to Anki
                 </button>
                 <button class="arcade-btn" onclick="refreshAnkiDrafts()">Refresh</button>
               </div>
@@ -2103,7 +2195,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
                   <tr class="empty-row">
                     <td colspan="5">
                       <div class="empty-state empty-state-compact">
-                        <span class="empty-state-icon">📝</span>
+                        <span class="empty-state-icon">ðŸ“</span>
                         <h3 class="empty-state-title">No card drafts yet</h3>
                         <p class="empty-state-hint">Create your first flashcard using the form below.</p>
                       </div>
@@ -2161,41 +2253,6 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         </div>
       </details>
     </section>
-    <!-- Sync Inbox Tab -->
-    <section id="tab-sync" class="tab-panel">
-      <div class="sync-inbox-header">
-        <div class="header-content">
-          <div class="title">📥 SYNC INBOX</div>
-          <div class="subtitle">Review and approve incoming data from scrapers and imports</div>
-        </div>
-        <button class="scraper-btn" onclick="loadSyncPending()">REFRESH</button>
-      </div>
-
-      <div class="section-panel" style="padding: 20px;">
-        <p style="color: var(--text-secondary); margin-bottom: 20px;">
-          Review and approve incoming data from the Blackboard scraper or syllabus imports.
-        </p>
-
-        <div id="sync-list-container" class="table-wrapper">
-          <table class="sessions-table">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Course</th>
-                <th>Title</th>
-                <th>Details</th>
-                <th>Date / Due</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="sync-tbody">
-              <!-- JS Populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
     </main>
 
     <!-- Proposal Viewer Modal -->
@@ -2222,9 +2279,9 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
         <div
           style="padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: flex-end;">
           <button id="proposal-reject-btn" class="btn" style="background: var(--danger); color: white;"
-            onclick="handleProposalAction('reject')">❌ Reject</button>
+            onclick="handleProposalAction('reject')">âŒ Reject</button>
           <button id="proposal-approve-btn" class="btn btn-primary" style="background: var(--success);"
-            onclick="handleProposalAction('approve')">✓ Approve</button>
+            onclick="handleProposalAction('approve')">âœ“ Approve</button>
           <button class="btn btn-secondary" onclick="closeProposalModal()">Close</button>
         </div>
       </div>
@@ -2455,10 +2512,10 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
     </div>
 
     <!-- Sync Inbox Tab -->
-    <section id="tab-sync" class="tab-panel">
+    <section id="tab-sync" class="tab-panel" role="tabpanel" aria-labelledby="tab-sync-tab" aria-hidden="true" tabindex="0">
       <div class="sync-inbox-header">
         <div class="header-content">
-          <div class="title">📥 SYNC INBOX</div>
+          <div class="title">ðŸ“¥ SYNC INBOX</div>
           <div class="subtitle">Review and approve incoming data from scrapers and imports</div>
         </div>
         <div style="display: flex; gap: 10px;">
@@ -2510,7 +2567,7 @@ Now say: “Paste your syllabus text here (one course at a time).” Then wait f
       const sidebar = document.getElementById('sidebar');
       const icon = document.getElementById('collapse-icon');
       sidebar.classList.toggle('collapsed');
-      icon.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+      icon.textContent = sidebar.classList.contains('collapsed') ? 'â–¶' : 'â—€';
     }
 
     // Update page title when switching tabs

@@ -1,4 +1,3 @@
-
 """
 Google Calendar Integration for PT Study Brain
 OAuth2 authentication + manual sync of calendar events
@@ -10,15 +9,21 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from db_setup import get_connection
+
+
 # Google API imports (install: pip install google-auth google-auth-oauthlib google-api-python-client)
 try:
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import Flow
     from googleapiclient.discovery import build
+
     GOOGLE_API_AVAILABLE = True
 except ImportError:
     GOOGLE_API_AVAILABLE = False
-    print("[WARN] Google API libraries not installed. Run: pip install google-auth google-auth-oauthlib google-api-python-client")
+    print(
+        "[WARN] Google API libraries not installed. Run: pip install google-auth google-auth-oauthlib google-api-python-client"
+    )
 
 # Paths
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -28,8 +33,8 @@ DB_PATH = DATA_DIR / "pt_study.db"
 
 # OAuth scopes - read-only access to calendar and tasks
 SCOPES = [
-    'https://www.googleapis.com/auth/calendar.readonly',
-    'https://www.googleapis.com/auth/tasks.readonly'
+    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/tasks.readonly",
 ]
 
 
@@ -37,25 +42,25 @@ def load_gcal_config():
     """Load Google Calendar config from api_config.json"""
     if not CONFIG_PATH.exists():
         return None
-    
-    with open(CONFIG_PATH, 'r') as f:
+
+    with open(CONFIG_PATH, "r") as f:
         config = json.load(f)
-    
-    return config.get('google_calendar', {})
+
+    return config.get("google_calendar", {})
 
 
 def save_token(creds):
     """Save OAuth token to file"""
     token_data = {
-        'token': creds.token,
-        'refresh_token': creds.refresh_token,
-        'token_uri': creds.token_uri,
-        'client_id': creds.client_id,
-        'client_secret': creds.client_secret,
-        'scopes': list(creds.scopes) if creds.scopes else [],
-        'expiry': creds.expiry.isoformat() if creds.expiry else None
+        "token": creds.token,
+        "refresh_token": creds.refresh_token,
+        "token_uri": creds.token_uri,
+        "client_id": creds.client_id,
+        "client_secret": creds.client_secret,
+        "scopes": list(creds.scopes) if creds.scopes else [],
+        "expiry": creds.expiry.isoformat() if creds.expiry else None,
     }
-    with open(TOKEN_PATH, 'w') as f:
+    with open(TOKEN_PATH, "w") as f:
         json.dump(token_data, f)
 
 
@@ -63,17 +68,17 @@ def load_token():
     """Load OAuth token from file"""
     if not TOKEN_PATH.exists():
         return None
-    
-    with open(TOKEN_PATH, 'r') as f:
+
+    with open(TOKEN_PATH, "r") as f:
         token_data = json.load(f)
-    
+
     return Credentials(
-        token=token_data.get('token'),
-        refresh_token=token_data.get('refresh_token'),
-        token_uri=token_data.get('token_uri'),
-        client_id=token_data.get('client_id'),
-        client_secret=token_data.get('client_secret'),
-        scopes=token_data.get('scopes')
+        token=token_data.get("token"),
+        refresh_token=token_data.get("refresh_token"),
+        token_uri=token_data.get("token_uri"),
+        client_id=token_data.get("client_id"),
+        client_secret=token_data.get("client_secret"),
+        scopes=token_data.get("scopes"),
     )
 
 
@@ -81,31 +86,35 @@ def get_auth_url():
     """Generate OAuth2 authorization URL"""
     if not GOOGLE_API_AVAILABLE:
         return None, "Google API libraries not installed"
-    
+
     config = load_gcal_config()
-    if not config or not config.get('client_id'):
+    if not config or not config.get("client_id"):
         return None, "Google Calendar not configured in api_config.json"
-    
+
     flow = Flow.from_client_config(
         {
             "web": {
-                "client_id": config['client_id'],
-                "client_secret": config['client_secret'],
+                "client_id": config["client_id"],
+                "client_secret": config["client_secret"],
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
-                "redirect_uris": [config.get('redirect_uri', 'http://localhost:5000/api/gcal/oauth/callback')]
+                "redirect_uris": [
+                    config.get(
+                        "redirect_uri", "http://localhost:5000/api/gcal/oauth/callback"
+                    )
+                ],
             }
         },
-        scopes=SCOPES
+        scopes=SCOPES,
     )
-    flow.redirect_uri = config.get('redirect_uri', 'http://localhost:5000/api/gcal/oauth/callback')
-    
+    flow.redirect_uri = config.get(
+        "redirect_uri", "http://localhost:5000/api/gcal/oauth/callback"
+    )
+
     auth_url, state = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true',
-        prompt='consent'
+        access_type="offline", include_granted_scopes="true", prompt="consent"
     )
-    
+
     return auth_url, state
 
 
@@ -113,30 +122,37 @@ def complete_oauth(code):
     """Complete OAuth flow with authorization code"""
     if not GOOGLE_API_AVAILABLE:
         return False, "Google API libraries not installed"
-    
+
     config = load_gcal_config()
     if not config:
         return False, "Google Calendar not configured"
-    
+
     try:
         flow = Flow.from_client_config(
             {
                 "web": {
-                    "client_id": config['client_id'],
-                    "client_secret": config['client_secret'],
+                    "client_id": config["client_id"],
+                    "client_secret": config["client_secret"],
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [config.get('redirect_uri', 'http://localhost:5000/api/gcal/oauth/callback')]
+                    "redirect_uris": [
+                        config.get(
+                            "redirect_uri",
+                            "http://localhost:5000/api/gcal/oauth/callback",
+                        )
+                    ],
                 }
             },
-            scopes=SCOPES
+            scopes=SCOPES,
         )
-        flow.redirect_uri = config.get('redirect_uri', 'http://localhost:5000/api/gcal/oauth/callback')
-        
+        flow.redirect_uri = config.get(
+            "redirect_uri", "http://localhost:5000/api/gcal/oauth/callback"
+        )
+
         flow.fetch_token(code=code)
         creds = flow.credentials
         save_token(creds)
-        
+
         return True, "Successfully connected to Google Calendar"
     except Exception as e:
         return False, f"OAuth error: {str(e)}"
@@ -146,37 +162,44 @@ def get_calendar_service():
     """Get authenticated Google Calendar service"""
     if not GOOGLE_API_AVAILABLE:
         return None
-    
+
     creds = load_token()
     if not creds or not creds.valid:
         return None
-    
-    return build('calendar', 'v3', credentials=creds)
+
+    return build("calendar", "v3", credentials=creds)
 
 
 def check_auth_status():
     """Check if user is authenticated with Google Calendar"""
     if not GOOGLE_API_AVAILABLE:
-        return {'connected': False, 'error': 'Google API not installed'}
-    
+        return {"connected": False, "error": "Google API not installed"}
+
+    config = load_gcal_config()
+    if not config or not config.get("client_id") or not config.get("client_secret"):
+        return {
+            "connected": False,
+            "error": "Google Calendar not configured. Update brain/data/api_config.json.",
+        }
+
     if not TOKEN_PATH.exists():
-        return {'connected': False}
-    
+        return {"connected": False}
+
     try:
         creds = load_token()
         if creds and creds.valid:
             # Get user email
-            service = build('calendar', 'v3', credentials=creds)
-            calendar = service.calendars().get(calendarId='primary').execute()
+            service = build("calendar", "v3", credentials=creds)
+            calendar = service.calendars().get(calendarId="primary").execute()
             return {
-                'connected': True,
-                'email': calendar.get('summary', 'Unknown'),
-                'id': calendar.get('id')
+                "connected": True,
+                "email": calendar.get("summary", "Unknown"),
+                "id": calendar.get("id"),
             }
         else:
-            return {'connected': False, 'error': 'Token expired'}
+            return {"connected": False, "error": "Token expired"}
     except Exception as e:
-        return {'connected': False, 'error': str(e)}
+        return {"connected": False, "error": str(e)}
 
 
 def revoke_auth():
@@ -191,67 +214,71 @@ def fetch_calendar_events(days_ahead=90):
     service = get_calendar_service()
     if not service:
         return [], "Not authenticated"
-    
-    config = load_gcal_config()
-    calendar_id = config.get('calendar_id', 'primary')
-    
+
+    config = load_gcal_config() or {}
+    calendar_id = config.get("calendar_id", "primary")
+
     now = datetime.utcnow()
-    time_min = now.isoformat() + 'Z'
-    time_max = (now + timedelta(days=days_ahead)).isoformat() + 'Z'
-    
+    time_min = now.isoformat() + "Z"
+    time_max = (now + timedelta(days=days_ahead)).isoformat() + "Z"
+
     try:
-        events_result = service.events().list(
-            calendarId=calendar_id,
-            timeMin=time_min,
-            timeMax=time_max,
-            maxResults=500,
-            singleEvents=True,
-            orderBy='startTime'
-        ).execute()
-        
-        return events_result.get('items', []), None
+        events_result = (
+            service.events()
+            .list(
+                calendarId=calendar_id,
+                timeMin=time_min,
+                timeMax=time_max,
+                maxResults=500,
+                singleEvents=True,
+                orderBy="startTime",
+            )
+            .execute()
+        )
+
+        return events_result.get("items", []), None
     except Exception as e:
         return [], str(e)
 
 
 def parse_gcal_event(gcal_event):
     """Parse Google Calendar event to Brain format"""
-    start = gcal_event.get('start', {})
-    end = gcal_event.get('end', {})
-    
+    start = gcal_event.get("start", {})
+    end = gcal_event.get("end", {})
+
     # Handle all-day vs timed events
-    if 'date' in start:
-        date = start['date']
+    if "date" in start:
+        date = start["date"]
         time_str = None
     else:
-        dt = start.get('dateTime', '')
+        dt = start.get("dateTime", "")
         date = dt[:10] if dt else None
         time_str = dt[11:16] if len(dt) > 16 else None
-    
+
     # Determine event type from title/description
-    title = gcal_event.get('summary', 'Untitled')
+    title = gcal_event.get("summary", "Untitled")
     title_lower = title.lower()
-    
-    if any(x in title_lower for x in ['exam', 'midterm', 'final']):
-        event_type = 'exam'
-    elif any(x in title_lower for x in ['quiz', 'irat', 'trat']):
-        event_type = 'quiz'
-    elif any(x in title_lower for x in ['lab', 'practical']):
-        event_type = 'lab'
-    elif any(x in title_lower for x in ['lecture', 'class', 'vs class']):
-        event_type = 'lecture'
-    elif any(x in title_lower for x in ['due', 'assignment', 'submit']):
-        event_type = 'assignment'
+
+    if any(x in title_lower for x in ["exam", "midterm", "final"]):
+        event_type = "exam"
+    elif any(x in title_lower for x in ["quiz", "irat", "trat"]):
+        event_type = "quiz"
+    elif any(x in title_lower for x in ["lab", "practical"]):
+        event_type = "lab"
+    elif any(x in title_lower for x in ["lecture", "class", "vs class"]):
+        event_type = "lecture"
+    elif any(x in title_lower for x in ["due", "assignment", "submit"]):
+        event_type = "assignment"
     else:
-        event_type = 'other'
-    
+        event_type = "other"
+
     return {
-        'google_event_id': gcal_event.get('id'),
-        'title': title,
-        'date': date,
-        'type': event_type,
-        'raw_text': f"Time: {time_str or 'All day'} | Location: {gcal_event.get('location', 'Not specified')}",
-        'status': 'pending'
+        "google_event_id": gcal_event.get("id"),
+        "title": title,
+        "date": date,
+        "type": event_type,
+        "raw_text": f"Time: {time_str or 'All day'} | Location: {gcal_event.get('location', 'Not specified')}",
+        "status": "pending",
     }
 
 
@@ -259,160 +286,231 @@ def sync_to_database(course_id=None):
     """Sync Google Calendar events to database"""
     events, error = fetch_calendar_events()
     if error:
-        return {'success': False, 'error': error, 'imported': 0, 'skipped': 0}
-    
+        return {"success": False, "error": error, "imported": 0, "skipped": 0}
+
     imported = 0
     skipped = 0
-    
-    conn = sqlite3.connect(DB_PATH)
+
+    conn = get_connection()
     cursor = conn.cursor()
-    
-    for gcal_event in events:
-        parsed = parse_gcal_event(gcal_event)
-        
-        # Check for duplicate
+
+    for event in events:
+        parsed = parse_gcal_event(event)
+        google_event_id = parsed.get("google_event_id")
+        if not parsed.get("date") or not google_event_id:
+            skipped += 1
+            continue
+
         cursor.execute(
             "SELECT id FROM course_events WHERE google_event_id = ?",
-            (parsed['google_event_id'],)
+            (google_event_id,),
         )
         if cursor.fetchone():
             skipped += 1
             continue
-        
-        # Insert new event
-        cursor.execute("""
+
+        cursor.execute(
+            """
             INSERT INTO course_events (course_id, type, title, date, raw_text, status, google_event_id, google_synced_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            course_id,
-            parsed['type'],
-            parsed['title'],
-            parsed['date'],
-            parsed['raw_text'],
-            parsed['status'],
-            parsed['google_event_id'],
-            datetime.now().isoformat()
-        ))
+        """,
+            (
+                course_id,
+                parsed["type"],
+                parsed["title"],
+                parsed["date"],
+                parsed["raw_text"],
+                parsed["status"],
+                google_event_id,
+                datetime.now().isoformat(),
+            ),
+        )
         imported += 1
-    
+
     conn.commit()
     conn.close()
-    
-    return {'success': True, 'imported': imported, 'skipped': skipped}
 
+    return {
+        "success": True,
+        "imported": imported,
+        "skipped": skipped,
+        "source": "calendar",
+    }
 
-# ============================================================================
-# GOOGLE TASKS INTEGRATION
-# ============================================================================
 
 def get_tasks_service():
     """Get authenticated Google Tasks service"""
     if not GOOGLE_API_AVAILABLE:
         return None
-    
+
     creds = load_token()
     if not creds or not creds.valid:
         return None
-    
-    return build('tasks', 'v1', credentials=creds)
+
+    return build("tasks", "v1", credentials=creds)
 
 
 def fetch_task_lists():
-    """Fetch all task lists from Google Tasks"""
+    """Fetch available Google Task lists"""
     service = get_tasks_service()
     if not service:
         return [], "Not authenticated"
-    
+
     try:
-        results = service.tasklists().list(maxResults=100).execute()
-        return results.get('items', []), None
-    except Exception as e:
-        return [], str(e)
+        result = service.tasklists().list(maxResults=100).execute()
+        return result.get("items", []), None
+    except Exception as exc:
+        return [], str(exc)
 
 
-def fetch_tasks(tasklist_id='@default'):
-    """Fetch tasks from a specific task list"""
+def resolve_task_lists(task_lists, config):
+    """Resolve which task lists should be synced (default: Reclaim)."""
+    if not task_lists:
+        return [], "No Google Tasks lists found"
+
+    target_id = (config or {}).get("tasks_list_id")
+    target_name = (config or {}).get("tasks_list_name") or "Reclaim"
+
+    if target_id:
+        matches = [
+            tasklist for tasklist in task_lists if tasklist.get("id") == target_id
+        ]
+        if matches:
+            return matches, None
+        return [], f"Google Tasks list id not found: {target_id}"
+
+    if target_name:
+        matches = [
+            tasklist
+            for tasklist in task_lists
+            if (tasklist.get("title") or "").lower() == target_name.lower()
+        ]
+        if matches:
+            return matches, None
+        return [], f"Google Tasks list '{target_name}' not found"
+
+    return task_lists, None
+
+
+def fetch_tasks(tasklist_id):
+    """Fetch tasks for a given list"""
     service = get_tasks_service()
     if not service:
         return [], "Not authenticated"
-    
+
     try:
-        results = service.tasks().list(
-            tasklist=tasklist_id,
-            showCompleted=False,
-            showHidden=False,
-            maxResults=100
-        ).execute()
-        return results.get('items', []), None
-    except Exception as e:
-        return [], str(e)
+        result = (
+            service.tasks()
+            .list(
+                tasklist=tasklist_id,
+                showCompleted=True,
+                showDeleted=False,
+                showHidden=False,
+                maxResults=200,
+            )
+            .execute()
+        )
+        return result.get("items", []), None
+    except Exception as exc:
+        return [], str(exc)
 
 
-def parse_google_task(task):
-    """Parse Google Task to Brain format"""
-    due_date = None
-    if task.get('due'):
-        # Google Tasks due date is in RFC 3339 format
-        due_str = task.get('due', '')[:10]
-        due_date = due_str if due_str else None
-    
+def parse_google_task(task, tasklist_title=None):
+    """Parse Google Task to Brain event format"""
+    title = task.get("title") or "Untitled Task"
+    due = task.get("due") or ""
+    date = due[:10] if due else None
+    status = "completed" if task.get("status") == "completed" else "pending"
+
+    raw_parts = ["Time: All day", "Location: Google Tasks"]
+    if tasklist_title:
+        raw_parts[1] = f"Location: {tasklist_title}"
+    notes = (task.get("notes") or "").strip()
+    if notes:
+        raw_parts.append(f"Notes: {notes}")
+
     return {
-        'google_task_id': task.get('id'),
-        'title': task.get('title', 'Untitled Task'),
-        'date': due_date,
-        'type': 'assignment',  # Tasks are treated as assignments
-        'raw_text': f"Notes: {task.get('notes', 'No notes')}",
-        'status': 'completed' if task.get('status') == 'completed' else 'pending'
+        "google_task_id": task.get("id"),
+        "title": title,
+        "date": date,
+        "type": "assignment",
+        "raw_text": " | ".join(raw_parts),
+        "status": status,
     }
 
 
 def sync_tasks_to_database(course_id=None):
-    """Sync Google Tasks to database"""
-    # Get all task lists
+    """Sync Google Tasks into course events"""
     task_lists, error = fetch_task_lists()
     if error:
-        return {'success': False, 'error': error, 'imported': 0, 'skipped': 0}
-    
+        return {"success": False, "error": error, "imported": 0, "skipped": 0}
+
+    config = load_gcal_config() or {}
+    target_lists, list_error = resolve_task_lists(task_lists, config)
+    if list_error:
+        return {"success": False, "error": list_error, "imported": 0, "skipped": 0}
+
     imported = 0
     skipped = 0
-    
-    conn = sqlite3.connect(DB_PATH)
+
+    conn = get_connection()
     cursor = conn.cursor()
-    
-    for tasklist in task_lists:
-        tasks, error = fetch_tasks(tasklist.get('id', '@default'))
-        if error:
+
+    for tasklist in target_lists:
+        tasklist_id = tasklist.get("id")
+        if not tasklist_id:
             continue
-            
+
+        tasks, error = fetch_tasks(tasklist_id)
+        if error:
+            conn.close()
+            return {
+                "success": False,
+                "error": error,
+                "imported": imported,
+                "skipped": skipped,
+            }
+
         for task in tasks:
-            parsed = parse_google_task(task)
-            
-            # Check for duplicate (using title + date as we don't have google_task_id column)
+            parsed = parse_google_task(task, tasklist.get("title"))
+            if not parsed.get("date") or not parsed.get("google_task_id"):
+                skipped += 1
+                continue
+
+            google_event_id = f"task_{parsed['google_task_id']}"
             cursor.execute(
-                "SELECT id FROM course_events WHERE title = ? AND date = ? AND google_event_id = ?",
-                (parsed['title'], parsed['date'], f"task_{parsed['google_task_id']}")
+                "SELECT id FROM course_events WHERE google_event_id = ?",
+                (google_event_id,),
             )
             if cursor.fetchone():
                 skipped += 1
                 continue
-            
-            # Insert new task as event
-            cursor.execute("""
+
+            cursor.execute(
+                """
                 INSERT INTO course_events (course_id, type, title, date, raw_text, status, google_event_id, google_synced_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                course_id,
-                parsed['type'],
-                parsed['title'],
-                parsed['date'],
-                parsed['raw_text'],
-                parsed['status'],
-                f"task_{parsed['google_task_id']}",
-                datetime.now().isoformat()
-            ))
+            """,
+                (
+                    course_id,
+                    parsed["type"],
+                    parsed["title"],
+                    parsed["date"],
+                    parsed["raw_text"],
+                    parsed["status"],
+                    google_event_id,
+                    datetime.now().isoformat(),
+                ),
+            )
             imported += 1
-    
+
     conn.commit()
     conn.close()
-    
-    return {'success': True, 'imported': imported, 'skipped': skipped, 'source': 'tasks'}
+
+    return {
+        "success": True,
+        "imported": imported,
+        "skipped": skipped,
+        "source": "tasks",
+        "lists": [tasklist.get("title") for tasklist in target_lists],
+    }

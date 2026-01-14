@@ -45,7 +45,24 @@ python dashboard_web.py
 # Then open http://127.0.0.1:5000 in your browser
 ```
 
+### Calendar CLI (add/clear)
+
+```powershell
+cd brain
+# Quick add with natural language
+python calendar_cli.py add "Course: PTA 101 | Lecture Intro to Pelvis | next Tue 7pm"
+# Structured prompts
+python calendar_cli.py add --interactive
+# Clear calendar data (courses, course_events, study_tasks)
+python calendar_cli.py clear
+```
+
+Notes:
+- Quick add accepts `today`, `tomorrow`, `next Tue`, or `YYYY-MM-DD`.
+- Use `time:` and `location:` tags when you want those fields.
+
 ---
+
 
 ## Directory Structure
 

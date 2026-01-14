@@ -29,7 +29,16 @@ from config import (
     WEAK_THRESHOLD,
     STRONG_THRESHOLD,
 )
-from db_setup import DB_PATH, init_database, get_connection
+from db_setup import (
+    DB_PATH,
+    init_database,
+    get_connection,
+    compute_file_checksum,
+    is_file_ingested,
+    mark_file_ingested,
+    remove_ingested_file,
+    get_ingested_session_id,
+)
 # Use import directly for items in brain/ folder (root of execution)
 from ingest_session import parse_session_log, validate_session_data, insert_session
 from generate_resume import generate_resume
@@ -56,6 +65,9 @@ from dashboard.scholar import (
     generate_implementation_bundle,
     get_latest_insights,
     check_proposal_similarity,
+    build_ralph_summary,
+    load_proposal_running_sheet,
+    run_proposal_sheet_build,
     MAX_CONTEXT_CHARS,
 )
 from dashboard.syllabus import fetch_all_courses_and_events, attach_event_analytics
@@ -129,6 +141,24 @@ def api_scholar_insights():
     """Get key Scholar insights for dashboard overview display."""
     result = get_latest_insights()
     return jsonify(result)
+
+
+@dashboard_bp.route("/api/scholar/ralph")
+def api_scholar_ralph():
+    """Get Ralph run summary and progress details."""
+    return jsonify(build_ralph_summary())
+
+
+@dashboard_bp.route("/api/scholar/proposal-sheet", methods=["GET"])
+def api_scholar_proposal_sheet():
+    """Get the proposal running sheet summary."""
+    return jsonify(load_proposal_running_sheet())
+
+
+@dashboard_bp.route("/api/scholar/proposal-sheet/rebuild", methods=["POST"])
+def api_scholar_proposal_sheet_rebuild():
+    """Rebuild the proposal running sheet for final check."""
+    return jsonify(run_proposal_sheet_build())
 
 
 @dashboard_bp.route("/api/brain/status", methods=["GET"])
@@ -1817,6 +1847,32 @@ def api_upload():
     except Exception as exc:
         return jsonify({"ok": False, "message": f"Failed to save file: {exc}"}), 500
 
+    normalized_path = os.path.abspath(str(dest_path))
+    try:
+        checksum = compute_file_checksum(normalized_path)
+    except Exception as exc:
+        return jsonify({"ok": False, "message": f"Checksum error: {exc}"}), 500
+
+    conn = get_connection()
+    try:
+        already_ingested, existing_session_id = is_file_ingested(conn, normalized_path, checksum)
+        if already_ingested:
+            return jsonify({
+                "ok": True,
+                "message": "Already ingested (unchanged).",
+                "filename": filename,
+                "session_id": existing_session_id,
+            }), 200
+
+        old_session_id = get_ingested_session_id(conn, normalized_path)
+        if old_session_id:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM sessions WHERE id = ?", (old_session_id,))
+            remove_ingested_file(conn, normalized_path)
+            conn.commit()
+    finally:
+        conn.close()
+
     try:
         data = parse_session_log(dest_path)
     except Exception as exc:
@@ -1825,9 +1881,30 @@ def api_upload():
             400,
         )
 
-    ok, msg = insert_session_data(data)
+    data['source_path'] = normalized_path
+
+    is_valid, error = validate_session_data(data)
+    if not is_valid:
+        return jsonify({"ok": False, "message": f"Validation failed: {error}"}), 400
+
+    ok, msg = insert_session(data)
+    session_id = None
+    if ok:
+        conn = get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id FROM sessions WHERE session_date = ? AND main_topic = ? ORDER BY id DESC LIMIT 1",
+                (data.get('session_date'), data.get('main_topic')),
+            )
+            result = cursor.fetchone()
+            session_id = result[0] if result else None
+            mark_file_ingested(conn, normalized_path, checksum, session_id)
+        finally:
+            conn.close()
+
     status = 200 if ok else 400
-    return jsonify({"ok": ok, "message": msg, "filename": filename}), status
+    return jsonify({"ok": ok, "message": msg, "filename": filename, "session_id": session_id}), status
 
 
 @dashboard_bp.route("/api/quick_session", methods=["POST"])

@@ -2465,6 +2465,192 @@ def generate_implementation_bundle() -> Dict[str, Any]:
     }
 
 
+def build_ralph_summary() -> Dict[str, Any]:
+    """
+    Build a summary of Ralph runs from scripts/ralph.
+    Returns PRD status, progress log info, and latest run summary text.
+    """
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    ralph_dir = repo_root / "scripts" / "ralph"
+    if not ralph_dir.exists():
+        return {"ok": False, "message": "Ralph folder not found."}
+
+    result: Dict[str, Any] = {
+        "ok": True,
+        "progress": {},
+        "prd": {},
+        "latest_summary": {},
+    }
+
+    # Progress log summary
+    progress_path = ralph_dir / "progress.txt"
+    progress_info = {
+        "started": None,
+        "entries": 0,
+        "latest_story": None,
+    }
+    if progress_path.exists():
+        try:
+            lines = progress_path.read_text(encoding="utf-8").splitlines()
+            current = None
+            for line in lines:
+                if line.startswith("Started:"):
+                    progress_info["started"] = line.replace("Started:", "").strip()
+                header_match = re.match(r"^##\s+(\d{4}-\d{2}-\d{2})\s+-\s+(US-\d+)\b", line)
+                if header_match:
+                    progress_info["entries"] += 1
+                    current = {
+                        "date": header_match.group(1),
+                        "id": header_match.group(2),
+                    }
+                    progress_info["latest_story"] = current
+                    continue
+                if current and line.strip().startswith("- What was implemented:"):
+                    summary = line.split(":", 1)[1].strip()
+                    if summary:
+                        current["summary"] = summary
+        except Exception:
+            pass
+    result["progress"] = progress_info
+
+    # PRD summary
+    prd_path = ralph_dir / "prd.json"
+    if prd_path.exists():
+        try:
+            prd = json.loads(prd_path.read_text(encoding="utf-8"))
+            stories = prd.get("userStories", []) or []
+            total = len(stories)
+            passed = sum(1 for story in stories if story.get("passes") is True)
+            failing = total - passed
+            next_failing = None
+            for story in stories:
+                if not story.get("passes"):
+                    next_failing = f"{story.get('id', '')} - {story.get('title', '').strip()}".strip(" -")
+                    break
+            result["prd"] = {
+                "project": prd.get("project"),
+                "branch": prd.get("branchName"),
+                "total": total,
+                "passed": passed,
+                "failing": failing,
+                "next_failing": next_failing,
+            }
+        except Exception:
+            pass
+
+    # Latest run summary file
+    summary_dir = ralph_dir / "run_summaries"
+    latest_summary = {}
+    if summary_dir.exists():
+        try:
+            summary_files = list(summary_dir.glob("*.md")) + list(summary_dir.glob("*.txt"))
+            if summary_files:
+                latest_file = max(summary_files, key=lambda p: p.stat().st_mtime)
+                content = latest_file.read_text(encoding="utf-8")
+                generated = None
+                run_window = None
+                for line in content.splitlines():
+                    if line.startswith("- Generated:"):
+                        generated = line.replace("- Generated:", "").strip()
+                    if line.startswith("- Run window"):
+                        run_window = line.split(":", 1)[1].strip()
+                    if generated and run_window:
+                        break
+                latest_summary = {
+                    "file": str(latest_file.relative_to(repo_root)),
+                    "generated": generated,
+                    "run_window": run_window,
+                    "content": content,
+                }
+        except Exception:
+            pass
+    result["latest_summary"] = latest_summary
+
+    return result
+
+
+def load_proposal_running_sheet() -> Dict[str, Any]:
+    """
+    Load the proposal running sheet summary for the Scholar dashboard.
+    """
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    sheet_path = repo_root / "docs" / "roadmap" / "proposal_running_sheet.md"
+    if not sheet_path.exists():
+        return {"ok": False, "message": "Proposal running sheet not found."}
+
+    try:
+        content = sheet_path.read_text(encoding="utf-8")
+    except Exception as exc:
+        return {"ok": False, "message": f"Failed to read running sheet: {exc}"}
+
+    generated = None
+    total = None
+    drift = None
+    missing = None
+    for line in content.splitlines():
+        if line.startswith("- Generated:"):
+            generated = line.replace("- Generated:", "").strip()
+        elif line.startswith("- Total proposals:"):
+            try:
+                total = int(line.split(":", 1)[1].strip())
+            except Exception:
+                total = None
+        elif line.startswith("- Evidence drift flags:"):
+            try:
+                drift = int(line.split(":", 1)[1].strip())
+            except Exception:
+                drift = None
+        elif line.startswith("- Missing path flags:"):
+            try:
+                missing = int(line.split(":", 1)[1].strip())
+            except Exception:
+                missing = None
+
+    return {
+        "ok": True,
+        "path": str(sheet_path.relative_to(repo_root)),
+        "generated": generated,
+        "counts": {
+            "total": total,
+            "drift": drift,
+            "missing": missing,
+        },
+        "content": content,
+    }
+
+
+def run_proposal_sheet_build() -> Dict[str, Any]:
+    """
+    Rebuild proposal running sheet via scripts/build_proposal_sheet.py.
+    """
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    script_path = repo_root / "scripts" / "build_proposal_sheet.py"
+    if not script_path.exists():
+        return {"ok": False, "message": "build_proposal_sheet.py not found."}
+
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True,
+            text=True,
+            cwd=str(repo_root),
+            timeout=60,
+        )
+        if proc.returncode != 0:
+            stderr = (proc.stderr or "").strip()
+            stdout = (proc.stdout or "").strip()
+            return {
+                "ok": False,
+                "message": stderr or stdout or "Failed to rebuild running sheet.",
+            }
+    except Exception as exc:
+        return {"ok": False, "message": f"Failed to rebuild running sheet: {exc}"}
+
+    result = load_proposal_running_sheet()
+    result["rebuilt"] = True
+    return result
+
+
 # -----------------------------------------------------------------------------
 # Proposal Similarity Detection
 # -----------------------------------------------------------------------------

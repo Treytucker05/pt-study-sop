@@ -1,0 +1,224 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TREY'S STUDY SYSTEM - DESIGN TOKENS
+   90s Arcade Action Theme
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─────────────────────────────────────────────────────────────────────────
+     COLOR PALETTE
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* Surface Colors - Dark Graphite Scale */
+  --color-black: #000000;
+  --color-surface-0: #0A0A0A;    /* Deepest background */
+  --color-surface-1: #0F0F0F;    /* Card backgrounds */
+  --color-surface-2: #141414;    /* Elevated surfaces */
+  --color-surface-3: #1B1B1B;    /* Hover states */
+  --color-surface-4: #222222;    /* Active states */
+  --color-surface-5: #2A2A2A;    /* Borders, dividers */
+
+  /* Primary - Retro Red (Main Brand) */
+  --color-primary: #DC2626;
+  --color-primary-hover: #EF4444;
+  --color-primary-dark: #B91C1C;
+  --color-primary-muted: #7F1D1D;
+  --color-primary-glow: rgba(220, 38, 38, 0.6);
+
+  /* Accent - Cool Chrome Grey */
+  --color-accent: #6B7280;
+  --color-accent-light: #9CA3AF;
+  --color-accent-dark: #4B5563;
+
+  /* Semantic Colors */
+  --color-success: #10B981;
+  --color-success-dark: #065F46;
+  --color-warning: #F59E0B;
+  --color-warning-dark: #92400E;
+  --color-error: #EF4444;
+  --color-error-dark: #991B1B;
+  --color-info: #3B82F6;
+  --color-info-dark: #1E40AF;
+
+  /* Neon Accents (for highlights) */
+  --color-neon-pink: #FF0080;
+  --color-neon-cyan: #00FFFF;
+  --color-neon-yellow: #FFFF00;
+  --color-neon-purple: #A855F7;
+
+  /* Text Colors */
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #D1D5DB;
+  --color-text-muted: #6B7280;
+  --color-text-disabled: #4B5563;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     TYPOGRAPHY
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* Font Families */
+  --font-display: 'Orbitron', 'Space Grotesk', sans-serif;      /* Titles, headers */
+  --font-body: 'Space Grotesk', -apple-system, sans-serif;      /* Body text */
+  --font-pixel: 'Press Start 2P', 'VT323', monospace;           /* Pixel/retro text */
+  --font-terminal: 'VT323', monospace;                          /* Terminal/status */
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;        /* Code */
+
+  /* Font Sizes */
+  --text-xs: 0.6875rem;    /* 11px */
+  --text-sm: 0.75rem;      /* 12px */
+  --text-base: 0.875rem;   /* 14px */
+  --text-lg: 1rem;         /* 16px */
+  --text-xl: 1.125rem;     /* 18px */
+  --text-2xl: 1.5rem;      /* 24px */
+  --text-3xl: 2rem;        /* 32px */
+  --text-4xl: 2.5rem;      /* 40px */
+  --text-5xl: 3rem;        /* 48px */
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-black: 900;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     SPACING SCALE
+     ───────────────────────────────────────────────────────────────────────── */
+
+  --space-0: 0;
+  --space-1: 0.25rem;      /* 4px */
+  --space-2: 0.5rem;       /* 8px */
+  --space-3: 0.75rem;      /* 12px */
+  --space-4: 1rem;         /* 16px */
+  --space-5: 1.25rem;      /* 20px */
+  --space-6: 1.5rem;       /* 24px */
+  --space-8: 2rem;         /* 32px */
+  --space-10: 2.5rem;      /* 40px */
+  --space-12: 3rem;        /* 48px */
+  --space-16: 4rem;        /* 64px */
+  --space-20: 5rem;        /* 80px */
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     BORDER RADIUS
+     ───────────────────────────────────────────────────────────────────────── */
+
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     SHADOWS & GLOWS
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* Standard Shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.7);
+
+  /* Inset Shadows (for pressed states) */
+  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  --shadow-inset-lg: inset 0 4px 8px rgba(0, 0, 0, 0.6);
+
+  /* Glow Effects */
+  --glow-primary: 0 0 20px var(--color-primary-glow);
+  --glow-primary-lg: 0 0 40px var(--color-primary-glow);
+  --glow-neon-pink: 0 0 20px rgba(255, 0, 128, 0.6);
+  --glow-neon-cyan: 0 0 20px rgba(0, 255, 255, 0.6);
+  --glow-success: 0 0 15px rgba(16, 185, 129, 0.5);
+  --glow-warning: 0 0 15px rgba(245, 158, 11, 0.5);
+  --glow-error: 0 0 15px rgba(239, 68, 68, 0.5);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     BORDERS
+     ───────────────────────────────────────────────────────────────────────── */
+
+  --border-width: 1px;
+  --border-width-2: 2px;
+  --border-width-3: 3px;
+  --border-width-4: 4px;
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-hover: rgba(255, 255, 255, 0.15);
+  --border-color-focus: var(--color-primary);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     TRANSITIONS
+     ───────────────────────────────────────────────────────────────────────── */
+
+  --transition-fast: 0.1s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     Z-INDEX SCALE
+     ───────────────────────────────────────────────────────────────────────── */
+
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 800;
+  --z-modal-backdrop: 900;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+  --z-max: 9999;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     ARCADE-SPECIFIC EFFECTS
+     ───────────────────────────────────────────────────────────────────────── */
+
+  /* CRT Scanline overlay */
+  --crt-scanline: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0.3) 1px,
+    rgba(0, 0, 0, 0.3) 2px
+  );
+
+  /* Chrome text effect */
+  --text-shadow-chrome:
+    2px 2px 0 #ff0000,
+    4px 4px 0 #990000,
+    6px 6px 10px rgba(0, 0, 0, 0.8);
+
+  /* Neon glow text */
+  --text-shadow-neon-red:
+    0 0 10px var(--color-primary),
+    0 0 20px var(--color-primary),
+    0 0 40px var(--color-primary-dark);
+
+  --text-shadow-neon-cyan:
+    0 0 10px var(--color-neon-cyan),
+    0 0 20px var(--color-neon-cyan),
+    0 0 40px rgba(0, 255, 255, 0.4);
+
+  /* Metal/chrome gradient */
+  --gradient-chrome: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #d4d4d4 25%,
+    #737373 50%,
+    #525252 75%,
+    #262626 100%
+  );
+
+  /* Red action gradient */
+  --gradient-action: linear-gradient(
+    180deg,
+    #ef4444 0%,
+    #dc2626 50%,
+    #991b1b 100%
+  );
+
+  /* Dark panel gradient */
+  --gradient-panel: linear-gradient(
+    180deg,
+    var(--color-surface-2) 0%,
+    var(--color-surface-0) 100%
+  );
+}

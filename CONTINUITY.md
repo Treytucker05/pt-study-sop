@@ -1,34 +1,39 @@
-Goal (incl. success criteria):
-- Execute Ralph loop: identify highest-priority failing story in `scripts/ralph/prd.json`, implement it, run required checks, update `AGENTS.md` + `scripts/ralph/progress.txt` + `scripts/ralph/prd.json`, and commit; or confirm all stories pass and return `<promise>COMPLETE</promise>`.
+﻿Goal (incl. success criteria):
+- Restore the intended dashboard header (title, buttons, shrink behavior) and ensure Scholar/Ralph panels show in main.
 Constraints/Assumptions:
-- Follow `AGENTS.md` and Ralph instructions; keep edits minimal and additive.
-- Stay on current branch; avoid staging unrelated changes.
-- Update `CONTINUITY.md` each time goal/state changes.
-- Approval policy is `never`; avoid commands needing escalation.
+- Follow AGENTS.md; keep changes minimal and additive.
+- Update CONTINUITY.md each turn.
+- Run required checks or note skips: python -m pytest brain/tests, python scripts/release_check.py, manual Run_Brain_All.bat.
+- Ask before destructive or irreversible actions.
 Key decisions:
-- Target story: US-047 (Propose improvements for Scholar Orchestrator).
+- Apply only the Scholar/Ralph dashboard + proposal running sheet + local-state session scripts to main (not unrelated changes).
 State:
   - Done:
-    - Read `CONTINUITY.md`.
-    - Read `scripts/ralph/prd.json` and `scripts/ralph/progress.txt`.
-    - Checked branch status via git with explicit `GIT_DIR`/`GIT_WORK_TREE`.
-    - Read Scholar references: `scholar/README.md`, `scholar/CHARTER.md`, `scholar/inputs/audit_manifest.json`, `scholar/workflows/orchestrator_loop.md`.
-    - Reviewed orchestrator audit + research note evidence.
-    - Drafted `scholar/outputs/promotion_queue/scholar_orchestrator_proposal_seed_2026-01-12.md`.
-    - Ran `powershell.exe -Command "python -m pytest brain/tests"`.
-    - Ran `powershell.exe -Command "python scripts/release_check.py"`.
-    - Updated `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, and `AGENTS.md`.
+    - Copied Scholar/Ralph dashboard UI + API + proposal running sheet + local-state session scripts from ralph-readiness into main.
+    - Updated opencode launcher default project path to main so session worktrees launch from pt-study-sop.
+    - Copied `scripts/launch_codex_session.ps1` into main and updated `C:\Users\treyt\OneDrive\Desktop\LAUNCH_CODEX.bat` to default to main with error handling.
+    - Identified a background dashboard server on port 5000 and terminated it to avoid serving the old header.
+    - Restored top nav title text to "TREY'S STUDY SYSTEM" in main dashboard header.
+    - Removed Overview/v3.0/TT header elements and added scroll-driven header collapse behavior.
   - Now:
-    - Commit story changes.
+    - Confirm header matches intended layout; capture correct nav button labels/order.
   - Next:
-    - None.
+    - Adjust header buttons/labels to match your intended design.
+
 Open questions (UNCONFIRMED if needed):
-- None.
+- What exact button labels/order should the header use?
+
 Working set (files/ids/commands):
-- `CONTINUITY.md`
-- `scripts/ralph/prd.json`
-- `scripts/ralph/progress.txt`
-- `scholar/outputs/reports/scholar_orchestrator_audit_2026-01-12.md`
-- `scholar/outputs/research_notebook/scholar_orchestrator_research_2026-01-12.md`
-- `scholar/outputs/promotion_queue/scholar_orchestrator_proposal_seed_2026-01-12.md`
-- `AGENTS.md`
+- CONTINUITY.md
+- brain/templates/dashboard.html
+- brain/static/js/dashboard.js
+- brain/static/css/dashboard.css
+- brain/dashboard/scholar.py
+- brain/dashboard/routes.py
+- scripts/build_proposal_sheet.py
+- docs/roadmap/proposal_running_sheet.md
+- scripts/new_session_worktree.ps1
+- scripts/mark_local_state.ps1
+- scripts/launch_opencode_session.ps1
+- C:\Users\treyt\OneDrive\Desktop\opencode_openrouter.bat
+- C:\Users\treyt\OneDrive\Desktop\LAUNCH_CODEX.bat

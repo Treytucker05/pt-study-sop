@@ -89,6 +89,19 @@ function collapseAllSections(tabId) {
 // Call initCollapsibles on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', initCollapsibles);
 
+function initHeaderCollapse() {
+  const threshold = 140;
+  const apply = () => {
+    const collapsed = window.scrollY > threshold;
+    document.body.classList.toggle('header-collapsed', collapsed);
+  };
+  apply();
+  window.addEventListener('scroll', apply, { passive: true });
+  window.addEventListener('resize', apply);
+}
+
+document.addEventListener('DOMContentLoaded', initHeaderCollapse);
+
 // Scroll to top on page load to show hero logo
 window.addEventListener('load', () => {
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -430,6 +443,8 @@ function openTab(evt, tabName) {
   for (let i = 0; i < panels.length; i++) {
     panels[i].style.display = "none";
     panels[i].classList.remove("active");
+    panels[i].setAttribute("aria-hidden", "true");
+    panels[i].setAttribute("hidden", "");
   }
 
   // 2. Deactivate all tab controls (top nav, mobile, legacy, arcade, and any tab buttons)
@@ -441,6 +456,8 @@ function openTab(evt, tabName) {
   if (panel) {
     panel.style.display = "block";
     panel.classList.add("active");
+    panel.setAttribute("aria-hidden", "false");
+    panel.removeAttribute("hidden");
   }
 
   // 4. Activate specific button
@@ -456,13 +473,11 @@ function openTab(evt, tabName) {
       });
   }
 
-  // Update aria-current for top nav accessibility
-  document.querySelectorAll('.top-nav-item').forEach(item => {
-    if (item.getAttribute('data-tab') === tabName) {
-      item.setAttribute('aria-current', 'page');
-    } else {
-      item.removeAttribute('aria-current');
-    }
+  // Update tab accessibility state
+  document.querySelectorAll('[role="tab"]').forEach(item => {
+    const isActive = item.getAttribute('data-tab') === tabName;
+    item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    item.setAttribute('tabindex', isActive ? '0' : '-1');
   });
 
   // 5. Update Hash
@@ -2182,6 +2197,12 @@ async function loadScholar() {
     const res = await fetch('/api/scholar');
     const data = await res.json();
     renderScholar(data);
+    if (typeof loadRalphSummary === 'function') {
+      loadRalphSummary();
+    }
+    if (typeof loadProposalSheet === 'function') {
+      loadProposalSheet();
+    }
     // Also load saved digests
     if (typeof loadSavedDigests === 'function') {
       loadSavedDigests();
@@ -2513,6 +2534,179 @@ function renderScholar(data) {
   } else {
     latestRunContainer.textContent = 'No recent run data available.';
   }
+}
+
+async function loadRalphSummary() {
+  const contentEl = document.getElementById('ralph-summary-content');
+  if (!contentEl) return;
+  contentEl.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">Loading Ralph summary...</div>';
+  try {
+    const res = await fetch('/api/scholar/ralph');
+    const data = await res.json();
+    renderRalphSummary(data);
+  } catch (error) {
+    renderRalphSummary({ ok: false, message: error.message || 'Failed to load Ralph summary.' });
+  }
+}
+
+function renderRalphSummary(data) {
+  const contentEl = document.getElementById('ralph-summary-content');
+  const prdStatusEl = document.getElementById('ralph-prd-status');
+  const prdNextEl = document.getElementById('ralph-prd-next');
+  const progressMetaEl = document.getElementById('ralph-progress-meta');
+  const latestStoryEl = document.getElementById('ralph-latest-story');
+  const summaryMetaEl = document.getElementById('ralph-summary-meta');
+  const summaryFileEl = document.getElementById('ralph-summary-file');
+
+  if (!contentEl) return;
+
+  if (!data || !data.ok) {
+    const message = data && data.message ? data.message : 'Ralph data not available.';
+    contentEl.innerHTML = `<div style="color: var(--text-muted); font-size: 13px;">${message}</div>`;
+    if (prdStatusEl) prdStatusEl.textContent = '-';
+    if (prdNextEl) prdNextEl.textContent = '-';
+    if (progressMetaEl) progressMetaEl.textContent = '-';
+    if (latestStoryEl) latestStoryEl.textContent = '-';
+    if (summaryMetaEl) summaryMetaEl.textContent = '-';
+    if (summaryFileEl) summaryFileEl.textContent = '-';
+    return;
+  }
+
+  const prd = data.prd || {};
+  if (prdStatusEl) {
+    if (prd.total != null) {
+      const passed = prd.passed != null ? prd.passed : 0;
+      const failing = prd.failing != null ? prd.failing : (prd.total - passed);
+      prdStatusEl.textContent = `${passed}/${prd.total} passed • ${failing} failing`;
+    } else {
+      prdStatusEl.textContent = 'No PRD data';
+    }
+  }
+  if (prdNextEl) {
+    prdNextEl.textContent = prd.next_failing ? `Next: ${prd.next_failing}` : 'All stories passed';
+  }
+
+  const progress = data.progress || {};
+  if (progressMetaEl) {
+    const parts = [];
+    if (progress.started) parts.push(`Started ${progress.started}`);
+    if (progress.entries != null) parts.push(`${progress.entries} entries`);
+    progressMetaEl.textContent = parts.length ? parts.join(' • ') : 'No progress log';
+  }
+  if (latestStoryEl) {
+    if (progress.latest_story) {
+      let summaryText = progress.latest_story.id || 'Latest story';
+      if (progress.latest_story.summary) {
+        summaryText += ` — ${progress.latest_story.summary}`;
+      }
+      if (summaryText.length > 160) {
+        summaryText = `${summaryText.slice(0, 157)}...`;
+      }
+      latestStoryEl.textContent = summaryText;
+    } else {
+      latestStoryEl.textContent = 'No story entries found';
+    }
+  }
+
+  const latest = data.latest_summary || {};
+  if (summaryMetaEl) {
+    if (latest.generated) {
+      summaryMetaEl.textContent = `Generated ${latest.generated}`;
+    } else {
+      summaryMetaEl.textContent = 'No run summary found';
+    }
+  }
+  if (summaryFileEl) {
+    const parts = [];
+    if (latest.run_window) parts.push(latest.run_window);
+    if (latest.file) parts.push(latest.file);
+    summaryFileEl.textContent = parts.length ? parts.join(' • ') : '-';
+  }
+
+  if (latest.content) {
+    contentEl.textContent = latest.content;
+  } else {
+    contentEl.textContent = 'No run summary content available.';
+  }
+}
+
+async function loadProposalSheet() {
+  const contentEl = document.getElementById('proposal-sheet-content');
+  if (!contentEl) return;
+  contentEl.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">Loading proposal running sheet...</div>';
+  try {
+    const res = await fetch('/api/scholar/proposal-sheet');
+    const data = await res.json();
+    renderProposalSheet(data);
+  } catch (error) {
+    renderProposalSheet({ ok: false, message: error.message || 'Failed to load proposal running sheet.' });
+  }
+}
+
+function renderProposalSheet(data) {
+  const contentEl = document.getElementById('proposal-sheet-content');
+  const metaEl = document.getElementById('proposal-sheet-meta');
+  const totalEl = document.getElementById('proposal-sheet-total');
+  const driftEl = document.getElementById('proposal-sheet-drift');
+  const missingEl = document.getElementById('proposal-sheet-missing');
+  const generatedEl = document.getElementById('proposal-sheet-generated');
+
+  if (!contentEl) return;
+
+  if (!data || !data.ok) {
+    const message = data && data.message ? data.message : 'Proposal running sheet not available.';
+    contentEl.innerHTML = `<div style="color: var(--text-muted); font-size: 13px;">${message}</div>`;
+    if (metaEl) metaEl.textContent = message;
+    if (totalEl) totalEl.textContent = '-';
+    if (driftEl) driftEl.textContent = '-';
+    if (missingEl) missingEl.textContent = '-';
+    if (generatedEl) generatedEl.textContent = '-';
+    return;
+  }
+
+  const counts = data.counts || {};
+  if (totalEl) totalEl.textContent = counts.total != null ? counts.total : '-';
+  if (driftEl) driftEl.textContent = counts.drift != null ? counts.drift : '-';
+  if (missingEl) missingEl.textContent = counts.missing != null ? counts.missing : '-';
+  if (generatedEl) generatedEl.textContent = data.generated || '-';
+  if (metaEl) metaEl.textContent = data.path ? `File: ${data.path}` : '';
+  contentEl.textContent = data.content || 'No running sheet content available.';
+}
+
+async function rebuildProposalSheet() {
+  const metaEl = document.getElementById('proposal-sheet-meta');
+  if (metaEl) metaEl.textContent = 'Running final check...';
+  try {
+    const res = await fetch('/api/scholar/proposal-sheet/rebuild', { method: 'POST' });
+    const data = await res.json();
+    renderProposalSheet(data);
+    if (data && data.ok && metaEl && data.path) {
+      metaEl.textContent = `File: ${data.path} • Final check complete`;
+    }
+  } catch (error) {
+    renderProposalSheet({ ok: false, message: error.message || 'Failed to rebuild proposal running sheet.' });
+  }
+}
+
+const btnRalphRefresh = document.getElementById('btn-ralph-refresh');
+if (btnRalphRefresh) {
+  btnRalphRefresh.addEventListener('click', () => {
+    loadRalphSummary();
+  });
+}
+
+const btnProposalSheetRefresh = document.getElementById('btn-proposal-sheet-refresh');
+if (btnProposalSheetRefresh) {
+  btnProposalSheetRefresh.addEventListener('click', () => {
+    loadProposalSheet();
+  });
+}
+
+const btnProposalSheetFinalCheck = document.getElementById('btn-proposal-sheet-final-check');
+if (btnProposalSheetFinalCheck) {
+  btnProposalSheetFinalCheck.addEventListener('click', () => {
+    rebuildProposalSheet();
+  });
 }
 
 // Scholar run handling
@@ -3369,8 +3563,8 @@ async function loadCalendar() {
   endDate.setDate(0); // Last day of that month
 
   const params = new URLSearchParams({
-    start_date: startDate.toISOString().split('T')[0],
-    end_date: endDate.toISOString().split('T')[0],
+    start_date: formatLocalDate(startDate),
+    end_date: formatLocalDate(endDate),
   });
   if (courseId) params.append('course_id', courseId);
   if (eventType) params.append('event_type', eventType);
@@ -3430,6 +3624,17 @@ function parseEventDetails(rawText) {
   return result;
 }
 
+function formatLocalDate(dateInput) {
+  const date = dateInput instanceof Date ? new Date(dateInput.getTime()) : new Date(dateInput);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 /**
  * Get icon for event type
  */
@@ -3479,7 +3684,7 @@ function renderWeekView() {
   weekStart.setDate(today.getDate() - dayOfWeek);
 
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const nowStr = new Date().toISOString().split('T')[0];
+  const nowStr = formatLocalDate(new Date());
 
   // Week view uses same grid as month but only 1 row of days
   let html = '';
@@ -3493,7 +3698,7 @@ function renderWeekView() {
   for (let i = 0; i < 7; i++) {
     const currentDay = new Date(weekStart);
     currentDay.setDate(weekStart.getDate() + i);
-    const dateStr = currentDay.toISOString().split('T')[0];
+    const dateStr = formatLocalDate(currentDay);
     const isToday = dateStr === nowStr;
 
     // Filter events for this day
@@ -3568,8 +3773,8 @@ function renderDayView() {
   calendarData.sessions = calendarData.sessions || [];
 
   const today = new Date(currentCalendarDate);
-  const dateStr = today.toISOString().split('T')[0];
-  const nowStr = new Date().toISOString().split('T')[0];
+  const dateStr = formatLocalDate(today);
+  const nowStr = formatLocalDate(new Date());
   const isToday = dateStr === nowStr;
 
   // Filter events for this day
@@ -4904,7 +5109,7 @@ if (btnAddPlanned) {
 // Set today's date as default for plan session date input
 const planDateInput = document.getElementById('plan-session-date');
 if (planDateInput) {
-  planDateInput.value = new Date().toISOString().split('T')[0];
+  planDateInput.value = formatLocalDate(new Date());
 }
 
 // Initialize immediately

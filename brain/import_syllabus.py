@@ -84,7 +84,9 @@ def _normalize_event_input(ev: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _event_dedupe_key(course_id: int, ev: Dict[str, Any]) -> Tuple[int, str, str, str, str, float, str]:
+def _event_dedupe_key(
+    course_id: int, ev: Dict[str, Any]
+) -> Tuple[int, str, str, str, str, float, str]:
     """Key used to detect duplicate course_events rows."""
     return (
         int(course_id),
@@ -128,7 +130,94 @@ def _parse_created_at(value: Optional[str]) -> datetime:
         return datetime.max
 
 
-def _prefer_event(existing: Dict[str, Any], candidate: Dict[str, Any]) -> Dict[str, Any]:
+def _normalize_course_key(
+    name: Any, code: Any, term: Any
+) -> Optional[Tuple[str, str, str]]:
+    name_norm = _normalize_str(name).lower()
+    code_norm = _normalize_str(code).lower()
+    term_norm = _normalize_str(term).lower()
+    if not (name_norm and code_norm and term_norm):
+        return None
+    return (name_norm, code_norm, term_norm)
+
+
+def merge_duplicate_courses(
+    target_key: Optional[Tuple[str, str, str]] = None,
+) -> Dict[str, Any]:
+    """Merge duplicate courses by normalized (name, code, term) key."""
+    init_database()
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT id, name, code, term, created_at FROM courses")
+    rows = cur.fetchall()
+
+    groups: Dict[Tuple[str, str, str], List[Dict[str, Any]]] = {}
+    for row in rows:
+        key = _normalize_course_key(row[1], row[2], row[3])
+        if not key:
+            continue
+        if target_key and key != target_key:
+            continue
+        groups.setdefault(key, []).append(
+            {
+                "id": int(row[0]),
+                "name": row[1],
+                "code": row[2],
+                "term": row[3],
+                "created_at": row[4],
+            }
+        )
+
+    merge_details = []
+    update_tables = [
+        "course_events",
+        "scraped_events",
+        "topics",
+        "study_tasks",
+        "rag_docs",
+        "tutor_turns",
+        "card_drafts",
+    ]
+
+    for key, items in groups.items():
+        if len(items) < 2:
+            continue
+        items.sort(
+            key=lambda item: (_parse_created_at(item.get("created_at")), item["id"])
+        )
+        keep = items[0]
+        merged_ids = []
+        for dup in items[1:]:
+            dup_id = dup["id"]
+            for table in update_tables:
+                cur.execute(
+                    f"UPDATE {table} SET course_id = ? WHERE course_id = ?",
+                    (keep["id"], dup_id),
+                )
+            cur.execute("DELETE FROM courses WHERE id = ?", (dup_id,))
+            merged_ids.append(dup_id)
+
+        merge_details.append(
+            {
+                "key": {"name": key[0], "code": key[1], "term": key[2]},
+                "kept_id": keep["id"],
+                "merged_ids": merged_ids,
+            }
+        )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "merged_count": len(merge_details),
+        "details": merge_details,
+    }
+
+
+def _prefer_event(
+    existing: Dict[str, Any], candidate: Dict[str, Any]
+) -> Dict[str, Any]:
     """Choose which event to keep when duplicates share the same key."""
     existing_status = (_normalize_str(existing.get("status")) or "pending").lower()
     candidate_status = (_normalize_str(candidate.get("status")) or "pending").lower()
@@ -163,9 +252,20 @@ def upsert_course(course_data: Dict[str, Any]) -> int:
     time_budget = int(course_data.get("time_budget_per_week_minutes", 0) or 0)
     now = datetime.now().isoformat(timespec="seconds")
 
-    # Try to find an existing course by code+term (preferred), then by name.
+    # Try to find an existing course by code+term+name (preferred), then code+term, then name.
     course_id: Optional[int] = None
-    if code and term:
+    if name and code and term:
+        cur.execute(
+            """
+            SELECT id FROM courses
+            WHERE lower(name) = ? AND lower(code) = ? AND lower(term) = ?
+            """,
+            (name.lower(), code.lower(), term.lower()),
+        )
+        row = cur.fetchone()
+        if row:
+            course_id = row[0]
+    if course_id is None and code and term:
         cur.execute(
             """
             SELECT id FROM courses
@@ -429,4 +529,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

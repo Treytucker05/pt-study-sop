@@ -1,0 +1,1211 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TREY'S STUDY SYSTEM - STYLE VARIANTS
+   5 different 90s arcade themes to choose from
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BUTTON VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Style 1: PIXEL PRESS - Classic 8-bit pixel art style */
+.arc-btn--pixel {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  padding: 12px 20px;
+  background: #1a1a2e;
+  border: 4px solid #16213e;
+  border-radius: 0;
+  box-shadow:
+    4px 4px 0 #0f0f23,
+    inset -2px -2px 0 #0f0f23,
+    inset 2px 2px 0 #2a2a4e;
+  color: #fff;
+  text-shadow: 2px 2px 0 #000;
+  image-rendering: pixelated;
+}
+
+.arc-btn--pixel:hover {
+  background: #e94560;
+  border-color: #ff6b6b;
+  box-shadow:
+    4px 4px 0 #0f0f23,
+    inset -2px -2px 0 #c73e54,
+    inset 2px 2px 0 #ff8080;
+  transform: none;
+}
+
+.arc-btn--pixel:active {
+  box-shadow:
+    2px 2px 0 #0f0f23,
+    inset 2px 2px 0 #0f0f23;
+  transform: translate(2px, 2px);
+}
+
+/* Style 2: NEON SYNTHWAVE - Glowing neon cyberpunk */
+.arc-btn--neon {
+  font-family: var(--font-display);
+  font-size: 13px;
+  padding: 14px 28px;
+  background: transparent;
+  border: 2px solid #ff00ff;
+  border-radius: 4px;
+  color: #ff00ff;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  box-shadow:
+    0 0 10px #ff00ff,
+    0 0 20px rgba(255, 0, 255, 0.5),
+    inset 0 0 10px rgba(255, 0, 255, 0.1);
+  text-shadow:
+    0 0 10px #ff00ff,
+    0 0 20px #ff00ff;
+}
+
+.arc-btn--neon:hover {
+  background: rgba(255, 0, 255, 0.1);
+  box-shadow:
+    0 0 20px #ff00ff,
+    0 0 40px rgba(255, 0, 255, 0.7),
+    0 0 60px rgba(255, 0, 255, 0.4),
+    inset 0 0 20px rgba(255, 0, 255, 0.2);
+  transform: none;
+}
+
+.arc-btn--neon-cyan {
+  border-color: #00ffff;
+  color: #00ffff;
+  box-shadow:
+    0 0 10px #00ffff,
+    0 0 20px rgba(0, 255, 255, 0.5),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+  text-shadow:
+    0 0 10px #00ffff,
+    0 0 20px #00ffff;
+}
+
+/* Style 3: CHROME METAL - Shiny metallic 90s look */
+.arc-btn--chrome {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 14px 28px;
+  background: linear-gradient(180deg,
+    #f0f0f0 0%,
+    #c0c0c0 20%,
+    #808080 50%,
+    #606060 80%,
+    #404040 100%);
+  border: 3px solid;
+  border-color: #ffffff #404040 #404040 #ffffff;
+  border-radius: 6px;
+  color: #000;
+  text-shadow: 1px 1px 0 #fff;
+  box-shadow:
+    4px 4px 8px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.arc-btn--chrome:hover {
+  background: linear-gradient(180deg,
+    #ffffff 0%,
+    #d0d0d0 20%,
+    #909090 50%,
+    #707070 80%,
+    #505050 100%);
+  transform: none;
+  box-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* Style 4: FIGHTING GAME - Street Fighter / Tekken style */
+.arc-btn--fighter {
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  padding: 16px 32px;
+  background: linear-gradient(180deg, #ffcc00 0%, #ff9900 50%, #cc6600 100%);
+  border: 4px solid #000;
+  border-radius: 8px;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow:
+    0 6px 0 #663300,
+    0 8px 10px rgba(0, 0, 0, 0.5),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  transform: perspective(100px) rotateX(5deg);
+}
+
+.arc-btn--fighter:hover {
+  background: linear-gradient(180deg, #ffdd33 0%, #ffaa00 50%, #dd7700 100%);
+  transform: perspective(100px) rotateX(5deg) translateY(-2px);
+  box-shadow:
+    0 8px 0 #663300,
+    0 12px 15px rgba(0, 0, 0, 0.5),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4);
+}
+
+.arc-btn--fighter:active {
+  transform: perspective(100px) rotateX(5deg) translateY(2px);
+  box-shadow:
+    0 2px 0 #663300,
+    0 4px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Style 5: ARCADE CABINET - Physical arcade button look */
+.arc-btn--cabinet {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 16px 24px;
+  background: radial-gradient(ellipse at 30% 30%, #ff4444 0%, #cc0000 50%, #880000 100%);
+  border: 4px solid #440000;
+  border-radius: 50px;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow:
+    0 8px 0 #440000,
+    0 10px 20px rgba(0, 0, 0, 0.6),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.4),
+    inset 0 4px 10px rgba(255, 255, 255, 0.2);
+}
+
+.arc-btn--cabinet:hover {
+  background: radial-gradient(ellipse at 30% 30%, #ff6666 0%, #ee0000 50%, #aa0000 100%);
+  box-shadow:
+    0 8px 0 #440000,
+    0 10px 25px rgba(255, 0, 0, 0.4),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.4),
+    inset 0 4px 10px rgba(255, 255, 255, 0.3);
+  transform: none;
+}
+
+.arc-btn--cabinet:active {
+  box-shadow:
+    0 2px 0 #440000,
+    0 4px 10px rgba(0, 0, 0, 0.6),
+    inset 0 4px 10px rgba(0, 0, 0, 0.5);
+  transform: translateY(6px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CARD VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Style 1: PIXEL FRAME - 8-bit bordered card */
+.arc-card--pixel {
+  background: #1a1a2e;
+  border: 4px solid #16213e;
+  border-radius: 0;
+  padding: 16px;
+  box-shadow:
+    6px 6px 0 #0f0f23,
+    inset -3px -3px 0 #0f0f23,
+    inset 3px 3px 0 #2a2a4e;
+  image-rendering: pixelated;
+}
+
+.arc-card--pixel::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 2px dashed #3a3a5e;
+  pointer-events: none;
+}
+
+/* Style 2: NEON BORDER - Glowing outline card */
+.arc-card--neon-border {
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #00ffff;
+  border-radius: 8px;
+  padding: 20px;
+  position: relative;
+  box-shadow:
+    0 0 15px rgba(0, 255, 255, 0.5),
+    0 0 30px rgba(0, 255, 255, 0.2),
+    inset 0 0 30px rgba(0, 255, 255, 0.05);
+}
+
+.arc-card--neon-border::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff);
+  border-radius: 10px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.arc-card--neon-border:hover::before {
+  opacity: 1;
+}
+
+/* Style 3: CHROME PANEL - Metallic beveled card */
+.arc-card--chrome-panel {
+  background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 50%, #1a1a1a 100%);
+  border: 3px solid;
+  border-color: #555 #222 #222 #555;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow:
+    4px 4px 10px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.arc-card--chrome-panel::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+}
+
+/* Style 4: FIGHTING SELECT - Character select card style */
+.arc-card--select {
+  background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
+  border: 4px solid #ffd700;
+  border-radius: 0;
+  padding: 16px;
+  position: relative;
+  box-shadow:
+    0 0 20px rgba(255, 215, 0, 0.3),
+    inset 0 0 40px rgba(255, 215, 0, 0.05);
+}
+
+.arc-card--select::before {
+  content: '▶';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffd700;
+  font-size: 20px;
+  text-shadow: 0 0 10px #ffd700;
+  animation: select-blink 0.5s infinite;
+}
+
+@keyframes select-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Style 5: ARCADE SCREEN - CRT monitor look */
+.arc-card--crt {
+  background: #000;
+  border: 8px solid #333;
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  box-shadow:
+    inset 0 0 100px rgba(0, 255, 0, 0.03),
+    0 0 20px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.arc-card--crt::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0.3) 1px,
+    rgba(0, 0, 0, 0.3) 2px
+  );
+  pointer-events: none;
+}
+
+.arc-card--crt::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BADGE VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Style 1: PIXEL BADGE */
+.arc-badge--pixel {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 6px 10px;
+  background: #e94560;
+  border: 2px solid #0f0f23;
+  border-radius: 0;
+  color: #fff;
+  box-shadow: 2px 2px 0 #0f0f23;
+}
+
+/* Style 2: NEON BADGE */
+.arc-badge--neon-glow {
+  font-family: var(--font-display);
+  font-size: 11px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid #00ffff;
+  border-radius: 20px;
+  color: #00ffff;
+  box-shadow: 0 0 10px #00ffff, inset 0 0 10px rgba(0, 255, 255, 0.1);
+  text-shadow: 0 0 5px #00ffff;
+}
+
+/* Style 3: CHROME BADGE */
+.arc-badge--chrome {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 14px;
+  background: linear-gradient(180deg, #e0e0e0 0%, #a0a0a0 50%, #808080 100%);
+  border: 2px solid;
+  border-color: #fff #666 #666 #fff;
+  border-radius: 4px;
+  color: #000;
+  text-shadow: 1px 1px 0 #fff;
+}
+
+/* Style 4: FIGHTER BADGE - KO style */
+.arc-badge--fighter {
+  font-family: 'Impact', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
+  padding: 4px 12px;
+  background: linear-gradient(180deg, #ff0000 0%, #cc0000 100%);
+  border: 3px solid #000;
+  border-radius: 4px;
+  color: #ffff00;
+  text-shadow: 2px 2px 0 #000;
+  transform: skewX(-5deg);
+}
+
+/* Style 5: LCD BADGE - Digital display look */
+.arc-badge--lcd {
+  font-family: var(--font-terminal);
+  font-size: 16px;
+  padding: 4px 12px;
+  background: #1a2f1a;
+  border: 2px solid #0a1f0a;
+  border-radius: 4px;
+  color: #33ff33;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 5px #33ff33;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   INPUT VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Style 1: PIXEL INPUT */
+.arc-input--pixel {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  padding: 12px 16px;
+  background: #1a1a2e;
+  border: 3px solid #16213e;
+  border-radius: 0;
+  color: #fff;
+  box-shadow:
+    inset 3px 3px 0 #0f0f23,
+    3px 3px 0 #0f0f23;
+}
+
+.arc-input--pixel:focus {
+  border-color: #e94560;
+  box-shadow:
+    inset 3px 3px 0 #0f0f23,
+    3px 3px 0 #e94560;
+}
+
+/* Style 2: NEON INPUT */
+.arc-input--neon {
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 14px 18px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #333;
+  border-radius: 4px;
+  color: #00ffff;
+  transition: all 0.3s;
+}
+
+.arc-input--neon:focus {
+  border-color: #00ffff;
+  box-shadow:
+    0 0 15px rgba(0, 255, 255, 0.5),
+    inset 0 0 15px rgba(0, 255, 255, 0.1);
+  outline: none;
+}
+
+/* Style 3: CHROME INPUT */
+.arc-input--chrome {
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  border: 3px solid;
+  border-color: #222 #555 #555 #222;
+  border-radius: 4px;
+  color: #ddd;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.arc-input--chrome:focus {
+  border-color: #444 #777 #777 #444;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 5px rgba(255,255,255,0.1);
+}
+
+/* Style 4: FIGHTER INPUT */
+.arc-input--fighter {
+  font-family: 'Arial Black', sans-serif;
+  font-size: 14px;
+  padding: 14px 18px;
+  background: #1a1a1a;
+  border: 4px solid #ffd700;
+  border-radius: 0;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.arc-input--fighter:focus {
+  background: #2a2a1a;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+/* Style 5: CRT INPUT */
+.arc-input--crt {
+  font-family: var(--font-terminal);
+  font-size: 18px;
+  padding: 12px 16px;
+  background: #0a0a0a;
+  border: 4px solid #333;
+  border-radius: 8px;
+  color: #33ff33;
+  text-shadow: 0 0 5px #33ff33;
+  box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.05);
+}
+
+.arc-input--crt:focus {
+  box-shadow: inset 0 0 30px rgba(0, 255, 0, 0.1), 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HEADER/TITLE VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Style 1: PIXEL TITLE */
+.arc-title--pixel {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 24px;
+  color: #e94560;
+  text-shadow:
+    4px 4px 0 #0f0f23,
+    -1px -1px 0 #ff6b6b;
+  letter-spacing: 0.05em;
+}
+
+/* Style 2: NEON TITLE */
+.arc-title--neon {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow:
+    0 0 10px #ff00ff,
+    0 0 20px #ff00ff,
+    0 0 40px #ff00ff,
+    0 0 80px #ff00ff;
+  letter-spacing: 0.1em;
+}
+
+/* Style 3: CHROME TITLE */
+.arc-title--chrome {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 900;
+  background: linear-gradient(180deg, #fff 0%, #aaa 40%, #666 60%, #333 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(3px 3px 0 #000);
+  letter-spacing: 0.05em;
+}
+
+/* Style 4: FIGHTER TITLE - Impact style */
+.arc-title--fighter {
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-size: 56px;
+  font-weight: 900;
+  color: #ffcc00;
+  text-shadow:
+    3px 3px 0 #000,
+    6px 6px 0 #663300,
+    -2px -2px 0 #fff;
+  letter-spacing: 0.02em;
+  transform: perspective(200px) rotateX(10deg);
+}
+
+/* Style 5: ARCADE TITLE - Classic marquee */
+.arc-title--marquee {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 900;
+  color: #ff0000;
+  text-shadow:
+    0 0 10px #ff0000,
+    0 0 20px #ff0000,
+    4px 4px 0 #000;
+  letter-spacing: 0.15em;
+  animation: marquee-flicker 0.1s infinite;
+}
+
+@keyframes marquee-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.95; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DIVIDER VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Style 1: PIXEL DIVIDER */
+.arc-divider--pixel {
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    #e94560 0px,
+    #e94560 8px,
+    transparent 8px,
+    transparent 16px
+  );
+  border: none;
+  box-shadow: 2px 2px 0 #0f0f23;
+}
+
+/* Style 2: NEON DIVIDER */
+.arc-divider--neon-line {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00ffff, transparent);
+  border: none;
+  box-shadow:
+    0 0 10px #00ffff,
+    0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+/* Style 3: CHROME DIVIDER */
+.arc-divider--chrome-bar {
+  height: 6px;
+  background: linear-gradient(180deg, #666 0%, #333 50%, #111 100%);
+  border: 1px solid;
+  border-color: #888 #222 #222 #888;
+  border-radius: 3px;
+}
+
+/* Style 4: FIGHTER DIVIDER - Yellow hazard stripe */
+.arc-divider--hazard {
+  height: 8px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #ffcc00 0px,
+    #ffcc00 10px,
+    #000 10px,
+    #000 20px
+  );
+  border: 2px solid #000;
+}
+
+/* Style 5: SCANLINE DIVIDER */
+.arc-divider--scanline {
+  height: 20px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(255, 0, 0, 0.1) 2px,
+      rgba(255, 0, 0, 0.1) 4px
+    ),
+    linear-gradient(90deg, transparent 0%, #ff0000 50%, transparent 100%);
+  border: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PROGRESS BAR VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Style 1: PIXEL PROGRESS */
+.arc-progress--pixel {
+  height: 20px;
+  background: #1a1a2e;
+  border: 3px solid #16213e;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: inset 2px 2px 0 #0f0f23, 2px 2px 0 #0f0f23;
+  position: relative;
+}
+
+.arc-progress--pixel-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #e94560, #ff6b6b);
+  width: 0%;
+  transition: width 0.4s ease;
+  box-shadow: inset -2px -2px 0 rgba(0,0,0,0.5);
+}
+
+/* Style 2: NEON PROGRESS */
+.arc-progress--neon {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+.arc-progress--neon-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+  width: 0%;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 10px #00ffff, 0 0 20px rgba(0,255,255,0.5);
+}
+
+/* Style 3: CHROME PROGRESS */
+.arc-progress--chrome {
+  height: 18px;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  border: 3px solid;
+  border-color: #444 #222 #222 #444;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+.arc-progress--chrome-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4a90e2 0%, #357abd 100%);
+  width: 0%;
+  transition: width 0.4s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+/* Style 4: FIGHTER PROGRESS */
+.arc-progress--fighter {
+  height: 24px;
+  background: #1a1a1a;
+  border: 4px solid #ffcc00;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+.arc-progress--fighter-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ffaa00 0%, #ff6600 100%);
+  width: 0%;
+  transition: width 0.4s ease;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.2);
+}
+
+/* Style 5: CRT PROGRESS */
+.arc-progress--crt {
+  height: 16px;
+  background: #0a0a0a;
+  border: 3px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: inset 0 0 15px rgba(0,255,0,0.1);
+  position: relative;
+}
+
+.arc-progress--crt-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e 0%, #86efac 100%);
+  width: 0%;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 10px #22c55e;
+  text-shadow: 0 0 5px #22c55e;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TOGGLE SWITCH VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Base Toggle */
+.arc-toggle {
+  display: inline-block;
+  position: relative;
+  width: 50px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.arc-toggle input {
+  display: none;
+}
+
+/* Style 1: PIXEL TOGGLE */
+.arc-toggle--pixel {
+  display: inline-block;
+  position: relative;
+  width: 50px;
+  height: 30px;
+}
+
+.arc-toggle--pixel input:checked + .arc-toggle-slider--pixel {
+  background: #e94560;
+}
+
+.arc-toggle-slider--pixel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1a1a2e;
+  border: 3px solid #16213e;
+  border-radius: 0;
+  box-shadow: inset 2px 2px 0 #0f0f23, 2px 2px 0 #0f0f23;
+  transition: 0.3s;
+}
+
+.arc-toggle-slider--pixel::before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  top: 2px;
+  background: #2a2a4e;
+  border: 2px solid #16213e;
+  transition: 0.3s;
+}
+
+input:checked + .arc-toggle-slider--pixel::before {
+  transform: translateX(20px);
+}
+
+/* Style 2: NEON TOGGLE */
+.arc-toggle--neon input:checked + .arc-toggle-slider--neon {
+  border-color: #ff00ff;
+  box-shadow: 0 0 10px #ff00ff, inset 0 0 10px rgba(255,0,255,0.1);
+}
+
+.arc-toggle-slider--neon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.8);
+  border: 2px solid #333;
+  border-radius: 20px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  transition: 0.3s;
+}
+
+.arc-toggle-slider--neon::before {
+  content: '';
+  position: absolute;
+  height: 22px;
+  width: 22px;
+  left: 2px;
+  top: 2px;
+  background: radial-gradient(circle, #00ffff, #009999);
+  border-radius: 50%;
+  box-shadow: 0 0 5px #00ffff;
+  transition: 0.3s;
+}
+
+input:checked + .arc-toggle-slider--neon::before {
+  transform: translateX(24px);
+  box-shadow: 0 0 10px #ff00ff;
+}
+
+/* Style 3: CHROME TOGGLE */
+.arc-toggle--chrome input:checked + .arc-toggle-slider--chrome {
+  background: linear-gradient(180deg, #4a90e2, #357abd);
+}
+
+.arc-toggle-slider--chrome {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, #505050, #303030);
+  border: 3px solid;
+  border-color: #666 #222 #222 #666;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: 0.3s;
+}
+
+.arc-toggle-slider--chrome::before {
+  content: '';
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  top: 2px;
+  background: linear-gradient(180deg, #c0c0c0, #808080);
+  border: 2px solid;
+  border-color: #fff #333 #333 #fff;
+  transition: 0.3s;
+}
+
+input:checked + .arc-toggle-slider--chrome::before {
+  transform: translateX(20px);
+}
+
+/* Style 4: FIGHTER TOGGLE */
+.arc-toggle--fighter input:checked + .arc-toggle-slider--fighter {
+  background: linear-gradient(90deg, #ff6600, #ffaa00);
+}
+
+.arc-toggle-slider--fighter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1a1a1a;
+  border: 4px solid #ffcc00;
+  border-radius: 0;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  transition: 0.3s;
+}
+
+.arc-toggle-slider--fighter::before {
+  content: '';
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  top: 2px;
+  background: #ffcc00;
+  transition: 0.3s;
+}
+
+input:checked + .arc-toggle-slider--fighter::before {
+  transform: translateX(20px);
+}
+
+/* Style 5: CRT TOGGLE */
+.arc-toggle--crt input:checked + .arc-toggle-slider--crt {
+  border-color: #22c55e;
+  box-shadow: 0 0 10px #22c55e, inset 0 0 10px rgba(34,197,95,0.1);
+}
+
+.arc-toggle-slider--crt {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0a0a0a;
+  border: 3px solid #333;
+  border-radius: 6px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+  transition: 0.3s;
+}
+
+.arc-toggle-slider--crt::before {
+  content: '';
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  top: 3px;
+  background: #333;
+  border-radius: 3px;
+  transition: 0.3s;
+}
+
+input:checked + .arc-toggle-slider--crt::before {
+  transform: translateX(20px);
+  background: #22c55e;
+  box-shadow: 0 0 5px #22c55e;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ALERT/NOTIFICATION VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Style 1: PIXEL ALERT */
+.arc-alert--pixel {
+  padding: 16px;
+  background: #1a1a2e;
+  border: 4px solid #16213e;
+  border-radius: 0;
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  box-shadow: 4px 4px 0 #0f0f23;
+}
+
+.arc-alert--pixel.error {
+  border-color: #e94560;
+  background: #2e1a1a;
+}
+
+.arc-alert--pixel.success {
+  border-color: #22c55e;
+  background: #1a2e1a;
+}
+
+.arc-alert--pixel.warning {
+  border-color: #fbbf24;
+  background: #2e2a1a;
+}
+
+/* Style 2: NEON ALERT */
+.arc-alert--neon {
+  padding: 16px;
+  background: rgba(0,0,0,0.9);
+  border: 2px solid #00ffff;
+  border-radius: 4px;
+  color: #00ffff;
+  font-family: var(--font-display);
+  box-shadow: 0 0 15px rgba(0,255,255,0.5), inset 0 0 10px rgba(0,255,255,0.1);
+}
+
+.arc-alert--neon.error {
+  border-color: #ff00ff;
+  color: #ff00ff;
+  box-shadow: 0 0 15px rgba(255,0,255,0.5), inset 0 0 10px rgba(255,0,255,0.1);
+}
+
+.arc-alert--neon.warning {
+  border-color: #ffff00;
+  color: #ffff00;
+  box-shadow: 0 0 15px rgba(255,255,0,0.5), inset 0 0 10px rgba(255,255,0,0.1);
+}
+
+/* Style 3: CHROME ALERT */
+.arc-alert--chrome {
+  padding: 16px;
+  background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
+  border: 3px solid;
+  border-color: #555 #222 #222 #555;
+  border-radius: 4px;
+  color: #ddd;
+  font-family: var(--font-body);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.arc-alert--chrome.error {
+  border-color: #ef4444 #991b1b #991b1b #ef4444;
+  background: linear-gradient(180deg, #3a2a2a, #2a1a1a);
+}
+
+.arc-alert--chrome.success {
+  border-color: #22c55e #166534 #166534 #22c55e;
+  background: linear-gradient(180deg, #2a3a2a, #1a2a1a);
+}
+
+/* Style 4: FIGHTER ALERT */
+.arc-alert--fighter {
+  padding: 16px;
+  background: #1a1a1a;
+  border: 4px solid #fbbf24;
+  border-radius: 0;
+  color: #fcd34d;
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+.arc-alert--fighter.error {
+  border-color: #ef4444;
+  color: #ff6b6b;
+}
+
+/* Style 5: CRT ALERT */
+.arc-alert--crt {
+  padding: 16px;
+  background: #0a0a0a;
+  border: 3px solid #22c55e;
+  border-radius: 6px;
+  color: #22c55e;
+  font-family: var(--font-terminal);
+  font-size: 14px;
+  box-shadow: 0 0 15px rgba(34,197,95,0.3), inset 0 0 10px rgba(34,197,95,0.05);
+  text-shadow: 0 0 5px #22c55e;
+}
+
+.arc-alert--crt.error {
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 0 15px rgba(239,68,68,0.3), inset 0 0 10px rgba(239,68,68,0.05);
+  text-shadow: 0 0 5px #ef4444;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODAL/DIALOG VARIANTS (backdrop + container)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Modal Backdrop */
+.arc-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.arc-modal-backdrop.active {
+  display: flex;
+}
+
+/* Style 1: PIXEL MODAL */
+.arc-modal--pixel {
+  width: 90%;
+  max-width: 600px;
+  background: #1a1a2e;
+  border: 6px solid #16213e;
+  border-radius: 0;
+  padding: 20px;
+  box-shadow: 10px 10px 0 #0f0f23;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+}
+
+.arc-modal--pixel h3 {
+  color: #e94560;
+  margin-bottom: 16px;
+}
+
+.arc-modal--pixel p {
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+/* Style 2: NEON MODAL */
+.arc-modal--neon {
+  width: 90%;
+  max-width: 600px;
+  background: rgba(0,0,0,0.95);
+  border: 3px solid #00ffff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 0 30px rgba(0,255,255,0.5), inset 0 0 30px rgba(0,255,255,0.1);
+  font-family: var(--font-display);
+}
+
+.arc-modal--neon h3 {
+  color: #00ffff;
+  text-shadow: 0 0 10px #00ffff;
+  margin-bottom: 16px;
+}
+
+/* Style 3: CHROME MODAL */
+.arc-modal--chrome {
+  width: 90%;
+  max-width: 600px;
+  background: linear-gradient(180deg, #3a3a3a, #2a2a2a);
+  border: 4px solid;
+  border-color: #666 #222 #222 #666;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1);
+  font-family: var(--font-body);
+}
+
+.arc-modal--chrome h3 {
+  color: #e5e7eb;
+  margin-bottom: 16px;
+}
+
+/* Style 4: FIGHTER MODAL */
+.arc-modal--fighter {
+  width: 90%;
+  max-width: 600px;
+  background: #1a1a1a;
+  border: 6px solid #fbbf24;
+  border-radius: 0;
+  padding: 20px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.8);
+  font-family: 'Impact', sans-serif;
+}
+
+.arc-modal--fighter h3 {
+  color: #fbbf24;
+  font-size: 24px;
+  text-shadow: 2px 2px 0 #000;
+  margin-bottom: 16px;
+}
+
+/* Style 5: CRT MODAL */
+.arc-modal--crt {
+  width: 90%;
+  max-width: 600px;
+  background: #0a0a0a;
+  border: 6px solid #22c55e;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 0 30px rgba(34,197,95,0.3), inset 0 0 30px rgba(34,197,95,0.05);
+  font-family: var(--font-terminal);
+  position: relative;
+  overflow: hidden;
+}
+
+.arc-modal--crt::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 1px,
+    rgba(0,0,0,0.3) 1px,
+    rgba(0,0,0,0.3) 2px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.arc-modal--crt h3 {
+  color: #22c55e;
+  text-shadow: 0 0 10px #22c55e;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.arc-modal--crt > * {
+  position: relative;
+  z-index: 2;
+}

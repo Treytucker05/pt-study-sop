@@ -8,6 +8,7 @@ import os
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "pt_study.db")
 
+
 def init_database():
     """
     Initialize the SQLite database with the sessions table (v9.2 schema)
@@ -114,7 +115,7 @@ def init_database():
     # Ensure all columns exist (migration for older databases)
     cursor.execute("PRAGMA table_info(sessions)")
     existing_columns = {col[1] for col in cursor.fetchall()}
-    
+
     # Define all required columns with their types (from CREATE TABLE above)
     required_columns = {
         "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -176,7 +177,7 @@ def init_database():
         "errors_discrimination": "TEXT",
         "errors_recall": "TEXT",
     }
-    
+
     # Add missing columns (skip id and constraints that can't be added via ALTER TABLE)
     added_count = 0
     for col_name, col_type in required_columns.items():
@@ -191,7 +192,7 @@ def init_database():
                 sql_type = "TEXT DEFAULT '9.2'"
             else:
                 sql_type = "TEXT"
-            
+
             try:
                 cursor.execute(f"ALTER TABLE sessions ADD COLUMN {col_name} {sql_type}")
                 added_count += 1
@@ -199,7 +200,7 @@ def init_database():
             except sqlite3.OperationalError:
                 # Column might already exist - skip silently
                 pass
-    
+
     if added_count > 0:
         print(f"[INFO] Added {added_count} missing column(s) to sessions table")
 
@@ -343,7 +344,7 @@ def init_database():
             print("[INFO] Added 'color' column to courses table")
         except sqlite3.OperationalError:
             pass
-    
+
     if "last_scraped_at" not in course_cols:
         try:
             cursor.execute("ALTER TABLE courses ADD COLUMN last_scraped_at TEXT")
@@ -623,14 +624,14 @@ def init_database():
     # Add google_event_id to course_events if not exists (for GCal sync)
     cursor.execute("PRAGMA table_info(course_events)")
     ce_columns = {col[1] for col in cursor.fetchall()}
-    if 'google_event_id' not in ce_columns:
+    if "google_event_id" not in ce_columns:
         try:
             cursor.execute("ALTER TABLE course_events ADD COLUMN google_event_id TEXT")
         except sqlite3.OperationalError:
             pass  # Column might already exist
 
     # Add google_synced_at column if not exists (for GCal sync timestamp)
-    if 'google_synced_at' not in ce_columns:
+    if "google_synced_at" not in ce_columns:
         try:
             cursor.execute("ALTER TABLE course_events ADD COLUMN google_synced_at TEXT")
             print("[INFO] Added 'google_synced_at' column to course_events table")
@@ -641,6 +642,14 @@ def init_database():
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_course_events_google_id ON course_events(google_event_id)"
     )
+
+    # Add recurrence_rule column if not exists (for recurring events)
+    if "recurrence_rule" not in ce_columns:
+        try:
+            cursor.execute("ALTER TABLE course_events ADD COLUMN recurrence_rule TEXT")
+            print("[INFO] Added 'recurrence_rule' column to course_events table")
+        except sqlite3.OperationalError:
+            pass  # Column might already exist
 
     # ------------------------------------------------------------------
     # Scholar Digests table (strategic analysis documents)
@@ -714,6 +723,7 @@ def init_database():
     print(f"[OK] Database initialized at: {DB_PATH}")
     print("[OK] Schema version: 9.1 + planning/RAG extensions")
 
+
 def migrate_from_v8():
     """
     Migrate data from v8 schema to v9.1 schema if needed.
@@ -721,23 +731,23 @@ def migrate_from_v8():
     """
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
+
     # Check if migration is needed by looking for old columns
     cursor.execute("PRAGMA table_info(sessions)")
     columns = [col[1] for col in cursor.fetchall()]
-    
+
     # If 'topic' exists but 'main_topic' doesn't, we need to migrate
-    if 'topic' in columns and 'main_topic' not in columns:
+    if "topic" in columns and "main_topic" not in columns:
         print("[INFO] Migrating from v8 schema to v9.1...")
-        
+
         # Rename old table
         cursor.execute("ALTER TABLE sessions RENAME TO sessions_v8")
-        
+
         # Create new table
         init_database()
-        
+
         # Copy data with column mapping
-        cursor.execute('''
+        cursor.execute("""
             INSERT INTO sessions (
                 session_date, session_time, duration_minutes, study_mode,
                 main_topic, frameworks_used, gated_platter_triggered,
@@ -752,23 +762,26 @@ def migrate_from_v8():
                 retention_confidence, system_performance, what_worked,
                 what_needs_fixing, notes_insights, created_at
             FROM sessions_v8
-        ''')
-        
+        """)
+
         conn.commit()
         print(f"[OK] Migrated {cursor.rowcount} sessions to v9.1 schema")
-        
+
         # Keep old table as backup
         print("[INFO] Old table preserved as 'sessions_v8'")
     else:
         print("[INFO] No migration needed - already on v9.1 schema or fresh database")
-    
+
     conn.close()
+
 
 def get_connection():
     """
     Get a database connection.
     """
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=15)
+    conn.execute("PRAGMA busy_timeout = 5000")
+    return conn
 
 
 # ------------------------------------------------------------------
@@ -776,15 +789,17 @@ def get_connection():
 # ------------------------------------------------------------------
 import hashlib
 
+
 def compute_file_checksum(filepath: str) -> str:
     """
     Compute MD5 checksum of a file's contents.
     """
     hash_md5 = hashlib.md5()
-    with open(filepath, 'rb') as f:
-        for chunk in iter(lambda: f.read(8192), b''):
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
 
 def is_file_ingested(conn, filepath: str, checksum: str) -> tuple:
     """
@@ -794,18 +809,20 @@ def is_file_ingested(conn, filepath: str, checksum: str) -> tuple:
     cursor = conn.cursor()
     cursor.execute(
         "SELECT session_id FROM ingested_files WHERE filepath = ? AND checksum = ?",
-        (filepath, checksum)
+        (filepath, checksum),
     )
     result = cursor.fetchone()
     if result:
         return True, result[0]
     return False, None
 
+
 def mark_file_ingested(conn, filepath: str, checksum: str, session_id: int = None):
     """
     Mark a file as ingested. Updates if filepath exists, inserts otherwise.
     """
     from datetime import datetime
+
     cursor = conn.cursor()
     cursor.execute(
         """
@@ -816,9 +833,10 @@ def mark_file_ingested(conn, filepath: str, checksum: str, session_id: int = Non
             session_id = excluded.session_id,
             ingested_at = excluded.ingested_at
         """,
-        (filepath, checksum, session_id, datetime.now().isoformat())
+        (filepath, checksum, session_id, datetime.now().isoformat()),
     )
     conn.commit()
+
 
 def remove_ingested_file(conn, filepath: str):
     """
@@ -828,12 +846,15 @@ def remove_ingested_file(conn, filepath: str):
     cursor.execute("DELETE FROM ingested_files WHERE filepath = ?", (filepath,))
     conn.commit()
 
+
 def get_ingested_session_id(conn, filepath: str) -> int:
     """
     Get the session_id linked to an ingested file, if any.
     """
     cursor = conn.cursor()
-    cursor.execute("SELECT session_id FROM ingested_files WHERE filepath = ?", (filepath,))
+    cursor.execute(
+        "SELECT session_id FROM ingested_files WHERE filepath = ?", (filepath,)
+    )
     result = cursor.fetchone()
     return result[0] if result else None
 
@@ -844,16 +865,17 @@ def get_schema_version():
     """
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
+
     try:
         cursor.execute("SELECT schema_version FROM sessions LIMIT 1")
         result = cursor.fetchone()
         version = result[0] if result else "unknown"
     except:
         version = "pre-9.1"
-    
+
     conn.close()
     return version
+
 
 if __name__ == "__main__":
     print("PT Study Brain - Database Setup")

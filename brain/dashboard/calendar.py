@@ -1,20 +1,22 @@
-
 from datetime import datetime, timedelta
 from db_setup import get_connection
 from dashboard.cli import get_all_sessions
 from dashboard.syllabus import fetch_all_courses_and_events
 
+
 def get_calendar_data(start_date, end_date, course_id=None, event_type=None):
     """
     Return calendar data: course events, study sessions, and planned spaced repetition.
     """
-    
+
     # Fetch courses and events
     courses, events = fetch_all_courses_and_events()
     if course_id is not None:
         events = [ev for ev in events if ev["course_id"] == course_id]
     if event_type:
-        events = [ev for ev in events if (ev.get("type") or "").lower() == event_type.lower()]
+        events = [
+            ev for ev in events if (ev.get("type") or "").lower() == event_type.lower()
+        ]
 
     # Filter events by date range
     calendar_events = []
@@ -59,11 +61,15 @@ def get_calendar_data(start_date, end_date, course_id=None, event_type=None):
                         "date": session_date_str,
                         "topic": s.get("main_topic") or s.get("topic") or "",
                         "mode": s.get("study_mode", ""),
-                        "duration_minutes": s.get("time_spent_minutes") or s.get("duration_minutes") or 0,
+                        "time": s.get("session_time"),
+                        "duration_minutes": s.get("time_spent_minutes")
+                        or s.get("duration_minutes")
+                        or 0,
                         "understanding": s.get("understanding_level"),
                         "retention": s.get("retention_confidence"),
                     }
                 )
+
         except ValueError:
             continue
 
@@ -92,7 +98,9 @@ def get_calendar_data(start_date, end_date, course_id=None, event_type=None):
         try:
             task_date = datetime.strptime(sched_date, "%Y-%m-%d").date()
             if start_date <= task_date <= end_date:
-                course = next((c for c in courses if c["id"] == cid), None) if cid else None
+                course = (
+                    next((c for c in courses if c["id"] == cid), None) if cid else None
+                )
                 calendar_planned.append(
                     {
                         "id": f"planned_{task_id}",
