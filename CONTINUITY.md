@@ -28,7 +28,7 @@ State:
     - Removed the mobile hamburger/nav panel markup.
     - Restored main content scale to full size, increased the header title size/position, and pushed the title area lower.
     - Lowered the title underline further and increased top-nav padding to move the title/line down.
-    - Removed a stray mobile-only CSS block that was overriding desktop header sizing.
+    - Removed a duplicate mobile CSS block that was overriding desktop header sizing.
     - Bumped asset query params to force CSS/JS refresh.
     - Removed legacy sidebar/top-nav CSS selectors after audit (unused in current template).
   - Next:

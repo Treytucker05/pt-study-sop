@@ -4141,12 +4141,6 @@ body.mobile-nav-open .mobile-nav-panel {
 
 
 
-  /* Adjust header padding on mobile */
-  .top-nav-header {
-    height: 110px;
-    padding: 12px var(--space-4) 10px;
-    align-items: center;
-  }
 
 
 
