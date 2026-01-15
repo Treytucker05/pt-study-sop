@@ -1,30 +1,21 @@
 Goal (incl. success criteria):
-- Audit repo and clean up unused files by deleting generated caches and temp artifacts.
-- Review pre-existing modified/untracked files and revert unrelated changes.
-- Keep v9.2 as current; preserve logs/runs and sensitive config files.
+- Audit the current dashboard layout/parts, document every piece, map a comprehensive flow chart, and produce a plan to rebuild a new dashboard by isolating and integrating each part one at a time.
+- Success: No missing parts in the audit; flow chart and build/integration plan delivered.
 Constraints/Assumptions:
 - Follow AGENTS.md; keep changes minimal and additive.
-- Update CONTINUITY.md each turn.
-- Do not delete v9.2, scholar outputs/runs/logs, .env, or GoogleCalendarTasksAPI.json.
-- Ask before destructive or irreversible actions (confirmed for cleanup).
+- Update CONTINUITY.md each turn and on state changes.
+- Use repo evidence for audit; ask questions only if essential.
 Key decisions:
-- Keep all run logs and scholar outputs intact.
-- Delete generated __pycache__ and .pyc files, plus tmpclaude-5fc3-cwd.
-- Add ignore rule for tmpclaude-* temp folders.
+- None yet.
 State:
   - Done:
-    - Completed deeper scan for orphaned files and logs.
-    - Confirmed v9.2 is current and logs/runs must be kept.
-    - Removed __pycache__ directories and tmpclaude-5fc3-cwd.
-    - Updated .gitignore to ignore tmpclaude-* temp folders.
-    - Reverted unrelated file edits and removed untracked dashboard_clean.css.
+    - Updated goal to dashboard audit + flow chart + rebuild plan request.
+    - Drafted comprehensive dashboard audit, flow chart, and phased rebuild plan in docs/dashboard_audit.md.
   - Now:
-    - Cleanup complete; working tree is clean after reverting unrelated changes.
+    - Review audit doc for completeness and commit changes.
   - Next:
-    - Optional: no further cleanup actions unless requested.
+    - Share audit, flow chart, and rebuild plan with user.
 Open questions (UNCONFIRMED if needed):
-- None.
+- None yet.
 Working set (files/ids/commands):
 - CONTINUITY.md
-- .gitignore
-- tmpclaude-5fc3-cwd (deleted)
