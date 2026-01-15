@@ -434,6 +434,9 @@ def get_google_calendars():
     calendars, error = gcal.fetch_calendar_list()
     if error:
         return jsonify({"error": error}), 500
+        
+    # Inject backgroundColor if missing (gcal.py doesn't always expose it raw)
+    # But usually 'backgroundColor' is in the calendar resource
     # Frontend expects: id, summary, backgroundColor
     return jsonify(calendars)
 
@@ -447,9 +450,15 @@ def get_google_events():
     # We need to fetch all selected calendars. 
     # For now, let's fetch 'primary' or all configured.
     
-    config = gcal.load_gcal_config()
+    config = gcal.load_gcal_config() or {}
+    # Force visibility of ALL calendars for the frontend
+    config["sync_all_calendars"] = True 
+    
     calendars, _ = gcal.fetch_calendar_list()
     selected_ids, _, _, calendar_meta = gcal.resolve_calendar_selection(config, calendars)
+    
+    # Build a color map
+    calendar_colors = {c['id']: c.get('backgroundColor', '#ef4444') for c in calendars}
     
     # Calculate days ahead based on timeMax if possible, else default 90
     days = 90
@@ -466,7 +475,137 @@ def get_google_events():
     if error:
         return jsonify({"error": error}), 500
         
-    return jsonify(events)
+    # Enrich events for frontend
+    enriched_events = []
+    for event in events:
+        cal_id = event.get("_calendar_id")
+        # Map fields for frontend
+        event["calendarId"] = cal_id
+        event["calendarSummary"] = event.get("_calendar_name")
+        event["calendarColor"] = calendar_colors.get(cal_id)
+        enriched_events.append(event)
+        
+    enriched_events = []
+    for event in events:
+        cal_id = event.get("_calendar_id")
+        # Map fields for frontend
+        event["calendarId"] = cal_id
+        event["calendarSummary"] = event.get("_calendar_name")
+        event["calendarColor"] = calendar_colors.get(cal_id)
+        enriched_events.append(event)
+        
+    return jsonify(enriched_events)
+
+@adapter_bp.route("/google-calendar/events", methods=["POST"])
+def create_google_event():
+    from brain.dashboard import gcal
+    
+    data = request.json
+    calendar_id = data.get("calendarId")
+    if not calendar_id:
+        return jsonify({"error": "Missing calendarId"}), 400
+        
+    # Construct "local_event" format expected by gcal.upsert_gcal_event
+    local_event = {
+        "title": data.get("title"),
+        "date": data.get("date"), # ISO string
+        "raw_text": data.get("description", ""),
+        # Additional parsing might be needed if date processing is complex
+    }
+    
+    service = gcal.get_calendar_service()
+    if not service:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    # We might need calendar metadata (timezone)
+    config = gcal.load_gcal_config()
+    calendars, _ = gcal.fetch_calendar_list()
+    cal_meta = next((c for c in calendars if c["id"] == calendar_id), {})
+    timezone = cal_meta.get("timeZone", "UTC")
+    
+    # We need to adapt the payload because upsert_gcal_event expects 
+    # a "local_event" structure which is DB-centric.
+    # Alternatively, we can just call service directly here for simplicity if gcal.py is too coupled to DB.
+    # However, let's try to reuse or adapt.
+    # gcal.upsert_gcal_event calls build_gcal_event_payload
+    
+    # Let's do a direct insert to avoid DB coupling complexity for now
+    # Or cleaner: update gcal.py to expose a clean insert function.
+    # For speed, I'll implement a direct service call here mimicking gcal logic.
+    
+    try:
+        from datetime import datetime, timedelta
+        
+        start_dt = datetime.fromisoformat(data["date"].replace("Z", "+00:00"))
+        if data.get("allDay"):
+             end_dt = datetime.fromisoformat(data.get("endDate").replace("Z", "+00:00")) if data.get("endDate") else start_dt + timedelta(days=1)
+             start = {"date": start_dt.date().isoformat()}
+             end = {"date": end_dt.date().isoformat()}
+        else:
+             end_dt = datetime.fromisoformat(data.get("endDate").replace("Z", "+00:00")) if data.get("endDate") else start_dt + timedelta(hours=1)
+             start = {"dateTime": start_dt.isoformat(), "timeZone": timezone}
+             end = {"dateTime": end_dt.isoformat(), "timeZone": timezone}
+             
+        body = {
+            "summary": data.get("title", "Untitled"),
+            "start": start,
+            "end": end,
+            "description": data.get("description", "")
+        }
+        
+        event = service.events().insert(calendarId=calendar_id, body=body).execute()
+        return jsonify(event)
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@adapter_bp.route("/google-calendar/events/<event_id>", methods=["PATCH"])
+def update_google_event(event_id):
+    from brain.dashboard import gcal
+    
+    data = request.json
+    calendar_id = data.get("calendarId")
+    if not calendar_id:
+         # Try to infer calendar ID? No, frontend should send it.
+         return jsonify({"error": "Missing calendarId"}), 400
+         
+    service = gcal.get_calendar_service()
+    if not service:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    try:
+        # Fetch existing to patch
+        # or just push updates. Google requires fetching for patch semantics usually or full update.
+        # METHOD patch exists in google api.
+        
+        body = {}
+        if "title" in data:
+            body["summary"] = data["title"]
+        if "description" in data:
+            body["description"] = data["description"]
+            
+        # Time updates
+        if "date" in data:
+             from datetime import datetime, timedelta
+             # Retrieve config for timezone if needed, or rely on existing
+             # Ideally fetching the event first is safer to know its current 'allDay' status if not sending both
+             # But let's assume frontend sends full date/time object if changing time.
+             
+             start_dt = datetime.fromisoformat(data["date"].replace("Z", "+00:00"))
+             if data.get("allDay"):
+                 end_dt = datetime.fromisoformat(data.get("endDate").replace("Z", "+00:00")) if data.get("endDate") else start_dt + timedelta(days=1)
+                 body["start"] = {"date": start_dt.date().isoformat()}
+                 body["end"] = {"date": end_dt.date().isoformat()}
+             else:
+                 end_dt = datetime.fromisoformat(data.get("endDate").replace("Z", "+00:00")) if data.get("endDate") else start_dt + timedelta(hours=1)
+                 body["start"] = {"dateTime": start_dt.isoformat()}
+                 body["end"] = {"dateTime": end_dt.isoformat()}
+        
+        updated_event = service.events().patch(calendarId=calendar_id, eventId=event_id, body=body).execute()
+        return jsonify(updated_event)
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @adapter_bp.route("/google-tasks/@default", methods=["GET"])
 def get_google_tasks():
@@ -498,3 +637,43 @@ def create_google_task():
 def toggle_google_task(task_id):
     # TODO: Implement toggle support
     return jsonify({"success": True})
+
+
+# ==============================================================================
+# QUICK NOTES
+# ==============================================================================
+
+@adapter_bp.route("/notes", methods=["GET"])
+def get_notes():
+    """Get quick notes content."""
+    files_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+    notes_path = os.path.join(files_dir, "quick_notes.txt")
+    
+    if not os.path.exists(notes_path):
+        return jsonify({"content": ""})
+        
+    try:
+        with open(notes_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return jsonify({"content": content})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@adapter_bp.route("/notes", methods=["POST"])
+def save_notes():
+    """Save quick notes content."""
+    data = request.json
+    content = data.get("content", "")
+    
+    files_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+    if not os.path.exists(files_dir):
+        os.makedirs(files_dir)
+        
+    notes_path = os.path.join(files_dir, "quick_notes.txt")
+    
+    try:
+        with open(notes_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

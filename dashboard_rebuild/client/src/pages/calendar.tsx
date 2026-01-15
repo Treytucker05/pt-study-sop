@@ -13,8 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { InsertCalendarEvent, CalendarEvent } from "@shared/schema";
-import { 
-  format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, 
+import {
+  format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay,
   addMonths, subMonths, startOfWeek, endOfWeek, isToday, addDays, subDays,
   addWeeks, subWeeks, setHours, setMinutes, differenceInMinutes, addHours
 } from "date-fns";
@@ -198,7 +198,7 @@ export default function CalendarPage() {
   });
 
   const updateEventMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<InsertCalendarEvent> }) => 
+    mutationFn: ({ id, data }: { id: number; data: Partial<InsertCalendarEvent> }) =>
       api.events.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -261,14 +261,47 @@ export default function CalendarPage() {
     },
   });
 
+  const updateGoogleEventMutation = useMutation({
+    mutationFn: async (event: GoogleCalendarEvent) => {
+      const res = await fetch(`/api/google-calendar/events/${event.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          calendarId: event.calendarId,
+          title: event.summary,
+          description: event.description,
+          date: event.start?.dateTime || event.start?.date,
+          endDate: event.end?.dateTime || event.end?.date,
+          allDay: !event.start?.dateTime
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to update google event');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["google-calendar-events"] });
+      toast({ title: "EVENT_UPDATED", description: "Changes synced to Google Calendar" });
+      setShowGoogleEditModal(false);
+    },
+    onError: (err) => {
+      toast({ title: "SYNC_FAILED", description: err.message, variant: "destructive" });
+    }
+  });
+
+  const handleGoogleSave = () => {
+    if (selectedGoogleEvent) {
+      updateGoogleEventMutation.mutate(selectedGoogleEvent);
+    }
+  };
+
   const resetNewEvent = () => {
-    setNewEvent({ 
-      title: "", 
-      date: "", 
+    setNewEvent({
+      title: "",
+      date: "",
       endDate: "",
-      startTime: "09:00", 
-      endTime: "10:00", 
-      allDay: false, 
+      startTime: "09:00",
+      endTime: "10:00",
+      allDay: false,
       eventType: "study",
       color: "#ef4444",
       recurrence: "",
@@ -315,7 +348,7 @@ export default function CalendarPage() {
       const [startHours, startMinutes] = newEvent.startTime.split(':').map(Number);
       const [endHours, endMinutes] = newEvent.endTime.split(':').map(Number);
       const startDate = setMinutes(setHours(new Date(newEvent.date), startHours), startMinutes);
-      
+
       let endDateTime: Date | null = null;
       if (!newEvent.allDay) {
         const endDateStr = newEvent.endDate || newEvent.date;
@@ -324,7 +357,7 @@ export default function CalendarPage() {
         // For all-day events, add a day to make end date inclusive (calendar convention uses exclusive end)
         endDateTime = addDays(new Date(newEvent.endDate), 1);
       }
-      
+
       createEventMutation.mutate({
         title: newEvent.title,
         date: startDate,
@@ -377,7 +410,7 @@ export default function CalendarPage() {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();
     const results: NormalizedEvent[] = [];
-    
+
     if (showLocalEvents) {
       localEvents.forEach(event => {
         if (event.title.toLowerCase().includes(query)) {
@@ -385,14 +418,14 @@ export default function CalendarPage() {
         }
       });
     }
-    
+
     googleEvents.forEach(event => {
       if (selectedCalendars.size > 0 && event.calendarId && !selectedCalendars.has(event.calendarId)) return;
       if (event.summary?.toLowerCase().includes(query)) {
         results.push(normalizeEvent(event));
       }
     });
-    
+
     return results.sort((a, b) => a.start.getTime() - b.start.getTime());
   }, [searchQuery, localEvents, googleEvents, showLocalEvents, selectedCalendars]);
 
@@ -404,7 +437,7 @@ export default function CalendarPage() {
 
   const getEventsForDay = (day: Date): NormalizedEvent[] => {
     const allEvents: NormalizedEvent[] = [];
-    
+
     if (showLocalEvents) {
       localEvents.forEach(event => {
         const normalized = normalizeEvent(event);
@@ -457,15 +490,22 @@ export default function CalendarPage() {
   };
 
   const getEventColor = (event: NormalizedEvent) => {
+    // Glassmorphism base styles
+    const base = "backdrop-blur-sm shadow-sm transition-all hover:bg-opacity-90 hover:scale-[1.02] hover:z-50";
+
     if (event.isGoogle && event.calendarColor) {
-      return `text-white border-l-2`;
+      // Use calendar color but transparentize it in inline styles usually, 
+      // but here we set border/text. Background is handled in getEventStyle.
+      return `${base} text-white border-l-4`;
     }
-    if (event.isGoogle) return "bg-white/90 text-black border-l-2 border-white";
+
+    if (event.isGoogle) return `${base} bg-white/10 text-white border-l-4 border-white/50`;
+
     switch (event.eventType) {
-      case 'study': return "bg-primary/80 text-black border-l-2 border-primary";
-      case 'lecture': return "bg-secondary/80 text-white border-l-2 border-secondary";
-      case 'exam': return "bg-red-600/80 text-white border-l-2 border-red-600";
-      default: return "bg-primary/80 text-black border-l-2 border-primary";
+      case 'study': return `${base} bg-primary/20 text-primary-foreground border-l-4 border-primary`;
+      case 'lecture': return `${base} bg-blue-500/20 text-blue-100 border-l-4 border-blue-500`;
+      case 'exam': return `${base} bg-red-600/20 text-red-100 border-l-4 border-red-600`;
+      default: return `${base} bg-primary/20 text-primary-foreground border-l-4 border-primary`;
     }
   };
 
@@ -473,19 +513,30 @@ export default function CalendarPage() {
     const startMinutes = differenceInMinutes(event.start, dayStart);
     const duration = differenceInMinutes(event.end, event.start);
     const top = (startMinutes / 60) * HOUR_HEIGHT;
-    const height = Math.max((duration / 60) * HOUR_HEIGHT, 20);
-    const style: React.CSSProperties = { top: `${top}px`, height: `${height}px` };
+    const height = Math.max((duration / 60) * HOUR_HEIGHT, 24); // Min height slightly larger
+
+    const style: React.CSSProperties = {
+      top: `${top}px`,
+      height: `${height}px`,
+      left: '2px',
+      right: '2px', // Add spacing sides
+      marginBottom: '2px'
+    };
+
     if (event.calendarColor) {
-      style.backgroundColor = event.calendarColor;
+      // Convert hex to rgba for glass effect if possible, or just use opacity
+      // Simple approach: set bg with opacity in style if it's a specific color
+      style.background = `${event.calendarColor}40`; // 25% opacity hex
       style.borderLeftColor = event.calendarColor;
     }
+
     return style;
   };
 
   return (
     <Layout>
       <div className="grid lg:grid-cols-4 gap-6 h-[calc(100vh-220px)]">
-        
+
         {/* Main Calendar */}
         <div className="lg:col-span-3 flex flex-col">
           <Card className="bg-black/40 border-2 border-primary rounded-none flex-1 flex flex-col overflow-hidden">
@@ -531,14 +582,15 @@ export default function CalendarPage() {
                       return (
                         <div key={index} onClick={() => goToDay(day)} className={cn("min-h-[80px] border-r border-b border-secondary p-1 cursor-pointer transition-colors hover:bg-primary/10", !isCurrentMonth && "bg-black/40 text-muted-foreground", index % 7 === 6 && "border-r-0")} data-testid={`day-cell-${format(day, 'yyyy-MM-dd')}`}>
                           <div className={cn("text-right font-arcade text-xs mb-1 w-6 h-6 flex items-center justify-center ml-auto", isTodayDate && "bg-primary text-black rounded-full")}>{format(day, 'd')}</div>
-                          <div className="space-y-0.5">
-                            {dayEvents.slice(0, 3).map((event, i) => (
-                              <div key={`${event.id}-${i}`} className={cn("text-[8px] font-terminal truncate px-1 py-0.5 rounded-sm", getEventColor(event))} title={event.title}>
-                                {!event.allDay && <span className="opacity-70">{format(event.start, 'h:mm')} </span>}
-                                {event.title}
+                          <div className="space-y-1">
+                            {dayEvents.slice(0, 4).map((event, i) => (
+                              <div key={`${event.id}-${i}`} className={cn("text-[9px] font-terminal truncate px-1.5 py-0.5 rounded-sm flex items-center gap-1", getEventColor(event))} title={event.title}>
+                                {event.isGoogle && <div className="w-1 h-1 rounded-full bg-current shrink-0 opacity-70" />}
+                                {!event.allDay && <span className="opacity-70 tabular-nums tracking-tighter">{format(event.start, 'h:mm')}</span>}
+                                <span className="truncate flex-1">{event.title}</span>
                               </div>
                             ))}
-                            {dayEvents.length > 3 && <div className="text-[8px] font-arcade text-muted-foreground px-1">+{dayEvents.length - 3}</div>}
+                            {dayEvents.length > 4 && <div className="text-[9px] font-arcade text-muted-foreground px-1">+{dayEvents.length - 4} MORE</div>}
                           </div>
                         </div>
                       );
@@ -559,7 +611,7 @@ export default function CalendarPage() {
                       </div>
                     ))}
                   </div>
-                  
+
                   {/* All-day events row */}
                   <div className="grid grid-cols-8 border-b border-secondary bg-black/40 shrink-0">
                     <div className="p-1 w-16 border-r border-secondary text-[9px] font-terminal text-muted-foreground text-right pr-2">ALL DAY</div>
@@ -585,7 +637,7 @@ export default function CalendarPage() {
                           </div>
                         ))}
                       </div>
-                      
+
                       {/* Day columns */}
                       {weekDays.map((day) => {
                         const dayStart = setHours(setMinutes(day, 0), 0);
@@ -598,9 +650,21 @@ export default function CalendarPage() {
                             {timedEvents.map((event, i) => {
                               const style = getEventStyle(event, dayStart);
                               return (
-                                <div key={i} className={cn("absolute left-0 right-1 mx-0.5 rounded-sm p-1 cursor-pointer overflow-hidden", getEventColor(event))} style={style} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
-                                  <div className="text-[9px] font-semibold truncate">{event.title}</div>
-                                  <div className="text-[7px] opacity-70">{format(event.start, 'h:mm')}-{format(event.end, 'h:mm a')}</div>
+                                <div
+                                  key={`${event.id}-${i}`}
+                                  className={cn("absolute left-0 right-1 mx-0.5 rounded-sm p-1.5 cursor-pointer overflow-hidden flex flex-col gap-0.5", getEventColor(event))}
+                                  style={style}
+                                  onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                                >
+                                  <div className="text-[10px] font-bold font-terminal truncate leading-tight">{event.title}</div>
+                                  <div className="text-[8px] font-terminal opacity-80 truncate tabular-nums tracking-tighter">
+                                    {format(event.start, 'h:mm')} - {format(event.end, 'h:mm a')}
+                                  </div>
+                                  {event.isGoogle && (
+                                    <div className="absolute bottom-1 right-1 opacity-60">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -624,7 +688,7 @@ export default function CalendarPage() {
                       <Plus className="w-4 h-4 mr-1" /> CREATE
                     </Button>
                   </div>
-                  
+
                   {/* All-day events */}
                   {(() => {
                     const allDayEvents = getEventsForDay(currentDate).filter(e => e.allDay);
@@ -649,17 +713,29 @@ export default function CalendarPage() {
                           <div className="flex-1 border-l border-secondary/50"></div>
                         </div>
                       ))}
-                      
+
                       {/* Positioned events */}
                       <div className="absolute top-0 left-20 right-0">
                         {getEventsForDay(currentDate).filter(e => !e.allDay).map((event, i) => {
                           const dayStart = setHours(setMinutes(currentDate, 0), 0);
                           const style = getEventStyle(event, dayStart);
                           return (
-                            <div key={i} className={cn("absolute left-1 right-4 rounded-sm p-2 cursor-pointer", getEventColor(event))} style={style} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
-                              <div className="font-semibold text-sm truncate">{event.title}</div>
-                              <div className="text-xs opacity-70">{format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}</div>
-                              {event.isGoogle && <Badge variant="outline" className="text-[8px] mt-1 rounded-none">GOOGLE</Badge>}
+                            <div
+                              key={`${event.id}-${i}`}
+                              className={cn("absolute left-1 right-4 rounded-sm p-3 cursor-pointer flex flex-col gap-1", getEventColor(event))}
+                              style={style}
+                              onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                            >
+                              <div className="font-bold text-sm font-terminal truncate leading-tight">{event.title}</div>
+                              <div className="text-xs font-terminal opacity-80 truncate tabular-nums">
+                                {format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}
+                              </div>
+                              {event.location && <div className="text-[10px] opacity-70 truncate font-arcade">{event.location}</div>}
+                              {event.isGoogle && (
+                                <div className="absolute top-2 right-2 opacity-50">
+                                  <div className="w-2 h-2 rounded-full bg-current" />
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -687,21 +763,21 @@ export default function CalendarPage() {
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              className="rounded-none bg-black border-secondary pl-10 font-terminal text-sm" 
-              placeholder="Search events..." 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
+            <Input
+              className="rounded-none bg-black border-secondary pl-10 font-terminal text-sm"
+              placeholder="Search events..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               data-testid="input-search-events"
             />
           </div>
-          
+
           {searchQuery && filteredEvents.length > 0 && (
             <Card className="bg-black/40 border-2 border-secondary rounded-none max-h-[200px] overflow-auto">
               <CardContent className="p-2 space-y-1">
                 {filteredEvents.map((event, i) => (
-                  <div 
-                    key={`${event.id}-${i}`} 
+                  <div
+                    key={`${event.id}-${i}`}
                     className="p-2 hover:bg-white/5 cursor-pointer flex items-center gap-2"
                     onClick={() => handleEventClick(event)}
                   >
@@ -716,7 +792,7 @@ export default function CalendarPage() {
               </CardContent>
             </Card>
           )}
-          
+
           {searchQuery && filteredEvents.length === 0 && (
             <div className="text-center text-muted-foreground font-terminal text-sm p-4">No events found</div>
           )}
@@ -743,8 +819,8 @@ export default function CalendarPage() {
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     <span className="font-terminal text-sm text-green-400">Connected</span>
                   </div>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     className="w-full rounded-none font-arcade text-[10px] text-red-400 hover:text-red-300 hover:bg-red-500/10"
                     onClick={() => disconnectGoogleMutation.mutate()}
@@ -755,7 +831,7 @@ export default function CalendarPage() {
                   </Button>
                 </div>
               ) : (
-                <Button 
+                <Button
                   className="w-full rounded-none font-arcade text-xs bg-blue-600 text-white hover:bg-blue-500"
                   onClick={() => connectGoogleMutation.mutate()}
                   disabled={connectGoogleMutation.isPending}
@@ -843,7 +919,7 @@ export default function CalendarPage() {
               <Label className="font-arcade text-xs">TITLE</Label>
               <Input className="rounded-none bg-black border-secondary focus-visible:ring-primary" placeholder="Event title..." value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} data-testid="input-modal-title" />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-arcade text-xs">START DATE</Label>
@@ -854,12 +930,12 @@ export default function CalendarPage() {
                 <Input type="date" className="rounded-none bg-black border-secondary" value={newEvent.endDate} onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })} placeholder={newEvent.date} data-testid="input-modal-end-date" />
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Checkbox id="allDay" checked={newEvent.allDay} onCheckedChange={(checked) => setNewEvent({ ...newEvent, allDay: !!checked })} />
               <Label htmlFor="allDay" className="font-terminal text-sm">All day</Label>
             </div>
-            
+
             {!newEvent.allDay && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -872,7 +948,7 @@ export default function CalendarPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-arcade text-xs">TYPE</Label>
@@ -901,7 +977,7 @@ export default function CalendarPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-arcade text-xs">REPEAT</Label>
@@ -987,48 +1063,95 @@ export default function CalendarPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Google Event View Modal */}
       <Dialog open={showGoogleEditModal} onOpenChange={setShowGoogleEditModal}>
-        <DialogContent className="bg-black border-2 border-blue-500 rounded-none max-w-md">
+        <DialogContent className="bg-black/95 border-2 border-primary text-white font-terminal max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-arcade text-blue-500 flex items-center gap-2">
+            <DialogTitle className="font-arcade text-xl text-primary flex items-center justify-between">
               GOOGLE_EVENT
-              <Badge variant="outline" className="text-[10px] rounded-none">READ ONLY</Badge>
             </DialogTitle>
           </DialogHeader>
+
           {selectedGoogleEvent && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label className="font-arcade text-xs">TITLE</Label>
-                <div className="font-terminal text-sm p-2 bg-black/50 border border-secondary">{selectedGoogleEvent.summary || 'Untitled'}</div>
+                <Input
+                  value={selectedGoogleEvent.summary || ''}
+                  onChange={(e) => setSelectedGoogleEvent({ ...selectedGoogleEvent, summary: e.target.value })}
+                  className="bg-black/50 border-secondary rounded-none font-terminal"
+                />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="font-arcade text-xs">DATE</Label>
-                  <div className="font-terminal text-sm p-2 bg-black/50 border border-secondary">
-                    {selectedGoogleEvent.start?.dateTime 
-                      ? format(new Date(selectedGoogleEvent.start.dateTime), 'MMM d, yyyy')
-                      : selectedGoogleEvent.start?.date || 'N/A'}
-                  </div>
+                  <Input
+                    type="date"
+                    value={selectedGoogleEvent.start?.dateTime ? format(new Date(selectedGoogleEvent.start.dateTime), 'yyyy-MM-dd') : selectedGoogleEvent.start?.date || ''}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      const currentStart = selectedGoogleEvent.start || {};
+                      const isDateTime = !!currentStart.dateTime;
+
+                      let newStart, newEnd;
+
+                      if (isDateTime) {
+                        const timePart = format(new Date(currentStart.dateTime!), 'HH:mm:ss');
+                        newStart = { dateTime: `${newDate}T${timePart}`, timeZone: currentStart.timeZone };
+                        const duration = new Date(selectedGoogleEvent.end!.dateTime!).getTime() - new Date(currentStart.dateTime!).getTime();
+                        newEnd = { dateTime: new Date(new Date(newStart.dateTime).getTime() + duration).toISOString(), timeZone: currentStart.timeZone };
+                      } else {
+                        newStart = { date: newDate };
+                        newEnd = { date: format(new Date(new Date(newDate).getTime() + 86400000), 'yyyy-MM-dd') };
+                      }
+
+                      setSelectedGoogleEvent({
+                        ...selectedGoogleEvent,
+                        start: newStart,
+                        end: newEnd
+                      });
+                    }}
+                    className="bg-black/50 border-secondary rounded-none font-terminal"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-arcade text-xs">TIME</Label>
-                  <div className="font-terminal text-sm p-2 bg-black/50 border border-secondary">
-                    {selectedGoogleEvent.start?.dateTime 
-                      ? format(new Date(selectedGoogleEvent.start.dateTime), 'h:mm a')
-                      : 'All Day'}
-                  </div>
+                  <Input
+                    type="time"
+                    disabled={!selectedGoogleEvent.start?.dateTime}
+                    value={selectedGoogleEvent.start?.dateTime ? format(new Date(selectedGoogleEvent.start.dateTime), 'HH:mm') : ''}
+                    onChange={(e) => {
+                      if (!selectedGoogleEvent.start?.dateTime) return;
+                      const newTime = e.target.value;
+                      const datePart = format(new Date(selectedGoogleEvent.start.dateTime), 'yyyy-MM-dd');
+                      const newStartDt = `${datePart}T${newTime}:00`;
+
+                      const duration = new Date(selectedGoogleEvent.end!.dateTime!).getTime() - new Date(selectedGoogleEvent.start.dateTime).getTime();
+                      const newEndDt = new Date(new Date(newStartDt).getTime() + duration).toISOString();
+
+                      setSelectedGoogleEvent({
+                        ...selectedGoogleEvent,
+                        start: { ...selectedGoogleEvent.start, dateTime: newStartDt },
+                        end: { ...selectedGoogleEvent.end, dateTime: newEndDt }
+                      });
+                    }}
+                    className="bg-black/50 border-secondary rounded-none font-terminal"
+                  />
                 </div>
               </div>
-              {selectedGoogleEvent.location && (
-                <div className="space-y-2">
-                  <Label className="font-arcade text-xs">LOCATION</Label>
-                  <div className="font-terminal text-sm p-2 bg-black/50 border border-secondary">{selectedGoogleEvent.location}</div>
-                </div>
-              )}
+
+              <div className="space-y-2">
+                <Label className="font-arcade text-xs">DESCRIPTION</Label>
+                <Textarea
+                  value={selectedGoogleEvent.description || ''}
+                  onChange={(e) => setSelectedGoogleEvent({ ...selectedGoogleEvent, description: e.target.value })}
+                  className="bg-black/50 border-secondary rounded-none font-terminal resize-none h-20"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label className="font-arcade text-xs">CALENDAR</Label>
-                <div className="font-terminal text-sm p-2 bg-black/50 border border-secondary flex items-center gap-2">
+                <div className="font-terminal text-sm p-2 bg-black/50 border border-secondary flex items-center gap-2 text-muted-foreground">
                   <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: selectedGoogleEvent.calendarColor || '#3b82f6' }} />
                   {selectedGoogleEvent.calendarSummary || 'Google Calendar'}
                 </div>
@@ -1036,12 +1159,22 @@ export default function CalendarPage() {
             </div>
           )}
           <DialogFooter className="flex justify-between">
-            {selectedGoogleEvent?.htmlLink && (
-              <Button variant="ghost" className="rounded-none font-arcade text-xs text-blue-500" onClick={() => window.open(selectedGoogleEvent.htmlLink, '_blank')}>
-                <ExternalLink className="w-4 h-4 mr-1" /> OPEN IN GOOGLE
+            <div className="flex gap-2">
+              {selectedGoogleEvent?.htmlLink && (
+                <Button variant="ghost" className="rounded-none font-arcade text-xs text-blue-500 p-0 hover:bg-transparent" onClick={() => window.open(selectedGoogleEvent.htmlLink, '_blank')}>
+                  <ExternalLink className="w-4 h-4 mr-1" /> OPEN
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="rounded-none font-arcade text-xs" onClick={() => setShowGoogleEditModal(false)}>CANCEL</Button>
+              <Button
+                className="rounded-none font-arcade text-xs bg-primary hover:bg-primary/90 text-black"
+                onClick={() => handleGoogleSave()}
+              >
+                SAVE CHANGES
               </Button>
-            )}
-            <Button variant="ghost" className="rounded-none font-arcade text-xs" onClick={() => setShowGoogleEditModal(false)}>CLOSE</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
