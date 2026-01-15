@@ -1,54 +1,30 @@
 Goal (incl. success criteria):
-- Restore dashboard header buttons, Notes tab, "Let's Study" text under the brain, and scroll-shrink behavior.
-- Confirm/recover any other missing dashboard elements once the UI is reviewed.
+- Audit repo and clean up unused files by deleting generated caches and temp artifacts.
+- Review pre-existing modified/untracked files and revert unrelated changes.
+- Keep v9.2 as current; preserve logs/runs and sensitive config files.
 Constraints/Assumptions:
 - Follow AGENTS.md; keep changes minimal and additive.
 - Update CONTINUITY.md each turn.
-- Run required checks or note skips: python -m pytest brain/tests, python scripts/release_check.py, manual Run_Brain_All.bat.
-- Ask before destructive or irreversible actions.
+- Do not delete v9.2, scholar outputs/runs/logs, .env, or GoogleCalendarTasksAPI.json.
+- Ask before destructive or irreversible actions (confirmed for cleanup).
 Key decisions:
-- Apply only the Scholar/Ralph dashboard + proposal running sheet + local-state session scripts to main (not unrelated changes).
+- Keep all run logs and scholar outputs intact.
+- Delete generated __pycache__ and .pyc files, plus tmpclaude-5fc3-cwd.
+- Add ignore rule for tmpclaude-* temp folders.
 State:
   - Done:
-    - Copied Scholar/Ralph dashboard UI + API + proposal running sheet + local-state session scripts from ralph-readiness into main.
-    - Updated opencode launcher default project path to main so session worktrees launch from pt-study-sop.
-    - Copied `scripts/launch_codex_session.ps1` into main and updated `C:\Users\treyt\OneDrive\Desktop\LAUNCH_CODEX.bat` to default to main with error handling.
-    - Identified a background dashboard server on port 5000 earlier to avoid serving the old header.
-    - Restored top nav title text to "TREY'S STUDY SYSTEM" in main dashboard header.
-    - Removed Overview/v3.0/TT header elements and added scroll-driven header collapse behavior.
-    - Replaced mojibake apostrophes and updated dashboard title to "Trey's Study System".
-    - Restarted the dashboard server from `C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain` to serve updated assets.
-    - Cloned `vercel-labs/agent-skills` into `C:\Users\treyt\.codex\skills\agent-skills` (per request).
-    - Copied `react-best-practices` to top-level `C:\Users\treyt\.codex\skills\react-best-practices` for direct use.
-    - Removed Sync from nav, added a top-right notes toggle + side notes panel, and set logo badge text to "LET'S STUDY".
-    - Added notes sidebar JS (localStorage-backed) and updated notes button styling.
-    - Added Notes edit button with update-in-place behavior.
-    - Reordered nav buttons to Dashboard > Calendar > Brain > Scholar > Tutor on desktop/mobile and updated labels.
+    - Completed deeper scan for orphaned files and logs.
+    - Confirmed v9.2 is current and logs/runs must be kept.
+    - Removed __pycache__ directories and tmpclaude-5fc3-cwd.
+    - Updated .gitignore to ignore tmpclaude-* temp folders.
+    - Reverted unrelated file edits and removed untracked dashboard_clean.css.
   - Now:
-    - Removed the mobile hamburger/nav panel markup.
-    - Restored main content scale to full size, increased the header title size/position, and pushed the title area lower.
-    - Lowered the title underline further and increased top-nav padding to move the title/line down.
-    - Removed a duplicate mobile CSS block that was overriding desktop header sizing.
-    - Bumped asset query params to force CSS/JS refresh.
-    - Removed legacy sidebar/top-nav CSS selectors after audit (unused in current template).
+    - Verify cleanup is complete; only .gitignore, CONTINUITY.md, and tmpclaude deletion remain.
   - Next:
-    - Confirm header placement, title size, and main content scale; optionally run required checks.
-
-
+    - Optional: commit cleanup changes if desired.
 Open questions (UNCONFIRMED if needed):
-- Any other style tweaks needed beyond the header buttons?
-
+- None.
 Working set (files/ids/commands):
 - CONTINUITY.md
-- brain/templates/dashboard.html
-- brain/static/js/dashboard.js
-- brain/static/css/dashboard.css
-- brain/dashboard/scholar.py
-- brain/dashboard/routes.py
-- scripts/build_proposal_sheet.py
-- docs/roadmap/proposal_running_sheet.md
-- scripts/new_session_worktree.ps1
-- scripts/mark_local_state.ps1
-- scripts/launch_opencode_session.ps1
-- C:\Users\treyt\OneDrive\Desktop\opencode_openrouter.bat
-- C:\Users\treyt\OneDrive\Desktop\LAUNCH_CODEX.bat
+- .gitignore
+- tmpclaude-5fc3-cwd (deleted)

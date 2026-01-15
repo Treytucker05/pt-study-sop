@@ -50,8 +50,12 @@ brain/output/
 # Logs
 *.log
 
+# Temp
+tmpclaude-*
+
 # Environment variables
 .env
+
 
 # Google Calendar OAuth token (sensitive)
 gcal_token.json
