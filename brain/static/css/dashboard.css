@@ -757,7 +757,10 @@ h4,
   background: var(--surface-1) !important;
   padding: 12px;
   border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
+
 
 /* Week/Day views: container is transparent, children have backgrounds */
 #calendar-grid:has(.calendar-timegrid) {
@@ -784,26 +787,28 @@ h4,
 
 /* Calendar Styles */
 .calendar-day {
-  min-height: 100px;
-  max-height: 140px;
+  min-height: 110px;
+  max-height: 160px;
   overflow-y: auto;
-  padding: 8px;
+  padding: 6px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card-bg);
+  border-radius: 6px;
+  background: var(--surface-1);
   position: relative;
   font-size: 12px;
+  font-family: "Roboto", "Inter", system-ui, sans-serif;
 }
 
 .calendar-day.other-month {
-  opacity: 0.4;
+  opacity: 0.35;
   background: var(--bg);
 }
 
 .calendar-day.today {
-  border-color: var(--primary);
-  background: rgba(220, 38, 38, 0.1);
+  border-color: var(--accent);
+  background: rgba(31, 111, 235, 0.12);
 }
+
 
 /* Week View - Larger day cells */
 .calendar-day.week-view-day {
@@ -867,28 +872,44 @@ h4,
 }
 
 .calendar-day-header {
-  font-weight: 600;
-  margin-bottom: 6px;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
   color: var(--text-primary);
 }
 
 .calendar-day-number {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
+
+.calendar-day.today .calendar-day-number {
+  background: var(--accent);
+  color: white;
+}
+
 
 .calendar-event {
   margin-top: 4px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+
 
 .calendar-event:hover {
   transform: translateY(-1px);
@@ -925,9 +946,12 @@ h4,
   padding: 8px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-transform: uppercase;
+  background: var(--surface-2);
+  border-radius: 6px;
 }
+
 
 /* Google-style time grid (week/day) */
 .calendar-timegrid {

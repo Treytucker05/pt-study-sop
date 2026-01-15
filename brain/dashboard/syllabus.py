@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from config import (
     WEAK_THRESHOLD,
@@ -7,8 +6,10 @@ from config import (
     FRESH_DAYS,
 )
 from db_setup import init_database, get_connection
+
 # Reuse existing session helper to keep behavior consistent with main dashboard
 from dashboard.cli import get_all_sessions
+
 
 def fetch_all_courses_and_events():
     """
@@ -55,8 +56,14 @@ def fetch_all_courses_and_events():
             due_date,
             weight,
             raw_text,
-            status
+            status,
+            google_event_id,
+            google_calendar_id,
+            google_calendar_name,
+            google_updated_at,
+            updated_at
         FROM course_events
+
         ORDER BY
             COALESCE(date, due_date) ASC,
             id ASC
@@ -74,6 +81,11 @@ def fetch_all_courses_and_events():
             "weight": row[6],
             "raw_text": row[7],
             "status": row[8] if len(row) > 8 else None,
+            "google_event_id": row[9] if len(row) > 9 else None,
+            "google_calendar_id": row[10] if len(row) > 10 else None,
+            "google_calendar_name": row[11] if len(row) > 11 else None,
+            "google_updated_at": row[12] if len(row) > 12 else None,
+            "updated_at": row[13] if len(row) > 13 else None,
         }
         for row in event_rows
     ]
@@ -91,7 +103,7 @@ def attach_event_analytics(events, sessions):
     - last_session_date
     - freshness_status: fresh / stale / unstarted
     """
-    
+
     if not events:
         return []
 

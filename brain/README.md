@@ -229,9 +229,14 @@ The web dashboard (`dashboard_web.py`) provides a modern UI for managing your st
   - Month-view calendar showing course events, study sessions, and planned spaced repetition
   - Filters by course, event type, and date range
   - Plan spaced repetition sessions directly from calendar
+  - Google Calendar two-way sync (Primary + PT School default; configurable calendars)
 - **Course Events**: Track lectures, quizzes, exams, assignments with dates, weights, and coverage analytics
 
+
+Google Calendar sync setup: add credentials under `google_calendar` in `brain/data/api_config.json`, then connect and choose calendars in the dashboard.
+
 ### Tutor (Codex-Powered)
+
 
 - **Tutor Tab**: Chat UI connected to Codex CLI via RAG
 - **Mode-Specific Behavior**: Core (teaching), Sprint (testing), Drill (deep practice)
@@ -264,7 +269,14 @@ The dashboard exposes REST API endpoints:
 | `/api/syllabus/events` | GET | List course events with coverage analytics |
 | `/api/calendar/data` | GET | Get calendar data (events, sessions, planned) |
 | `/api/calendar/plan_session` | POST | Create planned spaced repetition session |
+| `/api/gcal/status` | GET | Google Calendar auth status |
+| `/api/gcal/calendars` | GET | List Google calendars + selection |
+| `/api/gcal/config` | GET/POST | Read/update calendar sync settings |
+| `/api/gcal/sync` | POST | Two-way Google Calendar sync |
+| `/api/gcal/revoke` | POST | Disconnect Google Calendar |
+| `/api/gtasks/sync` | POST | Import Google Tasks |
 | `/api/tutor/session/start` | POST | Start Tutor session |
+
 | `/api/tutor/session/turn` | POST | Process Tutor conversation turn |
 | `/api/tutor/card-draft` | POST | Create card draft from Tutor turn |
 | `/api/scholar` | GET | Scholar status and metadata |

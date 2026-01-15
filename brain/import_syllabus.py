@@ -375,9 +375,9 @@ def import_events(course_id: int, events: Any, replace: bool = False) -> int:
             """
             INSERT INTO course_events (
                 course_id, type, title, date, due_date,
-                weight, raw_text, status, created_at
+                weight, raw_text, status, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
             """,
             (
                 course_id,
@@ -388,8 +388,10 @@ def import_events(course_id: int, events: Any, replace: bool = False) -> int:
                 ev["weight"],
                 ev["raw_text"],
                 now,
+                now,
             ),
         )
+
         inserted += 1
 
     conn.commit()

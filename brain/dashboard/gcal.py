@@ -6,10 +6,13 @@ OAuth2 authentication + manual sync of calendar events
 import os
 import json
 import sqlite3
-from datetime import datetime, timedelta
+import re
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
-from db_setup import get_connection
+
+from db_setup import get_connection, init_database
 
 
 # Google API imports (install: pip install google-auth google-auth-oauthlib google-api-python-client)
@@ -33,7 +36,7 @@ DB_PATH = DATA_DIR / "pt_study.db"
 
 # OAuth scopes - read-only access to calendar and tasks
 SCOPES = [
-    "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/tasks.readonly",
 ]
 
@@ -43,10 +46,22 @@ def load_gcal_config():
     if not CONFIG_PATH.exists():
         return None
 
-    with open(CONFIG_PATH, "r") as f:
-        config = json.load(f)
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            config = json.load(f)
+    except json.JSONDecodeError as exc:
+        return {"_error": f"Invalid JSON in api_config.json: {exc}"}
 
     return config.get("google_calendar", {})
+
+
+def normalize_gcal_config(config: Optional[Dict]) -> Dict:
+    normalized = dict(config or {})
+    normalized.setdefault("calendar_ids", [])
+    normalized.setdefault("default_calendar_id", "primary")
+    normalized.setdefault("sync_all_calendars", False)
+    normalized.setdefault("timezone", None)
+    return normalized
 
 
 def save_token(creds):
@@ -176,7 +191,14 @@ def check_auth_status():
         return {"connected": False, "error": "Google API not installed"}
 
     config = load_gcal_config()
-    if not config or not config.get("client_id") or not config.get("client_secret"):
+    if not config:
+        return {
+            "connected": False,
+            "error": "Google Calendar not configured. Update brain/data/api_config.json.",
+        }
+    if config.get("_error"):
+        return {"connected": False, "error": config.get("_error")}
+    if not config.get("client_id") or not config.get("client_secret"):
         return {
             "connected": False,
             "error": "Google Calendar not configured. Update brain/data/api_config.json.",
@@ -209,42 +231,143 @@ def revoke_auth():
     return True
 
 
-def fetch_calendar_events(days_ahead=90):
-    """Fetch upcoming events from Google Calendar"""
+def parse_rfc3339(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
+    except ValueError:
+        return None
+
+
+def parse_local_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(value)
+        if dt.tzinfo:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
+    except ValueError:
+        return None
+
+
+def fetch_calendar_list():
+    """Fetch available Google Calendars for the user."""
     service = get_calendar_service()
     if not service:
         return [], "Not authenticated"
 
-    config = load_gcal_config() or {}
-    calendar_id = config.get("calendar_id", "primary")
+    try:
+        result = service.calendarList().list(showHidden=False, maxResults=250).execute()
+        return result.get("items", []), None
+    except Exception as exc:
+        return [], str(exc)
+
+
+def resolve_calendar_selection(
+    config: Optional[Dict],
+    calendars: List[Dict],
+) -> Tuple[List[str], str, bool, Dict[str, Dict]]:
+    normalized = normalize_gcal_config(config)
+    sync_all = bool(normalized.get("sync_all_calendars"))
+    calendar_meta: Dict[str, Dict] = {}
+    for cal in calendars:
+        cal_id = cal.get("id")
+        if not cal_id:
+            continue
+        calendar_meta[cal_id] = {
+            "name": cal.get("summary") or cal_id,
+            "primary": bool(cal.get("primary")),
+            "time_zone": cal.get("timeZone"),
+            "access_role": cal.get("accessRole"),
+        }
+
+    calendar_ids = list(normalized.get("calendar_ids") or [])
+    if sync_all:
+        calendar_ids = list(calendar_meta.keys())
+
+    if not calendar_ids:
+        primary_id = next(
+            (cid for cid, meta in calendar_meta.items() if meta.get("primary")),
+            None,
+        )
+        if primary_id:
+            calendar_ids.append(primary_id)
+
+        pt_school_id = next(
+            (
+                cid
+                for cid, meta in calendar_meta.items()
+                if (meta.get("name") or "").lower() == "pt school"
+            ),
+            None,
+        )
+        if pt_school_id and pt_school_id not in calendar_ids:
+            calendar_ids.append(pt_school_id)
+
+        if not calendar_ids and calendar_meta:
+            calendar_ids.append(next(iter(calendar_meta.keys())))
+
+    default_calendar_id = normalized.get("default_calendar_id") or "primary"
+    if calendar_ids and default_calendar_id not in calendar_ids:
+        default_calendar_id = calendar_ids[0]
+
+    return calendar_ids, default_calendar_id, sync_all, calendar_meta
+
+
+def fetch_calendar_events(
+    calendar_ids: List[str],
+    calendar_meta: Dict[str, Dict],
+    days_ahead: int = 90,
+    service=None,
+):
+    """Fetch upcoming events from Google Calendar."""
+    service = service or get_calendar_service()
+    if not service:
+        return [], "Not authenticated"
 
     now = datetime.utcnow()
     time_min = now.isoformat() + "Z"
     time_max = (now + timedelta(days=days_ahead)).isoformat() + "Z"
 
-    try:
-        events_result = (
-            service.events()
-            .list(
-                calendarId=calendar_id,
-                timeMin=time_min,
-                timeMax=time_max,
-                maxResults=500,
-                singleEvents=True,
-                orderBy="startTime",
+    events: List[Dict] = []
+    for calendar_id in calendar_ids:
+        if not calendar_id:
+            continue
+        try:
+            events_result = (
+                service.events()
+                .list(
+                    calendarId=calendar_id,
+                    timeMin=time_min,
+                    timeMax=time_max,
+                    maxResults=500,
+                    singleEvents=True,
+                    orderBy="startTime",
+                )
+                .execute()
             )
-            .execute()
-        )
+        except Exception as exc:
+            return [], str(exc)
 
-        return events_result.get("items", []), None
-    except Exception as e:
-        return [], str(e)
+        for item in events_result.get("items", []):
+            if item.get("status") == "cancelled":
+                continue
+            item["_calendar_id"] = calendar_id
+            item["_calendar_name"] = calendar_meta.get(calendar_id, {}).get("name")
+            events.append(item)
+
+    return events, None
 
 
-def parse_gcal_event(gcal_event):
-    """Parse Google Calendar event to Brain format"""
+def parse_gcal_event(gcal_event: Dict) -> Dict:
+    """Parse Google Calendar event to Brain format."""
     start = gcal_event.get("start", {})
-    end = gcal_event.get("end", {})
+    updated = gcal_event.get("updated")
 
     # Handle all-day vs timed events
     if "date" in start:
@@ -272,60 +395,458 @@ def parse_gcal_event(gcal_event):
     else:
         event_type = "other"
 
+    raw_parts = [f"Time: {time_str or 'All day'}"]
+    location = gcal_event.get("location")
+    if location:
+        raw_parts.append(f"Location: {location}")
+    description = (gcal_event.get("description") or "").strip()
+    if description:
+        raw_parts.append(f"Notes: {description}")
+
     return {
         "google_event_id": gcal_event.get("id"),
+        "google_calendar_id": gcal_event.get("_calendar_id"),
+        "google_calendar_name": gcal_event.get("_calendar_name"),
+        "google_updated_at": updated,
         "title": title,
         "date": date,
         "type": event_type,
-        "raw_text": f"Time: {time_str or 'All day'} | Location: {gcal_event.get('location', 'Not specified')}",
+        "raw_text": " | ".join(raw_parts),
         "status": "pending",
     }
 
 
-def sync_to_database(course_id=None):
-    """Sync Google Calendar events to database"""
-    events, error = fetch_calendar_events()
+def _extract_raw_text_parts(raw_text: Optional[str]) -> Dict[str, Optional[str]]:
+    parts: Dict[str, Optional[str]] = {"time": None, "location": None, "notes": None}
+
+    if not raw_text:
+        return parts
+
+    time_match = re.search(r"Time:\s*([^|]+)", raw_text, re.IGNORECASE)
+    if time_match:
+        value = time_match.group(1).strip()
+        parts["time"] = value
+
+    location_match = re.search(r"Location:\s*([^|]+)", raw_text, re.IGNORECASE)
+    if location_match:
+        parts["location"] = location_match.group(1).strip()
+
+    notes_match = re.search(r"Notes:\s*([^|]+)", raw_text, re.IGNORECASE)
+    if notes_match:
+        parts["notes"] = notes_match.group(1).strip()
+
+    return parts
+
+
+def _parse_time_string(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    text = value.strip()
+    if not text or text.lower() in {"all day", "allday"}:
+        return None
+
+    match = re.search(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b", text, re.IGNORECASE)
+    if match:
+        hour = int(match.group(1))
+        minute = int(match.group(2) or 0)
+        meridian = match.group(3).lower()
+        hour = max(1, min(hour, 12))
+        if meridian == "pm" and hour != 12:
+            hour += 12
+        if meridian == "am" and hour == 12:
+            hour = 0
+        return f"{hour:02d}:{minute:02d}"
+
+    match = re.search(r"\b([01]?\d|2[0-3]):([0-5]\d)\b", text)
+    if match:
+        return f"{int(match.group(1)):02d}:{int(match.group(2)):02d}"
+
+    return None
+
+
+def _build_event_datetime(date_str: str, time_str: Optional[str]) -> Optional[datetime]:
+    if not date_str or not time_str:
+        return None
+    try:
+        return datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+    except ValueError:
+        return None
+
+
+def build_gcal_event_payload(
+    local_event: Dict,
+    calendar_timezone: Optional[str],
+) -> Optional[Dict]:
+    date_str = local_event.get("date") or local_event.get("due_date")
+    if not date_str:
+        return None
+
+    raw_text = (local_event.get("raw_text") or "").strip()
+    parts = _extract_raw_text_parts(raw_text)
+    time_str = _parse_time_string(parts.get("time"))
+    calendar_timezone = calendar_timezone or "UTC"
+
+    start_dt = _build_event_datetime(date_str, time_str)
+    if start_dt:
+        end_dt = start_dt + timedelta(minutes=60)
+        start = {"dateTime": start_dt.isoformat(), "timeZone": calendar_timezone}
+        end = {"dateTime": end_dt.isoformat(), "timeZone": calendar_timezone}
+    else:
+        try:
+            base_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+        start = {"date": base_date.isoformat()}
+        end = {"date": (base_date + timedelta(days=1)).isoformat()}
+
+    payload = {
+        "summary": local_event.get("title") or "Untitled",
+        "start": start,
+        "end": end,
+    }
+
+    if parts.get("location"):
+        payload["location"] = parts["location"]
+    if raw_text:
+        payload["description"] = raw_text
+
+    return payload
+
+
+def upsert_gcal_event(
+    service,
+    calendar_id: str,
+    local_event: Dict,
+    calendar_timezone: Optional[str],
+):
+    payload = build_gcal_event_payload(local_event, calendar_timezone)
+    if not payload:
+        return None, "Missing date"
+
+    event_id = local_event.get("google_event_id")
+    try:
+        if event_id:
+            updated = (
+                service.events()
+                .update(calendarId=calendar_id, eventId=event_id, body=payload)
+                .execute()
+            )
+        else:
+            updated = (
+                service.events().insert(calendarId=calendar_id, body=payload).execute()
+            )
+        return updated, None
+    except Exception as exc:
+        return None, str(exc)
+
+
+def delete_gcal_event(google_event_id: str, calendar_id: str):
+    service = get_calendar_service()
+    if not service:
+        return False, "Not authenticated"
+
+    try:
+        service.events().delete(
+            calendarId=calendar_id, eventId=google_event_id
+        ).execute()
+        return True, None
+    except Exception as exc:
+        return False, str(exc)
+
+
+def ensure_calendar_course(cursor, calendar_name: Optional[str]) -> int:
+    name = (calendar_name or "Google Calendar").strip() or "Google Calendar"
+    cursor.execute("SELECT id FROM courses WHERE lower(name) = ?", (name.lower(),))
+    row = cursor.fetchone()
+    if row:
+        return row[0]
+
+    now = datetime.now().isoformat(timespec="seconds")
+    cursor.execute(
+        """
+        INSERT INTO courses (
+            name, code, term, instructor, default_study_mode,
+            time_budget_per_week_minutes, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (name, name, None, None, "Core", 0, now),
+    )
+    return cursor.lastrowid
+
+
+def sync_bidirectional(course_id=None, calendar_ids: Optional[List[str]] = None):
+    """Two-way sync between Google Calendar and local course_events."""
+    if not GOOGLE_API_AVAILABLE:
+        return {"success": False, "error": "Google API libraries not installed"}
+
+    config = load_gcal_config()
+    if not config:
+        return {"success": False, "error": "Google Calendar not configured"}
+    if config.get("_error"):
+        return {"success": False, "error": config.get("_error")}
+    if not config.get("client_id"):
+        return {"success": False, "error": "Google Calendar not configured"}
+
+    service = get_calendar_service()
+    if not service:
+        return {"success": False, "error": "Not authenticated"}
+
+    calendars, error = fetch_calendar_list()
     if error:
-        return {"success": False, "error": error, "imported": 0, "skipped": 0}
+        return {"success": False, "error": error}
 
+    selected_ids, default_calendar_id, sync_all, calendar_meta = (
+        resolve_calendar_selection(config, calendars)
+    )
+    if calendar_ids:
+        selected_ids = calendar_ids
+        if selected_ids and default_calendar_id not in selected_ids:
+            default_calendar_id = selected_ids[0]
+
+    if not selected_ids:
+        return {"success": False, "error": "No calendars selected"}
+
+    events, error = fetch_calendar_events(selected_ids, calendar_meta, service=service)
+    if error:
+        return {"success": False, "error": error}
+
+    gcal_event_keys = {
+        (ev.get("_calendar_id"), ev.get("id"))
+        for ev in events
+        if ev.get("_calendar_id") and ev.get("id")
+    }
+
+    now = datetime.now().isoformat(timespec="seconds")
     imported = 0
+    updated = 0
+    pushed = 0
+    deleted = 0
     skipped = 0
+    errors: List[str] = []
 
+    init_database()
     conn = get_connection()
     cursor = conn.cursor()
+
+    course_by_calendar: Dict[str, int] = {}
+
+    def resolve_course_id(calendar_name: Optional[str]) -> int:
+        if course_id is not None:
+            return course_id
+        name = (calendar_name or "Google Calendar").strip() or "Google Calendar"
+        if name not in course_by_calendar:
+            course_by_calendar[name] = ensure_calendar_course(cursor, name)
+        return course_by_calendar[name]
+
+    local_to_push: List[Dict] = []
+    local_to_push_ids: set = set()
 
     for event in events:
         parsed = parse_gcal_event(event)
         google_event_id = parsed.get("google_event_id")
-        if not parsed.get("date") or not google_event_id:
-            skipped += 1
-            continue
-
-        cursor.execute(
-            "SELECT id FROM course_events WHERE google_event_id = ?",
-            (google_event_id,),
-        )
-        if cursor.fetchone():
+        calendar_id = parsed.get("google_calendar_id")
+        if not google_event_id or not parsed.get("date"):
             skipped += 1
             continue
 
         cursor.execute(
             """
-            INSERT INTO course_events (course_id, type, title, date, raw_text, status, google_event_id, google_synced_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """,
+            SELECT id, course_id, type, title, date, due_date, raw_text, status,
+                   google_event_id, google_calendar_id, google_calendar_name,
+                   google_updated_at, updated_at
+            FROM course_events
+            WHERE google_event_id = ? AND (google_calendar_id = ? OR google_calendar_id IS NULL)
+            """,
+            (google_event_id, calendar_id),
+        )
+        row = cursor.fetchone()
+        if row:
+            local_event = {
+                "id": row[0],
+                "course_id": row[1],
+                "type": row[2],
+                "title": row[3],
+                "date": row[4],
+                "due_date": row[5],
+                "raw_text": row[6],
+                "status": row[7],
+                "google_event_id": row[8],
+                "google_calendar_id": row[9],
+                "google_calendar_name": row[10],
+                "google_updated_at": row[11],
+                "updated_at": row[12],
+            }
+
+            local_updated = parse_local_datetime(local_event.get("updated_at"))
+            google_updated = parse_rfc3339(parsed.get("google_updated_at"))
+
+            if local_updated and google_updated and local_updated > google_updated:
+                if local_event["id"] not in local_to_push_ids:
+                    local_to_push.append(local_event)
+                    local_to_push_ids.add(local_event["id"])
+                continue
+
+            updated_at = parsed.get("google_updated_at") or now
+            cursor.execute(
+                """
+                UPDATE course_events
+                SET type = ?, title = ?, date = ?, due_date = ?, raw_text = ?, status = ?,
+                    google_calendar_id = ?, google_calendar_name = ?, google_updated_at = ?,
+                    google_synced_at = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    parsed["type"],
+                    parsed["title"],
+                    parsed["date"],
+                    local_event.get("due_date"),
+                    parsed["raw_text"],
+                    local_event.get("status") or parsed["status"],
+                    parsed.get("google_calendar_id"),
+                    parsed.get("google_calendar_name"),
+                    parsed.get("google_updated_at"),
+                    now,
+                    updated_at,
+                    local_event["id"],
+                ),
+            )
+            updated += 1
+        else:
+            updated_at = parsed.get("google_updated_at") or now
+            course_id_to_use = resolve_course_id(parsed.get("google_calendar_name"))
+            cursor.execute(
+                """
+                INSERT INTO course_events (
+                    course_id, type, title, date, raw_text, status,
+                    created_at, updated_at, google_event_id, google_calendar_id,
+                    google_calendar_name, google_updated_at, google_synced_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    course_id_to_use,
+                    parsed["type"],
+                    parsed["title"],
+                    parsed["date"],
+                    parsed["raw_text"],
+                    parsed["status"],
+                    now,
+                    updated_at,
+                    google_event_id,
+                    parsed.get("google_calendar_id"),
+                    parsed.get("google_calendar_name"),
+                    parsed.get("google_updated_at"),
+                    now,
+                ),
+            )
+            imported += 1
+
+    cursor.execute(
+        """
+        SELECT id, google_event_id, google_calendar_id
+        FROM course_events
+        WHERE google_event_id IS NOT NULL AND google_calendar_id IS NOT NULL
+        """
+    )
+    for row in cursor.fetchall():
+        local_id, google_event_id, calendar_id = row
+        if str(google_event_id).startswith("task_"):
+            continue
+        if calendar_id not in selected_ids:
+            continue
+        if (calendar_id, google_event_id) not in gcal_event_keys:
+            cursor.execute("DELETE FROM course_events WHERE id = ?", (local_id,))
+            deleted += 1
+
+    cursor.execute(
+        """
+        SELECT id, course_id, type, title, date, due_date, raw_text, status,
+               google_event_id, google_calendar_id, google_calendar_name,
+               google_updated_at, updated_at
+        FROM course_events
+        """
+    )
+    for row in cursor.fetchall():
+        local_event = {
+            "id": row[0],
+            "course_id": row[1],
+            "type": row[2],
+            "title": row[3],
+            "date": row[4],
+            "due_date": row[5],
+            "raw_text": row[6],
+            "status": row[7],
+            "google_event_id": row[8],
+            "google_calendar_id": row[9],
+            "google_calendar_name": row[10],
+            "google_updated_at": row[11],
+            "updated_at": row[12],
+        }
+        if course_id and local_event.get("course_id") != course_id:
+            continue
+        if str(local_event.get("google_event_id") or "").startswith("task_"):
+            continue
+        if local_event["id"] in local_to_push_ids:
+            continue
+
+        local_updated = parse_local_datetime(local_event.get("updated_at"))
+        google_updated = parse_rfc3339(local_event.get("google_updated_at"))
+
+        if not local_event.get("google_event_id"):
+            local_to_push.append(local_event)
+            local_to_push_ids.add(local_event["id"])
+            continue
+
+        if local_updated and (not google_updated or local_updated > google_updated):
+            local_to_push.append(local_event)
+            local_to_push_ids.add(local_event["id"])
+
+    for local_event in local_to_push:
+        calendar_id = local_event.get("google_calendar_id") or default_calendar_id
+        if calendar_id not in selected_ids:
+            continue
+
+        access_role = calendar_meta.get(calendar_id, {}).get("access_role")
+        if access_role and access_role not in ("owner", "writer"):
+            errors.append(
+                f"Calendar '{calendar_meta.get(calendar_id, {}).get('name')}' is read-only"
+            )
+            continue
+
+        calendar_timezone = (
+            calendar_meta.get(calendar_id, {}).get("time_zone")
+            or config.get("timezone")
+            or "UTC"
+        )
+        updated_event, error = upsert_gcal_event(
+            service, calendar_id, local_event, calendar_timezone
+        )
+        if error:
+            errors.append(error)
+            continue
+        if not updated_event:
+            skipped += 1
+            continue
+
+        cursor.execute(
+            """
+            UPDATE course_events
+            SET google_event_id = ?, google_calendar_id = ?, google_calendar_name = ?,
+                google_updated_at = ?, google_synced_at = ?, updated_at = ?
+            WHERE id = ?
+            """,
             (
-                course_id,
-                parsed["type"],
-                parsed["title"],
-                parsed["date"],
-                parsed["raw_text"],
-                parsed["status"],
-                google_event_id,
-                datetime.now().isoformat(),
+                updated_event.get("id"),
+                calendar_id,
+                calendar_meta.get(calendar_id, {}).get("name"),
+                updated_event.get("updated"),
+                now,
+                local_event.get("updated_at") or now,
+                local_event["id"],
             ),
         )
-        imported += 1
+        pushed += 1
 
     conn.commit()
     conn.close()
@@ -333,9 +854,26 @@ def sync_to_database(course_id=None):
     return {
         "success": True,
         "imported": imported,
+        "updated": updated,
+        "pushed": pushed,
+        "deleted": deleted,
         "skipped": skipped,
-        "source": "calendar",
+        "errors": errors,
+        "default_calendar_id": default_calendar_id,
+        "calendars": [
+            {
+                "id": cal_id,
+                "name": calendar_meta.get(cal_id, {}).get("name"),
+                "access_role": calendar_meta.get(cal_id, {}).get("access_role"),
+            }
+            for cal_id in selected_ids
+        ],
+        "sync_all": sync_all,
     }
+
+
+def sync_to_database(course_id=None):
+    return sync_bidirectional(course_id=course_id)
 
 
 def get_tasks_service():
@@ -453,6 +991,7 @@ def sync_tasks_to_database(course_id=None):
     imported = 0
     skipped = 0
 
+    init_database()
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -486,13 +1025,19 @@ def sync_tasks_to_database(course_id=None):
                 skipped += 1
                 continue
 
+            course_id_to_use = course_id or ensure_calendar_course(
+                cursor, tasklist.get("title") or "Google Tasks"
+            )
             cursor.execute(
                 """
-                INSERT INTO course_events (course_id, type, title, date, raw_text, status, google_event_id, google_synced_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO course_events (
+                    course_id, type, title, date, raw_text, status,
+                    google_event_id, google_synced_at, google_updated_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
-                    course_id,
+                    course_id_to_use,
                     parsed["type"],
                     parsed["title"],
                     parsed["date"],
@@ -500,8 +1045,11 @@ def sync_tasks_to_database(course_id=None):
                     parsed["status"],
                     google_event_id,
                     datetime.now().isoformat(),
+                    datetime.now().isoformat(),
+                    datetime.now().isoformat(),
                 ),
             )
+
             imported += 1
 
     conn.commit()

@@ -4245,7 +4245,13 @@ function populateEditModal(ev, eventId) {
     courseSelect.innerHTML = buildCourseOptions(coursesForModal, true, 'Select course');
     courseSelect.value = ev.course_id || '';
   }
+  const calendarSelect = document.getElementById('edit-event-calendar');
+  if (calendarSelect) {
+    refreshEventCalendarSelect(ev.google_calendar_id || '');
+    calendarSelect.value = ev.google_calendar_id || '';
+  }
   document.getElementById('edit-event-title').value = ev.title || '';
+
   document.getElementById('edit-event-type').value = ev.type || ev.event_type || 'other';
   document.getElementById('edit-event-status').value = ev.status || 'pending';
   document.getElementById('edit-event-date').value = ev.date || '';
@@ -4294,6 +4300,10 @@ async function deleteEvent() {
       closeEventEditModal();
       renderSyllabusList();
       if (typeof loadCalendar === 'function') loadCalendar();
+      if (data.gcal_warning) {
+        alert(`Deleted locally, but Google Calendar delete failed: ${data.gcal_warning}`);
+      }
+
     } else {
       statusEl.textContent = `Error: ${data.message}`;
       statusEl.style.color = 'var(--error)';
@@ -4324,7 +4334,11 @@ async function saveEventEdit(e) {
   const selectedCourse = document.getElementById('edit-event-course')?.value;
   if (selectedCourse) payload.course_id = parseInt(selectedCourse, 10) || null;
 
+  const selectedCalendar = document.getElementById('edit-event-calendar')?.value;
+  if (selectedCalendar !== undefined) payload.google_calendar_id = selectedCalendar || null;
+
   const recurrencePattern = document.getElementById('edit-event-repeat')?.value || 'none';
+
   const recurrenceUntil = document.getElementById('edit-event-repeat-until')?.value || '';
   if (recurrencePattern !== 'none' || recurrenceUntil) {
     payload.recurrence_plan = {
@@ -4333,10 +4347,13 @@ async function saveEventEdit(e) {
     };
   }
 
-  // Remove null/empty fields
+  // Remove null/empty fields (preserve google_calendar_id to allow clearing)
   Object.keys(payload).forEach(k => {
-    if (payload[k] === null || payload[k] === '') delete payload[k];
+    if ((payload[k] === null || payload[k] === '') && k !== 'google_calendar_id') {
+      delete payload[k];
+    }
   });
+
 
   try {
     statusEl.textContent = 'Saving...';
@@ -4364,7 +4381,9 @@ async function saveEventEdit(e) {
         if (payload.weight) ev.weight = payload.weight;
         if (payload.raw_text) ev.raw_text = payload.raw_text;
         if (payload.course_id) ev.course_id = payload.course_id;
+        if (payload.google_calendar_id !== undefined) ev.google_calendar_id = payload.google_calendar_id;
       }
+
 
       // Close modal and refresh list after brief delay
       setTimeout(() => {
@@ -6456,10 +6475,185 @@ async function clearSyncTracking() {
 // GOOGLE CALENDAR INTEGRATION
 // ============================================================================
 
+let gcalCalendars = [];
+let gcalConfig = { selectedIds: [], defaultCalendarId: 'primary', syncAll: false };
+
+function getCalendarLabel(calendarId) {
+  if (!calendarId) return 'Primary';
+  const calendar = gcalCalendars.find(cal => cal.id === calendarId);
+  if (calendar?.summary) return calendar.summary;
+  return calendarId === 'primary' ? 'Primary' : calendarId;
+}
+
+function refreshEventCalendarSelect(selectedId) {
+  const select = document.getElementById('edit-event-calendar');
+  if (!select) return;
+
+  const defaultLabel = getCalendarLabel(gcalConfig.defaultCalendarId || 'primary');
+  let options = `<option value="">Default (${defaultLabel})</option>`;
+  gcalCalendars.forEach(cal => {
+    if (!cal.id) return;
+    const suffix = cal.primary ? ' (Primary)' : '';
+    options += `<option value="${cal.id}">${cal.summary || cal.id}${suffix}</option>`;
+  });
+  select.innerHTML = options;
+
+  if (selectedId) {
+    select.value = selectedId;
+  }
+}
+
+function updateGCalWarning(syncAll) {
+  const warningEl = document.getElementById('gcal-calendar-warning');
+  if (!warningEl) return;
+  warningEl.style.display = syncAll ? 'block' : 'none';
+}
+
+function renderGCalCalendarList() {
+  const listEl = document.getElementById('gcal-calendar-list');
+  const defaultSelect = document.getElementById('gcal-default-calendar');
+  const syncAllToggle = document.getElementById('gcal-sync-all');
+
+  if (!listEl || !defaultSelect) return;
+
+  if (!gcalCalendars.length) {
+    listEl.textContent = 'No calendars found.';
+    return;
+  }
+
+  const syncAll = gcalConfig.syncAll;
+  if (syncAllToggle) {
+    syncAllToggle.checked = syncAll;
+  }
+
+  listEl.innerHTML = gcalCalendars.map(cal => {
+    const checked = syncAll || gcalConfig.selectedIds.includes(cal.id);
+    const canWrite = ['owner', 'writer'].includes(cal.access_role);
+    const suffix = cal.primary ? ' (Primary)' : '';
+    const accessLabel = canWrite ? '' : ' (read-only)';
+    return `
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary);">
+        <input type="checkbox" data-calendar-id="${cal.id}" ${checked ? 'checked' : ''} ${syncAll ? 'disabled' : ''}
+          style="width: 14px; height: 14px; accent-color: var(--primary);">
+        <span>${cal.summary || cal.id}${suffix}${accessLabel}</span>
+      </label>
+    `;
+  }).join('');
+
+  defaultSelect.innerHTML = gcalCalendars.map(cal => {
+    const suffix = cal.primary ? ' (Primary)' : '';
+    return `<option value="${cal.id}">${cal.summary || cal.id}${suffix}</option>`;
+  }).join('');
+  if (!gcalCalendars.find(cal => cal.id === gcalConfig.defaultCalendarId) && gcalCalendars.length) {
+    gcalConfig.defaultCalendarId = gcalCalendars[0].id;
+  }
+  defaultSelect.value = gcalConfig.defaultCalendarId || 'primary';
+
+  updateGCalWarning(syncAll);
+  refreshEventCalendarSelect();
+}
+
+function getSelectedCalendarIdsFromUI() {
+  const listEl = document.getElementById('gcal-calendar-list');
+  if (!listEl) return [];
+  return Array.from(listEl.querySelectorAll('input[data-calendar-id]'))
+    .filter(input => input.checked)
+    .map(input => input.getAttribute('data-calendar-id'))
+    .filter(Boolean);
+}
+
+async function loadGCalCalendars() {
+  const listEl = document.getElementById('gcal-calendar-list');
+  if (!listEl) return;
+
+  try {
+    listEl.textContent = 'Loading calendars...';
+    const response = await fetch('/api/gcal/calendars');
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('GCal calendars error:', text);
+      listEl.textContent = `Failed to load calendars (${response.status})`;
+      return;
+    }
+    const data = await response.json();
+
+    if (!data.ok) {
+      listEl.textContent = data.error || 'Failed to load calendars';
+      return;
+    }
+
+    gcalCalendars = data.calendars || [];
+    gcalConfig = {
+      selectedIds: data.selected_ids || [],
+      defaultCalendarId: data.default_calendar_id || 'primary',
+      syncAll: Boolean(data.sync_all)
+    };
+
+    renderGCalCalendarList();
+  } catch (error) {
+    console.error('Failed to load calendars:', error);
+    listEl.textContent = 'Failed to load calendars.';
+  }
+}
+
+async function saveGCalConfig() {
+  const statusEl = document.getElementById('gcal-config-status');
+  const defaultSelect = document.getElementById('gcal-default-calendar');
+  const syncAllToggle = document.getElementById('gcal-sync-all');
+
+  if (!defaultSelect || !statusEl) return;
+
+  const selectedIds = getSelectedCalendarIdsFromUI();
+  const defaultCalendarId = defaultSelect.value || 'primary';
+  const syncAll = Boolean(syncAllToggle?.checked);
+
+  statusEl.textContent = 'Saving...';
+  statusEl.style.color = 'var(--text-muted)';
+
+  try {
+    const response = await fetch('/api/gcal/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        calendar_ids: selectedIds,
+        default_calendar_id: defaultCalendarId,
+        sync_all_calendars: syncAll
+      })
+    });
+    const data = await response.json();
+    if (data.ok) {
+      statusEl.textContent = 'Saved calendar settings.';
+      statusEl.style.color = 'var(--success)';
+      await loadGCalCalendars();
+    } else {
+      statusEl.textContent = data.error || 'Failed to save settings.';
+      statusEl.style.color = 'var(--error)';
+    }
+  } catch (error) {
+    statusEl.textContent = 'Failed to save settings.';
+    statusEl.style.color = 'var(--error)';
+  }
+}
+
+function handleSyncAllToggle(event) {
+  if (!event?.target) return;
+  if (event.target.checked) {
+    const confirmed = confirm('Sync all calendars? This may import private events.');
+    if (!confirmed) {
+      event.target.checked = false;
+      return;
+    }
+  }
+  gcalConfig.syncAll = Boolean(event.target.checked);
+  renderGCalCalendarList();
+}
+
 /**
  * Check Google Calendar authentication status
  */
 async function checkGCalStatus() {
+
   try {
     const response = await fetch('/api/gcal/status');
     const data = await response.json();
@@ -6477,13 +6671,17 @@ async function checkGCalStatus() {
       authSection.style.display = 'none';
       syncSection.style.display = 'block';
       document.getElementById('gcal-user-email').textContent = data.email || data.id;
+      loadGCalCalendars();
     } else {
       badge.textContent = 'Not Connected';
       badge.style.background = 'var(--surface-3)';
       badge.style.color = 'var(--text-secondary)';
       authSection.style.display = 'block';
       syncSection.style.display = 'none';
+      gcalCalendars = [];
+      gcalConfig = { selectedIds: [], defaultCalendarId: 'primary', syncAll: false };
     }
+
   } catch (error) {
     console.error('GCal status check failed:', error);
   }
@@ -6514,7 +6712,9 @@ async function connectGoogleCalendar() {
       if (event.data?.type === 'gcal-auth-success') {
         window.removeEventListener('message', handler);
         checkGCalStatus();
+        loadGCalCalendars();
         if (typeof loadCalendar === 'function') loadCalendar(); // Refresh calendar
+
       }
     });
   } catch (error) {
@@ -6537,15 +6737,32 @@ async function syncGoogleCalendar() {
   statusEl.textContent = '';
 
   try {
+    const calendarIds = getSelectedCalendarIdsFromUI();
+    const payload = calendarIds.length ? { calendar_ids: calendarIds } : {};
+
     const response = await fetch('/api/gcal/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify(payload)
     });
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      throw new Error(`Server error (${response.status}): ${text.slice(0, 120)}`);
+    }
     const data = await response.json();
 
     if (data.success) {
-      statusEl.textContent = `<i class="fas fa-check"></i> Imported ${data.imported} events, skipped ${data.skipped} duplicates`;
+      const parts = [
+        `Imported ${data.imported || 0}`,
+        `Updated ${data.updated || 0}`,
+        `Pushed ${data.pushed || 0}`,
+        `Deleted ${data.deleted || 0}`
+      ];
+      statusEl.textContent = `✓ ${parts.join(', ')}`;
+      if (data.errors?.length) {
+        statusEl.textContent += ` (${data.errors.length} error(s))`;
+      }
       statusEl.style.color = 'var(--success)';
       if (typeof loadCalendar === 'function') loadCalendar(); // Refresh calendar
     } else {
@@ -6559,6 +6776,7 @@ async function syncGoogleCalendar() {
     btn.disabled = false;
     btn.textContent = '📅 Sync Calendar';
   }
+
 }
 
 /**
@@ -6623,7 +6841,10 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('btn-gcal-sync')?.addEventListener('click', syncGoogleCalendar);
   document.getElementById('btn-gtasks-sync')?.addEventListener('click', syncGoogleTasks);
   document.getElementById('btn-gcal-disconnect')?.addEventListener('click', disconnectGoogleCalendar);
+  document.getElementById('btn-gcal-save-config')?.addEventListener('click', saveGCalConfig);
+  document.getElementById('gcal-sync-all')?.addEventListener('change', handleSyncAllToggle);
 });
+
 
 async function runBlackboardScraper() {
   const btn = document.getElementById('btn-run-scraper');

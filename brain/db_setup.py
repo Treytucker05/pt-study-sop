@@ -239,7 +239,12 @@ def init_database():
             source_url TEXT,
             google_event_id TEXT,
             google_synced_at TEXT,
+            google_calendar_id TEXT,
+            google_calendar_name TEXT,
+            google_updated_at TEXT,
+            updated_at TEXT,
             FOREIGN KEY(course_id) REFERENCES courses(id)
+
         )
     """
     )
@@ -638,9 +643,53 @@ def init_database():
         except sqlite3.OperationalError:
             pass  # Column might already exist
 
+    if "google_calendar_id" not in ce_columns:
+        try:
+            cursor.execute(
+                "ALTER TABLE course_events ADD COLUMN google_calendar_id TEXT"
+            )
+            print("[INFO] Added 'google_calendar_id' column to course_events table")
+        except sqlite3.OperationalError:
+            pass
+
+    if "google_calendar_name" not in ce_columns:
+        try:
+            cursor.execute(
+                "ALTER TABLE course_events ADD COLUMN google_calendar_name TEXT"
+            )
+            print("[INFO] Added 'google_calendar_name' column to course_events table")
+        except sqlite3.OperationalError:
+            pass
+
+    if "google_updated_at" not in ce_columns:
+        try:
+            cursor.execute(
+                "ALTER TABLE course_events ADD COLUMN google_updated_at TEXT"
+            )
+            print("[INFO] Added 'google_updated_at' column to course_events table")
+        except sqlite3.OperationalError:
+            pass
+
+    if "updated_at" not in ce_columns:
+        try:
+            cursor.execute("ALTER TABLE course_events ADD COLUMN updated_at TEXT")
+            print("[INFO] Added 'updated_at' column to course_events table")
+        except sqlite3.OperationalError:
+            pass
+
+    try:
+        cursor.execute(
+            "UPDATE course_events SET updated_at = COALESCE(updated_at, created_at)"
+        )
+    except sqlite3.OperationalError:
+        pass
+
     # Create index for google_event_id lookups
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_course_events_google_id ON course_events(google_event_id)"
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_course_events_google_lookup ON course_events(google_event_id, google_calendar_id)"
     )
 
     # Add recurrence_rule column if not exists (for recurring events)
