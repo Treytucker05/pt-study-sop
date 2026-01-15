@@ -92,45 +92,8 @@
       </div>
 
 
-      <!-- Hamburger Button (Mobile) -->
-      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Toggle menu"
-        aria-expanded="false" aria-controls="mobile-nav-panel">
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-      </button>
     </header>
 
-    <!-- Mobile Navigation Overlay -->
-    <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileNav()"></div>
-
-    <!-- Mobile Navigation Panel -->
-    <nav class="mobile-nav-panel" id="mobile-nav-panel" role="tablist" aria-label="Mobile tabs">
-      <a href="#overview" class="mobile-nav-item active" onclick="openTab(event, 'overview'); closeMobileNav();"
-        data-tab="overview" role="tab" id="tab-overview-tab-mobile" aria-controls="tab-overview" aria-selected="true" tabindex="0">
-        <img src="/static/images/icons/neo-nav-overview.svg" alt="Dashboard" class="nav-icon-img">
-        <span class="nav-text">Dashboard</span>
-      </a>
-      <a href="#syllabus" class="mobile-nav-item" onclick="openTab(event, 'syllabus'); closeMobileNav();"
-        data-tab="syllabus" role="tab" id="tab-syllabus-tab-mobile" aria-controls="tab-syllabus" aria-selected="false" tabindex="-1">
-        <img src="/static/images/icons/neo-nav-syllabus.svg" alt="Calendar" class="nav-icon-img">
-        <span class="nav-text">Calendar</span>
-      </a>
-      <a href="#sessions" class="mobile-nav-item" onclick="openTab(event, 'sessions'); closeMobileNav();"
-        data-tab="sessions" role="tab" id="tab-sessions-tab-mobile" aria-controls="tab-sessions" aria-selected="false" tabindex="-1">
-        <img src="/static/images/icons/neo-nav-brain.svg" alt="Brain" class="nav-icon-img">
-        <span class="nav-text">Brain</span>
-      </a>
-      <a href="#scholar" class="mobile-nav-item" onclick="openTab(event, 'scholar'); closeMobileNav();"
-        data-tab="scholar" role="tab" id="tab-scholar-tab-mobile" aria-controls="tab-scholar" aria-selected="false" tabindex="-1">
-        <img src="/static/images/icons/neo-nav-scholar.svg" alt="Scholar" class="nav-icon-img">
-        <span class="nav-text">Scholar</span>
-      </a>
-      <a href="#tutor" class="mobile-nav-item" onclick="openTab(event, 'tutor'); closeMobileNav();" data-tab="tutor" role="tab" id="tab-tutor-tab-mobile" aria-controls="tab-tutor" aria-selected="false" tabindex="-1">
-        <img src="/static/images/icons/neo-nav-tutor.svg" alt="Tutor" class="nav-icon-img">
-        <span class="nav-text">Tutor</span>
-      </a>
-    </nav>
 
 
 
@@ -2609,9 +2572,10 @@ Now say: â€œPaste your syllabus text here (one course at a time).â€ The
       if (window.innerWidth <= 768) {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('mobile-overlay');
-        sidebar.classList.remove('mobile-open');
-        overlay.classList.remove('active');
+        if (sidebar) sidebar.classList.remove('mobile-open');
+        if (overlay) overlay.classList.remove('active');
       }
+
     };
   </script>
 

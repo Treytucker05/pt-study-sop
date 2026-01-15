@@ -25,13 +25,14 @@ State:
     - Added Notes edit button with update-in-place behavior.
     - Reordered nav buttons to Dashboard > Calendar > Brain > Scholar > Tutor on desktop/mobile and updated labels.
   - Now:
-    - Updated header button styling to a cleaner neo-retro look per request.
+    - Removed the mobile hamburger/nav panel markup.
+    - Restored main content scale to full size, and increased the header title size/position.
+    - Removed legacy sidebar/top-nav CSS selectors after audit (unused in current template).
   - Next:
-    - Confirm the updated header button style; optionally run required checks.
+    - Confirm header placement, title size, and main content scale; optionally run required checks.
 
 Open questions (UNCONFIRMED if needed):
-- Which areas should be restyled (header/nav, notes panel, main content, overall theme)?
-- What style direction/palette should we target?
+- Any other style tweaks needed beyond the header buttons?
 
 Working set (files/ids/commands):
 - CONTINUITY.md

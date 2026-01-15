@@ -289,6 +289,10 @@ function toggleMobileNav() {
   if (overlay) {
     overlay.style.display = isOpen ? 'block' : 'none';
   }
+  if (!hamburger && !overlay) {
+    document.body.classList.remove('mobile-nav-open');
+  }
+
 }
 
 function closeMobileNav() {
