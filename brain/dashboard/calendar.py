@@ -35,10 +35,15 @@ def get_calendar_data(start_date, end_date, course_id=None, event_type=None):
                         "date": ev_date_str,
                         "title": ev.get("title", ""),
                         "event_type": ev.get("type", ""),
+                        "course_id": ev.get("course_id"),
                         "course_code": course.get("code") if course else None,
                         "course_name": course.get("name") if course else None,
+                        "course_color": course.get("color") if course else None,
                         "weight": ev.get("weight", 0.0),
                         "raw_text": ev.get("raw_text", ""),
+                        "status": ev.get("status"),
+                        "google_calendar_id": ev.get("google_calendar_id"),
+                        "google_calendar_name": ev.get("google_calendar_name"),
                     }
                 )
         except ValueError:
@@ -106,7 +111,10 @@ def get_calendar_data(start_date, end_date, course_id=None, event_type=None):
                         "id": f"planned_{task_id}",
                         "type": "planned_repetition",
                         "date": sched_date,
+                        "course_id": cid,
                         "course_code": course.get("code") if course else None,
+                        "course_name": course.get("name") if course else None,
+                        "course_color": course.get("color") if course else None,
                         "planned_minutes": planned_mins or 0,
                         "status": status or "pending",
                         "notes": notes or "",
