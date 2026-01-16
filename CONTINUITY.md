@@ -1,19 +1,24 @@
 Goal (incl. success criteria):
-- Provide a Windows .bat that opens a new terminal and runs Ralph TUI with OpenCode for pt-study-sop.
-- Success = `Run_Ralph.bat` works with scripts/ralph/prd.json fallback and correct quoting.
+- Implement Brain intake pipeline: paste tutor notes into intake, use LLM to sort outputs (Anki, Obsidian, mastery, class, time spent, what worked/didn’t, tutor fixes).
+- Success = intake UI wired + backend endpoint to process intake + stored outputs ready for Anki/Obsidian/mastery views.
 Constraints/Assumptions:
-- Follow `C:\Users\treyt\OneDrive\Desktop\pt-study-sop\AGENTS.md` (continuity ledger required each turn).
-- Do not store/paste API keys or secrets in repo files.
+- Follow repo AGENTS.md; avoid secrets; keep edits scoped/additive.
+- LLM provider/config not yet confirmed.
 Key decisions:
-- Use doubled-percent for PATH in start cmd and doubled-quotes for PRD path with spaces.
+- Start with Brain intake flow and data shape alignment (Step 1).
 State:
   - Done:
-    - Updated `Run_Ralph.bat` with EnableDelayedExpansion and proper quote escaping for paths with spaces.
+    - Identified dashboard surfaces and gaps; roadmap in `docs/roadmap/dashboard_surface_gap_plan.md`.
   - Now:
-    - Awaiting user test of `Run_Ralph.bat` to confirm TUI launches.
+    - Inspect current Brain/Tutor intake and session data shape.
   - Next:
-    - If Bun TUI still crashes, create a --no-tui fallback launcher or use WSL.
+    - Design intake payload + storage, then implement UI + API.
 Open questions (UNCONFIRMED if needed):
-- Does the TUI launch correctly now, or does Bun still crash?
+- Which LLM provider/config should run the intake (OpenAI/OpenRouter/local)?
+- Where should outputs be stored (DB tables, files under `scholar/outputs`, or both)?
+- Desired output schema for Anki/Obsidian/mastery (fields + formats)?
 Working set (files/ids/commands):
-- `C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Run_Ralph.bat`
+- `brain/static/react/src/pages/brain.tsx`
+- `brain/static/react/src/pages/tutor.tsx`
+- `brain/dashboard/api_adapter.py`
+- `brain/dashboard/routes.py`
