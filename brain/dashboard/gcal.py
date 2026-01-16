@@ -350,15 +350,28 @@ def fetch_calendar_events(
     calendar_meta: Dict[str, Dict],
     days_ahead: int = 90,
     service=None,
+    time_min: Optional[str] = None,
+    time_max: Optional[str] = None,
 ):
     """Fetch upcoming events from Google Calendar."""
     service = service or get_calendar_service()
     if not service:
         return [], "Not authenticated"
 
-    now = datetime.utcnow()
-    time_min = now.isoformat() + "Z"
-    time_max = (now + timedelta(days=days_ahead)).isoformat() + "Z"
+    if not time_min:
+        now = datetime.utcnow()
+        time_min = now.isoformat() + "Z"
+    if not time_max:
+        # Default to days_ahead if not provided
+        if not time_min.endswith("Z"):
+             # Simple parsing if we just set it above it has Z. 
+             # If passed in as arg, assume formatted.
+             pass 
+        # For simplicity, if time_max missing, calculate from now or time_min
+        # Parsing time_min to add days is complex without strict format.
+        # Fallback to now + days_ahead if time_max not explicit.
+        now = datetime.utcnow()
+        time_max = (now + timedelta(days=days_ahead)).isoformat() + "Z"
 
     events: List[Dict] = []
     for calendar_id in calendar_ids:
@@ -1172,7 +1185,41 @@ def move_google_task(tasklist_id, task_id, previous=None, parent=None, service=N
         if previous:
             kwargs['previous'] = previous
             
-        result = service.tasks().move(**kwargs).execute()
         return result, None
     except Exception as e:
         return None, str(e)
+
+
+# -----------------------------------------------------------------------------
+# Event Write Methods (v9.3)
+# -----------------------------------------------------------------------------
+
+def create_event(calendar_id, body, service=None):
+    """Create a new event."""
+    service = service or get_service()
+    if not service: return None, "Not authenticated"
+    try:
+        event = service.events().insert(calendarId=calendar_id, body=body).execute()
+        return event, None
+    except Exception as e:
+        return None, str(e)
+
+def patch_event(calendar_id, event_id, body, service=None):
+    """Update an existing event (patch)."""
+    service = service or get_service()
+    if not service: return None, "Not authenticated"
+    try:
+        event = service.events().patch(calendarId=calendar_id, eventId=event_id, body=body).execute()
+        return event, None
+    except Exception as e:
+        return None, str(e)
+
+def delete_event(calendar_id, event_id, service=None):
+    """Delete an event."""
+    service = service or get_service()
+    if not service: return False, "Not authenticated"
+    try:
+        service.events().delete(calendarId=calendar_id, eventId=event_id).execute()
+        return True, None
+    except Exception as e:
+        return False, str(e)

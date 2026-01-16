@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type GoogleTask } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { SortableTaskItem, TaskListContainer, TaskDialog } from "@/components/GoogleTasksComponents";
+import { CalendarAssistant } from "@/components/CalendarAssistant";
 import type { InsertCalendarEvent, CalendarEvent } from "@shared/schema";
 import {
   DndContext,
@@ -88,6 +89,7 @@ function GoogleTasksBoard({ tasks, taskLists }: { tasks: GoogleTask[], taskLists
   const { toast } = useToast();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<GoogleTask | null>(null);
+  const [currentListIndex, setCurrentListIndex] = useState(0);
   const [creatingListId, setCreatingListId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -197,27 +199,52 @@ function GoogleTasksBoard({ tasks, taskLists }: { tasks: GoogleTask[], taskLists
       onDragEnd={handleDragEnd}
       onDragStart={(e) => setActiveId(e.active.id as string)}
     >
-      <div className="flex gap-4 h-full overflow-x-auto pb-4 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-track]:bg-transparent">
-        {taskLists.map(list => {
+      <div className="flex h-full items-start justify-center gap-4 pt-4">
+
+        {/* Prev Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCurrentListIndex(prev => (prev - 1 + taskLists.length) % taskLists.length)}
+          className="h-10 w-10 mt-3 rounded-full border border-white/10 hover:bg-white/10 hover:text-white shrink-0"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        {/* Active List */}
+        {taskLists.length > 0 && (() => {
+          const list = taskLists[currentListIndex];
           const listTasks = tasks
             .filter(t => t.listId === list.id)
             .sort((a, b) => (a.position || '').localeCompare(b.position || ''));
 
           return (
-            <TaskListContainer
-              key={list.id}
-              listId={list.id}
-              title={list.title}
-              tasks={listTasks}
-              onAddTask={(lid) => setCreatingListId(lid)}
-              onEdit={(t) => setEditingTask(t)}
-              onToggle={(t) => toggleMutation.mutate(t as GoogleTask)}
-              onDelete={(id, lid) => {
-                if (confirm("Delete task?")) deleteMutation.mutate({ id, listId: lid });
-              }}
-            />
+            <div className="h-full w-[320px] shrink-0">
+              <TaskListContainer
+                key={list.id}
+                listId={list.id}
+                title={list.title}
+                tasks={listTasks}
+                onAddTask={(lid) => setCreatingListId(lid)}
+                onEdit={(t) => setEditingTask(t)}
+                onToggle={(t) => toggleMutation.mutate(t as GoogleTask)}
+                onDelete={(id, lid) => {
+                  if (confirm("Delete task?")) deleteMutation.mutate({ id, listId: lid });
+                }}
+              />
+            </div>
           );
-        })}
+        })()}
+
+        {/* Next Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCurrentListIndex(prev => (prev + 1) % taskLists.length)}
+          className="h-10 w-10 mt-3 rounded-full border border-white/10 hover:bg-white/10 hover:text-white shrink-0"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
       </div>
 
       <DragOverlay>
@@ -1540,6 +1567,7 @@ export default function CalendarPage() {
           )}
         </DialogContent>
       </Dialog>
+      <CalendarAssistant />
     </Layout >
   );
 }

@@ -21,8 +21,12 @@ def test_tasks_flow():
         print("No target lists found. Creating a test one? (Skipping)")
         return
 
-    # 2. Fetch Tasks from first target
-    target = targets[0]
+    # 2. Fetch Tasks from 'To do'
+    target = next((l for l in lists if l['title'] == 'To do'), None)
+    if not target:
+        print("Could not find 'To do' list.")
+        return
+
     print(f"Fetching tasks from '{target['title']}' ({target['id']})...")
     tasks, err = gcal.fetch_tasks_from_list(target['id'])
     if err:

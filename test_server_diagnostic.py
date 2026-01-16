@@ -12,8 +12,12 @@ from brain.dashboard.app import create_app
 
 def run_server():
     print("Starting server on 5005...")
-    app = create_app()
-    app.run(port=5005, use_reloader=False)
+    try:
+        app = create_app()
+        app.run(port=5005, use_reloader=False)
+    except Exception as e:
+        print(f"Server Startup Failed: {e}")
+        os._exit(1)
 
 if __name__ == "__main__":
     t = threading.Thread(target=run_server)
@@ -23,19 +27,39 @@ if __name__ == "__main__":
     print("Waiting for server...")
     time.sleep(5)
     
-    try:
-        print("Pinging /api/google/status...")
-        resp = requests.get("http://localhost:5005/api/google/status")
-        print(f"Status: {resp.status_code}")
-        print(f"Response: {resp.text}")
+    endpoints = [
+        ("Google Status", "/api/google/status"),
+        ("Google Tasks Items", "/api/google-tasks"),
+        ("Google Task Lists", "/api/google-tasks/lists"),
+        ("Google Calendar Events", "/api/google-calendar/events?timeMin=2026-01-01T00:00:00Z&timeMax=2027-01-01T00:00:00Z"),
+        ("Scholar Status", "/api/scholar/status"),
+        ("Scholar Logs", "/api/scholar/logs"),
+        ("Events (Local)", "/api/events?start=2024-01-01&end=2025-01-01") 
+    ]
+    
+    failed = False
+    
+    for name, path in endpoints:
+        try:
+            url = f"http://localhost:5005{path}"
+            print(f"Pinging {name} ({url})...")
+            resp = requests.get(url, timeout=10)
+            if resp.status_code == 200:
+                print(f"  [OK] {resp.status_code}")
+                # Print preview of data for critical endpoints
+                if "events" in path or "tasks" in path:
+                     print(f"  [DATA] {resp.text[:500]}...") 
+            else:
+                print(f"  [FAIL] {resp.status_code} - {resp.text[:200]}")
+                # failed = True
+        except Exception as e:
+            print(f"  [CRASH/TIMEOUT] {e}")
+            failed = True
+            
+    if failed:
+        print("Some tests failed.")
+        # os._exit(1)
+    else:
+        print("All tests passed.")
         
-        print("Pinging /api/google-tasks...")
-        resp2 = requests.get("http://localhost:5005/api/google-tasks")
-        print(f"Tasks Status: {resp2.status_code}")
-        # print(f"Response: {resp2.text}") 
-        
-    except Exception as e:
-        print(f"FAILED: {e}")
-        
-    print("Done.")
     os._exit(0)

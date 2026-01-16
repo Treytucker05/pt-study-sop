@@ -286,7 +286,7 @@ export function TaskListContainer({ listId, title, tasks, onAddTask, onEdit, onT
     // Assuming 'tasks' prop is already sorted or we sort by position here.
 
     return (
-        <div ref={setNodeRef} className="flex-1 min-w-[320px] max-w-[360px] flex flex-col h-full bg-[#1A1A1A] rounded-2xl overflow-hidden border border-white/5 my-1">
+        <div ref={setNodeRef} className="flex-1 min-w-[260px] max-w-[300px] flex flex-col h-full bg-[#1A1A1A] rounded-2xl overflow-hidden border border-white/5 my-1">
             {/* Header */}
             <div className="p-4 flex items-center justify-between pb-2">
                 <h3 className="font-medium text-lg text-white tracking-wide truncate">

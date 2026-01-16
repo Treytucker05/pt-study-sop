@@ -785,6 +785,35 @@ def init_database():
     """
     )
 
+    # ------------------------------------------------------------------
+    # Calendar Action Ledger (v9.3 - for Undo)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS calendar_action_ledger (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+            action_type TEXT NOT NULL, -- create_event, update_task, etc.
+            target_id TEXT NOT NULL,
+            pre_state TEXT,  -- JSON
+            post_state TEXT, -- JSON
+            description TEXT
+        )
+    """)
+    
+    # Pruning Trigger: Keep only last 10 rows
+    cursor.execute("""
+        CREATE TRIGGER IF NOT EXISTS prune_ledger
+        AFTER INSERT ON calendar_action_ledger
+        BEGIN
+            DELETE FROM calendar_action_ledger
+            WHERE id NOT IN (
+                SELECT id FROM calendar_action_ledger
+                ORDER BY id DESC
+                LIMIT 10
+            );
+        END;
+    """)
+
     conn.commit()
     conn.close()
 

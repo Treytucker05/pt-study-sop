@@ -604,17 +604,32 @@ def process_tutor_turn(query: TutorQueryV1) -> TutorTurnResponse:
     
     full_user_prompt = "\n".join(user_prompt_parts)
     
-    # 4. Call OpenRouter API (replaces Codex CLI)
-    response_text, error = call_openrouter(full_user_prompt, system_prompt)
+    # 4. Call LLM (Codex Default) via Shared Provider
+    from brain.llm_provider import call_llm
     
-    if error:
-        # Return error response
+    llm_result = call_llm(system_prompt, full_user_prompt, provider="codex")
+    
+    if not llm_result["success"]:
+        # Return error with fallback info
+        error_msg = llm_result["error"]
+        fallback_models = llm_result.get("fallback_models", [])
+        
+        err_summary = {
+            "mode": query.mode,
+            "error": error_msg,
+            "fallback_needed": True,
+            "fallback_models": fallback_models
+        }
+        
         return TutorTurnResponse(
             session_id=session_id,
-            answer=f"I encountered an error: {error}\n\nPlease try again or check that Codex CLI is configured correctly.",
+            answer=f"**Codex Error**: {error_msg}\n\nPlease select a fallback model.",
             citations=[],
-            unverified=True
+            unverified=True,
+            summary_json=json.dumps(err_summary)
         )
+        
+    response_text = llm_result["content"]
     
     # 5. Determine if response is verified
     # Unverified if: no RAG results, or response contains unverified marker
