@@ -1,7 +1,12 @@
 # Dashboard Audit & Rebuild Plan
 
+> Canonical reference: This document is the single source of truth for dashboard behavior, page wiring, and API dependencies. Update here first.
+
 ## Scope
 This audit maps the current dashboard layout, UI components, data flows, and API surface so you can rebuild the dashboard by isolating each piece and integrating it one at a time. Sources are the live template (`brain/templates/dashboard.html`), client logic (`brain/static/js/dashboard.js`), documented endpoints (`brain/README.md`), and the current Flask blueprint (`brain/dashboard/routes.py`).
+
+Note: Root route `/` serves the React rebuild; legacy `dashboard.html` remains in the repo for reference and gap mapping.
+
 
 ## Current Layout Inventory (UI Surface)
 
@@ -9,6 +14,9 @@ This audit maps the current dashboard layout, UI components, data flows, and API
 - **Top navigation header** with logo/brand, arcade-style tab buttons (Dashboard, Calendar, Brain, Scholar, Tutor), and a Notes button. The legacy sidebar/mobile overlay remain in DOM for compatibility but are hidden. This shell drives tab navigation and page title updates. 【F:brain/templates/dashboard.html†L1-L114】【F:brain/templates/dashboard.html†L3167-L3199】
 - **Notes sidebar** (client-only local storage notes). 【F:brain/templates/dashboard.html†L3062-L3085】
 - **Retro terminal footer** status line. 【F:brain/templates/dashboard.html†L3201-L3215】
+- **Inputs/Outputs**: UI router + layout only; notes are local unless wired to `/api/notes`.
+- **Status**: Partial (React rebuild shell exists; notes persistence is missing).
+
 
 ### Tab: Dashboard Overview (`#tab-overview`)
 - **Quick stats bar**: sessions, uptime, rank, cards. 【F:brain/templates/dashboard.html†L184-L227】
@@ -16,6 +24,9 @@ This audit maps the current dashboard layout, UI components, data flows, and API
 - **Patterns & insights** (mode chart, focus areas, retrospective). 【F:brain/templates/dashboard.html†L308-L365】
 - **Study trends** (trends chart + legend, period selector). 【F:brain/templates/dashboard.html†L369-L458】
 - **Upload log** (drag/drop session log). 【F:brain/templates/dashboard.html†L461-L502】
+- **Inputs/Outputs**: `/api/stats/summary`, `/api/stats/trends`, `/api/upload` → sessions in `brain/data/pt_study.db`.
+- **Status**: Partial (React rebuild needs parity for charts and upload flow).
+
 
 ### Tab: Brain (`#tab-sessions`)
 - **Fast entry**: prompt copy + paste output ingest. 【F:brain/templates/dashboard.html†L511-L597】
@@ -25,6 +36,9 @@ This audit maps the current dashboard layout, UI components, data flows, and API
 - **Brain database sections** (stats, mastery, ingestion status). 【F:brain/templates/dashboard.html†L792-L917】
 - **Anki cards**: connection status, drafts table, create card form. 【F:brain/templates/dashboard.html†L922-L1117】
 - **Edit session modal** (global modal but used here). 【F:brain/templates/dashboard.html†L1448-L1564】
+- **Inputs/Outputs**: `/api/sessions`, `/api/quick_session`, `/api/resume`, `/api/upload`, `/api/cards/*` → `sessions`, `topic_mastery`, `card_drafts` in `pt_study.db`.
+- **Status**: Partial (React rebuild missing edit/delete + Anki wiring).
+
 
 ### Tab: Syllabus & Calendar (`#tab-syllabus`)
 - **Calendar view**: filters, month/week/day view selector, navigation, grid, legend. 【F:brain/templates/dashboard.html†L1216-L1345】
@@ -35,6 +49,9 @@ This audit maps the current dashboard layout, UI components, data flows, and API
 - **Syllabus import** (prompt + JSON import). 【F:brain/templates/dashboard.html†L1756-L1892】
 - **Course color manager**. 【F:brain/templates/dashboard.html†L1894-L1916】
 - **Event edit modal** (global modal for course events). 【F:brain/templates/dashboard.html†L1240-L1437】
+- **Inputs/Outputs**: `/api/syllabus/*`, `/api/calendar/data`, `/api/calendar/plan_session`, `/api/google/*`, `/api/google-calendar/*`, `/api/google-tasks/*` → `courses`, `course_events`, `study_tasks` in `pt_study.db`.
+- **Status**: Partial (React rebuild missing edit/delete + Google write support).
+
 
 ### Tab: Scholar (`#tab-scholar`)
 - **Scholar API key config** (provider + key, test). 【F:brain/templates/dashboard.html†L1940-L2018】
@@ -46,6 +63,9 @@ This audit maps the current dashboard layout, UI components, data flows, and API
 - **AI Strategic Digest** (generate/save). 【F:brain/templates/dashboard.html†L2555-L2626】
 - **Saved Digests** + digest viewer modal. 【F:brain/templates/dashboard.html†L2628-L2720】
 - **Proposal viewer modal**. 【F:brain/templates/dashboard.html†L1120-L1188】
+- **Inputs/Outputs**: `/api/scholar/*`, `scholar/outputs/*`, `scholar_digests` table → dashboards + question queue.
+- **Status**: Active (needs React parity and questions handoff UI).
+
 
 ### Tab: Tutor (`#tab-tutor`)
 - **Tutor chat**: mode selector (Core/Sprint/Drill), new session, chat messages, input box. 【F:brain/templates/dashboard.html†L2282-L2354】
@@ -53,18 +73,30 @@ This audit maps the current dashboard layout, UI components, data flows, and API
   - Study RAG folder path selection and sync.
   - Runtime RAG items toggle list.
   - YouTube/URL link ingestion. 【F:brain/templates/dashboard.html†L2361-L2466】
+- **Inputs/Outputs**: `/api/chat/:sessionId` (React rebuild), `/api/tutor/*` (legacy), `rag_docs` table, `session_logs` for ingestion.
+- **Status**: Partial (React uses adapter chat; full SOP/RAG enforcement WIP).
+
 
 ### Tab: Sync Inbox (`#tab-sync`)
 - **Sync Inbox**: run scraper, refresh, review pending events. 【F:brain/templates/dashboard.html†L2963-L3047】
+- **Inputs/Outputs**: `/api/sync/*`, `/api/scraper/run` → `course_events` updates.
+- **Status**: Partial (React rebuild lacks sync inbox UI).
+
 
 ### Mobile/Legacy Layout
 - **Alternate “Brain Database” tab** (`#tab-brain`) appears to duplicate database panels for mobile/legacy navigation. 【F:brain/templates/dashboard.html†L2475-L2556】
 - **Legacy sidebar and overlay** are preserved but hidden. 【F:brain/templates/dashboard.html†L84-L114】
+- **Inputs/Outputs**: Legacy-only; no React parity.
+- **Status**: Deferred (kept for reference).
+
 
 ---
 
 ## Client → API Surface (What the UI Calls)
 The client requests a broad set of endpoints (sessions, syllabus, tutor, cards, calendar, scholar, sync). These are defined in the JS client and documented in `brain/README.md`, even though the current `dashboard/routes.py` file only exposes a subset (stats/scholar/gcal/gtasks/sync). This mismatch is important to resolve during rebuild. 【F:brain/static/js/dashboard.js†L438-L6999】【F:brain/README.md†L262-L281】【F:brain/dashboard/routes.py†L102-L953】
+
+Status key: **Active** (implemented + used), **Partial** (exists but missing parity), **Deferred** (not implemented yet).
+
 
 Key endpoint groups (from `brain/README.md` + JS):
 - **Sessions**: `/api/sessions`, `/api/quick_session`, `/api/resume`, `/api/upload`, `/api/resume/download`. 【F:brain/README.md†L262-L271】【F:brain/static/js/dashboard.js†L438-L1527】
@@ -86,7 +118,43 @@ Key endpoint groups (from `brain/README.md` + JS):
 
 ---
 
-## Comprehensive Flow Chart (Current System)
+## System Flow (Canonical)
+
+```mermaid
+flowchart TD
+  User[User] --> UI[React Dashboard UI]
+  UI --> Client[Client Router & State]
+  Client -->|/api/*| API[Flask API Adapter]
+
+  API --> DB[(Brain DB: pt_study.db)]
+  API --> Files[Brain Files<br/>session logs, outputs, rag sources]
+  API --> Tutor[Tutor Engine]
+  API --> Scholar[Scholar Orchestrator]
+  API --> RAG[RAG Index (rag_docs)]
+
+  Tutor --> LLM[Local LLM Provider]
+  Tutor --> Sources[Source Packets<br/>NotebookLM]
+  Tutor --> Cards[Anki Card Drafts]
+
+  Scholar --> LLM2[Local LLM Provider]
+  Scholar --> Outputs[Scholar Outputs]
+
+  API --> GCal[Google Calendar]
+  API --> GTasks[Google Tasks]
+  API --> Anki[AnkiConnect]
+  API --> Obsidian[Obsidian Vault]
+
+  Outputs --> API
+  API --> UI
+```
+
+Legend:
+- Solid arrows show primary data flow.
+- Tutor/Scholar use local LLM providers; NotebookLM supplies source packets.
+
+---
+
+## Comprehensive Flow Chart (Legacy Reference)
 
 ```mermaid
 flowchart TD
@@ -124,6 +192,7 @@ flowchart TD
 ```
 
 ---
+
 
 ## Rebuild Plan (Isolate → Integrate)
 

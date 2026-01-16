@@ -110,6 +110,8 @@ pt-study-sop/
 | `sop/MASTER_REFERENCE_v9.2.md` | Detailed reference for the v9.2 development snapshot |
 | `sop/RESEARCH_INDEX.md` | Learning science research topics and sourcing |
 | `sop/working/ROADMAP.md` | Current gaps and next steps |
+| `docs/dashboard_audit.md` | Canonical dashboard behavior, flows, and API wiring |
+
 
 ---
 
@@ -164,7 +166,10 @@ Planned implementation ladder (stable high-level plan):
 
 ## Dashboard Features
 
+**Canonical dashboard spec:** `docs/dashboard_audit.md` (use this as the single source of truth for page behavior).
+
 The Brain web dashboard (`brain/dashboard_web.py`) provides:
+
 
 ### Core Features
 

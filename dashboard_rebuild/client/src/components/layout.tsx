@@ -1,11 +1,16 @@
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
-import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Menu, X, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Menu, X, Save, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import arcadeBg from "@assets/generated_images/dark_retro_arcade_grid_background_texture.png";
 import { cn } from "@/lib/utils";
+import { api, type Note } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 const NAV_ITEMS = [
   { path: "/", label: "DASHBOARD", icon: LayoutDashboard },
@@ -101,55 +106,164 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-import { api } from "@/lib/api";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
-import { useToast } from "@/hooks/use-toast";
-
 function NotesEditor() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { data } = useQuery({
+  // Use select to sort or rely on API sort order
+  const { data: notes = [], isLoading } = useQuery({
     queryKey: ["notes"],
-    queryFn: api.notes.get,
-    staleTime: 0,
+    queryFn: api.notes.getAll,
   });
 
-  const saveMutation = useMutation({
-    mutationFn: api.notes.save,
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
+
+  const createMutation = useMutation({
+    mutationFn: api.notes.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      toast({ title: "NOTES_SAVED", variant: "default" });
+      setNewTitle("");
+      setNewContent("");
+      toast({ title: "Note Added", description: "New note created." });
     },
   });
 
-  // Load content into textarea when data arrives
-  useEffect(() => {
-    if (data && textareaRef.current) {
-      textareaRef.current.value = data.content;
+  // ... (keep update/delete/reorder mutations) ...
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { title?: string; content?: string } }) =>
+      api.notes.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: api.notes.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast({ title: "Deleted", description: "Note removed." });
+    },
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: api.notes.reorder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+    },
+  });
+
+  const handleReorder = (index: number, direction: 'up' | 'down') => {
+    // ... (keep logic) ...
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === notes.length - 1) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    const currentNote = notes[index];
+    const targetNote = notes[targetIndex];
+
+    reorderMutation.mutate([
+      { id: currentNote.id, position: targetNote.position },
+      { id: targetNote.id, position: currentNote.position }
+    ]);
+  };
+
+  const handleCreate = () => {
+    if (!newContent.trim()) {
+      toast({ title: "Empty Note", description: "Please enter some content.", variant: "destructive" });
+      return;
     }
-  }, [data]);
+    createMutation.mutate({ title: newTitle, content: newContent });
+  };
+
+  if (isLoading) {
+    return <div className="text-center font-terminal text-primary animate-pulse mt-10">LOADING_SYSTEM...</div>;
+  }
 
   return (
-    <>
-      <Textarea
-        ref={textareaRef}
-        placeholder="TYPE_NOTES_HERE..."
-        className="flex-1 bg-secondary/20 border-2 border-secondary font-terminal text-lg rounded-none resize-none focus-visible:ring-primary text-white"
-      />
-      <Button
-        className="w-full font-arcade rounded-none hover:bg-primary/90"
-        onClick={() => {
-          if (textareaRef.current) {
-            saveMutation.mutate(textareaRef.current.value);
-          }
-        }}
-        disabled={saveMutation.isPending}
-      >
-        <Save className="w-4 h-4 mr-2" /> {saveMutation.isPending ? "SAVING..." : "SAVE"}
-      </Button>
-    </>
+    <div className="flex flex-col h-full gap-4">
+
+      {/* Creation Form */}
+      <div className="border-2 border-primary p-2 bg-primary/10 relative">
+        <div className="text-[10px] font-arcade mb-2 text-primary tracking-widest">:: NEW_NOTE_ENTRY ::</div>
+        <div className="space-y-2">
+          <Input
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="TITLE..."
+            className="h-8 font-barcode text-xs bg-black/50 border-primary/30 focus-visible:ring-primary"
+          />
+          <Textarea
+            value={newContent}
+            onChange={(e) => setNewContent(e.target.value)}
+            placeholder="TYPE_NEW_NOTE_HERE..."
+            className="min-h-[80px] bg-black/50 border-primary/30 font-terminal text-sm resize-none focus-visible:ring-primary"
+          />
+          <Button
+            size="sm"
+            className="w-full font-arcade rounded-none h-8 bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={handleCreate}
+            disabled={createMutation.isPending}
+          >
+            {createMutation.isPending ? "SAVING..." : "ADD_NOTE"} <Plus className="w-3 h-3 ml-2" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="h-[1px] bg-primary/30 w-full" />
+
+      <ScrollArea className="flex-1 pr-4 -mr-4">
+        <div className="space-y-4 pb-4">
+          {notes.map((note, index) => (
+            <div key={note.id} className="border border-primary/30 p-2 bg-black/40 relative group hover:border-primary/60 transition-colors">
+              {/* Controls */}
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <Input
+                  defaultValue={note.title || ""}
+                  placeholder="UNTITLED"
+                  className="h-6 font-arcade text-xs bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-primary placeholder:text-primary/30 w-full"
+                  onBlur={(e) => {
+                    if (e.target.value !== note.title) {
+                      updateMutation.mutate({ id: note.id, data: { title: e.target.value } });
+                    }
+                  }}
+                />
+                <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleReorder(index, 'up')} disabled={index === 0}>
+                    <ArrowUp className="w-3 h-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleReorder(index, 'down')} disabled={index === notes.length - 1}>
+                    <ArrowDown className="w-3 h-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 text-red-500 hover:text-red-400 hover:bg-red-500/10" onClick={() => deleteMutation.mutate(note.id)}>
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+
+              <Textarea
+                defaultValue={note.content}
+                placeholder="Content..."
+                className="min-h-[60px] bg-transparent border-none font-terminal text-sm resize-y focus-visible:ring-0 p-0 shadow-none leading-relaxed text-muted-foreground focus:text-foreground transition-colors"
+                onBlur={(e) => {
+                  if (e.target.value !== note.content) {
+                    updateMutation.mutate({ id: note.id, data: { content: e.target.value } });
+                  }
+                }}
+              />
+              <div className="text-[9px] text-muted-foreground/30 mt-1 text-right font-terminal uppercase tracking-tighter">
+                #{note.position} • {new Date(note.createdAt).toLocaleDateString()}
+              </div>
+            </div>
+          ))}
+
+          {notes.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground font-terminal text-[10px] border border-dashed border-secondary/30">
+              NO_ARCHIVED_NOTES
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }

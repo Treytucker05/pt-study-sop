@@ -1,21 +1,18 @@
 Goal (incl. success criteria):
-- Review provided zipped rework of repo to identify missing items vs current repo.
-- Success: clear list of missing files/dirs or discrepancies with evidence.
+- Produce a comprehensive deep-research prompt with exhaustive questions about system setup, concepts, flow, subsystems, gaps, and research directions.
 Constraints/Assumptions:
-- Need zip file path or location before review.
-- Compare against current repo contents; no destructive changes.
+- Prompt should cover SOP, Brain, Tutor, Scholar, RAG, Dashboard, Integrations, and data contracts.
+- Include questions for setup, architecture, governance, and experimentation.
 Key decisions:
-- UNCONFIRMED
+- Prompt will be delivered as a standalone block the user can paste into a deep research tool.
 State:
   - Done:
-    - Read existing CONTINUITY ledger.
+    - Confirmed the dashboard spec updates are complete.
   - Now:
-    - Await zip file location/details to begin comparison.
+    - Draft the deep-research prompt with exhaustive questions.
   - Next:
-    - Inspect zip contents and compare to repo.
-    - Report missing items with paths.
+    - Deliver prompt and ask if they want it saved to a doc.
 Open questions (UNCONFIRMED if needed):
-- Where is the zip file located (path)?
-- Should comparison be strict file-by-file or focus on key folders only?
+- Should the prompt reference specific files/paths from the repo?
 Working set (files/ids/commands):
 - `CONTINUITY.md`

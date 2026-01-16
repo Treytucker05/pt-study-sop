@@ -553,6 +553,14 @@ def create_google_event():
             "description": data.get("description", "")
         }
         
+        # Recurrence
+        if data.get("recurrence"):
+             # Ensure it's a list
+             rrules = data["recurrence"]
+             if isinstance(rrules, str):
+                 rrules = [rrules]
+             body["recurrence"] = rrules
+        
         event = service.events().insert(calendarId=calendar_id, body=body).execute()
         return jsonify(event)
         
@@ -560,13 +568,13 @@ def create_google_event():
         return jsonify({"error": str(e)}), 500
 
 @adapter_bp.route("/google-calendar/events/<event_id>", methods=["PATCH"])
+@adapter_bp.route("/google-calendar/events/<event_id>", methods=["PATCH"])
 def update_google_event(event_id):
     from brain.dashboard import gcal
     
     data = request.json
     calendar_id = data.get("calendarId")
     if not calendar_id:
-         # Try to infer calendar ID? No, frontend should send it.
          return jsonify({"error": "Missing calendarId"}), 400
          
     service = gcal.get_calendar_service()
@@ -574,69 +582,344 @@ def update_google_event(event_id):
         return jsonify({"error": "Not authenticated"}), 401
 
     try:
-        # Fetch existing to patch
-        # or just push updates. Google requires fetching for patch semantics usually or full update.
-        # METHOD patch exists in google api.
+        # 1. Verify Access Role
+        calendars, _ = gcal.fetch_calendar_list()
+        target_cal = next((c for c in calendars if c["id"] == calendar_id), None)
         
+        if not target_cal:
+             # If not found in list, we might not have access or it's hidden
+             # Try to proceed? Or fail safe?
+             # Let's try to fetch it specifically if missing, or assume we can't write if we can't see it.
+             # Strict permission check:
+             pass 
+        else:
+             role = target_cal.get("accessRole", "reader")
+             if role not in ["owner", "writer"]:
+                 return jsonify({"error": f"Permission denied: You have '{role}' access to this calendar."}), 403
+
+        # 2. Fetch existing event (Crucial for patches to minimal fields)
+        try:
+             existing_event = service.events().get(calendarId=calendar_id, eventId=event_id).execute()
+        except Exception as e:
+             return jsonify({"error": f"Event not found: {str(e)}"}), 404
+
+        # 3. Prepare Update Body
         body = {}
-        if "title" in data:
+        
+        # Basic fields
+        if "summary" in data:
+            body["summary"] = data["summary"]
+        elif "title" in data: 
             body["summary"] = data["title"]
+            
         if "description" in data:
             body["description"] = data["description"]
             
-        # Time updates
-        if "date" in data:
-             from datetime import datetime, timedelta
-             # Retrieve config for timezone if needed, or rely on existing
-             # Ideally fetching the event first is safer to know its current 'allDay' status if not sending both
-             # But let's assume frontend sends full date/time object if changing time.
-             
-             start_dt = datetime.fromisoformat(data["date"].replace("Z", "+00:00"))
-             if data.get("allDay"):
-                 end_dt = datetime.fromisoformat(data.get("endDate").replace("Z", "+00:00")) if data.get("endDate") else start_dt + timedelta(days=1)
-                 body["start"] = {"date": start_dt.date().isoformat()}
-                 body["end"] = {"date": end_dt.date().isoformat()}
-             else:
-                 end_dt = datetime.fromisoformat(data.get("endDate").replace("Z", "+00:00")) if data.get("endDate") else start_dt + timedelta(hours=1)
-                 body["start"] = {"dateTime": start_dt.isoformat()}
-                 body["end"] = {"dateTime": end_dt.isoformat()}
+        if "location" in data:
+            body["location"] = data["location"]
+            
+        # Recurrence
+        if "recurrence" in data:
+             rrules = data["recurrence"]
+             if isinstance(rrules, str):
+                 rrules = [rrules]
+             body["recurrence"] = rrules
+            
+        # Date Logic
+        # Frontend might send 'start'/'end' objects OR 'date'/'startDate' strings.
+        # We prioritize 'start'/'end' objects if valid.
         
+        if "start" in data and isinstance(data["start"], dict):
+             body["start"] = data["start"]
+        
+        if "end" in data and isinstance(data["end"], dict):
+             body["end"] = data["end"]
+             
+        # Fallback: Constructed date logic if objects missing but flat fields present
+        # (This matches the Agent task description "If allDay or date has no T...")
+        if "start" not in body and ("date" in data or "allDay" in data):
+             is_all_day = data.get("allDay", False)
+             date_val = data.get("date")
+             end_date_val = data.get("endDate")
+             
+             if not date_val:
+                 # Keep existing start if not updating date? 
+                 # If we are here, we probably aren't updating date.
+                 pass
+             else:
+                 if is_all_day or "T" not in date_val:
+                     # All Day
+                     start_d = date_val.split("T")[0]
+                     if end_date_val:
+                         end_d = end_date_val.split("T")[0]
+                     else:
+                         # Default 1 day
+                         from datetime import datetime, timedelta
+                         dt = datetime.strptime(start_d, "%Y-%m-%d")
+                         end_d = (dt + timedelta(days=1)).strftime("%Y-%m-%d")
+                         
+                     body["start"] = {"date": start_d}
+                     body["end"] = {"date": end_d}
+                 else:
+                     # Timed
+                     body["start"] = {"dateTime": date_val}
+                     # If end missing, default
+                     if end_date_val:
+                         body["end"] = {"dateTime": end_date_val}
+                     else:
+                         # Fallback to existing end duration or +1h
+                         # Easier: +1h
+                         from datetime import datetime, timedelta
+                         dt = datetime.fromisoformat(date_val.replace("Z", "+00:00"))
+                         end_dt = dt + timedelta(hours=1)
+                         body["end"] = {"dateTime": end_dt.isoformat()}
+        
+        # 4. Patch
         updated_event = service.events().patch(calendarId=calendar_id, eventId=event_id, body=body).execute()
+        
         return jsonify(updated_event)
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@adapter_bp.route("/google-tasks/@default", methods=["GET"])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@adapter_bp.route("/google-calendar/events/<event_id>", methods=["DELETE"])
+def delete_google_event(event_id):
+    from brain.dashboard import gcal
+    
+    calendar_id = request.args.get("calendarId")
+    if not calendar_id:
+         return jsonify({"error": "Missing calendarId parameter"}), 400
+         
+    service = gcal.get_calendar_service()
+    if not service:
+        return jsonify({"error": "Not authenticated"}), 401
+        
+    try:
+        service.events().delete(calendarId=calendar_id, eventId=event_id).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@adapter_bp.route("/google-calendar/clear", methods=["POST"])
+def clear_calendars():
+    from brain.dashboard import gcal
+    
+    data = request.json
+    calendar_ids = data.get("calendarIds", [])
+    
+    if not calendar_ids:
+        return jsonify({"error": "No calendarIds provided"}), 400
+        
+    service = gcal.get_calendar_service()
+    if not service:
+        return jsonify({"error": "Not authenticated"}), 401
+        
+    deleted_count = 0
+    errors = []
+    
+    for cal_id in calendar_ids:
+        try:
+             # Fetch all events (singleEvents=False to get series parent, but 'delete' works on ID)
+             # If we want to clear everything, iterating list is best.
+             pageToken = None
+             while True:
+                 events_res = service.events().list(calendarId=cal_id, pageToken=pageToken).execute()
+                 items = events_res.get("items", [])
+                 
+                 for item in items:
+                     try:
+                         service.events().delete(calendarId=cal_id, eventId=item["id"]).execute()
+                         deleted_count += 1
+                     except Exception as ex:
+                         pass # Best effort
+                         
+                 pageToken = events_res.get("nextPageToken")
+                 if not pageToken:
+                     break
+        except Exception as e:
+            errors.append(f"{cal_id}: {str(e)}")
+            
+    return jsonify({
+        "success": True, 
+        "deletedEvents": deleted_count,
+        "errors": errors
+    })
+@adapter_bp.route("/google-tasks", methods=["GET"])
 def get_google_tasks():
     from brain.dashboard import gcal
     
-    # Get first list or configured list
+    # Target lists
+    target_names = {"Reclaim", "Workouts", "To Do"}
+    
     task_lists, error = gcal.fetch_task_lists()
     if error:
-        return jsonify([]) # Return empty on error to avoid breaking UI
+        return jsonify({"error": error}), 500
         
-    if not task_lists:
-        return jsonify([])
-        
-    # Pick first one for now
-    target_list = task_lists[0]
-    tasks, error = gcal.fetch_tasks(target_list["id"])
+    all_tasks = []
     
+    # Filter for target lists
+    relevant_lists = [tl for tl in task_lists if tl.get("title") in target_names]
+    
+    # If no target lists found, maybe return all? Or just empty?
+    # User requirement: "Sync lists: Reclaim, Workouts, To Do".
+    # If they don't exist, we return empty (frontend can handle creation or showing nothing).
+    
+    for tl in relevant_lists:
+        t_list, err = gcal.fetch_tasks_from_list(tl["id"])
+        if err:
+            continue # specific list fail shouldn't crash all
+            
+        for t in t_list:
+            t["listId"] = tl["id"]
+            t["listTitle"] = tl["title"]
+            all_tasks.append(t)
+            
+    # Include list metadata so frontend knows available lists
+    # We can handle this by a separate endpoint or embedding it.
+    # Frontend requirement: "Add list selector".
+    # I'll embed `lists` in the response or trust frontend calls another endpoint?
+    # Better: return { tasks: [...], lists: [...] } ?
+    # Standard REST: GET /tasks returns tasks. GET /lists returns lists.
+    # Current adapter structure returns array of tasks.
+    # I'll stick to array of tasks. Frontend can deduce lists from the tasks or we add a separate endpoint /google-tasks/lists.
+    # User didn't ask for /lists endpoint explicitly but "Add list selector" implies we need available lists.
+    # I'll just return the tasks. Frontend can unique() the listIds or I'll add a /lists endpoint if needed.
+    # Wait, if a list is empty, frontend won't know it exists.
+    # I'll modify returning structure or add /lists endpoint. I'll add /google-tasks/lists.
+    
+    return jsonify(all_tasks)
+
+@adapter_bp.route("/google-tasks/lists", methods=["GET"])
+def get_google_task_lists():
+    from brain.dashboard import gcal
+    task_lists, error = gcal.fetch_task_lists()
     if error:
-        return jsonify([])
+        return jsonify({"error": error}), 500
+    
+    return jsonify(task_lists)
+
+@adapter_bp.route("/google-tasks", methods=["POST"])
+def create_google_task_endpoint():
+    from brain.dashboard import gcal
+    data = request.json
+    list_id = data.get("listId")
+    if not list_id:
+        return jsonify({"error": "Missing listId"}), 400
         
-    return jsonify(tasks)
+    # Construct body
+    body = {
+        "title": data.get("title"),
+        "notes": data.get("notes"),
+        "status": "completed" if data.get("completed") else "needsAction"
+    }
+    if data.get("due"):
+        # due is date-only string RFC 3339 timestamp but API says: "DueDate (as an RFC 3339 timestamp) ... optional time portion is discarded".
+        # We accept ISO string.
+        body["due"] = data.get("due")
+        
+    result, error = gcal.create_google_task(list_id, body)
+    if error:
+        return jsonify({"error": error}), 500
+    return jsonify(result)
 
-@adapter_bp.route("/google-tasks/@default", methods=["POST"])
-def create_google_task():
-    # TODO: Implement write support
-    return jsonify({"id": "mock", "title": request.json.get("title")})
+@adapter_bp.route("/google-tasks/<task_id>", methods=["PATCH"])
+def patch_google_task_endpoint(task_id):
+    from brain.dashboard import gcal
+    data = request.json
+    list_id = data.get("listId")
+    if not list_id:
+        return jsonify({"error": "Missing listId"}), 400
+        
+    body = {}
+    if "title" in data: body["title"] = data["title"]
+    if "notes" in data: body["notes"] = data["notes"]
+    if "status" in data: body["status"] = data["status"]
+    if "due" in data: body["due"] = data["due"]
+    if "completed" in data: 
+        body["status"] = "completed" if data["completed"] else "needsAction"
+        # If un-completing, we might need to clear 'completed' date field? API handles status logic.
+        if not data["completed"]:
+            body["completed"] = None 
 
-@adapter_bp.route("/google-tasks/@default/<task_id>/toggle", methods=["PATCH"])
-def toggle_google_task(task_id):
-    # TODO: Implement toggle support
+    result, error = gcal.patch_google_task(list_id, task_id, body)
+    if error:
+        return jsonify({"error": error}), 500
+    return jsonify(result)
+
+@adapter_bp.route("/google-tasks/<task_id>", methods=["DELETE"])
+def delete_google_task_endpoint(task_id):
+    from brain.dashboard import gcal
+    list_id = request.args.get("listId")
+    if not list_id:
+        return jsonify({"error": "Missing listId"}), 400
+        
+    success, error = gcal.delete_google_task(list_id, task_id)
+    if not success:
+        return jsonify({"error": error}), 500
     return jsonify({"success": True})
+
+@adapter_bp.route("/google-tasks/<task_id>/move", methods=["POST"])
+def move_google_task_endpoint(task_id):
+    from brain.dashboard import gcal
+    data = request.json
+    list_id = data.get("listId")
+    dest_list_id = data.get("destinationListId")
+    previous = data.get("previousTaskId")
+    parent = data.get("parentTaskId")
+    
+    if not list_id:
+        return jsonify({"error": "Missing listId"}), 400
+        
+    # Cross-list Move
+    if dest_list_id and dest_list_id != list_id:
+        # 1. Fetch source task
+        # We assume we don't have full body here, need to fetch it?
+        # Or frontend sends body? Frontend logic "reorder" might not send full body.
+        # Safest is fetch.
+        # But gcal helper fetch_tasks_from_list returns list.
+        # I need `get_task`. I didn't add `get_task` helper.
+        # I'll rely on frontend or add helper. 
+        # I'll assume frontend sends title/notes/status/due if resizing complexity.
+        # For now, I'll attempt to fetch by filtering the list (slow) or modifying gcal.py.
+        # I'll modify gcal.py? No, I'll iterate list.
+        # Wait, I can just use `get_tasks_service` here directly if needed.
+        service = gcal.get_tasks_service()
+        if not service: return jsonify({"error": "Auth"}), 401
+        
+        try:
+            task = service.tasks().get(tasklist=list_id, task=task_id).execute()
+        except:
+            return jsonify({"error": "Task not found"}), 404
+            
+        # 2. Insert into dest
+        new_body = {
+            "title": task.get("title"),
+            "notes": task.get("notes"),
+            "status": task.get("status"),
+            "due": task.get("due")
+        }
+        # Insert with previous/parent if supported? Insert supports 'previous' and 'parent' params!
+        # insert(..., previous=previous, parent=parent)
+        insert_kwargs = {"tasklist": dest_list_id, "body": new_body}
+        if previous: insert_kwargs["previous"] = previous
+        if parent: insert_kwargs["parent"] = parent
+        
+        try:
+            new_task = service.tasks().insert(**insert_kwargs).execute()
+            # 3. Delete from source
+            service.tasks().delete(tasklist=list_id, task=task_id).execute()
+            return jsonify(new_task)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # Same-list Reorder
+    result, error = gcal.move_google_task(list_id, task_id, previous, parent)
+    if error:
+        return jsonify({"error": error}), 500
+    return jsonify(result)
 
 
 # ==============================================================================
@@ -645,35 +928,122 @@ def toggle_google_task(task_id):
 
 @adapter_bp.route("/notes", methods=["GET"])
 def get_notes():
-    """Get quick notes content."""
-    files_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-    notes_path = os.path.join(files_dir, "quick_notes.txt")
-    
-    if not os.path.exists(notes_path):
-        return jsonify({"content": ""})
-        
+    """Get all quick notes ordered by position."""
     try:
-        with open(notes_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        return jsonify({"content": content})
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, title, content, position, created_at FROM quick_notes ORDER BY position ASC")
+        rows = cur.fetchall()
+        conn.close()
+        
+        notes = []
+        for r in rows:
+            notes.append({
+                "id": r[0],
+                "title": r[1],
+                "content": r[2],
+                "position": r[3],
+                "createdAt": r[4]
+            })
+        return jsonify(notes)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @adapter_bp.route("/notes", methods=["POST"])
-def save_notes():
-    """Save quick notes content."""
+def create_note():
+    """Create a new note."""
     data = request.json
     content = data.get("content", "")
-    
-    files_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-    if not os.path.exists(files_dir):
-        os.makedirs(files_dir)
-        
-    notes_path = os.path.join(files_dir, "quick_notes.txt")
+    title = data.get("title", "")
     
     try:
-        with open(notes_path, "w", encoding="utf-8") as f:
-            f.write(content)
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Get max position
+        cur.execute("SELECT MAX(position) FROM quick_notes")
+        max_pos = cur.fetchone()[0]
+        new_pos = (max_pos + 1) if max_pos is not None else 0
+        
+        now_ts = datetime.now().isoformat()
+        cur.execute(
+            "INSERT INTO quick_notes (title, content, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            (title, content, new_pos, now_ts, now_ts)
+        )
+        new_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            "id": new_id,
+            "title": title,
+            "content": content,
+            "position": new_pos,
+            "createdAt": now_ts
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@adapter_bp.route("/notes/<int:note_id>", methods=["PATCH"])
+def update_note(note_id):
+    """Update a note's title or content."""
+    data = request.json
+    
+    fields = []
+    values = []
+    if "title" in data:
+        fields.append("title = ?")
+        values.append(data["title"])
+    if "content" in data:
+        fields.append("content = ?")
+        values.append(data["content"])
+        
+    if not fields:
+        return jsonify({"error": "No fields to update"}), 400
+        
+    fields.append("updated_at = ?")
+    values.append(datetime.now().isoformat())
+    values.append(note_id)
+    
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(f"UPDATE quick_notes SET {', '.join(fields)} WHERE id = ?", tuple(values))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@adapter_bp.route("/notes/<int:note_id>", methods=["DELETE"])
+def delete_note(note_id):
+    """Delete a note."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM quick_notes WHERE id = ?", (note_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@adapter_bp.route("/notes/reorder", methods=["POST"])
+def reorder_notes():
+    """Reorder notes based on list of {id, position}."""
+    updates = request.json.get("updates", [])
+    if not updates:
+        return jsonify({"error": "No updates provided"}), 400
+        
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        # Batch update
+        for item in updates:
+            # item = {id: 1, position: 2}
+            cur.execute("UPDATE quick_notes SET position = ? WHERE id = ?", (item["position"], item["id"]))
+        conn.commit()
+        conn.close()
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

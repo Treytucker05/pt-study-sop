@@ -28,6 +28,10 @@ except ImportError:
         "[WARN] Google API libraries not installed. Run: pip install google-auth google-auth-oauthlib google-api-python-client"
     )
 
+
+# Strict scope validation causes errors when Google returns implicit scopes
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+
 # Paths
 DATA_DIR = Path(__file__).parent.parent / "data"
 TOKEN_PATH = DATA_DIR / "gcal_token.json"
@@ -37,7 +41,7 @@ DB_PATH = DATA_DIR / "pt_study.db"
 # OAuth scopes - read-only access to calendar and tasks
 SCOPES = [
     "https://www.googleapis.com/auth/calendar",
-    "https://www.googleapis.com/auth/tasks.readonly",
+    "https://www.googleapis.com/auth/tasks",
 ]
 
 
@@ -49,10 +53,10 @@ def load_gcal_config():
     try:
         with open(CONFIG_PATH, "r") as f:
             config = json.load(f)
-    except json.JSONDecodeError as exc:
-        return {"_error": f"Invalid JSON in api_config.json: {exc}"}
-
-    return config.get("google_calendar", {})
+            return config.get("google_calendar", {})
+    except Exception as exc:
+        # returns dict so get() works on it
+        return {"_error": f"Config Error: {exc}"}
 
 
 def normalize_gcal_config(config: Optional[Dict]) -> Dict:
@@ -66,17 +70,20 @@ def normalize_gcal_config(config: Optional[Dict]) -> Dict:
 
 def save_token(creds):
     """Save OAuth token to file"""
-    token_data = {
-        "token": creds.token,
-        "refresh_token": creds.refresh_token,
-        "token_uri": creds.token_uri,
-        "client_id": creds.client_id,
-        "client_secret": creds.client_secret,
-        "scopes": list(creds.scopes) if creds.scopes else [],
-        "expiry": creds.expiry.isoformat() if creds.expiry else None,
-    }
-    with open(TOKEN_PATH, "w") as f:
-        json.dump(token_data, f)
+    try:
+        token_data = {
+            "token": creds.token,
+            "refresh_token": creds.refresh_token,
+            "token_uri": creds.token_uri,
+            "client_id": creds.client_id,
+            "client_secret": creds.client_secret,
+            "scopes": list(creds.scopes) if creds.scopes else [],
+            "expiry": creds.expiry.isoformat() if creds.expiry else None,
+        }
+        with open(TOKEN_PATH, "w") as f:
+            json.dump(token_data, f)
+    except Exception as e:
+        print(f"[ERROR] Failed to save token: {e}")
 
 
 def load_token():
@@ -84,17 +91,20 @@ def load_token():
     if not TOKEN_PATH.exists():
         return None
 
-    with open(TOKEN_PATH, "r") as f:
-        token_data = json.load(f)
+    try:
+        with open(TOKEN_PATH, "r") as f:
+            token_data = json.load(f)
 
-    return Credentials(
-        token=token_data.get("token"),
-        refresh_token=token_data.get("refresh_token"),
-        token_uri=token_data.get("token_uri"),
-        client_id=token_data.get("client_id"),
-        client_secret=token_data.get("client_secret"),
-        scopes=token_data.get("scopes"),
-    )
+        return Credentials(
+            token=token_data.get("token"),
+            refresh_token=token_data.get("refresh_token"),
+            token_uri=token_data.get("token_uri"),
+            client_id=token_data.get("client_id"),
+            client_secret=token_data.get("client_secret"),
+            scopes=token_data.get("scopes"),
+        )
+    except Exception:
+        return None
 
 
 def get_auth_url():
@@ -185,6 +195,18 @@ def get_calendar_service():
     return build("calendar", "v3", credentials=creds)
 
 
+def get_tasks_service():
+    """Get authenticated Google Tasks service"""
+    if not GOOGLE_API_AVAILABLE:
+        return None
+
+    creds = load_token()
+    if not creds or not creds.valid:
+        return None
+
+    return build("tasks", "v1", credentials=creds)
+
+
 def check_auth_status():
     """Check if user is authenticated with Google Calendar"""
     if not GOOGLE_API_AVAILABLE:
@@ -226,9 +248,13 @@ def check_auth_status():
 
 def revoke_auth():
     """Revoke Google Calendar authentication"""
-    if TOKEN_PATH.exists():
-        TOKEN_PATH.unlink()
-    return True
+    try:
+        if TOKEN_PATH.exists():
+            TOKEN_PATH.unlink()
+        return True
+    except Exception as e:
+        print(f"[ERROR] Failed to revoke auth: {e}")
+        return False
 
 
 def parse_rfc3339(value: Optional[str]) -> Optional[datetime]:
@@ -1062,3 +1088,91 @@ def sync_tasks_to_database(course_id=None):
         "source": "tasks",
         "lists": [tasklist.get("title") for tasklist in target_lists],
     }
+
+# -----------------------------------------------------------------------------
+# Google Tasks API Helpers
+# -----------------------------------------------------------------------------
+
+def fetch_task_lists(service=None):
+    """Fetch all task lists."""
+    service = service or get_tasks_service()
+    if not service:
+        return [], "Not authenticated"
+    
+    try:
+        results = service.tasklists().list(maxResults=100).execute()
+        return results.get("items", []), None
+    except Exception as e:
+        return [], str(e)
+
+
+def fetch_tasks_from_list(tasklist_id, service=None):
+    """Fetch tasks from a specific list."""
+    service = service or get_tasks_service()
+    if not service:
+        return [], "Not authenticated"
+
+    try:
+        results = service.tasks().list(tasklist=tasklist_id, showCompleted=True, showHidden=True).execute()
+        return results.get("items", []), None
+    except Exception as e:
+        return [], str(e)
+
+
+def create_google_task(tasklist_id, body, service=None):
+    """Create a new task in the specified list."""
+    service = service or get_tasks_service()
+    if not service:
+        return None, "Not authenticated"
+    
+    try:
+        result = service.tasks().insert(tasklist=tasklist_id, body=body).execute()
+        return result, None
+    except Exception as e:
+        return None, str(e)
+
+
+def patch_google_task(tasklist_id, task_id, body, service=None):
+    """Update a task's fields."""
+    service = service or get_tasks_service()
+    if not service:
+        return None, "Not authenticated"
+    
+    try:
+        result = service.tasks().patch(tasklist=tasklist_id, task=task_id, body=body).execute()
+        return result, None
+    except Exception as e:
+        return None, str(e)
+
+
+def delete_google_task(tasklist_id, task_id, service=None):
+    """Delete a task."""
+    service = service or get_tasks_service()
+    if not service:
+        return False, "Not authenticated"
+    
+    try:
+        service.tasks().delete(tasklist=tasklist_id, task=task_id).execute()
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+
+def move_google_task(tasklist_id, task_id, previous=None, parent=None, service=None):
+    """Move a task to a new position (parent/previous)."""
+    service = service or get_tasks_service()
+    if not service:
+        return None, "Not authenticated"
+    
+    try:
+        # tasks.move takes 'parent' and 'previous' as query parameters
+        kwargs = {'tasklist': tasklist_id, 'task': task_id}
+        if parent:
+            kwargs['parent'] = parent
+        if previous:
+            kwargs['previous'] = previous
+            
+        result = service.tasks().move(**kwargs).execute()
+        return result, None
+    except Exception as e:
+        return None, str(e)

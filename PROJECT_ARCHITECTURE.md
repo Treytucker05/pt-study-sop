@@ -9,7 +9,10 @@
 
 ## 1. Executive Summary
 
+The **PT Study System** is a personal AI operating system for DPT coursework, integrating four main pillars. Canonical dashboard behavior and flows are documented in `docs/dashboard_audit.md`.
+
 The **PT Study System** is a personal AI operating system for DPT coursework, integrating four main pillars:
+
 
 1.  **SOP System (`sop/`)**: A rigorous learning methodology (PEIR-RO cycle) and runtime protocol for "Structured Architect" (Custom GPT).
 2.  **Scholar System (`scholar/`)**: A meta-system that audits study logs, detects friction, and proposes optimizations.
