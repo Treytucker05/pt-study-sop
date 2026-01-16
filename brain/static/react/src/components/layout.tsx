@@ -1,11 +1,14 @@
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
-import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Menu, X, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Menu, X, Save, Trash2, Edit3, Check, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import arcadeBg from "@assets/generated_images/dark_retro_arcade_grid_background_texture.png";
 import { cn } from "@/lib/utils";
+import { api, type Note } from "@/lib/api";
 
 const NAV_ITEMS = [
   { path: "/", label: "DASHBOARD", icon: LayoutDashboard },
@@ -18,6 +21,72 @@ const NAV_ITEMS = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const currentPath = location === "/" ? "/" : "/" + location.split("/")[1];
+  
+  // Notes state
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [newNoteContent, setNewNoteContent] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch notes on mount
+  useEffect(() => {
+    loadNotes();
+  }, []);
+
+  const loadNotes = async () => {
+    try {
+      const data = await api.notes.getAll();
+      setNotes(data.sort((a, b) => a.position - b.position));
+    } catch (err) {
+      console.error("Failed to load notes:", err);
+    }
+  };
+
+  const handleCreateNote = async () => {
+    if (!newNoteContent.trim()) return;
+    setIsLoading(true);
+    try {
+      await api.notes.create({ content: newNoteContent.trim() });
+      setNewNoteContent("");
+      await loadNotes();
+    } catch (err) {
+      console.error("Failed to create note:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteNote = async (id: number) => {
+    try {
+      await api.notes.delete(id);
+      await loadNotes();
+    } catch (err) {
+      console.error("Failed to delete note:", err);
+    }
+  };
+
+  const handleStartEdit = (note: Note) => {
+    setEditingId(note.id);
+    setEditContent(note.content);
+  };
+
+  const handleSaveEdit = async () => {
+    if (editingId === null) return;
+    try {
+      await api.notes.update(editingId, { content: editContent.trim() });
+      setEditingId(null);
+      setEditContent("");
+      await loadNotes();
+    } catch (err) {
+      console.error("Failed to update note:", err);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditContent("");
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground relative flex flex-col font-terminal">
@@ -64,20 +133,104 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" className="font-arcade rounded-none border-2">
-                  NOTES
+                  NOTES {notes.length > 0 && <span className="ml-1 text-primary">({notes.length})</span>}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="bg-black border-l-4 border-primary w-[300px] sm:w-[400px]">
+              <SheetContent className="bg-black border-l-4 border-primary w-[300px] sm:w-[400px] flex flex-col">
                 <SheetTitle className="font-arcade text-primary mb-4">QUICK_NOTES</SheetTitle>
-                <div className="flex flex-col h-full pb-8 gap-4">
-                  <Textarea 
-                    placeholder="TYPE_NOTES_HERE..." 
-                    className="flex-1 bg-secondary/20 border-2 border-secondary font-terminal text-lg rounded-none resize-none focus-visible:ring-primary" 
+                
+                {/* New note input - smaller */}
+                <div className="flex gap-2 mb-4">
+                  <Input
+                    placeholder="Add a quick note..."
+                    value={newNoteContent}
+                    onChange={(e) => setNewNoteContent(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleCreateNote()}
+                    className="flex-1 bg-secondary/20 border-2 border-secondary font-terminal rounded-none h-10"
                   />
-                  <Button className="w-full font-arcade rounded-none">
-                    <Save className="w-4 h-4 mr-2" /> SAVE
+                  <Button 
+                    onClick={handleCreateNote} 
+                    disabled={isLoading || !newNoteContent.trim()}
+                    className="font-arcade rounded-none h-10 px-4"
+                  >
+                    <Save className="w-4 h-4" />
                   </Button>
                 </div>
+
+                {/* Saved notes list */}
+                <ScrollArea className="flex-1 -mx-2 px-2">
+                  <div className="space-y-2 pb-8">
+                    {notes.length === 0 ? (
+                      <div className="text-center text-muted-foreground font-terminal text-sm py-8">
+                        No notes yet. Add one above!
+                      </div>
+                    ) : (
+                      notes.map((note) => (
+                        <div 
+                          key={note.id} 
+                          className="p-3 bg-secondary/10 border border-secondary/30 hover:border-primary/50 transition-colors group"
+                        >
+                          {editingId === note.id ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="bg-black border-primary font-terminal text-sm rounded-none resize-none min-h-[60px]"
+                                autoFocus
+                              />
+                              <div className="flex gap-2 justify-end">
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  onClick={handleCancelEdit}
+                                  className="h-7 px-2 text-muted-foreground hover:text-white"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  onClick={handleSaveEdit}
+                                  className="h-7 px-2 bg-primary text-black hover:bg-primary/90"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="font-terminal text-sm whitespace-pre-wrap break-words">
+                                {note.content}
+                              </p>
+                              <div className="flex justify-between items-center mt-2 pt-2 border-t border-secondary/20">
+                                <span className="text-[10px] text-muted-foreground font-terminal">
+                                  {new Date(note.createdAt).toLocaleDateString()}
+                                </span>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => handleStartEdit(note)}
+                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => handleDeleteNote(note.id)}
+                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-red-500"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
               </SheetContent>
             </Sheet>
           </div>

@@ -30,7 +30,7 @@ except ImportError:
 
 
 # Strict scope validation causes errors when Google returns implicit scopes
-os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
 
 # Paths
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -364,9 +364,9 @@ def fetch_calendar_events(
     if not time_max:
         # Default to days_ahead if not provided
         if not time_min.endswith("Z"):
-             # Simple parsing if we just set it above it has Z. 
-             # If passed in as arg, assume formatted.
-             pass 
+            # Simple parsing if we just set it above it has Z.
+            # If passed in as arg, assume formatted.
+            pass
         # For simplicity, if time_max missing, calculate from now or time_min
         # Parsing time_min to add days is complex without strict format.
         # Fallback to now + days_ahead if time_max not explicit.
@@ -1102,16 +1102,18 @@ def sync_tasks_to_database(course_id=None):
         "lists": [tasklist.get("title") for tasklist in target_lists],
     }
 
+
 # -----------------------------------------------------------------------------
 # Google Tasks API Helpers
 # -----------------------------------------------------------------------------
+
 
 def fetch_task_lists(service=None):
     """Fetch all task lists."""
     service = service or get_tasks_service()
     if not service:
         return [], "Not authenticated"
-    
+
     try:
         results = service.tasklists().list(maxResults=100).execute()
         return results.get("items", []), None
@@ -1126,7 +1128,11 @@ def fetch_tasks_from_list(tasklist_id, service=None):
         return [], "Not authenticated"
 
     try:
-        results = service.tasks().list(tasklist=tasklist_id, showCompleted=True, showHidden=True).execute()
+        results = (
+            service.tasks()
+            .list(tasklist=tasklist_id, showCompleted=True, showHidden=True)
+            .execute()
+        )
         return results.get("items", []), None
     except Exception as e:
         return [], str(e)
@@ -1137,7 +1143,7 @@ def create_google_task(tasklist_id, body, service=None):
     service = service or get_tasks_service()
     if not service:
         return None, "Not authenticated"
-    
+
     try:
         result = service.tasks().insert(tasklist=tasklist_id, body=body).execute()
         return result, None
@@ -1150,9 +1156,13 @@ def patch_google_task(tasklist_id, task_id, body, service=None):
     service = service or get_tasks_service()
     if not service:
         return None, "Not authenticated"
-    
+
     try:
-        result = service.tasks().patch(tasklist=tasklist_id, task=task_id, body=body).execute()
+        result = (
+            service.tasks()
+            .patch(tasklist=tasklist_id, task=task_id, body=body)
+            .execute()
+        )
         return result, None
     except Exception as e:
         return None, str(e)
@@ -1163,7 +1173,7 @@ def delete_google_task(tasklist_id, task_id, service=None):
     service = service or get_tasks_service()
     if not service:
         return False, "Not authenticated"
-    
+
     try:
         service.tasks().delete(tasklist=tasklist_id, task=task_id).execute()
         return True, None
@@ -1176,15 +1186,15 @@ def move_google_task(tasklist_id, task_id, previous=None, parent=None, service=N
     service = service or get_tasks_service()
     if not service:
         return None, "Not authenticated"
-    
+
     try:
         # tasks.move takes 'parent' and 'previous' as query parameters
-        kwargs = {'tasklist': tasklist_id, 'task': task_id}
+        kwargs = {"tasklist": tasklist_id, "task": task_id}
         if parent:
-            kwargs['parent'] = parent
+            kwargs["parent"] = parent
         if previous:
-            kwargs['previous'] = previous
-            
+            kwargs["previous"] = previous
+
         return result, None
     except Exception as e:
         return None, str(e)
@@ -1194,30 +1204,40 @@ def move_google_task(tasklist_id, task_id, previous=None, parent=None, service=N
 # Event Write Methods (v9.3)
 # -----------------------------------------------------------------------------
 
+
 def create_event(calendar_id, body, service=None):
     """Create a new event."""
-    service = service or get_service()
-    if not service: return None, "Not authenticated"
+    service = service or get_calendar_service()
+    if not service:
+        return None, "Not authenticated"
     try:
         event = service.events().insert(calendarId=calendar_id, body=body).execute()
         return event, None
     except Exception as e:
         return None, str(e)
 
+
 def patch_event(calendar_id, event_id, body, service=None):
     """Update an existing event (patch)."""
-    service = service or get_service()
-    if not service: return None, "Not authenticated"
+    service = service or get_calendar_service()
+    if not service:
+        return None, "Not authenticated"
     try:
-        event = service.events().patch(calendarId=calendar_id, eventId=event_id, body=body).execute()
+        event = (
+            service.events()
+            .patch(calendarId=calendar_id, eventId=event_id, body=body)
+            .execute()
+        )
         return event, None
     except Exception as e:
         return None, str(e)
 
+
 def delete_event(calendar_id, event_id, service=None):
     """Delete an event."""
-    service = service or get_service()
-    if not service: return False, "Not authenticated"
+    service = service or get_calendar_service()
+    if not service:
+        return False, "Not authenticated"
     try:
         service.events().delete(calendarId=calendar_id, eventId=event_id).execute()
         return True, None

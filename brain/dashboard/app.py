@@ -1,5 +1,5 @@
-from flask import Flask
-from flask_hot_reload import HotReload
+from flask import Flask, send_from_directory
+
 from dashboard.routes import dashboard_bp
 from dashboard.v3_routes import dashboard_v3_bp, dashboard_v3_api_bp
 from config import DATA_DIR, SESSION_LOGS_DIR
@@ -27,21 +27,38 @@ def create_app():
     def serve_react(path):
         if path.startswith("api/"):
             return "API not found", 404
-            
-        # 1. Check if file exists at exact path (e.g. /react/assets/foo.js -> static/react/assets/foo.js)
-        if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
-            return app.send_static_file(path)
-            
-        # 2. Check if file exists inside react folder (e.g. /favicon.png -> static/react/favicon.png)
-        react_path = os.path.join("react", path)
-        if path != "" and os.path.exists(os.path.join(app.static_folder, react_path)):
-            return app.send_static_file(react_path)
-            
-        # 3. Fallback to index.html for client-side routing
-        return app.send_static_file("react/index.html")
 
-    # Initialize Flask Hot Reload - automatically watches templates, static, and Python files
-    # HotReload(app) # Causing crash with static files (RuntimeError: direct passthrough)
+        if path:
+            # Serve files directly from /static when they exist
+            static_candidate = os.path.join(app.static_folder or "", path)
+            if os.path.exists(static_candidate):
+                return send_from_directory(app.static_folder or "", path)
+
+            # Serve React build assets from /static/react
+            react_candidate = os.path.join(app.static_folder or "", "react", path)
+            if os.path.exists(react_candidate):
+                return send_from_directory(
+                    os.path.join(app.static_folder or "", "react"), path
+                )
+
+            # Serve Vite dist assets from /static/dist
+            dist_candidate = os.path.join(app.static_folder or "", "dist", path)
+            if os.path.exists(dist_candidate):
+                return send_from_directory(
+                    os.path.join(app.static_folder or "", "dist"), path
+                )
+
+        dist_index = os.path.join(app.static_folder or "", "dist", "index.html")
+        if os.path.exists(dist_index):
+            return send_from_directory(
+                os.path.join(app.static_folder or "", "dist"), "index.html"
+            )
+
+        return send_from_directory(
+            os.path.join(app.static_folder or "", "react"), "index.html"
+        )
+
+    # Hot reload disabled to prevent dev reload loops
 
     # Add cache-busting headers for all responses
     @app.after_request
@@ -63,9 +80,10 @@ def create_app():
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(dashboard_v3_bp)
     app.register_blueprint(dashboard_v3_api_bp)
-    
+
     # Register the Hybrid Adapter (Node.js API emulation)
     from dashboard.api_adapter import adapter_bp
+
     app.register_blueprint(adapter_bp)
 
     return app
