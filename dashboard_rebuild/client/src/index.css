@@ -6,6 +6,7 @@
 @theme inline {
   --font-arcade: 'Press Start 2P', cursive;
   --font-terminal: 'VT323', monospace;
+  --font-display: 'Orbitron', 'Space Grotesk', sans-serif;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -26,21 +27,44 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-  
+
   --radius-sm: 0px;
   --radius-md: 0px;
   --radius-lg: 0px;
 
   --animate-scanline: scanline 8s linear infinite;
   --animate-flicker: flicker 0.15s infinite;
+  --animate-arcade-led: arcade-led 1.5s ease-in-out infinite;
 
   @keyframes scanline {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(100%); }
+    0% {
+      transform: translateY(-100%);
+    }
+
+    100% {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes arcade-led {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.6;
+    }
   }
 }
 
 :root {
+  /* ═══════════════════════════════════════════════════════════════════════════
+     NEO-RETRO THEME TOKENS - 80s/90s Vibe with Modern Dark Mode
+     From legacy dashboard.css
+     ═══════════════════════════════════════════════════════════════════════════ */
+
   /* Arcade Theme Base - UNIFIED RED THEME */
   --background: 0 0% 5%;
   --foreground: 0 0% 95%;
@@ -51,16 +75,19 @@
   --popover: 0 0% 8%;
   --popover-foreground: 0 0% 95%;
 
-  --primary: 0 100% 50%; /* Neon Red */
+  --primary: 0 100% 50%;
+  /* Neon Red */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 20%; /* Dark Grey */
+  --secondary: 0 0% 20%;
+  /* Dark Grey */
   --secondary-foreground: 0 0% 100%;
 
   --muted: 0 0% 15%;
   --muted-foreground: 0 0% 60%;
 
-  --accent: 0 100% 20%; /* Darker Red */
+  --accent: 0 100% 20%;
+  /* Darker Red */
   --accent-foreground: 0 0% 100%;
 
   --destructive: 0 100% 50%;
@@ -71,17 +98,80 @@
   --ring: 0 100% 50%;
 
   --radius: 0;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     LEGACY ARCADE TOKENS - Ported from dashboard.css
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* Base Surfaces - Dark Graphite */
+  --surface-0: #0A0A0A;
+  --surface-1: #0F0F0F;
+  --surface-2: #141414;
+  --surface-3: #1B1B1B;
+  --surface-4: #222222;
+  --surface-5: #2A2A2A;
+
+  /* Primary Accent - Retro Red with RGB variants */
+  --primary-hex: #DC2626;
+  --primary-hover: #EF4444;
+  --primary-dark: #B91C1C;
+  --primary-muted: #7F1D1D;
+  --primary-rgb: 220, 38, 38;
+  --primary-glow: 0 0 20px rgba(220, 38, 38, 0.4), 0 0 40px rgba(220, 38, 38, 0.2);
+  --primary-glow-subtle: 0 0 10px rgba(220, 38, 38, 0.2);
+
+  /* Semantic Colors */
+  --success-hex: #10B981;
+  --success-muted: #065F46;
+  --success-rgb: 16, 185, 129;
+  --warning-hex: #F59E0B;
+  --warning-muted: #92400E;
+  --warning-rgb: 245, 158, 11;
+  --error-hex: #EF4444;
+  --error-muted: #991B1B;
+  --error-rgb: 239, 68, 68;
+  --info-hex: #3B82F6;
+  --info-rgb: 59, 130, 246;
+  --purple-hex: #A855F7;
+  --cyan-hex: #06B6D4;
+
+  /* Glassmorphism Effects */
+  --glass-bg: rgba(12, 12, 12, 0.6);
+  --glass-bg-light: rgba(20, 20, 20, 0.75);
+  --glass-blur: blur(12px);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+
+  /* Shadows - Depth System */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+  --shadow-glow-primary: 0 0 20px rgba(220, 38, 38, 0.3);
+
+  /* Transitions */
+  --transition-fast: 0.1s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply font-terminal antialiased bg-background text-foreground tracking-wide;
     image-rendering: pixelated;
   }
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-arcade uppercase tracking-widest text-primary;
     text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
   }
@@ -91,22 +181,332 @@
   .text-glow {
     text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary);
   }
-  
+
   .crt-overlay {
-    background: linear-gradient(
-      rgba(18, 16, 16, 0) 50%,
-      rgba(0, 0, 0, 0.25) 50%
-    );
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.25) 50%);
     background-size: 100% 4px;
     pointer-events: none;
   }
 
   .pixel-border {
-    box-shadow: 
+    box-shadow:
       -4px 0 0 0 var(--color-border),
       4px 0 0 0 var(--color-border),
       0 -4px 0 0 var(--color-border),
       0 4px 0 0 var(--color-border);
     margin: 4px;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARCADE BUTTON - Neo-Retro 3D Push Button from legacy dashboard.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.arcade-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-family: var(--font-arcade);
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #cccccc;
+  background: linear-gradient(180deg, var(--surface-3) 0%, var(--surface-2) 100%);
+  border: 2px solid var(--surface-4);
+  border-bottom-width: 4px;
+  border-bottom-color: var(--surface-0);
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow:
+    0 2px 0 var(--surface-0),
+    0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.arcade-btn:hover {
+  color: #ffffff;
+  background: linear-gradient(180deg, var(--surface-4) 0%, var(--surface-3) 100%);
+  border-color: var(--surface-5);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 0 var(--surface-0),
+    0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.arcade-btn:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  box-shadow:
+    0 1px 0 var(--surface-0),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.arcade-btn-primary {
+  color: #fff;
+  background: linear-gradient(180deg, #ff0000 0%, #cc0000 100%);
+  border: 2px solid #ff0000;
+  border-bottom-width: 4px;
+  border-bottom-color: #660000;
+  box-shadow:
+    0 0 15px rgba(255, 0, 0, 0.4),
+    0 4px 0 #330000,
+    0 6px 16px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.arcade-btn-primary:hover {
+  color: #fff;
+  background: linear-gradient(180deg, #ff3333 0%, #ff0000 100%);
+  border-color: #ff3333;
+  box-shadow:
+    0 0 25px rgba(255, 0, 0, 0.7),
+    0 0 40px rgba(255, 0, 0, 0.4),
+    0 4px 0 #660000,
+    0 8px 20px rgba(255, 0, 0, 0.4);
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+.arcade-btn-primary:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+  box-shadow:
+    0 0 10px rgba(255, 0, 0, 0.5),
+    0 1px 0 #330000,
+    0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION PANEL - Collapsible Neo-Retro Panel from legacy dashboard.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.section-panel {
+  background: linear-gradient(135deg, rgba(20, 0, 0, 0.95) 0%, rgba(10, 0, 0, 0.92) 100%);
+  border: 2px solid;
+  border-image: linear-gradient(90deg,
+      #ff0000 0%,
+      #888888 25%,
+      #ff0000 50%,
+      #888888 75%,
+      #ff0000 100%) 1;
+  border-radius: 0;
+  margin-bottom: 24px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow:
+    0 0 20px rgba(255, 0, 0, 0.3),
+    0 0 40px rgba(255, 0, 0, 0.15),
+    inset 0 0 40px rgba(0, 0, 0, 0.7);
+  position: relative;
+}
+
+.section-panel::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 1px solid rgba(150, 150, 150, 0.15);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.section-panel:hover {
+  box-shadow:
+    0 0 30px rgba(255, 0, 0, 0.5),
+    0 0 60px rgba(255, 0, 0, 0.3),
+    inset 0 0 40px rgba(255, 0, 0, 0.1);
+  border-image: linear-gradient(90deg,
+      #ff0000 0%,
+      #ffffff 25%,
+      #ff0000 50%,
+      #ffffff 75%,
+      #ff0000 100%) 1;
+}
+
+.section-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+  user-select: none;
+  position: relative;
+}
+
+.section-panel-header:hover {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.section-panel-content {
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   METAL STAT CARD - Arcade Score Display from legacy dashboard.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.metal-stat-card {
+  background: linear-gradient(135deg, rgba(20, 0, 0, 0.95) 0%, rgba(10, 0, 0, 0.9) 100%);
+  border: 3px solid;
+  border-image: linear-gradient(135deg, #ff0000 0%, #666666 50%, #ff0000 100%) 1;
+  border-radius: 0;
+  padding: 20px 24px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  overflow: hidden;
+  box-shadow:
+    0 0 20px rgba(255, 0, 0, 0.3),
+    0 0 40px rgba(255, 0, 0, 0.15),
+    inset 0 0 20px rgba(0, 0, 0, 0.7);
+  text-align: center;
+}
+
+.metal-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: 1px solid rgba(150, 150, 150, 0.2);
+  pointer-events: none;
+}
+
+.metal-stat-card::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff0000;
+  animation: arcade-led 1.5s ease-in-out infinite;
+  box-shadow:
+    0 0 5px #ff0000,
+    0 0 10px #ff0000,
+    0 0 20px rgba(255, 0, 0, 0.5);
+}
+
+@keyframes arcade-led {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow:
+      0 0 5px #ff0000,
+      0 0 10px #ff0000,
+      0 0 20px rgba(255, 0, 0, 0.8);
+  }
+
+  50% {
+    opacity: 0.6;
+    box-shadow:
+      0 0 3px #ff0000,
+      0 0 6px #ff0000,
+      0 0 10px rgba(255, 0, 0, 0.3);
+  }
+}
+
+.metal-stat-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow:
+    0 0 30px rgba(255, 0, 0, 0.6),
+    0 0 60px rgba(255, 0, 0, 0.4),
+    0 10px 40px rgba(0, 0, 0, 0.8),
+    inset 0 0 30px rgba(255, 0, 0, 0.15);
+  border-image: linear-gradient(135deg, #ff0000 0%, #ffffff 50%, #ff0000 100%) 1;
+}
+
+.metal-stat-card .stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.metal-stat-card .stat-label {
+  font-family: var(--font-arcade);
+  font-size: 0.6rem;
+  color: #cccccc;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-shadow:
+    0 0 5px rgba(200, 200, 200, 0.5),
+    0 0 10px rgba(150, 150, 150, 0.3);
+}
+
+.metal-stat-card .stat-value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.8),
+    0 0 20px rgba(255, 0, 0, 0.4),
+    2px 2px 0 rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TERMINAL BADGE - Neo-Retro Label from legacy dashboard.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.terminal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, var(--surface-2), var(--surface-1));
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  font-family: var(--font-arcade);
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: #ff0000;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.2);
+}
+
+.terminal-badge.wide {
+  padding: 8px 16px;
+}
+
+.terminal-badge-label {
+  color: #ffffff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CRT SCANLINES - Retro Monitor Effect
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.retro-scanlines {
+  position: relative;
+}
+
+.retro-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg,
+      rgba(0, 0, 0, 0.1) 0px,
+      rgba(0, 0, 0, 0.1) 1px,
+      transparent 1px,
+      transparent 2px);
+  pointer-events: none;
+  opacity: 0.12;
 }

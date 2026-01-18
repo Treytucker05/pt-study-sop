@@ -21,12 +21,23 @@ def create_app():
     app.config["TEMPLATES_AUTO_RELOAD"] = True
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0  # Disable static cache during debug
 
-    # Serve React App
+    # Register blueprints BEFORE catch-all route
+    from dashboard.routes import dashboard_bp
+    from dashboard.v3_routes import dashboard_v3_bp, dashboard_v3_api_bp
+    from dashboard.api_adapter import adapter_bp
+
+    app.register_blueprint(adapter_bp)  # /api/* routes - must be first
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(dashboard_v3_bp)
+    app.register_blueprint(dashboard_v3_api_bp)
+
+    # Serve React App (catch-all for non-API routes)
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
     def serve_react(path):
+        # Skip API paths - they're handled by blueprints
         if path.startswith("api/"):
-            return "API not found", 404
+            return "API route not found", 404
 
         if path:
             # Serve files directly from /static when they exist
@@ -75,15 +86,5 @@ def create_app():
     @app.context_processor
     def inject_cache_buster():
         return dict(cache_bust=int(time.time()))
-
-    # Register Blueprint
-    app.register_blueprint(dashboard_bp)
-    app.register_blueprint(dashboard_v3_bp)
-    app.register_blueprint(dashboard_v3_api_bp)
-
-    # Register the Hybrid Adapter (Node.js API emulation)
-    from dashboard.api_adapter import adapter_bp
-
-    app.register_blueprint(adapter_bp)
 
     return app

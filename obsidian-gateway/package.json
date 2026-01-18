@@ -1,0 +1,13 @@
+﻿{
+  "name": "obsidian-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Append-only Obsidian gateway for Zapier via ngrok.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

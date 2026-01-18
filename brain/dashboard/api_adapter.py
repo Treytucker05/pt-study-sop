@@ -1,11 +1,103 @@
 from flask import Blueprint, jsonify, request
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import json
+import requests
 from typing import List, Dict, Any
 
 # Import internal modules from the "Brain"
 from db_setup import get_connection
+
+# ==============================================================================
+# OBSIDIAN LOCAL REST API CONFIG
+# ==============================================================================
+OBSIDIAN_API_URL = "http://127.0.0.1:27123"
+OBSIDIAN_API_KEY = "0be342fdbef2604bad20cb088e1aded26d5d5cde822849c6e3709fe646374eeb"
+
+def obsidian_health_check() -> dict:
+    """Check if Obsidian Local REST API is running."""
+    try:
+        resp = requests.get(
+            f"{OBSIDIAN_API_URL}/",
+            headers={"Authorization": f"Bearer {OBSIDIAN_API_KEY}"},
+            timeout=3
+        )
+        if resp.status_code == 200:
+            return {"connected": True, "status": "online"}
+        return {"connected": False, "status": "error", "error": f"Status {resp.status_code}"}
+    except requests.exceptions.ConnectionError:
+        return {"connected": False, "status": "offline", "error": "Obsidian not running or plugin disabled"}
+    except Exception as e:
+        return {"connected": False, "status": "error", "error": str(e)}
+
+def obsidian_append(path: str, content: str) -> dict:
+    """Append content to a file in Obsidian vault using Local REST API."""
+    try:
+        # Local REST API uses POST to append content
+        resp = requests.post(
+            f"{OBSIDIAN_API_URL}/vault/{path}",
+            data=content.encode('utf-8'),
+            headers={
+                "Authorization": f"Bearer {OBSIDIAN_API_KEY}",
+                "Content-Type": "text/markdown"
+            },
+            timeout=10
+        )
+        if resp.status_code in [200, 204]:
+            return {"success": True, "path": path, "bytes": len(content)}
+        return {"success": False, "error": f"Status {resp.status_code}: {resp.text}"}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "error": "Obsidian not running or plugin disabled"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def obsidian_list_files(folder: str = "") -> dict:
+    """List files in Obsidian vault folder."""
+    try:
+        url = f"{OBSIDIAN_API_URL}/vault/" if not folder else f"{OBSIDIAN_API_URL}/vault/{folder}/"
+        resp = requests.get(
+            url,
+            headers={"Authorization": f"Bearer {OBSIDIAN_API_KEY}", "Accept": "application/json"},
+            timeout=10
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return {"success": True, "files": data.get("files", [])}
+        return {"success": False, "error": f"Status {resp.status_code}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def obsidian_get_file(path: str) -> dict:
+    """Get content of a file from Obsidian vault."""
+    try:
+        resp = requests.get(
+            f"{OBSIDIAN_API_URL}/vault/{path}",
+            headers={"Authorization": f"Bearer {OBSIDIAN_API_KEY}", "Accept": "text/markdown"},
+            timeout=10
+        )
+        if resp.status_code == 200:
+            return {"success": True, "content": resp.text, "path": path}
+        return {"success": False, "error": f"Status {resp.status_code}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def obsidian_save_file(path: str, content: str) -> dict:
+    """Save/overwrite a file in Obsidian vault."""
+    try:
+        resp = requests.put(
+            f"{OBSIDIAN_API_URL}/vault/{path}",
+            data=content.encode('utf-8'),
+            headers={
+                "Authorization": f"Bearer {OBSIDIAN_API_KEY}",
+                "Content-Type": "text/markdown"
+            },
+            timeout=10
+        )
+        if resp.status_code in [200, 204]:
+            return {"success": True, "path": path}
+        return {"success": False, "error": f"Status {resp.status_code}: {resp.text}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 # Wrap optional imports to prevent crash if Scholar/Google libs missing
 try:
@@ -210,6 +302,28 @@ def delete_session(session_id):
         return jsonify({"error": str(e)}), 500
 
 
+@adapter_bp.route("/sessions/bulk-delete", methods=["POST"])
+def bulk_delete_sessions():
+    """Delete multiple sessions by IDs."""
+    try:
+        data = request.get_json()
+        ids = data.get("ids", [])
+        
+        if not ids:
+            return jsonify({"deleted": 0})
+        
+        conn = get_connection()
+        cur = conn.cursor()
+        placeholders = ",".join("?" * len(ids))
+        cur.execute(f"DELETE FROM sessions WHERE id IN ({placeholders})", ids)
+        deleted = cur.rowcount
+        conn.commit()
+        conn.close()
+        return jsonify({"deleted": deleted})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ==============================================================================
 # EVENTS (Calendar)
 # ==============================================================================
@@ -273,6 +387,57 @@ def get_events():
     except Exception as e:
         print(f"Calendar Error: {e}")
         return jsonify([]), 500
+
+
+@adapter_bp.route("/events", methods=["POST"])
+def create_event():
+    """
+    Mimics: app.post("/api/events")
+    Creates a local event in course_events table.
+    """
+    from db_setup import get_connection
+
+    data = request.json
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        title = data.get("title", "Untitled Event")
+        date_val = data.get("date", "")
+        if "T" in date_val:
+            date_val = date_val.split("T")[0]
+        
+        end_date = data.get("endDate")
+        if end_date and "T" in end_date:
+            end_date = end_date.split("T")[0]
+        
+        event_type = data.get("eventType", "event")
+        color = data.get("color", "#ef4444")
+        status = data.get("status", "pending")
+        notes = data.get("notes", "")
+        course_id = data.get("courseId")
+
+        cur.execute(
+            """INSERT INTO course_events (title, date, due_date, type, status, notes, course_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (title, date_val, end_date, event_type, status, notes, course_id)
+        )
+        event_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            "id": event_id,
+            "title": title,
+            "date": date_val,
+            "endDate": end_date,
+            "eventType": event_type,
+            "color": color,
+            "status": status,
+        }), 201
+    except Exception as e:
+        print(f"Create Event Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @adapter_bp.route("/events/<int:event_id>", methods=["DELETE"])
@@ -707,7 +872,7 @@ def google_status():
     Mimics: app.get("/api/google/status")
     Checks if backend is connected to Google Calendar.
     """
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     status = gcal.check_auth_status()
     # status = { connected: bool, email: str, error: str }
@@ -736,7 +901,7 @@ def google_auth_url():
     Mimics: app.get("/api/google/auth")
     Returns the OAuth URL to start the flow.
     """
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     url, state_or_msg = gcal.get_auth_url()
     if not url:
@@ -752,7 +917,7 @@ def google_callback():
     Exchanges code for token, then redirects user back to dashboard.
     """
     from flask import redirect
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     code = request.args.get("code")
     if not code:
@@ -773,7 +938,7 @@ def google_disconnect():
     """
     Mimics: app.post("/api/google/disconnect")
     """
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     gcal.revoke_auth()
     return jsonify({"success": True})
@@ -786,7 +951,7 @@ def google_disconnect():
 
 @adapter_bp.route("/google-calendar/calendars", methods=["GET"])
 def get_google_calendars():
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     calendars, error = gcal.fetch_calendar_list()
     if error:
@@ -800,7 +965,7 @@ def get_google_calendars():
 
 @adapter_bp.route("/google-calendar/events", methods=["GET"])
 def get_google_events():
-    from brain.dashboard import gcal
+    from dashboard import gcal
     from datetime import datetime
 
     # Frontend sends timeMin, timeMax
@@ -853,7 +1018,7 @@ def get_google_events():
 
 @adapter_bp.route("/google-calendar/events", methods=["POST"])
 def create_google_event():
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     data = request.json
     calendar_id = data.get("calendarId")
@@ -934,7 +1099,7 @@ def create_google_event():
 @adapter_bp.route("/google-calendar/events/<event_id>", methods=["PATCH"])
 @adapter_bp.route("/google-calendar/events/<event_id>", methods=["PATCH"])
 def update_google_event(event_id):
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     data = request.json
     calendar_id = data.get("calendarId")
@@ -1061,7 +1226,7 @@ def update_google_event(event_id):
 
 @adapter_bp.route("/google-calendar/events/<event_id>", methods=["DELETE"])
 def delete_google_event(event_id):
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     calendar_id = request.args.get("calendarId")
     if not calendar_id:
@@ -1080,7 +1245,7 @@ def delete_google_event(event_id):
 
 @adapter_bp.route("/google-calendar/clear", methods=["POST"])
 def clear_calendars():
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     data = request.json
     calendar_ids = data.get("calendarIds", [])
@@ -1128,7 +1293,7 @@ def clear_calendars():
 
 @adapter_bp.route("/google-tasks", methods=["GET"])
 def get_google_tasks():
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     task_lists, error = gcal.fetch_task_lists()
     if error:
@@ -1165,7 +1330,7 @@ def get_google_tasks():
 
 @adapter_bp.route("/google-tasks/lists", methods=["GET"])
 def get_google_task_lists():
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     task_lists, error = gcal.fetch_task_lists()
     if error:
@@ -1176,7 +1341,7 @@ def get_google_task_lists():
 
 @adapter_bp.route("/google-tasks", methods=["POST"])
 def create_google_task_endpoint():
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     data = request.json
     list_id = data.get("listId")
@@ -1202,7 +1367,7 @@ def create_google_task_endpoint():
 
 @adapter_bp.route("/google-tasks/<task_id>", methods=["PATCH"])
 def patch_google_task_endpoint(task_id):
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     data = request.json
     list_id = data.get("listId")
@@ -1232,7 +1397,7 @@ def patch_google_task_endpoint(task_id):
 
 @adapter_bp.route("/google-tasks/<task_id>", methods=["DELETE"])
 def delete_google_task_endpoint(task_id):
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     list_id = request.args.get("listId")
     if not list_id:
@@ -1246,7 +1411,7 @@ def delete_google_task_endpoint(task_id):
 
 @adapter_bp.route("/google-tasks/<task_id>/move", methods=["POST"])
 def move_google_task_endpoint(task_id):
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     data = request.json
     list_id = data.get("listId")
@@ -1365,7 +1530,7 @@ def calendar_assistant_endpoint():
 def undo_calendar_action_endpoint():
     """Revert the last action in the ledger."""
     from brain.db_setup import get_connection
-    from brain.dashboard import gcal
+    from dashboard import gcal
 
     try:
         conn = get_connection()
@@ -1616,5 +1781,1671 @@ def get_chat_history(session_id):
 
         conn.close()
         return jsonify(history)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ==============================================================================
+# COURSES (Study Wheel Support)
+# ==============================================================================
+
+
+@adapter_bp.route("/courses", methods=["GET"])
+def get_courses():
+    """Get all courses for the study wheel ordered by position."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Ensure courses table exists with correct schema
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS wheel_courses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                active INTEGER DEFAULT 1,
+                position INTEGER DEFAULT 0,
+                total_sessions INTEGER DEFAULT 0,
+                total_minutes INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Track if wheel has been initialized (prevents re-seeding after user clears it)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS wheel_config (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """)
+        conn.commit()
+
+        # Query wheel_courses table ordered by position
+        cur.execute("""
+            SELECT id, name, active, position, total_sessions, total_minutes, created_at 
+            FROM wheel_courses 
+            WHERE active = 1
+            ORDER BY position ASC
+        """)
+        rows = cur.fetchall()
+        
+        courses = []
+        for r in rows:
+            courses.append({
+                "id": r[0],
+                "name": r[1],
+                "active": bool(r[2]),
+                "position": r[3],
+                "totalSessions": r[4] or 0,
+                "totalMinutes": r[5] or 0,
+                "createdAt": r[6] or datetime.now().isoformat(),
+            })
+        
+        conn.close()
+        return jsonify(courses)
+    except Exception as e:
+        print(f"[GET COURSES] ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/courses/active", methods=["GET"])
+def get_active_courses():
+    """Get active courses only. Same as /courses since we filter by active."""
+    return get_courses()
+
+
+@adapter_bp.route("/courses", methods=["POST"])
+def create_course():
+    """Create a new course for the study wheel."""
+    try:
+        data = request.get_json()
+        name = data.get("name", "New Course")
+        active = data.get("active", True)
+        position = data.get("position", 0)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Ensure wheel_courses table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS wheel_courses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                active INTEGER DEFAULT 1,
+                position INTEGER DEFAULT 0,
+                total_sessions INTEGER DEFAULT 0,
+                total_minutes INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        cur.execute("""
+            INSERT INTO wheel_courses (name, active, position, total_sessions, total_minutes, created_at)
+            VALUES (?, ?, ?, 0, 0, ?)
+        """, (name, 1 if active else 0, position, datetime.now().isoformat()))
+
+        course_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            "id": course_id,
+            "name": name,
+            "active": active,
+            "position": position,
+            "totalSessions": 0,
+            "totalMinutes": 0,
+            "createdAt": datetime.now().isoformat(),
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/courses/<int:course_id>", methods=["PATCH"])
+def update_course(course_id):
+    """Update a course."""
+    try:
+        data = request.get_json()
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        updates = []
+        params = []
+        if "name" in data:
+            updates.append("name = ?")
+            params.append(data["name"])
+        if "active" in data:
+            updates.append("active = ?")
+            params.append(1 if data["active"] else 0)
+        if "position" in data:
+            updates.append("position = ?")
+            params.append(data["position"])
+        
+        if updates:
+            params.append(course_id)
+            cur.execute(f"UPDATE wheel_courses SET {', '.join(updates)} WHERE id = ?", params)
+            conn.commit()
+        
+        # Return updated course
+        cur.execute("SELECT id, name, active, position, total_sessions, total_minutes, created_at FROM wheel_courses WHERE id = ?", (course_id,))
+        r = cur.fetchone()
+        conn.close()
+        
+        if r:
+            return jsonify({
+                "id": r[0],
+                "name": r[1],
+                "active": bool(r[2]),
+                "position": r[3],
+                "totalSessions": r[4] or 0,
+                "totalMinutes": r[5] or 0,
+                "createdAt": r[6],
+            })
+        return jsonify({"error": "Course not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/courses/<int:course_id>", methods=["DELETE"])
+def delete_course(course_id):
+    """Delete a course from the study wheel."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        print(f"[DELETE] Attempting to delete course ID: {course_id}")
+        
+        # First check if course exists
+        cur.execute("SELECT id, name, position FROM wheel_courses WHERE id = ?", (course_id,))
+        row = cur.fetchone()
+        
+        if not row:
+            print(f"[DELETE] Course ID {course_id} NOT FOUND in wheel_courses!")
+            conn.close()
+            return jsonify({"error": f"Course {course_id} not found"}), 404
+        
+        print(f"[DELETE] Found course: id={row[0]}, name={row[1]}, position={row[2]}")
+        deleted_position = row[2]
+        
+        # Delete the course
+        cur.execute("DELETE FROM wheel_courses WHERE id = ?", (course_id,))
+        deleted_count = cur.rowcount
+        print(f"[DELETE] Rows deleted: {deleted_count}")
+        
+        # Shift all courses with higher positions down
+        cur.execute("UPDATE wheel_courses SET position = position - 1 WHERE position > ?", (deleted_position,))
+        shifted_count = cur.rowcount
+        print(f"[DELETE] Rows shifted: {shifted_count}")
+        
+        conn.commit()
+        print(f"[DELETE] Commit successful for course ID: {course_id}")
+        
+        # Verify deletion
+        cur.execute("SELECT id FROM wheel_courses WHERE id = ?", (course_id,))
+        still_exists = cur.fetchone()
+        if still_exists:
+            print(f"[DELETE] WARNING: Course {course_id} STILL EXISTS after delete!")
+        else:
+            print(f"[DELETE] Verified: Course {course_id} successfully deleted")
+        
+        conn.close()
+        return "", 204
+    except Exception as e:
+        print(f"[DELETE] ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ==============================================================================
+# STUDY WHEEL
+# ==============================================================================
+
+
+@adapter_bp.route("/study-wheel/current", methods=["GET"])
+def get_current_course():
+    """Get the current course in the study wheel rotation (position 0)."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Ensure wheel_courses table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS wheel_courses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                active INTEGER DEFAULT 1,
+                position INTEGER DEFAULT 0,
+                total_sessions INTEGER DEFAULT 0,
+                total_minutes INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+
+        # Get the course at position 0 (top of wheel)
+        cur.execute("""
+            SELECT id, name, active, position, total_sessions, total_minutes, created_at 
+            FROM wheel_courses 
+            WHERE active = 1
+            ORDER BY position ASC
+            LIMIT 1
+        """)
+        r = cur.fetchone()
+        conn.close()
+
+        if r:
+            return jsonify({
+                "currentCourse": {
+                    "id": r[0],
+                    "name": r[1],
+                    "active": bool(r[2]),
+                    "position": r[3],
+                    "totalSessions": r[4] or 0,
+                    "totalMinutes": r[5] or 0,
+                    "createdAt": r[6],
+                }
+            })
+        return jsonify({"currentCourse": None})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/study-wheel/complete-session", methods=["POST"])
+def complete_wheel_session():
+    """Complete a session and rotate the wheel - move completed course to bottom."""
+    try:
+        data = request.get_json()
+        course_id = data.get("courseId")
+        minutes = data.get("minutes", 0)
+        mode = data.get("mode", "study")
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Get the current course (should be at position 0)
+        cur.execute("""
+            SELECT id, name, position FROM wheel_courses WHERE id = ?
+        """, (course_id,))
+        current = cur.fetchone()
+
+        if not current:
+            conn.close()
+            return jsonify({"error": "Course not found"}), 404
+
+        course_name = current[1]
+
+        # Create session record
+        cur.execute("""
+            INSERT INTO sessions (session_date, session_time, main_topic, study_mode, duration_minutes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            datetime.now().strftime("%Y-%m-%d"), 
+            datetime.now().strftime("%H:%M"), 
+            course_name, 
+            mode, 
+            minutes,
+            datetime.now().isoformat()
+        ))
+        session_id = cur.lastrowid
+
+        # Update the course's session count and minutes
+        cur.execute("""
+            UPDATE wheel_courses 
+            SET total_sessions = total_sessions + 1, 
+                total_minutes = total_minutes + ?
+            WHERE id = ?
+        """, (minutes, course_id))
+
+        # ROTATE THE WHEEL: Move completed course to bottom, shift others up
+        # Get max position
+        cur.execute("SELECT MAX(position) FROM wheel_courses WHERE active = 1")
+        max_pos = cur.fetchone()[0] or 0
+
+        # Move all courses up by 1 position (except the current one)
+        cur.execute("""
+            UPDATE wheel_courses 
+            SET position = position - 1 
+            WHERE position > 0 AND id != ?
+        """, (course_id,))
+
+        # Move the completed course to the bottom
+        cur.execute("""
+            UPDATE wheel_courses 
+            SET position = ? 
+            WHERE id = ?
+        """, (max_pos, course_id))
+
+        conn.commit()
+
+        # Get the new current course (now at position 0)
+        cur.execute("""
+            SELECT id, name, active, position, total_sessions, total_minutes, created_at 
+            FROM wheel_courses 
+            WHERE active = 1
+            ORDER BY position ASC
+            LIMIT 1
+        """)
+        r = cur.fetchone()
+
+        next_course = None
+        if r:
+            next_course = {
+                "id": r[0],
+                "name": r[1],
+                "active": bool(r[2]),
+                "position": r[3],
+                "totalSessions": r[4] or 0,
+                "totalMinutes": r[5] or 0,
+                "createdAt": r[6],
+            }
+
+        # Update streak
+        update_streak(conn)
+        conn.close()
+
+        return jsonify({
+            "session": {"id": session_id, "minutes": minutes},
+            "nextCourse": next_course
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def update_streak(conn):
+    """Update study streak after completing a session."""
+    try:
+        cur = conn.cursor()
+
+        # Ensure streak table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS study_streak (
+                id INTEGER PRIMARY KEY,
+                current_streak INTEGER DEFAULT 0,
+                longest_streak INTEGER DEFAULT 0,
+                last_study_date TEXT
+            )
+        """)
+
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        cur.execute("SELECT current_streak, longest_streak, last_study_date FROM study_streak WHERE id = 1")
+        streak = cur.fetchone()
+
+        if not streak:
+            cur.execute("INSERT INTO study_streak (id, current_streak, longest_streak, last_study_date) VALUES (1, 1, 1, ?)", (today,))
+        else:
+            current, longest, last_date = streak
+            if last_date == today:
+                pass  # Already studied today
+            elif last_date == (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"):
+                # Consecutive day
+                new_streak = current + 1
+                new_longest = max(longest, new_streak)
+                cur.execute("UPDATE study_streak SET current_streak = ?, longest_streak = ?, last_study_date = ? WHERE id = 1",
+                           (new_streak, new_longest, today))
+            else:
+                # Streak broken, start fresh
+                cur.execute("UPDATE study_streak SET current_streak = 1, last_study_date = ? WHERE id = 1", (today,))
+
+        conn.commit()
+    except Exception:
+        pass  # Don't fail the session for streak errors
+
+
+# ==============================================================================
+# STREAK
+# ==============================================================================
+
+
+@adapter_bp.route("/streak", methods=["GET"])
+def get_streak():
+    """Get current study streak."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='study_streak'")
+        if not cur.fetchone():
+            conn.close()
+            return jsonify({"currentStreak": 0, "longestStreak": 0, "lastStudyDate": None})
+
+        cur.execute("SELECT current_streak, longest_streak, last_study_date FROM study_streak WHERE id = 1")
+        streak = cur.fetchone()
+        conn.close()
+
+        if streak:
+            return jsonify({
+                "currentStreak": streak[0] or 0,
+                "longestStreak": streak[1] or 0,
+                "lastStudyDate": streak[2]
+            })
+
+        return jsonify({"currentStreak": 0, "longestStreak": 0, "lastStudyDate": None})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ==============================================================================
+# WEAKNESS QUEUE
+# ==============================================================================
+
+
+@adapter_bp.route("/weakness-queue", methods=["GET"])
+def get_weakness_queue():
+    """Get flagged topics for review."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='weakness_queue'")
+        if not cur.fetchone():
+            # Create table if missing
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS weakness_queue (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    topic TEXT NOT NULL,
+                    course_id INTEGER,
+                    reason TEXT,
+                    flagged_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            conn.close()
+            return jsonify([])
+
+        cur.execute("SELECT id, topic, reason FROM weakness_queue ORDER BY flagged_at DESC LIMIT 10")
+        rows = cur.fetchall()
+        conn.close()
+
+        return jsonify([{"id": r[0], "topic": r[1], "reason": r[2]} for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ==============================================================================
+# SESSIONS TODAY
+# ==============================================================================
+
+
+@adapter_bp.route("/sessions/today", methods=["GET"])
+def get_sessions_today():
+    """Get sessions from today."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        cur.execute("""
+            SELECT id, session_date, main_topic, study_mode, duration_minutes, anki_cards_count
+            FROM sessions WHERE session_date = ?
+            ORDER BY session_time DESC
+        """, (today,))
+
+        rows = cur.fetchall()
+        conn.close()
+
+        sessions = []
+        for r in rows:
+            sessions.append({
+                "id": r[0],
+                "date": r[1],
+                "topic": r[2] or "Study Session",
+                "mode": r[3] or "study",
+                "minutes": r[4] or 0,
+                "cards": r[5] or 0,
+            })
+
+        return jsonify(sessions)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ==============================================================================
+# BRAIN METRICS
+# ==============================================================================
+
+
+@adapter_bp.route("/brain/metrics", methods=["GET"])
+def get_brain_metrics():
+    """Get aggregated brain analytics metrics."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Sessions per course
+        cur.execute("""
+            SELECT main_topic, COUNT(*) as cnt, SUM(duration_minutes) as mins
+            FROM sessions WHERE main_topic IS NOT NULL
+            GROUP BY main_topic ORDER BY cnt DESC LIMIT 10
+        """)
+        sessions_per_course = [{"course": r[0], "count": r[1], "minutes": r[2] or 0} for r in cur.fetchall()]
+
+        # Mode distribution
+        cur.execute("""
+            SELECT study_mode, COUNT(*) as cnt, SUM(duration_minutes) as mins
+            FROM sessions WHERE study_mode IS NOT NULL
+            GROUP BY study_mode ORDER BY cnt DESC
+        """)
+        mode_dist = [{"mode": r[0] or "study", "count": r[1], "minutes": r[2] or 0} for r in cur.fetchall()]
+
+        # Totals
+        cur.execute("SELECT COUNT(*), SUM(duration_minutes), SUM(anki_cards_count) FROM sessions")
+        totals = cur.fetchone()
+
+        conn.close()
+
+        return jsonify({
+            "sessionsPerCourse": sessions_per_course,
+            "modeDistribution": mode_dist,
+            "recentConfusions": [],
+            "recentWeakAnchors": [],
+            "conceptFrequency": [],
+            "issuesLog": [],
+            "totalMinutes": totals[1] or 0,
+            "totalSessions": totals[0] or 0,
+            "totalCards": totals[2] or 0,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/brain/chat", methods=["POST"])
+def brain_chat():
+    """
+    Intelligent study data processor.
+    Takes raw study session input, uses LLM to organize into:
+    - Anki cards → inserted into card_drafts table
+    - Session metadata (strengths, weaknesses, what went well, issues)
+    - Notes and insights
+    """
+    import json
+    import re
+    import os
+    import traceback
+    from datetime import datetime
+    
+    try:
+        data = request.get_json()
+        message = data.get("message", "")
+        
+        if not message.strip():
+            return jsonify({"response": "Please provide study session data to process.", "isStub": False})
+
+        # Import LLM provider using absolute path
+        import sys
+        brain_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if brain_dir not in sys.path:
+            sys.path.insert(0, brain_dir)
+        
+        from llm_provider import call_llm
+        
+        system_prompt = """You are a study session analyzer for a PT (Physical Therapy) student. 
+Your job is to parse raw study notes and organize them into structured data.
+
+ALWAYS respond with valid JSON in this exact format:
+{
+    "summary": "Brief 1-2 sentence summary of the study session",
+    "course": "Course name if mentioned, or 'General'",
+    "strengths": ["list of things the student did well or understood"],
+    "weaknesses": ["list of concepts the student struggled with"],
+    "what_went_well": ["positive aspects of the session"],
+    "what_didnt_work": ["issues or problems during studying"],
+    "concepts": ["key concepts/topics covered"],
+    "anki_cards": [
+        {
+            "front": "Question or prompt for the flashcard",
+            "back": "Answer or explanation",
+            "tags": "comma-separated tags like 'anatomy,muscles'"
+        }
+    ],
+    "notes": "Any additional observations or recommendations"
+}
+
+For anki_cards:
+- Create cards for key facts, definitions, and concepts mentioned
+- Focus on things the student found confusing or important
+- Make questions clear and specific
+- Keep answers concise but complete
+- Generate 3-10 cards per session depending on content
+
+If the input is a question rather than study data, respond with:
+{
+    "summary": "Answered a question",
+    "response": "Your helpful answer here",
+    "anki_cards": []
+}
+"""
+
+        # Call LLM via OpenRouter
+        result = call_llm(
+            system_prompt=system_prompt,
+            user_prompt=f"Process this study session data:\n\n{message}",
+            provider="openrouter",
+            model="google/gemini-2.0-flash-001",
+            timeout=45
+        )
+        
+        if not result.get("success"):
+            return jsonify({
+                "response": f"LLM error: {result.get('error', 'Unknown error')}",
+                "isStub": True
+            })
+        
+        # Parse LLM response
+        llm_content = result.get("content", "")
+        
+        # Try to extract JSON from response
+        parsed_data = None
+        try:
+            # Try direct JSON parse
+            parsed_data = json.loads(llm_content)
+        except json.JSONDecodeError:
+            # Try to find JSON in the response
+            json_match = re.search(r'\{[\s\S]*\}', llm_content)
+            if json_match:
+                try:
+                    parsed_data = json.loads(json_match.group())
+                except:
+                    pass
+        
+        if not parsed_data:
+            return jsonify({
+                "response": llm_content,
+                "isStub": False,
+                "parsed": False
+            })
+        
+        # Insert Anki cards into card_drafts if present
+        cards_created = 0
+        anki_cards = parsed_data.get("anki_cards", [])
+        
+        if anki_cards:
+            conn = get_connection()
+            cur = conn.cursor()
+            
+            session_id = f"chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            course = parsed_data.get("course", "General")
+            
+            for card in anki_cards:
+                if card.get("front") and card.get("back"):
+                    cur.execute("""
+                        INSERT INTO card_drafts 
+                        (session_id, course_id, topic_id, deck_name, card_type, front, back, tags, source_citation, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        session_id,
+                        None,  # course_id
+                        None,  # topic_id
+                        f"PT::{course}",
+                        "basic",
+                        card.get("front", ""),
+                        card.get("back", ""),
+                        card.get("tags", ""),
+                        None,  # source_citation
+                        "pending",
+                        datetime.now().isoformat()
+                    ))
+                    cards_created += 1
+            
+            conn.commit()
+            conn.close()
+        
+        # Build response message
+        response_parts = []
+        
+        if parsed_data.get("summary"):
+            response_parts.append(f"📝 **Summary:** {parsed_data['summary']}")
+        
+        if parsed_data.get("response"):
+            response_parts.append(parsed_data["response"])
+        
+        if parsed_data.get("course") and parsed_data["course"] != "General":
+            response_parts.append(f"📚 **Course:** {parsed_data['course']}")
+        
+        if parsed_data.get("strengths"):
+            response_parts.append(f"💪 **Strengths:** {', '.join(parsed_data['strengths'])}")
+        
+        if parsed_data.get("weaknesses"):
+            response_parts.append(f"⚠️ **Weaknesses:** {', '.join(parsed_data['weaknesses'])}")
+        
+        if parsed_data.get("what_went_well"):
+            response_parts.append(f"✅ **What went well:** {', '.join(parsed_data['what_went_well'])}")
+        
+        if parsed_data.get("what_didnt_work"):
+            response_parts.append(f"❌ **What didn't work:** {', '.join(parsed_data['what_didnt_work'])}")
+        
+        if parsed_data.get("concepts"):
+            response_parts.append(f"🧠 **Concepts:** {', '.join(parsed_data['concepts'])}")
+        
+        if cards_created > 0:
+            response_parts.append(f"\n🃏 **Created {cards_created} Anki card(s)** - Check the Anki Integration panel to review and sync them!")
+        
+        if parsed_data.get("notes"):
+            response_parts.append(f"\n📌 **Notes:** {parsed_data['notes']}")
+        
+        # Sync to Obsidian if requested
+        obsidian_synced = False
+        obsidian_error = None
+        sync_to_obsidian = data.get("syncToObsidian", False)
+        
+        if sync_to_obsidian and parsed_data:
+            # Build Obsidian note content
+            today = datetime.now().strftime("%Y-%m-%d")
+            time_now = datetime.now().strftime("%H:%M")
+            course = parsed_data.get("course", "General")
+            
+            obsidian_content = f"\n\n---\n## Study Session - {time_now}\n"
+            obsidian_content += f"**Course:** {course}\n\n"
+            
+            if parsed_data.get("summary"):
+                obsidian_content += f"### Summary\n{parsed_data['summary']}\n\n"
+            
+            if parsed_data.get("concepts"):
+                obsidian_content += f"### Concepts Covered\n"
+                for concept in parsed_data["concepts"]:
+                    obsidian_content += f"- {concept}\n"
+                obsidian_content += "\n"
+            
+            if parsed_data.get("strengths"):
+                obsidian_content += f"### Strengths\n"
+                for s in parsed_data["strengths"]:
+                    obsidian_content += f"- ✅ {s}\n"
+                obsidian_content += "\n"
+            
+            if parsed_data.get("weaknesses"):
+                obsidian_content += f"### Areas to Review\n"
+                for w in parsed_data["weaknesses"]:
+                    obsidian_content += f"- ⚠️ {w}\n"
+                obsidian_content += "\n"
+            
+            if cards_created > 0:
+                obsidian_content += f"### Anki Cards Created: {cards_created}\n"
+                for card in anki_cards[:5]:  # Show first 5
+                    obsidian_content += f"- **Q:** {card.get('front', '')[:80]}...\n"
+                obsidian_content += "\n"
+            
+            if parsed_data.get("notes"):
+                obsidian_content += f"### Notes\n{parsed_data['notes']}\n"
+            
+            # Append to daily note in Inbox
+            obsidian_path = f"Inbox/Study-Log-{today}.md"
+            result = obsidian_append(obsidian_path, obsidian_content)
+            
+            if result.get("success"):
+                obsidian_synced = True
+                response_parts.append(f"\n📓 **Synced to Obsidian:** {obsidian_path}")
+            else:
+                obsidian_error = result.get("error")
+                response_parts.append(f"\n⚠️ **Obsidian sync failed:** {obsidian_error}")
+        
+        return jsonify({
+            "response": "\n\n".join(response_parts),
+            "isStub": False,
+            "parsed": True,
+            "cardsCreated": cards_created,
+            "obsidianSynced": obsidian_synced,
+            "obsidianError": obsidian_error,
+            "data": parsed_data
+        })
+        
+    except Exception as e:
+        error_trace = traceback.format_exc()
+        print(f"[BRAIN CHAT ERROR] {str(e)}")
+        print(error_trace)
+        # Return 200 with error message so frontend can display it
+        return jsonify({
+            "response": f"Error: {str(e)}\n\nDetails: {error_trace[:500]}",
+            "isStub": True
+        })
+
+
+@adapter_bp.route("/brain/ingest", methods=["POST"])
+def brain_ingest():
+    """Ingest content into brain (stub)."""
+    try:
+        data = request.get_json()
+        content = data.get("content", "")
+        filename = data.get("filename", "unknown")
+
+        # Stub response
+        return jsonify({
+            "message": f"Received content from '{filename}' ({len(content)} chars). Ingestion pending integration.",
+            "parsed": False,
+            "isStub": True
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ==============================================================================
+# GOOGLE TASKS - Individual List
+# ==============================================================================
+
+
+@adapter_bp.route("/google-tasks/<list_id>", methods=["GET"])
+def get_tasks_for_list(list_id):
+    """Get tasks for a specific Google Tasks list."""
+    try:
+        from dashboard.gcal import get_google_service
+
+        service = get_google_service("tasks")
+        if not service:
+            return jsonify([])
+
+        result = service.tasks().list(tasklist=list_id, showCompleted=True, maxResults=100).execute()
+        tasks = result.get("items", [])
+
+        return jsonify([{
+            "id": t.get("id"),
+            "title": t.get("title", ""),
+            "notes": t.get("notes", ""),
+            "status": t.get("status", "needsAction"),
+            "due": t.get("due"),
+            "position": t.get("position"),
+            "listId": list_id,
+        } for t in tasks])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/google-tasks/<list_id>", methods=["POST"])
+def create_task_in_list(list_id):
+    """Create a task in a specific Google Tasks list."""
+    try:
+        from dashboard.gcal import get_google_service
+
+        service = get_google_service("tasks")
+        if not service:
+            return jsonify({"error": "Not connected to Google"}), 401
+
+        data = request.json
+        body = {
+            "title": data.get("title", ""),
+            "notes": data.get("notes", ""),
+            "status": data.get("status", "needsAction"),
+        }
+        if data.get("due"):
+            body["due"] = data["due"]
+
+        result = service.tasks().insert(tasklist=list_id, body=body).execute()
+        
+        return jsonify({
+            "id": result.get("id"),
+            "title": result.get("title", ""),
+            "notes": result.get("notes", ""),
+            "status": result.get("status", "needsAction"),
+            "due": result.get("due"),
+            "position": result.get("position"),
+            "listId": list_id,
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/google-tasks/<list_id>/<task_id>", methods=["PATCH"])
+def update_task_in_list(list_id, task_id):
+    """Update a task in a specific Google Tasks list."""
+    try:
+        from dashboard.gcal import get_google_service
+
+        service = get_google_service("tasks")
+        if not service:
+            return jsonify({"error": "Not connected to Google"}), 401
+
+        data = request.json
+        
+        # Get current task
+        current = service.tasks().get(tasklist=list_id, task=task_id).execute()
+        
+        # Update fields
+        if "title" in data:
+            current["title"] = data["title"]
+        if "notes" in data:
+            current["notes"] = data["notes"]
+        if "status" in data:
+            current["status"] = data["status"]
+        if "due" in data:
+            current["due"] = data["due"]
+
+        result = service.tasks().update(tasklist=list_id, task=task_id, body=current).execute()
+        
+        return jsonify({
+            "id": result.get("id"),
+            "title": result.get("title", ""),
+            "notes": result.get("notes", ""),
+            "status": result.get("status", "needsAction"),
+            "due": result.get("due"),
+            "position": result.get("position"),
+            "listId": list_id,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/google-tasks/<list_id>/<task_id>/toggle", methods=["PATCH"])
+def toggle_task_in_list(list_id, task_id):
+    """Toggle a task's completion status in a specific Google Tasks list."""
+    try:
+        from dashboard.gcal import get_google_service
+
+        service = get_google_service("tasks")
+        if not service:
+            return jsonify({"error": "Not connected to Google"}), 401
+
+        data = request.json or {}
+        completed = data.get("completed", True)
+        
+        # Get current task
+        current = service.tasks().get(tasklist=list_id, task=task_id).execute()
+        
+        # Toggle status
+        current["status"] = "completed" if completed else "needsAction"
+
+        result = service.tasks().update(tasklist=list_id, task=task_id, body=current).execute()
+        
+        return jsonify({
+            "id": result.get("id"),
+            "title": result.get("title", ""),
+            "notes": result.get("notes", ""),
+            "status": result.get("status", "needsAction"),
+            "due": result.get("due"),
+            "position": result.get("position"),
+            "listId": list_id,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/google-tasks/<list_id>/<task_id>", methods=["DELETE"])
+def delete_task_in_list(list_id, task_id):
+    """Delete a task from a specific Google Tasks list."""
+    try:
+        from dashboard.gcal import get_google_service
+
+        service = get_google_service("tasks")
+        if not service:
+            return jsonify({"error": "Not connected to Google"}), 401
+
+        service.tasks().delete(tasklist=list_id, task=task_id).execute()
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/google-tasks/<list_id>/<task_id>/move", methods=["POST"])
+def move_task_in_list(list_id, task_id):
+    """Move a task within or between Google Tasks lists."""
+    try:
+        from dashboard.gcal import get_google_service
+
+        service = get_google_service("tasks")
+        if not service:
+            return jsonify({"error": "Not connected to Google"}), 401
+
+        data = request.json
+        dest_list_id = data.get("destListId", list_id)
+        previous = data.get("previous")
+        parent = data.get("parent")
+
+        # If moving to a different list, need to copy then delete
+        if dest_list_id != list_id:
+            # Get current task
+            current = service.tasks().get(tasklist=list_id, task=task_id).execute()
+            
+            # Create in new list
+            body = {
+                "title": current.get("title", ""),
+                "notes": current.get("notes", ""),
+                "status": current.get("status", "needsAction"),
+            }
+            if current.get("due"):
+                body["due"] = current["due"]
+            
+            result = service.tasks().insert(tasklist=dest_list_id, body=body, previous=previous, parent=parent).execute()
+            
+            # Delete from old list
+            service.tasks().delete(tasklist=list_id, task=task_id).execute()
+        else:
+            # Just move within same list
+            result = service.tasks().move(tasklist=list_id, task=task_id, previous=previous, parent=parent).execute()
+        
+        return jsonify({
+            "id": result.get("id"),
+            "title": result.get("title", ""),
+            "notes": result.get("notes", ""),
+            "status": result.get("status", "needsAction"),
+            "due": result.get("due"),
+            "position": result.get("position"),
+            "listId": dest_list_id,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ==============================================================================
+# ACADEMIC DEADLINES (Assignments, Quizzes, Exams)
+# ==============================================================================
+
+@adapter_bp.route("/academic-deadlines", methods=["GET"])
+def get_academic_deadlines():
+    """Get all academic deadlines."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Ensure table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS academic_deadlines (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                course TEXT NOT NULL,
+                type TEXT NOT NULL CHECK(type IN ('assignment', 'quiz', 'exam', 'project')),
+                due_date TEXT NOT NULL,
+                completed INTEGER DEFAULT 0,
+                notes TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+        
+        cur.execute("""
+            SELECT id, title, course, type, due_date, completed, notes, created_at
+            FROM academic_deadlines
+            ORDER BY due_date ASC
+        """)
+        rows = cur.fetchall()
+        conn.close()
+        
+        deadlines = []
+        for r in rows:
+            deadlines.append({
+                "id": r[0],
+                "title": r[1],
+                "course": r[2],
+                "type": r[3],
+                "dueDate": r[4],
+                "completed": bool(r[5]),
+                "notes": r[6],
+                "createdAt": r[7],
+            })
+        
+        return jsonify(deadlines)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/academic-deadlines", methods=["POST"])
+def create_academic_deadline():
+    """Create a new academic deadline."""
+    try:
+        data = request.get_json()
+        title = data.get("title")
+        course = data.get("course")
+        deadline_type = data.get("type")
+        due_date = data.get("dueDate")
+        notes = data.get("notes", "")
+        
+        if not all([title, course, deadline_type, due_date]):
+            return jsonify({"error": "Missing required fields"}), 400
+        
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            INSERT INTO academic_deadlines (title, course, type, due_date, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (title, course, deadline_type, due_date, notes, datetime.now().isoformat()))
+        
+        deadline_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            "id": deadline_id,
+            "title": title,
+            "course": course,
+            "type": deadline_type,
+            "dueDate": due_date,
+            "completed": False,
+            "notes": notes,
+            "createdAt": datetime.now().isoformat(),
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/academic-deadlines/<int:deadline_id>", methods=["PATCH"])
+def update_academic_deadline(deadline_id):
+    """Update an academic deadline."""
+    try:
+        data = request.get_json()
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        updates = []
+        params = []
+        
+        if "title" in data:
+            updates.append("title = ?")
+            params.append(data["title"])
+        if "course" in data:
+            updates.append("course = ?")
+            params.append(data["course"])
+        if "type" in data:
+            updates.append("type = ?")
+            params.append(data["type"])
+        if "dueDate" in data:
+            updates.append("due_date = ?")
+            params.append(data["dueDate"])
+        if "completed" in data:
+            updates.append("completed = ?")
+            params.append(1 if data["completed"] else 0)
+        if "notes" in data:
+            updates.append("notes = ?")
+            params.append(data["notes"])
+        
+        if updates:
+            params.append(deadline_id)
+            cur.execute(f"UPDATE academic_deadlines SET {', '.join(updates)} WHERE id = ?", params)
+            conn.commit()
+        
+        cur.execute("""
+            SELECT id, title, course, type, due_date, completed, notes, created_at
+            FROM academic_deadlines WHERE id = ?
+        """, (deadline_id,))
+        r = cur.fetchone()
+        conn.close()
+        
+        if r:
+            return jsonify({
+                "id": r[0],
+                "title": r[1],
+                "course": r[2],
+                "type": r[3],
+                "dueDate": r[4],
+                "completed": bool(r[5]),
+                "notes": r[6],
+                "createdAt": r[7],
+            })
+        return jsonify({"error": "Deadline not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/academic-deadlines/<int:deadline_id>", methods=["DELETE"])
+def delete_academic_deadline(deadline_id):
+    """Delete an academic deadline."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM academic_deadlines WHERE id = ?", (deadline_id,))
+        conn.commit()
+        conn.close()
+        return "", 204
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/academic-deadlines/<int:deadline_id>/toggle", methods=["POST"])
+def toggle_academic_deadline(deadline_id):
+    """Toggle completion status of an academic deadline."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        cur.execute("SELECT completed FROM academic_deadlines WHERE id = ?", (deadline_id,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"error": "Deadline not found"}), 404
+        
+        new_status = 0 if row[0] else 1
+        cur.execute("UPDATE academic_deadlines SET completed = ? WHERE id = ?", (new_status, deadline_id))
+        conn.commit()
+        
+        cur.execute("""
+            SELECT id, title, course, type, due_date, completed, notes, created_at
+            FROM academic_deadlines WHERE id = ?
+        """, (deadline_id,))
+        r = cur.fetchone()
+        conn.close()
+        
+        return jsonify({
+            "id": r[0],
+            "title": r[1],
+            "course": r[2],
+            "type": r[3],
+            "dueDate": r[4],
+            "completed": bool(r[5]),
+            "notes": r[6],
+            "createdAt": r[7],
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# SCHOLAR ENDPOINTS
+# =============================================================================
+
+@adapter_bp.route("/scholar/questions", methods=["GET"])
+def get_scholar_questions():
+    """Get open questions from Scholar outputs."""
+    from pathlib import Path
+    
+    questions = []
+    scholar_outputs = Path(__file__).parent.parent.parent / "scholar" / "outputs"
+    
+    # Check questions_dashboard.md
+    questions_file = scholar_outputs / "questions_dashboard.md"
+    if questions_file.exists():
+        content = questions_file.read_text(encoding="utf-8", errors="ignore")
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("- ") or stripped.startswith("* "):
+                question_text = stripped[2:].strip()
+                if question_text and len(question_text) > 5:
+                    questions.append({
+                        "id": len(questions) + 1,
+                        "question": question_text,
+                        "context": "",
+                        "dataInsufficient": "",
+                        "researchAttempted": "",
+                        "source": "questions_dashboard.md"
+                    })
+    
+    # Also check orchestrator runs for questions_needed files
+    orchestrator_dir = scholar_outputs / "orchestrator_runs"
+    if orchestrator_dir.exists():
+        for qfile in orchestrator_dir.glob("questions_needed_*.md"):
+            content = qfile.read_text(encoding="utf-8", errors="ignore")
+            for line in content.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("- ") or stripped.startswith("* "):
+                    question_text = stripped[2:].strip()
+                    if question_text:
+                        questions.append({
+                            "id": len(questions) + 1,
+                            "question": question_text,
+                            "context": "",
+                            "dataInsufficient": "",
+                            "researchAttempted": "",
+                            "source": qfile.name
+                        })
+    
+    return jsonify(questions[:20])
+
+
+@adapter_bp.route("/scholar/chat", methods=["POST"])
+def scholar_chat():
+    """Chat with Scholar about study data."""
+    from scholar.brain_reader import get_all_sessions, get_session_count
+    
+    data = request.json
+    message = data.get("message", "").lower()
+    
+    # Get study data for context
+    session_count = get_session_count()
+    sessions = get_all_sessions()
+    
+    # Build contextual response
+    if "session" in message or "study" in message:
+        if sessions:
+            recent = sessions[:5]
+            topics = [s.main_topic for s in recent if s.main_topic]
+            response = f"You have {session_count} sessions logged. Recent topics: {', '.join(topics[:3]) if topics else 'None recorded'}."
+        else:
+            response = "No sessions found in the database. Start logging study sessions to track your progress."
+    elif "progress" in message or "how" in message:
+        response = f"Based on {session_count} logged sessions, you're building a study habit. Keep logging sessions to see detailed analytics."
+    elif "help" in message:
+        response = "I can help you analyze your study patterns. Ask about: sessions, progress, topics, or study time."
+    else:
+        response = f"I found {session_count} sessions in your study database. Ask me about your sessions, topics, or study patterns for insights."
+    
+    return jsonify({
+        "response": response,
+        "sessionCount": session_count,
+        "isStub": False
+    })
+
+
+@adapter_bp.route("/scholar/findings", methods=["GET"])
+def get_scholar_findings():
+    """Get research findings from Scholar outputs."""
+    from pathlib import Path
+    
+    findings = []
+    scholar_outputs = Path(__file__).parent.parent.parent / "scholar" / "outputs"
+    
+    # Check STATUS.md
+    status_file = scholar_outputs / "STATUS.md"
+    if status_file.exists():
+        content = status_file.read_text(encoding="utf-8", errors="ignore")
+        findings.append({
+            "id": 1,
+            "title": "System Status",
+            "source": "STATUS.md",
+            "content": content[:500] if len(content) > 500 else content
+        })
+    
+    # Check for review outputs
+    review_dir = scholar_outputs / "review"
+    if review_dir.exists():
+        for rfile in list(review_dir.glob("*.md"))[:5]:
+            content = rfile.read_text(encoding="utf-8", errors="ignore")
+            findings.append({
+                "id": len(findings) + 1,
+                "title": rfile.stem.replace("_", " ").title(),
+                "source": f"review/{rfile.name}",
+                "content": content[:300] if len(content) > 300 else content
+            })
+    
+    return jsonify(findings)
+
+
+@adapter_bp.route("/scholar/tutor-audit", methods=["GET"])
+def get_tutor_audit():
+    """Get tutor session audit data."""
+    # For now, derive from chat messages in database
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Get recent chat sessions
+        cur.execute("""
+            SELECT DISTINCT session_id, created_at 
+            FROM chat_messages 
+            ORDER BY created_at DESC 
+            LIMIT 10
+        """)
+        sessions = cur.fetchall()
+        
+        audit_items = []
+        for sess_id, created_at in sessions:
+            cur.execute("""
+                SELECT COUNT(*), role 
+                FROM chat_messages 
+                WHERE session_id = ? 
+                GROUP BY role
+            """, (sess_id,))
+            counts = {r[1]: r[0] for r in cur.fetchall()}
+            
+            audit_items.append({
+                "id": len(audit_items) + 1,
+                "sessionId": sess_id,
+                "date": created_at,
+                "userMessages": counts.get("user", 0),
+                "assistantMessages": counts.get("assistant", 0),
+                "status": "reviewed" if counts.get("user", 0) > 0 else "pending"
+            })
+        
+        conn.close()
+        return jsonify(audit_items)
+    except Exception as e:
+        return jsonify([])
+
+
+# =========================================================================
+# OBSIDIAN INTEGRATION ENDPOINTS
+# =========================================================================
+
+@adapter_bp.route("/obsidian/status", methods=["GET"])
+def get_obsidian_status():
+    """Check Obsidian gateway status."""
+    status = obsidian_health_check()
+    return jsonify(status)
+
+@adapter_bp.route("/obsidian/append", methods=["POST"])
+def post_obsidian_append():
+    """Append content to Obsidian vault."""
+    data = request.get_json() or {}
+    path = data.get("path", "")
+    content = data.get("content", "")
+    
+    if not path or not content:
+        return jsonify({"success": False, "error": "path and content are required"}), 400
+    
+    result = obsidian_append(path, content)
+    if result.get("success"):
+        return jsonify(result)
+    return jsonify(result), 500
+
+@adapter_bp.route("/obsidian/files", methods=["GET"])
+def get_obsidian_files():
+    """List files in Obsidian vault."""
+    folder = request.args.get("folder", "")
+    result = obsidian_list_files(folder)
+    if result.get("success"):
+        return jsonify(result)
+    return jsonify(result), 500
+
+@adapter_bp.route("/obsidian/file", methods=["GET"])
+def get_obsidian_file():
+    """Get content of a file from Obsidian vault."""
+    path = request.args.get("path", "")
+    if not path:
+        return jsonify({"success": False, "error": "path is required"}), 400
+    result = obsidian_get_file(path)
+    if result.get("success"):
+        return jsonify(result)
+    return jsonify(result), 500
+
+@adapter_bp.route("/obsidian/file", methods=["PUT"])
+def put_obsidian_file():
+    """Save/overwrite a file in Obsidian vault."""
+    data = request.get_json() or {}
+    path = data.get("path", "")
+    content = data.get("content", "")
+    
+    if not path:
+        return jsonify({"success": False, "error": "path is required"}), 400
+    
+    result = obsidian_save_file(path, content)
+    if result.get("success"):
+        return jsonify(result)
+    return jsonify(result), 500
+
+
+# =========================================================================
+# ANKI INTEGRATION ENDPOINTS
+# =========================================================================
+
+@adapter_bp.route("/anki/status", methods=["GET"])
+def get_anki_status():
+    """Check Anki Connect status and get basic stats."""
+    import json
+    from urllib.request import Request, urlopen
+    from urllib.error import URLError
+    
+    try:
+        # Check AnkiConnect
+        payload = json.dumps({"action": "version", "version": 6}).encode("utf-8")
+        req = Request("http://localhost:8765", data=payload, headers={"Content-Type": "application/json"})
+        response = urlopen(req, timeout=2)
+        result = json.loads(response.read().decode("utf-8"))
+        
+        connected = result.get("result") is not None
+        
+        if connected:
+            # Get deck names
+            deck_payload = json.dumps({"action": "deckNames", "version": 6}).encode("utf-8")
+            deck_req = Request("http://localhost:8765", data=deck_payload, headers={"Content-Type": "application/json"})
+            deck_response = urlopen(deck_req, timeout=2)
+            deck_result = json.loads(deck_response.read().decode("utf-8"))
+            decks = deck_result.get("result", [])
+            
+            # Get review stats
+            stats_payload = json.dumps({
+                "action": "getNumCardsReviewedToday",
+                "version": 6
+            }).encode("utf-8")
+            stats_req = Request("http://localhost:8765", data=stats_payload, headers={"Content-Type": "application/json"})
+            stats_response = urlopen(stats_req, timeout=2)
+            stats_result = json.loads(stats_response.read().decode("utf-8"))
+            reviewed_today = stats_result.get("result", 0)
+            
+            return jsonify({
+                "connected": True,
+                "version": result.get("result"),
+                "decks": decks,
+                "reviewedToday": reviewed_today
+            })
+        else:
+            return jsonify({"connected": False, "error": "AnkiConnect not responding"})
+            
+    except URLError:
+        return jsonify({"connected": False, "error": "Anki not running"})
+    except Exception as e:
+        return jsonify({"connected": False, "error": str(e)})
+
+
+@adapter_bp.route("/anki/decks", methods=["GET"])
+def get_anki_decks():
+    """Get all Anki decks with card counts."""
+    import json
+    from urllib.request import Request, urlopen
+    from urllib.error import URLError
+    
+    try:
+        # Get deck names
+        payload = json.dumps({"action": "deckNamesAndIds", "version": 6}).encode("utf-8")
+        req = Request("http://localhost:8765", data=payload, headers={"Content-Type": "application/json"})
+        response = urlopen(req, timeout=2)
+        result = json.loads(response.read().decode("utf-8"))
+        
+        decks_raw = result.get("result", {})
+        decks = []
+        
+        for name, deck_id in decks_raw.items():
+            # Get card count for each deck
+            count_payload = json.dumps({
+                "action": "findCards",
+                "version": 6,
+                "params": {"query": f"deck:\"{name}\""}
+            }).encode("utf-8")
+            count_req = Request("http://localhost:8765", data=count_payload, headers={"Content-Type": "application/json"})
+            count_response = urlopen(count_req, timeout=2)
+            count_result = json.loads(count_response.read().decode("utf-8"))
+            card_ids = count_result.get("result", [])
+            
+            decks.append({
+                "id": deck_id,
+                "name": name,
+                "cardCount": len(card_ids)
+            })
+        
+        return jsonify(decks)
+        
+    except URLError:
+        return jsonify({"error": "Anki not running"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/anki/due", methods=["GET"])
+def get_anki_due():
+    """Get due cards count."""
+    import json
+    from urllib.request import Request, urlopen
+    from urllib.error import URLError
+    
+    try:
+        payload = json.dumps({
+            "action": "findCards",
+            "version": 6,
+            "params": {"query": "is:due"}
+        }).encode("utf-8")
+        req = Request("http://localhost:8765", data=payload, headers={"Content-Type": "application/json"})
+        response = urlopen(req, timeout=2)
+        result = json.loads(response.read().decode("utf-8"))
+        
+        due_cards = result.get("result", [])
+        
+        return jsonify({
+            "dueCount": len(due_cards),
+            "cardIds": due_cards[:100]  # Limit to first 100
+        })
+        
+    except URLError:
+        return jsonify({"error": "Anki not running"}), 503
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/anki/sync", methods=["POST"])
+def trigger_anki_sync():
+    """Trigger sync of approved card drafts to Anki."""
+    try:
+        import subprocess
+        import sys
+        
+        # Run the anki_sync.py script
+        script_path = Path(__file__).parent.parent / "anki_sync.py"
+        result = subprocess.run(
+            [sys.executable, str(script_path), "--sync"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        return jsonify({
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr if result.returncode != 0 else None
+        })
+        
+    except subprocess.TimeoutExpired:
+        return jsonify({"success": False, "error": "Sync timed out"}), 504
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@adapter_bp.route("/anki/drafts", methods=["GET"])
+def get_card_drafts():
+    """Get card drafts from the database."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, session_id, deck_name, card_type, front, back, tags, status, created_at
+            FROM card_drafts
+            ORDER BY created_at DESC
+            LIMIT 50
+        """)
+        
+        drafts = []
+        for row in cur.fetchall():
+            drafts.append({
+                "id": row[0],
+                "sessionId": row[1],
+                "deckName": row[2],
+                "cardType": row[3],
+                "front": row[4],
+                "back": row[5],
+                "tags": row[6],
+                "status": row[7],
+                "createdAt": row[8]
+            })
+        
+        conn.close()
+        return jsonify(drafts)
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/anki/drafts/<int:draft_id>/approve", methods=["POST"])
+def approve_card_draft(draft_id):
+    """Approve a card draft for syncing to Anki."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        cur.execute("UPDATE card_drafts SET status = 'approved' WHERE id = ?", (draft_id,))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"success": True, "id": draft_id, "status": "approved"})
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500

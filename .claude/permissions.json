@@ -1,0 +1,4 @@
+{
+  "allow_execution": ["git status", "ls"],
+  "require_confirmation": ["git push", "del"]
+}

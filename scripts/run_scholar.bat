@@ -14,6 +14,10 @@ REM Previously required: scholar-orchestrator-loop branch
 
 set "RUN_DIR=%REPO_ROOT%\scholar\outputs\orchestrator_runs"
 if not exist "%RUN_DIR%" mkdir "%RUN_DIR%"
+
+REM Cleanup stale run markers (older than 6 hours)
+powershell -NoProfile -Command "Get-ChildItem -Path '%RUN_DIR%' -Filter 'unattended_*.running' -File | Where-Object {$_.LastWriteTime -lt (Get-Date).AddHours(-6)} | Remove-Item -Force" >nul 2>&1
+
 for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmmss"') do set "TS=%%i"
 set "LOG_PATH=%RUN_DIR%\unattended_%TS%.log"
 set "FINAL_PATH=%RUN_DIR%\unattended_final_%TS%.md"
@@ -78,6 +82,8 @@ echo 6) Open orchestrator_runs folder
 echo    - Open run folder (debug/raw logs).
 echo 7) Exit
 echo    - Exit.
+echo.
+echo Note: stale unattended_*.running markers older than 6 hours are auto-removed.
 echo.
 echo Reminder: safe_mode False = proposals allowed, but no patch drafts.
 echo Reminder: safe_mode True = proposals allowed + patch drafts permitted.

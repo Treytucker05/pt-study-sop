@@ -6,13 +6,16 @@ The Scholar is a dedicated meta-system designed to audit, analyze, and optimize 
 
 - **NOT a Tutor:** Does not teach PT content or interact with students.
 - **NOT a Proctor:** Does not answer factual anatomy/ROM questions.
-- **NOT a Producer:** Does not modify production files in `sop/`, `brain/`, or `dist/`.
+- **NOT a Producer:** Does not modify production files in `sop/`, `brain/`, or `dist/` unless explicitly approved after review.
+
 
 ## Required Inputs
 
 - **Telemetry:** Brain session logs (`brain/session_logs/*.md`).
-- **Source:** Allowlisted Tutor modules (`sop/gpt-knowledge/*.md`).
+- **Source (Canonical):** Tutor modules in `sop/modules/`, `sop/engines/`, `sop/frameworks/`, plus `sop/MASTER_REFERENCE_v9.2.md` and `sop/MASTER_PLAN_PT_STUDY.md`.
+- **Source (Exports):** `sop/gpt-knowledge/*.md` as generated copies.
 - **AI Artifacts Manifest:** `scholar/inputs/ai_artifacts_manifest.json` (output lanes + file patterns for summaries, questions, recommendations).
+
 *Note: All paths must be explicitly listed in [audit_manifest.json](inputs/audit_manifest.json).*
 
 ## Running the Scholar
@@ -35,18 +38,30 @@ Safe mode is controlled by `scholar/inputs/audit_manifest.json`:
 
 ## Standard Workflows
 
-1. **[Audit a Session Log](workflows/audit_session.md):** Analyze telemetry for learning effectiveness and friction.
-2. **[Audit a Tutor Module](workflows/audit_module.md):** Evaluate SOP files for operational clarity and pedagogical alignment.
+1. **[Brain Telemetry Review](workflows/audit_session.md):** Analyze session logs for learning effectiveness and friction.
+2. **[System Review](workflows/audit_module.md):** Evaluate SOP files for operational clarity and pedagogical alignment.
+3. **[Orchestrator Run](workflows/orchestrator_loop.md):** Full pipeline from review → plan → research → proposals → review summary → digest.
 
-## Output Locations
 
 ## Output Lanes
 
+
+- **Review:** `scholar/outputs/review/` (Run summary with top findings + next actions).
+- **Questions Dashboard:** `scholar/outputs/questions_dashboard.md` (Unanswered questions for human review).
+- **Digests:** `scholar/outputs/digests/` (Run-level thematic clustering + major proposal summary).
 - **Research Notebook:** `scholar/outputs/research_notebook/` (Unbounded investigation).
 - **Promotion Queue:** `scholar/outputs/promotion_queue/` (Bounded, testable RFCs).
 - **System Map:** `scholar/outputs/system_map/` (System architecture).
 - **Module Dossiers:** `scholar/outputs/module_dossiers/` (Deep-dives).
+- **Module Audits:** `scholar/outputs/module_audits/` (Focused module audits).
+- **Gap Analysis:** `scholar/outputs/gap_analysis/` (Coverage gaps and risks).
+- **Implementation Bundles:** `scholar/outputs/implementation_bundles/` (Post-approval change + verification notes).
 - **Reports:** `scholar/outputs/reports/` (Routine audits).
+- **Plan Updates:** `scholar/outputs/plan_updates/` (Every run plan).
+- **Orchestrator Runs:** `scholar/outputs/orchestrator_runs/` (Run logs + questions).
+- **Proposal Seeds:** `scholar/outputs/proposal_seeds/` (Idea staging).
+- **Proposals:** `scholar/outputs/proposals/` (Approved/Rejected buckets).
+
 
 ## Creating Improvements
 
@@ -62,6 +77,9 @@ When an audit reveals a needed change, use these canonical templates:
 1. **ONE-change-only:** Every proposal and experiment must target exactly one variable.
 2. **Human Review Required:** No change is promoted to production without manual architect approval.
 3. **Evidence-First:** Proposals must cite logs or learning science.
+4. **Review Summary Required:** Every orchestrator run outputs a review summary.
+5. **Questions Dashboard Required:** All open questions get appended to the dashboard.
+
 
 ---
 
@@ -75,6 +93,15 @@ When an audit reveals a needed change, use these canonical templates:
 
 ### Audit a Module
 
-1. Select a module (e.g., `sop/gpt-knowledge/M0-planning.md`).
+1. Select a module (e.g., `sop/modules/M0-planning.md`).
 2. Follow [audit_module.md](workflows/audit_module.md).
 3. Name your report: `outputs/reports/module_audit_M0_2026-01-07.md`.
+
+### Run the Orchestrator
+
+1. Run `scripts/run_scholar.bat` and choose Orchestrator.
+2. Produce a plan update in `outputs/plan_updates/`.
+3. Produce a review summary in `outputs/review/`.
+4. Append questions to `outputs/questions_dashboard.md`.
+5. Draft proposals in `outputs/promotion_queue/` when needed.
+

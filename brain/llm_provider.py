@@ -33,6 +33,83 @@ def find_codex_cli() -> Optional[str]:
     return None
 
 
+# OpenRouter API key (hardcoded for convenience)
+OPENROUTER_API_KEY = "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"
+
+
+def _call_openrouter_api(
+    system_prompt: str,
+    user_prompt: str,
+    model: str = "google/gemini-2.0-flash-001",
+    timeout: int = OPENAI_API_TIMEOUT,
+) -> Dict[str, Any]:
+    """
+    Call OpenRouter API directly.
+    Uses hardcoded OPENROUTER_API_KEY or falls back to environment variable.
+    """
+    import urllib.request
+    import urllib.error
+
+    api_key = OPENROUTER_API_KEY or os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        return {
+            "success": False,
+            "error": "OPENROUTER_API_KEY not set.",
+            "content": None,
+            "fallback_available": False,
+        }
+
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "HTTP-Referer": "http://localhost:5000",
+        "X-Title": "PT Study Brain",
+    }
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "temperature": 0.7,
+        "max_tokens": 2000,
+    }
+
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            result = json.loads(response.read().decode("utf-8"))
+            content = result["choices"][0]["message"]["content"]
+            return {"success": True, "content": content, "error": None}
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8") if e.fp else str(e)
+        return {
+            "success": False,
+            "error": f"OpenRouter API error ({e.code}): {error_body}",
+            "content": None,
+            "fallback_available": False,
+        }
+    except urllib.error.URLError as e:
+        return {
+            "success": False,
+            "error": f"Network error: {e.reason}",
+            "content": None,
+            "fallback_available": False,
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Exception calling OpenRouter API: {str(e)}",
+            "content": None,
+            "fallback_available": False,
+        }
+
+
 def _call_openai_api(
     system_prompt: str,
     user_prompt: str,
@@ -111,7 +188,7 @@ def _call_openai_api(
 def call_llm(
     system_prompt: str,
     user_prompt: str,
-    provider: str = "codex",
+    provider: str = "openrouter",
     model: str = "default",
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
     isolated: bool = False,
@@ -120,12 +197,13 @@ def call_llm(
     Centralized LLM Caller.
 
     Providers:
-        - "openai": Direct OpenAI API (fast, requires OPENAI_API_KEY)
+        - "openrouter": OpenRouter API (recommended, uses google/gemini-flash-1.5)
+        - "openai": Direct OpenAI API (requires OPENAI_API_KEY)
         - "codex": Codex CLI (slower, uses ChatGPT account)
 
     Args:
         isolated: If True and using codex, run in empty temp directory.
-                  If True and provider not specified, prefer openai for speed.
+                  If True and provider not specified, prefer openrouter for speed.
 
     Returns a dictionary:
     {
@@ -137,12 +215,16 @@ def call_llm(
     }
     """
 
-    # For isolated mode (simple tasks like calendar), prefer OpenAI API if available
+    # For isolated mode, prefer OpenRouter
     if isolated and provider == "codex":
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if api_key:
-            provider = "openai"
-            model = "gpt-4o-mini" if model == "default" else model
+        provider = "openrouter"
+        model = "google/gemini-2.0-flash-001" if model == "default" else model
+
+    if provider == "openrouter":
+        actual_model = "google/gemini-2.0-flash-001" if model == "default" else model
+        return _call_openrouter_api(
+            system_prompt, user_prompt, model=actual_model, timeout=timeout
+        )
 
     if provider == "openai":
         actual_model = "gpt-4o-mini" if model == "default" else model

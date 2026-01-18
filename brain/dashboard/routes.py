@@ -101,6 +101,37 @@ def insert_session_data(data):
 
 @dashboard_bp.route("/")
 def index():
+    """Serve the React dashboard from /static/dist/index.html."""
+    return serve_react_app()
+
+
+@dashboard_bp.route("/brain")
+@dashboard_bp.route("/calendar")
+@dashboard_bp.route("/scholar")
+@dashboard_bp.route("/tutor")
+def react_pages():
+    """Serve React app for client-side routes."""
+    return serve_react_app()
+
+
+def serve_react_app():
+    """Helper to serve the React app."""
+    import os
+    from flask import send_from_directory, current_app
+    
+    static_folder = current_app.static_folder or ""
+    dist_index = os.path.join(static_folder, "dist", "index.html")
+    
+    if os.path.exists(dist_index):
+        return send_from_directory(os.path.join(static_folder, "dist"), "index.html")
+    
+    # Fallback to old dashboard if new one doesn't exist
+    return render_template("dashboard.html")
+
+
+@dashboard_bp.route("/old-dashboard")
+def old_dashboard():
+    """Legacy dashboard for reference."""
     return render_template("dashboard.html")
 
 

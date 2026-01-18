@@ -15,7 +15,20 @@
     "dist/"
   ],
   "tutor_paths": [
+    "sop/MASTER_REFERENCE_v9.2.md",
     "sop/MASTER_PLAN_PT_STUDY.md",
+    "sop/modules/M0-planning.md",
+    "sop/modules/M1-entry.md",
+    "sop/modules/M2-prime.md",
+    "sop/modules/M3-encode.md",
+    "sop/modules/M4-build.md",
+    "sop/modules/M5-modes.md",
+    "sop/modules/M6-wrap.md",
+    "sop/engines/anatomy-engine.md",
+    "sop/engines/concept-engine.md",
+    "sop/frameworks/H-series.md",
+    "sop/frameworks/M-series.md",
+    "sop/frameworks/levels.md",
     "sop/gpt-knowledge/gpt-instructions.md",
     "sop/gpt-knowledge/runtime-prompt.md",
     "sop/gpt-knowledge/PEIRRO.md",
@@ -36,6 +49,7 @@
     "sop/gpt-knowledge/notebooklm-bridge.md",
     "sop/gpt-knowledge/brain-session-log-template.md"
   ],
+
   "brain_paths": [
     "brain/session_logs/",
     "brain/session_logs/TEMPLATE.md"

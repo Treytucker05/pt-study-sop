@@ -5,9 +5,14 @@
       "patterns": ["scholar/outputs/reports/*.md"]
     },
     {
+      "lane": "review",
+      "patterns": ["scholar/outputs/review/*.md"]
+    },
+    {
       "lane": "digests",
       "patterns": ["scholar/outputs/digests/*.md"]
     },
+
     {
       "lane": "system_map",
       "patterns": ["scholar/outputs/system_map/*.md"]
@@ -34,8 +39,13 @@
         "scholar/outputs/orchestrator_runs/questions_resolved_*.md",
         "scholar/outputs/orchestrator_runs/questions_answered_*.md"
       ]
+    },
+    {
+      "lane": "questions_dashboard",
+      "patterns": ["scholar/outputs/questions_dashboard.md"]
     }
   ],
+
   "recommendations": [
     {
       "lane": "module_audits",
