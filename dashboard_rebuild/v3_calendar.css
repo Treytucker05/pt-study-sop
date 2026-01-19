@@ -1,0 +1,142 @@
+:root {
+  color-scheme: light;
+  --v3-bg: #f7f8fb;
+  --v3-border: #e5e7eb;
+  --v3-text: #111827;
+  --v3-muted: #6b7280;
+  --v3-primary: #1a73e8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--v3-bg);
+  color: var(--v3-text);
+}
+
+.v3-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.v3-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--v3-border);
+}
+
+.v3-brand {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.v3-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.v3-button {
+  border: 1px solid var(--v3-border);
+  background: #fff;
+  color: var(--v3-text);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.v3-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.v3-primary {
+  background: var(--v3-primary);
+  color: #fff;
+  border-color: var(--v3-primary);
+}
+
+.v3-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.v3-sidebar {
+  width: 280px;
+  background: #fff;
+  border-right: 1px solid var(--v3-border);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.v3-main {
+  flex: 1;
+  padding: 18px;
+  min-width: 0;
+}
+
+.v3-section {
+  margin-bottom: 20px;
+}
+
+.v3-section h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--v3-muted);
+}
+
+.v3-muted {
+  color: var(--v3-muted);
+  font-size: 14px;
+}
+
+.v3-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.v3-filter-title {
+  font-size: 12px;
+  color: var(--v3-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 8px;
+}
+
+.v3-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.v3-filter-row input {
+  transform: translateY(1px);
+}
+
+.v3-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d1d5db;
+  display: inline-block;
+}
+
+#calendar {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}

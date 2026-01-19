@@ -1,0 +1,481 @@
+Cleanup log - 2026-01-19 02:27:41
+Root: C:\Users\treyt\OneDrive\Desktop\pt-study-sop
+Excluded names: node_modules, dist, .git, .pytest_cache, __pycache__, .ralph-tui, .venv, .next, build, coverage
+Excluded prefixes: C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\.git; C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\.github; C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\.agent; C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\.claude; C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\.shared; C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\sop\\src; C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\sop\\gpt-knowledge; C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\ui; C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\Arcade-RetroDesignNEW; C:\Users\treyt\OneDrive\Desktop\pt-study-sop\\PT School Semester 2
+Candidate folders: 281
+
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\claude.ai\vercel-deploy-claimable\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\claude.ai\SKILL.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\claude.ai\vercel-deploy-claimable
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\web-design-guidelines\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\SKILL.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\web-design-guidelines
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\react-best-practices\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\SKILL__moved1.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\react-best-practices
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ask-questions-if-underspecified\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ask-questions-if-underspecified
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\claude.ai\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\SKILL__moved2.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\claude.ai
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\video-transcript-downloader\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved1.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\video-transcript-downloader
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\developer-growth-analysis\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved2.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\developer-growth-analysis
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\competitive-ads-extractor\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved3.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\competitive-ads-extractor
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\coding-guidelines-verify\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved4.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\coding-guidelines-verify
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Movement Science 1\Construct 1 - Movement Foundations\Learning Objectives.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Movement Science 1\Learning Objectives.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Movement Science 1\Construct 1 - Movement Foundations
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\content-research-writer\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved5.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\content-research-writer
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\code-split_Module_Rules\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved6.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\code-split_Module_Rules
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\.system\skill-installer\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\.system\SKILL.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\.system\skill-installer
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\.system\skill-creator\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\.system\SKILL__moved1.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\.system\skill-creator
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\javascript-typescript\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved7.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\javascript-typescript
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\context-optimization\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved8.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\context-optimization
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\react-best-practices\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved9.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\react-best-practices
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-openai-builder\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved10.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-openai-builder
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\multi-agent-patterns\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved11.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\multi-agent-patterns
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\context-fundamentals\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved12.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\context-fundamentals
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\llm-application-dev\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved13.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\llm-application-dev
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\gh-address-comments\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved14.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\gh-address-comments
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\project-development\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved15.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\project-development
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\context-degradation\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved16.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\context-degradation
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\backend-development\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved17.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\backend-development
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\SKILL.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\SKILL__moved1.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\SKILL__moved1.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills\SKILL__moved2.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\SKILL__moved2.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\skills
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\context-compression\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved18.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\context-compression
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\dependency-upgrader\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved19.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\dependency-upgrader
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\python-development\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved20.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\python-development
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\code-documentation\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved21.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\code-documentation
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\filesystem-context\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved22.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\filesystem-context
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\browser-automation\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved23.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\browser-automation
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\bdi-mental-states\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved24.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\bdi-mental-states
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-claude-code\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved25.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-claude-code
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\rebase-assistant\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved26.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\rebase-assistant
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-llamaindex\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved27.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-llamaindex
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-openai-sdk\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved28.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-openai-sdk
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\code-refactoring\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved29.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\code-refactoring
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\sessions-to-blog\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved30.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\sessions-to-blog
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\database-design\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved31.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\database-design
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\frontend-design\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved32.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\frontend-design
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-langgraph\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved33.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-langgraph
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\attached_assets\generated_images\dark_retro_arcade_grid_background_texture.png -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\attached_assets\dark_retro_arcade_grid_background_texture.png
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\attached_assets\generated_images
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\memory-systems\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved34.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\memory-systems
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\file-organizer\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved35.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\file-organizer
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\branch-cleaner\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved36.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\branch-cleaner
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\release-notes\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved37.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\release-notes
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\regex-builder\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved38.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\regex-builder
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\image\client.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\client.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\image\index.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\index.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\image\routes.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\routes.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\image
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\audio\client.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\client__moved1.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\audio\index.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\index__moved1.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\audio\routes.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\routes__moved1.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\audio
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\batch\index.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\index__moved2.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\batch\utils.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\utils.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\batch
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\attached_assets\generated_images\dark_retro_arcade_grid_background_texture.png -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\attached_assets\dark_retro_arcade_grid_background_texture.png
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\attached_assets\generated_images
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-crewai\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved39.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-crewai
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\batch\index.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\index.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\batch\utils.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\utils.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\batch
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ralph-status\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved40.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ralph-status
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\audio\client.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\client.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\audio\index.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\index__moved1.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\audio\routes.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\routes.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\audio
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\image\client.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\client__moved1.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\image\index.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\index__moved2.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\image\routes.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\routes__moved1.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\image
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved41.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\SKILL__moved1.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved1__moved1.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills\SKILL__moved2.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved2__moved1.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agent-skills
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\attached_assets\generated_images\dark_retro_arcade_grid_background_texture.png -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\attached_assets\dark_retro_arcade_grid_background_texture.png
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\attached_assets\generated_images
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\chat\index.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\index__moved3.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\chat\routes.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\routes__moved2.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\chat\storage.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\storage.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\server\replit_integrations\chat
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\code-review\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved42.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\code-review
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\commit-work\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved43.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\commit-work
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\chat\index.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\index__moved3.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\chat\routes.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\routes__moved2.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\chat\storage.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\storage.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\server\replit_integrations\chat
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\tool-design\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved44.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\tool-design
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\vps-checkup\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved45.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\vps-checkup
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\mcp-builder\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved46.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\mcp-builder
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ralph-short\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved47.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ralph-short
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\bug-triage\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved48.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\bug-triage
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ralph-long\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved49.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ralph-long
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\create-cli\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved50.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\create-cli
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\evaluation\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved51.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\evaluation
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\create-pr\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved52.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\create-pr
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\evals\adversarial\safety
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\attached_assets\generated_images\dark_retro_arcade_grid_background_texture.png -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\attached_assets\dark_retro_arcade_grid_background_texture.png
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\attached_assets\generated_images
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\plan-work\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved53.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\plan-work
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agents-md\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved54.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\agents-md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\.system\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved55.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\.system\SKILL__moved1.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved1__moved2.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\.system
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\evals\adversarial\bias
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\replit_integrations\audio -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\audio
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\replit_integrations
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\oracle\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved56.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\oracle
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\replit_integrations\audio -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\audio
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\replit_integrations
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ci-fix\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved57.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ci-fix
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ralph\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved58.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\ralph
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\xlsx\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved59.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\xlsx
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\docx\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved60.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\docx
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\pptx\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved61.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\pptx
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\pdf\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved62.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\pdf
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\prd\SKILL.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\SKILL__moved63.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\skills\prd
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\v8
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\evals\adversarial
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\evals\functional
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\components\ui -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\ui
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\components\layout.tsx -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\layout.tsx
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\components
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\evals\regression
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-15-dashboard-walkthrough-audit\prd.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\prd.json
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-15-dashboard-walkthrough-audit\progress.txt -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\progress.txt
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-15-dashboard-walkthrough-audit
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\.local\state\replit\agent -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\.local\state\agent
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\.local\state\replit
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\styles
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\evals\gold_set
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\.local\state\replit\agent -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\.local\state\agent
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\.local\state\replit
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\plans\milestones.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\milestones__moved1.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\plans
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\context\seeds
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-13-scholar-loop-integration\prd.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\prd__moved1.json
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-13-scholar-loop-integration\progress.txt -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\progress__moved1.txt
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-13-scholar-loop-integration
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\hooks\use-mobile.tsx -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\use-mobile.tsx
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\hooks\use-toast.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\use-toast.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\hooks
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\hooks\use-mobile.tsx -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\use-mobile.tsx
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\hooks\use-toast.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\use-toast.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\hooks
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\systems\__pycache__ -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\__pycache__
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\systems\retrieval.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\retrieval.py
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\systems
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\agents\__pycache__ -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\__pycache____moved1
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\agents\architect.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\architect.py
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\agents\base.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\base.py
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\agents
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\evals\unit
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\lib\api.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\api.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\lib\queryClient.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\queryClient.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\lib\utils.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\utils.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\src\lib
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\lib\api.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\api.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\lib\queryClient.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\queryClient.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\lib\utils.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\utils.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\src\lib
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\graph\__pycache__ -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\__pycache____moved2
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\graph\ingest.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\ingest.py
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\graph
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\shared\models\chat.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\shared\chat.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\shared\models
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\public\favicon.png -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\favicon.png
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\public\opengraph.jpg -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\opengraph.jpg
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\client\public
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\public\favicon.png -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\favicon.png
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\public\opengraph.jpg -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\opengraph.jpg
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\client\public
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\shared\models\chat.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\shared\chat.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\shared\models
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-12-scholar-audit-20pass\prd.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\prd__moved2.json
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-12-scholar-audit-20pass\progress.txt -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\progress__moved2.txt
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-12-scholar-audit-20pass
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\hooks\use-mobile.tsx -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\use-mobile.tsx
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\hooks\use-toast.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\use-toast.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\hooks
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\.local\state\agent -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\.local\agent
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\.local\state
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\.local\state\agent -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\.local\agent
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\.local\state
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\lib\api.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\api.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\lib\queryClient.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\queryClient.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\lib\utils.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\utils.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\src\lib
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\templates\v3_calendar.html -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\v3_calendar.html
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\templates
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\public\favicon.png -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\favicon.png
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\public\opengraph.jpg -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\opengraph.jpg
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\public
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Movement Science 1\Intro Info.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Intro Info.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Movement Science 1\Learning Objectives.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Learning Objectives.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Movement Science 1
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\shared\schema.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\schema.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\client\shared
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\__pycache__ -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\__pycache____moved1
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\__pycache____moved1 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\__pycache____moved1__moved1
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\__pycache____moved2 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\__pycache____moved2
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\architect.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\architect.py
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\base.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\base.py
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\ingest.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\ingest.py
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src\retrieval.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\retrieval.py
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent\src
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\static\v3_calendar.css -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\v3_calendar.css
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\static\v3_calendar.js -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\v3_calendar.js
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\static
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\.local\agent -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\agent
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\.local
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\shared\chat.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\chat.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\shared\schema.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\schema.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\shared
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\src\hooks\use-mobile.tsx -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\src\use-mobile.tsx
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\src\hooks\use-toast.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\src\use-toast.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\src\hooks
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\script\build.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\build.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign\script
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\shared\chat.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\chat.ts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\shared\schema.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\schema.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\shared
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\script\build.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\build.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\script
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\.local\agent -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\agent
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign\.local
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\public\favicon.png -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\favicon__moved1.png
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\public\opengraph.jpg -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\opengraph__moved1.jpg
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\public
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-12-setup-ralph\prd.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\prd__moved3.json
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-12-setup-ralph\progress.txt -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\progress__moved3.txt
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts\ralph\archive\2026-01-12-setup-ralph
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\shared\schema.ts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\schema.ts
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react\shared
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs\20260117_001316\prompt.txt -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs\prompt.txt
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs\20260117_001316\tasks.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs\tasks.json
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs\20260117_001316
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines\templates\anatomy-engine_template.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines\anatomy-engine_template.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines\templates\engine_template.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines\engine_template.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines\templates
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\v3_calendar.css -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\v3_calendar.css
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\v3_calendar.html -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\v3_calendar.html
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code\v3_calendar.js -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\v3_calendar.js
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild\code
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\.obsidian\plugins\obsidian-local-rest-api -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\.obsidian\obsidian-local-rest-api
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\.obsidian\plugins
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\implementation_bundles\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\README.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\implementation_bundles
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects\treys-agent -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\treys-agent
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Dev_Projects
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions\v8.6\Custom_GPT_Instructions.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions\Custom_GPT_Instructions.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions\v8.6\Runtime_Prompt.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions\Runtime_Prompt.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions\v8.6
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Intro Info.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Intro Info.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes\Learning Objectives.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Learning Objectives.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\10-Classes
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines\anatomy-engine_template.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\anatomy-engine_template.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines\engine_template.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engine_template.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\proposal_seeds\proposal_seeds_2026-01-16_053615.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\proposal_seeds_2026-01-16_053615.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\proposal_seeds
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\2_Instructions\gpt_custom_instructions_study_os_v9.3.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\gpt_custom_instructions_study_os_v9.3.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\2_Instructions
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v8.6 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\v8.6
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v9.1 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\v9.1
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\plan_updates\plan_update_2026-01-16_053615.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\plan_update_2026-01-16_053615.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\plan_updates
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions\changelog_legacy.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\changelog_legacy.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions\Custom_GPT_Instructions.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\Custom_GPT_Instructions.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions\Runtime_Prompt.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\Runtime_Prompt.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs\20260117_001355 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\20260117_001355
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs\20260117_024146 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\20260117_024146
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs\prompt.txt -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\prompt.txt
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs\tasks.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\tasks.json
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\runs
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\Inbox
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\3_Prompts\gpt_prompt_exit_ticket_and_wrap.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\gpt_prompt_exit_ticket_and_wrap.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\3_Prompts\gpt_prompt_weekly_rotational_plan.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\gpt_prompt_weekly_rotational_plan.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\3_Prompts\runtime_prompt.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\runtime_prompt.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\3_Prompts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\old_templates\logging_schema_v9.2.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\logging_schema_v9.2.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\old_templates
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\modes\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\README.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\modes\v8.4.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\v8.4.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\modes\v8.6.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\v8.6.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\modes
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\proposals\change_proposal_core_mode_probe_refine_lock_2026-01-07.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\change_proposal_core_mode_probe_refine_lock_2026-01-07.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\proposals\experiment_core_mode_probe_refine_lock_2026-01-07.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\experiment_core_mode_probe_refine_lock_2026-01-07.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\proposals
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\evidence\research\PEIRRO_encode_research.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\evidence\PEIRRO_encode_research.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\evidence\research\RESEARCH_TOPICS.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\evidence\RESEARCH_TOPICS.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\evidence\research
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\engines\templates\anatomy-engine_template.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\engines\anatomy-engine_template.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\engines\templates\engine_template.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\engines\engine_template.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\engines\templates
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\data\project_files
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\old_runtime\gpt-knowledge -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\gpt-knowledge
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\old_runtime
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\review\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\README__moved1.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\review
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\20260117_001355 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\20260117_001355
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\20260117_024146 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\20260117_024146
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\dispatcher.ps1 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\dispatcher.ps1
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\prompt.txt -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\prompt.txt
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\schema.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\schema.json
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher\tasks.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\tasks.json
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\ralph-dispatcher
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\engines\templates
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\plans\scholar_upgrade_plan.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\scholar_upgrade_plan.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\plans
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW\Arcade-RetroDesign -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesign
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesignNEW
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign\Arcade-RetroDesign -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\Arcade-RetroDesign__moved1
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\arcade-retrodesign
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\ui-ux-pro-max\data -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\data
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\ui-ux-pro-max\scripts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\scripts
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\ui-ux-pro-max\.DS_Store -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\__moved1.DS_Store
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\ui-ux-pro-max
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\data\study_rag
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\brain_static_react -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\brain_static_react
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards\dashboard_rebuild -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboard_rebuild
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboards
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\knowledge\log_analysis.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\log_analysis.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\knowledge\pedagogy_audit.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\pedagogy_audit.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\knowledge
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\gpt-knowledge\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\README__moved1.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\gpt-knowledge
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.github\workflows\ci.yml -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.github\ci.yml
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.github\workflows
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\workload\rotational_interleaving_3plus2.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\rotational_interleaving_3plus2.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\workload
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.agent\workflows\ui-ux-pro-max.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.agent\ui-ux-pro-max.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.agent\workflows
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\js\dashboard.js -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\dashboard.js
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\js
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\templates\dashboard.html -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\dashboard.html
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\templates\dashboard_backup.html -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\dashboard_backup.html
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\templates\styleguide.html -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\styleguide.html
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\templates
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\inputs\ai_artifacts_manifest.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\ai_artifacts_manifest.json
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\inputs\audit_manifest.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\audit_manifest.json
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\inputs
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\frameworks\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\README__moved2.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\frameworks
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\research\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\README__moved3.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\research
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\output\session_resume.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\session_resume__moved1.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\output
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\release\RELEASE_PROCESS.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\RELEASE_PROCESS.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\release
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\library\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\README__moved4.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\library
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\engines\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\README__moved5.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\engines
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\modules\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\README__moved6.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\modules
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\design\IDEAS.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\IDEAS.md
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\design\SOLUTION.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\SOLUTION.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\design
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\tests\__pycache__ -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\__pycache____moved1
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\tests\test_ingest_session.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\test_ingest_session.py
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\tests\test_trends.py -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\test_trends.py
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\tests
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\assets
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\references\plan-template.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\plan-template.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\references
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\legacy\README.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\README__moved7.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\legacy
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\logs\verification_report_2026-01-12.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\verification_report_2026-01-12.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\docs\logs
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\projects\treys-agent -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\treys-agent
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\projects
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\logs
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\brain_static_react -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\dashboard_rebuild -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.github\ci.yml -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ci.yml
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.github
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\data -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\data
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\scripts -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scripts__moved1
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\.DS_Store -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.DS_Store
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared\__moved1.DS_Store -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\__moved1.DS_Store
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.shared
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.agent\ui-ux-pro-max.md -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui-ux-pro-max.md
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.agent
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\20260117_001355 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\20260117_001355
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\20260117_024146 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\20260117_024146
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\dispatcher.ps1 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dispatcher.ps1
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\prompt.txt -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\prompt.txt
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\schema.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\schema.json
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools\tasks.json -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tasks.json
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\tools
+MOVE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui\Arcade-RetroDesign__moved1 -> C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Arcade-RetroDesign__moved1
+DELETE C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ui
+
+Summary: moves=277 deletes=196 skipped=0

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark" />
+  <title>Trey's Study System - Style Guide</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Orbitron:wght@500;600;700;800&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/_tokens.css">
+  <link rel="stylesheet" href="/static/css/_components.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-surface-0);
+      color: var(--color-text-primary);
+      min-height: 100vh;
+      padding: var(--space-8);
+    }
+
+    .styleguide {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .styleguide-section {
+      margin-bottom: var(--space-12);
+    }
+
+    .styleguide-section__title {
+      font-family: var(--font-display);
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-primary);
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-4);
+      border-bottom: 2px solid var(--color-primary-muted);
+    }
+
+    .styleguide-subsection {
+      margin-bottom: var(--space-8);
+    }
+
+    .styleguide-subsection__title {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      font-weight: var(--font-semibold);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-4);
+    }
+
+    .styleguide-demo {
+      padding: var(--space-6);
+      background: var(--color-surface-1);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-4);
+    }
+
+    .styleguide-code {
+      padding: var(--space-4);
+      background: var(--color-black);
+      border: 1px solid var(--color-surface-5);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .demo-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .color-swatch {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .color-swatch__box {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      border: 2px solid var(--color-surface-5);
+    }
+
+    .color-swatch__info {
+      font-size: var(--text-sm);
+    }
+
+    .color-swatch__name {
+      font-weight: var(--font-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .color-swatch__value {
+      font-family: var(--font-mono);
+      color: var(--color-text-muted);
+    }
+
+    .nav-demo {
+      display: flex;
+      gap: var(--space-8);
+      justify-content: center;
+      padding: var(--space-6);
+      background: linear-gradient(180deg, #0a0a0a 0%, #000000 100%);
+      border-radius: var(--radius-lg);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="styleguide">
+
+    <!-- Page Header -->
+    <div class="arc-header" style="margin-bottom: var(--space-12);">
+      <div class="arc-header__pretitle">Design System</div>
+      <div class="arc-header__title">Style Guide</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         COLORS
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Colors</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Surface Colors</h3>
+        <div class="styleguide-demo">
+          <div class="demo-grid">
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-surface-0);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Surface 0</div>
+                <div class="color-swatch__value">#0A0A0A</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-surface-1);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Surface 1</div>
+                <div class="color-swatch__value">#0F0F0F</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-surface-2);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Surface 2</div>
+                <div class="color-swatch__value">#141414</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-surface-3);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Surface 3</div>
+                <div class="color-swatch__value">#1B1B1B</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-surface-4);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Surface 4</div>
+                <div class="color-swatch__value">#222222</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-surface-5);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Surface 5</div>
+                <div class="color-swatch__value">#2A2A2A</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Brand & Semantic Colors</h3>
+        <div class="styleguide-demo">
+          <div class="demo-grid">
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-primary);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Primary (Red)</div>
+                <div class="color-swatch__value">#DC2626</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-accent);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Accent (Grey)</div>
+                <div class="color-swatch__value">#6B7280</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-success);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Success</div>
+                <div class="color-swatch__value">#10B981</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-warning);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Warning</div>
+                <div class="color-swatch__value">#F59E0B</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-error);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Error</div>
+                <div class="color-swatch__value">#EF4444</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-swatch__box" style="background: var(--color-info);"></div>
+              <div class="color-swatch__info">
+                <div class="color-swatch__name">Info</div>
+                <div class="color-swatch__value">#3B82F6</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         TYPOGRAPHY
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Typography</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Font Families</h3>
+        <div class="styleguide-demo">
+          <p style="font-family: var(--font-display); font-size: var(--text-2xl); margin-bottom: var(--space-4);">
+            Orbitron - Display Font (Titles)
+          </p>
+          <p style="font-family: var(--font-body); font-size: var(--text-lg); margin-bottom: var(--space-4);">
+            Space Grotesk - Body Font (Content)
+          </p>
+          <p style="font-family: var(--font-pixel); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+            Press Start 2P - Pixel Font
+          </p>
+          <p style="font-family: var(--font-terminal); font-size: var(--text-lg); margin-bottom: var(--space-4);">
+            VT323 - Terminal Font
+          </p>
+          <p style="font-family: var(--font-mono); font-size: var(--text-base);">
+            JetBrains Mono - Code Font
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         BUTTONS
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Buttons</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Button Variants</h3>
+        <div class="styleguide-demo">
+          <div class="demo-row">
+            <button class="arc-btn">Default</button>
+            <button class="arc-btn arc-btn--primary">Primary</button>
+            <button class="arc-btn arc-btn--ghost">Ghost</button>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;button class="arc-btn"&gt;Default&lt;/button&gt;
+&lt;button class="arc-btn arc-btn--primary"&gt;Primary&lt;/button&gt;
+&lt;button class="arc-btn arc-btn--ghost"&gt;Ghost&lt;/button&gt;</pre>
+      </div>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Button Sizes</h3>
+        <div class="styleguide-demo">
+          <div class="demo-row">
+            <button class="arc-btn arc-btn--sm">Small</button>
+            <button class="arc-btn">Default</button>
+            <button class="arc-btn arc-btn--lg">Large</button>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;button class="arc-btn arc-btn--sm"&gt;Small&lt;/button&gt;
+&lt;button class="arc-btn"&gt;Default&lt;/button&gt;
+&lt;button class="arc-btn arc-btn--lg"&gt;Large&lt;/button&gt;</pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         NAV BUTTONS
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Navigation Buttons</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Arcade Nav Buttons</h3>
+        <div class="styleguide-demo">
+          <div class="nav-demo">
+            <a href="#" class="arc-nav-btn is-active">
+              <div class="arc-nav-btn__face">
+                <img src="/static/images/icons/neo-nav-overview.svg" alt="" class="arc-nav-btn__icon">
+              </div>
+              <span class="arc-nav-btn__label">Dashboard</span>
+            </a>
+            <a href="#" class="arc-nav-btn">
+              <div class="arc-nav-btn__face">
+                <img src="/static/images/icons/neo-nav-brain.svg" alt="" class="arc-nav-btn__icon">
+              </div>
+              <span class="arc-nav-btn__label">Brain</span>
+            </a>
+            <a href="#" class="arc-nav-btn">
+              <div class="arc-nav-btn__face">
+                <img src="/static/images/icons/neo-nav-syllabus.svg" alt="" class="arc-nav-btn__icon">
+              </div>
+              <span class="arc-nav-btn__label">Syllabus</span>
+            </a>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;a href="#" class="arc-nav-btn is-active"&gt;
+  &lt;div class="arc-nav-btn__face"&gt;
+    &lt;img src="icon.svg" alt="" class="arc-nav-btn__icon"&gt;
+  &lt;/div&gt;
+  &lt;span class="arc-nav-btn__label"&gt;Dashboard&lt;/span&gt;
+&lt;/a&gt;</pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         CARDS
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Cards</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Base Card</h3>
+        <div class="styleguide-demo">
+          <div class="demo-grid">
+            <div class="arc-card">
+              <h4 style="margin-bottom: var(--space-2);">Default Card</h4>
+              <p style="color: var(--color-text-muted); font-size: var(--text-sm);">Basic card with subtle border.</p>
+            </div>
+            <div class="arc-card arc-card--glow">
+              <h4 style="margin-bottom: var(--space-2);">Glow Card</h4>
+              <p style="color: var(--color-text-muted); font-size: var(--text-sm);">Card with red glow on hover.</p>
+            </div>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;div class="arc-card"&gt;...&lt;/div&gt;
+&lt;div class="arc-card arc-card--glow"&gt;...&lt;/div&gt;</pre>
+      </div>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Stat Cards</h3>
+        <div class="styleguide-demo">
+          <div class="demo-grid">
+            <div class="arc-stat-card">
+              <div class="arc-stat-card__icon">📊</div>
+              <div class="arc-stat-card__content">
+                <div class="arc-stat-card__label">Sessions</div>
+                <div class="arc-stat-card__value">142</div>
+              </div>
+            </div>
+            <div class="arc-stat-card">
+              <div class="arc-stat-card__icon">⏳</div>
+              <div class="arc-stat-card__content">
+                <div class="arc-stat-card__label">Uptime</div>
+                <div class="arc-stat-card__value">86h</div>
+              </div>
+            </div>
+            <div class="arc-stat-card">
+              <div class="arc-stat-card__icon">🏅</div>
+              <div class="arc-stat-card__content">
+                <div class="arc-stat-card__label">Rank</div>
+                <div class="arc-stat-card__value">92%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;div class="arc-stat-card"&gt;
+  &lt;div class="arc-stat-card__icon"&gt;📊&lt;/div&gt;
+  &lt;div class="arc-stat-card__content"&gt;
+    &lt;div class="arc-stat-card__label"&gt;Sessions&lt;/div&gt;
+    &lt;div class="arc-stat-card__value"&gt;142&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         LOGO
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Logo Frame</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Circular Logo with Status</h3>
+        <div class="styleguide-demo" style="display: flex; justify-content: center;">
+          <div class="arc-logo">
+            <div class="arc-logo__inner">
+              <img src="/static/images/logo-brain-new.jpg" alt="Logo" class="arc-logo__img">
+            </div>
+            <div class="arc-logo__status">
+              <span class="arc-logo__status-text">TREY'S_STUDY_SYSTEM</span>
+            </div>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;div class="arc-logo"&gt;
+  &lt;div class="arc-logo__inner"&gt;
+    &lt;img src="logo.jpg" alt="Logo" class="arc-logo__img"&gt;
+  &lt;/div&gt;
+  &lt;div class="arc-logo__status"&gt;
+    &lt;span class="arc-logo__status-text"&gt;STATUS_TEXT&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         BADGES
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Badges</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Badge Variants</h3>
+        <div class="styleguide-demo">
+          <div class="demo-row">
+            <span class="arc-badge">Default</span>
+            <span class="arc-badge arc-badge--primary">Primary</span>
+            <span class="arc-badge arc-badge--success">Success</span>
+            <span class="arc-badge arc-badge--warning">Warning</span>
+            <span class="arc-badge arc-badge--error">Error</span>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;span class="arc-badge"&gt;Default&lt;/span&gt;
+&lt;span class="arc-badge arc-badge--primary"&gt;Primary&lt;/span&gt;
+&lt;span class="arc-badge arc-badge--success"&gt;Success&lt;/span&gt;
+&lt;span class="arc-badge arc-badge--warning"&gt;Warning&lt;/span&gt;
+&lt;span class="arc-badge arc-badge--error"&gt;Error&lt;/span&gt;</pre>
+      </div>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Counter Badge</h3>
+        <div class="styleguide-demo">
+          <div class="demo-row">
+            <span class="arc-counter">5</span>
+            <span class="arc-counter">42</span>
+            <span class="arc-counter">133</span>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;span class="arc-counter"&gt;42&lt;/span&gt;</pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         FORMS
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Forms</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Input Fields</h3>
+        <div class="styleguide-demo">
+          <div style="max-width: 400px;">
+            <label class="arc-label">Text Input</label>
+            <input type="text" class="arc-input" placeholder="Enter text...">
+
+            <label class="arc-label" style="margin-top: var(--space-4);">Select</label>
+            <select class="arc-input arc-select">
+              <option>Option 1</option>
+              <option>Option 2</option>
+              <option>Option 3</option>
+            </select>
+
+            <label class="arc-label" style="margin-top: var(--space-4);">Textarea</label>
+            <textarea class="arc-input arc-textarea" placeholder="Enter longer text..."></textarea>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;label class="arc-label"&gt;Label&lt;/label&gt;
+&lt;input type="text" class="arc-input" placeholder="..."&gt;
+&lt;select class="arc-input arc-select"&gt;...&lt;/select&gt;
+&lt;textarea class="arc-input arc-textarea"&gt;&lt;/textarea&gt;</pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         DIVIDERS
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Dividers</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Divider Styles</h3>
+        <div class="styleguide-demo">
+          <p style="color: var(--color-text-muted); margin-bottom: var(--space-4);">Glowing divider:</p>
+          <div class="arc-divider"></div>
+          <p style="color: var(--color-text-muted); margin-bottom: var(--space-4);">Subtle divider:</p>
+          <div class="arc-divider arc-divider--subtle"></div>
+        </div>
+        <pre class="styleguide-code">&lt;div class="arc-divider"&gt;&lt;/div&gt;
+&lt;div class="arc-divider arc-divider--subtle"&gt;&lt;/div&gt;</pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         HEADER
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="styleguide-section">
+      <h2 class="styleguide-section__title">Headers</h2>
+
+      <div class="styleguide-subsection">
+        <h3 class="styleguide-subsection__title">Title Block</h3>
+        <div class="styleguide-demo" style="background: var(--color-black);">
+          <div class="arc-header">
+            <div class="arc-header__pretitle">Trey's</div>
+            <div class="arc-header__title">Study System</div>
+          </div>
+        </div>
+        <pre class="styleguide-code">&lt;div class="arc-header"&gt;
+  &lt;div class="arc-header__pretitle"&gt;Trey's&lt;/div&gt;
+  &lt;div class="arc-header__title"&gt;Study System&lt;/div&gt;
+&lt;/div&gt;</pre>
+      </div>
+    </section>
+
+    <div class="arc-divider"></div>
+
+    <p style="text-align: center; color: var(--color-text-muted); padding: var(--space-8);">
+      <span style="font-family: var(--font-pixel); font-size: 10px;">TREY'S_STUDY_SYSTEM // DESIGN_SYSTEM_v1.0</span>
+    </p>
+
+  </div>
+</body>
+</html>

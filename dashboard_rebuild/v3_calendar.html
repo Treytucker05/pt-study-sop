@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PT Study • Calendar (v3)</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('dashboard_v3.static', filename='v3_calendar.css') }}"
+    />
+  </head>
+  <body>
+    <div class="v3-shell">
+      <header class="v3-header">
+        <div class="v3-brand">PT Study • Calendar</div>
+        <div class="v3-actions">
+          <button class="v3-button" id="gcal-auth-btn">Connect Google</button>
+          <button class="v3-button v3-primary" id="gcal-sync-btn">Sync</button>
+        </div>
+      </header>
+      <div class="v3-body">
+        <aside class="v3-sidebar">
+          <div class="v3-section">
+            <h3>Calendars</h3>
+            <div id="calendar-filters" class="v3-filters">
+              <div class="v3-muted">Loading filters...</div>
+            </div>
+          </div>
+          <div class="v3-section">
+            <h3>Google Status</h3>
+            <div id="gcal-status" class="v3-muted">Checking status...</div>
+          </div>
+        </aside>
+        <main class="v3-main">
+          <div id="calendar"></div>
+        </main>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="{{ url_for('dashboard_v3.static', filename='v3_calendar.js') }}"></script>
+  </body>
+</html>

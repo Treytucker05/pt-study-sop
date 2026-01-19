@@ -1,0 +1,189 @@
+# Ralph Progress Log
+Started: 2026-01-12
+
+## Codebase Patterns
+- Scholar inventories should enumerate output lanes and outputs root files using repo-relative paths.
+
+## Key Files
+- scholar/outputs/system_map/scholar_inventory_2026-01-12.md
+---
+## 2026-01-12 - US-001
+- What was implemented
+  - Created a full Scholar inventory with directories, key files, output lanes, notable artifacts, and coverage note.
+- Files changed
+  - scholar/outputs/system_map/scholar_inventory_2026-01-12.md
+  - AGENTS.md
+- **Learnings:**
+  - Inventory docs are easiest to validate when they list every output artifact by lane and include outputs root files.
+---
+
+## 2026-01-12 - US-002
+- What was implemented
+  - Created `scholar/outputs/system_map/scholar_system_map_2026-01-12.md` as required by US-002.
+- Files changed
+  - scholar/outputs/system_map/scholar_system_map_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-003
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_entrypoints_2026-01-12.md` as required by US-003.
+- Files changed
+  - scholar/outputs/reports/scholar_entrypoints_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-004
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_io_matrix_2026-01-12.md` as required by US-004.
+- Files changed
+  - scholar/outputs/reports/scholar_io_matrix_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-005
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_workflows_audit_2026-01-12.md` as required by US-005.
+- Files changed
+  - scholar/outputs/module_audits/scholar_workflows_audit_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-006
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_agents_audit_2026-01-12.md` as required by US-006.
+- Files changed
+  - scholar/outputs/module_audits/scholar_agents_audit_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-007
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_code_brain_reader_2026-01-12.md` as required by US-007.
+- Files changed
+  - scholar/outputs/module_audits/scholar_code_brain_reader_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-008
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_code_telemetry_snapshot_2026-01-12.md` as required by US-008.
+- Files changed
+  - scholar/outputs/module_audits/scholar_code_telemetry_snapshot_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-009
+- What was implemented
+  - Created `scholar/outputs/module_audits/scholar_code_friction_alerts_2026-01-12.md` as required by US-009.
+- Files changed
+  - scholar/outputs/module_audits/scholar_code_friction_alerts_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-010
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_docs_audit_2026-01-12.md` as required by US-010.
+- Files changed
+  - scholar/outputs/reports/scholar_docs_audit_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-011
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_dependencies_2026-01-12.md` as required by US-011.
+- Files changed
+  - scholar/outputs/reports/scholar_dependencies_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-012
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_runbook_2026-01-12.md` as required by US-012.
+- Files changed
+  - scholar/outputs/reports/scholar_runbook_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-013
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_observability_2026-01-12.md` as required by US-013.
+- Files changed
+  - scholar/outputs/reports/scholar_observability_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-014
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_validation_2026-01-12.md` as required by US-014.
+- Files changed
+  - scholar/outputs/reports/scholar_validation_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-015
+- What was implemented
+  - Created `scholar/outputs/gap_analysis/scholar_artifact_coverage_gaps_2026-01-12.md` as required by US-015.
+- Files changed
+  - scholar/outputs/gap_analysis/scholar_artifact_coverage_gaps_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-016
+- What was implemented
+  - Created `scholar/outputs/gap_analysis/scholar_risks_2026-01-12.md` as required by US-016.
+- Files changed
+  - scholar/outputs/gap_analysis/scholar_risks_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-017
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_working_status_2026-01-12.md` as required by US-017.
+- Files changed
+  - scholar/outputs/reports/scholar_working_status_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-018
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_open_questions_2026-01-12.md` as required by US-018.
+- Files changed
+  - scholar/outputs/reports/scholar_open_questions_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-019
+- What was implemented
+  - Created `scholar/outputs/reports/scholar_recommendations_backlog_2026-01-12.md` as required by US-019.
+- Files changed
+  - scholar/outputs/reports/scholar_recommendations_backlog_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
+
+## 2026-01-12 - US-020
+- What was implemented
+  - Created `scholar/outputs/digests/scholar_audit_digest_2026-01-12.md` as required by US-020.
+- Files changed
+  - scholar/outputs/digests/scholar_audit_digest_2026-01-12.md
+- **Learnings:**
+  - Audit artifacts should cite file paths and note gaps explicitly.
+---
