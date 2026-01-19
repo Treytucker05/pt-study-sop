@@ -1,1 +1,0 @@
-Generate a hierarchical tree view for `C:\Users\treyt\OneDrive\Desktop\pt-study-sop` that includes all directories and files.

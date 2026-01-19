@@ -17,7 +17,23 @@
     "C:\\Users\\treyt\\OneDrive\\Desktop\\pt-study-sop\\Run_Brain_All.bat",
     "pip list",
     "pip show",
-    "bun -v"
+    "bun -v",
+    "Move-Item",
+    "Remove-Item",
+    "New-Item",
+    "Add-Content",
+    "Set-Content",
+    "Test-Path",
+    "git status -sb --untracked-files=no",
+    "git status -sb",
+    "git checkout",
+    "git checkout -b",
+    "git branch",
+    "git add -u",
+    "git commit -m",
+    "git push",
+    "git push -u origin",
+    "git rev-parse --abbrev-ref HEAD"
   ],
   "require_confirmation": ["git push", "del"]
 }
