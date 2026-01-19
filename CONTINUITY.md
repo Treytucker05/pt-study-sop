@@ -339,3 +339,10 @@ Update 2026-01-19:
   - Updated `brain/config.py` to load `.env` with `override_env=True` so repo .env wins over machine env vars (prevents wrong OPENROUTER_API_KEY).
 - Now: Retest dashboard launch via `Run_Brain_All.bat` to confirm LLM calls succeed regardless of Windows env.
 - Next: Optionally clear stale Windows OPENROUTER_API_KEY to keep the machine clean.
+
+Update 2026-01-19:
+- Goal: Remove confusing unused app copies from workspace root.
+- Done:
+  - Moved `Arcade-RetroDesign` and `Arcade-RetroDesign__moved1` into `archive/unused/`.
+- Now: Root workspace contains only active projects and required archives.
+- Next: If confirmed unused long-term, add `archive/unused/` to .gitignore to keep scans cleaner.
