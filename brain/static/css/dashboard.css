@@ -173,6 +173,37 @@ body {
   overflow-x: hidden;
 }
 
+/* Readability boost: larger base text and key UI surfaces */
+body {
+  font-size: var(--text-base);
+}
+
+.main-wrapper,
+.content-card-body,
+.panel-body,
+.notes-body,
+.notes-body textarea,
+.sessions-table td,
+.sessions-table th,
+.modal-body,
+.top-nav-header,
+.top-nav-title,
+.top-nav-menu,
+.arcade-nav-btn .btn-label,
+.stat-card,
+.info-row,
+.form-control,
+.timeline-list,
+.summary-text,
+label,
+input,
+button,
+select,
+textarea {
+  font-size: var(--text-base);
+  line-height: 1.65;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    90s ARCADE CRT EFFECTS - Scanlines and Glow
    ═══════════════════════════════════════════════════════════════════════════ */
