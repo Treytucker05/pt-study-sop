@@ -9,8 +9,13 @@ import os
 VERSION = '9.3'
 
 # Load .env if present (lightweight, no external deps)
-def load_env():
-    """Load key=value pairs from .env into os.environ (if not already set)."""
+def load_env(override_env=True):
+    """
+    Load key=value pairs from .env into os.environ.
+
+    By default override_env=True so the repo-local .env wins over any
+    machine-level env var (prevents stale system OPENROUTER_API_KEY).
+    """
     env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
     loaded = {}
     if not os.path.exists(env_path):
@@ -27,7 +32,7 @@ def load_env():
                 val = val.strip().strip('"').strip("'")
                 if key:
                     loaded[key] = val
-                    if key not in os.environ:
+                    if override_env or key not in os.environ:
                         os.environ[key] = val
     except Exception:
         pass
@@ -35,7 +40,7 @@ def load_env():
     return loaded
 
 # Initialize environment variables from .env once at import time
-_ENV_CACHE = load_env()
+_ENV_CACHE = load_env(override_env=True)
 
 # Base paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
