@@ -71,3 +71,7 @@ nul
 archive/unused/Arcade-RetroDesign/
 archive/unused/Arcade-RetroDesign__moved1/
 archive/unused/_old/
+
+# Local backups
+backups/
+
