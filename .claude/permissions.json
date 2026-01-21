@@ -33,7 +33,11 @@
     "C:\\\\Users\\\\treyt\\\\OneDrive\\\\Desktop\\\\pt-study-sop\\\\Run_Brain_All.bat",
     "pip list",
     "pip show",
-    "bun -v"
+    "bun -v",
+    "winget",
+    "winget list",
+    "winget search",
+    "winget install"
   ],
   "require_confirmation": ["git push", "del"]
 }

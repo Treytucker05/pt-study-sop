@@ -165,10 +165,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   NOTES
                 </Button>
               </SheetTrigger>
-              <SheetContent className="bg-black border-l-4 border-primary w-[300px] sm:w-[400px] shadow-2xl z-[60]">
+              <SheetContent
+                className="bg-black border-l-4 border-primary w-[300px] sm:w-[400px] shadow-2xl overflow-y-auto"
+              >
                 <SheetTitle className="font-arcade text-primary mb-4">QUICK_NOTES</SheetTitle>
                 <SheetDescription className="sr-only">Quick notes panel</SheetDescription>
-                <div className="flex flex-col h-full pb-16 gap-4">
+                <div className="flex flex-col gap-4">
                   <div className="space-y-2">
                     <Textarea 
                       placeholder="TYPE_NOTE_HERE..." 

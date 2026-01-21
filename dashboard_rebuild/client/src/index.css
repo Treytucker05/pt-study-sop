@@ -102,11 +102,20 @@
   }
 
   .pixel-border {
-    box-shadow: 
+    box-shadow:
       -4px 0 0 0 var(--color-border),
       4px 0 0 0 var(--color-border),
       0 -4px 0 0 var(--color-border),
       0 4px 0 0 var(--color-border);
     margin: 4px;
+  }
+
+  /* Notes sheet positioning */
+  .top-16 {
+    top: 4rem !important;
+  }
+
+  .h-\[calc\(100vh-4rem\)\] {
+    height: calc(100vh - 4rem) !important;
   }
 }

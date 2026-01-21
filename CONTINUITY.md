@@ -1,3 +1,15 @@
+## CURRENT STATE (2026-01-20)
+- Goal: Lock in AI config sync (ai-config canonical) and reduce repo noise.
+- Now: Phase 0 complete (backups ignored; session_resume untracked).
+- Now: Phase 1 complete (.gitattributes added for AI surfaces).
+- Now: Phase 3 complete (sync script in place; ai-config canonical; root/.claude synced; subagents mirrored to .claude/agents).
+- Now: Phase 4 complete (CI drift gate added; ai-config canonical enforced in CI).
+- Now: Phase 2 hardening complete (Check mode + optional skills treated as non-noisy).
+- Now: AI config docs added (docs/AI_CONFIG.md + DOCS_INDEX.md link).
+- Next: Run Phase 2 sync follow-ups if any drift is detected.
+- Open questions (UNCONFIRMED): None.
+- Working set: .gitignore; .gitattributes; scripts/sync_ai_config.ps1; docs/AI_CONFIG.md; DOCS_INDEX.md; ai-config/AGENTS.md; CONTINUITY.md
+
 Goal (incl. success criteria):
 - Finalize the documentation for the OpenRouter-based Trey's Agent by installing the new high-speed README so the project can be paused cleanly.
 Constraints/Assumptions:
@@ -442,3 +454,5 @@ Update 2026-01-20:
 ## 2026-01-20 09:09:40
 - Added git add/commit/push permissions for backup commit.
 
+## 2026-01-20 21:53:00
+- Added winget permissions (winget/list/search/install) to allow dependency installs.

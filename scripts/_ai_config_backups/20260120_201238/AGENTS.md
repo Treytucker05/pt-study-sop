@@ -45,7 +45,7 @@ You must read and obey `CLAUDE.md` immediately (same folder). It contains core r
 
 ## Continuity ledger
 - Maintain a single Continuity Ledger at `C:/Users/treyt/OneDrive/Desktop/pt-study-sop/CONTINUITY.md`.
-- Update the ledger after every significant change; append only -- never delete history.
+- Update the ledger after every significant change; append only—never delete history.
 
 ## Project map (nearest AGENTS.md locations)
 - PT Study SOP: `C:/Users/treyt/OneDrive/Desktop/pt-study-sop/AGENTS.md` (symlinked to this file)

@@ -5,6 +5,15 @@ on:
   pull_request:
 
 jobs:
+  ai_config_drift:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: AI config drift check
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/sync_ai_config.ps1 -Mode Check
+
   tests:
     runs-on: ubuntu-latest
     steps:

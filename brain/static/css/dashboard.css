@@ -3381,7 +3381,7 @@ details.section-panel .dashboard-grid {
   text-transform: uppercase;
   cursor: pointer;
   user-select: none;
-  z-index: calc(var(--z-sticky) + 1);
+  z-index: calc(var(--z-modal) + 1);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
   transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
 }
@@ -3414,7 +3414,7 @@ body.header-collapsed .notes-tab-btn {
   box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
   transform: translateX(100%);
   transition: transform var(--transition-slow);
-  z-index: var(--z-sticky);
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
 }

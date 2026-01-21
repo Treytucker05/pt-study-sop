@@ -9,6 +9,7 @@ A root-level index that separates user guidance, developer guidance, and archite
 - **Architecture Spec:** `GUIDE_ARCHITECTURE.md`
 
 ## Core System Docs
+- AI config sync: `docs/AI_CONFIG.md`
 - System map (flow + loops): `docs/system_map.md`
 - Calendar/Tasks integration: `docs/calendar_tasks.md`
 - WRAP buckets (ingestion taxonomy): `docs/wrap_buckets.md`
