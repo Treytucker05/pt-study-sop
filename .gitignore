@@ -75,3 +75,11 @@ archive/unused/_old/
 # Local backups
 backups/
 
+
+# AI config sync backups
+scripts/_ai_config_backups/
+
+
+# Generated Claude surface (synced from ai-config)
+.claude/
+
