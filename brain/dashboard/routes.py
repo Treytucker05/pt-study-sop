@@ -903,35 +903,6 @@ def gcal_auth_start():
         return jsonify({"error": state}), 400
 
 
-@dashboard_bp.route("/api/gcal/oauth/callback", methods=["GET"])
-def gcal_oauth_callback():
-    """Handle OAuth callback from Google"""
-    from .gcal import complete_oauth
-
-    code = request.args.get("code")
-    if not code:
-        return "Missing authorization code", 400
-
-    success, message = complete_oauth(code)
-    if success:
-        # Return HTML that closes popup and notifies parent
-        return """
-        <html>
-        <body>
-        <script>
-            if (window.opener) {
-                window.opener.postMessage({type: 'gcal-auth-success'}, '*');
-            }
-            window.close();
-        </script>
-        <p>Successfully connected! You can close this window.</p>
-        </body>
-        </html>
-        """
-    else:
-        return f"<html><body><p>Error: {message}</p></body></html>", 400
-
-
 @dashboard_bp.route("/api/gcal/sync", methods=["POST"])
 def gcal_sync():
     """Manually sync Google Calendar events to database"""

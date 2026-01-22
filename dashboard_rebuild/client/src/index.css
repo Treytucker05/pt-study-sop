@@ -94,6 +94,12 @@
     display: inline-flex;
   }
 
+  .dialog-center {
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+  }
+
   .text-glow {
     text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary);
   }

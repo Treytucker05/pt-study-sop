@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Tuple
 
 
 from db_setup import get_connection, init_database
+from config import load_env
 
 
 # Google API imports (install: pip install google-auth google-auth-oauthlib google-api-python-client)
@@ -47,16 +48,33 @@ SCOPES = [
 
 def load_gcal_config():
     """Load Google Calendar config from api_config.json"""
+    load_env()
     if not CONFIG_PATH.exists():
-        return None
+        config = {}
+    else:
+        try:
+            with open(CONFIG_PATH, "r") as f:
+                config = json.load(f)
+        except Exception as exc:
+            # returns dict so get() works on it
+            return {"_error": f"Config Error: {exc}"}
 
-    try:
-        with open(CONFIG_PATH, "r") as f:
-            config = json.load(f)
-            return config.get("google_calendar", {})
-    except Exception as exc:
-        # returns dict so get() works on it
-        return {"_error": f"Config Error: {exc}"}
+    gcal_config = config.get("google_calendar", {}) if isinstance(config, dict) else {}
+    if not isinstance(gcal_config, dict):
+        gcal_config = {}
+
+    env_client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    env_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+    env_redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+
+    if env_client_id:
+        gcal_config["client_id"] = env_client_id
+    if env_client_secret:
+        gcal_config["client_secret"] = env_client_secret
+    if env_redirect_uri:
+        gcal_config["redirect_uri"] = env_redirect_uri
+
+    return gcal_config
 
 
 def normalize_gcal_config(config: Optional[Dict]) -> Dict:

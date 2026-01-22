@@ -957,25 +957,35 @@ def google_auth_url():
 
 
 @adapter_bp.route("/gcal/oauth/callback", methods=["GET"])
-def google_callback():
+def google_oauth_callback():
     """
     The redirect target for Google OAuth.
     Exchanges code for token, then redirects user back to dashboard.
     """
     from flask import redirect
     from dashboard import gcal
+    import logging
+
+    logging.info(f"OAuth callback received. Args: {request.args}")
 
     code = request.args.get("code")
+    error = request.args.get("error")
+
+    if error:
+        logging.error(f"OAuth error from Google: {error}")
+        return f"Google OAuth Error: {error}", 400
+
     if not code:
+        logging.error("Missing authorization code")
         return "Missing code", 400
 
     success, msg = gcal.complete_oauth(code)
+    logging.info(f"OAuth complete result: success={success}, msg={msg}")
 
     if success:
-        # Trigger an initial sync in background?
-        # For now, just redirect home
-        return redirect("/")
+        return redirect("/calendar")
 
+    logging.error(f"OAuth failed: {msg}")
     return f"Google Auth Failed: {msg}", 400
 
 

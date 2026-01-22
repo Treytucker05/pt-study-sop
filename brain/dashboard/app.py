@@ -35,6 +35,12 @@ def create_app():
         app.register_blueprint(dashboard_v3_bp)
         app.register_blueprint(dashboard_v3_api_bp)
 
+    # DEBUG: Print all registered routes
+    print("\n=== REGISTERED ROUTES ===")
+    for rule in app.url_map.iter_rules():
+        print(f"  {rule.rule} -> {rule.endpoint} [{', '.join(rule.methods - {'OPTIONS', 'HEAD'})}]")
+    print("=========================\n")
+
     # Serve React App (catch-all for non-API routes)
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")

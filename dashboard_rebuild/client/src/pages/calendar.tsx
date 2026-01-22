@@ -1011,32 +1011,36 @@ export default function CalendarPage() {
             </CardHeader>
 
             {/* Calendar Legend - Compact inline */}
-            <div className="px-4 py-1.5 border-b border-primary/20 bg-black/60 flex items-center gap-3 flex-wrap shrink-0">
-              <span className="font-arcade text-[10px] text-muted-foreground">CALENDARS:</span>
-              <div 
-                className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" 
-                onClick={() => setShowLocalEvents(!showLocalEvents)}
-              >
-                <div className={cn("w-2.5 h-2.5 rounded-sm", showLocalEvents ? "bg-primary" : "bg-muted-foreground/30")} />
-                <span className={cn("font-terminal text-xs", showLocalEvents ? "text-primary" : "text-muted-foreground")}>Local</span>
-              </div>
-              {visibleCalendars.map((cal) => (
-                <div 
-                  key={cal.id}
-                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" 
-                  onClick={() => toggleCalendar(cal.id)}
+            <div className="px-4 py-1.5 border-b border-primary/20 bg-black/60 flex items-center gap-3 shrink-0">
+              {/* Left: Scrollable calendar list */}
+              <div className="flex items-center gap-3 overflow-x-auto flex-1 min-w-0">
+                <span className="font-arcade text-[10px] text-muted-foreground shrink-0">CALENDARS:</span>
+                <div
+                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                  onClick={() => setShowLocalEvents(!showLocalEvents)}
                 >
-                  <div 
-                    className="w-2.5 h-2.5 rounded-sm" 
-                    style={{ backgroundColor: selectedCalendars.has(cal.id) ? cal.color : 'rgba(100,100,100,0.3)' }} 
-                  />
-                  <span className={cn("font-terminal text-xs truncate max-w-[80px]", selectedCalendars.has(cal.id) ? "" : "text-muted-foreground")}>{cal.name}</span>
+                  <div className={cn("w-2.5 h-2.5 rounded-sm", showLocalEvents ? "bg-primary" : "bg-muted-foreground/30")} />
+                  <span className={cn("font-terminal text-xs", showLocalEvents ? "text-primary" : "text-muted-foreground")}>Local</span>
                 </div>
-              ))}
-              {hiddenCalendars.length > 0 && (
-                <span className="font-terminal text-[10px] text-muted-foreground">+{hiddenCalendars.length} hidden</span>
-              )}
-              <div className="flex items-center gap-2 ml-auto">
+                {visibleCalendars.map((cal) => (
+                  <div
+                    key={cal.id}
+                    className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                    onClick={() => toggleCalendar(cal.id)}
+                  >
+                    <div
+                      className="w-2.5 h-2.5 rounded-sm"
+                      style={{ backgroundColor: selectedCalendars.has(cal.id) ? cal.color : 'rgba(100,100,100,0.3)' }}
+                    />
+                    <span className={cn("font-terminal text-xs truncate max-w-[80px]", selectedCalendars.has(cal.id) ? "" : "text-muted-foreground")}>{cal.name}</span>
+                  </div>
+                ))}
+                {hiddenCalendars.length > 0 && (
+                  <span className="font-terminal text-[10px] text-muted-foreground shrink-0">+{hiddenCalendars.length} hidden</span>
+                )}
+              </div>
+              {/* Right: Fixed buttons - always visible */}
+              <div className="flex items-center gap-2 shrink-0">
                 <Button 
                   size="sm" 
                   variant="ghost" 
@@ -1045,10 +1049,22 @@ export default function CalendarPage() {
                 >
                   MANAGE
                 </Button>
-                <div className={cn("flex items-center gap-1", googleStatus?.connected ? "text-green-500" : "text-yellow-500")}>
-                  <div className="w-2 h-2 rounded-full bg-current" />
-                  <span className="font-terminal text-[10px]">{googleStatus?.connected ? 'SYNCED' : 'OFFLINE'}</span>
-                </div>
+                {googleStatus?.connected ? (
+                  <div className="flex items-center gap-1 text-green-500">
+                    <div className="w-2 h-2 rounded-full bg-current" />
+                    <span className="font-terminal text-[10px]">SYNCED</span>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 px-2 rounded-none border-yellow-500 text-yellow-500 hover:bg-yellow-500/20 font-arcade text-[9px]"
+                    onClick={() => connectGoogleMutation.mutate()}
+                    disabled={connectGoogleMutation.isPending}
+                  >
+                    {connectGoogleMutation.isPending ? 'CONNECTING...' : 'CONNECT GOOGLE'}
+                  </Button>
+                )}
               </div>
             </div>
 

@@ -1,0 +1,12 @@
+## Code Review Summary
+
+### 🔴 Critical (Must Fix)
+- **[GoogleCalendarTasksAPI.json:1]** OAuth client secret is committed in source control. Why: leaked client secrets can be abused to impersonate the app or harvest tokens if the repo is exposed. Fix: rotate the secret, remove the file from the repo history, and load credentials from env/secret manager.
+- **[brain/dashboard/api_adapter.py:351]**, **[brain/dashboard/api_adapter.py:3526]**, **[brain/dashboard/api_adapter.py:3537]**, **[brain/dashboard/routes.py:769]**, **[brain/dashboard/routes.py:954]** Sensitive API endpoints (bulk delete, Obsidian vault read/write, API key update, background scraper execution) are exposed without any authentication/authorization checks. Why: any network client can delete/modify data or trigger costly operations if the Flask app is reachable beyond localhost. Fix: add auth middleware (token/session), enforce CSRF on state-changing routes, and/or bind the server to localhost with network firewalling.
+
+Assumption: the Flask app is reachable by untrusted clients; if it is strictly localhost-only, the auth issue severity is reduced but still a risk if the port is ever exposed.
+
+### ✅ What's Good
+- **[obsidian-gateway/server.js:33]**, **[obsidian-gateway/server.js:51]** The Obsidian gateway enforces bearer-token auth and validates allowlisted, relative paths to prevent traversal.
+
+Files changed: none.

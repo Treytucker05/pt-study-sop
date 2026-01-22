@@ -1,0 +1,18 @@
+## Code Review Summary
+### 🔴 Critical (Must Fix)
+- None found.
+
+### 🟡 Suggestions (Should Consider)
+- UNCONFIRMED: `animate-in`/`fade-in`/`slide-in-from-*` are used, but I don’t see `tailwindcss-animate` enabled in CSS/config. If `tw-animate-css` doesn’t provide these utilities, they’ll compile to no-op. Consider adding `@plugin "tailwindcss-animate";` (Tailwind v4) or a `tailwind.config.*` plugin entry, or replace with core animation utilities. Files: `dashboard_rebuild/client/src/components/CalendarAssistant.tsx:92`, `dashboard_rebuild/client/src/components/layout.tsx:284`, `dashboard_rebuild/client/src/pages/home.tsx:120`, `dashboard_rebuild/client/src/index.css:2`, `dashboard_rebuild/package.json:81`.
+- `@source "../../shared/**/*"` points to a non-existent directory, so Tailwind won’t pick up shared classes if they live elsewhere and you pay extra scan/watcher overhead. Remove or update to the correct shared path. File: `dashboard_rebuild/client/src/index.css:4`.
+- Testing gap: no UI/visual regression hook in scripts; Tailwind-heavy layouts can regress silently. Consider adding a lightweight Playwright/Storybook visual check. File: `dashboard_rebuild/package.json:6`.
+
+### 🟢 Nits (Optional)
+- `.inline-flex` redefines a core Tailwind utility; removing it would reduce confusion and CSS noise. File: `dashboard_rebuild/client/src/index.css:93`.
+- `@source` only covers `client/src` and `../../shared`; if you ever add Tailwind classes in `client/index.html`, they won’t be scanned. Consider adding `../index.html` or `../**/*.html`. File: `dashboard_rebuild/client/src/index.css:3`.
+
+### ✅ What's Good
+- Tailwind v4 setup keeps content scanning and design tokens co-located in CSS via `@source` and `@theme inline`. File: `dashboard_rebuild/client/src/index.css:3`, `dashboard_rebuild/client/src/index.css:8`.
+- `cn` helper uses `clsx` + `tailwind-merge` to keep conditional classes clean. File: `dashboard_rebuild/client/src/utils.ts:2`, `dashboard_rebuild/client/src/utils.ts:5`.
+
+Files changed: none.

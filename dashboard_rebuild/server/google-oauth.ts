@@ -19,10 +19,7 @@ function getOAuth2Client() {
     throw new Error('Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET');
   }
   
-  const replitDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0];
-  const redirectUri = replitDomain 
-    ? `https://${replitDomain}/api/google/callback`
-    : 'http://localhost:5000/api/google/callback';
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/google/callback';
   
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 }
