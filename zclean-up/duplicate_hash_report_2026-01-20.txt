@@ -1,0 +1,1633 @@
+﻿Hash: 36EDF7C8AFA41CCA6378D5A52F1EFC7E6A51D7C2F6510D50F73774EE5F713546 (Count: 14)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\dark_retro_arcade_grid_background_texture.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\dist\public\assets\dark_retro_arcade_grid_background_texture-CKt6Tt6a.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\dark_retro_arcade_grid_background_texture-CKt6Tt6a.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\attached_assets\generated_images\dark_retro_arcade_grid_background_texture.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\dist\public\assets\dark_retro_arcade_grid_background_texture-CKt6Tt6a.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\dark_retro_arcade_grid_background_texture.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\dark_retro_arcade_grid_background_texture-CKt6Tt6a.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\attached_assets\generated_images\dark_retro_arcade_grid_background_texture.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\attached_assets\generated_images\dark_retro_arcade_grid_background_texture.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\dark_retro_arcade_grid_background_texture-CKt6Tt6a.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\dark_retro_arcade_grid_background_texture-CKt6Tt6a.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_192539\assets\dark_retro_arcade_grid_background_texture-CKt6Tt6a.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\dist\assets\dark_retro_arcade_grid_background_texture-CKt6Tt6a.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\dist\assets\dark_retro_arcade_grid_background_texture-CKt6Tt6a.png
+
+Hash: B6ACB73ABB0B7E8E808D72C016E81D97860BC7E7E0EB4F06FF76BA1D16A5B04F (Count: 14)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\dist\public\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\public\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\dist\public\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\public\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\public\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_192539\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\dist\favicon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\dist\favicon.png
+
+Hash: C01EF577C30B7EB7049EBE68BE36887493687972BEB32A377E783F4763B7C8C3 (Count: 12)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-CP2eSMZs.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DU1K2-uX.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-Dwfb1f5P.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-CP2eSMZs.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DU1K2-uX.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-Dwfb1f5P.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-CP2eSMZs.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DU1K2-uX.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-Dwfb1f5P.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-CP2eSMZs.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DU1K2-uX.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-Dwfb1f5P.js
+
+Hash: 50D08FD046A7596142D03F3CB71E187D9A2D50A4881DC32CF1FACCE4CC8241B4 (Count: 10)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\public\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\dist\public\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\public\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\public\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_192539\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\dist\opengraph.jpg
+
+Hash: 9D2D43A44E7AD00DCD8196A3CF682FF3BD122CEBE85113F2EA03734F017839C2 (Count: 7)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\StudyBrainIMAGE_1768640444498.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\dist\public\assets\StudyBrainIMAGE_1768640444498-xUGqGDLJ.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\StudyBrainIMAGE_1768640444498.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\dist\assets\StudyBrainIMAGE_1768640444498-xUGqGDLJ.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\logo-brain-new.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\icons\logo-brain.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Images\StudyBrainIMAGE.jpg
+
+Hash: E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855 (Count: 6)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\_ul
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\rapid_build_success
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\pages\calendar_prev.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\rapid_build_success
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\rapid_build_success
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\__init__.py
+
+Hash: E898B0B7603216E397F1D41F896E9974903EC1C12F67DDFAC466122572A33626 (Count: 5)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\image_1768498922408.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\attached_assets\image_1768498922408.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\image_1768498922408.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\attached_assets\image_1768498922408.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\attached_assets\image_1768498922408.png
+
+Hash: 704D8920F6F3EA745F255A55191A3D9D2FCC5284101B0532EBB8C235521FA5A9 (Count: 5)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\image_1768498879502.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\attached_assets\image_1768498879502.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\image_1768498879502.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\attached_assets\image_1768498879502.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\attached_assets\image_1768498879502.png
+
+Hash: 2983E4D5D300716841F587FF028146F37AA241E4B8655679BAE10EE776C5820F (Count: 5)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\image_1768499296674.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\attached_assets\image_1768499296674.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\image_1768499296674.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\attached_assets\image_1768499296674.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\attached_assets\image_1768499296674.png
+
+Hash: ED03BBE3E2D81E795DB556EEA7320529FF2B2125D0D1DB4E2820A5B1B36F7913 (Count: 5)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\Pasted-PT-Study-Dashboard-Page-Design-Specifications-I-need-he_1768495797349.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\attached_assets\Pasted-PT-Study-Dashboard-Page-Design-Specifications-I-need-he_1768495797349.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\Pasted-PT-Study-Dashboard-Page-Design-Specifications-I-need-he_1768495797349.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\attached_assets\Pasted-PT-Study-Dashboard-Page-Design-Specifications-I-need-he_1768495797349.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\attached_assets\Pasted-PT-Study-Dashboard-Page-Design-Specifications-I-need-he_1768495797349.txt
+
+Hash: A463327D1162CAF013A2E58882AC8885567C53B53FD7D81699B4A622E1D43AA4 (Count: 5)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\image_1768499782123.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\attached_assets\image_1768499782123.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\image_1768499782123.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\attached_assets\image_1768499782123.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\attached_assets\image_1768499782123.png
+
+Hash: 0C3335E40340A4819191E6CAD036D17B618D1219794D099F7E875AFB8B4CE115 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DmLJiLX2.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DmLJiLX2.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DmLJiLX2.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DmLJiLX2.css
+
+Hash: 4A3FF6C1C8F07C12E10B08E8300AD50ED24C7E133054E254618B9B20162C0BAC (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DlTtieOG.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DlTtieOG.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DlTtieOG.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DlTtieOG.css
+
+Hash: 909426AF226FB8EA49DBE30450DCB668A6C6E5257216B893115BF822F58C8398 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DO5IoGXo.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DO5IoGXo.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DO5IoGXo.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DO5IoGXo.js
+
+Hash: 156F7AF046529B9234BB5950B4003D368546679D38F84CE94564EB6FE78CD555 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DnF-6i7S.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DnF-6i7S.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DnF-6i7S.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DnF-6i7S.css
+
+Hash: A9A11813438BA2FC0C6EFD97F13B88BF41AF82044D04182D865BDD38EAA32423 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\questions_needed_2026-01-09.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\questions_needed_2026-01-09_024155.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\questions_needed_2026-01-09_032259.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\questions_needed_2026-01-09_032316.md
+
+Hash: 402475536B4E8B82D47C6DF2C58EDCE01C10C9E98E04FEE99DBA1CFF06E22D4D (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DhL-HZ1l.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DhL-HZ1l.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DhL-HZ1l.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DhL-HZ1l.js
+
+Hash: 454B6F5F11C2CBDD9561B949BB0D90FFAFD10AD86BCDE75D27421AD77297053A (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-Cn97mOZZ.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-Cn97mOZZ.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-Cn97mOZZ.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-Cn97mOZZ.css
+
+Hash: 69430D3607ED9B6E2119047D0130973AF8C9DC367129342E47CD7F8061865DE1 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DJV72Y8u.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DJV72Y8u.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DJV72Y8u.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DJV72Y8u.css
+
+Hash: 3F66C6F9C8AA9CA5A6AFC021C453A71DB987CB964959E62E6AFC3A7850CAE7F1 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DhL8stUt.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DhL8stUt.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DhL8stUt.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DhL8stUt.js
+
+Hash: C99429703E63E68353AC711B9D3A241029E95145B2E0BE0898C18F6AF12BC552 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DS-BrFUZ.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DS-BrFUZ.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DS-BrFUZ.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DS-BrFUZ.js
+
+Hash: B03C5642118F00C6008C6414B37991F6BD96BE566E4B21A0F80558F3F2409078 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DresnF8Q.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DresnF8Q.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DresnF8Q.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DresnF8Q.js
+
+Hash: 6B6F8CF6DC4BBD6B9FDE05FB21ED3B792CA1AD4CBC9CF9BAE4926CD7F799ABCB (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DZTtsuxo.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DZTtsuxo.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DZTtsuxo.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DZTtsuxo.js
+
+Hash: 06B30967659304EA22585AD7AA3DE3BA6B7332AE3F06C87B507E600822AFCBD4 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DsveFWNF.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DsveFWNF.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DsveFWNF.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DsveFWNF.css
+
+Hash: E120A65DAC7B24F2583211E4839D8C2447F8D0C730983FFDF48113DFED62D0B1 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-3db0FH0_.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-3db0FH0_.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-3db0FH0_.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-3db0FH0_.js
+
+Hash: BFE43068038D6A8AB22981E918AF4034A8BEF0070B55A74C0290A6FDBBC21BB8 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-olnhtfym.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-olnhtfym.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-olnhtfym.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-olnhtfym.css
+
+Hash: 7861D2002DE43976AE0C7EB6CD3C70521DE32D4AD9B82A88AA983F77CBB8A491 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-zavVQ4__.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-zavVQ4__.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-zavVQ4__.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-zavVQ4__.css
+
+Hash: 0346B66C02A93B01436B2409C4B9829B5C4C698BF76F7BCE399E6E2B88450AE5 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-GHEsKyfy.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-GHEsKyfy.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-GHEsKyfy.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-GHEsKyfy.js
+
+Hash: 3913AC9BE6290CA3C77979ECA8FB065E216E104E440CA56E0AE17016CB7F53A2 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-hlKXyLj1.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-hlKXyLj1.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-hlKXyLj1.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-hlKXyLj1.js
+
+Hash: EC1410F797AA1536E9B885BFFF77BCB921653C865C0FB8D3858FE3DD1D75713A (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines\templates\anatomy-engine_template.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\anatomy-engine.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v9.1\anatomy-engine.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\engines\templates\anatomy-engine_template.md
+
+Hash: B9BFA4882CBE6644F8E075ED1E23B571DD5879236FAD5C739FB13D87D374245D (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-CM05OS16.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-CM05OS16.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-CM05OS16.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-CM05OS16.js
+
+Hash: 20DD7A8EFFA289D7282543C6F1496F86BCF653AD01457DC0DA54010D981C81AB (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-Bd3ALw0Y.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-Bd3ALw0Y.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-Bd3ALw0Y.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-Bd3ALw0Y.css
+
+Hash: A11571ADAB14C7F72F84A637BE05C7B270957E5F7F3A7796323FD6AA0B9E671A (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-B17E64mv.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-B17E64mv.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-B17E64mv.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-B17E64mv.css
+
+Hash: 7EC55E4DE004BB16EC3C5E8D53016E2DE2C2555D40CFB913CE24ED6016F5E342 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-BgxtMqew.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-BgxtMqew.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-BgxtMqew.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-BgxtMqew.js
+
+Hash: 3DC855E6E632F399781F2EFE6749A528455D3D5B9252CE0C4EF5C262E076EFD6 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-C-_jAKSv.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-C-_jAKSv.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-C-_jAKSv.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-C-_jAKSv.js
+
+Hash: 1B3F94A0E17C302E118DD232C415D8ADD5D22FC334C32F46074A79D98BA4C05B (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-Bl-7WVIO.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-Bl-7WVIO.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-Bl-7WVIO.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-Bl-7WVIO.css
+
+Hash: B80313251CC9E78D6F792B726013BF060A436C3260041CC6CE54C2EB0A1E2E33 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-BikPuxl-.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-BikPuxl-.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-BikPuxl-.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-BikPuxl-.css
+
+Hash: AF942B7C93808D41C708E0BFD8928B080E731A7C6E4D1DF6CBEC9D39759A17FD (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-C77nRFzH.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-C77nRFzH.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-C77nRFzH.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-C77nRFzH.js
+
+Hash: F37935E8D865E296BBB4834E64198CCAC87B657B1D625183EF1336273D341ADB (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-D6izpRtc.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-D6izpRtc.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-D6izpRtc.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-D6izpRtc.js
+
+Hash: 1E4F941BD21DD31E7BD4850822A25471A7BAD80A56A9AF616377D9AA881D94D2 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-D165ilG4.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-D165ilG4.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-D165ilG4.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-D165ilG4.css
+
+Hash: 851C90E0E406168AC54B8846B3A2FAD0765131126E339E530D699B3B4FF9FDB8 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-DEbwbRB7.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-DEbwbRB7.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-DEbwbRB7.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-DEbwbRB7.css
+
+Hash: FD53D715C066C9ABE45719E672318D6CC7A42E5F17B1461571AE257EEAD22BDD (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-CaJYfyT6.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-CaJYfyT6.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-CaJYfyT6.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-CaJYfyT6.js
+
+Hash: 562CC39CFB59A7D68EE397C43062D9E14F6A856785B6EA1DE791DBAB85D120A7 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\dist\public\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\opengraph.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\dist\opengraph.jpg
+
+Hash: 2C1CA94712189299883A8D127C7A064F8DE77F679DD7077E3A2371BB3B2F7A39 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-CTa3Ra4P.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-CTa3Ra4P.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-CTa3Ra4P.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-CTa3Ra4P.js
+
+Hash: 02DCC639135DE7AF1CC1DEE57A61EAAA496E392D22A18424491DDF44B9DCDDD3 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-D0eGc54J.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-D0eGc54J.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-D0eGc54J.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-D0eGc54J.js
+
+Hash: D37B739DC555964420D1974ECE60F48B283B8FFB59A4B2E4C7D1597279BA53D5 (Count: 4)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\assets\index-CX2sujM4.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\assets\index-CX2sujM4.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\brain_static_react_20260119_193346\assets\index-CX2sujM4.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\assets\index-CX2sujM4.js
+
+Hash: 5A4FF73C804E86C873382DA80C453F1399006326EF042FB984C24162EC86666E (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\carousel.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\carousel.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\carousel.tsx
+
+Hash: 787A19C855CF2B826942D25440B63150C45094154C6A40E95ABDB4109298B8B4 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\calendar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\calendar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\calendar.tsx
+
+Hash: B4F104169A3ED4607DA5BCAF19BA3B2D4CAD633D728961B71DA05D0DE4845B41 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\GoogleTasksComponents.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\components\GoogleTasksComponents.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\components\GoogleTasksComponents.tsx
+
+Hash: 525C4BB2C051987BE64DF0E92E1D90174912B219BF541E24FFBC4A3406DE49E8 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\card.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\card.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\card.tsx
+
+Hash: B40D1236F168C746B228ADEC6BC4E9D196EA362A7910878F161D3C359A013B89 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\chart.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\chart.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\chart.tsx
+
+Hash: AC389A574651C8BEDFFC10F80674C5FC2F02AB81291A5F4AD9C587D1F775FDCE (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\checkbox.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\checkbox.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\checkbox.tsx
+
+Hash: 08B0AA0B05EFC573C7D63363C03E83D4B101BFEB54140764E96DDEA30659CFCC (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\aspect-ratio.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\aspect-ratio.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\aspect-ratio.tsx
+
+Hash: 5950AC01377E7EEDC94B00EB3FEE678745E4CC1A72B5343867F0733D07DB6660 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\alert.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\alert.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\alert.tsx
+
+Hash: 3C339F439797DBA9B3872A9D89DB42420FFD900504B4E0B27E9DAD51E87BC41C (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\badge.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\badge.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\badge.tsx
+
+Hash: E78B35ED76C67D8FF50603FBE0DFA4FE600097BD860D89E65BEEA3E16683DAD8 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\avatar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\avatar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\avatar.tsx
+
+Hash: 311BEDE35F785D7B1ECD7398986757E26409D1049352A94CCF83586B8603C92D (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\alert-dialog.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\alert-dialog.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\alert-dialog.tsx
+
+Hash: 9A9EDF4FDA319623EE228D5CB26AC31DD008DCFD5C57DBAFE3B7D768E59E50CA (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\button.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\button.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\button.tsx
+
+Hash: DCBFB3243A26096FC3E5F54039CCB5C4C23D9BB79A4D5846B4BE75BF912F07D9 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\accordion.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\accordion.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\accordion.tsx
+
+Hash: C3D3DCB0D82FC5E91D8830BAC7FEAD905686FE876F1F42C3ED872BB0A6B6584E (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\breadcrumb.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\breadcrumb.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\breadcrumb.tsx
+
+Hash: E3716D270E9EF6457B5CD29464AE00194ABC8093C08EBF726C9204D7A69231D9 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\button-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\button-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\button-group.tsx
+
+Hash: 3E6E6E8D37FB4069F8E43E55318F8DB06FBC36E6C8BE0096DA3C9337C1C798B9 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\spinner.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\spinner.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\spinner.tsx
+
+Hash: 771AB8637D27384C3ED030BA3BE01A07B90C791C294EAE06646250F8E81BC49E (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\sonner.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\sonner.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\sonner.tsx
+
+Hash: BA5867CD3145AF1290EDD80BB56D4B6D61C6331AA8EF96AE0B85487F4499FEAF (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\switch.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\switch.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\switch.tsx
+
+Hash: 6F74706BC6B53F9E4BCEBB5E7AB8743B616AEF181EDC7758B8EE905F9B2FDCD7 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\tabs.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\tabs.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\tabs.tsx
+
+Hash: A4A6972C2D47D465D7F02C1DC4A6CBFEDA7A97E46479C1B0CEBDAF26BF9B497A (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\table.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\table.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\table.tsx
+
+Hash: 234E38FEF59169BD02D8F5B56CA02E5EC13A0BD6846C328927B924E1299F7FB0 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\slider.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\slider.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\slider.tsx
+
+Hash: C956C4CCA4B8442FA9314D6079B9F975E1EE39D5804AAF2966990F6258AC342A (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\separator.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\separator.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\separator.tsx
+
+Hash: 3D93AE07A8F3FE121BA60F4439E26BD7859F247EB8BFCAFCF4B4A8A069888EEC (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\select.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\select.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\select.tsx
+
+Hash: 363F8E06AA5B53C6475F445117F60FA9294BE79E9E4F1F5BF70886800188124E (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\sheet.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\sheet.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\sheet.tsx
+
+Hash: 87608E7CC815AD3D88E0B9DE6C402BB37B58EA1B38636CF69709DA1BAFF6E334 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\skeleton.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\skeleton.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\skeleton.tsx
+
+Hash: B023FF6245BE1930E152A18C6AAA2B6DD1A11DF7B05FCF41BBE483968BFB1C39 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\sidebar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\sidebar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\sidebar.tsx
+
+Hash: 718A41BD05A163D1DB32480ABA013F5FE754894E656B6542A8E4B302275B172E (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\pages\not-found.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\pages\not-found.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\pages\not-found.tsx
+
+Hash: D4CFA75422F478C2A2F12DD643E283EC69AFFA5EC523D874F618EF1144D769FA (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\pages\home.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\pages\home.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\pages\home.tsx
+
+Hash: 4E62397715460556A24B629E7BC064368341888D80814A8653CCFE46741FC53F (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\google-tasks.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\server\google-tasks.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\google-tasks.ts
+
+Hash: D1A1EE1C19FC98D37BC5D5EAAEEE346263FC373DD937644992999E0E7DCAA658 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\vite.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\server\vite.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\vite.ts
+
+Hash: D157D1B0188131461928FEF822F7F21035F62B8597A42D7C5C7507C2C74F6ECF (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\static.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\server\static.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\static.ts
+
+Hash: CE6AFA34FB9DAE51053A863B4C3F7C6E55F3DA23B00149F31A8E4402BC963BE0 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\tooltip.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\tooltip.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\tooltip.tsx
+
+Hash: 99F9F4A3E897F71D89B01C6772B2F5DB51B888CECB2C8214FB2C2DBB2B3E6356 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\toast.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\toast.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\toast.tsx
+
+Hash: EC7C92AAED80F6923A7CAA4BFE4EEAD395B50A7001504FD7FBB0B9381804DAE9 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\textarea.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\textarea.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\textarea.tsx
+
+Hash: 1348F1A1F9820E2F1394B93CECC156A7E22F03636AB9270753985549AAE2BE74 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\toaster.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\toaster.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\toaster.tsx
+
+Hash: 955FA1BB97505B7A8BBA3F7CFF1991035A9AFA0E1113F5D598147E6369DBF44B (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\toggle.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\toggle.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\toggle.tsx
+
+Hash: DBA95EAD40D163AF6959198DED9853A2CC9282B2CB534980F99937A65EDF4E2D (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\toggle-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\toggle-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\toggle-group.tsx
+
+Hash: D7D02600EFFCA55D0DCADCE8C09C97EBDDDA3A19C5FA1D52DC9F6F727B26C6B1 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\scroll-area.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\scroll-area.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\scroll-area.tsx
+
+Hash: D50ADF86568F76246F0F319C9E1E858627475563F6C1E38F5DF7D4EE23958559 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\form.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\form.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\form.tsx
+
+Hash: E463611AB049C5E9B1C61691D239E05970EAD7B577A191B3F80AA6F8FFCCADA9 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\field.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\field.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\field.tsx
+
+Hash: 00F9086B1412843E04E01D31D2FAB00A25D65D789D1A382E41F01B1F3C167C3B (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\hover-card.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\hover-card.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\hover-card.tsx
+
+Hash: 7C4799E3597F2780C09A39A1391B921FA16EAEDD0476457492AF734F58E2EC98 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\input-otp.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\input-otp.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\input-otp.tsx
+
+Hash: E9DAD28BC940CA29714312D6C75D83BFE63F0CF7F9A384D2A2969A00A1D79700 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\input-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\input-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\input-group.tsx
+
+Hash: 9F975582A0290DBC7CE6EFA3B36B376A4C3F07863026C3B74C1E73CB0023ACB8 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\empty.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\empty.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\empty.tsx
+
+Hash: 5369FC82C51DF067AEC2934F5E711AAF9E3F745ED7BAADD7BA4B77397DEE2A1B (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\context-menu.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\context-menu.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\context-menu.tsx
+
+Hash: F4CDD104DE29928BFCD40B865C7D08EED9157A537FBB8B5E6D0921F02B63CC04 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\collapsible.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\collapsible.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\collapsible.tsx
+
+Hash: F9C982ED8114C253C6CA738043D3F455E89C6D65569E90C9415776D6B4D6BE14 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\dialog.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\dialog.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\dialog.tsx
+
+Hash: DC109123ECD59AF01D07AA9F3A8E8A7085BD3F337388C5369799AB1CE6C2D45F (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\dropdown-menu.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\dropdown-menu.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\dropdown-menu.tsx
+
+Hash: 47FF6248307A4AC09BF7E00181A2A29F9F846691092E04CAD03E15D749BC249B (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\drawer.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\drawer.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\drawer.tsx
+
+Hash: 04CF38BF94ABD3FE1B51E90227E6E235CA74776F6FC6AF718BFC149E7424F582 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\popover.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\popover.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\popover.tsx
+
+Hash: 9506DBD19DDD0C2810D1C9668A3F01606E39D9BF33DDC43329523C03BF629012 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\pagination.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\pagination.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\pagination.tsx
+
+Hash: A879C6CB5A3018866C58C2090FE26376C71DD5BF17C1FF8E92CC1B529EEB6C5B (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\progress.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\progress.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\progress.tsx
+
+Hash: 70D1E35A5FB0897AF7063CDD841D8ED636E1C332EF7EA6469F0F175A5A93DDDF (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\resizable.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\resizable.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\resizable.tsx
+
+Hash: 9BA7808B7404CDF2159C81883A39290033BC4308F2978EB80797C92B87421301 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\radio-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\radio-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\radio-group.tsx
+
+Hash: A06D96A582AC207FFCD38445D773C05E841D646EFB185B5E9B65F73E5BD388C7 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\navigation-menu.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\navigation-menu.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\navigation-menu.tsx
+
+Hash: 90983640AA7CFEF8217422347D8E14825CF55137C76369DECACF440767F03188 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\item.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\item.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\item.tsx
+
+Hash: 6299A6A387DC55E528AEC4342DEAEA0B83F1EA3A365C135A31A18EE55334F441 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\input.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\input.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\input.tsx
+
+Hash: 0C025E7736D435F563BFB44105E562629672799EB1F35CBF194148D06CD1A9F7 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\kbd.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\kbd.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\kbd.tsx
+
+Hash: DEF61EB2C47C9EC319423471F4CA20045E99549958211CACF832E4EDE769E484 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\menubar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\menubar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\menubar.tsx
+
+Hash: 2EAC8FBB04002C42B0FBC4062D20D131E421796EAF65C37D2049E29E42ECBC5A (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\label.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\label.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\label.tsx
+
+Hash: 48155820348021EE4E5E361E6B447680A4C0D2CF7D9E79C6C8762A69CCA0FA47 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_6892034b54d0dfec1bdd9a2a1e0e1d3221214fa7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_6892034b54d0dfec1bdd9a2a1e0e1d3221214fa7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_6892034b54d0dfec1bdd9a2a1e0e1d3221214fa7.bin
+
+Hash: E720DCCB12DF29967187394F2388F8B5EEFD12268BB9698C131DBF14EF8A14CA (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_4_Session_Recap_Template.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.3\Module_4_Session_Recap_Template.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_4_Session_Recap_Template.md
+
+Hash: 75E0D04A479150A13325D1CC7247CCFC649534A8F3E3084D9B6638851B963B12 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_7dfa8a8b5f51ffbd8bc905bf4a5329c19e9924d7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_7dfa8a8b5f51ffbd8bc905bf4a5329c19e9924d7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_7dfa8a8b5f51ffbd8bc905bf4a5329c19e9924d7.bin
+
+Hash: E368EE7E382FB08B69755D7B6940FD5571B221AB3AADD0C199785A56B976222A (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_44edbdd4906debacfbb368105252ab0407368c0e.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_44edbdd4906debacfbb368105252ab0407368c0e.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_44edbdd4906debacfbb368105252ab0407368c0e.bin
+
+Hash: 644E9616F4E2BC1A0C3CD5A9A7C2F870254459DBB3F92FFF072A1292112A93C0 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_49d653f8fcf7db6941409a62815a18ed0f0f9981.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_49d653f8fcf7db6941409a62815a18ed0f0f9981.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_49d653f8fcf7db6941409a62815a18ed0f0f9981.bin
+
+Hash: 3CB8E1DDCB83A78CD95598B7E910BA0C01F4F5BA634E428740D72B4F296DEC51 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_4cabde33692040f01957ebf47521c36fe1e1481b.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_4cabde33692040f01957ebf47521c36fe1e1481b.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_4cabde33692040f01957ebf47521c36fe1e1481b.bin
+
+Hash: 33975F7011FB2A57D17BCA9456F8428604F47A768BF1FF3DAA3ED37B6A8A3242 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_83ecec0831a3e1a0b19d8752636ab3ba182939f7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_83ecec0831a3e1a0b19d8752636ab3ba182939f7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_83ecec0831a3e1a0b19d8752636ab3ba182939f7.bin
+
+Hash: F30A05FC3C86D02E6CDF8AB149C003741966BD567E0562AB2BE0BC8B0A6640EC (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_965db1409eea87b2f1b7208a50f9e6128dbc6ae4.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_965db1409eea87b2f1b7208a50f9e6128dbc6ae4.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_965db1409eea87b2f1b7208a50f9e6128dbc6ae4.bin
+
+Hash: BD676FAA71B8A0285545F0ECC37FAB2E3C90C9812297167A5C4933B215655E22 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_988596d54746edeaecdb26920decea637aaa75f3.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_988596d54746edeaecdb26920decea637aaa75f3.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_988596d54746edeaecdb26920decea637aaa75f3.bin
+
+Hash: D8E6D5485B7715E250FD456B2CA2B721C18E612151FD129FAD55393598088944 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_b3b3b34db9b13e5906d8253a778c1f019dbfe264.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_b3b3b34db9b13e5906d8253a778c1f019dbfe264.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_b3b3b34db9b13e5906d8253a778c1f019dbfe264.bin
+
+Hash: B198CDE52880DF07DC5A7C83BCFDBD366298756D5B359D6B118E92C0CDB1C918 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_8493220ac1db442435974beb9d00063b308190f3.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_8493220ac1db442435974beb9d00063b308190f3.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_8493220ac1db442435974beb9d00063b308190f3.bin
+
+Hash: E228CB772D2E4919DCA725D118C84E8733A46A2453E04F86D4E440CFF2B56973 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_870ead2f2ee2fcd2d4a96c5000a864e189538538.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_870ead2f2ee2fcd2d4a96c5000a864e189538538.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_870ead2f2ee2fcd2d4a96c5000a864e189538538.bin
+
+Hash: ADC39E2528CBA23CC66908489654E681C3A9FA353FA24D485A2BCF7084900920 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_92ec9edbecac10069f88bfd92c26a9ac1360b32e.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_92ec9edbecac10069f88bfd92c26a9ac1360b32e.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_92ec9edbecac10069f88bfd92c26a9ac1360b32e.bin
+
+Hash: A10EAE4D191B013CB9438976612B1CE5D17B14CA9016FC8F86544D0BD1AB27CE (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\generated-icon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\generated-icon.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\generated-icon.png
+
+Hash: 190C877DB466995BF1482F4A16ABD06E04A89EDE3119341E2A86FF96E1737B27 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\postcss.config.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\postcss.config.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\postcss.config.js
+
+Hash: 4BEA0E0003E3C943F455346ABC4854D1666D604ADBAA6AA8EDA11F94FB8F1396 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\tsconfig.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\tsconfig.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\tsconfig.json
+
+Hash: 7F3B982AC4F0D7FAD59B9E5751078FE19DC6F549190B61FC266FAAEFEB795DFA (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\.gitignore
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.gitignore
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\.gitignore
+
+Hash: 35DF8BF9D4C1AAD8CDFF54DF8108BBC964A853BBC29538EC0EC6E1B1A9B0D54F (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\build.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\script\build.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\build.ts
+
+Hash: 34396B963D1CEDE6248BDB6C7B32672B51E731B327002EBC27615EDF21004FDE (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\components.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\components.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\components.json
+
+Hash: A486D3E594B148CA2FD893D76475A0B9736C88F267CECAC4E76F6B2D9579E694 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\vite-plugin-meta-images.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\vite-plugin-meta-images.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\vite-plugin-meta-images.ts
+
+Hash: 2C220574DB86C99C777F30CB0D414E0239197EA0541D5F20845DF4D3621F7D3E (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_2362605d7e211fbe29d8b1824982c648cba95b63.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_2362605d7e211fbe29d8b1824982c648cba95b63.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_2362605d7e211fbe29d8b1824982c648cba95b63.bin
+
+Hash: 5095C7B843CDA74F8B873AFCBB65B1253725C04AFDD65C116332BBBE9EC881B9 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_34a07eca102ccd6a56f2973a5d919f7893d296c9.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_34a07eca102ccd6a56f2973a5d919f7893d296c9.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_34a07eca102ccd6a56f2973a5d919f7893d296c9.bin
+
+Hash: 953EF4D7CEED62D8C04B30088E6FAA6F5E9E177EBF43762E794951A7B2684E6F (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_3aeaf834fc4effcc319b927dbbb8a83a8868c83b.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_3aeaf834fc4effcc319b927dbbb8a83a8868c83b.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_3aeaf834fc4effcc319b927dbbb8a83a8868c83b.bin
+
+Hash: D8416AE14CA09FF795914BBFFCA2CFE4A52A67E654ADC2F8D15C231A9E56EDEA (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\vite.config.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\vite.config.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\vite.config.ts
+
+Hash: D250EB20E788BE4522E0039C879D4A035948673DB08C266DDAB7CE053154D2E7 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_16245d81d3b30e5c335fa52a6f4d40696d6733c7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_16245d81d3b30e5c335fa52a6f4d40696d6733c7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_16245d81d3b30e5c335fa52a6f4d40696d6733c7.bin
+
+Hash: F471B7927EFED0B1151C2630366B71AC04221F9973FB540C62D31F4951CB9AE6 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\logo-trey.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\icons\logo-full.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Images\TreysStudySystemIMAGE.jpg
+
+Hash: 848DF2DEE77D4DE28FBCDE057FD5C24E69D3BE430D2B784D06558558D90FC434 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_d21ab9170dd9be57aa1601f3283eb0917fffaffc.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_d21ab9170dd9be57aa1601f3283eb0917fffaffc.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_d21ab9170dd9be57aa1601f3283eb0917fffaffc.bin
+
+Hash: 29946F51942FBA11605C7595FD82B50B0D7E50148E0194FD356DACBC958F18EC (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\main.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\main.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\main.tsx
+
+Hash: E5B8F5F446E9C6043739425FC0D4D363D087AAAB3C7FC8F3E66E4617D7B59AD5 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\index.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\index.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\index.css
+
+Hash: B9FB89C8EC93D26A54D3988D0995401F6000E77BEA9888C153250AEF02DAE798 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_ed90043841197b4b85fe49dac7a6e49af9b842b7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_ed90043841197b4b85fe49dac7a6e49af9b842b7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_ed90043841197b4b85fe49dac7a6e49af9b842b7.bin
+
+Hash: AD0936F84F1DF79D3697BFBFF9C18F8AD58431C1CBAF2359C6A853B0FCC9F28B (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\use-mobile.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\hooks\use-mobile.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\use-mobile.tsx
+
+Hash: 4E32B4E5CF93A98C307883ED253A7EDC4B309E2A299472C1B121626C1594B726 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\queryClient.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\lib\queryClient.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\queryClient.ts
+
+Hash: 5A57EBC119F2357B097098D22865D45DE8FDA623EE88FE98B99999838C13633B (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\ui\command.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\components\ui\command.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\ui\command.tsx
+
+Hash: FFDE1611A1C8F612D8569F573E26FB72D444A004CB4AD6B54D66A95CEF4C01DC (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.latest.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.latest.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.latest.json
+
+Hash: 8BF2726FFF6D01422B392D1DE4DB87E201057A7C736DB7453BFD02AB60FAE1B4 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_e3612d1fbd2878b0cef18c4d2967f45bf3869107.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_e3612d1fbd2878b0cef18c4d2967f45bf3869107.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_e3612d1fbd2878b0cef18c4d2967f45bf3869107.bin
+
+Hash: 9D23DCB28A8E945F4F84AFF70C8838946D501775D7431E44189C559AFD5C3DF2 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\App.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\App.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\App.tsx
+
+Hash: 003158D5F636FF847F798231B695F59550611EB0BBB1AF0671FD7D6E5216D9E4 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\index.html
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\index.html
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\index.html
+
+Hash: F15204ED31AD4C7ECB1720E5D55773AA7F7FB397C2A187A69E7FE69492C2FA8A (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_d294d4b5cfba9f03a268ee67c143962603ad55ad.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_d294d4b5cfba9f03a268ee67c143962603ad55ad.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_d294d4b5cfba9f03a268ee67c143962603ad55ad.bin
+
+Hash: 5AAB0623EE24BDDF9420C259A23A06996292E38EA70ECCBAC2715516F6D01A0B (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\use-toast.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\hooks\use-toast.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\use-toast.ts
+
+Hash: 16007D7D2ADCC3BD7E4016E59FA5274409FACFBB315F7E53CA830926F07EF166 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_bbf37e0f8deb6afe16685a4c7808c556764484dc.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_bbf37e0f8deb6afe16685a4c7808c556764484dc.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_bbf37e0f8deb6afe16685a4c7808c556764484dc.bin
+
+Hash: 7C8C3DFC0CDD370D44932828EB067EF771C8FE7996693221D5D4B90AF6D54F2D (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\utils.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\lib\utils.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\utils.ts
+
+Hash: 249DBF4F12A6E9146763031A1ABAE06D807194825AD55B10F9E50BB433AC321D (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_daa5d31e58d54c6eba05471ccbfc31b6cd3c4962.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_daa5d31e58d54c6eba05471ccbfc31b6cd3c4962.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_daa5d31e58d54c6eba05471ccbfc31b6cd3c4962.bin
+
+Hash: 92279B673984CD1AB3727DF3E11C6CE9D665CEC0DBEB022B2C98FA67597F6523 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\_preserved_questions_2026-01-10_165423.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\_preserved_questions_2026-01-10_181915.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\_preserved_questions_2026-01-10_190700.txt
+
+Hash: AEC391386A25253144F1F8178074721B81967A206C498F7B02C0F579492BF921 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_caa4eb146e7d04969a5fb2b60a5c823ed453f0e0.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_caa4eb146e7d04969a5fb2b60a5c823ed453f0e0.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_caa4eb146e7d04969a5fb2b60a5c823ed453f0e0.bin
+
+Hash: 8811AAB1FE4A0F422F129A09FD55C147EC1A4402E17ECA3FD716B5584A848DE3 (Count: 3)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_cb56d275a177a764a5280581d59d78a8d5413542.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\.local\state\replit\agent\.agent_state_cb56d275a177a764a5280581d59d78a8d5413542.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_cb56d275a177a764a5280581d59d78a8d5413542.bin
+
+Hash: D0A176BC30348FB86AA581029FE6091DB105ACA2E372FD12A5FB98B3606A073B (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\button.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\button.tsx
+
+Hash: 95DFF8F7A917B42DE3F413DF3C5F7615CF158AE4ED9129642EFF59BA9D352D0C (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\menubar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\menubar.tsx
+
+Hash: 76807D2C1BE3D1E5E0E055FFBECD8451ACFC71DB6A7AA3C8660631D7603D517F (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\breadcrumb.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\breadcrumb.tsx
+
+Hash: F8BA72AC1EDF867F20E940B5B99212D98EBD7D5A2132EAF6A98130209080BB2E (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\navigation-menu.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\navigation-menu.tsx
+
+Hash: F42AB464F85E682BE5DD43E069543DDFBC0938D856665304092A5EBA3D4CD0C9 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\button-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\button-group.tsx
+
+Hash: 4EE6FBFF6D693BF5B76F1B30E4CD55DE6C6343C46A51E636C3E3B8A911FA7EC0 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\avatar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\avatar.tsx
+
+Hash: 62F29CD87C19F52D403DC2D17823849DB2C8CBD541C9F96DE20EF13E58D379DB (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\aspect-ratio.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\aspect-ratio.tsx
+
+Hash: DFAC5998C66E5651323D913A1A3D4548E9A3CAD94819950E0F6AB36C6EA92C15 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\alert.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\alert.tsx
+
+Hash: 8E1871D6160D067A687BEB25F850FA12DFC30D19356FDAA27AE6F7FD17E1FE02 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\badge.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\badge.tsx
+
+Hash: C95BD7C60CD25365707126852C718EA6EBDD1BE2C487CB7C5D88E4BE14AD4634 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\calendar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\calendar.tsx
+
+Hash: CACC180F0367350B3FE134949E04A562E027878131FAADABEB300148C6CD84FB (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\input.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\input.tsx
+
+Hash: 8D02514FBFDE8ABDDD519887FA2332FE151428F54C0F46D07466E77A49B2B70F (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\dropdown-menu.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\dropdown-menu.tsx
+
+Hash: 9710F71DCF19D52D2E757EA2F364A03B4BD4546161F4BBEBFDD8A829A382748A (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\drawer.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\drawer.tsx
+
+Hash: 8A4215777AB3E381C840C0708818DBF4799D6FE3BA44F39CBAE0DA0B3E0BCAB1 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\dialog.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\dialog.tsx
+
+Hash: F93D19A3E63B621B16D8FFAABB531C10B3B5611153E14079A187A9D76A78FAB8 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\item.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\item.tsx
+
+Hash: 6D7A49ACB2CBB08A0ABB911F41DEB0D097D2B1A1A8647959C5EBBD4FE37AAA75 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\input-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\input-group.tsx
+
+Hash: 377975A4E6A9DA67A52D097D59A03A398E9023A45CD5A5CC79DE25B6BB6A4A92 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\form.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\form.tsx
+
+Hash: A4808670F918794E5402BF9753E9009A75A29868A1F9FF4F399260A0A3513381 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\field.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\field.tsx
+
+Hash: D7699CF34D1A4CFD88C3DA711CF6A193CD72E1F5B0FFC6B392FE9F35D0125F29 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\input-otp.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\input-otp.tsx
+
+Hash: 954873C4438F866BC417E36F7745000C16A8851B59609BDC310BB027C2918953 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\empty.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\empty.tsx
+
+Hash: DD4B76A2C84F23BB410A1361C8355332AD8D0E99BC348CEC8FD626C26C50540C (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\kbd.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\kbd.tsx
+
+Hash: D48A52F0BC5161C47EE818C88BEBEDEA98C14742A1E4D3C76639A612DDBB376A (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\carousel.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\carousel.tsx
+
+Hash: 7BEF587E8C6FF88FAAE02C1DC58572A794F88950459EDB4A409070F5EF7BC290 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\hover-card.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\hover-card.tsx
+
+Hash: C58A39198AAB485B7BEC9DDE033DCA0B25BE3FCE06C00A101C2561DCEFF775A1 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\card.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\card.tsx
+
+Hash: 8253EE4179284DE5D037EEE03B55F4499B04FF41DDFA60B3176EA28D4BDC301C (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\label.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\label.tsx
+
+Hash: 65332AC050FABEF0C860273D8D97BE14A6A33B8D3B7CFB1599ADED26622F0246 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\command.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\command.tsx
+
+Hash: F875C1DC21224F223D27962338E983589C014A6980BD03C5F1B651EBB7471345 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\context-menu.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\context-menu.tsx
+
+Hash: BC854800960EF4129D4679A7C4A6B5091E7038ADC03698E4529D0C9B5AF0D831 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\collapsible.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\collapsible.tsx
+
+Hash: E38A709F24713B27F4FC90DDB140B90F784BB5DBFC81AE4C89F8B34B20BDFCC6 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\chart.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\chart.tsx
+
+Hash: A90725BCC6583CBCED083484E8051582284F5374ACC1585E0A742F1C21925CAD (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\checkbox.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\checkbox.tsx
+
+Hash: E3CC6DFB9D84CF94A00B1C61E188FF19AB9CC5558EF046944D90BD6E2DE55D31 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\pagination.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\pagination.tsx
+
+Hash: 6A9AAD40C5E9E6089A58E5D00A45CFD42819398343C81B4207F1CFFBCCA88914 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Custom_GPT_Instructions.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Custom_GPT_Instructions.md
+
+Hash: 9023858F49DDA9B5093F7E6C2FFF2D2E0812ECD8F004F251435BBC1710BB12A2 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Master_Index.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Master_Index.md
+
+Hash: 5CCDC93049B06F4D16C3D87E0FAFDD36E0BEB6798932039C400A624F715A8F3D (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\changelog.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\versions\changelog_legacy.md
+
+Hash: F38D298783E005BDD89FFA06AA58570434A201EB0770F26F1D9B254995233D5E (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.1\Master_Index.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.1.1\Master_Index.md
+
+Hash: 0AB5179149DD57620EE4BDD76C8642182080CA8DB2628E94C4F8B50807DAAAC5 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_3_Framework_Selector.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_3_Framework_Selector.md
+
+Hash: EB8698F87E7F94EFA16FEA688868153A9C352DF7A5D32B4FF11AE3ADB4E33088 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_6_Framework_Library.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_6_Framework_Library.md
+
+Hash: AF89BE9E66BD1C1C5116C5F322348D6691A5748A67EE55EBD15D4ABE2CB026B5 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_1_Core_Protocol.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_1_Core_Protocol.md
+
+Hash: 1426935263D41C83176817151E81AACC8A40160E0701502A634A5672C1F12C17 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Module_2_Triage_Rules.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Module_2_Triage_Rules.md
+
+Hash: 10C13AE325008A884A59324E8C91BECCF5B7A5E833166FFA9CFCB383D69CF067 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\projects\treys-agent\context\architecture\elaborative-interrogation.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\methods\elaborative-interrogation.md
+
+Hash: 2E76A830C7100E8E2E5373070C238D1348DD9A0CACE3B9E664C93884D002F0D5 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\projects\treys-agent\context\architecture\metacognition.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\methods\metacognition.md
+
+Hash: 84EAC367983F646DD857944A410F4A3F4DC0DECEE922808BF4BF2509A8C83F32 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\projects\treys-agent\context\architecture\desirable-difficulties.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\methods\desirable-difficulties.md
+
+Hash: E5C236D39FCC7CF4026DDEB18C5DF35BBBCDFB7631905BCC3B654B328CB4B5A8 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\projects\treys-agent\context\architecture\drawing-for-anatomy.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\methods\drawing-for-anatomy.md
+
+Hash: 42F5198E0DB08A68BDA7F239CB6A250D1C71C79FC46CF9B86D1CF560C5D04B07 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\digests\strategic_digest_2026-01-10_185544.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\digests\strategic_digest_2026-01-10_190644.md
+
+Hash: EB62DE29C71E9567ABA673AB1BFF1975A3931C4418E1712805C61D4A3A50B7AE (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\questions_needed_2026-01-10_231606.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\scholar\outputs\orchestrator_runs\_preserved_questions_2026-01-11_155933.txt
+
+Hash: A81117609019C19950777FE567BF62973E18255A061CA16813E354879D82DEC1 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\projects\treys-agent\context\architecture\retrieval-practice.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\methods\retrieval-practice.md
+
+Hash: 44136FA355B3678A1146AD16F7E8649E94FB4FC21FE77E8310C060F61CAAFF8A (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\.obsidian\app.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2\.obsidian\appearance.json
+
+Hash: B9582D157186BFA69D08F6B961D4476BC6819511A7DA678673DC9C3F2566CAB1 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\M0-planning.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v9.1\M0-planning.md
+
+Hash: 508CAB79D8D5F6CF4BEA9EB3E25E37876DB9D344108CFB8A7C5AEC8AD28A5506 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\M1-entry.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v9.1\M1-entry.md
+
+Hash: 2557E4A7650EA177B153100F522597D93EF4A833D12A919F7870535CE9783356 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\RESEARCH_TOPICS.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\v9.2\RESEARCH_TOPICS.md
+
+Hash: DD0AF8ED3C5AC55E8332DB4936D72E0B6808C19D812BEA894348167E0EFF9DC4 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\engines\templates\engine_template.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\src\engines\templates\engine_template.md
+
+Hash: F3039CCB011CE0B990F2018686E2F0F99A2E4C09F4E438F3C65E5AD7DFCAC5CA (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\M4-build.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v9.1\M4-build.md
+
+Hash: 7ED95F54BF194AFC5883CFE8D8137439CFC953CAC87CE92140C25BF931281DA2 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\M5-modes.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v9.1\M5-modes.md
+
+Hash: EC243073CFFE3EDBAA20C2A02D15D7EBC3430F6B3ACD603FF4A5554F5E2978E9 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\M2-prime.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v9.1\M2-prime.md
+
+Hash: CDF598D54A286E83D15577B5A00C72E8DA0C28F9C5F3F0489C189E6C472034E8 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\M3-encode.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v9.1\M3-encode.md
+
+Hash: 14808F059B284DA78362E7C8DE1D7AAF72DC2C6FD76554D9C7E85BEF48CABDB0 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\Module_1_Core_Protocol.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.5.1\Module_1_Core_Protocol.md
+
+Hash: 336B531D6D0BFCA61A52186EB9C7F793641067DFB9B2D35D86853D73DC3A9EC6 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\Module_6_Framework_Library.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.5.1\Module_6_Framework_Library.md
+
+Hash: 9F5879E39797C5EB8586A8C8AD4EACF6E4EAF083ABD8447AAF9BA8C9D221DA97 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.4_Tutor_Edition\Runtime_Prompt.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.4\Runtime_Prompt.md
+
+Hash: 37998D3BE4ABE5E60A6D7D39A122286B9B3010C796785330C255FD9020A044B5 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\Custom_GPT_Instructions.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.5.1\Custom_GPT_Instructions.md
+
+Hash: 25755073DFE6B451036F5FDB4F835258952EE1CF97AD933AF4C61B48668C6E53 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\MASTER.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\MASTER.md
+
+Hash: 3ABC0762BC4743DC2BA57CC19E863C3B13E169E0C3750BFDA908F5EF56C20D81 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\MASTER_PLAN_PT_STUDY.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\v9.2\MASTER_PLAN_PT_STUDY.md
+
+Hash: 486774864311097A230E0493C515C240C8CB51E3116876E704C79D8D970C76D7 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\Runtime_Prompt.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\LEGACY VERSIONS\v8.5.1_Spotter_Prime\releases\v8\PT_Study_SOP_v8.5.1\Runtime_Prompt.md
+
+Hash: 77FD16FCFE6A53FD0D752A0F41EC45B7B255CBE7006E9702AA8456B64FF204E9 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\GPT-INSTRUCTIONS.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\gpt-instructions.md
+
+Hash: 569E89689A026BEA88D880518F0D4A02F26F095FC097746C5F5A16902043CAC2 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\1_Project_Files\05_EXAMPLES_MINI.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\runtime\knowledge_upload\05_EXAMPLES_MINI.md
+
+Hash: F2C30F700B5A8DFD342413CA266F7618B39DAC0CA50E7101ADEFD0B68AFB3478 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\slider.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\slider.tsx
+
+Hash: 16AB4F1F4C538F3991751B31C64D930B44A4D20CAEF51629EE13C3517DB9A986 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\sonner.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\sonner.tsx
+
+Hash: 3A36BA9F139AF5708D6AA1F0FC620085E4B2E9FCC1E58E35EE1933A0C9AC07CE (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\sidebar.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\sidebar.tsx
+
+Hash: 91E3BB69A8B91319442AE4AA4203407044B90BD43703C3AA8F011D43F844FE43 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\skeleton.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\skeleton.tsx
+
+Hash: 08711F3D92DA7C10C8F84D30984870628331E66212FB9F618DA24D1A803A4DEE (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\switch.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\switch.tsx
+
+Hash: 865E3FCA4936C02B58BEAB4509ABCB468449FD2EE2EBDC3AEBDD23EE3BFD982B (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\table.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\table.tsx
+
+Hash: CBF9073613AED22FFD4BA21219ADC1D1B8DCE311D4280800F772B5EAE587EEFF (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\spinner.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\spinner.tsx
+
+Hash: EC0E83AB6FBC98944C8CC1C090AD21BA53FE07DB8009CD690F9045E1198791F5 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\legacy\v9.1\gpt-knowledge\M6-wrap.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\library\versions\v9.1\M6-wrap.md
+
+Hash: 7FE8FFEDBABAC6B82D277B086B774F9EE57D9184D1AB13452D77CEDA489C5C99 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\radio-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\radio-group.tsx
+
+Hash: BBB236CF580525F2F1F7E40404D34C03CF806C02EEE8404891F72FCF5034EC31 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\resizable.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\resizable.tsx
+
+Hash: C700D123E6729B734AC3B13A44947D2EF9180B56DC9A72E8A1768EA8B943BC93 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\popover.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\popover.tsx
+
+Hash: DAFBE0109C2D2F1D46BA1D11BD42EE5B7716ED9719280169CAABDDBD6E82B685 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\progress.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\progress.tsx
+
+Hash: 1E2F9C2EAB409BF25614F4E0B495B9A67646E92A0A7D1A033AFAADA64FDB1B78 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\separator.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\separator.tsx
+
+Hash: 72EDC44A754350BB77FCD9BFD621F3B8B98FBA5E85AA72D7555912B1E2EA6FAF (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\sheet.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\sheet.tsx
+
+Hash: 5BBF2EFC963F2A62D9F9D41FDF2A96F798AD409EE2A1FDB1FE51DA947D882DC7 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\scroll-area.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\scroll-area.tsx
+
+Hash: 41C332DA1A05575EE9F45650301EFCDAA62B01B237C831D779AB23F034F535C7 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\select.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\select.tsx
+
+Hash: C022AA723D71712A2B0B60B727F1247357CFB553E70D2ADD3CEF90423190D677 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\manifest.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\runtime\manifest.md
+
+Hash: 09AE8677AF5CA408DC882C10421326525CEDA6B17F1538396FBB07982329DBB1 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\1_Project_Files\00_INDEX_AND_RULES.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\runtime\knowledge_upload\00_INDEX_AND_RULES.md
+
+Hash: 1C4FEA91BC361C45F705AD586BEC70B80380CFD7523E8FC3E416B8A59D9F1CF5 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\deployment_checklist.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\runtime\deployment_checklist.md
+
+Hash: A54974C14D6F3B4A42CB1DC1B623328A636359321E045BBCBDCEA12CD9885A39 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\logging_schema_v9.3.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\logging_schema_v9.3.md
+
+Hash: E0C7F3303259D9645F06BDE1592E2AD1CD49473A232167A2DD73D7077D013EF4 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\1_Project_Files\03_ENGINES.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\runtime\knowledge_upload\03_ENGINES.md
+
+Hash: 1E67B5D8A2F5DABE0314FE4108375DD9C65F0061B6136F4B16C313036C173C83 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\1_Project_Files\04_LOGGING_AND_TEMPLATES.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\runtime\knowledge_upload\04_LOGGING_AND_TEMPLATES.md
+
+Hash: 39CF34DD143F5BF009C94FA07FDF227DF6BAD4E69B9F1AFBDA60B4A9D07CFC06 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\1_Project_Files\01_MODULES_M0-M6.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\runtime\knowledge_upload\01_MODULES_M0-M6.md
+
+Hash: A119905EED93A32953FEAA0F6591D56DA6144DD99B343FA54065BECEDD360AE0 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\gpt_bundle_v9.3\1_Project_Files\02_FRAMEWORKS.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\runtime\knowledge_upload\02_FRAMEWORKS.md
+
+Hash: 2DA684420D53B7826485853A5F433BC794EB8A3FA3CA99DB7CABB59974DFFF38 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\toast.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\toast.tsx
+
+Hash: D336E69DC56F72DF1DA448F1F39EEDDDB3B7E0DD0E5A69CA5BE8DB7ACB32B7E4 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\toaster.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\toaster.tsx
+
+Hash: 8134E14B016E1F3846640C2BC8A2C6438C289DA6B8CE1D04362A101EF62D45A7 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\tabs.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\tabs.tsx
+
+Hash: C3B95CAA4B59E88F09752932DC93D289F9E3758FD0EFF9B029F8E6D453DCEA03 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\textarea.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\textarea.tsx
+
+Hash: F3B91D8E764AE4BF78E0BF44A62CD8EF2503A251A7824EE062F0CD864CAFFDF6 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\tooltip.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\tooltip.tsx
+
+Hash: DCE9E4CF14D88BD9284DEA62570B111216526E97E3D473101EAE04AFDC487945 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dist\PT_STUDY_SOP_RUNTIME_PROMPT_v9.2.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\sop\archive\old_runtime\gpt-knowledge\runtime-prompt.md
+
+Hash: 04C1AC2983A3B790295FAE9A0C475B32C61D6C49954E65EB38B54FA9AF09F9DC (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\toggle-group.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\toggle-group.tsx
+
+Hash: 950F6552560C82C4F7C8AD15568ACB0CE59EE6305AFE8B2DF92A0B4C60A1D478 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\toggle.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\toggle.tsx
+
+Hash: 954AA5D2030EAC91726054666E81113F22A709FC3D2786E5E6907384EDE58DC3 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\alert-dialog.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\alert-dialog.tsx
+
+Hash: 6A72B51114DA63C57DE1548CA30522708A4A0F06B634A86A8B186010C4EB8B2A (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_de3c07412ce4866b2b9725552ff72c10ea1020f5.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_de3c07412ce4866b2b9725552ff72c10ea1020f5.bin
+
+Hash: 53D26EAF9B58FDD04122CED877D70DAFEECE222B291BDAADFD29BCDD31DFCAB4 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_d308a547229822c1c877af3b3fca9685164844f2.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_d308a547229822c1c877af3b3fca9685164844f2.bin
+
+Hash: 06FE467E8CE285D65306F75BCFD871C9B210DA428255C74F9898C3BB59048360 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_d19eb08c0b0c038f4b789a1285d589bceb02af02.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_d19eb08c0b0c038f4b789a1285d589bceb02af02.bin
+
+Hash: 35BE9689249F5E19A62467A689F2DE9A1571660F8FFCA5CC9833199CEB2A2098 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_e3e783a134cabfc15635e1d1d6cf01699daf0a78.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_e3e783a134cabfc15635e1d1d6cf01699daf0a78.bin
+
+Hash: 1793B0D67C205BFDEAB853F6851271EC675A96E53FC2FDC91102EF36226DC11D (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_e399b3493cc2f514204c48e4c2746e2a2a33c756.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_e399b3493cc2f514204c48e4c2746e2a2a33c756.bin
+
+Hash: 5E5A2D8F4353EB49779550D17BC7A051BC056DDD62AC48090D90ED4108CF9325 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_e07b7932efab7281c151e1c6b92e6d4f456f0df3.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_e07b7932efab7281c151e1c6b92e6d4f456f0df3.bin
+
+Hash: 29F055829229B6744B7B9619FF111DB8C6998F8B032984E2007E7CD6B79EED2D (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_bbb2db8fcb43a2bcdb4bc5f34e65e53367026253.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_bbb2db8fcb43a2bcdb4bc5f34e65e53367026253.bin
+
+Hash: F62F8A0CE5989A2371C2D183BC743875934EA464E367487099F09117FBAB37DB (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_b58daeadc57668367919f93d54809b0bf2368a6e.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_b58daeadc57668367919f93d54809b0bf2368a6e.bin
+
+Hash: 315E598F71B8A17E1AD5A1600C843245B0E44584FE9D7296D7FB50A654830B01 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_b552ea70ead64a043f5e929d6fcfcbbb7fa1953e.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_b552ea70ead64a043f5e929d6fcfcbbb7fa1953e.bin
+
+Hash: CBA4643D5410A01274578947E82CBE611FEFE150691180D6B0D22669D0B1143B (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_c82f2bcb0df65239107ca594b2f4f407c9cbe398.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_c82f2bcb0df65239107ca594b2f4f407c9cbe398.bin
+
+Hash: BB0AF602DA6D43F1CFD8EEBBAD9DE727FC4611BD0F7F9409CD2B03B338819BD3 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_c51de04a039a9f57186b1fd1bd6167a8aff0fdd8.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_c51de04a039a9f57186b1fd1bd6167a8aff0fdd8.bin
+
+Hash: 2F2C41E2F4E030D3585622D3EB41814567F56C5658F89EB0AC020DB276F5CCD0 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_bdb19878f1020a1fe943b4ff4d46c26463fe162f.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_bdb19878f1020a1fe943b4ff4d46c26463fe162f.bin
+
+Hash: 67AF4A707CA89D7561AB683C20F3552FBA9B8FCDF60E11F2BE83C386EF557E4B (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_ebf32ab9848236d15612a2d5eb279b3a1be53087.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_ebf32ab9848236d15612a2d5eb279b3a1be53087.bin
+
+Hash: 5656051F622088BB314D48F28170863FBCBB27037FFD7E96EFE85E0420D12607 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\Pasted-Refactor-the-existing-Brain-page-This-page-is-the-centr_1768645264992.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\Pasted-Refactor-the-existing-Brain-page-This-page-is-the-centr_1768645264992.txt
+
+Hash: 31F46918B1EDDD080B8C2A7D9B45B2A7395C69C60178F1CCAC0CD193AC6BF4EE (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\Pasted-1-Typography-Readability-The-High-Impact-Fix-The-bigges_1768648986778.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\Pasted-1-Typography-Readability-The-High-Impact-Fix-The-bigges_1768648986778.txt
+
+Hash: FA16AF2B0A313DC76B96864C0AC9FF697D325D00D7C3DABB8C332D4E84897817 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\image_1768648626307.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\image_1768648626307.png
+
+Hash: E6847BFDFBCB6E957D001CA494AF1B4B0F8EEAB4AE4B2960EBC4C523DB5A59B6 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\audio\audio-playback-worklet.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\audio\audio-playback-worklet.js
+
+Hash: AF8DC56652135193A6D26F496713352808A5CA564E08729A9E712842CBDC30EE (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\Pasted-You-are-modifying-an-existing-Brain-page-This-page-is-t_1768644637562.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\Pasted-You-are-modifying-an-existing-Brain-page-This-page-is-t_1768644637562.txt
+
+Hash: 677FD191867FE50403A7FF46F3182255026A51D11C819C46EAAF8023BB82EEA2 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\Pasted-Refactor-the-existing-Scholar-page-This-page-is-advisor_1768646275223.txt
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\Pasted-Refactor-the-existing-Scholar-page-This-page-is-advisor_1768646275223.txt
+
+Hash: 119767C8DD194F5EFF2E2199CB62B2C62B52053C80E88B8C102CDD8B6C505D30 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_main.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_main.bin
+
+Hash: E4F765339719E47794CE751890CF82E9B52E503704CC4925679D8E6A86E433D7 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_fbab4e064b94ce75b4ad0b5d4dc8087de3965d04.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_fbab4e064b94ce75b4ad0b5d4dc8087de3965d04.bin
+
+Hash: 17D645ABF85297E308BFD50E5B7A2BB7CA9EFB5831D3552FCCD8D7492F291672 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_fa3abc372fdc0d5283103dd8fe819793e12b952a.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_fa3abc372fdc0d5283103dd8fe819793e12b952a.bin
+
+Hash: 0425852D2EEFD5778440AAD7A482A9667ADAEED083F5AF42FB3ED9619AD986B5 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\image_1768648221992.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\image_1768648221992.png
+
+Hash: 0C681C26DC071D51EBBD255F26FC88D32AE5503B701CB75DC0A04907B54D25DA (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\attached_assets\image_1768643232800.png
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\attached_assets\image_1768643232800.png
+
+Hash: E9279290486CAC09FB3A1DC539C9887437A29422F3ED5A3503CE40DF10FA0D4E (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\repl_state.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\repl_state.bin
+
+Hash: 5123A0A10369B7213757388D3479CBEE41F506DA21FC500C12BE8424AD120FAE (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_15db4520a79ea5132cded07300c18c05359e6306.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_15db4520a79ea5132cded07300c18c05359e6306.bin
+
+Hash: 648C390EC45126EB40EB1DF65331411C32DE0C505C5C3F4838608548D8793D3E (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_038186d7f4102f820418dc93a8d1454222f764d7.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_038186d7f4102f820418dc93a8d1454222f764d7.bin
+
+Hash: 98E129532143FB98AD8C7A1BFAB8B2E2241A6D11DB9441E1CCACB234B9B36493 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\replit.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\replit.md
+
+Hash: F73511685A9196F891FFA6CE513DF826FB935B0DD860367CF8E9DB6B1853BFD7 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_31ebcf2d617689c18fccfb9facbf1f34979ad18f.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_31ebcf2d617689c18fccfb9facbf1f34979ad18f.bin
+
+Hash: 619A1B997C58607E199A705DBE48D186C6462451516C3ECAAFCAC099CBA48FB0 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_2f43a980e459d0382701561b4acc0ae1f34f97bd.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_2f43a980e459d0382701561b4acc0ae1f34f97bd.bin
+
+Hash: F1414377614680E5C03CD080845A0ECD2C1572A204207076710BA61DBD76A03D (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_2185fbc97c70b7d4ae4b8789193c71ef83984e17.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_2185fbc97c70b7d4ae4b8789193c71ef83984e17.bin
+
+Hash: AC45CD86DAD9B6BB29CD75672EAC39E8C7A0943BAE86C331415D7071CB849980 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\CLAUDE.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ai-config\CLAUDE.md
+
+Hash: 08E119B43124CFC7AC97622CE015CFF1FF12ECA0369C593AEAFD71EED6039171 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\AGENTS.md
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ai-config\AGENTS.md
+
+Hash: 1394350C95FEBAEC999BECE4E334F6C6CBFB3A2AA375C09E33C84D017AA713EB (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\.mcp.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\ai-config\mcp.json
+
+Hash: 2065341C5ABBDE97AD6BBCFF0BCB998399474884A91D6C3E1B1D931A9B625368 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\chat.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\chat.ts
+
+Hash: AB6411D8F808488FA868B0E4ED8E282569D8B27984CD682FCA2EEBF4F8BFF489 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\.replit
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\.replit
+
+Hash: 3D760CEBC026747483D5C8FAF602DC553A02B94678477F552C43547AAB2680C2 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\.google-tokens.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\.google-tokens.json
+
+Hash: AB33C4BAAF6A36CBFD13A78676A369E2AAC038251C5BA34ED563CCC3514CF740 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_4e103b1a91fbd75fc53d1c8c3f924491f17ff509.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_4e103b1a91fbd75fc53d1c8c3f924491f17ff509.bin
+
+Hash: FC794CC598373BE5D686CC44DC6197D59C2CB6F445AEDEA30D776687299F4F28 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_853490ef7f475e52acc48da03f65226d1add16d4.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_853490ef7f475e52acc48da03f65226d1add16d4.bin
+
+Hash: 00C8E9F845CC0FD45A8077ED328308AC5AB6040DD581D9B459C90F5495DC5513 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_7d88decb1c35e97176d21900fc196a6d8fff5299.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_7d88decb1c35e97176d21900fc196a6d8fff5299.bin
+
+Hash: D4E71B7B4872965A8286327EEA19328471158F3D2CA344D9878D51C58B298A90 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_7c5926fadd0f84f335ef0974915953172ef05905.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_7c5926fadd0f84f335ef0974915953172ef05905.bin
+
+Hash: B5D58CEC7D38E0AA0BBA3D88CD03B5D0F6A35CFEB848113D8E99BED2401F09AB (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_9cf8e64cca9bdd86161242a78007ee88edf24f72.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_9cf8e64cca9bdd86161242a78007ee88edf24f72.bin
+
+Hash: C513E4B49A4DC1FB04A50D2A59D332BA9987E6DD9EFC1C76BCB89578E21F74CA (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_97ba65b96f85d54e3c255589409f92a49037bb71.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_97ba65b96f85d54e3c255589409f92a49037bb71.bin
+
+Hash: C7BBD59ABA113C40A6F5764D03ABAF1158BD00FA931595D17DC2712F024BE124 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_8da76761589e41e1698337f33aabdc0e78882f42.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_8da76761589e41e1698337f33aabdc0e78882f42.bin
+
+Hash: F84B1329760B14362E75F2589066BEBE8A496C67B201B18A077E89D19A4D3267 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_5a6be07974755ee95b2cab0d3f4167ccc64dafa5.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_5a6be07974755ee95b2cab0d3f4167ccc64dafa5.bin
+
+Hash: DC02304AEBFB6762F7B70830397171903C7EE634A417B6B4206CB7E0F8C61107 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_5a2456f4b1ecdb0bb9259acaa41b6c2de4c01f38.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_5a2456f4b1ecdb0bb9259acaa41b6c2de4c01f38.bin
+
+Hash: 07B475921C4C2984771FAED43AE2107EF05F5E6B745FCEBC3AB58D2CC831B420 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_5832ad834bbc09880ebc26a87c41fafa5cfb9cdb.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_5832ad834bbc09880ebc26a87c41fafa5cfb9cdb.bin
+
+Hash: 2A5ACC5B20449A7EAF05D99855C7E1538E0C66FD8F3B825CFBBB080D2286D6A9 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_75cb2b51d41bb9ccbf3c0a7f414dae01cf8e7c14.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_75cb2b51d41bb9ccbf3c0a7f414dae01cf8e7c14.bin
+
+Hash: C8988D9AF2048AAD93B93DCF0B9FA94C60842240CAB63D940BE995AEDF2CF88F (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_69dcc68434abb29a91f3854abb270d970332d1af.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_69dcc68434abb29a91f3854abb270d970332d1af.bin
+
+Hash: BA62D9C707928EF76DC69BBFC273DBA8818421751AB2BE910D285F9BF83DED85 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\agent\.agent_state_631305cb2b5eb9c9762c8c1155a566cc4586a7ad.bin
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\agent\.agent_state_631305cb2b5eb9c9762c8c1155a566cc4586a7ad.bin
+
+Hash: 5ED61B029817B687A7DD7980599AC9021EDEBE2E83C9FD95CFFD2CAFB7E71AEF (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\shared\schema.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\shared\schema.ts
+
+Hash: 1D0B0C681407BCA004AC10D2E3EA3F60DA8640C240AA9096A1C68005EE4B20FF (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\vite-plugin-meta-images.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\vite-plugin-meta-images.ts
+
+Hash: 68F6035534C93245D035B2A0A3A0EA210EA5C8371DA4FD68FA6ADA652849571B (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\tsconfig.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\tsconfig.json
+
+Hash: D2377FBAD5AD2BDF7FA896A68C36AC8BF4AA74A974B2061F77B41AE58D623001 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\hooks\use-mobile.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\hooks\use-mobile.tsx
+
+Hash: 5DF52F8FA0B617B6FF92334ADC5551E01C4BF771C5A27C6ABE58AD162C347B80 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\main.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\main.tsx
+
+Hash: C3825007A49B54B32C9CC7CC78CE6830F6E879AE09F61394B502E41D3DFFE8C8 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\App.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\App.tsx
+
+Hash: EE4B295AFC88A82A69E15983BCDB16C0692123C97717643ED6404194773E638B (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\server\db.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\db.ts
+
+Hash: 832A1398BDFDEA9AAB7FD4E449B13B9DF20ED8ADD1CBF88BC5E8887E43D09318 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\dist\public\assets\index-Dpt3CMna.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_192539\assets\index-Dpt3CMna.js
+
+Hash: EB72418FC7C39AD33BA80CC6A694095C48AFA30C764DC652F0C5E3E1EA1EABDE (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\dist\public\assets\index-B2Uz43HD.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_192539\assets\index-B2Uz43HD.css
+
+Hash: C85E33BCBE5E41C3601CC808346720EC08AFF54196A53F50CCED6FFB8670BB3A (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\package.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\package.json
+
+Hash: 4CA70D3C7F445464775144467ABCB66D3C704E9ECE80EC0F5FBBD714E080CEBF (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\package-lock.json
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\package-lock.json
+
+Hash: ACB694B2125FF4A787355BF0AEFC65175E28F8323E5CCF32797501F580485C3B (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\server\index.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\index.ts
+
+Hash: 52580E80B7D8E7DFC0EEE27F3BC8DFA209E32FE8DC96B8E3E79ED61666348DD7 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\hooks\use-toast.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\hooks\use-toast.ts
+
+Hash: F419773E0BFD7C92EC3DAAA46A0E34D5FDC84275109FAF4F176E3EBDBACEDD7C (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\icons\icon-scholar.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Images\ScholarIMG.jpg
+
+Hash: 7844AD57AB3866024F24416681A546DAE44507ADDD46F0E59355E732199AA57B (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\icons\icon-overview.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Images\OverviewIMG.jpg
+
+Hash: E51EF2557A69DDAE64C03D94BBD3DC18A049136702C9BAFD090BEFA06A2C7A6F (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\icons\icon-database.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Images\DatabaseIMG.jpg
+
+Hash: FFF47C151B7B1BEEDD3CDD38F1BB80B28B0152A7D4E323A50B519471DBA5206C (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain_static_react\src\components\ui\accordion.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\dashboard_rebuild\client\src\components\ui\accordion.tsx
+
+Hash: 0406984FA0D2DD8D17AF09F4A49B067427F16FD298750B018E7B3A948B976CF6 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\icons\icon-tutor.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Images\TutorIMG.jpg
+
+Hash: DB9C879A3A6B85F7A3EA79142549F40197F349F853D8FBCB4CEEB8589CFF7057 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\icons\icon-syllabus.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Images\SyllabusIMG.jpg
+
+Hash: F35AC7D7F8300AEA8384700FD4F350064F95A2CCBDDC686E0CE340D8566C67EC (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\pages\home.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\pages\home.tsx
+
+Hash: 738FEAFFE63ABC19E8C3A6921F36335DD369F8006CD63076378FC94D54ACC3A0 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\pages\dashboard.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\pages\dashboard.tsx
+
+Hash: CEE726475B08F831A931BB1F28592677E00DA5F6BF498BCCE0518212C4EEB781 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\pages\brain.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\pages\brain.tsx
+
+Hash: F2FDB5148B88969D9F7870BDEDDCA1F54226A7DB4867B50D7606731414A0A6B1 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\images\icons\icon-brain.jpg
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\Images\BrainIMG.jpg
+
+Hash: 5E4AAD91C62E48D43E54CEFA1040EFF4AB30A6C76115830740F80150B80A1442 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\pages\tutor.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\pages\tutor.tsx
+
+Hash: D6CE1DABFF2CB0630606C8502200A8BB531B7AEBB7C864D8863EF896DF350DAC (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\brain_static_react\src\pages\not-found.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\archive_dashboards_20260119_193346\dashboard_rebuild\client\src\pages\not-found.tsx
+
+Hash: F7A6BEDA5087E2590786F5FD8EC999D2A6485151F3BC35D3F04BC0AAFDE76FC0 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\dist\public\assets\index-D5Qwz8fv.js
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\dist\assets\index-D5Qwz8fv.js
+
+Hash: A22A2237BA2633F424BCDCDCDBE763240001B52C3D89B774A1A586917F4F77B3 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\dist\public\assets\index-CoNxHzdJ.css
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\dist\assets\index-CoNxHzdJ.css
+
+Hash: 80A005B72AC0433F11D186D608D5A84B3E3001F29E135F317F3C8182C59C52DE (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\dist\public\index.html
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\brain\static\dist\index.html
+
+Hash: 46399401179BFD9D5E8CEF5E7BAD7042CA00438EE041C08D8943CA47DC9A6AA0 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\client.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\client__moved1.ts
+
+Hash: A5AA6941266FF3EE0985F4B22D997DF403730326838230CE7D8BDA7D33709523 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\google-oauth.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\google-oauth.ts
+
+Hash: EC15104946E238DBDDB636A111F3D9C4C557DE1C6955362347EB3C01FBD48574 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\google-calendar.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\google-calendar.ts
+
+Hash: C69D68B88611DFC7FAED4746B2A95BA7A4F9E31E2615103746BCF0E5E0024F58 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\audio\useAudioPlayback.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\audio\useAudioPlayback.ts
+
+Hash: 9CC921A866DE0F7538188643EDA3217447F6437161C9E2C74640C9485FB97741 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\audio\index.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\audio\index.ts
+
+Hash: B95288D082A8B4F5DF2E9BC8E02F3E3FCFD4DBBD9B7B7B1269B7F3B990E242FD (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\audio\audio-utils.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\audio\audio-utils.ts
+
+Hash: B145E8A960935C7159591B0AC748856953BFA3C99D6FED4B6A42C6F1FEED9CE4 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\src\components\layout.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\layout.tsx
+
+Hash: 03C6DE8C48C4338583E16B1E9D4439FD0F73F66DD36CC14DF3AFF7FEFEE7FEA0 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\audio\useVoiceStream.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\audio\useVoiceStream.ts
+
+Hash: CB1559DEA0C5C2A44EE08CF2D7E89ADA2E307352BEE8F045614DB5FC10BE4D87 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\client\audio\useVoiceRecorder.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\audio\useVoiceRecorder.ts
+
+Hash: FC14BD1F66C7D81B1C3FF6DFF7E4CEB4E92316BD1E09CDA06E7ADC88E84B2E29 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\client__moved1.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\client.ts
+
+Hash: 26EE86B103545A7D0A884EDB754918C68A3B961144F8DD62B77AED6A026D4456 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\dist_brain_react_attempt_20260120\index.html
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_191221\index.html
+
+Hash: 7DBD6EE31B61445EDF582F2A49594F63D25E44BD0FA427B87C0D389266453848 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\utils.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\utils.ts
+
+Hash: E535F9C0CE6CBF01D98D1476F4145D15726247CC15BFE1FB365AF85D5016CCD2 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\routes__moved2.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\routes__moved2.ts
+
+Hash: 330F5DA78B160EACAE458920FED03FCCCC5B40B6B90DC9AC03F5D8AE2EC61605 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\dist\public\index.html
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\dist_backups\dist_backup_20260119_192539\index.html
+
+Hash: 86E7C323C193F3422C17CB8DB1D837CE98A0BD3E11C3E714AD05A0A0B1BB5372 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\client\src\pages\tutor.tsx
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\client\src\pages\tutor.tsx
+
+Hash: DB80922910A890344195617C17ACD664CD9B922973F607A5C6FDC0C749B4476A (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign_desktop_20260119_193346\Arcade-RetroDesign\drizzle.config.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\drizzle.config.ts
+
+Hash: 29A7CE4AF1E3F0CC4C66EF7952535DDBED1BB8A1B45A157EBFAEA835C09B9DCB (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\index__moved2.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\index.ts
+
+Hash: 6E51D3303234F3EF9FFAA57E4562EBF08E29465FEAC7B62179A3434E561849E6 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\index__moved1.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\index__moved1.ts
+
+Hash: F2593C4E55334F004D25B68EC78EA08E3981585F0C436934D45371039BE9631F (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\index.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\index__moved2.ts
+
+Hash: D4CB2DCF5E69613F608CF553006CF585D2B3BF24DFA39BC3E2DA941DBA23BF8F (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\routes__moved1.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\routes.ts
+
+Hash: 1944327995E11383D8C3AFCCEECC78D7E2CBCB8073B2D64B4BDDE93EC4AFE952 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\routes.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\routes__moved1.ts
+
+Hash: 79240F004121EADAC4D982A4B88EFB2A8DBB8A80BC1D3CAFE9C624C9CA5759A8 (Count: 2)
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign\server\replit_integrations\index__moved3.ts
+  C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\_old\Arcade-RetroDesign__moved1_20260119_193346\server\replit_integrations\index__moved3.ts
+
