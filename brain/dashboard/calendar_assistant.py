@@ -10,7 +10,7 @@ This module provides a calendar assistant that can:
 
 import json
 from datetime import datetime, timedelta
-from typing import List, Optional, cast
+from typing import Dict, List, Optional, cast
 
 
 from pathlib import Path
@@ -148,7 +148,7 @@ def _format_gcal_error(error: str, prefix: str = "Error") -> str:
 
 
 # =============================================================================
-# TOOL IMPLEMENTATIONS
+# TOOL IMPLEMENTATIONS - CALENDAR
 # =============================================================================
 
 
@@ -539,6 +539,196 @@ def batch_delete_events(
 
 
 # =============================================================================
+# TOOL IMPLEMENTATIONS - GOOGLE TASKS
+# =============================================================================
+
+
+def _get_default_tasklist_id() -> str:
+    """Get the default task list ID (usually '@default' or first available)."""
+    task_lists, error = gcal.fetch_task_lists_api()
+    if error or not task_lists:
+        return "@default"
+    # Prefer "Reclaim" or first list
+    for tl in task_lists:
+        if (tl.get("title") or "").lower() == "reclaim":
+            return tl.get("id", "@default")
+    return task_lists[0].get("id", "@default") if task_lists else "@default"
+
+
+def list_tasks(
+    tasklist_id: Optional[str] = None,
+    show_completed: bool = False,
+) -> str:
+    """
+    List tasks from Google Tasks.
+
+    Args:
+        tasklist_id: Task list ID (defaults to primary list)
+        show_completed: Whether to include completed tasks
+
+    Returns:
+        Formatted list of tasks
+    """
+    service = gcal.get_tasks_service()
+    if not service:
+        return "Error: Not authenticated with Google Tasks"
+
+    tasklist_id = tasklist_id or _get_default_tasklist_id()
+
+    try:
+        result = (
+            service.tasks()
+            .list(
+                tasklist=tasklist_id,
+                showCompleted=show_completed,
+                showHidden=False,
+                maxResults=50,
+            )
+            .execute()
+        )
+        tasks = result.get("items", [])
+
+        if not tasks:
+            return f"No tasks found in list '{tasklist_id}'."
+
+        lines = []
+        for i, task in enumerate(tasks, 1):
+            title = task.get("title", "Untitled")
+            status = "✓" if task.get("status") == "completed" else "○"
+            due = task.get("due", "")[:10] if task.get("due") else ""
+            due_str = f" (due: {due})" if due else ""
+            task_id = task.get("id", "")
+            lines.append(f"{i}. {status} {title}{due_str} [ID: {task_id}]")
+
+        return f"Found {len(tasks)} task(s):\n" + "\n".join(lines)
+
+    except Exception as e:
+        return f"Error listing tasks: {str(e)}"
+
+
+def create_task(
+    title: str,
+    due_date: Optional[str] = None,
+    notes: Optional[str] = None,
+    tasklist_id: Optional[str] = None,
+) -> str:
+    """
+    Create a new task in Google Tasks.
+
+    Args:
+        title: Task title
+        due_date: Optional due date in YYYY-MM-DD format
+        notes: Optional task notes/description
+        tasklist_id: Task list ID (defaults to primary list)
+
+    Returns:
+        Confirmation message
+    """
+    service = gcal.get_tasks_service()
+    if not service:
+        return "Error: Not authenticated with Google Tasks"
+
+    tasklist_id = tasklist_id or _get_default_tasklist_id()
+
+    body: Dict[str, str] = {"title": title, "status": "needsAction"}
+    if due_date:
+        # Google Tasks expects RFC 3339 format with time
+        body["due"] = f"{due_date}T00:00:00.000Z"
+    if notes:
+        body["notes"] = notes
+
+    result, error = gcal.create_google_task(tasklist_id, body, service=service)
+
+    if error:
+        return f"Error creating task: {error}"
+
+    task_id = result.get("id", "") if result else ""
+    return f"Created task '{title}'. Task ID: {task_id}"
+
+
+def complete_task(
+    task_id: str,
+    tasklist_id: Optional[str] = None,
+) -> str:
+    """
+    Mark a task as completed.
+
+    Args:
+        task_id: Google Task ID
+        tasklist_id: Task list ID (defaults to primary list)
+
+    Returns:
+        Confirmation message
+    """
+    service = gcal.get_tasks_service()
+    if not service:
+        return "Error: Not authenticated with Google Tasks"
+
+    tasklist_id = tasklist_id or _get_default_tasklist_id()
+
+    body = {"status": "completed"}
+    result, error = gcal.patch_google_task(tasklist_id, task_id, body, service=service)
+
+    if error:
+        return f"Error completing task: {error}"
+
+    title = result.get("title", "Unknown") if result else "Unknown"
+    return f"Marked task '{title}' as completed."
+
+
+def delete_task(
+    task_id: str,
+    tasklist_id: Optional[str] = None,
+) -> str:
+    """
+    Delete a task from Google Tasks.
+
+    Args:
+        task_id: Google Task ID
+        tasklist_id: Task list ID (defaults to primary list)
+
+    Returns:
+        Confirmation message
+    """
+    service = gcal.get_tasks_service()
+    if not service:
+        return "Error: Not authenticated with Google Tasks"
+
+    tasklist_id = tasklist_id or _get_default_tasklist_id()
+
+    success, error = gcal.delete_google_task(tasklist_id, task_id, service=service)
+
+    if error:
+        return f"Error deleting task: {error}"
+
+    return f"Deleted task with ID: {task_id}"
+
+
+def list_task_lists() -> str:
+    """
+    List all available Google Task lists.
+
+    Returns:
+        Formatted list of task lists
+    """
+    task_lists, error = gcal.fetch_task_lists_api()
+
+    if error:
+        return f"Error listing task lists: {error}"
+
+    if not task_lists:
+        return "No task lists found."
+
+    lines = []
+    for i, tl in enumerate(task_lists, 1):
+        title = tl.get("title", "Untitled")
+        tl_id = tl.get("id", "")
+        lines.append(f"{i}. {title} [ID: {tl_id}]")
+
+    return f"Found {len(task_lists)} task list(s):\n" + "\n".join(lines)
+
+
+# =============================================================================
 # TOOL DEFINITIONS FOR OPENAI API
 # =============================================================================
 
@@ -746,16 +936,128 @@ TOOLS = [
             },
         },
     },
+    # Google Tasks tools
+    {
+        "type": "function",
+        "function": {
+            "name": "list_tasks",
+            "description": "List tasks from Google Tasks",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tasklist_id": {
+                        "type": "string",
+                        "description": "Task list ID (defaults to primary list)",
+                    },
+                    "show_completed": {
+                        "type": "boolean",
+                        "description": "Whether to include completed tasks (default false)",
+                    },
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_task",
+            "description": "Create a new task in Google Tasks",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Task title",
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "description": "Due date in YYYY-MM-DD format",
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Task notes/description",
+                    },
+                    "tasklist_id": {
+                        "type": "string",
+                        "description": "Task list ID (defaults to primary list)",
+                    },
+                },
+                "required": ["title"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "complete_task",
+            "description": "Mark a task as completed",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {
+                        "type": "string",
+                        "description": "Google Task ID",
+                    },
+                    "tasklist_id": {
+                        "type": "string",
+                        "description": "Task list ID (defaults to primary list)",
+                    },
+                },
+                "required": ["task_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delete_task",
+            "description": "Delete a task from Google Tasks",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {
+                        "type": "string",
+                        "description": "Google Task ID",
+                    },
+                    "tasklist_id": {
+                        "type": "string",
+                        "description": "Task list ID (defaults to primary list)",
+                    },
+                },
+                "required": ["task_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_task_lists",
+            "description": "List all available Google Task lists",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
 ]
 
 # Map tool names to functions
 TOOL_MAP = {
+    # Calendar tools
     "list_events": list_events,
     "create_event": create_event,
     "update_event": update_event,
     "batch_create_events": batch_create_events,
     "delete_event_by_title": delete_event_by_title,
     "batch_delete_events": batch_delete_events,
+    # Tasks tools
+    "list_tasks": list_tasks,
+    "create_task": create_task,
+    "complete_task": complete_task,
+    "delete_task": delete_task,
+    "list_task_lists": list_task_lists,
 }
 
 

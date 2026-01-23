@@ -135,6 +135,7 @@ function Build-Plan([string]$planMode) {
     Add-FileMapping -src (Join-Path $canonicalRoot "AGENTS.md") -dst (Join-Path $repoRoot ".claude\\AGENTS.md") -optional $false
     Add-FileMapping -src (Join-Path $canonicalRoot "CLAUDE.md") -dst (Join-Path $repoRoot "CLAUDE.md") -optional $false
     Add-FileMapping -src (Join-Path $canonicalRoot "CLAUDE.md") -dst (Join-Path $repoRoot ".claude\\CLAUDE.md") -optional $false
+    Add-FileMapping -src (Join-Path $canonicalRoot "permissions.json") -dst (Join-Path $repoRoot "permissions.json") -optional $false
     Add-FileMapping -src (Join-Path $canonicalRoot "permissions.json") -dst (Join-Path $repoRoot ".claude\\permissions.json") -optional $false
 
     $mcpPath = Join-Path $canonicalRoot "mcp.json"

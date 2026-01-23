@@ -65,6 +65,10 @@ export default function Brain() {
   const [sessionsToDelete, setSessionsToDelete] = useState<number[]>([]);
   const [syncToObsidian, setSyncToObsidian] = useState(false);
 
+  // Filter state for session evidence table
+  const [dateFilter, setDateFilter] = useState<string>("");
+  const [courseFilter, setCourseFilter] = useState<string>("all");
+
   // Edit form state
   const [editFormData, setEditFormData] = useState({
     mode: "",
@@ -78,11 +82,20 @@ export default function Brain() {
   });
   
   // Obsidian editor state
-  const [obsidianCurrentFolder, setObsidianCurrentFolder] = useState("");
+  const [obsidianCurrentFolder, setObsidianCurrentFolder] = useState("School");
   const [obsidianCurrentFile, setObsidianCurrentFile] = useState<string | null>(null);
   const [obsidianFileContent, setObsidianFileContent] = useState("");
   const [obsidianIsSaving, setObsidianIsSaving] = useState(false);
   const [obsidianHasChanges, setObsidianHasChanges] = useState(false);
+
+  // Quick access course folders
+  const courseFolders = [
+    { name: "EBP", path: "School/Evidence Based Practice" },
+    { name: "ExPhys", path: "School/Exercise Physiology" },
+    { name: "MS1", path: "School/Movement Science 1" },
+    { name: "Neuro", path: "School/Neuroscience" },
+    { name: "TI", path: "School/Theraputic Intervention" },
+  ];
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -256,6 +269,18 @@ export default function Brain() {
     setObsidianCurrentFolder(folder);
     setObsidianCurrentFile(null);
     setObsidianFileContent("");
+  };
+
+  // Create new note in current folder
+  const createNewNote = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const newPath = obsidianCurrentFolder
+      ? `${obsidianCurrentFolder}/Session-${today}.md`
+      : `Session-${today}.md`;
+    const template = `# Study Session - ${today}\n\n## Summary\n\n\n## Concepts Covered\n- \n\n## Strengths\n- \n\n## Areas to Review\n- \n\n## Notes\n\n`;
+    setObsidianCurrentFile(newPath);
+    setObsidianFileContent(template);
+    setObsidianHasChanges(true);
   };
 
   // Anki queries
@@ -618,6 +643,16 @@ export default function Brain() {
                     )}
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 rounded-none font-terminal text-xs"
+                      onClick={createNewNote}
+                      disabled={!obsidianStatus?.connected}
+                    >
+                      <FileText className="w-3 h-3 mr-1" />
+                      New Note
+                    </Button>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -630,9 +665,23 @@ export default function Brain() {
                     </label>
                   </div>
                 </div>
+                {/* Quick access course buttons */}
+                <div className="flex items-center gap-1 mt-2 flex-wrap">
+                  {courseFolders.map((course) => (
+                    <Button
+                      key={course.path}
+                      size="sm"
+                      variant={obsidianCurrentFolder === course.path ? "default" : "outline"}
+                      className="h-6 px-2 rounded-none font-terminal text-xs"
+                      onClick={() => navigateToFolder(course.path)}
+                    >
+                      {course.name}
+                    </Button>
+                  ))}
+                </div>
                 {obsidianCurrentFolder && (
                   <div className="flex items-center gap-1 mt-2 font-terminal text-xs text-muted-foreground">
-                    <button 
+                    <button
                       onClick={() => navigateToFolder("")}
                       className="hover:text-primary"
                     >
@@ -641,7 +690,7 @@ export default function Brain() {
                     {obsidianCurrentFolder.split('/').map((part, i, arr) => (
                       <span key={i} className="flex items-center gap-1">
                         <ChevronRight className="w-3 h-3" />
-                        <button 
+                        <button
                           onClick={() => navigateToFolder(arr.slice(0, i + 1).join('/'))}
                           className="hover:text-primary"
                         >

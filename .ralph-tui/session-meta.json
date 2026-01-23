@@ -1,0 +1,14 @@
+{
+  "id": "784c7552-1300-4bd3-9ebf-13cbb38d78a6",
+  "status": "running",
+  "startedAt": "2026-01-23T09:25:08.734Z",
+  "updatedAt": "2026-01-23T09:25:08.734Z",
+  "agentPlugin": "opencode",
+  "trackerPlugin": "json",
+  "prdPath": "C:\\pt-study-sop\\scripts\\ralph\\prd.json",
+  "currentIteration": 0,
+  "maxIterations": 10,
+  "totalTasks": 0,
+  "tasksCompleted": 0,
+  "cwd": "C:\\pt-study-sop"
+}

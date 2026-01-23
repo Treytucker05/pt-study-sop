@@ -1,6 +1,6 @@
 # CLAUDE.md - Universal Engineering Constitution (Unified)
 
-Canonical location: `C:/Users/treyt/OneDrive/Desktop/pt-study-sop/ai-config/CLAUDE.md`
+Canonical location: `C:/pt-study-sop/ai-config/CLAUDE.md`
 
 ## Core Rules
 1. **Planning Mode First:** Never start coding immediately.

@@ -14,11 +14,10 @@ interface Message {
     isError?: boolean;
 }
 
-interface BrainChatResponse {
+interface CalendarAssistantResponse {
     response: string;
-    isStub: boolean;
-    parsed?: boolean;
-    cardsCreated?: number;
+    success: boolean;
+    error?: string;
 }
 
 interface CalendarAssistantProps {
@@ -81,14 +80,15 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
 
     const chatMutation = useMutation({
         mutationFn: async (message: string) => {
-            return api.brain.chat(message, false);
+            return api.calendar.assistant(message);
         },
-        onSuccess: (data) => {
+        onSuccess: (data: CalendarAssistantResponse) => {
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: data.response
+                content: data.response,
+                isError: !data.success
             }]);
-            // Refresh calendar data when tool execution is implemented
+            // Refresh calendar data after assistant actions
             queryClient.invalidateQueries({ queryKey: ['events'] });
             queryClient.invalidateQueries({ queryKey: ['google-tasks'] });
             queryClient.invalidateQueries({ queryKey: ['google-calendar'] });
@@ -124,7 +124,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                     <div>
                         <CardTitle className="text-sm font-arcade tracking-wider text-primary">AI_ASSISTANT</CardTitle>
                         <div className="flex items-center gap-2">
-                            <CardDescription className="text-[10px] text-muted-foreground font-terminal">Brain API (Integration Pending)</CardDescription>
+                            <CardDescription className="text-[10px] text-muted-foreground font-terminal">Calendar + Tasks Assistant</CardDescription>
                             {!isGoogleStatusLoading && googleStatus?.connected && (
                                 <span className="text-[9px] font-arcade text-green-400">CONNECTED</span>
                             )}
@@ -204,7 +204,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                     </Button>
                 </div>
                 <div className="text-[9px] text-center mt-1 text-muted-foreground/50 font-terminal">
-                    OpenRouter • DeepSeek
+                    OpenRouter • GPT-4o-mini
                 </div>
             </div>
         </Card>

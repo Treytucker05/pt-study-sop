@@ -1,9 +1,9 @@
 # AGENTS Master (Unified)
 
-Canonical location: `C:/Users/treyt/OneDrive/Desktop/pt-study-sop/ai-config/AGENTS.md`
+Canonical location: `C:/pt-study-sop/ai-config/AGENTS.md`
 
 ## Scope and precedence
-- Applies to work under `C:/Users/treyt/OneDrive/Desktop` and specifically the `pt-study-sop` repo unless a nearer `AGENTS.md` exists.
+- Applies to work under `C:/pt-study-sop` and specifically the `pt-study-sop` repo unless a nearer `AGENTS.md` exists.
 - The nearest `AGENTS.md` overrides this file if there is any conflict; note the reason when that happens.
 
 ## DIRECTIVE 0: LOAD SYSTEM CONSTITUTION
@@ -44,11 +44,11 @@ You must read and obey `CLAUDE.md` immediately (same folder). It contains core r
 - Stop condition is `<promise>COMPLETE</promise>`.
 
 ## Continuity ledger
-- Maintain a single Continuity Ledger at `C:/Users/treyt/OneDrive/Desktop/pt-study-sop/CONTINUITY.md`.
+- Maintain a single Continuity Ledger at `C:/pt-study-sop/CONTINUITY.md`.
 - Update the ledger after every significant change; append only -- never delete history.
 
 ## Project map (nearest AGENTS.md locations)
-- PT Study SOP: `C:/Users/treyt/OneDrive/Desktop/pt-study-sop/AGENTS.md` (symlinked to this file)
+- PT Study SOP: `C:/pt-study-sop/AGENTS.md` (synced to this file)
   - Runtime canon in `sop/gpt-knowledge/`; master plan in `sop/MASTER_PLAN_PT_STUDY.md`.
   - Requires `CONTINUITY.md` and specific test commands.
 - DrCodePT-Swarm: `C:/Users/treyt/OneDrive/Desktop/DrCodePT-Swarm/AGENTS.md`

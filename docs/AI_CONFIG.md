@@ -1,10 +1,10 @@
 # AI Config Sync
 ## Overview
-ai-config/ is the canonical source of truth for AI agent configuration in this repo. We sync from ai-config/ to both the repo root and .claude/ so Codex and Claude Code always read consistent instructions.
+ai-config/ is the canonical source of truth for AI agent configuration in this repo. We sync from ai-config/ to both the repo root and .claude/ so Codex, OpenCode, and Claude Code always read consistent instructions.
 ## What lives where
 - ai-config/: canonical AGENTS, CLAUDE, permissions, commands, subagents.
 - .claude/: Claude Code config surface (commands, subagents/agents, permissions, mcp, settings).
-- Repo root: AGENTS.md and CLAUDE.md for Codex instruction loading.
+- Repo root: AGENTS.md, CLAUDE.md, and permissions.json for Codex/OpenCode instruction loading.
 ## PowerShell commands
 - Plan (DryRun):
   powershell -ExecutionPolicy Bypass -File .\scripts\sync_ai_config.ps1 -Mode DryRun

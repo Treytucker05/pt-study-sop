@@ -8,16 +8,35 @@ from typing import List, Dict, Any
 
 # Import internal modules from the "Brain"
 from db_setup import get_connection
-from config import load_env
+from config import load_env, COURSE_FOLDERS
 
 # ==============================================================================
 # OBSIDIAN LOCAL REST API CONFIG
 # ==============================================================================
-OBSIDIAN_API_URL = "http://127.0.0.1:27123"
+OBSIDIAN_API_URL = "https://127.0.0.1:27124"
 
 # Load .env so OBSIDIAN_API_KEY is available if set there
 load_env()
-OBSIDIAN_API_KEY = os.environ.get("OBSIDIAN_API_KEY", "")
+
+def get_obsidian_api_key() -> str:
+    """Get Obsidian API key, with fallback to direct .env read."""
+    key = os.environ.get("OBSIDIAN_API_KEY", "")
+    if key:
+        return key
+    # Fallback: read directly from brain/.env
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("OBSIDIAN_API_KEY="):
+                        return line.split("=", 1)[1].strip().strip('"').strip("'")
+        except Exception:
+            pass
+    return ""
+
+OBSIDIAN_API_KEY = get_obsidian_api_key()
 
 def obsidian_health_check() -> dict:
     """Check if Obsidian Local REST API is running."""
@@ -25,7 +44,8 @@ def obsidian_health_check() -> dict:
         resp = requests.get(
             f"{OBSIDIAN_API_URL}/",
             headers={"Authorization": f"Bearer {OBSIDIAN_API_KEY}"},
-            timeout=3
+            timeout=3,
+            verify=False  # Self-signed cert
         )
         if resp.status_code == 200:
             return {"connected": True, "status": "online"}
@@ -46,7 +66,8 @@ def obsidian_append(path: str, content: str) -> dict:
                 "Authorization": f"Bearer {OBSIDIAN_API_KEY}",
                 "Content-Type": "text/markdown"
             },
-            timeout=10
+            timeout=10,
+            verify=False  # Self-signed cert
         )
         if resp.status_code in [200, 204]:
             return {"success": True, "path": path, "bytes": len(content)}
@@ -63,7 +84,8 @@ def obsidian_list_files(folder: str = "") -> dict:
         resp = requests.get(
             url,
             headers={"Authorization": f"Bearer {OBSIDIAN_API_KEY}", "Accept": "application/json"},
-            timeout=10
+            timeout=10,
+            verify=False  # Self-signed cert
         )
         if resp.status_code == 200:
             try:
@@ -119,7 +141,8 @@ def obsidian_get_file(path: str) -> dict:
         resp = requests.get(
             f"{OBSIDIAN_API_URL}/vault/{path}",
             headers={"Authorization": f"Bearer {OBSIDIAN_API_KEY}", "Accept": "text/markdown"},
-            timeout=10
+            timeout=10,
+            verify=False  # Self-signed cert
         )
         if resp.status_code == 200:
             return {"success": True, "content": resp.text, "path": path}
@@ -137,13 +160,52 @@ def obsidian_save_file(path: str, content: str) -> dict:
                 "Authorization": f"Bearer {OBSIDIAN_API_KEY}",
                 "Content-Type": "text/markdown"
             },
-            timeout=10
+            timeout=10,
+            verify=False  # Self-signed cert
         )
         if resp.status_code in [200, 204]:
             return {"success": True, "path": path}
         return {"success": False, "error": f"Status {resp.status_code}: {resp.text}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+def get_current_course_name() -> str | None:
+    """Get the current course name from the study wheel (position 0)."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT name FROM wheel_courses
+            WHERE active = 1
+            ORDER BY position ASC
+            LIMIT 1
+        """)
+        row = cur.fetchone()
+        conn.close()
+        return row[0] if row else None
+    except Exception:
+        return None
+
+
+def get_course_obsidian_folder(course_name: str) -> str | None:
+    """Get the Obsidian folder path for a course name."""
+    if not course_name:
+        return None
+    # Exact match first
+    if course_name in COURSE_FOLDERS:
+        return COURSE_FOLDERS[course_name]
+    # Case-insensitive match
+    course_lower = course_name.lower()
+    for name, folder in COURSE_FOLDERS.items():
+        if name.lower() == course_lower:
+            return folder
+    # Partial match (course name contains key or vice versa)
+    for name, folder in COURSE_FOLDERS.items():
+        if course_lower in name.lower() or name.lower() in course_lower:
+            return folder
+    return None
+
 
 # Wrap optional imports to prevent crash if Scholar/Google libs missing
 try:
@@ -1347,6 +1409,49 @@ def clear_calendars():
     return jsonify({"success": True, "deletedEvents": deleted_count, "errors": errors})
 
 
+# ==============================================================================
+# CALENDAR ASSISTANT (AI-powered)
+# ==============================================================================
+
+
+@adapter_bp.route("/calendar/assistant", methods=["POST"])
+def calendar_assistant():
+    """
+    AI-powered calendar assistant endpoint.
+    Uses the calendar_assistant module's run_calendar_assistant function.
+    This is SEPARATE from brain_chat to avoid study session logging bleeding into calendar responses.
+    """
+    try:
+        data = request.get_json() or {}
+        message = data.get("message", "")
+
+        if not message or not isinstance(message, str) or not message.strip():
+            return jsonify({
+                "response": "Please provide a message.",
+                "success": False
+            })
+
+        # Import and run the calendar assistant
+        from dashboard.calendar_assistant import run_calendar_assistant
+
+        result = run_calendar_assistant(message.strip())
+
+        return jsonify({
+            "response": result.get("response", ""),
+            "success": result.get("success", False),
+            "error": result.get("error")
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "response": f"Calendar assistant error: {str(e)}",
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 @adapter_bp.route("/google-tasks", methods=["GET"])
 def get_google_tasks():
     from dashboard import gcal
@@ -2492,41 +2597,90 @@ def brain_chat():
                 "anki_cards": [],
             }
         else:
-            system_prompt = """You are a study session analyzer for a PT (Physical Therapy) student. 
-Your job is to parse raw study notes and organize them into structured data.
+            system_prompt = """You are a study assistant for a PT (Physical Therapy) student using the PERRIO Protocol. You help with TWO things:
+1. CONVERSATION: Answer questions, respond to greetings, chat casually
+2. STUDY INGESTION: Parse detailed study notes into comprehensive structured data
 
-ALWAYS respond with valid JSON in this exact format:
+FIRST, determine the intent:
+- Short messages, greetings, questions, or casual chat = CONVERSATION
+- Detailed notes with concepts, topics, or learning content = STUDY INGESTION
+
+For CONVERSATION (greetings, questions, short messages, tests like "you working"):
 {
-    "summary": "Brief 1-2 sentence summary of the study session",
-    "course": "Course name if mentioned, or 'General'",
-    "strengths": ["list of things the student did well or understood"],
-    "weaknesses": ["list of concepts the student struggled with"],
-    "what_went_well": ["positive aspects of the session"],
-    "what_didnt_work": ["issues or problems during studying"],
-    "concepts": ["key concepts/topics covered"],
-    "anki_cards": [
-        {
-            "front": "Question or prompt for the flashcard",
-            "back": "Answer or explanation",
-            "tags": "comma-separated tags like 'anatomy,muscles'"
-        }
-    ],
-    "notes": "Any additional observations or recommendations"
-}
-
-For anki_cards:
-- Create cards for key facts, definitions, and concepts mentioned
-- Focus on things the student found confusing or important
-- Make questions clear and specific
-- Keep answers concise but complete
-- Generate 3-10 cards per session depending on content
-
-If the input is a question rather than study data, respond with:
-{
-    "summary": "Answered a question",
-    "response": "Your helpful answer here",
+    "is_conversation": true,
+    "response": "Your friendly, helpful response here",
     "anki_cards": []
 }
+
+For STUDY INGESTION (actual study notes with substantial content):
+{
+    "is_conversation": false,
+
+    // Core Metadata
+    "summary": "2-3 sentence overview of what was studied",
+    "course": "Evidence Based Practice | Exercise Physiology | Movement Science 1 | Neuroscience | Therapeutic Intervention | General",
+    "study_mode": "Prime | Encode | Retrieve | Reinforce | Review | Exam Prep",
+
+    // Content
+    "topics_covered": ["list of main topics"],
+    "key_concepts": ["important concepts to remember"],
+
+    // Performance Assessment
+    "strengths": ["things understood well"],
+    "weaknesses": ["areas needing more work"],
+    "confidence_level": 1-5,  // Self-assessed understanding
+    "retention_estimate": 1-5,  // How well will this stick?
+
+    // Anki Cards
+    "anki_cards": [
+        {
+            "front": "Question for flashcard",
+            "back": "Answer",
+            "tags": "course,topic,difficulty",
+            "card_type": "basic | cloze | reverse"
+        }
+    ],
+
+    // CustomGPT Tutor Feedback (if mentioned in notes)
+    "tutor_mistakes": ["any errors the CustomGPT tutor made"],
+    "tutor_helpful": ["what the tutor did well"],
+    "tutor_corrections_needed": ["facts/concepts the tutor got wrong"],
+
+    // Learning Style Insights
+    "what_worked": ["techniques that helped learning"],
+    "what_didnt_work": ["approaches that weren't effective"],
+    "inferred_learning_style": "visual | auditory | reading | kinesthetic | mixed",
+    "optimal_session_length": "short (<30min) | medium (30-60min) | long (>60min)",
+    "style_confidence": "low | medium | high",
+
+    // Next Steps
+    "follow_up_topics": ["topics to revisit"],
+    "questions_remaining": ["unanswered questions"],
+    "next_session_focus": "recommended focus for next session",
+
+    // Legacy fields (for backward compatibility)
+    "concepts": ["key concepts - same as key_concepts"],
+    "what_went_well": ["same as what_worked"],
+    "notes": "Additional observations"
+}
+
+STUDY MODES EXPLAINED:
+- Prime: Initial exposure, overview (15-30 min)
+- Encode: Deep learning, note-taking (45-90 min)
+- Retrieve: Active recall, practice questions (20-40 min)
+- Reinforce: Spaced review, Anki (15-30 min)
+- Review: Pre-exam review (30-60 min)
+- Exam Prep: Focused exam preparation (60-120 min)
+
+IMPORTANT:
+- Do NOT create study sessions for greetings, tests, or short messages
+- Only create anki_cards when there's actual educational content
+- Be conversational and friendly for casual messages
+- For study notes, extract as much structure as possible
+- Infer study_mode from context (e.g., "reviewing notes" = Review, "first time seeing" = Prime)
+- Always try to identify confidence_level and retention_estimate even if not explicit
+- Capture any tutor feedback mentioned (errors, corrections, helpful moments)
+- Look for patterns in what learning techniques worked or didn't work
 """
 
             # Call LLM via OpenRouter
@@ -2718,6 +2872,7 @@ If the input is a question rather than study data, respond with:
         session_saved = False
         session_id = None
         session_error = None
+        is_conversation = parsed_data.get("is_conversation", False)
         session_signals = any([
             anki_cards,
             parsed_data.get("concepts"),
@@ -2727,7 +2882,7 @@ If the input is a question rather than study data, respond with:
             parsed_data.get("what_didnt_work"),
             parsed_data.get("notes"),
         ])
-        skip_session_logging = (not use_direct_payload) and parsed_data.get("response") and not session_signals
+        skip_session_logging = is_conversation or ((not use_direct_payload) and parsed_data.get("response") and not session_signals)
 
         if skip_session_logging:
             session_error = "Skipped logging (question response)."
@@ -2783,93 +2938,112 @@ If the input is a question rather than study data, respond with:
         
         # Build response message
         response_parts = []
-        
-        if parsed_data.get("summary"):
-            response_parts.append(f"📝 **Summary:** {parsed_data['summary']}")
-        
-        if parsed_data.get("response"):
-            response_parts.append(parsed_data["response"])
-        
-        if parsed_data.get("course") and parsed_data["course"] != "General":
-            response_parts.append(f"📚 **Course:** {parsed_data['course']}")
-        
-        if parsed_data.get("strengths"):
-            response_parts.append(f"💪 **Strengths:** {', '.join(parsed_data['strengths'])}")
-        
-        if parsed_data.get("weaknesses"):
-            response_parts.append(f"⚠️ **Weaknesses:** {', '.join(parsed_data['weaknesses'])}")
-        
-        if parsed_data.get("what_went_well"):
-            response_parts.append(f"✅ **What went well:** {', '.join(parsed_data['what_went_well'])}")
-        
-        if parsed_data.get("what_didnt_work"):
-            response_parts.append(f"❌ **What didn't work:** {', '.join(parsed_data['what_didnt_work'])}")
-        
-        if parsed_data.get("concepts"):
-            response_parts.append(f"🧠 **Concepts:** {', '.join(parsed_data['concepts'])}")
-        
-        if cards_created > 0:
-            response_parts.append(f"\n🃏 **Created {cards_created} Anki card(s)** - Check the Anki Integration panel to review and sync them!")
-        
-        if parsed_data.get("notes"):
-            response_parts.append(f"\n📌 **Notes:** {parsed_data['notes']}")
-        
-        if session_saved:
-            if session_id:
-                response_parts.append(f"\nSession logged (ID: {session_id}).")
-            else:
-                response_parts.append("\nSession logged.")
-        elif session_error:
-            response_parts.append(f"\nSession log failed: {session_error}")
 
-        # Sync to Obsidian if requested
+        if is_conversation:
+            # For conversations, just return the response
+            response_parts.append(parsed_data.get("response", "Hello! How can I help you with your studies today?"))
+        else:
+            # For study sessions, show full structured output
+            if parsed_data.get("summary"):
+                response_parts.append(f"📝 **Summary:** {parsed_data['summary']}")
+
+            if parsed_data.get("response"):
+                response_parts.append(parsed_data["response"])
+
+            if parsed_data.get("course") and parsed_data["course"] != "General":
+                response_parts.append(f"📚 **Course:** {parsed_data['course']}")
+
+            if parsed_data.get("strengths"):
+                response_parts.append(f"💪 **Strengths:** {', '.join(parsed_data['strengths'])}")
+
+            if parsed_data.get("weaknesses"):
+                response_parts.append(f"⚠️ **Weaknesses:** {', '.join(parsed_data['weaknesses'])}")
+
+            if parsed_data.get("what_went_well"):
+                response_parts.append(f"✅ **What went well:** {', '.join(parsed_data['what_went_well'])}")
+
+            if parsed_data.get("what_didnt_work"):
+                response_parts.append(f"❌ **What didn't work:** {', '.join(parsed_data['what_didnt_work'])}")
+
+            if parsed_data.get("concepts"):
+                response_parts.append(f"🧠 **Concepts:** {', '.join(parsed_data['concepts'])}")
+
+            if cards_created > 0:
+                response_parts.append(f"\n🃏 **Created {cards_created} Anki card(s)** - Check the Anki Integration panel to review and sync them!")
+
+            if parsed_data.get("notes"):
+                response_parts.append(f"\n📌 **Notes:** {parsed_data['notes']}")
+
+            if session_saved:
+                if session_id:
+                    response_parts.append(f"\nSession logged (ID: {session_id}).")
+                else:
+                    response_parts.append("\nSession logged.")
+            elif session_error and "Skipped" not in session_error:
+                response_parts.append(f"\nSession log failed: {session_error}")
+
+        # Sync to Obsidian if requested (skip for conversations)
         obsidian_synced = False
         obsidian_error = None
         sync_to_obsidian = data.get("syncToObsidian", False)
-        
-        if sync_to_obsidian and parsed_data:
+
+        if sync_to_obsidian and parsed_data and not is_conversation:
             # Build Obsidian note content
             today = datetime.now().strftime("%Y-%m-%d")
             time_now = datetime.now().strftime("%H:%M")
             course = parsed_data.get("course", "General")
-            
+
+            # Determine course for routing: parsed data > study wheel > fallback
+            route_course = course if course and course.lower() != "general" else None
+            if not route_course:
+                wheel_course = get_current_course_name()
+                if wheel_course:
+                    route_course = wheel_course
+
+            # Get course-specific folder path
+            course_folder = get_course_obsidian_folder(route_course) if route_course else None
+
             obsidian_content = f"\n\n---\n## Study Session - {time_now}\n"
             obsidian_content += f"**Course:** {course}\n\n"
-            
+
             if parsed_data.get("summary"):
                 obsidian_content += f"### Summary\n{parsed_data['summary']}\n\n"
-            
+
             if parsed_data.get("concepts"):
                 obsidian_content += f"### Concepts Covered\n"
                 for concept in parsed_data["concepts"]:
                     obsidian_content += f"- {concept}\n"
                 obsidian_content += "\n"
-            
+
             if parsed_data.get("strengths"):
                 obsidian_content += f"### Strengths\n"
                 for s in parsed_data["strengths"]:
                     obsidian_content += f"- ✅ {s}\n"
                 obsidian_content += "\n"
-            
+
             if parsed_data.get("weaknesses"):
                 obsidian_content += f"### Areas to Review\n"
                 for w in parsed_data["weaknesses"]:
                     obsidian_content += f"- ⚠️ {w}\n"
                 obsidian_content += "\n"
-            
+
             if cards_created > 0:
                 obsidian_content += f"### Anki Cards Created: {cards_created}\n"
                 for card in anki_cards[:5]:  # Show first 5
                     obsidian_content += f"- **Q:** {card.get('front', '')[:80]}...\n"
                 obsidian_content += "\n"
-            
+
             if parsed_data.get("notes"):
                 obsidian_content += f"### Notes\n{parsed_data['notes']}\n"
-            
-            # Append to daily note in Inbox
-            obsidian_path = f"Inbox/Study-Log-{today}.md"
+
+            # Route to course-specific folder or fall back to Inbox
+            if course_folder:
+                obsidian_path = f"{course_folder}/Session-{today}.md"
+            else:
+                obsidian_path = f"Inbox/Study-Log-{today}.md"
+
             result = obsidian_append(obsidian_path, obsidian_content)
-            
+
             if result.get("success"):
                 obsidian_synced = True
                 response_parts.append(f"\n📓 **Synced to Obsidian:** {obsidian_path}")

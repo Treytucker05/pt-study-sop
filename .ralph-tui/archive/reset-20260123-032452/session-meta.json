@@ -1,0 +1,15 @@
+{
+  "id": "7682355c-844a-4bb0-a2fb-6726dead6f93",
+  "status": "interrupted",
+  "startedAt": "2026-01-23T07:47:59.860Z",
+  "updatedAt": "2026-01-23T08:55:56.413Z",
+  "agentPlugin": "opencode",
+  "trackerPlugin": "json",
+  "prdPath": "C:\\pt-study-sop\\scripts\\ralph\\prd.json",
+  "currentIteration": 2,
+  "maxIterations": 10,
+  "totalTasks": 0,
+  "tasksCompleted": 2,
+  "cwd": "C:\\pt-study-sop",
+  "endedAt": "2026-01-23T08:55:56.413Z"
+}

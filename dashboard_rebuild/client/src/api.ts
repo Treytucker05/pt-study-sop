@@ -132,6 +132,17 @@ export const api = {
     disconnect: () => request<{ success: boolean }>("/google/disconnect", { method: "POST" }),
   },
 
+  calendar: {
+    assistant: (message: string) => request<{
+      response: string;
+      success: boolean;
+      error?: string;
+    }>("/calendar/assistant", {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    }),
+  },
+
   googleTasks: {
     getLists: () => request<{ id: string; title: string }[]>("/google-tasks/lists"),
     getAll: () => request<GoogleTask[]>("/google-tasks"),
