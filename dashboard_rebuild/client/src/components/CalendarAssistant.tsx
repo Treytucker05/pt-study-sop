@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Send, MessageSquare, AlertTriangle, X, Bot } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2, Send, X, Bot, Link } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface Message {
@@ -44,6 +44,20 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
     const [inputValue, setInputValue] = useState("");
     const scrollRef = useRef<HTMLDivElement>(null);
     const queryClient = useQueryClient();
+
+    const { data: googleStatus, isLoading: isGoogleStatusLoading } = useQuery({
+        queryKey: ["google-status"],
+        queryFn: api.google.getStatus,
+        retry: 1,
+    });
+
+    const connectGoogleMutation = useMutation({
+        mutationFn: async () => {
+            const { authUrl } = await api.google.getAuthUrl();
+            window.location.href = authUrl;
+        },
+    });
+
 
     // Scroll to bottom
     useEffect(() => {
@@ -95,7 +109,14 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                     <Bot className="w-5 h-5 text-primary" />
                     <div>
                         <CardTitle className="text-sm font-arcade tracking-wider text-primary">AI_ASSISTANT</CardTitle>
-                        <CardDescription className="text-[10px] text-muted-foreground font-terminal">Brain API (Integration Pending)</CardDescription>
+                        <div className="flex items-center gap-2">
+                            <CardDescription className="text-[10px] text-muted-foreground font-terminal">Brain API (Integration Pending)</CardDescription>
+                            {!isGoogleStatusLoading && (
+                                <span className={googleStatus?.connected ? "text-[9px] font-arcade text-green-400" : "text-[9px] font-arcade text-yellow-400"}>
+                                    {googleStatus?.connected ? "CONNECTED" : "NOT CONNECTED"}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
@@ -103,8 +124,24 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                 </Button>
             </CardHeader>
 
+
             <ScrollArea className="flex-1 p-3" ref={scrollRef}>
                 <div className="space-y-3">
+                    {!isGoogleStatusLoading && !googleStatus?.connected && (
+                        <div className="border border-yellow-500/50 bg-yellow-500/10 text-yellow-200 text-[10px] font-terminal px-3 py-2 flex items-center justify-between gap-3">
+                            <span>Calendar not connected.</span>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 rounded-none border-yellow-500 text-yellow-200 hover:bg-yellow-500/20 font-arcade text-[9px]"
+                                onClick={() => connectGoogleMutation.mutate()}
+                                disabled={connectGoogleMutation.isPending}
+                            >
+                                <Link className="w-3 h-3 mr-1" />
+                                {connectGoogleMutation.isPending ? "CONNECTING..." : "CONNECT GOOGLE"}
+                            </Button>
+                        </div>
+                    )}
                     {messages.length === 0 && (
                         <div className="text-center text-muted-foreground text-xs mt-8 space-y-2">
                             <p className="font-terminal">Ask me to create events or tasks.</p>
@@ -112,6 +149,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                             <p className="text-[10px] opacity-50 font-terminal">"Schedule PT study session Friday 2pm"</p>
                         </div>
                     )}
+
 
                     {messages.map((m, i) => (
                         <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>

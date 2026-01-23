@@ -1,4 +1,4 @@
-﻿# CONTINUITY\n
+# CONTINUITY\n
 
 - 2026-01-21 18:47:42: Replaced C:\pt-study-sop\brain\data\pt_study.db with C:\Users\treyt\Downloads\pt_study.db after backup (pt_study.db.bak_20260121_184637). Counts: sessions=2, wheel_courses=5, quick_notes=4, courses=0.
 
@@ -33,3 +33,17 @@
 - 2026-01-22 14:04:36: Tightened Quick Notes sheet inset to 4px (inset-y-1) and rebuilt/copied dashboard_rebuild dist to brain/static/dist.
 
 - 2026-01-22 14:06:01: Increased Quick Notes sheet inset to 12px (inset-y-3) and rebuilt/copied dashboard_rebuild dist to brain/static/dist.
+
+- 2026-01-22 15:41:44: Added agent-browser commands to permissions.json to enable automated UI audit.
+
+- 2026-01-22 16:58:16: Documented full UI + API audit in docs/full-ui-api-audit-2026-01-22.md (no code changes).
+
+- 2026-01-22 17:01:00: Policy update — after each successful upgrade or change, push to GitHub.
+
+- 2026-01-22 18:30:51: Added YAML frontmatter to Codex skills refactor-clean and tdd; normalized arrows to ASCII in refactor-clean.
+
+- 2026-01-22 18:46:16: Synced ai-config to root/.claude, corrected pt-study-sop path references in AI instructions, added root permissions.json sync, and documented Codex/OpenCode usage.
+
+- 2026-01-22 18:50:34: Updated AGENTS.md wording to reflect sync (not symlink) and re-synced to root/.claude.
+
+- 2026-01-23 08:15:00: Added AI assistant Google connection status CTA in calendar panel.
