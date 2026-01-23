@@ -19,11 +19,16 @@ from config import load_env
 # Google API imports (install: pip install google-auth google-auth-oauthlib google-api-python-client)
 try:
     from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
     from google_auth_oauthlib.flow import Flow
     from googleapiclient.discovery import build
 
     GOOGLE_API_AVAILABLE = True
 except ImportError:
+    Credentials = None
+    Request = None
+    Flow = None
+    build = None
     GOOGLE_API_AVAILABLE = False
     print(
         "[WARN] Google API libraries not installed. Run: pip install google-auth google-auth-oauthlib google-api-python-client"
@@ -74,6 +79,12 @@ def load_gcal_config():
     if env_redirect_uri:
         gcal_config["redirect_uri"] = env_redirect_uri
 
+    if not gcal_config.get("client_id") or not gcal_config.get("client_secret"):
+        token_data = _load_token_data() or {}
+        if token_data:
+            gcal_config.setdefault("client_id", token_data.get("client_id"))
+            gcal_config.setdefault("client_secret", token_data.get("client_secret"))
+
     return gcal_config
 
 
@@ -84,6 +95,16 @@ def normalize_gcal_config(config: Optional[Dict]) -> Dict:
     normalized.setdefault("sync_all_calendars", False)
     normalized.setdefault("timezone", None)
     return normalized
+
+
+def _load_token_data() -> Optional[Dict]:
+    if not TOKEN_PATH.exists() or not GOOGLE_API_AVAILABLE:
+        return None
+    try:
+        with open(TOKEN_PATH, "r") as f:
+            return json.load(f)
+    except Exception:
+        return None
 
 
 def save_token(creds):
@@ -104,16 +125,54 @@ def save_token(creds):
         print(f"[ERROR] Failed to save token: {e}")
 
 
+def refresh_token(creds):
+    """Refresh OAuth token if possible."""
+    if not creds or not getattr(creds, "refresh_token", None):
+        return False
+    if not GOOGLE_API_AVAILABLE or Request is None:
+        return False
+    try:
+        assert Request is not None
+        creds.refresh(Request())
+        save_token(creds)
+        return True
+    except Exception as exc:
+        print(f"[ERROR] Failed to refresh token: {exc}")
+        return False
+
+
+def ensure_valid_token(creds) -> bool:
+    if not creds:
+        return False
+    if creds.valid:
+        return True
+    if creds.expired and getattr(creds, "refresh_token", None):
+        return refresh_token(creds)
+    return False
+
+
+def token_requires_reauth(creds) -> bool:
+    if not creds:
+        return True
+    if creds.valid:
+        return False
+    if creds.expired and getattr(creds, "refresh_token", None):
+        return False
+    return True
+
+
 def load_token():
     """Load OAuth token from file"""
-    if not TOKEN_PATH.exists():
+    if not GOOGLE_API_AVAILABLE or Credentials is None:
+        return None
+
+    token_data = _load_token_data()
+    if not token_data:
         return None
 
     try:
-        with open(TOKEN_PATH, "r") as f:
-            token_data = json.load(f)
-
-        return Credentials(
+        assert Credentials is not None
+        creds = Credentials(
             token=token_data.get("token"),
             refresh_token=token_data.get("refresh_token"),
             token_uri=token_data.get("token_uri"),
@@ -121,19 +180,25 @@ def load_token():
             client_secret=token_data.get("client_secret"),
             scopes=token_data.get("scopes"),
         )
+        expiry_value = token_data.get("expiry")
+        expiry_dt = parse_rfc3339(expiry_value)
+        if expiry_dt:
+            creds.expiry = expiry_dt
+        return creds
     except Exception:
         return None
 
 
 def get_auth_url():
     """Generate OAuth2 authorization URL"""
-    if not GOOGLE_API_AVAILABLE:
+    if not GOOGLE_API_AVAILABLE or Flow is None:
         return None, "Google API libraries not installed"
 
     config = load_gcal_config()
     if not config or not config.get("client_id"):
         return None, "Google Calendar not configured in api_config.json"
 
+    assert Flow is not None
     flow = Flow.from_client_config(
         {
             "web": {
@@ -163,7 +228,7 @@ def get_auth_url():
 
 def complete_oauth(code):
     """Complete OAuth flow with authorization code"""
-    if not GOOGLE_API_AVAILABLE:
+    if not GOOGLE_API_AVAILABLE or Flow is None:
         return False, "Google API libraries not installed"
 
     config = load_gcal_config()
@@ -171,6 +236,7 @@ def complete_oauth(code):
         return False, "Google Calendar not configured"
 
     try:
+        assert Flow is not None
         flow = Flow.from_client_config(
             {
                 "web": {
@@ -203,31 +269,42 @@ def complete_oauth(code):
 
 def get_calendar_service():
     """Get authenticated Google Calendar service"""
-    if not GOOGLE_API_AVAILABLE:
+    if not GOOGLE_API_AVAILABLE or build is None:
         return None
 
     creds = load_token()
-    if not creds or not creds.valid:
+    if not ensure_valid_token(creds):
         return None
 
+    assert build is not None
     return build("calendar", "v3", credentials=creds)
 
 
 def get_tasks_service():
     """Get authenticated Google Tasks service"""
-    if not GOOGLE_API_AVAILABLE:
+    if not GOOGLE_API_AVAILABLE or build is None:
         return None
 
     creds = load_token()
-    if not creds or not creds.valid:
+    if not ensure_valid_token(creds):
         return None
 
+    assert build is not None
     return build("tasks", "v1", credentials=creds)
+
+
+def get_google_service(service_type: str):
+    """Return Google API service for 'calendar' or 'tasks'."""
+    if service_type == "calendar":
+        return get_calendar_service()
+    if service_type == "tasks":
+        return get_tasks_service()
+    return None
 
 
 def check_auth_status():
     """Check if user is authenticated with Google Calendar"""
-    if not GOOGLE_API_AVAILABLE:
+    if not GOOGLE_API_AVAILABLE or build is None:
         return {"connected": False, "error": "Google API not installed"}
 
     config = load_gcal_config()
@@ -244,13 +321,15 @@ def check_auth_status():
             "error": "Google Calendar not configured. Update brain/data/api_config.json.",
         }
 
-    if not TOKEN_PATH.exists():
-        return {"connected": False}
+    token_data = _load_token_data()
+    if not token_data:
+        return {"connected": False, "error": "Missing OAuth token. Re-auth required."}
 
     try:
         creds = load_token()
-        if creds and creds.valid:
+        if creds and ensure_valid_token(creds):
             # Get user email
+            assert build is not None
             service = build("calendar", "v3", credentials=creds)
             calendar = service.calendars().get(calendarId="primary").execute()
             return {
@@ -258,8 +337,10 @@ def check_auth_status():
                 "email": calendar.get("summary", "Unknown"),
                 "id": calendar.get("id"),
             }
-        else:
-            return {"connected": False, "error": "Token expired"}
+
+        if token_requires_reauth(creds):
+            return {"connected": False, "error": "Token expired. Re-auth required."}
+        return {"connected": False, "error": "Token invalid. Re-auth required."}
     except Exception as e:
         return {"connected": False, "error": str(e)}
 
@@ -933,29 +1014,9 @@ def sync_to_database(course_id=None):
     return sync_bidirectional(course_id=course_id)
 
 
-def get_tasks_service():
-    """Get authenticated Google Tasks service"""
-    if not GOOGLE_API_AVAILABLE:
-        return None
-
-    creds = load_token()
-    if not creds or not creds.valid:
-        return None
-
-    return build("tasks", "v1", credentials=creds)
-
-
 def fetch_task_lists():
     """Fetch available Google Task lists"""
-    service = get_tasks_service()
-    if not service:
-        return [], "Not authenticated"
-
-    try:
-        result = service.tasklists().list(maxResults=100).execute()
-        return result.get("items", []), None
-    except Exception as exc:
-        return [], str(exc)
+    return fetch_task_lists_api()
 
 
 def resolve_task_lists(task_lists, config):
@@ -1126,7 +1187,7 @@ def sync_tasks_to_database(course_id=None):
 # -----------------------------------------------------------------------------
 
 
-def fetch_task_lists(service=None):
+def fetch_task_lists_api(service=None):
     """Fetch all task lists."""
     service = service or get_tasks_service()
     if not service:
