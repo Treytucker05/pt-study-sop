@@ -79,6 +79,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
             queryClient.invalidateQueries({ queryKey: ['events'] });
             queryClient.invalidateQueries({ queryKey: ['google-tasks'] });
             queryClient.invalidateQueries({ queryKey: ['google-calendar'] });
+            queryClient.refetchQueries({ queryKey: ['google-calendar'] });
         },
         onError: (err) => {
             setMessages(prev => [...prev, { role: 'assistant', content: `Network Error: ${err}`, isError: true }]);

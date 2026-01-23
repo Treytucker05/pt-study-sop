@@ -382,7 +382,7 @@ export default function CalendarPage() {
     queryFn: async () => {
       const timeMin = startOfMonth(subMonths(currentDate, 1)).toISOString();
       const timeMax = endOfMonth(addMonths(currentDate, 1)).toISOString();
-      const res = await fetch(`/api/google-calendar/events?timeMin=${timeMin}&timeMax=${timeMax}`);
+      const res = await fetch(`/api/google-calendar/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`);
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json() as Promise<GoogleCalendarEvent[]>;
     },
@@ -493,6 +493,10 @@ export default function CalendarPage() {
     mutationFn: api.events.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
+      if (newEvent.calendarId && newEvent.calendarId !== "local") {
+        queryClient.invalidateQueries({ queryKey: ["google-calendar"] });
+        refetchGoogle();
+      }
       setShowEventModal(false);
       resetNewEvent();
     },
@@ -564,14 +568,16 @@ export default function CalendarPage() {
 
   const deleteGoogleEventMutation = useMutation({
     mutationFn: async ({ eventId, calendarId }: { eventId: string; calendarId: string }) => {
-      const res = await fetch(`/api/google-calendar/events/${eventId}?calendarId=${calendarId}`, {
+      const res = await fetch(`/api/google-calendar/events/${encodeURIComponent(calendarId)}/${encodeURIComponent(eventId)}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete event");
+      if (res.status === 204) return null;
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-calendar"] });
+      refetchGoogle();
       toast({ title: "EVENT_DELETED", description: "Event removed from Google Calendar" });
       setShowGoogleEditModal(false);
       setSelectedGoogleEvent(null);
@@ -583,17 +589,16 @@ export default function CalendarPage() {
 
   const updateGoogleEventMutation = useMutation({
     mutationFn: async (event: GoogleCalendarEvent) => {
-      const res = await fetch(`/api/google-calendar/events/${event.id}`, {
+      if (!event.calendarId) throw new Error('Missing calendarId');
+      const res = await fetch(`/api/google-calendar/events/${encodeURIComponent(event.calendarId)}/${encodeURIComponent(event.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          calendarId: event.calendarId,
-          title: event.summary,
+          summary: event.summary,
           description: event.description,
           location: event.location,
-          date: event.start?.dateTime || event.start?.date,
-          endDate: event.end?.dateTime || event.end?.date,
-          allDay: !event.start?.dateTime,
+          start: event.start,
+          end: event.end,
           recurrence: event.recurrence
         }),
       });
@@ -602,6 +607,7 @@ export default function CalendarPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-calendar"] });
+      refetchGoogle();
       toast({ title: "EVENT_UPDATED", description: "Changes synced to Google Calendar" });
       setShowGoogleEditModal(false);
     },
@@ -731,7 +737,7 @@ export default function CalendarPage() {
       allDay: false,
       eventType: "study",
       color: "#ef4444",
-      recurrence: "none",
+      recurrence: "",
       calendarId: "local",
     });
     setShowEventModal(true);
