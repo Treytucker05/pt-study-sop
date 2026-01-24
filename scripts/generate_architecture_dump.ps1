@@ -1,11 +1,11 @@
-$outFile = "ARCHITECTURE_CONTEXT.md"
+$outFile = "docs/root/ARCHITECTURE_CONTEXT.md"
 $root = Get-Location
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
 $files = @(
     "AGENTS.md",
-    "PROJECT_ARCHITECTURE.md",
-    "sop/MASTER_PLAN_PT_STUDY.md",
+    "docs/root/PROJECT_ARCHITECTURE.md",
+    "sop/src/MASTER_PLAN_PT_STUDY.md",
     "CONTINUITY.md",
     "brain/db_setup.py",
     "brain/dashboard/routes.py",

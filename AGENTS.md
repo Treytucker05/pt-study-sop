@@ -1,6 +1,7 @@
 # AGENTS Master (Unified)
 
 Canonical location: `C:/pt-study-sop/ai-config/AGENTS.md`
+Mirror copies (keep in sync; do not edit directly): `C:/pt-study-sop/AGENTS.md`, `C:/pt-study-sop/.claude/AGENTS.md`
 
 ## Scope and precedence
 - Applies to work under `C:/pt-study-sop` and specifically the `pt-study-sop` repo unless a nearer `AGENTS.md` exists.
@@ -13,6 +14,7 @@ You must read and obey `CLAUDE.md` immediately (same folder). It contains core r
 - Keep changes minimal and scoped; avoid broad reformatting.
 - Prefer ASCII; keep filenames and paths stable unless requested.
 - Prefer non-archive paths for code changes; avoid editing `archive/` (including `archive/unused`) unless explicitly requested.
+- When working in any folder, ensure a concise `README.md` exists that explains purpose, key paths, and pointers; create/update it if missing (skip `archive/` unless asked).
 - Ask before destructive or irreversible actions (delete, overwrite, submit, purchase).
 - Run project-required checks or clearly state when they are skipped.
 
@@ -51,7 +53,7 @@ When writing complex features or significant refactors, use an ExecPlan (as desc
 - Update the ledger after every significant change; append only -- never delete history.
 
 ## Project map (nearest AGENTS.md locations)
-- PT Study SOP: `C:/pt-study-sop/AGENTS.md` (synced to this file)
+- PT Study SOP: `C:/pt-study-sop/AGENTS.md` (mirror of canonical in `C:/pt-study-sop/ai-config/AGENTS.md`)
   - Runtime canon in `sop/gpt-knowledge/`; master plan in `sop/MASTER_PLAN_PT_STUDY.md`.
   - Requires `CONTINUITY.md` and specific test commands.
 - DrCodePT-Swarm: `C:/Users/treyt/OneDrive/Desktop/DrCodePT-Swarm/AGENTS.md`

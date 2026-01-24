@@ -12,9 +12,9 @@ Canonical location: `C:/pt-study-sop/ai-config/CLAUDE.md`
 
 ## Documentation Map (Root Index)
 - Start here: `DOCS_INDEX.md`.
-- User Guide: `GUIDE_USER.md`.
-- Developer Guide: `GUIDE_DEV.md`.
-- Architecture Spec: `GUIDE_ARCHITECTURE.md`.
+- User Guide: `docs/root/GUIDE_USER.md`.
+- Developer Guide: `docs/root/GUIDE_DEV.md`.
+- Architecture Spec: `docs/root/GUIDE_ARCHITECTURE.md`.
 - Contracts: `docs/contracts/INDEX.md`.
 - Acceptance tests: `docs/tests/`.
 

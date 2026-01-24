@@ -87,13 +87,13 @@ IngestionWizard.tsx    → Brain page (Ingestion tab)
 ### Essential Reference:
 - `docs/full-ui-api-audit-2026-01-22.md` — Complete API endpoint inventory
 - `docs/contracts/wrap_schema.md` — WRAP required fields (source_lock is there!)
-- `PROJECT_ARCHITECTURE.md` — Deep architecture doc
-- `SYSTEM_INVENTORY.md` — Engines, frameworks, mechanisms, modes
+- `docs/root/PROJECT_ARCHITECTURE.md` — Deep architecture doc
+- `docs/root/SYSTEM_INVENTORY.md` — Engines, frameworks, mechanisms, modes
 
 ### Helpful Context:
 - `README.md` — System overview, milestone plans
 - `CONTINUITY.md` — Recent changes log
-- `GUIDE_USER.md` / `GUIDE_DEV.md` / `GUIDE_ARCHITECTURE.md` — System guides
+- `docs/root/GUIDE_USER.md` / `docs/root/GUIDE_DEV.md` / `docs/root/GUIDE_ARCHITECTURE.md` — System guides
 
 ### Source Code:
 - `dashboard_rebuild/` — Current dashboard codebase
@@ -127,4 +127,3 @@ From EXECPLAN, the implementation is complete when:
 API checks:
 - `GET /api/learning-objectives` returns array
 - `GET /api/sessions/last-context?courseId=1` returns context object
-

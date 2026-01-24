@@ -4,16 +4,16 @@
 A root-level index that separates user guidance, developer guidance, and architecture specs, and provides a single launch point for system contracts and acceptance tests.
 
 ## Guides (Separated)
-- **User Guide:** `GUIDE_USER.md`
-- **Developer Guide:** `GUIDE_DEV.md`
-- **Architecture Spec:** `GUIDE_ARCHITECTURE.md`
+- **User Guide:** `docs/root/GUIDE_USER.md`
+- **Developer Guide:** `docs/root/GUIDE_DEV.md`
+- **Architecture Spec:** `docs/root/GUIDE_ARCHITECTURE.md`
 
 ## Core System Docs
 - AI config sync: `docs/AI_CONFIG.md`
 - System map (flow + loops): `docs/system_map.md`
 - Calendar/Tasks integration: `docs/calendar_tasks.md`
 - WRAP buckets (ingestion taxonomy): `docs/wrap_buckets.md`
-- System architecture deep dive: `PROJECT_ARCHITECTURE.md`
+- System architecture deep dive: `docs/root/PROJECT_ARCHITECTURE.md`
 
 ## Contracts + Schemas
 - Contracts index: `docs/contracts/INDEX.md`

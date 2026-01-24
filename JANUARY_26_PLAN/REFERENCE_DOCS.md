@@ -138,7 +138,7 @@ notes
 
 # 3. System Inventory
 
-**Source:** `SYSTEM_INVENTORY.md`
+**Source:** `docs/root/SYSTEM_INVENTORY.md`
 
 ## The Engines (Content Models)
 | Engine | Purpose |
@@ -180,7 +180,7 @@ notes
 
 # 4. Project Architecture (Excerpt)
 
-**Source:** `PROJECT_ARCHITECTURE.md`
+**Source:** `docs/root/PROJECT_ARCHITECTURE.md`
 
 ## Database Schema (`brain/data/pt_study.db`)
 
@@ -315,4 +315,3 @@ python scripts/release_check.py
 | SQLite database | `brain/data/pt_study.db` |
 | Session logs | `brain/session_logs/` |
 | MASTER_SOP docs | `scholar/knowledge/MASTER_SOP/` |
-

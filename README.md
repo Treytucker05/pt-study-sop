@@ -59,9 +59,15 @@ Build a personal study OS that captures every session, turns it into metrics and
 - Brain + Dashboard: `brain/`
 - Scholar: `scholar/`
 - SOP runtime canon: `sop/`
-- System architecture: `PROJECT_ARCHITECTURE.md`
+- Root docs (guides, architecture): `docs/root/`
+- System architecture: `docs/root/PROJECT_ARCHITECTURE.md`
 - System map: `docs/system_map.md`
 - Calendar/Tasks doc: `docs/calendar_tasks.md`
+
+## Agent Routing
+- Canonical agent rules live in `ai-config/AGENTS.md` and `ai-config/CLAUDE.md` (edit there only).
+- Mirrors exist at `AGENTS.md`, `CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md` for tool compatibility; keep them identical to canonical.
+- Precedence: the nearest `AGENTS.md` to your working path overrides higher-level files; if you add a nested one, note the reason.
 
 ## Quick Start
 1. Open Obsidian at `projects/treys-agent/context/`.

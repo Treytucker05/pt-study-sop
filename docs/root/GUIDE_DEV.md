@@ -37,7 +37,7 @@ This guide covers how to run the stack, update docs, and extend the system safel
 - Release check: `python scripts/release_check.py`
 
 ## Docs Discipline
-- User Guide: `GUIDE_USER.md`
-- Developer Guide: `GUIDE_DEV.md`
-- Architecture Spec: `GUIDE_ARCHITECTURE.md`
+- User Guide: `docs/root/GUIDE_USER.md`
+- Developer Guide: `docs/root/GUIDE_DEV.md`
+- Architecture Spec: `docs/root/GUIDE_ARCHITECTURE.md`
 - Index: `DOCS_INDEX.md`
