@@ -6,6 +6,7 @@ import os
 import requests
 from typing import List, Dict, Any
 
+
 # Import internal modules from the "Brain"
 from db_setup import get_connection
 from config import load_env, COURSE_FOLDERS
@@ -677,12 +678,16 @@ def get_events():
             c_info = course_map.get(ev.get("course_id"), {})
             title = ev.get("title", "Untitled")
 
+            # For endDate, use the event date if due_date is missing, and ensure proper format
+            raw_end = ev.get("due_date") or ev.get("date")
+            end_date = safe_iso_date(raw_end)
+
             serialized.append(
                 {
                     "id": ev["id"],
                     "title": title,
                     "date": start_date,
-                    "endDate": ev.get("due_date"),
+                    "endDate": end_date,
                     "allDay": True,
                     "eventType": (ev.get("type") or "event").lower(),
                     "course": c_info.get("code") or c_info.get("name"),
@@ -780,24 +785,55 @@ def update_event(event_id):
             fields.append("title = ?")
             values.append(data["title"])
         if "date" in data:
-            # handle iso
-            dt = data["date"].split("T")[0] if "T" in data["date"] else data["date"]
-            fields.append("date = ?")
-            values.append(dt)
+            # handle iso - extract date and time parts
+            date_val = data["date"]
+            if isinstance(date_val, str):
+                if "T" in date_val:
+                    dt_part = date_val.split("T")[0]
+                    time_part = date_val.split("T")[1].split(".")[0] if "." in date_val else date_val.split("T")[1][:8]
+                    fields.append("date = ?")
+                    values.append(dt_part)
+                    # Also update time if present
+                    if time_part and time_part != "00:00:00":
+                        fields.append("time = ?")
+                        values.append(time_part[:5])  # HH:MM format
+                else:
+                    fields.append("date = ?")
+                    values.append(date_val)
+        if "eventType" in data:
+            fields.append("type = ?")
+            values.append(data["eventType"])
         if "status" in data:
             fields.append("status = ?")
             values.append(data["status"])
 
         if not fields:
-            return jsonify({"success": True})
+            return jsonify({"success": True, "id": event_id})
+
+        # Add updated_at timestamp
+        fields.append("updated_at = ?")
+        values.append(datetime.now().isoformat(timespec="seconds"))
 
         values.append(event_id)
         cur.execute(
             f"UPDATE course_events SET {', '.join(fields)} WHERE id = ?", tuple(values)
         )
         conn.commit()
+
+        # Return the updated event
+        cur.execute("SELECT id, title, date, type, status FROM course_events WHERE id = ?", (event_id,))
+        row = cur.fetchone()
         conn.close()
-        return jsonify({"success": True})
+
+        if row:
+            return jsonify({
+                "id": row[0],
+                "title": row[1],
+                "date": safe_iso_date(row[2]),
+                "eventType": row[3],
+                "status": row[4],
+            })
+        return jsonify({"success": True, "id": event_id})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -3871,7 +3907,9 @@ def brain_chat():
         direct_enhanced = None
 
         has_direct_payload = isinstance(data.get("payload"), dict) or isinstance(data.get("tracker"), dict) or isinstance(data.get("enhanced"), dict)
-        if not has_direct_payload and isinstance(message, str) and message.strip() and is_wrap_format(message):
+        # DISABLED: Direct WRAP parsing - now all input goes through LLM processing
+        # To re-enable: remove "False and" from the condition below
+        if False and not has_direct_payload and isinstance(message, str) and message.strip() and is_wrap_format(message):
             wrap_data = parse_wrap(message)
             if wrap_data:
                 now = datetime.now()
@@ -3996,6 +4034,10 @@ def brain_chat():
                     # If mode is "anki", trigger immediate sync to Anki
                     if mode == "anki" and cards_created > 0:
                         try:
+                            import sys
+                            brain_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                            if brain_dir not in sys.path:
+                                sys.path.insert(0, brain_dir)
                             from anki_sync import sync_pending_cards
                             sync_result = sync_pending_cards()
                             cards_synced_to_anki = sync_result.get("synced", 0)
@@ -4099,12 +4141,14 @@ def brain_chat():
         elif isinstance(data.get("payload"), dict):
             direct_payload = data.get("payload")
 
-        if direct_payload is None and isinstance(message, str) and message.strip():
-            merged_payload, tracker_payload, enhanced_payload = _parse_json_payloads(message)
-            if merged_payload:
-                direct_payload = merged_payload
-                direct_tracker = tracker_payload
-                direct_enhanced = enhanced_payload
+        # DISABLED: Auto-extract JSON from message text - now all text goes through LLM
+        # This was extracting JSON from WRAP Section D and skipping LLM processing
+        # if direct_payload is None and isinstance(message, str) and message.strip():
+        #     merged_payload, tracker_payload, enhanced_payload = _parse_json_payloads(message)
+        #     if merged_payload:
+        #         direct_payload = merged_payload
+        #         direct_tracker = tracker_payload
+        #         direct_enhanced = enhanced_payload
 
         use_direct_payload = direct_payload is not None
 
@@ -4133,6 +4177,15 @@ def brain_chat():
 FIRST, determine the intent:
 - Short messages, greetings, questions, or casual chat = CONVERSATION
 - Detailed notes with concepts, topics, or learning content = STUDY INGESTION
+- WRAP format (sections A, B, C, D with Anki cards) = STUDY INGESTION
+
+WRAP FORMAT DETECTION:
+If the input contains "## A)" or "## B) Anki Cards" or "* Front:" and "* Back:", this is WRAP format.
+For WRAP format, extract ALL cards from Section B exactly as written. Each card has:
+- Front: (the question)
+- Back: (the answer)
+- Tags: (semicolon-separated)
+- Source: (citation)
 
 For CONVERSATION (greetings, questions, short messages, tests like "you working"):
 {
@@ -4434,6 +4487,12 @@ IMPORTANT:
 
         # Insert Anki cards into card_drafts if present
         cards_created = 0
+        cards_synced_to_anki = 0
+        anki_sync_error = None
+
+        # If mode is "anki" or "all", auto-approve cards for immediate sync
+        card_status = "approved" if mode in ("anki", "all") else "pending"
+
         if anki_cards:
             conn = get_connection()
             cur = conn.cursor()
@@ -4444,7 +4503,7 @@ IMPORTANT:
             for card in anki_cards:
                 if isinstance(card, dict) and card.get("front") and card.get("back"):
                     cur.execute("""
-                        INSERT INTO card_drafts 
+                        INSERT INTO card_drafts
                         (session_id, course_id, topic_id, deck_name, card_type, front, back, tags, source_citation, status, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (
@@ -4457,13 +4516,24 @@ IMPORTANT:
                         card.get("back", ""),
                         card.get("tags", ""),
                         None,  # source_citation
-                        "pending",
+                        card_status,
                         datetime.now().isoformat()
                     ))
                     cards_created += 1
 
             conn.commit()
             conn.close()
+
+            # If mode is "anki" or "all", trigger immediate sync to Anki
+            if mode in ("anki", "all") and cards_created > 0:
+                try:
+                    from anki_sync import sync_pending_cards
+                    sync_result = sync_pending_cards()
+                    cards_synced_to_anki = sync_result.get("synced", 0)
+                    if sync_result.get("errors"):
+                        anki_sync_error = "; ".join(sync_result["errors"])
+                except Exception as sync_err:
+                    anki_sync_error = str(sync_err)
         
         # Build response message
         response_parts = []
@@ -4514,7 +4584,7 @@ IMPORTANT:
         # Sync to Obsidian if requested (skip for conversations)
         obsidian_synced = False
         obsidian_error = None
-        sync_to_obsidian = data.get("syncToObsidian", False)
+        sync_to_obsidian = data.get("syncToObsidian", False) or mode in ("obsidian", "all")
 
         if sync_to_obsidian and parsed_data and not is_conversation:
             # Build Obsidian note content
@@ -4585,6 +4655,8 @@ IMPORTANT:
             "isStub": False,
             "parsed": True,
             "cardsCreated": cards_created,
+            "cardsSyncedToAnki": cards_synced_to_anki,
+            "ankiSyncError": anki_sync_error,
             "obsidianSynced": obsidian_synced,
             "obsidianError": obsidian_error,
             "sessionSaved": session_saved,

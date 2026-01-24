@@ -61,6 +61,14 @@ def create_app():
                 return send_from_directory(
                     os.path.join(app.static_folder or "", "dist"), path
                 )
+            
+            # Handle /assets/* requests - serve from /static/dist/assets/
+            if path.startswith("assets/"):
+                assets_candidate = os.path.join(app.static_folder or "", "dist", path)
+                if os.path.exists(assets_candidate):
+                    return send_from_directory(
+                        os.path.join(app.static_folder or "", "dist"), path
+                    )
 
         dist_index = os.path.join(app.static_folder or "", "dist", "index.html")
         if os.path.exists(dist_index):

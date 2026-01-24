@@ -983,3 +983,35 @@ def api_scraper_run():
         )
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@dashboard_bp.route("/api/syllabus/import_bulk", methods=["POST"])
+def api_syllabus_import_bulk():
+    """Import a full syllabus JSON (course + events) from ChatGPT output."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"ok": False, "message": "No JSON data provided"}), 400
+
+    # Validate required fields
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify({"ok": False, "message": "Course name is required"}), 400
+
+    try:
+        # Upsert course (creates or updates)
+        course_id = upsert_course(data)
+
+        # Import events if provided
+        events = data.get("events", [])
+        inserted = 0
+        if events:
+            inserted = import_events(course_id, events, replace=False)
+
+        return jsonify({
+            "ok": True,
+            "message": f"Imported course '{name}' with {inserted} event(s)",
+            "course_id": course_id,
+            "events_imported": inserted
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500

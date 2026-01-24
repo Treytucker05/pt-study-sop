@@ -36,7 +36,8 @@
       "Bash(del local.db)",
       "Bash(netstat:*)",
       "Bash(echo $OPENROUTER_API_KEY)",
-      "Bash(cmd //c taskkill /PID 27412 /F)"
+      "Bash(cmd //c taskkill /PID 27412 /F)",
+      "Bash(wc:*)"
     ],
     "defaultMode": "bypassPermissions"
   }

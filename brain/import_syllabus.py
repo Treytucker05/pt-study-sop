@@ -14,6 +14,7 @@ The expected input format is JSON, for example:
   "term": "Spring 2026",
   "instructor": "Dr. Smith",
   "default_study_mode": "Core",
+  "delivery_format": "synchronous",  // synchronous/asynchronous/online_module/hybrid
   "time_budget_per_week_minutes": 900,
   "events": [
     {
@@ -69,6 +70,8 @@ def _normalize_event_input(ev: Dict[str, Any]) -> Dict[str, Any]:
     title = _normalize_str(ev.get("title"))
     date = _normalize_str(ev.get("date")) or None
     due_date = _normalize_str(ev.get("due_date")) or None
+    time = _normalize_str(ev.get("time")) or None
+    end_time = _normalize_str(ev.get("end_time")) or None
     weight = float(ev.get("weight", 0.0) or 0.0)
     raw_text = _normalize_str(ev.get("raw_text"))
     status = _normalize_str(ev.get("status") or "pending") or "pending"
@@ -78,6 +81,8 @@ def _normalize_event_input(ev: Dict[str, Any]) -> Dict[str, Any]:
         "title": title,
         "date": date,
         "due_date": due_date,
+        "time": time,
+        "end_time": end_time,
         "weight": weight,
         "raw_text": raw_text,
         "status": status,
@@ -249,6 +254,7 @@ def upsert_course(course_data: Dict[str, Any]) -> int:
     default_mode = (
         str(course_data.get("default_study_mode") or "Core").strip() or "Core"
     )
+    delivery_format = str(course_data.get("delivery_format") or "").strip() or None
     time_budget = int(course_data.get("time_budget_per_week_minutes", 0) or 0)
     now = datetime.now().isoformat(timespec="seconds")
 
@@ -294,13 +300,13 @@ def upsert_course(course_data: Dict[str, Any]) -> int:
             """
             INSERT INTO courses (
                 name, code, term, instructor,
-                default_study_mode,
+                default_study_mode, delivery_format,
                 time_budget_per_week_minutes,
                 created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (name, code, term, instructor, default_mode, time_budget, now),
+            (name, code, term, instructor, default_mode, delivery_format, time_budget, now),
         )
         course_id = cur.lastrowid
         print(f"[OK] Created new course '{name}' (id={course_id})")
@@ -314,6 +320,7 @@ def upsert_course(course_data: Dict[str, Any]) -> int:
                 term = COALESCE(?, term),
                 instructor = COALESCE(?, instructor),
                 default_study_mode = COALESCE(?, default_study_mode),
+                delivery_format = COALESCE(?, delivery_format),
                 time_budget_per_week_minutes =
                     CASE WHEN ? > 0 THEN ? ELSE time_budget_per_week_minutes END
             WHERE id = ?
@@ -324,6 +331,7 @@ def upsert_course(course_data: Dict[str, Any]) -> int:
                 term,
                 instructor,
                 default_mode,
+                delivery_format,
                 time_budget,
                 time_budget,
                 course_id,
@@ -374,10 +382,10 @@ def import_events(course_id: int, events: Any, replace: bool = False) -> int:
         cur.execute(
             """
             INSERT INTO course_events (
-                course_id, type, title, date, due_date,
+                course_id, type, title, date, due_date, time, end_time,
                 weight, raw_text, status, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
             """,
             (
                 course_id,
@@ -385,6 +393,8 @@ def import_events(course_id: int, events: Any, replace: bool = False) -> int:
                 ev["title"],
                 ev["date"],
                 ev["due_date"],
+                ev["time"],
+                ev["end_time"],
                 ev["weight"],
                 ev["raw_text"],
                 now,

@@ -36,24 +36,7 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) {
-            return;
-          }
-          if (id.includes("react")) {
-            return "react";
-          }
-          if (id.includes("@radix-ui")) {
-            return "radix";
-          }
-          if (id.includes("@tanstack")) {
-            return "tanstack";
-          }
-          if (id.includes("lucide-react")) {
-            return "icons";
-          }
-          return "vendor";
-        },
+        // Disable manual chunking to avoid module initialization order issues
       },
     },
   },

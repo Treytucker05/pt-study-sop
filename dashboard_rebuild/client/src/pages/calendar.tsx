@@ -1134,7 +1134,7 @@ export default function CalendarPage() {
                           <div className={cn("text-right font-mono text-sm w-6 h-6 flex items-center justify-center ml-auto", isTodayDate && "bg-red-500 text-white rounded-full font-bold")}>{format(day, 'd')}</div>
                           <div className="space-y-0.5 mt-1">
                             {dayEvents.slice(0, 3).map((event, i) => (
-                              <div key={`${event.id}-${i}`} className={cn("text-[10px] font-mono truncate px-1.5 py-0.5 rounded", getEventColor(event))} style={getEventInlineStyle(event)} title={event.title}>
+                              <div key={`${event.id}-${i}`} className={cn("text-[10px] font-mono truncate px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} title={event.title} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
                                 {event.title}
                               </div>
                             ))}
@@ -1168,7 +1168,7 @@ export default function CalendarPage() {
                       return (
                         <div key={`allday-${day.toISOString()}`} className="border-r border-zinc-800 last:border-r-0 p-0.5 min-h-[28px]">
                           {allDayEvents.map((event, i) => (
-                            <div key={i} className={cn("text-[10px] font-mono truncate px-1.5 py-0.5 rounded", getEventColor(event))} style={getEventInlineStyle(event)}>{event.title}</div>
+                            <div key={i} className={cn("text-[10px] font-mono truncate px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
                           ))}
                         </div>
                       );
@@ -1235,7 +1235,7 @@ export default function CalendarPage() {
                       <div className="p-3 border-b border-secondary/50 bg-black/40 shrink-0 flex gap-2 flex-wrap items-center">
                         <span className="font-mono text-sm text-muted-foreground">ALL DAY:</span>
                         {allDayEvents.map((event, i) => (
-                          <div key={i} className={cn("text-sm font-mono px-3 py-1 rounded", getEventColor(event))} style={getEventInlineStyle(event)}>{event.title}</div>
+                          <div key={i} className={cn("text-sm font-mono px-3 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
                         ))}
                       </div>
                     );

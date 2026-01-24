@@ -1653,16 +1653,19 @@ Given the raw syllabus text I provide, output a SINGLE JSON object in this exact
   "code": "COURSE CODE OR SHORT LABEL",
   "term": "TERM (e.g., Spring 2026)",
   "instructor": "INSTRUCTOR NAME (if known)",
+  "delivery_format": "synchronous | asynchronous | online_module | hybrid",
   "default_study_mode": "Core",
   "time_budget_per_week_minutes": 900,
   "events": [
     {
-      "type": "lecture | reading | quiz | exam | assignment | other",
+      "type": "lecture | lab | reading | quiz | exam | assignment | other",
       "title": "Short, clear title",
       "date": "YYYY-MM-DD or null",
       "due_date": "YYYY-MM-DD or null",
+      "time": "HH:MM (24-hour) or null",
+      "end_time": "HH:MM (24-hour) or null",
       "weight": 0.0,
-      "raw_text": "Short description: chapters, slides, topics, etc."
+      "raw_text": "Short description: chapters, slides, topics, location/room, etc."
     }
   ]
 }
@@ -1671,16 +1674,20 @@ Given the raw syllabus text I provide, output a SINGLE JSON object in this exact
 
 1. Only output JSON. No commentary, no markdown, no backticks.
 2. Use these rules for events:
-   - Create ONE event per meaningful item in the syllabus (lecture, reading block, quiz, exam, assignment).
-   - type: lecture, reading, quiz, exam, assignment, or other.
+   - Create ONE event per meaningful item in the syllabus (lecture, lab, reading block, quiz, exam, assignment).
+   - type: lecture, lab, reading, quiz, exam, assignment, or other.
    - title: short but specific (include week or topic where helpful).
    - date: calendar date if present, otherwise null.
    - due_date: for quizzes/exams/assignments, usually same as date; otherwise null.
+   - time: start time in 24-hour format (e.g., "14:00" for 2:00 PM), null if not specified.
+   - end_time: end time in 24-hour format, null if not specified.
    - weight: 0.0 if not clearly stated; or 0.3 if the syllabus says â€œ30%â€.
-   - raw_text: the most useful details (chapters, pages, slides, topics), under ~200 characters.
+   - raw_text: the most useful details (chapters, pages, slides, topics, room/location), under ~200 characters.
 3. If the syllabus spans multiple courses, process ONLY ONE course per run.
 4. If term, instructor, or course code are not obvious, use null for those fields.
-5. Dates must be in "YYYY-MM-DD" format if you can infer them; otherwise null.
+5. delivery_format: "synchronous" (live in-person or live Zoom), "asynchronous" (watch pre-recorded lectures anytime), "online_module" (self-paced online content), or "hybrid" (mix of live and async). If unclear, use null.
+6. Dates must be in "YYYY-MM-DD" format if you can infer them; otherwise null.
+7. For recurring events, create separate entries for each occurrence if specific dates are listed.
 
 Now say: â€œPaste your syllabus text here (one course at a time).â€ Then wait for me, and after I paste the syllabus, respond ONLY with the JSON object.</textarea>
                 </div>

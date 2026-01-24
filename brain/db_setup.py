@@ -253,6 +253,7 @@ def init_database():
             term TEXT,
             instructor TEXT,
             default_study_mode TEXT,
+            delivery_format TEXT,  -- synchronous/asynchronous/online_module/hybrid
             time_budget_per_week_minutes INTEGER DEFAULT 0,
             created_at TEXT NOT NULL
         )
@@ -264,10 +265,12 @@ def init_database():
         CREATE TABLE IF NOT EXISTS course_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             course_id INTEGER NOT NULL,
-            type TEXT NOT NULL, -- lecture/reading/quiz/exam/assignment/announcement/other
+            type TEXT NOT NULL, -- lecture/reading/quiz/exam/assignment/lab/announcement/other
             title TEXT NOT NULL,
             date TEXT,          -- primary calendar date (e.g., lecture date)
             due_date TEXT,      -- for quizzes/exams/assignments
+            time TEXT,          -- HH:MM format (24-hour)
+            end_time TEXT,      -- HH:MM format (24-hour)
             weight REAL DEFAULT 0.0,
             raw_text TEXT,      -- syllabus snippet or notes
             status TEXT DEFAULT 'pending', -- pending/completed/cancelled
@@ -444,6 +447,13 @@ def init_database():
         try:
             cursor.execute("ALTER TABLE courses ADD COLUMN last_scraped_at TEXT")
             print("[INFO] Added 'last_scraped_at' column to courses table")
+        except sqlite3.OperationalError:
+            pass
+
+    if "delivery_format" not in course_cols:
+        try:
+            cursor.execute("ALTER TABLE courses ADD COLUMN delivery_format TEXT")
+            print("[INFO] Added 'delivery_format' column to courses table")
         except sqlite3.OperationalError:
             pass
 
@@ -831,6 +841,21 @@ def init_database():
             print("[INFO] Added 'recurrence_rule' column to course_events table")
         except sqlite3.OperationalError:
             pass  # Column might already exist
+
+    # Add time and end_time columns if not exist (for event times)
+    if "time" not in ce_columns:
+        try:
+            cursor.execute("ALTER TABLE course_events ADD COLUMN time TEXT")
+            print("[INFO] Added 'time' column to course_events table")
+        except sqlite3.OperationalError:
+            pass
+
+    if "end_time" not in ce_columns:
+        try:
+            cursor.execute("ALTER TABLE course_events ADD COLUMN end_time TEXT")
+            print("[INFO] Added 'end_time' column to course_events table")
+        except sqlite3.OperationalError:
+            pass
 
     # ------------------------------------------------------------------
     # Scholar Digests table (strategic analysis documents)

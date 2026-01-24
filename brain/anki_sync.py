@@ -529,19 +529,19 @@ def sync_pending_cards(
         if result["success"]:
             update_card_status(card_id, "synced", note_id=result.get("note_id"))
             summary["synced"] += 1
-            print(f"  ✓ Card {card_id} synced (note_id: {result.get('note_id')})")
+            print(f"  [OK] Card {card_id} synced (note_id: {result.get('note_id')})")
         else:
             error = result.get("error", "Unknown error")
             if "duplicate" in error.lower():
                 # Mark as synced anyway (already exists)
                 update_card_status(card_id, "synced")
                 summary["skipped"] += 1
-                print(f"  ⊘ Card {card_id} skipped (duplicate)")
+                print(f"  [SKIP] Card {card_id} skipped (duplicate)")
             else:
                 update_card_status(card_id, "draft")  # Reset to draft for retry
                 summary["failed"] += 1
                 summary["errors"].append(f"Card {card_id}: {error}")
-                print(f"  ✗ Card {card_id} failed: {error}")
+                print(f"  [FAIL] Card {card_id} failed: {error}")
     
     print(f"\n[SUMMARY] Synced: {summary['synced']}, Skipped: {summary['skipped']}, Failed: {summary['failed']}")
     return summary
@@ -592,7 +592,7 @@ Examples:
     if args.check:
         print(f"Checking Anki Connect at {ANKI_CONNECT_URL}...")
         if check_connection():
-            print("✓ Connected to Anki Connect")
+            print("[OK] Connected to Anki Connect")
             try:
                 version = _invoke("version")
                 print(f"  Anki Connect version: {version}")
@@ -600,13 +600,13 @@ Examples:
                 pass
             sys.exit(0)
         else:
-            print("✗ Cannot connect to Anki Connect")
+            print("[FAIL] Cannot connect to Anki Connect")
             print("  Make sure Anki is running with the Anki Connect plugin installed.")
             sys.exit(1)
     
     elif args.list_decks:
         if not check_connection():
-            print("✗ Cannot connect to Anki. Is it running?")
+            print("[FAIL] Cannot connect to Anki. Is it running?")
             sys.exit(1)
         decks = get_deck_names()
         print(f"Found {len(decks)} deck(s):")
@@ -615,7 +615,7 @@ Examples:
     
     elif args.list_models:
         if not check_connection():
-            print("✗ Cannot connect to Anki. Is it running?")
+            print("[FAIL] Cannot connect to Anki. Is it running?")
             sys.exit(1)
         models = get_model_names()
         print(f"Found {len(models)} note type(s):")
@@ -663,7 +663,7 @@ Examples:
             tags="anatomy,gluteal,test",
             status="approved",  # Ready for sync
         )
-        print(f"✓ Created test card draft (ID: {card_id}) with status 'approved'")
+        print(f"[OK] Created test card draft (ID: {card_id}) with status 'approved'")
         print("  Run 'python anki_sync.py --sync' to push it to Anki")
     
     else:

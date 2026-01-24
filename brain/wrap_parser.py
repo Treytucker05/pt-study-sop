@@ -20,6 +20,12 @@ def is_wrap_format(raw_text: str) -> bool:
         score += 2
     if re.search(r"(?im)^\s*[ABCD]\s*[:\)\-]\s*", text):
         score += 2
+    # v9.3 format: "### A) Title" style headers
+    if re.search(r"(?im)^\s*#+\s*[ABCD]\s*\)", text):
+        score += 2
+    # v9.3 marker: "Obsidian Notes Pack" in Section A header
+    if re.search(r"(?im)obsidian\s*notes?\s*pack", text):
+        score += 2
     if re.search(r"(?im)^\s*front\s*:", text) and re.search(r"(?im)^\s*back\s*:", text):
         score += 2
     if re.search(r"(?im)\bWRAP\b", text):
@@ -122,7 +128,14 @@ def extract_anki_cards(wrap: dict) -> list:
         if not line:
             continue
 
-        match = re.match(r"^(front|back|tags|source)\s*:\s*(.*)$", line, re.I)
+        # Detect card number headers like "**1**", "**2**", "1.", "Card 1:" - flush previous card
+        if re.match(r"^(?:\*\*)?(\d+)(?:\*\*)?\.?$", line) or re.match(r"^Card\s+\d+", line, re.I):
+            if current:
+                flush()
+            continue
+
+        # Match: "Front:", "* Front:", "- Front:", "**Front:**"
+        match = re.match(r"^(?:[*\-]\s*)?(?:\*\*)?(front|back|tags|source)(?:\*\*)?\s*:\s*(.*)$", line, re.I)
         if match:
             key = match.group(1).lower()
             value = match.group(2).strip()
@@ -132,9 +145,10 @@ def extract_anki_cards(wrap: dict) -> list:
             last_key = key
             continue
 
-        # Continuation lines for multi-line fields
-        if last_key and current.get(last_key):
-            current[last_key] = f"{current[last_key]} {line}".strip()
+        # Continuation lines for multi-line fields (allow even if previous value empty)
+        if last_key:
+            existing = current.get(last_key, "")
+            current[last_key] = f"{existing} {line}".strip() if existing else line
 
     flush()
     return cards
@@ -150,10 +164,12 @@ def extract_spaced_schedule(wrap: dict) -> dict:
         line = raw_line.strip()
         if not line:
             continue
-        match = re.match(r"^(R[1-4])\s*[:=\-]\s*(.+)$", line, re.I)
+        # Match: "R1:", "**R1:**", "* R1:", "- R1:"
+        match = re.match(r"^(?:[*\-]\s*)?(?:\*\*)?(R[1-4])(?:\*\*)?\s*[:=\-]\s*(.+)$", line, re.I)
         if match:
             key = match.group(1).upper()
-            value = match.group(2).strip()
+            # Clean up any remaining ** markers from value
+            value = match.group(2).strip().strip("*").strip()
             schedule[key] = value
     return schedule
 
@@ -209,12 +225,16 @@ def _split_sections(raw_text: str) -> Dict[str, str]:
 def _detect_section_header(line: str) -> Optional[str]:
     if not line:
         return None
-    match = re.match(r"^\s*(?:#+\s*)?(?:section\s*)?([ABCD])\b", line, re.I)
-    if match:
-        return match.group(1).upper()
-    match = re.match(r"^\s*([ABCD])\s*[:\)\-]\s*", line, re.I)
-    if match:
-        return match.group(1).upper()
+    # Match various formats: "Section A", "### Section A", "A:", "A)", "### A) Title"
+    patterns = [
+        r"^\s*(?:#+\s*)?section\s*([ABCD])\b",  # "Section A" or "### Section A"
+        r"^\s*(?:#+\s*)?([ABCD])\s*\)",          # "### A)" or "A)"
+        r"^\s*([ABCD])\s*[:\-]\s*",              # "A:" or "A -"
+    ]
+    for pattern in patterns:
+        match = re.match(pattern, line, re.I)
+        if match:
+            return match.group(1).upper()
     return None
 
 
@@ -255,7 +275,13 @@ def _fallback_parse_sections(raw_text: str) -> Dict[str, str]:
 
 
 def _extract_json_section(raw_text: str) -> str:
-    blocks = re.findall(r"```json\s*({.*?})\s*```", raw_text, flags=re.DOTALL | re.IGNORECASE)
+    # Match multiline JSON blocks including arrays and nested objects
+    pattern = r"```json\s*\n?([\s\S]*?)\n?```"
+    blocks = []
+    for match in re.finditer(pattern, raw_text, flags=re.IGNORECASE):
+        block = match.group(1).strip()
+        if block:
+            blocks.append(block)
     if not blocks:
         return ""
     return "\n\n".join(blocks).strip()
