@@ -3961,11 +3961,15 @@ def brain_chat():
                 wrap_session_id = metadata.get("session_id") or (str(session_id) if session_id else None)
 
                 cards_created = 0
-                if cards:
+                cards_synced_to_anki = 0
+                anki_sync_error = None
+                if cards and mode in ("all", "anki"):
                     conn = get_connection()
                     cur = conn.cursor()
                     course = metadata.get("course") or topic or "General"
                     session_ref = wrap_session_id or f"wrap_{now.strftime('%Y%m%d_%H%M%S')}"
+                    # If mode is "anki", auto-approve cards for immediate sync
+                    card_status = "approved" if mode == "anki" else "pending"
                     for card in cards:
                         if isinstance(card, dict) and card.get("front") and card.get("back"):
                             cur.execute("""
@@ -3982,12 +3986,23 @@ def brain_chat():
                                 card.get("back", ""),
                                 card.get("tags", ""),
                                 card.get("source") or metadata.get("source_lock"),
-                                "pending",
+                                card_status,
                                 now.isoformat()
                             ))
                             cards_created += 1
                     conn.commit()
                     conn.close()
+                    
+                    # If mode is "anki", trigger immediate sync to Anki
+                    if mode == "anki" and cards_created > 0:
+                        try:
+                            from anki_sync import sync_pending_cards
+                            sync_result = sync_pending_cards()
+                            cards_synced_to_anki = sync_result.get("synced", 0)
+                            if sync_result.get("errors"):
+                                anki_sync_error = "; ".join(sync_result["errors"])
+                        except Exception as sync_err:
+                            anki_sync_error = str(sync_err)
 
                 obsidian_synced = False
                 obsidian_error = None
@@ -4039,9 +4054,15 @@ def brain_chat():
                 response_parts = [
                     "WRAP ingestion complete.",
                     f"Cards drafted: {cards_created}",
+                ]
+                if mode == "anki" and cards_created > 0:
+                    response_parts.append(f"Cards synced to Anki: {cards_synced_to_anki}")
+                    if anki_sync_error:
+                        response_parts.append(f"Anki sync error: {anki_sync_error}")
+                response_parts.extend([
                     f"Notes merged: {'Yes' if obsidian_synced else 'No'}",
                     f"Tutor issues logged: {issues_logged}",
-                ]
+                ])
                 if obsidian_path and obsidian_synced:
                     response_parts.append(f"Obsidian note: {obsidian_path}")
                 if session_saved and session_id:
@@ -4055,6 +4076,8 @@ def brain_chat():
                     "parsed": True,
                     "wrapProcessed": True,
                     "cardsCreated": cards_created,
+                    "cardsSyncedToAnki": cards_synced_to_anki,
+                    "ankiSyncError": anki_sync_error,
                     "obsidianSynced": obsidian_synced,
                     "obsidianError": obsidian_error,
                     "obsidianPath": obsidian_path,

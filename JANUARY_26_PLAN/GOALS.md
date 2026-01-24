@@ -275,7 +275,15 @@ Infrastructure upgrades, research items.
 
 ## Quick Reference: What to Do First
 
-1. **GOAL 1 M1.1** - Add API key (5 min fix)
+### COMPLETED (Jan 24, 2026)
+1. **Brain Chat Mode Selector** - Added mode buttons (ALL, OBSIDIAN, ANKI, METRICS) above chat input
+   - Files modified: `dashboard_rebuild/client/src/pages/brain.tsx`, `dashboard_rebuild/client/src/api.ts`
+   - Backend: `brain/dashboard/api_adapter.py`
+2. **Anki Auto-Sync** - When mode is "ANKI", cards are auto-approved and synced to Anki immediately
+   - Requires Anki desktop running with AnkiConnect plugin
+
+### NEXT STEPS
+1. **GOAL 1 M1.1** - Add API key to `brain/data/api_config.json` (5 min fix)
 2. **GOAL 1 M1.2** - Set up Google OAuth if not done
 3. **GOAL 3** - Date/semester filters (UI work)
 4. **GOAL 4 M4.1** - Audit ingestion (understand before changing)

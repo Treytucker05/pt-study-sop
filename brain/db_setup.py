@@ -1116,6 +1116,40 @@ def get_schema_version():
     return version
 
 
+def backfill_session_minutes():
+    """
+    Backfill time_spent_minutes and duration_minutes where one is missing.
+    """
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE sessions
+        SET time_spent_minutes = duration_minutes
+        WHERE (time_spent_minutes IS NULL OR time_spent_minutes = 0)
+          AND duration_minutes IS NOT NULL
+          AND duration_minutes > 0
+    """
+    )
+    updated_time = cursor.rowcount
+
+    cursor.execute(
+        """
+        UPDATE sessions
+        SET duration_minutes = time_spent_minutes
+        WHERE (duration_minutes IS NULL OR duration_minutes = 0)
+          AND time_spent_minutes IS NOT NULL
+          AND time_spent_minutes > 0
+    """
+    )
+    updated_duration = cursor.rowcount
+
+    conn.commit()
+    conn.close()
+    return updated_time, updated_duration
+
+
 if __name__ == "__main__":
     print("PT Study Brain - Database Setup")
     print("=" * 40)
@@ -1153,3 +1187,9 @@ if __name__ == "__main__":
     # Always run init_database() to ensure schema is fully up to date
     # (adds any missing columns and creates new planning/RAG tables).
     init_database()
+
+    # Optional one-time data correction for session minutes
+    if os.environ.get("PT_BRAIN_BACKFILL_MINUTES", "").strip().lower() in {"1", "true", "yes"}:
+        updated_time, updated_duration = backfill_session_minutes()
+        print(f"[INFO] Backfilled time_spent_minutes for {updated_time} sessions.")
+        print(f"[INFO] Backfilled duration_minutes for {updated_duration} sessions.")
