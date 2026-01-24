@@ -25,6 +25,26 @@
 
 ---
 
+### 0.5 MILESTONE_INSTRUCTIONS.md (IMPLEMENTATION GUIDE)
+**What it covers:**
+- Complete step-by-step instructions for each milestone
+- All file paths explicitly listed
+- Exact code to add/modify
+- Validation steps after each milestone
+- Pre-flight checks before starting
+
+**Milestones:**
+1. Database Schema - Add tables to schema.ts, run db:push
+2. Storage Layer - Add CRUD functions to storage.ts
+3. API Endpoints - Add routes to routes.ts
+4. API Client - Add methods to client/src/api.ts
+5. ChatGPT Prompts - Create import prompt templates
+6. Ingestion Tab UI - Build Brain page Ingestion tab
+
+**Tonight's Minimum Viable Path:** Milestones 1-4 (2 hours)
+
+---
+
 ### 1. PROJECT_OVERVIEW.md (383 lines)
 **What it covers:**
 - The complete vision (Tutor → Brain → Scholar loop)
