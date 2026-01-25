@@ -40,7 +40,8 @@
       "Bash(wc:*)",
       "Bash(npx @realmikekelly/claude-sneakpeek quick:*)",
       "mcp__filesystem__read_multiple_files",
-      "Bash(if not exist \"C:\\\\Users\\\\treyt\\\\.claude\\\\agents\" mkdir \"C:\\\\Users\\\\treyt\\\\.claude\\\\agents\")"
+      "Bash(if not exist \"C:\\\\Users\\\\treyt\\\\.claude\\\\agents\" mkdir \"C:\\\\Users\\\\treyt\\\\.claude\\\\agents\")",
+      "Bash(bash scripts/test_brain_ingest.sh:*)"
     ],
     "defaultMode": "bypassPermissions"
   }

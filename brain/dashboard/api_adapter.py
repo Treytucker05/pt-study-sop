@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import sqlite3
 import json
 import os
+import re
 import requests
 from typing import List, Dict, Any
 
@@ -4678,20 +4679,128 @@ IMPORTANT:
 
 @adapter_bp.route("/brain/ingest", methods=["POST"])
 def brain_ingest():
-    """Ingest content into brain (stub)."""
+    """Ingest WRAP content into brain."""
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         content = data.get("content", "")
-        filename = data.get("filename", "unknown")
+        filename = data.get("filename", f"api_{datetime.now().isoformat()}")
 
-        # Stub response
+        if not content.strip():
+            return jsonify({
+                "message": "No content provided",
+                "parsed": False,
+                "isStub": False,
+                "sessionSaved": False,
+                "errors": ["content field is required"]
+            })
+
+        # Import dependencies (same as /brain/chat)
+        from ingest_session import (
+            insert_session,
+            validate_session_data,
+            _map_json_payload_to_session,
+            V93_SCHEMA_VERSION,
+        )
+        from wrap_parser import is_wrap_format, parse_wrap
+
+        if not is_wrap_format(content):
+            return jsonify({
+                "message": "Content is not valid WRAP format",
+                "parsed": False,
+                "isStub": False,
+                "sessionSaved": False,
+                "errors": ["Content must be WRAP format with sections A/B/C/D"]
+            })
+
+        # Parse WRAP (reuse existing logic from /brain/chat WRAP flow)
+        wrap_data = parse_wrap(content)
+        if not wrap_data:
+            return jsonify({
+                "message": "Failed to parse WRAP content",
+                "parsed": False,
+                "isStub": False,
+                "sessionSaved": False,
+                "errors": ["WRAP parsing returned empty result"]
+            })
+
+        # Build session_data with defaults (same logic as /brain/chat)
+        now = datetime.now()
+        metadata = wrap_data.get("metadata", {})
+        section_d = wrap_data.get("section_d", {}) or {}
+        merged_payload = section_d.get("merged") or {}
+
+        session_data = _map_json_payload_to_session(merged_payload)
+
+        # Helper for safe int conversion (matches existing WRAP flow)
+        def _safe_int(value, default=0):
+            try:
+                return int(float(value))
+            except (TypeError, ValueError):
+                return default
+
+        # Apply defaults (matches existing logic exactly)
+        session_date = metadata.get("date") or merged_payload.get("date") or now.strftime("%Y-%m-%d")
+        topic = metadata.get("topic") or merged_payload.get("topic") or metadata.get("course") or "General"
+        study_mode = metadata.get("mode") or metadata.get("study_mode") or merged_payload.get("mode") or "Core"
+        duration_minutes = _safe_int(
+            metadata.get("duration_min")
+            or metadata.get("duration_minutes")
+            or metadata.get("duration")
+            or merged_payload.get("duration_min")
+            or 0
+        )
+
+        session_data.setdefault("session_date", session_date)
+        session_data.setdefault("session_time", now.strftime("%H:%M:%S"))
+        session_data.setdefault("study_mode", str(study_mode).title())
+        session_data.setdefault("main_topic", topic)
+        session_data.setdefault("topic", topic)
+        session_data.setdefault("duration_minutes", duration_minutes)
+        session_data.setdefault("time_spent_minutes", duration_minutes)
+        session_data.setdefault("source_path", f"api/brain/ingest:{filename}")
+        session_data.setdefault("schema_version", V93_SCHEMA_VERSION)
+        session_data["created_at"] = now.isoformat()
+        # Optional provenance fields for debugging
+        session_data.setdefault("ingest_source", "api/brain/ingest")
+        session_data.setdefault("original_filename", filename)
+
+        # Validate and insert
+        is_valid, error = validate_session_data(session_data)
+        if not is_valid:
+            return jsonify({
+                "message": f"Validation failed: {error}",
+                "parsed": True,
+                "isStub": False,
+                "sessionSaved": False,
+                "errors": [error]
+            })
+
+        success, msg = insert_session(session_data)
+
+        # Parse session ID from insert message (matches existing WRAP flow)
+        session_id = None
+        if success and msg:
+            match = re.search(r"ID:\s*(\d+)", msg)
+            if match:
+                session_id = int(match.group(1))
+
         return jsonify({
-            "message": f"Received content from '{filename}' ({len(content)} chars). Ingestion pending integration.",
-            "parsed": False,
-            "isStub": True
+            "message": msg,
+            "parsed": True,
+            "isStub": False,
+            "sessionSaved": success,
+            "sessionId": session_id
         })
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        return jsonify({
+            "message": f"Error: {str(e)}",
+            "parsed": False,
+            "isStub": False,
+            "sessionSaved": False,
+            "errors": [str(e)]
+        })
 
 
 @adapter_bp.route("/tutor-issues", methods=["GET"])

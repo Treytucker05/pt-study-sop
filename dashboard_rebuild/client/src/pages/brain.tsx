@@ -392,7 +392,19 @@ export default function Brain() {
         setIsProcessing(true);
         try {
           const result = await api.brain.ingest(content, file.name);
-          setChatMessages(prev => [...prev, { role: "assistant", content: result.message }]);
+          if (result.sessionSaved) {
+            setChatMessages(prev => [...prev, {
+              role: "assistant",
+              content: `✓ Session saved (ID: ${result.sessionId})\n${result.message}`
+            }]);
+          } else {
+            // Surface errors from validation or parsing
+            const errorMsg = result.errors?.join(", ") || result.message;
+            setChatMessages(prev => [...prev, {
+              role: "assistant",
+              content: `⚠ ${errorMsg}`
+            }]);
+          }
         } catch (error) {
           setChatMessages(prev => [...prev, { role: "assistant", content: "Error processing file. Please try again." }]);
         } finally {

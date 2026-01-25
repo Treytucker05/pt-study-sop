@@ -75,6 +75,25 @@ def parse_markdown_session(filepath):
 
 V93_SCHEMA_VERSION = "9.3"
 
+# Mode aliasing for case-insensitive and shorthand mode values
+MODE_ALIASES = {
+    "sprint": "Sprint",
+    "core": "Core",
+    "drill": "Drill",
+    "diagnostic sprint": "Diagnostic Sprint",
+    "diagnostic": "Diagnostic Sprint",
+    "teaching sprint": "Teaching Sprint",
+    "teaching": "Teaching Sprint",
+}
+
+
+def normalize_study_mode(mode: str) -> str:
+    """Normalize study mode to canonical form."""
+    if not mode:
+        return "Core"
+    return MODE_ALIASES.get(mode.lower().strip(), mode.title())
+
+
 def _coerce_int(value, default=None):
     if value is None or value == "":
         return default
@@ -572,6 +591,56 @@ def validate_session_data(data):
                 return False, f"{label} must be between 1 and 5 (got {value})"
 
     return True, None
+
+
+def validate_session_data_verbose(data: dict) -> tuple:
+    """
+    Validate session data, returning list of all errors found.
+    Returns (is_valid, errors_list) - does not stop on first error.
+    """
+    errors = []
+
+    # Required fields check
+    required_fields = ["session_date", "topic", "study_mode"]
+    for field in required_fields:
+        if not data.get(field):
+            errors.append(f"Missing required field: {field}")
+
+    # Date validation (only if present)
+    date = data.get("session_date") or data.get("date")
+    if date:
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+        except ValueError:
+            errors.append(f"Invalid date format: {date} (expected YYYY-MM-DD)")
+
+    # Rating validation
+    for field in ["understanding_level", "retention_confidence", "system_performance"]:
+        val = data.get(field)
+        if val is not None:
+            try:
+                if not (1 <= int(val) <= 5):
+                    errors.append(f"{field} must be 1-5, got {val}")
+            except (ValueError, TypeError):
+                errors.append(f"{field} must be integer 1-5, got {val}")
+
+    # Mode validation
+    mode = data.get("study_mode", "")
+    valid_modes = {"Core", "Sprint", "Drill", "Diagnostic Sprint", "Teaching Sprint"}
+    if mode and mode not in valid_modes:
+        errors.append(f"Invalid study_mode: {mode}")
+
+    # Duration validation
+    duration = data.get("duration_minutes")
+    if duration is not None:
+        try:
+            if int(duration) < 0:
+                errors.append(f"duration_minutes must be non-negative, got {duration}")
+        except (ValueError, TypeError):
+            errors.append(f"duration_minutes must be integer, got {duration}")
+
+    return len(errors) == 0, errors
+
 
 def insert_session(data):
     """
