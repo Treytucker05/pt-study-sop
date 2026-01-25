@@ -4729,6 +4729,10 @@ def brain_ingest():
         section_d = wrap_data.get("section_d", {}) or {}
         merged_payload = section_d.get("merged") or {}
 
+        # Handle nested {"merged": {...}} structure - unwrap if needed
+        if isinstance(merged_payload.get("merged"), dict):
+            merged_payload = merged_payload.get("merged")
+
         session_data = _map_json_payload_to_session(merged_payload)
 
         # Helper for safe int conversion (matches existing WRAP flow)
@@ -4764,6 +4768,32 @@ def brain_ingest():
         session_data.setdefault("ingest_source", "api/brain/ingest")
         session_data.setdefault("original_filename", filename)
 
+        # Process Section A: Obsidian notes
+        section_a = wrap_data.get("section_a") or {}
+        if section_a:
+            notes_raw = section_a.get("raw", "") if isinstance(section_a, dict) else str(section_a)
+            session_data.setdefault("notes_insights", notes_raw)
+
+        # Process Section C: Spaced schedule
+        spaced_schedule = wrap_data.get("section_c") or {}
+        if spaced_schedule and isinstance(spaced_schedule, dict):
+            spaced_parts = [f"{key}={value}" for key, value in spaced_schedule.items()]
+            session_data["spaced_reviews"] = "; ".join(spaced_parts)
+
+        # Process Section B: Anki cards
+        cards = wrap_data.get("section_b") or []
+        card_texts = []
+        for card in cards:
+            front = str(card.get("front", "")).strip() if isinstance(card, dict) else ""
+            back = str(card.get("back", "")).strip() if isinstance(card, dict) else ""
+            if front and back:
+                card_texts.append(f"{front} :: {back}")
+            elif front:
+                card_texts.append(front)
+        if card_texts:
+            session_data["anki_cards_text"] = "; ".join(card_texts)
+        session_data["anki_cards_count"] = len(card_texts)
+
         # Validate and insert
         is_valid, error = validate_session_data(session_data)
         if not is_valid:
@@ -4784,12 +4814,44 @@ def brain_ingest():
             if match:
                 session_id = int(match.group(1))
 
+        # Insert cards into card_drafts table (same logic as /brain/chat)
+        cards_created = 0
+        if success and cards:
+            from db_setup import get_connection
+            conn = get_connection()
+            cur = conn.cursor()
+            course = metadata.get("course") or topic or "General"
+            session_ref = str(session_id) if session_id else f"ingest_{now.strftime('%Y%m%d_%H%M%S')}"
+            for card in cards:
+                if isinstance(card, dict) and card.get("front") and card.get("back"):
+                    cur.execute("""
+                        INSERT INTO card_drafts
+                        (session_id, course_id, topic_id, deck_name, card_type, front, back, tags, source_citation, status, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        session_ref,
+                        None,
+                        None,
+                        f"PT::{course}",
+                        "basic",
+                        card.get("front", ""),
+                        card.get("back", ""),
+                        card.get("tags", ""),
+                        card.get("source") or metadata.get("source_lock"),
+                        "pending",
+                        now.isoformat()
+                    ))
+                    cards_created += 1
+            conn.commit()
+            conn.close()
+
         return jsonify({
             "message": msg,
             "parsed": True,
             "isStub": False,
             "sessionSaved": success,
-            "sessionId": session_id
+            "sessionId": session_id,
+            "cardsCreated": cards_created
         })
 
     except Exception as e:
@@ -5810,6 +5872,88 @@ def approve_card_draft(draft_id):
         conn.close()
         
         return jsonify({"success": True, "id": draft_id, "status": "approved"})
-        
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/anki/drafts/<int:draft_id>", methods=["DELETE"])
+def delete_card_draft(draft_id):
+    """Delete a card draft."""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("DELETE FROM card_drafts WHERE id = ?", (draft_id,))
+        conn.commit()
+        conn.close()
+
+        return jsonify({"success": True, "id": draft_id})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/anki/drafts/<int:draft_id>", methods=["PATCH"])
+def update_card_draft(draft_id):
+    """Update a card draft (front, back, deckName)."""
+    try:
+        data = request.get_json() or {}
+
+        # Build update fields dynamically
+        updates = []
+        values = []
+
+        if "front" in data:
+            updates.append("front = ?")
+            values.append(data["front"])
+        if "back" in data:
+            updates.append("back = ?")
+            values.append(data["back"])
+        if "deckName" in data:
+            updates.append("deck_name = ?")
+            values.append(data["deckName"])
+        if "tags" in data:
+            updates.append("tags = ?")
+            values.append(data["tags"])
+
+        if not updates:
+            return jsonify({"error": "No fields to update"}), 400
+
+        values.append(draft_id)
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        sql = f"UPDATE card_drafts SET {', '.join(updates)} WHERE id = ?"
+        cur.execute(sql, values)
+        conn.commit()
+
+        # Fetch updated record
+        cur.execute("""
+            SELECT id, session_id, deck_name, card_type, front, back, tags, status, created_at
+            FROM card_drafts WHERE id = ?
+        """, (draft_id,))
+        row = cur.fetchone()
+        conn.close()
+
+        if row:
+            return jsonify({
+                "success": True,
+                "draft": {
+                    "id": row[0],
+                    "sessionId": row[1],
+                    "deckName": row[2],
+                    "cardType": row[3],
+                    "front": row[4],
+                    "back": row[5],
+                    "tags": row[6],
+                    "status": row[7],
+                    "createdAt": row[8],
+                }
+            })
+        else:
+            return jsonify({"error": "Draft not found"}), 404
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500

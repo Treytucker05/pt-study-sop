@@ -1,5 +1,8 @@
 # PT Study System (Dashboard / Brain / Calendar / Scholar / Tutor)
 
+**Project Hub:** [docs/project/INDEX.md](docs/project/INDEX.md)
+- Docs Index: [DOCS_INDEX.md](DOCS_INDEX.md)
+
 ## Vision
 Build a personal study OS that captures every session, turns it into metrics and Anki-ready outputs, keeps Obsidian as the primary knowledge base, and drives continuous improvement through Scholar research and proposals.
 

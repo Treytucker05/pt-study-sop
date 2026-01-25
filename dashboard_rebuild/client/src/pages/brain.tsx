@@ -96,7 +96,10 @@ export default function Brain() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sessionsToDelete, setSessionsToDelete] = useState<number[]>([]);
   const [syncToObsidian, setSyncToObsidian] = useState(false);
-  
+  const [selectedDrafts, setSelectedDrafts] = useState<Set<number>>(new Set());
+  const [editingDraft, setEditingDraft] = useState<number | null>(null);
+  const [editDraftData, setEditDraftData] = useState({ front: "", back: "", deckName: "" });
+
   // Brain chat mode selector
   const [brainChatMode, setBrainChatMode] = useState<"all" | "obsidian" | "anki" | "metrics">("all");
 
@@ -327,16 +330,77 @@ export default function Brain() {
     enabled: ankiStatus?.connected === true,
   });
 
+  const { data: ankiDrafts = [], refetch: refetchDrafts } = useQuery({
+    queryKey: ["anki", "drafts"],
+    queryFn: api.anki.getDrafts,
+  });
+
+  const pendingDrafts = ankiDrafts.filter(d => d.status === "pending");
+
   const syncAnkiMutation = useMutation({
     mutationFn: api.anki.sync,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["anki"] });
+      refetchDrafts();
     },
   });
+
+  const approveDraftMutation = useMutation({
+    mutationFn: (id: number) => api.anki.approveDraft(id),
+    onSuccess: () => {
+      refetchDrafts();
+    },
+  });
+
+  const deleteDraftMutation = useMutation({
+    mutationFn: (id: number) => api.anki.deleteDraft(id),
+    onSuccess: () => {
+      refetchDrafts();
+    },
+  });
+
+  const updateDraftMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { front?: string; back?: string; deckName?: string } }) =>
+      api.anki.updateDraft(id, data),
+    onSuccess: () => {
+      refetchDrafts();
+      setEditingDraft(null);
+    },
+  });
+
+  // Open edit dialog for a draft
+  const handleEditDraft = (draft: typeof pendingDrafts[0]) => {
+    setEditingDraft(draft.id);
+    setEditDraftData({
+      front: draft.front,
+      back: draft.back,
+      deckName: draft.deckName,
+    });
+  };
+
+  // Save draft edits
+  const handleSaveDraft = () => {
+    if (editingDraft === null) return;
+    updateDraftMutation.mutate({
+      id: editingDraft,
+      data: editDraftData,
+    });
+  };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
+
+  // Simple WRAP format detection (matches is_wrap_format scoring in wrap_parser.py)
+  const looksLikeWrap = (text: string): boolean => {
+    let score = 0;
+    if (/section\s*[ABCD]/i.test(text)) score += 2;
+    if (/^[ABCD]\s*[:\)\-]/im.test(text)) score += 2;
+    if (/front\s*:/i.test(text) && /back\s*:/i.test(text)) score += 2;
+    if (/\bWRAP\b/i.test(text)) score += 1;
+    if (/```json/i.test(text)) score += 1;
+    return score >= 2;
+  };
 
   const handleSendMessage = async () => {
     if (!chatInput.trim()) return;
@@ -345,22 +409,46 @@ export default function Brain() {
     setWrapSummary(null);
     setChatMessages(prev => [...prev, { role: "user", content: message }]);
     setIsProcessing(true);
+
     try {
-      const result = await api.brain.chat(message, syncToObsidian, brainChatMode);
-      setChatMessages(prev => [...prev, { role: "assistant", content: result.response }]);
-      if (result.wrapProcessed) {
-        setWrapSummary({
-          cardsCreated: result.cardsCreated || 0,
-          issuesLogged: result.issuesLogged || 0,
-          obsidianSynced: Boolean(result.obsidianSynced),
-          obsidianPath: result.obsidianPath,
-          sessionId: result.sessionId ?? null,
-          wrapSessionId: result.wrapSessionId ?? null,
-        });
-      }
-      // Refresh data if cards were created
-      if (result.cardsCreated && result.cardsCreated > 0) {
-        queryClient.invalidateQueries({ queryKey: ["anki"] });
+      // If it looks like WRAP, use direct ingestion instead of LLM
+      if (looksLikeWrap(message)) {
+        const result = await api.brain.ingest(message, "pasted_wrap.md");
+        if (result.sessionSaved) {
+          const cardsMsg = result.cardsCreated ? ` | Cards: ${result.cardsCreated}` : "";
+          setChatMessages(prev => [...prev, {
+            role: "assistant",
+            content: `✓ Session saved (ID: ${result.sessionId})${cardsMsg}\n${result.message}`
+          }]);
+          queryClient.invalidateQueries({ queryKey: ["sessions"] });
+          if (result.cardsCreated && result.cardsCreated > 0) {
+            queryClient.invalidateQueries({ queryKey: ["anki"] });
+          }
+        } else {
+          const errorMsg = result.errors?.join(", ") || result.message;
+          setChatMessages(prev => [...prev, {
+            role: "assistant",
+            content: `⚠ ${errorMsg}`
+          }]);
+        }
+      } else {
+        // Regular chat - go through LLM
+        const result = await api.brain.chat(message, syncToObsidian, brainChatMode);
+        setChatMessages(prev => [...prev, { role: "assistant", content: result.response }]);
+        if (result.wrapProcessed) {
+          setWrapSummary({
+            cardsCreated: result.cardsCreated || 0,
+            issuesLogged: result.issuesLogged || 0,
+            obsidianSynced: Boolean(result.obsidianSynced),
+            obsidianPath: result.obsidianPath,
+            sessionId: result.sessionId ?? null,
+            wrapSessionId: result.wrapSessionId ?? null,
+          });
+        }
+        // Refresh data if cards were created
+        if (result.cardsCreated && result.cardsCreated > 0) {
+          queryClient.invalidateQueries({ queryKey: ["anki"] });
+        }
       }
     } catch (error) {
       setChatMessages(prev => [...prev, { role: "assistant", content: "Error processing request. Please try again." }]);
@@ -914,17 +1002,17 @@ export default function Brain() {
                         <span className="font-arcade text-xs text-muted-foreground">{ankiStatus.decks?.length || 0}</span>
                       </div>
                       <div className="pt-2 flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          size="sm"
+                          variant="outline"
                           className="flex-1 font-terminal text-xs"
                           onClick={() => refetchAnki()}
                         >
                           <RefreshCw className="w-3 h-3 mr-1" />
                           Refresh
                         </Button>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           className="flex-1 font-terminal text-xs bg-secondary hover:bg-secondary/80"
                           onClick={() => syncAnkiMutation.mutate()}
                           disabled={syncAnkiMutation.isPending}
@@ -932,6 +1020,116 @@ export default function Brain() {
                           {syncAnkiMutation.isPending ? "Syncing..." : "Sync Cards"}
                         </Button>
                       </div>
+                      {/* Pending Drafts */}
+                      {pendingDrafts.length > 0 && (
+                        <div className="pt-3 border-t border-secondary/30">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-arcade text-[10px] text-yellow-400">PENDING CARDS ({pendingDrafts.length})</span>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-5 px-2 text-[10px] font-terminal"
+                                onClick={() => {
+                                  if (selectedDrafts.size === pendingDrafts.length) {
+                                    setSelectedDrafts(new Set());
+                                  } else {
+                                    setSelectedDrafts(new Set(pendingDrafts.map(d => d.id)));
+                                  }
+                                }}
+                              >
+                                {selectedDrafts.size === pendingDrafts.length ? "None" : "All"}
+                              </Button>
+                            </div>
+                          </div>
+                          {selectedDrafts.size > 0 && (
+                            <div className="flex gap-1 mb-2">
+                              <Button
+                                size="sm"
+                                className="h-6 px-2 text-[10px] font-terminal bg-green-600 hover:bg-green-700"
+                                onClick={() => {
+                                  selectedDrafts.forEach(id => approveDraftMutation.mutate(id));
+                                  setSelectedDrafts(new Set());
+                                }}
+                              >
+                                <Check className="w-3 h-3 mr-1" />
+                                Approve ({selectedDrafts.size})
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-6 px-2 text-[10px] font-terminal"
+                                onClick={() => {
+                                  selectedDrafts.forEach(id => deleteDraftMutation.mutate(id));
+                                  setSelectedDrafts(new Set());
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Delete ({selectedDrafts.size})
+                              </Button>
+                            </div>
+                          )}
+                          <ScrollArea className="h-[200px]">
+                            <div className="space-y-2">
+                              {pendingDrafts.map((draft) => (
+                                <div key={draft.id} className={`p-2 bg-black/40 border text-xs ${selectedDrafts.has(draft.id) ? 'border-primary' : 'border-secondary/30'}`}>
+                                  <div className="flex items-start gap-2">
+                                    <Checkbox
+                                      checked={selectedDrafts.has(draft.id)}
+                                      onCheckedChange={(checked) => {
+                                        const newSet = new Set(selectedDrafts);
+                                        if (checked) {
+                                          newSet.add(draft.id);
+                                        } else {
+                                          newSet.delete(draft.id);
+                                        }
+                                        setSelectedDrafts(newSet);
+                                      }}
+                                      className="mt-1 border-secondary data-[state=checked]:bg-primary"
+                                    />
+                                    <div className="flex-1 min-w-0 overflow-hidden">
+                                      <div className="font-terminal text-primary truncate">{draft.front}</div>
+                                      <div className="font-terminal text-muted-foreground mt-1 truncate">{draft.back}</div>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <Badge variant="outline" className="text-[9px] border-blue-500/50 text-blue-400 shrink-0">
+                                          {draft.deckName}
+                                        </Badge>
+                                        <Button
+                                          size="icon"
+                                          variant="outline"
+                                          className="h-5 w-5 shrink-0 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20"
+                                          onClick={() => handleEditDraft(draft)}
+                                          title="Edit card"
+                                        >
+                                          <Pencil className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          size="icon"
+                                          variant="outline"
+                                          className="h-5 w-5 shrink-0 border-green-500/50 text-green-400 hover:bg-green-500/20"
+                                          onClick={() => approveDraftMutation.mutate(draft.id)}
+                                          title="Approve card"
+                                        >
+                                          <Check className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          size="icon"
+                                          variant="outline"
+                                          className="h-5 w-5 shrink-0 border-red-500/50 text-red-400 hover:bg-red-500/20"
+                                          onClick={() => deleteDraftMutation.mutate(draft.id)}
+                                          title="Delete card"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="text-center space-y-2">
@@ -1112,13 +1310,14 @@ export default function Brain() {
                     >
                       <FileText className="w-4 h-4" />
                     </Button>
-                    <Input
+                    <Textarea
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Type a message..."
-                      className="rounded-none border-secondary bg-black font-terminal text-sm"
+                      placeholder="Type a message or paste WRAP..."
+                      className="rounded-none border-secondary bg-black font-terminal text-sm min-h-[40px] max-h-[200px] resize-none overflow-y-auto"
+                      rows={Math.min(8, Math.max(1, chatInput.split('\n').length))}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
+                        if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
                           e.preventDefault();
                           handleSendMessage();
                         }
@@ -1300,6 +1499,95 @@ export default function Brain() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Card Draft Dialog */}
+      <Dialog open={editingDraft !== null} onOpenChange={() => setEditingDraft(null)}>
+        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-lg" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+          <DialogHeader>
+            <DialogTitle className="font-arcade text-primary flex items-center gap-2">
+              <Pencil className="w-5 h-5" />
+              EDIT CARD
+            </DialogTitle>
+            <DialogDescription className="font-terminal text-muted-foreground">
+              Edit card content and select target deck
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 font-terminal">
+            {/* Front */}
+            <div>
+              <label className="text-sm text-muted-foreground">Front (Question)</label>
+              <Textarea
+                value={editDraftData.front}
+                onChange={(e) => setEditDraftData(prev => ({ ...prev, front: e.target.value }))}
+                placeholder="Card front..."
+                className="rounded-none border-secondary min-h-[80px]"
+              />
+            </div>
+
+            {/* Back */}
+            <div>
+              <label className="text-sm text-muted-foreground">Back (Answer)</label>
+              <Textarea
+                value={editDraftData.back}
+                onChange={(e) => setEditDraftData(prev => ({ ...prev, back: e.target.value }))}
+                placeholder="Card back..."
+                className="rounded-none border-secondary min-h-[80px]"
+              />
+            </div>
+
+            {/* Deck Selector */}
+            <div>
+              <label className="text-sm text-muted-foreground">Target Deck</label>
+              <Select
+                value={editDraftData.deckName}
+                onValueChange={(value) => setEditDraftData(prev => ({ ...prev, deckName: value }))}
+              >
+                <SelectTrigger className="rounded-none border-secondary">
+                  <SelectValue placeholder="Select deck" />
+                </SelectTrigger>
+                <SelectContent className="rounded-none border-secondary bg-black max-h-[200px]">
+                  {/* Course-specific decks */}
+                  <SelectItem value="PT::EBP">PT::EBP (Evidence Based Practice)</SelectItem>
+                  <SelectItem value="PT::ExPhys">PT::ExPhys (Exercise Physiology)</SelectItem>
+                  <SelectItem value="PT::MS1">PT::MS1 (Movement Science 1)</SelectItem>
+                  <SelectItem value="PT::Neuro">PT::Neuro (Neuroscience)</SelectItem>
+                  <SelectItem value="PT::TI">PT::TI (Therapeutic Intervention)</SelectItem>
+                  <SelectItem value="PT::General">PT::General</SelectItem>
+                  {/* Dynamic decks from Anki */}
+                  {ankiStatus?.decks?.filter(d => !d.startsWith("PT::")).map((deck) => (
+                    <SelectItem key={deck} value={deck}>
+                      {deck}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Current: <span className="text-blue-400">{editDraftData.deckName}</span>
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditingDraft(null)}
+              className="font-terminal rounded-none border-secondary hover:bg-secondary/20"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveDraft}
+              disabled={updateDraftMutation.isPending}
+              className="font-terminal rounded-none bg-primary hover:bg-primary/80"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {updateDraftMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
