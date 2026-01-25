@@ -38,7 +38,9 @@
       "Bash(echo $OPENROUTER_API_KEY)",
       "Bash(cmd //c taskkill /PID 27412 /F)",
       "Bash(wc:*)",
-      "Bash(npx @realmikekelly/claude-sneakpeek quick:*)"
+      "Bash(npx @realmikekelly/claude-sneakpeek quick:*)",
+      "mcp__filesystem__read_multiple_files",
+      "Bash(if not exist \"C:\\\\Users\\\\treyt\\\\.claude\\\\agents\" mkdir \"C:\\\\Users\\\\treyt\\\\.claude\\\\agents\")"
     ],
     "defaultMode": "bypassPermissions"
   }

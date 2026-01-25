@@ -1,301 +1,411 @@
 import Layout from "@/components/layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User, Sparkles, BookOpen, Clock, Zap, BrainCircuit, FileText, RefreshCw } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import {
+  ChevronRight,
+  ChevronDown,
+  FileText,
+  Folder,
+  FolderOpen,
+  Copy,
+  Link,
+  Code,
+  Loader2
+} from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearch } from "wouter";
 import { cn } from "@/lib/utils";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { api, SOPIndex, SOPGroup, SOPSection, SOPItem } from "@/lib/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+interface TreeItemProps {
+  item: SOPItem;
+  isSelected: boolean;
+  onSelect: (path: string) => void;
+}
+
+function TreeItem({ item, isSelected, onSelect }: TreeItemProps) {
+  const isFolder = item.type === "dir";
+
+  return (
+    <button
+      onClick={() => !isFolder && onSelect(item.path)}
+      disabled={isFolder}
+      className={cn(
+        "w-full text-left px-3 py-1.5 text-sm font-terminal flex items-center gap-2 transition-colors",
+        isFolder
+          ? "text-muted-foreground cursor-default"
+          : "hover:bg-primary/20 cursor-pointer",
+        isSelected && "bg-primary/30 text-primary border-l-2 border-primary"
+      )}
+    >
+      {isFolder ? (
+        <Folder className="w-4 h-4 text-yellow-500/70" />
+      ) : (
+        <FileText className="w-4 h-4 text-primary/70" />
+      )}
+      <span className="truncate">{item.title}</span>
+    </button>
+  );
+}
+
+interface TreeSectionProps {
+  section: SOPSection;
+  selectedPath: string | null;
+  onSelect: (path: string) => void;
+}
+
+function TreeSection({ section, selectedPath, onSelect }: TreeSectionProps) {
+  const [isOpen, setIsOpen] = useState(true);
+  const hasSelectedItem = section.items.some(item => item.path === selectedPath);
+
+  useEffect(() => {
+    if (hasSelectedItem) setIsOpen(true);
+  }, [hasSelectedItem]);
+
+  return (
+    <div className="mb-2">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full text-left px-2 py-1 text-xs font-arcade uppercase text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+      >
+        {isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        {section.title}
+      </button>
+      {isOpen && (
+        <div className="ml-2 border-l border-secondary/50">
+          {section.items.map((item) => (
+            <TreeItem
+              key={item.id}
+              item={item}
+              isSelected={item.path === selectedPath}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface TreeGroupProps {
+  group: SOPGroup;
+  selectedPath: string | null;
+  onSelect: (path: string) => void;
+  defaultOpen?: boolean;
+}
+
+function TreeGroup({ group, selectedPath, onSelect, defaultOpen = false }: TreeGroupProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const hasSelectedItem = group.sections.some(section =>
+    section.items.some(item => item.path === selectedPath)
+  );
+
+  useEffect(() => {
+    if (hasSelectedItem) setIsOpen(true);
+  }, [hasSelectedItem]);
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full text-left p-2 text-sm font-arcade uppercase bg-secondary/20 hover:bg-secondary/30 flex items-center gap-2 transition-colors border-l-2 border-primary/50"
+      >
+        {isOpen ? (
+          <FolderOpen className="w-4 h-4 text-primary" />
+        ) : (
+          <Folder className="w-4 h-4 text-primary/70" />
+        )}
+        {group.title}
+      </button>
+      {isOpen && (
+        <div className="mt-1 ml-2">
+          {group.sections.map((section) => (
+            <TreeSection
+              key={section.id}
+              section={section}
+              selectedPath={selectedPath}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CopyButton({
+  onClick,
+  icon: Icon,
+  label,
+  copied
+}: {
+  onClick: () => void;
+  icon: React.ElementType;
+  label: string;
+  copied: boolean;
+}) {
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={onClick}
+      className={cn(
+        "rounded-none border border-secondary hover:bg-primary hover:text-black text-[10px] font-arcade h-auto py-2 px-3 transition-all",
+        copied && "bg-green-500/20 border-green-500 text-green-500"
+      )}
+    >
+      <Icon className="w-3 h-3 mr-1" />
+      {copied ? "COPIED!" : label}
+    </Button>
+  );
+}
 
 export default function Tutor() {
-  const queryClient = useQueryClient();
-  const [mode, setMode] = useState("core");
-  const [topic, setTopic] = useState("");
-  const [message, setMessage] = useState("");
-  const [sessionId, setSessionId] = useState(() => `session-${Date.now()}`);
-  const [timer, setTimer] = useState(0);
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const searchString = useSearch();
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [copiedType, setCopiedType] = useState<string | null>(null);
 
-  const { data: messages = [], refetch } = useQuery({
-    queryKey: ["chat", sessionId],
-    queryFn: () => api.chat.getMessages(sessionId),
-    enabled: isSessionActive,
+  // Parse path from URL query string
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const pathParam = params.get("path");
+    if (pathParam) {
+      setSelectedPath(pathParam);
+    }
+  }, [searchString]);
+
+  // Fetch SOP index
+  const { data: index, isLoading: indexLoading, error: indexError } = useQuery({
+    queryKey: ["sop-index"],
+    queryFn: () => api.sop.getIndex(),
   });
 
-  const sendMessageMutation = useMutation({
-    mutationFn: (content: string) => 
-      api.chat.sendMessage(sessionId, { sender: "user", content }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chat", sessionId] });
+  // Fetch selected file content
+  const { data: fileData, isLoading: fileLoading, error: fileError } = useQuery({
+    queryKey: ["sop-file", selectedPath],
+    queryFn: () => selectedPath ? api.sop.getFile(selectedPath) : null,
+    enabled: !!selectedPath,
+  });
+
+  // Handle file selection
+  const handleSelect = useCallback((path: string) => {
+    setSelectedPath(path);
+    // Update URL without navigation
+    const newUrl = `/tutor?path=${encodeURIComponent(path)}`;
+    window.history.pushState({}, "", newUrl);
+  }, []);
+
+  // Handle anchor scrolling after content loads
+  useEffect(() => {
+    if (fileData?.content && window.location.hash) {
+      const anchor = decodeURIComponent(window.location.hash.slice(1));
       setTimeout(() => {
-        api.chat.sendMessage(sessionId, { 
-          sender: "tutor", 
-          content: generateTutorResponse(),
-        }).then(() => {
-          queryClient.invalidateQueries({ queryKey: ["chat", sessionId] });
-        });
-      }, 1000);
-    },
-  });
-
-  const generateTutorResponse = () => {
-    const responses = [
-      `Great question about ${topic || "this topic"}! Let me break this down for you with the PEIRRO method.`,
-      `Let's apply the Seed-Lock principle here. What's your initial hook or mental model for understanding this concept?`,
-      `According to the Function Before Structure approach, let's first understand what this DOES before where it IS.`,
-      `Excellent progress! Remember: prove understanding at L2 (teach-back) before advancing to the next level.`,
-      `Let me check the source materials... Based on your active sources, here's what we know:`,
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isSessionActive) {
-      interval = setInterval(() => {
-        setTimer(t => t + 1);
-      }, 1000);
+        const element = document.getElementById(anchor);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 100);
     }
-    return () => clearInterval(interval);
-  }, [isSessionActive]);
+  }, [fileData?.content]);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  // Copy functions
+  const copyContent = useCallback(() => {
+    if (fileData?.content) {
+      navigator.clipboard.writeText(fileData.content);
+      setCopiedType("content");
+      setTimeout(() => setCopiedType(null), 2000);
     }
-  }, [messages]);
+  }, [fileData?.content]);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const startSession = () => {
-    const newSessionId = `session-${Date.now()}`;
-    setSessionId(newSessionId);
-    setIsSessionActive(true);
-    setTimer(0);
-    api.chat.sendMessage(newSessionId, {
-      sender: "tutor",
-      content: `Ready to study ${topic || "your chosen topic"} in ${mode.toUpperCase()} mode. What would you like to focus on first?`,
-    }).then(() => {
-      refetch();
-    });
-  };
-
-  const handleSend = () => {
-    if (message.trim() && isSessionActive) {
-      sendMessageMutation.mutate(message);
-      setMessage("");
+  const copyDeepLink = useCallback(() => {
+    if (selectedPath) {
+      const url = `${window.location.origin}/tutor?path=${encodeURIComponent(selectedPath)}`;
+      navigator.clipboard.writeText(url);
+      setCopiedType("link");
+      setTimeout(() => setCopiedType(null), 2000);
     }
-  };
+  }, [selectedPath]);
 
-  const handleExplain = () => {
-    if (!isSessionActive) {
-      startSession();
+  const copySOPRef = useCallback(() => {
+    if (selectedPath) {
+      const sopRef = JSON.stringify({
+        path: selectedPath,
+        anchor: "",
+        label: selectedPath.split("/").pop()?.replace(".md", "") || selectedPath,
+      }, null, 2);
+      navigator.clipboard.writeText(sopRef);
+      setCopiedType("sopref");
+      setTimeout(() => setCopiedType(null), 2000);
     }
-    sendMessageMutation.mutate(`Can you explain ${topic || "this concept"} in more detail? Break it down step by step.`);
-  };
+  }, [selectedPath]);
 
-  const handleQuizMe = () => {
-    if (!isSessionActive) {
-      startSession();
-    }
-    sendMessageMutation.mutate(`Quiz me on ${topic || "what we've discussed"}. Give me a practice question to test my understanding.`);
-  };
+  // Get the default group
+  const defaultGroup = index?.default_group || "runtime";
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  // Find selected item title
+  const selectedTitle = useMemo(() => {
+    if (!index || !selectedPath) return null;
+    for (const group of index.groups) {
+      for (const section of group.sections) {
+        const item = section.items.find(i => i.path === selectedPath);
+        if (item) return item.title;
+      }
     }
-  };
+    return selectedPath.split("/").pop();
+  }, [index, selectedPath]);
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-140px)] flex flex-col md:flex-row gap-6">
-        
-        {/* Left Sidebar: Context & Setup */}
-        <aside className="w-full md:w-80 flex flex-col gap-6 shrink-0">
-          
-          {/* Mode Selector */}
-          <Card className="bg-black/40 border-2 border-primary rounded-none">
-             <div className="grid grid-cols-3">
-               {['core', 'sprint', 'drill'].map((m) => (
-                 <button
-                   key={m}
-                   onClick={() => setMode(m)}
-                   className={cn(
-                     "p-3 font-arcade text-[10px] uppercase border-b-2 transition-all hover:bg-primary/20",
-                     mode === m 
-                       ? "bg-primary text-black border-primary font-bold" 
-                       : "text-muted-foreground border-secondary bg-black"
-                   )}
-                   data-testid={`button-mode-${m}`}
-                 >
-                   {m}
-                 </button>
-               ))}
-             </div>
-             <CardContent className="p-4">
-                <div className="font-terminal text-sm text-center text-primary mb-4 animate-pulse uppercase">
-                  &lt;&lt; {mode.toUpperCase()}_MODE {isSessionActive ? "ACTIVE" : "STANDBY"} &gt;&gt;
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-arcade text-muted-foreground">COURSE</label>
-                    <Select defaultValue="anat">
-                      <SelectTrigger className="rounded-none bg-black border-secondary" data-testid="select-course"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-black border-primary rounded-none">
-                         <SelectItem value="anat">ANATOMY</SelectItem>
-                         <SelectItem value="phys">PHYSIOLOGY</SelectItem>
-                         <SelectItem value="neuro">NEUROSCIENCE</SelectItem>
-                      </SelectContent>
-                    </Select>
+      <div className="h-[calc(100vh-140px)] flex flex-col md:flex-row gap-4">
+
+        {/* Left Panel: Navigation Tree */}
+        <aside className="w-full md:w-80 shrink-0">
+          <Card className="h-full bg-black/40 border-2 border-primary rounded-none flex flex-col">
+            <CardHeader className="border-b border-secondary p-3">
+              <CardTitle className="font-arcade text-sm flex items-center gap-2">
+                <Folder className="w-4 h-4" /> SOP EXPLORER
+              </CardTitle>
+            </CardHeader>
+            <ScrollArea className="flex-1">
+              <div className="p-2">
+                {indexLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-arcade text-muted-foreground">TOPIC</label>
-                    <Input 
-                      className="rounded-none bg-black border-secondary" 
-                      placeholder="Ex: Cranial Nerves" 
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      data-testid="input-topic"
+                ) : indexError ? (
+                  <div className="text-red-500 text-sm p-4 font-terminal">
+                    Failed to load SOP index
+                  </div>
+                ) : index ? (
+                  index.groups.map((group) => (
+                    <TreeGroup
+                      key={group.id}
+                      group={group}
+                      selectedPath={selectedPath}
+                      onSelect={handleSelect}
+                      defaultOpen={group.id === defaultGroup}
                     />
-                  </div>
-                  <Button 
-                    className="w-full rounded-none font-arcade bg-secondary hover:bg-white hover:text-black"
-                    onClick={startSession}
-                    data-testid="button-start-session"
-                  >
-                    {isSessionActive ? <><RefreshCw className="w-4 h-4 mr-2" /> NEW_SESSION</> : "START_SESSION"}
-                  </Button>
-                </div>
-             </CardContent>
+                  ))
+                ) : null}
+              </div>
+            </ScrollArea>
           </Card>
-
-          {/* Context Panel */}
-          <Card className="bg-black/40 border-2 border-secondary rounded-none flex-1 flex flex-col">
-             <CardHeader className="border-b border-secondary p-4">
-               <CardTitle className="font-arcade text-sm flex items-center gap-2">
-                 <BrainCircuit className="w-4 h-4" /> CONTEXT
-               </CardTitle>
-             </CardHeader>
-             <CardContent className="p-4 flex-1 space-y-4 font-terminal text-sm">
-                <div className="flex justify-between items-center">
-                   <span className="text-muted-foreground">TIMER</span>
-                   <span className="text-xl text-primary font-arcade" data-testid="text-timer">{formatTime(timer)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                   <span className="text-muted-foreground">MESSAGES</span>
-                   <span className="text-white" data-testid="text-message-count">{messages.length}</span>
-                </div>
-                
-                <div className="space-y-2 pt-4 border-t border-secondary/50">
-                   <p className="text-xs text-muted-foreground uppercase mb-2">ACTIVE SOURCES</p>
-                   <div className="flex items-center gap-2 text-xs border border-secondary p-2 bg-black/50">
-                      <BookOpen className="w-3 h-3 text-white" /> 
-                      <span className="truncate">Gray's Anatomy Ch.4</span>
-                   </div>
-                   <div className="flex items-center gap-2 text-xs border border-secondary p-2 bg-black/50">
-                      <FileText className="w-3 h-3 text-white" /> 
-                      <span className="truncate">Lecture_Notes_W4.pdf</span>
-                   </div>
-                </div>
-             </CardContent>
-             
-             {/* Quick Actions */}
-             <div className="p-2 grid grid-cols-2 gap-2 border-t border-secondary bg-black/20">
-                <Button size="sm" variant="ghost" onClick={handleExplain} className="rounded-none border border-secondary hover:bg-primary hover:text-black text-[10px] font-arcade h-auto py-2" data-testid="button-explain">
-                   <Sparkles className="w-3 h-3 mr-1" /> EXPLAIN
-                </Button>
-                <Button size="sm" variant="ghost" onClick={handleQuizMe} className="rounded-none border border-secondary hover:bg-primary hover:text-black text-[10px] font-arcade h-auto py-2" data-testid="button-quiz">
-                   <Zap className="w-3 h-3 mr-1" /> QUIZ_ME
-                </Button>
-             </div>
-          </Card>
-
         </aside>
 
-        {/* Chat Interface */}
-        <Card className="flex-1 bg-black/60 border-2 border-primary rounded-none flex flex-col overflow-hidden relative">
-           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(255,0,0,0.03)_1px,transparent_1px),linear-gradient(rgba(255,0,0,0.03),rgba(255,0,0,0.03)_1px,transparent_1px)] bg-[length:100%_4px,20px_20px,20px_20px] pointer-events-none"></div>
-           
-           {/* Messages */}
-           <ScrollArea className="flex-1 p-6" ref={scrollRef}>
-              <div className="space-y-6">
-                 {!isSessionActive && messages.length === 0 ? (
-                   <div className="text-center py-12 font-terminal text-muted-foreground">
-                     <Bot className="w-12 h-12 mx-auto mb-4 text-primary/50" />
-                     <p>SELECT A TOPIC AND START A SESSION</p>
-                     <p className="text-xs mt-2">Your AI tutor is standing by...</p>
-                   </div>
-                 ) : (
-                   messages.map((msg) => (
-                     msg.sender === "tutor" ? (
-                       <div key={msg.id} className="flex gap-4 max-w-[80%]" data-testid={`message-tutor-${msg.id}`}>
-                          <div className="w-8 h-8 shrink-0 bg-primary/20 border border-primary flex items-center justify-center rounded-none">
-                             <Bot className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="space-y-1">
-                             <div className="text-xs font-arcade text-primary">AI_TUTOR</div>
-                             <div className="bg-primary/10 border border-primary/30 p-3 font-terminal text-sm md:text-base leading-relaxed">
-                                <p>{msg.content}</p>
-                             </div>
-                          </div>
-                       </div>
-                     ) : (
-                       <div key={msg.id} className="flex flex-row-reverse gap-4 max-w-[80%] ml-auto" data-testid={`message-user-${msg.id}`}>
-                          <div className="w-8 h-8 shrink-0 bg-secondary/20 border border-secondary flex items-center justify-center rounded-none">
-                             <User className="w-5 h-5 text-secondary-foreground" />
-                          </div>
-                          <div className="space-y-1 text-right">
-                             <div className="text-xs font-arcade text-muted-foreground">USER</div>
-                             <div className="bg-secondary/20 border border-secondary p-3 font-terminal text-sm md:text-base leading-relaxed text-left">
-                                <p>{msg.content}</p>
-                             </div>
-                          </div>
-                       </div>
-                     )
-                   ))
-                 )}
+        {/* Main Panel: Content Viewer */}
+        <Card className="flex-1 bg-black/60 border-2 border-primary rounded-none flex flex-col overflow-hidden">
+          {/* Top Controls */}
+          <div className="border-b border-secondary p-3 flex items-center justify-between gap-2 bg-black/40">
+            <div className="font-arcade text-xs text-primary truncate">
+              {selectedPath ? (
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  {selectedTitle || selectedPath}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">SELECT A FILE TO VIEW</span>
+              )}
+            </div>
+            {selectedPath && (
+              <div className="flex gap-2 shrink-0">
+                <CopyButton
+                  onClick={copyContent}
+                  icon={Copy}
+                  label="CONTENT"
+                  copied={copiedType === "content"}
+                />
+                <CopyButton
+                  onClick={copyDeepLink}
+                  icon={Link}
+                  label="LINK"
+                  copied={copiedType === "link"}
+                />
+                <CopyButton
+                  onClick={copySOPRef}
+                  icon={Code}
+                  label="SOPREF"
+                  copied={copiedType === "sopref"}
+                />
               </div>
-           </ScrollArea>
+            )}
+          </div>
 
-           {/* Input Area */}
-           <div className="p-4 border-t-2 border-primary bg-black">
-              <div className="flex gap-2">
-                 <Input 
-                   className="flex-1 rounded-none bg-secondary/20 border-secondary focus-visible:ring-primary font-terminal text-lg h-12" 
-                   placeholder={isSessionActive ? "TYPE_MESSAGE..." : "START A SESSION FIRST..."}
-                   value={message}
-                   onChange={(e) => setMessage(e.target.value)}
-                   onKeyPress={handleKeyPress}
-                   disabled={!isSessionActive}
-                   data-testid="input-message"
-                 />
-                 <Button 
-                   className="h-12 w-12 rounded-none bg-primary text-black hover:bg-primary/90"
-                   onClick={handleSend}
-                   disabled={!isSessionActive || !message.trim()}
-                   data-testid="button-send"
-                 >
-                    <Send className="w-5 h-5" />
-                 </Button>
+          {/* Content Area */}
+          <ScrollArea className="flex-1">
+            <div className="p-6">
+              {!selectedPath ? (
+                <div className="text-center py-12 font-terminal text-muted-foreground">
+                  <Folder className="w-12 h-12 mx-auto mb-4 text-primary/50" />
+                  <p>SELECT A FILE FROM THE TREE</p>
+                  <p className="text-xs mt-2">Browse your Study Operating Procedures</p>
+                </div>
+              ) : fileLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : fileError ? (
+                <div className="text-red-500 font-terminal">
+                  Failed to load file: {selectedPath}
+                </div>
+              ) : fileData?.content ? (
+                <article className="prose prose-invert prose-primary max-w-none font-terminal text-sm leading-relaxed
+                  prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-secondary/50 prose-headings:pb-2
+                  prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                  prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline
+                  prose-code:bg-secondary/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-primary
+                  prose-pre:bg-black/50 prose-pre:border prose-pre:border-secondary
+                  prose-ul:list-disc prose-ol:list-decimal
+                  prose-li:marker:text-primary
+                  prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground
+                  prose-table:border-collapse prose-th:border prose-th:border-secondary prose-th:bg-secondary/20 prose-th:p-2
+                  prose-td:border prose-td:border-secondary prose-td:p-2
+                ">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      // Add IDs to headings for anchor scrolling
+                      h1: ({ children, ...props }) => {
+                        const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                        return <h1 id={id} {...props}>{children}</h1>;
+                      },
+                      h2: ({ children, ...props }) => {
+                        const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                        return <h2 id={id} {...props}>{children}</h2>;
+                      },
+                      h3: ({ children, ...props }) => {
+                        const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                        return <h3 id={id} {...props}>{children}</h3>;
+                      },
+                      h4: ({ children, ...props }) => {
+                        const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                        return <h4 id={id} {...props}>{children}</h4>;
+                      },
+                    }}
+                  >
+                    {fileData.content}
+                  </ReactMarkdown>
+                </article>
+              ) : (
+                <div className="text-muted-foreground font-terminal">
+                  No content available
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          {/* Footer with path info */}
+          {selectedPath && (
+            <div className="border-t border-secondary p-2 bg-black/40">
+              <div className="text-[10px] font-mono text-muted-foreground truncate">
+                {selectedPath}
               </div>
-              <div className="text-[10px] font-arcade text-muted-foreground mt-2 text-right" data-testid="text-session-id">
-                 SESSION_ID: #{sessionId.slice(-8).toUpperCase()}{isSessionActive ? "-ACTIVE" : "-IDLE"}
-              </div>
-           </div>
+            </div>
+          )}
         </Card>
-
       </div>
     </Layout>
   );

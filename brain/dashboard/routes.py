@@ -1015,3 +1015,112 @@ def api_syllabus_import_bulk():
         })
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500
+
+
+# ==============================================================================
+# SOP Explorer API
+# ==============================================================================
+
+SOP_MANIFEST_PATH = Path(__file__).parent.parent.parent / "sop" / "sop_index.v1.json"
+_sop_allowlist: set = set()
+_sop_allowlist_loaded = False
+
+
+def _load_sop_allowlist() -> set:
+    """Load and cache the SOP file allowlist from manifest."""
+    global _sop_allowlist, _sop_allowlist_loaded
+    if _sop_allowlist_loaded:
+        return _sop_allowlist
+
+    if not SOP_MANIFEST_PATH.exists():
+        _sop_allowlist_loaded = True
+        return _sop_allowlist
+
+    try:
+        with open(SOP_MANIFEST_PATH, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        # Extract all paths from manifest
+        for group in manifest.get("groups", []):
+            for section in group.get("sections", []):
+                for item in section.get("items", []):
+                    path = item.get("path", "")
+                    if path and item.get("type") != "dir":
+                        _sop_allowlist.add(path)
+
+        _sop_allowlist_loaded = True
+    except Exception:
+        _sop_allowlist_loaded = True
+
+    return _sop_allowlist
+
+
+def _is_sop_path_allowed(path: str) -> bool:
+    """Check if a path is allowed to be served."""
+    if not path:
+        return False
+    # Security checks
+    if ".." in path.split("/"):
+        return False
+    if "\\" in path:
+        return False
+    if path.startswith("/") or path.startswith("~"):
+        return False
+    # Must be in allowlist
+    allowlist = _load_sop_allowlist()
+    return path in allowlist
+
+
+@dashboard_bp.route("/api/sop/index")
+def api_sop_index():
+    """Return the SOP manifest JSON."""
+    if not SOP_MANIFEST_PATH.exists():
+        return jsonify({"ok": False, "message": "SOP manifest not found"}), 404
+
+    try:
+        with open(SOP_MANIFEST_PATH, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        return jsonify(manifest)
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@dashboard_bp.route("/api/sop/file")
+def api_sop_file():
+    """Return allowlisted SOP file content."""
+    path = request.args.get("path", "").strip()
+
+    if not _is_sop_path_allowed(path):
+        return jsonify({"ok": False, "message": "File not found"}), 404
+
+    # Resolve full path
+    repo_root = Path(__file__).parent.parent.parent
+    full_path = repo_root / path.replace("/", os.sep)
+
+    if not full_path.exists() or not full_path.is_file():
+        return jsonify({"ok": False, "message": "File not found"}), 404
+
+    # Optional size limit (5MB)
+    if full_path.stat().st_size > 5 * 1024 * 1024:
+        return jsonify({"ok": False, "message": "File too large"}), 413
+
+    try:
+        content = full_path.read_text(encoding="utf-8")
+
+        # Determine content type
+        suffix = full_path.suffix.lower()
+        content_type_map = {
+            ".md": "text/markdown",
+            ".json": "application/json",
+            ".txt": "text/plain",
+        }
+        content_type = content_type_map.get(suffix, "text/plain")
+
+        return jsonify({
+            "ok": True,
+            "path": path,
+            "content_type": content_type,
+            "content": content,
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
