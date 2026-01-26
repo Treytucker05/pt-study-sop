@@ -159,3 +159,8 @@
 - 2026-01-26 00:39:55: Mirrored schedule section buttons to Check All, Delete, Save and per-row Save/Delete only.
 - 2026-01-26 00:44:52: Updated docs to reference Start_Dashboard.bat instead of Run_Brain_All.bat.
 - 2026-01-26 00:46:38: Updated permissions allowlist to Start_Dashboard.bat.
+-   2 0 2 6 - 0 1 - 2 6   1 4 : 0 0 : 0 9 :   U p d a t e d   c a l e n d a r   m a n a g e   U I   t o   s u p p o r t   d r a g - a n d - d r o p   o r d e r i n g ,   l o c a l   c a l e n d a r   s e l e c t i o n ,   a n d   s e l e c t i o n - o n l y   f i l t e r i n g ;   p e r s i s t e d   c a l e n d a r   o r d e r / s e l e c t i o n   i n   l o c a l S t o r a g e .  
+ -   2 0 2 6 - 0 1 - 2 6   1 4 : 1 4 : 2 3 :   R e b u i l t   d a s h b o a r d _ r e b u i l d   a n d   c o p i e d   d i s t / p u b l i c   t o   b r a i n / s t a t i c / d i s t   f o r   c a l e n d a r   M a n a g e   o r d e r i n g   +   s e l e c t i o n - o n l y   f i l t e r i n g .  
+ - 2026-01-26 15:07:33: Backed up uncommitted files to _codex_backups and reverted Brain session filter/query UI changes in dashboard_rebuild/client/src/pages/brain.tsx.
+-   2 0 2 6 - 0 1 - 2 6   1 5 : 1 0 : 0 2 :   U p d a t e d   A G E N T S . m d   t o   r e q u i r e   a   g i t   c o m m i t   a f t e r   c h a n g e s ;   s y n c e d   m i r r o r s .  
+ 

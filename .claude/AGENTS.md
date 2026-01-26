@@ -17,6 +17,7 @@ You must read and obey `CLAUDE.md` immediately (same folder). It contains core r
 - When working in any folder, ensure a concise `README.md` exists that explains purpose, key paths, and pointers; create/update it if missing (skip `archive/` unless asked). This applies to every folder you touch.
 - Ask before destructive or irreversible actions (delete, overwrite, submit, purchase).
 - Run project-required checks or clearly state when they are skipped.
+- Always create a git commit after making changes; if a commit message isn't provided, ask for one. Do not leave changes uncommitted unless the user explicitly opts out.
 
 ## ExecPlans
 When writing complex features or significant refactors, use an ExecPlan (as described in `.agent/PLANS.md`) from design to implementation.
