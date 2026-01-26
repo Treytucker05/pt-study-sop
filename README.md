@@ -39,7 +39,7 @@ Build a personal study OS that captures every session, turns it into metrics and
 - `dashboard_rebuild` is frontend-only; the API lives in `brain/dashboard/api_adapter.py`.
 - Production bundle served by Flask: `brain/static/dist` (copied from `dashboard_rebuild\dist\public`).
 - Only run the Flask dashboard on port 5000 (via `Start_Dashboard.bat`); do not start a separate dashboard_rebuild server.
-- Backups of older builds live in `archive/unused/dist_backup_*` and are **not** used by `Run_Brain_All.bat`.
+- Backups of older builds live in `archive/unused/dist_backup_*` and are **not** used by `Start_Dashboard.bat`.
 - If the UI looks wrong, rebuild from `dashboard_rebuild` and copy `dist/public` into `brain/static/dist` (do not mix assets from other dashboards).
 
 ## First Session Without Notes (Source-Lock Rule)
@@ -83,7 +83,7 @@ Build a personal study OS that captures every session, turns it into metrics and
 ## Quick Start
 1. Open Obsidian at `projects/treys-agent/context/`.
 2. Start Tutor via `projects/treys-agent/ask.bat`.
-3. Launch Dashboard with `python brain/dashboard_web.py`.
+3. Launch Dashboard with `Start_Dashboard.bat`.
 4. Save WRAP logs to `brain/session_logs/` or use Dashboard upload.
 
 ## Operational Rules (SOP Summary)

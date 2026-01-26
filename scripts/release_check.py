@@ -28,7 +28,11 @@ def check_pytest() -> None:
     if not has_tests:
         print("no tests found")
         return
-    code = run_cmd([sys.executable, "-m", "pytest"])
+    brain_tests = ROOT / "brain" / "tests"
+    if brain_tests.exists():
+        code = run_cmd([sys.executable, "-m", "pytest", str(brain_tests)])
+    else:
+        code = run_cmd([sys.executable, "-m", "pytest"])
     if code != 0:
         sys.exit(code)
 

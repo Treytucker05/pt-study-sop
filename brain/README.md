@@ -57,7 +57,7 @@ curl -X POST http://127.0.0.1:5000/api/brain/chat -H "Content-Type: application/
 
 ```powershell
 # Option 1: One-click launcher (recommended)
-../Run_Brain_All.bat
+../Start_Dashboard.bat
 
 # Option 2: Manual launch
 python dashboard_web.py
@@ -323,7 +323,7 @@ The dashboard exposes REST API endpoints:
 | `../Run_Brain_Sync.bat` | One-click daily sync: move stray logs + ingest all + regenerate resume |
 | `python scripts/scrape_blackboard.py` | Sync courses/events/files from Blackboard |
 | `python dedupe_course_events.py [--course-id N] --apply` | Remove duplicate syllabus events (dry-run without --apply) |
-| `../Run_Brain_All.bat` | One-click: sync + resume + start dashboard and open browser (<http://127.0.0.1:5000>) |
+| `../Start_Dashboard.bat` | One-click: start dashboard and open browser (<http://127.0.0.1:5000>) |
 
 ---
 

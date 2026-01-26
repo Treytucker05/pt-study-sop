@@ -23,4 +23,4 @@ The application is run via the entry point `dashboard_web.py` in the `brain/` ro
 python dashboard_web.py
 ```
 
-Or via the `Run_Brain_All.bat` launcher.
+Or via the `Start_Dashboard.bat` launcher.

@@ -60,7 +60,7 @@ def main() -> int:
             bad_paths.append((it_id, "missing path"))
             continue
 
-        if "\\\" in path or "\" in path:
+        if "\\" in path:
             bad_paths.append((it_id, f"backslash found in path: {path}"))
 
         if path.startswith("/") or path.startswith("~"):

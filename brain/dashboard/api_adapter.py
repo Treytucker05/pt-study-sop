@@ -5,7 +5,7 @@ import json
 import os
 import re
 import requests
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 # Import internal modules from the "Brain"
@@ -295,13 +295,19 @@ def get_sessions():
     """
     Mimics: app.get("/api/sessions")
     Returns a list of study sessions.
+    Supports optional date range filtering via query parameters:
+    - start: YYYY-MM-DD (inclusive)
+    - end: YYYY-MM-DD (inclusive)
     """
     try:
+        start_date = request.args.get("start")
+        end_date = request.args.get("end")
+        
         conn = get_connection()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
-        cur.execute(
-            """
+        
+        query = """
             SELECT
                 id,
                 session_date,
@@ -324,9 +330,20 @@ def get_sessions():
                 what_needs_fixing,
                 created_at
             FROM sessions
-            ORDER BY session_date DESC, session_time DESC
+            WHERE 1=1
         """
-        )
+        params = []
+        
+        if start_date:
+            query += " AND session_date >= ?"
+            params.append(start_date)
+        if end_date:
+            query += " AND session_date <= ?"
+            params.append(end_date)
+            
+        query += " ORDER BY session_date DESC, session_time DESC"
+        
+        cur.execute(query, params)
         rows = cur.fetchall()
         conn.close()
 
@@ -679,9 +696,16 @@ def get_events():
             c_info = course_map.get(ev.get("course_id"), {})
             title = ev.get("title", "Untitled")
 
-            # For endDate, use the event date if due_date is missing, and ensure proper format
+            event_time = ev.get("time")
+            event_end_time = ev.get("end_time")
+            if event_time:
+                start_date = f"{start_date}T{event_time}:00"
+
+            # For endDate, use end_time if present, otherwise due_date or date
             raw_end = ev.get("due_date") or ev.get("date")
             end_date = safe_iso_date(raw_end)
+            if event_end_time and end_date:
+                end_date = f"{end_date}T{event_end_time}:00"
 
             serialized.append(
                 {
@@ -689,7 +713,7 @@ def get_events():
                     "title": title,
                     "date": start_date,
                     "endDate": end_date,
-                    "allDay": True,
+                    "allDay": False if event_time else True,
                     "eventType": (ev.get("type") or "event").lower(),
                     "course": c_info.get("code") or c_info.get("name"),
                     "color": c_info.get("color") or "#ef4444",
@@ -843,6 +867,279 @@ def update_event(event_id):
 # SCHEDULE EVENTS (Course Events mapping)
 # ==============================================================================
 
+DAY_INDEX = {
+    "mon": 0,
+    "monday": 0,
+    "tue": 1,
+    "tues": 1,
+    "tuesday": 1,
+    "wed": 2,
+    "wednesday": 2,
+    "thu": 3,
+    "th": 3,
+    "thur": 3,
+    "thurs": 3,
+    "thursday": 3,
+    "fri": 4,
+    "friday": 4,
+    "sat": 5,
+    "saturday": 5,
+    "sun": 6,
+    "sunday": 6,
+}
+
+
+def _normalize_days(value: Any) -> List[int]:
+    if not value:
+        return []
+    items: List[str] = []
+    if isinstance(value, list):
+        items = [str(v).strip() for v in value if str(v).strip()]
+    elif isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return []
+        compact = raw.lower()
+        if compact in {"mwf", "m-w-f"}:
+            items = ["Mon", "Wed", "Fri"]
+        elif compact in {"tth", "tr", "t-r"}:
+            items = ["Tue", "Thu"]
+        elif compact in {"mw", "m-w"}:
+            items = ["Mon", "Wed"]
+        elif "," in raw or " " in raw:
+            items = [part.strip() for part in re.split(r"[,\s]+", raw) if part.strip()]
+        else:
+            letter_map = {
+                "m": "Mon",
+                "t": "Tue",
+                "w": "Wed",
+                "r": "Thu",
+                "f": "Fri",
+                "s": "Sat",
+                "u": "Sun",
+            }
+            items = [letter_map[ch.lower()] for ch in raw if ch.lower() in letter_map]
+    else:
+        return []
+
+    indices = []
+    for item in items:
+        key = item.strip().lower()
+        if key in DAY_INDEX:
+            indices.append(DAY_INDEX[key])
+        elif len(key) >= 3 and key[:3] in DAY_INDEX:
+            indices.append(DAY_INDEX[key[:3]])
+    return sorted(set(indices))
+
+
+def _build_raw_text(notes: Any, metadata: Dict[str, Any]) -> Optional[str]:
+    clean_meta = {k: v for k, v in metadata.items() if v not in (None, "", [], {})}
+    if clean_meta:
+        if notes not in (None, ""):
+            clean_meta["notes"] = notes
+        return json.dumps(clean_meta)
+    return notes if notes not in (None, "") else None
+
+
+def _expand_class_meetings(ev: Dict[str, Any], term: Dict[str, Any]) -> List[Dict[str, Any]]:
+    days = _normalize_days(ev.get("daysOfWeek"))
+    start = term.get("startDate")
+    end = term.get("endDate")
+    if not days or not start or not end:
+        return [ev]
+    try:
+        start_dt = datetime.fromisoformat(start)
+        end_dt = datetime.fromisoformat(end)
+    except Exception:
+        return [ev]
+
+    expanded: List[Dict[str, Any]] = []
+    current = start_dt
+    while current.date() <= end_dt.date():
+        if current.weekday() in days:
+            clone = dict(ev)
+            clone["date"] = current.date().isoformat()
+            expanded.append(clone)
+        current += timedelta(days=1)
+    return expanded
+
+
+def _ensure_academic_deadlines_table(cur) -> None:
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS academic_deadlines (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            course TEXT NOT NULL,
+            type TEXT NOT NULL CHECK(type IN ('assignment', 'quiz', 'exam', 'project')),
+            due_date TEXT NOT NULL,
+            completed INTEGER DEFAULT 0,
+            notes TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+
+def _insert_academic_deadline(
+    cur,
+    title: str,
+    course: str,
+    deadline_type: str,
+    due_date: str,
+    notes: Optional[str],
+) -> bool:
+    if not title or not course or not deadline_type or not due_date:
+        return False
+    cur.execute(
+        """
+        SELECT id FROM academic_deadlines
+        WHERE title = ? AND course = ? AND type = ? AND due_date = ?
+        """,
+        (title, course, deadline_type, due_date),
+    )
+    if cur.fetchone():
+        return False
+    cur.execute(
+        """
+        INSERT INTO academic_deadlines (title, course, type, due_date, notes, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (title, course, deadline_type, due_date, notes or "", datetime.now().isoformat()),
+    )
+    return True
+
+
+@adapter_bp.route("/syllabus/import-bulk", methods=["POST"])
+def import_syllabus_bulk():
+    data = request.get_json() or {}
+    course_id = data.get("courseId")
+    if not course_id:
+        return jsonify({"error": "courseId is required"}), 400
+
+    modules_data = data.get("modules", [])
+    events_data = data.get("events", [])
+    term = data.get("term", {}) or {}
+
+    if not isinstance(modules_data, list) or not isinstance(events_data, list):
+        return jsonify({"error": "modules and events must be arrays"}), 400
+
+    modules_created = 0
+    events_created = 0
+    class_meetings_expanded = 0
+    now = datetime.now().isoformat()
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    _ensure_academic_deadlines_table(cur)
+    cur.execute("SELECT name FROM courses WHERE id = ?", (course_id,))
+    course_row = cur.fetchone()
+    course_name = course_row[0] if course_row and course_row[0] else str(course_id)
+
+    cur.execute("SELECT name FROM modules WHERE course_id = ?", (course_id,))
+    existing_names = {row[0].strip().lower() for row in cur.fetchall() if row and row[0]}
+
+    for mod in modules_data:
+        name = str(mod.get("name") or "").strip()
+        if not name:
+            continue
+        name_key = name.lower()
+        if name_key in existing_names:
+            continue
+        order_index = int(mod.get("orderIndex", 0) or 0)
+        sources_meta = {
+            "topics": mod.get("topics"),
+            "readings": mod.get("readings"),
+            "assessments": mod.get("assessments"),
+        }
+        sources = _build_raw_text(None, sources_meta)
+        cur.execute(
+            """
+            INSERT INTO modules (course_id, name, order_index, files_downloaded, notebooklm_loaded, sources, created_at, updated_at)
+            VALUES (?, ?, ?, 0, 0, ?, ?, ?)
+            """,
+            (course_id, name, order_index, sources, now, now),
+        )
+        modules_created += 1
+        existing_names.add(name_key)
+
+    expanded_events: List[Dict[str, Any]] = []
+    for ev in events_data:
+        if not isinstance(ev, dict):
+            continue
+        ev_type = ev.get("type")
+        title = ev.get("title")
+        if not ev_type or not title:
+            continue
+        if ev_type in {"class", "lecture"} and ev.get("daysOfWeek"):
+            expanded = _expand_class_meetings(ev, term)
+            class_meetings_expanded += max(len(expanded) - 1, 0)
+            expanded_events.extend(expanded)
+        else:
+            expanded_events.append(ev)
+
+    for ev in expanded_events:
+        event_type = ev.get("type") or "other"
+        title = ev.get("title")
+        if not title:
+            continue
+        date_val = ev.get("date") or ev.get("dueDate")
+        due_date = ev.get("dueDate")
+        start_time = ev.get("startTime")
+        end_time = ev.get("endTime")
+        raw_text = _build_raw_text(
+            ev.get("notes"),
+            {
+                "moduleName": ev.get("moduleName"),
+                "delivery": ev.get("delivery"),
+                "assessmentType": ev.get("assessmentType"),
+                "daysOfWeek": ev.get("daysOfWeek"),
+            },
+        )
+
+        cur.execute(
+            """
+            INSERT INTO course_events (
+                course_id, type, title, date, due_date, time, end_time, raw_text,
+                status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+            """,
+            (
+                course_id,
+                event_type,
+                title,
+                date_val,
+                due_date,
+                start_time,
+                end_time,
+                raw_text,
+                now,
+                now,
+            ),
+        )
+        events_created += 1
+
+        if event_type in {"assignment", "quiz", "exam"}:
+            deadline_date = due_date or date_val
+            _insert_academic_deadline(
+                cur,
+                title=title,
+                course=course_name,
+                deadline_type=event_type,
+                due_date=deadline_date,
+                notes=ev.get("notes"),
+            )
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        "modulesCreated": modules_created,
+        "eventsCreated": events_created,
+        "classMeetingsExpanded": class_meetings_expanded,
+    })
+
 
 @adapter_bp.route("/schedule-events", methods=["GET"])
 def get_schedule_events():
@@ -856,7 +1153,8 @@ def get_schedule_events():
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT id, course_id, type, title, due_date, date, raw_text, created_at, updated_at
+            SELECT id, course_id, type, title, due_date, date, time, end_time, raw_text,
+                   created_at, updated_at
             FROM course_events
             WHERE course_id = ?
             ORDER BY COALESCE(due_date, date) ASC
@@ -868,16 +1166,32 @@ def get_schedule_events():
 
         events = []
         for r in rows:
+            raw_text = r[8]
+            notes = raw_text
+            delivery = None
+            if raw_text:
+                try:
+                    parsed = json.loads(raw_text)
+                    if isinstance(parsed, dict):
+                        if parsed.get("notes") is not None:
+                            notes = parsed.get("notes")
+                        delivery = parsed.get("delivery")
+                except Exception:
+                    pass
             events.append({
                 "id": r[0],
                 "courseId": r[1],
                 "type": r[2],
                 "title": r[3],
-                "dueDate": r[4] or r[5],
+                "date": r[5],
+                "dueDate": r[4],
+                "startTime": r[6],
+                "endTime": r[7],
                 "linkedModuleId": None,
-                "notes": r[6],
-                "createdAt": r[7],
-                "updatedAt": r[8] or r[7],
+                "notes": notes,
+                "delivery": delivery,
+                "createdAt": r[9],
+                "updatedAt": r[10] or r[9],
             })
 
         return jsonify(events)
@@ -893,7 +1207,11 @@ def create_schedule_event():
     event_type = data.get("type")
     title = data.get("title")
     due_date = data.get("dueDate")
+    date_val = data.get("date") or due_date
+    start_time = data.get("startTime")
+    end_time = data.get("endTime")
     notes = data.get("notes")
+    delivery = data.get("delivery")
 
     if not course_id or not event_type or not title:
         return jsonify({"error": "courseId, type, and title are required"}), 400
@@ -901,24 +1219,47 @@ def create_schedule_event():
     try:
         conn = get_connection()
         cur = conn.cursor()
+        _ensure_academic_deadlines_table(cur)
+        cur.execute("SELECT name FROM courses WHERE id = ?", (course_id,))
+        course_row = cur.fetchone()
+        course_name = course_row[0] if course_row and course_row[0] else str(course_id)
         now = datetime.now().isoformat()
+        raw_text = _build_raw_text(
+            notes,
+            {
+                "delivery": delivery,
+            },
+        )
         cur.execute(
             """
             INSERT INTO course_events (
-                course_id, type, title, date, due_date, raw_text, status, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+                course_id, type, title, date, due_date, time, end_time, raw_text, status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
         """,
             (
                 course_id,
                 event_type,
                 title,
+                date_val,
                 due_date,
-                due_date,
-                notes,
+                start_time,
+                end_time,
+                raw_text,
                 now,
                 now,
             ),
         )
+        if event_type in {"assignment", "quiz", "exam"}:
+            deadline_date = due_date or date_val
+            _insert_academic_deadline(
+                cur,
+                title,
+                course_name,
+                event_type,
+                deadline_date,
+                notes,
+            )
+
         conn.commit()
         new_id = cur.lastrowid
         conn.close()
@@ -928,7 +1269,10 @@ def create_schedule_event():
             "courseId": course_id,
             "type": event_type,
             "title": title,
+            "date": date_val,
             "dueDate": due_date,
+            "startTime": start_time,
+            "endTime": end_time,
             "linkedModuleId": None,
             "notes": notes,
             "createdAt": now,
@@ -949,28 +1293,44 @@ def bulk_create_schedule_events():
     try:
         conn = get_connection()
         cur = conn.cursor()
+        _ensure_academic_deadlines_table(cur)
+        cur.execute("SELECT name FROM courses WHERE id = ?", (course_id,))
+        course_row = cur.fetchone()
+        course_name = course_row[0] if course_row and course_row[0] else str(course_id)
         now = datetime.now().isoformat()
         created = []
         for ev in events:
             event_type = ev.get("type")
             title = ev.get("title")
             due_date = ev.get("dueDate")
+            date_val = ev.get("date") or due_date
+            start_time = ev.get("startTime")
+            end_time = ev.get("endTime")
             notes = ev.get("notes")
+            delivery = ev.get("delivery")
             if not event_type or not title:
                 continue
+            raw_text = _build_raw_text(
+                notes,
+                {
+                    "delivery": delivery,
+                },
+            )
             cur.execute(
                 """
                 INSERT INTO course_events (
-                    course_id, type, title, date, due_date, raw_text, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+                    course_id, type, title, date, due_date, time, end_time, raw_text, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
             """,
                 (
                     course_id,
                     event_type,
                     title,
+                    date_val,
                     due_date,
-                    due_date,
-                    notes,
+                    start_time,
+                    end_time,
+                    raw_text,
                     now,
                     now,
                 ),
@@ -980,12 +1340,25 @@ def bulk_create_schedule_events():
                 "courseId": course_id,
                 "type": event_type,
                 "title": title,
+                "date": date_val,
                 "dueDate": due_date,
+                "startTime": start_time,
+                "endTime": end_time,
                 "linkedModuleId": None,
                 "notes": notes,
                 "createdAt": now,
                 "updatedAt": now,
             })
+            if event_type in {"assignment", "quiz", "exam"}:
+                deadline_date = due_date or date_val
+                _insert_academic_deadline(
+                    cur,
+                    title,
+                    course_name,
+                    event_type,
+                    deadline_date,
+                    notes,
+                )
         conn.commit()
         conn.close()
         return jsonify(created), 201
@@ -1002,20 +1375,47 @@ def update_schedule_event(event_id):
 
         fields = []
         values = []
+        updated_notes = None
         if "type" in data:
             fields.append("type = ?")
             values.append(data["type"])
         if "title" in data:
             fields.append("title = ?")
             values.append(data["title"])
+        if "date" in data:
+            fields.append("date = ?")
+            values.append(data["date"])
         if "dueDate" in data:
             fields.append("due_date = ?")
             values.append(data["dueDate"])
-            fields.append("date = ?")
-            values.append(data["dueDate"])
-        if "notes" in data:
+        if "startTime" in data:
+            fields.append("time = ?")
+            values.append(data["startTime"])
+        if "endTime" in data:
+            fields.append("end_time = ?")
+            values.append(data["endTime"])
+        if "notes" in data or "delivery" in data:
+            new_notes = data.get("notes")
+            new_delivery = data.get("delivery")
+            cur.execute("SELECT raw_text FROM course_events WHERE id = ?", (event_id,))
+            existing = cur.fetchone()
+            updated_notes = new_notes
+            if existing and existing[0]:
+                try:
+                    parsed = json.loads(existing[0])
+                    if isinstance(parsed, dict):
+                        if "notes" in data:
+                            parsed["notes"] = new_notes
+                        if "delivery" in data:
+                            parsed["delivery"] = new_delivery
+                        updated_notes = json.dumps(parsed)
+                except Exception:
+                    updated_notes = _build_raw_text(
+                        new_notes,
+                        {"delivery": new_delivery} if "delivery" in data else {},
+                    )
             fields.append("raw_text = ?")
-            values.append(data["notes"])
+            values.append(updated_notes)
 
         if not fields:
             return jsonify({"error": "No fields to update"}), 400
@@ -1031,7 +1431,8 @@ def update_schedule_event(event_id):
 
         cur.execute(
             """
-            SELECT id, course_id, type, title, due_date, date, raw_text, created_at, updated_at
+            SELECT id, course_id, type, title, due_date, date, time, end_time, raw_text,
+                   created_at, updated_at
             FROM course_events
             WHERE id = ?
         """,
@@ -1047,11 +1448,14 @@ def update_schedule_event(event_id):
             "courseId": row[1],
             "type": row[2],
             "title": row[3],
-            "dueDate": row[4] or row[5],
+            "date": row[5],
+            "dueDate": row[4],
+            "startTime": row[6],
+            "endTime": row[7],
             "linkedModuleId": None,
-            "notes": row[6],
-            "createdAt": row[7],
-            "updatedAt": row[8] or row[7],
+            "notes": row[8],
+            "createdAt": row[9],
+            "updatedAt": row[10] or row[9],
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1066,6 +1470,28 @@ def delete_schedule_event(event_id):
         conn.commit()
         conn.close()
         return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/schedule-events/bulk-delete", methods=["POST", "OPTIONS"])
+def bulk_delete_schedule_events():
+    data = request.get_json() or {}
+    ids = data.get("ids", [])
+    if not isinstance(ids, list) or not ids:
+        return jsonify({"error": "ids array required"}), 400
+
+    try:
+        cleaned = [int(i) for i in ids if isinstance(i, int) or str(i).isdigit()]
+        if not cleaned:
+            return jsonify({"error": "no valid ids provided"}), 400
+
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.executemany("DELETE FROM course_events WHERE id = ?", [(i,) for i in cleaned])
+        conn.commit()
+        conn.close()
+        return jsonify({"deleted": len(cleaned)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -2906,6 +3332,28 @@ def delete_module(module_id):
         conn.commit()
         conn.close()
         return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@adapter_bp.route("/modules/bulk-delete", methods=["POST", "OPTIONS"])
+def bulk_delete_modules():
+    data = request.get_json() or {}
+    ids = data.get("ids", [])
+    if not isinstance(ids, list) or not ids:
+        return jsonify({"error": "ids array required"}), 400
+
+    try:
+        cleaned = [int(i) for i in ids if isinstance(i, int) or str(i).isdigit()]
+        if not cleaned:
+            return jsonify({"error": "no valid ids provided"}), 400
+
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.executemany("DELETE FROM modules WHERE id = ?", [(i,) for i in cleaned])
+        conn.commit()
+        conn.close()
+        return jsonify({"deleted": len(cleaned)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

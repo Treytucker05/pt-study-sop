@@ -19,7 +19,7 @@
 **Source:** `docs/full-ui-api-audit-2026-01-22.md`
 
 ## Entrypoints / Runtime
-- Launcher: `Run_Brain_All.bat`
+- Launcher: `Start_Dashboard.bat`
 - Backend runtime: Flask app in `brain/dashboard_web.py` → `brain/dashboard/app.py`
 - Frontend build served from: `brain/static/dist/` (React build)
 - React routes (Wouter): `/`, `/brain`, `/calendar`, `/scholar`, `/tutor`

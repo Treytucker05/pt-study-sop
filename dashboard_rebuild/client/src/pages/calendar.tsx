@@ -312,6 +312,9 @@ export default function CalendarPage() {
   const [showGoogleEditModal, setShowGoogleEditModal] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
+  const debugModals =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("debugModals");
 
   // Calendar Organization State
   const [pinnedCalendars, setPinnedCalendars] = useState<string[]>(() => {
@@ -324,6 +327,44 @@ export default function CalendarPage() {
   });
   const [showCalendarSettings, setShowCalendarSettings] = useState(false);
   const [isOthersOpen, setIsOthersOpen] = useState(false);
+
+  useEffect(() => {
+    if (showEditModal && !selectedEvent) {
+      if (debugModals) {
+        console.warn("[ModalDebug][Calendar] Edit modal open without event; closing.");
+      }
+      setShowEditModal(false);
+    }
+  }, [debugModals, selectedEvent, showEditModal]);
+
+  useEffect(() => {
+    if (showGoogleEditModal && !selectedGoogleEvent) {
+      if (debugModals) {
+        console.warn("[ModalDebug][Calendar] Google edit modal open without event; closing.");
+      }
+      setShowGoogleEditModal(false);
+    }
+  }, [debugModals, selectedGoogleEvent, showGoogleEditModal]);
+
+  useEffect(() => {
+    if (!debugModals) return;
+    console.info("[ModalDebug][Calendar] state", {
+      showEditModal,
+      selectedEvent: selectedEvent?.id ?? null,
+      showGoogleEditModal,
+      selectedGoogleEvent: selectedGoogleEvent?.id ?? null,
+      showCalendarSettings,
+      showEventModal,
+    });
+  }, [
+    debugModals,
+    selectedEvent,
+    selectedGoogleEvent,
+    showCalendarSettings,
+    showEditModal,
+    showEventModal,
+    showGoogleEditModal,
+  ]);
 
   const toggleHideCalendar = (calId: string) => {
     setHiddenCalendars(prev => {
@@ -743,12 +784,14 @@ export default function CalendarPage() {
     setShowEventModal(true);
   };
 
-  const openEditModal = (event: CalendarEvent) => {
+  const openEditModal = (event?: CalendarEvent | null) => {
+    if (!event) return;
     setSelectedEvent(event);
     setShowEditModal(true);
   };
 
-  const openGoogleEditModal = (event: GoogleCalendarEvent) => {
+  const openGoogleEditModal = (event?: GoogleCalendarEvent | null) => {
+    if (!event) return;
     setSelectedGoogleEvent(event);
     setShowGoogleEditModal(true);
   };
@@ -951,6 +994,17 @@ export default function CalendarPage() {
 
   return (
     <Layout>
+      {debugModals && (
+        <div className="fixed bottom-12 right-4 z-[70] bg-black/80 border border-primary text-primary font-terminal text-[10px] px-2 py-1 rounded-none">
+          <div>Calendar modals</div>
+          <div>Edit event: {showEditModal ? "open" : "closed"}</div>
+          <div>Selected event: {selectedEvent?.id ?? "none"}</div>
+          <div>Google edit: {showGoogleEditModal ? "open" : "closed"}</div>
+          <div>Google event: {selectedGoogleEvent?.id ?? "none"}</div>
+          <div>Manage calendars: {showCalendarSettings ? "open" : "closed"}</div>
+          <div>Create event: {showEventModal ? "open" : "closed"}</div>
+        </div>
+      )}
       <div className="h-[calc(100vh-80px)]">
 
         {/* Main Calendar - Full Width */}
@@ -1051,7 +1105,12 @@ export default function CalendarPage() {
                   size="sm" 
                   variant="ghost" 
                   className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-[9px]"
-                  onClick={() => setShowCalendarSettings(true)}
+                  onClick={() => {
+                    if (debugModals) {
+                      console.info("[ModalDebug][Calendar] MANAGE click");
+                    }
+                    setShowCalendarSettings(true);
+                  }}
                 >
                   MANAGE
                 </Button>
@@ -1075,8 +1134,16 @@ export default function CalendarPage() {
             </div>
 
             {/* Calendar Settings Modal */}
-            <Dialog open={showCalendarSettings} onOpenChange={setShowCalendarSettings}>
-              <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
+            <Dialog
+              open={showCalendarSettings}
+              onOpenChange={setShowCalendarSettings}
+              modal={false}
+            >
+              <DialogContent
+                data-modal="calendar-manage"
+                className="bg-black border-2 border-primary rounded-none max-w-md pointer-events-auto translate-y-0 data-[state=open]:animate-none data-[state=closed]:animate-none"
+                style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+              >
                 <DialogHeader>
                   <DialogTitle className="font-arcade text-primary">MANAGE CALENDARS</DialogTitle>
                 </DialogHeader>
@@ -1289,7 +1356,11 @@ export default function CalendarPage() {
 
       {/* Create Modal */}
       <Dialog open={showEventModal} onOpenChange={setShowEventModal}>
-        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        data-modal="calendar-create"
+        className="bg-black border-2 border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto translate-y-0"
+        style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+      >
           <DialogHeader><DialogTitle className="font-arcade text-primary">CREATE_EVENT</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -1396,8 +1467,18 @@ export default function CalendarPage() {
       </Dialog>
 
       {/* Edit Modal */}
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
+      <Dialog
+        open={showEditModal && !!selectedEvent}
+        onOpenChange={(open) => {
+          setShowEditModal(open);
+          if (!open) setSelectedEvent(null);
+        }}
+      >
+        <DialogContent
+          data-modal="calendar-edit"
+          className="bg-black border-2 border-primary rounded-none max-w-md translate-y-0"
+          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+        >
           <DialogHeader><DialogTitle className="font-arcade text-primary">EDIT_EVENT</DialogTitle></DialogHeader>
           {selectedEvent && (
             <div className="space-y-4 py-4">
@@ -1441,8 +1522,18 @@ export default function CalendarPage() {
       </Dialog>
 
       {/* Edit Google Event Modal */}
-      <Dialog open={showGoogleEditModal} onOpenChange={setShowGoogleEditModal}>
-        <DialogContent className="font-arcade bg-black border-2 border-green-500 rounded-none max-w-md p-0 overflow-hidden">
+      <Dialog
+        open={showGoogleEditModal && !!selectedGoogleEvent}
+        onOpenChange={(open) => {
+          setShowGoogleEditModal(open);
+          if (!open) setSelectedGoogleEvent(null);
+        }}
+      >
+        <DialogContent
+          data-modal="calendar-edit-google"
+          className="font-arcade bg-black border-2 border-green-500 rounded-none max-w-md p-0 overflow-hidden translate-y-0"
+          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+        >
           {selectedGoogleEvent && (
             <div className="flex flex-col h-full">
               {/* Header */}

@@ -9,7 +9,7 @@
                             "agent-browser screenshot",
                             "agent-browser snapshot",
                             "bun -v",
-                            "C:\\\\pt-study-sop\\\\Run_Brain_All.bat",
+                            "C:\\\\pt-study-sop\\\\Start_Dashboard.bat",
                             "Copy-Item",
                             "ForEach-Object",
                             "Get-ChildItem",

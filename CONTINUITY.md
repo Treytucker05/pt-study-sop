@@ -1,4 +1,4 @@
-# CONTINUITY\n
+﻿# CONTINUITY\n
 
 - 2026-01-21 18:47:42: Replaced C:\pt-study-sop\brain\data\pt_study.db with C:\Users\treyt\Downloads\pt_study.db after backup (pt_study.db.bak_20260121_184637). Counts: sessions=2, wheel_courses=5, quick_notes=4, courses=0.
 
@@ -125,3 +125,37 @@
 - 2026-01-25 15:17:53: Reduced audit_repo_hygiene.py noise with ignore prefixes, warning grouping, and stricter fail scope; documented audit enforcement in docs/project/REPO_HYGIENE.md.
 
 - 2026-01-25 15:23:51: Expanded audit_repo_hygiene.py planning-keyword ignore prefixes and updated repo hygiene exemptions.
+- 2026-01-25 19:46:18: Refactored Brain page layout with KPI HUD, 75/25 grid, sticky chat, compact session table, status bar, and collapsed ingestion/integrations panels; reduced background grid opacity and added brain card utility styles.
+- 2026-01-25 20:04:20: Adjusted Brain layout flow to avoid overflow (min-width guards, responsive heights, table horizontal scroll, chat sticky sizing, and flex wrap for inputs).
+- 2026-01-25 20:11:14: Removed Brain LLM chat panel and chat logic for a basic, focused layout.
+- 2026-01-25 20:18:16: Removed KPI HUD and derived metrics grid to keep Brain page minimal; retained session evidence and core system panels.
+- 2026-01-25 20:23:47: Reordered Brain layout: System Status first, then Data Ingestion, then Integrations, followed by Session Evidence and Issues Log.
+- 2026-01-25 20:28:16: Removed WRAP file upload intake; WRAP ingestion now paste-only.
+- 2026-01-25 22:51:41: Updated Brain Ingestion syllabus workflow with combined JSON prompt/import, class meeting expansion to calendar events, and inline module/schedule editing+deletion in the UI.
+- 2026-01-26 00:11:00: Hardened modal behavior (z-index + max-height/scroll), guarded calendar edit modals against null events, and ensured dialogs only close on explicit close to prevent black overlay without content.
+- 2026-01-26 00:22:00: Documented persistent modal overlay issue and prior fix attempts in dashboard_rebuild/client/src/pages/README.md for tracking.
+- 2026-01-26 00:32:00: Added modal debug HUD/logging and stricter data-backed open guards for Brain/Calendar dialogs; documented attempt in pages README.
+- 2026-01-26 00:41:00: Forced dialog/alert-dialog opacity on open and added data-modal attrs for DOM tracing; documented in pages README.
+- 2026-01-26 00:49:00: Raised dialog/alert-dialog z-index and forced pointer-events auto on content to prevent overlay-only lock-ups; documented in pages README.
+- 2026-01-25 23:00:16: Fixed validate_sop_index.py backslash check and scoped release_check.py pytest run to brain/tests to avoid capture errors.
+- 2026-01-26 00:58:00: Forced dialog/alert-dialog portals to render in document.body to prevent fixed-positioning relative to transformed ancestors; documented in pages README.
+- 2026-01-26 01:07:00: Disabled modal behavior + animations for Calendar Manage dialog, added MANAGE click logging; set dialog/alert overlay pointer-events to none to prevent overlay-only locks.
+- 2026-01-25 23:18:38: Added checkbox selection, select-all, and bulk delete for modules and schedule items on the Brain Ingestion page (new bulk-delete endpoints).
+- 2026-01-26 01:22:00: Forced Calendar Manage dialog inline positioning + z-index to keep it in viewport; documented in pages README.
+- 2026-01-25 23:24:38: Added Delete All buttons for modules and schedule items on the Brain Ingestion page.
+- 2026-01-25 23:33:32: Replaced native confirm with themed AlertDialog for bulk delete on Brain Ingestion.
+- 2026-01-25 23:38:27: Fixed bulk delete confirmation by persisting payload in a ref so the themed dialog executes deletes reliably.
+- 2026-01-26 01:39:00: Forced Brain delete confirmation dialog inline positioning + z-index to keep it in viewport; documented in pages README.
+- 2026-01-25 23:45:12: Swapped native checkboxes for themed Checkbox components in Brain Ingestion tables.
+- 2026-01-25 23:49:57: Restyled bulk delete confirmation dialog in Brain Ingestion to match app theme.
+- 2026-01-26 01:53:00: Applied inline positioning + z-index to remaining dialogs (Brain edit session/draft; Calendar create/edit/edit-Google) to prevent off-screen rendering.
+- 2026-01-26 02:03:00: Applied inline positioning + z-index to ingestion bulk delete confirmation dialog (Schedule/Modules delete selected/all) to prevent off-screen rendering.
+- 2026-01-25 23:55:24: Added error handling for bulk deletes and forced confirmation action button type to ensure delete fires.
+- 2026-01-25 23:57:58: Allowed OPTIONS on bulk-delete endpoints to prevent 405 on delete requests.
+- 2026-01-26 00:03:12: Added academic deadline inserts for assignment/quiz/exam during syllabus and schedule imports.
+- 2026-01-26 00:16:40: Updated syllabus prompt defaults (term dates/timezone) and added JSON extraction for pasted LLM outputs.
+- 2026-01-26 00:29:10: Added delivery field to schedule items, replaced Delete All with Save Selected, and removed cancel buttons.
+- 2026-01-26 00:37:18: Adjusted module bulk/action buttons to Check All, Delete, Save and per-row Save/Delete only.
+- 2026-01-26 00:39:55: Mirrored schedule section buttons to Check All, Delete, Save and per-row Save/Delete only.
+- 2026-01-26 00:44:52: Updated docs to reference Start_Dashboard.bat instead of Run_Brain_All.bat.
+- 2026-01-26 00:46:38: Updated permissions allowlist to Start_Dashboard.bat.

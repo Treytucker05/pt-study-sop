@@ -1,0 +1,7 @@
+- `dashboard_rebuild/client/src/pages/brain.tsx:507-520` KPI HUD header (`BRAIN ANALYTICS` + totals). Recommended order: keep first, full-width above the 2‑column layout (this is the HUD).
+- `dashboard_rebuild/client/src/pages/brain.tsx:518-1118` Main content column (75%). Recommended block order: Ingestion (~523-529) → Session Evidence table (~532-642) + Derived Metrics grid (~645-744) kept side‑by‑side → Issues Log (~751-779) → Obsidian Vault (~784-948) → Anki Integration (~952-1115).
+- `dashboard_rebuild/client/src/pages/brain.tsx:1128-1238` Chat column (25%). Move this block to the right column and wrap it in a sticky container (e.g., `sticky top-6`) so the chat stays fixed while the left column scrolls.
+- `dashboard_rebuild/client/src/pages/brain.tsx:790-835` + `dashboard_rebuild/client/src/pages/brain.tsx:1160-1185` Dependency: `obsidianStatus`/`syncToObsidian` are used in both Obsidian Vault and Chat header; keep these controls aligned (or together) when reordering. `dashboard_rebuild/client/src/pages/brain.tsx:1210-1245` wrapSummary actions touch Anki/Obsidian, so keep those panels in the left column below the HUD for contextual grouping.
+
+Files changed: none.  
+Tests: not run (analysis only).

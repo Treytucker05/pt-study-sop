@@ -24,6 +24,13 @@ export interface GoogleTask {
   listTitle?: string;
 }
 
+export interface SyllabusImportResult {
+  modulesCreated: number;
+  eventsCreated: number;
+  classMeetingsExpanded: number;
+  errors?: string[];
+}
+
 const API_BASE = "/api";
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -108,6 +115,18 @@ export const api = {
     delete: (id: number) => request<void>(`/schedule-events/${id}`, {
       method: "DELETE",
     }),
+    deleteMany: (ids: number[]) => request<{ deleted: number }>("/schedule-events/bulk-delete", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
+  },
+
+  syllabus: {
+    importBulk: (courseId: number, payload: Record<string, unknown>) =>
+      request<SyllabusImportResult>("/syllabus/import-bulk", {
+        method: "POST",
+        body: JSON.stringify({ courseId, ...payload }),
+      }),
   },
 
   modules: {
@@ -129,6 +148,10 @@ export const api = {
     }),
     delete: (id: number) => request<void>(`/modules/${id}`, {
       method: "DELETE",
+    }),
+    deleteMany: (ids: number[]) => request<{ deleted: number }>("/modules/bulk-delete", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
     }),
   },
 

@@ -284,10 +284,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background text-foreground relative flex flex-col font-terminal">
       {/* Background with overlay */}
       <div 
-        className="fixed inset-0 z-0 opacity-15 pointer-events-none" 
+        className="fixed inset-0 z-0 opacity-[0.06] pointer-events-none" 
         style={{ 
           backgroundImage: `url(${arcadeBg})`, 
-          backgroundSize: '300px' 
+          backgroundSize: '420px' 
         }}
       />
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />

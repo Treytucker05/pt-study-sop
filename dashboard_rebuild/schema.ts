@@ -44,7 +44,10 @@ export const scheduleEvents = sqliteTable("schedule_events", {
   courseId: integer("course_id").notNull(),
   type: text("type").notNull(), // 'chapter' | 'quiz' | 'assignment' | 'exam'
   title: text("title").notNull(),
+  date: text("date"), // ISO date string YYYY-MM-DD
   dueDate: text("due_date"), // ISO date string YYYY-MM-DD
+  startTime: text("start_time"), // HH:MM
+  endTime: text("end_time"), // HH:MM
   linkedModuleId: integer("linked_module_id"),
   notes: text("notes"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
