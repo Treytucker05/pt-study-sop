@@ -43,6 +43,43 @@ Here are my learning objectives:
 
 [PASTE YOUR LOs BELOW]`;
 
+const WRAP_PROMPT = `I need you to convert my study session notes into WRAP format.
+
+WRAP format has 4 sections:
+
+Section A: Obsidian Notes
+- Main concepts and insights from the session
+- Key points to remember
+
+Section B: Anki Cards
+- Format: "front: [question]" on one line, "back: [answer]" on next line
+- Create cards for important facts and concepts
+
+Section C: Spaced Schedule
+- R1=tomorrow
+- R2=3d
+- R3=1w
+- R4=2w
+
+Section D: JSON Logs
+\`\`\`json
+{
+  "merged": {
+    "topic": "[main topic]",
+    "mode": "Core",
+    "duration_minutes": [number],
+    "understanding": [1-5],
+    "retention": [1-5]
+  }
+}
+\`\`\`
+
+Return ONLY the WRAP formatted content, NO additional text or explanation.
+
+Here are my study notes:
+
+[PASTE YOUR NOTES BELOW]`;
+
 export function IngestionTab() {
   const queryClient = useQueryClient();
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
@@ -157,6 +194,17 @@ export function IngestionTab() {
         )}
         
         <div className="space-y-4">
+          <button
+            onClick={() => copyToClipboard(WRAP_PROMPT)}
+            className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal mb-2"
+            type="button"
+          >
+            Copy Prompt for ChatGPT
+          </button>
+          <p className="text-xs text-muted-foreground mb-2 font-terminal">
+            Use ChatGPT to convert your notes to WRAP format, then paste or upload below:
+          </p>
+          
           <div>
             <label className="block text-sm mb-2 font-terminal text-muted-foreground">
               Upload WRAP File (.md, .txt)
