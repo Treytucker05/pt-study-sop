@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { Course, Module, LearningObjective } from "@shared/schema";
@@ -50,6 +50,9 @@ export function IngestionTab() {
   const [scheduleJson, setScheduleJson] = useState("");
   const [loJson, setLoJson] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
+  const [wrapContent, setWrapContent] = useState("");
+  const [wrapFile, setWrapFile] = useState<File | null>(null);
+  const [wrapStatus, setWrapStatus] = useState<{type: "success" | "error", message: string} | null>(null);
 
   const { data: courses = [] } = useQuery({
     queryKey: ["courses"],
@@ -112,8 +115,100 @@ export function IngestionTab() {
     navigator.clipboard.writeText(text);
   };
 
+  const handleWrapSubmit = async () => {
+    try {
+      setWrapStatus(null);
+      const content = wrapFile ? await wrapFile.text() : wrapContent;
+      const filename = wrapFile?.name || "pasted_wrap.md";
+      const result = await api.brain.ingest(content, filename);
+      
+      if (result.sessionSaved) {
+        setWrapStatus({
+          type: "success",
+          message: `✓ Session saved! ID: ${result.sessionId}, Cards: ${result.cardsCreated || 0}`
+        });
+        setWrapContent("");
+        setWrapFile(null);
+      } else {
+        setWrapStatus({
+          type: "error",
+          message: result.errors?.join(", ") || result.message
+        });
+      }
+    } catch (err: any) {
+      setWrapStatus({type: "error", message: err.message || "Failed to ingest"});
+    }
+  };
+
   return (
     <div className="space-y-6 p-4">
+      {/* WRAP SESSION INGESTION - First and prominent */}
+      <div className="border-2 border-primary rounded-none p-4 bg-primary/5">
+        <h2 className="text-xl font-arcade text-primary mb-4">WRAP SESSION INGESTION</h2>
+        
+        {wrapStatus && (
+          <div className={`mb-4 p-3 rounded-none font-terminal text-sm ${
+            wrapStatus.type === "success" 
+              ? "bg-green-900/30 border border-green-500 text-green-400"
+              : "bg-red-900/30 border border-red-500 text-red-400"
+          }`}>
+            {wrapStatus.message}
+          </div>
+        )}
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm mb-2 font-terminal text-muted-foreground">
+              Upload WRAP File (.md, .txt)
+            </label>
+            <input
+              type="file"
+              accept=".md,.txt"
+              onChange={(e) => {
+                setWrapFile(e.target.files?.[0] || null);
+                setWrapContent("");
+                setWrapStatus(null);
+              }}
+              className="w-full bg-black border border-secondary rounded-none p-2 font-terminal text-sm"
+            />
+            {wrapFile && (
+              <p className="text-xs text-muted-foreground mt-1 font-terminal">
+                Selected: {wrapFile.name}
+              </p>
+            )}
+          </div>
+          
+          <div className="text-center font-terminal text-xs text-muted-foreground">
+            - OR -
+          </div>
+          
+          <div>
+            <label className="block text-sm mb-2 font-terminal text-muted-foreground">
+              Paste WRAP Content
+            </label>
+            <textarea
+              className="w-full bg-black border border-secondary rounded-none p-2 h-48 font-terminal text-sm"
+              placeholder="Paste your WRAP session here..."
+              value={wrapContent}
+              onChange={(e) => {
+                setWrapContent(e.target.value);
+                setWrapFile(null);
+                setWrapStatus(null);
+              }}
+            />
+          </div>
+          
+          <button
+            onClick={handleWrapSubmit}
+            disabled={!wrapContent && !wrapFile}
+            className="bg-primary hover:bg-primary/80 disabled:opacity-50 px-6 py-3 rounded-none font-arcade text-sm w-full"
+            type="button"
+          >
+            INGEST WRAP SESSION
+          </button>
+        </div>
+      </div>
+      
       <h2 className="text-xl font-arcade text-primary">MATERIAL INGESTION</h2>
 
       <div>
