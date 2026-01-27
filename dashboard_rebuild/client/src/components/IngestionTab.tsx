@@ -118,6 +118,17 @@ export function IngestionTab() {
   const [wrapContent, setWrapContent] = useState("");
   const [wrapStatus, setWrapStatus] = useState<{type: "success" | "error", message: string} | null>(null);
   const [syllabusStatus, setSyllabusStatus] = useState<{type: "success" | "error", message: string} | null>(null);
+  const [syllabusValidation, setSyllabusValidation] = useState<{
+    isValid: boolean;
+    errors: string[];
+    preview?: {
+      courseName: string;
+      moduleCount: number;
+      eventCount: number;
+      startDate?: string;
+      endDate?: string;
+    };
+  } | null>(null);
 
   const { data: courses = [] } = useQuery({
     queryKey: ["courses"],
@@ -189,6 +200,62 @@ export function IngestionTab() {
       return candidate.slice(firstBrace, lastBrace + 1).trim();
     }
     return candidate;
+  };
+
+  const validateSyllabusJson = (jsonStr: string) => {
+    const errors: string[] = [];
+    let parsed: any = null;
+
+    // Try to parse JSON
+    try {
+      const extracted = extractJsonPayload(jsonStr);
+      if (!extracted) {
+        errors.push("No JSON found in input");
+        setSyllabusValidation({ isValid: false, errors });
+        return;
+      }
+      parsed = JSON.parse(extracted);
+    } catch (err: any) {
+      errors.push(`Invalid JSON: ${err.message}`);
+      setSyllabusValidation({ isValid: false, errors });
+      return;
+    }
+
+    // Validate required fields
+    if (!parsed || typeof parsed !== "object") {
+      errors.push("JSON must be an object");
+    }
+
+    // Check for required top-level fields
+    const hasName = parsed.name && typeof parsed.name === "string" && parsed.name.trim();
+    const hasTerm = parsed.term && typeof parsed.term === "object";
+    const hasModules = Array.isArray(parsed.modules);
+    const hasEvents = Array.isArray(parsed.events);
+
+    if (!hasName) errors.push("Missing or invalid 'name' field");
+    if (!hasTerm) errors.push("Missing or invalid 'term' object");
+    if (!hasModules) errors.push("Missing or invalid 'modules' array");
+    if (!hasEvents) errors.push("Missing or invalid 'events' array");
+
+    // If we have term, validate its structure
+    if (hasTerm) {
+      if (!parsed.term.startDate) errors.push("term.startDate is required");
+      if (!parsed.term.endDate) errors.push("term.endDate is required");
+    }
+
+    // If validation passed, build preview
+    if (errors.length === 0) {
+      const preview = {
+        courseName: parsed.name,
+        moduleCount: parsed.modules?.length || 0,
+        eventCount: parsed.events?.length || 0,
+        startDate: parsed.term?.startDate,
+        endDate: parsed.term?.endDate,
+      };
+      setSyllabusValidation({ isValid: true, errors: [], preview });
+    } else {
+      setSyllabusValidation({ isValid: false, errors });
+    }
   };
 
   const handleWrapSubmit = async () => {
@@ -311,23 +378,52 @@ export function IngestionTab() {
               <p className="text-xs text-muted-foreground mb-2 font-terminal">
                 Paste the ChatGPT response (combined JSON object) below:
               </p>
-              <textarea
-                className="w-full bg-black border border-secondary rounded-none p-2 h-40 font-terminal text-sm"
-                placeholder='{"term":{"startDate":"2026-01-15","endDate":"2026-05-01","timezone":"America/Chicago"},"modules":[...],"events":[...]}'
-                value={syllabusJson}
-                onChange={(e) => {
-                  setSyllabusJson(e.target.value);
-                  setSyllabusStatus(null);
-                }}
-              />
-              <button
-                onClick={() => importSyllabusMutation.mutate(syllabusJson)}
-                disabled={!syllabusJson || importSyllabusMutation.isPending}
-                className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none mt-2 font-terminal text-xs"
-                type="button"
-              >
-                {importSyllabusMutation.isPending ? "Importing..." : "Import Syllabus"}
-              </button>
+               <textarea
+                 className="w-full bg-black border border-secondary rounded-none p-2 h-40 font-terminal text-sm"
+                 placeholder='{"term":{"startDate":"2026-01-15","endDate":"2026-05-01","timezone":"America/Chicago"},"modules":[...],"events":[...]}'
+                 value={syllabusJson}
+                 onChange={(e) => {
+                   setSyllabusJson(e.target.value);
+                   setSyllabusStatus(null);
+                   if (e.target.value.trim()) {
+                     validateSyllabusJson(e.target.value);
+                   } else {
+                     setSyllabusValidation(null);
+                   }
+                 }}
+               />
+               {syllabusValidation && !syllabusValidation.isValid && (
+                 <div className="mt-2 p-2 border border-red-500 bg-red-900/30 rounded-none font-terminal text-xs text-red-400">
+                   <div className="font-bold mb-1">Validation Errors:</div>
+                   {syllabusValidation.errors.map((error, idx) => (
+                     <div key={idx}>• {error}</div>
+                   ))}
+                 </div>
+               )}
+               {syllabusValidation && syllabusValidation.isValid && syllabusValidation.preview && (
+                 <div className="mt-2 p-3 border border-primary bg-primary/10 rounded-none font-terminal text-xs text-primary">
+                   <div className="font-bold mb-2">✓ Valid JSON Preview:</div>
+                   <div className="space-y-1">
+                     <div><span className="text-muted-foreground">Course:</span> {syllabusValidation.preview.courseName}</div>
+                     <div><span className="text-muted-foreground">Modules:</span> {syllabusValidation.preview.moduleCount}</div>
+                     <div><span className="text-muted-foreground">Events:</span> {syllabusValidation.preview.eventCount}</div>
+                     {syllabusValidation.preview.startDate && (
+                       <div><span className="text-muted-foreground">Start:</span> {syllabusValidation.preview.startDate}</div>
+                     )}
+                     {syllabusValidation.preview.endDate && (
+                       <div><span className="text-muted-foreground">End:</span> {syllabusValidation.preview.endDate}</div>
+                     )}
+                   </div>
+                 </div>
+               )}
+               <button
+                 onClick={() => importSyllabusMutation.mutate(syllabusJson)}
+                 disabled={!syllabusValidation?.isValid || importSyllabusMutation.isPending}
+                 className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none mt-2 font-terminal text-xs"
+                 type="button"
+               >
+                 {importSyllabusMutation.isPending ? "Importing..." : "Import Syllabus"}
+               </button>
               {syllabusStatus && (
                 <div className={`mt-2 p-2 border font-terminal text-xs ${
                   syllabusStatus.type === "success"

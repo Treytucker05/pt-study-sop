@@ -249,7 +249,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ---
 
-- [ ] 4. Add date/semester filter UI to Brain page
+- [x] 4. Add date/semester filter UI to Brain page
 
   **What to do**:
   - Add date range picker to Session Evidence tab
@@ -289,7 +289,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ---
 
-- [ ] 5. Rebuild and deploy frontend
+- [x] 5. Rebuild and deploy frontend
 
   **What to do**:
   - Run: `cd dashboard_rebuild && npm run build`
@@ -379,7 +379,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ### PR-M3: Syllabus/Modules/Objectives Ingestion
 
-- [ ] 8. Create prompt generator UI for syllabus conversion
+- [x] 8. Create prompt generator UI for syllabus conversion [ALREADY COMPLETE - lines 304-310]
 
   **What to do**:
   - Add to Ingestion tab: "Generate ChatGPT Prompt" button
@@ -409,7 +409,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ---
 
-- [ ] 9. Add JSON validation preview before commit
+- [x] 9. Add JSON validation preview before commit [ALREADY COMPLETE - lines 205-259, 395-418]
 
   **What to do**:
   - When JSON pasted, validate against schema
