@@ -693,7 +693,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ---
 
-- [ ] 18. Add questions and proposals lifecycle UI
+- [x] 18. Add questions and proposals lifecycle UI [NEEDS BUILD]
 
   **What to do**:
   - Display Scholar questions list
