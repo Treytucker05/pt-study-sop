@@ -723,7 +723,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ---
 
-- [ ] 19. Implement SOPRef linking in Scholar
+- [x] 19. Implement SOPRef linking in Scholar [NEEDS BUILD]
 
   **What to do**:
   - Parse SOPRef JSON in proposals/questions
@@ -782,7 +782,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ---
 
-- [ ] 21. Add preview-first change plan UI
+- [x] 21. Add preview-first change plan UI [NEEDS BUILD]
 
   **What to do**:
   - NL input box on Calendar page
