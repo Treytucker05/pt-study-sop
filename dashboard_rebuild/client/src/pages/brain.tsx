@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { IngestionTab } from "@/components/IngestionTab";
 import { DataTablesSection } from "@/components/DataTablesSection";
+import { SyllabusViewTab } from "@/components/SyllabusViewTab";
 import {
   Dialog,
   DialogContent,
@@ -477,19 +478,22 @@ export default function Brain() {
             </Card>
           </div>
 
-          {/* 3 Horizontal Tabs */}
-          <Tabs defaultValue="ingestion" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 rounded-none bg-black border border-secondary/40">
-              <TabsTrigger value="ingestion" className="font-arcade text-xs rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-                INGESTION
-              </TabsTrigger>
-              <TabsTrigger value="data" className="font-arcade text-xs rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-                DATA
-              </TabsTrigger>
-              <TabsTrigger value="integrations" className="font-arcade text-xs rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-                INTEGRATIONS
-              </TabsTrigger>
-            </TabsList>
+           {/* 4 Horizontal Tabs */}
+           <Tabs defaultValue="ingestion" className="w-full">
+             <TabsList className="grid w-full grid-cols-4 rounded-none bg-black border border-secondary/40">
+               <TabsTrigger value="ingestion" className="font-arcade text-xs rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                 INGESTION
+               </TabsTrigger>
+               <TabsTrigger value="data" className="font-arcade text-xs rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                 DATA
+               </TabsTrigger>
+               <TabsTrigger value="integrations" className="font-arcade text-xs rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                 INTEGRATIONS
+               </TabsTrigger>
+               <TabsTrigger value="syllabus" className="font-arcade text-xs rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                 SYLLABUS VIEW
+               </TabsTrigger>
+             </TabsList>
 
             {/* INGESTION Tab */}
             <TabsContent value="ingestion" className="border border-t-0 border-secondary/40 rounded-none">
@@ -867,9 +871,14 @@ export default function Brain() {
                       )}
                     </CardContent>
                   </Card>
-                </div>
-            </TabsContent>
-           </Tabs>
+                 </div>
+             </TabsContent>
+
+             {/* SYLLABUS VIEW Tab */}
+             <TabsContent value="syllabus" className="border border-t-0 border-secondary/40 rounded-none">
+               <SyllabusViewTab />
+             </TabsContent>
+            </Tabs>
 
            {/* Session Evidence Section */}
            <div>
