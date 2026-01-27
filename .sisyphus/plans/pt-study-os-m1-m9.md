@@ -505,7 +505,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ---
 
-- [ ] 12. Add projection preview UI with accept/edit/decline
+- [x] 12. Add projection preview UI with accept/edit/decline [NEEDS BUILD]
 
   **What to do**:
   - After syllabus import: show "Preview Projection" button
