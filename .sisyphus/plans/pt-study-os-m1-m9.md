@@ -664,7 +664,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ### PR-M7: Scholar Loop
 
-- [ ] 17. Implement Scholar run button and status
+- [x] 17. Implement Scholar run button and status [NEEDS BUILD]
 
   **What to do**:
   - Verify existing `/api/scholar/run` endpoint
