@@ -345,3 +345,43 @@ const [endDate, setEndDate] = useState<string>("");
 ### Status
 ✅ COMPLETE - Filter UI fully implemented and wired to API
 
+
+## Task 4 Implementation (2026-01-27)
+
+### Completed
+- ✅ Added filter state variables (semesterFilter, startDate, endDate) to brain.tsx
+- ✅ Added useEffect to read URL params on mount and restore filter state
+- ✅ Updated sessions query to include filter params in queryKey and queryFn
+- ✅ Added filter UI controls (semester dropdown, date inputs, clear button)
+- ✅ Added Session Evidence table to display filtered sessions with edit/delete actions
+- ✅ Implemented bulk delete for selected sessions
+- ✅ TypeScript compilation passes (only pre-existing error in DataTablesSection.tsx)
+
+### Implementation Notes
+- Filter UI uses grid layout (4 columns) with font-arcade labels and border-primary styling
+- URL params updated via window.history.replaceState() on every filter change
+- Sessions query uses fetch directly instead of api.sessions.getAll() to support query params
+- Session Evidence table includes: date, mode, minutes, cards, concepts count, edit/delete actions
+- Added Session type import from @shared/schema to fix TypeScript errors
+- Bulk delete button appears when sessions are selected
+
+### API Integration
+- Backend endpoint: GET /api/sessions?semester=1&start=YYYY-MM-DD&end=YYYY-MM-DD
+- Semester values: "1" (Fall 2025), "2" (Spring 2026), or omitted for all
+- Date filters work independently or combined with semester filter
+- Empty filters return all sessions
+
+### Files Modified
+- dashboard_rebuild/client/src/pages/brain.tsx (ONLY FILE)
+  - Added 3 filter state variables (lines 93-96)
+  - Added useEffect for URL param reading (lines 126-135)
+  - Updated sessions query (lines 137-149)
+  - Added Session Evidence section with filters and table (lines 871-1020)
+  - Added Session type import (line 47)
+  - Fixed TypeScript errors by adding type annotations to map/find callbacks
+
+### Testing
+- npm run check passes with no new TypeScript errors
+- Filter UI renders correctly with all controls
+- URL params persist across page reloads
+- Sessions table displays filtered results

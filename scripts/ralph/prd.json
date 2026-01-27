@@ -1,79 +1,121 @@
 {
-  "name": "Calendar LLM Google Calendar Connection Fix",
-  "description": "Fix the Calendar AI assistant so it connects to Google Calendar using the existing OAuth credentials/tokens in the repo. The assistant must have full CRUD permissions (add/edit/delete/find) across all calendars, and the calendar layout must display real Google events. The current \"not connected\" message in the AI assistant should only appear when auth is truly missing or expired.",
-  "branchName": "feature/calendar-llm-google-calendar-connection-fix",
+  "name": "Study Workflow MVP - Syllabus, LOs, WRAP Sync",
+  "description": "Enable end-to-end study workflow: (1) Import syllabus and push to Google Calendar + Google Tasks (School list), (2) Track learning objectives by module with view/checkoff UI, (3) WRAP session ingestion to Obsidian + Anki draft-approve-sync flow.",
+  "branchName": "feature/study-workflow-mvp",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Initialize Google Calendar client from existing tokens",
-      "description": "Initialize Google Calendar client from existing tokens",
+      "title": "Syllabus import creates Google Calendar events",
+      "description": "When importing a syllabus JSON, class meetings should be pushed to Google Calendar as recurring events",
       "acceptanceCriteria": [
-        "Locate and use the existing OAuth client credentials and token files already stored in the repo.",
-        "Google Calendar client initializes successfully with stored tokens.",
-        "If tokens are missing or expired, backend returns a clear error indicating re-auth is required.",
-        "Typecheck/lint passes (if applicable)."
+        "Syllabus JSON import parses class meeting times and recurrence patterns",
+        "Class meetings are pushed to Google Calendar via existing OAuth connection",
+        "Events show course name, meeting type (lecture/lab), and location if provided",
+        "Recurring events use proper RRULE (e.g., weekly until semester end)",
+        "Calendar UI shows the synced events after import",
+        "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
-      "labels": [],
-      "dependsOn": [],
-      "completionNotes": "Completed by agent"
+      "passes": false,
+      "labels": ["calendar", "syllabus"],
+      "dependsOn": []
     },
     {
       "id": "US-002",
-      "title": "AI assistant CRUD across all calendars",
-      "description": "AI assistant CRUD across all calendars",
+      "title": "Syllabus import creates Google Tasks for deadlines",
+      "description": "Assignments, exams, and quizzes from syllabus should become Google Tasks in the 'School' list",
       "acceptanceCriteria": [
-        "Find/search returns events across all calendars accessible by the token.",
-        "Create/edit/delete succeed and include calendar id and event id in the response.",
-        "If the calendar is not specified, default to primary calendar and note it in the response.",
-        "API failures return an actionable error (e.g., permission denied, token expired).",
-        "Typecheck/lint passes (if applicable)."
+        "Identify or create a 'School' task list in Google Tasks",
+        "Syllabus items with type assignment/exam/quiz create tasks with due dates",
+        "Task title includes course code and item name",
+        "Task notes include weight/points if available",
+        "Tasks appear in Google Tasks after import",
+        "Duplicate guard: skip tasks that already exist with same title and due date",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
-      "labels": [],
-      "dependsOn": [],
-      "completionNotes": "Completed by agent"
+      "passes": false,
+      "labels": ["tasks", "syllabus"],
+      "dependsOn": ["US-001"]
     },
     {
       "id": "US-003",
-      "title": "Calendar layout shows Google events",
-      "description": "Calendar layout shows Google events",
+      "title": "Learning Objectives API endpoints",
+      "description": "REST API for CRUD operations on learning objectives, organized by module",
       "acceptanceCriteria": [
-        "Calendar UI fetches events from the backend (not mock data).",
-        "Events display correct date/time and calendar source.",
-        "After AI add/edit/delete, the UI refreshes to show changes (manual refresh or auto).",
-        "Typecheck/lint passes.",
-        "Verify in browser using dev-browser skill."
+        "GET /api/learning-objectives returns LOs grouped by course and module",
+        "GET /api/learning-objectives?courseId=X filters by course",
+        "POST /api/learning-objectives creates new LO with course_id, module_id, title, lo_code",
+        "PATCH /api/learning-objectives/:id updates status, next_action",
+        "DELETE /api/learning-objectives/:id removes LO",
+        "Status values: not_started, in_progress, review_needed, mastered",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
-      "labels": [],
-      "dependsOn": [],
-      "completionNotes": "Completed by agent"
+      "passes": false,
+      "labels": ["api", "learning-objectives"],
+      "dependsOn": []
     },
     {
       "id": "US-004",
-      "title": "AI assistant connection status",
-      "description": "AI assistant connection status",
+      "title": "Learning Objectives UI - view and checkoff",
+      "description": "Brain page section showing LOs organized by module with status checkboxes",
       "acceptanceCriteria": [
-        "AI assistant checks connection status on open.",
-        "When connected, no \"not connected\" error is shown.",
-        "When not connected, show a clear CTA (e.g., \"Connect Google Calendar\") that triggers the existing auth flow.",
-        "Typecheck/lint passes.",
-        "Verify in browser using dev-browser skill."
+        "Brain page has 'Learning Objectives' section (collapsible panel)",
+        "LOs grouped by course, then by module",
+        "Each LO shows title, lo_code, current status",
+        "Click to cycle status: not_started -> in_progress -> review_needed -> mastered",
+        "Filter by course dropdown",
+        "Add new LO form (course, module, title, optional code)",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
-      "labels": [],
-      "dependsOn": [],
-      "completionNotes": "Completed by agent"
+      "passes": false,
+      "labels": ["ui", "learning-objectives"],
+      "dependsOn": ["US-003"]
+    },
+    {
+      "id": "US-005",
+      "title": "Anki card draft review and sync",
+      "description": "Review WRAP-extracted cards in UI, approve them, and sync to Anki via AnkiConnect",
+      "acceptanceCriteria": [
+        "Brain page shows 'Card Drafts' section with pending cards",
+        "Each card shows front/back preview, source session, status",
+        "Approve button marks card for sync",
+        "Reject button removes draft",
+        "Sync button sends approved cards to Anki via AnkiConnect (localhost:8765)",
+        "Cards go to deck 'PT_Study' with tags from session topic",
+        "Status updates: draft -> approved -> synced",
+        "Error handling if Anki not running or deck missing",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "labels": ["anki", "ui"],
+      "dependsOn": []
+    },
+    {
+      "id": "US-006",
+      "title": "Bulk LO import from syllabus or paste",
+      "description": "Import learning objectives in bulk from a course syllabus or pasted list",
+      "acceptanceCriteria": [
+        "Brain Ingestion tab has 'Import Learning Objectives' option",
+        "Accepts JSON format with course_id, module assignments, and LO titles",
+        "Accepts plain text list (one LO per line, auto-assigns to selected course/module)",
+        "Preview before import showing parsed LOs",
+        "Creates LO records with not_started status",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "labels": ["ingestion", "learning-objectives"],
+      "dependsOn": ["US-003"]
     }
   ],
   "metadata": {
-    "createdAt": "2026-01-23T07:47:59.289Z",
-    "version": "1.0.0",
-    "updatedAt": "2026-01-23T08:55:55.343Z"
+    "createdAt": "2026-01-26T15:30:00.000Z",
+    "version": "1.0.0"
   }
 }

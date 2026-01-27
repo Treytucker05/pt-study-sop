@@ -44,6 +44,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { format, isValid } from "date-fns";
+import type { Session } from "@shared/schema";
 
 // Helper to safely format dates
 const safeFormatDate = (
@@ -90,17 +91,22 @@ export default function Brain() {
   const [editingDraft, setEditingDraft] = useState<number | null>(null);
   const [editDraftData, setEditDraftData] = useState({ front: "", back: "", deckName: "" });
 
-  // Edit form state
-  const [editFormData, setEditFormData] = useState({
-    mode: "",
-    minutes: "",
-    cards: "",
-    confusions: "",
-    weakAnchors: "",
-    concepts: "",
-    issues: "",
-    notes: ""
-  });
+   // Filter state for Session Evidence
+   const [semesterFilter, setSemesterFilter] = useState<string>("all");
+   const [startDate, setStartDate] = useState<string>("");
+   const [endDate, setEndDate] = useState<string>("");
+
+   // Edit form state
+   const [editFormData, setEditFormData] = useState({
+     mode: "",
+     minutes: "",
+     cards: "",
+     confusions: "",
+     weakAnchors: "",
+     concepts: "",
+     issues: "",
+     notes: ""
+   });
   
   // Obsidian editor state
   const [obsidianCurrentFolder, setObsidianCurrentFolder] = useState("School");
@@ -118,10 +124,31 @@ export default function Brain() {
     { name: "TI", path: "School/Theraputic Intervention" },
   ];
 
-  const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
-    queryKey: ["sessions"],
-    queryFn: api.sessions.getAll,
-  });
+   // Read URL params on mount to restore filter state
+   useEffect(() => {
+     const params = new URLSearchParams(window.location.search);
+     const semester = params.get("semester") || "all";
+     const start = params.get("start") || "";
+     const end = params.get("end") || "";
+     setSemesterFilter(semester);
+     setStartDate(start);
+     setEndDate(end);
+   }, []);
+
+    const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
+      queryKey: ["sessions", semesterFilter, startDate, endDate],
+      queryFn: async () => {
+        const params = new URLSearchParams();
+        if (semesterFilter !== "all") params.append("semester", semesterFilter);
+        if (startDate) params.append("start", startDate);
+        if (endDate) params.append("end", endDate);
+        const query = params.toString();
+        const url = query ? `/sessions?${query}` : "/sessions";
+        const response = await fetch(`/api${url}`);
+        if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+        return response.json();
+      },
+    });
 
   const { data: metrics } = useQuery({
     queryKey: ["brain", "metrics"],
@@ -164,56 +191,56 @@ export default function Brain() {
     });
   };
 
-  // Toggle all sessions
-  const toggleAllSessions = () => {
-    if (selectedSessions.size === sessions.length) {
-      setSelectedSessions(new Set());
-    } else {
-      setSelectedSessions(new Set(sessions.map(s => s.id)));
-    }
-  };
+   // Toggle all sessions
+   const toggleAllSessions = () => {
+     if (selectedSessions.size === sessions.length) {
+       setSelectedSessions(new Set());
+     } else {
+       setSelectedSessions(new Set(sessions.map((s: Session) => s.id)));
+     }
+   };
 
-  // Open delete dialog for selected sessions
-  const handleDeleteSelected = () => {
-    if (selectedSessions.size === 0) return;
-    setSessionsToDelete(Array.from(selectedSessions));
-    setDeleteDialogOpen(true);
-  };
+   // Open delete dialog for selected sessions
+   const handleDeleteSelected = () => {
+     if (selectedSessions.size === 0) return;
+     setSessionsToDelete(Array.from(selectedSessions));
+     setDeleteDialogOpen(true);
+   };
 
-  // Open delete dialog for single session
-  const handleDeleteSingle = (id: number) => {
-    setSessionsToDelete([id]);
-    setDeleteDialogOpen(true);
-  };
+   // Open delete dialog for single session
+   const handleDeleteSingle = (id: number) => {
+     setSessionsToDelete([id]);
+     setDeleteDialogOpen(true);
+   };
 
-  // Confirm deletion
-  const confirmDelete = () => {
-    deleteSessionsMutation.mutate(sessionsToDelete);
-    setDeleteDialogOpen(false);
-    setSessionsToDelete([]);
-  };
+   // Confirm deletion
+   const confirmDelete = () => {
+     deleteSessionsMutation.mutate(sessionsToDelete);
+     setDeleteDialogOpen(false);
+     setSessionsToDelete([]);
+   };
 
-  // Handle edit session - populate form with session data
-  useEffect(() => {
-    if (editingSession !== null) {
-      const session = sessions.find(s => s.id === editingSession);
-      if (session) {
-        setEditFormData({
-          mode: session.mode || "",
-          minutes: session.minutes?.toString() || "",
-          cards: session.cards?.toString() || "",
-          confusions: parseStringArray(session.confusions).join(", "),
-          weakAnchors: parseStringArray(session.weakAnchors).join(", "),
-          concepts: parseStringArray(session.concepts).join(", "),
-          issues: parseStringArray(session.issues).join(", "),
-          notes: session.notes || ""
-        });
-      }
-    }
-  }, [editingSession, sessions]);
+   // Handle edit session - populate form with session data
+   useEffect(() => {
+     if (editingSession !== null) {
+       const session = sessions.find((s: Session) => s.id === editingSession);
+       if (session) {
+         setEditFormData({
+           mode: session.mode || "",
+           minutes: session.minutes?.toString() || "",
+           cards: session.cards?.toString() || "",
+           confusions: parseStringArray(session.confusions).join(", "),
+           weakAnchors: parseStringArray(session.weakAnchors).join(", "),
+           concepts: parseStringArray(session.concepts).join(", "),
+           issues: parseStringArray(session.issues).join(", "),
+           notes: session.notes || ""
+         });
+       }
+     }
+   }, [editingSession, sessions]);
 
-  const editingSessionData =
-    editingSession !== null ? sessions.find((s) => s.id === editingSession) : null;
+   const editingSessionData =
+     editingSession !== null ? sessions.find((s: Session) => s.id === editingSession) : null;
   const debugModals =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).has("debugModals");
@@ -842,11 +869,182 @@ export default function Brain() {
                   </Card>
                 </div>
             </TabsContent>
-          </Tabs>
-        </div>
-      </div>
+           </Tabs>
 
-      {/* Edit Session Dialog */}
+           {/* Session Evidence Section */}
+           <div>
+             <h2 className="font-arcade text-lg text-primary mb-4">SESSION EVIDENCE</h2>
+             <Card className="brain-card rounded-none">
+               <CardContent className="p-4 space-y-4">
+                 {/* Date and Semester Filters */}
+                 <div className="grid grid-cols-4 gap-4 mb-4">
+                   <div>
+                     <label className="text-sm font-arcade text-primary mb-2 block">Semester</label>
+                     <Select
+                       value={semesterFilter}
+                       onValueChange={(value) => {
+                         setSemesterFilter(value);
+                         const params = new URLSearchParams(window.location.search);
+                         if (value === "all") params.delete("semester");
+                         else params.set("semester", value);
+                         window.history.replaceState({}, "", `?${params.toString()}`);
+                       }}
+                     >
+                       <SelectTrigger className="rounded-none border-primary">
+                         <SelectValue />
+                       </SelectTrigger>
+                       <SelectContent>
+                         <SelectItem value="all">All</SelectItem>
+                         <SelectItem value="1">Semester 1 (Fall 2025)</SelectItem>
+                         <SelectItem value="2">Semester 2 (Spring 2026)</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div>
+                     <label className="text-sm font-arcade text-primary mb-2 block">Start Date</label>
+                     <Input
+                       type="date"
+                       value={startDate}
+                       onChange={(e) => {
+                         setStartDate(e.target.value);
+                         const params = new URLSearchParams(window.location.search);
+                         if (e.target.value) params.set("start", e.target.value);
+                         else params.delete("start");
+                         window.history.replaceState({}, "", `?${params.toString()}`);
+                       }}
+                       className="rounded-none border-primary"
+                     />
+                   </div>
+                   <div>
+                     <label className="text-sm font-arcade text-primary mb-2 block">End Date</label>
+                     <Input
+                       type="date"
+                       value={endDate}
+                       onChange={(e) => {
+                         setEndDate(e.target.value);
+                         const params = new URLSearchParams(window.location.search);
+                         if (e.target.value) params.set("end", e.target.value);
+                         else params.delete("end");
+                         window.history.replaceState({}, "", `?${params.toString()}`);
+                       }}
+                       className="rounded-none border-primary"
+                     />
+                   </div>
+                   <div className="flex items-end">
+                     <Button
+                       variant="outline"
+                       onClick={() => {
+                         setSemesterFilter("all");
+                         setStartDate("");
+                         setEndDate("");
+                         window.history.replaceState({}, "", window.location.pathname);
+                       }}
+                       className="rounded-none border-primary w-full"
+                     >
+                       Clear Filters
+                     </Button>
+                   </div>
+                 </div>
+
+                 {/* Sessions Table */}
+                 {sessionsLoading ? (
+                   <div className="text-center py-8">
+                     <p className="font-terminal text-xs text-muted-foreground">Loading sessions...</p>
+                   </div>
+                 ) : sessions.length === 0 ? (
+                   <div className="text-center py-8">
+                     <p className="font-terminal text-xs text-muted-foreground">No sessions found</p>
+                   </div>
+                 ) : (
+                   <ScrollArea className="h-[400px]">
+                     <Table>
+                       <TableHeader>
+                         <TableRow className="border-secondary/30">
+                           <TableHead className="w-12">
+                             <Checkbox
+                               checked={selectedSessions.size === sessions.length && sessions.length > 0}
+                               onCheckedChange={toggleAllSessions}
+                               className="border-secondary"
+                             />
+                           </TableHead>
+                           <TableHead className="font-arcade text-xs text-primary">Date</TableHead>
+                           <TableHead className="font-arcade text-xs text-primary">Mode</TableHead>
+                           <TableHead className="font-arcade text-xs text-primary">Minutes</TableHead>
+                           <TableHead className="font-arcade text-xs text-primary">Cards</TableHead>
+                           <TableHead className="font-arcade text-xs text-primary">Concepts</TableHead>
+                           <TableHead className="font-arcade text-xs text-primary">Actions</TableHead>
+                         </TableRow>
+                       </TableHeader>
+                       <TableBody>
+                         {sessions.map((session: any) => (
+                           <TableRow key={session.id} className="border-secondary/30 hover:bg-secondary/10">
+                             <TableCell>
+                               <Checkbox
+                                 checked={selectedSessions.has(session.id)}
+                                 onCheckedChange={() => toggleSessionSelection(session.id)}
+                                 className="border-secondary"
+                               />
+                             </TableCell>
+                             <TableCell className="font-terminal text-xs">
+                               {safeFormatDate(session.createdAt, "MMM dd, yyyy")}
+                             </TableCell>
+                             <TableCell className="font-terminal text-xs text-muted-foreground">
+                               {session.mode || "-"}
+                             </TableCell>
+                             <TableCell className="font-terminal text-xs text-muted-foreground">
+                               {session.minutes || "-"}
+                             </TableCell>
+                             <TableCell className="font-terminal text-xs text-muted-foreground">
+                               {session.cards || "-"}
+                             </TableCell>
+                             <TableCell className="font-terminal text-xs text-muted-foreground">
+                               {Array.isArray(session.concepts) ? session.concepts.length : 0}
+                             </TableCell>
+                             <TableCell className="flex gap-1">
+                               <Button
+                                 size="icon"
+                                 variant="outline"
+                                 className="h-6 w-6 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20"
+                                 onClick={() => setEditingSession(session.id)}
+                               >
+                                 <Pencil className="w-3 h-3" />
+                               </Button>
+                               <Button
+                                 size="icon"
+                                 variant="outline"
+                                 className="h-6 w-6 border-red-500/50 text-red-400 hover:bg-red-500/20"
+                                 onClick={() => handleDeleteSingle(session.id)}
+                               >
+                                 <Trash2 className="w-3 h-3" />
+                               </Button>
+                             </TableCell>
+                           </TableRow>
+                         ))}
+                       </TableBody>
+                     </Table>
+                   </ScrollArea>
+                 )}
+
+                 {/* Bulk Actions */}
+                 {selectedSessions.size > 0 && (
+                   <div className="flex gap-2 pt-4 border-t border-secondary/30">
+                     <Button
+                       size="sm"
+                       className="flex-1 font-terminal text-xs bg-red-600 hover:bg-red-700"
+                       onClick={handleDeleteSelected}
+                     >
+                       <Trash2 className="w-3 h-3 mr-1" />
+                       Delete Selected ({selectedSessions.size})
+                     </Button>
+                   </div>
+                 )}
+               </CardContent>
+             </Card>
+           </div>
+         </div>
+       </div>
+
+       {/* Edit Session Dialog */}
       <Dialog
         open={!!editingSessionData}
         onOpenChange={(open) => {

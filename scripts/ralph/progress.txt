@@ -1,5 +1,22 @@
 # Ralph Progress Log
-Started: 2026-01-21
+Started: 2026-01-26
 
 ## Codebase Patterns
-- (Add learnings as they emerge)
+- Flask API in `brain/dashboard/api_adapter.py` - add new endpoints there
+- DB schema in `brain/db_setup.py` - tables already exist for learning_objectives, lo_sessions, card_drafts
+- Google Calendar auth via `brain/gcal.py` - reuse existing OAuth
+- Google Tasks API via `brain/gtasks.py` - reuse existing OAuth  
+- AnkiConnect at localhost:8765 - standard HTTP POST with JSON
+- Dashboard React UI in `dashboard_rebuild/client/src/pages/brain.tsx`
+- Syllabus JSON import already works - extend it to push to GCal/GTasks
+- WRAP parser in `brain/wrap_parser.py` extracts anki_cards
+- Obsidian merge in `brain/obsidian_merge.py` - already working
+
+## Existing Infrastructure
+- `learning_objectives` table: course_id, module_id, lo_code, title, status, last_session_id, next_action
+- `lo_sessions` table: tracks LO progress per session
+- `card_drafts` table: session_id, front, back, tags, status (draft/approved/synced)
+- `modules` table: course_id, name, order_index
+- Google Calendar OAuth tokens in `brain/data/gcal_token.json`
+- WRAP ingestion endpoint at POST /api/brain/chat
+
