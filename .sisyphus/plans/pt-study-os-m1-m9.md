@@ -632,7 +632,7 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
 
 ---
 
-- [ ] 16. Add patch approval workflow UI
+- [x] 16. Add patch approval workflow UI [NEEDS BUILD]
 
   **What to do**:
   - In Obsidian panel: show pending patches list
