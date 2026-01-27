@@ -307,9 +307,9 @@ M7 (Scholar Loop) → M8 (Calendar NL) → M9 (Integration Test)
   - `brain/static/dist/` - deployment target
 
   **Acceptance Criteria**:
-  - [ ] `npm run build` succeeds with no errors
-  - [ ] `brain/static/dist/index.html` updated timestamp
-  - [ ] Filter UI works at http://localhost:5000/brain
+  - [x] `npm run build` succeeds with no errors [User completed in Windows]
+  - [x] `brain/static/dist/index.html` updated timestamp [Verified: Jan 26 21:48]
+  - [ ] Filter UI works at http://localhost:5000/brain [BLOCKED - requires Flask + browser]
 
   **Commit**: YES
   - Message: `build(dashboard): rebuild frontend with M1 changes`
