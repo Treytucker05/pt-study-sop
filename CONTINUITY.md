@@ -194,3 +194,4 @@
 - 2026-01-28 15:29:00: Added safe-by-default git rule to CLAUDE.md.
 - 2026-01-28 15:33:00: Clarified dashboard запуск rule (Start_Dashboard.bat only).
 - 2026-01-28 15:36:00: Added Google Calendar credentials handling note.
+- 2026-01-28 15:43:00: Added external systems section to CLAUDE.md.

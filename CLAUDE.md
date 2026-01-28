@@ -43,6 +43,11 @@ Response style: straight to the point, no fluff.
 - SOP definitions: sop/
 - Tutor logs: brain/session_logs/ (Tutor itself is external)
 
+## External Systems (from docs)
+- Tutor (CustomGPT): started via projects/treys-agent/ask.bat (confirm path if different).
+- Anki (AnkiConnect): syncs card_drafts to Anki Desktop.
+- Google Calendar/Tasks: OAuth via Calendar page; config in brain/data/api_config.json.
+
 ## UI/UX (Retro Arcade)
 - Theme: high-contrast red and black, no glow, consistent across pages.
 - Typography: font-arcade headers, font-terminal body.
