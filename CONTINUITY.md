@@ -198,3 +198,4 @@
 - 2026-01-28 15:46:00: Updated Tutor note (CustomGPT only; no local launcher).
 - 2026-01-28 15:48:00: Added CustomGPT name to CLAUDE.md.
 - 2026-01-28 15:51:00: Marked Anki/AnkiConnect as active use.
+- 2026-01-28 15:52:00: Marked Google Calendar/Tasks as active use.

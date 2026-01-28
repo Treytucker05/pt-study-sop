@@ -46,7 +46,7 @@ Response style: straight to the point, no fluff.
 ## External Systems (from docs)
 - Tutor (CustomGPT): "Trey's Study System" (external only; no local launcher).
 - Anki (AnkiConnect): in active use; syncs card_drafts to Anki Desktop.
-- Google Calendar/Tasks: OAuth via Calendar page; config in brain/data/api_config.json.
+- Google Calendar/Tasks: in active use; OAuth via Calendar page; config in brain/data/api_config.json.
 
 ## UI/UX (Retro Arcade)
 - Theme: high-contrast red and black, no glow, consistent across pages.
