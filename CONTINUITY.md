@@ -196,3 +196,4 @@
 - 2026-01-28 15:36:00: Added Google Calendar credentials handling note.
 - 2026-01-28 15:43:00: Added external systems section to CLAUDE.md.
 - 2026-01-28 15:46:00: Updated Tutor note (CustomGPT only; no local launcher).
+- 2026-01-28 15:48:00: Added CustomGPT name to CLAUDE.md.
