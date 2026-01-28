@@ -173,3 +173,4 @@
 - Added README files to `brain/output` and `brain/static` per repo folder documentation rule.
 - 2026-01-27 12:23:23: Added dashboard window inventory documentation and dashboard docs README.
 - 2026-01-27 12:55:00: Updated AGENTS.md commit-message rule to auto-generate when not provided; synced mirrors.
+- 2026-01-27 22:13:13: Added Codex MCP server config and documented the Claude Code review loop workflow.

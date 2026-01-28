@@ -9,6 +9,7 @@ This folder is the canonical planning hub for the PT Study SOP project.
 - [DECISIONS.md](DECISIONS.md) - Decision log template.
 - [STATUS.md](STATUS.md) - Weekly status template.
 - [REFERENCES.md](REFERENCES.md) - Canonical references and contracts.
+- [AI_REVIEW_LOOP.md](AI_REVIEW_LOOP.md) - Claude Code and Codex review loop workflow.
 
 ## Related
 - [docs/README.md](../README.md)
