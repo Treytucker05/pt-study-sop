@@ -50,7 +50,7 @@ Response style: straight to the point, no fluff.
 ## Rules
 1. Plan before coding for any non-trivial change.
 2. dashboard_rebuild is frontend-only; API lives in brain/.
-3. Only serve the dashboard via Start_Dashboard.bat on port 5000. Do not run a separate dev server.
+3. Only serve the dashboard via Start_Dashboard.bat on port 5000. Do not run a separate dev server or python brain/dashboard_web.py directly.
 4. After frontend changes: rebuild and copy dist/public -> brain/static/dist.
 5. Check permissions.json before executing new shell commands.
 6. Update CONTINUITY.md after every significant change (append only).
