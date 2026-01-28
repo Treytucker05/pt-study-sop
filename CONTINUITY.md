@@ -182,3 +182,4 @@
 - 2026-01-28 14:47:00: Added Trey response style preference to CLAUDE.md.
 - 2026-01-28 14:50:00: Noted npm as preferred frontend package manager.
 - 2026-01-28 14:54:00: Added rule to push after every change.
+- 2026-01-28 14:57:00: Removed git push from permissions require_confirmation to allow auto-push.
