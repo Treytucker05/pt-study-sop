@@ -48,6 +48,7 @@ Response style: straight to the point, no fluff.
 4. After frontend changes: rebuild and copy dist/public -> brain/static/dist.
 5. Check permissions.json before executing new shell commands.
 6. Update CONTINUITY.md after every significant change (append only).
+7. Push to remote after every change (auto).
 
 ## Detailed Guidelines
 - Agent Workflow: ai-config/agent-workflow.md

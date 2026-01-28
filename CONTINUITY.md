@@ -181,3 +181,4 @@
 - 2026-01-28 14:44:00: Updated CLAUDE.md with Obsidian vault path for Trey.
 - 2026-01-28 14:47:00: Added Trey response style preference to CLAUDE.md.
 - 2026-01-28 14:50:00: Noted npm as preferred frontend package manager.
+- 2026-01-28 14:54:00: Added rule to push after every change.
