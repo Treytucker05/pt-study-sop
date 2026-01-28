@@ -53,6 +53,7 @@ Response style: straight to the point, no fluff.
 5. Check permissions.json before executing new shell commands.
 6. Update CONTINUITY.md after every significant change (append only).
 7. Push to remote after every change (auto).
+8. After code changes, run relevant checks by default (pytest brain/tests/; frontend build already required).
 
 ## Detailed Guidelines
 - Agent Workflow: ai-config/agent-workflow.md

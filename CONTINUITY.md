@@ -184,3 +184,4 @@
 - 2026-01-28 14:54:00: Added rule to push after every change.
 - 2026-01-28 14:57:00: Removed git push from permissions require_confirmation to allow auto-push.
 - 2026-01-28 15:00:00: Added Trey git identity to CLAUDE.md.
+- 2026-01-28 15:05:00: Set default to run relevant checks after code changes.
