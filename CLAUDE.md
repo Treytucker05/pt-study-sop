@@ -9,6 +9,7 @@ Response style: straight to the point, no fluff.
 ## Environment
 - Repo root: C:\pt-study-sop
 - Shell: PowerShell
+- Shell preference: PowerShell by default; use WSL/Git Bash when required.
 - Obsidian vault: C:\Users\treyt\Desktop\PT School Semester 2
 
 ## Git Identity
