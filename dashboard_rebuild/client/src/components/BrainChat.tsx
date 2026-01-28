@@ -201,16 +201,19 @@ export function BrainChat() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-between brain-card border border-primary/30 px-4 py-2 mb-4 text-sm text-primary hover:bg-primary/10 transition-colors"
+        className="w-full flex items-center justify-between bg-black/40 border-2 border-primary rounded-none px-4 py-2 mb-4 text-sm text-primary hover:bg-primary/10 transition-colors"
       >
-        <span className="font-arcade text-xs tracking-widest uppercase">BRAIN CHAT</span>
+        <span className="font-arcade text-xs tracking-widest uppercase flex items-center gap-2">
+          <div className="w-2 h-2 bg-primary inline-block"></div>
+          BRAIN CHAT
+        </span>
         <ChevronDown className="w-4 h-4" />
       </button>
     );
   }
 
   return (
-    <Card className="brain-card border-primary/30 mb-4">
+    <Card className="bg-black/40 border-2 border-primary rounded-none mb-4">
       <CardHeader className="py-2 px-4 flex flex-row items-center justify-between">
         <CardTitle className="text-xs">BRAIN CHAT</CardTitle>
         <div className="flex items-center gap-1">
@@ -218,17 +221,15 @@ export function BrainChat() {
           <div className="flex bg-secondary/40 border border-secondary/60 rounded overflow-hidden mr-2">
             <button
               onClick={() => setMode("chat")}
-              className={`flex items-center gap-1 px-2 py-0.5 text-[10px] transition-colors ${
-                mode === "chat" ? "bg-primary/30 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`flex items-center gap-1 px-2 py-0.5 text-[10px] transition-colors ${mode === "chat" ? "bg-primary/30 text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               <MessageSquare className="w-3 h-3" /> CHAT
             </button>
             <button
               onClick={() => setMode("ingest")}
-              className={`flex items-center gap-1 px-2 py-0.5 text-[10px] transition-colors ${
-                mode === "ingest" ? "bg-primary/30 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`flex items-center gap-1 px-2 py-0.5 text-[10px] transition-colors ${mode === "ingest" ? "bg-primary/30 text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               <BrainCircuit className="w-3 h-3" /> INGEST
             </button>
@@ -252,9 +253,8 @@ export function BrainChat() {
                 <button
                   key={t}
                   onClick={() => setIngestTarget(t)}
-                  className={`flex items-center gap-1 px-2 py-0.5 text-[10px] transition-colors ${
-                    ingestTarget === t ? "bg-primary/30 text-primary" : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`flex items-center gap-1 px-2 py-0.5 text-[10px] transition-colors ${ingestTarget === t ? "bg-primary/30 text-primary" : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   {t === "anki" && <><Layers className="w-3 h-3" /> ANKI</>}
                   {t === "obsidian" && <><BookOpen className="w-3 h-3" /> OBSIDIAN</>}
@@ -277,11 +277,10 @@ export function BrainChat() {
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[80%] rounded px-3 py-2 text-sm whitespace-pre-wrap ${
-                  m.role === "user"
+                className={`max-w-[80%] rounded px-3 py-2 text-sm whitespace-pre-wrap ${m.role === "user"
                     ? "bg-primary/20 text-foreground border border-primary/30"
                     : "bg-secondary/40 text-foreground border border-secondary/60"
-                }`}
+                  }`}
               >
                 {m.images?.map((img, j) => (
                   <img key={j} src={img} alt="attached" className="max-h-32 rounded mb-1" />

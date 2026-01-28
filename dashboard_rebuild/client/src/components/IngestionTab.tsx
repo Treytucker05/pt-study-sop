@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Database, Layers } from "lucide-react";
 import type { Course, Module, LearningObjective } from "@shared/schema";
 
 const SYLLABUS_PROMPT = `You are extracting a full course syllabus for ingestion.
@@ -116,8 +118,8 @@ export function IngestionTab() {
   const [loJson, setLoJson] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
   const [wrapContent, setWrapContent] = useState("");
-  const [wrapStatus, setWrapStatus] = useState<{type: "success" | "error", message: string} | null>(null);
-  const [syllabusStatus, setSyllabusStatus] = useState<{type: "success" | "error", message: string} | null>(null);
+  const [wrapStatus, setWrapStatus] = useState<{ type: "success" | "error", message: string } | null>(null);
+  const [syllabusStatus, setSyllabusStatus] = useState<{ type: "success" | "error", message: string } | null>(null);
   const [syllabusValidation, setSyllabusValidation] = useState<{
     isValid: boolean;
     errors: string[];
@@ -278,7 +280,7 @@ export function IngestionTab() {
         });
       }
     } catch (err: any) {
-      setWrapStatus({type: "error", message: err.message || "Failed to ingest"});
+      setWrapStatus({ type: "error", message: err.message || "Failed to ingest" });
     }
   };
 
@@ -307,210 +309,227 @@ export function IngestionTab() {
       )}
 
       {/* WRAP SESSION INGESTION - First and prominent */}
-      {selectedCourseId && <div className="border border-secondary/40 rounded-none p-4 bg-primary/5">
-        <h2 className="text-xl font-arcade text-primary mb-4">WRAP SESSION INGESTION</h2>
-
-        {wrapStatus && (
-          <div className={`mb-4 p-3 rounded-none font-terminal text-sm ${
-            wrapStatus.type === "success"
-              ? "bg-green-900/30 border border-green-500 text-green-400"
-              : "bg-red-900/30 border border-red-500 text-red-400"
-          }`}>
-            {wrapStatus.message}
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <button
-            onClick={() => copyToClipboard(WRAP_PROMPT)}
-            className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal mb-2"
-            type="button"
-          >
-            Copy Prompt for ChatGPT
-          </button>
-          <p className="text-xs text-muted-foreground mb-2 font-terminal">
-            Use ChatGPT to convert your notes to WRAP format, then paste or upload below:
-          </p>
-
-          <div>
-            <label className="block text-sm mb-2 font-terminal text-muted-foreground">
-              Paste WRAP Content
-            </label>
-            <textarea
-              className="w-full bg-black border border-secondary rounded-none p-2 h-48 font-terminal text-sm"
-              placeholder="Paste your WRAP session here..."
-              value={wrapContent}
-              onChange={(e) => {
-                setWrapContent(e.target.value);
-                setWrapStatus(null);
-              }}
-            />
-          </div>
-
-          <button
-            onClick={handleWrapSubmit}
-            disabled={!wrapContent}
-            className="bg-primary hover:bg-primary/80 disabled:opacity-50 px-6 py-3 rounded-none font-arcade text-sm w-full"
-            type="button"
-          >
-            INGEST WRAP SESSION
-          </button>
-        </div>
-      </div>}
-
-      {selectedCourseId && <>
-      <h2 className="text-xl font-arcade text-primary">MATERIAL INGESTION</h2>
-
-      {importError && (
-        <div className="bg-destructive/20 border border-destructive rounded-none p-3 text-destructive font-terminal">
-          {importError}
-        </div>
-      )}
-
       {selectedCourseId && (
-        <Accordion type="multiple" className="border border-secondary/40 rounded-none divide-y divide-secondary/40">
-          <AccordionItem value="syllabus-import" className="border-secondary/40">
-            <AccordionTrigger className="font-arcade text-xs text-primary px-3 hover:no-underline">
-              SYLLABUS IMPORT (MODULES + SCHEDULE)
-            </AccordionTrigger>
-            <AccordionContent className="px-3">
+        <Card className="bg-black/40 border-2 border-primary rounded-none mb-6">
+          <CardHeader className="border-b border-primary/50 p-4">
+            <CardTitle className="font-arcade text-sm flex items-center gap-2">
+              <Database className="w-4 h-4" />
+              WRAP SESSION INGESTION
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+
+            {wrapStatus && (
+              <div className={`mb-4 p-3 rounded-none font-terminal text-sm ${wrapStatus.type === "success"
+                ? "bg-green-900/30 border border-green-500 text-green-400"
+                : "bg-red-900/30 border border-red-500 text-red-400"
+                }`}>
+                {wrapStatus.message}
+              </div>
+            )}
+
+            <div className="space-y-4">
               <button
-                onClick={() => copyToClipboard(SYLLABUS_PROMPT)}
+                onClick={() => copyToClipboard(WRAP_PROMPT)}
                 className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal mb-2"
                 type="button"
               >
                 Copy Prompt for ChatGPT
               </button>
               <p className="text-xs text-muted-foreground mb-2 font-terminal">
-                Paste the ChatGPT response (combined JSON object) below:
+                Use ChatGPT to convert your notes to WRAP format, then paste or upload below:
               </p>
-               <textarea
-                 className="w-full bg-black border border-secondary rounded-none p-2 h-40 font-terminal text-sm"
-                 placeholder='{"term":{"startDate":"2026-01-15","endDate":"2026-05-01","timezone":"America/Chicago"},"modules":[...],"events":[...]}'
-                 value={syllabusJson}
-                 onChange={(e) => {
-                   setSyllabusJson(e.target.value);
-                   setSyllabusStatus(null);
-                   if (e.target.value.trim()) {
-                     validateSyllabusJson(e.target.value);
-                   } else {
-                     setSyllabusValidation(null);
-                   }
-                 }}
-               />
-               {syllabusValidation && !syllabusValidation.isValid && (
-                 <div className="mt-2 p-2 border border-red-500 bg-red-900/30 rounded-none font-terminal text-xs text-red-400">
-                   <div className="font-bold mb-1">Validation Errors:</div>
-                   {syllabusValidation.errors.map((error, idx) => (
-                     <div key={idx}>• {error}</div>
-                   ))}
-                 </div>
-               )}
-               {syllabusValidation && syllabusValidation.isValid && syllabusValidation.preview && (
-                 <div className="mt-2 p-3 border border-primary bg-primary/10 rounded-none font-terminal text-xs text-primary">
-                   <div className="font-bold mb-2">✓ Valid JSON Preview:</div>
-                   <div className="space-y-1">
-                     <div><span className="text-muted-foreground">Course:</span> {syllabusValidation.preview.courseName}</div>
-                     <div><span className="text-muted-foreground">Modules:</span> {syllabusValidation.preview.moduleCount}</div>
-                     <div><span className="text-muted-foreground">Events:</span> {syllabusValidation.preview.eventCount}</div>
-                     {syllabusValidation.preview.startDate && (
-                       <div><span className="text-muted-foreground">Start:</span> {syllabusValidation.preview.startDate}</div>
-                     )}
-                     {syllabusValidation.preview.endDate && (
-                       <div><span className="text-muted-foreground">End:</span> {syllabusValidation.preview.endDate}</div>
-                     )}
-                   </div>
-                 </div>
-               )}
-               <button
-                 onClick={() => importSyllabusMutation.mutate(syllabusJson)}
-                 disabled={!syllabusValidation?.isValid || importSyllabusMutation.isPending}
-                 className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none mt-2 font-terminal text-xs"
-                 type="button"
-               >
-                 {importSyllabusMutation.isPending ? "Importing..." : "Import Syllabus"}
-               </button>
-              {syllabusStatus && (
-                <div className={`mt-2 p-2 border font-terminal text-xs ${
-                  syllabusStatus.type === "success"
-                    ? "border-green-500 text-green-400"
-                    : "border-red-500 text-red-400"
-                }`}>
-                  {syllabusStatus.message}
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
 
-          <AccordionItem value="learning-objectives" className="border-secondary/40">
-            <AccordionTrigger className="font-arcade text-xs text-primary px-3 hover:no-underline">
-              LEARNING OBJECTIVES IMPORT
-            </AccordionTrigger>
-            <AccordionContent className="px-3">
-              <div className="mb-2">
-                <label className="block text-xs mb-1 font-terminal text-muted-foreground">Target Module (optional)</label>
-                <select
-                  className="w-full bg-black border border-secondary rounded-none p-2 font-terminal"
-                  value={selectedModuleId || ""}
-                  onChange={(e) => setSelectedModuleId(e.target.value ? parseInt(e.target.value) : null)}
-                >
-                  <option value="">-- No Module (Course-level) --</option>
-                  {modules.map((m: Module) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
+              <div>
+                <label className="block text-sm mb-2 font-terminal text-muted-foreground">
+                  Paste WRAP Content
+                </label>
+                <textarea
+                  className="w-full bg-black border border-secondary rounded-none p-2 h-48 font-terminal text-sm"
+                  placeholder="Paste your WRAP session here..."
+                  value={wrapContent}
+                  onChange={(e) => {
+                    setWrapContent(e.target.value);
+                    setWrapStatus(null);
+                  }}
+                />
               </div>
 
               <button
-                onClick={() => copyToClipboard(LO_PROMPT)}
-                className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal mb-2"
+                onClick={handleWrapSubmit}
+                disabled={!wrapContent}
+                className="bg-primary hover:bg-primary/80 disabled:opacity-50 px-6 py-3 rounded-none font-arcade text-sm w-full"
                 type="button"
               >
-                Copy Prompt for ChatGPT
+                INGEST WRAP SESSION
               </button>
-              <p className="text-xs text-muted-foreground mb-2 font-terminal">
-                Paste the ChatGPT response (JSON array) below:
-              </p>
-              <textarea
-                className="w-full bg-black border border-secondary rounded-none p-2 h-32 font-terminal text-sm"
-                placeholder='[{"loCode": "1.1", "title": "Define..."}]'
-                value={loJson}
-                onChange={(e) => setLoJson(e.target.value)}
-              />
-              <button
-                onClick={() => importLosMutation.mutate(loJson)}
-                disabled={!loJson || importLosMutation.isPending}
-                className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none mt-2 font-terminal text-xs"
-                type="button"
-              >
-                {importLosMutation.isPending ? "Importing..." : "Import LOs"}
-              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-              {learningObjectives.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-terminal text-xs mb-2">Current LOs ({learningObjectives.length})</h4>
-                  <div className="max-h-48 overflow-y-auto">
-                    {learningObjectives.map((lo: LearningObjective) => (
-                      <div key={lo.id} className="text-xs py-1 border-b border-secondary/30 font-terminal">
-                        <span className="text-primary">{lo.loCode}</span>: {lo.title}
-                        <span className={`ml-2 text-[10px] px-1 rounded ${
-                          lo.status === "solid" ? "bg-green-600" :
-                          lo.status === "in_progress" ? "bg-yellow-600" :
-                          lo.status === "need_review" ? "bg-orange-600" :
-                          "bg-gray-600"
-                        }`}>
-                          {lo.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+      {
+        selectedCourseId && (
+          <Card className="bg-black/40 border-2 border-primary rounded-none">
+            <CardHeader className="border-b border-primary/50 p-4">
+              <CardTitle className="font-arcade text-sm flex items-center gap-2">
+                <Layers className="w-4 h-4" />
+                MATERIAL INGESTION
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+
+              {importError && (
+                <div className="bg-destructive/20 border border-destructive rounded-none p-3 text-destructive font-terminal">
+                  {importError}
                 </div>
               )}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      )}
-      </>}
-    </div>
+
+              {selectedCourseId && (
+                <Accordion type="multiple" className="border border-secondary/40 rounded-none divide-y divide-secondary/40">
+                  <AccordionItem value="syllabus-import" className="border-secondary/40">
+                    <AccordionTrigger className="font-arcade text-xs text-primary px-3 hover:no-underline">
+                      SYLLABUS IMPORT (MODULES + SCHEDULE)
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3">
+                      <button
+                        onClick={() => copyToClipboard(SYLLABUS_PROMPT)}
+                        className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal mb-2"
+                        type="button"
+                      >
+                        Copy Prompt for ChatGPT
+                      </button>
+                      <p className="text-xs text-muted-foreground mb-2 font-terminal">
+                        Paste the ChatGPT response (combined JSON object) below:
+                      </p>
+                      <textarea
+                        className="w-full bg-black border border-secondary rounded-none p-2 h-40 font-terminal text-sm"
+                        placeholder='{"term":{"startDate":"2026-01-15","endDate":"2026-05-01","timezone":"America/Chicago"},"modules":[...],"events":[...]}'
+                        value={syllabusJson}
+                        onChange={(e) => {
+                          setSyllabusJson(e.target.value);
+                          setSyllabusStatus(null);
+                          if (e.target.value.trim()) {
+                            validateSyllabusJson(e.target.value);
+                          } else {
+                            setSyllabusValidation(null);
+                          }
+                        }}
+                      />
+                      {syllabusValidation && !syllabusValidation.isValid && (
+                        <div className="mt-2 p-2 border border-red-500 bg-red-900/30 rounded-none font-terminal text-xs text-red-400">
+                          <div className="font-bold mb-1">Validation Errors:</div>
+                          {syllabusValidation.errors.map((error, idx) => (
+                            <div key={idx}>• {error}</div>
+                          ))}
+                        </div>
+                      )}
+                      {syllabusValidation && syllabusValidation.isValid && syllabusValidation.preview && (
+                        <div className="mt-2 p-3 border border-primary bg-primary/10 rounded-none font-terminal text-xs text-primary">
+                          <div className="font-bold mb-2">✓ Valid JSON Preview:</div>
+                          <div className="space-y-1">
+                            <div><span className="text-muted-foreground">Course:</span> {syllabusValidation.preview.courseName}</div>
+                            <div><span className="text-muted-foreground">Modules:</span> {syllabusValidation.preview.moduleCount}</div>
+                            <div><span className="text-muted-foreground">Events:</span> {syllabusValidation.preview.eventCount}</div>
+                            {syllabusValidation.preview.startDate && (
+                              <div><span className="text-muted-foreground">Start:</span> {syllabusValidation.preview.startDate}</div>
+                            )}
+                            {syllabusValidation.preview.endDate && (
+                              <div><span className="text-muted-foreground">End:</span> {syllabusValidation.preview.endDate}</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => importSyllabusMutation.mutate(syllabusJson)}
+                        disabled={!syllabusValidation?.isValid || importSyllabusMutation.isPending}
+                        className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none mt-2 font-terminal text-xs"
+                        type="button"
+                      >
+                        {importSyllabusMutation.isPending ? "Importing..." : "Import Syllabus"}
+                      </button>
+                      {syllabusStatus && (
+                        <div className={`mt-2 p-2 border font-terminal text-xs ${syllabusStatus.type === "success"
+                          ? "border-green-500 text-green-400"
+                          : "border-red-500 text-red-400"
+                          }`}>
+                          {syllabusStatus.message}
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="learning-objectives" className="border-secondary/40">
+                    <AccordionTrigger className="font-arcade text-xs text-primary px-3 hover:no-underline">
+                      LEARNING OBJECTIVES IMPORT
+                    </AccordionTrigger>
+                    <AccordionContent className="px-3">
+                      <div className="mb-2">
+                        <label className="block text-xs mb-1 font-terminal text-muted-foreground">Target Module (optional)</label>
+                        <select
+                          className="w-full bg-black border border-secondary rounded-none p-2 font-terminal"
+                          value={selectedModuleId || ""}
+                          onChange={(e) => setSelectedModuleId(e.target.value ? parseInt(e.target.value) : null)}
+                        >
+                          <option value="">-- No Module (Course-level) --</option>
+                          {modules.map((m: Module) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={() => copyToClipboard(LO_PROMPT)}
+                        className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal mb-2"
+                        type="button"
+                      >
+                        Copy Prompt for ChatGPT
+                      </button>
+                      <p className="text-xs text-muted-foreground mb-2 font-terminal">
+                        Paste the ChatGPT response (JSON array) below:
+                      </p>
+                      <textarea
+                        className="w-full bg-black border border-secondary rounded-none p-2 h-32 font-terminal text-sm"
+                        placeholder='[{"loCode": "1.1", "title": "Define..."}]'
+                        value={loJson}
+                        onChange={(e) => setLoJson(e.target.value)}
+                      />
+                      <button
+                        onClick={() => importLosMutation.mutate(loJson)}
+                        disabled={!loJson || importLosMutation.isPending}
+                        className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none mt-2 font-terminal text-xs"
+                        type="button"
+                      >
+                        {importLosMutation.isPending ? "Importing..." : "Import LOs"}
+                      </button>
+
+                      {learningObjectives.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="font-terminal text-xs mb-2">Current LOs ({learningObjectives.length})</h4>
+                          <div className="max-h-48 overflow-y-auto">
+                            {learningObjectives.map((lo: LearningObjective) => (
+                              <div key={lo.id} className="text-xs py-1 border-b border-secondary/30 font-terminal">
+                                <span className="text-primary">{lo.loCode}</span>: {lo.title}
+                                <span className={`ml-2 text-[10px] px-1 rounded ${lo.status === "solid" ? "bg-green-600" :
+                                  lo.status === "in_progress" ? "bg-yellow-600" :
+                                    lo.status === "need_review" ? "bg-orange-600" :
+                                      "bg-gray-600"
+                                  }`}>
+                                  {lo.status}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              )}
+            </CardContent>
+          </Card>
+        )
+      }
+    </div >
   );
 }

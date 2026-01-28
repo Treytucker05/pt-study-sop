@@ -1,22 +1,33 @@
-# CLAUDE.md - Universal Engineering Constitution (Unified)
+# PT Study System
 
-Canonical location: `C:/pt-study-sop/ai-config/CLAUDE.md`
+Personal study OS: captures sessions, generates Anki cards, drives improvement via Scholar research. Flask dashboard on port 5000, Obsidian as primary knowledge base.
 
-## Core Rules
-1. **Planning Mode First:** Never start coding immediately.
-2. **No Hallucinations:** Do not reference files that do not exist.
-3. **Verify Paths:** Confirm paths before reading or writing.
+## Commands
 
-## Automation
-- Look for commands in `./commands/`.
+- **Start dashboard:** `Start_Dashboard.bat`
+- **Run tests:** `pytest brain/tests/`
+- **Build frontend:** `cd dashboard_rebuild && npm run build`
+- **Copy build:** copy `dashboard_rebuild/dist/public` → `brain/static/dist`
 
-## Documentation Map (Root Index)
-- Start here: `DOCS_INDEX.md`.
-- User Guide: `docs/root/GUIDE_USER.md`.
-- Developer Guide: `docs/root/GUIDE_DEV.md`.
-- Architecture Spec: `docs/root/GUIDE_ARCHITECTURE.md`.
-- Contracts: `docs/contracts/INDEX.md`.
-- Acceptance tests: `docs/tests/`.
+## Key Paths
 
-## Safety
-- Check `./permissions.json` before execution.
+- Database: `brain/data/pt_study.db`
+- Session logs: `brain/session_logs/`
+- API: `brain/dashboard/api_adapter.py`
+- Frontend source: `dashboard_rebuild/`
+- SOP canon: `sop/`
+- Scholar outputs: `scholar/outputs/`
+- Docs index: `DOCS_INDEX.md`
+
+## Rules
+
+1. Planning first — never start coding immediately.
+2. `dashboard_rebuild` is frontend-only; API lives in `brain/`.
+3. Only serve the Flask dashboard on port 5000 via `Start_Dashboard.bat`.
+4. After frontend changes: rebuild and copy dist to `brain/static/dist`.
+5. Check `permissions.json` before executing new shell commands.
+6. Update `CONTINUITY.md` after every significant change (append only).
+
+## Detailed Guidelines
+
+- [Agent Workflow](ai-config/agent-workflow.md)

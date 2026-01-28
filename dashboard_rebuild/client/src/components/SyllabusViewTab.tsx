@@ -70,8 +70,8 @@ export function SyllabusViewTab() {
   return (
     <div className="space-y-4 p-4">
       {/* Course Selector */}
-      <Card className="brain-card rounded-none">
-        <CardHeader className="border-b border-secondary/50 p-3">
+      <Card className="bg-black/40 border-2 border-primary rounded-none">
+        <CardHeader className="border-b border-primary/50 p-3">
           <CardTitle className="font-arcade text-sm">SELECT COURSE</CardTitle>
         </CardHeader>
         <CardContent className="p-3">
@@ -95,19 +95,19 @@ export function SyllabusViewTab() {
 
       {/* Syllabus Content */}
       {!selectedCourseId ? (
-        <Card className="brain-card rounded-none">
+        <Card className="bg-black/40 border-2 border-primary rounded-none">
           <CardContent className="p-8 text-center">
             <p className="font-terminal text-xs text-muted-foreground">Select a course to view syllabus</p>
           </CardContent>
         </Card>
       ) : modulesLoading ? (
-        <Card className="brain-card rounded-none">
+        <Card className="bg-black/40 border-2 border-primary rounded-none">
           <CardContent className="p-8 text-center">
             <p className="font-terminal text-xs text-muted-foreground">Loading syllabus...</p>
           </CardContent>
         </Card>
       ) : !hasData ? (
-        <Card className="brain-card rounded-none">
+        <Card className="bg-black/40 border-2 border-primary rounded-none">
           <CardContent className="p-8 text-center">
             <p className="font-terminal text-xs text-muted-foreground">No syllabus imported</p>
           </CardContent>
@@ -118,8 +118,8 @@ export function SyllabusViewTab() {
             {Object.entries(modulesByWeek)
               .sort(([weekA], [weekB]) => parseInt(weekA) - parseInt(weekB))
               .map(([week, weekModules]) => (
-                <Card key={week} className="brain-card rounded-none">
-                  <CardHeader className="border-b border-secondary/50 p-3">
+                <Card key={week} className="bg-black/40 border-2 border-primary rounded-none">
+                  <CardHeader className="border-b border-primary/50 p-3">
                     <CardTitle className="font-arcade text-sm">WEEK {week}</CardTitle>
                   </CardHeader>
                   <CardContent className="p-3 space-y-3">
@@ -150,13 +150,12 @@ export function SyllabusViewTab() {
                                 <div key={event.id} className="flex items-center gap-2">
                                   <Badge
                                     variant="outline"
-                                    className={`text-[10px] font-terminal ${
-                                      event.type === "quiz"
+                                    className={`text-[10px] font-terminal ${event.type === "quiz"
                                         ? "border-yellow-500/50 text-yellow-400"
                                         : event.type === "exam"
-                                        ? "border-red-500/50 text-red-400"
-                                        : "border-blue-500/50 text-blue-400"
-                                    }`}
+                                          ? "border-red-500/50 text-red-400"
+                                          : "border-blue-500/50 text-blue-400"
+                                      }`}
                                   >
                                     {event.type?.toUpperCase()}
                                   </Badge>

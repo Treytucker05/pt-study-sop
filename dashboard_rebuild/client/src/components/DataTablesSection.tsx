@@ -21,7 +21,7 @@ export function DataTablesSection() {
   const queryClient = useQueryClient();
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [moduleEdits, setModuleEdits] = useState<Record<number, Partial<Module>>>({});
-  const [scheduleEdits, setScheduleEdits] = useState<Record<number, (Partial<ScheduleEvent> & { delivery?: string })>>({});
+  const [scheduleEdits, setScheduleEdits] = useState<Record<number, Partial<ScheduleEvent>>>({});
   const [selectedModuleIds, setSelectedModuleIds] = useState<Set<number>>(new Set());
   const [selectedScheduleIds, setSelectedScheduleIds] = useState<Set<number>>(new Set());
   const [bulkDelete, setBulkDelete] = useState<{
@@ -122,8 +122,8 @@ export function DataTablesSection() {
       {selectedCourseId && (
         <div className="space-y-6">
           {/* Modules Table */}
-          <Card className="brain-card rounded-none">
-            <CardHeader className="border-b border-secondary/50 p-3">
+          <Card className="bg-black/40 border-2 border-primary rounded-none">
+            <CardHeader className="border-b border-primary/50 p-3">
               <CardTitle className="font-arcade text-sm flex items-center gap-2">
                 <Database className="w-4 h-4" />
                 MODULES ({modules.length})
@@ -300,8 +300,8 @@ export function DataTablesSection() {
           </Card>
 
           {/* Schedule Items Table */}
-          <Card className="brain-card rounded-none">
-            <CardHeader className="border-b border-secondary/50 p-3">
+          <Card className="bg-black/40 border-2 border-primary rounded-none">
+            <CardHeader className="border-b border-primary/50 p-3">
               <CardTitle className="font-arcade text-sm flex items-center gap-2">
                 <Layers className="w-4 h-4" />
                 SCHEDULE ITEMS ({scheduleEvents.length})
@@ -366,7 +366,6 @@ export function DataTablesSection() {
                           <tr className="border-b border-secondary/50">
                             <th className="text-center p-2 w-8">Select</th>
                             <th className="text-left p-2">Type</th>
-                            <th className="text-left p-2">Delivery</th>
                             <th className="text-left p-2">Title</th>
                             <th className="text-center p-2">Date</th>
                             <th className="text-center p-2">Start</th>
@@ -380,7 +379,7 @@ export function DataTablesSection() {
                           {scheduleEvents.map((ev: ScheduleEvent) => {
                             const edit = scheduleEdits[ev.id] || {};
                             const type = edit.type ?? ev.type ?? "";
-                            const delivery = edit.delivery ?? (ev as ScheduleEvent & { delivery?: string }).delivery ?? "";
+                            // delivery removed
                             const title = edit.title ?? ev.title ?? "";
                             const date = edit.date ?? ev.date ?? "";
                             const startTime = edit.startTime ?? ev.startTime ?? "";
@@ -421,22 +420,7 @@ export function DataTablesSection() {
                                     ))}
                                   </select>
                                 </td>
-                                <td className="p-2">
-                                  <select
-                                    className="bg-black border border-secondary rounded-none p-1 text-xs font-terminal"
-                                    value={delivery}
-                                    onChange={(e) =>
-                                      setScheduleEdits((prev) => ({
-                                        ...prev,
-                                        [ev.id]: { ...prev[ev.id], delivery: e.target.value },
-                                      }))
-                                    }
-                                  >
-                                    {["", "in_person", "virtual_sync", "virtual_async", "online_module", "hybrid"].map((opt) => (
-                                      <option key={opt} value={opt}>{opt || "--"}</option>
-                                    ))}
-                                  </select>
-                                </td>
+
                                 <td className="p-2">
                                   <input
                                     className="w-full bg-black border border-secondary rounded-none p-1 text-xs font-terminal"
@@ -521,7 +505,7 @@ export function DataTablesSection() {
                                     onClick={() => {
                                       updateScheduleMutation.mutate({
                                         id: ev.id,
-                                        data: { type, title, date, startTime, endTime, dueDate, notes, delivery },
+                                        data: { type, title, date, startTime, endTime, dueDate, notes },
                                       });
                                       setScheduleEdits((prev) => {
                                         const next = { ...prev };

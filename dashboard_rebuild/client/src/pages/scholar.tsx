@@ -6,19 +6,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Brain, 
-  Search, 
-  AlertCircle, 
-  HelpCircle, 
-  BookOpen, 
-  Lightbulb, 
-  History, 
-  TrendingUp, 
-  TrendingDown, 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
+import {
+  Brain,
+  Search,
+  AlertCircle,
+  HelpCircle,
+  BookOpen,
+  Lightbulb,
+  History,
+  TrendingUp,
+  TrendingDown,
+  CheckCircle2,
+  XCircle,
+  Clock,
   MessageSquare,
   ChevronRight,
   FileText,
@@ -92,7 +92,7 @@ export default function Scholar() {
 
   // Proposal status updates (the only write operation - managed via API)
   const updateProposalMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Proposal> }) => 
+    mutationFn: ({ id, data }: { id: number; data: Partial<Proposal> }) =>
       api.proposals.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["proposals"] });
@@ -127,7 +127,7 @@ export default function Scholar() {
   // Handle chat submission - uses real Scholar API
   const handleChatSubmit = async () => {
     if (!chatInput.trim()) return;
-    
+
     const userMessage = chatInput.trim();
     setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setChatInput("");
@@ -135,13 +135,13 @@ export default function Scholar() {
 
     try {
       const response = await api.scholar.chat(userMessage);
-      setChatMessages(prev => [...prev, { 
-        role: 'assistant', 
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
         content: response.response
       }]);
     } catch (error) {
-      setChatMessages(prev => [...prev, { 
-        role: 'assistant', 
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
         content: `Error processing your question. Please try again.`
       }]);
     } finally {
@@ -174,7 +174,7 @@ export default function Scholar() {
   return (
     <Layout>
       <div className="h-[calc(100vh-140px)] flex flex-col gap-6">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -184,9 +184,9 @@ export default function Scholar() {
               READ ONLY ADVISORY
             </Badge>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="rounded-none font-arcade text-xs border-secondary"
             onClick={() => queryClient.invalidateQueries()}
             data-testid="button-refresh-data"
@@ -207,9 +207,9 @@ export default function Scholar() {
                 { id: 'proposals', label: 'PROPOSALS', icon: Lightbulb },
                 { id: 'history', label: 'HISTORY', icon: History },
               ].map(tab => (
-                <TabsTrigger 
+                <TabsTrigger
                   key={tab.id}
-                  value={tab.id} 
+                  value={tab.id}
                   className="rounded-none font-arcade text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black px-3"
                   data-testid={`tab-${tab.id}`}
                 >
@@ -257,7 +257,7 @@ export default function Scholar() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6">
-                      <ul className="space-y-3 font-terminal text-base">
+                      <ul className="space-y-3 font-terminal text-sm">
                         {courses.filter(c => (c.totalSessions || 0) >= 3).length > 0 ? (
                           <>
                             <li className="flex items-start gap-2">
@@ -289,7 +289,7 @@ export default function Scholar() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6">
-                      <ul className="space-y-3 font-terminal text-base">
+                      <ul className="space-y-3 font-terminal text-sm">
                         {coursesWithLowActivity.length > 0 && (
                           <li className="flex items-start gap-2">
                             <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
@@ -335,12 +335,12 @@ export default function Scholar() {
                           </div>
                         )}
                         {chatMessages.map((msg, i) => (
-                          <div 
-                            key={i} 
+                          <div
+                            key={i}
                             className={cn(
                               "p-2 rounded-sm font-terminal text-xs",
-                              msg.role === 'user' 
-                                ? "bg-primary/20 text-primary ml-8" 
+                              msg.role === 'user'
+                                ? "bg-primary/20 text-primary ml-8"
                                 : "bg-secondary/20 text-white mr-8"
                             )}
                           >
@@ -358,7 +358,7 @@ export default function Scholar() {
                     </ScrollArea>
                     <div className="p-2 border-t border-secondary shrink-0">
                       <div className="flex gap-2">
-                        <Textarea 
+                        <Textarea
                           value={chatInput}
                           onChange={(e) => setChatInput(e.target.value)}
                           onKeyDown={(e) => {
@@ -371,7 +371,7 @@ export default function Scholar() {
                           className="rounded-none bg-black border-secondary text-xs min-h-[60px] resize-none"
                           data-testid="input-scholar-chat"
                         />
-                        <Button 
+                        <Button
                           size="icon"
                           className="rounded-none bg-primary text-black h-[60px] w-10"
                           onClick={handleChatSubmit}
@@ -409,13 +409,13 @@ export default function Scholar() {
                     ].map((item, i) => (
                       <div key={i} className="flex items-center justify-between p-2 bg-black/40 border border-secondary/50">
                         <span className="font-terminal text-xs">{item.q}</span>
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className={cn(
                             "rounded-none text-[9px]",
                             item.status === 'ok' ? 'border-primary text-primary' :
-                            item.status === 'concern' ? 'border-destructive text-destructive' :
-                            'border-secondary text-secondary-foreground'
+                              item.status === 'concern' ? 'border-destructive text-destructive' :
+                                'border-secondary text-secondary-foreground'
                           )}
                         >
                           {item.status.toUpperCase()}
@@ -519,7 +519,7 @@ export default function Scholar() {
                               </div>
                             </div>
                             <div className="mt-3 pt-2 border-t border-primary/20">
-                              <Textarea 
+                              <Textarea
                                 placeholder="Your response..."
                                 className="rounded-none bg-black border-secondary text-xs min-h-[60px]"
                                 data-testid={`input-question-response-${q.id}`}
@@ -648,7 +648,7 @@ export default function Scholar() {
                                 </Badge>
                               </div>
                             </div>
-                            
+
                             {proposal.targetSystem && (
                               <div className="mb-3">
                                 <span className="text-[10px] text-muted-foreground">Target: </span>
@@ -665,8 +665,8 @@ export default function Scholar() {
                                   Risk: LOW
                                 </Badge>
                               </div>
-                              <Select 
-                                value={proposal.status || 'DRAFT'} 
+                              <Select
+                                value={proposal.status || 'DRAFT'}
                                 onValueChange={(value) => updateProposalMutation.mutate({ id: proposal.id, data: { status: value } })}
                               >
                                 <SelectTrigger className={cn("rounded-none w-28 h-7 text-[10px]", getStatusColor(proposal.status || 'DRAFT'))} data-testid={`select-proposal-status-${proposal.id}`}>
@@ -706,8 +706,8 @@ export default function Scholar() {
                         </div>
                       ) : (
                         proposals.map((proposal) => (
-                          <div 
-                            key={proposal.id} 
+                          <div
+                            key={proposal.id}
                             className="flex items-center p-3 bg-black/40 border border-secondary/50 font-terminal text-sm"
                             data-testid={`history-proposal-${proposal.id}`}
                           >

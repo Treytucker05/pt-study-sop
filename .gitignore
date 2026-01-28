@@ -54,6 +54,10 @@ brain/output/
 
 # Temp
 tmpclaude-*
+.tmp/
+*.tmp
+*.temp
+_codex_backups/
 
 # Environment variables
 .env

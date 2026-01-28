@@ -388,7 +388,7 @@ export default function CalendarPage() {
       const isPinned = prev.includes(calId);
       const next = isPinned ? prev.filter(p => p !== calId) : [...prev, calId];
       localStorage.setItem("pinnedCalendars", JSON.stringify(next));
-      
+
       // Auto-show when pinning, auto-hide when unpinning
       setSelectedCalendars(sel => {
         const newSet = new Set(sel);
@@ -399,7 +399,7 @@ export default function CalendarPage() {
         }
         return newSet;
       });
-      
+
       return next;
     });
   };
@@ -501,8 +501,8 @@ export default function CalendarPage() {
   useEffect(() => {
     if (availableCalendars.length > 0 && selectedCalendars.size === 0) {
       // Only show pinned calendars by default
-      const pinnedIds = pinnedCalendars.length > 0 
-        ? pinnedCalendars 
+      const pinnedIds = pinnedCalendars.length > 0
+        ? pinnedCalendars
         : availableCalendars.slice(0, 2).map(c => c.id); // Fallback to first 2 if none pinned
       setSelectedCalendars(new Set(pinnedIds));
     }
@@ -927,8 +927,8 @@ export default function CalendarPage() {
     const height = Math.max((duration / 60) * HOUR_HEIGHT, 24);
     const width = totalColumns > 1 ? `${100 / totalColumns}%` : 'calc(100% - 4px)';
     const left = totalColumns > 1 ? `${(columnIndex / totalColumns) * 100}%` : '0';
-    const style: React.CSSProperties = { 
-      top: `${top}px`, 
+    const style: React.CSSProperties = {
+      top: `${top}px`,
       height: `${height}px`,
       width,
       left,
@@ -947,10 +947,10 @@ export default function CalendarPage() {
 
     // Sort events by start time
     const sorted = [...events].sort((a, b) => a.start.getTime() - b.start.getTime());
-    
+
     // Track columns and their end times
     const columns: Date[] = [];
-    
+
     for (const event of sorted) {
       // Find a column where this event fits (no overlap)
       let column = -1;
@@ -960,17 +960,17 @@ export default function CalendarPage() {
           break;
         }
       }
-      
+
       if (column === -1) {
         column = columns.length;
         columns.push(event.end);
       } else {
         columns[column] = event.end;
       }
-      
+
       result.set(event.id, { column, totalColumns: 1 });
     }
-    
+
     // Calculate total columns for each event (max columns in its time range)
     for (const event of sorted) {
       let maxCols = 1;
@@ -988,7 +988,7 @@ export default function CalendarPage() {
         result.set(event.id, { ...current, totalColumns: maxCols });
       }
     }
-    
+
     return result;
   };
 
@@ -1005,6 +1005,7 @@ export default function CalendarPage() {
           <div>Create event: {showEventModal ? "open" : "closed"}</div>
         </div>
       )}
+
       <div className="h-[calc(100vh-80px)]">
 
         {/* Main Calendar - Full Width */}
@@ -1020,8 +1021,8 @@ export default function CalendarPage() {
                 </div>
                 {/* Clickable Title with Mini-Calendar Dropdown */}
                 <div className="relative">
-                  <button 
-                    className="font-arcade text-sm md:text-lg text-primary hover:text-primary/80 flex items-center gap-1 transition-colors" 
+                  <button
+                    className="font-arcade text-sm md:text-lg text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
                     onClick={() => setShowMiniCalendar(!showMiniCalendar)}
                     data-testid="text-header-title"
                   >
@@ -1058,7 +1059,7 @@ export default function CalendarPage() {
                 </Button>
                 <div className="flex border border-secondary rounded-none">
                   {(['month', 'week', 'day', 'tasks'] as ViewMode[]).map((mode) => (
-                    <Button key={mode} size="sm" variant={viewMode === mode ? "default" : "ghost"} className={cn("rounded-none font-arcade text-[10px] px-2", viewMode === mode ? "bg-primary text-black" : "")} onClick={() => setViewMode(mode)} data-testid={`button-${mode}-view`}>
+                    <Button key={mode} size="sm" variant={viewMode === mode ? "default" : "ghost"} className={cn("rounded-none font-arcade text-xs px-3", viewMode === mode ? "bg-primary text-black" : "")} onClick={() => setViewMode(mode)} data-testid={`button-${mode}-view`}>
                       {mode.toUpperCase()}
                     </Button>
                   ))}
@@ -1073,14 +1074,14 @@ export default function CalendarPage() {
             {/* Calendar Legend - Compact inline */}
             <div className="px-4 py-1.5 border-b border-primary/20 bg-black/60 flex items-center gap-3 shrink-0">
               {/* Left: Scrollable calendar list */}
-              <div className="flex items-center gap-3 overflow-x-auto flex-1 min-w-0">
-                <span className="font-arcade text-[10px] text-muted-foreground shrink-0">CALENDARS:</span>
+              <div className="flex items-center gap-4 overflow-x-auto flex-1 min-w-0">
+                <span className="font-arcade text-xs text-muted-foreground shrink-0">CALENDARS:</span>
                 <div
-                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
                   onClick={() => setShowLocalEvents(!showLocalEvents)}
                 >
-                  <div className={cn("w-2.5 h-2.5 rounded-sm", showLocalEvents ? "bg-primary" : "bg-muted-foreground/30")} />
-                  <span className={cn("font-terminal text-xs", showLocalEvents ? "text-primary" : "text-muted-foreground")}>Local</span>
+                  <div className={cn("w-3 h-3 rounded-sm", showLocalEvents ? "bg-primary" : "bg-muted-foreground/30")} />
+                  <span className={cn("font-terminal text-sm", showLocalEvents ? "text-primary" : "text-muted-foreground")}>Local</span>
                 </div>
                 {visibleCalendars.map((cal) => (
                   <div
@@ -1089,10 +1090,10 @@ export default function CalendarPage() {
                     onClick={() => toggleCalendar(cal.id)}
                   >
                     <div
-                      className="w-2.5 h-2.5 rounded-sm"
+                      className="w-3 h-3 rounded-sm"
                       style={{ backgroundColor: selectedCalendars.has(cal.id) ? cal.color : 'rgba(100,100,100,0.3)' }}
                     />
-                    <span className={cn("font-terminal text-xs truncate max-w-[80px]", selectedCalendars.has(cal.id) ? "" : "text-muted-foreground")}>{cal.name}</span>
+                    <span className={cn("font-terminal text-sm truncate max-w-[100px]", selectedCalendars.has(cal.id) ? "" : "text-muted-foreground")}>{cal.name}</span>
                   </div>
                 ))}
                 {hiddenCalendars.length > 0 && (
@@ -1101,9 +1102,9 @@ export default function CalendarPage() {
               </div>
               {/* Right: Fixed buttons - always visible */}
               <div className="flex items-center gap-2 shrink-0">
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  size="sm"
+                  variant="ghost"
                   className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-[9px]"
                   onClick={() => {
                     if (debugModals) {
@@ -1150,8 +1151,8 @@ export default function CalendarPage() {
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   <p className="font-terminal text-xs text-muted-foreground mb-4">Toggle calendars to show/hide them in the legend.</p>
                   {availableCalendars.map((cal) => (
-                    <div 
-                      key={cal.id} 
+                    <div
+                      key={cal.id}
                       className={cn(
                         "flex items-center gap-3 p-2 border border-zinc-800 cursor-pointer hover:bg-zinc-900 transition-colors",
                         hiddenCalendars.includes(cal.id) && "opacity-50"
@@ -1170,8 +1171,8 @@ export default function CalendarPage() {
                   ))}
                 </div>
                 <DialogFooter>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="rounded-none border-primary font-arcade text-xs"
                     onClick={() => setShowCalendarSettings(false)}
                   >
@@ -1201,7 +1202,7 @@ export default function CalendarPage() {
                           <div className={cn("text-right font-mono text-sm w-6 h-6 flex items-center justify-center ml-auto", isTodayDate && "bg-red-500 text-white rounded-full font-bold")}>{format(day, 'd')}</div>
                           <div className="space-y-0.5 mt-1">
                             {dayEvents.slice(0, 3).map((event, i) => (
-                              <div key={`${event.id}-${i}`} className={cn("text-[10px] font-mono truncate px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} title={event.title} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
+                              <div key={`${event.id}-${i}`} className={cn("text-xs font-mono truncate px-1.5 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} title={event.title} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
                                 {event.title}
                               </div>
                             ))}
@@ -1268,8 +1269,8 @@ export default function CalendarPage() {
                               const style = { ...getEventStyle(event, dayStart, colInfo.column, colInfo.totalColumns), ...getEventInlineStyle(event) };
                               return (
                                 <div key={i} className={cn("absolute rounded p-1 cursor-pointer overflow-hidden", getEventColor(event))} style={style} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
-                                  <div className="text-[10px] font-mono font-medium truncate">{event.title}</div>
-                                  <div className="text-[9px] opacity-80 font-mono">{format(event.start, 'h:mma')}</div>
+                                  <div className="text-xs font-mono font-medium truncate">{event.title}</div>
+                                  <div className="text-[10px] opacity-80 font-mono">{format(event.start, 'h:mma')}</div>
                                 </div>
                               );
                             })}
@@ -1356,25 +1357,25 @@ export default function CalendarPage() {
 
       {/* Create Modal */}
       <Dialog open={showEventModal} onOpenChange={setShowEventModal}>
-      <DialogContent
-        data-modal="calendar-create"
-        className="bg-black border-2 border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto translate-y-0"
-        style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
-      >
+        <DialogContent
+          data-modal="calendar-create"
+          className="bg-black border-2 border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto translate-y-0"
+          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+        >
           <DialogHeader><DialogTitle className="font-arcade text-primary">CREATE_EVENT</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label className="font-arcade text-xs">TITLE</Label>
+              <Label className="font-arcade text-sm">TITLE</Label>
               <Input className="rounded-none bg-black border-secondary focus-visible:ring-primary" placeholder="Event title..." value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} data-testid="input-modal-title" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="font-arcade text-xs">START DATE</Label>
+                <Label className="font-arcade text-sm">START DATE</Label>
                 <Input type="date" className="rounded-none bg-black border-secondary" value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} data-testid="input-modal-date" />
               </div>
               <div className="space-y-2">
-                <Label className="font-arcade text-xs">END DATE</Label>
+                <Label className="font-arcade text-sm">END DATE</Label>
                 <Input type="date" className="rounded-none bg-black border-secondary" value={newEvent.endDate} onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })} placeholder={newEvent.date} data-testid="input-modal-end-date" />
               </div>
             </div>
@@ -1387,11 +1388,11 @@ export default function CalendarPage() {
             {!newEvent.allDay && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-arcade text-xs">START TIME</Label>
+                  <Label className="font-arcade text-sm">START TIME</Label>
                   <Input type="time" className="rounded-none bg-black border-secondary" value={newEvent.startTime} onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })} data-testid="input-modal-start" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-arcade text-xs">END TIME</Label>
+                  <Label className="font-arcade text-sm">END TIME</Label>
                   <Input type="time" className="rounded-none bg-black border-secondary" value={newEvent.endTime} onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })} data-testid="input-modal-end" />
                 </div>
               </div>
@@ -1399,7 +1400,7 @@ export default function CalendarPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="font-arcade text-xs">TYPE</Label>
+                <Label className="font-arcade text-sm">TYPE</Label>
                 <Select value={newEvent.eventType} onValueChange={(v) => setNewEvent({ ...newEvent, eventType: v as typeof newEvent.eventType })}>
                   <SelectTrigger className="rounded-none bg-black border-secondary" data-testid="select-event-type"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-none bg-black border-primary">
@@ -1410,7 +1411,7 @@ export default function CalendarPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="font-arcade text-xs">COLOR</Label>
+                <Label className="font-arcade text-sm">COLOR</Label>
                 <div className="flex gap-2 flex-wrap">
                   {["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280"].map((color) => (
                     <button
@@ -1428,7 +1429,7 @@ export default function CalendarPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="font-arcade text-xs">REPEAT</Label>
+                <Label className="font-arcade text-sm">REPEAT</Label>
                 <Select value={newEvent.recurrence} onValueChange={(v) => setNewEvent({ ...newEvent, recurrence: v as typeof newEvent.recurrence })}>
                   <SelectTrigger className="rounded-none bg-black border-secondary" data-testid="select-recurrence"><SelectValue placeholder="No repeat" /></SelectTrigger>
                   <SelectContent className="rounded-none bg-black border-primary">
@@ -1441,7 +1442,7 @@ export default function CalendarPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="font-arcade text-xs">CALENDAR</Label>
+                <Label className="font-arcade text-sm">CALENDAR</Label>
                 <Select value={newEvent.calendarId} onValueChange={(v) => setNewEvent({ ...newEvent, calendarId: v })}>
                   <SelectTrigger className="rounded-none bg-black border-secondary" data-testid="select-calendar"><SelectValue placeholder="Local" /></SelectTrigger>
                   <SelectContent className="rounded-none bg-black border-primary">
@@ -1483,21 +1484,21 @@ export default function CalendarPage() {
           {selectedEvent && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label className="font-arcade text-xs">TITLE</Label>
+                <Label className="font-arcade text-sm">TITLE</Label>
                 <Input className="rounded-none bg-black border-secondary focus-visible:ring-primary" value={selectedEvent.title} onChange={(e) => setSelectedEvent({ ...selectedEvent, title: e.target.value })} data-testid="input-edit-title" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="font-arcade text-xs">DATE</Label>
+                  <Label className="font-arcade text-sm">DATE</Label>
                   <Input type="date" className="rounded-none bg-black border-secondary" value={format(new Date(selectedEvent.date), 'yyyy-MM-dd')} onChange={(e) => { const [h, m] = [new Date(selectedEvent.date).getHours(), new Date(selectedEvent.date).getMinutes()]; setSelectedEvent({ ...selectedEvent, date: setMinutes(setHours(new Date(e.target.value), h), m) }); }} data-testid="input-edit-date" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="font-arcade text-xs">TIME</Label>
+                  <Label className="font-arcade text-sm">TIME</Label>
                   <Input type="time" className="rounded-none bg-black border-secondary" value={format(new Date(selectedEvent.date), 'HH:mm')} onChange={(e) => { const [hours, minutes] = e.target.value.split(':').map(Number); setSelectedEvent({ ...selectedEvent, date: setMinutes(setHours(new Date(selectedEvent.date), hours), minutes) }); }} data-testid="input-edit-time" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="font-arcade text-xs">TYPE</Label>
+                <Label className="font-arcade text-sm">TYPE</Label>
                 <Select value={selectedEvent.eventType || 'study'} onValueChange={(v) => setSelectedEvent({ ...selectedEvent, eventType: v })}>
                   <SelectTrigger className="rounded-none bg-black border-secondary" data-testid="select-edit-type"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-none bg-black border-primary">
@@ -1665,6 +1666,6 @@ export default function CalendarPage() {
         </DialogContent>
       </Dialog>
       <CalendarAssistant isOpen={showAssistant} onClose={() => setShowAssistant(false)} />
-    </Layout >
+    </Layout>
   );
 }

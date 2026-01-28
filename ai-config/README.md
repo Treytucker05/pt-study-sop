@@ -1,14 +1,10 @@
-﻿# AI Config
+# ai-config
 
-Canonical agent configuration for this repo.
+Former canonical location for agent instructions. Root `CLAUDE.md` and `AGENTS.md` are now canonical.
 
 ## Files
-- `AGENTS.md` - canonical agent rules.
-- `CLAUDE.md` - canonical system constitution.
-- `permissions.json` - allowed command list.
-- `mcp.json` - MCP configuration.
-- `settings.local.json` - local settings overrides.
 
-## Edit policy
-- Edit files here first.
-- Mirrors live at `C:/pt-study-sop/AGENTS.md`, `C:/pt-study-sop/CLAUDE.md`, `C:/pt-study-sop/.claude/AGENTS.md`, and `C:/pt-study-sop/.claude/CLAUDE.md`; keep them in sync.
+- `CLAUDE.md` / `AGENTS.md` — pointers to root files
+- `agent-workflow.md` — startup menu, Ralph usage, agent hygiene
+- `permissions.json` — allowed commands
+- `mcp.json` / `settings.local.json` — config

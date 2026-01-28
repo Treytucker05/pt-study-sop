@@ -1,22 +1,3 @@
-# CLAUDE.md - Universal Engineering Constitution (Unified)
+# PT Study System
 
-Canonical location: `C:/pt-study-sop/ai-config/CLAUDE.md`
-
-## Core Rules
-1. **Planning Mode First:** Never start coding immediately.
-2. **No Hallucinations:** Do not reference files that do not exist.
-3. **Verify Paths:** Confirm paths before reading or writing.
-
-## Automation
-- Look for commands in `./commands/`.
-
-## Documentation Map (Root Index)
-- Start here: `DOCS_INDEX.md`.
-- User Guide: `docs/root/GUIDE_USER.md`.
-- Developer Guide: `docs/root/GUIDE_DEV.md`.
-- Architecture Spec: `docs/root/GUIDE_ARCHITECTURE.md`.
-- Contracts: `docs/contracts/INDEX.md`.
-- Acceptance tests: `docs/tests/`.
-
-## Safety
-- Check `./permissions.json` before execution.
+See root `CLAUDE.md` for all project instructions. This copy exists for Claude Code tool compatibility.

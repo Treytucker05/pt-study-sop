@@ -489,60 +489,60 @@ export default function Brain() {
         </div>
       )}
       <div className="space-y-6 min-w-0 overflow-hidden">
-        <div className="flex items-center justify-between">
-          <h1 className="font-arcade text-xl text-primary flex items-center gap-2">
-            <BrainIcon className="w-6 h-6" />
-            BRAIN ANALYTICS
-          </h1>
-        </div>
+        <div className="space-y-6 min-w-0 overflow-hidden">
+          {/* Header removed to match Dashboard uniformity */}
 
-        <BrainChat />
+          <BrainChat />
 
-        <div className="space-y-6">
-          {/* System Status */}
-          <div>
-            <h2 className="font-arcade text-lg text-primary mb-4">SYSTEM STATUS</h2>
-            <Card className="brain-card rounded-none">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 font-terminal text-sm">
+          <div className="space-y-6">
+            {/* System Status - Standardized Card */}
+            <Card className="bg-black/40 border-2 border-primary rounded-none">
+              <CardHeader className="border-b border-primary/50 p-4">
+                <CardTitle className="font-arcade text-sm flex items-center gap-2">
+                  <div className="w-4 h-4 bg-primary inline-block"></div>
+                  SYSTEM_STATUS
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 font-terminal text-xs">
                   <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${obsidianStatus?.connected ? 'bg-green-500' : 'bg-red-500'}`} />
                       <span className="text-muted-foreground">Obsidian</span>
-                      <span className="text-primary">{obsidianStatus?.connected ? "Online" : "Offline"}</span>
+                      <span className="text-white">{obsidianStatus?.connected ? "Online" : "Offline"}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${ankiStatus?.connected ? 'bg-green-500' : 'bg-red-500'}`} />
                       <span className="text-muted-foreground">Anki</span>
-                      <span className="text-primary">{ankiStatus?.connected ? "Connected" : "Offline"}</span>
+                      <span className="text-white">{ankiStatus?.connected ? "Connected" : "Offline"}</span>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-                    <span>Cards: <span className="text-primary">{metrics?.totalCards || 0}</span></span>
-                    <span>Drafts: <span className="text-primary">{pendingDrafts.length}</span></span>
+                    <span>Cards: <span className="text-white">{metrics?.totalCards || 0}</span></span>
+                    <span>Drafts: <span className="text-white">{pendingDrafts.length}</span></span>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* 4 Horizontal Tabs */}
+          {/* 4 Horizontal Tabs - Updated to match Dashboard Contrast */}
           <Tabs defaultValue="ingestion" className="w-full space-y-6">
-            <TabsList className="grid w-full grid-cols-5 rounded-none bg-black border border-secondary/40 p-1 h-auto">
-              <TabsTrigger value="ingestion" className="font-arcade text-sm py-3 rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+            <TabsList className="grid w-full grid-cols-5 rounded-none bg-black/40 border-2 border-primary p-0 h-auto">
+              <TabsTrigger value="ingestion" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground border-r last:border-r-0 border-primary/30">
                 INGESTION
               </TabsTrigger>
-              <TabsTrigger value="data" className="font-arcade text-sm py-3 rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              <TabsTrigger value="data" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground border-r last:border-r-0 border-primary/30">
                 DATA
               </TabsTrigger>
-              <TabsTrigger value="integrations" className="font-arcade text-sm py-3 rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+              <TabsTrigger value="integrations" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground border-r last:border-r-0 border-primary/30">
                 INTEGRATIONS
               </TabsTrigger>
-              <TabsTrigger value="syllabus" className="font-arcade text-sm py-3 rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-                SYLLABUS VIEW
+              <TabsTrigger value="syllabus" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground border-r last:border-r-0 border-primary/30">
+                SYLLABUS
               </TabsTrigger>
-              <TabsTrigger value="graph" className="font-arcade text-sm py-3 rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-                GRAPH VIEW
+              <TabsTrigger value="graph" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground">
+                GRAPH
               </TabsTrigger>
             </TabsList>
 
@@ -560,8 +560,8 @@ export default function Brain() {
             <TabsContent value="integrations" className="border border-t-0 border-secondary/40 rounded-none mt-6">
               <div className="space-y-6 p-6 min-w-0">
                 {/* Obsidian Vault Browser */}
-                <Card className="brain-card rounded-none">
-                  <CardHeader className="border-b border-secondary/50 p-4">
+                <Card className="bg-black/40 border-2 border-primary rounded-none">
+                  <CardHeader className="border-b border-primary/50 p-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="font-arcade text-sm flex items-center gap-3">
                         <FolderOpen className="w-4 h-4" />
@@ -763,10 +763,10 @@ export default function Brain() {
                   </CardContent>
                 </Card>
 
-                <Card className="brain-card rounded-none">
-                  <CardHeader className="border-b border-secondary/50 p-4">
-                    <CardTitle className="font-arcade text-sm flex items-center gap-3 text-muted-foreground">
-                      <Layers className="w-3 h-3" />
+                <Card className="bg-black/40 border-2 border-primary rounded-none">
+                  <CardHeader className="border-b border-primary/50 p-4">
+                    <CardTitle className="font-arcade text-sm flex items-center gap-3">
+                      <Layers className="w-4 h-4" />
                       ANKI INTEGRATION
                       {ankiStatus?.connected ? (
                         <Check className="w-3 h-3 text-green-500 ml-auto" />
@@ -969,9 +969,14 @@ export default function Brain() {
           </Tabs>
 
           {/* Session Evidence Section */}
-          <div>
-            <h2 className="font-arcade text-lg text-primary mb-4">SESSION EVIDENCE</h2>
-            <Card className="brain-card rounded-none">
+          <div className="mt-8">
+            <Card className="bg-black/40 border-2 border-primary rounded-none">
+              <CardHeader className="border-b border-primary/50 p-4">
+                <CardTitle className="font-arcade text-sm flex items-center gap-2">
+                  <Database className="w-4 h-4" />
+                  SESSION_EVIDENCE
+                </CardTitle>
+              </CardHeader>
               <CardContent className="p-4 space-y-4">
                 {/* Date and Semester Filters */}
                 <div className="grid grid-cols-5 gap-4 mb-4">
