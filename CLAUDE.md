@@ -29,7 +29,7 @@ Response style: straight to the point, no fluff.
 - Frontend build output: brain/static/dist/
 - SOP canon: sop/
 - Scholar outputs: scholar/outputs/
-- Docs index: docs/README.md (DOCS_INDEX.md also exists)
+- Docs index (canonical): docs/README.md (DOCS_INDEX.md is legacy)
 - Architecture doc: docs/root/PROJECT_ARCHITECTURE.md
 - SOP manifest: sop/sop_index.v1.json
 
