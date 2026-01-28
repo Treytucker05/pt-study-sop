@@ -199,3 +199,4 @@
 - 2026-01-28 15:48:00: Added CustomGPT name to CLAUDE.md.
 - 2026-01-28 15:51:00: Marked Anki/AnkiConnect as active use.
 - 2026-01-28 15:52:00: Marked Google Calendar/Tasks as active use.
+- 2026-01-28 17:30:00: Added PRD for calendar month view and event management improvements.
