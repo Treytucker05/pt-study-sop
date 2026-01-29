@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [editingCourse, setEditingCourse] = useState<{ id: number; name: string } | null>(null);
   const [editCourseName, setEditCourseName] = useState("");
   const [courseToDelete, setCourseToDelete] = useState<{ id: number; name: string } | null>(null);
+  const dialogAnchorStyle = { zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" } as const;
 
   // Google Tasks state
   const [currentTaskListIndex, setCurrentTaskListIndex] = useState(0);
@@ -415,7 +416,7 @@ export default function Dashboard() {
                         ADD_COURSE
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-black border-2 border-primary rounded-none">
+                    <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
                       <DialogHeader>
                         <DialogTitle className="font-arcade">ADD_NEW_COURSE</DialogTitle>
                       </DialogHeader>
@@ -508,7 +509,7 @@ export default function Dashboard() {
                           ADD COURSE
                         </button>
                       </DialogTrigger>
-                      <DialogContent className="bg-black border-2 border-primary rounded-none">
+                      <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
                         <DialogHeader>
                           <DialogTitle className="font-arcade">ADD_NEW_COURSE</DialogTitle>
                         </DialogHeader>
@@ -542,7 +543,7 @@ export default function Dashboard() {
 
                   {/* Edit Course Dialog */}
                   <Dialog open={!!editingCourse} onOpenChange={(open) => !open && setEditingCourse(null)}>
-                    <DialogContent className="bg-black border-2 border-primary rounded-none">
+                    <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
                       <DialogHeader>
                         <DialogTitle className="font-arcade">EDIT_COURSE</DialogTitle>
                       </DialogHeader>
@@ -568,7 +569,7 @@ export default function Dashboard() {
 
                   {/* Delete Confirmation Dialog */}
                   <AlertDialog open={!!courseToDelete} onOpenChange={(open) => !open && setCourseToDelete(null)}>
-                    <AlertDialogContent className="bg-black border-2 border-red-500 rounded-none">
+                    <AlertDialogContent className="bg-black border-2 border-red-500 rounded-none translate-y-0" style={dialogAnchorStyle}>
                       <AlertDialogHeader>
                         <AlertDialogTitle className="font-arcade text-red-500">DELETE_COURSE</AlertDialogTitle>
                         <AlertDialogDescription className="font-terminal text-muted-foreground">
@@ -853,7 +854,7 @@ export default function Dashboard() {
 
           {/* Edit Task Dialog */}
           <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
-            <DialogContent className="bg-black border-2 border-primary rounded-none">
+            <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
               <DialogHeader>
                 <DialogTitle className="font-arcade">EDIT_TASK</DialogTitle>
               </DialogHeader>
@@ -941,7 +942,7 @@ export default function Dashboard() {
                     ADD
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-black border-2 border-primary rounded-none">
+                <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
                   <DialogHeader>
                     <DialogTitle className="font-arcade">ADD_DEADLINE</DialogTitle>
                   </DialogHeader>

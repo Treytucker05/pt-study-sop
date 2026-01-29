@@ -222,3 +222,4 @@
 - 2026-01-29: Limited timezone dropdowns to America zones and added course dropdowns backed by study wheel courses in calendar edit modals; rebuilt and synced dashboard.
 - 2026-01-29: Linked study wheel courses to canonical courses (course_id + code), updated course APIs to return canonical IDs, and wired calendar course dropdowns to store courseId/courseCode; restricted timezones to America-only; rebuilt and synced dashboard.
 - 2026-01-29: Added course number input for new Study Wheel courses (no retroactive edits); wired to course create API; rebuilt and synced dashboard.
+- 2026-01-29: Anchored dashboard dialogs (add/edit course, add deadline, edit task, delete course) to top offset to prevent off-screen modal overlay; rebuilt and synced dashboard.
