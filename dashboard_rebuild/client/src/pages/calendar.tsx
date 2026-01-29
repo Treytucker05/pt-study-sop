@@ -19,7 +19,7 @@ import { SortableTaskItem, TaskListContainer, TaskDialog } from "@/components/Go
 import { CalendarAssistant, CalendarAssistantButton } from "@/components/CalendarAssistant";
 import { EventEditModal } from "@/components/EventEditModal";
 import { LocalEventEditModal, type LocalCalendarEvent } from "@/components/LocalEventEditModal";
-import type { InsertCalendarEvent, CalendarEvent } from "@shared/schema";
+import type { InsertCalendarEvent, CalendarEvent, Course } from "@shared/schema";
 import {
   DndContext,
   closestCenter,
@@ -491,6 +491,11 @@ export default function CalendarPage() {
     retry: 1,
   });
 
+  const { data: studyWheelCourses = [] } = useQuery<Course[]>({
+    queryKey: ["courses"],
+    queryFn: api.courses.getActive,
+  });
+
   const { data: googleTaskLists = [] } = useQuery({
     queryKey: ["google-task-lists"],
     queryFn: api.googleTasks.getLists
@@ -583,6 +588,13 @@ export default function CalendarPage() {
   const visibleCalendars = useMemo(() => {
     return availableCalendars.filter(cal => !hiddenCalendars.includes(cal.id));
   }, [availableCalendars, hiddenCalendars]);
+
+  const courseOptions = useMemo(() => {
+    const names = studyWheelCourses
+      .map((course) => course.name)
+      .filter((name): name is string => !!name);
+    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+  }, [studyWheelCourses]);
 
   useEffect(() => {
     if (availableCalendars.length > 0 && selectedCalendars.size === 0
@@ -1615,6 +1627,7 @@ export default function CalendarPage() {
         }}
         event={selectedEvent}
         onEventChange={setSelectedEvent}
+        courseOptions={courseOptions}
         onSave={() => {
           if (!selectedEvent) return;
           updateEventMutation.mutate({
@@ -1653,6 +1666,7 @@ export default function CalendarPage() {
         }}
         event={selectedGoogleEvent}
         onEventChange={setSelectedGoogleEvent}
+        courseOptions={courseOptions}
         onSave={handleGoogleSave}
         onDelete={handleGoogleDelete}
       />

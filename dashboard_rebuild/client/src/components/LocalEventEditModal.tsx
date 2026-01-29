@@ -37,18 +37,17 @@ export type LocalCalendarEvent = Omit<
 type Tab = "details" | "time" | "recurrence" | "people" | "settings";
 
 const FALLBACK_TIME_ZONES = [
-  "UTC",
   "America/New_York",
   "America/Chicago",
   "America/Denver",
   "America/Los_Angeles",
   "America/Phoenix",
   "America/Anchorage",
+  "America/Indiana/Indianapolis",
+  "America/Detroit",
+  "America/Boise",
+  "America/Juneau",
   "Pacific/Honolulu",
-  "Europe/London",
-  "Europe/Paris",
-  "Asia/Tokyo",
-  "Australia/Sydney",
 ];
 
 interface LocalEventEditModalProps {
@@ -58,6 +57,7 @@ interface LocalEventEditModalProps {
   onEventChange: (event: LocalCalendarEvent) => void;
   onSave: () => void;
   onDelete: () => void;
+  courseOptions?: string[];
 }
 
 const COLOR_PALETTE = [
@@ -80,13 +80,25 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "settings", label: "SETTINGS" },
 ];
 
-export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, onSave, onDelete }: LocalEventEditModalProps) {
+export function LocalEventEditModal({
+  open,
+  onOpenChange,
+  event,
+  onEventChange,
+  onSave,
+  onDelete,
+  courseOptions = [],
+}: LocalEventEditModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [newAttendee, setNewAttendee] = useState("");
   const timeZoneOptions = useMemo(() => {
     if (typeof Intl !== "undefined" && "supportedValuesOf" in Intl) {
       try {
-        return (Intl.supportedValuesOf("timeZone") as string[]).slice().sort();
+        const zones = (Intl.supportedValuesOf("timeZone") as string[])
+          .filter((tz) => tz.startsWith("America/") || tz === "Pacific/Honolulu")
+          .slice()
+          .sort();
+        return zones.length > 0 ? zones : FALLBACK_TIME_ZONES;
       } catch {
         return FALLBACK_TIME_ZONES;
       }
@@ -102,7 +114,8 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
     event.timeZone ||
     Intl.DateTimeFormat().resolvedOptions().timeZone ||
     "UTC";
-  const timeZoneValue = timeZoneOptions.includes(resolvedTimeZone) ? resolvedTimeZone : "UTC";
+  const fallbackTimeZone = timeZoneOptions[0] || "America/New_York";
+  const timeZoneValue = timeZoneOptions.includes(resolvedTimeZone) ? resolvedTimeZone : fallbackTimeZone;
   const recurrenceValue = (() => {
     const raw = event.recurrence || "none";
     if (raw === "daily") return "RRULE:FREQ=DAILY";
@@ -209,16 +222,31 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs text-primary/80">COURSE_</Label>
-                    <Input
-                      value={event.course || ""}
-                      onChange={(e) => setField("course", e.target.value || null)}
-                      placeholder="e.g. PHTH 5301"
-                      className="bg-black border-primary/50 text-primary font-terminal rounded-none"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-primary/80">COURSE_</Label>
+                  <Select
+                    value={event.course || "__none__"}
+                    onValueChange={(v) => setField("course", v === "__none__" ? null : v)}
+                  >
+                    <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
+                      <SelectValue placeholder="Select course" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black border-primary text-primary font-terminal z-[100010]">
+                      <SelectItem value="__none__">None</SelectItem>
+                      {courseOptions.length === 0 && (
+                        <SelectItem value="__empty__" disabled>
+                          No courses found
+                        </SelectItem>
+                      )}
+                      {courseOptions.map((course) => (
+                        <SelectItem key={course} value={course}>
+                          {course}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs text-primary/80">WEIGHT_</Label>
