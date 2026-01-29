@@ -369,6 +369,7 @@ export default function CalendarPage() {
   const [showGoogleEditModal, setShowGoogleEditModal] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const debugModals =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).has("debugModals");
@@ -516,7 +517,7 @@ export default function CalendarPage() {
     backgroundColor?: string;
   }
 
-  const { data: calendarList = [] } = useQuery({
+  const { data: calendarList = [], refetch: refetchCalendarList } = useQuery({
     queryKey: ["google-calendar-list"],
     queryFn: async () => {
       const res = await fetch("/api/google-calendar/calendars");
@@ -530,6 +531,45 @@ export default function CalendarPage() {
     queryFn: api.google.getStatus,
     retry: 1,
   });
+
+  const handleSync = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    try {
+      const statusResult = await refetchGoogleStatus();
+      if (statusResult.data && !statusResult.data.connected) {
+        toast({ title: "SYNC_FAILED", description: "Google is not connected.", variant: "destructive" });
+        return;
+      }
+
+      const calendarResult = await refetchCalendarList();
+      const calendars = calendarResult.data || [];
+      const calendarIds = calendars.map((cal) => cal.id).filter(Boolean);
+
+      if (calendarIds.length > 0) {
+        const hasMatch = Array.from(selectedCalendars).some((id) => calendarIds.includes(id));
+        if (!hasMatch) {
+          const next = new Set(calendarIds);
+          setSelectedCalendars(next);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("selectedCalendars", JSON.stringify(calendarIds));
+          }
+          setCalendarSelectionDirty(false);
+        }
+      }
+
+      await refetchGoogle();
+      toast({ title: "SYNCED", description: "Google calendars refreshed." });
+    } catch (err) {
+      toast({
+        title: "SYNC_FAILED",
+        description: err instanceof Error ? err.message : "Unable to sync Google calendars.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const connectGoogleMutation = useMutation({
     mutationFn: async () => {
@@ -1227,8 +1267,15 @@ export default function CalendarPage() {
                   />
                 </div>
                 <CalendarAssistantButton onClick={() => setShowAssistant(true)} />
-                <Button size="sm" variant="ghost" className="rounded-none hover:bg-primary/20" onClick={() => refetchGoogle()} disabled={isLoadingGoogle} data-testid="button-sync">
-                  <RefreshCw className={cn("h-4 w-4", isLoadingGoogle && "animate-spin")} />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-none hover:bg-primary/20"
+                  onClick={handleSync}
+                  disabled={isLoadingGoogle || isSyncing}
+                  data-testid="button-sync"
+                >
+                  <RefreshCw className={cn("h-4 w-4", (isLoadingGoogle || isSyncing) && "animate-spin")} />
                 </Button>
                 <div className="flex border border-secondary rounded-none">
                   {(['month', 'week', 'day', 'tasks'] as ViewMode[]).map((mode) => (

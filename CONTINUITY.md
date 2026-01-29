@@ -227,4 +227,4 @@
 -   2 0 2 6 - 0 1 - 2 9 :   U p d a t e d   A G E N T S . m d   w i t h   p r o j e c t - e x p l o r a t i o n - b e f o r e - s k i l l s   g u i d a n c e ,   S w i f t U I   r e t r i e v a l - f i r s t   r u l e ,   a n d   d o c s   T a b l e   o f   C o n t e n t s   r e q u i r e m e n t .  
  - 2026-01-29: Fixed calendar edit modal crash by rendering course dropdown options as course names/ids (not raw objects) in local + Google edit modals; rebuilt and synced dashboard.
 -   2 0 2 6 - 0 1 - 2 9 :   N o t e d   i n   C L A U D E . m d   t o   r e a d   A G E N T S . m d   f o r   a g e n t   b e h a v i o r   r u l e s .  
- 
+ - 2026-01-29: Strengthened Calendar Sync button to refresh Google status, calendar list, and events; auto-resets calendar selection if it no longer matches current Google calendars; added sync success/failure toasts; rebuilt and synced dashboard.
