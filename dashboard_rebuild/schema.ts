@@ -193,6 +193,12 @@ export const calendarEvents = sqliteTable("calendar_events", {
   course: text("course"),
   weight: text("weight"),
   notes: text("notes"),
+  location: text("location"),
+  attendees: text("attendees"),
+  visibility: text("visibility"),
+  transparency: text("transparency"),
+  reminders: text("reminders"),
+  timeZone: text("time_zone"),
   status: text("status").default("pending"),
   color: text("color").default("#ef4444"),
   recurrence: text("recurrence"),
@@ -203,6 +209,19 @@ export const calendarEvents = sqliteTable("calendar_events", {
 export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit({
   id: true,
   createdAt: true,
+}).extend({
+  attendees: z.array(z.object({
+    email: z.string(),
+    responseStatus: z.string().optional(),
+    self: z.boolean().optional(),
+  })).optional(),
+  reminders: z.object({
+    useDefault: z.boolean().optional(),
+    overrides: z.array(z.object({
+      method: z.string(),
+      minutes: z.number(),
+    })).optional(),
+  }).optional(),
 });
 
 export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;

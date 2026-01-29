@@ -205,3 +205,7 @@
 - 2026-01-29: Calendar page fixes — (1) selectedCalendars now persists to localStorage with SAVE button, initializes from localStorage on mount with try/catch + Array.isArray guard. (2) New LocalEventEditModal.tsx with 4-tab interface (DETAILS, TIME, TYPE, REPEAT) covering all 10 editable DB fields, replacing the old 4-field inline dialog. Updated mutation to send all fields. (3) Added Post-Implementation Checklist section to CLAUDE.md to enforce build+copy workflow.
 
 - 2026-01-29: Added end-of-session hookify rule (.claude/hookify.end-of-session-checklist.local.md) that prompts 5-step cleanup checklist when session-ending phrases detected. Added calendar SAVE dirty/saved indicator dot and toast feedback. Captured 4 session learnings to CLAUDE.md.
+
+ -   2 0 2 6 - 0 1 - 2 9 :   U n i f i e d   l o c a l / G o o g l e   e v e n t   e d i t   o p t i o n s ,   w i r e d   l o c a l   e v e n t   f i e l d s   t o   D B / A P I ,   a n d   f i x e d   G o o g l e   u p d a t e / d e l e t e   +   m e t a d a t a   p e r s i s t e n c e   f o r   e v e n t T y p e / c o u r s e / w e i g h t .   R e b u i l t   d a s h b o a r d   a n d   s y n c e d   d i s t . 
+  
+ 

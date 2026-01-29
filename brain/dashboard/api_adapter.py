@@ -684,6 +684,52 @@ def normalize_list_value(value):
     return json.dumps([str(value)])
 
 
+def split_date_time(value):
+    if not value:
+        return None, None
+    if isinstance(value, str):
+        if "T" in value:
+            date_part, time_part = value.split("T", 1)
+            time_part = time_part.replace("Z", "")
+            time_part = time_part.split(".")[0]
+            if time_part:
+                time_part = time_part[:5]
+            if time_part in ("00:00", "00:00:00"):
+                time_part = None
+            return date_part, time_part
+        return value, None
+    if hasattr(value, "isoformat"):
+        return split_date_time(value.isoformat())
+    return None, None
+
+
+def parse_json_value(value):
+    if value is None:
+        return None
+    if isinstance(value, (dict, list)):
+        return value
+    if isinstance(value, str):
+        trimmed = value.strip()
+        if not trimmed:
+            return None
+        try:
+            return json.loads(trimmed)
+        except Exception:
+            return None
+    return None
+
+
+def normalize_json_value(value):
+    if value is None:
+        return None
+    if isinstance(value, (dict, list)):
+        return json.dumps(value)
+    if isinstance(value, str):
+        trimmed = value.strip()
+        return trimmed if trimmed else None
+    return json.dumps(value)
+
+
 @adapter_bp.route("/events", methods=["GET"])
 def get_events():
     """
@@ -707,6 +753,11 @@ def get_events():
 
             c_info = course_map.get(ev.get("course_id"), {})
             title = ev.get("title", "Untitled")
+            course_label = ev.get("course") or c_info.get("name") or c_info.get("code")
+            notes_val = ev.get("notes") or ev.get("raw_text")
+            event_color = ev.get("color") or c_info.get("color") or "#ef4444"
+            attendees_val = parse_json_value(ev.get("attendees")) or []
+            reminders_val = parse_json_value(ev.get("reminders"))
 
             event_time = ev.get("time")
             event_end_time = ev.get("end_time")
@@ -729,10 +780,20 @@ def get_events():
                     "endDate": end_date,
                     "allDay": False if event_time else True,
                     "eventType": (ev.get("type") or "event").lower(),
-                    "course": c_info.get("name") or c_info.get("code"),
+                    "course": course_label,
                     "courseId": ev.get("course_id"),
-                    "color": c_info.get("color") or "#ef4444",
+                    "weight": ev.get("weight"),
+                    "notes": notes_val,
+                    "color": event_color,
                     "status": ev.get("status", "pending"),
+                    "recurrence": ev.get("recurrence_rule"),
+                    "calendarId": "local",
+                    "location": ev.get("location"),
+                    "attendees": attendees_val,
+                    "visibility": ev.get("visibility"),
+                    "transparency": ev.get("transparency"),
+                    "reminders": reminders_val,
+                    "timeZone": ev.get("time_zone"),
                     "startTime": event_time,
                     "endTime": event_end_time,
                 }
@@ -758,24 +819,69 @@ def create_event():
         cur = conn.cursor()
 
         title = data.get("title", "Untitled Event")
-        date_val = data.get("date", "")
-        if "T" in date_val:
-            date_val = date_val.split("T")[0]
-        
-        end_date = data.get("endDate")
-        if end_date and "T" in end_date:
-            end_date = end_date.split("T")[0]
-        
         event_type = data.get("eventType", "event")
         color = data.get("color", "#ef4444")
         status = data.get("status", "pending")
         notes = data.get("notes", "")
         course_id = data.get("courseId")
+        course_label = data.get("course")
+        weight = data.get("weight")
+        location = data.get("location")
+        attendees = normalize_json_value(data.get("attendees"))
+        visibility = data.get("visibility")
+        transparency = data.get("transparency")
+        reminders = normalize_json_value(data.get("reminders"))
+        time_zone = data.get("timeZone")
+
+        recurrence = data.get("recurrence")
+        if isinstance(recurrence, list):
+            recurrence = recurrence[0] if len(recurrence) == 1 else json.dumps(recurrence)
+        if recurrence in ("none", ""):
+            recurrence = None
+
+        all_day = bool(data.get("allDay"))
+        date_val, time_val = split_date_time(data.get("date", ""))
+        if all_day:
+            time_val = None
+        if data.get("startTime"):
+            time_val = data.get("startTime")
+
+        end_date, end_time_val = split_date_time(data.get("endDate"))
+        if all_day:
+            end_time_val = None
+        if data.get("endTime"):
+            end_time_val = data.get("endTime")
 
         cur.execute(
-            """INSERT INTO course_events (title, date, due_date, type, status, notes, course_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (title, date_val, end_date, event_type, status, notes, course_id)
+            """
+            INSERT INTO course_events (
+                title, date, due_date, time, end_time, type, status, notes, course_id,
+                course, weight, color, recurrence_rule, location, attendees, visibility,
+                transparency, reminders, time_zone
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                title,
+                date_val,
+                end_date,
+                time_val,
+                end_time_val,
+                event_type,
+                status,
+                notes,
+                course_id,
+                course_label,
+                weight,
+                color,
+                recurrence,
+                location,
+                attendees,
+                visibility,
+                transparency,
+                reminders,
+                time_zone,
+            )
         )
         event_id = cur.lastrowid
         conn.commit()
@@ -789,6 +895,16 @@ def create_event():
             "eventType": event_type,
             "color": color,
             "status": status,
+            "notes": notes,
+            "weight": weight,
+            "recurrence": recurrence,
+            "location": location,
+            "attendees": parse_json_value(attendees),
+            "visibility": visibility,
+            "transparency": transparency,
+            "reminders": parse_json_value(reminders),
+            "timeZone": time_zone,
+            "course": course_label,
         }), 201
     except Exception as e:
         print(f"Create Event Error: {e}")
@@ -821,27 +937,39 @@ def update_event(event_id):
 
         fields = []
         values = []
+        all_day = data.get("allDay") if isinstance(data, dict) else None
+        all_day_flag = None if all_day is None else bool(all_day)
 
         # Map frontend fields to DB columns
         if "title" in data:
             fields.append("title = ?")
             values.append(data["title"])
         if "date" in data:
-            # handle iso - extract date and time parts
-            date_val = data["date"]
-            if isinstance(date_val, str):
-                if "T" in date_val:
-                    dt_part = date_val.split("T")[0]
-                    time_part = date_val.split("T")[1].split(".")[0] if "." in date_val else date_val.split("T")[1][:8]
-                    fields.append("date = ?")
-                    values.append(dt_part)
-                    # Also update time if present
-                    if time_part and time_part != "00:00:00":
-                        fields.append("time = ?")
-                        values.append(time_part[:5])  # HH:MM format
-                else:
-                    fields.append("date = ?")
-                    values.append(date_val)
+            date_part, time_part = split_date_time(data["date"])
+            if date_part:
+                fields.append("date = ?")
+                values.append(date_part)
+            if all_day_flag is True:
+                fields.append("time = ?")
+                values.append(None)
+            else:
+                time_candidate = data.get("startTime") or time_part
+                if time_candidate is not None:
+                    fields.append("time = ?")
+                    values.append(time_candidate)
+        if "endDate" in data:
+            end_date_part, end_time_part = split_date_time(data["endDate"])
+            if end_date_part:
+                fields.append("due_date = ?")
+                values.append(end_date_part)
+            if all_day_flag is True:
+                fields.append("end_time = ?")
+                values.append(None)
+            else:
+                end_time_candidate = data.get("endTime") or end_time_part
+                if end_time_candidate is not None:
+                    fields.append("end_time = ?")
+                    values.append(end_time_candidate)
         if "eventType" in data:
             fields.append("type = ?")
             values.append(data["eventType"])
@@ -851,10 +979,55 @@ def update_event(event_id):
         if "courseId" in data:
             fields.append("course_id = ?")
             values.append(data["courseId"])
-        if "startTime" in data:
+        if "course" in data:
+            fields.append("course = ?")
+            values.append(data["course"])
+        if "weight" in data:
+            fields.append("weight = ?")
+            values.append(data["weight"])
+        if "notes" in data:
+            fields.append("notes = ?")
+            values.append(data["notes"])
+        if "color" in data:
+            fields.append("color = ?")
+            values.append(data["color"])
+        if "recurrence" in data:
+            recurrence = data.get("recurrence")
+            if isinstance(recurrence, list):
+                recurrence = recurrence[0] if len(recurrence) == 1 else json.dumps(recurrence)
+            if recurrence in ("none", ""):
+                recurrence = None
+            fields.append("recurrence_rule = ?")
+            values.append(recurrence)
+        if "location" in data:
+            fields.append("location = ?")
+            values.append(data["location"])
+        if "attendees" in data:
+            fields.append("attendees = ?")
+            values.append(normalize_json_value(data.get("attendees")))
+        if "visibility" in data:
+            fields.append("visibility = ?")
+            values.append(data["visibility"])
+        if "transparency" in data:
+            fields.append("transparency = ?")
+            values.append(data["transparency"])
+        if "reminders" in data:
+            fields.append("reminders = ?")
+            values.append(normalize_json_value(data.get("reminders")))
+        if "timeZone" in data:
+            fields.append("time_zone = ?")
+            values.append(data["timeZone"])
+
+        if all_day_flag is True and "date" not in data:
+            fields.append("time = ?")
+            values.append(None)
+        if all_day_flag is True and "endDate" not in data:
+            fields.append("end_time = ?")
+            values.append(None)
+        if all_day_flag is not True and "date" not in data and "startTime" in data:
             fields.append("time = ?")
             values.append(data["startTime"])
-        if "endTime" in data:
+        if all_day_flag is not True and "endDate" not in data and "endTime" in data:
             fields.append("end_time = ?")
             values.append(data["endTime"])
 
@@ -2265,6 +2438,27 @@ def update_google_event(event_id):
             body["colorId"] = data["colorId"]
         if "reminders" in data:
             body["reminders"] = data["reminders"]
+
+        # Extended properties (custom metadata)
+        if "extendedProperties" in data:
+            incoming_props = data.get("extendedProperties") or {}
+            if isinstance(incoming_props, dict):
+                existing_props = existing_event.get("extendedProperties") or {}
+                merged = {}
+                existing_private = existing_props.get("private") or {}
+                existing_shared = existing_props.get("shared") or {}
+                incoming_private = incoming_props.get("private") or {}
+                incoming_shared = incoming_props.get("shared") or {}
+
+                if isinstance(existing_private, dict) and isinstance(incoming_private, dict):
+                    merged_private = {**existing_private, **incoming_private}
+                    merged["private"] = merged_private
+                if isinstance(existing_shared, dict) and isinstance(incoming_shared, dict):
+                    merged_shared = {**existing_shared, **incoming_shared}
+                    merged["shared"] = merged_shared
+
+                if merged:
+                    body["extendedProperties"] = merged
 
         # Date Logic
         # Frontend might send 'start'/'end' objects OR 'date'/'startDate' strings.

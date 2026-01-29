@@ -24,6 +24,10 @@ interface GoogleCalendarEvent {
   calendarSummary?: string;
   calendarColor?: string;
   htmlLink?: string;
+  eventType?: string;
+  course?: string;
+  weight?: string;
+  extendedProperties?: { private?: Record<string, string> };
   conferenceData?: { entryPoints?: { uri?: string; entryPointType?: string }[]; conferenceSolution?: { name?: string } };
   hangoutLink?: string;
   attendees?: { email: string; responseStatus?: string; self?: boolean }[];
@@ -160,27 +164,64 @@ export function EventEditModal({ open, onOpenChange, event, onEventChange, onSav
                     className="bg-black border-green-500/50 text-green-500 font-terminal rounded-none"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-green-500/80">COLOR_ID_</Label>
-                  <Select value={event.colorId || "0"} onValueChange={(v) => setField("colorId", v === "0" ? undefined : v)}>
-                    <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
-                      <SelectValue placeholder="Default" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-black border-green-500 text-green-500 font-terminal">
-                      <SelectItem value="0">Default</SelectItem>
-                      <SelectItem value="1">Lavender</SelectItem>
-                      <SelectItem value="2">Sage</SelectItem>
-                      <SelectItem value="3">Grape</SelectItem>
-                      <SelectItem value="4">Flamingo</SelectItem>
-                      <SelectItem value="5">Banana</SelectItem>
-                      <SelectItem value="6">Tangerine</SelectItem>
-                      <SelectItem value="7">Peacock</SelectItem>
-                      <SelectItem value="8">Graphite</SelectItem>
-                      <SelectItem value="9">Blueberry</SelectItem>
-                      <SelectItem value="10">Basil</SelectItem>
-                      <SelectItem value="11">Tomato</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-green-500/80">EVENT_TYPE_</Label>
+                    <Select value={event.eventType || "study"} onValueChange={(v) => setField("eventType", v)}>
+                      <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black border-green-500 text-green-500 font-terminal">
+                        <SelectItem value="study">STUDY</SelectItem>
+                        <SelectItem value="lecture">LECTURE</SelectItem>
+                        <SelectItem value="exam">EXAM</SelectItem>
+                        <SelectItem value="synchronous">SYNCHRONOUS</SelectItem>
+                        <SelectItem value="online">ONLINE</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-green-500/80">COURSE_</Label>
+                    <Input
+                      value={event.course || ""}
+                      onChange={(e) => setField("course", e.target.value)}
+                      placeholder="e.g. PHTH 5301"
+                      className="bg-black border-green-500/50 text-green-500 font-terminal rounded-none"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-green-500/80">WEIGHT_</Label>
+                    <Input
+                      value={event.weight || ""}
+                      onChange={(e) => setField("weight", e.target.value)}
+                      placeholder="e.g. High, Medium, Low"
+                      className="bg-black border-green-500/50 text-green-500 font-terminal rounded-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-green-500/80">COLOR_ID_</Label>
+                    <Select value={event.colorId || "0"} onValueChange={(v) => setField("colorId", v === "0" ? undefined : v)}>
+                      <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
+                        <SelectValue placeholder="Default" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black border-green-500 text-green-500 font-terminal">
+                        <SelectItem value="0">Default</SelectItem>
+                        <SelectItem value="1">Lavender</SelectItem>
+                        <SelectItem value="2">Sage</SelectItem>
+                        <SelectItem value="3">Grape</SelectItem>
+                        <SelectItem value="4">Flamingo</SelectItem>
+                        <SelectItem value="5">Banana</SelectItem>
+                        <SelectItem value="6">Tangerine</SelectItem>
+                        <SelectItem value="7">Peacock</SelectItem>
+                        <SelectItem value="8">Graphite</SelectItem>
+                        <SelectItem value="9">Blueberry</SelectItem>
+                        <SelectItem value="10">Basil</SelectItem>
+                        <SelectItem value="11">Tomato</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </>
             )}

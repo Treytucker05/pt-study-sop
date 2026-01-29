@@ -11,13 +11,36 @@ import { cn } from "@/lib/utils";
 import { format, setHours, setMinutes } from "date-fns";
 import type { CalendarEvent } from "@shared/schema";
 
-type Tab = "details" | "time" | "type" | "recurrence";
+export interface CalendarAttendee {
+  email: string;
+  responseStatus?: string;
+  self?: boolean;
+}
+
+export interface CalendarReminders {
+  useDefault?: boolean;
+  overrides?: { method: string; minutes: number }[];
+}
+
+export type LocalCalendarEvent = Omit<
+  CalendarEvent,
+  "attendees" | "reminders" | "location" | "visibility" | "transparency" | "timeZone"
+> & {
+  location?: string | null;
+  attendees?: CalendarAttendee[];
+  visibility?: string | null;
+  transparency?: string | null;
+  reminders?: CalendarReminders | null;
+  timeZone?: string | null;
+};
+
+type Tab = "details" | "time" | "recurrence" | "people" | "settings";
 
 interface LocalEventEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  event: CalendarEvent | null;
-  onEventChange: (event: CalendarEvent) => void;
+  event: LocalCalendarEvent | null;
+  onEventChange: (event: LocalCalendarEvent) => void;
   onSave: () => void;
   onDelete: () => void;
 }
@@ -37,20 +60,49 @@ const COLOR_PALETTE = [
 const tabs: { id: Tab; label: string }[] = [
   { id: "details", label: "DETAILS" },
   { id: "time", label: "TIME" },
-  { id: "type", label: "TYPE" },
   { id: "recurrence", label: "REPEAT" },
+  { id: "people", label: "PEOPLE" },
+  { id: "settings", label: "SETTINGS" },
 ];
 
 export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, onSave, onDelete }: LocalEventEditModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
+  const [newAttendee, setNewAttendee] = useState("");
 
   if (!event) return null;
 
   const eventDate = new Date(event.date);
   const endDate = event.endDate ? new Date(event.endDate) : null;
+  const recurrenceValue = (() => {
+    const raw = event.recurrence || "none";
+    if (raw === "daily") return "RRULE:FREQ=DAILY";
+    if (raw === "weekly") return "RRULE:FREQ=WEEKLY";
+    if (raw === "monthly") return "RRULE:FREQ=MONTHLY";
+    if (raw === "yearly") return "RRULE:FREQ=YEARLY";
+    return raw;
+  })();
+  const standardRecurrence = [
+    "RRULE:FREQ=DAILY",
+    "RRULE:FREQ=WEEKLY",
+    "RRULE:FREQ=MONTHLY",
+    "RRULE:FREQ=YEARLY",
+  ];
 
-  const setField = <K extends keyof CalendarEvent>(key: K, value: CalendarEvent[K]) => {
+  const setField = <K extends keyof LocalCalendarEvent>(key: K, value: LocalCalendarEvent[K]) => {
     onEventChange({ ...event, [key]: value });
+  };
+
+  const addAttendee = () => {
+    const email = newAttendee.trim();
+    if (!email || !email.includes("@")) return;
+    const current = event.attendees || [];
+    if (current.some(a => a.email === email)) return;
+    setField("attendees", [...current, { email }]);
+    setNewAttendee("");
+  };
+
+  const removeAttendee = (email: string) => {
+    setField("attendees", (event.attendees || []).filter(a => a.email !== email));
   };
 
   return (
@@ -96,7 +148,7 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-primary/80">NOTES_</Label>
+                  <Label className="text-xs text-primary/80">DESCRIPTION_</Label>
                   <Textarea
                     value={event.notes || ""}
                     onChange={(e) => setField("notes", e.target.value)}
@@ -104,20 +156,65 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-primary/80">COLOR_</Label>
-                  <div className="flex gap-2 flex-wrap">
-                    {COLOR_PALETTE.map(c => (
-                      <button
-                        key={c.value}
-                        className={cn(
-                          "w-7 h-7 rounded-sm border-2 transition-all",
-                          event.color === c.value ? "border-white scale-110" : "border-transparent hover:border-white/30"
-                        )}
-                        style={{ backgroundColor: c.value }}
-                        onClick={() => setField("color", c.value)}
-                        title={c.label}
-                      />
-                    ))}
+                  <Label className="text-xs text-primary/80">LOCATION_</Label>
+                  <Input
+                    value={event.location || ""}
+                    onChange={(e) => setField("location", e.target.value || null)}
+                    className="bg-black border-primary/50 text-primary font-terminal rounded-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-primary/80">EVENT_TYPE_</Label>
+                    <Select value={event.eventType || "study"} onValueChange={(v) => setField("eventType", v)}>
+                      <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black border-primary text-primary font-terminal">
+                        <SelectItem value="study">STUDY</SelectItem>
+                        <SelectItem value="lecture">LECTURE</SelectItem>
+                        <SelectItem value="exam">EXAM</SelectItem>
+                        <SelectItem value="synchronous">SYNCHRONOUS</SelectItem>
+                        <SelectItem value="online">ONLINE</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-primary/80">COURSE_</Label>
+                    <Input
+                      value={event.course || ""}
+                      onChange={(e) => setField("course", e.target.value || null)}
+                      placeholder="e.g. PHTH 5301"
+                      className="bg-black border-primary/50 text-primary font-terminal rounded-none"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-primary/80">WEIGHT_</Label>
+                    <Input
+                      value={event.weight || ""}
+                      onChange={(e) => setField("weight", e.target.value || null)}
+                      placeholder="e.g. High, Medium, Low"
+                      className="bg-black border-primary/50 text-primary font-terminal rounded-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-primary/80">COLOR_</Label>
+                    <div className="flex gap-2 flex-wrap">
+                      {COLOR_PALETTE.map(c => (
+                        <button
+                          key={c.value}
+                          className={cn(
+                            "w-7 h-7 rounded-sm border-2 transition-all",
+                            event.color === c.value ? "border-white scale-110" : "border-transparent hover:border-white/30"
+                          )}
+                          style={{ backgroundColor: c.value }}
+                          onClick={() => setField("color", c.value)}
+                          title={c.label}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               </>
@@ -190,42 +287,13 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                     </div>
                   </div>
                 )}
-              </>
-            )}
-
-            {activeTab === "type" && (
-              <>
                 <div className="space-y-2">
-                  <Label className="text-xs text-primary/80">EVENT_TYPE_</Label>
-                  <Select value={event.eventType || "study"} onValueChange={(v) => setField("eventType", v)}>
-                    <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-black border-primary text-primary font-terminal">
-                      <SelectItem value="study">STUDY</SelectItem>
-                      <SelectItem value="lecture">LECTURE</SelectItem>
-                      <SelectItem value="exam">EXAM</SelectItem>
-                      <SelectItem value="synchronous">SYNCHRONOUS</SelectItem>
-                      <SelectItem value="online">ONLINE</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-primary/80">COURSE_</Label>
+                  <Label className="text-xs text-primary/80">TIMEZONE_</Label>
                   <Input
-                    value={event.course || ""}
-                    onChange={(e) => setField("course", e.target.value || null)}
-                    placeholder="e.g. PHTH 5301"
-                    className="bg-black border-primary/50 text-primary font-terminal rounded-none"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-primary/80">WEIGHT_</Label>
-                  <Input
-                    value={event.weight || ""}
-                    onChange={(e) => setField("weight", e.target.value || null)}
-                    placeholder="e.g. High, Medium, Low"
-                    className="bg-black border-primary/50 text-primary font-terminal rounded-none"
+                    value={event.timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone}
+                    onChange={(e) => setField("timeZone", e.target.value)}
+                    className="bg-black border-primary/50 text-primary font-terminal rounded-none text-xs"
+                    placeholder="America/Chicago"
                   />
                 </div>
               </>
@@ -236,7 +304,7 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                 <div className="space-y-2">
                   <Label className="text-xs text-primary/80">PATTERN_</Label>
                   <Select
-                    value={event.recurrence || "none"}
+                    value={recurrenceValue}
                     onValueChange={(v) => setField("recurrence", v === "none" ? null : v)}
                   >
                     <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
@@ -244,12 +312,125 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                     </SelectTrigger>
                     <SelectContent className="bg-black border-primary text-primary font-terminal">
                       <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="yearly">Yearly</SelectItem>
+                      <SelectItem value="RRULE:FREQ=DAILY">Daily</SelectItem>
+                      <SelectItem value="RRULE:FREQ=WEEKLY">Weekly</SelectItem>
+                      <SelectItem value="RRULE:FREQ=MONTHLY">Monthly</SelectItem>
+                      <SelectItem value="RRULE:FREQ=YEARLY">Yearly</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                {event.recurrence &&
+                  !standardRecurrence.includes(recurrenceValue) &&
+                  recurrenceValue !== "none" && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-primary/80">CUSTOM_RRULE_</Label>
+                      <Textarea
+                        value={event.recurrence}
+                        onChange={(e) => setField("recurrence", e.target.value)}
+                        className="bg-black border-primary/30 text-primary text-[10px] font-mono h-12 rounded-none"
+                        placeholder="RRULE:FREQ=WEEKLY;BYDAY=MO,WE"
+                      />
+                    </div>
+                  )}
+              </div>
+            )}
+
+            {activeTab === "people" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-primary/80">ATTENDEES_</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newAttendee}
+                      onChange={(e) => setNewAttendee(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && addAttendee()}
+                      placeholder="email@example.com"
+                      className="bg-black border-primary/50 text-primary font-terminal rounded-none text-xs flex-1"
+                    />
+                    <Button size="sm" onClick={addAttendee} className="rounded-none bg-primary text-black hover:bg-primary/90 h-9 px-3">
+                      ADD
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {(event.attendees || []).map((att) => (
+                    <div key={att.email} className="flex items-center justify-between p-2 border border-zinc-800 text-xs font-terminal">
+                      <span className="text-primary">{att.email}</span>
+                      <div className="flex items-center gap-2">
+                        {att.responseStatus && (
+                          <span
+                            className={cn(
+                              "text-[10px]",
+                              att.responseStatus === "accepted"
+                                ? "text-green-400"
+                                : att.responseStatus === "declined"
+                                  ? "text-red-400"
+                                  : "text-yellow-400"
+                            )}
+                          >
+                            {att.responseStatus.toUpperCase()}
+                          </span>
+                        )}
+                        {!att.self && (
+                          <button onClick={() => removeAttendee(att.email)} className="text-red-500 hover:text-red-400">
+                            X
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {(!event.attendees || event.attendees.length === 0) && (
+                    <p className="text-xs text-zinc-500 font-terminal">No attendees</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "settings" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-primary/80">VISIBILITY_</Label>
+                  <Select value={event.visibility || "default"} onValueChange={(v) => setField("visibility", v === "default" ? null : v)}>
+                    <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black border-primary text-primary font-terminal">
+                      <SelectItem value="default">Default</SelectItem>
+                      <SelectItem value="public">Public</SelectItem>
+                      <SelectItem value="private">Private</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-primary/80">AVAILABILITY_</Label>
+                  <Select value={event.transparency || "opaque"} onValueChange={(v) => setField("transparency", v)}>
+                    <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black border-primary text-primary font-terminal">
+                      <SelectItem value="opaque">Busy</SelectItem>
+                      <SelectItem value="transparent">Free</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-primary/80">REMINDERS_</Label>
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="use-default-reminders-local"
+                      checked={event.reminders?.useDefault !== false}
+                      onCheckedChange={(checked) =>
+                        setField(
+                          "reminders",
+                          checked
+                            ? { useDefault: true }
+                            : { useDefault: false, overrides: event.reminders?.overrides || [] }
+                        )
+                      }
+                      className="border-primary/50 data-[state=checked]:bg-primary"
+                    />
+                    <Label htmlFor="use-default-reminders-local" className="text-xs text-primary/80 cursor-pointer">Use default reminders</Label>
+                  </div>
                 </div>
               </div>
             )}

@@ -265,6 +265,7 @@ def init_database():
         CREATE TABLE IF NOT EXISTS course_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             course_id INTEGER NOT NULL,
+            course TEXT,
             type TEXT NOT NULL, -- lecture/reading/quiz/exam/assignment/lab/announcement/other
             title TEXT NOT NULL,
             date TEXT,          -- primary calendar date (e.g., lecture date)
@@ -272,8 +273,17 @@ def init_database():
             time TEXT,          -- HH:MM format (24-hour)
             end_time TEXT,      -- HH:MM format (24-hour)
             weight REAL DEFAULT 0.0,
+            notes TEXT,
             raw_text TEXT,      -- syllabus snippet or notes
             status TEXT DEFAULT 'pending', -- pending/completed/cancelled
+            color TEXT,
+            recurrence_rule TEXT,
+            location TEXT,
+            attendees TEXT,
+            visibility TEXT,
+            transparency TEXT,
+            reminders TEXT,
+            time_zone TEXT,
             created_at TEXT NOT NULL,
             source_url TEXT,
             google_event_id TEXT,
@@ -819,6 +829,25 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
+    for col_name in [
+        "course",
+        "notes",
+        "color",
+        "recurrence_rule",
+        "location",
+        "attendees",
+        "visibility",
+        "transparency",
+        "reminders",
+        "time_zone",
+    ]:
+        if col_name not in ce_columns:
+            try:
+                cursor.execute(f"ALTER TABLE course_events ADD COLUMN {col_name} TEXT")
+                print(f"[INFO] Added '{col_name}' column to course_events table")
+            except sqlite3.OperationalError:
+                pass
+
     try:
         cursor.execute(
             "UPDATE course_events SET updated_at = COALESCE(updated_at, created_at)"
@@ -833,14 +862,6 @@ def init_database():
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_course_events_google_lookup ON course_events(google_event_id, google_calendar_id)"
     )
-
-    # Add recurrence_rule column if not exists (for recurring events)
-    if "recurrence_rule" not in ce_columns:
-        try:
-            cursor.execute("ALTER TABLE course_events ADD COLUMN recurrence_rule TEXT")
-            print("[INFO] Added 'recurrence_rule' column to course_events table")
-        except sqlite3.OperationalError:
-            pass  # Column might already exist
 
     # Add time and end_time columns if not exist (for event times)
     if "time" not in ce_columns:

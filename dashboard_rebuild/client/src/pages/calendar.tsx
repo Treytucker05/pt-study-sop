@@ -18,7 +18,7 @@ import { useToast } from "@/use-toast";
 import { SortableTaskItem, TaskListContainer, TaskDialog } from "@/components/GoogleTasksComponents";
 import { CalendarAssistant, CalendarAssistantButton } from "@/components/CalendarAssistant";
 import { EventEditModal } from "@/components/EventEditModal";
-import { LocalEventEditModal } from "@/components/LocalEventEditModal";
+import { LocalEventEditModal, type LocalCalendarEvent } from "@/components/LocalEventEditModal";
 import type { InsertCalendarEvent, CalendarEvent } from "@shared/schema";
 import {
   DndContext,
@@ -65,6 +65,10 @@ interface GoogleCalendarEvent {
   calendarSummary?: string;
   calendarColor?: string;
   htmlLink?: string;
+  eventType?: string;
+  course?: string;
+  weight?: string;
+  extendedProperties?: { private?: Record<string, string> };
   conferenceData?: { entryPoints?: { uri?: string; entryPointType?: string }[]; conferenceSolution?: { name?: string } };
   hangoutLink?: string;
   attendees?: { email: string; responseStatus?: string; self?: boolean }[];
@@ -327,7 +331,7 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [showEventModal, setShowEventModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<LocalCalendarEvent | null>(null);
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: "",
@@ -459,9 +463,9 @@ export default function CalendarPage() {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
 
-  const { data: localEvents = [] } = useQuery({
+  const { data: localEvents = [] } = useQuery<LocalCalendarEvent[]>({
     queryKey: ["events"],
-    queryFn: api.events.getAll,
+    queryFn: api.events.getAll as () => Promise<LocalCalendarEvent[]>,
   });
 
   const { data: googleEvents = [], isLoading: isLoadingGoogle, refetch: refetchGoogle } = useQuery({
@@ -692,7 +696,7 @@ export default function CalendarPage() {
 
   const deleteGoogleEventMutation = useMutation({
     mutationFn: async ({ eventId, calendarId }: { eventId: string; calendarId: string }) => {
-      const res = await fetch(`/api/google-calendar/events/${encodeURIComponent(calendarId)}/${encodeURIComponent(eventId)}`, {
+      const res = await fetch(`/api/google-calendar/events/${encodeURIComponent(eventId)}?calendarId=${encodeURIComponent(calendarId)}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete event");
@@ -714,10 +718,19 @@ export default function CalendarPage() {
   const updateGoogleEventMutation = useMutation({
     mutationFn: async (event: GoogleCalendarEvent) => {
       if (!event.calendarId) throw new Error('Missing calendarId');
-      const res = await fetch(`/api/google-calendar/events/${encodeURIComponent(event.calendarId)}/${encodeURIComponent(event.id)}`, {
+      const privateProps: Record<string, string> = {
+        ...(event.extendedProperties?.private || {}),
+      };
+      if (event.eventType !== undefined) privateProps.eventType = event.eventType;
+      if (event.course !== undefined) privateProps.course = event.course;
+      if (event.weight !== undefined) privateProps.weight = event.weight;
+      const extendedProperties = Object.keys(privateProps).length ? { private: privateProps } : undefined;
+
+      const res = await fetch(`/api/google-calendar/events/${encodeURIComponent(event.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          calendarId: event.calendarId,
           summary: event.summary,
           description: event.description,
           location: event.location,
@@ -729,6 +742,7 @@ export default function CalendarPage() {
           transparency: event.transparency,
           colorId: event.colorId,
           reminders: event.reminders,
+          extendedProperties,
         }),
       });
       if (!res.ok) throw new Error('Failed to update google event');
@@ -800,6 +814,7 @@ export default function CalendarPage() {
       const startStr = gEvent.start?.dateTime || gEvent.start?.date || new Date().toISOString();
       const endStr = gEvent.end?.dateTime || gEvent.end?.date || startStr;
       const isOnline = !!(gEvent.conferenceData || gEvent.hangoutLink);
+      const storedEventType = gEvent.eventType || gEvent.extendedProperties?.private?.eventType;
       return {
         id: gEvent.id,
         title: gEvent.summary || 'Untitled',
@@ -807,13 +822,13 @@ export default function CalendarPage() {
         end: new Date(endStr),
         allDay: isAllDay,
         isGoogle: true,
-        eventType: isOnline ? 'online' : 'synchronous',
+        eventType: storedEventType || (isOnline ? 'online' : 'synchronous'),
         calendarColor: gEvent.calendarColor,
         calendarName: gEvent.calendarSummary,
         originalEvent: event,
       };
     } else {
-      const localEvent = event as CalendarEvent;
+      const localEvent = event as LocalCalendarEvent;
       const start = new Date(localEvent.date);
       const end = localEvent.endDate ? new Date(localEvent.endDate) : addHours(start, 1);
       return {
@@ -824,6 +839,7 @@ export default function CalendarPage() {
         allDay: localEvent.allDay || false,
         isGoogle: false,
         eventType: localEvent.eventType,
+        calendarColor: localEvent.color || undefined,
         originalEvent: event,
       };
     }
@@ -874,7 +890,7 @@ export default function CalendarPage() {
     setShowEventModal(true);
   };
 
-  const openEditModal = (event?: CalendarEvent | null) => {
+  const openEditModal = (event?: LocalCalendarEvent | null) => {
     if (!event) return;
     setSelectedEvent(event);
     setShowEditModal(true);
@@ -882,7 +898,13 @@ export default function CalendarPage() {
 
   const openGoogleEditModal = (event?: GoogleCalendarEvent | null) => {
     if (!event) return;
-    setSelectedGoogleEvent(event);
+    const extras = event.extendedProperties?.private || {};
+    setSelectedGoogleEvent({
+      ...event,
+      eventType: event.eventType || extras.eventType,
+      course: event.course || extras.course,
+      weight: event.weight || extras.weight,
+    });
     setShowGoogleEditModal(true);
   };
 
@@ -890,7 +912,7 @@ export default function CalendarPage() {
     if (event.isGoogle) {
       openGoogleEditModal(event.originalEvent as GoogleCalendarEvent);
     } else {
-      openEditModal(event.originalEvent as CalendarEvent);
+      openEditModal(event.originalEvent as LocalCalendarEvent);
     }
   };
 
@@ -981,6 +1003,9 @@ export default function CalendarPage() {
     // Glassmorphism base with hover animation
     const base = "backdrop-blur-sm shadow-sm transition-all duration-200 hover:scale-[1.02] hover:z-50 hover:shadow-lg";
 
+    if (event.calendarColor) {
+      return `${base} text-white font-medium border-l-4`;
+    }
     if (event.isGoogle) {
       return `${base} text-white font-medium border-l-4`;
     }
@@ -1603,6 +1628,12 @@ export default function CalendarPage() {
               notes: selectedEvent.notes,
               color: selectedEvent.color,
               recurrence: selectedEvent.recurrence,
+              location: selectedEvent.location,
+              attendees: selectedEvent.attendees,
+              visibility: selectedEvent.visibility,
+              transparency: selectedEvent.transparency,
+              reminders: selectedEvent.reminders,
+              timeZone: selectedEvent.timeZone,
             },
           });
         }}
