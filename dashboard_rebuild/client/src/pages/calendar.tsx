@@ -18,6 +18,7 @@ import { useToast } from "@/use-toast";
 import { SortableTaskItem, TaskListContainer, TaskDialog } from "@/components/GoogleTasksComponents";
 import { CalendarAssistant, CalendarAssistantButton } from "@/components/CalendarAssistant";
 import { EventEditModal } from "@/components/EventEditModal";
+import { LocalEventEditModal } from "@/components/LocalEventEditModal";
 import type { InsertCalendarEvent, CalendarEvent } from "@shared/schema";
 import {
   DndContext,
@@ -340,8 +341,14 @@ export default function CalendarPage() {
     calendarId: "",
   });
   const [selectedCalendars, setSelectedCalendars] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem("selectedCalendars");
-    return saved ? new Set(JSON.parse(saved)) : new Set();
+    try {
+      const saved = localStorage.getItem("selectedCalendars");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch { /* corrupted localStorage — fall through to empty */ }
+    return new Set();
   });
   const [showLocalEvents, setShowLocalEvents] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -1188,6 +1195,16 @@ export default function CalendarPage() {
                   variant="ghost"
                   className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-[9px]"
                   onClick={() => {
+                    localStorage.setItem("selectedCalendars", JSON.stringify(Array.from(selectedCalendars)));
+                  }}
+                >
+                  SAVE
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-[9px]"
+                  onClick={() => {
                     if (debugModals) {
                       console.info("[ModalDebug][Calendar] MANAGE click");
                     }
@@ -1558,61 +1575,36 @@ export default function CalendarPage() {
       </Dialog>
 
       {/* Edit Modal */}
-      <Dialog
+      <LocalEventEditModal
         open={showEditModal && !!selectedEvent}
         onOpenChange={(open) => {
           setShowEditModal(open);
           if (!open) setSelectedEvent(null);
         }}
-      >
-        <DialogContent
-          data-modal="calendar-edit"
-          className="bg-black border-2 border-primary rounded-none max-w-md translate-y-0"
-          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
-        >
-          <DialogHeader><DialogTitle className="font-arcade text-primary">EDIT_EVENT</DialogTitle></DialogHeader>
-          {selectedEvent && (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label className="font-arcade text-sm">TITLE</Label>
-                <Input className="rounded-none bg-black border-secondary focus-visible:ring-primary" value={selectedEvent.title} onChange={(e) => setSelectedEvent({ ...selectedEvent, title: e.target.value })} data-testid="input-edit-title" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="font-arcade text-sm">DATE</Label>
-                  <Input type="date" className="rounded-none bg-black border-secondary" value={format(new Date(selectedEvent.date), 'yyyy-MM-dd')} onChange={(e) => { const [h, m] = [new Date(selectedEvent.date).getHours(), new Date(selectedEvent.date).getMinutes()]; setSelectedEvent({ ...selectedEvent, date: setMinutes(setHours(new Date(e.target.value), h), m) }); }} data-testid="input-edit-date" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-arcade text-sm">TIME</Label>
-                  <Input type="time" className="rounded-none bg-black border-secondary" value={format(new Date(selectedEvent.date), 'HH:mm')} onChange={(e) => { const [hours, minutes] = e.target.value.split(':').map(Number); setSelectedEvent({ ...selectedEvent, date: setMinutes(setHours(new Date(selectedEvent.date), hours), minutes) }); }} data-testid="input-edit-time" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-arcade text-sm">TYPE</Label>
-                <Select value={selectedEvent.eventType || 'study'} onValueChange={(v) => setSelectedEvent({ ...selectedEvent, eventType: v })}>
-                  <SelectTrigger className="rounded-none bg-black border-secondary" data-testid="select-edit-type"><SelectValue /></SelectTrigger>
-                  <SelectContent className="rounded-none bg-black border-primary">
-                    <SelectItem value="study">STUDY</SelectItem>
-                    <SelectItem value="lecture">LECTURE</SelectItem>
-                    <SelectItem value="exam">EXAM</SelectItem>
-                    <SelectItem value="synchronous">SYNCHRONOUS</SelectItem>
-                    <SelectItem value="online">ONLINE</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          <DialogFooter className="flex justify-between">
-            <Button variant="ghost" className="rounded-none font-arcade text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10" onClick={() => selectedEvent && deleteEventMutation.mutate(selectedEvent.id)} data-testid="button-delete-event">
-              <Trash2 className="w-4 h-4 mr-1" /> DELETE
-            </Button>
-            <div className="flex gap-2">
-              <Button variant="ghost" className="rounded-none font-arcade text-xs" onClick={() => setShowEditModal(false)}>CANCEL</Button>
-              <Button className="rounded-none font-arcade text-xs bg-primary text-black hover:bg-primary/90" onClick={() => selectedEvent && updateEventMutation.mutate({ id: selectedEvent.id, data: { title: selectedEvent.title, date: selectedEvent.date, eventType: selectedEvent.eventType } })} data-testid="button-update-event">UPDATE</Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        event={selectedEvent}
+        onEventChange={setSelectedEvent}
+        onSave={() => {
+          if (!selectedEvent) return;
+          updateEventMutation.mutate({
+            id: selectedEvent.id,
+            data: {
+              title: selectedEvent.title,
+              date: selectedEvent.date,
+              endDate: selectedEvent.endDate,
+              allDay: selectedEvent.allDay,
+              eventType: selectedEvent.eventType,
+              course: selectedEvent.course,
+              weight: selectedEvent.weight,
+              notes: selectedEvent.notes,
+              color: selectedEvent.color,
+              recurrence: selectedEvent.recurrence,
+            },
+          });
+        }}
+        onDelete={() => {
+          if (selectedEvent) deleteEventMutation.mutate(selectedEvent.id);
+        }}
+      />
 
       {/* Edit Google Event Modal */}
       <EventEditModal

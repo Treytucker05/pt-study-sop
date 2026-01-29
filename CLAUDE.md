@@ -53,11 +53,19 @@ Response style: straight to the point, no fluff.
 - Typography: font-arcade headers, font-terminal body.
 - Components: 2px solid red borders; semi-transparent black backgrounds.
 
+## Post-Implementation Checklist (MANDATORY after any code change)
+1. **Build frontend**: `cd dashboard_rebuild && npm run build`
+2. **Copy to Flask**: `rm -rf brain/static/dist && cp -r dashboard_rebuild/dist/public brain/static/dist`
+3. **Never use dev server**: Do NOT run `npm run dev` or `vite dev`. The dashboard is served only via `Start_Dashboard.bat` on port **5000**.
+4. Run relevant tests: `pytest brain/tests/`
+
+Skip steps 1-2 only if the change is backend-only (brain/ Python files).
+
 ## Rules
 1. Plan before coding for any non-trivial change.
 2. dashboard_rebuild is frontend-only; API lives in brain/.
 3. Only serve the dashboard via Start_Dashboard.bat on port 5000. Do not run a separate dev server or python brain/dashboard_web.py directly.
-4. After frontend changes: rebuild and copy dist/public -> brain/static/dist.
+4. After frontend changes: rebuild and copy dist/public -> brain/static/dist. (See Post-Implementation Checklist above.)
 5. Check permissions.json before executing new shell commands.
 6. Update CONTINUITY.md after every significant change (append only).
 7. Push to remote after every change (auto).

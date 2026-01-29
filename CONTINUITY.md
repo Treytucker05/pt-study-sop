@@ -202,3 +202,4 @@
 - 2026-01-28 17:30:00: Added PRD for calendar month view and event management improvements.
 -   2 0 2 6 - 0 1 - 2 9   1 8 : 2 9 : 3 0 :   A d d e d   d e v e l o p e r   w o r k f l o w   d i s c o v e r y   e x a m p l e   a n d   r e v i e w - l o o p   p r o m p t   t o   C L A U D E _ C O D E X _ R E V I E W _ L O O P . m d .  
  
+- 2026-01-29: Calendar page fixes — (1) selectedCalendars now persists to localStorage with SAVE button, initializes from localStorage on mount with try/catch + Array.isArray guard. (2) New LocalEventEditModal.tsx with 4-tab interface (DETAILS, TIME, TYPE, REPEAT) covering all 10 editable DB fields, replacing the old 4-field inline dialog. Updated mutation to send all fields. (3) Added Post-Implementation Checklist section to CLAUDE.md to enforce build+copy workflow.
