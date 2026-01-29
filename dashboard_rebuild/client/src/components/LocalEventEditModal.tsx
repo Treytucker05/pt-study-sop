@@ -83,11 +83,6 @@ const tabs: { id: Tab; label: string }[] = [
 export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, onSave, onDelete }: LocalEventEditModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [newAttendee, setNewAttendee] = useState("");
-
-  if (!event) return null;
-
-  const eventDate = new Date(event.date);
-  const endDate = event.endDate ? new Date(event.endDate) : null;
   const timeZoneOptions = useMemo(() => {
     if (typeof Intl !== "undefined" && "supportedValuesOf" in Intl) {
       try {
@@ -98,6 +93,11 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
     }
     return FALLBACK_TIME_ZONES;
   }, []);
+
+  if (!event) return null;
+
+  const eventDate = new Date(event.date);
+  const endDate = event.endDate ? new Date(event.endDate) : null;
   const resolvedTimeZone =
     event.timeZone ||
     Intl.DateTimeFormat().resolvedOptions().timeZone ||

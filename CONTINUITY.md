@@ -217,4 +217,4 @@
  
  -   2 0 2 6 - 0 1 - 2 9 :   R e p l a c e d   t i m e z o n e   i n p u t s   w i t h   d r o p d o w n s   ( l o c a l   +   G o o g l e ) ,   p e r s i s t i n g   s e l e c t i o n   v i a   l o c a l   t i m e _ z o n e   a n d   G o o g l e   e x t e n d e d P r o p e r t i e s ;   r e b u i l t   a n d   s y n c e d   d a s h b o a r d . 
   
- 
+ - 2026-01-29: Fixed calendar edit modal hook ordering (timezone useMemo now before null guard) to prevent black-screen crash when opening events; rebuilt and synced dashboard.

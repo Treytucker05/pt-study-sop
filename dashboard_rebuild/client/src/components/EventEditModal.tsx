@@ -65,10 +65,6 @@ interface EventEditModalProps {
 export function EventEditModal({ open, onOpenChange, event, onEventChange, onSave, onDelete }: EventEditModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [newAttendee, setNewAttendee] = useState("");
-
-  if (!event) return null;
-
-  const isAllDay = !!event.start?.date && !event.start?.dateTime;
   const timeZoneOptions = useMemo(() => {
     if (typeof Intl !== "undefined" && "supportedValuesOf" in Intl) {
       try {
@@ -79,6 +75,10 @@ export function EventEditModal({ open, onOpenChange, event, onEventChange, onSav
     }
     return FALLBACK_TIME_ZONES;
   }, []);
+
+  if (!event) return null;
+
+  const isAllDay = !!event.start?.date && !event.start?.dateTime;
   const resolvedTimeZone =
     event.start?.timeZone ||
     event.extendedProperties?.private?.timeZone ||
