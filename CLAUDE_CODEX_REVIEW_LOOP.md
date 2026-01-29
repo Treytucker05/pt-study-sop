@@ -49,3 +49,57 @@ Return findings as:
 
 ## Stop condition
 - No critical/major issues remaining and any required tests pass.
+
+## Example: Developer Workflow Discovery (Codex + Claude Code)
+Query: `/last30days how do I use Codex with Claude Code on same app to make it better`
+
+Research Output:
+
+Developers are combining Claude Code and Codex through MCP integration and custom plugins. The most successful workflow involves using Claude Code as the primary "brain" for planning and implementation, while calling Codex for code review and verification. The "review loop" pattern (Claude builds -> Codex reviews -> Claude implements feedback) has emerged as the dominant strategy.
+
+Key patterns discovered:
+- MCP Integration - Add Codex as an MCP server inside Claude Code
+- Review Loop Workflow - Claude implements, Codex reviews, Claude fixes
+- Task Division - Claude for planning/coding, Codex for review/debugging
+- Single Interface - Call Codex without leaving Claude Code
+
+Then asked: "how do I build a review loop workflow"
+
+Generated Workflow:
+
+Step 1: Add Codex as MCP Server
+
+```
+claude mcp add codex-cli -- npx -y codex-mcp-server
+```
+
+Step 2: The Review Loop Pattern
+
+Phase 1 - Claude Implements
+> Build [feature/fix] following [requirements]
+
+Phase 2 - Codex Reviews
+> Ask Codex to review the changes I just made. Look for bugs,
+> edge cases, performance issues, security concerns.
+
+Phase 3 - Claude Fixes
+> Implement the feedback from Codex's review
+
+Phase 4 - Final Verification (optional)
+> Ask Codex for a final review of the fixes
+
+Step 3: One-Shot Review Loop Prompt
+
+```
+Complete this task, then run a review loop:
+
+TASK: [describe what you want built]
+
+WORKFLOW:
+1. Implement the task fully
+2. When done, call Codex via MCP to review your changes
+3. Parse Codex's feedback and fix any issues it identifies
+4. If Codex found significant issues, request one more review
+
+Focus areas for Codex review: bugs, edge cases, security, performance
+```

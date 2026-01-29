@@ -200,3 +200,5 @@
 - 2026-01-28 15:51:00: Marked Anki/AnkiConnect as active use.
 - 2026-01-28 15:52:00: Marked Google Calendar/Tasks as active use.
 - 2026-01-28 17:30:00: Added PRD for calendar month view and event management improvements.
+-   2 0 2 6 - 0 1 - 2 9   1 8 : 2 9 : 3 0 :   A d d e d   d e v e l o p e r   w o r k f l o w   d i s c o v e r y   e x a m p l e   a n d   r e v i e w - l o o p   p r o m p t   t o   C L A U D E _ C O D E X _ R E V I E W _ L O O P . m d .  
+ 
