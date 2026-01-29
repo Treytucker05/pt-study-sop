@@ -171,7 +171,7 @@ export function EventEditModal({ open, onOpenChange, event, onEventChange, onSav
                       <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-black border-green-500 text-green-500 font-terminal">
+                      <SelectContent className="bg-black border-green-500 text-green-500 font-terminal z-[100010]">
                         <SelectItem value="study">STUDY</SelectItem>
                         <SelectItem value="lecture">LECTURE</SelectItem>
                         <SelectItem value="exam">EXAM</SelectItem>
@@ -206,7 +206,7 @@ export function EventEditModal({ open, onOpenChange, event, onEventChange, onSav
                       <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
                         <SelectValue placeholder="Default" />
                       </SelectTrigger>
-                      <SelectContent className="bg-black border-green-500 text-green-500 font-terminal">
+                      <SelectContent className="bg-black border-green-500 text-green-500 font-terminal z-[100010]">
                         <SelectItem value="0">Default</SelectItem>
                         <SelectItem value="1">Lavender</SelectItem>
                         <SelectItem value="2">Sage</SelectItem>
@@ -313,7 +313,7 @@ export function EventEditModal({ open, onOpenChange, event, onEventChange, onSav
                         <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
                           <SelectValue placeholder="No Recurrence" />
                         </SelectTrigger>
-                        <SelectContent className="bg-black border-green-500 text-green-500 font-terminal">
+                        <SelectContent className="bg-black border-green-500 text-green-500 font-terminal z-[100010]">
                           <SelectItem value="none">None</SelectItem>
                           <SelectItem value="RRULE:FREQ=DAILY">Daily</SelectItem>
                           <SelectItem value="RRULE:FREQ=WEEKLY">Weekly</SelectItem>
@@ -389,7 +389,7 @@ export function EventEditModal({ open, onOpenChange, event, onEventChange, onSav
                     <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-black border-green-500 text-green-500 font-terminal">
+                    <SelectContent className="bg-black border-green-500 text-green-500 font-terminal z-[100010]">
                       <SelectItem value="default">Default</SelectItem>
                       <SelectItem value="public">Public</SelectItem>
                       <SelectItem value="private">Private</SelectItem>
@@ -402,7 +402,7 @@ export function EventEditModal({ open, onOpenChange, event, onEventChange, onSav
                     <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-black border-green-500 text-green-500 font-terminal">
+                    <SelectContent className="bg-black border-green-500 text-green-500 font-terminal z-[100010]">
                       <SelectItem value="opaque">Busy</SelectItem>
                       <SelectItem value="transparent">Free</SelectItem>
                     </SelectContent>

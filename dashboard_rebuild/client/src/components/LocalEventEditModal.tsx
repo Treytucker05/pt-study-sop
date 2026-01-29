@@ -170,7 +170,7 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                       <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-black border-primary text-primary font-terminal">
+                      <SelectContent className="bg-black border-primary text-primary font-terminal z-[100010]">
                         <SelectItem value="study">STUDY</SelectItem>
                         <SelectItem value="lecture">LECTURE</SelectItem>
                         <SelectItem value="exam">EXAM</SelectItem>
@@ -310,7 +310,7 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                     <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
                       <SelectValue placeholder="No Recurrence" />
                     </SelectTrigger>
-                    <SelectContent className="bg-black border-primary text-primary font-terminal">
+                    <SelectContent className="bg-black border-primary text-primary font-terminal z-[100010]">
                       <SelectItem value="none">None</SelectItem>
                       <SelectItem value="RRULE:FREQ=DAILY">Daily</SelectItem>
                       <SelectItem value="RRULE:FREQ=WEEKLY">Weekly</SelectItem>
@@ -394,7 +394,7 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                     <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-black border-primary text-primary font-terminal">
+                    <SelectContent className="bg-black border-primary text-primary font-terminal z-[100010]">
                       <SelectItem value="default">Default</SelectItem>
                       <SelectItem value="public">Public</SelectItem>
                       <SelectItem value="private">Private</SelectItem>
@@ -407,7 +407,7 @@ export function LocalEventEditModal({ open, onOpenChange, event, onEventChange, 
                     <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-black border-primary text-primary font-terminal">
+                    <SelectContent className="bg-black border-primary text-primary font-terminal z-[100010]">
                       <SelectItem value="opaque">Busy</SelectItem>
                       <SelectItem value="transparent">Free</SelectItem>
                     </SelectContent>

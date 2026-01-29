@@ -1538,7 +1538,7 @@ export default function CalendarPage() {
                 <Label className="font-arcade text-sm">TYPE</Label>
                 <Select value={newEvent.eventType} onValueChange={(v) => setNewEvent({ ...newEvent, eventType: v as typeof newEvent.eventType })}>
                   <SelectTrigger className="rounded-none bg-black border-secondary" data-testid="select-event-type"><SelectValue /></SelectTrigger>
-                  <SelectContent className="rounded-none bg-black border-primary">
+                  <SelectContent className="rounded-none bg-black border-primary z-[100010]">
                     <SelectItem value="study">STUDY</SelectItem>
                     <SelectItem value="lecture">LECTURE</SelectItem>
                     <SelectItem value="exam">EXAM</SelectItem>
@@ -1569,7 +1569,7 @@ export default function CalendarPage() {
                 <Label className="font-arcade text-sm">REPEAT</Label>
                 <Select value={newEvent.recurrence} onValueChange={(v) => setNewEvent({ ...newEvent, recurrence: v as typeof newEvent.recurrence })}>
                   <SelectTrigger className="rounded-none bg-black border-secondary" data-testid="select-recurrence"><SelectValue placeholder="No repeat" /></SelectTrigger>
-                  <SelectContent className="rounded-none bg-black border-primary">
+                  <SelectContent className="rounded-none bg-black border-primary z-[100010]">
                     <SelectItem value="none">NO REPEAT</SelectItem>
                     <SelectItem value="daily">DAILY</SelectItem>
                     <SelectItem value="weekly">WEEKLY</SelectItem>
@@ -1582,7 +1582,7 @@ export default function CalendarPage() {
                 <Label className="font-arcade text-sm">CALENDAR</Label>
                 <Select value={newEvent.calendarId} onValueChange={(v) => setNewEvent({ ...newEvent, calendarId: v })}>
                   <SelectTrigger className="rounded-none bg-black border-secondary" data-testid="select-calendar"><SelectValue placeholder="Local" /></SelectTrigger>
-                  <SelectContent className="rounded-none bg-black border-primary">
+                  <SelectContent className="rounded-none bg-black border-primary z-[100010]">
                     <SelectItem value="local">LOCAL</SelectItem>
                     {availableCalendars.map((cal) => (
                       <SelectItem key={cal.id} value={cal.id}>

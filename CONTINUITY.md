@@ -209,3 +209,9 @@
  -   2 0 2 6 - 0 1 - 2 9 :   U n i f i e d   l o c a l / G o o g l e   e v e n t   e d i t   o p t i o n s ,   w i r e d   l o c a l   e v e n t   f i e l d s   t o   D B / A P I ,   a n d   f i x e d   G o o g l e   u p d a t e / d e l e t e   +   m e t a d a t a   p e r s i s t e n c e   f o r   e v e n t T y p e / c o u r s e / w e i g h t .   R e b u i l t   d a s h b o a r d   a n d   s y n c e d   d i s t . 
   
  
+ -   2 0 2 6 - 0 1 - 2 9 :   R a i s e d   S e l e c t   m e n u   z - i n d e x   t o   s h o w   d r o p d o w n s   a b o v e   c a l e n d a r   e d i t   d i a l o g s ;   r e b u i l t   a n d   s y n c e d   d a s h b o a r d . 
+  
+ 
+ -   2 0 2 6 - 0 1 - 2 9 :   A d d e d   z - i n d e x   o v e r r i d e s   o n   c a l e n d a r   S e l e c t   m e n u s   t o   k e e p   d r o p d o w n s   a b o v e   e d i t   d i a l o g s ;   r e b u i l t   a n d   s y n c e d   d a s h b o a r d . 
+  
+ 
