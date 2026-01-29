@@ -547,15 +547,14 @@ export default function CalendarPage() {
       const calendarIds = calendars.map((cal) => cal.id).filter(Boolean);
 
       if (calendarIds.length > 0) {
-        const hasMatch = Array.from(selectedCalendars).some((id) => calendarIds.includes(id));
-        if (!hasMatch) {
-          const next = new Set(calendarIds);
-          setSelectedCalendars(next);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("selectedCalendars", JSON.stringify(calendarIds));
-          }
-          setCalendarSelectionDirty(false);
+        const next = new Set(calendarIds);
+        setSelectedCalendars(next);
+        setHiddenCalendars([]);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("selectedCalendars", JSON.stringify(calendarIds));
+          localStorage.setItem("hiddenCalendars", JSON.stringify([]));
         }
+        setCalendarSelectionDirty(false);
       }
 
       await refetchGoogle();

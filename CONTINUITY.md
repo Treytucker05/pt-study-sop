@@ -228,3 +228,4 @@
  - 2026-01-29: Fixed calendar edit modal crash by rendering course dropdown options as course names/ids (not raw objects) in local + Google edit modals; rebuilt and synced dashboard.
 -   2 0 2 6 - 0 1 - 2 9 :   N o t e d   i n   C L A U D E . m d   t o   r e a d   A G E N T S . m d   f o r   a g e n t   b e h a v i o r   r u l e s .  
  - 2026-01-29: Strengthened Calendar Sync button to refresh Google status, calendar list, and events; auto-resets calendar selection if it no longer matches current Google calendars; added sync success/failure toasts; rebuilt and synced dashboard.
+- 2026-01-29: Sync now forces Google calendar selection to all current calendars and clears hidden calendars so the dashboard mirrors Google after sync; rebuilt and synced dashboard.
