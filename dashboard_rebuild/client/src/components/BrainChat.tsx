@@ -26,6 +26,22 @@ function buildApiContent(text: string, images: string[]): ApiContent {
 
 type Mode = "chat" | "ingest";
 
+const CHATGPT_ANKI_PROMPT = `Generate Anki flashcards from the following study material. Output ONLY a numbered list in this exact format:
+
+1. Front: [question]
+Back: [answer]
+Tags: [comma-separated tags like: Module1, Obj2, TopicName]
+
+Rules:
+- Front = the question only (no module/objective prefixes)
+- Back = concise answer
+- Tags = include Module#, Obj#, and topic keywords
+- One card per concept
+- No extra text before or after the list
+
+Study material:
+[PASTE YOUR NOTES HERE]`;
+
 export function BrainChat() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("chat");
@@ -34,6 +50,7 @@ export function BrainChat() {
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [ingestTarget, setIngestTarget] = useState<"anki" | "obsidian" | "both">("anki");
+  const [promptCopied, setPromptCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -234,6 +251,19 @@ export function BrainChat() {
               <BrainCircuit className="w-3 h-3" /> INGEST
             </button>
           </div>
+          {mode === "ingest" && (
+            <button
+              type="button"
+              className="bg-primary hover:bg-primary/80 px-2 py-0.5 rounded-none text-[10px] font-terminal"
+              onClick={() => {
+                navigator.clipboard.writeText(CHATGPT_ANKI_PROMPT);
+                setPromptCopied(true);
+                setTimeout(() => setPromptCopied(false), 2000);
+              }}
+            >
+              {promptCopied ? "Copied!" : "Copy Prompt for ChatGPT"}
+            </button>
+          )}
           <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setOpen(false)}>
             <ChevronUp className="w-4 h-4" />
           </Button>
@@ -266,7 +296,7 @@ export function BrainChat() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="h-64 overflow-y-auto px-4 py-2 space-y-3">
+        <div ref={scrollRef} className="h-80 overflow-y-auto px-4 py-2 space-y-3">
           {messages.length === 0 && (
             <p className="text-muted-foreground text-xs text-center py-8">
               {mode === "chat"
@@ -277,7 +307,7 @@ export function BrainChat() {
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[80%] rounded px-3 py-2 text-sm whitespace-pre-wrap ${m.role === "user"
+                className={`max-w-[80%] rounded px-3 py-2 text-base whitespace-pre-wrap ${m.role === "user"
                     ? "bg-primary/20 text-foreground border border-primary/30"
                     : "bg-secondary/40 text-foreground border border-secondary/60"
                   }`}
@@ -342,7 +372,7 @@ export function BrainChat() {
             onPaste={handlePaste}
             placeholder={mode === "chat" ? "Ask anything... (Ctrl+V to paste images)" : "Paste study notes to ingest..."}
             rows={mode === "ingest" ? 3 : 1}
-            className="flex-1 bg-transparent border border-input rounded px-3 py-1.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+            className="flex-1 bg-transparent border border-input rounded px-3 py-1.5 text-base resize-none focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <Button
             variant="ghost"

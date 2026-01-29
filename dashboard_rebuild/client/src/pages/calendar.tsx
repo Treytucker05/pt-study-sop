@@ -17,6 +17,7 @@ import { api, type GoogleTask } from "@/lib/api";
 import { useToast } from "@/use-toast";
 import { SortableTaskItem, TaskListContainer, TaskDialog } from "@/components/GoogleTasksComponents";
 import { CalendarAssistant, CalendarAssistantButton } from "@/components/CalendarAssistant";
+import { EventEditModal } from "@/components/EventEditModal";
 import type { InsertCalendarEvent, CalendarEvent } from "@shared/schema";
 import {
   DndContext,
@@ -63,6 +64,12 @@ interface GoogleCalendarEvent {
   calendarSummary?: string;
   calendarColor?: string;
   htmlLink?: string;
+  conferenceData?: { entryPoints?: { uri?: string; entryPointType?: string }[]; conferenceSolution?: { name?: string } };
+  hangoutLink?: string;
+  attendees?: { email: string; responseStatus?: string; self?: boolean }[];
+  visibility?: string;
+  transparency?: string;
+  reminders?: { useDefault?: boolean; overrides?: { method: string; minutes: number }[] };
 }
 
 interface NormalizedEvent {
@@ -285,6 +292,33 @@ function GoogleTasksBoard({ tasks, taskLists }: { tasks: GoogleTask[], taskLists
   );
 }
 
+function SortableCalendarRow({ cal, isHidden, onToggle }: { cal: { id: string; name: string; color: string }; isHidden: boolean; onToggle: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: cal.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center gap-3 p-2 border border-zinc-800 hover:bg-zinc-900 transition-colors",
+        isHidden && "opacity-50"
+      )}
+    >
+      <div {...attributes} {...listeners} className="cursor-grab text-zinc-500 hover:text-zinc-300">
+        <GripVertical className="w-4 h-4" />
+      </div>
+      <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: cal.color }} />
+      <span className="font-terminal text-sm flex-1 cursor-pointer" onClick={onToggle}>{cal.name}</span>
+      <span
+        className={cn("font-arcade text-[10px] px-2 py-0.5 cursor-pointer", isHidden ? "text-red-500" : "text-green-500")}
+        onClick={onToggle}
+      >
+        {isHidden ? 'HIDDEN' : 'VISIBLE'}
+      </span>
+    </div>
+  );
+}
+
 export default function CalendarPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -300,12 +334,15 @@ export default function CalendarPage() {
     startTime: "09:00",
     endTime: "10:00",
     allDay: false,
-    eventType: "study" as "study" | "lecture" | "exam",
+    eventType: "study" as "study" | "lecture" | "exam" | "synchronous" | "online",
     color: "#ef4444",
     recurrence: "" as "" | "daily" | "weekly" | "monthly" | "yearly",
     calendarId: "",
   });
-  const [selectedCalendars, setSelectedCalendars] = useState<Set<string>>(new Set());
+  const [selectedCalendars, setSelectedCalendars] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem("selectedCalendars");
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
   const [showLocalEvents, setShowLocalEvents] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGoogleEvent, setSelectedGoogleEvent] = useState<GoogleCalendarEvent | null>(null);
@@ -326,6 +363,7 @@ export default function CalendarPage() {
     return saved ? JSON.parse(saved) : [];
   });
   const [showCalendarSettings, setShowCalendarSettings] = useState(false);
+  const calendarOrderSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [isOthersOpen, setIsOthersOpen] = useState(false);
 
   useEffect(() => {
@@ -485,13 +523,49 @@ export default function CalendarPage() {
     },
   });
 
+  const { data: savedCalendarOrder = [] } = useQuery({
+    queryKey: ["calendar-order"],
+    queryFn: async () => {
+      const res = await fetch("/api/calendar-order?userId=default");
+      if (!res.ok) return [];
+      return res.json() as Promise<string[]>;
+    },
+  });
+
+  const saveCalendarOrderMutation = useMutation({
+    mutationFn: async (order: string[]) => {
+      const res = await fetch("/api/calendar-order", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: "default", order }),
+      });
+      if (!res.ok) throw new Error("Failed to save calendar order");
+    },
+    onMutate: async (order) => {
+      await queryClient.cancelQueries({ queryKey: ["calendar-order"] });
+      queryClient.setQueryData(["calendar-order"], order);
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ["calendar-order"] });
+    },
+  });
+
   const availableCalendars = useMemo(() => {
-    return calendarList.map(cal => ({
+    const cals = calendarList.map(cal => ({
       id: cal.id,
       name: cal.summary,
       color: cal.backgroundColor || '#888888',
     }));
-  }, [calendarList]);
+    if (savedCalendarOrder.length > 0) {
+      const orderMap = new Map(savedCalendarOrder.map((id, i) => [id, i]));
+      cals.sort((a, b) => {
+        const aIdx = orderMap.get(a.id) ?? 999;
+        const bIdx = orderMap.get(b.id) ?? 999;
+        return aIdx - bIdx;
+      });
+    }
+    return cals;
+  }, [calendarList, savedCalendarOrder]);
 
   // Filter out hidden calendars from display
   const visibleCalendars = useMemo(() => {
@@ -499,11 +573,11 @@ export default function CalendarPage() {
   }, [availableCalendars, hiddenCalendars]);
 
   useEffect(() => {
-    if (availableCalendars.length > 0 && selectedCalendars.size === 0) {
-      // Only show pinned calendars by default
+    if (availableCalendars.length > 0 && selectedCalendars.size === 0
+        && !localStorage.getItem("selectedCalendars")) {
       const pinnedIds = pinnedCalendars.length > 0
         ? pinnedCalendars
-        : availableCalendars.slice(0, 2).map(c => c.id); // Fallback to first 2 if none pinned
+        : availableCalendars.slice(0, 2).map(c => c.id);
       setSelectedCalendars(new Set(pinnedIds));
     }
   }, [availableCalendars, pinnedCalendars]);
@@ -640,7 +714,12 @@ export default function CalendarPage() {
           location: event.location,
           start: event.start,
           end: event.end,
-          recurrence: event.recurrence
+          recurrence: event.recurrence,
+          attendees: event.attendees,
+          visibility: event.visibility,
+          transparency: event.transparency,
+          colorId: event.colorId,
+          reminders: event.reminders,
         }),
       });
       if (!res.ok) throw new Error('Failed to update google event');
@@ -711,6 +790,7 @@ export default function CalendarPage() {
       const isAllDay = !!gEvent.start?.date && !gEvent.start?.dateTime;
       const startStr = gEvent.start?.dateTime || gEvent.start?.date || new Date().toISOString();
       const endStr = gEvent.end?.dateTime || gEvent.end?.date || startStr;
+      const isOnline = !!(gEvent.conferenceData || gEvent.hangoutLink);
       return {
         id: gEvent.id,
         title: gEvent.summary || 'Untitled',
@@ -718,6 +798,7 @@ export default function CalendarPage() {
         end: new Date(endStr),
         allDay: isAllDay,
         isGoogle: true,
+        eventType: isOnline ? 'online' : 'synchronous',
         calendarColor: gEvent.calendarColor,
         calendarName: gEvent.calendarSummary,
         originalEvent: event,
@@ -818,7 +899,7 @@ export default function CalendarPage() {
     }
 
     googleEvents.forEach(event => {
-      if (selectedCalendars.size > 0 && event.calendarId && !selectedCalendars.has(event.calendarId)) return;
+      if (selectedCalendars.size > 0 && !selectedCalendars.has(event.calendarId || '')) return;
       if (event.summary?.toLowerCase().includes(query)) {
         results.push(normalizeEvent(event));
       }
@@ -846,7 +927,7 @@ export default function CalendarPage() {
     }
 
     googleEvents.forEach(event => {
-      if (selectedCalendars.size > 0 && event.calendarId && !selectedCalendars.has(event.calendarId)) return;
+      if (selectedCalendars.size > 0 && !selectedCalendars.has(event.calendarId || '')) return;
       const normalized = normalizeEvent(event);
       if (eventSpansDay(normalized, day)) {
         allEvents.push(normalized);
@@ -1149,26 +1230,32 @@ export default function CalendarPage() {
                   <DialogTitle className="font-arcade text-primary">MANAGE CALENDARS</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  <p className="font-terminal text-xs text-muted-foreground mb-4">Toggle calendars to show/hide them in the legend.</p>
-                  {availableCalendars.map((cal) => (
-                    <div
-                      key={cal.id}
-                      className={cn(
-                        "flex items-center gap-3 p-2 border border-zinc-800 cursor-pointer hover:bg-zinc-900 transition-colors",
-                        hiddenCalendars.includes(cal.id) && "opacity-50"
-                      )}
-                      onClick={() => toggleHideCalendar(cal.id)}
-                    >
-                      <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: cal.color }} />
-                      <span className="font-terminal text-sm flex-1">{cal.name}</span>
-                      <span className={cn(
-                        "font-arcade text-[10px] px-2 py-0.5",
-                        hiddenCalendars.includes(cal.id) ? "text-red-500" : "text-green-500"
-                      )}>
-                        {hiddenCalendars.includes(cal.id) ? 'HIDDEN' : 'VISIBLE'}
-                      </span>
-                    </div>
-                  ))}
+                  <p className="font-terminal text-xs text-muted-foreground mb-4">Drag to reorder. Click to show/hide.</p>
+                  <DndContext
+                    sensors={calendarOrderSensors}
+                    collisionDetection={closestCenter}
+                    modifiers={[restrictToVerticalAxis]}
+                    onDragEnd={(event: DragEndEvent) => {
+                      const { active, over } = event;
+                      if (!over || active.id === over.id) return;
+                      const oldIndex = availableCalendars.findIndex(c => c.id === active.id);
+                      const newIndex = availableCalendars.findIndex(c => c.id === over.id);
+                      if (oldIndex === -1 || newIndex === -1) return;
+                      const reordered = arrayMove(availableCalendars, oldIndex, newIndex);
+                      saveCalendarOrderMutation.mutate(reordered.map(c => c.id));
+                    }}
+                  >
+                    <SortableContext items={availableCalendars.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                      {availableCalendars.map((cal) => (
+                        <SortableCalendarRow
+                          key={cal.id}
+                          cal={cal}
+                          isHidden={hiddenCalendars.includes(cal.id)}
+                          onToggle={() => toggleHideCalendar(cal.id)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
                 </div>
                 <DialogFooter>
                   <Button
@@ -1198,11 +1285,12 @@ export default function CalendarPage() {
                       const isCurrentMonth = isSameMonth(day, currentDate);
                       const isTodayDate = isToday(day);
                       return (
-                        <div key={index} onClick={() => goToDay(day)} className={cn("min-h-[90px] border-r border-b border-zinc-800 p-1.5 cursor-pointer transition-colors hover:bg-zinc-800/50", !isCurrentMonth && "bg-zinc-900/60 text-zinc-600", index % 7 === 6 && "border-r-0")} data-testid={`day-cell-${format(day, 'yyyy-MM-dd')}`}>
+                        <div key={index} onClick={() => goToDay(day)} className={cn("min-h-[180px] border-r border-b border-zinc-800 p-1.5 cursor-pointer transition-colors hover:bg-zinc-800/50", !isCurrentMonth && "bg-zinc-900/60 text-zinc-600", index % 7 === 6 && "border-r-0")} data-testid={`day-cell-${format(day, 'yyyy-MM-dd')}`}>
                           <div className={cn("text-right font-mono text-sm w-6 h-6 flex items-center justify-center ml-auto", isTodayDate && "bg-red-500 text-white rounded-full font-bold")}>{format(day, 'd')}</div>
                           <div className="space-y-0.5 mt-1">
                             {dayEvents.slice(0, 3).map((event, i) => (
                               <div key={`${event.id}-${i}`} className={cn("text-xs font-mono truncate px-1.5 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} title={event.title} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
+                                {event.eventType === 'online' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 mr-1 align-middle" title="Online" />}
                                 {event.title}
                               </div>
                             ))}
@@ -1407,6 +1495,8 @@ export default function CalendarPage() {
                     <SelectItem value="study">STUDY</SelectItem>
                     <SelectItem value="lecture">LECTURE</SelectItem>
                     <SelectItem value="exam">EXAM</SelectItem>
+                    <SelectItem value="synchronous">SYNCHRONOUS</SelectItem>
+                    <SelectItem value="online">ONLINE</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1505,6 +1595,8 @@ export default function CalendarPage() {
                     <SelectItem value="study">STUDY</SelectItem>
                     <SelectItem value="lecture">LECTURE</SelectItem>
                     <SelectItem value="exam">EXAM</SelectItem>
+                    <SelectItem value="synchronous">SYNCHRONOUS</SelectItem>
+                    <SelectItem value="online">ONLINE</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1523,148 +1615,17 @@ export default function CalendarPage() {
       </Dialog>
 
       {/* Edit Google Event Modal */}
-      <Dialog
+      <EventEditModal
         open={showGoogleEditModal && !!selectedGoogleEvent}
         onOpenChange={(open) => {
           setShowGoogleEditModal(open);
           if (!open) setSelectedGoogleEvent(null);
         }}
-      >
-        <DialogContent
-          data-modal="calendar-edit-google"
-          className="font-arcade bg-black border-2 border-green-500 rounded-none max-w-md p-0 overflow-hidden translate-y-0"
-          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
-        >
-          {selectedGoogleEvent && (
-            <div className="flex flex-col h-full">
-              {/* Header */}
-              <div className="bg-green-500/20 border-b border-green-500 p-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-green-500 font-bold tracking-wider">EDIT_GOOGLE_EVENT</span>
-                </div>
-                {selectedGoogleEvent.recurringEventId && <Badge variant="outline" className="text-[10px] border-green-500 text-green-500">INSTANCE</Badge>}
-                {selectedGoogleEvent.recurrence && <Badge variant="outline" className="text-[10px] border-green-500 text-green-500">SERIES</Badge>}
-              </div>
-
-              <div className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-xs text-green-500/80">EVENT_TITLE_</Label>
-                  <Input
-                    value={selectedGoogleEvent.summary || ""}
-                    onChange={(e) => setSelectedGoogleEvent({ ...selectedGoogleEvent, summary: e.target.value })}
-                    className="bg-black border-green-500/50 focus:border-green-500 text-green-500 font-terminal text-lg h-12 rounded-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs text-green-500/80">START_TIME_</Label>
-                    <Input
-                      type="datetime-local"
-                      value={selectedGoogleEvent.start?.dateTime?.substring(0, 16) || selectedGoogleEvent.start?.date + "T00:00" || ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSelectedGoogleEvent({
-                          ...selectedGoogleEvent,
-                          start: { dateTime: val }
-                        });
-                      }}
-                      disabled={!!selectedGoogleEvent.start?.date && !selectedGoogleEvent.start?.dateTime}
-                      className="bg-black border-green-500/50 text-green-500 font-terminal rounded-none"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs text-green-500/80">END_TIME_</Label>
-                    <Input
-                      type="datetime-local"
-                      value={selectedGoogleEvent.end?.dateTime?.substring(0, 16) || selectedGoogleEvent.end?.date + "T00:00" || ""}
-                      onChange={(e) => setSelectedGoogleEvent({ ...selectedGoogleEvent, end: { dateTime: e.target.value } })}
-                      disabled={!!selectedGoogleEvent.end?.date && !selectedGoogleEvent.end?.dateTime}
-                      className="bg-black border-green-500/50 text-green-500 font-terminal rounded-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Recurrence Simple UI */}
-                {!selectedGoogleEvent.recurringEventId && (
-                  <div className="space-y-2">
-                    <Label className="text-xs text-green-500/80 flex items-center gap-2">
-                      RECURRENCE_PATTERN_
-                      <RefreshCw className="w-3 h-3" />
-                    </Label>
-                    <Select
-                      value={selectedGoogleEvent.recurrence?.[0] || "none"}
-                      onValueChange={(val) => {
-                        const rrule = val === "none" ? undefined : [val];
-                        setSelectedGoogleEvent({ ...selectedGoogleEvent, recurrence: rrule });
-                      }}
-                    >
-                      <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
-                        <SelectValue placeholder="No Recurrence" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-black border-green-500 text-green-500 font-terminal">
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="RRULE:FREQ=DAILY">Daily</SelectItem>
-                        <SelectItem value="RRULE:FREQ=WEEKLY">Weekly</SelectItem>
-                        <SelectItem value="RRULE:FREQ=MONTHLY">Monthly</SelectItem>
-                        <SelectItem value="RRULE:FREQ=YEARLY">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {/* Advanced RRULE Textarea if Custom or existing complex rule */}
-                    {selectedGoogleEvent.recurrence &&
-                      !["RRULE:FREQ=DAILY", "RRULE:FREQ=WEEKLY", "RRULE:FREQ=MONTHLY", "RRULE:FREQ=YEARLY"].includes(selectedGoogleEvent.recurrence[0]) && (
-                        <Textarea
-                          value={selectedGoogleEvent.recurrence[0]}
-                          onChange={(e) => setSelectedGoogleEvent({ ...selectedGoogleEvent, recurrence: [e.target.value] })}
-                          className="bg-black border-green-500/30 text-green-100/70 text-[10px] font-mono h-12 rounded-none"
-                          placeholder="RRULE:FREQ=WEEKLY;BYDAY=MO,WE"
-                        />
-                      )}
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label className="text-xs text-green-500/80">DESCRIPTION_</Label>
-                  <Textarea
-                    value={selectedGoogleEvent.description || ""}
-                    onChange={(e) => setSelectedGoogleEvent({ ...selectedGoogleEvent, description: e.target.value })}
-                    className="bg-black border-green-500/50 text-green-500 font-terminal min-h-[100px] rounded-none resize-none"
-                  />
-                </div>
-
-                <div className="pt-2 flex items-center justify-between gap-4 border-t border-green-500/20 mt-4">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleGoogleDelete}
-                    className="rounded-none bg-red-900/20 text-red-500 hover:bg-red-900/40 border border-red-900/50 font-arcade text-xs"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    DELETE
-                  </Button>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      className="bg-transparent border border-green-500/50 text-green-500 hover:bg-green-500/10 rounded-none font-arcade text-xs"
-                      onClick={() => window.open(selectedGoogleEvent.htmlLink, '_blank')}
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" /> OPEN
-                    </Button>
-                    <Button
-                      className="bg-green-500 text-black hover:bg-green-400 rounded-none font-arcade text-xs px-6"
-                      onClick={handleGoogleSave}
-                    >
-                      SAVE CHANGES
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        event={selectedGoogleEvent}
+        onEventChange={setSelectedGoogleEvent}
+        onSave={handleGoogleSave}
+        onDelete={handleGoogleDelete}
+      />
       <CalendarAssistant isOpen={showAssistant} onClose={() => setShowAssistant(false)} />
     </Layout>
   );

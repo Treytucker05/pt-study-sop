@@ -1992,6 +1992,63 @@ def google_disconnect():
 
 
 # ==============================================================================
+# CALENDAR ORDER
+# ==============================================================================
+
+
+def _ensure_calendar_order_table(conn):
+    """Create calendar_order table if missing. Called once at init or lazily."""
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS calendar_order "
+        "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "user_id TEXT NOT NULL UNIQUE DEFAULT 'default', "
+        "order_json TEXT NOT NULL, "
+        "updated_at INTEGER NOT NULL DEFAULT (unixepoch()))"
+    )
+
+
+@adapter_bp.route("/calendar-order", methods=["GET"])
+def get_calendar_order():
+    """Get saved calendar display order. Single-user: always uses 'default'."""
+    conn = get_connection()
+    try:
+        _ensure_calendar_order_table(conn)
+        row = conn.execute(
+            "SELECT order_json FROM calendar_order WHERE user_id = 'default' LIMIT 1",
+        ).fetchone()
+        if row:
+            try:
+                return jsonify(json.loads(row[0]))
+            except (json.JSONDecodeError, TypeError):
+                return jsonify([])
+        return jsonify([])
+    finally:
+        conn.close()
+
+
+@adapter_bp.route("/calendar-order", methods=["PUT"])
+def put_calendar_order():
+    """Save calendar display order. Single-user: always uses 'default'."""
+    data = request.get_json() or {}
+    order = data.get("order", [])
+    if not isinstance(order, list):
+        return jsonify({"error": "order must be an array"}), 400
+    conn = get_connection()
+    try:
+        _ensure_calendar_order_table(conn)
+        order_json = json.dumps(order)
+        conn.execute(
+            "INSERT INTO calendar_order (user_id, order_json) VALUES ('default', ?) "
+            "ON CONFLICT(user_id) DO UPDATE SET order_json = excluded.order_json, updated_at = unixepoch()",
+            (order_json,),
+        )
+        conn.commit()
+        return jsonify({"success": True})
+    finally:
+        conn.close()
+
+
+# ==============================================================================
 # GOOGLE DATA PROXIES (Direct Fetch)
 # ==============================================================================
 
@@ -2045,16 +2102,6 @@ def get_google_events():
     enriched_events = []
     for event in events:
         cal_id = event.get("_calendar_id")
-        # Map fields for frontend
-        event["calendarId"] = cal_id
-        event["calendarSummary"] = event.get("_calendar_name")
-        event["calendarColor"] = calendar_colors.get(cal_id)
-        enriched_events.append(event)
-
-    enriched_events = []
-    for event in events:
-        cal_id = event.get("_calendar_id")
-        # Map fields for frontend
         event["calendarId"] = cal_id
         event["calendarSummary"] = event.get("_calendar_name")
         event["calendarColor"] = calendar_colors.get(cal_id)
@@ -2206,6 +2253,18 @@ def update_google_event(event_id):
             if isinstance(rrules, str):
                 rrules = [rrules]
             body["recurrence"] = rrules
+
+        # Attendees, visibility, transparency, colorId, reminders
+        if "attendees" in data:
+            body["attendees"] = data["attendees"]
+        if "visibility" in data:
+            body["visibility"] = data["visibility"]
+        if "transparency" in data:
+            body["transparency"] = data["transparency"]
+        if "colorId" in data:
+            body["colorId"] = data["colorId"]
+        if "reminders" in data:
+            body["reminders"] = data["reminders"]
 
         # Date Logic
         # Frontend might send 'start'/'end' objects OR 'date'/'startDate' strings.
@@ -5015,8 +5074,8 @@ IMPORTANT:
         cards_synced_to_anki = 0
         anki_sync_error = None
 
-        # If mode is "anki" or "all", auto-approve cards for immediate sync
-        card_status = "approved" if mode in ("anki", "all") else "pending"
+        # Always start as pending so cards appear in Anki Integration for review
+        card_status = "pending"
 
         if anki_cards:
             conn = get_connection()
@@ -5049,16 +5108,7 @@ IMPORTANT:
             conn.commit()
             conn.close()
 
-            # If mode is "anki" or "all", trigger immediate sync to Anki
-            if mode in ("anki", "all") and cards_created > 0:
-                try:
-                    from anki_sync import sync_pending_cards
-                    sync_result = sync_pending_cards()
-                    cards_synced_to_anki = sync_result.get("synced", 0)
-                    if sync_result.get("errors"):
-                        anki_sync_error = "; ".join(sync_result["errors"])
-                except Exception as sync_err:
-                    anki_sync_error = str(sync_err)
+            # Cards stay pending - user reviews/approves in Anki Integration window
         
         # Build response message
         response_parts = []

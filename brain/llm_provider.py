@@ -78,7 +78,7 @@ def _call_openrouter_api(
             {"role": "user", "content": user_prompt},
         ],
         "temperature": 0.7,
-        "max_tokens": 2000,
+        "max_tokens": 4000,
     }
 
     try:
@@ -140,7 +140,7 @@ def _call_openrouter_chat(
         "model": model,
         "messages": messages,
         "temperature": 0.7,
-        "max_tokens": 1500,
+        "max_tokens": 4000,
     }
 
     try:

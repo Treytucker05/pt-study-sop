@@ -35,16 +35,41 @@ Personal study OS that captures every session, turns it into metrics and Anki-re
 - **Anki drafts:** `card_drafts` table
 - **Scholar outputs:** `scholar/outputs/`
 
-## Dashboard Build
+## Dashboard Build & Deploy
 
-`dashboard_rebuild` is frontend-only. The API lives in `brain/dashboard/api_adapter.py`.
+The frontend (`dashboard_rebuild/`) is a React/Vite app that compiles to static files. The Flask server (`brain/`) serves these from `brain/static/dist/`. There is no dev server — all changes require a build + copy.
 
-```
+### Why build?
+
+The browser loads pre-built JS/CSS from `brain/static/dist/`. Editing `.tsx` files has **zero effect** until you build and copy. If you don't see your changes, you forgot this step.
+
+### Steps
+
+```bash
+# 1. Build (from project root)
 cd dashboard_rebuild && npm run build
-# Copy dist/public → brain/static/dist
+
+# 2. Copy output to Flask static dir
+cp -r dist/public/. ../brain/static/dist/
+
+# 3. Restart Flask if it's running (or just hard-refresh browser)
 ```
 
-Do not start a separate dev server. Only use `Start_Dashboard.bat`.
+`Start_Dashboard.bat` does step 2 automatically on launch, but **not** step 1. If you changed frontend code, always run `npm run build` first.
+
+### Common issues
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Changes not visible in browser | Forgot to build or copy | Run steps 1-2 above |
+| Old JS still loading | Browser cache | Hard refresh (Ctrl+Shift+R) |
+| Build fails with type errors | Check `npx tsc --noEmit` | Fix TS errors in your changed files |
+| `Start_Dashboard.bat` warns "build not found" | Never ran `npm run build` | Run step 1 |
+
+### Do NOT
+
+- Start a separate Vite dev server (`npm run dev`) — the Flask backend won't proxy to it
+- Edit files in `brain/static/dist/` directly — they get overwritten on next build
 
 ## Docs
 

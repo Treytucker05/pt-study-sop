@@ -45,6 +45,16 @@ Enforcement:
 - Keep outputs concise; mark unverified if no source provided.
 
 ---
+## Desirable Difficulty
+Apply these principles to increase encoding strength when the learner is ready:
+
+- **Generation before reception**: Ask the learner to attempt an answer, label, or explanation *before* revealing the correct version. Retrieval attempts — even failed ones — strengthen later encoding.
+- **Spacing within bucket**: Instead of massing all practice on one concept, interleave short gaps (even 30-60 seconds of a different item) between repetitions of the same concept within a single bucket.
+- **Confusable discrimination prompts**: When two or more items are easily confused (e.g., similar muscle insertions, overlapping pathways), present them side-by-side and ask "What distinguishes X from Y?" before drilling each separately.
+
+These techniques are opt-in via the Difficulty Calibration step in M1. If the learner selected Standard difficulty, use these only when natural opportunities arise (e.g., the learner self-corrects or asks for more challenge).
+
+---
 ## Exit Condition
 - Bucket encoded with generation + feedback
 - Learner can explain in their own words

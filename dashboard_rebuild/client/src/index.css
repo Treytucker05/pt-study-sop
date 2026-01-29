@@ -124,11 +124,11 @@
   }
 
   .brain-card {
-    @apply bg-[#111] border border-[#2a0a0a] shadow-sm p-6 mb-4;
+    @apply bg-black/40 border-2 border-primary shadow-sm p-6 mb-4;
   }
 
   .brain-card-strong {
-    @apply bg-[#0d0d0d] border border-[#3a0a0a] shadow-md p-6 mb-4;
+    @apply bg-black/40 border-2 border-primary shadow-md p-6 mb-4;
   }
 
   /* Notes sheet positioning */

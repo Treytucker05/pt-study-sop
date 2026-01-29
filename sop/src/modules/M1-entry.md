@@ -33,6 +33,19 @@ Why: Defines what is achievable and prevents scope creep.
 
 Ask directly: "Have you studied this before, or is it new?"
 
+### 3.5) Difficulty Calibration (opt-in)
+After mode selection, the learner may opt in to desirable difficulty:
+
+| Option | Effect |
+| --- | --- |
+| **+1 Difficulty** | Raise one tier on the progressive ladder (e.g., guided → faded) |
+| **Full Interleave** | Mix confusable items from the start instead of blocking by topic |
+| **Standard** (default) | No change — proceed with mode defaults |
+
+Ask: "Want to push the difficulty up a notch, go full interleave, or keep it standard?"
+
+If the learner skips or doesn't respond, default to Standard. This step never blocks session start.
+
 ### 4) Context Load
 - Resuming -> user pastes resume or describes where they left off
 - Fresh start -> proceed to M2 (Prime)

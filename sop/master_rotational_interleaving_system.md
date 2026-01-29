@@ -61,6 +61,41 @@ Adaptive spacing rule:
 | [Concept] | YYYY-MM-DD | R/Y/G | YYYY-MM-DD | R/Y/G | YYYY-MM-DD | R/Y/G | YYYY-MM-DD | R/Y/G | [notes] |
 
 ---
+## Part 6: RSR-Adaptive Spacing
+
+Adjust spacing intervals automatically based on retrieval success rate (RSR) at session start. Manual R/Y/G override is always preserved.
+
+### Decision Rules
+| RSR at review | Adjustment | Rationale |
+| --- | --- | --- |
+| **≥ 80%** | Extend next interval by +25% | Strong retrieval — push spacing outward |
+| **50–79%** | Keep standard interval | Effortful but successful — maintain |
+| **< 50%** | Compress next interval by −50% | Weak retrieval — review sooner |
+
+### Bounds
+- Minimum interval: 12 hours (never schedule closer than half a day)
+- Maximum interval: 60 days (cap to prevent drift)
+
+### Decision Tree
+```
+RSR >= 80%?
+  YES → next_interval = current_interval × 1.25 (cap at 60d)
+  NO  → RSR >= 50%?
+           YES → next_interval = current_interval (no change)
+           NO  → next_interval = current_interval × 0.50 (floor at 12h)
+
+Manual override?
+  YES → use R/Y/G adjustment instead (same as Part 4 rules)
+  NO  → use RSR-adaptive result
+```
+
+### Example
+- Standard R2 = +3 days. RSR at R2 = 90%. → R3 = 3 × 1.25 = 3.75 days ≈ +4 days.
+- Standard R3 = +7 days. RSR at R3 = 40%. → R4 = 7 × 0.50 = 3.5 days ≈ +4 days (compressed).
+
+RSR-adaptive runs automatically when RSR is logged. If RSR is not captured (e.g., Light mode with no retrieval), fall back to standard 1-3-7-21 heuristic.
+
+---
 ## Minimal daily playbooks
 10-15 min:
 - 1 micro target

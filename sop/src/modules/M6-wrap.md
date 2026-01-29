@@ -39,6 +39,27 @@ Adjust intervals based on retrospective status:
 - Green (easy): extend interval
 
 ---
+## Error Capture & Classification
+After miss capture, classify each error to guide targeted review:
+
+### Error Types
+| Type | Definition | Example |
+| --- | --- | --- |
+| **careless** | Knew the answer but slipped (attention, rushing) | Wrote "flexion" when meant "extension" |
+| **misunderstanding** | Incorrect mental model or faulty reasoning | Confused origin vs insertion function |
+| **spacing** | Knew it before but forgot (retrieval decay) | Couldn't recall a concept mastered last week |
+| **transfer** | Can recall but can't apply to new context | Knows muscle action but fails clinical scenario |
+
+### Error Severity
+| Severity | Criteria | Action |
+| --- | --- | --- |
+| **minor** | Careless slip, self-corrected quickly | Note only — no schedule change |
+| **moderate** | Required prompt or hint to correct | Add card + move next review sooner |
+| **critical** | Fundamental misunderstanding or repeated miss | Rebuild hook + drill + compress spacing |
+
+Log each error with type, severity, and recurrence count (how many sessions this error has appeared). Patterns of recurring errors trigger Drill mode recommendation at next session Entry.
+
+---
 ## Calibration Check
 - Predict your score (0-100%) on today's target.
 - Answer one application question.

@@ -29,5 +29,5 @@ A structured study system for PT coursework. Canonical content lives in `sop/src
 
 ---
 ## Logging
-Canonical schema: `sop/src/templates/logging_schema_v9.2.md`.
+Canonical schema: `sop/logging_schema_v9.3.md`.
 Output both Tracker JSON and Enhanced JSON at Wrap.

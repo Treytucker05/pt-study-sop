@@ -1,5 +1,13 @@
 ﻿{
     "allow_execution":  [
+                            "cat",
+                            "echo",
+                            "find",
+                            "head",
+                            "tail",
+                            "wc",
+                            "diff",
+                            "grep",
                             "agent-browser",
                             "agent-browser click",
                             "agent-browser close",

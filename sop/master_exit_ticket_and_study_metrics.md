@@ -11,9 +11,12 @@
 - RSR (retrieval success rate): percent correct on recall attempts at session start.
 - Cognitive load type: intrinsic / extraneous / germane (dominant).
 - Transfer check: did you connect this to another class? yes/no.
+- Error type: classification of each miss — careless | misunderstanding | spacing | transfer.
+- Error severity: impact level — minor | moderate | critical.
+- Recurrence count: number of sessions in which this specific error has appeared.
 
 ---
 ## Dashboard table template
-| Date | Topic | Mode | Duration | RSR % | Calibration Gap | Load Type | Transfer (Y/N) | Muddiest Point | Next Action |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| YYYY-MM-DD | [topic] | Core/Sprint/Drill | [min] | [0-100] | [+/-] | intrinsic/extraneous/germane | Y/N | [one concept] | [one action] |
+| Date | Topic | Mode | Duration | RSR % | Calibration Gap | Load Type | Transfer (Y/N) | Muddiest Point | Next Action | Error Type | Error Severity | Recurrence |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| YYYY-MM-DD | [topic] | Core/Sprint/Drill | [min] | [0-100] | [+/-] | intrinsic/extraneous/germane | Y/N | [one concept] | [one action] | [type] | [severity] | [count] |

@@ -208,6 +208,15 @@ export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit
 export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
 export type CalendarEvent = typeof calendarEvents.$inferSelect;
 
+export const calendarOrder = sqliteTable("calendar_order", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().default("default"),
+  orderJson: text("order_json").notNull(), // JSON array of calendar IDs
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+export type CalendarOrder = typeof calendarOrder.$inferSelect;
+
 export const tasks = sqliteTable("tasks", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),

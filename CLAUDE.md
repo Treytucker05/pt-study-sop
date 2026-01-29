@@ -68,5 +68,19 @@ Response style: straight to the point, no fluff.
 12. Auto-commit after changes; use a conventional commit message if none is provided.
 13. Safe-by-default git: check status/diff before edits.
 
+## Learnings
+
+### Project Location
+The project root is `C:\pt-study-sop`. All dashboard_rebuild/ and brain/ paths are relative to this root.
+
+### React Hooks in calendar.tsx
+Never place `useSensors`, `useSensor`, or any `use*` hook inside JSX or callbacks. Always declare at the top level of `CalendarPage()`. This was a bug introduced when adding DnD to the manage calendars dialog.
+
+### Calendar Filtering
+When filtering Google events by `selectedCalendars`, always use `event.calendarId || ''` — never rely on a truthy check on `calendarId` since some events have undefined/empty calendarId and would bypass the filter.
+
+### Build & Deploy
+After frontend changes, run `npm run build` in `dashboard_rebuild/`, then copy `dist/public/` to `brain/static/dist/`. The Flask server serves static files from there. Without this step, changes won't appear in the browser.
+
 ## Detailed Guidelines
 - Agent Workflow: ai-config/agent-workflow.md

@@ -30,6 +30,9 @@ Provide a single, consistent JSON logging format for all sessions.
   "anchors": "semicolon-separated",
   "what_worked": "semicolon-separated",
   "what_needs_fixing": "semicolon-separated",
+  "error_classification": "semicolon-separated",
+  "error_severity": "semicolon-separated",
+  "error_recurrence": "semicolon-separated",
   "notes": "semicolon-separated"
 }
 ```
@@ -65,9 +68,37 @@ Provide a single, consistent JSON logging format for all sessions.
   "what_worked": "semicolon-separated",
   "what_needs_fixing": "semicolon-separated",
   "next_session": "semicolon-separated",
+  "errors_by_type": "semicolon-separated",
+  "errors_by_severity": "semicolon-separated",
+  "error_patterns": "semicolon-separated",
+  "spacing_algorithm": "standard|rsr-adaptive",
+  "rsr_adaptive_adjustment": "semicolon-separated",
+  "adaptive_multipliers": "semicolon-separated",
   "notes": "semicolon-separated"
 }
 ```
+
+---
+## Error Classification Schema
+
+### Error type enum
+`careless | misunderstanding | spacing | transfer`
+
+### Error severity enum
+`minor | moderate | critical`
+
+### Field definitions
+- `error_classification`: semicolon-separated list of error types observed (e.g., `"misunderstanding; spacing"`).
+- `error_severity`: semicolon-separated list matching error_classification order (e.g., `"moderate; minor"`).
+- `error_recurrence`: semicolon-separated counts of how many previous sessions each error appeared (e.g., `"3; 1"`).
+- `errors_by_type` (Enhanced): aggregate counts per type (e.g., `"careless=1; misunderstanding=2; spacing=1; transfer=0"`).
+- `errors_by_severity` (Enhanced): aggregate counts per severity (e.g., `"minor=1; moderate=2; critical=0"`).
+- `error_patterns` (Enhanced): recurring error descriptions (e.g., `"origin vs insertion confusion recurring 3 sessions"`).
+
+### Spacing algorithm fields
+- `spacing_algorithm`: `"standard"` (1-3-7-21 heuristic) or `"rsr-adaptive"` (RSR-based adjustment).
+- `rsr_adaptive_adjustment`: description of adjustment applied (e.g., `"R2 extended +25% to 3.75d; RSR=85%"`).
+- `adaptive_multipliers`: multipliers used (e.g., `"R2=1.25; R3=1.0"`).
 
 ---
 ## Required calculations
