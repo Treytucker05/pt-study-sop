@@ -26,6 +26,8 @@ interface GoogleCalendarEvent {
   htmlLink?: string;
   eventType?: string;
   course?: string;
+  courseId?: number;
+  courseCode?: string;
   weight?: string;
   extendedProperties?: { private?: Record<string, string> };
   conferenceData?: { entryPoints?: { uri?: string; entryPointType?: string }[]; conferenceSolution?: { name?: string } };
@@ -37,6 +39,12 @@ interface GoogleCalendarEvent {
 }
 
 type Tab = "details" | "time" | "recurrence" | "people" | "settings";
+
+interface CourseOption {
+  id: number;
+  name: string;
+  code?: string | null;
+}
 
 const FALLBACK_TIME_ZONES = [
   "America/New_York",
@@ -59,7 +67,7 @@ interface EventEditModalProps {
   onEventChange: (event: GoogleCalendarEvent) => void;
   onSave: () => void;
   onDelete: () => void;
-  courseOptions?: string[];
+  courseOptions?: CourseOption[];
 }
 
 export function EventEditModal({
@@ -87,6 +95,15 @@ export function EventEditModal({
     }
     return FALLBACK_TIME_ZONES;
   }, []);
+  const courseIdValue = useMemo(() => {
+    if (!event) return "__none__";
+    if (event.courseId) return String(event.courseId);
+    if (event.course) {
+      const match = courseOptions.find((c) => c.name === event.course);
+      if (match) return String(match.id);
+    }
+    return "__none__";
+  }, [event, courseOptions]);
 
   if (!event) return null;
 
@@ -101,6 +118,21 @@ export function EventEditModal({
 
   const setField = <K extends keyof GoogleCalendarEvent>(key: K, value: GoogleCalendarEvent[K]) => {
     onEventChange({ ...event, [key]: value });
+  };
+
+  const updateCourseSelection = (value: string) => {
+    if (value === "__none__") {
+      onEventChange({ ...event, course: undefined, courseId: undefined, courseCode: undefined });
+      return;
+    }
+    const selected = courseOptions.find((c) => String(c.id) === value);
+    if (!selected) return;
+    onEventChange({
+      ...event,
+      course: selected.name,
+      courseId: selected.id,
+      courseCode: selected.code || undefined,
+    });
   };
 
   const toggleAllDay = (allDay: boolean) => {
@@ -245,8 +277,8 @@ export function EventEditModal({
                 <div className="space-y-2">
                   <Label className="text-xs text-green-500/80">COURSE_</Label>
                   <Select
-                    value={event.course || "__none__"}
-                    onValueChange={(v) => setField("course", v === "__none__" ? undefined : v)}
+                    value={courseIdValue}
+                    onValueChange={updateCourseSelection}
                   >
                     <SelectTrigger className="bg-black border-green-500/50 text-green-500 rounded-none h-8 font-terminal text-xs">
                       <SelectValue placeholder="Select course" />

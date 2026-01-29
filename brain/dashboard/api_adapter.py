@@ -178,12 +178,16 @@ def get_current_course_name() -> str | None:
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("""
-            SELECT name FROM wheel_courses
-            WHERE active = 1
-            ORDER BY position ASC
+        cur.execute(
+            """
+            SELECT COALESCE(c.name, w.name)
+            FROM wheel_courses w
+            LEFT JOIN courses c ON c.id = w.course_id
+            WHERE w.active = 1
+            ORDER BY w.position ASC
             LIMIT 1
-        """)
+        """
+        )
         row = cur.fetchone()
         conn.close()
         return row[0] if row else None
@@ -1238,7 +1242,7 @@ def import_syllabus_bulk():
     cur.execute("SELECT name FROM courses WHERE id = ?", (course_id,))
     course_row = cur.fetchone()
     if not course_row or not course_row[0]:
-        cur.execute("SELECT name FROM wheel_courses WHERE id = ?", (course_id,))
+        cur.execute("SELECT name FROM wheel_courses WHERE course_id = ?", (course_id,))
         course_row = cur.fetchone()
     course_name = course_row[0] if course_row and course_row[0] else str(course_id)
 
@@ -3181,26 +3185,103 @@ def get_chat_history(session_id):
 # ==============================================================================
 
 
+def _ensure_courses_table(cur):
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS courses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            code TEXT,
+            term TEXT,
+            instructor TEXT,
+            default_study_mode TEXT,
+            delivery_format TEXT,
+            time_budget_per_week_minutes INTEGER DEFAULT 0,
+            color TEXT,
+            last_scraped_at TEXT,
+            created_at TEXT NOT NULL
+        )
+    """
+    )
+
+
+def _ensure_wheel_courses_schema(cur):
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS wheel_courses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_id INTEGER,
+            name TEXT NOT NULL,
+            active INTEGER DEFAULT 1,
+            position INTEGER DEFAULT 0,
+            total_sessions INTEGER DEFAULT 0,
+            total_minutes INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """
+    )
+    cur.execute("PRAGMA table_info(wheel_courses)")
+    cols = {row[1] for row in cur.fetchall()}
+    if "course_id" not in cols:
+        cur.execute("ALTER TABLE wheel_courses ADD COLUMN course_id INTEGER")
+
+
+def _find_or_create_course(cur, name: str, code: Optional[str] = None) -> int:
+    course_id = None
+    if code:
+        cur.execute("SELECT id, name, code FROM courses WHERE lower(code) = ?", (code.lower(),))
+        row = cur.fetchone()
+        if row:
+            course_id = row[0]
+            if name and row[1] != name:
+                cur.execute("UPDATE courses SET name = ? WHERE id = ?", (name, course_id))
+            return course_id
+
+    if name:
+        cur.execute("SELECT id, code FROM courses WHERE lower(name) = ?", (name.lower(),))
+        row = cur.fetchone()
+        if row:
+            course_id = row[0]
+            if code and not row[1]:
+                cur.execute("UPDATE courses SET code = ? WHERE id = ?", (code, course_id))
+            return course_id
+
+    cur.execute(
+        "INSERT INTO courses (name, code, created_at) VALUES (?, ?, ?)",
+        (name or "Untitled Course", code, datetime.now().isoformat()),
+    )
+    return cur.lastrowid
+
+
+def _ensure_wheel_course_links(cur):
+    _ensure_courses_table(cur)
+    _ensure_wheel_courses_schema(cur)
+    cur.execute("SELECT id, name, course_id FROM wheel_courses")
+    rows = cur.fetchall()
+    for wheel_id, wheel_name, course_id in rows:
+        if course_id:
+            cur.execute("SELECT name FROM courses WHERE id = ?", (course_id,))
+            course_row = cur.fetchone()
+            if course_row and course_row[0] and course_row[0] != wheel_name:
+                cur.execute(
+                    "UPDATE wheel_courses SET name = ? WHERE id = ?",
+                    (course_row[0], wheel_id),
+                )
+            continue
+        course_id = _find_or_create_course(cur, wheel_name)
+        cur.execute(
+            "UPDATE wheel_courses SET course_id = ? WHERE id = ?",
+            (course_id, wheel_id),
+        )
+
 @adapter_bp.route("/courses", methods=["GET"])
 def get_courses():
     """Get all courses for the study wheel ordered by position."""
     try:
         conn = get_connection()
         cur = conn.cursor()
+        _ensure_wheel_course_links(cur)
 
-        # Ensure courses table exists with correct schema
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS wheel_courses (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                active INTEGER DEFAULT 1,
-                position INTEGER DEFAULT 0,
-                total_sessions INTEGER DEFAULT 0,
-                total_minutes INTEGER DEFAULT 0,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
         # Track if wheel has been initialized (prevents re-seeding after user clears it)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS wheel_config (
@@ -3212,8 +3293,27 @@ def get_courses():
 
         # Query wheel_courses table ordered by position
         cur.execute("""
-            SELECT id, name, active, position, total_sessions, total_minutes, created_at 
-            FROM wheel_courses 
+            SELECT
+                w.id,
+                w.course_id,
+                w.name,
+                w.active,
+                w.position,
+                w.total_sessions,
+                w.total_minutes,
+                w.created_at,
+                c.name,
+                c.code,
+                c.term,
+                c.instructor,
+                c.default_study_mode,
+                c.delivery_format,
+                c.time_budget_per_week_minutes,
+                c.color,
+                c.last_scraped_at,
+                c.created_at
+            FROM wheel_courses w
+            LEFT JOIN courses c ON c.id = w.course_id
             WHERE active = 1
             ORDER BY position ASC
         """)
@@ -3221,14 +3321,26 @@ def get_courses():
         
         courses = []
         for r in rows:
+            wheel_id = r[0]
+            course_id = r[1] or wheel_id
+            wheel_name = r[2]
+            course_name = r[8] or wheel_name
             courses.append({
-                "id": r[0],
-                "name": r[1],
-                "active": bool(r[2]),
-                "position": r[3],
-                "totalSessions": r[4] or 0,
-                "totalMinutes": r[5] or 0,
-                "createdAt": r[6] or datetime.now().isoformat(),
+                "id": course_id,
+                "name": course_name,
+                "code": r[9],
+                "term": r[10],
+                "instructor": r[11],
+                "defaultStudyMode": r[12],
+                "deliveryFormat": r[13],
+                "timeBudgetPerWeekMinutes": r[14] or 0,
+                "color": r[15],
+                "lastScrapedAt": r[16],
+                "active": bool(r[3]),
+                "position": r[4],
+                "totalSessions": r[5] or 0,
+                "totalMinutes": r[6] or 0,
+                "createdAt": r[7] or r[17] or datetime.now().isoformat(),
             })
         
         conn.close()
@@ -3248,39 +3360,45 @@ def get_active_courses():
 def create_course():
     """Create a new course for the study wheel."""
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         name = data.get("name", "New Course")
+        code = data.get("code") or data.get("courseCode")
         active = data.get("active", True)
         position = data.get("position", 0)
 
         conn = get_connection()
         cur = conn.cursor()
 
-        # Ensure wheel_courses table exists
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS wheel_courses (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                active INTEGER DEFAULT 1,
-                position INTEGER DEFAULT 0,
-                total_sessions INTEGER DEFAULT 0,
-                total_minutes INTEGER DEFAULT 0,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        _ensure_wheel_course_links(cur)
+        course_id = _find_or_create_course(cur, name, code)
+
+        cur.execute("SELECT id FROM wheel_courses WHERE course_id = ?", (course_id,))
+        existing = cur.fetchone()
+        if existing:
+            wheel_id = existing[0]
+            cur.execute(
+                """
+                UPDATE wheel_courses
+                SET name = ?, active = ?, position = ?
+                WHERE id = ?
+                """,
+                (name, 1 if active else 0, position, wheel_id),
             )
-        """)
-
-        cur.execute("""
-            INSERT INTO wheel_courses (name, active, position, total_sessions, total_minutes, created_at)
-            VALUES (?, ?, ?, 0, 0, ?)
-        """, (name, 1 if active else 0, position, datetime.now().isoformat()))
-
-        course_id = cur.lastrowid
+        else:
+            cur.execute(
+                """
+                INSERT INTO wheel_courses (course_id, name, active, position, total_sessions, total_minutes, created_at)
+                VALUES (?, ?, ?, ?, 0, 0, ?)
+                """,
+                (course_id, name, 1 if active else 0, position, datetime.now().isoformat()),
+            )
         conn.commit()
         conn.close()
 
         return jsonify({
             "id": course_id,
             "name": name,
+            "code": code,
             "active": active,
             "position": position,
             "totalSessions": 0,
@@ -3295,15 +3413,26 @@ def create_course():
 def update_course(course_id):
     """Update a course."""
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         conn = get_connection()
         cur = conn.cursor()
+
+        _ensure_wheel_course_links(cur)
+
+        cur.execute("SELECT id FROM wheel_courses WHERE course_id = ?", (course_id,))
+        wheel_row = cur.fetchone()
+        if not wheel_row:
+            conn.close()
+            return jsonify({"error": "Course not found"}), 404
         
         updates = []
         params = []
         if "name" in data:
+            cur.execute("UPDATE courses SET name = ? WHERE id = ?", (data["name"], course_id))
             updates.append("name = ?")
             params.append(data["name"])
+        if "code" in data:
+            cur.execute("UPDATE courses SET code = ? WHERE id = ?", (data["code"], course_id))
         if "active" in data:
             updates.append("active = ?")
             params.append(1 if data["active"] else 0)
@@ -3313,11 +3442,27 @@ def update_course(course_id):
         
         if updates:
             params.append(course_id)
-            cur.execute(f"UPDATE wheel_courses SET {', '.join(updates)} WHERE id = ?", params)
+            cur.execute(f"UPDATE wheel_courses SET {', '.join(updates)} WHERE course_id = ?", params)
             conn.commit()
         
         # Return updated course
-        cur.execute("SELECT id, name, active, position, total_sessions, total_minutes, created_at FROM wheel_courses WHERE id = ?", (course_id,))
+        cur.execute(
+            """
+            SELECT
+                w.course_id,
+                w.name,
+                w.active,
+                w.position,
+                w.total_sessions,
+                w.total_minutes,
+                w.created_at,
+                c.code
+            FROM wheel_courses w
+            LEFT JOIN courses c ON c.id = w.course_id
+            WHERE w.course_id = ?
+            """,
+            (course_id,),
+        )
         r = cur.fetchone()
         conn.close()
         
@@ -3325,6 +3470,7 @@ def update_course(course_id):
             return jsonify({
                 "id": r[0],
                 "name": r[1],
+                "code": r[7],
                 "active": bool(r[2]),
                 "position": r[3],
                 "totalSessions": r[4] or 0,
@@ -3346,7 +3492,7 @@ def delete_course(course_id):
         print(f"[DELETE] Attempting to delete course ID: {course_id}")
         
         # First check if course exists
-        cur.execute("SELECT id, name, position FROM wheel_courses WHERE id = ?", (course_id,))
+        cur.execute("SELECT id, name, position FROM wheel_courses WHERE course_id = ?", (course_id,))
         row = cur.fetchone()
         
         if not row:
@@ -3368,7 +3514,7 @@ def delete_course(course_id):
         print(f"[DELETE] Cascade deleted {modules_deleted} modules")
 
         # Delete the course
-        cur.execute("DELETE FROM wheel_courses WHERE id = ?", (course_id,))
+        cur.execute("DELETE FROM wheel_courses WHERE course_id = ?", (course_id,))
         deleted_count = cur.rowcount
         print(f"[DELETE] Rows deleted: {deleted_count}")
         
@@ -3381,7 +3527,7 @@ def delete_course(course_id):
         print(f"[DELETE] Commit successful for course ID: {course_id}")
         
         # Verify deletion
-        cur.execute("SELECT id FROM wheel_courses WHERE id = ?", (course_id,))
+        cur.execute("SELECT id FROM wheel_courses WHERE course_id = ?", (course_id,))
         still_exists = cur.fetchone()
         if still_exists:
             print(f"[DELETE] WARNING: Course {course_id} STILL EXISTS after delete!")
@@ -3997,25 +4143,24 @@ def get_current_course():
         conn = get_connection()
         cur = conn.cursor()
 
-        # Ensure wheel_courses table exists
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS wheel_courses (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                active INTEGER DEFAULT 1,
-                position INTEGER DEFAULT 0,
-                total_sessions INTEGER DEFAULT 0,
-                total_minutes INTEGER DEFAULT 0,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        _ensure_wheel_course_links(cur)
         conn.commit()
 
         # Get the course at position 0 (top of wheel)
         cur.execute("""
-            SELECT id, name, active, position, total_sessions, total_minutes, created_at 
-            FROM wheel_courses 
-            WHERE active = 1
+            SELECT
+                w.course_id,
+                w.name,
+                w.active,
+                w.position,
+                w.total_sessions,
+                w.total_minutes,
+                w.created_at,
+                c.name,
+                c.code
+            FROM wheel_courses w
+            LEFT JOIN courses c ON c.id = w.course_id
+            WHERE w.active = 1
             ORDER BY position ASC
             LIMIT 1
         """)
@@ -4026,7 +4171,8 @@ def get_current_course():
             return jsonify({
                 "currentCourse": {
                     "id": r[0],
-                    "name": r[1],
+                    "name": r[7] or r[1],
+                    "code": r[8],
                     "active": bool(r[2]),
                     "position": r[3],
                     "totalSessions": r[4] or 0,
@@ -4055,10 +4201,12 @@ def complete_wheel_session():
 
         conn = get_connection()
         cur = conn.cursor()
+        _ensure_wheel_course_links(cur)
+        conn.commit()
 
         # Get the current course (should be at position 0)
         cur.execute("""
-            SELECT id, name, position FROM wheel_courses WHERE id = ?
+            SELECT id, course_id, name, position FROM wheel_courses WHERE course_id = ?
         """, (course_id,))
         current = cur.fetchone()
 
@@ -4066,7 +4214,12 @@ def complete_wheel_session():
             conn.close()
             return jsonify({"error": "Course not found"}), 404
 
-        course_name = current[1]
+        wheel_id = current[0]
+        course_name = current[2]
+        cur.execute("SELECT name FROM courses WHERE id = ?", (course_id,))
+        course_row = cur.fetchone()
+        if course_row and course_row[0]:
+            course_name = course_row[0]
 
         # Create session record
         cur.execute("""
@@ -4099,7 +4252,7 @@ def complete_wheel_session():
             SET total_sessions = total_sessions + 1, 
                 total_minutes = total_minutes + ?
             WHERE id = ?
-        """, (minutes, course_id))
+        """, (minutes, wheel_id))
 
         # ROTATE THE WHEEL: Move completed course to bottom, shift others up
         # Get max position
@@ -4111,22 +4264,32 @@ def complete_wheel_session():
             UPDATE wheel_courses 
             SET position = position - 1 
             WHERE position > 0 AND id != ?
-        """, (course_id,))
+        """, (wheel_id,))
 
         # Move the completed course to the bottom
         cur.execute("""
             UPDATE wheel_courses 
             SET position = ? 
             WHERE id = ?
-        """, (max_pos, course_id))
+        """, (max_pos, wheel_id))
 
         conn.commit()
 
         # Get the new current course (now at position 0)
         cur.execute("""
-            SELECT id, name, active, position, total_sessions, total_minutes, created_at 
-            FROM wheel_courses 
-            WHERE active = 1
+            SELECT
+                w.course_id,
+                w.name,
+                w.active,
+                w.position,
+                w.total_sessions,
+                w.total_minutes,
+                w.created_at,
+                c.name,
+                c.code
+            FROM wheel_courses w
+            LEFT JOIN courses c ON c.id = w.course_id
+            WHERE w.active = 1
             ORDER BY position ASC
             LIMIT 1
         """)
@@ -4136,7 +4299,8 @@ def complete_wheel_session():
         if r:
             next_course = {
                 "id": r[0],
-                "name": r[1],
+                "name": r[7] or r[1],
+                "code": r[8],
                 "active": bool(r[2]),
                 "position": r[3],
                 "totalSessions": r[4] or 0,
@@ -4334,23 +4498,36 @@ def get_last_session_context():
         if course_id:
             cur.execute(
                 """
-                SELECT id, name, active, position, total_sessions, total_minutes, created_at
-                FROM wheel_courses WHERE id = ?
+                SELECT
+                    w.course_id,
+                    w.name AS wheel_name,
+                    w.active,
+                    w.position,
+                    w.total_sessions,
+                    w.total_minutes,
+                    w.created_at,
+                    c.name AS course_name,
+                    c.code AS course_code
+                FROM wheel_courses w
+                LEFT JOIN courses c ON c.id = w.course_id
+                WHERE w.course_id = ?
             """,
                 (course_id,),
             )
             course_row = cur.fetchone()
             if course_row:
+                resolved_name = course_row["course_name"] or course_row["wheel_name"]
                 course = {
-                    "id": course_row["id"],
-                    "name": course_row["name"],
+                    "id": course_row["course_id"],
+                    "name": resolved_name,
+                    "code": course_row["course_code"],
                     "active": bool(course_row["active"]),
                     "position": course_row["position"],
                     "totalSessions": course_row["total_sessions"] or 0,
                     "totalMinutes": course_row["total_minutes"] or 0,
                     "createdAt": course_row["created_at"],
                 }
-                course_name = course_row["name"]
+                course_name = resolved_name
 
         if course_name:
             cur.execute(
@@ -4421,25 +4598,37 @@ def get_last_session_context():
             if session_course_name:
                 cur.execute(
                     """
-                    SELECT id, name, active, position, total_sessions, total_minutes, created_at
-                    FROM wheel_courses
-                    WHERE LOWER(name) = LOWER(?)
+                    SELECT
+                        w.course_id,
+                        w.name AS wheel_name,
+                        w.active,
+                        w.position,
+                        w.total_sessions,
+                        w.total_minutes,
+                        w.created_at,
+                        c.name AS course_name,
+                        c.code AS course_code
+                    FROM wheel_courses w
+                    LEFT JOIN courses c ON c.id = w.course_id
+                    WHERE LOWER(COALESCE(c.name, w.name)) = LOWER(?)
                     LIMIT 1
                 """,
                     (session_course_name,),
                 )
                 course_row = cur.fetchone()
                 if course_row:
+                    resolved_name = course_row["course_name"] or course_row["wheel_name"]
                     course = {
-                        "id": course_row["id"],
-                        "name": course_row["name"],
+                        "id": course_row["course_id"],
+                        "name": resolved_name,
+                        "code": course_row["course_code"],
                         "active": bool(course_row["active"]),
                         "position": course_row["position"],
                         "totalSessions": course_row["total_sessions"] or 0,
                         "totalMinutes": course_row["total_minutes"] or 0,
                         "createdAt": course_row["created_at"],
                     }
-                    course_id = course_row["id"]
+                    course_id = course_row["course_id"]
 
         recent_los = []
         if course_id:
@@ -6120,10 +6309,10 @@ def get_academic_deadlines():
             if r[2] and r[2].isdigit():
                 numeric_ids.add(int(r[2]))
         for cid in numeric_ids:
-            cur.execute("SELECT name FROM wheel_courses WHERE id = ?", (cid,))
+            cur.execute("SELECT name FROM courses WHERE id = ?", (cid,))
             row = cur.fetchone()
             if not row:
-                cur.execute("SELECT name FROM courses WHERE id = ?", (cid,))
+                cur.execute("SELECT name FROM wheel_courses WHERE course_id = ?", (cid,))
                 row = cur.fetchone()
             _course_name_cache[cid] = row[0] if row and row[0] else str(cid)
 

@@ -67,6 +67,8 @@ interface GoogleCalendarEvent {
   htmlLink?: string;
   eventType?: string;
   course?: string;
+  courseId?: number;
+  courseCode?: string;
   weight?: string;
   extendedProperties?: { private?: Record<string, string> };
   conferenceData?: { entryPoints?: { uri?: string; entryPointType?: string }[]; conferenceSolution?: { name?: string } };
@@ -88,6 +90,12 @@ interface NormalizedEvent {
   calendarColor?: string;
   calendarName?: string;
   originalEvent: CalendarEvent | GoogleCalendarEvent;
+}
+
+interface CourseOption {
+  id: number;
+  name: string;
+  code?: string | null;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -589,11 +597,21 @@ export default function CalendarPage() {
     return availableCalendars.filter(cal => !hiddenCalendars.includes(cal.id));
   }, [availableCalendars, hiddenCalendars]);
 
-  const courseOptions = useMemo(() => {
-    const names = studyWheelCourses
-      .map((course) => course.name)
-      .filter((name): name is string => !!name);
-    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+  const courseOptions = useMemo<CourseOption[]>(() => {
+    const mapped = studyWheelCourses
+      .map((course) => ({
+        id: course.id,
+        name: course.name,
+        code: (course as Course & { code?: string | null }).code ?? null,
+      }))
+      .filter((course) => !!course.name);
+    const byId = new Map<number, CourseOption>();
+    mapped.forEach((course) => {
+      if (!byId.has(course.id)) {
+        byId.set(course.id, course);
+      }
+    });
+    return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [studyWheelCourses]);
 
   useEffect(() => {
@@ -643,7 +661,7 @@ export default function CalendarPage() {
   });
 
   const updateEventMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<InsertCalendarEvent> }) =>
+    mutationFn: ({ id, data }: { id: number; data: Partial<InsertCalendarEvent> & { courseId?: number | null } }) =>
       api.events.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -733,9 +751,31 @@ export default function CalendarPage() {
       const privateProps: Record<string, string> = {
         ...(event.extendedProperties?.private || {}),
       };
-      if (event.eventType !== undefined) privateProps.eventType = event.eventType;
-      if (event.course !== undefined) privateProps.course = event.course;
-      if (event.weight !== undefined) privateProps.weight = event.weight;
+      if (event.eventType !== undefined) {
+        privateProps.eventType = event.eventType;
+      } else {
+        delete privateProps.eventType;
+      }
+      if (event.course !== undefined) {
+        privateProps.course = event.course;
+      } else {
+        delete privateProps.course;
+      }
+      if (event.courseId !== undefined) {
+        privateProps.courseId = String(event.courseId);
+      } else {
+        delete privateProps.courseId;
+      }
+      if (event.courseCode !== undefined) {
+        privateProps.courseCode = event.courseCode;
+      } else {
+        delete privateProps.courseCode;
+      }
+      if (event.weight !== undefined) {
+        privateProps.weight = event.weight;
+      } else {
+        delete privateProps.weight;
+      }
       const timeZoneProp = event.extendedProperties?.private?.timeZone || event.start?.timeZone;
       if (timeZoneProp) privateProps.timeZone = timeZoneProp;
       const extendedProperties = Object.keys(privateProps).length ? { private: privateProps } : undefined;
@@ -913,10 +953,14 @@ export default function CalendarPage() {
   const openGoogleEditModal = (event?: GoogleCalendarEvent | null) => {
     if (!event) return;
     const extras = event.extendedProperties?.private || {};
+    const parsedCourseId = extras.courseId ? Number.parseInt(extras.courseId, 10) : undefined;
+    const extrasCourseId = Number.isFinite(parsedCourseId) ? parsedCourseId : undefined;
     setSelectedGoogleEvent({
       ...event,
       eventType: event.eventType || extras.eventType,
       course: event.course || extras.course,
+      courseId: event.courseId ?? extrasCourseId,
+      courseCode: event.courseCode || extras.courseCode,
       weight: event.weight || extras.weight,
     });
     setShowGoogleEditModal(true);
@@ -1638,6 +1682,7 @@ export default function CalendarPage() {
               endDate: selectedEvent.endDate,
               allDay: selectedEvent.allDay,
               eventType: selectedEvent.eventType,
+              courseId: selectedEvent.courseId ?? null,
               course: selectedEvent.course,
               weight: selectedEvent.weight,
               notes: selectedEvent.notes,

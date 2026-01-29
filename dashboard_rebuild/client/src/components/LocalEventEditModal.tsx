@@ -32,9 +32,16 @@ export type LocalCalendarEvent = Omit<
   transparency?: string | null;
   reminders?: CalendarReminders | null;
   timeZone?: string | null;
+  courseId?: number | null;
 };
 
 type Tab = "details" | "time" | "recurrence" | "people" | "settings";
+
+interface CourseOption {
+  id: number;
+  name: string;
+  code?: string | null;
+}
 
 const FALLBACK_TIME_ZONES = [
   "America/New_York",
@@ -57,7 +64,7 @@ interface LocalEventEditModalProps {
   onEventChange: (event: LocalCalendarEvent) => void;
   onSave: () => void;
   onDelete: () => void;
-  courseOptions?: string[];
+  courseOptions?: CourseOption[];
 }
 
 const COLOR_PALETTE = [
@@ -105,6 +112,15 @@ export function LocalEventEditModal({
     }
     return FALLBACK_TIME_ZONES;
   }, []);
+  const courseIdValue = useMemo(() => {
+    if (!event) return "__none__";
+    if (event.courseId) return String(event.courseId);
+    if (event.course) {
+      const match = courseOptions.find((c) => c.name === event.course);
+      if (match) return String(match.id);
+    }
+    return "__none__";
+  }, [event, courseOptions]);
 
   if (!event) return null;
 
@@ -133,6 +149,20 @@ export function LocalEventEditModal({
 
   const setField = <K extends keyof LocalCalendarEvent>(key: K, value: LocalCalendarEvent[K]) => {
     onEventChange({ ...event, [key]: value });
+  };
+
+  const updateCourseSelection = (value: string) => {
+    if (value === "__none__") {
+      onEventChange({ ...event, course: null, courseId: null });
+      return;
+    }
+    const selected = courseOptions.find((c) => String(c.id) === value);
+    if (!selected) return;
+    onEventChange({
+      ...event,
+      course: selected.name,
+      courseId: selected.id,
+    });
   };
 
   const addAttendee = () => {
@@ -225,8 +255,8 @@ export function LocalEventEditModal({
                 <div className="space-y-2">
                   <Label className="text-xs text-primary/80">COURSE_</Label>
                   <Select
-                    value={event.course || "__none__"}
-                    onValueChange={(v) => setField("course", v === "__none__" ? null : v)}
+                    value={courseIdValue}
+                    onValueChange={updateCourseSelection}
                   >
                     <SelectTrigger className="bg-black border-primary/50 text-primary rounded-none h-8 font-terminal text-xs">
                       <SelectValue placeholder="Select course" />
