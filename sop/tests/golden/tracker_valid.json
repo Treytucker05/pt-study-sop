@@ -1,0 +1,20 @@
+﻿{
+  "schema_version": "9.3",
+  "date": "2026-01-30",
+  "topic": "[DPT] Shoulder: rotator cuff",
+  "mode": "Core",
+  "duration_min": 45,
+  "understanding": 4,
+  "retention": 3,
+  "calibration_gap": 8,
+  "rsr_percent": 72,
+  "cognitive_load": "intrinsic",
+  "transfer_check": "yes",
+  "anchors": "supraspinatus=init abduction;infraspinatus=ER hook",
+  "what_worked": "L2 teach-back;diagram recall",
+  "what_needs_fixing": "greater tubercle attachments",
+  "error_classification": "misunderstanding;spacing",
+  "error_severity": "moderate;minor",
+  "error_recurrence": "1;2",
+  "notes": "need better landmark map"
+}
