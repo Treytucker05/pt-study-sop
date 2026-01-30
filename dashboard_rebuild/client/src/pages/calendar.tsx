@@ -547,6 +547,21 @@ export default function CalendarPage() {
       const calendars = calendarResult.data || [];
       const calendarIds = calendars.map((cal) => cal.id).filter(Boolean);
 
+      let syncSummary: { imported?: number; updated?: number; pushed?: number; deleted?: number; skipped?: number; errors?: string[] } | null = null;
+      if (calendarIds.length > 0) {
+        const syncRes = await fetch("/api/gcal/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ calendar_ids: calendarIds }),
+        });
+        if (!syncRes.ok) throw new Error("Failed to sync with Google.");
+        const payload = await syncRes.json();
+        if (payload?.success === false) {
+          throw new Error(payload.error || "Sync failed.");
+        }
+        syncSummary = payload || null;
+      }
+
       if (calendarIds.length > 0) {
         const next = new Set(calendarIds);
         setSelectedCalendars(next);
@@ -558,8 +573,19 @@ export default function CalendarPage() {
         setCalendarSelectionDirty(false);
       }
 
+      queryClient.invalidateQueries({ queryKey: ["events"] });
       await refetchGoogle();
-      toast({ title: "SYNCED", description: "Google calendars refreshed." });
+      if (syncSummary) {
+        const counts = [
+          typeof syncSummary.imported === "number" ? `${syncSummary.imported} imported` : null,
+          typeof syncSummary.updated === "number" ? `${syncSummary.updated} updated` : null,
+          typeof syncSummary.pushed === "number" ? `${syncSummary.pushed} pushed` : null,
+        ].filter(Boolean).join(", ");
+        const suffix = syncSummary.errors?.length ? ` (${syncSummary.errors.length} errors)` : "";
+        toast({ title: "SYNCED", description: `Google sync complete${counts ? `: ${counts}` : ""}${suffix}.` });
+      } else {
+        toast({ title: "SYNCED", description: "Google calendars refreshed." });
+      }
     } catch (err) {
       toast({
         title: "SYNC_FAILED",
