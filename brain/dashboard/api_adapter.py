@@ -2270,11 +2270,30 @@ def get_google_events():
     time_min = request.args.get("timeMin")
     time_max = request.args.get("timeMax")
 
+    service = gcal.get_calendar_service()
+    if not service:
+        return jsonify({"error": "Not authenticated"}), 401
+
     events, error = gcal.fetch_calendar_events(
-        selected_ids, calendar_meta, time_min=time_min, time_max=time_max
+        selected_ids, calendar_meta, time_min=time_min, time_max=time_max, service=service
     )
     if error:
         return jsonify({"error": error}), 500
+
+    recurrence_cache = {}
+    for event in events:
+        series_id = event.get("recurringEventId")
+        cal_id = event.get("_calendar_id")
+        if not series_id or event.get("recurrence") or not cal_id:
+            continue
+        key = (cal_id, series_id)
+        if key in recurrence_cache:
+            continue
+        try:
+            master = service.events().get(calendarId=cal_id, eventId=series_id).execute()
+            recurrence_cache[key] = master.get("recurrence")
+        except Exception:
+            recurrence_cache[key] = None
 
     # Enrich events for frontend
     enriched_events = []
@@ -2283,6 +2302,8 @@ def get_google_events():
         event["calendarId"] = cal_id
         event["calendarSummary"] = event.get("_calendar_name")
         event["calendarColor"] = calendar_colors.get(cal_id)
+        if event.get("recurringEventId") and not event.get("recurrence") and cal_id:
+            event["recurrence"] = recurrence_cache.get((cal_id, event.get("recurringEventId")))
         enriched_events.append(event)
 
     return jsonify(enriched_events)
