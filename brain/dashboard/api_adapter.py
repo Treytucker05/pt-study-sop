@@ -2368,6 +2368,25 @@ def create_google_event():
         return jsonify({"error": str(e)}), 500
 
 
+@adapter_bp.route("/google-calendar/events/<event_id>", methods=["GET"])
+def get_google_event(event_id):
+    from dashboard import gcal
+
+    calendar_id = request.args.get("calendarId")
+    if not calendar_id:
+        return jsonify({"error": "Missing calendarId parameter"}), 400
+
+    service = gcal.get_calendar_service()
+    if not service:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    try:
+        event = service.events().get(calendarId=calendar_id, eventId=event_id).execute()
+        return jsonify(event)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @adapter_bp.route("/google-calendar/events/<event_id>", methods=["PATCH"])
 @adapter_bp.route("/google-calendar/events/<event_id>", methods=["PATCH"])
 def update_google_event(event_id):

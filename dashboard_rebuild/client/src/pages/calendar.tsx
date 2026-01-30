@@ -98,6 +98,13 @@ interface CourseOption {
   code?: string | null;
 }
 
+const parseDateOnly = (value?: string) => {
+  if (!value) return new Date();
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return new Date(value);
+  return new Date(year, month - 1, day);
+};
+
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60;
 
@@ -852,7 +859,7 @@ export default function CalendarPage() {
           location: event.location,
           start: event.start,
           end: event.end,
-          recurrence: event.recurrence,
+          recurrence: event.recurringEventId ? undefined : event.recurrence,
           attendees: event.attendees,
           visibility: event.visibility,
           transparency: event.transparency,
@@ -975,10 +982,10 @@ export default function CalendarPage() {
       const isAllDay = !!gEvent.start?.date && !gEvent.start?.dateTime;
       const startStr = gEvent.start?.dateTime || gEvent.start?.date || new Date().toISOString();
       const endStr = gEvent.end?.dateTime || gEvent.end?.date || startStr;
-      const start = new Date(startStr);
-      let end = new Date(endStr);
+      const start = isAllDay && gEvent.start?.date ? parseDateOnly(gEvent.start.date) : new Date(startStr);
+      let end = isAllDay && gEvent.end?.date ? parseDateOnly(gEvent.end.date) : new Date(endStr);
       if (isAllDay && gEvent.start?.date && gEvent.end?.date && gEvent.end.date > gEvent.start.date) {
-        end = addDays(new Date(gEvent.end.date), -1);
+        end = addDays(parseDateOnly(gEvent.end.date), -1);
       }
       const isOnline = !!(gEvent.conferenceData || gEvent.hangoutLink);
       const storedEventType = gEvent.eventType || gEvent.extendedProperties?.private?.eventType;

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,6 +95,37 @@ export function EventEditModal({
     }
     return FALLBACK_TIME_ZONES;
   }, []);
+
+  useEffect(() => {
+    if (!open || !event?.recurringEventId || !event.calendarId) return;
+    if (event.recurrence && event.recurrence.length > 0) return;
+    let cancelled = false;
+    fetch(`/api/google-calendar/events/${encodeURIComponent(event.recurringEventId)}?calendarId=${encodeURIComponent(event.calendarId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.recurrence) return;
+        onEventChange({ ...event, recurrence: data.recurrence });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, event?.recurringEventId, event?.calendarId, event?.recurrence, onEventChange]);
+
+  const formatRecurrence = (rule?: string) => {
+    switch (rule) {
+      case "RRULE:FREQ=DAILY":
+        return "Daily";
+      case "RRULE:FREQ=WEEKLY":
+        return "Weekly";
+      case "RRULE:FREQ=MONTHLY":
+        return "Monthly";
+      case "RRULE:FREQ=YEARLY":
+        return "Yearly";
+      default:
+        return rule || "Unavailable";
+    }
+  };
   const courseIdValue = useMemo(() => {
     if (!event) return "__none__";
     if (event.courseId) return String(event.courseId);
@@ -410,7 +441,14 @@ export function EventEditModal({
             {activeTab === "recurrence" && (
               <>
                 {event.recurringEventId ? (
-                  <p className="text-xs text-yellow-500 font-terminal">This is a single instance of a recurring event. Recurrence can only be edited on the series.</p>
+                  <div className="space-y-2">
+                    <p className="text-xs text-yellow-500 font-terminal">
+                      This is a single instance of a recurring event. Recurrence can only be edited on the series.
+                    </p>
+                    <p className="text-[10px] text-green-300 font-terminal">
+                      Series pattern: {formatRecurrence(event.recurrence?.[0])}
+                    </p>
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     <div className="space-y-2">
