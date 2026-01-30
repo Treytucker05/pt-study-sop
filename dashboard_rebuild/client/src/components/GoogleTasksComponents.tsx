@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Trash2, Plus, Calendar as CalendarIcon, AlignLeft, ChevronRight, ChevronDown, Clock } from "lucide-react";
@@ -173,6 +173,12 @@ export function TaskDialog({ task, isOpen, onClose, onSave, onDelete, isCreating
     return (
         <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
             <DialogContent className="sm:max-w-[500px] border-border bg-[#1E1E1E] text-white p-0 gap-0 overflow-hidden shadow-2xl rounded-xl">
+                <DialogTitle className="sr-only">
+                    {isCreating ? "Create New Task" : "Edit Task"}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                    {isCreating ? "Enter task details to create a new task." : "Modify task details."}
+                </DialogDescription>
                 {/* Header / Title Input */}
                 <div className="p-6 pb-2">
                     <Input

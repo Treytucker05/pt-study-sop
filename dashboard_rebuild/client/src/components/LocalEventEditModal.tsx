@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -180,11 +180,13 @@ export function LocalEventEditModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent
-          data-modal="calendar-edit-local"
-          className="font-arcade bg-black border-2 border-primary rounded-none max-w-lg p-0 overflow-hidden translate-y-0 max-h-[calc(100vh-4rem)]"
-          style={{ zIndex: 100005, top: "3rem", left: "50%", transform: "translate(-50%, 0)" }}
-        >
+      <DialogContent
+        data-modal="calendar-edit-local"
+        className="font-arcade bg-black border-2 border-primary rounded-none max-w-lg p-0 overflow-hidden translate-y-0 max-h-[calc(100vh-4rem)]"
+        style={{ zIndex: 100005, top: "3rem", left: "50%", transform: "translate(-50%, 0)" }}
+      >
+        <DialogTitle className="sr-only">Edit Event</DialogTitle>
+        <DialogDescription className="sr-only">Make changes to your event here. Click save when you're done.</DialogDescription>
         <div className="flex flex-col h-full min-h-0">
           {/* Header */}
           <div className="bg-primary/20 border-b border-primary p-4 flex items-center gap-2 shrink-0">

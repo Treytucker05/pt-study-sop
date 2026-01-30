@@ -9,7 +9,7 @@ import type { GoogleTask } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type AcademicDeadline, type InsertAcademicDeadline } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/use-toast";
 import { format, isPast, isToday, isTomorrow, differenceInDays, isValid } from "date-fns";
@@ -427,6 +427,7 @@ export default function Dashboard() {
                     <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
                       <DialogHeader>
                         <DialogTitle className="font-arcade">ADD_NEW_COURSE</DialogTitle>
+                        <DialogDescription className="sr-only">Enter course details to add a new course.</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 pt-4">
                         <Input
@@ -520,6 +521,7 @@ export default function Dashboard() {
                       <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
                         <DialogHeader>
                           <DialogTitle className="font-arcade">ADD_NEW_COURSE</DialogTitle>
+                          <DialogDescription className="sr-only">Enter course details to add a new course.</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 pt-4">
                           <Input
@@ -563,6 +565,7 @@ export default function Dashboard() {
                     <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
                       <DialogHeader>
                         <DialogTitle className="font-arcade">EDIT_COURSE</DialogTitle>
+                        <DialogDescription className="sr-only">Modify the course details.</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 pt-4">
                         <Input
@@ -881,6 +884,7 @@ export default function Dashboard() {
             <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
               <DialogHeader>
                 <DialogTitle className="font-arcade">EDIT_TASK</DialogTitle>
+                <DialogDescription className="sr-only">Edit the selected task.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div>
@@ -969,6 +973,7 @@ export default function Dashboard() {
                 <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
                   <DialogHeader>
                     <DialogTitle className="font-arcade">ADD_DEADLINE</DialogTitle>
+                    <DialogDescription className="sr-only">Add a new academic deadline.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
                     <Input

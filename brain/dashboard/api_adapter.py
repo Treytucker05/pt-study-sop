@@ -21,13 +21,16 @@ OBSIDIAN_API_URL = "https://127.0.0.1:27124"
 # Load .env so OBSIDIAN_API_KEY is available if set there
 load_env()
 
+
 def get_obsidian_api_key() -> str:
     """Get Obsidian API key, with fallback to direct .env read."""
     key = os.environ.get("OBSIDIAN_API_KEY", "")
     if key:
         return key
     # Fallback: read directly from brain/.env
-    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+    env_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"
+    )
     if os.path.exists(env_path):
         try:
             with open(env_path, "r", encoding="utf-8") as f:
@@ -39,7 +42,9 @@ def get_obsidian_api_key() -> str:
             pass
     return ""
 
+
 OBSIDIAN_API_KEY = get_obsidian_api_key()
+
 
 def obsidian_health_check() -> dict:
     """Check if Obsidian Local REST API is running."""
@@ -48,15 +53,24 @@ def obsidian_health_check() -> dict:
             f"{OBSIDIAN_API_URL}/",
             headers={"Authorization": f"Bearer {OBSIDIAN_API_KEY}"},
             timeout=3,
-            verify=False  # Self-signed cert
+            verify=False,  # Self-signed cert
         )
         if resp.status_code == 200:
             return {"connected": True, "status": "online"}
-        return {"connected": False, "status": "error", "error": f"Status {resp.status_code}"}
+        return {
+            "connected": False,
+            "status": "error",
+            "error": f"Status {resp.status_code}",
+        }
     except requests.exceptions.ConnectionError:
-        return {"connected": False, "status": "offline", "error": "Obsidian not running or plugin disabled"}
+        return {
+            "connected": False,
+            "status": "offline",
+            "error": "Obsidian not running or plugin disabled",
+        }
     except Exception as e:
         return {"connected": False, "status": "error", "error": str(e)}
+
 
 def obsidian_append(path: str, content: str) -> dict:
     """Append content to a file in Obsidian vault using Local REST API."""
@@ -64,13 +78,13 @@ def obsidian_append(path: str, content: str) -> dict:
         # Local REST API uses POST to append content
         resp = requests.post(
             f"{OBSIDIAN_API_URL}/vault/{path}",
-            data=content.encode('utf-8'),
+            data=content.encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {OBSIDIAN_API_KEY}",
-                "Content-Type": "text/markdown"
+                "Content-Type": "text/markdown",
             },
             timeout=10,
-            verify=False  # Self-signed cert
+            verify=False,  # Self-signed cert
         )
         if resp.status_code in [200, 204]:
             return {"success": True, "path": path, "bytes": len(content)}
@@ -80,15 +94,23 @@ def obsidian_append(path: str, content: str) -> dict:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 def obsidian_list_files(folder: str = "") -> dict:
     """List files in Obsidian vault folder."""
     try:
-        url = f"{OBSIDIAN_API_URL}/vault/" if not folder else f"{OBSIDIAN_API_URL}/vault/{folder}/"
+        url = (
+            f"{OBSIDIAN_API_URL}/vault/"
+            if not folder
+            else f"{OBSIDIAN_API_URL}/vault/{folder}/"
+        )
         resp = requests.get(
             url,
-            headers={"Authorization": f"Bearer {OBSIDIAN_API_KEY}", "Accept": "application/json"},
+            headers={
+                "Authorization": f"Bearer {OBSIDIAN_API_KEY}",
+                "Accept": "application/json",
+            },
             timeout=10,
-            verify=False  # Self-signed cert
+            verify=False,  # Self-signed cert
         )
         if resp.status_code == 200:
             try:
@@ -138,14 +160,18 @@ def obsidian_list_files(folder: str = "") -> dict:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 def obsidian_get_file(path: str) -> dict:
     """Get content of a file from Obsidian vault."""
     try:
         resp = requests.get(
             f"{OBSIDIAN_API_URL}/vault/{path}",
-            headers={"Authorization": f"Bearer {OBSIDIAN_API_KEY}", "Accept": "text/markdown"},
+            headers={
+                "Authorization": f"Bearer {OBSIDIAN_API_KEY}",
+                "Accept": "text/markdown",
+            },
             timeout=10,
-            verify=False  # Self-signed cert
+            verify=False,  # Self-signed cert
         )
         if resp.status_code == 200:
             return {"success": True, "content": resp.text, "path": path}
@@ -153,18 +179,19 @@ def obsidian_get_file(path: str) -> dict:
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 def obsidian_save_file(path: str, content: str) -> dict:
     """Save/overwrite a file in Obsidian vault."""
     try:
         resp = requests.put(
             f"{OBSIDIAN_API_URL}/vault/{path}",
-            data=content.encode('utf-8'),
+            data=content.encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {OBSIDIAN_API_KEY}",
-                "Content-Type": "text/markdown"
+                "Content-Type": "text/markdown",
             },
             timeout=10,
-            verify=False  # Self-signed cert
+            verify=False,  # Self-signed cert
         )
         if resp.status_code in [200, 204]:
             return {"success": True, "path": path}
@@ -253,9 +280,13 @@ def serialize_session_row(row):
 
     confusions_val = row["confusions"] if "confusions" in row.keys() else None
     if not confusions_val:
-        confusions_val = row["errors_conceptual"] if "errors_conceptual" in row.keys() else None
+        confusions_val = (
+            row["errors_conceptual"] if "errors_conceptual" in row.keys() else None
+        )
     if not confusions_val:
-        confusions_val = row["gaps_identified"] if "gaps_identified" in row.keys() else None
+        confusions_val = (
+            row["gaps_identified"] if "gaps_identified" in row.keys() else None
+        )
 
     concepts_val = row["concepts"] if "concepts" in row.keys() else None
     if not concepts_val:
@@ -263,11 +294,17 @@ def serialize_session_row(row):
 
     issues_val = row["issues"] if "issues" in row.keys() else None
     if not issues_val:
-        issues_val = row["what_needs_fixing"] if "what_needs_fixing" in row.keys() else None
+        issues_val = (
+            row["what_needs_fixing"] if "what_needs_fixing" in row.keys() else None
+        )
 
-    duration_minutes = row["duration_minutes"] if "duration_minutes" in row.keys() else None
+    duration_minutes = (
+        row["duration_minutes"] if "duration_minutes" in row.keys() else None
+    )
     minutes = row["time_spent_minutes"] if "time_spent_minutes" in row.keys() else None
-    if minutes in (None, "") or (minutes == 0 and duration_minutes not in (None, "", 0)):
+    if minutes in (None, "") or (
+        minutes == 0 and duration_minutes not in (None, "", 0)
+    ):
         minutes = duration_minutes
     minutes = minutes or 0
 
@@ -308,11 +345,11 @@ def get_sessions():
         start_date = request.args.get("start")
         end_date = request.args.get("end")
         semester = request.args.get("semester", type=int)
-        
+
         conn = get_connection()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
-        
+
         query = """
             SELECT
                 id,
@@ -339,26 +376,26 @@ def get_sessions():
             WHERE 1=1
         """
         params = []
-        
+
         # Apply semester filter if provided
         if semester in SEMESTER_DATES:
             sem_config = SEMESTER_DATES[semester]
             # If no start_date provided, use semester start
             if not start_date:
-                start_date = sem_config['start']
+                start_date = sem_config["start"]
             # If no end_date provided, use semester end
             if not end_date:
-                end_date = sem_config['end']
-        
+                end_date = sem_config["end"]
+
         if start_date:
             query += " AND session_date >= ?"
             params.append(start_date)
         if end_date:
             query += " AND session_date <= ?"
             params.append(end_date)
-            
+
         query += " ORDER BY session_date DESC, session_time DESC"
-        
+
         cur.execute(query, params)
         rows = cur.fetchall()
         conn.close()
@@ -622,10 +659,10 @@ def bulk_delete_sessions():
     try:
         data = request.get_json()
         ids = data.get("ids", [])
-        
+
         if not ids:
             return jsonify({"deleted": 0})
-        
+
         conn = get_connection()
         cur = conn.cursor()
         placeholders = ",".join("?" * len(ids))
@@ -766,7 +803,9 @@ def get_events():
             event_time = ev.get("time")
             event_end_time = ev.get("end_time")
             if event_time:
-                date_only = start_date.split("T")[0] if "T" in start_date else start_date
+                date_only = (
+                    start_date.split("T")[0] if "T" in start_date else start_date
+                )
                 start_date = f"{date_only}T{event_time}:00"
 
             # For endDate, use end_time if present, otherwise due_date or date
@@ -840,7 +879,9 @@ def create_event():
 
         recurrence = data.get("recurrence")
         if isinstance(recurrence, list):
-            recurrence = recurrence[0] if len(recurrence) == 1 else json.dumps(recurrence)
+            recurrence = (
+                recurrence[0] if len(recurrence) == 1 else json.dumps(recurrence)
+            )
         if recurrence in ("none", ""):
             recurrence = None
 
@@ -886,31 +927,33 @@ def create_event():
                 transparency,
                 reminders,
                 time_zone,
-            )
+            ),
         )
         event_id = cur.lastrowid
         conn.commit()
         conn.close()
 
-        return jsonify({
-            "id": event_id,
-            "title": title,
-            "date": date_val,
-            "endDate": end_date,
-            "eventType": event_type,
-            "color": color,
-            "status": status,
-            "notes": notes,
-            "weight": weight,
-            "recurrence": recurrence,
-            "location": location,
-            "attendees": parse_json_value(attendees),
-            "visibility": visibility,
-            "transparency": transparency,
-            "reminders": parse_json_value(reminders),
-            "timeZone": time_zone,
-            "course": course_label,
-        }), 201
+        return jsonify(
+            {
+                "id": event_id,
+                "title": title,
+                "date": date_val,
+                "endDate": end_date,
+                "eventType": event_type,
+                "color": color,
+                "status": status,
+                "notes": notes,
+                "weight": weight,
+                "recurrence": recurrence,
+                "location": location,
+                "attendees": parse_json_value(attendees),
+                "visibility": visibility,
+                "transparency": transparency,
+                "reminders": parse_json_value(reminders),
+                "timeZone": time_zone,
+                "course": course_label,
+            }
+        ), 201
     except Exception as e:
         print(f"Create Event Error: {e}")
         return jsonify({"error": str(e)}), 500
@@ -999,7 +1042,9 @@ def update_event(event_id):
         if "recurrence" in data:
             recurrence = data.get("recurrence")
             if isinstance(recurrence, list):
-                recurrence = recurrence[0] if len(recurrence) == 1 else json.dumps(recurrence)
+                recurrence = (
+                    recurrence[0] if len(recurrence) == 1 else json.dumps(recurrence)
+                )
             if recurrence in ("none", ""):
                 recurrence = None
             fields.append("recurrence_rule = ?")
@@ -1050,21 +1095,26 @@ def update_event(event_id):
         conn.commit()
 
         # Return the updated event
-        cur.execute("SELECT id, title, date, type, status, course_id, time, end_time FROM course_events WHERE id = ?", (event_id,))
+        cur.execute(
+            "SELECT id, title, date, type, status, course_id, time, end_time FROM course_events WHERE id = ?",
+            (event_id,),
+        )
         row = cur.fetchone()
         conn.close()
 
         if row:
-            return jsonify({
-                "id": row[0],
-                "title": row[1],
-                "date": safe_iso_date(row[2]),
-                "eventType": row[3],
-                "status": row[4],
-                "courseId": row[5],
-                "startTime": row[6],
-                "endTime": row[7],
-            })
+            return jsonify(
+                {
+                    "id": row[0],
+                    "title": row[1],
+                    "date": safe_iso_date(row[2]),
+                    "eventType": row[3],
+                    "status": row[4],
+                    "courseId": row[5],
+                    "startTime": row[6],
+                    "endTime": row[7],
+                }
+            )
         return jsonify({"success": True, "id": event_id})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1148,7 +1198,9 @@ def _build_raw_text(notes: Any, metadata: Dict[str, Any]) -> Optional[str]:
     return notes if notes not in (None, "") else None
 
 
-def _expand_class_meetings(ev: Dict[str, Any], term: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _expand_class_meetings(
+    ev: Dict[str, Any], term: Dict[str, Any]
+) -> List[Dict[str, Any]]:
     days = _normalize_days(ev.get("daysOfWeek"))
     start = term.get("startDate")
     end = term.get("endDate")
@@ -1212,7 +1264,14 @@ def _insert_academic_deadline(
         INSERT INTO academic_deadlines (title, course, type, due_date, notes, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (title, course, deadline_type, due_date, notes or "", datetime.now().isoformat()),
+        (
+            title,
+            course,
+            deadline_type,
+            due_date,
+            notes or "",
+            datetime.now().isoformat(),
+        ),
     )
     return True
 
@@ -1248,7 +1307,9 @@ def import_syllabus_bulk():
     course_name = course_row[0] if course_row and course_row[0] else str(course_id)
 
     cur.execute("SELECT name FROM modules WHERE course_id = ?", (course_id,))
-    existing_names = {row[0].strip().lower() for row in cur.fetchall() if row and row[0]}
+    existing_names = {
+        row[0].strip().lower() for row in cur.fetchall() if row and row[0]
+    }
 
     for mod in modules_data:
         name = str(mod.get("name") or "").strip()
@@ -1285,12 +1346,25 @@ def import_syllabus_bulk():
         # Only expand if: type is class/lecture, has daysOfWeek, AND does NOT have a specific date
         # If event has a specific date, it's a one-time event - don't expand even if daysOfWeek is set
         has_specific_date = ev.get("date") and ev.get("date") != term.get("startDate")
-        if ev_type in {"class", "lecture"} and ev.get("daysOfWeek") and not has_specific_date:
+        if (
+            ev_type in {"class", "lecture"}
+            and ev.get("daysOfWeek")
+            and not has_specific_date
+        ):
             expanded = _expand_class_meetings(ev, term)
             class_meetings_expanded += max(len(expanded) - 1, 0)
             expanded_events.extend(expanded)
         else:
             expanded_events.append(ev)
+
+    # Deduplication: Load existing event signatures (type, title, date, due_date, time)
+    cur.execute(
+        "SELECT type, title, date, due_date, time FROM course_events WHERE course_id = ?",
+        (course_id,),
+    )
+    existing_signatures = set(
+        (row[0], row[1], row[2], row[3], row[4]) for row in cur.fetchall()
+    )
 
     for ev in expanded_events:
         event_type = ev.get("type") or "other"
@@ -1300,6 +1374,13 @@ def import_syllabus_bulk():
         date_val = ev.get("date") or ev.get("dueDate")
         due_date = ev.get("dueDate")
         start_time = ev.get("startTime")
+
+        # Check for duplicates
+        signature = (event_type, title, date_val, due_date, start_time)
+        if signature in existing_signatures:
+            continue
+        existing_signatures.add(signature)
+
         end_time = ev.get("endTime")
         raw_text = _build_raw_text(
             ev.get("notes"),
@@ -1347,11 +1428,13 @@ def import_syllabus_bulk():
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "modulesCreated": modules_created,
-        "eventsCreated": events_created,
-        "classMeetingsExpanded": class_meetings_expanded,
-    })
+    return jsonify(
+        {
+            "modulesCreated": modules_created,
+            "eventsCreated": events_created,
+            "classMeetingsExpanded": class_meetings_expanded,
+        }
+    )
 
 
 @adapter_bp.route("/schedule-events", methods=["GET"])
@@ -1391,21 +1474,23 @@ def get_schedule_events():
                         delivery = parsed.get("delivery")
                 except Exception:
                     pass
-            events.append({
-                "id": r[0],
-                "courseId": r[1],
-                "type": r[2],
-                "title": r[3],
-                "date": r[5],
-                "dueDate": r[4],
-                "startTime": r[6],
-                "endTime": r[7],
-                "linkedModuleId": None,
-                "notes": notes,
-                "delivery": delivery,
-                "createdAt": r[9],
-                "updatedAt": r[10] or r[9],
-            })
+            events.append(
+                {
+                    "id": r[0],
+                    "courseId": r[1],
+                    "type": r[2],
+                    "title": r[3],
+                    "date": r[5],
+                    "dueDate": r[4],
+                    "startTime": r[6],
+                    "endTime": r[7],
+                    "linkedModuleId": None,
+                    "notes": notes,
+                    "delivery": delivery,
+                    "createdAt": r[9],
+                    "updatedAt": r[10] or r[9],
+                }
+            )
 
         return jsonify(events)
     except Exception as e:
@@ -1477,20 +1562,22 @@ def create_schedule_event():
         new_id = cur.lastrowid
         conn.close()
 
-        return jsonify({
-            "id": new_id,
-            "courseId": course_id,
-            "type": event_type,
-            "title": title,
-            "date": date_val,
-            "dueDate": due_date,
-            "startTime": start_time,
-            "endTime": end_time,
-            "linkedModuleId": None,
-            "notes": notes,
-            "createdAt": now,
-            "updatedAt": now,
-        }), 201
+        return jsonify(
+            {
+                "id": new_id,
+                "courseId": course_id,
+                "type": event_type,
+                "title": title,
+                "date": date_val,
+                "dueDate": due_date,
+                "startTime": start_time,
+                "endTime": end_time,
+                "linkedModuleId": None,
+                "notes": notes,
+                "createdAt": now,
+                "updatedAt": now,
+            }
+        ), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1548,20 +1635,22 @@ def bulk_create_schedule_events():
                     now,
                 ),
             )
-            created.append({
-                "id": cur.lastrowid,
-                "courseId": course_id,
-                "type": event_type,
-                "title": title,
-                "date": date_val,
-                "dueDate": due_date,
-                "startTime": start_time,
-                "endTime": end_time,
-                "linkedModuleId": None,
-                "notes": notes,
-                "createdAt": now,
-                "updatedAt": now,
-            })
+            created.append(
+                {
+                    "id": cur.lastrowid,
+                    "courseId": course_id,
+                    "type": event_type,
+                    "title": title,
+                    "date": date_val,
+                    "dueDate": due_date,
+                    "startTime": start_time,
+                    "endTime": end_time,
+                    "linkedModuleId": None,
+                    "notes": notes,
+                    "createdAt": now,
+                    "updatedAt": now,
+                }
+            )
             if event_type in {"assignment", "quiz", "exam"}:
                 deadline_date = due_date or date_val
                 _insert_academic_deadline(
@@ -1656,20 +1745,22 @@ def update_schedule_event(event_id):
         if not row:
             return jsonify({"error": "Schedule event not found"}), 404
 
-        return jsonify({
-            "id": row[0],
-            "courseId": row[1],
-            "type": row[2],
-            "title": row[3],
-            "date": row[5],
-            "dueDate": row[4],
-            "startTime": row[6],
-            "endTime": row[7],
-            "linkedModuleId": None,
-            "notes": row[8],
-            "createdAt": row[9],
-            "updatedAt": row[10] or row[9],
-        })
+        return jsonify(
+            {
+                "id": row[0],
+                "courseId": row[1],
+                "type": row[2],
+                "title": row[3],
+                "date": row[5],
+                "dueDate": row[4],
+                "startTime": row[6],
+                "endTime": row[7],
+                "linkedModuleId": None,
+                "notes": row[8],
+                "createdAt": row[9],
+                "updatedAt": row[10] or row[9],
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1679,6 +1770,26 @@ def delete_schedule_event(event_id):
     try:
         conn = get_connection()
         cur = conn.cursor()
+
+        # Cascade: delete matching academic_deadlines
+        cur.execute(
+            "SELECT title, due_date, course FROM course_events WHERE id = ?",
+            (event_id,),
+        )
+        row = cur.fetchone()
+        if row:
+            title, due_date, course = row
+            if title and due_date:
+                cur.execute(
+                    "DELETE FROM academic_deadlines WHERE title = ? AND due_date = ?",
+                    (title, due_date),
+                )
+            elif title and course:
+                cur.execute(
+                    "DELETE FROM academic_deadlines WHERE title = ? AND course = ?",
+                    (title, course),
+                )
+
         cur.execute("DELETE FROM course_events WHERE id = ?", (event_id,))
         conn.commit()
         conn.close()
@@ -1701,7 +1812,29 @@ def bulk_delete_schedule_events():
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.executemany("DELETE FROM course_events WHERE id = ?", [(i,) for i in cleaned])
+
+        # Cascade: delete matching academic_deadlines for removed events
+        placeholders = ",".join("?" * len(cleaned))
+        cur.execute(
+            f"SELECT title, due_date, course FROM course_events WHERE id IN ({placeholders})",
+            cleaned,
+        )
+        events_to_delete = cur.fetchall()
+        for title, due_date, course in events_to_delete:
+            if title and due_date:
+                cur.execute(
+                    "DELETE FROM academic_deadlines WHERE title = ? AND due_date = ?",
+                    (title, due_date),
+                )
+            elif title and course:
+                cur.execute(
+                    "DELETE FROM academic_deadlines WHERE title = ? AND course = ?",
+                    (title, course),
+                )
+
+        cur.executemany(
+            "DELETE FROM course_events WHERE id = ?", [(i,) for i in cleaned]
+        )
         conn.commit()
         conn.close()
         return jsonify({"deleted": len(cleaned)})
@@ -2275,7 +2408,11 @@ def get_google_events():
         return jsonify({"error": "Not authenticated"}), 401
 
     events, error = gcal.fetch_calendar_events(
-        selected_ids, calendar_meta, time_min=time_min, time_max=time_max, service=service
+        selected_ids,
+        calendar_meta,
+        time_min=time_min,
+        time_max=time_max,
+        service=service,
     )
     if error:
         return jsonify({"error": error}), 500
@@ -2290,7 +2427,9 @@ def get_google_events():
         if key in recurrence_cache:
             continue
         try:
-            master = service.events().get(calendarId=cal_id, eventId=series_id).execute()
+            master = (
+                service.events().get(calendarId=cal_id, eventId=series_id).execute()
+            )
             recurrence_cache[key] = master.get("recurrence")
         except Exception:
             recurrence_cache[key] = None
@@ -2303,7 +2442,9 @@ def get_google_events():
         event["calendarSummary"] = event.get("_calendar_name")
         event["calendarColor"] = calendar_colors.get(cal_id)
         if event.get("recurringEventId") and not event.get("recurrence") and cal_id:
-            event["recurrence"] = recurrence_cache.get((cal_id, event.get("recurringEventId")))
+            event["recurrence"] = recurrence_cache.get(
+                (cal_id, event.get("recurringEventId"))
+            )
         enriched_events.append(event)
 
     return jsonify(enriched_events)
@@ -2495,10 +2636,14 @@ def update_google_event(event_id):
                 incoming_private = incoming_props.get("private") or {}
                 incoming_shared = incoming_props.get("shared") or {}
 
-                if isinstance(existing_private, dict) and isinstance(incoming_private, dict):
+                if isinstance(existing_private, dict) and isinstance(
+                    incoming_private, dict
+                ):
                     merged_private = {**existing_private, **incoming_private}
                     merged["private"] = merged_private
-                if isinstance(existing_shared, dict) and isinstance(incoming_shared, dict):
+                if isinstance(existing_shared, dict) and isinstance(
+                    incoming_shared, dict
+                ):
                     merged_shared = {**existing_shared, **incoming_shared}
                     merged["shared"] = merged_shared
 
@@ -2653,30 +2798,32 @@ def calendar_assistant():
         message = data.get("message", "")
 
         if not message or not isinstance(message, str) or not message.strip():
-            return jsonify({
-                "response": "Please provide a message.",
-                "success": False
-            })
+            return jsonify({"response": "Please provide a message.", "success": False})
 
         # Import and run the calendar assistant
         from dashboard.calendar_assistant import run_calendar_assistant
 
         result = run_calendar_assistant(message.strip())
 
-        return jsonify({
-            "response": result.get("response", ""),
-            "success": result.get("success", False),
-            "error": result.get("error")
-        })
+        return jsonify(
+            {
+                "response": result.get("response", ""),
+                "success": result.get("success", False),
+                "error": result.get("error"),
+            }
+        )
 
     except Exception as e:
         import traceback
+
         traceback.print_exc()
-        return jsonify({
-            "response": f"Calendar assistant error: {str(e)}",
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify(
+            {
+                "response": f"Calendar assistant error: {str(e)}",
+                "success": False,
+                "error": str(e),
+            }
+        ), 500
 
 
 @adapter_bp.route("/google-tasks", methods=["GET"])
@@ -3000,6 +3147,7 @@ def undo_calendar_action_endpoint():
 # NOTES (Quick Notes / Scratchpad)
 # ==============================================================================
 
+
 def _ensure_quick_notes_schema(conn):
     """Ensure quick_notes has required columns (note_type)."""
     try:
@@ -3007,8 +3155,12 @@ def _ensure_quick_notes_schema(conn):
         cur.execute("PRAGMA table_info(quick_notes)")
         cols = {row[1] for row in cur.fetchall()}
         if "note_type" not in cols:
-            cur.execute("ALTER TABLE quick_notes ADD COLUMN note_type TEXT DEFAULT 'notes'")
-            cur.execute("UPDATE quick_notes SET note_type = COALESCE(note_type, 'notes')")
+            cur.execute(
+                "ALTER TABLE quick_notes ADD COLUMN note_type TEXT DEFAULT 'notes'"
+            )
+            cur.execute(
+                "UPDATE quick_notes SET note_type = COALESCE(note_type, 'notes')"
+            )
             conn.commit()
     except Exception:
         # Fail silently to avoid breaking read paths; caller handles missing fields.
@@ -3058,12 +3210,16 @@ def create_note():
         _ensure_quick_notes_schema(conn)
         cur = conn.cursor()
         now = datetime.now().isoformat()
-        note_type = (data.get("noteType") or data.get("note_type") or "notes").strip().lower()
+        note_type = (
+            (data.get("noteType") or data.get("note_type") or "notes").strip().lower()
+        )
         if not note_type:
             note_type = "notes"
 
         # Get max position
-        cur.execute("SELECT MAX(position) FROM quick_notes WHERE note_type = ?", (note_type,))
+        cur.execute(
+            "SELECT MAX(position) FROM quick_notes WHERE note_type = ?", (note_type,)
+        )
         max_pos = cur.fetchone()[0] or 0
 
         cur.execute(
@@ -3071,7 +3227,14 @@ def create_note():
             INSERT INTO quick_notes (title, content, note_type, position, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?)
         """,
-            (data.get("title", ""), data.get("content", ""), note_type, max_pos + 1, now, now),
+            (
+                data.get("title", ""),
+                data.get("content", ""),
+                note_type,
+                max_pos + 1,
+                now,
+                now,
+            ),
         )
 
         new_id = cur.lastrowid
@@ -3159,7 +3322,9 @@ def reorder_notes():
         items = data.get("notes", []) or data.get("updates", [])
         if not items:
             note_ids = data.get("noteIds", []) or []
-            items = [{"id": note_id, "position": idx} for idx, note_id in enumerate(note_ids)]
+            items = [
+                {"id": note_id, "position": idx} for idx, note_id in enumerate(note_ids)
+            ]
         for item in items:
             note_type = item.get("noteType") or item.get("note_type")
             if note_type is not None:
@@ -3221,6 +3386,7 @@ def get_chat_history(session_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 # ==============================================================================
 # COURSES (Study Wheel Support)
 # ==============================================================================
@@ -3270,21 +3436,29 @@ def _ensure_wheel_courses_schema(cur):
 def _find_or_create_course(cur, name: str, code: Optional[str] = None) -> int:
     course_id = None
     if code:
-        cur.execute("SELECT id, name, code FROM courses WHERE lower(code) = ?", (code.lower(),))
+        cur.execute(
+            "SELECT id, name, code FROM courses WHERE lower(code) = ?", (code.lower(),)
+        )
         row = cur.fetchone()
         if row:
             course_id = row[0]
             if name and row[1] != name:
-                cur.execute("UPDATE courses SET name = ? WHERE id = ?", (name, course_id))
+                cur.execute(
+                    "UPDATE courses SET name = ? WHERE id = ?", (name, course_id)
+                )
             return course_id
 
     if name:
-        cur.execute("SELECT id, code FROM courses WHERE lower(name) = ?", (name.lower(),))
+        cur.execute(
+            "SELECT id, code FROM courses WHERE lower(name) = ?", (name.lower(),)
+        )
         row = cur.fetchone()
         if row:
             course_id = row[0]
             if code and not row[1]:
-                cur.execute("UPDATE courses SET code = ? WHERE id = ?", (code, course_id))
+                cur.execute(
+                    "UPDATE courses SET code = ? WHERE id = ?", (code, course_id)
+                )
             return course_id
 
     cur.execute(
@@ -3314,6 +3488,7 @@ def _ensure_wheel_course_links(cur):
             "UPDATE wheel_courses SET course_id = ? WHERE id = ?",
             (course_id, wheel_id),
         )
+
 
 @adapter_bp.route("/courses", methods=["GET"])
 def get_courses():
@@ -3359,31 +3534,33 @@ def get_courses():
             ORDER BY position ASC
         """)
         rows = cur.fetchall()
-        
+
         courses = []
         for r in rows:
             wheel_id = r[0]
             course_id = r[1] or wheel_id
             wheel_name = r[2]
             course_name = r[8] or wheel_name
-            courses.append({
-                "id": course_id,
-                "name": course_name,
-                "code": r[9],
-                "term": r[10],
-                "instructor": r[11],
-                "defaultStudyMode": r[12],
-                "deliveryFormat": r[13],
-                "timeBudgetPerWeekMinutes": r[14] or 0,
-                "color": r[15],
-                "lastScrapedAt": r[16],
-                "active": bool(r[3]),
-                "position": r[4],
-                "totalSessions": r[5] or 0,
-                "totalMinutes": r[6] or 0,
-                "createdAt": r[7] or r[17] or datetime.now().isoformat(),
-            })
-        
+            courses.append(
+                {
+                    "id": course_id,
+                    "name": course_name,
+                    "code": r[9],
+                    "term": r[10],
+                    "instructor": r[11],
+                    "defaultStudyMode": r[12],
+                    "deliveryFormat": r[13],
+                    "timeBudgetPerWeekMinutes": r[14] or 0,
+                    "color": r[15],
+                    "lastScrapedAt": r[16],
+                    "active": bool(r[3]),
+                    "position": r[4],
+                    "totalSessions": r[5] or 0,
+                    "totalMinutes": r[6] or 0,
+                    "createdAt": r[7] or r[17] or datetime.now().isoformat(),
+                }
+            )
+
         conn.close()
         return jsonify(courses)
     except Exception as e:
@@ -3431,21 +3608,29 @@ def create_course():
                 INSERT INTO wheel_courses (course_id, name, active, position, total_sessions, total_minutes, created_at)
                 VALUES (?, ?, ?, ?, 0, 0, ?)
                 """,
-                (course_id, name, 1 if active else 0, position, datetime.now().isoformat()),
+                (
+                    course_id,
+                    name,
+                    1 if active else 0,
+                    position,
+                    datetime.now().isoformat(),
+                ),
             )
         conn.commit()
         conn.close()
 
-        return jsonify({
-            "id": course_id,
-            "name": name,
-            "code": code,
-            "active": active,
-            "position": position,
-            "totalSessions": 0,
-            "totalMinutes": 0,
-            "createdAt": datetime.now().isoformat(),
-        }), 201
+        return jsonify(
+            {
+                "id": course_id,
+                "name": name,
+                "code": code,
+                "active": active,
+                "position": position,
+                "totalSessions": 0,
+                "totalMinutes": 0,
+                "createdAt": datetime.now().isoformat(),
+            }
+        ), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -3465,27 +3650,34 @@ def update_course(course_id):
         if not wheel_row:
             conn.close()
             return jsonify({"error": "Course not found"}), 404
-        
+
         updates = []
         params = []
         if "name" in data:
-            cur.execute("UPDATE courses SET name = ? WHERE id = ?", (data["name"], course_id))
+            cur.execute(
+                "UPDATE courses SET name = ? WHERE id = ?", (data["name"], course_id)
+            )
             updates.append("name = ?")
             params.append(data["name"])
         if "code" in data:
-            cur.execute("UPDATE courses SET code = ? WHERE id = ?", (data["code"], course_id))
+            cur.execute(
+                "UPDATE courses SET code = ? WHERE id = ?", (data["code"], course_id)
+            )
         if "active" in data:
             updates.append("active = ?")
             params.append(1 if data["active"] else 0)
         if "position" in data:
             updates.append("position = ?")
             params.append(data["position"])
-        
+
         if updates:
             params.append(course_id)
-            cur.execute(f"UPDATE wheel_courses SET {', '.join(updates)} WHERE course_id = ?", params)
+            cur.execute(
+                f"UPDATE wheel_courses SET {', '.join(updates)} WHERE course_id = ?",
+                params,
+            )
             conn.commit()
-        
+
         # Return updated course
         cur.execute(
             """
@@ -3506,18 +3698,20 @@ def update_course(course_id):
         )
         r = cur.fetchone()
         conn.close()
-        
+
         if r:
-            return jsonify({
-                "id": r[0],
-                "name": r[1],
-                "code": r[7],
-                "active": bool(r[2]),
-                "position": r[3],
-                "totalSessions": r[4] or 0,
-                "totalMinutes": r[5] or 0,
-                "createdAt": r[6],
-            })
+            return jsonify(
+                {
+                    "id": r[0],
+                    "name": r[1],
+                    "code": r[7],
+                    "active": bool(r[2]),
+                    "position": r[3],
+                    "totalSessions": r[4] or 0,
+                    "totalMinutes": r[5] or 0,
+                    "createdAt": r[6],
+                }
+            )
         return jsonify({"error": "Course not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -3529,18 +3723,21 @@ def delete_course(course_id):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        
+
         print(f"[DELETE] Attempting to delete course ID: {course_id}")
-        
+
         # First check if course exists
-        cur.execute("SELECT id, name, position FROM wheel_courses WHERE course_id = ?", (course_id,))
+        cur.execute(
+            "SELECT id, name, position FROM wheel_courses WHERE course_id = ?",
+            (course_id,),
+        )
         row = cur.fetchone()
-        
+
         if not row:
             print(f"[DELETE] Course ID {course_id} NOT FOUND in wheel_courses!")
             conn.close()
             return jsonify({"error": f"Course {course_id} not found"}), 404
-        
+
         print(f"[DELETE] Found course: id={row[0]}, name={row[1]}, position={row[2]}")
         deleted_position = row[2]
 
@@ -3554,19 +3751,31 @@ def delete_course(course_id):
         modules_deleted = cur.rowcount
         print(f"[DELETE] Cascade deleted {modules_deleted} modules")
 
+        # Delete associated academic deadlines (cascade cleanup)
+        course_name = row[1]
+        cur.execute(
+            "DELETE FROM academic_deadlines WHERE course = ? OR course = ?",
+            (course_name, str(course_id)),
+        )
+        deadlines_deleted = cur.rowcount
+        print(f"[DELETE] Cascade deleted {deadlines_deleted} academic_deadlines")
+
         # Delete the course
         cur.execute("DELETE FROM wheel_courses WHERE course_id = ?", (course_id,))
         deleted_count = cur.rowcount
         print(f"[DELETE] Rows deleted: {deleted_count}")
-        
+
         # Shift all courses with higher positions down
-        cur.execute("UPDATE wheel_courses SET position = position - 1 WHERE position > ?", (deleted_position,))
+        cur.execute(
+            "UPDATE wheel_courses SET position = position - 1 WHERE position > ?",
+            (deleted_position,),
+        )
         shifted_count = cur.rowcount
         print(f"[DELETE] Rows shifted: {shifted_count}")
-        
+
         conn.commit()
         print(f"[DELETE] Commit successful for course ID: {course_id}")
-        
+
         # Verify deletion
         cur.execute("SELECT id FROM wheel_courses WHERE course_id = ?", (course_id,))
         still_exists = cur.fetchone()
@@ -3574,7 +3783,7 @@ def delete_course(course_id):
             print(f"[DELETE] WARNING: Course {course_id} STILL EXISTS after delete!")
         else:
             print(f"[DELETE] Verified: Course {course_id} successfully deleted")
-        
+
         conn.close()
         return "", 204
     except Exception as e:
@@ -3740,17 +3949,19 @@ def bulk_create_modules():
                     now,
                 ),
             )
-            created.append({
-                "id": cur.lastrowid,
-                "courseId": course_id,
-                "name": name,
-                "orderIndex": order_index,
-                "filesDownloaded": bool(files_downloaded),
-                "notebooklmLoaded": bool(notebooklm_loaded),
-                "sources": sources,
-                "createdAt": now,
-                "updatedAt": now,
-            })
+            created.append(
+                {
+                    "id": cur.lastrowid,
+                    "courseId": course_id,
+                    "name": name,
+                    "orderIndex": order_index,
+                    "filesDownloaded": bool(files_downloaded),
+                    "notebooklmLoaded": bool(notebooklm_loaded),
+                    "sources": sources,
+                    "createdAt": now,
+                    "updatedAt": now,
+                }
+            )
         conn.commit()
         conn.close()
         return jsonify(created), 201
@@ -3788,9 +3999,7 @@ def update_module(module_id):
         values.append(datetime.now().isoformat())
 
         values.append(module_id)
-        cur.execute(
-            f"UPDATE modules SET {', '.join(fields)} WHERE id = ?", values
-        )
+        cur.execute(f"UPDATE modules SET {', '.join(fields)} WHERE id = ?", values)
         conn.commit()
         cur.execute(
             """
@@ -3821,10 +4030,13 @@ def delete_module(module_id):
             module_name = row[0]
             course_id = row[1]
             # Delete course_events that reference this module in raw_text
-            cur.execute("""
+            cur.execute(
+                """
                 DELETE FROM course_events
                 WHERE course_id = ? AND raw_text LIKE ?
-            """, (course_id, f'%"moduleName": "{module_name}"%'))
+            """,
+                (course_id, f'%"moduleName": "{module_name}"%'),
+            )
 
         cur.execute("DELETE FROM modules WHERE id = ?", (module_id,))
         conn.commit()
@@ -3851,15 +4063,20 @@ def bulk_delete_modules():
 
         # Get module names and course_ids before deleting for cascade cleanup
         placeholders = ",".join("?" * len(cleaned))
-        cur.execute(f"SELECT name, course_id FROM modules WHERE id IN ({placeholders})", cleaned)
+        cur.execute(
+            f"SELECT name, course_id FROM modules WHERE id IN ({placeholders})", cleaned
+        )
         modules_to_delete = cur.fetchall()
 
         # Delete associated course_events for each module
         for module_name, course_id in modules_to_delete:
-            cur.execute("""
+            cur.execute(
+                """
                 DELETE FROM course_events
                 WHERE course_id = ? AND raw_text LIKE ?
-            """, (course_id, f'%"moduleName": "{module_name}"%'))
+            """,
+                (course_id, f'%"moduleName": "{module_name}"%'),
+            )
 
         cur.executemany("DELETE FROM modules WHERE id = ?", [(i,) for i in cleaned])
         conn.commit()
@@ -4040,19 +4257,21 @@ def bulk_create_learning_objectives():
                     now,
                 ),
             )
-            created.append({
-                "id": cur.lastrowid,
-                "courseId": course_id,
-                "moduleId": module_id,
-                "loCode": lo_code,
-                "title": title,
-                "status": status,
-                "lastSessionId": None,
-                "lastSessionDate": None,
-                "nextAction": None,
-                "createdAt": now,
-                "updatedAt": now,
-            })
+            created.append(
+                {
+                    "id": cur.lastrowid,
+                    "courseId": course_id,
+                    "moduleId": module_id,
+                    "loCode": lo_code,
+                    "title": title,
+                    "status": status,
+                    "lastSessionId": None,
+                    "lastSessionDate": None,
+                    "nextAction": None,
+                    "createdAt": now,
+                    "updatedAt": now,
+                }
+            )
         conn.commit()
         conn.close()
         return jsonify(created), 201
@@ -4159,15 +4378,17 @@ def create_lo_session():
         conn.commit()
         lo_session_id = cur.lastrowid
         conn.close()
-        return jsonify({
-            "id": lo_session_id,
-            "loId": lo_id,
-            "sessionId": session_id,
-            "statusBefore": status_before,
-            "statusAfter": status_after,
-            "notes": notes,
-            "createdAt": now,
-        }), 201
+        return jsonify(
+            {
+                "id": lo_session_id,
+                "loId": lo_id,
+                "sessionId": session_id,
+                "statusBefore": status_before,
+                "statusAfter": status_after,
+                "notes": notes,
+                "createdAt": now,
+            }
+        ), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -4209,18 +4430,20 @@ def get_current_course():
         conn.close()
 
         if r:
-            return jsonify({
-                "currentCourse": {
-                    "id": r[0],
-                    "name": r[7] or r[1],
-                    "code": r[8],
-                    "active": bool(r[2]),
-                    "position": r[3],
-                    "totalSessions": r[4] or 0,
-                    "totalMinutes": r[5] or 0,
-                    "createdAt": r[6],
+            return jsonify(
+                {
+                    "currentCourse": {
+                        "id": r[0],
+                        "name": r[7] or r[1],
+                        "code": r[8],
+                        "active": bool(r[2]),
+                        "position": r[3],
+                        "totalSessions": r[4] or 0,
+                        "totalMinutes": r[5] or 0,
+                        "createdAt": r[6],
+                    }
                 }
-            })
+            )
         return jsonify({"currentCourse": None})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -4246,9 +4469,12 @@ def complete_wheel_session():
         conn.commit()
 
         # Get the current course (should be at position 0)
-        cur.execute("""
+        cur.execute(
+            """
             SELECT id, course_id, name, position FROM wheel_courses WHERE course_id = ?
-        """, (course_id,))
+        """,
+            (course_id,),
+        )
         current = cur.fetchone()
 
         if not current:
@@ -4263,7 +4489,8 @@ def complete_wheel_session():
             course_name = course_row[0]
 
         # Create session record
-        cur.execute("""
+        cur.execute(
+            """
             INSERT INTO sessions (
                 session_date,
                 session_time,
@@ -4275,25 +4502,30 @@ def complete_wheel_session():
                 created_at
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            datetime.now().strftime("%Y-%m-%d"),
-            datetime.now().strftime("%H:%M"),
-            course_name,
-            course_name,
-            mode,
-            minutes,
-            minutes,
-            datetime.now().isoformat()
-        ))
+        """,
+            (
+                datetime.now().strftime("%Y-%m-%d"),
+                datetime.now().strftime("%H:%M"),
+                course_name,
+                course_name,
+                mode,
+                minutes,
+                minutes,
+                datetime.now().isoformat(),
+            ),
+        )
         session_id = cur.lastrowid
 
         # Update the course's session count and minutes
-        cur.execute("""
+        cur.execute(
+            """
             UPDATE wheel_courses 
             SET total_sessions = total_sessions + 1, 
                 total_minutes = total_minutes + ?
             WHERE id = ?
-        """, (minutes, wheel_id))
+        """,
+            (minutes, wheel_id),
+        )
 
         # ROTATE THE WHEEL: Move completed course to bottom, shift others up
         # Get max position
@@ -4301,18 +4533,24 @@ def complete_wheel_session():
         max_pos = cur.fetchone()[0] or 0
 
         # Move all courses up by 1 position (except the current one)
-        cur.execute("""
+        cur.execute(
+            """
             UPDATE wheel_courses 
             SET position = position - 1 
             WHERE position > 0 AND id != ?
-        """, (wheel_id,))
+        """,
+            (wheel_id,),
+        )
 
         # Move the completed course to the bottom
-        cur.execute("""
+        cur.execute(
+            """
             UPDATE wheel_courses 
             SET position = ? 
             WHERE id = ?
-        """, (max_pos, wheel_id))
+        """,
+            (max_pos, wheel_id),
+        )
 
         conn.commit()
 
@@ -4353,10 +4591,12 @@ def complete_wheel_session():
         update_streak(conn)
         conn.close()
 
-        return jsonify({
-            "session": {"id": session_id, "minutes": minutes},
-            "nextCourse": next_course
-        })
+        return jsonify(
+            {
+                "session": {"id": session_id, "minutes": minutes},
+                "nextCourse": next_course,
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -4378,11 +4618,16 @@ def update_streak(conn):
 
         today = datetime.now().strftime("%Y-%m-%d")
 
-        cur.execute("SELECT current_streak, longest_streak, last_study_date FROM study_streak WHERE id = 1")
+        cur.execute(
+            "SELECT current_streak, longest_streak, last_study_date FROM study_streak WHERE id = 1"
+        )
         streak = cur.fetchone()
 
         if not streak:
-            cur.execute("INSERT INTO study_streak (id, current_streak, longest_streak, last_study_date) VALUES (1, 1, 1, ?)", (today,))
+            cur.execute(
+                "INSERT INTO study_streak (id, current_streak, longest_streak, last_study_date) VALUES (1, 1, 1, ?)",
+                (today,),
+            )
         else:
             current, longest, last_date = streak
             if last_date == today:
@@ -4391,11 +4636,16 @@ def update_streak(conn):
                 # Consecutive day
                 new_streak = current + 1
                 new_longest = max(longest, new_streak)
-                cur.execute("UPDATE study_streak SET current_streak = ?, longest_streak = ?, last_study_date = ? WHERE id = 1",
-                           (new_streak, new_longest, today))
+                cur.execute(
+                    "UPDATE study_streak SET current_streak = ?, longest_streak = ?, last_study_date = ? WHERE id = 1",
+                    (new_streak, new_longest, today),
+                )
             else:
                 # Streak broken, start fresh
-                cur.execute("UPDATE study_streak SET current_streak = 1, last_study_date = ? WHERE id = 1", (today,))
+                cur.execute(
+                    "UPDATE study_streak SET current_streak = 1, last_study_date = ? WHERE id = 1",
+                    (today,),
+                )
 
         conn.commit()
     except Exception:
@@ -4414,21 +4664,29 @@ def get_streak():
         conn = get_connection()
         cur = conn.cursor()
 
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='study_streak'")
+        cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='study_streak'"
+        )
         if not cur.fetchone():
             conn.close()
-            return jsonify({"currentStreak": 0, "longestStreak": 0, "lastStudyDate": None})
+            return jsonify(
+                {"currentStreak": 0, "longestStreak": 0, "lastStudyDate": None}
+            )
 
-        cur.execute("SELECT current_streak, longest_streak, last_study_date FROM study_streak WHERE id = 1")
+        cur.execute(
+            "SELECT current_streak, longest_streak, last_study_date FROM study_streak WHERE id = 1"
+        )
         streak = cur.fetchone()
         conn.close()
 
         if streak:
-            return jsonify({
-                "currentStreak": streak[0] or 0,
-                "longestStreak": streak[1] or 0,
-                "lastStudyDate": streak[2]
-            })
+            return jsonify(
+                {
+                    "currentStreak": streak[0] or 0,
+                    "longestStreak": streak[1] or 0,
+                    "lastStudyDate": streak[2],
+                }
+            )
 
         return jsonify({"currentStreak": 0, "longestStreak": 0, "lastStudyDate": None})
     except Exception as e:
@@ -4447,7 +4705,9 @@ def get_weakness_queue():
         conn = get_connection()
         cur = conn.cursor()
 
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='weakness_queue'")
+        cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='weakness_queue'"
+        )
         if not cur.fetchone():
             # Create table if missing
             cur.execute("""
@@ -4463,7 +4723,9 @@ def get_weakness_queue():
             conn.close()
             return jsonify([])
 
-        cur.execute("SELECT id, topic, reason FROM weakness_queue ORDER BY flagged_at DESC LIMIT 10")
+        cur.execute(
+            "SELECT id, topic, reason FROM weakness_queue ORDER BY flagged_at DESC LIMIT 10"
+        )
         rows = cur.fetchall()
         conn.close()
 
@@ -4486,7 +4748,8 @@ def get_sessions_today():
         cur = conn.cursor()
 
         today = datetime.now().strftime("%Y-%m-%d")
-        cur.execute("""
+        cur.execute(
+            """
             SELECT
                 id,
                 session_date,
@@ -4510,7 +4773,9 @@ def get_sessions_today():
                 created_at
             FROM sessions WHERE session_date = ?
             ORDER BY session_time DESC
-        """, (today,))
+        """,
+            (today,),
+        )
 
         rows = cur.fetchall()
         conn.close()
@@ -4658,7 +4923,9 @@ def get_last_session_context():
                 )
                 course_row = cur.fetchone()
                 if course_row:
-                    resolved_name = course_row["course_name"] or course_row["wheel_name"]
+                    resolved_name = (
+                        course_row["course_name"] or course_row["wheel_name"]
+                    )
                     course = {
                         "id": course_row["course_id"],
                         "name": resolved_name,
@@ -4688,11 +4955,13 @@ def get_last_session_context():
 
         conn.close()
 
-        return jsonify({
-            "lastSession": last_session,
-            "course": course,
-            "recentLos": recent_los,
-        })
+        return jsonify(
+            {
+                "lastSession": last_session,
+                "course": course,
+                "recentLos": recent_los,
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -4748,7 +5017,9 @@ def get_brain_metrics():
             course = row["main_topic"] or row["topic"] or "General"
             minutes = row["time_spent_minutes"]
             duration = row["duration_minutes"]
-            if minutes in (None, "") or (minutes == 0 and duration not in (None, "", 0)):
+            if minutes in (None, "") or (
+                minutes == 0 and duration not in (None, "", 0)
+            ):
                 minutes = duration
             minutes = minutes or 0
             total_minutes += minutes
@@ -4756,7 +5027,11 @@ def get_brain_metrics():
 
             # Sessions per course
             if course not in sessions_per_course_map:
-                sessions_per_course_map[course] = {"course": course, "count": 0, "minutes": 0}
+                sessions_per_course_map[course] = {
+                    "course": course,
+                    "count": 0,
+                    "minutes": 0,
+                }
             sessions_per_course_map[course]["count"] += 1
             sessions_per_course_map[course]["minutes"] += minutes
 
@@ -4768,7 +5043,9 @@ def get_brain_metrics():
             mode_map[mode]["minutes"] += minutes
 
             # Confusions
-            confusions_val = row["confusions"] or row["errors_conceptual"] or row["gaps_identified"]
+            confusions_val = (
+                row["confusions"] or row["errors_conceptual"] or row["gaps_identified"]
+            )
             for item in parse_json_array(confusions_val):
                 key = item.lower().strip()
                 if not key:
@@ -4811,26 +5088,34 @@ def get_brain_metrics():
             sessions_per_course_map.values(), key=lambda x: x["count"], reverse=True
         )
         mode_dist = sorted(mode_map.values(), key=lambda x: x["count"], reverse=True)
-        recent_confusions = sorted(confusions_map.values(), key=lambda x: x["count"], reverse=True)[:10]
-        recent_weak = sorted(weak_map.values(), key=lambda x: x["count"], reverse=True)[:10]
+        recent_confusions = sorted(
+            confusions_map.values(), key=lambda x: x["count"], reverse=True
+        )[:10]
+        recent_weak = sorted(weak_map.values(), key=lambda x: x["count"], reverse=True)[
+            :10
+        ]
         concept_frequency = sorted(
             [{"concept": k, "count": v} for k, v in concept_map.items()],
             key=lambda x: x["count"],
             reverse=True,
         )[:10]
-        issues_log = sorted(issues_map.values(), key=lambda x: x["count"], reverse=True)[:10]
+        issues_log = sorted(
+            issues_map.values(), key=lambda x: x["count"], reverse=True
+        )[:10]
 
-        return jsonify({
-            "sessionsPerCourse": sessions_per_course,
-            "modeDistribution": mode_dist,
-            "recentConfusions": recent_confusions,
-            "recentWeakAnchors": recent_weak,
-            "conceptFrequency": concept_frequency,
-            "issuesLog": issues_log,
-            "totalMinutes": total_minutes,
-            "totalSessions": len(rows),
-            "totalCards": total_cards,
-        })
+        return jsonify(
+            {
+                "sessionsPerCourse": sessions_per_course,
+                "modeDistribution": mode_dist,
+                "recentConfusions": recent_confusions,
+                "recentWeakAnchors": recent_weak,
+                "conceptFrequency": concept_frequency,
+                "issuesLog": issues_log,
+                "totalMinutes": total_minutes,
+                "totalSessions": len(rows),
+                "totalCards": total_cards,
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -4848,19 +5133,23 @@ def get_llm_status():
         model = config.get("model", "openrouter/auto")
         connected = bool(api_key)
 
-        return jsonify({
-            "connected": connected,
-            "model": model,
-            "status": "Connected" if connected else "Disconnected",
-            "error": None if connected else "No API key configured",
-        })
+        return jsonify(
+            {
+                "connected": connected,
+                "model": model,
+                "status": "Connected" if connected else "Disconnected",
+                "error": None if connected else "No API key configured",
+            }
+        )
     except Exception as e:
-        return jsonify({
-            "connected": False,
-            "model": "unknown",
-            "status": "Error",
-            "error": str(e),
-        })
+        return jsonify(
+            {
+                "connected": False,
+                "model": "unknown",
+                "status": "Error",
+                "error": str(e),
+            }
+        )
 
 
 @adapter_bp.route("/brain/chat", methods=["POST"])
@@ -4877,7 +5166,7 @@ def brain_chat():
     import os
     import traceback
     from datetime import datetime
-    
+
     try:
         data = request.get_json() or {}
         message = data.get("message", "")
@@ -4885,10 +5174,11 @@ def brain_chat():
 
         # Import LLM provider using absolute path
         import sys
+
         brain_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if brain_dir not in sys.path:
             sys.path.insert(0, brain_dir)
-        
+
         from llm_provider import call_llm
         from ingest_session import (
             insert_session,
@@ -4909,10 +5199,20 @@ def brain_chat():
         direct_tracker = None
         direct_enhanced = None
 
-        has_direct_payload = isinstance(data.get("payload"), dict) or isinstance(data.get("tracker"), dict) or isinstance(data.get("enhanced"), dict)
+        has_direct_payload = (
+            isinstance(data.get("payload"), dict)
+            or isinstance(data.get("tracker"), dict)
+            or isinstance(data.get("enhanced"), dict)
+        )
         # DISABLED: Direct WRAP parsing - now all input goes through LLM processing
         # To re-enable: remove "False and" from the condition below
-        if False and not has_direct_payload and isinstance(message, str) and message.strip() and is_wrap_format(message):
+        if (
+            False
+            and not has_direct_payload
+            and isinstance(message, str)
+            and message.strip()
+            and is_wrap_format(message)
+        ):
             wrap_data = parse_wrap(message)
             if wrap_data:
                 now = datetime.now()
@@ -4930,10 +5230,24 @@ def brain_chat():
                     except (TypeError, ValueError):
                         return default
 
-                session_date = metadata.get("date") or merged_payload.get("date") or now.strftime("%Y-%m-%d")
+                session_date = (
+                    metadata.get("date")
+                    or merged_payload.get("date")
+                    or now.strftime("%Y-%m-%d")
+                )
                 session_time = now.strftime("%H:%M:%S")
-                topic = metadata.get("topic") or merged_payload.get("topic") or metadata.get("course") or "General"
-                study_mode = metadata.get("mode") or metadata.get("study_mode") or merged_payload.get("mode") or "Core"
+                topic = (
+                    metadata.get("topic")
+                    or merged_payload.get("topic")
+                    or metadata.get("course")
+                    or "General"
+                )
+                study_mode = (
+                    metadata.get("mode")
+                    or metadata.get("study_mode")
+                    or merged_payload.get("mode")
+                    or "Core"
+                )
                 duration_minutes = _safe_int(
                     metadata.get("duration_min")
                     or metadata.get("duration_minutes")
@@ -4949,19 +5263,36 @@ def brain_chat():
                 session_data.setdefault("topic", topic)
                 session_data.setdefault("duration_minutes", duration_minutes)
                 session_data.setdefault("time_spent_minutes", duration_minutes)
-                session_data.setdefault("source_lock", metadata.get("source_lock") or metadata.get("source_lock_active") or session_data.get("source_lock", ""))
-                session_data.setdefault("notes_insights", (wrap_data.get("section_a") or {}).get("raw", ""))
+                session_data.setdefault(
+                    "source_lock",
+                    metadata.get("source_lock")
+                    or metadata.get("source_lock_active")
+                    or session_data.get("source_lock", ""),
+                )
+                session_data.setdefault(
+                    "notes_insights", (wrap_data.get("section_a") or {}).get("raw", "")
+                )
 
                 spaced_schedule = wrap_data.get("section_c") or {}
                 if spaced_schedule:
-                    spaced_parts = [f"{key}={value}" for key, value in spaced_schedule.items()]
+                    spaced_parts = [
+                        f"{key}={value}" for key, value in spaced_schedule.items()
+                    ]
                     session_data["spaced_reviews"] = "; ".join(spaced_parts)
 
                 cards = wrap_data.get("section_b") or []
                 card_texts = []
                 for card in cards:
-                    front = str(card.get("front", "")).strip() if isinstance(card, dict) else ""
-                    back = str(card.get("back", "")).strip() if isinstance(card, dict) else ""
+                    front = (
+                        str(card.get("front", "")).strip()
+                        if isinstance(card, dict)
+                        else ""
+                    )
+                    back = (
+                        str(card.get("back", "")).strip()
+                        if isinstance(card, dict)
+                        else ""
+                    )
                     if front and back:
                         card_texts.append(f"{front} :: {back}")
                     elif front:
@@ -4971,9 +5302,13 @@ def brain_chat():
                 session_data["anki_cards_count"] = len(card_texts)
 
                 if tracker_payload:
-                    session_data["tracker_json"] = json.dumps(tracker_payload, ensure_ascii=True)
+                    session_data["tracker_json"] = json.dumps(
+                        tracker_payload, ensure_ascii=True
+                    )
                 if enhanced_payload:
-                    session_data["enhanced_json"] = json.dumps(enhanced_payload, ensure_ascii=True)
+                    session_data["enhanced_json"] = json.dumps(
+                        enhanced_payload, ensure_ascii=True
+                    )
 
                 session_data["raw_input"] = message
                 session_data["created_at"] = now.isoformat()
@@ -4999,7 +5334,9 @@ def brain_chat():
                 except Exception as e:
                     session_error = str(e)
 
-                wrap_session_id = metadata.get("session_id") or (str(session_id) if session_id else None)
+                wrap_session_id = metadata.get("session_id") or (
+                    str(session_id) if session_id else None
+                )
 
                 cards_created = 0
                 cards_synced_to_anki = 0
@@ -5008,40 +5345,53 @@ def brain_chat():
                     conn = get_connection()
                     cur = conn.cursor()
                     course = metadata.get("course") or topic or "General"
-                    session_ref = wrap_session_id or f"wrap_{now.strftime('%Y%m%d_%H%M%S')}"
+                    session_ref = (
+                        wrap_session_id or f"wrap_{now.strftime('%Y%m%d_%H%M%S')}"
+                    )
                     # If mode is "anki", auto-approve cards for immediate sync
                     card_status = "approved" if mode == "anki" else "pending"
                     for card in cards:
-                        if isinstance(card, dict) and card.get("front") and card.get("back"):
-                            cur.execute("""
+                        if (
+                            isinstance(card, dict)
+                            and card.get("front")
+                            and card.get("back")
+                        ):
+                            cur.execute(
+                                """
                                 INSERT INTO card_drafts 
                                 (session_id, course_id, topic_id, deck_name, card_type, front, back, tags, source_citation, status, created_at)
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            """, (
-                                session_ref,
-                                None,
-                                None,
-                                f"PT::{course}",
-                                "basic",
-                                card.get("front", ""),
-                                card.get("back", ""),
-                                card.get("tags", ""),
-                                card.get("source") or metadata.get("source_lock"),
-                                card_status,
-                                now.isoformat()
-                            ))
+                            """,
+                                (
+                                    session_ref,
+                                    None,
+                                    None,
+                                    f"PT::{course}",
+                                    "basic",
+                                    card.get("front", ""),
+                                    card.get("back", ""),
+                                    card.get("tags", ""),
+                                    card.get("source") or metadata.get("source_lock"),
+                                    card_status,
+                                    now.isoformat(),
+                                ),
+                            )
                             cards_created += 1
                     conn.commit()
                     conn.close()
-                    
+
                     # If mode is "anki", trigger immediate sync to Anki
                     if mode == "anki" and cards_created > 0:
                         try:
                             import sys
-                            brain_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+                            brain_dir = os.path.dirname(
+                                os.path.dirname(os.path.abspath(__file__))
+                            )
                             if brain_dir not in sys.path:
                                 sys.path.insert(0, brain_dir)
                             from anki_sync import sync_pending_cards
+
                             sync_result = sync_pending_cards()
                             cards_synced_to_anki = sync_result.get("synced", 0)
                             if sync_result.get("errors"):
@@ -5055,22 +5405,46 @@ def brain_chat():
                 notes = extract_obsidian_notes(wrap_data)
                 if notes:
                     wrap_date = metadata.get("date") or session_date
-                    route_course = metadata.get("course") or (topic if topic and topic.lower() != "general" else None)
+                    route_course = metadata.get("course") or (
+                        topic if topic and topic.lower() != "general" else None
+                    )
                     if not route_course:
                         wheel_course = get_current_course_name()
                         if wheel_course:
                             route_course = wheel_course
-                    course_folder = get_course_obsidian_folder(route_course) if route_course else None
-                    obsidian_path = f"{course_folder}/Session-{wrap_date}.md" if course_folder else f"Inbox/Study-Log-{wrap_date}.md"
+                    course_folder = (
+                        get_course_obsidian_folder(route_course)
+                        if route_course
+                        else None
+                    )
+                    obsidian_path = (
+                        f"{course_folder}/Session-{wrap_date}.md"
+                        if course_folder
+                        else f"Inbox/Study-Log-{wrap_date}.md"
+                    )
 
                     # Fetch vault index for validated wikilinks
                     from obsidian_index import get_vault_index
+
                     vault_result = get_vault_index()
-                    vault_notes = vault_result.get("notes", []) if vault_result.get("success") else []
+                    vault_notes = (
+                        vault_result.get("notes", [])
+                        if vault_result.get("success")
+                        else []
+                    )
 
                     existing_resp = obsidian_get_file(obsidian_path)
-                    existing_content = existing_resp.get("content", "") if existing_resp.get("success") else ""
-                    merged_content = merge_sections(existing_content, notes, session_id=wrap_session_id, vault_index=vault_notes)
+                    existing_content = (
+                        existing_resp.get("content", "")
+                        if existing_resp.get("success")
+                        else ""
+                    )
+                    merged_content = merge_sections(
+                        existing_content,
+                        notes,
+                        session_id=wrap_session_id,
+                        vault_index=vault_notes,
+                    )
                     save_result = obsidian_save_file(obsidian_path, merged_content)
                     if save_result.get("success"):
                         obsidian_synced = True
@@ -5085,18 +5459,21 @@ def brain_chat():
                     for issue in tutor_issues:
                         if not isinstance(issue, dict):
                             continue
-                        cur.execute("""
+                        cur.execute(
+                            """
                             INSERT INTO tutor_issues
                             (session_id, issue_type, description, severity, resolved, created_at)
                             VALUES (?, ?, ?, ?, ?, ?)
-                        """, (
-                            wrap_session_id,
-                            issue.get("issue_type"),
-                            issue.get("description"),
-                            issue.get("severity"),
-                            0,
-                            now.isoformat()
-                        ))
+                        """,
+                            (
+                                wrap_session_id,
+                                issue.get("issue_type"),
+                                issue.get("description"),
+                                issue.get("severity"),
+                                0,
+                                now.isoformat(),
+                            ),
+                        )
                         issues_logged += 1
                     conn.commit()
                     conn.close()
@@ -5106,13 +5483,17 @@ def brain_chat():
                     f"Cards drafted: {cards_created}",
                 ]
                 if mode == "anki" and cards_created > 0:
-                    response_parts.append(f"Cards synced to Anki: {cards_synced_to_anki}")
+                    response_parts.append(
+                        f"Cards synced to Anki: {cards_synced_to_anki}"
+                    )
                     if anki_sync_error:
                         response_parts.append(f"Anki sync error: {anki_sync_error}")
-                response_parts.extend([
-                    f"Notes merged: {'Yes' if obsidian_synced else 'No'}",
-                    f"Tutor issues logged: {issues_logged}",
-                ])
+                response_parts.extend(
+                    [
+                        f"Notes merged: {'Yes' if obsidian_synced else 'No'}",
+                        f"Tutor issues logged: {issues_logged}",
+                    ]
+                )
                 if obsidian_path and obsidian_synced:
                     response_parts.append(f"Obsidian note: {obsidian_path}")
                 if session_saved and session_id:
@@ -5120,27 +5501,35 @@ def brain_chat():
                 elif session_error:
                     response_parts.append(f"Session log failed: {session_error}")
 
-                return jsonify({
-                    "response": "\n".join(response_parts),
-                    "isStub": False,
-                    "parsed": True,
-                    "wrapProcessed": True,
-                    "cardsCreated": cards_created,
-                    "cardsSyncedToAnki": cards_synced_to_anki,
-                    "ankiSyncError": anki_sync_error,
-                    "obsidianSynced": obsidian_synced,
-                    "obsidianError": obsidian_error,
-                    "obsidianPath": obsidian_path,
-                    "issuesLogged": issues_logged,
-                    "sessionSaved": session_saved,
-                    "sessionId": session_id,
-                    "wrapSessionId": wrap_session_id,
-                    "sessionError": session_error,
-                })
+                return jsonify(
+                    {
+                        "response": "\n".join(response_parts),
+                        "isStub": False,
+                        "parsed": True,
+                        "wrapProcessed": True,
+                        "cardsCreated": cards_created,
+                        "cardsSyncedToAnki": cards_synced_to_anki,
+                        "ankiSyncError": anki_sync_error,
+                        "obsidianSynced": obsidian_synced,
+                        "obsidianError": obsidian_error,
+                        "obsidianPath": obsidian_path,
+                        "issuesLogged": issues_logged,
+                        "sessionSaved": session_saved,
+                        "sessionId": session_id,
+                        "wrapSessionId": wrap_session_id,
+                        "sessionError": session_error,
+                    }
+                )
 
-        if isinstance(data.get("tracker"), dict) or isinstance(data.get("enhanced"), dict):
-            direct_tracker = data.get("tracker") if isinstance(data.get("tracker"), dict) else None
-            direct_enhanced = data.get("enhanced") if isinstance(data.get("enhanced"), dict) else None
+        if isinstance(data.get("tracker"), dict) or isinstance(
+            data.get("enhanced"), dict
+        ):
+            direct_tracker = (
+                data.get("tracker") if isinstance(data.get("tracker"), dict) else None
+            )
+            direct_enhanced = (
+                data.get("enhanced") if isinstance(data.get("enhanced"), dict) else None
+            )
             direct_payload = {}
             if direct_tracker:
                 direct_payload.update(direct_tracker)
@@ -5160,10 +5549,22 @@ def brain_chat():
 
         use_direct_payload = direct_payload is not None
 
-        if not use_direct_payload and (not isinstance(message, str) or not message.strip()):
-            return jsonify({"response": "Please provide study session data to process.", "isStub": False})
+        if not use_direct_payload and (
+            not isinstance(message, str) or not message.strip()
+        ):
+            return jsonify(
+                {
+                    "response": "Please provide study session data to process.",
+                    "isStub": False,
+                }
+            )
 
-        if use_direct_payload and direct_tracker is None and direct_enhanced is None and isinstance(direct_payload, dict):
+        if (
+            use_direct_payload
+            and direct_tracker is None
+            and direct_enhanced is None
+            and isinstance(direct_payload, dict)
+        ):
             if _classify_json_payload(direct_payload) == "enhanced":
                 direct_enhanced = direct_payload
             else:
@@ -5171,7 +5572,11 @@ def brain_chat():
 
         parsed_data = None
         if use_direct_payload:
-            topic_hint = direct_payload.get("topic") if isinstance(direct_payload, dict) else None
+            topic_hint = (
+                direct_payload.get("topic")
+                if isinstance(direct_payload, dict)
+                else None
+            )
             parsed_data = {
                 "summary": "Direct JSON intake",
                 "course": topic_hint or "General",
@@ -5279,38 +5684,38 @@ IMPORTANT:
                 user_prompt=f"Process this study session data:\n\n{message}",
                 provider="openrouter",
                 model="google/gemini-2.0-flash-001",
-                timeout=45
+                timeout=45,
             )
-            
+
             if not result.get("success"):
-                return jsonify({
-                    "response": f"LLM error: {result.get('error', 'Unknown error')}",
-                    "isStub": True
-                })
-            
+                return jsonify(
+                    {
+                        "response": f"LLM error: {result.get('error', 'Unknown error')}",
+                        "isStub": True,
+                    }
+                )
+
             # Parse LLM response
             llm_content = result.get("content", "")
-            
+
             # Try to extract JSON from response
             try:
                 # Try direct JSON parse
                 parsed_data = json.loads(llm_content)
             except json.JSONDecodeError:
                 # Try to find JSON in the response
-                json_match = re.search(r'\{[\s\S]*\}', llm_content)
+                json_match = re.search(r"\{[\s\S]*\}", llm_content)
                 if json_match:
                     try:
                         parsed_data = json.loads(json_match.group())
                     except:
                         parsed_data = None
-            
+
             if not parsed_data:
-                return jsonify({
-                    "response": llm_content,
-                    "isStub": False,
-                    "parsed": False
-                })
-        
+                return jsonify(
+                    {"response": llm_content, "isStub": False, "parsed": False}
+                )
+
         def _as_list(value):
             if isinstance(value, list):
                 return [str(v).strip() for v in value if str(v).strip()]
@@ -5352,11 +5757,17 @@ IMPORTANT:
         what_didnt_work = _as_list(parsed_data.get("what_didnt_work"))
         notes = parsed_data.get("notes", "")
 
-        topic = course if course and course.lower() != "general" else (concepts[0] if concepts else "General")
+        topic = (
+            course
+            if course and course.lower() != "general"
+            else (concepts[0] if concepts else "General")
+        )
         study_mode = "Core"
 
         duration_minutes = 0
-        duration_match = re.search(r"(\\d+)\\s*(min|mins|minutes|hr|hrs|hours)", message, re.IGNORECASE)
+        duration_match = re.search(
+            r"(\\d+)\\s*(min|mins|minutes|hr|hrs|hours)", message, re.IGNORECASE
+        )
         if duration_match:
             raw_val = int(duration_match.group(1))
             unit = duration_match.group(2).lower()
@@ -5413,7 +5824,14 @@ IMPORTANT:
             "buckets": "N/A",
             "confusables_interleaved": "N/A",
             "anchors": "N/A",
-            "anki_cards": _join_items([str(card.get("front", "")).strip() for card in anki_cards if isinstance(card, dict)]) or "N/A",
+            "anki_cards": _join_items(
+                [
+                    str(card.get("front", "")).strip()
+                    for card in anki_cards
+                    if isinstance(card, dict)
+                ]
+            )
+            or "N/A",
             "glossary": _join_items(concepts) or "N/A",
             "exit_ticket_blurt": "N/A",
             "exit_ticket_muddiest": "N/A",
@@ -5426,10 +5844,24 @@ IMPORTANT:
             "notes": notes_value or "N/A",
         }
 
-        tracker_payload = direct_tracker if use_direct_payload else parsed_data.get("tracker", {})
-        enhanced_payload = direct_enhanced if use_direct_payload else parsed_data.get("enhanced", {})
-        tracker_payload = _merge_defaults(_normalize_payload(tracker_payload if isinstance(tracker_payload, dict) else {}), tracker_defaults)
-        enhanced_payload = _merge_defaults(_normalize_payload(enhanced_payload if isinstance(enhanced_payload, dict) else {}), enhanced_defaults)
+        tracker_payload = (
+            direct_tracker if use_direct_payload else parsed_data.get("tracker", {})
+        )
+        enhanced_payload = (
+            direct_enhanced if use_direct_payload else parsed_data.get("enhanced", {})
+        )
+        tracker_payload = _merge_defaults(
+            _normalize_payload(
+                tracker_payload if isinstance(tracker_payload, dict) else {}
+            ),
+            tracker_defaults,
+        )
+        enhanced_payload = _merge_defaults(
+            _normalize_payload(
+                enhanced_payload if isinstance(enhanced_payload, dict) else {}
+            ),
+            enhanced_defaults,
+        )
 
         merged_payload = {}
         merged_payload.update(tracker_payload)
@@ -5463,16 +5895,22 @@ IMPORTANT:
         session_id = None
         session_error = None
         is_conversation = parsed_data.get("is_conversation", False)
-        session_signals = any([
-            anki_cards,
-            parsed_data.get("concepts"),
-            parsed_data.get("strengths"),
-            parsed_data.get("weaknesses"),
-            parsed_data.get("what_went_well"),
-            parsed_data.get("what_didnt_work"),
-            parsed_data.get("notes"),
-        ])
-        skip_session_logging = is_conversation or ((not use_direct_payload) and parsed_data.get("response") and not session_signals)
+        session_signals = any(
+            [
+                anki_cards,
+                parsed_data.get("concepts"),
+                parsed_data.get("strengths"),
+                parsed_data.get("weaknesses"),
+                parsed_data.get("what_went_well"),
+                parsed_data.get("what_didnt_work"),
+                parsed_data.get("notes"),
+            ]
+        )
+        skip_session_logging = is_conversation or (
+            (not use_direct_payload)
+            and parsed_data.get("response")
+            and not session_signals
+        )
 
         if skip_session_logging:
             session_error = "Skipped logging (question response)."
@@ -5505,41 +5943,52 @@ IMPORTANT:
             conn = get_connection()
             cur = conn.cursor()
 
-            session_ref = str(session_id) if session_id else f"chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            session_ref = (
+                str(session_id)
+                if session_id
+                else f"chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
             course = parsed_data.get("course", "General")
 
             for card in anki_cards:
                 if isinstance(card, dict) and card.get("front") and card.get("back"):
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO card_drafts
                         (session_id, course_id, topic_id, deck_name, card_type, front, back, tags, source_citation, status, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        session_ref,
-                        None,  # course_id
-                        None,  # topic_id
-                        f"PT::{course}",
-                        "basic",
-                        card.get("front", ""),
-                        card.get("back", ""),
-                        card.get("tags", ""),
-                        None,  # source_citation
-                        card_status,
-                        datetime.now().isoformat()
-                    ))
+                    """,
+                        (
+                            session_ref,
+                            None,  # course_id
+                            None,  # topic_id
+                            f"PT::{course}",
+                            "basic",
+                            card.get("front", ""),
+                            card.get("back", ""),
+                            card.get("tags", ""),
+                            None,  # source_citation
+                            card_status,
+                            datetime.now().isoformat(),
+                        ),
+                    )
                     cards_created += 1
 
             conn.commit()
             conn.close()
 
             # Cards stay pending - user reviews/approves in Anki Integration window
-        
+
         # Build response message
         response_parts = []
 
         if is_conversation:
             # For conversations, just return the response
-            response_parts.append(parsed_data.get("response", "Hello! How can I help you with your studies today?"))
+            response_parts.append(
+                parsed_data.get(
+                    "response", "Hello! How can I help you with your studies today?"
+                )
+            )
         else:
             # For study sessions, show full structured output
             if parsed_data.get("summary"):
@@ -5552,22 +6001,34 @@ IMPORTANT:
                 response_parts.append(f"📚 **Course:** {parsed_data['course']}")
 
             if parsed_data.get("strengths"):
-                response_parts.append(f"💪 **Strengths:** {', '.join(parsed_data['strengths'])}")
+                response_parts.append(
+                    f"💪 **Strengths:** {', '.join(parsed_data['strengths'])}"
+                )
 
             if parsed_data.get("weaknesses"):
-                response_parts.append(f"⚠️ **Weaknesses:** {', '.join(parsed_data['weaknesses'])}")
+                response_parts.append(
+                    f"⚠️ **Weaknesses:** {', '.join(parsed_data['weaknesses'])}"
+                )
 
             if parsed_data.get("what_went_well"):
-                response_parts.append(f"✅ **What went well:** {', '.join(parsed_data['what_went_well'])}")
+                response_parts.append(
+                    f"✅ **What went well:** {', '.join(parsed_data['what_went_well'])}"
+                )
 
             if parsed_data.get("what_didnt_work"):
-                response_parts.append(f"❌ **What didn't work:** {', '.join(parsed_data['what_didnt_work'])}")
+                response_parts.append(
+                    f"❌ **What didn't work:** {', '.join(parsed_data['what_didnt_work'])}"
+                )
 
             if parsed_data.get("concepts"):
-                response_parts.append(f"🧠 **Concepts:** {', '.join(parsed_data['concepts'])}")
+                response_parts.append(
+                    f"🧠 **Concepts:** {', '.join(parsed_data['concepts'])}"
+                )
 
             if cards_created > 0:
-                response_parts.append(f"\n🃏 **Created {cards_created} Anki card(s)** - Check the Anki Integration panel to review and sync them!")
+                response_parts.append(
+                    f"\n🃏 **Created {cards_created} Anki card(s)** - Check the Anki Integration panel to review and sync them!"
+                )
 
             if parsed_data.get("notes"):
                 response_parts.append(f"\n📌 **Notes:** {parsed_data['notes']}")
@@ -5583,7 +6044,10 @@ IMPORTANT:
         # Sync to Obsidian if requested (skip for conversations)
         obsidian_synced = False
         obsidian_error = None
-        sync_to_obsidian = data.get("syncToObsidian", False) or mode in ("obsidian", "all")
+        sync_to_obsidian = data.get("syncToObsidian", False) or mode in (
+            "obsidian",
+            "all",
+        )
 
         if sync_to_obsidian and parsed_data and not is_conversation:
             # Build Obsidian note content
@@ -5599,7 +6063,9 @@ IMPORTANT:
                     route_course = wheel_course
 
             # Get course-specific folder path
-            course_folder = get_course_obsidian_folder(route_course) if route_course else None
+            course_folder = (
+                get_course_obsidian_folder(route_course) if route_course else None
+            )
 
             obsidian_content = f"\n\n---\n## Study Session - {time_now}\n"
             obsidian_content += f"**Course:** {course}\n\n"
@@ -5648,37 +6114,42 @@ IMPORTANT:
             else:
                 obsidian_error = result.get("error")
                 response_parts.append(f"\n⚠️ **Obsidian sync failed:** {obsidian_error}")
-        
-        return jsonify({
-            "response": "\n\n".join(response_parts),
-            "isStub": False,
-            "parsed": True,
-            "cardsCreated": cards_created,
-            "cardsSyncedToAnki": cards_synced_to_anki,
-            "ankiSyncError": anki_sync_error,
-            "obsidianSynced": obsidian_synced,
-            "obsidianError": obsidian_error,
-            "sessionSaved": session_saved,
-            "sessionId": session_id,
-            "sessionError": session_error,
-            "data": parsed_data
-        })
-        
+
+        return jsonify(
+            {
+                "response": "\n\n".join(response_parts),
+                "isStub": False,
+                "parsed": True,
+                "cardsCreated": cards_created,
+                "cardsSyncedToAnki": cards_synced_to_anki,
+                "ankiSyncError": anki_sync_error,
+                "obsidianSynced": obsidian_synced,
+                "obsidianError": obsidian_error,
+                "sessionSaved": session_saved,
+                "sessionId": session_id,
+                "sessionError": session_error,
+                "data": parsed_data,
+            }
+        )
+
     except Exception as e:
         error_trace = traceback.format_exc()
         print(f"[BRAIN CHAT ERROR] {str(e)}")
         print(error_trace)
         # Return 200 with error message so frontend can display it
-        return jsonify({
-            "response": f"Error: {str(e)}\n\nDetails: {error_trace[:500]}",
-            "isStub": True
-        })
+        return jsonify(
+            {
+                "response": f"Error: {str(e)}\n\nDetails: {error_trace[:500]}",
+                "isStub": True,
+            }
+        )
 
 
 @adapter_bp.route("/brain/quick-chat", methods=["POST"])
 def brain_quick_chat():
     """Streaming chat endpoint using Kimi k2.5 via OpenRouter. Supports vision."""
     from flask import Response
+
     data = request.get_json() or {}
     messages = data.get("messages", [])
     if not messages:
@@ -5686,16 +6157,17 @@ def brain_quick_chat():
 
     system_msg = {
         "role": "system",
-        "content": "You are a concise study assistant for a DPT (Doctor of Physical Therapy) student. Keep responses short and direct. Use bullet points for lists. No fluff or unnecessary elaboration."
+        "content": "You are a concise study assistant for a DPT (Doctor of Physical Therapy) student. Keep responses short and direct. Use bullet points for lists. No fluff or unnecessary elaboration.",
     }
 
     def generate():
         import urllib.request
         import urllib.error
         from llm_provider import OPENROUTER_API_KEY
+
         api_key = OPENROUTER_API_KEY or os.environ.get("OPENROUTER_API_KEY")
         if not api_key:
-            yield "data: {\"error\": \"OPENROUTER_API_KEY not set.\"}\n\n"
+            yield 'data: {"error": "OPENROUTER_API_KEY not set."}\n\n'
             return
 
         url = "https://openrouter.ai/api/v1/chat/completions"
@@ -5714,7 +6186,9 @@ def brain_quick_chat():
         }
         try:
             req_data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(url, data=req_data, headers=headers, method="POST")
+            req = urllib.request.Request(
+                url, data=req_data, headers=headers, method="POST"
+            )
             with urllib.request.urlopen(req, timeout=120) as response:
                 for line in response:
                     decoded = line.decode("utf-8").strip()
@@ -5734,11 +6208,16 @@ def brain_quick_chat():
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-    return Response(generate(), mimetype="text/event-stream", direct_passthrough=True, headers={
-        "Cache-Control": "no-cache, no-store",
-        "X-Accel-Buffering": "no",
-        "Connection": "keep-alive",
-    })
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        direct_passthrough=True,
+        headers={
+            "Cache-Control": "no-cache, no-store",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @adapter_bp.route("/brain/ingest", methods=["POST"])
@@ -5750,13 +6229,15 @@ def brain_ingest():
         filename = data.get("filename", f"api_{datetime.now().isoformat()}")
 
         if not content.strip():
-            return jsonify({
-                "message": "No content provided",
-                "parsed": False,
-                "isStub": False,
-                "sessionSaved": False,
-                "errors": ["content field is required"]
-            })
+            return jsonify(
+                {
+                    "message": "No content provided",
+                    "parsed": False,
+                    "isStub": False,
+                    "sessionSaved": False,
+                    "errors": ["content field is required"],
+                }
+            )
 
         # Import dependencies (same as /brain/chat)
         from ingest_session import (
@@ -5768,24 +6249,28 @@ def brain_ingest():
         from wrap_parser import is_wrap_format, parse_wrap
 
         if not is_wrap_format(content):
-            return jsonify({
-                "message": "Content is not valid WRAP format",
-                "parsed": False,
-                "isStub": False,
-                "sessionSaved": False,
-                "errors": ["Content must be WRAP format with sections A/B/C/D"]
-            })
+            return jsonify(
+                {
+                    "message": "Content is not valid WRAP format",
+                    "parsed": False,
+                    "isStub": False,
+                    "sessionSaved": False,
+                    "errors": ["Content must be WRAP format with sections A/B/C/D"],
+                }
+            )
 
         # Parse WRAP (reuse existing logic from /brain/chat WRAP flow)
         wrap_data = parse_wrap(content)
         if not wrap_data:
-            return jsonify({
-                "message": "Failed to parse WRAP content",
-                "parsed": False,
-                "isStub": False,
-                "sessionSaved": False,
-                "errors": ["WRAP parsing returned empty result"]
-            })
+            return jsonify(
+                {
+                    "message": "Failed to parse WRAP content",
+                    "parsed": False,
+                    "isStub": False,
+                    "sessionSaved": False,
+                    "errors": ["WRAP parsing returned empty result"],
+                }
+            )
 
         # Build session_data with defaults (same logic as /brain/chat)
         now = datetime.now()
@@ -5807,9 +6292,23 @@ def brain_ingest():
                 return default
 
         # Apply defaults (matches existing logic exactly)
-        session_date = metadata.get("date") or merged_payload.get("date") or now.strftime("%Y-%m-%d")
-        topic = metadata.get("topic") or merged_payload.get("topic") or metadata.get("course") or "General"
-        study_mode = metadata.get("mode") or metadata.get("study_mode") or merged_payload.get("mode") or "Core"
+        session_date = (
+            metadata.get("date")
+            or merged_payload.get("date")
+            or now.strftime("%Y-%m-%d")
+        )
+        topic = (
+            metadata.get("topic")
+            or merged_payload.get("topic")
+            or metadata.get("course")
+            or "General"
+        )
+        study_mode = (
+            metadata.get("mode")
+            or metadata.get("study_mode")
+            or merged_payload.get("mode")
+            or "Core"
+        )
         duration_minutes = _safe_int(
             metadata.get("duration_min")
             or metadata.get("duration_minutes")
@@ -5835,7 +6334,11 @@ def brain_ingest():
         # Process Section A: Obsidian notes
         section_a = wrap_data.get("section_a") or {}
         if section_a:
-            notes_raw = section_a.get("raw", "") if isinstance(section_a, dict) else str(section_a)
+            notes_raw = (
+                section_a.get("raw", "")
+                if isinstance(section_a, dict)
+                else str(section_a)
+            )
             session_data.setdefault("notes_insights", notes_raw)
 
         # Process Section C: Spaced schedule
@@ -5861,13 +6364,15 @@ def brain_ingest():
         # Validate and insert
         is_valid, error = validate_session_data(session_data)
         if not is_valid:
-            return jsonify({
-                "message": f"Validation failed: {error}",
-                "parsed": True,
-                "isStub": False,
-                "sessionSaved": False,
-                "errors": [error]
-            })
+            return jsonify(
+                {
+                    "message": f"Validation failed: {error}",
+                    "parsed": True,
+                    "isStub": False,
+                    "sessionSaved": False,
+                    "errors": [error],
+                }
+            )
 
         success, msg = insert_session(session_data)
 
@@ -5882,51 +6387,64 @@ def brain_ingest():
         cards_created = 0
         if success and cards:
             from db_setup import get_connection
+
             conn = get_connection()
             cur = conn.cursor()
             course = metadata.get("course") or topic or "General"
-            session_ref = str(session_id) if session_id else f"ingest_{now.strftime('%Y%m%d_%H%M%S')}"
+            session_ref = (
+                str(session_id)
+                if session_id
+                else f"ingest_{now.strftime('%Y%m%d_%H%M%S')}"
+            )
             for card in cards:
                 if isinstance(card, dict) and card.get("front") and card.get("back"):
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO card_drafts
                         (session_id, course_id, topic_id, deck_name, card_type, front, back, tags, source_citation, status, created_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (
-                        session_ref,
-                        None,
-                        None,
-                        f"PT::{course}",
-                        "basic",
-                        card.get("front", ""),
-                        card.get("back", ""),
-                        card.get("tags", ""),
-                        card.get("source") or metadata.get("source_lock"),
-                        "pending",
-                        now.isoformat()
-                    ))
+                    """,
+                        (
+                            session_ref,
+                            None,
+                            None,
+                            f"PT::{course}",
+                            "basic",
+                            card.get("front", ""),
+                            card.get("back", ""),
+                            card.get("tags", ""),
+                            card.get("source") or metadata.get("source_lock"),
+                            "pending",
+                            now.isoformat(),
+                        ),
+                    )
                     cards_created += 1
             conn.commit()
             conn.close()
 
-        return jsonify({
-            "message": msg,
-            "parsed": True,
-            "isStub": False,
-            "sessionSaved": success,
-            "sessionId": session_id,
-            "cardsCreated": cards_created
-        })
+        return jsonify(
+            {
+                "message": msg,
+                "parsed": True,
+                "isStub": False,
+                "sessionSaved": success,
+                "sessionId": session_id,
+                "cardsCreated": cards_created,
+            }
+        )
 
     except Exception as e:
         import traceback
-        return jsonify({
-            "message": f"Error: {str(e)}",
-            "parsed": False,
-            "isStub": False,
-            "sessionSaved": False,
-            "errors": [str(e)]
-        })
+
+        return jsonify(
+            {
+                "message": f"Error: {str(e)}",
+                "parsed": False,
+                "isStub": False,
+                "sessionSaved": False,
+                "errors": [str(e)],
+            }
+        )
 
 
 @adapter_bp.route("/tutor-issues", methods=["GET"])
@@ -5979,15 +6497,20 @@ def get_tutor_issues():
         rows = cur.fetchall()
         conn.close()
 
-        return jsonify([{
-            "id": row["id"],
-            "sessionId": row["session_id"],
-            "issueType": row["issue_type"],
-            "description": row["description"],
-            "severity": row["severity"],
-            "resolved": bool(row["resolved"]),
-            "createdAt": row["created_at"],
-        } for row in rows])
+        return jsonify(
+            [
+                {
+                    "id": row["id"],
+                    "sessionId": row["session_id"],
+                    "issueType": row["issue_type"],
+                    "description": row["description"],
+                    "severity": row["severity"],
+                    "resolved": bool(row["resolved"]),
+                    "createdAt": row["created_at"],
+                }
+                for row in rows
+            ]
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6019,15 +6542,17 @@ def create_tutor_issue():
         conn.commit()
         conn.close()
 
-        return jsonify({
-            "id": issue_id,
-            "sessionId": session_id,
-            "issueType": issue_type,
-            "description": description,
-            "severity": severity,
-            "resolved": False,
-            "createdAt": now,
-        }), 201
+        return jsonify(
+            {
+                "id": issue_id,
+                "sessionId": session_id,
+                "issueType": issue_type,
+                "description": description,
+                "severity": severity,
+                "resolved": False,
+                "createdAt": now,
+            }
+        ), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6080,26 +6605,40 @@ def get_tutor_issue_stats():
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
-        cur.execute("SELECT issue_type, COUNT(*) as count FROM tutor_issues GROUP BY issue_type")
-        by_type = [{"issueType": row["issue_type"], "count": row["count"]} for row in cur.fetchall()]
+        cur.execute(
+            "SELECT issue_type, COUNT(*) as count FROM tutor_issues GROUP BY issue_type"
+        )
+        by_type = [
+            {"issueType": row["issue_type"], "count": row["count"]}
+            for row in cur.fetchall()
+        ]
 
-        cur.execute("SELECT severity, COUNT(*) as count FROM tutor_issues GROUP BY severity")
-        by_severity = [{"severity": row["severity"], "count": row["count"]} for row in cur.fetchall()]
+        cur.execute(
+            "SELECT severity, COUNT(*) as count FROM tutor_issues GROUP BY severity"
+        )
+        by_severity = [
+            {"severity": row["severity"], "count": row["count"]}
+            for row in cur.fetchall()
+        ]
 
-        cur.execute("SELECT resolved, COUNT(*) as count FROM tutor_issues GROUP BY resolved")
+        cur.execute(
+            "SELECT resolved, COUNT(*) as count FROM tutor_issues GROUP BY resolved"
+        )
         resolved_counts = {row["resolved"]: row["count"] for row in cur.fetchall()}
 
         conn.close()
 
-        return jsonify({
-            "byType": by_type,
-            "bySeverity": by_severity,
-            "resolved": {
-                "resolved": resolved_counts.get(1, 0),
-                "unresolved": resolved_counts.get(0, 0),
-                "total": sum(resolved_counts.values()),
-            },
-        })
+        return jsonify(
+            {
+                "byType": by_type,
+                "bySeverity": by_severity,
+                "resolved": {
+                    "resolved": resolved_counts.get(1, 0),
+                    "unresolved": resolved_counts.get(0, 0),
+                    "total": sum(resolved_counts.values()),
+                },
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6119,18 +6658,27 @@ def get_tasks_for_list(list_id):
         if not service:
             return jsonify([])
 
-        result = service.tasks().list(tasklist=list_id, showCompleted=True, maxResults=100).execute()
+        result = (
+            service.tasks()
+            .list(tasklist=list_id, showCompleted=True, maxResults=100)
+            .execute()
+        )
         tasks = result.get("items", [])
 
-        return jsonify([{
-            "id": t.get("id"),
-            "title": t.get("title", ""),
-            "notes": t.get("notes", ""),
-            "status": t.get("status", "needsAction"),
-            "due": t.get("due"),
-            "position": t.get("position"),
-            "listId": list_id,
-        } for t in tasks])
+        return jsonify(
+            [
+                {
+                    "id": t.get("id"),
+                    "title": t.get("title", ""),
+                    "notes": t.get("notes", ""),
+                    "status": t.get("status", "needsAction"),
+                    "due": t.get("due"),
+                    "position": t.get("position"),
+                    "listId": list_id,
+                }
+                for t in tasks
+            ]
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6155,16 +6703,18 @@ def create_task_in_list(list_id):
             body["due"] = data["due"]
 
         result = service.tasks().insert(tasklist=list_id, body=body).execute()
-        
-        return jsonify({
-            "id": result.get("id"),
-            "title": result.get("title", ""),
-            "notes": result.get("notes", ""),
-            "status": result.get("status", "needsAction"),
-            "due": result.get("due"),
-            "position": result.get("position"),
-            "listId": list_id,
-        }), 201
+
+        return jsonify(
+            {
+                "id": result.get("id"),
+                "title": result.get("title", ""),
+                "notes": result.get("notes", ""),
+                "status": result.get("status", "needsAction"),
+                "due": result.get("due"),
+                "position": result.get("position"),
+                "listId": list_id,
+            }
+        ), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6180,10 +6730,10 @@ def update_task_in_list(list_id, task_id):
             return jsonify({"error": "Not connected to Google"}), 401
 
         data = request.json
-        
+
         # Get current task
         current = service.tasks().get(tasklist=list_id, task=task_id).execute()
-        
+
         # Update fields
         if "title" in data:
             current["title"] = data["title"]
@@ -6194,17 +6744,23 @@ def update_task_in_list(list_id, task_id):
         if "due" in data:
             current["due"] = data["due"]
 
-        result = service.tasks().update(tasklist=list_id, task=task_id, body=current).execute()
-        
-        return jsonify({
-            "id": result.get("id"),
-            "title": result.get("title", ""),
-            "notes": result.get("notes", ""),
-            "status": result.get("status", "needsAction"),
-            "due": result.get("due"),
-            "position": result.get("position"),
-            "listId": list_id,
-        })
+        result = (
+            service.tasks()
+            .update(tasklist=list_id, task=task_id, body=current)
+            .execute()
+        )
+
+        return jsonify(
+            {
+                "id": result.get("id"),
+                "title": result.get("title", ""),
+                "notes": result.get("notes", ""),
+                "status": result.get("status", "needsAction"),
+                "due": result.get("due"),
+                "position": result.get("position"),
+                "listId": list_id,
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6221,24 +6777,30 @@ def toggle_task_in_list(list_id, task_id):
 
         data = request.json or {}
         completed = data.get("completed", True)
-        
+
         # Get current task
         current = service.tasks().get(tasklist=list_id, task=task_id).execute()
-        
+
         # Toggle status
         current["status"] = "completed" if completed else "needsAction"
 
-        result = service.tasks().update(tasklist=list_id, task=task_id, body=current).execute()
-        
-        return jsonify({
-            "id": result.get("id"),
-            "title": result.get("title", ""),
-            "notes": result.get("notes", ""),
-            "status": result.get("status", "needsAction"),
-            "due": result.get("due"),
-            "position": result.get("position"),
-            "listId": list_id,
-        })
+        result = (
+            service.tasks()
+            .update(tasklist=list_id, task=task_id, body=current)
+            .execute()
+        )
+
+        return jsonify(
+            {
+                "id": result.get("id"),
+                "title": result.get("title", ""),
+                "notes": result.get("notes", ""),
+                "status": result.get("status", "needsAction"),
+                "due": result.get("due"),
+                "position": result.get("position"),
+                "listId": list_id,
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6254,7 +6816,7 @@ def delete_task_in_list(list_id, task_id):
             return jsonify({"error": "Not connected to Google"}), 401
 
         service.tasks().delete(tasklist=list_id, task=task_id).execute()
-        
+
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -6279,7 +6841,7 @@ def move_task_in_list(list_id, task_id):
         if dest_list_id != list_id:
             # Get current task
             current = service.tasks().get(tasklist=list_id, task=task_id).execute()
-            
+
             # Create in new list
             body = {
                 "title": current.get("title", ""),
@@ -6288,24 +6850,36 @@ def move_task_in_list(list_id, task_id):
             }
             if current.get("due"):
                 body["due"] = current["due"]
-            
-            result = service.tasks().insert(tasklist=dest_list_id, body=body, previous=previous, parent=parent).execute()
-            
+
+            result = (
+                service.tasks()
+                .insert(
+                    tasklist=dest_list_id, body=body, previous=previous, parent=parent
+                )
+                .execute()
+            )
+
             # Delete from old list
             service.tasks().delete(tasklist=list_id, task=task_id).execute()
         else:
             # Just move within same list
-            result = service.tasks().move(tasklist=list_id, task=task_id, previous=previous, parent=parent).execute()
-        
-        return jsonify({
-            "id": result.get("id"),
-            "title": result.get("title", ""),
-            "notes": result.get("notes", ""),
-            "status": result.get("status", "needsAction"),
-            "due": result.get("due"),
-            "position": result.get("position"),
-            "listId": dest_list_id,
-        })
+            result = (
+                service.tasks()
+                .move(tasklist=list_id, task=task_id, previous=previous, parent=parent)
+                .execute()
+            )
+
+        return jsonify(
+            {
+                "id": result.get("id"),
+                "title": result.get("title", ""),
+                "notes": result.get("notes", ""),
+                "status": result.get("status", "needsAction"),
+                "due": result.get("due"),
+                "position": result.get("position"),
+                "listId": dest_list_id,
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6314,13 +6888,14 @@ def move_task_in_list(list_id, task_id):
 # ACADEMIC DEADLINES (Assignments, Quizzes, Exams)
 # ==============================================================================
 
+
 @adapter_bp.route("/academic-deadlines", methods=["GET"])
 def get_academic_deadlines():
     """Get all academic deadlines."""
     try:
         conn = get_connection()
         cur = conn.cursor()
-        
+
         # Ensure table exists
         cur.execute("""
             CREATE TABLE IF NOT EXISTS academic_deadlines (
@@ -6335,7 +6910,7 @@ def get_academic_deadlines():
             )
         """)
         conn.commit()
-        
+
         cur.execute("""
             SELECT id, title, course, type, due_date, completed, notes, created_at
             FROM academic_deadlines
@@ -6353,7 +6928,9 @@ def get_academic_deadlines():
             cur.execute("SELECT name FROM courses WHERE id = ?", (cid,))
             row = cur.fetchone()
             if not row:
-                cur.execute("SELECT name FROM wheel_courses WHERE course_id = ?", (cid,))
+                cur.execute(
+                    "SELECT name FROM wheel_courses WHERE course_id = ?", (cid,)
+                )
                 row = cur.fetchone()
             _course_name_cache[cid] = row[0] if row and row[0] else str(cid)
 
@@ -6364,17 +6941,19 @@ def get_academic_deadlines():
             course_val = r[2] or ""
             if course_val.isdigit():
                 course_val = _course_name_cache.get(int(course_val), course_val)
-            deadlines.append({
-                "id": r[0],
-                "title": r[1],
-                "course": course_val,
-                "type": r[3],
-                "dueDate": r[4],
-                "completed": bool(r[5]),
-                "notes": r[6],
-                "createdAt": r[7],
-            })
-        
+            deadlines.append(
+                {
+                    "id": r[0],
+                    "title": r[1],
+                    "course": course_val,
+                    "type": r[3],
+                    "dueDate": r[4],
+                    "completed": bool(r[5]),
+                    "notes": r[6],
+                    "createdAt": r[7],
+                }
+            )
+
         return jsonify(deadlines)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -6390,32 +6969,37 @@ def create_academic_deadline():
         deadline_type = data.get("type")
         due_date = data.get("dueDate")
         notes = data.get("notes", "")
-        
+
         if not all([title, course, deadline_type, due_date]):
             return jsonify({"error": "Missing required fields"}), 400
-        
+
         conn = get_connection()
         cur = conn.cursor()
-        
-        cur.execute("""
+
+        cur.execute(
+            """
             INSERT INTO academic_deadlines (title, course, type, due_date, notes, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (title, course, deadline_type, due_date, notes, datetime.now().isoformat()))
-        
+        """,
+            (title, course, deadline_type, due_date, notes, datetime.now().isoformat()),
+        )
+
         deadline_id = cur.lastrowid
         conn.commit()
         conn.close()
-        
-        return jsonify({
-            "id": deadline_id,
-            "title": title,
-            "course": course,
-            "type": deadline_type,
-            "dueDate": due_date,
-            "completed": False,
-            "notes": notes,
-            "createdAt": datetime.now().isoformat(),
-        }), 201
+
+        return jsonify(
+            {
+                "id": deadline_id,
+                "title": title,
+                "course": course,
+                "type": deadline_type,
+                "dueDate": due_date,
+                "completed": False,
+                "notes": notes,
+                "createdAt": datetime.now().isoformat(),
+            }
+        ), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6427,10 +7011,10 @@ def update_academic_deadline(deadline_id):
         data = request.get_json()
         conn = get_connection()
         cur = conn.cursor()
-        
+
         updates = []
         params = []
-        
+
         if "title" in data:
             updates.append("title = ?")
             params.append(data["title"])
@@ -6449,30 +7033,38 @@ def update_academic_deadline(deadline_id):
         if "notes" in data:
             updates.append("notes = ?")
             params.append(data["notes"])
-        
+
         if updates:
             params.append(deadline_id)
-            cur.execute(f"UPDATE academic_deadlines SET {', '.join(updates)} WHERE id = ?", params)
+            cur.execute(
+                f"UPDATE academic_deadlines SET {', '.join(updates)} WHERE id = ?",
+                params,
+            )
             conn.commit()
-        
-        cur.execute("""
+
+        cur.execute(
+            """
             SELECT id, title, course, type, due_date, completed, notes, created_at
             FROM academic_deadlines WHERE id = ?
-        """, (deadline_id,))
+        """,
+            (deadline_id,),
+        )
         r = cur.fetchone()
         conn.close()
-        
+
         if r:
-            return jsonify({
-                "id": r[0],
-                "title": r[1],
-                "course": r[2],
-                "type": r[3],
-                "dueDate": r[4],
-                "completed": bool(r[5]),
-                "notes": r[6],
-                "createdAt": r[7],
-            })
+            return jsonify(
+                {
+                    "id": r[0],
+                    "title": r[1],
+                    "course": r[2],
+                    "type": r[3],
+                    "dueDate": r[4],
+                    "completed": bool(r[5]),
+                    "notes": r[6],
+                    "createdAt": r[7],
+                }
+            )
         return jsonify({"error": "Deadline not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -6498,34 +7090,44 @@ def toggle_academic_deadline(deadline_id):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        
-        cur.execute("SELECT completed FROM academic_deadlines WHERE id = ?", (deadline_id,))
+
+        cur.execute(
+            "SELECT completed FROM academic_deadlines WHERE id = ?", (deadline_id,)
+        )
         row = cur.fetchone()
         if not row:
             conn.close()
             return jsonify({"error": "Deadline not found"}), 404
-        
+
         new_status = 0 if row[0] else 1
-        cur.execute("UPDATE academic_deadlines SET completed = ? WHERE id = ?", (new_status, deadline_id))
+        cur.execute(
+            "UPDATE academic_deadlines SET completed = ? WHERE id = ?",
+            (new_status, deadline_id),
+        )
         conn.commit()
-        
-        cur.execute("""
+
+        cur.execute(
+            """
             SELECT id, title, course, type, due_date, completed, notes, created_at
             FROM academic_deadlines WHERE id = ?
-        """, (deadline_id,))
+        """,
+            (deadline_id,),
+        )
         r = cur.fetchone()
         conn.close()
-        
-        return jsonify({
-            "id": r[0],
-            "title": r[1],
-            "course": r[2],
-            "type": r[3],
-            "dueDate": r[4],
-            "completed": bool(r[5]),
-            "notes": r[6],
-            "createdAt": r[7],
-        })
+
+        return jsonify(
+            {
+                "id": r[0],
+                "title": r[1],
+                "course": r[2],
+                "type": r[3],
+                "dueDate": r[4],
+                "completed": bool(r[5]),
+                "notes": r[6],
+                "createdAt": r[7],
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -6534,14 +7136,15 @@ def toggle_academic_deadline(deadline_id):
 # SCHOLAR ENDPOINTS
 # =============================================================================
 
+
 @adapter_bp.route("/scholar/questions", methods=["GET"])
 def get_scholar_questions():
     """Get open questions from Scholar outputs."""
     from pathlib import Path
-    
+
     questions = []
     scholar_outputs = Path(__file__).parent.parent.parent / "scholar" / "outputs"
-    
+
     # Check questions_dashboard.md
     questions_file = scholar_outputs / "questions_dashboard.md"
     if questions_file.exists():
@@ -6551,15 +7154,17 @@ def get_scholar_questions():
             if stripped.startswith("- ") or stripped.startswith("* "):
                 question_text = stripped[2:].strip()
                 if question_text and len(question_text) > 5:
-                    questions.append({
-                        "id": len(questions) + 1,
-                        "question": question_text,
-                        "context": "",
-                        "dataInsufficient": "",
-                        "researchAttempted": "",
-                        "source": "questions_dashboard.md"
-                    })
-    
+                    questions.append(
+                        {
+                            "id": len(questions) + 1,
+                            "question": question_text,
+                            "context": "",
+                            "dataInsufficient": "",
+                            "researchAttempted": "",
+                            "source": "questions_dashboard.md",
+                        }
+                    )
+
     # Also check orchestrator runs for questions_needed files
     orchestrator_dir = scholar_outputs / "orchestrator_runs"
     if orchestrator_dir.exists():
@@ -6570,15 +7175,17 @@ def get_scholar_questions():
                 if stripped.startswith("- ") or stripped.startswith("* "):
                     question_text = stripped[2:].strip()
                     if question_text:
-                        questions.append({
-                            "id": len(questions) + 1,
-                            "question": question_text,
-                            "context": "",
-                            "dataInsufficient": "",
-                            "researchAttempted": "",
-                            "source": qfile.name
-                        })
-    
+                        questions.append(
+                            {
+                                "id": len(questions) + 1,
+                                "question": question_text,
+                                "context": "",
+                                "dataInsufficient": "",
+                                "researchAttempted": "",
+                                "source": qfile.name,
+                            }
+                        )
+
     return jsonify(questions[:20])
 
 
@@ -6586,14 +7193,14 @@ def get_scholar_questions():
 def scholar_chat():
     """Chat with Scholar about study data."""
     from scholar.brain_reader import get_all_sessions, get_session_count
-    
+
     data = request.json
     message = data.get("message", "").lower()
-    
+
     # Get study data for context
     session_count = get_session_count()
     sessions = get_all_sessions()
-    
+
     # Build contextual response
     if "session" in message or "study" in message:
         if sessions:
@@ -6608,45 +7215,47 @@ def scholar_chat():
         response = "I can help you analyze your study patterns. Ask about: sessions, progress, topics, or study time."
     else:
         response = f"I found {session_count} sessions in your study database. Ask me about your sessions, topics, or study patterns for insights."
-    
-    return jsonify({
-        "response": response,
-        "sessionCount": session_count,
-        "isStub": False
-    })
+
+    return jsonify(
+        {"response": response, "sessionCount": session_count, "isStub": False}
+    )
 
 
 @adapter_bp.route("/scholar/findings", methods=["GET"])
 def get_scholar_findings():
     """Get research findings from Scholar outputs."""
     from pathlib import Path
-    
+
     findings = []
     scholar_outputs = Path(__file__).parent.parent.parent / "scholar" / "outputs"
-    
+
     # Check STATUS.md
     status_file = scholar_outputs / "STATUS.md"
     if status_file.exists():
         content = status_file.read_text(encoding="utf-8", errors="ignore")
-        findings.append({
-            "id": 1,
-            "title": "System Status",
-            "source": "STATUS.md",
-            "content": content[:500] if len(content) > 500 else content
-        })
-    
+        findings.append(
+            {
+                "id": 1,
+                "title": "System Status",
+                "source": "STATUS.md",
+                "content": content[:500] if len(content) > 500 else content,
+            }
+        )
+
     # Check for review outputs
     review_dir = scholar_outputs / "review"
     if review_dir.exists():
         for rfile in list(review_dir.glob("*.md"))[:5]:
             content = rfile.read_text(encoding="utf-8", errors="ignore")
-            findings.append({
-                "id": len(findings) + 1,
-                "title": rfile.stem.replace("_", " ").title(),
-                "source": f"review/{rfile.name}",
-                "content": content[:300] if len(content) > 300 else content
-            })
-    
+            findings.append(
+                {
+                    "id": len(findings) + 1,
+                    "title": rfile.stem.replace("_", " ").title(),
+                    "source": f"review/{rfile.name}",
+                    "content": content[:300] if len(content) > 300 else content,
+                }
+            )
+
     return jsonify(findings)
 
 
@@ -6657,7 +7266,7 @@ def get_tutor_audit():
     try:
         conn = get_connection()
         cur = conn.cursor()
-        
+
         # Get recent chat sessions
         cur.execute("""
             SELECT DISTINCT session_id, created_at 
@@ -6666,26 +7275,31 @@ def get_tutor_audit():
             LIMIT 10
         """)
         sessions = cur.fetchall()
-        
+
         audit_items = []
         for sess_id, created_at in sessions:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT COUNT(*), role 
                 FROM chat_messages 
                 WHERE session_id = ? 
                 GROUP BY role
-            """, (sess_id,))
+            """,
+                (sess_id,),
+            )
             counts = {r[1]: r[0] for r in cur.fetchall()}
-            
-            audit_items.append({
-                "id": len(audit_items) + 1,
-                "sessionId": sess_id,
-                "date": created_at,
-                "userMessages": counts.get("user", 0),
-                "assistantMessages": counts.get("assistant", 0),
-                "status": "reviewed" if counts.get("user", 0) > 0 else "pending"
-            })
-        
+
+            audit_items.append(
+                {
+                    "id": len(audit_items) + 1,
+                    "sessionId": sess_id,
+                    "date": created_at,
+                    "userMessages": counts.get("user", 0),
+                    "assistantMessages": counts.get("assistant", 0),
+                    "status": "reviewed" if counts.get("user", 0) > 0 else "pending",
+                }
+            )
+
         conn.close()
         return jsonify(audit_items)
     except Exception as e:
@@ -6696,11 +7310,13 @@ def get_tutor_audit():
 # OBSIDIAN INTEGRATION ENDPOINTS
 # =========================================================================
 
+
 @adapter_bp.route("/obsidian/status", methods=["GET"])
 def get_obsidian_status():
     """Check Obsidian gateway status."""
     status = obsidian_health_check()
     return jsonify(status)
+
 
 @adapter_bp.route("/obsidian/append", methods=["POST"])
 def post_obsidian_append():
@@ -6708,14 +7324,17 @@ def post_obsidian_append():
     data = request.get_json() or {}
     path = data.get("path", "")
     content = data.get("content", "")
-    
+
     if not path or not content:
-        return jsonify({"success": False, "error": "path and content are required"}), 400
-    
+        return jsonify(
+            {"success": False, "error": "path and content are required"}
+        ), 400
+
     result = obsidian_append(path, content)
     if result.get("success"):
         return jsonify(result)
     return jsonify(result), 500
+
 
 @adapter_bp.route("/obsidian/files", methods=["GET"])
 def get_obsidian_files():
@@ -6725,6 +7344,7 @@ def get_obsidian_files():
     if result.get("success"):
         return jsonify(result)
     return jsonify(result), 500
+
 
 @adapter_bp.route("/obsidian/file", methods=["GET"])
 def get_obsidian_file():
@@ -6737,16 +7357,17 @@ def get_obsidian_file():
         return jsonify(result)
     return jsonify(result), 500
 
+
 @adapter_bp.route("/obsidian/file", methods=["PUT"])
 def put_obsidian_file():
     """Save/overwrite a file in Obsidian vault."""
     data = request.get_json() or {}
     path = data.get("path", "")
     content = data.get("content", "")
-    
+
     if not path:
         return jsonify({"success": False, "error": "path is required"}), 400
-    
+
     result = obsidian_save_file(path, content)
     if result.get("success"):
         return jsonify(result)
@@ -6757,6 +7378,7 @@ def put_obsidian_file():
 def get_obsidian_vault_index():
     """Get complete vault index (all note names) with caching."""
     from obsidian_index import get_vault_index
+
     force_refresh = request.args.get("refresh", "false").lower() == "true"
     result = get_vault_index(force_refresh=force_refresh)
     if result.get("success"):
@@ -6768,6 +7390,7 @@ def get_obsidian_vault_index():
 def clear_obsidian_vault_index():
     """Clear vault index cache."""
     from obsidian_index import clear_vault_cache
+
     return jsonify(clear_vault_cache())
 
 
@@ -6775,6 +7398,7 @@ def clear_obsidian_vault_index():
 def get_obsidian_graph():
     """Get vault graph data (nodes + wikilink edges)."""
     from obsidian_index import get_vault_graph
+
     refresh = request.args.get("refresh", "").lower() == "true"
     return jsonify(get_vault_graph(force_refresh=refresh))
 
@@ -6783,10 +7407,12 @@ def get_obsidian_graph():
 def get_obsidian_config():
     """Get Obsidian configuration for frontend."""
     vault_name = os.environ.get("OBSIDIAN_VAULT_NAME", "PT School Semester 2")
-    return jsonify({
-        "vaultName": vault_name,
-        "apiUrl": OBSIDIAN_API_URL,
-    })
+    return jsonify(
+        {
+            "vaultName": vault_name,
+            "apiUrl": OBSIDIAN_API_URL,
+        }
+    )
 
 
 @adapter_bp.route("/obsidian/vault-file/<path:filepath>", methods=["GET"])
@@ -6795,6 +7421,7 @@ def get_obsidian_vault_file(filepath):
     import ssl
     import urllib.request
     import urllib.parse
+
     api_key = os.environ.get("OBSIDIAN_API_KEY", "")
     if not api_key:
         return jsonify({"error": "No Obsidian API key"}), 500
@@ -6805,14 +7432,18 @@ def get_obsidian_vault_file(filepath):
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    req = urllib.request.Request(url, headers={
-        "Authorization": f"Bearer {api_key}",
-    })
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+        },
+    )
     try:
         with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
             data = resp.read()
             content_type = resp.headers.get("Content-Type", "application/octet-stream")
             from flask import Response
+
             return Response(data, content_type=content_type)
     except Exception as e:
         return jsonify({"error": str(e)}), 404
@@ -6822,49 +7453,65 @@ def get_obsidian_vault_file(filepath):
 # ANKI INTEGRATION ENDPOINTS
 # =========================================================================
 
+
 @adapter_bp.route("/anki/status", methods=["GET"])
 def get_anki_status():
     """Check Anki Connect status and get basic stats."""
     import json
     from urllib.request import Request, urlopen
     from urllib.error import URLError
-    
+
     try:
         # Check AnkiConnect
         payload = json.dumps({"action": "version", "version": 6}).encode("utf-8")
-        req = Request("http://localhost:8765", data=payload, headers={"Content-Type": "application/json"})
+        req = Request(
+            "http://localhost:8765",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
         response = urlopen(req, timeout=2)
         result = json.loads(response.read().decode("utf-8"))
-        
+
         connected = result.get("result") is not None
-        
+
         if connected:
             # Get deck names
-            deck_payload = json.dumps({"action": "deckNames", "version": 6}).encode("utf-8")
-            deck_req = Request("http://localhost:8765", data=deck_payload, headers={"Content-Type": "application/json"})
+            deck_payload = json.dumps({"action": "deckNames", "version": 6}).encode(
+                "utf-8"
+            )
+            deck_req = Request(
+                "http://localhost:8765",
+                data=deck_payload,
+                headers={"Content-Type": "application/json"},
+            )
             deck_response = urlopen(deck_req, timeout=2)
             deck_result = json.loads(deck_response.read().decode("utf-8"))
             decks = deck_result.get("result", [])
-            
+
             # Get review stats
-            stats_payload = json.dumps({
-                "action": "getNumCardsReviewedToday",
-                "version": 6
-            }).encode("utf-8")
-            stats_req = Request("http://localhost:8765", data=stats_payload, headers={"Content-Type": "application/json"})
+            stats_payload = json.dumps(
+                {"action": "getNumCardsReviewedToday", "version": 6}
+            ).encode("utf-8")
+            stats_req = Request(
+                "http://localhost:8765",
+                data=stats_payload,
+                headers={"Content-Type": "application/json"},
+            )
             stats_response = urlopen(stats_req, timeout=2)
             stats_result = json.loads(stats_response.read().decode("utf-8"))
             reviewed_today = stats_result.get("result", 0)
-            
-            return jsonify({
-                "connected": True,
-                "version": result.get("result"),
-                "decks": decks,
-                "reviewedToday": reviewed_today
-            })
+
+            return jsonify(
+                {
+                    "connected": True,
+                    "version": result.get("result"),
+                    "decks": decks,
+                    "reviewedToday": reviewed_today,
+                }
+            )
         else:
             return jsonify({"connected": False, "error": "AnkiConnect not responding"})
-            
+
     except URLError:
         return jsonify({"connected": False, "error": "Anki not running"})
     except Exception as e:
@@ -6877,37 +7524,45 @@ def get_anki_decks():
     import json
     from urllib.request import Request, urlopen
     from urllib.error import URLError
-    
+
     try:
         # Get deck names
-        payload = json.dumps({"action": "deckNamesAndIds", "version": 6}).encode("utf-8")
-        req = Request("http://localhost:8765", data=payload, headers={"Content-Type": "application/json"})
+        payload = json.dumps({"action": "deckNamesAndIds", "version": 6}).encode(
+            "utf-8"
+        )
+        req = Request(
+            "http://localhost:8765",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
         response = urlopen(req, timeout=2)
         result = json.loads(response.read().decode("utf-8"))
-        
+
         decks_raw = result.get("result", {})
         decks = []
-        
+
         for name, deck_id in decks_raw.items():
             # Get card count for each deck
-            count_payload = json.dumps({
-                "action": "findCards",
-                "version": 6,
-                "params": {"query": f"deck:\"{name}\""}
-            }).encode("utf-8")
-            count_req = Request("http://localhost:8765", data=count_payload, headers={"Content-Type": "application/json"})
+            count_payload = json.dumps(
+                {
+                    "action": "findCards",
+                    "version": 6,
+                    "params": {"query": f'deck:"{name}"'},
+                }
+            ).encode("utf-8")
+            count_req = Request(
+                "http://localhost:8765",
+                data=count_payload,
+                headers={"Content-Type": "application/json"},
+            )
             count_response = urlopen(count_req, timeout=2)
             count_result = json.loads(count_response.read().decode("utf-8"))
             card_ids = count_result.get("result", [])
-            
-            decks.append({
-                "id": deck_id,
-                "name": name,
-                "cardCount": len(card_ids)
-            })
-        
+
+            decks.append({"id": deck_id, "name": name, "cardCount": len(card_ids)})
+
         return jsonify(decks)
-        
+
     except URLError:
         return jsonify({"error": "Anki not running"}), 503
     except Exception as e:
@@ -6920,24 +7575,28 @@ def get_anki_due():
     import json
     from urllib.request import Request, urlopen
     from urllib.error import URLError
-    
+
     try:
-        payload = json.dumps({
-            "action": "findCards",
-            "version": 6,
-            "params": {"query": "is:due"}
-        }).encode("utf-8")
-        req = Request("http://localhost:8765", data=payload, headers={"Content-Type": "application/json"})
+        payload = json.dumps(
+            {"action": "findCards", "version": 6, "params": {"query": "is:due"}}
+        ).encode("utf-8")
+        req = Request(
+            "http://localhost:8765",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
         response = urlopen(req, timeout=2)
         result = json.loads(response.read().decode("utf-8"))
-        
+
         due_cards = result.get("result", [])
-        
-        return jsonify({
-            "dueCount": len(due_cards),
-            "cardIds": due_cards[:100]  # Limit to first 100
-        })
-        
+
+        return jsonify(
+            {
+                "dueCount": len(due_cards),
+                "cardIds": due_cards[:100],  # Limit to first 100
+            }
+        )
+
     except URLError:
         return jsonify({"error": "Anki not running"}), 503
     except Exception as e:
@@ -6950,22 +7609,24 @@ def trigger_anki_sync():
     try:
         import subprocess
         import sys
-        
+
         # Run the anki_sync.py script
         script_path = Path(__file__).parent.parent / "anki_sync.py"
         result = subprocess.run(
             [sys.executable, str(script_path), "--sync"],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
-        
-        return jsonify({
-            "success": result.returncode == 0,
-            "output": result.stdout,
-            "error": result.stderr if result.returncode != 0 else None
-        })
-        
+
+        return jsonify(
+            {
+                "success": result.returncode == 0,
+                "output": result.stdout,
+                "error": result.stderr if result.returncode != 0 else None,
+            }
+        )
+
     except subprocess.TimeoutExpired:
         return jsonify({"success": False, "error": "Sync timed out"}), 504
     except Exception as e:
@@ -6978,31 +7639,33 @@ def get_card_drafts():
     try:
         conn = get_connection()
         cur = conn.cursor()
-        
+
         cur.execute("""
             SELECT id, session_id, deck_name, card_type, front, back, tags, status, created_at
             FROM card_drafts
             ORDER BY created_at DESC
             LIMIT 50
         """)
-        
+
         drafts = []
         for row in cur.fetchall():
-            drafts.append({
-                "id": row[0],
-                "sessionId": row[1],
-                "deckName": row[2],
-                "cardType": row[3],
-                "front": row[4],
-                "back": row[5],
-                "tags": row[6],
-                "status": row[7],
-                "createdAt": row[8]
-            })
-        
+            drafts.append(
+                {
+                    "id": row[0],
+                    "sessionId": row[1],
+                    "deckName": row[2],
+                    "cardType": row[3],
+                    "front": row[4],
+                    "back": row[5],
+                    "tags": row[6],
+                    "status": row[7],
+                    "createdAt": row[8],
+                }
+            )
+
         conn.close()
         return jsonify(drafts)
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -7013,11 +7676,13 @@ def approve_card_draft(draft_id):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        
-        cur.execute("UPDATE card_drafts SET status = 'approved' WHERE id = ?", (draft_id,))
+
+        cur.execute(
+            "UPDATE card_drafts SET status = 'approved' WHERE id = ?", (draft_id,)
+        )
         conn.commit()
         conn.close()
-        
+
         return jsonify({"success": True, "id": draft_id, "status": "approved"})
 
     except Exception as e:
@@ -7077,28 +7742,33 @@ def update_card_draft(draft_id):
         conn.commit()
 
         # Fetch updated record
-        cur.execute("""
+        cur.execute(
+            """
             SELECT id, session_id, deck_name, card_type, front, back, tags, status, created_at
             FROM card_drafts WHERE id = ?
-        """, (draft_id,))
+        """,
+            (draft_id,),
+        )
         row = cur.fetchone()
         conn.close()
 
         if row:
-            return jsonify({
-                "success": True,
-                "draft": {
-                    "id": row[0],
-                    "sessionId": row[1],
-                    "deckName": row[2],
-                    "cardType": row[3],
-                    "front": row[4],
-                    "back": row[5],
-                    "tags": row[6],
-                    "status": row[7],
-                    "createdAt": row[8],
+            return jsonify(
+                {
+                    "success": True,
+                    "draft": {
+                        "id": row[0],
+                        "sessionId": row[1],
+                        "deckName": row[2],
+                        "cardType": row[3],
+                        "front": row[4],
+                        "back": row[5],
+                        "tags": row[6],
+                        "status": row[7],
+                        "createdAt": row[8],
+                    },
                 }
-            })
+            )
         else:
             return jsonify({"error": "Draft not found"}), 404
 

@@ -2,29 +2,21 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, Layers, BookOpen } from "lucide-react";
+import { Database, CalendarDays, Layers, BookOpen } from "lucide-react";
 import type { Course, Module, LearningObjective } from "@shared/schema";
 
-const SYLLABUS_PROMPT = `You are extracting a full course syllabus for ingestion.
+const SCHEDULE_PROMPT = `You are extracting a course schedule for ingestion.
 
 Return ONLY a valid JSON object with NO additional text, NO markdown code blocks, NO explanation.
 
-Top-level structure:
+Structure:
 {
+  "name": "Course Name (e.g. Anatomy & Physiology II)",
   "term": {
     "startDate": "2026-01-05",
     "endDate": "2026-04-24",
     "timezone": "America/Chicago"
   },
-  "modules": [
-    {
-      "name": "Module 1: ...",
-      "orderIndex": 1,
-      "topics": ["..."],
-      "readings": ["..."],
-      "assessments": ["..."]
-    }
-  ],
   "events": [
     {
       "type": "class" | "lecture" | "reading" | "topic" | "assignment" | "quiz" | "exam" | "assessment",
@@ -43,11 +35,38 @@ Top-level structure:
 }
 
 Rules:
-1. Include ALL items: class meetings, assignments, quizzes, exams, topics, readings, virtual synchronous/asynchronous activities, and learning assessments (EA).
+1. Include ALL schedule items: class meetings, assignments, quizzes, exams, readings, virtual activities, and learning assessments (EA).
 2. For repeating class meetings, set daysOfWeek + startTime/endTime, and include term start/end.
 3. For one-off items, set date or dueDate.
-4. Keep moduleName when items belong to a module.
+4. Do NOT include a "modules" array — schedule only.
 5. Return ONLY the JSON object, nothing else.
+
+Here's my syllabus:
+
+[PASTE YOUR SYLLABUS BELOW]`;
+
+const MODULES_PROMPT = `You are extracting course module structure for ingestion.
+
+Return ONLY a valid JSON object with NO additional text, NO markdown code blocks, NO explanation.
+
+Structure:
+{
+  "modules": [
+    {
+      "name": "Module 1: Topic Name",
+      "orderIndex": 1,
+      "topics": ["Topic A", "Topic B"],
+      "readings": ["Chapter 1", "Article X"],
+      "assessments": ["Quiz 1", "Exam 1"]
+    }
+  ]
+}
+
+Rules:
+1. Include ALL modules/units with their topics, readings, and assessments.
+2. orderIndex should be sequential starting at 1.
+3. Do NOT include dates or events — structure only.
+4. Return ONLY the JSON object, nothing else.
 
 Here's my syllabus:
 
@@ -109,26 +128,34 @@ Here are my study notes:
 
 [PASTE YOUR NOTES BELOW]`;
 
+type IngestionSubTab = "schedule" | "modules" | "objectives";
+
 export function IngestionTab() {
   const queryClient = useQueryClient();
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
-  const [syllabusJson, setSyllabusJson] = useState("");
+  const [activeSubTab, setActiveSubTab] = useState<IngestionSubTab>("schedule");
+
+  const [scheduleJson, setScheduleJson] = useState("");
+  const [modulesJson, setModulesJson] = useState("");
   const [loJson, setLoJson] = useState("");
-  const [importError, setImportError] = useState<string | null>(null);
   const [wrapContent, setWrapContent] = useState("");
-  const [wrapStatus, setWrapStatus] = useState<{ type: "success" | "error", message: string } | null>(null);
-  const [syllabusStatus, setSyllabusStatus] = useState<{ type: "success" | "error", message: string } | null>(null);
-  const [syllabusValidation, setSyllabusValidation] = useState<{
+
+  const [importError, setImportError] = useState<string | null>(null);
+  const [wrapStatus, setWrapStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [scheduleStatus, setScheduleStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [modulesStatus, setModulesStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const [scheduleValidation, setScheduleValidation] = useState<{
     isValid: boolean;
     errors: string[];
-    preview?: {
-      courseName: string;
-      moduleCount: number;
-      eventCount: number;
-      startDate?: string;
-      endDate?: string;
-    };
+    preview?: { courseName: string; eventCount: number; startDate?: string; endDate?: string };
+  } | null>(null);
+
+  const [modulesValidation, setModulesValidation] = useState<{
+    isValid: boolean;
+    errors: string[];
+    preview?: { moduleCount: number };
   } | null>(null);
 
   const { data: courses = [] } = useQuery({
@@ -148,28 +175,73 @@ export function IngestionTab() {
     enabled: !!selectedCourseId,
   });
 
-  const importSyllabusMutation = useMutation({
+  const extractJsonPayload = (input: string) => {
+    const trimmed = input.trim();
+    if (!trimmed) return "";
+    const fenced = trimmed.match(/```json\s*([\s\S]*?)```/i) || trimmed.match(/```\s*([\s\S]*?)```/i);
+    const candidate = fenced ? fenced[1].trim() : trimmed;
+    const firstBracket = candidate.indexOf("[");
+    const lastBracket = candidate.lastIndexOf("]");
+    const firstBrace = candidate.indexOf("{");
+    const lastBrace = candidate.lastIndexOf("}");
+    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket &&
+        (firstBrace === -1 || firstBracket < firstBrace)) {
+      return candidate.slice(firstBracket, lastBracket + 1).trim();
+    }
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return candidate.slice(firstBrace, lastBrace + 1).trim();
+    }
+    return candidate;
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  // --- Schedule import ---
+  const importScheduleMutation = useMutation({
     mutationFn: async (jsonStr: string) => {
       if (!selectedCourseId) throw new Error("Select a course first");
-      const payload = JSON.parse(extractJsonPayload(jsonStr));
+      const parsed = JSON.parse(extractJsonPayload(jsonStr));
+      const payload = { ...parsed, modules: [] };
       return api.syllabus.importBulk(selectedCourseId, payload);
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["scheduleEvents"] });
-      queryClient.invalidateQueries({ queryKey: ["modules"] });
-      setSyllabusJson("");
-      setSyllabusStatus({
+      setScheduleJson("");
+      setScheduleValidation(null);
+      setScheduleStatus({
         type: "success",
-        message: `Imported: ${result.modulesCreated} modules, ${result.eventsCreated} events (${result.classMeetingsExpanded} class meetings expanded)`,
+        message: `Imported: ${result.eventsCreated} events (${result.classMeetingsExpanded} class meetings expanded)`,
       });
       setImportError(null);
     },
     onError: (err: any) => {
-      setSyllabusStatus({ type: "error", message: err.message || "Failed to import syllabus" });
-      setImportError(err.message || "Failed to import syllabus");
+      setScheduleStatus({ type: "error", message: err.message || "Failed to import schedule" });
     },
   });
 
+  // --- Modules import ---
+  const importModulesMutation = useMutation({
+    mutationFn: async (jsonStr: string) => {
+      if (!selectedCourseId) throw new Error("Select a course first");
+      const parsed = JSON.parse(extractJsonPayload(jsonStr));
+      const modulesArr = parsed.modules || parsed;
+      return api.modules.createBulk(selectedCourseId, modulesArr);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["modules"] });
+      setModulesJson("");
+      setModulesValidation(null);
+      setModulesStatus({ type: "success", message: "Modules imported successfully" });
+      setImportError(null);
+    },
+    onError: (err: any) => {
+      setModulesStatus({ type: "error", message: err.message || "Failed to import modules" });
+    },
+  });
+
+  // --- LO import ---
   const importLosMutation = useMutation({
     mutationFn: async (jsonStr: string) => {
       if (!selectedCourseId) throw new Error("Select a course first");
@@ -186,110 +258,78 @@ export function IngestionTab() {
     },
   });
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
-
-  const extractJsonPayload = (input: string) => {
-    const trimmed = input.trim();
-    if (!trimmed) return "";
-    const fenced = trimmed.match(/```json\s*([\s\S]*?)```/i) || trimmed.match(/```\s*([\s\S]*?)```/i);
-    const candidate = fenced ? fenced[1].trim() : trimmed;
-    // Handle JSON arrays (e.g. LO imports)
-    const firstBracket = candidate.indexOf("[");
-    const lastBracket = candidate.lastIndexOf("]");
-    const firstBrace = candidate.indexOf("{");
-    const lastBrace = candidate.lastIndexOf("}");
-    // If array starts before object, extract as array
-    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket &&
-        (firstBrace === -1 || firstBracket < firstBrace)) {
-      return candidate.slice(firstBracket, lastBracket + 1).trim();
-    }
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      return candidate.slice(firstBrace, lastBrace + 1).trim();
-    }
-    return candidate;
-  };
-
-  const validateSyllabusJson = (jsonStr: string) => {
+  // --- Validation ---
+  const validateScheduleJson = (jsonStr: string) => {
     const errors: string[] = [];
-    let parsed: any = null;
-
-    // Try to parse JSON
     try {
       const extracted = extractJsonPayload(jsonStr);
-      if (!extracted) {
-        errors.push("No JSON found in input");
-        setSyllabusValidation({ isValid: false, errors });
-        return;
+      if (!extracted) { setScheduleValidation({ isValid: false, errors: ["No JSON found"] }); return; }
+      const parsed = JSON.parse(extracted);
+      if (!parsed || typeof parsed !== "object") errors.push("JSON must be an object");
+      if (!parsed.name || typeof parsed.name !== "string") errors.push("Missing 'name' field");
+      if (!parsed.term || typeof parsed.term !== "object") errors.push("Missing 'term' object");
+      else {
+        if (!parsed.term.startDate) errors.push("term.startDate is required");
+        if (!parsed.term.endDate) errors.push("term.endDate is required");
       }
-      parsed = JSON.parse(extracted);
+      if (!Array.isArray(parsed.events)) errors.push("Missing 'events' array");
+      if (errors.length === 0) {
+        setScheduleValidation({
+          isValid: true, errors: [],
+          preview: {
+            courseName: parsed.name,
+            eventCount: parsed.events.length,
+            startDate: parsed.term?.startDate,
+            endDate: parsed.term?.endDate,
+          },
+        });
+      } else {
+        setScheduleValidation({ isValid: false, errors });
+      }
     } catch (err: any) {
-      errors.push(`Invalid JSON: ${err.message}`);
-      setSyllabusValidation({ isValid: false, errors });
-      return;
+      setScheduleValidation({ isValid: false, errors: [`Invalid JSON: ${err.message}`] });
     }
+  };
 
-    // Validate required fields
-    if (!parsed || typeof parsed !== "object") {
-      errors.push("JSON must be an object");
-    }
-
-    // Check for required top-level fields
-    const hasName = parsed.name && typeof parsed.name === "string" && parsed.name.trim();
-    const hasTerm = parsed.term && typeof parsed.term === "object";
-    const hasModules = Array.isArray(parsed.modules);
-    const hasEvents = Array.isArray(parsed.events);
-
-    if (!hasName) errors.push("Missing or invalid 'name' field");
-    if (!hasTerm) errors.push("Missing or invalid 'term' object");
-    if (!hasModules) errors.push("Missing or invalid 'modules' array");
-    if (!hasEvents) errors.push("Missing or invalid 'events' array");
-
-    // If we have term, validate its structure
-    if (hasTerm) {
-      if (!parsed.term.startDate) errors.push("term.startDate is required");
-      if (!parsed.term.endDate) errors.push("term.endDate is required");
-    }
-
-    // If validation passed, build preview
-    if (errors.length === 0) {
-      const preview = {
-        courseName: parsed.name,
-        moduleCount: parsed.modules?.length || 0,
-        eventCount: parsed.events?.length || 0,
-        startDate: parsed.term?.startDate,
-        endDate: parsed.term?.endDate,
-      };
-      setSyllabusValidation({ isValid: true, errors: [], preview });
-    } else {
-      setSyllabusValidation({ isValid: false, errors });
+  const validateModulesJson = (jsonStr: string) => {
+    const errors: string[] = [];
+    try {
+      const extracted = extractJsonPayload(jsonStr);
+      if (!extracted) { setModulesValidation({ isValid: false, errors: ["No JSON found"] }); return; }
+      const parsed = JSON.parse(extracted);
+      const modulesArr = parsed.modules || (Array.isArray(parsed) ? parsed : null);
+      if (!Array.isArray(modulesArr)) errors.push("Missing 'modules' array");
+      else if (modulesArr.length === 0) errors.push("modules array is empty");
+      if (errors.length === 0) {
+        setModulesValidation({ isValid: true, errors: [], preview: { moduleCount: modulesArr.length } });
+      } else {
+        setModulesValidation({ isValid: false, errors });
+      }
+    } catch (err: any) {
+      setModulesValidation({ isValid: false, errors: [`Invalid JSON: ${err.message}`] });
     }
   };
 
   const handleWrapSubmit = async () => {
     try {
       setWrapStatus(null);
-      const content = wrapContent;
-      const filename = "pasted_wrap.md";
-      const result = await api.brain.ingest(content, filename);
-
+      const result = await api.brain.ingest(wrapContent, "pasted_wrap.md");
       if (result.sessionSaved) {
-        setWrapStatus({
-          type: "success",
-          message: `✓ Session saved! ID: ${result.sessionId}, Cards: ${result.cardsCreated || 0}`
-        });
+        setWrapStatus({ type: "success", message: `Session saved! ID: ${result.sessionId}, Cards: ${result.cardsCreated || 0}` });
         setWrapContent("");
       } else {
-        setWrapStatus({
-          type: "error",
-          message: result.errors?.join(", ") || result.message
-        });
+        setWrapStatus({ type: "error", message: result.errors?.join(", ") || result.message });
       }
     } catch (err: any) {
       setWrapStatus({ type: "error", message: err.message || "Failed to ingest" });
     }
   };
+
+  const SUB_TABS: { key: IngestionSubTab; label: string; icon: React.ReactNode }[] = [
+    { key: "schedule", label: "SCHEDULE", icon: <CalendarDays className="w-3.5 h-3.5" /> },
+    { key: "modules", label: "MODULES", icon: <Layers className="w-3.5 h-3.5" /> },
+    { key: "objectives", label: "OBJECTIVES", icon: <BookOpen className="w-3.5 h-3.5" /> },
+  ];
 
   return (
     <div className="space-y-6 p-4">
@@ -315,7 +355,7 @@ export function IngestionTab() {
         <p className="text-center text-muted-foreground font-terminal text-sm py-8">Select a course above to begin ingestion.</p>
       )}
 
-      {/* WRAP SESSION INGESTION - First and prominent */}
+      {/* WRAP SESSION INGESTION */}
       {selectedCourseId && (
         <Card className="bg-black/40 border-2 border-primary rounded-none mb-6">
           <CardHeader className="border-b border-primary/50 p-4">
@@ -325,16 +365,14 @@ export function IngestionTab() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
-
             {wrapStatus && (
               <div className={`mb-4 p-3 rounded-none font-terminal text-sm ${wrapStatus.type === "success"
                 ? "bg-green-900/30 border border-green-500 text-green-400"
                 : "bg-red-900/30 border border-red-500 text-red-400"
-                }`}>
+              }`}>
                 {wrapStatus.message}
               </div>
             )}
-
             <div className="space-y-4">
               <button
                 onClick={() => copyToClipboard(WRAP_PROMPT)}
@@ -346,22 +384,15 @@ export function IngestionTab() {
               <p className="text-xs text-muted-foreground mb-2 font-terminal">
                 Use ChatGPT to convert your notes to WRAP format, then paste or upload below:
               </p>
-
               <div>
-                <label className="block text-sm mb-2 font-terminal text-muted-foreground">
-                  Paste WRAP Content
-                </label>
+                <label className="block text-sm mb-2 font-terminal text-muted-foreground">Paste WRAP Content</label>
                 <textarea
                   className="w-full bg-black border border-secondary rounded-none p-2 h-48 font-terminal text-sm"
                   placeholder="Paste your WRAP session here..."
                   value={wrapContent}
-                  onChange={(e) => {
-                    setWrapContent(e.target.value);
-                    setWrapStatus(null);
-                  }}
+                  onChange={(e) => { setWrapContent(e.target.value); setWrapStatus(null); }}
                 />
               </div>
-
               <button
                 onClick={handleWrapSubmit}
                 disabled={!wrapContent}
@@ -381,152 +412,236 @@ export function IngestionTab() {
         </div>
       )}
 
+      {/* Sub-tab navigation */}
       {selectedCourseId && (
-        <Card className="bg-black/40 border-2 border-primary rounded-none">
-          <CardHeader className="border-b border-primary/50 p-4">
-            <CardTitle className="font-arcade text-sm flex items-center gap-2">
-              <Layers className="w-4 h-4" />
-              SYLLABUS IMPORT (MODULES + SCHEDULE)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-4">
-            <button
-              onClick={() => copyToClipboard(SYLLABUS_PROMPT)}
-              className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal"
-              type="button"
-            >
-              Copy Prompt for ChatGPT
-            </button>
-            <p className="text-xs text-muted-foreground font-terminal">
-              Paste the ChatGPT response (combined JSON object) below:
-            </p>
-            <textarea
-              className="w-full bg-black border border-secondary rounded-none p-2 h-40 font-terminal text-sm"
-              placeholder='{"term":{"startDate":"2026-01-15","endDate":"2026-05-01","timezone":"America/Chicago"},"modules":[...],"events":[...]}'
-              value={syllabusJson}
-              onChange={(e) => {
-                setSyllabusJson(e.target.value);
-                setSyllabusStatus(null);
-                if (e.target.value.trim()) {
-                  validateSyllabusJson(e.target.value);
-                } else {
-                  setSyllabusValidation(null);
-                }
-              }}
-            />
-            {syllabusValidation && !syllabusValidation.isValid && (
-              <div className="p-2 border border-red-500 bg-red-900/30 rounded-none font-terminal text-xs text-red-400">
-                <div className="font-bold mb-1">Validation Errors:</div>
-                {syllabusValidation.errors.map((error, idx) => (
-                  <div key={idx}>• {error}</div>
-                ))}
-              </div>
-            )}
-            {syllabusValidation?.isValid && syllabusValidation.preview && (
-              <div className="p-3 border border-primary bg-primary/10 rounded-none font-terminal text-xs text-primary">
-                <div className="font-bold mb-2">Valid JSON Preview:</div>
-                <div className="space-y-1">
-                  <div><span className="text-muted-foreground">Course:</span> {syllabusValidation.preview.courseName}</div>
-                  <div><span className="text-muted-foreground">Modules:</span> {syllabusValidation.preview.moduleCount}</div>
-                  <div><span className="text-muted-foreground">Events:</span> {syllabusValidation.preview.eventCount}</div>
-                  {syllabusValidation.preview.startDate && (
-                    <div><span className="text-muted-foreground">Start:</span> {syllabusValidation.preview.startDate}</div>
-                  )}
-                  {syllabusValidation.preview.endDate && (
-                    <div><span className="text-muted-foreground">End:</span> {syllabusValidation.preview.endDate}</div>
-                  )}
-                </div>
-              </div>
-            )}
-            <button
-              onClick={() => importSyllabusMutation.mutate(syllabusJson)}
-              disabled={!syllabusValidation?.isValid || importSyllabusMutation.isPending}
-              className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none font-terminal text-xs"
-              type="button"
-            >
-              {importSyllabusMutation.isPending ? "Importing..." : "Import Syllabus"}
-            </button>
-            {syllabusStatus && (
-              <div className={`p-2 border font-terminal text-xs ${syllabusStatus.type === "success"
-                ? "border-green-500 text-green-400"
-                : "border-red-500 text-red-400"
-                }`}>
-                {syllabusStatus.message}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {selectedCourseId && (
-        <Card className="bg-black/40 border-2 border-primary rounded-none">
-          <CardHeader className="border-b border-primary/50 p-4">
-            <CardTitle className="font-arcade text-sm flex items-center gap-2">
-              <BookOpen className="w-4 h-4" />
-              LEARNING OBJECTIVES IMPORT
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-4">
-            <div>
-              <label className="block text-xs mb-1 font-terminal text-muted-foreground">Target Module (optional)</label>
-              <select
-                className="w-full bg-black border border-secondary rounded-none p-2 font-terminal"
-                value={selectedModuleId || ""}
-                onChange={(e) => setSelectedModuleId(e.target.value ? parseInt(e.target.value) : null)}
+        <div className="space-y-4">
+          <div className="flex border-b border-primary/50">
+            {SUB_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveSubTab(tab.key)}
+                className={`flex items-center gap-1.5 px-4 py-2 font-arcade text-xs border-b-2 transition-colors ${
+                  activeSubTab === tab.key
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-primary/70"
+                }`}
+                type="button"
               >
-                <option value="">-- No Module (Course-level) --</option>
-                {modules.map((m: Module) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
-            <button
-              onClick={() => copyToClipboard(LO_PROMPT)}
-              className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal"
-              type="button"
-            >
-              Copy Prompt for ChatGPT
-            </button>
-            <p className="text-xs text-muted-foreground font-terminal">
-              Paste the ChatGPT response (JSON array) below:
-            </p>
-            <textarea
-              className="w-full bg-black border border-secondary rounded-none p-2 h-32 font-terminal text-sm"
-              placeholder='[{"loCode": "1.1", "title": "Define..."}]'
-              value={loJson}
-              onChange={(e) => setLoJson(e.target.value)}
-            />
-            <button
-              onClick={() => importLosMutation.mutate(loJson)}
-              disabled={!loJson || importLosMutation.isPending}
-              className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none font-terminal text-xs"
-              type="button"
-            >
-              {importLosMutation.isPending ? "Importing..." : "Import LOs"}
-            </button>
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-            {learningObjectives.length > 0 && (
-              <div>
-                <h4 className="font-terminal text-xs mb-2">Current LOs ({learningObjectives.length})</h4>
-                <div className="max-h-48 overflow-y-auto">
-                  {learningObjectives.map((lo: LearningObjective) => (
-                    <div key={lo.id} className="text-xs py-1 border-b border-secondary/30 font-terminal">
-                      <span className="text-primary">{lo.loCode}</span>: {lo.title}
-                      <span className={`ml-2 text-[10px] px-1 rounded ${lo.status === "solid" ? "bg-green-600" :
-                        lo.status === "in_progress" ? "bg-yellow-600" :
-                          lo.status === "need_review" ? "bg-orange-600" :
-                            "bg-gray-600"
-                        }`}>
-                        {lo.status}
-                      </span>
+          {/* SCHEDULE TAB */}
+          {activeSubTab === "schedule" && (
+            <Card className="bg-black/40 border-2 border-primary rounded-none">
+              <CardHeader className="border-b border-primary/50 p-4">
+                <CardTitle className="font-arcade text-sm flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4" />
+                  SCHEDULE IMPORT
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <button
+                  onClick={() => copyToClipboard(SCHEDULE_PROMPT)}
+                  className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal"
+                  type="button"
+                >
+                  Copy Prompt for ChatGPT
+                </button>
+                <p className="text-xs text-muted-foreground font-terminal">
+                  Paste the ChatGPT response (schedule JSON) below:
+                </p>
+                <textarea
+                  className="w-full bg-black border border-secondary rounded-none p-2 h-40 font-terminal text-sm"
+                  placeholder='{"name":"...","term":{...},"events":[...]}'
+                  value={scheduleJson}
+                  onChange={(e) => {
+                    setScheduleJson(e.target.value);
+                    setScheduleStatus(null);
+                    if (e.target.value.trim()) validateScheduleJson(e.target.value);
+                    else setScheduleValidation(null);
+                  }}
+                />
+                {scheduleValidation && !scheduleValidation.isValid && (
+                  <div className="p-2 border border-red-500 bg-red-900/30 rounded-none font-terminal text-xs text-red-400">
+                    <div className="font-bold mb-1">Validation Errors:</div>
+                    {scheduleValidation.errors.map((error, idx) => (
+                      <div key={idx}>• {error}</div>
+                    ))}
+                  </div>
+                )}
+                {scheduleValidation?.isValid && scheduleValidation.preview && (
+                  <div className="p-3 border border-primary bg-primary/10 rounded-none font-terminal text-xs text-primary">
+                    <div className="font-bold mb-2">Valid JSON Preview:</div>
+                    <div className="space-y-1">
+                      <div><span className="text-muted-foreground">Course:</span> {scheduleValidation.preview.courseName}</div>
+                      <div><span className="text-muted-foreground">Events:</span> {scheduleValidation.preview.eventCount}</div>
+                      {scheduleValidation.preview.startDate && (
+                        <div><span className="text-muted-foreground">Start:</span> {scheduleValidation.preview.startDate}</div>
+                      )}
+                      {scheduleValidation.preview.endDate && (
+                        <div><span className="text-muted-foreground">End:</span> {scheduleValidation.preview.endDate}</div>
+                      )}
                     </div>
-                  ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => importScheduleMutation.mutate(scheduleJson)}
+                  disabled={!scheduleValidation?.isValid || importScheduleMutation.isPending}
+                  className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none font-terminal text-xs"
+                  type="button"
+                >
+                  {importScheduleMutation.isPending ? "Importing..." : "Import Schedule"}
+                </button>
+                {scheduleStatus && (
+                  <div className={`p-2 border font-terminal text-xs ${scheduleStatus.type === "success"
+                    ? "border-green-500 text-green-400" : "border-red-500 text-red-400"
+                  }`}>
+                    {scheduleStatus.message}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* MODULES TAB */}
+          {activeSubTab === "modules" && (
+            <Card className="bg-black/40 border-2 border-primary rounded-none">
+              <CardHeader className="border-b border-primary/50 p-4">
+                <CardTitle className="font-arcade text-sm flex items-center gap-2">
+                  <Layers className="w-4 h-4" />
+                  MODULES IMPORT
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <button
+                  onClick={() => copyToClipboard(MODULES_PROMPT)}
+                  className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal"
+                  type="button"
+                >
+                  Copy Prompt for ChatGPT
+                </button>
+                <p className="text-xs text-muted-foreground font-terminal">
+                  Paste the ChatGPT response (modules JSON) below:
+                </p>
+                <textarea
+                  className="w-full bg-black border border-secondary rounded-none p-2 h-40 font-terminal text-sm"
+                  placeholder='{"modules":[{"name":"Module 1: ...","orderIndex":1,"topics":[...],"readings":[...],"assessments":[...]}]}'
+                  value={modulesJson}
+                  onChange={(e) => {
+                    setModulesJson(e.target.value);
+                    setModulesStatus(null);
+                    if (e.target.value.trim()) validateModulesJson(e.target.value);
+                    else setModulesValidation(null);
+                  }}
+                />
+                {modulesValidation && !modulesValidation.isValid && (
+                  <div className="p-2 border border-red-500 bg-red-900/30 rounded-none font-terminal text-xs text-red-400">
+                    <div className="font-bold mb-1">Validation Errors:</div>
+                    {modulesValidation.errors.map((error, idx) => (
+                      <div key={idx}>• {error}</div>
+                    ))}
+                  </div>
+                )}
+                {modulesValidation?.isValid && modulesValidation.preview && (
+                  <div className="p-3 border border-primary bg-primary/10 rounded-none font-terminal text-xs text-primary">
+                    <div className="font-bold mb-2">Valid JSON Preview:</div>
+                    <div><span className="text-muted-foreground">Modules:</span> {modulesValidation.preview.moduleCount}</div>
+                  </div>
+                )}
+                <button
+                  onClick={() => importModulesMutation.mutate(modulesJson)}
+                  disabled={!modulesValidation?.isValid || importModulesMutation.isPending}
+                  className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none font-terminal text-xs"
+                  type="button"
+                >
+                  {importModulesMutation.isPending ? "Importing..." : "Import Modules"}
+                </button>
+                {modulesStatus && (
+                  <div className={`p-2 border font-terminal text-xs ${modulesStatus.type === "success"
+                    ? "border-green-500 text-green-400" : "border-red-500 text-red-400"
+                  }`}>
+                    {modulesStatus.message}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* OBJECTIVES TAB */}
+          {activeSubTab === "objectives" && (
+            <Card className="bg-black/40 border-2 border-primary rounded-none">
+              <CardHeader className="border-b border-primary/50 p-4">
+                <CardTitle className="font-arcade text-sm flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  LEARNING OBJECTIVES IMPORT
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <div>
+                  <label className="block text-xs mb-1 font-terminal text-muted-foreground">Target Module (optional)</label>
+                  <select
+                    className="w-full bg-black border border-secondary rounded-none p-2 font-terminal"
+                    value={selectedModuleId || ""}
+                    onChange={(e) => setSelectedModuleId(e.target.value ? parseInt(e.target.value) : null)}
+                  >
+                    <option value="">-- No Module (Course-level) --</option>
+                    {modules.map((m: Module) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                <button
+                  onClick={() => copyToClipboard(LO_PROMPT)}
+                  className="bg-primary hover:bg-primary/80 px-3 py-1 rounded-none text-xs font-terminal"
+                  type="button"
+                >
+                  Copy Prompt for ChatGPT
+                </button>
+                <p className="text-xs text-muted-foreground font-terminal">
+                  Paste the ChatGPT response (JSON array) below:
+                </p>
+                <textarea
+                  className="w-full bg-black border border-secondary rounded-none p-2 h-32 font-terminal text-sm"
+                  placeholder='[{"loCode": "1.1", "title": "Define..."}]'
+                  value={loJson}
+                  onChange={(e) => setLoJson(e.target.value)}
+                />
+                <button
+                  onClick={() => importLosMutation.mutate(loJson)}
+                  disabled={!loJson || importLosMutation.isPending}
+                  className="bg-secondary hover:bg-secondary/80 disabled:opacity-50 px-4 py-2 rounded-none font-terminal text-xs"
+                  type="button"
+                >
+                  {importLosMutation.isPending ? "Importing..." : "Import LOs"}
+                </button>
+
+                {learningObjectives.length > 0 && (
+                  <div>
+                    <h4 className="font-terminal text-xs mb-2">Current LOs ({learningObjectives.length})</h4>
+                    <div className="max-h-48 overflow-y-auto">
+                      {learningObjectives.map((lo: LearningObjective) => (
+                        <div key={lo.id} className="text-xs py-1 border-b border-secondary/30 font-terminal">
+                          <span className="text-primary">{lo.loCode}</span>: {lo.title}
+                          <span className={`ml-2 text-[10px] px-1 rounded ${lo.status === "solid" ? "bg-green-600" :
+                            lo.status === "in_progress" ? "bg-yellow-600" :
+                              lo.status === "need_review" ? "bg-orange-600" :
+                                "bg-gray-600"
+                          }`}>
+                            {lo.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
-    </div >
+    </div>
   );
 }

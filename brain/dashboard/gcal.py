@@ -387,8 +387,19 @@ def fetch_calendar_list():
         return [], "Not authenticated"
 
     try:
-        result = service.calendarList().list(showHidden=False, maxResults=250).execute()
-        return result.get("items", []), None
+        items = []
+        page_token = None
+        while True:
+            result = (
+                service.calendarList()
+                .list(showHidden=False, maxResults=250, pageToken=page_token)
+                .execute()
+            )
+            items.extend(result.get("items", []))
+            page_token = result.get("nextPageToken")
+            if not page_token:
+                break
+        return items, None
     except Exception as exc:
         return [], str(exc)
 
@@ -477,27 +488,37 @@ def fetch_calendar_events(
         if not calendar_id:
             continue
         try:
-            events_result = (
-                service.events()
-                .list(
-                    calendarId=calendar_id,
-                    timeMin=time_min,
-                    timeMax=time_max,
-                    maxResults=500,
-                    singleEvents=True,
-                    orderBy="startTime",
+            page_token = None
+            while True:
+                events_result = (
+                    service.events()
+                    .list(
+                        calendarId=calendar_id,
+                        timeMin=time_min,
+                        timeMax=time_max,
+                        maxResults=2500,
+                        singleEvents=True,
+                        orderBy="startTime",
+                        pageToken=page_token,
+                    )
+                    .execute()
                 )
-                .execute()
-            )
+
+                for item in events_result.get("items", []):
+                    if item.get("status") == "cancelled":
+                        continue
+                    item["_calendar_id"] = calendar_id
+                    item["_calendar_name"] = calendar_meta.get(calendar_id, {}).get(
+                        "name"
+                    )
+                    events.append(item)
+
+                page_token = events_result.get("nextPageToken")
+                if not page_token:
+                    break
+
         except Exception as exc:
             return [], str(exc)
-
-        for item in events_result.get("items", []):
-            if item.get("status") == "cancelled":
-                continue
-            item["_calendar_id"] = calendar_id
-            item["_calendar_name"] = calendar_meta.get(calendar_id, {}).get("name")
-            events.append(item)
 
     return events, None
 
@@ -1055,18 +1076,26 @@ def fetch_tasks(tasklist_id):
         return [], "Not authenticated"
 
     try:
-        result = (
-            service.tasks()
-            .list(
-                tasklist=tasklist_id,
-                showCompleted=True,
-                showDeleted=False,
-                showHidden=False,
-                maxResults=200,
+        items = []
+        page_token = None
+        while True:
+            result = (
+                service.tasks()
+                .list(
+                    tasklist=tasklist_id,
+                    showCompleted=True,
+                    showDeleted=False,
+                    showHidden=False,
+                    maxResults=100,
+                    pageToken=page_token,
+                )
+                .execute()
             )
-            .execute()
-        )
-        return result.get("items", []), None
+            items.extend(result.get("items", []))
+            page_token = result.get("nextPageToken")
+            if not page_token:
+                break
+        return items, None
     except Exception as exc:
         return [], str(exc)
 
@@ -1194,8 +1223,17 @@ def fetch_task_lists_api(service=None):
         return [], "Not authenticated"
 
     try:
-        results = service.tasklists().list(maxResults=100).execute()
-        return results.get("items", []), None
+        items = []
+        page_token = None
+        while True:
+            results = (
+                service.tasklists().list(maxResults=100, pageToken=page_token).execute()
+            )
+            items.extend(results.get("items", []))
+            page_token = results.get("nextPageToken")
+            if not page_token:
+                break
+        return items, None
     except Exception as e:
         return [], str(e)
 
@@ -1207,12 +1245,25 @@ def fetch_tasks_from_list(tasklist_id, service=None):
         return [], "Not authenticated"
 
     try:
-        results = (
-            service.tasks()
-            .list(tasklist=tasklist_id, showCompleted=True, showHidden=True)
-            .execute()
-        )
-        return results.get("items", []), None
+        items = []
+        page_token = None
+        while True:
+            results = (
+                service.tasks()
+                .list(
+                    tasklist=tasklist_id,
+                    showCompleted=True,
+                    showHidden=True,
+                    maxResults=100,
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+            items.extend(results.get("items", []))
+            page_token = results.get("nextPageToken")
+            if not page_token:
+                break
+        return items, None
     except Exception as e:
         return [], str(e)
 

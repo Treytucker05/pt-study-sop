@@ -10,7 +10,7 @@ import { CheckCircle2, Circle, Plus, ChevronLeft, ChevronRight, RefreshCw, Calen
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type GoogleTask } from "@/lib/api";
@@ -45,7 +45,7 @@ import { restrictToVerticalAxis, restrictToWindowEdges } from '@dnd-kit/modifier
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay,
   addMonths, subMonths, startOfWeek, endOfWeek, isToday, addDays, subDays,
-  addWeeks, subWeeks, setHours, setMinutes, differenceInMinutes, addHours
+  addWeeks, subWeeks, setHours, setMinutes, differenceInMinutes, addHours, startOfDay
 } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -1161,7 +1161,7 @@ export default function CalendarPage() {
     }
 
     googleEvents.forEach(event => {
-      if (selectedCalendars.size > 0 && !selectedCalendars.has(event.calendarId || '')) return;
+      if (!selectedCalendars.has(event.calendarId || '')) return;
       if (event.summary?.toLowerCase().includes(query)) {
         results.push(normalizeEvent(event));
       }
@@ -1176,32 +1176,53 @@ export default function CalendarPage() {
     return event.start <= dayEnd && event.end >= dayStart;
   };
 
-  const getEventsForDay = (day: Date): NormalizedEvent[] => {
-    const allEvents: NormalizedEvent[] = [];
-
+  const allNormalizedEvents = useMemo(() => {
+    const results: NormalizedEvent[] = [];
     if (showLocalEvents) {
       localEvents.forEach(event => {
-        if (googleConnected && !isLocalOnlyEvent(event)) return;
-        const normalized = normalizeEvent(event);
-        if (eventSpansDay(normalized, day)) {
-          allEvents.push(normalized);
-        }
+         if (googleConnected && !isLocalOnlyEvent(event)) return;
+         results.push(normalizeEvent(event));
       });
     }
-
     googleEvents.forEach(event => {
-      if (selectedCalendars.size > 0 && !selectedCalendars.has(event.calendarId || '')) return;
-      const normalized = normalizeEvent(event);
-      if (eventSpansDay(normalized, day)) {
-        allEvents.push(normalized);
+      if (!selectedCalendars.has(event.calendarId || '')) return;
+      results.push(normalizeEvent(event));
+    });
+    return results;
+  }, [localEvents, googleEvents, showLocalEvents, selectedCalendars, googleConnected]);
+
+  const eventsByDay = useMemo(() => {
+    const map = new Map<string, NormalizedEvent[]>();
+    
+    allNormalizedEvents.forEach(event => {
+      // For each event, find all days it spans
+      const startDay = startOfDay(event.start);
+      const endDay = startOfDay(event.end);
+      
+      let current = startDay;
+      while (current <= endDay) {
+        const key = format(current, 'yyyy-MM-dd');
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(event);
+        current = addDays(current, 1);
       }
     });
 
-    return allEvents.sort((a, b) => {
-      if (a.allDay && !b.allDay) return -1;
-      if (!a.allDay && b.allDay) return 1;
-      return a.start.getTime() - b.start.getTime();
+    // Sort each day's events once
+    map.forEach(events => {
+      events.sort((a, b) => {
+        if (a.allDay && !b.allDay) return -1;
+        if (!a.allDay && b.allDay) return 1;
+        return a.start.getTime() - b.start.getTime();
+      });
     });
+
+    return map;
+  }, [allNormalizedEvents]);
+
+  const getEventsForDay = (day: Date): NormalizedEvent[] => {
+    const key = format(day, 'yyyy-MM-dd');
+    return eventsByDay.get(key) || [];
   };
 
   const navigate = (direction: 'prev' | 'next') => {
@@ -1514,6 +1535,7 @@ export default function CalendarPage() {
               >
                 <DialogHeader>
                   <DialogTitle className="font-arcade text-primary">MANAGE CALENDARS</DialogTitle>
+                  <DialogDescription className="sr-only">Reorder or hide calendars.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   <p className="font-terminal text-xs text-muted-foreground mb-4">Drag to reorder. Click to show/hide.</p>
@@ -1736,7 +1758,10 @@ export default function CalendarPage() {
           className="bg-black border-2 border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto translate-y-0"
           style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
         >
-          <DialogHeader><DialogTitle className="font-arcade text-primary">CREATE_EVENT</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-arcade text-primary">CREATE_EVENT</DialogTitle>
+            <DialogDescription className="sr-only">Create a new event.</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="font-arcade text-sm">TITLE</Label>
