@@ -235,3 +235,4 @@
 - 2026-01-29: Wired Calendar Sync button to call /api/gcal/sync (bidirectional), then refresh local + Google events and show sync counts in toast; rebuilt and synced dashboard.
 - 2026-01-29: Fixed Google all-day date shift by parsing date-only values as local dates, added Google event GET for recurring series lookup, and display series recurrence for instances; rebuilt and synced dashboard.
 - 2026-01-29: Enriched Google event list responses with master recurrence for instances so Repeat tab shows actual series pattern.
+- 2026-01-30: Added Google recurring edit controls (instance vs series), delete instance/series actions, and screen-reader title/description in EventEditModal; wired instance-to-series switch in calendar page; rebuilt and synced dashboard.

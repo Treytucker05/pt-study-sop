@@ -374,6 +374,7 @@ export default function CalendarPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGoogleEvent, setSelectedGoogleEvent] = useState<GoogleCalendarEvent | null>(null);
   const [showGoogleEditModal, setShowGoogleEditModal] = useState(false);
+  const [googleEditMode, setGoogleEditMode] = useState<"instance" | "series">("series");
   const [showAssistant, setShowAssistant] = useState(false);
   const [showMiniCalendar, setShowMiniCalendar] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -419,6 +420,7 @@ export default function CalendarPage() {
       selectedEvent: selectedEvent?.id ?? null,
       showGoogleEditModal,
       selectedGoogleEvent: selectedGoogleEvent?.id ?? null,
+      googleEditMode,
       showCalendarSettings,
       showEventModal,
     });
@@ -426,6 +428,7 @@ export default function CalendarPage() {
     debugModals,
     selectedEvent,
     selectedGoogleEvent,
+    googleEditMode,
     showCalendarSettings,
     showEditModal,
     showEventModal,
@@ -911,31 +914,23 @@ export default function CalendarPage() {
     }
   });
 
-  const handleGoogleDelete = () => {
-    if (selectedGoogleEvent && selectedGoogleEvent.calendarId) {
-      if (selectedGoogleEvent.recurringEventId) {
-        if (confirm("Delete this single occurrence?")) {
-          deleteGoogleEventMutation.mutate({
-            eventId: selectedGoogleEvent.id,
-            calendarId: selectedGoogleEvent.calendarId
-          });
-        }
-      } else if (selectedGoogleEvent.recurrence && selectedGoogleEvent.recurrence.length > 0) {
-        if (confirm("Delete the ENTIRE series? This cannot be undone.")) {
-          deleteGoogleEventMutation.mutate({
-            eventId: selectedGoogleEvent.id,
-            calendarId: selectedGoogleEvent.calendarId
-          });
-        }
-      } else {
-        if (confirm("Delete this event?")) {
-          deleteGoogleEventMutation.mutate({
-            eventId: selectedGoogleEvent.id,
-            calendarId: selectedGoogleEvent.calendarId
-          });
-        }
-      }
-    }
+  const handleGoogleDeleteInstance = () => {
+    if (!selectedGoogleEvent || !selectedGoogleEvent.calendarId) return;
+    if (!confirm("Delete this single occurrence?")) return;
+    deleteGoogleEventMutation.mutate({
+      eventId: selectedGoogleEvent.id,
+      calendarId: selectedGoogleEvent.calendarId,
+    });
+  };
+
+  const handleGoogleDeleteSeries = () => {
+    if (!selectedGoogleEvent || !selectedGoogleEvent.calendarId) return;
+    const seriesId = selectedGoogleEvent.recurringEventId || selectedGoogleEvent.id;
+    if (!confirm("Delete the ENTIRE series? This cannot be undone.")) return;
+    deleteGoogleEventMutation.mutate({
+      eventId: seriesId,
+      calendarId: selectedGoogleEvent.calendarId,
+    });
   };
 
   const handleGoogleSave = () => {
@@ -1094,20 +1089,53 @@ export default function CalendarPage() {
     setShowEditModal(true);
   };
 
-  const openGoogleEditModal = (event?: GoogleCalendarEvent | null) => {
-    if (!event) return;
+  const hydrateGoogleEvent = (event: GoogleCalendarEvent, fallback?: GoogleCalendarEvent): GoogleCalendarEvent => {
     const extras = event.extendedProperties?.private || {};
     const parsedCourseId = extras.courseId ? Number.parseInt(extras.courseId, 10) : undefined;
     const extrasCourseId = Number.isFinite(parsedCourseId) ? parsedCourseId : undefined;
-    setSelectedGoogleEvent({
+    return {
       ...event,
-      eventType: event.eventType || extras.eventType,
-      course: event.course || extras.course,
-      courseId: event.courseId ?? extrasCourseId,
-      courseCode: event.courseCode || extras.courseCode,
-      weight: event.weight || extras.weight,
-    });
+      calendarId: event.calendarId ?? fallback?.calendarId,
+      calendarSummary: event.calendarSummary ?? fallback?.calendarSummary,
+      calendarColor: event.calendarColor ?? fallback?.calendarColor,
+      eventType: event.eventType || extras.eventType || fallback?.eventType,
+      course: event.course || extras.course || fallback?.course,
+      courseId: event.courseId ?? extrasCourseId ?? fallback?.courseId,
+      courseCode: event.courseCode || extras.courseCode || fallback?.courseCode,
+      weight: event.weight || extras.weight || fallback?.weight,
+    };
+  };
+
+  const openGoogleEditModal = (event?: GoogleCalendarEvent | null, modeOverride?: "instance" | "series") => {
+    if (!event) return;
+    const nextMode = modeOverride || (event.recurringEventId ? "instance" : "series");
+    setGoogleEditMode(nextMode);
+    setSelectedGoogleEvent(hydrateGoogleEvent(event));
     setShowGoogleEditModal(true);
+  };
+
+  const handleEditSeries = async () => {
+    if (!selectedGoogleEvent?.recurringEventId || !selectedGoogleEvent.calendarId) return;
+    try {
+      const res = await fetch(
+        `/api/google-calendar/events/${encodeURIComponent(selectedGoogleEvent.recurringEventId)}?calendarId=${encodeURIComponent(selectedGoogleEvent.calendarId)}`
+      );
+      if (!res.ok) throw new Error("Failed to load series");
+      const data = await res.json();
+      const nextEvent = hydrateGoogleEvent(
+        {
+          ...data,
+          calendarId: selectedGoogleEvent.calendarId,
+          calendarSummary: selectedGoogleEvent.calendarSummary,
+          calendarColor: selectedGoogleEvent.calendarColor,
+        },
+        selectedGoogleEvent
+      );
+      setSelectedGoogleEvent(nextEvent);
+      setGoogleEditMode("series");
+    } catch (err) {
+      toast({ title: "LOAD_FAILED", description: err.message, variant: "destructive" });
+    }
   };
 
   const handleEventClick = (event: NormalizedEvent) => {
@@ -1863,13 +1891,19 @@ export default function CalendarPage() {
           open={showGoogleEditModal}
           onOpenChange={(open) => {
             setShowGoogleEditModal(open);
-            if (!open) setSelectedGoogleEvent(null);
+            if (!open) {
+              setSelectedGoogleEvent(null);
+              setGoogleEditMode("series");
+            }
           }}
           event={selectedGoogleEvent}
           onEventChange={setSelectedGoogleEvent}
           courseOptions={courseOptions}
           onSave={handleGoogleSave}
-          onDelete={handleGoogleDelete}
+          onDeleteInstance={handleGoogleDeleteInstance}
+          onDeleteSeries={handleGoogleDeleteSeries}
+          onEditSeries={handleEditSeries}
+          mode={googleEditMode}
         />
       )}
       <CalendarAssistant isOpen={showAssistant} onClose={() => setShowAssistant(false)} />

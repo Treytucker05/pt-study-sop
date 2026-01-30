@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,7 +66,10 @@ interface EventEditModalProps {
   event: GoogleCalendarEvent | null;
   onEventChange: (event: GoogleCalendarEvent) => void;
   onSave: () => void;
-  onDelete: () => void;
+  onDeleteInstance: () => void;
+  onDeleteSeries: () => void;
+  onEditSeries?: () => void;
+  mode?: "instance" | "series";
   courseOptions?: CourseOption[];
 }
 
@@ -76,11 +79,15 @@ export function EventEditModal({
   event,
   onEventChange,
   onSave,
-  onDelete,
+  onDeleteInstance,
+  onDeleteSeries,
+  onEditSeries,
+  mode = "series",
   courseOptions = [],
 }: EventEditModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [newAttendee, setNewAttendee] = useState("");
+  const isInstance = mode === "instance";
   const timeZoneOptions = useMemo(() => {
     if (typeof Intl !== "undefined" && "supportedValuesOf" in Intl) {
       try {
@@ -231,6 +238,8 @@ export function EventEditModal({
           className="font-arcade bg-black border-2 border-green-500 rounded-none max-w-lg p-0 overflow-hidden translate-y-0"
           style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
         >
+        <DialogTitle className="sr-only">Edit Google Calendar event</DialogTitle>
+        <DialogDescription className="sr-only">Update event details, time, recurrence, attendees, and settings.</DialogDescription>
         <div className="flex flex-col h-full max-h-[80vh]">
           {/* Header */}
           <div className="bg-green-500/20 border-b border-green-500 p-4 flex items-center justify-between shrink-0">
@@ -238,10 +247,34 @@ export function EventEditModal({
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-green-500 font-bold tracking-wider">EDIT_EVENT</span>
             </div>
-            <div className="flex gap-1">
-              {event.recurringEventId && <Badge variant="outline" className="text-[10px] border-green-500 text-green-500">INSTANCE</Badge>}
-              {event.recurrence && <Badge variant="outline" className="text-[10px] border-green-500 text-green-500">SERIES</Badge>}
-              {(event.conferenceData || event.hangoutLink) && <Badge variant="outline" className="text-[10px] border-blue-400 text-blue-400">ONLINE</Badge>}
+            <div className="flex items-center gap-2">
+              {isInstance && onEditSeries && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={onEditSeries}
+                  className="h-6 px-2 border border-green-500/50 text-green-500 hover:bg-green-500/10 rounded-none font-arcade text-[10px]"
+                >
+                  EDIT SERIES
+                </Button>
+              )}
+              <div className="flex gap-1">
+                {isInstance && (
+                  <Badge variant="outline" className="text-[10px] border-green-500 text-green-500">
+                    INSTANCE
+                  </Badge>
+                )}
+                {mode === "series" && event.recurrence && (
+                  <Badge variant="outline" className="text-[10px] border-green-500 text-green-500">
+                    SERIES
+                  </Badge>
+                )}
+                {(event.conferenceData || event.hangoutLink) && (
+                  <Badge variant="outline" className="text-[10px] border-blue-400 text-blue-400">
+                    ONLINE
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
@@ -448,6 +481,16 @@ export function EventEditModal({
                     <p className="text-[10px] text-green-300 font-terminal">
                       Series pattern: {formatRecurrence(event.recurrence?.[0])}
                     </p>
+                    {isInstance && onEditSeries && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={onEditSeries}
+                        className="mt-2 h-7 px-3 border border-green-500/50 text-green-500 hover:bg-green-500/10 rounded-none font-arcade text-[10px]"
+                      >
+                        EDIT SERIES
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -595,14 +638,37 @@ export function EventEditModal({
 
           {/* Footer */}
           <div className="p-4 flex items-center justify-between gap-4 border-t border-green-500/20 shrink-0">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={onDelete}
-              className="rounded-none bg-red-900/20 text-red-500 hover:bg-red-900/40 border border-red-900/50 font-arcade text-xs"
-            >
-              <Trash2 className="w-4 h-4 mr-2" /> DELETE
-            </Button>
+            <div className="flex items-center gap-2">
+              {isInstance ? (
+                <>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={onDeleteInstance}
+                    className="rounded-none bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/50 font-arcade text-[10px]"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> DELETE INSTANCE
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={onDeleteSeries}
+                    className="rounded-none bg-red-900/10 text-red-500 hover:bg-red-900/30 border border-red-900/50 font-arcade text-[10px]"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> DELETE SERIES
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={onDeleteSeries}
+                  className="rounded-none bg-red-900/20 text-red-500 hover:bg-red-900/40 border border-red-900/50 font-arcade text-xs"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> DELETE
+                </Button>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="ghost"
