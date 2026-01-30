@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "."] },
-    "codex-cli": { "command": "npx", "args": ["-y", "@cexll/codex-mcp-server"] }
+    "filesystem": { "command": "cmd", "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "."] },
+    "codex-cli": { "command": "cmd", "args": ["/c", "npx", "-y", "@cexll/codex-mcp-server"] }
   }
 }
