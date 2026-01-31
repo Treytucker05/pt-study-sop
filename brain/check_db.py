@@ -3,7 +3,7 @@
 import sqlite3
 import os
 
-db_path = os.path.join(os.path.dirname(__file__), "data", "pt_study.db")
+from config import DB_PATH as db_path
 print(f"DB Path: {db_path}")
 
 conn = sqlite3.connect(db_path)

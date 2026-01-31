@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, CalendarDays, Layers, BookOpen } from "lucide-react";
+import { SessionJsonIngest } from "@/components/SessionJsonIngest";
 import type { Course, Module, LearningObjective } from "@shared/schema";
 
 const SCHEDULE_PROMPT = `You are extracting a course schedule for ingestion.
@@ -333,6 +334,9 @@ export function IngestionTab() {
 
   return (
     <div className="space-y-6 p-4">
+      {/* Session JSON Ingest (v9.4) */}
+      <SessionJsonIngest />
+
       {/* Global Course Selector */}
       <div>
         <label className="block text-sm mb-1 font-terminal text-muted-foreground">Select Course</label>

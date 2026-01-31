@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timedelta
 from collections import Counter, defaultdict
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'pt_study.db')
+from config import DB_PATH
 OUTPUT_PATH = os.path.join(os.path.dirname(__file__), 'output', 'session_resume.md')
 
 def get_connection():

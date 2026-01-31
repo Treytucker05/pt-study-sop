@@ -346,6 +346,8 @@ export const api = {
       totalMinutes: number;
       totalSessions: number;
       totalCards: number;
+      averages?: { understanding: number; retention: number };
+      staleTopics?: { topic: string; count: number; lastStudied: string; daysSince: number }[];
     }>("/brain/metrics"),
     chat: (message: string, syncToObsidian: boolean = false, mode: string = "all") => request<{ 
       response: string; 

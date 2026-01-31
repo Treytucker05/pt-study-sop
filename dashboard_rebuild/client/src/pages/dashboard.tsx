@@ -1,4 +1,5 @@
 import Layout from "@/components/layout";
+import { NextActions } from "@/components/NextActions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -395,6 +396,9 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="space-y-6 max-w-5xl mx-auto">
+        {/* Next Actions (Planner) */}
+        <NextActions />
+
         {/* Main Grid — Fix #1: auto rows so cards size to content */}
         <div className="grid md:grid-cols-2 gap-6 grid-rows-[auto]">
 

@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-db_path = os.path.join(os.path.dirname(__file__), 'data', 'pt_study.db')
+from config import DB_PATH as db_path
 print(f"DB path: {db_path}")
 print(f"Exists: {os.path.exists(db_path)}")
 

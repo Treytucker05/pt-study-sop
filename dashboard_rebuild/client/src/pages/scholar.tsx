@@ -23,7 +23,8 @@ import {
   ChevronRight,
   FileText,
   Send,
-  RefreshCw
+  RefreshCw,
+  Layers,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type ScholarQuestion, type ScholarFinding, type TutorAuditItem } from "@/lib/api";
@@ -88,6 +89,19 @@ export default function Scholar() {
   const { data: tutorAuditData = [] } = useQuery({
     queryKey: ["scholar-tutor-audit"],
     queryFn: api.scholar.getTutorAudit,
+  });
+
+  // Scholar clusters
+  const { data: clustersData } = useQuery({
+    queryKey: ["scholar-clusters"],
+    queryFn: api.scholar.getClusters,
+  });
+
+  const clusterMutation = useMutation({
+    mutationFn: api.scholar.runClustering,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scholar-clusters"] });
+    },
   });
 
   // Proposal status updates (the only write operation - managed via API)
@@ -205,6 +219,7 @@ export default function Scholar() {
                 { id: 'pipeline', label: 'QUESTIONS', icon: HelpCircle },
                 { id: 'evidence', label: 'EVIDENCE', icon: BookOpen },
                 { id: 'proposals', label: 'PROPOSALS', icon: Lightbulb },
+                { id: 'clusters', label: 'CLUSTERS', icon: Layers },
                 { id: 'history', label: 'HISTORY', icon: History },
               ].map(tab => (
                 <TabsTrigger
@@ -679,6 +694,63 @@ export default function Scholar() {
                                   <SelectItem value="IMPLEMENTED">IMPLEMENTED</SelectItem>
                                 </SelectContent>
                               </Select>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* CLUSTERS TAB */}
+            <TabsContent value="clusters" className="flex-1 overflow-auto mt-4">
+              <Card className="bg-black/40 border-2 border-secondary rounded-none">
+                <CardHeader className="p-3 border-b border-secondary flex flex-row items-center justify-between">
+                  <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                    <Layers className="w-4 h-4" /> TOPIC CLUSTERS
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-none font-arcade text-[10px] border-primary text-primary"
+                    onClick={() => clusterMutation.mutate()}
+                    disabled={clusterMutation.isPending}
+                    data-testid="button-run-clustering"
+                  >
+                    {clusterMutation.isPending ? (
+                      <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> CLUSTERING...</>
+                    ) : (
+                      <><Layers className="w-3 h-3 mr-1" /> RUN CLUSTERING</>
+                    )}
+                  </Button>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ScrollArea className="h-[500px]">
+                    <div className="space-y-4">
+                      {!clustersData?.clusters || clustersData.clusters.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground font-terminal text-sm">
+                          No clusters yet. Click RUN CLUSTERING to group digests and proposals by topic.
+                        </div>
+                      ) : (
+                        clustersData.clusters.map((cluster) => (
+                          <div key={cluster.cluster_id} className="p-4 bg-black/40 border border-secondary/50">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-arcade text-xs text-primary uppercase">{cluster.cluster_id}</h4>
+                              <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
+                                {cluster.count} items
+                              </Badge>
+                            </div>
+                            <div className="space-y-2">
+                              {cluster.items.map((item, i) => (
+                                <div key={i} className="flex items-center gap-2 font-terminal text-xs">
+                                  <Badge variant="secondary" className="rounded-none text-[8px] shrink-0">
+                                    {item.source === "digest" ? "DIG" : "PROP"}
+                                  </Badge>
+                                  <span className="truncate">{item.title || "Untitled"}</span>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         ))

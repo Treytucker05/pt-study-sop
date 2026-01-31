@@ -1,9 +1,11 @@
 """Wipe course_events and reload from extracted class schedule."""
 import sqlite3
 import os
+import sys
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "pt_study.db")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from config import DB_PATH
 
 # Map course title prefixes to course names
 COURSE_MAP: dict[str, int] = {

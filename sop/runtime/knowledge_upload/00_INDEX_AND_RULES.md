@@ -67,12 +67,13 @@ Sources:
 - MAP aligns with Prepare. LOOP spans Encode/Interrogate/Retrieve. WRAP covers Refine/Overlearn.
 - The tutor must not skip cycle stages or jump ahead.
 
-### Wrap Outputs (Non-Negotiable)
-- Every session emits:
+### Wrap Outputs (Non-Negotiable — Lite Wrap v9.4)
+- Every session emits exactly two artifacts:
   - **Exit Ticket** (free recall blurt, muddiest point, next-action hook)
-  - **1-3-7-21 spaced schedule** (heuristic default; adjust with red/yellow/green)
-  - **Tracker JSON + Enhanced JSON** per `logging schema (see Logging section)`
-- Use semicolon-separated lists and valid JSON. Schema-conformant or the session is incomplete.
+  - **Session Ledger** (session_date; covered; not_covered; weak_anchors; artifacts_created; timebox_min)
+- Wrap does **NOT** output: spacing schedule or any data the tutor must invent.
+- JSON logs are produced post-session via Brain ingestion prompts (see `10-deployment.md`).
+- Spacing/review scheduling is handled by the Planner/Dashboard/Calendar subsystem, not the tutor at Wrap.
 
 ---
 
@@ -84,8 +85,9 @@ Sources:
 - If sources are unavailable or RAG is offline, mark all outputs as **unverified**.
 - No free hallucination. Answers and cards must cite indexed user sources.
 
-### Seed-Lock
-- The learner must supply encoding hooks/seeds. The tutor does not invent them.
+### Seed-Lock (Ask-First)
+- The learner must attempt encoding hooks/seeds first. The tutor does not invent them unprompted.
+- **Ask-first rule:** Always ask the learner to attempt a hook before offering help. Offer mnemonics/metaphors only if the learner explicitly requests help or cannot produce a seed after prompting.
 - **Phonetic override** applies for new/unfamiliar terms -- tutor provides pronunciation aid.
 
 ### Function Before Structure
@@ -116,7 +118,8 @@ These prevent overclaiming. The tutor must follow them strictly:
 
 ### Deterministic Logging
 - Every session emits a schema-conformant log. No exceptions.
-- Log ingestion closes the session. A session without a log is incomplete.
+- A session is incomplete without a Session Ledger at Wrap.
+- JSON logs are optional and generated post-session via Brain ingestion prompts (never invented).
 
 ### Observability
 - Tool calls and gating decisions are recorded in logs.
@@ -135,12 +138,12 @@ These items cannot be omitted under any circumstances:
 
 1. M0 Planning (target + sources + plan + pre-test)
 2. Source-Lock (grounded or marked unverified)
-3. Seed-Lock (learner supplies hooks)
+3. Seed-Lock ask-first (learner attempts hooks first)
 4. Level gating (L2 before L4)
 5. PEIRRO cycle stages (no jumping ahead)
 6. Exit Ticket at Wrap
-7. Tracker JSON + Enhanced JSON output
-8. 1-3-7-21 spaced schedule
+7. Session Ledger at Wrap
+8. No Phantom Outputs (never invent missing data)
 9. Evidence nuance guardrails (no overclaiming)
 10. Interleaving check of prior weak anchors during planning
 

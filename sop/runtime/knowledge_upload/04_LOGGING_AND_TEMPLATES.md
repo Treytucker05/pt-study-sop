@@ -20,11 +20,11 @@ Sources:
 
 ## Source: sop/library/08-logging.md
 
-# Logging Schema v9.3 (Canonical)
+# Logging Schema v9.4 (Canonical)
 
 ## Purpose
 
-Single, consistent JSON logging format for all study sessions. Output both Tracker and Enhanced JSON at session wrap.
+Single, consistent JSON logging format for all study sessions. This file is the **schema reference**. JSON is produced via Brain ingestion prompts (see `10-deployment.md`), **not** by the tutor at Wrap. Missing values must be `"UNKNOWN"` or `"N/A"` — never invented.
 
 ---
 
@@ -40,11 +40,28 @@ Single, consistent JSON logging format for all study sessions. Output both Track
 
 ---
 
-## Tracker JSON (Required)
+## Session Ledger (Produced at Wrap)
+
+The tutor outputs this plain-text ledger at Wrap. It is the input for Brain ingestion.
+
+```
+session_date: YYYY-MM-DD
+covered: [semicolon-separated list of what was actually studied]
+not_covered: [semicolon-separated list of planned but not reached]
+weak_anchors: [semicolon-separated list of items needing review]
+artifacts_created: [semicolon-separated list — only if actually created]
+timebox_min: [number — actual session duration]
+```
+
+Empty fields in the Session Ledger: use `NONE`. In JSON (produced later via Brain ingestion), use `"UNKNOWN"` or `"N/A"`.
+
+---
+
+## Tracker JSON (Schema Reference — produced via Brain ingestion, not at Wrap)
 
 ```json
 {
-  "schema_version": "9.3",
+  "schema_version": "9.4",
   "date": "YYYY-MM-DD",
   "topic": "Main topic",
   "mode": "Core",
@@ -67,7 +84,7 @@ Single, consistent JSON logging format for all study sessions. Output both Track
 
 ---
 
-## Enhanced JSON (Required)
+## Enhanced JSON (Schema Reference — produced via Brain ingestion, not at Wrap)
 
 Includes all Tracker fields plus:
 
@@ -92,6 +109,8 @@ Includes all Tracker fields plus:
 | `spacing_algorithm` | `standard` or `rsr-adaptive` |
 | `rsr_adaptive_adjustment` | e.g., `R2 extended +25% to 3.75d; RSR=85%` |
 | `adaptive_multipliers` | e.g., `R2=1.25; R3=1.0` |
+
+Rule: anki_cards is recorded only if cards were actually created; otherwise set to NONE (never invent cards).
 
 ---
 
@@ -147,8 +166,9 @@ Notes: [short, semicolon-separated if used in JSON]
 
 ## Output Requirements
 
-- Always output **both** Tracker JSON **and** Enhanced JSON at Wrap.
-- Label outputs clearly (e.g., "Tracker JSON:" and "Enhanced JSON:").
+- The tutor outputs **Exit Ticket + Session Ledger** at Wrap (plain text).
+- JSON (Tracker + Enhanced) is produced **post-session** via Brain ingestion prompts (see `10-deployment.md`).
+- Missing values in JSON must be `"UNKNOWN"` or `"N/A"` — never invented.
 - Use current system date for the `date` field.
 
 ---
@@ -169,6 +189,17 @@ Notes: [short, semicolon-separated if used in JSON]
 
 ---
 
+## v9.3 to v9.4 Changes
+
+- Wrap outputs reduced to **Exit Ticket + Session Ledger** only (Lite Wrap).
+- JSON (Tracker + Enhanced) moved to Brain ingestion post-session.
+- Added Session Ledger format (covered, not_covered, weak_anchors, artifacts_created, timebox_min).
+- No Phantom Outputs invariant: missing values must be UNKNOWN/N/A; never invented.
+- Spacing/review scheduling removed from Wrap; handled by Planner/Dashboard/Calendar.
+- Topic prefix requirement removed.
+
+---
+
 ## v9.2 to v9.3 Changes
 
 - `system_performance` field: removed
@@ -182,7 +213,7 @@ Notes: [short, semicolon-separated if used in JSON]
 
 # 09 — Templates
 
-All PERRIO study templates in one file. Copy and fill in per session/week.
+All PEIRRO study templates in one file. Copy and fill in per session/week.
 
 ---
 
@@ -230,25 +261,27 @@ JSON is the canonical log format. Use this for human-readable recaps.
 
 ---
 
-## 3. Exit Ticket (Final 10 Minutes)
+## 3. Exit Ticket + Session Ledger (Wrap Outputs — v9.4)
 
+**Exit Ticket:**
 - [ ] **Blurt** (2 min, notes closed) — free recall summary: _______________
 - [ ] **Muddiest point** — one concept: _______________
 - [ ] **Next action hook** — first action next session: _______________
 
-**Wrap outputs (required):**
-- [ ] Spaced retrieval schedule (1-3-7-21 + red/yellow/green adjustment)
-- [ ] Tracker JSON per logging schema v9.3
-- [ ] Enhanced JSON per logging schema v9.3
+**Session Ledger:**
+- session_date: _______________
+- covered: _______________
+- not_covered: _______________
+- weak_anchors: _______________
+- artifacts_created: _______________
+- timebox_min: _______________
 
-**Evidence nuance:**
-- Spacing is a heuristic; adjust based on performance.
+**Rules:**
+- Only list what actually happened. If a field has nothing, write `NONE`.
+- No JSON at Wrap.
+- JSON is produced post-session via Brain ingestion (see `10-deployment.md`).
+- No spacing schedule at Wrap. Spacing is a Planner/Dashboard/Calendar responsibility.
 - Zeigarnik is not used as a memory guarantee; next-action hook is a friction reducer.
-
-**JSON rules:**
-- Valid JSON only.
-- Semicolon-separated list fields.
-- No multiline strings.
 
 ---
 
@@ -325,7 +358,7 @@ Item,Review1,Status1,Review2,Status2,Review3,Status3,Review4,Status4,Notes
 |--------|-----------|--------|-----------|-------------|-------------|-------------|-------|
 | M3 | LO 2.1: Shoulder stabilizers | In progress | YYYY-MM-DD | Drill rotator cuff actions | YYYY-MM-DD | Slides 12-18 | Missed supraspinatus action |
 
-**Update cadence:** Update during Wrap. Use exit ticket to set "Next action." Set review dates using 1-3-7-21 default.
+**Update cadence:** Update post-session via Planner/Dashboard. Use the Session Ledger's `weak_anchors` and exit ticket "Next action" to inform updates. Review dates are set by the Planner, not at Wrap.
 
 ---
 

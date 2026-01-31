@@ -227,8 +227,9 @@ def api_brain_status():
         pending_cards = cur.fetchone()[0]
 
     # Get DB file size
-    db_path = Path(__file__).parent.parent / "data" / "pt_study.db"
-    db_size_mb = db_path.stat().st_size / (1024 * 1024) if db_path.exists() else 0
+    from config import DB_PATH
+    _db_path = Path(DB_PATH)
+    db_size_mb = _db_path.stat().st_size / (1024 * 1024) if _db_path.exists() else 0
 
     conn.close()
 
@@ -597,8 +598,8 @@ def _save_digest_artifacts(digest_content: str, digest_type: str = "strategic") 
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO scholar_digests (filename, filepath, title, digest_type, created_at, content_hash)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO scholar_digests (filename, filepath, title, digest_type, created_at, content_hash, content)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (
             filename,
@@ -607,6 +608,7 @@ def _save_digest_artifacts(digest_content: str, digest_type: str = "strategic") 
             digest_type,
             created_at,
             content_hash,
+            digest_content,
         ),
     )
     conn.commit()
@@ -648,7 +650,7 @@ def api_scholar_list_digests():
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT id, filename, title, digest_type, created_at, content_hash
+        SELECT id, filename, title, digest_type, created_at, content_hash, cluster_id
         FROM scholar_digests
         ORDER BY created_at DESC
         """
@@ -664,6 +666,7 @@ def api_scholar_list_digests():
             "digest_type": row[3],
             "created_at": row[4],
             "content_hash": row[5],
+            "cluster_id": row[6],
         }
         for row in rows
     ]
@@ -676,9 +679,11 @@ def api_scholar_get_digest(digest_id):
     """Get a single digest by ID, including its content."""
     conn = get_connection()
     cur = conn.cursor()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
     cur.execute(
         """
-        SELECT id, filename, filepath, title, digest_type, created_at, content_hash
+        SELECT id, filename, filepath, title, digest_type, created_at, content_hash, content, cluster_id
         FROM scholar_digests WHERE id = ?
         """,
         (digest_id,),
@@ -689,25 +694,27 @@ def api_scholar_get_digest(digest_id):
     if not row:
         return jsonify({"ok": False, "message": "Digest not found"}), 404
 
-    # Read content from file
-    repo_root = Path(__file__).parent.parent.parent.resolve()
-    filepath = repo_root / row[2]
-    content = ""
-    if filepath.exists():
-        content = filepath.read_text(encoding="utf-8")
+    # DB-first: use content from DB, fallback to file
+    content = row["content"] or ""
+    if not content:
+        repo_root = Path(__file__).parent.parent.parent.resolve()
+        filepath = repo_root / row["filepath"]
+        if filepath.exists():
+            content = filepath.read_text(encoding="utf-8")
 
     return jsonify(
         {
             "ok": True,
             "digest": {
-                "id": row[0],
-                "filename": row[1],
-                "filepath": row[2],
-                "title": row[3],
-                "digest_type": row[4],
-                "created_at": row[5],
-                "content_hash": row[6],
+                "id": row["id"],
+                "filename": row["filename"],
+                "filepath": row["filepath"],
+                "title": row["title"],
+                "digest_type": row["digest_type"],
+                "created_at": row["created_at"],
+                "content_hash": row["content_hash"],
                 "content": content,
+                "cluster_id": row["cluster_id"],
             },
         }
     )
@@ -739,6 +746,167 @@ def api_scholar_delete_digest(digest_id):
         filepath.unlink()
 
     return jsonify({"ok": True, "message": "Digest deleted"})
+
+
+@dashboard_bp.route("/api/scholar/clusters", methods=["POST"])
+def api_scholar_cluster():
+    """Cluster digests and proposals by title keyword similarity.
+
+    Simple keyword-based clustering: extracts significant words from titles,
+    groups items sharing keywords into clusters. No ML dependencies needed.
+    """
+    import re as _re
+    from collections import defaultdict
+
+    STOP_WORDS = {
+        "the", "a", "an", "and", "or", "of", "in", "to", "for", "is", "on",
+        "at", "by", "with", "from", "as", "it", "that", "this", "be", "are",
+        "was", "were", "been", "has", "have", "had", "do", "does", "did",
+        "will", "would", "could", "should", "may", "might", "can", "shall",
+        "not", "no", "but", "if", "so", "up", "out", "about", "into",
+        "over", "after", "under", "between", "through", "during", "before",
+        "study", "review", "analysis", "digest", "proposal", "strategic",
+        "summary", "report", "overview", "notes",
+    }
+
+    def _extract_keywords(title: str) -> set:
+        if not title:
+            return set()
+        words = _re.findall(r"[a-z]+", title.lower())
+        return {w for w in words if len(w) > 2 and w not in STOP_WORDS}
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Fetch all digests and proposals with titles
+    cur.execute("SELECT id, title, cluster_id FROM scholar_digests")
+    digests = [{"id": r[0], "title": r[1], "cluster_id": r[2], "table": "scholar_digests"} for r in cur.fetchall()]
+
+    cur.execute("SELECT id, title, cluster_id FROM scholar_proposals")
+    proposals = [{"id": r[0], "title": r[1], "cluster_id": r[2], "table": "scholar_proposals"} for r in cur.fetchall()]
+
+    all_items = digests + proposals
+
+    # Build keyword → items index
+    keyword_items: dict = defaultdict(list)
+    item_keywords: dict = {}
+    for item in all_items:
+        kws = _extract_keywords(item["title"] or "")
+        item_keywords[f"{item['table']}:{item['id']}"] = kws
+        for kw in kws:
+            keyword_items[kw].append(f"{item['table']}:{item['id']}")
+
+    # Union-find clustering: items sharing 2+ keywords are in same cluster
+    parent: dict = {}
+
+    def find(x: str) -> str:
+        while parent.get(x, x) != x:
+            parent[x] = parent.get(parent[x], parent[x])
+            x = parent[x]
+        return x
+
+    def union(a: str, b: str) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    # For each pair of items, union if they share 2+ keywords
+    keys = list(item_keywords.keys())
+    for i in range(len(keys)):
+        for j in range(i + 1, len(keys)):
+            shared = item_keywords[keys[i]] & item_keywords[keys[j]]
+            if len(shared) >= 2:
+                union(keys[i], keys[j])
+
+    # Build clusters
+    clusters: dict = defaultdict(list)
+    for item in all_items:
+        key = f"{item['table']}:{item['id']}"
+        root = find(key)
+        clusters[root].append(item)
+
+    # Assign cluster_id labels and update DB
+    cluster_map: dict = {}
+    cluster_idx = 0
+    for root, members in clusters.items():
+        if len(members) < 2:
+            # Singletons get no cluster
+            continue
+        # Name cluster after most common keyword
+        all_kws: dict = defaultdict(int)
+        for m in members:
+            for kw in item_keywords.get(f"{m['table']}:{m['id']}", set()):
+                all_kws[kw] += 1
+        label = max(all_kws, key=all_kws.get) if all_kws else f"cluster-{cluster_idx}"
+        cluster_idx += 1
+        cluster_map[root] = label
+
+    # Update DB with cluster assignments
+    updated = 0
+    for root, members in clusters.items():
+        label = cluster_map.get(root)
+        for m in members:
+            cur.execute(
+                f"UPDATE {m['table']} SET cluster_id = ? WHERE id = ?",
+                (label, m["id"]),
+            )
+            updated += 1
+
+    conn.commit()
+    conn.close()
+
+    # Build response
+    result_clusters = []
+    for root, label in cluster_map.items():
+        members = clusters[root]
+        result_clusters.append({
+            "cluster_id": label,
+            "count": len(members),
+            "items": [
+                {"table": m["table"], "id": m["id"], "title": m["title"]}
+                for m in members
+            ],
+        })
+
+    return jsonify({
+        "ok": True,
+        "clusters": result_clusters,
+        "total_clustered": sum(c["count"] for c in result_clusters),
+        "total_items": len(all_items),
+        "updated": updated,
+    })
+
+
+@dashboard_bp.route("/api/scholar/clusters", methods=["GET"])
+def api_scholar_clusters_list():
+    """List current cluster assignments."""
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT id, title, digest_type, cluster_id FROM scholar_digests WHERE cluster_id IS NOT NULL"
+    )
+    digests = [{"id": r[0], "title": r[1], "type": r[2], "cluster_id": r[3], "source": "digest"} for r in cur.fetchall()]
+
+    cur.execute(
+        "SELECT id, title, proposal_type, cluster_id FROM scholar_proposals WHERE cluster_id IS NOT NULL"
+    )
+    proposals = [{"id": r[0], "title": r[1], "type": r[2], "cluster_id": r[3], "source": "proposal"} for r in cur.fetchall()]
+
+    conn.close()
+
+    # Group by cluster_id
+    from collections import defaultdict as _dd
+    grouped: dict = _dd(list)
+    for item in digests + proposals:
+        grouped[item["cluster_id"]].append(item)
+
+    clusters = [
+        {"cluster_id": cid, "count": len(items), "items": items}
+        for cid, items in sorted(grouped.items())
+    ]
+
+    return jsonify({"ok": True, "clusters": clusters})
 
 
 @dashboard_bp.route("/api/scholar/implementation-bundle", methods=["POST"])

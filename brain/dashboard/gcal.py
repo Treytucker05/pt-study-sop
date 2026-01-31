@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Tuple
 
 
 from db_setup import get_connection, init_database
-from config import load_env
+from config import load_env, DB_PATH
 
 
 # Google API imports (install: pip install google-auth google-auth-oauthlib google-api-python-client)
@@ -42,7 +42,7 @@ os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
 DATA_DIR = Path(__file__).parent.parent / "data"
 TOKEN_PATH = DATA_DIR / "gcal_token.json"
 CONFIG_PATH = DATA_DIR / "api_config.json"
-DB_PATH = DATA_DIR / "pt_study.db"
+# DB_PATH imported from config
 
 # OAuth scopes - read-only access to calendar and tasks
 SCOPES = [

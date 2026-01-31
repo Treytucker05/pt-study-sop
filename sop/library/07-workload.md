@@ -156,4 +156,4 @@ Use this prompt template when generating a weekly study plan with GPT.
 - Interleaving is for discrimination among confusables within a class.
 - No numeric forgetting or guaranteed gains claims.
 
-Reference schema: `08-logging.md`.
+Reference schema: `08-logging.md`. Note: spacing/review scheduling is a Planner/Dashboard/Calendar responsibility, not produced by the tutor at Wrap.

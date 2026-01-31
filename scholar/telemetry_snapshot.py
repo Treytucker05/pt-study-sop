@@ -6,10 +6,16 @@ Outputs a markdown report in scholar/outputs/telemetry/.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional, List
+
+# Import canonical DB_PATH from brain/config.py
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "brain"))
+from config import DB_PATH as _DB_PATH_STR
 
 
 def _repo_root() -> Path:
@@ -17,7 +23,7 @@ def _repo_root() -> Path:
 
 
 def _db_path() -> Path:
-    return _repo_root() / "brain" / "data" / "pt_study.db"
+    return Path(_DB_PATH_STR)
 
 
 def _table_exists(conn: sqlite3.Connection, name: str) -> bool:

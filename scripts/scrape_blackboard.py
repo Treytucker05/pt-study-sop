@@ -17,8 +17,9 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
-# Adjust this to your database path
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "brain", "data", "pt_study.db")
+# Import canonical DB path from brain/config.py
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "brain"))
+from config import DB_PATH
 
 def get_db_connection():
     return sqlite3.connect(DB_PATH)

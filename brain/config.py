@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Configuration settings for PT Study Brain v9.3.
+Configuration settings for PT Study Brain v9.4.
 """
 
 import os
 
 # Version
-VERSION = '9.3'
+VERSION = '9.4'
 
 # Load .env if present (lightweight, no external deps)
 def load_env(override_env=True):

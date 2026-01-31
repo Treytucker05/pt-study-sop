@@ -263,6 +263,61 @@ from dashboard.syllabus import fetch_all_courses_and_events
 # Define the Blueprint that mimics the Node.js API
 adapter_bp = Blueprint("api_adapter", __name__, url_prefix="/api")
 
+
+# ==============================================================================
+# DB HEALTH CHECK
+# ==============================================================================
+
+
+@adapter_bp.route("/db/health", methods=["GET"])
+def db_health():
+    """Read-only health check: schema version, tables, v9.4 readiness.
+
+    Only reports structural info — no file paths exposed.
+    """
+    from config import VERSION
+    import os as _os
+    from config import DB_PATH
+
+    result = {"config_version": VERSION, "db_exists": _os.path.exists(DB_PATH)}
+
+    if not result["db_exists"]:
+        return jsonify(result)
+
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=5)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        # schema version from first session row
+        cur.execute("SELECT schema_version FROM sessions LIMIT 1")
+        row = cur.fetchone()
+        result["schema_version"] = row["schema_version"] if row else None
+        # table count (not names, to limit info disclosure)
+        cur.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
+        result["table_count"] = cur.fetchone()[0]
+        # v9.4 columns check
+        cur.execute("PRAGMA table_info(sessions)")
+        cols = {c[1] for c in cur.fetchall()}
+        v94_cols = [
+            "covered", "not_covered", "artifacts_created", "timebox_min",
+            "error_classification", "error_severity", "error_recurrence",
+            "errors_by_type", "errors_by_severity", "error_patterns",
+            "spacing_algorithm", "rsr_adaptive_adjustment", "adaptive_multipliers",
+            "tracker_json", "enhanced_json",
+        ]
+        result["v94_ready"] = all(c in cols for c in v94_cols)
+        missing = [c for c in v94_cols if c not in cols]
+        if missing:
+            result["v94_missing"] = missing
+    except Exception as e:
+        result["error"] = str(e)
+    finally:
+        if conn:
+            conn.close()
+    return jsonify(result)
+
+
 # ==============================================================================
 # SESSIONS
 # ==============================================================================
@@ -543,6 +598,177 @@ def create_session():
             "cards": cards,
         }
     ), 201
+
+
+# ==============================================================================
+# SESSION JSON INGESTION (v9.4)
+# ==============================================================================
+
+# Valid v9.4 Tracker JSON keys (includes Session Ledger fields)
+_TRACKER_KEYS = {
+    "schema_version", "date", "topic", "mode", "duration_min",
+    "understanding", "retention", "calibration_gap", "rsr_percent",
+    "cognitive_load", "transfer_check", "anchors", "what_worked",
+    "what_needs_fixing", "error_classification", "error_severity",
+    "error_recurrence", "notes",
+    # Session Ledger v9.4
+    "covered", "not_covered", "weak_anchors", "artifacts_created", "timebox_min",
+}
+
+# Enhanced JSON adds these on top of Tracker
+_ENHANCED_EXTRA_KEYS = {
+    "source_lock", "plan_of_attack", "frameworks_used", "buckets",
+    "confusables_interleaved", "anki_cards", "glossary",
+    "exit_ticket_blurt", "exit_ticket_muddiest", "exit_ticket_next_action",
+    "retrospective_status", "spaced_reviews", "next_session",
+    "errors_by_type", "errors_by_severity", "error_patterns",
+    "spacing_algorithm", "rsr_adaptive_adjustment", "adaptive_multipliers",
+}
+
+# Map from JSON key → sessions table column (only where they differ or need mapping)
+_JSON_TO_COLUMN = {
+    "understanding": "understanding_level",
+    "retention": "retention_confidence",
+    "duration_min": "duration_minutes",
+    "anchors": "anchors_locked",
+    "notes": "notes_insights",
+    "anki_cards": "anki_cards_text",
+    "glossary": "glossary_entries",
+    "next_session": "next_session_plan",
+}
+
+
+@adapter_bp.route("/brain/session-json", methods=["POST"])
+def ingest_session_json():
+    """Attach Tracker + Enhanced JSON to an existing session (v9.4).
+
+    Body: {
+        "session_id": int,          # required — existing session to update
+        "tracker_json": {...},      # optional — v9.4 Tracker payload
+        "enhanced_json": {...}      # optional — v9.4 Enhanced payload
+    }
+    """
+    body = request.json or {}
+    session_id = body.get("session_id")
+    tracker = body.get("tracker_json")
+    enhanced = body.get("enhanced_json")
+
+    if not session_id:
+        return jsonify({"error": "session_id is required"}), 400
+    if not tracker and not enhanced:
+        return jsonify({"error": "At least one of tracker_json or enhanced_json is required"}), 400
+
+    # Validate JSON structure and keys
+    errors = []
+    if tracker:
+        if not isinstance(tracker, dict):
+            return jsonify({"error": "tracker_json must be a JSON object"}), 422
+        unknown = set(tracker.keys()) - _TRACKER_KEYS
+        if unknown:
+            errors.append(f"Unknown tracker keys: {sorted(unknown)}")
+        if tracker.get("schema_version") and tracker["schema_version"] != "9.4":
+            errors.append(f"Expected schema_version 9.4, got {tracker['schema_version']}")
+    if enhanced:
+        if not isinstance(enhanced, dict):
+            return jsonify({"error": "enhanced_json must be a JSON object"}), 422
+        valid_enhanced = _TRACKER_KEYS | _ENHANCED_EXTRA_KEYS
+        unknown = set(enhanced.keys()) - valid_enhanced
+        if unknown:
+            errors.append(f"Unknown enhanced keys: {sorted(unknown)}")
+
+    if errors:
+        return jsonify({"error": "Validation failed", "details": errors}), 422
+
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Verify session exists
+        cur.execute("SELECT id FROM sessions WHERE id = ?", (session_id,))
+        if not cur.fetchone():
+            return jsonify({"error": f"Session {session_id} not found"}), 404
+
+        fields = []
+        values = []
+
+        # Store raw JSON blobs
+        if tracker:
+            fields.append("tracker_json = ?")
+            values.append(json.dumps(tracker, ensure_ascii=True))
+        if enhanced:
+            fields.append("enhanced_json = ?")
+            values.append(json.dumps(enhanced, ensure_ascii=True))
+
+        # Extract individual column values from both payloads
+        merged = {}
+        if tracker:
+            merged.update(tracker)
+        if enhanced:
+            merged.update(enhanced)
+
+        # Map JSON keys to DB columns
+        column_map = {
+            "calibration_gap": "calibration_gap",
+            "rsr_percent": "rsr_percent",
+            "cognitive_load": "cognitive_load",
+            "transfer_check": "transfer_check",
+            "buckets": "buckets",
+            "confusables_interleaved": "confusables_interleaved",
+            "exit_ticket_blurt": "exit_ticket_blurt",
+            "exit_ticket_muddiest": "exit_ticket_muddiest",
+            "exit_ticket_next_action": "exit_ticket_next_action",
+            "retrospective_status": "retrospective_status",
+            "error_classification": "error_classification",
+            "error_severity": "error_severity",
+            "error_recurrence": "error_recurrence",
+            "errors_by_type": "errors_by_type",
+            "errors_by_severity": "errors_by_severity",
+            "error_patterns": "error_patterns",
+            "spacing_algorithm": "spacing_algorithm",
+            "rsr_adaptive_adjustment": "rsr_adaptive_adjustment",
+            "adaptive_multipliers": "adaptive_multipliers",
+            "spaced_reviews": "spaced_reviews",
+        }
+        column_map.update(_JSON_TO_COLUMN)
+
+        for json_key, col_name in column_map.items():
+            if json_key in merged and merged[json_key] is not None:
+                val = merged[json_key]
+                fields.append(f"{col_name} = ?")
+                if isinstance(val, (int, float)):
+                    values.append(val)
+                elif isinstance(val, (dict, list)):
+                    values.append(json.dumps(val, ensure_ascii=True))
+                else:
+                    values.append(str(val))
+
+        # Also populate v9.4 Session Ledger fields if present
+        for ledger_key in ("covered", "not_covered", "artifacts_created", "timebox_min"):
+            if ledger_key in merged and merged[ledger_key] is not None:
+                fields.append(f"{ledger_key} = ?")
+                values.append(merged[ledger_key])
+
+        if not fields:
+            return jsonify({"error": "No fields to update"}), 400
+
+        values.append(session_id)
+        sql = f"UPDATE sessions SET {', '.join(fields)} WHERE id = ?"
+        cur.execute(sql, values)
+        conn.commit()
+
+        return jsonify({
+            "ok": True,
+            "session_id": session_id,
+            "fields_updated": len(fields),
+        })
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
 
 
 @adapter_bp.route("/sessions/<int:session_id>", methods=["PATCH"])
@@ -2040,6 +2266,198 @@ def create_task():
     """
     # TODO: Implement manual task creation if needed
     return jsonify({"id": 999, "status": "mocked"}), 201
+
+
+# ==============================================================================
+# PLANNER
+# ==============================================================================
+
+
+@adapter_bp.route("/planner/settings", methods=["GET"])
+def get_planner_settings():
+    """Return planner settings (singleton row)."""
+    conn = None
+    try:
+        conn = get_connection()
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM planner_settings WHERE id = 1")
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"error": "Planner settings not initialized"}), 500
+        return jsonify(dict(row))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@adapter_bp.route("/planner/settings", methods=["PUT"])
+def update_planner_settings():
+    """Update planner settings."""
+    data = request.json or {}
+    allowed = {"spacing_strategy", "default_session_minutes", "calendar_source", "auto_schedule_reviews"}
+    fields = []
+    values = []
+    for key in allowed:
+        if key in data:
+            fields.append(f"{key} = ?")
+            values.append(data[key])
+    if not fields:
+        return jsonify({"error": "No valid fields to update"}), 400
+    fields.append("updated_at = datetime('now')")
+    conn = None
+    try:
+        conn = get_connection()
+        conn.execute(f"UPDATE planner_settings SET {', '.join(fields)} WHERE id = 1", values)
+        conn.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@adapter_bp.route("/planner/queue", methods=["GET"])
+def get_planner_queue():
+    """Compute study task queue from sessions and weak anchors.
+
+    Returns pending study_tasks sorted by priority + scheduled_date.
+    """
+    conn = None
+    try:
+        conn = get_connection()
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT st.*, c.name as course_name
+            FROM study_tasks st
+            LEFT JOIN courses c ON st.course_id = c.id
+            WHERE st.status IN ('pending', 'in_progress')
+            ORDER BY st.priority DESC, st.scheduled_date ASC
+            LIMIT 50
+        """)
+        tasks = [dict(r) for r in cur.fetchall()]
+        return jsonify(tasks)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@adapter_bp.route("/planner/generate", methods=["POST"])
+def generate_planner_tasks():
+    """Generate study_tasks from recent session weak_anchors using spacing heuristic.
+
+    Reads sessions with weak_anchors, applies 1-3-7-21 day spacing,
+    and inserts review tasks into study_tasks.
+    """
+    conn = None
+    try:
+        conn = get_connection()
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        # Get planner settings
+        cur.execute("SELECT * FROM planner_settings WHERE id = 1")
+        settings = dict(cur.fetchone() or {})
+        default_minutes = settings.get("default_session_minutes", 45)
+        strategy = settings.get("spacing_strategy", "standard")
+
+        # Standard spacing intervals (days)
+        if strategy == "rsr-adaptive":
+            intervals = [1, 4, 9, 21]  # slightly longer gaps for RSR-adaptive
+        else:
+            intervals = [1, 3, 7, 21]
+
+        # Get recent sessions with weak_anchors (last 30 days)
+        cur.execute("""
+            SELECT id, session_date, weak_anchors, main_topic, topic
+            FROM sessions
+            WHERE weak_anchors IS NOT NULL AND weak_anchors != ''
+              AND session_date >= date('now', '-30 days')
+            ORDER BY session_date DESC
+        """)
+        sessions = cur.fetchall()
+
+        created = 0
+        for sess in sessions:
+            import re as _re
+            anchors = [a.strip() for a in _re.split(r"[;\n]", sess["weak_anchors"] or "") if a.strip()]
+            for anchor in anchors:
+                for i, days in enumerate(intervals):
+                    review_num = i + 1
+
+                    # Check if task already exists for this anchor + review number
+                    cur.execute("""
+                        SELECT id FROM study_tasks
+                        WHERE anchor_text = ? AND review_number = ?
+                          AND source = 'spacing'
+                    """, (anchor, review_num))
+                    if cur.fetchone():
+                        continue
+
+                    cur.execute("""
+                        INSERT INTO study_tasks (
+                            scheduled_date, planned_minutes,
+                            status, notes, source, priority, review_number,
+                            anchor_text, created_at
+                        ) VALUES (
+                            date(?, '+' || ? || ' days'), ?,
+                            'pending', ?, 'spacing', ?, ?,
+                            ?, datetime('now')
+                        )
+                    """, (
+                        sess["session_date"],
+                        str(days),
+                        default_minutes,
+                        f"Review R{review_num}: {anchor} (from {sess['session_date']})",
+                        4 - i,  # R1 = priority 3, R2 = 2, R3 = 1, R4 = 0
+                        review_num,
+                        anchor,
+                    ))
+                    created += 1
+
+        conn.commit()
+        return jsonify({"ok": True, "tasks_created": created})
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
+@adapter_bp.route("/planner/tasks/<int:task_id>", methods=["PATCH"])
+def update_planner_task(task_id):
+    """Update a study task status."""
+    data = request.json or {}
+    allowed = {"status", "notes", "actual_session_id", "scheduled_date", "planned_minutes"}
+    fields = []
+    values = []
+    for key in allowed:
+        if key in data:
+            fields.append(f"{key} = ?")
+            values.append(data[key])
+    if not fields:
+        return jsonify({"error": "No valid fields"}), 400
+    fields.append("updated_at = datetime('now')")
+    values.append(task_id)
+    conn = None
+    try:
+        conn = get_connection()
+        conn.execute(f"UPDATE study_tasks SET {', '.join(fields)} WHERE id = ?", values)
+        conn.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
 
 
 # ==============================================================================
@@ -5103,6 +5521,43 @@ def get_brain_metrics():
             issues_map.values(), key=lambda x: x["count"], reverse=True
         )[:10]
 
+        # --- Averages (understanding, retention) ---
+        conn2 = get_connection()
+        conn2.row_factory = sqlite3.Row
+        cur2 = conn2.cursor()
+        cur2.execute("""
+            SELECT
+                AVG(CAST(understanding_level AS REAL)) AS avg_understanding,
+                AVG(CAST(retention_confidence AS REAL)) AS avg_retention
+            FROM sessions
+            WHERE understanding_level IS NOT NULL AND retention_confidence IS NOT NULL
+        """)
+        avg_row = cur2.fetchone()
+        averages = {
+            "understanding": round(avg_row["avg_understanding"] or 0, 1),
+            "retention": round(avg_row["avg_retention"] or 0, 1),
+        }
+
+        # --- Mastery: stale topics (not studied in 14+ days) ---
+        cur2.execute("""
+            SELECT COALESCE(main_topic, topic) AS t,
+                   COUNT(*) AS cnt,
+                   MAX(session_date) AS last_studied,
+                   CAST(julianday('now') - julianday(MAX(session_date)) AS INTEGER) AS days_since
+            FROM sessions
+            WHERE COALESCE(main_topic, topic) IS NOT NULL
+              AND COALESCE(main_topic, topic) != ''
+            GROUP BY t
+            HAVING days_since >= 14
+            ORDER BY days_since DESC
+            LIMIT 10
+        """)
+        stale_topics = [
+            {"topic": r["t"], "count": r["cnt"], "lastStudied": r["last_studied"], "daysSince": r["days_since"]}
+            for r in cur2.fetchall()
+        ]
+        conn2.close()
+
         return jsonify(
             {
                 "sessionsPerCourse": sessions_per_course,
@@ -5114,6 +5569,8 @@ def get_brain_metrics():
                 "totalMinutes": total_minutes,
                 "totalSessions": len(rows),
                 "totalCards": total_cards,
+                "averages": averages,
+                "staleTopics": stale_topics,
             }
         )
     except Exception as e:

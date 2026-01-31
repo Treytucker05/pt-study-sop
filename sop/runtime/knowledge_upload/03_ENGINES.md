@@ -168,7 +168,7 @@ M0 (Planning)  -> Region selected, landmarks identified from LOs/labs
 M2 (Prime)     -> List bones and landmarks (H1 scan)
 M3 (Encode)    -> Run Landmark Pass (visual > spatial > attachments)
 M4 (Build)     -> Layer OIANA+ per muscle, clinical last
-M6 (Wrap)      -> Review landmarks mastered, create cards, glossary terms
+M6 (Wrap)      -> Exit Ticket + Session Ledger; cards created only if actually produced
 ```
 
 ### Anatomy Engine Template

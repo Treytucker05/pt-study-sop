@@ -1,6 +1,6 @@
 # Operating Modes
 
-Modes modify AI behavior for different session types. All modes operate inside PERRIO and may call KWIK for encoding.
+Modes modify AI behavior for different session types. All modes operate inside PEIRRO and may call KWIK for encoding.
 
 ## Mode Comparison
 

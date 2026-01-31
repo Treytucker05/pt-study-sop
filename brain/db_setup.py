@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Database setup and schema initialization for PT Study Brain v9.3.
+Database setup and schema initialization for PT Study Brain v9.4.
 """
 
 import sqlite3
 import os
 import sys
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "pt_study.db")
+from config import DB_PATH
 
 
 def init_database():
@@ -97,7 +97,7 @@ def init_database():
 
             -- Metadata
             created_at TEXT NOT NULL,
-            schema_version TEXT DEFAULT '9.3',
+            schema_version TEXT DEFAULT '9.4',
             source_path TEXT,  -- Path to the source markdown file
             raw_input TEXT,    -- Raw plain-text intake (LLM or manual)
 
@@ -126,6 +126,25 @@ def init_database():
             retrospective_status TEXT,
             tracker_json TEXT,
             enhanced_json TEXT,
+
+            -- Session Ledger v9.4 fields
+            covered TEXT,
+            not_covered TEXT,
+            artifacts_created TEXT,
+            timebox_min INTEGER,
+
+            -- Error classification v9.4 fields
+            error_classification TEXT,
+            error_severity TEXT,
+            error_recurrence TEXT,
+
+            -- Enhanced v9.4 fields
+            errors_by_type TEXT,
+            errors_by_severity TEXT,
+            error_patterns TEXT,
+            spacing_algorithm TEXT,
+            rsr_adaptive_adjustment TEXT,
+            adaptive_multipliers TEXT,
 
             UNIQUE(session_date, session_time, main_topic)
         )
@@ -185,7 +204,7 @@ def init_database():
         "next_focus": "TEXT",
         "next_materials": "TEXT",
         "created_at": "TEXT NOT NULL",
-        "schema_version": "TEXT DEFAULT '9.3'",
+        "schema_version": "TEXT DEFAULT '9.4'",
         "source_path": "TEXT",
         "raw_input": "TEXT",
         # WRAP Enhancement v9.2 fields
@@ -212,6 +231,22 @@ def init_database():
         "retrospective_status": "TEXT",
         "tracker_json": "TEXT",
         "enhanced_json": "TEXT",
+        # Session Ledger v9.4 fields
+        "covered": "TEXT",
+        "not_covered": "TEXT",
+        "artifacts_created": "TEXT",
+        "timebox_min": "INTEGER",
+        # Error classification v9.4 fields
+        "error_classification": "TEXT",
+        "error_severity": "TEXT",
+        "error_recurrence": "TEXT",
+        # Enhanced v9.4 fields
+        "errors_by_type": "TEXT",
+        "errors_by_severity": "TEXT",
+        "error_patterns": "TEXT",
+        "spacing_algorithm": "TEXT",
+        "rsr_adaptive_adjustment": "TEXT",
+        "adaptive_multipliers": "TEXT",
     }
 
     # Add missing columns (skip id and constraints that can't be added via ALTER TABLE)
@@ -224,8 +259,8 @@ def init_database():
                     sql_type = "INTEGER DEFAULT 0"
                 else:
                     sql_type = "INTEGER"
-            elif "DEFAULT '9.3'" in col_type:
-                sql_type = "TEXT DEFAULT '9.3'"
+            elif "DEFAULT '9.4'" in col_type:
+                sql_type = "TEXT DEFAULT '9.4'"
             else:
                 sql_type = "TEXT"
 
@@ -239,6 +274,18 @@ def init_database():
 
     if added_count > 0:
         print(f"[INFO] Added {added_count} missing column(s) to sessions table")
+
+    # Bump schema_version on rows still marked < 9.4 (idempotent)
+    try:
+        cursor.execute(
+            "UPDATE sessions SET schema_version = '9.4' "
+            "WHERE schema_version IS NULL OR schema_version < '9.4'"
+        )
+        bumped = cursor.rowcount
+        if bumped > 0:
+            print(f"[INFO] Bumped schema_version to 9.4 on {bumped} row(s)")
+    except sqlite3.OperationalError:
+        pass
 
     # ------------------------------------------------------------------
     # Additive tables for courses, events, topics, study tasks, and RAG
@@ -407,6 +454,39 @@ def init_database():
             FOREIGN KEY(actual_session_id) REFERENCES sessions(id)
         )
     """
+    )
+
+    # Add planner-specific columns to study_tasks if missing
+    cursor.execute("PRAGMA table_info(study_tasks)")
+    st_cols = {c[1] for c in cursor.fetchall()}
+    for col_name, col_type in [
+        ("source", "TEXT"),          # 'weak_anchor' | 'exit_ticket' | 'manual' | 'spacing'
+        ("priority", "INTEGER DEFAULT 0"),
+        ("review_number", "INTEGER"),  # R1=1, R2=2, R3=3, R4=4
+        ("anchor_text", "TEXT"),       # the weak anchor or topic text
+    ]:
+        if col_name not in st_cols:
+            try:
+                cursor.execute(f"ALTER TABLE study_tasks ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
+
+    # Planner settings (singleton row, id=1)
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS planner_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            spacing_strategy TEXT DEFAULT 'standard',  -- 'standard' (1-3-7-21) | 'rsr-adaptive'
+            default_session_minutes INTEGER DEFAULT 45,
+            calendar_source TEXT DEFAULT 'local',       -- 'local' | 'google'
+            auto_schedule_reviews INTEGER DEFAULT 1,    -- boolean
+            updated_at TEXT
+        )
+    """
+    )
+    # Ensure singleton row exists
+    cursor.execute(
+        "INSERT OR IGNORE INTO planner_settings (id, updated_at) VALUES (1, datetime('now'))"
     )
 
     cursor.execute(
@@ -944,6 +1024,21 @@ def init_database():
     """
     )
 
+    # Add content + cluster columns to scholar tables (v9.4 DB-first)
+    for table, cols in [
+        ("scholar_digests", [("content", "TEXT"), ("cluster_id", "TEXT")]),
+        ("scholar_proposals", [("content", "TEXT"), ("cluster_id", "TEXT")]),
+    ]:
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing = {c[1] for c in cursor.fetchall()}
+        for col_name, col_type in cols:
+            if col_name not in existing:
+                try:
+                    cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type}")
+                    print(f"[INFO] Added '{col_name}' to {table}")
+                except sqlite3.OperationalError:
+                    pass
+
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS quick_notes (
@@ -1205,7 +1300,7 @@ if __name__ == "__main__":
         version = get_schema_version()
         print(f"[INFO] Current schema version: {version}")
 
-        if version not in {"9.1", "9.2", "9.3"}:
+        if version not in {"9.1", "9.2", "9.3", "9.4"}:
             if not sys.stdin or not sys.stdin.isatty():
                 auto_migrate = os.environ.get("PT_BRAIN_AUTO_MIGRATE", "").strip().lower() in {
                     "1",
