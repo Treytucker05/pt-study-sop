@@ -1,6 +1,6 @@
 # PT Study OS -- Overview
 
-**Version:** v9.3
+**Version:** v9.4
 **Owner:** Trey Tucker
 
 ## What This Is
@@ -13,7 +13,8 @@ A structured AI study operating system for DPT coursework. It enforces an end-to
 - **End-to-end study flows** -- MAP (plan) -> LOOP (learn) -> WRAP (log) with minimal manual steps.
 - **RAG-first, citation-first** -- all generated content grounded in the learner's indexed materials. Unverified outputs are explicitly marked.
 - **Spaced, high-quality Anki cards** -- source-tagged, deduplicated, retained over years.
-- **Deterministic logging** -- every session emits schema-conformant JSON for long-term tracking.
+- **Deterministic logging** -- every session emits a Session Ledger; JSON is produced via Brain ingestion, not by the tutor.
+- **No Phantom Outputs** -- if a step didn't happen, output NOT DONE / UNKNOWN; never invent.
 
 ## Lifecycle
 
@@ -28,8 +29,8 @@ A structured AI study operating system for DPT coursework. It enforces an end-to
 1. Paste `sop/runtime/runtime_prompt.md` at session start.
 2. Complete M0 Planning: declare target, sources, plan, pre-test.
 3. Run the session through M1-M6.
-4. At Wrap, output Exit Ticket + Tracker JSON + Enhanced JSON.
-5. Store logs in `sop/logs/` or preferred location.
+4. At Wrap, output **Exit Ticket + Session Ledger** (no JSON, no spacing schedule).
+5. Copy Exit Ticket + Session Ledger into Brain ingestion prompts (see `10-deployment.md`) to produce JSON logs.
 
 ## Architecture (Stable Components)
 
@@ -48,21 +49,22 @@ A structured AI study operating system for DPT coursework. It enforces an end-to
 |---|------|-------------|
 | 00 | `00-overview.md` | System identity, vision, quick-start, and library map (this file) |
 | 01 | `01-core-rules.md` | All behavioral rules the tutor must follow |
-| 02 | `02-modules.md` | M0-M6 execution flow details |
-| 03 | `03-frameworks.md` | PEIRRO, KWIK, H/M/Y series, Levels |
+| 02 | `02-learning-cycle.md` | PEIRRO macro cycle + KWIK encoding micro-loop |
+| 03 | `03-frameworks.md` | H/M/Y series, Levels |
 | 04 | `04-engines.md` | Anatomy Engine and Concept Engine |
-| 05 | `05-blueprint.md` | 3+2 rotation, sandwich ingestion, spacing, evidence nuance |
-| 06 | `06-logging.md` | Logging schema v9.3, Tracker JSON, Enhanced JSON |
-| 07 | `07-templates.md` | Exit ticket, session log, weekly plan/review templates |
-| 08 | `08-workload.md` | Rotational interleaving 3+2 system |
-| 09 | `09-evidence.md` | NotebookLM bridge, source-lock protocol, research grounding |
-| 10 | `10-examples.md` | Mini usage examples |
-| 11 | `11-schemas.md` | Session log, RAG doc, card, and resume schema contracts |
-| 12 | `12-roadmap.md` | Roadmap ladder, current alignment, next targets |
+| 05 | `05-session-flow.md` | M0-M6 execution flow, planning through Wrap |
+| 06 | `06-modes.md` | Operating modes (Core, Sprint, Light, Quick Sprint, Drill) |
+| 07 | `07-workload.md` | 3+2 rotational interleaving, sandwich, spacing |
+| 08 | `08-logging.md` | Logging schema v9.4 (schema reference; JSON produced via Brain ingestion) |
+| 09 | `09-templates.md` | Exit ticket, session ledger, weekly plan/review templates |
+| 10 | `10-deployment.md` | Custom GPT deployment guide + Brain ingestion prompts |
+| 11 | `11-examples.md` | Command reference and dialogue examples |
+| 12 | `12-evidence.md` | Evidence base, NotebookLM bridge, research backlog |
+| 13 | `13-custom-gpt-system-instructions.md` | Custom GPT system instructions (v9.4 Lite Wrap) |
 
 ## Schemas / Contracts
 
-- **Session Log v9.x:** date, time, duration, study_mode, target_exam/block, sources, plan, main_topic, subtopics, frameworks, gates, WRAP, anki_count, anatomy fields, ratings, anchors, reflection, next_session. Additive-only changes unless Master Plan is updated.
+- **Session Log v9.4:** date, topic, mode, duration_min, understanding, retention, calibration_gap, rsr_percent, cognitive_load, transfer_check, anchors, what_worked, what_needs_fixing, error_classification, error_severity, error_recurrence, notes (Tracker); plus source_lock, plan_of_attack, frameworks_used, buckets, anki_cards, exit_ticket fields, spaced_reviews, etc. (Enhanced). JSON is produced via Brain ingestion, not by the tutor at Wrap. Additive-only changes unless Master Plan is updated.
 - **RAG Doc v1:** `{id, source_path, course, module, doc_type, created_at, checksum, text_chunks[], image_captions[], metadata{}}`.
 - **Card v1:** `{deck, guid, front, back, tags[], source_refs[], created_at, updated_at}`.
 - **Resume v1:** `{generated_at, readiness_score, recent_sessions[], topic_coverage[], gaps[], recommendations[]}`.
@@ -110,4 +112,4 @@ A structured AI study operating system for DPT coursework. It enforces an end-to
 
 ## Source of Truth
 
-Canonical content lives in `sop/src/`. Runtime bundles in `sop/runtime/` are generated artifacts. If any file conflicts with canonical source, canonical wins. Do not edit runtime files directly.
+Canonical content lives in `sop/library/`. Runtime bundles in `sop/runtime/` are generated artifacts. If any file conflicts with canonical source, canonical wins. Do not edit runtime files directly.
