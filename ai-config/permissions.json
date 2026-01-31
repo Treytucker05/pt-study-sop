@@ -1,5 +1,13 @@
 ﻿{
     "allow_execution":  [
+                            "cat",
+                            "echo",
+                            "find",
+                            "head",
+                            "tail",
+                            "wc",
+                            "diff",
+                            "grep",
                             "agent-browser",
                             "agent-browser click",
                             "agent-browser close",
@@ -27,6 +35,9 @@
                             "npm install",
                             "npm run build",
                             "npm -v",
+                            "npx",
+                            "npx skills add",
+                            "npx skills find",
                             "Out-File",
                             "pip list",
                             "pip show",
@@ -35,11 +46,17 @@
                             "pwsh",
                             "python brain/db_setup.py",
                             "python -m pytest brain/tests",
+                            "python -m pytest brain/tests -v",
+                            "pytest brain/tests/ -v",
+                            "python brain/dashboard_web.py",
                             "python scripts/release_check.py",
                             "python --version",
+                            "bash -lc",
+                            "bash scripts/test_brain_ingest.sh",
                             "Remove-Item",
                             "rg",
                             "rg --files",
+                            "robocopy",
                             "Select-Object",
                             "Select-String",
                             "Sort-Object",
@@ -54,7 +71,6 @@
                             "winget search"
                         ],
     "require_confirmation":  [
-                                 "git push",
                                  "del"
                              ]
 }

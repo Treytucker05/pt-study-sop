@@ -36,7 +36,26 @@
       "Bash(del local.db)",
       "Bash(netstat:*)",
       "Bash(echo $OPENROUTER_API_KEY)",
-      "Bash(cmd //c taskkill /PID 27412 /F)"
+      "Bash(cmd //c taskkill /PID 27412 /F)",
+      "Bash(wc:*)",
+      "Bash(npx @realmikekelly/claude-sneakpeek quick:*)",
+      "mcp__filesystem__read_multiple_files",
+      "Bash(if not exist \"C:\\\\Users\\\\treyt\\\\.claude\\\\agents\" mkdir \"C:\\\\Users\\\\treyt\\\\.claude\\\\agents\")",
+      "Bash(bash scripts/test_brain_ingest.sh:*)",
+      "Bash(Select-Object LocalPort,OwningProcess)",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 5000,3000 -ErrorAction SilentlyContinue | Select-Object LocalPort,State,OwningProcess\")",
+      "Bash(powershell.exe:*)",
+      "Bash(robocopy:*)",
+      "Bash(ls:*)",
+      "Bash(xargs:*)",
+      "Skill(frontend-design)",
+      "Skill(frontend-design:*)",
+      "Bash(python3:*)",
+      "Bash(PYTHONIOENCODING=utf-8 python3:*)",
+      "Bash(api \")",
+      "Bash(git status:*)",
+      "Bash(npx vite:*)",
+      "Bash(wmic process where \"name=''python.exe''\" get processid,commandline)"
     ],
     "defaultMode": "bypassPermissions"
   }
