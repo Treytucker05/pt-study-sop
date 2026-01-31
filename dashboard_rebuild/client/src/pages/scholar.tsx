@@ -734,12 +734,8 @@ export default function Scholar() {
                   <ScrollArea className="h-[500px]">
                     <div className="space-y-4">
                       {!clustersData?.clusters || clustersData.clusters.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="font-arcade text-xs text-primary mb-2">NO CLUSTERS YET</p>
-                          <p className="font-terminal text-xs text-muted-foreground">
-                            Click RUN CLUSTERING to group digests and proposals by shared topic keywords.
-                            Requires at least 2 digests or proposals with titles to find clusters.
-                          </p>
+                        <div className="text-center py-8 text-muted-foreground font-terminal text-sm">
+                          No clusters yet. Click RUN CLUSTERING to group digests and proposals by topic.
                         </div>
                       ) : (
                         clustersData.clusters.map((cluster) => (
