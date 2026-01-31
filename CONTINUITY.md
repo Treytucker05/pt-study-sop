@@ -248,3 +248,5 @@
 -   2 0 2 6 - 0 1 - 3 1 :   A d d e d   L i t e   W r a p   e x a m p l e   h e a d i n g   i n   1 1 - e x a m p l e s   a n d   m a d e   e x a m p l e   e x t r a c t i o n   t o l e r a n t   t o   m i s s i n g   h e a d i n g s   i n   b u i l d _ r u n t i m e _ b u n d l e .  
  - 2026-01-31: Added v9.4 Custom GPT system instructions to SOP library and linked in overview.
 - 2026-01-31: Updated v9.4 Custom GPT system instructions with pre-test guardrail (NO-GUESS), first exposure vs review rule, and LO relabel restriction.
+-   2 0 2 6 - 0 1 - 3 1 :   B u i l t   d a s h b o a r d   f r o n t e n d   a n d   s y n c e d   b r a i n / s t a t i c / d i s t   f r o m   d a s h b o a r d _ r e b u i l d / d i s t / p u b l i c   f o r   l i v e   d e p l o y .  
+ 
