@@ -22,7 +22,7 @@ Supporting findings from review literature: dual coding and self-explanation are
 - **Retrospective timetable** red/yellow/green adjustments
 - **RSR thresholds** are adaptive, not fixed
 
-## Evidence Nuance Rules (v9.3)
+## Evidence Nuance Rules (v9.4)
 
 - No numeric forgetting claims unless cited.
 - Dual coding is a helpful heuristic, not a guarantee.
@@ -128,7 +128,7 @@ M0-planning, M2-prime, M3-encode, M4-build, M5-modes, M6-wrap
 | custom_instructions.md | Enforcement | Runtime identity and behavior rules | In progress | Candidate |
 | runtime_prompt.md | Enforcement | Session startup prompt and gating questions | In progress | Candidate |
 | notebooklm_bridge.md | Enforcement | Source packet rules for NotebookLM-based grounding | Complete | Implemented |
-| logging_schema_v9.3.md | Measurement | Canonical logging schema (Tracker + Enhanced JSON) | Complete | Implemented |
+| 08-logging.md | Measurement | Canonical logging schema (Tracker + Enhanced JSON) | Complete | Implemented |
 
 ### Refinement Rules
 Changes require an identified gap, supporting research, and an explicit decision. Recording "no change" is acceptable when evidence supports current state.

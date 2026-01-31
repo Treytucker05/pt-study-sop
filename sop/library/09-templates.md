@@ -1,6 +1,6 @@
 # 09 — Templates
 
-All PERRIO study templates in one file. Copy and fill in per session/week.
+All PEIRRO study templates in one file. Copy and fill in per session/week.
 
 ---
 
@@ -48,25 +48,27 @@ JSON is the canonical log format. Use this for human-readable recaps.
 
 ---
 
-## 3. Exit Ticket (Final 10 Minutes)
+## 3. Exit Ticket + Session Ledger (Wrap Outputs — v9.4)
 
+**Exit Ticket:**
 - [ ] **Blurt** (2 min, notes closed) — free recall summary: _______________
 - [ ] **Muddiest point** — one concept: _______________
 - [ ] **Next action hook** — first action next session: _______________
 
-**Wrap outputs (required):**
-- [ ] Spaced retrieval schedule (1-3-7-21 + red/yellow/green adjustment)
-- [ ] Tracker JSON per logging schema v9.3
-- [ ] Enhanced JSON per logging schema v9.3
+**Session Ledger:**
+- session_date: _______________
+- covered: _______________
+- not_covered: _______________
+- weak_anchors: _______________
+- artifacts_created: _______________
+- timebox_min: _______________
 
-**Evidence nuance:**
-- Spacing is a heuristic; adjust based on performance.
+**Rules:**
+- Only list what actually happened. If a field has nothing, write `NONE`.
+- No JSON at Wrap.
+- JSON is produced post-session via Brain ingestion (see `10-deployment.md`).
+- No spacing schedule at Wrap. Spacing is a Planner/Dashboard/Calendar responsibility.
 - Zeigarnik is not used as a memory guarantee; next-action hook is a friction reducer.
-
-**JSON rules:**
-- Valid JSON only.
-- Semicolon-separated list fields.
-- No multiline strings.
 
 ---
 
@@ -143,7 +145,7 @@ Item,Review1,Status1,Review2,Status2,Review3,Status3,Review4,Status4,Notes
 |--------|-----------|--------|-----------|-------------|-------------|-------------|-------|
 | M3 | LO 2.1: Shoulder stabilizers | In progress | YYYY-MM-DD | Drill rotator cuff actions | YYYY-MM-DD | Slides 12-18 | Missed supraspinatus action |
 
-**Update cadence:** Update during Wrap. Use exit ticket to set "Next action." Set review dates using 1-3-7-21 default.
+**Update cadence:** Update post-session via Planner/Dashboard. Use the Session Ledger's `weak_anchors` and exit ticket "Next action" to inform updates. Review dates are set by the Planner, not at Wrap.
 
 ---
 

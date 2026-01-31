@@ -251,43 +251,48 @@ Mode modifies AI behavior across M2-M4. For full details, see [06-modes.md](06-m
 
 ---
 
-## M6: Wrap (Close and Schedule)
+## M6: Wrap — Lite Wrap v9.4 (Close Session)
 
 2-10 minutes. Mandatory.
 
-**Exit Ticket (Final 10 min):**
+**Exit Ticket:**
 1. Free recall blurt (2 min, notes closed).
 2. Muddiest point: name the fuzziest concept.
 3. Next action hook: first step for next session.
 
+**Session Ledger:**
+
+| Field | Format | Rule |
+|-------|--------|------|
+| `session_date` | YYYY-MM-DD | Date of the session |
+| `covered` | semicolon-separated list | Only what was actually studied |
+| `not_covered` | semicolon-separated list | Planned but not reached |
+| `weak_anchors` | semicolon-separated list | Items that need review |
+| `artifacts_created` | semicolon-separated list | Only if actually created (cards, drawings, etc.) |
+| `timebox_min` | number | Actual session duration |
+
+Empty fields: use `NONE`. In JSON (produced later via Brain ingestion), use `"UNKNOWN"` or `"N/A"`.
+
 **Wrap Protocol:**
-1. **Anchors review** -- list all hooks locked today.
-2. **Cards** -- Anki-style cards for misses/weak anchors (required).
-3. **Metrics capture:**
-   - Calibration gap (confidence vs recall)
-   - Retrieval success rate (RSR %)
-   - Cognitive load type (intrinsic / extraneous / germane)
-   - Transfer check (connected to another class? yes/no)
-4. **Calibration check** -- predict score, answer one application Q, compare.
-5. **Spaced retrieval schedule** -- 1-3-7-21 days, adjusted by R/Y/G status.
-6. **Error classification:**
+1. **Exit Ticket** — run the three prompts above.
+2. **Session Ledger** — fill in the five fields above from what actually happened.
+3. **Anchors review** — list all hooks locked today (feeds `weak_anchors` if shaky).
+4. **Cards** — Anki-style cards for misses/weak anchors (if created, list in `artifacts_created`).
+5. **Error classification** (human-readable notes, not JSON):
 
 | Type | Definition | Action |
 |------|-----------|--------|
 | Careless | Knew it, slipped | Note only |
-| Misunderstanding | Wrong mental model | Card + sooner review |
-| Spacing | Knew before, forgot | Card + sooner review |
+| Misunderstanding | Wrong mental model | Card + flag for review |
+| Spacing | Knew before, forgot | Card + flag for review |
 | Transfer | Can recall, can't apply | Rebuild hook + drill |
 
-| Severity | Criteria | Action |
-|----------|----------|--------|
-| Minor | Self-corrected quickly | Note only |
-| Moderate | Needed prompt/hint | Card + compress spacing |
-| Critical | Fundamental miss or recurrence | Rebuild + drill + compress |
+**What Wrap does NOT do (v9.4):**
+- Does NOT output JSON logs (produced via Brain ingestion post-session; see `10-deployment.md`).
+- Does NOT schedule spaced reviews (handled by Planner/Dashboard/Calendar subsystem).
+- Does NOT invent data for steps that didn't happen (No Phantom Outputs).
 
-7. **Output logs** -- Tracker JSON + Enhanced JSON per schema v9.3.
-
-**Exit:** Exit ticket done, cards captured, metrics logged, reviews scheduled, JSON output complete.
+**Exit:** Exit ticket done, session ledger filled, cards captured if applicable.
 
 ---
 
@@ -326,7 +331,7 @@ M4 Build -- teach-back gate, progressive ladder, misses captured
   |
   (Mode modifies behavior across M2-M4; see 06-modes.md)
   |
-M6 Wrap -- recall blurt, cards, metrics, spacing, JSON logs
+M6 Wrap -- Exit Ticket + Session Ledger (no spacing)
   |
 Progress Tracking (post-session)
 ```
