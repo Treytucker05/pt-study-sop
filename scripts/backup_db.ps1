@@ -28,6 +28,8 @@ if (-not (Test-Path $backupDir)) {
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $backupFile = Join-Path $backupDir "pt_study_$timestamp.db"
 
+# Note: copying a live SQLite DB is safe for single-user apps (WAL mode handles this).
+# For guaranteed consistency under concurrent writes, use: sqlite3 $dbPath ".backup $backupFile"
 Copy-Item -Path $dbPath -Destination $backupFile -Force
 $sizeMB = [math]::Round((Get-Item $backupFile).Length / 1MB, 2)
 Write-Host "[OK] Backup created: $backupFile ($sizeMB MB)" -ForegroundColor Green

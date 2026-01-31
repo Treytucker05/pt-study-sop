@@ -118,7 +118,13 @@ export function NextActions({ filter = "all" }: NextActionsProps) {
 
         {!isLoading && queue.length === 0 && (
           <div className="font-terminal text-xs text-muted-foreground text-center py-4">
-            No pending tasks. Click GENERATE to create review tasks from weak anchors.
+            No pending tasks. {filter === "all" ? "Click GENERATE to create review tasks from weak anchors." : ""}
+          </div>
+        )}
+
+        {!isLoading && filter === "today" && queue.length > 0 && todayTasks.length === 0 && (
+          <div className="font-terminal text-xs text-muted-foreground text-center py-4">
+            No tasks due today. {upcomingTasks.length} upcoming.
           </div>
         )}
 

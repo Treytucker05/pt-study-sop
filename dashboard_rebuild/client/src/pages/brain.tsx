@@ -13,7 +13,7 @@ import { AnkiIntegration } from "@/components/AnkiIntegration";
 import { SessionEvidence } from "@/components/SessionEvidence";
 import { NextActions } from "@/components/NextActions";
 import { TopicNoteBuilder } from "@/components/TopicNoteBuilder";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
@@ -34,7 +34,6 @@ const FLOW_STEPS = [
 export default function Brain() {
   const [graphMode, setGraphMode] = useState<"vault" | "mindmap">("vault");
   const [activeTab, setActiveTab] = useState("daily");
-  const scrollTarget = useRef<string | null>(null);
 
   const { data: obsidianStatus } = useQuery({
     queryKey: ["obsidian", "status"],
@@ -70,8 +69,9 @@ export default function Brain() {
 
   const pendingDrafts = ankiDrafts.filter(d => d.status === "pending");
 
-  // Deterministic done logic for each flow step
-  const today = new Date().toISOString().slice(0, 10);
+  // Deterministic done logic for each flow step (local date, not UTC)
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const hasRecentSession = sessions.some(
     (s: { session_date?: string }) => s.session_date === today
   );
@@ -94,7 +94,6 @@ export default function Brain() {
     if (!step.tab) return;
     setActiveTab(step.tab);
     if (step.section) {
-      scrollTarget.current = step.section;
       // Scroll after tab switch renders
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
