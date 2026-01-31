@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/use-toast";
 // Session shape from the API (not the Drizzle schema — API serializes differently)
 interface ApiSession {
@@ -38,48 +39,84 @@ export function SessionJsonIngest() {
     })
     .slice(0, 20);
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedSessionId) throw new Error("Select a session first");
+   const generateMutation = useMutation({
+     mutationFn: () => api.planner.generate(),
+     onSuccess: (data) => {
+       toast({
+         title: "Planner tasks generated",
+         description: `${data.tasks_created} review tasks created`,
+       });
+       queryClient.invalidateQueries({ queryKey: ["planner", "queue"] });
+     },
+     onError: (err: Error) => {
+       toast({
+         title: "Failed to generate tasks",
+         description: err.message,
+         variant: "destructive",
+       });
+     },
+   });
 
-      let parsed: Record<string, unknown>;
-      try {
-        parsed = JSON.parse(jsonText);
-      } catch {
-        throw new Error("Invalid JSON — check syntax");
-      }
+   const mutation = useMutation({
+     mutationFn: async () => {
+       if (!selectedSessionId) throw new Error("Select a session first");
 
-      // Detect type if auto
-      let type = jsonType;
-      if (type === "auto") {
-        const keys = Object.keys(parsed);
-        const enhancedKeys = [
-          "source_lock", "plan_of_attack", "frameworks_used", "buckets",
-          "confusables_interleaved", "anki_cards", "glossary",
-          "exit_ticket_blurt", "exit_ticket_muddiest", "exit_ticket_next_action",
-          "retrospective_status", "spaced_reviews", "next_session",
-          "errors_by_type", "errors_by_severity", "error_patterns",
-          "spacing_algorithm", "rsr_adaptive_adjustment", "adaptive_multipliers",
-        ];
-        type = keys.some(k => enhancedKeys.includes(k)) ? "enhanced" : "tracker";
-      }
+       let parsed: Record<string, unknown>;
+       try {
+         parsed = JSON.parse(jsonText);
+       } catch {
+         throw new Error("Invalid JSON — check syntax");
+       }
 
-      const tracker = type === "tracker" ? parsed : undefined;
-      const enhanced = type === "enhanced" ? parsed : undefined;
+       // Detect type if auto
+       let type = jsonType;
+       if (type === "auto") {
+         const keys = Object.keys(parsed);
+         const enhancedKeys = [
+           "source_lock", "plan_of_attack", "frameworks_used", "buckets",
+           "confusables_interleaved", "anki_cards", "glossary",
+           "exit_ticket_blurt", "exit_ticket_muddiest", "exit_ticket_next_action",
+           "retrospective_status", "spaced_reviews", "next_session",
+           "errors_by_type", "errors_by_severity", "error_patterns",
+           "spacing_algorithm", "rsr_adaptive_adjustment", "adaptive_multipliers",
+         ];
+         type = keys.some(k => enhancedKeys.includes(k)) ? "enhanced" : "tracker";
+       }
 
-      return api.brain.ingestSessionJson(selectedSessionId, tracker, enhanced);
-    },
-    onSuccess: (data) => {
-      toast({ title: "JSON ingested", description: `${data.fields_updated} fields updated on session #${data.session_id}` });
-      queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["brain", "metrics"] });
-      setJsonText("");
-      setValidationErrors([]);
-    },
-    onError: (err: Error) => {
-      toast({ title: "Ingestion failed", description: err.message, variant: "destructive" });
-    },
-  });
+       const tracker = type === "tracker" ? parsed : undefined;
+       const enhanced = type === "enhanced" ? parsed : undefined;
+
+       return api.brain.ingestSessionJson(selectedSessionId, tracker, enhanced);
+     },
+     onSuccess: (data) => {
+       toast({ title: "JSON ingested", description: `${data.fields_updated} fields updated on session #${data.session_id}` });
+       queryClient.invalidateQueries({ queryKey: ["sessions"] });
+       queryClient.invalidateQueries({ queryKey: ["brain", "metrics"] });
+       
+       // Show CTA toast for planner generation
+       toast({
+         title: "Next step: Generate planner tasks?",
+         description: "Create review tasks from weak anchors",
+         duration: 10000,
+         action: (
+           <Button
+             size="sm"
+             onClick={() => generateMutation.mutate()}
+             disabled={generateMutation.isPending}
+             className="bg-primary text-black hover:bg-primary/80"
+           >
+             {generateMutation.isPending ? "Generating..." : "Generate Now"}
+           </Button>
+         ),
+       });
+       
+       setJsonText("");
+       setValidationErrors([]);
+     },
+     onError: (err: Error) => {
+       toast({ title: "Ingestion failed", description: err.message, variant: "destructive" });
+     },
+   });
 
   function validate() {
     const errs: string[] = [];
