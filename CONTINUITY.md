@@ -247,3 +247,4 @@
 - 2026-01-31: Updated M6 Wrap heading compatibility in session flow and made build_runtime_bundle wrap heading detection flexible with a wrap-found message.
 -   2 0 2 6 - 0 1 - 3 1 :   A d d e d   L i t e   W r a p   e x a m p l e   h e a d i n g   i n   1 1 - e x a m p l e s   a n d   m a d e   e x a m p l e   e x t r a c t i o n   t o l e r a n t   t o   m i s s i n g   h e a d i n g s   i n   b u i l d _ r u n t i m e _ b u n d l e .  
  - 2026-01-31: Added v9.4 Custom GPT system instructions to SOP library and linked in overview.
+- 2026-01-31: Updated v9.4 Custom GPT system instructions with pre-test guardrail (NO-GUESS), first exposure vs review rule, and LO relabel restriction.
