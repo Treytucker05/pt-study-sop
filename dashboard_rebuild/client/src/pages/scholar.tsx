@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { ScholarRunStatus } from "@/components/ScholarRunStatus";
 import {
   Brain,
   Search,
@@ -189,25 +190,30 @@ export default function Scholar() {
     <Layout>
       <div className="h-[calc(100vh-140px)] flex flex-col gap-6">
 
-        {/* Header */}
-        <div className="flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <Brain className="w-6 h-6 text-primary" />
-            <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
-            <Badge variant="outline" className="rounded-none text-[10px] font-terminal border-primary/50">
-              READ ONLY ADVISORY
-            </Badge>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-none font-arcade text-xs border-secondary"
-            onClick={() => queryClient.invalidateQueries()}
-            data-testid="button-refresh-data"
-          >
-            <RefreshCw className="w-3 h-3 mr-2" /> REFRESH DATA
-          </Button>
-        </div>
+         {/* Header */}
+         <div className="space-y-4 shrink-0">
+           <div className="flex items-center justify-between">
+             <div className="flex items-center gap-3">
+               <Brain className="w-6 h-6 text-primary" />
+               <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
+               <Badge variant="outline" className="rounded-none text-[10px] font-terminal border-primary/50">
+                 READ ONLY ADVISORY
+               </Badge>
+             </div>
+             <Button
+               variant="outline"
+               size="sm"
+               className="rounded-none font-arcade text-xs border-secondary"
+               onClick={() => queryClient.invalidateQueries()}
+               data-testid="button-refresh-data"
+             >
+               <RefreshCw className="w-3 h-3 mr-2" /> REFRESH DATA
+             </Button>
+           </div>
+           
+           {/* Run Status Component */}
+           <ScholarRunStatus />
+         </div>
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
