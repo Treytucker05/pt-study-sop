@@ -98,7 +98,7 @@ export default function Scholar() {
     queryFn: api.scholar.getClusters,
   });
 
-  const clusterMutation = useMutation({
+  const runClusteringMutation = useMutation({
     mutationFn: api.scholar.runClustering,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholar-clusters"] });
