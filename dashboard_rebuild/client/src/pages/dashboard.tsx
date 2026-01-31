@@ -395,6 +395,43 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="space-y-6 max-w-5xl mx-auto">
+        {/* Compact Task Preview + Open Brain CTA */}
+        <Card className="bg-black/40 border-2 border-secondary rounded-none">
+          <CardHeader className="p-3 border-b border-secondary/50">
+            <CardTitle className="font-arcade text-xs flex items-center justify-between">
+              <span>TODAY'S FOCUS</span>
+              <Badge variant="outline" className="rounded-none text-[9px]">
+                {plannerQueue.filter(t => t.scheduled_date && t.scheduled_date <= new Date().toISOString().slice(0, 10)).length} tasks
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            {plannerQueue.filter(t => t.scheduled_date && t.scheduled_date <= new Date().toISOString().slice(0, 10)).length === 0 ? (
+              <p className="font-terminal text-xs text-muted-foreground">No tasks due today</p>
+            ) : (
+              <ul className="space-y-2 mb-4">
+                {plannerQueue
+                  .filter(t => t.scheduled_date && t.scheduled_date <= new Date().toISOString().slice(0, 10))
+                  .slice(0, 3)
+                  .map(task => (
+                    <li key={task.id} className="font-terminal text-xs flex items-center gap-2">
+                      <Circle className="w-2 h-2 text-primary" />
+                      <span className="truncate">{task.anchor_text || task.notes || 'Untitled task'}</span>
+                    </li>
+                  ))}
+              </ul>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full rounded-none font-arcade text-xs border-primary"
+              onClick={() => window.location.href = '/brain'}
+            >
+              Open Brain →
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Main Grid — Fix #1: auto rows so cards size to content */}
         <div className="grid md:grid-cols-2 gap-6 grid-rows-[auto]">
 
