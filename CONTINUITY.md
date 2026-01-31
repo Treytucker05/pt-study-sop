@@ -244,3 +244,4 @@
 - 2026-01-30: Added SOP runtime bundle generator/validator, golden log tests, and runtime prompt outputs for Custom GPT v9.3 (sop/runtime, sop/tools, sop/tests).
 - 2026-01-30: Added ExecPlan for SOP runtime bundle build in .agent/context/plans/SOP_RUNTIME_V9_3_CUSTOM_GPT_EXECPLAN.md.
 - 2026-01-30: Updated sop/library/10-deployment.md with multi-domain prefixes, UNVERIFIED summary, anki_cards encoding, and canonical source note.
+- 2026-01-31: Updated M6 Wrap heading compatibility in session flow and made build_runtime_bundle wrap heading detection flexible with a wrap-found message.

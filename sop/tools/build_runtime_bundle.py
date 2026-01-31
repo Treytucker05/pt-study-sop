@@ -84,6 +84,22 @@ def join_sections(text: str, headings: Iterable[str]) -> str:
     return "\n\n".join(extract_section(text, heading) for heading in headings)
 
 
+def find_wrap_heading(text: str) -> str:
+    text = normalize(text)
+    lines = text.split("\n")
+    prefix = "## M6: Wrap"
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(prefix):
+            print(f"Wrap section found: {stripped}")
+            return stripped
+    raise ValueError(
+        "M6 Wrap heading not found. Acceptable headings: "
+        "'## M6: Wrap (Close and Schedule)', '## M6: Wrap', "
+        "or any heading starting with '## M6: Wrap'."
+    )
+
+
 def render_header(filename: str, sources: List[Path]) -> str:
     sources_block = "\n".join(f"- {rel(path)}" for path in sources)
     return (
@@ -168,6 +184,7 @@ def build_index_and_rules(core_rules: str, evidence: str) -> str:
 
 
 def build_modules(session_flow: str, modes: str) -> str:
+    wrap_heading = find_wrap_heading(session_flow)
     headings = [
         "## Pre-Session: Material Ingestion",
         "## 60-Second Quick Start",
@@ -176,7 +193,7 @@ def build_modules(session_flow: str, modes: str) -> str:
         "## M2: Prime (Map the Territory)",
         "## M3: Encode (Attach Meaning)",
         "## M4: Build (Practice and Transfer)",
-        "## M6: Wrap (Close and Schedule)",
+        wrap_heading,
         "## Quick Reference: Session Flow",
     ]
     session_extract = join_sections(session_flow, headings)

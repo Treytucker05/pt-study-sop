@@ -251,7 +251,9 @@ Mode modifies AI behavior across M2-M4. For full details, see [06-modes.md](06-m
 
 ---
 
-## M6: Wrap — Lite Wrap v9.4 (Close Session)
+## M6: Wrap (Close and Schedule)
+
+Lite Wrap v9.4 (Close Session).
 
 2-10 minutes. Mandatory.
 
