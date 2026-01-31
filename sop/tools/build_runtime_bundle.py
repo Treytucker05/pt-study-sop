@@ -252,7 +252,19 @@ def build_examples(examples: str) -> str:
         "## Example: Sprint Mode (Fail-First)",
         "## Example: Wrap Output",
     ]
-    extract = join_sections(examples, headings)
+    sections: list[str] = []
+    missing: list[str] = []
+    for heading in headings:
+        try:
+            sections.append(extract_section(examples, heading))
+        except ValueError:
+            missing.append(heading)
+    if missing:
+        print(
+            "WARNING: Missing example headings: " + ", ".join(missing),
+            file=sys.stderr,
+        )
+    extract = "\n\n".join(sections).strip()
     return render_source_block(LIB_DIR / "11-examples.md", extract)
 
 

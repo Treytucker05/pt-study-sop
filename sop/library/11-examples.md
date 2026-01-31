@@ -114,7 +114,7 @@ That's MY metaphor. Edit or upgrade it — what would YOU change?"
 
 **User:** "Prevents lateral translation?"
 
-**AI:** "Miss. PCL prevents POSTERIOR tibial translation. Phonetic hook: PCL — 'Posterior-C-Lock.' Picture the PCL as the lock stopping the shin from sliding backward. Retry: What does the PCL prevent?"
+**AI:** "Miss. PCL prevents POSTERIOR tibial translation. Can you come up with a hook to remember that? If you need help, say 'help' and I'll offer options. Retry: What does the PCL prevent?"
 
 **User:** "Posterior tibial translation — the backward lock."
 
@@ -132,9 +132,7 @@ What does infraspinatus do?"
 
 **User:** "Uh... abduction?"
 
-**AI:** "Miss. Infraspinatus does EXTERNAL ROTATION.
-
-Memory hook: 'Infra' = below the spine. Think of rotating your arm outward like you're hitchhiking — thumb points OUT.
+**AI:** "Miss. Infraspinatus does EXTERNAL ROTATION. What hook can you create to remember that? If you're stuck, say 'help' and I'll offer options.
 
 Retry: What movement does infraspinatus produce?"
 
@@ -149,7 +147,7 @@ What attaches to the greater tubercle of the humerus?"
 **Key rules:**
 1. No teaching until miss — Correct answers get immediate "Next"
 2. Miss triggers full stop — Don't skip past errors
-3. Phonetic/visual hook required — Build anchor before retry
+3. Ask learner for a hook first (Seed-Lock ask-first) — offer help only if requested
 4. User must demonstrate corrected knowledge — Can't move on until right
 5. Pace is rapid for correct answers — Efficient gap-finding
 
@@ -167,4 +165,21 @@ What attaches to the greater tubercle of the humerus?"
 
 ## Example: Wrap Output
 
-**AI:** "Exit ticket: blurt everything you remember, name your muddiest point, and set a next-action hook. Then I'll output Tracker and Enhanced JSON per schema."
+**Exit Ticket**
+- Blurt: Glute med = pelvic stabilizer; Trendelenburg if weak.
+- Muddiest: Differentiating glute med vs minimus actions.
+- Next action: Draw pelvis and label abductors before next session.
+
+**Session Ledger**
+- session_date: 2026-01-31
+- covered: glute med function; Trendelenburg sign
+- not_covered: glute minimus actions
+- weak_anchors: glute med vs minimus
+- artifacts_created: NONE
+- timebox_min: 45
+
+**Rules:** Output ONLY Exit Ticket + Session Ledger. No JSON at Wrap; JSON is post-session via Brain ingestion prompts. No spacing schedule. No invented hooks/cards - if not done, mark NOT DONE/UNKNOWN.
+
+**AI:** "Exit ticket: blurt everything you remember, name your muddiest point, and set a next-action hook. Then we'll fill in the Session Ledger — what we covered, what we didn't, weak anchors, and any artifacts created."
+
+**Key rules:** Wrap outputs Exit Ticket + Session Ledger only. No JSON, no spacing schedule. JSON is produced post-session via Brain ingestion prompts.
