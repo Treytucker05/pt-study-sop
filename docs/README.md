@@ -2,6 +2,20 @@
 
 Central documentation for the PT Study system.
 
+## Feature → Doc Quick Reference
+
+| Feature | Doc(s) |
+|---------|--------|
+| Calendar/Tasks | `docs/calendar_tasks.md` |
+| Dashboard UI | `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`, `docs/full-ui-api-audit-2026-01-22.md` |
+| Scholar | `docs/brain_scholar_map.md` |
+| SOP System | `sop/library/00-overview.md` |
+| Architecture | `docs/root/PROJECT_ARCHITECTURE.md` |
+| Data Contracts | `docs/contracts/INDEX.md` |
+| Tutor/SOP Explorer | `docs/dashboard/TUTOR_PAGE_SOP_EXPLORER_v1.0.md` |
+| Brain System | `docs/root/PROJECT_ARCHITECTURE.md` (Brain section) |
+| Release Process | `docs/release/RELEASE_PROCESS.md` |
+
 ## Project Hub
 
 - [Project Hub](project/INDEX.md) — planning, milestones, decisions, status

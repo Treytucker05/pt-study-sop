@@ -61,6 +61,8 @@ Also read `AGENTS.md` for agent behavior rules.
 2. **Copy to Flask**: `rm -rf brain/static/dist && cp -r dashboard_rebuild/dist/public brain/static/dist`
 3. **Never use dev server**: Do NOT run `npm run dev` or `vite dev`. The dashboard is served only via `Start_Dashboard.bat` on port **5000**.
 4. Run relevant tests: `pytest brain/tests/`
+5. **Update relevant docs**: If the change affects a feature, update its doc (see Feature→Doc table in `docs/README.md`). For new features, create a doc and add it to the table.
+6. **Verify docs match code**: Spot-check that the updated doc accurately reflects the implementation.
 
 Skip steps 1-2 only if the change is backend-only (brain/ Python files).
 
