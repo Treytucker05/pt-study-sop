@@ -95,7 +95,4 @@ scripts/_ai_config_backups/
 .claude/
 
 # Agent planning artifacts (local only)
-task_plan.md
-findings.md
-progress.md
 

@@ -271,3 +271,4 @@
 -   2 0 2 6 - 0 2 - 0 1 :   A d d e d   a g e n t   s t r a t e g y   d o c s ,   p r o m p t   p a t t e r n s ,   a n d   s y n c   s c r i p t ;   a l i g n e d   C l a u d e / C o d e x / O p e n C o d e   c o n f i g s   a n d   c o m m a n d s .  
  - 2026-02-01: Made /api/scholar/digest DB-first, added /api/scholar/proposals alias, fixed duplicate obsidian patch, and ignored scholar outputs.
 - 2026-02-01: Added Custom GPT deployment pack doc and print helper script.
+- 2026-02-01: Moved planning docs into tasks/ and stopped ignoring curated planning files in .gitignore.
