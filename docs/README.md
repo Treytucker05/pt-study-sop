@@ -17,6 +17,7 @@ Central documentation for the PT Study system.
 - [System Map](system_map.md)
 - [Calendar/Tasks Integration](calendar_tasks.md)
 - [Architecture](root/PROJECT_ARCHITECTURE.md)
+- [Agent Strategy](AGENT_STRATEGY.md)
 - [User Guide](root/GUIDE_USER.md)
 - [Dev Guide](root/GUIDE_DEV.md)
 - [Architecture Guide](root/GUIDE_ARCHITECTURE.md)

@@ -9,6 +9,13 @@
 2. Which project path?
 3. Shell preference? A. WSL/Git Bash  B. PowerShell
 
+## Strategy Quickstart (Claude/Codex/OpenCode)
+
+- Terminal: Ghostty, set `/statusline` to show context usage + git branch.
+- Subagents: append `use subagents`; delegate research/tests/review.
+- Analytics: use `bq` CLI; show query + result summary.
+- Learning: set output style to Explanatory/Learning or add "explain why"; include ASCII diagrams when helpful.
+
 ## Agent Hygiene
 
 - Clean up after each task: remove failed scripts, temp files, obsolete drafts.
