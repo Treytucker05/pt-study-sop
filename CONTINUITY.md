@@ -272,3 +272,4 @@
  - 2026-02-01: Made /api/scholar/digest DB-first, added /api/scholar/proposals alias, fixed duplicate obsidian patch, and ignored scholar outputs.
 - 2026-02-01: Added Custom GPT deployment pack doc and print helper script.
 - 2026-02-01: Moved planning docs into tasks/ and stopped ignoring curated planning files in .gitignore.
+- 2026-02-01: Refined Custom GPT deployment pack content and print script for acceptance test and run history.

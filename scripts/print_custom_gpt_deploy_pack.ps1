@@ -1,16 +1,17 @@
-$packPath = "C:\pt-study-sop\docs\custom_gpt_deployment_pack.md"
+﻿$packPath = "C:\pt-study-sop\docs\custom_gpt_deployment_pack.md"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-$acceptance = @'
+$acceptance = @"
 Core mode, first exposure.
 LO → Milestone Map first.
 One-Step rule.
 No MCQ in Core.
 No answer leakage.
-WRAP outputs only Exit Ticket + Session Ledger.
+WRAP outputs ONLY Exit Ticket + Session Ledger (Lite Wrap).
 
 LO: "Explain the muscle spindle and its role in the stretch reflex."
 Start now.
-'@
+"@
 
 $files = @(
     "sop/runtime/knowledge_upload/00_INDEX_AND_RULES.md",
