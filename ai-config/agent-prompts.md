@@ -7,6 +7,8 @@ Reusable prompt suffixes and blocks to keep Claude, Codex, and OpenCode aligned.
 - `explain why, then change`
 - `include an ASCII diagram when it clarifies the flow`
 
+Auto-append is enabled across tools. Use "no suffix" (or "no subagents") to opt out for a request.
+
 ## Task Blocks
 
 ### Research + Plan

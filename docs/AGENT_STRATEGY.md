@@ -7,6 +7,8 @@ Concrete, cross-tool defaults for terminal setup, subagents, analytics, and lear
 2) Subagents: append `use subagents` to multi-step tasks and delegate research/tests/review.
 3) Analytics: use `bq` for metrics queries; show query + result summary.
 4) Learning: enable Explanatory/Learning output style or add "explain why"; include ASCII diagrams when helpful.
+5) Auto-append: assume every request ends with `use subagents; use bq when asked; explain why; include ASCII diagram when helpful`.
+   - Say "no suffix" (or "no subagents") to skip the auto-append behavior.
 
 ## Terminal & Environment
 - Terminal: Ghostty (fast render, true color, Unicode).
