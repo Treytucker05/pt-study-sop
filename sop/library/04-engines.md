@@ -7,6 +7,12 @@ Two engines govern how topics are taught. Select based on content type.
 | **Anatomy** | Regional/spatial anatomy | OIANA+: Bones > Landmarks > Attachments > Actions > Nerves > Arterial Supply > Clinical |
 | **Concept** | Abstract/non-spatial topics | Identity > Context > Mechanism > Boundary > Application |
 
+## Protocol Packs (Workflow Layer)
+
+Protocol Packs choose the cognitive workflow; Modes choose pacing. Content Engines (Anatomy/Concept) supply the content sequence.
+
+- **LO Engine (Learning Objective Engine):** LO -> source anchors -> milestone map -> cluster map -> teach loop -> note emit. Can wrap the Concept Engine for LO-driven topics.
+
 ---
 
 ## Anatomy Engine

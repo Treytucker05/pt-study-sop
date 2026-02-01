@@ -48,7 +48,60 @@ JSON is the canonical log format. Use this for human-readable recaps.
 
 ---
 
-## 3. Exit Ticket + Session Ledger (Wrap Outputs — v9.4)
+## 3. LO Engine Topic Note Template
+
+Obsidian-ready, fixed output order. Use one LO at a time.
+
+1) LO text:
+- LO:
+
+2) Source anchors (file + slide/page/heading):
+- [source]:
+
+3) Milestone Map (3-7 milestones per LO, each with anchor):
+- M1: [milestone] (anchor)
+- M2: [milestone] (anchor)
+- M3: [milestone] (anchor)
+
+4) Cluster Map (3-5 clusters mapped to LO):
+- C1: [cluster] -> LO [id]
+- C2: [cluster] -> LO [id]
+- C3: [cluster] -> LO [id]
+
+5) Explanation per cluster (plain language):
+- C1:
+- C2:
+- C3:
+
+6) Mermaid diagram (big-picture spine + clusters):
+```mermaid
+flowchart LR
+  LO[LO] --> A[Anchors]
+  A --> M[Milestones]
+  M --> C[Clusters]
+  C --> T[Teach Loop]
+```
+
+7) Retrieval prompts (2-3 per cluster; free recall):
+- C1:
+  - Prompt 1:
+  - Prompt 2:
+- C2:
+  - Prompt 1:
+  - Prompt 2:
+- C3:
+  - Prompt 1:
+  - Prompt 2:
+
+8) Transfer prompt (1 per LO):
+- Transfer:
+
+9) Next micro-task (<=15 words):
+- Next:
+
+---
+
+## 4. Exit Ticket + Session Ledger (Wrap Outputs — v9.4)
 
 **Exit Ticket:**
 - [ ] **Blurt** (2 min, notes closed) — free recall summary: _______________
@@ -72,7 +125,7 @@ JSON is the canonical log format. Use this for human-readable recaps.
 
 ---
 
-## 4. Weekly Plan (3+2 Clusters)
+## 5. Weekly Plan (3+2 Clusters)
 
 **Cluster A (technical):**
 - [ ]
@@ -94,7 +147,7 @@ JSON is the canonical log format. Use this for human-readable recaps.
 
 ---
 
-## 5. Weekly Review (Sunday)
+## 6. Weekly Review (Sunday)
 
 **Wins:**
 - [ ]
@@ -117,7 +170,7 @@ JSON is the canonical log format. Use this for human-readable recaps.
 
 ---
 
-## 6. Retrospective Timetable (1-3-7-21)
+## 7. Retrospective Timetable (1-3-7-21)
 
 **Status:** Red = struggled (review sooner) | Yellow = effortful success (keep spacing) | Green = easy (extend interval)
 
@@ -133,7 +186,7 @@ Item,Review1,Status1,Review2,Status2,Review3,Status3,Review4,Status4,Notes
 
 ---
 
-## 7. Progress Tracker
+## 8. Progress Tracker
 
 **Status legend:**
 - **Not started:** No active session yet
@@ -149,7 +202,7 @@ Item,Review1,Status1,Review2,Status2,Review3,Status3,Review4,Status4,Notes
 
 ---
 
-## 8. Post-Lecture Elaboration Prompts
+## 9. Post-Lecture Elaboration Prompts
 
 Use within 24 hours. Answer from memory first, then check sources.
 
