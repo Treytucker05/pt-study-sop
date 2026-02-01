@@ -48,6 +48,7 @@ Thumbs.db
 *.sqlite3
 brain/data/
 brain/output/
+scholar/outputs/
 
 # Logs
 *.log
@@ -92,4 +93,9 @@ scripts/_ai_config_backups/
 
 # Generated Claude surface (synced from ai-config)
 .claude/
+
+# Agent planning artifacts (local only)
+task_plan.md
+findings.md
+progress.md
 

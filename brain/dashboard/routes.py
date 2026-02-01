@@ -151,19 +151,62 @@ def api_scholar():
 
 @dashboard_bp.route("/api/scholar/digest")
 def api_scholar_digest():
-    """Generate weekly digest of Scholar outputs from the past 7 days."""
-    result = generate_weekly_digest(days=7)
-    save_param = request.args.get("save", "true").strip().lower()
-    should_save = save_param not in {"0", "false", "no"}
-    if result.get("ok") and result.get("digest") and should_save:
-        try:
-            saved = _save_digest_artifacts(result["digest"], digest_type="weekly")
-            result["saved"] = True
-            result.update(saved)
-        except Exception as e:
-            result["saved"] = False
-            result["save_error"] = str(e)
-    return jsonify(result)
+    """Fetch latest Scholar digest from the database (fast, DB-first)."""
+    try:
+        from dashboard.scholar import get_scholar_run_status
+        run_status = get_scholar_run_status()
+    except Exception:
+        run_status = None
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            SELECT id, filename, filepath, title, digest_type, created_at, content_hash, content, cluster_id
+            FROM scholar_digests
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+        )
+        row = cur.fetchone()
+    except Exception as e:
+        conn.close()
+        return jsonify({"ok": False, "error": str(e), "run_status": run_status}), 500
+    conn.close()
+
+    if not row:
+        return jsonify(
+            {
+                "ok": True,
+                "digest": None,
+                "message": "No digest yet. Run Scholar.",
+                "run_status": run_status,
+            }
+        )
+
+    content = row["content"] or ""
+    if not content:
+        repo_root = Path(__file__).parent.parent.parent.resolve()
+        filepath = repo_root / row["filepath"]
+        if filepath.exists():
+            content = filepath.read_text(encoding="utf-8")
+
+    return jsonify(
+        {
+            "ok": True,
+            "digest": content,
+            "digest_id": row["id"],
+            "title": row["title"],
+            "digest_type": row["digest_type"],
+            "created_at": row["created_at"],
+            "filename": row["filename"],
+            "content_hash": row["content_hash"],
+            "cluster_id": row["cluster_id"],
+            "run_status": run_status,
+        }
+    )
 
 
 @dashboard_bp.route("/api/scholar/insights")

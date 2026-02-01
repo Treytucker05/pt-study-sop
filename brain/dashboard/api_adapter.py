@@ -2129,6 +2129,7 @@ def get_tasks():
 
 
 @adapter_bp.route("/proposals", methods=["GET"])
+@adapter_bp.route("/scholar/proposals", methods=["GET"])
 def get_proposals():
     """
     Mimics: app.get("/api/proposals")

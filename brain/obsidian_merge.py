@@ -249,6 +249,8 @@ def generate_obsidian_patch(session_id: str, note_path: str, new_content: str, e
     from pathlib import Path
     
     existing = existing_content if existing_content is not None else read_existing_note(note_path)
+    if existing and diff_content(existing, new_content).get("is_duplicate"):
+        return None
     merged = merge_sections(existing, new_content, session_id)
     
     if existing == merged:
