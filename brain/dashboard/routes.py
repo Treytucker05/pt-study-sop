@@ -1387,3 +1387,41 @@ def api_sop_file():
         })
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@dashboard_bp.route("/api/sop/explain", methods=["POST"])
+def api_sop_explain():
+    """
+    Return a hierarchical breakdown + explanation for a SOP excerpt.
+
+    This is designed to support progressive disclosure in the Tutor SOP Explorer:
+    users select a heading, we explain that section into groups/subgroups/concepts.
+    """
+    data = request.get_json() or {}
+    path = (data.get("path") or "").strip()
+    heading = (data.get("heading") or "").strip()
+    level = int(data.get("level") or 0)
+    excerpt = (data.get("excerpt") or "").strip()
+    mode = (data.get("mode") or "teach").strip()
+
+    if not _is_sop_path_allowed(path):
+        return jsonify({"ok": False, "message": "File not found"}), 404
+    if not excerpt:
+        return jsonify({"ok": False, "message": "Missing excerpt"}), 400
+
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    try:
+        from dashboard.sop_explainer import explain_sop_excerpt
+
+        result = explain_sop_excerpt(
+            repo_root=repo_root,
+            sop_path=path,
+            heading=heading,
+            level=level,
+            excerpt=excerpt,
+            mode=mode,
+        )
+        status_code = 200 if result.get("ok") else 400
+        return jsonify(result), status_code
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500

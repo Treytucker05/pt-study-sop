@@ -2,6 +2,7 @@ import Layout from "@/components/layout";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ChevronRight,
   ChevronDown,
@@ -20,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, SOPIndex, SOPGroup, SOPSection, SOPItem } from "@/lib/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { SopBreakdownPanel } from "@/components/SopBreakdownPanel";
 
 interface TreeItemProps {
   item: SOPItem;
@@ -168,6 +170,7 @@ export default function Tutor() {
   const searchString = useSearch();
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [copiedType, setCopiedType] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"content" | "breakdown">("content");
 
   // Parse path from URL query string
   useEffect(() => {
@@ -194,6 +197,7 @@ export default function Tutor() {
   // Handle file selection
   const handleSelect = useCallback((path: string) => {
     setSelectedPath(path);
+    setActiveTab("content");
     // Update URL without navigation
     const newUrl = `/tutor?path=${encodeURIComponent(path)}`;
     window.history.pushState({}, "", newUrl);
@@ -334,68 +338,100 @@ export default function Tutor() {
             )}
           </div>
 
-          {/* Content Area */}
-          <ScrollArea className="flex-1">
-            <div className="p-6">
-              {!selectedPath ? (
-                <div className="text-center py-12 font-terminal text-muted-foreground">
-                  <Folder className="w-12 h-12 mx-auto mb-4 text-primary/50" />
-                  <p>SELECT A FILE FROM THE TREE</p>
-                  <p className="text-xs mt-2">Browse your Study Operating Procedures</p>
+          {/* Content / Breakdown Tabs */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col">
+            <TabsList className="bg-black/60 border-b border-secondary rounded-none p-1 w-full justify-start">
+              <TabsTrigger
+                value="content"
+                className="rounded-none font-arcade text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black px-3"
+              >
+                CONTENT
+              </TabsTrigger>
+              <TabsTrigger
+                value="breakdown"
+                className="rounded-none font-arcade text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black px-3"
+                disabled={!fileData?.content}
+              >
+                BREAKDOWN
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="content" className="flex-1 overflow-hidden mt-0">
+              <ScrollArea className="h-full">
+                <div className="p-6">
+                  {!selectedPath ? (
+                    <div className="text-center py-12 font-terminal text-muted-foreground">
+                      <Folder className="w-12 h-12 mx-auto mb-4 text-primary/50" />
+                      <p>SELECT A FILE FROM THE TREE</p>
+                      <p className="text-xs mt-2">Browse your Study Operating Procedures</p>
+                    </div>
+                  ) : fileLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                  ) : fileError ? (
+                    <div className="text-red-500 font-terminal">
+                      Failed to load file: {selectedPath}
+                    </div>
+                  ) : fileData?.content ? (
+                    <article className="prose prose-invert prose-primary max-w-none font-terminal text-sm leading-relaxed
+                      prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-secondary/50 prose-headings:pb-2
+                      prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                      prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline
+                      prose-code:bg-secondary/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-primary
+                      prose-pre:bg-black/50 prose-pre:border prose-pre:border-secondary
+                      prose-ul:list-disc prose-ol:list-decimal
+                      prose-li:marker:text-primary
+                      prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground
+                      prose-table:border-collapse prose-th:border prose-th:border-secondary prose-th:bg-secondary/20 prose-th:p-2
+                      prose-td:border prose-td:border-secondary prose-td:p-2
+                    ">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          // Add IDs to headings for anchor scrolling
+                          h1: ({ children, ...props }) => {
+                            const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                            return <h1 id={id} {...props}>{children}</h1>;
+                          },
+                          h2: ({ children, ...props }) => {
+                            const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                            return <h2 id={id} {...props}>{children}</h2>;
+                          },
+                          h3: ({ children, ...props }) => {
+                            const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                            return <h3 id={id} {...props}>{children}</h3>;
+                          },
+                          h4: ({ children, ...props }) => {
+                            const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                            return <h4 id={id} {...props}>{children}</h4>;
+                          },
+                        }}
+                      >
+                        {fileData.content}
+                      </ReactMarkdown>
+                    </article>
+                  ) : (
+                    <div className="text-muted-foreground font-terminal">
+                      No content available
+                    </div>
+                  )}
                 </div>
-              ) : fileLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-              ) : fileError ? (
-                <div className="text-red-500 font-terminal">
-                  Failed to load file: {selectedPath}
-                </div>
-              ) : fileData?.content ? (
-                <article className="prose prose-invert prose-primary max-w-none font-terminal text-sm leading-relaxed
-                  prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-secondary/50 prose-headings:pb-2
-                  prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
-                  prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline
-                  prose-code:bg-secondary/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-primary
-                  prose-pre:bg-black/50 prose-pre:border prose-pre:border-secondary
-                  prose-ul:list-disc prose-ol:list-decimal
-                  prose-li:marker:text-primary
-                  prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground
-                  prose-table:border-collapse prose-th:border prose-th:border-secondary prose-th:bg-secondary/20 prose-th:p-2
-                  prose-td:border prose-td:border-secondary prose-td:p-2
-                ">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      // Add IDs to headings for anchor scrolling
-                      h1: ({ children, ...props }) => {
-                        const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-                        return <h1 id={id} {...props}>{children}</h1>;
-                      },
-                      h2: ({ children, ...props }) => {
-                        const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-                        return <h2 id={id} {...props}>{children}</h2>;
-                      },
-                      h3: ({ children, ...props }) => {
-                        const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-                        return <h3 id={id} {...props}>{children}</h3>;
-                      },
-                      h4: ({ children, ...props }) => {
-                        const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-                        return <h4 id={id} {...props}>{children}</h4>;
-                      },
-                    }}
-                  >
-                    {fileData.content}
-                  </ReactMarkdown>
-                </article>
-              ) : (
-                <div className="text-muted-foreground font-terminal">
-                  No content available
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="breakdown" className="flex-1 overflow-hidden mt-0">
+              <div className="h-full p-4">
+                {selectedPath && fileData?.content ? (
+                  <SopBreakdownPanel path={selectedPath} content={fileData.content} />
+                ) : (
+                  <div className="font-terminal text-xs text-muted-foreground p-3">
+                    Select a SOP file first.
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
 
           {/* Footer with path info */}
           {selectedPath && (
