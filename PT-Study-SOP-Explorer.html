@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PT Study SOP — Interactive Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            gap: 2px;
+        }
+
+        .controls {
+            width: 320px;
+            background: #161b22;
+            border-right: 1px solid #30363d;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .preview {
+            flex: 1;
+            background: #0d1117;
+            overflow: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section {
+            border-top: 1px solid #30363d;
+            padding-top: 12px;
+        }
+
+        .section:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        h3 {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8b949e;
+            margin-bottom: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            color: #c9d1d9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        input[type="checkbox"],
+        input[type="radio"] {
+            cursor: pointer;
+            accent-color: #58a6ff;
+        }
+
+        select, input[type="range"] {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        select:hover, input[type="range"]:hover {
+            border-color: #58a6ff;
+        }
+
+        button {
+            background: #238636;
+            border: 1px solid #3fb950;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #2ea043;
+        }
+
+        button.secondary {
+            background: transparent;
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+
+        button.secondary:hover {
+            background: #0e3a1f;
+        }
+
+        /* Flowchart Styles */
+        .flowchart-container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .hierarchy-level {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #0d1117;
+            border-left: 3px solid #58a6ff;
+            border-radius: 4px;
+        }
+
+        .hierarchy-level.hidden {
+            display: none;
+        }
+
+        .level-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .level-header:hover {
+            color: #58a6ff;
+        }
+
+        .toggle-icon {
+            display: inline-block;
+            transition: transform 0.2s;
+            font-size: 14px;
+        }
+
+        .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .level-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #79c0ff;
+        }
+
+        .level-badge {
+            display: inline-block;
+            background: #1f6feb;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .level-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-left: 20px;
+            transition: max-height 0.2s, opacity 0.2s;
+        }
+
+        .level-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .level-item {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #8b949e;
+            padding: 6px 8px;
+            background: #0d1117;
+            border-radius: 3px;
+            border-left: 2px solid #30363d;
+        }
+
+        .level-item strong {
+            color: #c9d1d9;
+        }
+
+        .concept-map {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1;
+            overflow: auto;
+        }
+
+        .node {
+            padding: 12px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .node:hover {
+            background: #161b22;
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+
+        .node.selected {
+            background: #1f6feb;
+            border-color: #58a6ff;
+            color: #fff;
+        }
+
+        .node-title {
+            font-weight: 600;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .node-desc {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .connection-line {
+            height: 20px;
+            border-left: 2px solid #30363d;
+            margin-left: 20px;
+        }
+
+        .prompt-output {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .prompt-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8b949e;
+        }
+
+        .prompt-text {
+            font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #79c0ff;
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 4px;
+            min-height: 60px;
+        }
+
+        .copy-button {
+            align-self: flex-start;
+        }
+
+        .copy-feedback {
+            font-size: 11px;
+            color: #3fb950;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .copy-feedback.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 1200px) {
+            .controls {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .controls {
+                width: 100%;
+                height: 40%;
+                border-right: none;
+                border-bottom: 1px solid #30363d;
+            }
+
+            .preview {
+                height: 60%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <div class="section">
+                <h3>View Mode</h3>
+                <div class="control-group">
+                    <label>
+                        <input type="radio" name="viewMode" value="hierarchy" checked>
+                        Hierarchy Levels
+                    </label>
+                    <label>
+                        <input type="radio" name="viewMode" value="conceptMap">
+                        Concept Map
+                    </label>
+                    <label>
+                        <input type="radio" name="viewMode" value="timeline">
+                        Session Timeline
+                    </label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Hierarchy Levels</h3>
+                <div class="control-group" id="levelToggles"></div>
+            </div>
+
+            <div class="section">
+                <h3>Presets</h3>
+                <div class="control-group">
+                    <button onclick="applyPreset('all')">Show All Levels</button>
+                    <button onclick="applyPreset('mapLoop')" class="secondary">MAP-LOOP-WRAP</button>
+                    <button onclick="applyPreset('learning')" class="secondary">Learning Cycles</button>
+                    <button onclick="applyPreset('rules')" class="secondary">Core Rules</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>Options</h3>
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="showDescriptions" checked>
+                        Show Descriptions
+                    </label>
+                    <label>
+                        <input type="checkbox" id="showRelations" checked>
+                        Show Relationships
+                    </label>
+                    <label>
+                        <input type="checkbox" id="compactView">
+                        Compact View
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview">
+            <div class="flowchart-container" id="hierarchyView"></div>
+            <div class="concept-map" id="conceptMapView" style="display: none;"></div>
+            <div class="flowchart-container" id="timelineView" style="display: none;"></div>
+            <div class="prompt-output">
+                <div class="prompt-label">Explorer Query</div>
+                <div class="prompt-text" id="promptText">Select levels to explore PT Study SOP architecture...</div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="copy-button" onclick="copyPrompt()">Copy Query</button>
+                    <span class="copy-feedback" id="copyFeedback">Copied!</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data structure for PT Study SOP
+        const sopData = {
+            levels: [
+                {
+                    id: 1,
+                    title: "System Vision (North Star)",
+                    items: [
+                        "Durable Context — remembers across sessions",
+                        "End-to-End Study Flows — MAP → LOOP → WRAP",
+                        "RAG-First, Citation-First — grounded in learner's materials",
+                        "Spaced, High-Quality Anki Cards — source-tagged, deduplicated",
+                        "Deterministic Logging — every session produces a ledger",
+                        "No Phantom Outputs — if it didn't happen, we don't invent it"
+                    ]
+                },
+                {
+                    id: 2,
+                    title: "Lifecycle Phases (Session-Level)",
+                    items: [
+                        "MAP: M0 Planning + M1 Entry",
+                        "LOOP: M2 Prime + M3 Encode + M4 Build + M5 Modes",
+                        "WRAP: M6 Exit Ticket + Session Ledger"
+                    ]
+                },
+                {
+                    id: 3,
+                    title: "Learning Cycles (Cognitive)",
+                    items: [
+                        "PEIRRO (Macro): Prepare → Encode → Interrogate → Retrieve → Refine → Overlearn",
+                        "KWIK (Micro): Sound → Function → Image → Resonance → Lock"
+                    ]
+                },
+                {
+                    id: 4,
+                    title: "Content Engines (What to Teach)",
+                    items: [
+                        "Anatomy Engine: Bones → Landmarks → Attachments → Actions → Nerves → Arterial Supply → Clinical",
+                        "Concept Engine: Definition → Context → Mechanism → Differentiation → Application"
+                    ]
+                },
+                {
+                    id: 5,
+                    title: "Content Rules (How to Teach)",
+                    items: [
+                        "Source-Lock: All factual teaching grounded in learner's materials",
+                        "Seed-Lock: Learner attempts hooks first (ask-first rule)",
+                        "Function Before Structure: Teach what before how",
+                        "Level Gating: L2 teach-back must pass before L4 detail",
+                        "No Phantom Outputs: Never invent missing data"
+                    ]
+                },
+                {
+                    id: 6,
+                    title: "System Components (Architecture)",
+                    items: [
+                        "Tutor System: Enforces M0-M6, PEIRRO, KWIK, content engines",
+                        "RAG Subsystem: Indexes materials, returns snippets + citations",
+                        "Brain: Ingests session ledgers, produces JSON logs & resume",
+                        "Anki Bridge: Manages cards, dedupes, source-tags",
+                        "Planner/Dashboard: Coverage maps, spacing alerts, readiness scores"
+                    ]
+                },
+                {
+                    id: 7,
+                    title: "Data Schemas (Contracts)",
+                    items: [
+                        "Session Log v9.4: date, topic, mode, understanding, retention, calibration, RSR, artifacts",
+                        "RAG Document v1: id, source_path, text_chunks, image_captions, metadata",
+                        "Card v1: deck, guid, front, back, tags, source_refs",
+                        "Resume v1: readiness_score, topic_coverage, gaps, recommendations"
+                    ]
+                },
+                {
+                    id: 8,
+                    title: "Operating Modes (Session Behavior)",
+                    items: [
+                        "Core: Guided through Prime → Encode → Build (default for new material)",
+                        "Sprint: Test-first, teaches only on miss (exam prep)",
+                        "Light: Micro-session (10-15 min, 1-3 cards)",
+                        "Quick Sprint: Sprint compressed to 20-30 min (mandatory wrap cards)",
+                        "Drill: Learner leads, AI spots gaps (repeated misses)"
+                    ]
+                },
+                {
+                    id: 9,
+                    title: "Material Ingestion (Pre-Session)",
+                    items: [
+                        "Select 1-3 LOs, source-lock, quick scan → 2-4 buckets",
+                        "Extract definitions, key mechanisms, 1 example + 1 boundary",
+                        "Capture diagram with labels, draft 5-10 retrieval prompts",
+                        "Format into Tutor-Ready Packet"
+                    ]
+                },
+                {
+                    id: 10,
+                    title: "Weekly Planning & Spacing",
+                    items: [
+                        "3+2 Rotation: Study 3 classes → review 2 weakest anchors",
+                        "Progress Tracker: Status (Not started → In progress → Needs review → Solid)",
+                        "Rule: Solid = retrieval success on 2 separate sessions"
+                    ]
+                },
+                {
+                    id: 11,
+                    title: "Evidence Guardrails & No-Skip Rules",
+                    items: [
+                        "Prevent overclaiming: No numeric forgetting curves, no '2x' guarantees",
+                        "10 No-Skip Items: M0 Planning, Source-Lock, Seed-Lock, Level Gating, PEIRRO Cycle, Exit Ticket, Session Ledger, No Phantoms, Evidence Nuance, Function-First"
+                    ]
+                }
+            ]
+        };
+
+        // State
+        const state = {
+            viewMode: 'hierarchy',
+            visibleLevels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            showDescriptions: true,
+            showRelations: true,
+            compactView: false,
+            selectedNode: null
+        };
+
+        // Initialize
+        function init() {
+            renderLevelToggles();
+            attachEventListeners();
+            updateAll();
+        }
+
+        function renderLevelToggles() {
+            const container = document.getElementById('levelToggles');
+            container.innerHTML = sopData.levels.map(level => `
+                <label>
+                    <input type="checkbox" value="${level.id}" checked onchange="toggleLevel(${level.id})">
+                    L${level.id}: ${level.title.split('(')[0].trim()}
+                </label>
+            `).join('');
+        }
+
+        function toggleLevel(id) {
+            const idx = state.visibleLevels.indexOf(id);
+            if (idx > -1) {
+                state.visibleLevels.splice(idx, 1);
+            } else {
+                state.visibleLevels.push(id);
+                state.visibleLevels.sort((a, b) => a - b);
+            }
+            updateAll();
+        }
+
+        function applyPreset(preset) {
+            switch (preset) {
+                case 'all':
+                    state.visibleLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+                    break;
+                case 'mapLoop':
+                    state.visibleLevels = [1, 2, 3, 5];
+                    break;
+                case 'learning':
+                    state.visibleLevels = [2, 3, 4, 5];
+                    break;
+                case 'rules':
+                    state.visibleLevels = [5, 6, 11];
+                    break;
+            }
+            updateCheckboxes();
+            updateAll();
+        }
+
+        function updateCheckboxes() {
+            document.querySelectorAll('#levelToggles input[type="checkbox"]').forEach(cb => {
+                cb.checked = state.visibleLevels.includes(parseInt(cb.value));
+            });
+        }
+
+        function attachEventListeners() {
+            document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    state.viewMode = e.target.value;
+                    updateAll();
+                });
+            });
+
+            document.getElementById('showDescriptions').addEventListener('change', (e) => {
+                state.showDescriptions = e.target.checked;
+                updateAll();
+            });
+
+            document.getElementById('showRelations').addEventListener('change', (e) => {
+                state.showRelations = e.target.checked;
+                updateAll();
+            });
+
+            document.getElementById('compactView').addEventListener('change', (e) => {
+                state.compactView = e.target.checked;
+                updateAll();
+            });
+        }
+
+        function updateAll() {
+            if (state.viewMode === 'hierarchy') {
+                renderHierarchy();
+            } else if (state.viewMode === 'conceptMap') {
+                renderConceptMap();
+            } else if (state.viewMode === 'timeline') {
+                renderTimeline();
+            }
+            updatePrompt();
+        }
+
+        function renderHierarchy() {
+            const view = document.getElementById('hierarchyView');
+            const conceptMapView = document.getElementById('conceptMapView');
+            const timelineView = document.getElementById('timelineView');
+
+            view.style.display = 'flex';
+            conceptMapView.style.display = 'none';
+            timelineView.style.display = 'none';
+
+            view.innerHTML = sopData.levels
+                .filter(level => state.visibleLevels.includes(level.id))
+                .map(level => `
+                    <div class="hierarchy-level">
+                        <div class="level-header" onclick="toggleLevel${level.id}(this)">
+                            <span class="toggle-icon">▼</span>
+                            <span class="level-badge">L${level.id}</span>
+                            <span class="level-title">${level.title}</span>
+                        </div>
+                        <div class="level-content" id="level-${level.id}-content">
+                            ${level.items.map(item => `
+                                <div class="level-item">${item}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('');
+
+            // Attach toggle handlers
+            sopData.levels.forEach(level => {
+                window[`toggleLevel${level.id}`] = function(header) {
+                    const content = document.getElementById(`level-${level.id}-content`);
+                    const icon = header.querySelector('.toggle-icon');
+                    content.classList.toggle('collapsed');
+                    icon.classList.toggle('collapsed');
+                };
+            });
+        }
+
+        function renderConceptMap() {
+            const view = document.getElementById('hierarchyView');
+            const conceptMapView = document.getElementById('conceptMapView');
+            const timelineView = document.getElementById('timelineView');
+
+            view.style.display = 'none';
+            conceptMapView.style.display = 'flex';
+            timelineView.style.display = 'none';
+
+            const nodes = [
+                { id: 'vision', title: 'PT Study OS Vision', desc: 'Durable, RAG-first, no phantoms', levels: [1] },
+                { id: 'map', title: 'MAP Phase', desc: 'M0-M1: Planning & Entry', levels: [2] },
+                { id: 'loop', title: 'LOOP Phase', desc: 'M2-M5: Active Learning', levels: [2] },
+                { id: 'wrap', title: 'WRAP Phase', desc: 'M6: Close & Schedule', levels: [2] },
+                { id: 'peirro', title: 'PEIRRO Cycle', desc: '6-phase learning backbone', levels: [3] },
+                { id: 'kwik', title: 'KWIK Flow', desc: '5-step encoding hooks', levels: [3] },
+                { id: 'anatomy', title: 'Anatomy Engine', desc: 'OIANA+ sequence', levels: [4] },
+                { id: 'concept', title: 'Concept Engine', desc: '5-step definition', levels: [4] },
+                { id: 'rules', title: 'Core Rules', desc: '10 no-skip invariants', levels: [5, 11] },
+                { id: 'components', title: 'System Components', desc: 'Tutor, RAG, Brain, Anki, Dashboard', levels: [6] },
+                { id: 'schemas', title: 'Data Schemas', desc: 'Session Log, RAG Doc, Card, Resume', levels: [7] },
+                { id: 'modes', title: 'Operating Modes', desc: 'Core, Sprint, Light, Drill', levels: [8] }
+            ];
+
+            // Filter nodes based on visible levels
+            const visibleNodes = nodes.filter(n =>
+                n.levels.some(level => state.visibleLevels.includes(level))
+            );
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+
+            visibleNodes.forEach(node => {
+                html += `
+                    <div class="node ${state.selectedNode === node.id ? 'selected' : ''}"
+                         onclick="selectNode('${node.id}')">
+                        <div class="node-title">${node.title}</div>
+                        <div class="node-desc">${node.desc}</div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            conceptMapView.innerHTML = html;
+
+            window.selectNode = function(id) {
+                state.selectedNode = state.selectedNode === id ? null : id;
+                updateAll();
+            };
+        }
+
+        function renderTimeline() {
+            const view = document.getElementById('hierarchyView');
+            const conceptMapView = document.getElementById('conceptMapView');
+            const timelineView = document.getElementById('timelineView');
+
+            view.style.display = 'none';
+            conceptMapView.style.display = 'none';
+            timelineView.style.display = 'flex';
+
+            const timeline = [
+                { time: 'M0', name: 'Planning', desc: 'Declare target, sources, plan, pre-test' },
+                { time: 'M1', name: 'Entry', desc: 'State check, scope, mode selection' },
+                { time: 'M2', name: 'Prime', desc: 'H1 scan, bucket, select first' },
+                { time: 'M3', name: 'Encode', desc: 'KWIK flow: Sound→Function→Image→Resonance→Lock' },
+                { time: 'M4', name: 'Build', desc: 'Teach-back gate, progressive ladder' },
+                { time: 'M5', name: 'Modes', desc: 'Apply mode behavior (Core/Sprint/Light/etc)' },
+                { time: 'M6', name: 'Wrap', desc: 'Exit Ticket + Session Ledger' }
+            ];
+
+            const html = `<div style="display: flex; flex-direction: column; gap: 16px;">
+                ${timeline.map((item, idx) => `
+                    <div style="display: flex; gap: 16px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 50px;">
+                            <div style="background: #1f6feb; color: white; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 600; font-size: 12px;">${item.time}</div>
+                            ${idx < timeline.length - 1 ? '<div style="width: 2px; flex: 1; background: #30363d;"></div>' : ''}
+                        </div>
+                        <div style="flex: 1; padding-top: 4px;">
+                            <div style="font-weight: 600; color: #79c0ff; font-size: 13px;">${item.name}</div>
+                            <div style="font-size: 12px; color: #8b949e; margin-top: 4px;">${item.desc}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>`;
+
+            timelineView.innerHTML = html;
+        }
+
+        function updatePrompt() {
+            const visibleCount = state.visibleLevels.length;
+            const levelNames = state.visibleLevels
+                .map(id => {
+                    const level = sopData.levels.find(l => l.id === id);
+                    return `L${id} (${level.title.split('(')[0].trim()})`;
+                })
+                .join(', ');
+
+            const modeText = state.viewMode === 'hierarchy' ? 'hierarchical'
+                           : state.viewMode === 'conceptMap' ? 'concept map'
+                           : 'session timeline';
+
+            const prompt = `Show me ${visibleCount} levels of the PT Study SOP as a ${modeText}: ${levelNames}.`;
+
+            document.getElementById('promptText').textContent = prompt;
+        }
+
+        function copyPrompt() {
+            const text = document.getElementById('promptText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const feedback = document.getElementById('copyFeedback');
+                feedback.classList.add('show');
+                setTimeout(() => feedback.classList.remove('show'), 2000);
+            });
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

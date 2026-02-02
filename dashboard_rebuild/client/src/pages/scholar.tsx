@@ -193,7 +193,7 @@ export default function Scholar() {
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-140px)] flex flex-col gap-6">
+      <div className="min-h-[calc(100vh-140px)] flex flex-col gap-6">
 
          {/* Header */}
          <div className="space-y-4 shrink-0">
@@ -221,8 +221,8 @@ export default function Scholar() {
          </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+        <div className="flex-1">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
             <TabsList className="bg-black/60 border border-secondary rounded-none p-1 shrink-0 w-full justify-start overflow-x-auto">
               {[
                 { id: 'summary', label: 'SUMMARY', icon: TrendingUp },
@@ -243,7 +243,7 @@ export default function Scholar() {
             </TabsList>
 
             {/* SCHOLAR SUMMARY TAB */}
-            <TabsContent value="summary" className="flex-1 overflow-hidden mt-6">
+            <TabsContent value="summary" className="flex-1 mt-6">
               {/* Scholar run flow strip */}
               <Card className="bg-black/40 border border-secondary/60 rounded-none mb-4">
                 <CardContent className="p-3">
@@ -295,9 +295,9 @@ export default function Scholar() {
                 </Card>
               )}
 
-              <div className="grid lg:grid-cols-3 gap-6 h-full">
+              <div className="grid lg:grid-cols-3 gap-6">
                 {/* Left: Summary Cards */}
-                <div className="lg:col-span-2 space-y-4 overflow-auto pr-2">
+                <div className="lg:col-span-2 space-y-4 pr-2">
                   {/* Study Health Overview */}
                   <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
                     <CardHeader className="p-4 border-b border-primary/30">
@@ -421,14 +421,14 @@ export default function Scholar() {
                 </div>
 
                 {/* Right: Chat Interface */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none flex flex-col h-full">
-                  <CardHeader className="p-3 border-b border-secondary shrink-0">
+                <Card className="bg-black/40 border-2 border-secondary rounded-none flex flex-col">
+                  <CardHeader className="p-3 border-b border-secondary shrink-0 sticky top-0 bg-black/95 z-10">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" /> ASK SCHOLAR
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
-                    <ScrollArea className="flex-1 p-3">
+                  <CardContent className="p-0 flex-1 flex flex-col">
+                    <ScrollArea className="flex-1 p-3 min-h-[400px]">
                       <div className="space-y-3">
                         {chatMessages.length === 0 && (
                           <div className="text-center py-8">
@@ -515,8 +515,7 @@ export default function Scholar() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4">
-                          <ScrollArea className="h-[300px]">
-                            <div className="space-y-3">
+                          <div className="space-y-3">
                               {tutorAuditData.length === 0 ? (
                                 <p className="font-terminal text-xs text-muted-foreground">No audit data available</p>
                               ) : (
@@ -538,7 +537,6 @@ export default function Scholar() {
                                 ))
                               )}
                             </div>
-                          </ScrollArea>
                         </CardContent>
                       </Card>
 
@@ -627,25 +625,23 @@ export default function Scholar() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4">
-                          <ScrollArea className="h-[300px]">
-                            <div className="space-y-4">
-                              {openQuestions.map((q) => (
-                                <div key={q.id} className="p-3 bg-primary/5 border border-primary/30">
-                                  <p className="font-terminal text-sm mb-3">{q.question}</p>
-                                  <div className="space-y-2 text-xs">
-                                    <div className="flex gap-2">
-                                      <span className="text-muted-foreground shrink-0">Context:</span>
-                                      <span>{q.context}</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <span className="text-muted-foreground shrink-0">Data Gap:</span>
-                                      <span>{q.dataInsufficient}</span>
-                                    </div>
+                          <div className="space-y-4">
+                            {openQuestions.map((q) => (
+                              <div key={q.id} className="p-3 bg-primary/5 border border-primary/30">
+                                <p className="font-terminal text-sm mb-3">{q.question}</p>
+                                <div className="space-y-2 text-xs">
+                                  <div className="flex gap-2">
+                                    <span className="text-muted-foreground shrink-0">Context:</span>
+                                    <span>{q.context}</span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <span className="text-muted-foreground shrink-0">Data Gap:</span>
+                                    <span>{q.dataInsufficient}</span>
                                   </div>
                                 </div>
-                              ))}
-                            </div>
-                          </ScrollArea>
+                              </div>
+                            ))}
+                          </div>
                         </CardContent>
                       </Card>
                     </div>
@@ -669,9 +665,8 @@ export default function Scholar() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4">
-                          <ScrollArea className="h-[300px]">
-                            <div className="space-y-4">
-                              {scholarFindings.map((finding, i) => (
+                          <div className="space-y-4">
+                            {scholarFindings.map((finding, i) => (
                                 <div key={i} className="p-3 bg-black/40 border border-secondary/50">
                                   <div className="flex items-center gap-2 mb-2">
                                     <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
@@ -684,8 +679,7 @@ export default function Scholar() {
                                   <p className="font-terminal text-sm">{finding.observation}</p>
                                 </div>
                               ))}
-                            </div>
-                          </ScrollArea>
+                          </div>
                         </CardContent>
                       </Card>
 
@@ -697,9 +691,8 @@ export default function Scholar() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="p-4">
-                          <ScrollArea className="h-[300px]">
-                            <div className="space-y-4">
-                              {researchFindings.map((finding, i) => (
+                          <div className="space-y-4">
+                            {researchFindings.map((finding, i) => (
                                 <div key={i} className="p-3 bg-black/40 border border-secondary/50">
                                   <div className="font-arcade text-xs text-primary mb-2">{finding.topic ?? finding.title}</div>
                                   <p className="font-terminal text-xs mb-2">{finding.summary ?? finding.content}</p>
@@ -708,8 +701,7 @@ export default function Scholar() {
                                   </div>
                                 </div>
                               ))}
-                            </div>
-                          </ScrollArea>
+                          </div>
                         </CardContent>
                       </Card>
                     </div>
@@ -737,8 +729,7 @@ export default function Scholar() {
                       Clustering works best after you have a healthy volume of sessions and findings. Use it to spot
                       recurring themes that might deserve their own proposals.
                     </p>
-                    <ScrollArea className="h-[300px]">
-                      <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid md:grid-cols-2 gap-4">
                         {clustersData?.clusters?.length === 0 ? (
                           <p className="font-terminal text-xs text-muted-foreground col-span-2">No clusters yet. Run clustering to analyze.</p>
                         ) : (
@@ -764,7 +755,6 @@ export default function Scholar() {
                           ))
                         )}
                       </div>
-                    </ScrollArea>
                   </CardContent>
                 </Card>
 
@@ -803,8 +793,7 @@ export default function Scholar() {
                   </p>
                 </CardHeader>
                 <CardContent className="p-4">
-                  <ScrollArea className="h-[500px]">
-                    <div className="space-y-4">
+                  <div className="space-y-4">
                       {proposals.length === 0 ? (
                         <div className="text-center py-8">
                           <p className="font-arcade text-xs text-primary mb-2">NO PROPOSALS YET</p>
@@ -864,8 +853,7 @@ export default function Scholar() {
                           </div>
                         ))
                       )}
-                    </div>
-                  </ScrollArea>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -885,8 +873,7 @@ export default function Scholar() {
                     Read-only log of every Scholar proposal and its final status. Use this to see what has already
                     been tried and decided before creating new changes.
                   </p>
-                  <ScrollArea className="h-[500px]">
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                       {proposals.length === 0 ? (
                         <div className="text-center py-8">
                           <p className="font-arcade text-xs text-primary mb-2">NO HISTORY YET</p>
@@ -915,8 +902,7 @@ export default function Scholar() {
                           </div>
                         ))
                       )}
-                    </div>
-                  </ScrollArea>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

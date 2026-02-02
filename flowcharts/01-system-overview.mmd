@@ -1,0 +1,50 @@
+%% PT Study SOP - System Overview Flowchart
+%% Shows the complete system architecture and data flow
+
+flowchart TD
+    Start([Learner]) -->|Study Request + Materials| IngestionCheck{Materials<br/>Ready?}
+
+    IngestionCheck -->|No| Ingest["Material Ingestion<br/>(15 min timebox)<br/>- Select LOs<br/>- Source-lock<br/>- Draft buckets<br/>- Extract definitions<br/>- Create Tutor-Ready Packet"]
+    Ingest --> Packet["Tutor-Ready Packet<br/>(LOs, sources, buckets,<br/>glossary, mechanisms)"]
+    IngestionCheck -->|Yes| Packet
+
+    Packet -->|Input| Tutor["TUTOR SYSTEM<br/>(Custom GPT)<br/><br/>Enforces:<br/>- M0-M6 Session Flow<br/>- PEIRRO Cycle<br/>- KWIK Encoding<br/>- Content Engines<br/>- All Core Rules"]
+
+    Tutor -->|Queries| RAG["RAG SUBSYSTEM<br/>(NotebookLM)<br/><br/>- Text chunks<br/>- Image captions<br/>- Citations<br/>- Source-lock compliance"]
+
+    RAG -->|Returns| RAGResult["Snippets +<br/>Citations<br/>(UNVERIFIED if<br/>no sources)"]
+    RAGResult -->|Grounds Teaching| Tutor
+
+    Tutor -->|Session Execution| Session["SESSION FLOW<br/>- MAP: M0 Planning + M1 Entry<br/>- LOOP: M2 Prime + M3 Encode +<br/>  M4 Build + M5 Modes<br/>- WRAP: M6 Exit Ticket +<br/>  Session Ledger"]
+
+    Session -->|Creates| Cards["Anki Cards<br/>(if created)"]
+    Session -->|Outputs| Ledger["Exit Ticket +<br/>Session Ledger<br/>(text, NOT JSON)<br/>- covered<br/>- weak_anchors<br/>- artifacts_created<br/>- timebox_min"]
+
+    Cards -->|Source-tagged| AnkiBridge["ANKI BRIDGE<br/>- Dedupe by deck+guid<br/>- Add/update cards<br/>- Offline fallback"]
+    AnkiBridge -->|Syncs| Anki["Anki Desktop<br/>User reviews<br/>on schedule"]
+
+    Ledger -->|Text Input| Brain["BRAIN<br/>(Ingestion + Storage)<br/><br/>- Session Ledger → JSON<br/>  (via ingestion prompts)<br/>- Stores: logs, progress,<br/>  resume data<br/>- Produces: readiness score,<br/>  gaps, recommendations"]
+
+    Brain -->|Inputs| Dashboard["DASHBOARD / PLANNER<br/><br/>- Coverage maps<br/>- Spacing alerts<br/>- Readiness scores<br/>- Weekly plans<br/>- 3+2 rotation schedule"]
+
+    Brain -->|Progress Tracker| Progress["Progress Tracker<br/>(per topic)<br/>- Status: Not started →<br/>  In progress → Needs review<br/>  → Solid<br/>- Next action<br/>- Next review date"]
+
+    Dashboard -->|Next Session| NextSession["Next Session<br/>Recommendations"]
+    Progress -->|Weak Anchors| Interleave["Interleaving<br/>(M0 Planning)"]
+
+    NextSession --> Learner2["Learner<br/>Reviews Results"]
+    Learner2 -->|Resumes| Packet
+
+    Anki -->|Reviews| User["User Reviews Cards<br/>on Spacing Schedule"]
+    User -->|Learns| Learner2
+
+    Learner2 -->|Reads| Dashboard
+    Learner2 -->|Reads| Progress
+
+    style Start fill:#ff6b6b,stroke:#333,color:#fff
+    style Tutor fill:#4ecdc4,stroke:#333,color:#fff
+    style RAG fill:#95e1d3,stroke:#333,color:#000
+    style Brain fill:#f38181,stroke:#333,color:#fff
+    style Dashboard fill:#aa96da,stroke:#333,color:#fff
+    style Session fill:#fcbad3,stroke:#333,color:#000
+    style Anki fill:#ffffd2,stroke:#333,color:#000

@@ -1,7 +1,6 @@
 import Layout from "@/components/layout";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ChevronRight,
@@ -166,6 +165,157 @@ function CopyButton({
   );
 }
 
+const CONCEPT_MAP_CONTENT = `╔══════════════════════════════════════════════════════════════════════════════╗
+║                    PT STUDY OS — CONCEPT MAP                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+                         ┌─────────────────────────┐
+                         │  PT Study OS Vision     │
+                         │  ──────────────────     │
+                         │ • Durable Context       │
+                         │ • End-to-End Flows      │
+                         │ • RAG-First             │
+                         │ • Spaced Cards          │
+                         │ • No Phantoms           │
+                         └────────┬────────────────┘
+                                  │
+                ┌─────────────────┼─────────────────┐
+                ▼                 ▼                 ▼
+        ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+        │  MAP Phase   │  │  LOOP Phase  │  │  WRAP Phase  │
+        │ ──────────   │  │ ────────────  │  │ ────────────  │
+        │ M0 Planning  │  │ M2 Prime     │  │ M6 Wrap      │
+        │ M1 Entry     │  │ M3 Encode    │  │ Exit Ticket  │
+        │              │  │ M4 Build     │  │ Session      │
+        │              │  │ M5 Modes     │  │ Ledger       │
+        └──────────────┘  └──────┬───────┘  └──────────────┘
+                                  │
+                    ┌─────────────┼─────────────┐
+                    ▼             ▼             ▼
+            ┌──────────────┐ ┌──────────┐ ┌──────────────┐
+            │ PEIRRO Cycle │ │ KWIK     │ │ Content      │
+            │ ──────────   │ │ Encoding │ │ Engines      │
+            │ Prepare      │ │ ──────   │ │ ────────     │
+            │ Encode ────┐ │ │ • Sound  │ │ • Anatomy    │
+            │ Interrogate│ │ │ • Func.  │ │ • Concept    │
+            │ Retrieve   │ │ │ • Image  │ │              │
+            │ Refine     │ │ │ • Reson. │ │              │
+            │ Overlearn  │ │ │ • Lock   │ │              │
+            └──────────────┘ └──────────┘ └──────────────┘
+                    │
+                    └─────────────────────┐
+                                          ▼
+                        ┌──────────────────────────────┐
+                        │   Core Rules (10 No-Skip)    │
+                        │ ────────────────────────────  │
+                        │ 1. M0 Planning (mandatory)    │
+                        │ 2. Source-Lock (invariant)    │
+                        │ 3. Seed-Lock (ask-first)      │
+                        │ 4. Level Gating (L2→L4)       │
+                        │ 5. PEIRRO Cycle (no skip)     │
+                        │ 6. Exit Ticket (mandatory)    │
+                        │ 7. Session Ledger (mand.)     │
+                        │ 8. No Phantoms (invariant)    │
+                        │ 9. Evidence Nuance            │
+                        │ 10. Function Before Struct.   │
+                        └──────────────────────────────┘
+
+                              SYSTEM FLOW
+                    ┌──────────────────────────────┐
+                    │   Material Ingestion         │
+                    │   (pre-session, if needed)   │
+                    │   → Tutor-Ready Packet       │
+                    └──────────────┬───────────────┘
+                                   ▼
+                    ┌──────────────────────────────┐
+                    │   TUTOR SYSTEM               │
+                    │   (Custom GPT)               │
+                    │ • Enforces M0-M6 flow        │
+                    │ • Runs PEIRRO cycle          │
+                    │ • KWIK encoding              │
+                    │ • Content engines            │
+                    └──────────────┬───────────────┘
+                                   │
+                ┌──────────────────┼──────────────┐
+                ▼                  ▼              ▼
+        ┌─────────────┐  ┌──────────┐  ┌──────────────┐
+        │ RAG System  │  │ Anki     │  │ Exit Ticket+ │
+        │ (source     │  │ Bridge   │  │ Session      │
+        │  lock)      │  │ (cards)  │  │ Ledger       │
+        └─────────────┘  └──────────┘  └───────┬──────┘
+                                                 │
+                                                 ▼
+                                    ┌────────────────────────┐
+                                    │ BRAIN (Ingestion)      │
+                                    │ • Parse Session Ledger │
+                                    │ • Generate JSON logs   │
+                                    │ • Store data           │
+                                    │ • Produce Resume       │
+                                    └────────────┬───────────┘
+                                                 │
+                                                 ▼
+                            ┌────────────────────────────────┐
+                            │ DASHBOARD / PLANNER            │
+                            │ • Coverage maps                │
+                            │ • Spacing alerts               │
+                            │ • Readiness scores             │
+                            │ • Weekly plans (3+2 rotation)  │
+                            │ • Next session recommendations │
+                            └────────────────────────────────┘
+
+                              DATA SCHEMAS
+        ┌─────────────┬─────────────┬──────────────┬────────────┐
+        │ Session Log │ RAG Doc     │ Card         │ Resume     │
+        │ ─────────── │ ────────    │ ────         │ ──────     │
+        │ • date      │ • id        │ • deck       │ • readiness│
+        │ • topic     │ • chunks    │ • front      │ • coverage │
+        │ • mode      │ • images    │ • back       │ • gaps     │
+        │ • duration  │ • metadata  │ • tags       │ • recs     │
+        │ • understanding          │ • source_refs│            │
+        │ • retention │ • Function-first glossary │            │
+        │ • RSR %     │ (ALL definitions)         │            │
+        │ • artifacts │                          │            │
+        └─────────────┴─────────────┴──────────────┴────────────┘
+
+
+                            OPERATING MODES
+        ┌──────────┬──────────┬──────────┬──────────┬──────────┐
+        │  Core    │  Sprint  │  Light   │  Quick   │  Drill   │
+        │ ──────── │ ──────── │ ──────── │ Sprint   │ ──────── │
+        │ Guided   │ Test-1st │ Micro    │ 20-30min │ Repeated │
+        │ w/       │ rapid    │ 10-15min │ burst    │ misses   │
+        │ scaffolds│ gap find │ 1-3 cards│ mand.    │ deep     │
+        │ Default  │ Exam prep│ Focused  │ wrap     │ practice │
+        │ new mat. │          │          │ cards    │ on weak   │
+        └──────────┴──────────┴──────────┴──────────┴──────────┘
+
+
+                      WEEKLY ROTATION (3+2)
+
+        Week Structure:
+        ┌──────────────────────────────────┐
+        │ Study 3 classes (1 session each)  │
+        │         ↓                         │
+        │ Review 2 weakest anchors (spaced) │
+        │         ↓                         │
+        │ Repeat cycle                      │
+        └──────────────────────────────────┘
+
+        Progress Status Progression:
+        Not Started → In Progress → Needs Review → Solid
+                                                    (2 retrieval ✓s)
+
+
+                      EVIDENCE GUARDRAILS
+        ┌─────────────────────────────────────────┐
+        │ Prevent Overclaiming:                   │
+        │ ✗ No numeric forgetting curves         │
+        │ ✗ No "2x" dual-coding guarantees       │
+        │ ✗ Zeigarnik effect ≠ memory guarantee  │
+        │ ✗ RSR thresholds are adaptive          │
+        │ ✗ Interleaving ≠ distributed practice  │
+        └─────────────────────────────────────────┘`;
+
 export default function Tutor() {
   const searchString = useSearch();
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -190,7 +340,13 @@ export default function Tutor() {
   // Fetch selected file content
   const { data: fileData, isLoading: fileLoading, error: fileError } = useQuery({
     queryKey: ["sop-file", selectedPath],
-    queryFn: () => selectedPath ? api.sop.getFile(selectedPath) : null,
+    queryFn: () => {
+      if (!selectedPath) return null;
+      if (selectedPath === "concept-map") {
+        return { content: CONCEPT_MAP_CONTENT };
+      }
+      return api.sop.getFile(selectedPath);
+    },
     enabled: !!selectedPath,
   });
 
@@ -264,18 +420,30 @@ export default function Tutor() {
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-140px)] flex flex-col md:flex-row gap-4">
+      <div className="min-h-[calc(100vh-140px)] flex flex-col md:flex-row gap-4">
 
         {/* Left Panel: Navigation Tree */}
         <aside className="w-full md:w-80 shrink-0">
-          <Card className="h-full bg-black/40 border-2 border-primary rounded-none flex flex-col">
-            <CardHeader className="border-b border-secondary p-3">
+          <Card className="min-h-[calc(100vh-140px)] bg-black/40 border-2 border-primary rounded-none flex flex-col">
+            <CardHeader className="border-b border-secondary p-3 sticky top-0 bg-black/95 z-10">
               <CardTitle className="font-arcade text-sm flex items-center gap-2">
                 <Folder className="w-4 h-4" /> SOP EXPLORER
               </CardTitle>
             </CardHeader>
-            <ScrollArea className="flex-1">
-              <div className="p-2">
+            <div className="flex-1">
+              <div className="p-2 space-y-2">
+                {/* Concept Map Button */}
+                <button
+                  onClick={() => handleSelect("concept-map")}
+                  className={cn(
+                    "w-full text-left p-2 text-sm font-arcade uppercase bg-secondary/20 hover:bg-secondary/30 flex items-center gap-2 transition-colors border-l-2 mb-2",
+                    selectedPath === "concept-map" ? "bg-primary/30 border-primary text-primary" : "border-primary/50"
+                  )}
+                >
+                  <Code className="w-4 h-4" />
+                  CONCEPT MAP
+                </button>
+
                 {indexLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -296,19 +464,23 @@ export default function Tutor() {
                   ))
                 ) : null}
               </div>
-            </ScrollArea>
+            </div>
           </Card>
         </aside>
 
         {/* Main Panel: Content Viewer */}
-        <Card className="flex-1 bg-black/60 border-2 border-primary rounded-none flex flex-col overflow-hidden">
+        <Card className="flex-1 bg-black/60 border-2 border-primary rounded-none flex flex-col">
           {/* Top Controls */}
-          <div className="border-b border-secondary p-3 flex items-center justify-between gap-2 bg-black/40">
+          <div className="border-b border-secondary p-3 flex items-center justify-between gap-2 bg-black/40 sticky top-0 z-10">
             <div className="font-arcade text-xs text-primary truncate">
               {selectedPath ? (
                 <span className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  {selectedTitle || selectedPath}
+                  {selectedPath === "concept-map" ? (
+                    <Code className="w-4 h-4" />
+                  ) : (
+                    <FileText className="w-4 h-4" />
+                  )}
+                  {selectedPath === "concept-map" ? "PT STUDY SOP — CONCEPT MAP" : (selectedTitle || selectedPath)}
                 </span>
               ) : (
                 <span className="text-muted-foreground">SELECT A FILE TO VIEW</span>
@@ -340,7 +512,7 @@ export default function Tutor() {
 
           {/* Content / Breakdown Tabs */}
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col">
-            <TabsList className="bg-black/60 border-b border-secondary rounded-none p-1 w-full justify-start">
+            <TabsList className="bg-black/60 border-b border-secondary rounded-none p-1 w-full justify-start sticky top-0 z-10">
               <TabsTrigger
                 value="content"
                 className="rounded-none font-arcade text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black px-3"
@@ -350,14 +522,14 @@ export default function Tutor() {
               <TabsTrigger
                 value="breakdown"
                 className="rounded-none font-arcade text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black px-3"
-                disabled={!fileData?.content}
+                disabled={!fileData?.content || selectedPath === "concept-map"}
               >
                 BREAKDOWN
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="content" className="flex-1 overflow-hidden mt-0">
-              <ScrollArea className="h-full">
+            <TabsContent value="content" className="flex-1 mt-0">
+              <div className="h-full">
                 <div className="p-6">
                   {!selectedPath ? (
                     <div className="text-center py-12 font-terminal text-muted-foreground">
@@ -374,54 +546,62 @@ export default function Tutor() {
                       Failed to load file: {selectedPath}
                     </div>
                   ) : fileData?.content ? (
-                    <article className="prose prose-invert prose-primary max-w-none font-terminal text-sm leading-relaxed
-                      prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-secondary/50 prose-headings:pb-2
-                      prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
-                      prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline
-                      prose-code:bg-secondary/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-primary
-                      prose-pre:bg-black/50 prose-pre:border prose-pre:border-secondary
-                      prose-ul:list-disc prose-ol:list-decimal
-                      prose-li:marker:text-primary
-                      prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground
-                      prose-table:border-collapse prose-th:border prose-th:border-secondary prose-th:bg-secondary/20 prose-th:p-2
-                      prose-td:border prose-td:border-secondary prose-td:p-2
-                    ">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          // Add IDs to headings for anchor scrolling
-                          h1: ({ children, ...props }) => {
-                            const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-                            return <h1 id={id} {...props}>{children}</h1>;
-                          },
-                          h2: ({ children, ...props }) => {
-                            const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-                            return <h2 id={id} {...props}>{children}</h2>;
-                          },
-                          h3: ({ children, ...props }) => {
-                            const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-                            return <h3 id={id} {...props}>{children}</h3>;
-                          },
-                          h4: ({ children, ...props }) => {
-                            const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-                            return <h4 id={id} {...props}>{children}</h4>;
-                          },
-                        }}
-                      >
-                        {fileData.content}
-                      </ReactMarkdown>
-                    </article>
+                    selectedPath === "concept-map" ? (
+                      <div className="p-6 overflow-auto h-full">
+                        <pre className="font-mono text-xs leading-relaxed text-primary whitespace-pre-wrap break-words bg-black/30 p-4 border border-secondary rounded">
+                          {fileData.content}
+                        </pre>
+                      </div>
+                    ) : (
+                      <article className="prose prose-invert prose-primary max-w-none font-terminal text-sm leading-relaxed
+                        prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-secondary/50 prose-headings:pb-2
+                        prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                        prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline
+                        prose-code:bg-secondary/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-primary
+                        prose-pre:bg-black/50 prose-pre:border prose-pre:border-secondary
+                        prose-ul:list-disc prose-ol:list-decimal
+                        prose-li:marker:text-primary
+                        prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground
+                        prose-table:border-collapse prose-th:border prose-th:border-secondary prose-th:bg-secondary/20 prose-th:p-2
+                        prose-td:border prose-td:border-secondary prose-td:p-2
+                      ">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            // Add IDs to headings for anchor scrolling
+                            h1: ({ children, ...props }) => {
+                              const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                              return <h1 id={id} {...props}>{children}</h1>;
+                            },
+                            h2: ({ children, ...props }) => {
+                              const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                              return <h2 id={id} {...props}>{children}</h2>;
+                            },
+                            h3: ({ children, ...props }) => {
+                              const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                              return <h3 id={id} {...props}>{children}</h3>;
+                            },
+                            h4: ({ children, ...props }) => {
+                              const id = String(children).toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+                              return <h4 id={id} {...props}>{children}</h4>;
+                            },
+                          }}
+                        >
+                          {fileData.content}
+                        </ReactMarkdown>
+                      </article>
+                    )
                   ) : (
                     <div className="text-muted-foreground font-terminal">
                       No content available
                     </div>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </TabsContent>
 
-            <TabsContent value="breakdown" className="flex-1 overflow-hidden mt-0">
-              <div className="h-full p-4">
+            <TabsContent value="breakdown" className="flex-1 mt-0">
+              <div className="p-4">
                 {selectedPath && fileData?.content ? (
                   <SopBreakdownPanel path={selectedPath} content={fileData.content} />
                 ) : (
@@ -437,7 +617,7 @@ export default function Tutor() {
           {selectedPath && (
             <div className="border-t border-secondary p-2 bg-black/40">
               <div className="text-[10px] font-mono text-muted-foreground truncate">
-                {selectedPath}
+                {selectedPath === "concept-map" ? "PT Study SOP — Concept Map (ASCII Visual)" : selectedPath}
               </div>
             </div>
           )}
