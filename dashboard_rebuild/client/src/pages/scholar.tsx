@@ -139,6 +139,11 @@ export default function Scholar() {
     .filter(s => s.issues && s.issues.length > 0)
     .flatMap(s => s.issues || []);
 
+  const hasConcerns =
+    coursesWithLowActivity.length > 0 ||
+    confusionTopics.length > 0 ||
+    unresolvedIssues.length > 0;
+
   // Handle chat submission - uses real Scholar API
   const handleChatSubmit = async () => {
     if (!chatInput.trim()) return;
@@ -223,6 +228,7 @@ export default function Scholar() {
                 { id: 'summary', label: 'SUMMARY', icon: TrendingUp },
                 { id: 'analysis', label: 'ANALYSIS', icon: Search },
                 { id: 'proposals', label: 'PROPOSALS', icon: Lightbulb },
+                { id: 'history', label: 'HISTORY', icon: History },
               ].map(tab => (
                 <TabsTrigger
                   key={tab.id}
@@ -238,6 +244,57 @@ export default function Scholar() {
 
             {/* SCHOLAR SUMMARY TAB */}
             <TabsContent value="summary" className="flex-1 overflow-hidden mt-6">
+              {/* Scholar run flow strip */}
+              <Card className="bg-black/40 border border-secondary/60 rounded-none mb-4">
+                <CardContent className="p-3">
+                  <div className="font-arcade text-[10px] text-secondary mb-2">
+                    SCHOLAR RUN: HIGH-LEVEL → ANALYSIS → DECISIONS
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-3 font-terminal text-[11px] text-muted-foreground">
+                    <div>
+                      <span className="text-primary font-semibold">1. Review study health</span>
+                      <p>Scan totals and recent activity for obvious gaps.</p>
+                    </div>
+                    <div>
+                      <span className="text-primary font-semibold">2. Dive into analysis</span>
+                      <p>Use Tutor audit, questions, and evidence to understand why.</p>
+                    </div>
+                    <div>
+                      <span className="text-primary font-semibold">3. Approve/track proposals</span>
+                      <p>Decide which changes to adopt and track over time.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Proposals banner when work is waiting */}
+              {proposals.length > 0 && (
+                <Card className="bg-black/60 border border-primary/70 rounded-none mb-4">
+                  <CardContent className="p-3 flex flex-col md:flex-row md:items-center gap-3 justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-primary" />
+                      <p className="font-terminal text-xs text-muted-foreground">
+                        You have{" "}
+                        <span className="text-primary">
+                          {proposals.filter(p => p.status !== "REJECTED").length} active Scholar proposal
+                          {proposals.filter(p => p.status !== "REJECTED").length === 1 ? "" : "s"}
+                        </span>{" "}
+                        waiting for a decision.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none font-arcade text-[10px] border-primary text-primary"
+                      onClick={() => setActiveTab("proposals")}
+                      data-testid="cta-review-proposals-from-summary"
+                    >
+                      GO TO PROPOSALS
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="grid lg:grid-cols-3 gap-6 h-full">
                 {/* Left: Summary Cards */}
                 <div className="lg:col-span-2 space-y-4 overflow-auto pr-2">
@@ -287,7 +344,10 @@ export default function Scholar() {
                             </li>
                           </>
                         ) : (
-                          <li className="text-muted-foreground">Insufficient data - need more sessions to identify patterns</li>
+                          <li className="text-muted-foreground">
+                            Insufficient data for strong conclusions. Aim for at least ~10 logged sessions
+                            (via the Dashboard Study Wheel) before trusting these patterns.
+                          </li>
                         )}
                       </ul>
                       <div className="mt-3 pt-3 border-t border-secondary/30">
@@ -326,9 +386,36 @@ export default function Scholar() {
                           </li>
                         )}
                         {coursesWithLowActivity.length === 0 && confusionTopics.length === 0 && unresolvedIssues.length === 0 && (
-                          <li className="text-muted-foreground">No significant concerns identified</li>
+                          <li className="text-muted-foreground">
+                            No significant concerns identified yet. Keep logging sessions; Scholar will surface issues
+                            here once patterns emerge.
+                          </li>
                         )}
                       </ul>
+                      {hasConcerns && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-none font-arcade text-[10px] border-primary text-primary"
+                            onClick={() => setActiveTab("analysis")}
+                            data-testid="cta-open-analysis-from-summary"
+                          >
+                            OPEN DETAILED ANALYSIS
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-none font-arcade text-[10px]"
+                            onClick={() => {
+                              window.location.href = "/brain";
+                            }}
+                            data-testid="cta-open-brain-from-summary"
+                          >
+                            REVIEW SESSIONS IN BRAIN
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
@@ -404,79 +491,13 @@ export default function Scholar() {
               </div>
             </TabsContent>
 
-            {/* TUTOR AUDIT TAB */}
-            <TabsContent value="audit" className="flex-1 overflow-auto mt-4">
-              <div className="grid lg:grid-cols-2 gap-4">
-                {/* Audit Questions */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="p-3 border-b border-secondary">
-                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <Search className="w-4 h-4" /> TUTOR BEHAVIOR AUDIT
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-4">
-                    <p className="font-terminal text-xs text-muted-foreground mb-4">
-                      Post-session analysis of Tutor interactions. No live Tutor access.
-                    </p>
-                    {[
-                      { q: "Was the Tutor source-aligned?", status: "pending" },
-                      { q: "Was cognitive load appropriate?", status: "concern" },
-                      { q: "Were confusions resolved or deferred?", status: "ok" },
-                      { q: "Did explanations correlate with outcomes?", status: "pending" },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 bg-black/40 border border-secondary/50">
-                        <span className="font-terminal text-xs">{item.q}</span>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "rounded-none text-[9px]",
-                            item.status === 'ok' ? 'border-primary text-primary' :
-                              item.status === 'concern' ? 'border-destructive text-destructive' :
-                                'border-secondary text-secondary-foreground'
-                          )}
-                        >
-                          {item.status.toUpperCase()}
-                        </Badge>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-
-                {/* Recurrent Issues */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="p-3 border-b border-secondary">
-                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" /> RECURRENT ISSUES
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {tutorAuditItems.map((item, i) => (
-                        <div key={i} className="p-3 bg-black/40 border border-secondary/50">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-terminal text-sm">{item.issue ?? "Unknown issue"}</span>
-                            <Badge variant="outline" className="rounded-none text-[9px] border-primary text-primary">
-                              x{item.frequency ?? 0}
-                            </Badge>
-                          </div>
-                          <div className="flex gap-1 flex-wrap">
-                            {(item.courses || []).map((course: string, j: number) => (
-                              <Badge key={j} variant="secondary" className="rounded-none text-[8px]">
-                                {course}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
             {/* ANALYSIS TAB - Consolidated from Audit, Questions, Evidence, Clusters */}
             <TabsContent value="analysis" className="flex-1 overflow-auto mt-4">
               <div className="space-y-4">
+                <p className="font-terminal text-[11px] text-muted-foreground">
+                  Scholar analysis walks from how Tutor behaved, to where issues cluster, to concrete questions and
+                  evidence. If something looks important here, expect or create a matching proposal on the next tab.
+                </p>
                 {/* Tutor Audit Section */}
                 <Card className="bg-black/40 border-2 border-secondary rounded-none">
                   <CardHeader className="p-3 border-b border-secondary">
@@ -562,6 +583,10 @@ export default function Scholar() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
+                    <p className="font-terminal text-[11px] text-muted-foreground mb-3">
+                      Scholar turns messy issues into tractable questions. Use this section to see what is still
+                      unanswered and where more Brain data or external research is needed.
+                    </p>
                     <div className="grid lg:grid-cols-2 gap-4">
                       {/* Pipeline Stages */}
                       <Card className="bg-black/40 border-2 border-secondary rounded-none">
@@ -708,6 +733,10 @@ export default function Scholar() {
                     </Button>
                   </CardHeader>
                   <CardContent className="p-4">
+                    <p className="font-terminal text-[11px] text-muted-foreground mb-3">
+                      Clustering works best after you have a healthy volume of sessions and findings. Use it to spot
+                      recurring themes that might deserve their own proposals.
+                    </p>
                     <ScrollArea className="h-[300px]">
                       <div className="grid md:grid-cols-2 gap-4">
                         {clustersData?.clusters?.length === 0 ? (
@@ -738,6 +767,20 @@ export default function Scholar() {
                     </ScrollArea>
                   </CardContent>
                 </Card>
+
+                {proposals.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none font-arcade text-[10px] mt-2"
+                      onClick={() => setActiveTab("proposals")}
+                      data-testid="cta-next-proposals-from-analysis"
+                    >
+                      NEXT: REVIEW PROPOSALS
+                    </Button>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -752,6 +795,11 @@ export default function Scholar() {
                   </CardTitle>
                   <p className="font-terminal text-[10px] text-muted-foreground mt-1">
                     No auto-implementation. All changes require user approval.
+                  </p>
+                  <p className="font-terminal text-[10px] text-muted-foreground mt-1">
+                    <span className="font-semibold text-primary">Status legend:</span>{" "}
+                    DRAFT = idea only, APPROVED = you intend to implement, IMPLEMENTED = change applied,
+                    REJECTED = explicitly declined.
                   </p>
                 </CardHeader>
                 <CardContent className="p-4">
@@ -782,8 +830,10 @@ export default function Scholar() {
 
                             {proposal.targetSystem && (
                               <div className="mb-3">
-                                <span className="text-[10px] text-muted-foreground">Target: </span>
-                                <Badge variant="secondary" className="rounded-none text-[9px]">{proposal.targetSystem}</Badge>
+                                <span className="text-[10px] text-muted-foreground">Target system: </span>
+                                <Badge variant="secondary" className="rounded-none text-[9px]">
+                                  {proposal.targetSystem}
+                                </Badge>
                               </div>
                             )}
 
@@ -831,6 +881,10 @@ export default function Scholar() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
+                  <p className="font-terminal text-[10px] text-muted-foreground mb-2">
+                    Read-only log of every Scholar proposal and its final status. Use this to see what has already
+                    been tried and decided before creating new changes.
+                  </p>
                   <ScrollArea className="h-[500px]">
                     <div className="space-y-2">
                       {proposals.length === 0 ? (
