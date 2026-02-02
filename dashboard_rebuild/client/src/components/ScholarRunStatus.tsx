@@ -23,7 +23,7 @@ export function ScholarRunStatus() {
   const { data: status, isLoading } = useQuery<ScholarStatus>({
     queryKey: ["scholarStatus"],
     queryFn: async () => {
-      const response = await fetch("/api/scholar");
+      const response = await fetch("/api/scholar/status");
       if (!response.ok) throw new Error("Failed to fetch Scholar status");
       return response.json();
     },
@@ -37,8 +37,16 @@ export function ScholarRunStatus() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ triggered_by: "ui" }),
       });
-      if (!response.ok) throw new Error("Failed to start Scholar run");
-      return response.json();
+      const payload = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
+      if (!response.ok) {
+        const msg =
+          (payload && (payload.message || payload.error)) ||
+          `Failed to start Scholar run (${response.status})`;
+        throw new Error(msg);
+      }
+      return payload;
     },
     onSuccess: () => {
       setPollingEnabled(true);
@@ -108,6 +116,15 @@ export function ScholarRunStatus() {
       <CardContent className="p-3 space-y-3">
         {/* Status Info */}
         <div className="space-y-2">
+          {runMutation.isError && (
+            <div className="p-2 bg-red-900/20 border border-red-500/50 rounded-none">
+              <div className="font-terminal text-[10px] text-red-400">Run Error:</div>
+              <div className="font-terminal text-[10px] text-red-300">
+                {(runMutation.error as Error)?.message || "Unknown error"}
+              </div>
+            </div>
+          )}
+
           {status?.running && (
             <>
               {status.current_step && (

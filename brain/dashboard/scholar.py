@@ -135,7 +135,10 @@ Respond with markdown formatting. Be concise and actionable.
 
 def cleanup_stale_pids() -> int:
     """
-    Scan orchestrator_runs for *.pid files and remove any where the process is no longer running.
+    Scan orchestrator_runs for stale lock markers and remove them:
+    - *.pid: removed if the referenced process is not running
+    - *.running: removed if it appears stale (older than a threshold)
+
     Returns count of cleaned up files.
     """
     repo_root = Path(__file__).parent.parent.parent.resolve()
@@ -145,6 +148,8 @@ def cleanup_stale_pids() -> int:
         return 0
     
     cleaned = 0
+    now = datetime.now()
+
     for pid_file in run_dir.glob("*.pid"):
         try:
             pid_txt = pid_file.read_text(encoding="utf-8").strip()
@@ -184,6 +189,24 @@ def cleanup_stale_pids() -> int:
             except Exception:
                 pass
     
+    # Clean up stale ".running" markers (multi-agent runs use these).
+    # If a marker is old enough, treat it as stale to avoid wedging the UI.
+    # Default threshold: 2 hours.
+    stale_seconds = 2 * 60 * 60
+    for running_file in run_dir.glob("*.running"):
+        try:
+            age_seconds = (now - datetime.fromtimestamp(running_file.stat().st_mtime)).total_seconds()
+            if age_seconds >= stale_seconds:
+                running_file.unlink()
+                cleaned += 1
+        except Exception:
+            # Best-effort cleanup
+            try:
+                running_file.unlink()
+                cleaned += 1
+            except Exception:
+                pass
+
     return cleaned
 
 
