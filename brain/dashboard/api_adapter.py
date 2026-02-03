@@ -241,6 +241,166 @@ def get_course_obsidian_folder(course_name: str) -> str | None:
     return None
 
 
+def _extract_title_from_notes(notes: str) -> str | None:
+    """Return the first H1 title from notes (line starting with '# ')."""
+    for line in notes.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("# "):
+            title = stripped[2:].strip()
+            if title:
+                return title
+    return None
+
+
+def _sanitize_filename(name: str) -> str:
+    """Sanitize a string for safe Obsidian filenames on Windows."""
+    cleaned = re.sub(r'[\\/:*?"<>|]', "", name)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned or "Study Notes"
+
+
+def _normalize_filename(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", name.lower())
+
+
+def _parse_module_number(title: str) -> str | None:
+    match = re.search(r"\bmodule\s+(\d+)\b", title, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    return None
+
+
+def _strip_module_prefix(title: str) -> str:
+    return re.sub(r"(?i)^\s*module\s*\d+\s*[:\-\u2013\u2014]*\s*", "", title).strip()
+
+
+def _find_existing_match(files: list[str], target_title: str, module_number: str | None) -> str | None:
+    target_norm = _normalize_filename(target_title)
+    module_token = f"module{module_number}" if module_number else None
+    for path in files:
+        if not isinstance(path, str):
+            continue
+        base = os.path.splitext(os.path.basename(path))[0]
+        base_norm = _normalize_filename(base)
+        if base_norm == target_norm:
+            return path
+    if module_token:
+        for path in files:
+            if not isinstance(path, str):
+                continue
+            base = os.path.splitext(os.path.basename(path))[0]
+            if module_token in _normalize_filename(base):
+                return path
+    return None
+
+
+def _build_destination_options(course_folder: str | None, title: str) -> dict:
+    today = datetime.now().strftime("%Y-%m-%d")
+    session_path = (
+        f"{course_folder}/Session-{today}.md" if course_folder else f"Inbox/Study-Log-{today}.md"
+    )
+
+    module_number = _parse_module_number(title)
+    base_title = _strip_module_prefix(title) if module_number else title
+    base_title = _sanitize_filename(base_title)
+    if module_number:
+        module_filename = f"Module {module_number} - {base_title}.md"
+    else:
+        module_filename = f"{base_title}.md"
+
+    module_path = f"{course_folder}/{module_filename}" if course_folder else None
+
+    files = []
+    if course_folder:
+        list_result = obsidian_list_files(course_folder)
+        if list_result.get("success"):
+            files = list_result.get("files") or []
+
+    existing_module = (
+        _find_existing_match(files, f"Module {module_number} - {base_title}" if module_number else base_title, module_number)
+        if files
+        else None
+    )
+
+    recommended_path = existing_module or module_path or session_path
+    recommended_label = (
+        "Recommended (existing module note)"
+        if existing_module
+        else "Recommended (new module note)"
+        if module_path
+        else "Recommended (session log)"
+    )
+
+    options = []
+    options.append(
+        {
+            "id": "recommended",
+            "label": recommended_label,
+            "path": recommended_path,
+            "kind": "recommended",
+            "exists": bool(existing_module),
+        }
+    )
+    if session_path and session_path != recommended_path:
+        options.append(
+            {
+                "id": "session",
+                "label": "Session log",
+                "path": session_path,
+                "kind": "session",
+                "exists": True,
+            }
+        )
+    if module_path and module_path != recommended_path:
+        options.append(
+            {
+                "id": "new-module",
+                "label": "Create new module note",
+                "path": module_path,
+                "kind": "new",
+                "exists": False,
+            }
+        )
+
+    if files:
+        other_files = [
+            path
+            for path in files
+            if isinstance(path, str)
+            and path.lower().endswith(".md")
+            and path not in {recommended_path, session_path}
+            and "session-" not in path.lower()
+        ]
+        for path in other_files[:5]:
+            options.append(
+                {
+                    "id": f"existing-{path}",
+                    "label": f"Existing: {os.path.basename(path)}",
+                    "path": path,
+                    "kind": "existing",
+                    "exists": True,
+                }
+            )
+
+    options.append(
+        {
+            "id": "custom",
+            "label": "Custom path...",
+            "path": "",
+            "kind": "custom",
+            "exists": False,
+        }
+    )
+
+    return {
+        "recommended_path": recommended_path,
+        "recommended_label": recommended_label,
+        "session_path": session_path,
+        "module_path": module_path,
+        "options": options,
+    }
+
+
 # Wrap optional imports to prevent crash if Scholar/Google libs missing
 try:
     from scholar.brain_reader import (
@@ -5710,6 +5870,110 @@ def get_llm_status():
         )
 
 
+@adapter_bp.route("/brain/organize-preview", methods=["POST"])
+def brain_organize_preview():
+    """Organize raw notes into structured markdown and suggest destination paths."""
+    import traceback
+    from llm_provider import call_llm
+
+    try:
+        data = request.get_json() or {}
+        raw_notes = data.get("rawNotes") or data.get("message") or ""
+        if not isinstance(raw_notes, str) or not raw_notes.strip():
+            return jsonify({"success": False, "error": "No notes provided."})
+
+        course = data.get("course") or get_current_course_name() or "General"
+        course_folder = get_course_obsidian_folder(course) if course else None
+        title_hint = _extract_title_from_notes(raw_notes) or "Study Notes"
+
+        system_prompt = """You are a study note organizer for a DPT (Doctor of Physical Therapy) student.
+Convert raw notes into a clean, structured Obsidian markdown note for review.
+
+Rules:
+- Preserve the user's meaning; do NOT add new facts.
+- Output markdown WITHOUT a top-level H1. Use H2/H3 headings only.
+- Use bullet lists for definitions, stats, and frameworks.
+- Include a "Recall Questions" section with 5-10 questions.
+- Use Obsidian wikilinks [[Like This]] for key concepts.
+- If CDC or WHO is mentioned, link them as [CDC](https://www.cdc.gov/) or [WHO](https://www.who.int/).
+- Provide a short review checklist (4-6 items).
+
+Return STRICT JSON only (no code fences, no extra text) with:
+{
+  "title": "string",
+  "markdown": "string",
+  "checklist": ["string", ...],
+  "suggested_links": ["string", ...]
+}
+"""
+
+        result = call_llm(
+            system_prompt=system_prompt,
+            user_prompt=f"Organize these notes:\n\n{raw_notes}",
+            provider="openrouter",
+            model="google/gemini-2.0-flash-001",
+            timeout=60,
+        )
+
+        organized_title = title_hint
+        organized_markdown = raw_notes.strip()
+        checklist = [
+            "Headings reflect the main sections.",
+            "Key facts are accurate and complete.",
+            "Links look correct.",
+            "Recall questions match the content.",
+            "Ready to save.",
+        ]
+        suggested_links = []
+
+        if result.get("success"):
+            content = result.get("content", "") or ""
+            parsed = None
+            try:
+                parsed = json.loads(content)
+            except json.JSONDecodeError:
+                json_match = re.search(r"\{[\s\S]*\}", content)
+                if json_match:
+                    try:
+                        parsed = json.loads(json_match.group())
+                    except Exception:
+                        parsed = None
+
+            if isinstance(parsed, dict):
+                organized_title = parsed.get("title") or organized_title
+                organized_markdown = parsed.get("markdown") or organized_markdown
+                if isinstance(parsed.get("checklist"), list) and parsed["checklist"]:
+                    checklist = [str(item) for item in parsed["checklist"] if str(item).strip()]
+                if isinstance(parsed.get("suggested_links"), list):
+                    suggested_links = [str(item) for item in parsed["suggested_links"] if str(item).strip()]
+
+        if not suggested_links:
+            suggested_links = re.findall(r"\[\[([^\]]+)\]\]", organized_markdown)
+
+        destination = _build_destination_options(course_folder, organized_title)
+
+        return jsonify(
+            {
+                "success": True,
+                "organized": {
+                    "title": organized_title,
+                    "markdown": organized_markdown,
+                    "checklist": checklist,
+                    "suggested_links": suggested_links,
+                },
+                "destination": destination,
+                "course": course,
+                "courseFolder": course_folder,
+            }
+        )
+
+    except Exception as e:
+        error_trace = traceback.format_exc()
+        print(f"[ORGANIZE PREVIEW ERROR] {str(e)}")
+        print(error_trace)
+        return jsonify({"success": False, "error": str(e)})
+
+
 @adapter_bp.route("/brain/chat", methods=["POST"])
 def brain_chat():
     """
@@ -5729,6 +5993,10 @@ def brain_chat():
         data = request.get_json() or {}
         message = data.get("message", "")
         mode = data.get("mode", "all")  # all, obsidian, anki, metrics
+        destination_path = data.get("destinationPath")
+        organized_markdown = data.get("organizedMarkdown") or ""
+        organized_title = data.get("organizedTitle") or ""
+        confirm_write = data.get("confirmWrite")
 
         # Import LLM provider using absolute path
         import sys
@@ -6606,6 +6874,8 @@ IMPORTANT:
             "obsidian",
             "all",
         )
+        if confirm_write is False:
+            sync_to_obsidian = False
 
         if sync_to_obsidian and parsed_data and not is_conversation:
             # Build Obsidian note content
@@ -6627,6 +6897,11 @@ IMPORTANT:
 
             obsidian_content = f"\n\n---\n## Study Session - {time_now}\n"
             obsidian_content += f"**Course:** {course}\n\n"
+
+            if organized_markdown.strip():
+                title_line = f"### Organized Notes: {organized_title}\n" if organized_title else "### Organized Notes\n"
+                obsidian_content += title_line
+                obsidian_content += f"{organized_markdown.strip()}\n\n"
 
             if parsed_data.get("summary"):
                 obsidian_content += f"### Summary\n{parsed_data['summary']}\n\n"
@@ -6664,7 +6939,9 @@ IMPORTANT:
                 obsidian_content += f"{raw_notes.strip()}\n"
 
             # Route to course-specific folder or fall back to Inbox
-            if course_folder:
+            if destination_path:
+                obsidian_path = destination_path
+            elif course_folder:
                 obsidian_path = f"{course_folder}/Session-{today}.md"
             else:
                 obsidian_path = f"Inbox/Study-Log-{today}.md"

@@ -349,24 +349,39 @@ export const api = {
       averages?: { understanding: number; retention: number };
       staleTopics?: { topic: string; count: number; lastStudied: string; daysSince: number }[];
     }>("/brain/metrics"),
-    chat: (message: string, syncToObsidian: boolean = false, mode: string = "all") => request<{ 
-      response: string; 
-      isStub: boolean; 
-      parsed?: boolean;
-      wrapProcessed?: boolean;
-      cardsCreated?: number;
-      obsidianSynced?: boolean;
-      obsidianError?: string;
-      obsidianPath?: string;
-      issuesLogged?: number;
-      sessionSaved?: boolean;
-      sessionId?: number | null;
-      wrapSessionId?: string | null;
-      sessionError?: string | null;
-    }>("/brain/chat", {
-      method: "POST",
-      body: JSON.stringify({ message, syncToObsidian, mode }),
-    }),
+    chat: (
+      messageOrPayload: string | BrainChatPayload,
+      syncToObsidian: boolean = false,
+      mode: string = "all"
+    ) => {
+      const payload =
+        typeof messageOrPayload === "string"
+          ? { message: messageOrPayload, syncToObsidian, mode }
+          : messageOrPayload;
+      return request<{ 
+        response: string; 
+        isStub: boolean; 
+        parsed?: boolean;
+        wrapProcessed?: boolean;
+        cardsCreated?: number;
+        obsidianSynced?: boolean;
+        obsidianError?: string;
+        obsidianPath?: string;
+        issuesLogged?: number;
+        sessionSaved?: boolean;
+        sessionId?: number | null;
+        wrapSessionId?: string | null;
+        sessionError?: string | null;
+      }>("/brain/chat", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    organizePreview: (rawNotes: string, course?: string) =>
+      request<BrainOrganizePreviewResponse>("/brain/organize-preview", {
+        method: "POST",
+        body: JSON.stringify({ rawNotes, ...(course ? { course } : {}) }),
+      }),
     ingest: (content: string, filename?: string) => request<{ message: string; parsed: boolean; isStub: boolean }>("/brain/ingest", {
       method: "POST",
       body: JSON.stringify({ content, filename }),
@@ -549,4 +564,43 @@ export interface ObsidianFileResult {
   content?: string;
   path?: string;
   error?: string;
+}
+
+// Brain ingest types
+export interface BrainChatPayload {
+  message: string;
+  syncToObsidian?: boolean;
+  mode?: string;
+  destinationPath?: string;
+  organizedMarkdown?: string;
+  organizedTitle?: string;
+  confirmWrite?: boolean;
+}
+
+export interface BrainDestinationOption {
+  id: string;
+  label: string;
+  path: string;
+  kind: "recommended" | "session" | "new" | "existing" | "custom";
+  exists: boolean;
+}
+
+export interface BrainOrganizePreviewResponse {
+  success: boolean;
+  error?: string;
+  organized?: {
+    title: string;
+    markdown: string;
+    checklist: string[];
+    suggested_links: string[];
+  };
+  destination?: {
+    recommended_path: string;
+    recommended_label: string;
+    session_path?: string;
+    module_path?: string | null;
+    options: BrainDestinationOption[];
+  };
+  course?: string;
+  courseFolder?: string | null;
 }

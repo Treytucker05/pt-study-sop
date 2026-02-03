@@ -276,3 +276,4 @@
 -   2 0 2 6 - 0 2 - 0 1 :   E n a b l e d   a u t o - a p p e n d   p r o m p t   s u f f i x   d e f a u l t s   a c r o s s   C l a u d e / C o d e x / O p e n C o d e   s t r a t e g y   d o c s   a n d   r u l e s .  
  - 2026-02-01: Added LO Engine protocol pack doc, routing, and templates.
 - 2026-02-03: Appended raw input notes to Obsidian study session sync for Brain chat.
+- 2026-02-03: Added organize-preview flow with destination picker and raw+organized Obsidian sync for Brain ingest.
