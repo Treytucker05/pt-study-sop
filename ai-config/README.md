@@ -1,10 +1,10 @@
 # ai-config
 
-Former canonical location for agent instructions. Root `CLAUDE.md` and `AGENTS.md` are now canonical.
+Consolidated Jan 2026. Most files moved to canonical locations:
+- Root `CLAUDE.md` / `AGENTS.md` — project instructions
+- `.claude/` — commands, agents, subagents, settings
 
-## Files
+## Remaining files (unique content)
 
-- `CLAUDE.md` / `AGENTS.md` — pointers to root files
-- `agent-workflow.md` — startup menu, Ralph usage, agent hygiene
-- `permissions.json` — allowed commands
-- `mcp.json` / `settings.local.json` — config
+- `agent-workflow.md` — startup menu, Ralph usage, agent hygiene (referenced by root CLAUDE.md)
+- `agent-prompts.md` — delegation prompt templates

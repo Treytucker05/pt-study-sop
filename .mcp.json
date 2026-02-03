@@ -1,6 +1,9 @@
 {
   "mcpServers": {
     "filesystem": { "command": "cmd", "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "."] },
-    "codex-cli": { "command": "cmd", "args": ["/c", "npx", "-y", "@cexll/codex-mcp-server"] }
+    "codex-cli": {
+      "command": "cmd",
+      "args": ["/c", "set PATH=C:\\nvm4w\\nodejs;C:\\Users\\treyt\\AppData\\Roaming\\npm;%PATH%&& npx -y @cexll/codex-mcp-server"]
+    }
   }
 }

@@ -166,7 +166,7 @@ function CopyButton({
 }
 
 const CONCEPT_MAP_CONTENT = `╔══════════════════════════════════════════════════════════════════════════════╗
-║                    PT STUDY OS — CONCEPT MAP                                ║
+║                    PT STUDY OS — CONCEPT MAP (v9.4)                         ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
                          ┌─────────────────────────┐
@@ -176,7 +176,7 @@ const CONCEPT_MAP_CONTENT = `╔════════════════
                          │ • End-to-End Flows      │
                          │ • RAG-First             │
                          │ • Spaced Cards          │
-                         │ • No Phantoms           │
+                         │ • Deterministic Logging │
                          └────────┬────────────────┘
                                   │
                 ┌─────────────────┼─────────────────┐
@@ -185,9 +185,10 @@ const CONCEPT_MAP_CONTENT = `╔════════════════
         │  MAP Phase   │  │  LOOP Phase  │  │  WRAP Phase  │
         │ ──────────   │  │ ────────────  │  │ ────────────  │
         │ M0 Planning  │  │ M2 Prime     │  │ M6 Wrap      │
-        │ M1 Entry     │  │ M3 Encode    │  │ Exit Ticket  │
-        │              │  │ M4 Build     │  │ Session      │
-        │              │  │ M5 Modes     │  │ Ledger       │
+        │ M1 Entry     │  │ M3 Encode    │  │ Text Output: │
+        │              │  │ M4 Build     │  │ • Exit Ticket│
+        │              │  │ M5 Modes     │  │ • Session    │
+        │              │  │              │  │   Ledger     │
         └──────────────┘  └──────┬───────┘  └──────────────┘
                                   │
                     ┌─────────────┼─────────────┐
@@ -197,10 +198,10 @@ const CONCEPT_MAP_CONTENT = `╔════════════════
             │ ──────────   │ │ Encoding │ │ Engines      │
             │ Prepare      │ │ ──────   │ │ ────────     │
             │ Encode ────┐ │ │ • Sound  │ │ • Anatomy    │
-            │ Interrogate│ │ │ • Func.  │ │ • Concept    │
-            │ Retrieve   │ │ │ • Image  │ │              │
-            │ Refine     │ │ │ • Reson. │ │              │
-            │ Overlearn  │ │ │ • Lock   │ │              │
+            │ Interrogate│ │ │ • Func.  │ │   (OIANA+)   │
+            │ Retrieve   │ │ │ • Image  │ │ • Concept    │
+            │ Refine     │ │ │ • Reson. │ │   (5-step)   │
+            │ Overlearn  │ │ │ • Lock   │ │ • LO Engine  │
             └──────────────┘ └──────────┘ └──────────────┘
                     │
                     └─────────────────────┐
@@ -214,13 +215,13 @@ const CONCEPT_MAP_CONTENT = `╔════════════════
                         │ 4. Level Gating (L2→L4)       │
                         │ 5. PEIRRO Cycle (no skip)     │
                         │ 6. Exit Ticket (mandatory)    │
-                        │ 7. Session Ledger (mand.)     │
+                        │ 7. Session Ledger (text)      │
                         │ 8. No Phantoms (invariant)    │
-                        │ 9. Evidence Nuance            │
+                        │ 9. Evidence Nuance Guardrails │
                         │ 10. Function Before Struct.   │
                         └──────────────────────────────┘
 
-                              SYSTEM FLOW
+                         SYSTEM FLOW (Data Pipeline)
                     ┌──────────────────────────────┐
                     │   Material Ingestion         │
                     │   (pre-session, if needed)   │
@@ -233,7 +234,7 @@ const CONCEPT_MAP_CONTENT = `╔════════════════
                     │ • Enforces M0-M6 flow        │
                     │ • Runs PEIRRO cycle          │
                     │ • KWIK encoding              │
-                    │ • Content engines            │
+                    │ • Selects content engines    │
                     └──────────────┬───────────────┘
                                    │
                 ┌──────────────────┼──────────────┐
@@ -241,80 +242,105 @@ const CONCEPT_MAP_CONTENT = `╔════════════════
         ┌─────────────┐  ┌──────────┐  ┌──────────────┐
         │ RAG System  │  │ Anki     │  │ Exit Ticket+ │
         │ (source     │  │ Bridge   │  │ Session      │
-        │  lock)      │  │ (cards)  │  │ Ledger       │
+        │  lock)      │  │ (cards)  │  │ Ledger (text)│
         └─────────────┘  └──────────┘  └───────┬──────┘
                                                  │
-                                                 ▼
-                                    ┌────────────────────────┐
-                                    │ BRAIN (Ingestion)      │
-                                    │ • Parse Session Ledger │
-                                    │ • Generate JSON logs   │
-                                    │ • Store data           │
-                                    │ • Produce Resume       │
-                                    └────────────┬───────────┘
-                                                 │
-                                                 ▼
-                            ┌────────────────────────────────┐
-                            │ DASHBOARD / PLANNER            │
-                            │ • Coverage maps                │
-                            │ • Spacing alerts               │
-                            │ • Readiness scores             │
-                            │ • Weekly plans (3+2 rotation)  │
-                            │ • Next session recommendations │
-                            └────────────────────────────────┘
+                    ┌────────────────────────────┴──────────────┐
+                    ▼                                           ▼
+        ┌────────────────────────┐          ┌──────────────────────────┐
+        │ ANKI DESKTOP           │          │ BRAIN (Ingestion)        │
+        │ User reviews cards on  │          │ • Parse Session Ledger   │
+        │ spacing schedule       │          │ • Convert to JSON (v9.4) │
+        │                        │          │ • Store session logs     │
+        │                        │          │ • Produce Resume         │
+        └────────────────────────┘          └──────────────┬───────────┘
+                                                           │
+                                                           ▼
+                                    ┌────────────────────────────────┐
+                                    │ DASHBOARD / PLANNER            │
+                                    │ • Coverage maps                │
+                                    │ • Spacing alerts (1-3-7-21)    │
+                                    │ • Readiness scores             │
+                                    │ • Weekly rotation (3+2)        │
+                                    │ • Next session recommendations │
+                                    └────────────────────────────────┘
 
-                              DATA SCHEMAS
-        ┌─────────────┬─────────────┬──────────────┬────────────┐
-        │ Session Log │ RAG Doc     │ Card         │ Resume     │
-        │ ─────────── │ ────────    │ ────         │ ──────     │
-        │ • date      │ • id        │ • deck       │ • readiness│
-        │ • topic     │ • chunks    │ • front      │ • coverage │
-        │ • mode      │ • images    │ • back       │ • gaps     │
-        │ • duration  │ • metadata  │ • tags       │ • recs     │
-        │ • understanding          │ • source_refs│            │
-        │ • retention │ • Function-first glossary │            │
-        │ • RSR %     │ (ALL definitions)         │            │
-        │ • artifacts │                          │            │
-        └─────────────┴─────────────┴──────────────┴────────────┘
+                           DATA SCHEMAS & CONTRACTS
+        ┌──────────────┬──────────────┬──────────────┬──────────────┐
+        │ Session      │ RAG Document │ Card v1      │ Resume v1    │
+        │ Ledger (Text)│ v1           │              │              │
+        │ ──────────── │ ────────     │ ────────     │ ──────────── │
+        │ Text output  │ • id         │ • deck       │ • generated_ │
+        │ at Wrap:     │ • chunks[]   │ • guid       │   at         │
+        │ • date       │ • images[]   │ • front      │ • readiness_ │
+        │ • covered    │ • metadata{} │ • back       │   score      │
+        │ • not_       │ • Function-  │ • tags[]     │ • recent_    │
+        │   covered    │   first defs │ • source_    │   sessions[] │
+        │ • weak_      │              │   refs[]     │ • topic_     │
+        │   anchors    │ (Tutor-Ready │              │   coverage[] │
+        │ • artifacts_ │  Packets use │ (source-     │ • gaps[]     │
+        │   created    │  these)      │  tagged,     │ • recommend  │
+        │ • timebox    │              │  dedupe by   │   ations[]   │
+        │              │              │  deck+guid)  │              │
+        │ Later        │              │              │ Produced via │
+        │ converted    │              │              │ Brain        │
+        │ to JSON v9.4 │              │              │ ingestion    │
+        │ by Brain     │              │              │ (not tutor)  │
+        └──────────────┴──────────────┴──────────────┴──────────────┘
 
 
-                            OPERATING MODES
+                             OPERATING MODES
         ┌──────────┬──────────┬──────────┬──────────┬──────────┐
-        │  Core    │  Sprint  │  Light   │  Quick   │  Drill   │
-        │ ──────── │ ──────── │ ──────── │ Sprint   │ ──────── │
-        │ Guided   │ Test-1st │ Micro    │ 20-30min │ Repeated │
-        │ w/       │ rapid    │ 10-15min │ burst    │ misses   │
-        │ scaffolds│ gap find │ 1-3 cards│ mand.    │ deep     │
-        │ Default  │ Exam prep│ Focused  │ wrap     │ practice │
-        │ new mat. │          │          │ cards    │ on weak   │
+        │  CORE    │  SPRINT  │  LIGHT   │  QUICK   │  DRILL   │
+        │ ──────── │ ──────── │ ──────── │ SPRINT   │ ──────── │
+        │ Guided   │ Test-1st │ Micro    │ Timed    │ Deep     │
+        │ w/       │ rapid    │ 10-15min │ 20-30min │ Practice │
+        │ scaffolds│ gap find │ 1-3 cards│ burst    │ on 1     │
+        │ Default  │ Exam prep│ Focused  │ 3-5 cards│ weak     │
+        │ new mat. │ 3-5 cards│          │ mand.    │ anchor   │
         └──────────┴──────────┴──────────┴──────────┴──────────┘
 
 
-                      WEEKLY ROTATION (3+2)
+                    WEEKLY ROTATION (3+2) — CLUSTER SPLIT
+        ┌─────────────────────────────────────────────────────────┐
+        │ CLUSTER A: 3 Technical Classes (Highest Cognitive Load) │
+        │ CLUSTER B: 2 Lighter/Reading-Heavy Classes             │
+        └─────────────────────────────────────────────────────────┘
 
-        Week Structure:
-        ┌──────────────────────────────────┐
-        │ Study 3 classes (1 session each)  │
-        │         ↓                         │
-        │ Review 2 weakest anchors (spaced) │
-        │         ↓                         │
-        │ Repeat cycle                      │
-        └──────────────────────────────────┘
+                        WEEKLY RHYTHM (M-S rotation)
+        ┌──────────────────────────────────────────────────────────┐
+        │ Mon/Wed/Fri:                                             │
+        │  → Cluster A (deep work/full session)                   │
+        │  → 15 min Cluster B review (cross-review)               │
+        │                                                          │
+        │ Tue/Thu/Sat:                                             │
+        │  → Cluster B (deep work/full session)                   │
+        │  → 15 min Cluster A review (cross-review)               │
+        │                                                          │
+        │ Sunday:                                                  │
+        │  → Weekly review + metacognition                        │
+        │  → Wins / Gaps / Backlog / Load check                  │
+        │  → Next-week cluster assignments                        │
+        └──────────────────────────────────────────────────────────┘
 
-        Progress Status Progression:
-        Not Started → In Progress → Needs Review → Solid
-                                                    (2 retrieval ✓s)
+                     SPACED RETRIEVAL (1-3-7-21 Heuristic)
+        ┌──────────────────────────────────────────────────────────┐
+        │ R1 (+1d)  → RSR adaptive or Manual R/Y/G               │
+        │ R2 (+3d)  → Adjust: ≥80% +25% | 50-79% keep | <50% -50%│
+        │ R3 (+7d)  → Min 12h, Max 60d bounds                    │
+        │ R4 (+21d) → If no RSR captured, use standard 1-3-7-21  │
+        └──────────────────────────────────────────────────────────┘
 
-
-                      EVIDENCE GUARDRAILS
-        ┌─────────────────────────────────────────┐
-        │ Prevent Overclaiming:                   │
-        │ ✗ No numeric forgetting curves         │
-        │ ✗ No "2x" dual-coding guarantees       │
-        │ ✗ Zeigarnik effect ≠ memory guarantee  │
-        │ ✗ RSR thresholds are adaptive          │
-        │ ✗ Interleaving ≠ distributed practice  │
-        └─────────────────────────────────────────┘`;
+                    EVIDENCE GUARDRAILS (No Overclaiming)
+        ┌─────────────────────────────────────────────────────────┐
+        │ ✗ No numeric forgetting curve claims (cite studies)    │
+        │ ✗ Dual coding = heuristic only, never "2x" guarantee   │
+        │ ✗ Zeigarnik effect ≠ reliable memory guarantee         │
+        │ ✗ RSR thresholds = adaptive (not fixed "85%")          │
+        │ ✗ 3+2 rotation = distributed practice across classes   │
+        │ ✗ Interleaving = discrimination within class only      │
+        │ ✗ These are distinct (rotation ≠ interleaving)         │
+        └─────────────────────────────────────────────────────────┘`;
 
 export default function Tutor() {
   const searchString = useSearch();
