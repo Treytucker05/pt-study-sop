@@ -24,13 +24,13 @@ def _extract_scope_from_content(content):
     return ''
 
 # Test with different queries
-repo_root = Path('c:/Users/treyt/OneDrive/Desktop/pt-study-sop')
+repo_root = Path(__file__).resolve().parents[1]
 queue = repo_root / 'scholar' / 'outputs' / 'promotion_queue'
 
 queries = [
     ('Successive Relearning Mastery Count', ''),
     ('Change Proposal Successive Relearning Mastery Count', ''),
-    ('Mastery Count', 'sop/gpt-knowledge'),
+    ('Mastery Count', 'sop/library'),
     ('Probe First Core Mode Gating', ''),
     ('Semantic Lead KWIK Flow', ''),
 ]

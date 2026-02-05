@@ -2,8 +2,10 @@
 """
 Ingest SOP knowledge files into the RAG database.
 
-This script ingests all markdown files from sop/gpt-knowledge/ 
-into the rag_docs table for Tutor retrieval.
+This script ingests SOP markdown files into the rag_docs table for Tutor retrieval.
+
+Prefers the generated runtime bundle under `sop/runtime/knowledge_upload/` and
+falls back to legacy `sop/gpt-knowledge/` if present.
 """
 
 import sys
@@ -33,14 +35,21 @@ def ingest_sop_knowledge(verbose: bool = True) -> IngestResult:
     """
     init_database()
     
-    # SOP knowledge directory
+    # SOP knowledge directory (prefer generated runtime bundle).
     repo_root = brain_dir.parent
-    knowledge_dir = repo_root / "sop" / "gpt-knowledge"
-    
-    if not knowledge_dir.exists():
+    runtime_dir = repo_root / "sop" / "runtime" / "knowledge_upload"
+    legacy_dir = repo_root / "sop" / "gpt-knowledge"
+
+    if runtime_dir.exists():
+        knowledge_dir = runtime_dir
+        source_label = "sop/runtime/knowledge_upload"
+    elif legacy_dir.exists():
+        knowledge_dir = legacy_dir
+        source_label = "sop/gpt-knowledge (legacy)"
+    else:
         return {
             "ok": False,
-            "message": f"Knowledge directory not found: {knowledge_dir}",
+            "message": f"Knowledge directory not found: expected {runtime_dir} (preferred) or {legacy_dir} (legacy)",
             "processed": 0,
             "errors": [],
         }
@@ -83,7 +92,7 @@ def ingest_sop_knowledge(verbose: bool = True) -> IngestResult:
     
     return {
         "ok": len(errors) == 0,
-        "message": f"Ingested {processed} files, {len(errors)} errors",
+        "message": f"Ingested {processed} files from {source_label}, {len(errors)} errors",
         "processed": processed,
         "errors": errors
     }
@@ -91,49 +100,49 @@ def ingest_sop_knowledge(verbose: bool = True) -> IngestResult:
 
 def ingest_module_examples(verbose: bool = True) -> IngestResult:
     """
-    Ingest example files from sop/examples/ if they exist.
+    Ingest example content if present.
+
+    Current canonical examples live in `sop/library/11-examples.md` and are also
+    included in the runtime bundle. This is optional.
     """
     init_database()
     
     repo_root = Path(__file__).parent.parent
-    examples_dir = repo_root / "sop" / "examples"
-    
-    if not examples_dir.exists():
+    examples_file = repo_root / "sop" / "library" / "11-examples.md"
+
+    if not examples_file.exists():
         return {
             "ok": True,
-            "message": "Examples directory not found (optional)",
+            "message": "Examples file not found (optional)",
             "processed": 0,
             "errors": [],
         }
-    
-    md_files = list(examples_dir.glob("**/*.md"))
-    
+
     processed = 0
     errors: list[str] = []
     
-    for md_file in md_files:
-        try:
-            doc_id = ingest_document(
-                path=str(md_file),
-                doc_type="note",  # Examples treated as notes
-                course_id=None,
-                topic_tags=["example", md_file.stem.lower()]
-            )
-            
-            if verbose:
-                print(f"[OK] Ingested example: {md_file.name} (id={doc_id})")
-            
-            processed += 1
-            
-        except Exception as e:
-            error_msg = f"{md_file.name}: {str(e)}"
-            errors.append(error_msg)
-            if verbose:
-                print(f"[ERROR] {error_msg}")
+    try:
+        doc_id = ingest_document(
+            path=str(examples_file),
+            doc_type="note",
+            course_id=None,
+            topic_tags=["sop", "example", examples_file.stem.lower()],
+        )
+
+        if verbose:
+            print(f"[OK] Ingested examples: {examples_file.name} (id={doc_id})")
+
+        processed += 1
+
+    except Exception as e:
+        error_msg = f"{examples_file.name}: {str(e)}"
+        errors.append(error_msg)
+        if verbose:
+            print(f"[ERROR] {error_msg}")
     
     return {
         "ok": len(errors) == 0,
-        "message": f"Ingested {processed} example files, {len(errors)} errors",
+        "message": f"Ingested {processed} example file, {len(errors)} errors",
         "processed": processed,
         "errors": errors
     }

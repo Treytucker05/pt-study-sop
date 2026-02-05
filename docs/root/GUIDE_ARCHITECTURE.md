@@ -14,10 +14,10 @@ A high-level architecture guide describing subsystems, integrations, and data fl
 See `docs/system_map.md` for the diagram and loop definitions.
 
 ## Subsystems
-- **SOP Runtime:** `sop/src/` (canonical runtime rules)
+- **SOP Runtime:** `sop/library/` (canonical) and `sop/runtime/` (generated bundle)
 - **Brain DB + APIs:** `brain/` and `brain/dashboard/`
 - **Scholar Workflows:** `scholar/workflows/`
-- **Obsidian Vault:** `projects/treys-agent/context/`
+- **Obsidian Vault:** `C:\Users\treyt\Desktop\PT School Semester 2` (notes under `projects/pt-study-sop/`)
 
 ## Key Data Stores
 - `brain/data/pt_study.db` (source of truth)

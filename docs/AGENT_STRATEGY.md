@@ -67,5 +67,5 @@ Safety: never paste secrets or credentials into prompts or logs.
 
 ## Repo Integration
 - Prompt patterns: `ai-config/agent-prompts.md`
-- Command templates: `ai-config/claude-commands/`
-- Sync script: `scripts/sync_agent_configs.ps1` (copies repo command templates to global)
+- Repo Claude Code commands: `.claude/commands/`
+- Portable global config (vault canonical): `C:\Users\treyt\Desktop\PT School Semester 2\agents\config\`

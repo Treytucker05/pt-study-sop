@@ -1063,8 +1063,8 @@ def _ensure_plan_update(run_id: str, repo_root: Path, run_dir: Path, final_path:
         "- Which module has the weakest evidence coverage?",
         "",
         "## Plan Targets",
-        "- `sop/MASTER_PLAN_PT_STUDY.md`",
-        "- `sop/gpt-knowledge/M0-planning.md`",
+        "- `sop/library/00-overview.md`",
+        "- `sop/library/05-session-flow.md`",
         "",
         "## Draft Plan Edits (human-in-the-loop)",
         "- (fill in concrete edits to plan files, then apply manually)",
@@ -1260,8 +1260,8 @@ def run_scholar_orchestrator_multi(manifest: Dict[str, Any], mode: str = "brain"
                     "context": [
                         "## SOP Allowlist",
                         sop_list,
-                        "## Master Plan",
-                        "sop/MASTER_PLAN_PT_STUDY.md",
+                        "## SOP Overview",
+                        "sop/library/00-overview.md",
                     ],
                     "header": header_common + [f"Agent: SOP Auditor"],
                 })

@@ -5,7 +5,9 @@ This workflow uses Claude Code for implementation and Codex (via MCP) for review
 ## MCP setup (project scoped)
 - MCP server name: codex-cli
 - Command: npx -y @cexll/codex-mcp-server
-- Config file: ai-config/mcp.json (synced to .claude/mcp.json and .mcp.json)
+- Config files:
+  - Claude Code: `.claude/mcp.json`
+  - Repo root: `.mcp.json`
 
 ## Review loop phases
 1. Implement in Claude Code.

@@ -5,11 +5,12 @@ $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 $files = @(
     "AGENTS.md",
     "docs/root/PROJECT_ARCHITECTURE.md",
-    "sop/src/MASTER_PLAN_PT_STUDY.md",
+    "sop/sop_index.v1.json",
+    "sop/library/00-overview.md",
     "CONTINUITY.md",
     "brain/db_setup.py",
     "brain/dashboard/routes.py",
-    "brain/static/js/dashboard.js"
+    "brain/static/dist/index.html"
 )
 
 Write-Host "Generating context dump..."

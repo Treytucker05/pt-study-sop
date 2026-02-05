@@ -1,7 +1,7 @@
 # PT Study System — Comprehensive Project Architecture
 
 **Version:** 4.0
-**Last Updated:** 2026-01-12
+**Last Updated:** 2026-02-05
 **Scope:** Entire repository (SOP, Brain, Scholar, Scripts)
 **Purpose:** Canonical technical documentation for system architecture, dependencies, and integration.
 
@@ -27,51 +27,53 @@ This document serves as the "Project Map," superseding previous architecture doc
 
 The SOP (Standard Operating Procedure) is the cognitive engine of the project. It defines *how* learning happens.
 
-### 2.1 Runtime Canon Overview (`sop/gpt-knowledge/`)
+### 2.1 Runtime Canon Overview (`sop/library/` + `sop/runtime/`)
 
-The `sop/gpt-knowledge/` folder contains the **Runtime Canon** — the authoritative instructions loaded into the Custom GPT ("Structured Architect").
+The SOP "Runtime Canon" is built from canonical source files in `sop/library/` into a generated upload bundle in `sop/runtime/`.
 
-**Stats:**
-- **Files:** 24 canonical files
-- **Total Lines:** ~1,560
-- **Rule:** This folder is the single source of truth. If it conflicts with `MASTER_PLAN_PT_STUDY.md` or other docs, the Runtime Canon wins.
+- **Source of truth (edit here):** `sop/library/`
+- **Generated runtime bundle (do not edit):** `sop/runtime/knowledge_upload/`
+- **Runtime prompt (generated):** `sop/runtime/runtime_prompt.md`
+- **Manifest/index:** `sop/sop_index.v1.json`
 
-**File Structure:**
+If anything conflicts (docs, scripts, or older SOPs), `sop/library/` wins. `sop/archive/` is legacy history (do not edit).
+
+**Library file map:**
 ```
-sop/gpt-knowledge/
-├── 00_INDEX.md                 # Entry point and quick start
-├── 00_FILE_INDEX.md            # File purpose index
-├── 00_LEARNING_CORE.md         # PEIR-RO learning cycle (Backbone)
-├── 00_SFIRL_ENCODING.md        # KWIK encoding flow (Backbone)
-├── BUILD_ORDER.md              # Required upload sequence
-├── DEPLOYMENT_CHECKLIST.md     # Pre-flight verification
-├── ANATOMY_ENGINE.md           # Bone-first anatomy protocol
-├── CONCEPT_ENGINE.md           # Non-anatomy topic protocol
-├── CONTEXT_FRAMEWORKS.md       # Y-series (quick context)
-├── HIERARCHY_FRAMEWORKS.md     # H-series (structure mapping)
-├── LOGIC_FRAMEWORKS.md         # M-series (mechanisms/logic)
-├── LEVELS.md                   # L1-L4 gating system
-├── M0_PLANNING.md              # Phase 0: Plan & Source-Lock
-├── M1_ACTIVATION.md            # Phase 1: Mode & Entry
-├── M2_FRAMING.md               # Phase 2: Prime & Map
-├── M3_ENCODING.md              # Phase 3: Active Encoding
-├── M4_PRACTICE.md              # Phase 4: Build & Fade
-├── M5_TRANSITIONS.md           # Mode switching logic
-├── M6_WRAP.md                  # Phase 6: Consolidate & Data Output
-├── GPT-INSTRUCTIONS.md         # Custom GPT System Prompt
-├── SESSION_PRIMER.md           # Per-session copy/paste prompt
-├── SESSION_LOG_TEMPLATE.md     # Canonical output format
-├── NOTEBOOKLM_BRIDGE.md        # Source-grounding rules
-└── ARCHIVE_MASTER_FULL.md      # version 9.1 reference (legacy)
+sop/library/
+├── 00-overview.md
+├── 01-core-rules.md
+├── 02-learning-cycle.md
+├── 03-frameworks.md
+├── 04-engines.md
+├── 05-session-flow.md
+├── 06-modes.md
+├── 07-workload.md
+├── 08-logging.md
+├── 09-templates.md
+├── 10-deployment.md
+├── 11-examples.md
+├── 12-evidence.md
+├── 13-custom-gpt-system-instructions.md
+├── 14-lo-engine.md
+└── README.md
 ```
 
-[...Section 2 continues with Core Learning Modules...]
-
+**Generated upload bundle:**
+```
+sop/runtime/knowledge_upload/
+├── 00_INDEX_AND_RULES.md
+├── 01_MODULES_M0-M6.md
+├── 02_FRAMEWORKS.md
+├── 03_ENGINES.md
+├── 04_LOGGING_AND_TEMPLATES.md
+└── 05_EXAMPLES_MINI.md
+```
 ### 2.2 Core Learning Modules
 
-These two files define the pedagogical backbone of the system.
+These files define the pedagogical backbone of the system.
 
-**1. `00_LEARNING_CORE.md` (PEIR-RO Cycle)**
+**1. `02-learning-cycle.md` (PEIRRO + KWIK)**
 Defines the 6-phase learning cycle that ALL sessions must follow:
 - **P**repare: Orient focus, clarify scope.
 - **E**ncode: Construct durable schemas (active, not passive).
@@ -81,7 +83,7 @@ Defines the 6-phase learning cycle that ALL sessions must follow:
 - **O**verlearn: Spaced repetition beyond mastery.
 *Constraint:* NEVER deviate from this method.
 
-**2. `00_SFIRL_ENCODING.md` (KWIK Flow)**
+**2. `02-learning-cycle.md` (KWIK Flow)**
 Defines the encoding mechanism for memory hooks (Jim Kwik method):
 - **S**ound: Capture phonetic seed / sound-alike.
 - **F**unction: State *what it does* (grounding).
@@ -102,30 +104,31 @@ These modules control the session timeline.
 | **M3** | **Encoding** | **Function-First:** Meaning before structure.<br>**Active:** Use Dual Coding, Self-Explanation.<br>**Gating:** One-step-at-a-time confirmation. |
 | **M4** | **Practice** | **Faded Scaffolding (/fade):** Worked → Completion → Independent.<br>**Interleaving:** Mix problem types.<br>**Successive Relearning:** 2-3 correct recalls required. |
 | **M5** | **Transitions** | Switches behavior based on **Mode**.<br>**Core:** Guide & Build.<br>**Sprint:** Ask & Verify.<br>**Drill:** Spot & Correct. |
-| **M6** | **Wrap** | **Consolidation:** 3-Question Recap, Error Log, Glossaries.<br>**JSON Output:** MANDATORY dual JSON dump (Tracker + Enhanced) for Brain ingestion. |
+| **M6** | **Wrap** | **Consolidation:** 3-Question Recap, Error Log, Glossaries.<br>**Wrap outputs:** Exit Ticket + Session Ledger only; JSON is generated post-session via Brain ingestion (see `sop/library/08-logging.md`). |
 
 ### 2.4 Support Content (Frameworks & Engines)
 
 **Frameworks** provide structured ways to think:
-- **Levels (`LEVELS.md`):** L1 (Analogy) → L2 (Simple 10yo) → **GATE** → L3 (Technical) → L4 (Clinical).
+- **Levels (`sop/library/03-frameworks.md`):** L1 (Analogy) → L2 (Simple 10yo) → **GATE** → L3 (Technical) → L4 (Clinical).
   - *Rule:* Must pass L2 teach-back before accessing L3/L4.
-- **H-Series (`HIERARCHY_FRAMEWORKS.md`):** Structure maps (System → Subsystem → Component).
-- **M-Series (`LOGIC_FRAMEWORKS.md`):** Logic flows (Trigger → Mechanism → Result).
-- **Y-Series (`CONTEXT_FRAMEWORKS.md`):** Quick context (Load/Stress, Signal/Detection).
+- **H-Series (`sop/library/03-frameworks.md`):** Structure maps (System → Subsystem → Component).
+- **M-Series (`sop/library/03-frameworks.md`):** Logic flows (Trigger → Mechanism → Result).
+- **Y-Series (`sop/library/03-frameworks.md`):** Quick context (Load/Stress, Signal/Detection).
 
 **Engines** contain specialized content logic:
-- **Anatomy Engine (`ANATOMY_ENGINE.md`):**
+- **Anatomy Engine (`sop/library/04-engines.md`):**
   - **OIANA+ Order:** Bones → Landmarks (Visual First) → Attachments → Actions → Nerves → Arterial → Clinical.
   - **Rollback Rule:** If struggling with OIANA, return to landmarks.
-- **Concept Engine (`CONCEPT_ENGINE.md`):**
+- **Concept Engine (`sop/library/04-engines.md`):**
   - **Flow:** Definition → Context → Mechanism → Boundary (vs near-miss) → Application.
   - **Generation-First:** Always ask user for their take first.
 
 ### 2.5 Integration Layer
 
-- **`NOTEBOOKLM_BRIDGE.md`**: Enforces **Source-Lock**. If no source packet provided, AI cannot make factual claims.
-- **`SESSION_LOG_TEMPLATE.md`**: The strict markdown format required for `brain/ingest_session.py`.
-
+- **`sop/library/01-core-rules.md`**: Source-Lock and NotebookLM Source Packet requirements.
+- **`sop/library/08-logging.md`**: Canonical logging schema (Exit Ticket + Session Ledger at Wrap; JSON via Brain ingestion).
+- **`sop/library/09-templates.md`**: Copy/paste templates.
+- **`sop/library/10-deployment.md`**: Runtime bundle build/upload and Brain ingestion prompt pack.
 ### 2.6 Mechanism & Command Master Lists
 
 **Named Mechanisms:**
@@ -140,11 +143,14 @@ These modules control the session timeline.
 - `draw` (drawing steps), `landmark` (anatomy visual pass)
 - `/fade` (scaffolding ramp)
 
-### 2.7 Loading Order (`BUILD_ORDER.md`)
+### 2.7 Loading Order (Build + Upload)
 
-1. **System Instructions:** Paste `GPT-INSTRUCTIONS.md` into Custom GPT.
-2. **Knowledge Uploads:** Upload all 24 files in exact order defined in `BUILD_ORDER.md`.
-3. **Session Start:** Paste `SESSION_PRIMER.md` at start of every chat.
+See `sop/library/10-deployment.md` for the canonical checklist. Summary:
+
+1. **System Instructions:** Paste the system instructions from `sop/library/10-deployment.md` (Step 1).
+2. **Build Bundle:** `python sop/tools/build_runtime_bundle.py`.
+3. **Upload Knowledge:** Upload `sop/runtime/knowledge_upload/*.md` in the order listed in `sop/library/10-deployment.md` (Step 2).
+4. **Session Start:** Paste `sop/runtime/runtime_prompt.md` as the first user message (Step 3).
 
 ---
 
@@ -189,7 +195,7 @@ Scholar organizes its artifacts into strict folders ("lanes"):
 
 ### 3.4 Integration Points
 
-- **Reads:** `brain/session_logs/` (via DB), `sop/gpt-knowledge/` (for compliance checks).
+- **Reads:** `brain/session_logs/` (via DB), `sop/library/` (for compliance checks).
 - **Writes:** `scholar/outputs/` (reports), `brain/data/scholar_proposals` (metadata).
 - **Triggers:** Run via `scripts/run_scholar.bat` (Codex CLI agent).
 

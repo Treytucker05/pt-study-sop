@@ -277,3 +277,5 @@
  - 2026-02-01: Added LO Engine protocol pack doc, routing, and templates.
 - 2026-02-03: Appended raw input notes to Obsidian study session sync for Brain chat.
 - 2026-02-03: Added organize-preview flow with destination picker and raw+organized Obsidian sync for Brain ingest.
+
+- 2026-02-05 14:30:08: Unified SOP/agent paths: updated docs/root/PROJECT_ARCHITECTURE.md, refreshed docs/root/ARCHITECTURE_CONTEXT.md, replaced AI config drift with scripts/sync_agent_config.ps1 (CI), updated Scholar allowlists/docs to sop/library + sop/runtime, and updated brain/ingest_knowledge.py to ingest from sop/runtime/knowledge_upload (legacy fallback kept). Added Conductor workflow docs + scripts/sync_portable_agent_config.ps1 wrapper for vault-based agent config.

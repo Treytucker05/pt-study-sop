@@ -12,8 +12,8 @@ The Scholar is a dedicated meta-system designed to audit, analyze, and optimize 
 ## Required Inputs
 
 - **Telemetry:** Brain session logs (`brain/session_logs/*.md`).
-- **Source (Canonical):** Tutor modules in `sop/modules/`, `sop/engines/`, `sop/frameworks/`, plus `sop/MASTER_REFERENCE_v9.2.md` and `sop/MASTER_PLAN_PT_STUDY.md`.
-- **Source (Exports):** `sop/gpt-knowledge/*.md` as generated copies.
+- **Source (Canonical):** SOP library files in `sop/library/` plus `sop/sop_index.v1.json` (file map).
+- **Source (Exports):** `sop/runtime/knowledge_upload/*.md` and `sop/runtime/runtime_prompt.md` as generated copies.
 - **AI Artifacts Manifest:** `scholar/inputs/ai_artifacts_manifest.json` (output lanes + file patterns for summaries, questions, recommendations).
 
 *Note: All paths must be explicitly listed in [audit_manifest.json](inputs/audit_manifest.json).*
@@ -93,7 +93,7 @@ When an audit reveals a needed change, use these canonical templates:
 
 ### Audit a Module
 
-1. Select a module (e.g., `sop/modules/M0-planning.md`).
+1. Select a module (e.g., `sop/library/05-session-flow.md`).
 2. Follow [audit_module.md](workflows/audit_module.md).
 3. Name your report: `outputs/reports/module_audit_M0_2026-01-07.md`.
 
@@ -104,4 +104,3 @@ When an audit reveals a needed change, use these canonical templates:
 3. Produce a review summary in `outputs/review/`.
 4. Append questions to `outputs/questions_dashboard.md`.
 5. Draft proposals in `outputs/promotion_queue/` when needed.
-

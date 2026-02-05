@@ -12,4 +12,4 @@ This folder holds documentation that was previously in the repo root.
 - `SYSTEM_INVENTORY.md`
 
 ## Entry points
-- `C:/pt-study-sop/DOCS_INDEX.md`
+- `C:/pt-study-sop/docs/README.md` (canonical docs index)

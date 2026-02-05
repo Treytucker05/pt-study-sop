@@ -593,14 +593,14 @@ def _save_digest_artifacts(digest_content: str, digest_type: str = "strategic") 
     plan_lines.extend(
         [
             "",
-            "## Plan Targets",
-            "- `sop/MASTER_PLAN_PT_STUDY.md`",
-            "- `sop/gpt-knowledge/M0-planning.md`",
-            "",
-            "## Draft Plan Edits (human-in-the-loop)",
-            "- (fill in concrete edits to plan files, then apply manually)",
-            "",
-        ]
+             "## Plan Targets",
+            "- `sop/library/00-overview.md`",
+            "- `sop/library/05-session-flow.md`",
+             "",
+             "## Draft Plan Edits (human-in-the-loop)",
+             "- (fill in concrete edits to plan files, then apply manually)",
+             "",
+         ]
     )
     plan_update_path.write_text("\n".join(plan_lines), encoding="utf-8")
 

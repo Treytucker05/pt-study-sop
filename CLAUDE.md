@@ -114,7 +114,7 @@ const [state, setState] = useState<T>(() => {
 Any button that saves state without navigating or closing a modal MUST have visual feedback: (1) a toast notification confirming the action, and (2) a status indicator (green dot = saved, red dot = unsaved changes) using a dirty state flag.
 
 ### SOP Library Is Source of Truth
-The 75 original SOP files were consolidated into 13 library files at `sop/library/` (00-12). Originals archived to `sop/archive/`. The library is now the sole source of truth for all study system content. Do not reference `sop/src/`, `sop/runtime/`, or `sop/examples/` — those paths no longer exist (archived Jan 2026).
+The 75 original SOP files were consolidated into library files at `sop/library/` (00-14). Originals were archived to `sop/archive/`. The library is the sole source of truth for SOP content. `sop/runtime/` exists but is generated output (do not edit it directly). Do not reference `sop/src/` or `sop/examples/` (archived Jan 2026).
 
 ### Codex MCP Cannot Review Inline Diffs
 Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks for a repo path instead. When the repo isn't reachable by Codex, do the code review manually using the standard checklist (bugs, edge cases, security, performance, type correctness).
