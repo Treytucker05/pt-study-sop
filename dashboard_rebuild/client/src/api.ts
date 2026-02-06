@@ -335,6 +335,25 @@ export const api = {
     get: () => request<Session[]>("/sessions/today"),
   },
 
+  planner: {
+    getQueue: () => request<unknown[]>("/planner/queue"),
+    getSettings: () => request<Record<string, unknown>>("/planner/settings"),
+    updateSettings: (data: Record<string, unknown>) =>
+      request<{ ok: boolean }>("/planner/settings", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    generate: () =>
+      request<{ ok: boolean; tasks_created: number }>("/planner/generate", {
+        method: "POST",
+      }),
+    updateTask: (taskId: number, data: Record<string, unknown>) =>
+      request<{ ok: boolean }>(`/planner/tasks/${taskId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+  },
+
   brain: {
     getMetrics: () => request<{
       sessionsPerCourse: { course: string; count: number; minutes: number }[];
