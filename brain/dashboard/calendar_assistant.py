@@ -10,7 +10,7 @@ This module provides a calendar assistant that can:
 
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 
 from pathlib import Path

@@ -310,3 +310,8 @@
 ## 2026-02-06 - Allow Codex CLI in Repo Permissions
 
 - Permit codex exec / codex resume in permissions.json (and .claude/permissions.json) so the codex-subagent workflow isn't blocked by the repo allowlist.
+
+
+## 2026-02-06 - Fix CI Calendar Assistant Typing Import
+
+- Import Any in brain/dashboard/calendar_assistant.py to prevent NameError during pytest collection on Ubuntu GitHub Actions.
