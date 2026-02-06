@@ -10,13 +10,14 @@ This guide covers how to run the stack, update docs, and extend the system safel
 - Knowledge base: Obsidian vault at `C:\Users\treyt\Desktop\PT School Semester 2` (notes under `projects/pt-study-sop/`)
 
 ## Run Locally
-1. Install Python deps: `pip install -r requirements.txt`
+1. Install Python deps (first time): `python -m pip install -r requirements.txt`
 2. Launch dashboard: `Start_Dashboard.bat`
 3. Open: `http://127.0.0.1:5000`
 
 ## Frontend Build + Sync (Required For UI Changes)
 The Flask app serves the built frontend from `brain/static/dist/`. If you change anything under `dashboard_rebuild/`, you must:
-1. Build the frontend: `cd dashboard_rebuild; npm run build`
+1. Install frontend deps (first time): `cd dashboard_rebuild; npm install`
+2. Build the frontend: `cd dashboard_rebuild; npm run build`
 2. Sync the build output into Flask static dir (PowerShell):
    - `Remove-Item -Recurse -Force brain/static/dist`
    - `Copy-Item -Recurse -Force dashboard_rebuild/dist/public brain/static/dist`

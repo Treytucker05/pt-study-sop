@@ -280,3 +280,5 @@
 
 - 2026-02-05 14:30:08: Unified SOP/agent paths: updated docs/root/PROJECT_ARCHITECTURE.md, refreshed docs/root/ARCHITECTURE_CONTEXT.md, replaced AI config drift with scripts/sync_agent_config.ps1 (CI), updated Scholar allowlists/docs to sop/library + sop/runtime, and updated brain/ingest_knowledge.py to ingest from sop/runtime/knowledge_upload (legacy fallback kept). Added Conductor workflow docs + scripts/sync_portable_agent_config.ps1 wrapper for vault-based agent config.
 - 2026-02-06: Synced documentation entrypoints (README, CLAUDE, GUIDE_DEV) and added CI docs sync check (scripts/check_docs_sync.py); added v9.4 log validator script.
+
+2026-02-06 - Add root requirements.txt + fix memory.py so release_check passes; update GUIDE_DEV install steps.
