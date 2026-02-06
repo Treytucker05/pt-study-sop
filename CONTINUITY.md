@@ -282,3 +282,5 @@
 - 2026-02-06: Synced documentation entrypoints (README, CLAUDE, GUIDE_DEV) and added CI docs sync check (scripts/check_docs_sync.py); added v9.4 log validator script.
 
 2026-02-06 - Add root requirements.txt + fix memory.py so release_check passes; update GUIDE_DEV install steps.
+
+2026-02-06 - Fix dashboard Brain Tools black screen by adding missing Obsidian API client methods (getConfig/getVaultIndex/getGraph) and rebuilding brain/static/dist.

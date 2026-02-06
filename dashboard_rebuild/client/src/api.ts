@@ -448,6 +448,13 @@ export const api = {
 
   obsidian: {
     getStatus: () => request<ObsidianStatus>("/obsidian/status"),
+    getConfig: () => request<ObsidianConfig>("/obsidian/config"),
+    getVaultIndex: (refresh: boolean = false) =>
+      request<ObsidianVaultIndexResult>(
+        `/obsidian/vault-index${refresh ? "?refresh=true" : ""}`,
+      ),
+    getGraph: (refresh: boolean = false) =>
+      request<ObsidianGraphResult>(`/obsidian/graph${refresh ? "?refresh=true" : ""}`),
     append: (path: string, content: string) => request<ObsidianAppendResult>("/obsidian/append", {
       method: "POST",
       body: JSON.stringify({ path, content }),
@@ -559,6 +566,11 @@ export interface ObsidianStatus {
   error?: string;
 }
 
+export interface ObsidianConfig {
+  vaultName: string;
+  apiUrl: string;
+}
+
 export interface ObsidianAppendResult {
   success: boolean;
   path?: string;
@@ -582,6 +594,35 @@ export interface ObsidianFileResult {
   success: boolean;
   content?: string;
   path?: string;
+  error?: string;
+}
+
+export interface ObsidianVaultIndexResult {
+  success: boolean;
+  notes: string[];
+  paths: Record<string, string>;
+  count: number;
+  cached?: boolean;
+  timestamp?: string;
+  error?: string;
+}
+
+export interface ObsidianGraphNode {
+  id: string;
+  name: string;
+  folder: string;
+}
+
+export interface ObsidianGraphLink {
+  source: string;
+  target: string;
+}
+
+export interface ObsidianGraphResult {
+  success: boolean;
+  nodes: ObsidianGraphNode[];
+  links: ObsidianGraphLink[];
+  cached?: boolean;
   error?: string;
 }
 
