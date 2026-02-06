@@ -9,13 +9,13 @@ Source for the PT Study dashboard UI (frontend only). The API is served by Flask
 - Build output: `dist/public` (copied to `brain/static/dist`).
 
 ## Common commands
-- `npm run dev` - start Vite dev server (UI only).
-- `npm run check` - typecheck.
+- `npm run dev` - start Vite dev server (NOT supported for this repo; use `Start_Dashboard.bat`).
+- `npm run check` - typecheck (not required for builds; there are known failures).
 - `npm run build` - production build (dist/public).
 
 ## Notes
 - The Express server was removed; do not run a separate dashboard server.
-- Production bundle is copied to `brain/static/dist` by repo scripts.
+- Production bundle is served by Flask from `brain/static/dist` (see `docs/root/GUIDE_DEV.md` for the canonical build/sync steps).
 
 ## Styling Guidelines (Arcade Theme)
 

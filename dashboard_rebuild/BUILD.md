@@ -1,31 +1,26 @@
-# Dashboard Build & Deploy
+# Dashboard Build & Sync
 
 ## Quick Build (copy-paste this)
 
 ```powershell
 cd C:\pt-study-sop\dashboard_rebuild
-npx vite build
-Remove-Item -Recurse -Force ..\brain\static\dist
-Copy-Item -Recurse dist\public ..\brain\static\dist
+npm install
+npm run build
+robocopy dist\public ..\brain\static\dist /MIR
 ```
 
-Then restart Flask: `python app.py` in `brain/`
+Then run the dashboard via: `Start_Dashboard.bat`
 
 ## Why This Process
 
-- Vite builds to `dashboard_rebuild/dist/public/` (configured in `vite.config.ts` line 35)
-- Flask serves from `brain/static/dist/` (configured in `brain/dashboard/routes.py` line 123)
-- You must copy the build output to Flask's static dir after every build
-- **Do NOT use `--outDir ../brain/static/dist`** with vite build - it creates JS files but doesn't update `index.html` hash references correctly
+- The UI builds to `dashboard_rebuild/dist/public/`.
+- Flask serves the canonical build from `brain/static/dist/`.
+- After any frontend change, build and mirror-copy `dist/public` into `brain/static/dist`.
 
-## Dev Server (hot reload, no build needed)
+## IMPORTANT
 
-```powershell
-cd C:\pt-study-sop\dashboard_rebuild
-npx vite dev --port 3000
-```
-
-Dev server proxies `/api` requests to Flask on port 5000 (see `vite.config.ts` line 51-54).
+- The repo's canonical run path is `Start_Dashboard.bat` (port 5000). Do not run `npm run dev` / `vite dev` for this project.
+- Canonical developer workflow lives in `docs/root/GUIDE_DEV.md`.
 
 ## Common Mistakes
 

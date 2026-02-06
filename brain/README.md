@@ -40,10 +40,9 @@ Send plain text or v9.3 JSON directly to the Brain intake endpoint. This logs a 
 
 ## Dashboard bundle (canonical)
 - The Flask app serves `brain/static/dist/index.html` as the one true dashboard.
-- Locked source repo (save point): `C:\Users\treyt\OneDrive\Desktop\pt-study-sop\archive\unused\Arcade-RetroDesign`.
-- Build steps: run `npm run build` in that repo, then copy `dist/public` into `brain/static/dist`.
-- Backups of older builds live in `archive/unused/dist_backup_*` and are not used at runtime.
-- If the frontend breaks, rebuild from Arcade-RetroDesign and replace `brain/static/dist` (do not mix assets from other folders).
+- Frontend source lives in this repo at `dashboard_rebuild/`.
+- Build steps: run `npm run build` in `dashboard_rebuild/`, then mirror-copy `dist/public` into `brain/static/dist`.
+- If the frontend breaks, rebuild and re-sync `brain/static/dist` (do not mix assets from other folders).
 
 ```powershell
 # Plain text
@@ -56,12 +55,8 @@ curl -X POST http://127.0.0.1:5000/api/brain/chat -H "Content-Type: application/
 ### Launch Dashboard
 
 ```powershell
-# Option 1: One-click launcher (recommended)
+# One-click launcher (recommended)
 ../Start_Dashboard.bat
-
-# Option 2: Manual launch
-python dashboard_web.py
-# Then open http://127.0.0.1:5000 in your browser
 ```
 
 ### Calendar CLI (add/clear)

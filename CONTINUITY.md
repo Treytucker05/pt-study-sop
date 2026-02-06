@@ -300,3 +300,8 @@
 - Add github + memory MCP server presets to .mcp.json and .claude/mcp.json (GitHub requires GITHUB_PERSONAL_ACCESS_TOKEN).
 - Document the MCP presets in docs/AI_CONFIG.md.
 - Add a quick black-screen troubleshooting note to docs/root/GUIDE_USER.md.
+
+
+## 2026-02-06 - Align Dashboard Build/Run Docs
+
+- Update dashboard_rebuild and brain READMEs to match the canonical workflow: build via npm run build, sync dist/public -> brain/static/dist, run via Start_Dashboard.bat (no Vite dev server).
