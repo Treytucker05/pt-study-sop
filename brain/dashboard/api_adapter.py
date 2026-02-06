@@ -241,6 +241,166 @@ def get_course_obsidian_folder(course_name: str) -> str | None:
     return None
 
 
+def _extract_title_from_notes(notes: str) -> str | None:
+    """Return the first H1 title from notes (line starting with '# ')."""
+    for line in notes.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("# "):
+            title = stripped[2:].strip()
+            if title:
+                return title
+    return None
+
+
+def _sanitize_filename(name: str) -> str:
+    """Sanitize a string for safe Obsidian filenames on Windows."""
+    cleaned = re.sub(r'[\\/:*?"<>|]', "", name)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned or "Study Notes"
+
+
+def _normalize_filename(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", name.lower())
+
+
+def _parse_module_number(title: str) -> str | None:
+    match = re.search(r"\bmodule\s+(\d+)\b", title, re.IGNORECASE)
+    if match:
+        return match.group(1)
+    return None
+
+
+def _strip_module_prefix(title: str) -> str:
+    return re.sub(r"(?i)^\s*module\s*\d+\s*[:\-\u2013\u2014]*\s*", "", title).strip()
+
+
+def _find_existing_match(files: list[str], target_title: str, module_number: str | None) -> str | None:
+    target_norm = _normalize_filename(target_title)
+    module_token = f"module{module_number}" if module_number else None
+    for path in files:
+        if not isinstance(path, str):
+            continue
+        base = os.path.splitext(os.path.basename(path))[0]
+        base_norm = _normalize_filename(base)
+        if base_norm == target_norm:
+            return path
+    if module_token:
+        for path in files:
+            if not isinstance(path, str):
+                continue
+            base = os.path.splitext(os.path.basename(path))[0]
+            if module_token in _normalize_filename(base):
+                return path
+    return None
+
+
+def _build_destination_options(course_folder: str | None, title: str) -> dict:
+    today = datetime.now().strftime("%Y-%m-%d")
+    session_path = (
+        f"{course_folder}/Session-{today}.md" if course_folder else f"Inbox/Study-Log-{today}.md"
+    )
+
+    module_number = _parse_module_number(title)
+    base_title = _strip_module_prefix(title) if module_number else title
+    base_title = _sanitize_filename(base_title)
+    if module_number:
+        module_filename = f"Module {module_number} - {base_title}.md"
+    else:
+        module_filename = f"{base_title}.md"
+
+    module_path = f"{course_folder}/{module_filename}" if course_folder else None
+
+    files = []
+    if course_folder:
+        list_result = obsidian_list_files(course_folder)
+        if list_result.get("success"):
+            files = list_result.get("files") or []
+
+    existing_module = (
+        _find_existing_match(files, f"Module {module_number} - {base_title}" if module_number else base_title, module_number)
+        if files
+        else None
+    )
+
+    recommended_path = existing_module or module_path or session_path
+    recommended_label = (
+        "Recommended (existing module note)"
+        if existing_module
+        else "Recommended (new module note)"
+        if module_path
+        else "Recommended (session log)"
+    )
+
+    options = []
+    options.append(
+        {
+            "id": "recommended",
+            "label": recommended_label,
+            "path": recommended_path,
+            "kind": "recommended",
+            "exists": bool(existing_module),
+        }
+    )
+    if session_path and session_path != recommended_path:
+        options.append(
+            {
+                "id": "session",
+                "label": "Session log",
+                "path": session_path,
+                "kind": "session",
+                "exists": True,
+            }
+        )
+    if module_path and module_path != recommended_path:
+        options.append(
+            {
+                "id": "new-module",
+                "label": "Create new module note",
+                "path": module_path,
+                "kind": "new",
+                "exists": False,
+            }
+        )
+
+    if files:
+        other_files = [
+            path
+            for path in files
+            if isinstance(path, str)
+            and path.lower().endswith(".md")
+            and path not in {recommended_path, session_path}
+            and "session-" not in path.lower()
+        ]
+        for path in other_files[:5]:
+            options.append(
+                {
+                    "id": f"existing-{path}",
+                    "label": f"Existing: {os.path.basename(path)}",
+                    "path": path,
+                    "kind": "existing",
+                    "exists": True,
+                }
+            )
+
+    options.append(
+        {
+            "id": "custom",
+            "label": "Custom path...",
+            "path": "",
+            "kind": "custom",
+            "exists": False,
+        }
+    )
+
+    return {
+        "recommended_path": recommended_path,
+        "recommended_label": recommended_label,
+        "session_path": session_path,
+        "module_path": module_path,
+        "options": options,
+    }
+
+
 # Wrap optional imports to prevent crash if Scholar/Google libs missing
 try:
     from scholar.brain_reader import (
@@ -270,25 +430,36 @@ adapter_bp = Blueprint("api_adapter", __name__, url_prefix="/api")
 
 
 @adapter_bp.route("/db/health", methods=["GET"])
+@adapter_bp.route("/health/db", methods=["GET"])
 def db_health():
     """Read-only health check: schema version, tables, v9.4 readiness.
 
     Only reports structural info — no file paths exposed.
     """
-    from config import VERSION
+    from config import VERSION, DB_PATH
     import os as _os
-    from config import DB_PATH
 
-    result = {"config_version": VERSION, "db_exists": _os.path.exists(DB_PATH)}
+    result = {
+        "ok": False,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "config_version": VERSION,
+        "db_path": DB_PATH,
+        "db_exists": _os.path.exists(DB_PATH),
+        "schema_version": None,
+    }
 
     if not result["db_exists"]:
+        result["error"] = "DB file not found"
         return jsonify(result)
 
     conn = None
     try:
-        conn = sqlite3.connect(DB_PATH, timeout=5)
+        conn = get_connection()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.fetchone()
+        result["ok"] = True
         # schema version from first session row
         cur.execute("SELECT schema_version FROM sessions LIMIT 1")
         row = cur.fetchone()
@@ -311,6 +482,7 @@ def db_health():
         if missing:
             result["v94_missing"] = missing
     except Exception as e:
+        result["ok"] = False
         result["error"] = str(e)
     finally:
         if conn:
@@ -2117,6 +2289,7 @@ def get_tasks():
 
 
 @adapter_bp.route("/proposals", methods=["GET"])
+@adapter_bp.route("/scholar/proposals", methods=["GET"])
 def get_proposals():
     """
     Mimics: app.get("/api/proposals")
@@ -2465,68 +2638,156 @@ def update_planner_task(task_id):
 # ==============================================================================
 
 
+def _scholar_status_payload() -> dict:
+    """
+    Return a UI-friendly Scholar orchestrator status payload.
+
+    Frontend expects:
+      - running: bool
+      - status: "running" | "complete" | "error" | "idle"
+      - last_run: ISO timestamp (best-effort)
+      - current_step: string (best-effort)
+      - progress: number 0-100 (optional; best-effort)
+      - errors: list[str] (best-effort)
+    """
+    from pathlib import Path
+
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    running = any(run_dir.glob("*.pid")) or any(run_dir.glob("*.running"))
+
+    last_run: str | None = None
+    current_step: str | None = None
+    progress: float | None = None
+    errors: list[str] = []
+
+    # Prefer latest log file for timestamps + step/error hints
+    log_files = list(run_dir.glob("*.log"))
+    if log_files:
+        latest_log = max(log_files, key=lambda f: f.stat().st_mtime)
+        try:
+            last_run = datetime.fromtimestamp(latest_log.stat().st_mtime).isoformat()
+        except Exception:
+            last_run = None
+
+        try:
+            content = latest_log.read_text(encoding="utf-8", errors="ignore")
+            tail = [ln.strip() for ln in content.splitlines()[-120:] if ln.strip()]
+            if tail:
+                # Best-effort: last non-empty line as "current step"
+                current_step = tail[-1][:200]
+
+            # Best-effort: surface explicit error lines
+            for ln in tail[-120:]:
+                if re.search(r"\b(error|exception|traceback)\b", ln, re.IGNORECASE):
+                    errors.append(ln[:300])
+            errors = errors[-10:]
+
+            # Best-effort progress parsing: look for "Progress: NN%" in tail
+            for ln in reversed(tail):
+                m = re.search(r"progress\s*[:=-]\s*(\d{1,3})\s*%?", ln, re.IGNORECASE)
+                if m:
+                    try:
+                        pct = float(m.group(1))
+                        progress = max(0.0, min(100.0, pct))
+                        break
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+    else:
+        # Fall back to latest final artifact timestamp (if any)
+        final_files = list(run_dir.glob("unattended_final_*.md"))
+        if final_files:
+            latest_final = max(final_files, key=lambda f: f.stat().st_mtime)
+            try:
+                last_run = datetime.fromtimestamp(latest_final.stat().st_mtime).isoformat()
+            except Exception:
+                last_run = None
+
+    if running:
+        status = "running"
+    elif errors:
+        status = "error"
+    elif last_run:
+        status = "complete"
+    else:
+        status = "idle"
+
+    payload: dict = {
+        "running": bool(running),
+        "status": status,
+        "last_run": last_run,
+    }
+    if current_step:
+        payload["current_step"] = current_step
+    if progress is not None:
+        payload["progress"] = progress
+    if errors:
+        payload["errors"] = errors
+
+    return payload
+
+
+@adapter_bp.route("/scholar", methods=["GET"])
+def scholar_overview():
+    """
+    UI polling endpoint for Scholar orchestrator status.
+    Kept intentionally lightweight; detailed artifacts are available via /scholar/logs
+    and the rest of the Scholar endpoints.
+    """
+    try:
+        # Opportunistic cleanup so stale pid markers don't wedge the UI.
+        try:
+            from dashboard.scholar import cleanup_stale_pids
+            cleanup_stale_pids()
+        except Exception:
+            pass
+        return jsonify(_scholar_status_payload())
+    except Exception as e:
+        return jsonify({"running": False, "status": "error", "errors": [str(e)]}), 500
+
+
 @adapter_bp.route("/scholar/run", methods=["POST"])
 def run_scholar():
     """
     Triggers the Scholar agent loop.
-    Uses subprocess to spawn independent process or background thread?
-    For safety, let's use a background thread calling `scholar.run_scholar_orchestrator` if properly isolated,
-    or subprocess to run `run_scholar.bat` (unattended).
-
-    Subprocess is safer to avoid blocking Flask.
+    Uses the in-app orchestrator runner so the button actually starts
+    the Codex-powered Scholar workflow and writes outputs.
     """
-    import subprocess
     from pathlib import Path
 
     try:
+        from dashboard.scholar import cleanup_stale_pids, run_scholar_orchestrator
         repo_root = Path(__file__).parent.parent.parent.resolve()
-        script_path = repo_root / "scripts" / "run_scholar.bat"
+        run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
+        run_dir.mkdir(parents=True, exist_ok=True)
 
-        # Check if running? (Optional)
+        cleanup_stale_pids()
+        is_running = any(run_dir.glob("*.pid")) or any(run_dir.glob("*.running"))
+        if is_running:
+            return jsonify({"success": False, "message": "Scholar run already in progress"}), 409
 
-        # Spawn process
-        # We use a special flag or mode? The bat file shows a menu.
-        # We need an unattended mode.
-        # The user wants "Unattended execution" from menu.
-        # But for now, let's just assume we can call the python script directly.
-
-        # Direct python call to bypass menu:
-        # python brain/dashboard/scholar.py --mode orchestrator
-
-        py_script = repo_root / "brain" / "dashboard" / "scholar.py"
-
-        # Use Popen to run in background
-        subprocess.Popen(
-            ["python", str(py_script), "--mode", "orchestrator"],
-            cwd=str(repo_root),
-            start_new_session=True,  # Detach
-        )
-
-        return jsonify({"success": True, "message": "Scholar process started"})
+        data = request.get_json() or {}
+        mode = data.get("mode", "brain")
+        if mode not in ("brain", "tutor"):
+            mode = "brain"
+        result = run_scholar_orchestrator(mode=mode)
+        if result.get("ok") is False:
+            return jsonify(result), 400
+        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @adapter_bp.route("/scholar/status", methods=["GET"])
 def scholar_status():
-    """Check if Scholar is running."""
-    from pathlib import Path
-
+    """Back-compat alias for Scholar status polling."""
     try:
-        repo_root = Path(__file__).parent.parent.parent.resolve()
-        run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
-
-        is_running = False
-        if run_dir.exists():
-            for pid_file in run_dir.glob("*.pid"):
-                # If pid file exists, check if process is still running
-                is_running = True
-                break
-
-        return jsonify(
-            {"running": is_running, "status": "active" if is_running else "idle"}
-        )
-    except:
+        return jsonify(_scholar_status_payload())
+    except Exception:
         return jsonify({"running": False, "status": "unknown"})
 
 
@@ -5609,6 +5870,110 @@ def get_llm_status():
         )
 
 
+@adapter_bp.route("/brain/organize-preview", methods=["POST"])
+def brain_organize_preview():
+    """Organize raw notes into structured markdown and suggest destination paths."""
+    import traceback
+    from llm_provider import call_llm
+
+    try:
+        data = request.get_json() or {}
+        raw_notes = data.get("rawNotes") or data.get("message") or ""
+        if not isinstance(raw_notes, str) or not raw_notes.strip():
+            return jsonify({"success": False, "error": "No notes provided."})
+
+        course = data.get("course") or get_current_course_name() or "General"
+        course_folder = get_course_obsidian_folder(course) if course else None
+        title_hint = _extract_title_from_notes(raw_notes) or "Study Notes"
+
+        system_prompt = """You are a study note organizer for a DPT (Doctor of Physical Therapy) student.
+Convert raw notes into a clean, structured Obsidian markdown note for review.
+
+Rules:
+- Preserve the user's meaning; do NOT add new facts.
+- Output markdown WITHOUT a top-level H1. Use H2/H3 headings only.
+- Use bullet lists for definitions, stats, and frameworks.
+- Include a "Recall Questions" section with 5-10 questions.
+- Use Obsidian wikilinks [[Like This]] for key concepts.
+- If CDC or WHO is mentioned, link them as [CDC](https://www.cdc.gov/) or [WHO](https://www.who.int/).
+- Provide a short review checklist (4-6 items).
+
+Return STRICT JSON only (no code fences, no extra text) with:
+{
+  "title": "string",
+  "markdown": "string",
+  "checklist": ["string", ...],
+  "suggested_links": ["string", ...]
+}
+"""
+
+        result = call_llm(
+            system_prompt=system_prompt,
+            user_prompt=f"Organize these notes:\n\n{raw_notes}",
+            provider="openrouter",
+            model="google/gemini-2.0-flash-001",
+            timeout=60,
+        )
+
+        organized_title = title_hint
+        organized_markdown = raw_notes.strip()
+        checklist = [
+            "Headings reflect the main sections.",
+            "Key facts are accurate and complete.",
+            "Links look correct.",
+            "Recall questions match the content.",
+            "Ready to save.",
+        ]
+        suggested_links = []
+
+        if result.get("success"):
+            content = result.get("content", "") or ""
+            parsed = None
+            try:
+                parsed = json.loads(content)
+            except json.JSONDecodeError:
+                json_match = re.search(r"\{[\s\S]*\}", content)
+                if json_match:
+                    try:
+                        parsed = json.loads(json_match.group())
+                    except Exception:
+                        parsed = None
+
+            if isinstance(parsed, dict):
+                organized_title = parsed.get("title") or organized_title
+                organized_markdown = parsed.get("markdown") or organized_markdown
+                if isinstance(parsed.get("checklist"), list) and parsed["checklist"]:
+                    checklist = [str(item) for item in parsed["checklist"] if str(item).strip()]
+                if isinstance(parsed.get("suggested_links"), list):
+                    suggested_links = [str(item) for item in parsed["suggested_links"] if str(item).strip()]
+
+        if not suggested_links:
+            suggested_links = re.findall(r"\[\[([^\]]+)\]\]", organized_markdown)
+
+        destination = _build_destination_options(course_folder, organized_title)
+
+        return jsonify(
+            {
+                "success": True,
+                "organized": {
+                    "title": organized_title,
+                    "markdown": organized_markdown,
+                    "checklist": checklist,
+                    "suggested_links": suggested_links,
+                },
+                "destination": destination,
+                "course": course,
+                "courseFolder": course_folder,
+            }
+        )
+
+    except Exception as e:
+        error_trace = traceback.format_exc()
+        print(f"[ORGANIZE PREVIEW ERROR] {str(e)}")
+        print(error_trace)
+        return jsonify({"success": False, "error": str(e)})
+
+
 @adapter_bp.route("/brain/chat", methods=["POST"])
 def brain_chat():
     """
@@ -5628,6 +5993,10 @@ def brain_chat():
         data = request.get_json() or {}
         message = data.get("message", "")
         mode = data.get("mode", "all")  # all, obsidian, anki, metrics
+        destination_path = data.get("destinationPath")
+        organized_markdown = data.get("organizedMarkdown") or ""
+        organized_title = data.get("organizedTitle") or ""
+        confirm_write = data.get("confirmWrite")
 
         # Import LLM provider using absolute path
         import sys
@@ -6505,6 +6874,8 @@ IMPORTANT:
             "obsidian",
             "all",
         )
+        if confirm_write is False:
+            sync_to_obsidian = False
 
         if sync_to_obsidian and parsed_data and not is_conversation:
             # Build Obsidian note content
@@ -6526,6 +6897,11 @@ IMPORTANT:
 
             obsidian_content = f"\n\n---\n## Study Session - {time_now}\n"
             obsidian_content += f"**Course:** {course}\n\n"
+
+            if organized_markdown.strip():
+                title_line = f"### Organized Notes: {organized_title}\n" if organized_title else "### Organized Notes\n"
+                obsidian_content += title_line
+                obsidian_content += f"{organized_markdown.strip()}\n\n"
 
             if parsed_data.get("summary"):
                 obsidian_content += f"### Summary\n{parsed_data['summary']}\n\n"
@@ -6557,8 +6933,15 @@ IMPORTANT:
             if parsed_data.get("notes"):
                 obsidian_content += f"### Notes\n{parsed_data['notes']}\n"
 
+            raw_notes = message if isinstance(message, str) else ""
+            if raw_notes.strip():
+                obsidian_content += "### Full Notes (Raw)\n"
+                obsidian_content += f"{raw_notes.strip()}\n"
+
             # Route to course-specific folder or fall back to Inbox
-            if course_folder:
+            if destination_path:
+                obsidian_path = destination_path
+            elif course_folder:
                 obsidian_path = f"{course_folder}/Session-{today}.md"
             else:
                 obsidian_path = f"Inbox/Study-Log-{today}.md"
@@ -6668,7 +7051,6 @@ def brain_quick_chat():
     return Response(
         generate(),
         mimetype="text/event-stream",
-        direct_passthrough=True,
         headers={
             "Cache-Control": "no-cache, no-store",
             "X-Accel-Buffering": "no",

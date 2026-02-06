@@ -7,17 +7,17 @@ This guide covers how to run the stack, update docs, and extend the system safel
 - Backend: Python + Flask (Brain/Dashboard)
 - DB: SQLite (`brain/data/pt_study.db`)
 - Frontend: React build served from `brain/static/dist/`
-- Knowledge base: Obsidian vault under `projects/treys-agent/context/`
+- Knowledge base: Obsidian vault at `C:\Users\treyt\Desktop\PT School Semester 2` (notes under `projects/pt-study-sop/`)
 
 ## Run Locally
 1. Install Python deps: `pip install -r requirements.txt`
-2. Launch dashboard: `python brain/dashboard_web.py`
-3. Tutor runs via `projects/treys-agent/ask.bat`
+2. Launch dashboard: `Start_Dashboard.bat`
+3. Open: `http://127.0.0.1:5000`
 
 ## Configuration
 - Calendar/Tasks: `brain/data/api_config.json`
 - OAuth tokens: `brain/data/gcal_token.json`
-- System rules: `sop/src/` (canonical)
+- System rules: `sop/library/` (canonical)
 
 ## Contracts (Do Not Drift)
 - WRAP schema: `docs/contracts/wrap_schema.md`
@@ -40,4 +40,4 @@ This guide covers how to run the stack, update docs, and extend the system safel
 - User Guide: `docs/root/GUIDE_USER.md`
 - Developer Guide: `docs/root/GUIDE_DEV.md`
 - Architecture Spec: `docs/root/GUIDE_ARCHITECTURE.md`
-- Index: `DOCS_INDEX.md`
+- Index: `docs/README.md` (`DOCS_INDEX.md` is legacy)

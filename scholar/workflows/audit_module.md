@@ -7,8 +7,8 @@
 
 ## Inputs (must be allowlisted)
 
-- One Tutor module file path (e.g., `sop/gpt-knowledge/M0-planning.md`).
-- Constraint: The path must be present in the `tutor_paths` array within `scholar/inputs/audit_manifest.json`.
+- One SOP module file path (e.g., `sop/library/05-session-flow.md` or `sop/runtime/knowledge_upload/01_MODULES_M0-M6.md`).
+- Constraint: The path must be present in `tutor_study_paths` (preferred) or `tutor_paths` within `scholar/inputs/audit_manifest.json`.
 
 ## Outputs
 

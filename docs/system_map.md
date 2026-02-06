@@ -67,7 +67,7 @@ flowchart LR
 - **Database:** `brain/data/pt_study.db` (source of truth).
 - **Card Drafts:** `card_drafts` table + Anki sync tooling.
 - **Scholar Outputs:** `scholar/outputs/` (reports, questions, proposals).
-- **Obsidian Notes:** `projects/treys-agent/context/` (primary knowledge base; updated by Brain after WRAP).
+- **Obsidian Notes:** `C:\Users\treyt\Desktop\PT School Semester 2` (see `projects/pt-study-sop/`).
 
 ## Image Export (PNG)
 - Export the Mermaid diagram to `docs/assets/system_map.png`.

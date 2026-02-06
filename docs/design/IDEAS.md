@@ -36,9 +36,9 @@ Captured research items and future enhancements for the PT Study system.
 - Drill Mode: Pattern recognition, error correction, spaced repetition integration
 
 **Source Files to Review:**
-- sop/gpt-knowledge/M2-MODES.md
-- sop/gpt-knowledge/M1-PLANNING.md
-- sop/MASTER_PLAN_PT_STUDY.md (mode definitions)
+- sop/library/06-modes.md
+- sop/library/05-session-flow.md (planning + modes overview)
+- sop/library/00-overview.md
 
 **Status:** UNCONFIRMED - needs SOP review
 

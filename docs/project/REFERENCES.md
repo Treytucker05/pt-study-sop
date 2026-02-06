@@ -4,7 +4,7 @@
 - [Architecture context](../root/ARCHITECTURE_CONTEXT.md)
 - [System map](../system_map.md)
 - [Calendar tasks](../calendar_tasks.md)
-- [Master plan](../../sop/src/MASTER_PLAN_PT_STUDY.md)
+- [SOP overview (canonical)](../../sop/library/00-overview.md)
 
 ## Contracts
 - [Contracts index](../contracts/INDEX.md)

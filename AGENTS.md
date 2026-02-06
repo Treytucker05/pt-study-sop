@@ -13,9 +13,11 @@ Applies to all work under `C:/pt-study-sop`. A nearer `AGENTS.md` overrides this
 - Do not edit `archive/` unless explicitly requested.
 - Ask before destructive or irreversible actions.
 - Run project-required checks or state when they are skipped.
+- When completing work, read and update any docs that correspond to the changed code (see `docs/README.md` Feature→Doc table). Don't read all docs — just the relevant ones.
 - Auto-commit after changes with a conventional commit message if none is provided.
 - Explore the project first (key files/paths), then invoke any skill.
 - For SwiftUI tasks, prefer retrieval-led reasoning over pre-training-led reasoning.
+- Prompt suffix defaults: treat every request as if it ends with `use subagents; use bq when asked; explain why; include ASCII diagram when helpful` unless the user says "no suffix" or "no subagents".
 
 ## When to Ask
 

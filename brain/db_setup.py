@@ -1024,6 +1024,35 @@ def init_database():
     """
     )
 
+    # ------------------------------------------------------------------
+    # Scholar Run tracking (v9.4.2 - for UI run button + history)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scholar_runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            started_at TEXT NOT NULL,
+            ended_at TEXT,
+            status TEXT DEFAULT 'running',
+            error_message TEXT,
+            triggered_by TEXT DEFAULT 'ui',
+            params_json TEXT,
+            digest_id INTEGER,
+            proposals_created INTEGER DEFAULT 0,
+            notes TEXT,
+            FOREIGN KEY(digest_id) REFERENCES scholar_digests(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_scholar_runs_status
+        ON scholar_runs(status)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_scholar_runs_started
+        ON scholar_runs(started_at DESC)
+    """)
+
     # Add content + cluster columns to scholar tables (v9.4 DB-first)
     for table, cols in [
         ("scholar_digests", [("content", "TEXT"), ("cluster_id", "TEXT")]),

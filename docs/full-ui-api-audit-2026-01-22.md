@@ -1,4 +1,4 @@
-﻿## Full UI + API Audit (React Dashboard)
+## Full UI + API Audit (React Dashboard)
 
 Date: 2026-01-22
 Scope: React UI served from Flask (`Start_Dashboard.bat` → `brain/dashboard_web.py`), legacy dashboard treated as unused.
@@ -101,22 +101,23 @@ API usage:
 File: `dashboard_rebuild/client/src/pages/scholar.tsx`
 Tabs:
 - Summary
-- Tutor Audit
-- Questions
-- Evidence
+- Analysis
 - Proposals
 - History
 
 Buttons / actions:
 - Refresh data
 - Scholar chat submit
+- Open detailed analysis (from concerns card)
+- Go to Brain (review sessions)
+- Run clustering
 - Proposal status select
 
 API usage:
 - Sessions: GET `/api/sessions`
 - Courses: GET `/api/courses`
 - Proposals: GET `/api/proposals`, PATCH `/api/proposals/<id>`
-- Scholar: GET `/api/scholar/questions`, GET `/api/scholar/findings`, GET `/api/scholar/tutor-audit`, POST `/api/scholar/chat`
+- Scholar: GET `/api/scholar/questions`, GET `/api/scholar/findings`, GET `/api/scholar/tutor-audit`, GET `/api/scholar/clusters`, POST `/api/scholar/clusters/run`, POST `/api/scholar/chat`
 
 ### Tutor Page
 File: `dashboard_rebuild/client/src/pages/tutor.tsx`

@@ -1,7 +1,10 @@
 # Obsidian Write Semantics (Brain → Obsidian)
 
 ## Default Behavior (Safe)
-- Append a `## WRAP Highlights` block to a session note.
+- Append a `## Study Session - HH:MM` block to a session note.
+- Include summary, concepts, strengths, areas to review, and notes extracted by Brain.
+- If an organized markdown preview is provided, append it under `### Organized Notes` with its title.
+- If raw input is provided, append a `### Full Notes (Raw)` section with the original text.
 - Never rewrite user-authored content.
 - Each block is keyed by `session_id` for idempotency.
 

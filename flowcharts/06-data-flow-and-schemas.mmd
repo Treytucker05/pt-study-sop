@@ -1,0 +1,53 @@
+%% PT Study SOP - Data Flow & Schema Contracts
+%% How data moves through the system and what shape it has
+
+flowchart TD
+    Tutor["TUTOR OUTPUT<br/>━━━━━━━━━━<br/>at M6 Wrap"]
+
+    Tutor -->|Produces| ExitTicket["EXIT TICKET<br/>(Mandatory text)<br/>─────────────────<br/>1. Free recall blurt<br/>2. Muddiest point<br/>3. Next action hook<br/><br/>Format: Human-readable<br/>No JSON, no spacing schedule"]
+
+    Tutor -->|Produces| Ledger["SESSION LEDGER v9.4<br/>(Mandatory text)<br/>─────────────────────<br/>Fields:<br/>- session_date: YYYY-MM-DD\n- covered: items studied\n- not_covered: items skipped\n- weak_anchors: needs review\n- artifacts_created: cards, drawings\n- timebox_min: duration\n\nEmpty fields: 'NONE'\nFormat: Human-readable, not JSON"]
+
+    Tutor -->|Creates| Cards["ANKI CARD ARTIFACTS<br/>(Optional, if created)<br/>───────────────────<br/>Per card:\n- Front (question/prompt)\n- Back (answer)\n- Tags (source-tagged)\n- Deck (e.g., 'DPT-Anatomy')\n- guid (dedupe key)\n\nFormat: Text or card data\nSource reference: mandatory"]
+
+    ExitTicket --> Brain
+    Ledger --> Brain["BRAIN: Ingestion Layer<br/>━━━━━━━━━━━━━━━━<br/><br/>Input: Session Ledger +\nExit Ticket (text)\n\nProcess:\n1. Parse Session Ledger\n2. Ingest via Brain prompts\n   (see 10-deployment.md)\n3. Transform to JSON\n\nNo invented data.\nIf field is 'NONE',\nJSON: null or 'N/A'"]
+
+    Cards --> AnkiBridge["ANKI BRIDGE<br/>─────────────<br/>Input: Card artifacts\nOperations:\n- Add/update in Anki\n- Dedupe by deck+guid\n- Source-tag\n- Offline fallback\n\nOutput: Cards in\nAnki Desktop"]
+
+    AnkiBridge --> AnkiDesktop["ANKI DESKTOP<br/>User reviews cards\non spacing schedule"]
+
+    Brain -->|Produces| SessionLogJSON["SESSION LOG v9.4<br/>(JSON)<br/>────────────────<br/>Tracker Fields:\n- date, topic, mode\n- duration_min\n- understanding, retention\n- calibration_gap\n- rsr_percent\n- cognitive_load\n- transfer_check\n- anchors\n- what_worked\n- what_needs_fixing\n- error_classification\n- error_severity\n- error_recurrence\n- notes\n\nEnhanced Fields:\n- source_lock\n- plan_of_attack\n- frameworks_used\n- buckets\n- anki_cards (semicolon-list)\n- exit_ticket\n- weak_anchors\n- artifacts_created\n- spaced_reviews\n\nSchema: v9.4 (additive-only)\nBackward-compatible\nStored in Brain DB"]
+
+    SessionLogJSON --> Storage["BRAIN STORAGE<br/>────────────────<br/>Stores:<br/>- Session logs (JSON)\n- Progress tracker\n- Resume data"]
+
+    Storage -->|Reads| Dashboard["DASHBOARD / PLANNER<br/>━━━━━━━━━━━━━━━━<br/>\nInputs:\n- Session logs (JSON)\n- Progress tracker\n\nGenerates:\n- Coverage maps\n- Spacing alerts\n- Readiness scores\n- Weekly plans"]
+
+    Storage -->|Reads| Resume["RESUME v1<br/>────────────<br/>Generated from:\nRecent sessions\n\nFields:\n- generated_at\n- readiness_score\n- recent_sessions[]\n- topic_coverage[]\n- gaps[]\n- recommendations[]\n\nOutput: JSON\nInput to: Dashboard"]
+
+    Brain -->|Ingests| RAGDocs["RAG DOCUMENT SCHEMA v1<br/>────────────────────<br/>Per source document:\n- id (unique)\n- source_path\n- course\n- module\n- doc_type\n- created_at\n- checksum\n- text_chunks[] (indexed)\n- image_captions[] (indexed)\n- metadata{}\n\nGlossary Rule:\nAll definitions must be\nFUNCTION-FIRST"]
+
+    RAGDocs -->|Indexed| RAG["RAG SUBSYSTEM<br/>(NotebookLM)<br/>────────────<br/>Returns: snippets +\ncitations for tutor\nqueries\n\nSource-lock compliant"]
+
+    Dashboard --> Observer["OBSERVER / LEARNER<br/>Reads:\n- Dashboard\n- Resume\n- Session Ledgers"]
+
+    AnkiDesktop --> Observer
+
+    Observer -->|Next Session| TutorInput["Learner inputs\nto Tutor\n─────────────\nMaterials + request"]
+
+    TutorInput --> Tutor
+
+    style Tutor fill:#4ecdc4,stroke:#333,color:#fff
+    style ExitTicket fill:#ffab91,stroke:#333,color:#000
+    style Ledger fill:#fff59d,stroke:#333,color:#000
+    style Cards fill:#c5e1a5,stroke:#333,color:#000
+    style Brain fill:#b2dfdb,stroke:#333,color:#000
+    style AnkiBridge fill:#b3e5fc,stroke:#333,color:#000
+    style AnkiDesktop fill:#ffffd2,stroke:#333,color:#000
+    style SessionLogJSON fill:#e1bee7,stroke:#333,color:#000
+    style Storage fill:#f8bbd0,stroke:#333,color:#000
+    style Dashboard fill:#bbdefb,stroke:#333,color:#000
+    style Resume fill:#ffe0b2,stroke:#333,color:#000
+    style RAGDocs fill:#ffccbc,stroke:#333,color:#000
+    style RAG fill:#c8e6c9,stroke:#333,color:#000
+    style Observer fill:#ff8787,stroke:#333,color:#000

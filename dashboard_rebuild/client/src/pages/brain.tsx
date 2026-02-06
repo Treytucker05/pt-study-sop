@@ -12,7 +12,8 @@ import { ObsidianVaultBrowser } from "@/components/ObsidianVaultBrowser";
 import { AnkiIntegration } from "@/components/AnkiIntegration";
 import { SessionEvidence } from "@/components/SessionEvidence";
 import { NextActions } from "@/components/NextActions";
-import { useState } from "react";
+import { TopicNoteBuilder } from "@/components/TopicNoteBuilder";
+import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
@@ -22,17 +23,17 @@ import {
 } from "lucide-react";
 
 const FLOW_STEPS = [
-  { id: "study", label: "Study (Tutor)", tab: null },
-  { id: "wrap", label: "Lite Wrap Ledger", tab: null },
-  { id: "generate", label: "Generate JSON", tab: "daily" },
-  { id: "attach", label: "Attach JSON", tab: "daily" },
-  { id: "planner", label: "Planner Queue", tab: "weekly" },
-  { id: "actions", label: "Next Actions", tab: "daily" },
+  { id: "study", label: "Study (Tutor)", tab: null, section: null },
+  { id: "wrap", label: "Lite Wrap Ledger", tab: null, section: null },
+  { id: "generate", label: "Generate JSON", tab: "today", section: "section-ingestion" },
+  { id: "attach", label: "Attach JSON", tab: "today", section: "section-ingestion" },
+  { id: "planner", label: "Planner Queue", tab: "this_week", section: "section-planner" },
+  { id: "actions", label: "Next Actions", tab: "today", section: "section-actions" },
 ] as const;
 
 export default function Brain() {
   const [graphMode, setGraphMode] = useState<"vault" | "mindmap">("vault");
-  const [activeTab, setActiveTab] = useState("daily");
+  const [activeTab, setActiveTab] = useState("today");
 
   const { data: obsidianStatus } = useQuery({
     queryKey: ["obsidian", "status"],
@@ -68,8 +69,44 @@ export default function Brain() {
 
   const pendingDrafts = ankiDrafts.filter(d => d.status === "pending");
 
-  const hasRecentSession = sessions.length > 0;
+  // Deterministic done logic for each flow step (local date, not UTC)
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const hasRecentSession = sessions.some(
+    (s: { session_date?: string }) => s.session_date === today
+  );
   const hasPlannerTasks = plannerQueue.length > 0;
+  const hasJsonAttached = sessions.some(
+    (s: { session_date?: string; understanding_level?: number | null }) =>
+      s.session_date === today && s.understanding_level != null
+  );
+
+  const stepDone: Record<string, boolean> = {
+    study: hasRecentSession,
+    wrap: hasRecentSession, // wrap is prerequisite to having a session logged
+    generate: hasJsonAttached,
+    attach: hasJsonAttached,
+    planner: hasPlannerTasks,
+    actions: hasPlannerTasks,
+  };
+
+  const navigateToStep = useCallback((step: typeof FLOW_STEPS[number]) => {
+    if (!step.tab) return;
+    setActiveTab(step.tab);
+    if (step.section) {
+      // Scroll after tab switch renders
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const el = document.getElementById(step.section!);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+            el.classList.add("ring-2", "ring-primary/50");
+            setTimeout(() => el.classList.remove("ring-2", "ring-primary/50"), 1500);
+          }
+        });
+      });
+    }
+  }, []);
 
   return (
     <Layout>
@@ -84,13 +121,11 @@ export default function Brain() {
           <CardContent className="p-3">
             <div className="flex items-center gap-1 overflow-x-auto">
               {FLOW_STEPS.map((step, i) => {
-                const done =
-                  (step.id === "study" && hasRecentSession) ||
-                  (step.id === "actions" && hasPlannerTasks);
+                const done = stepDone[step.id] ?? false;
                 return (
                   <div key={step.id} className="flex items-center gap-1 shrink-0">
                     <button
-                      onClick={() => step.tab && setActiveTab(step.tab)}
+                      onClick={() => navigateToStep(step)}
                       className={`flex items-center gap-1 px-2 py-1 text-[9px] font-terminal border rounded-none transition-colors ${
                         done
                           ? "border-green-500/50 text-green-400 bg-green-500/10"
@@ -138,27 +173,30 @@ export default function Brain() {
           )}
         </div>
 
-        {/* Main Tabs: DAILY / WEEKLY / ADVANCED */}
+        {/* Main Tabs: TODAY / THIS WEEK / TOOLS / DATA */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-4">
-          <TabsList className="grid w-full grid-cols-3 rounded-none bg-black/40 border-2 border-primary p-0 h-auto">
-            <TabsTrigger value="daily" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground border-r border-primary/30">
-              DAILY
+          <TabsList className="grid w-full grid-cols-4 rounded-none bg-black/40 border-2 border-primary p-0 h-auto">
+            <TabsTrigger value="today" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground border-r border-primary/30">
+              TODAY
             </TabsTrigger>
-            <TabsTrigger value="weekly" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground border-r border-primary/30">
-              WEEKLY
+            <TabsTrigger value="this_week" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground border-r border-primary/30">
+              THIS WEEK
             </TabsTrigger>
-            <TabsTrigger value="advanced" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground">
-              ADVANCED
+            <TabsTrigger value="tools" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground border-r border-primary/30">
+              TOOLS
+            </TabsTrigger>
+            <TabsTrigger value="data" className="font-arcade text-xs py-3 rounded-none data-[state=active]:bg-primary data-[state=active]:text-black data-[state=inactive]:text-muted-foreground">
+              DATA
             </TabsTrigger>
           </TabsList>
 
-          {/* ─── DAILY TAB ─── */}
-          <TabsContent value="daily" className="space-y-6">
+          {/* ─── TODAY TAB ─── */}
+          <TabsContent value="today" className="space-y-6">
             {/* Empty state */}
             {!hasRecentSession && (
               <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
                 <CardContent className="p-6 text-center">
-                  <p className="font-arcade text-xs text-primary mb-2">NO SESSIONS YET</p>
+                  <p className="font-arcade text-xs text-primary mb-2">NO SESSIONS TODAY</p>
                   <p className="font-terminal text-xs text-muted-foreground">
                     Start a study session with the Tutor → complete a Lite Wrap → come back here to generate and attach JSON.
                   </p>
@@ -167,64 +205,60 @@ export default function Brain() {
             )}
 
             {/* Attach JSON to Session */}
-            <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
-              <CardHeader className="p-3 border-b border-secondary/30">
-                <CardTitle className="font-arcade text-xs">ATTACH JSON TO SESSION</CardTitle>
-                <p className="font-terminal text-[10px] text-muted-foreground mt-1">
-                  Paste your Tracker or Enhanced JSON from Brain ingestion prompt. Auto-detects format.
-                </p>
-              </CardHeader>
-              <CardContent className="p-4">
-                <IngestionTab />
-              </CardContent>
-            </Card>
+            <div id="section-ingestion" className="transition-all duration-300">
+              <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
+                <CardHeader className="p-3 border-b border-secondary/30">
+                  <CardTitle className="font-arcade text-xs">ATTACH JSON TO SESSION</CardTitle>
+                  <p className="font-terminal text-[10px] text-muted-foreground mt-1">
+                    Paste your Tracker or Enhanced JSON from Brain ingestion prompt. Auto-detects format.
+                  </p>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <IngestionTab />
+                </CardContent>
+              </Card>
+            </div>
 
-            {/* Next Actions (due today) */}
-            <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
-              <CardHeader className="p-3 border-b border-secondary/30">
-                <CardTitle className="font-arcade text-xs">VIEW NEXT ACTIONS</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                {hasPlannerTasks ? (
-                  <NextActions />
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="font-terminal text-xs text-muted-foreground">
-                      No planner tasks yet. Attach session JSON with weak_anchors to auto-generate review tasks.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Next Actions (today only) */}
+            <div id="section-actions" className="transition-all duration-300">
+              <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
+                <CardHeader className="p-3 border-b border-secondary/30">
+                  <CardTitle className="font-arcade text-xs">TODAY'S ACTIONS</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  {hasPlannerTasks ? (
+                    <NextActions filter="today" />
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="font-terminal text-xs text-muted-foreground">
+                        No planner tasks yet. Attach session JSON with weak_anchors to auto-generate review tasks.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Session Evidence */}
             <SessionEvidence />
           </TabsContent>
 
-          {/* ─── WEEKLY TAB ─── */}
-          <TabsContent value="weekly" className="space-y-6">
-            {/* Planner Settings + Recompute */}
-            <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
-              <CardHeader className="p-3 border-b border-secondary/30">
-                <CardTitle className="font-arcade text-xs">RECOMPUTE PLANNER QUEUE</CardTitle>
-                <p className="font-terminal text-[10px] text-muted-foreground mt-1">
-                  Full planner queue with upcoming tasks. Use settings to adjust spacing strategy.
-                </p>
-              </CardHeader>
-              <CardContent className="p-4">
-                <NextActions />
-              </CardContent>
-            </Card>
-
-            {/* Data Tables */}
-            <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
-              <CardHeader className="p-3 border-b border-secondary/30">
-                <CardTitle className="font-arcade text-xs">SESSION DATA</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <DataTablesSection />
-              </CardContent>
-            </Card>
+          {/* ─── THIS WEEK TAB ─── */}
+          <TabsContent value="this_week" className="space-y-6">
+            {/* Planner — full view */}
+            <div id="section-planner" className="transition-all duration-300">
+              <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
+                <CardHeader className="p-3 border-b border-secondary/30">
+                  <CardTitle className="font-arcade text-xs">PLANNER QUEUE</CardTitle>
+                  <p className="font-terminal text-[10px] text-muted-foreground mt-1">
+                    Full planner queue with upcoming tasks. Use settings to adjust spacing strategy.
+                  </p>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <NextActions filter="all" />
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Stale Topics Alert */}
             {metrics?.staleTopics && metrics.staleTopics.length > 0 && (
@@ -248,8 +282,11 @@ export default function Brain() {
             )}
           </TabsContent>
 
-          {/* ─── ADVANCED TAB ─── */}
-          <TabsContent value="advanced" className="space-y-6">
+          {/* ─── TOOLS TAB ─── */}
+          <TabsContent value="tools" className="space-y-6">
+            {/* Six-Phase Topic Note Builder */}
+            <TopicNoteBuilder />
+
             {/* Integrations */}
             <div className="space-y-6 min-w-0">
               <ObsidianVaultBrowser />
@@ -281,6 +318,19 @@ export default function Brain() {
                 <div className="h-[calc(100vh-200px)] flex flex-col min-w-0 overflow-hidden">
                   {graphMode === "vault" ? <VaultGraphView /> : <MindMapView />}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── DATA TAB ─── */}
+          <TabsContent value="data" className="space-y-6">
+            {/* Data Tables */}
+            <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
+              <CardHeader className="p-3 border-b border-secondary/30">
+                <CardTitle className="font-arcade text-xs">SESSION DATA</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <DataTablesSection />
               </CardContent>
             </Card>
           </TabsContent>

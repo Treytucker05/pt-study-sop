@@ -152,42 +152,37 @@ Source: `dashboard_rebuild/client/src/pages/calendar.tsx`
 ## Page: Scholar (/scholar)
 Source: `dashboard_rebuild/client/src/pages/scholar.tsx`
 
-### Tabs: SUMMARY
-- Purpose: summarize study health and highlight concerns.
-- UI/Components: study health overview, working/concerns cards.
-- Reads: `api.sessions.getAll`, `api.courses.getAll`.
-- Backend: `brain/dashboard/api_adapter.py` routes `/sessions`, `/courses`.
+### Tab: SUMMARY
+- Purpose: summarize study health and highlight concerns, and act as the starting point for a Scholar \"run\".
+- UI/Components: study health overview metrics, working/concerns cards, Scholar run strip, proposals banner, Scholar chat panel.
+- Reads: `api.sessions.getAll`, `api.courses.getAll`, `api.proposals.getAll`.
+- Writes: `api.scholar.chat`.
+- Backend: `brain/dashboard/api_adapter.py` routes `/sessions`, `/courses`, `/proposals`, `/scholar/chat`.
 
-### Tabs: TUTOR AUDIT
-- Purpose: show post-session audit issues from Tutor.
-- Reads: `api.scholar.getTutorAudit`.
-- Backend: `brain/dashboard/api_adapter.py` route `/scholar/tutor-audit`.
+### Tab: ANALYSIS
+- Purpose: deep-dive review of how studying and Tutor are behaving, before making changes.
+- UI/Components:
+  - Tutor audit section (per-session observations, phases, impacts).
+  - Recurrent issues aggregate (issues, frequencies, courses).
+  - Question pipeline (open Scholar questions and data gaps).
+  - Evidence review (observed data vs. research interpretation).
+  - Topic clusters card with clustering trigger.
+- Reads: `api.scholar.getTutorAudit`, `api.scholar.getQuestions`, `api.scholar.getFindings`, `api.scholar.getClusters`.
+- Writes: `api.scholar.runClustering`.
+- Backend: `brain/dashboard/api_adapter.py` routes `/scholar/tutor-audit`, `/scholar/questions`, `/scholar/findings`, `/scholar/clusters`, `/scholar/clusters/run`.
 
-### Tabs: QUESTIONS
-- Purpose: show Scholar questions pipeline.
-- Reads: `api.scholar.getQuestions`.
-- Backend: `brain/dashboard/api_adapter.py` route `/scholar/questions`.
-
-### Tabs: EVIDENCE
-- Purpose: show Scholar findings library.
-- Reads: `api.scholar.getFindings`.
-- Backend: `brain/dashboard/api_adapter.py` route `/scholar/findings`.
-
-### Tabs: PROPOSALS
-- Purpose: manage and approve Scholar proposals.
+### Tab: PROPOSALS
+- Purpose: manage and approve Scholar proposals (decision surface).
+- UI/Components: proposals list with priority, target system badge, confidence/risk badges, status select (DRAFT/APPROVED/REJECTED/IMPLEMENTED).
 - Reads: `api.proposals.getAll`.
 - Writes: `api.proposals.update`.
 - Backend: `brain/dashboard/api_adapter.py` routes `/proposals`, `/proposals/<id>`.
 
-### Tabs: HISTORY
-- Purpose: view proposal history.
+### Tab: HISTORY
+- Purpose: read-only proposal history and timeline.
+- UI/Components: proposal rows with ID, summary, status badge, created date.
 - Reads: `api.proposals.getAll`.
 - Backend: `brain/dashboard/api_adapter.py` routes `/proposals`, `/proposals/<id>`.
-
-### Scholar chat panel
-- Purpose: ask Scholar questions.
-- Writes: `api.scholar.chat`.
-- Backend: `brain/dashboard/api_adapter.py` route `/scholar/chat`.
 
 ## Page: Tutor (/tutor)
 Source: `dashboard_rebuild/client/src/pages/tutor.tsx`

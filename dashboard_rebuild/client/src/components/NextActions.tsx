@@ -23,7 +23,12 @@ interface PlannerSettings {
   auto_schedule_reviews: number;
 }
 
-export function NextActions() {
+interface NextActionsProps {
+  /** "today" shows only due-today tasks inline; "all" shows full planner (default) */
+  filter?: "today" | "all";
+}
+
+export function NextActions({ filter = "all" }: NextActionsProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -82,26 +87,28 @@ export function NextActions() {
             <div className="w-4 h-4 bg-primary inline-block" />
             NEXT_ACTIONS
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="font-terminal text-xs text-muted-foreground">
-              Source: {settings?.calendar_source === "google" ? "Google" : "Local"}
-            </span>
-            <button
-              onClick={() => settingsMutation.mutate({
-                calendar_source: settings?.calendar_source === "google" ? "local" : "google"
-              })}
-              className="px-2 py-1 border border-primary/30 text-xs font-arcade text-muted-foreground hover:text-white rounded-none"
-            >
-              TOGGLE
-            </button>
-            <button
-              onClick={() => generateMutation.mutate()}
-              disabled={generateMutation.isPending}
-              className="px-3 py-1 bg-primary text-black font-arcade text-xs rounded-none hover:bg-primary/80 disabled:opacity-50"
-            >
-              {generateMutation.isPending ? "..." : "GENERATE"}
-            </button>
-          </div>
+          {filter === "all" && (
+            <div className="flex items-center gap-2">
+              <span className="font-terminal text-xs text-muted-foreground">
+                Source: {settings?.calendar_source === "google" ? "Google" : "Local"}
+              </span>
+              <button
+                onClick={() => settingsMutation.mutate({
+                  calendar_source: settings?.calendar_source === "google" ? "local" : "google"
+                })}
+                className="px-2 py-1 border border-primary/30 text-xs font-arcade text-muted-foreground hover:text-white rounded-none"
+              >
+                TOGGLE
+              </button>
+              <button
+                onClick={() => generateMutation.mutate()}
+                disabled={generateMutation.isPending}
+                className="px-3 py-1 bg-primary text-black font-arcade text-xs rounded-none hover:bg-primary/80 disabled:opacity-50"
+              >
+                {generateMutation.isPending ? "..." : "GENERATE"}
+              </button>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-4 space-y-4">
@@ -111,7 +118,13 @@ export function NextActions() {
 
         {!isLoading && queue.length === 0 && (
           <div className="font-terminal text-xs text-muted-foreground text-center py-4">
-            No pending tasks. Click GENERATE to create review tasks from weak anchors.
+            No pending tasks. {filter === "all" ? "Click GENERATE to create review tasks from weak anchors." : ""}
+          </div>
+        )}
+
+        {!isLoading && filter === "today" && queue.length > 0 && todayTasks.length === 0 && (
+          <div className="font-terminal text-xs text-muted-foreground text-center py-4">
+            No tasks due today. {upcomingTasks.length} upcoming.
           </div>
         )}
 
@@ -133,7 +146,7 @@ export function NextActions() {
         )}
 
         {/* Upcoming */}
-        {upcomingTasks.length > 0 && (
+        {filter === "all" && upcomingTasks.length > 0 && (
           <div>
             <div className="font-arcade text-xs text-muted-foreground mb-2">
               UPCOMING ({upcomingTasks.length})

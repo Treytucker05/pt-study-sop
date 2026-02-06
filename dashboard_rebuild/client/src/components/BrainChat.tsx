@@ -1,9 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Send, Image, ChevronDown, ChevronUp, X, Loader2, Layers, BrainCircuit, MessageSquare, BookOpen } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ObsidianRenderer } from "@/components/ObsidianRenderer";
+import { Send, Image, ChevronDown, ChevronUp, X, Loader2, Layers, BrainCircuit, MessageSquare, BookOpen, FileText, CheckCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import type { BrainOrganizePreviewResponse, BrainChatPayload } from "@/lib/api";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -42,6 +51,37 @@ Rules:
 Study material:
 [PASTE YOUR NOTES HERE]`;
 
+type ChecklistState = Record<string, boolean>;
+
+const buildDiffLines = (rawNotes: string, organizedNotes: string) => {
+  const raw = rawNotes.split("\n");
+  const organized = organizedNotes.split("\n");
+  const diff: string[] = [];
+  let i = 0;
+  let j = 0;
+
+  while (i < raw.length || j < organized.length) {
+    const rawLine = raw[i];
+    const orgLine = organized[j];
+    if (i < raw.length && j < organized.length && rawLine === orgLine) {
+      diff.push(` ${rawLine}`);
+      i += 1;
+      j += 1;
+      continue;
+    }
+    if (i < raw.length) {
+      diff.push(`-${rawLine}`);
+      i += 1;
+    }
+    if (j < organized.length) {
+      diff.push(`+${orgLine}`);
+      j += 1;
+    }
+  }
+
+  return diff;
+};
+
 export function BrainChat() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("chat");
@@ -51,6 +91,16 @@ export function BrainChat() {
   const [loading, setLoading] = useState(false);
   const [ingestTarget, setIngestTarget] = useState<"anki" | "obsidian" | "both">("anki");
   const [promptCopied, setPromptCopied] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [rawPreviewNotes, setRawPreviewNotes] = useState("");
+  const [organizedPreview, setOrganizedPreview] = useState<BrainOrganizePreviewResponse["organized"] | null>(null);
+  const [destinationPreview, setDestinationPreview] = useState<BrainOrganizePreviewResponse["destination"] | null>(null);
+  const [selectedDestinationId, setSelectedDestinationId] = useState("");
+  const [customDestination, setCustomDestination] = useState("");
+  const [checklistState, setChecklistState] = useState<ChecklistState>({});
+  const [diffLines, setDiffLines] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -62,6 +112,125 @@ export function BrainChat() {
   }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
+
+  const resetPreviewState = () => {
+    setPreviewOpen(false);
+    setPreviewLoading(false);
+    setPreviewError(null);
+    setRawPreviewNotes("");
+    setOrganizedPreview(null);
+    setDestinationPreview(null);
+    setSelectedDestinationId("");
+    setCustomDestination("");
+    setChecklistState({});
+    setDiffLines([]);
+  };
+
+  const handlePreviewClose = (openState: boolean) => {
+    if (!openState) {
+      resetPreviewState();
+    } else {
+      setPreviewOpen(true);
+    }
+  };
+
+  const startPreview = async (notes: string) => {
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setRawPreviewNotes(notes);
+    try {
+      const response = await api.brain.organizePreview(notes);
+      if (!response.success || !response.organized || !response.destination) {
+        throw new Error(response.error || "Unable to organize notes.");
+      }
+      setOrganizedPreview(response.organized);
+      setDestinationPreview(response.destination);
+      setSelectedDestinationId("recommended");
+      const checklistEntries = response.organized.checklist ?? [];
+      const initialChecklist: ChecklistState = {};
+      checklistEntries.forEach((item) => {
+        initialChecklist[item] = false;
+      });
+      setChecklistState(initialChecklist);
+      setDiffLines(buildDiffLines(notes, response.organized.markdown || ""));
+      setPreviewOpen(true);
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setPreviewError(msg);
+      return false;
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const toggleChecklist = (item: string) => {
+    setChecklistState((prev) => ({
+      ...prev,
+      [item]: !prev[item],
+    }));
+  };
+
+  const allChecklistChecked = Object.values(checklistState).length === 0
+    ? true
+    : Object.values(checklistState).every(Boolean);
+
+  const getSelectedDestinationPath = () => {
+    if (!destinationPreview) return "";
+    if (selectedDestinationId === "custom") {
+      return customDestination.trim();
+    }
+    const match = destinationPreview.options.find((opt) => opt.id === selectedDestinationId);
+    return match?.path || "";
+  };
+
+  const handleConfirmPreview = async () => {
+    if (!organizedPreview) return;
+    const destinationPath = getSelectedDestinationPath();
+    if (!destinationPath) {
+      setPreviewError("Select a destination path.");
+      return;
+    }
+    setPreviewError(null);
+    setPreviewLoading(true);
+    setLoading(true);
+    try {
+      await sendIngest(rawPreviewNotes, {
+        destinationPath,
+        organizedMarkdown: organizedPreview.markdown,
+        organizedTitle: organizedPreview.title,
+        confirmWrite: true,
+      });
+      resetPreviewState();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setPreviewError(msg);
+    } finally {
+      setPreviewLoading(false);
+      setLoading(false);
+    }
+  };
+
+  const renderDiffLine = (line: string, index: number) => {
+    const isAddition = line.startsWith("+");
+    const isRemoval = line.startsWith("-");
+    const isContext = !isAddition && !isRemoval;
+
+    return (
+      <div
+        key={index}
+        className={`font-terminal text-[11px] px-2 ${
+          isAddition
+            ? "bg-green-900/30 text-green-400"
+            : isRemoval
+            ? "bg-red-900/30 text-red-400"
+            : "text-muted-foreground"
+        }`}
+      >
+        {line}
+      </div>
+    );
+  };
 
   const addImage = (file: File) => {
     const reader = new FileReader();
@@ -148,11 +317,28 @@ export function BrainChat() {
     }
   };
 
-  const sendIngest = async (text: string) => {
+  const sendIngest = async (
+    text: string,
+    opts?: {
+      destinationPath?: string;
+      organizedMarkdown?: string;
+      organizedTitle?: string;
+      confirmWrite?: boolean;
+    }
+  ) => {
     try {
       const backendMode = ingestTarget === "both" ? "all" : ingestTarget;
       const sync = ingestTarget === "obsidian" || ingestTarget === "both";
-      const res = await api.brain.chat(text, sync, backendMode);
+      const payload: BrainChatPayload = {
+        message: text,
+        syncToObsidian: sync,
+        mode: backendMode,
+        destinationPath: opts?.destinationPath,
+        organizedMarkdown: opts?.organizedMarkdown,
+        organizedTitle: opts?.organizedTitle,
+        confirmWrite: opts?.confirmWrite,
+      };
+      const res = await api.brain.chat(payload);
       let summary = res.response;
       const meta: ChatMessage["meta"] = {
         cardsCreated: res.cardsCreated,
@@ -190,7 +376,14 @@ export function BrainChat() {
       if (mode === "chat") {
         await sendChat(text, userMsg.images ?? []);
       } else {
-        await sendIngest(text);
+        if (ingestTarget === "obsidian" || ingestTarget === "both") {
+          const ok = await startPreview(text);
+          if (!ok) {
+            setMessages((prev) => [...prev, { role: "assistant", content: "Error: Unable to prepare preview." }]);
+          }
+        } else {
+          await sendIngest(text);
+        }
       }
     } catch (err) {
       setMessages((prev) => {
@@ -230,7 +423,147 @@ export function BrainChat() {
   }
 
   return (
-    <Card className="bg-black/40 border-2 border-primary rounded-none mb-4">
+    <>
+      <Dialog open={previewOpen} onOpenChange={handlePreviewClose}>
+        <DialogContent className="max-w-6xl w-full h-[85vh] bg-black border-2 border-primary rounded-none p-4 overflow-hidden">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="font-arcade text-sm text-primary flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              ORGANIZE + REVIEW
+            </DialogTitle>
+            <DialogDescription className="font-terminal text-[11px] text-muted-foreground">
+              Review the organized notes, compare to raw, then choose where to save.
+            </DialogDescription>
+          </DialogHeader>
+
+          {previewError && (
+            <div className="border border-red-500/50 bg-red-900/20 text-red-200 font-terminal text-xs p-2 rounded-none">
+              {previewError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-3 gap-4 h-[70vh]">
+            <div className="col-span-2 flex flex-col gap-3">
+              <Tabs defaultValue="preview" className="w-full">
+                <TabsList className="grid grid-cols-3 rounded-none">
+                  <TabsTrigger value="preview" className="rounded-none text-xs">Preview</TabsTrigger>
+                  <TabsTrigger value="raw" className="rounded-none text-xs">Raw</TabsTrigger>
+                  <TabsTrigger value="diff" className="rounded-none text-xs">Diff</TabsTrigger>
+                </TabsList>
+                <TabsContent value="preview" className="mt-2">
+                  <ScrollArea className="h-[56vh] border border-secondary/40 rounded-none bg-black/40 p-3">
+                    <div className="space-y-2">
+                      <div className="font-arcade text-xs text-primary">
+                        {organizedPreview?.title || "Untitled"}
+                      </div>
+                      <ObsidianRenderer content={organizedPreview?.markdown || ""} />
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="raw" className="mt-2">
+                  <ScrollArea className="h-[56vh] border border-secondary/40 rounded-none bg-black/40 p-3">
+                    <pre className="whitespace-pre-wrap font-terminal text-[11px] text-foreground">
+                      {rawPreviewNotes}
+                    </pre>
+                  </ScrollArea>
+                </TabsContent>
+                <TabsContent value="diff" className="mt-2">
+                  <ScrollArea className="h-[56vh] border border-secondary/40 rounded-none bg-black/40 p-0">
+                    <div className="p-2">
+                      {diffLines.length === 0 ? (
+                        <div className="text-muted-foreground font-terminal text-xs">
+                          No diff available.
+                        </div>
+                      ) : (
+                        diffLines.map((line, idx) => renderDiffLine(line, idx))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            <div className="col-span-1 flex flex-col gap-3">
+              <div className="border border-secondary/50 bg-black/40 p-3 rounded-none">
+                <div className="font-arcade text-[10px] text-primary mb-2">DESTINATION</div>
+                <RadioGroup value={selectedDestinationId} onValueChange={setSelectedDestinationId} className="space-y-2">
+                  {(destinationPreview?.options || []).map((opt) => (
+                    <label key={opt.id} className="flex items-start gap-2 cursor-pointer">
+                      <RadioGroupItem value={opt.id} className="mt-1" />
+                      <div className="space-y-1">
+                        <div className="font-terminal text-[11px] text-foreground flex items-center gap-1">
+                          {opt.label}
+                          {opt.exists && <Badge variant="outline" className="text-[9px]">existing</Badge>}
+                        </div>
+                        <div className="font-terminal text-[10px] text-muted-foreground break-all">
+                          {opt.path || "Custom path"}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </RadioGroup>
+                {selectedDestinationId === "custom" && (
+                  <div className="mt-2 space-y-1">
+                    <div className="font-terminal text-[10px] text-muted-foreground">Custom path</div>
+                    <Input
+                      value={customDestination}
+                      onChange={(e) => setCustomDestination(e.target.value)}
+                      placeholder="School/Theraputic Intervention/Module 01 - Title.md"
+                      className="bg-black border-secondary/60 rounded-none text-xs font-terminal"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="border border-secondary/50 bg-black/40 p-3 rounded-none">
+                <div className="font-arcade text-[10px] text-primary mb-2">REVIEW CHECKLIST</div>
+                <div className="space-y-2">
+                  {(organizedPreview?.checklist || []).map((item) => (
+                    <label key={item} className="flex items-start gap-2 cursor-pointer">
+                      <Checkbox checked={Boolean(checklistState[item])} onCheckedChange={() => toggleChecklist(item)} />
+                      <span className="font-terminal text-[11px] text-foreground">{item}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {(organizedPreview?.suggested_links || []).length > 0 && (
+                <div className="border border-secondary/50 bg-black/40 p-3 rounded-none">
+                  <div className="font-arcade text-[10px] text-primary mb-2">SUGGESTED LINKS</div>
+                  <div className="space-y-1">
+                    {organizedPreview?.suggested_links.map((link) => (
+                      <div key={link} className="font-terminal text-[11px] text-muted-foreground">
+                        [[{link}]]
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-none font-terminal text-xs"
+                  onClick={() => resetPreviewState()}
+                  disabled={previewLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-primary hover:bg-primary/80 rounded-none font-terminal text-xs"
+                  onClick={handleConfirmPreview}
+                  disabled={!allChecklistChecked || previewLoading || !getSelectedDestinationPath()}
+                >
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  {previewLoading ? "Saving..." : "Confirm & Save"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Card className="bg-black/40 border-2 border-primary rounded-none mb-4">
       <CardHeader className="py-2 px-4 flex flex-row items-center justify-between">
         <CardTitle className="text-xs">BRAIN CHAT</CardTitle>
         <div className="flex items-center gap-1">
@@ -386,5 +719,6 @@ export function BrainChat() {
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }

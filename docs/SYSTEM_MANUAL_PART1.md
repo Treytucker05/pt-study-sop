@@ -59,7 +59,7 @@ Your code is now linked to your notes.
 3.  A folder `Dev_Projects` will appear in your Obsidian "PT School Semester 2" vault.
 
 ## 6. System 3 (Knowledge Base)
-System 3 lives under `projects/treys-agent/context/SOPs/` and `context/input/`.
+System 3 lives in the Obsidian vault under `agents/` (see `agents/_MOC-agents.md`) and `projects/pt-study-sop/`.
 Start with:
 - `SOPs/system_3_obsidian_bridge.md`
 - `SOPs/system_3_README.md`
@@ -67,7 +67,7 @@ Start with:
 - `input/system_3_checklist.md`
 
 ## 7. System 4 (Intro to Agents)
-System 4 lives under `projects/treys-agent/context/SOPs/` and `context/input/`.
+System 4 lives in the Obsidian vault under `agents/` (see `agents/_MOC-agents.md`) and `projects/pt-study-sop/`.
 Start with:
 - `SOPs/system_4_intro_agents.md`
 - `SOPs/system_4_README.md`

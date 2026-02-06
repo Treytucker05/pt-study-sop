@@ -55,4 +55,4 @@ Define the canonical buckets Brain uses to sort Tutor WRAP output into metrics, 
 - **Calibration gap** → Learning Signals → Issue flag if >10.
 
 ## Mirror Note
-This document is mirrored into Obsidian at `projects/treys-agent/context/architecture/wrap_buckets.md`.
+If you keep a mirrored copy in Obsidian, put it under `projects/pt-study-sop/` (suggested: `projects/pt-study-sop/docs/wrap_buckets.md`).

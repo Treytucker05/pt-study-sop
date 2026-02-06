@@ -1,12 +1,13 @@
 {
-  "active_plan": "/mnt/c/pt-study-sop/.sisyphus/plans/pt-study-os-m1-m9.md",
-  "started_at": "2026-01-25T23:32:36.227Z",
+  "active_plan": "/mnt/c/pt-study-sop/.sisyphus/plans/ui-overhaul-v9.4.2.md",
+  "started_at": "2026-01-31T11:21:06.162Z",
   "session_ids": [
     "ses_408985a41ffeLvN0y5sbNtZ2PG",
     "ses_404af8946ffeg92Qlvo0PPokA8",
     "ses_40324c643ffekuC2FunKTlaj46",
     "ses_402be368bffeQbZu6aCoxLCwzQ",
-    "ses_402945c68ffeRhCTj4DFIvrYRA"
+    "ses_402945c68ffeRhCTj4DFIvrYRA",
+    "ses_3ec6b0559ffetx4A592FyvOZ0i"
   ],
-  "plan_name": "pt-study-os-m1-m9"
+  "plan_name": "ui-overhaul-v9.4.2"
 }

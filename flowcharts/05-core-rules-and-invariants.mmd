@@ -1,0 +1,48 @@
+%% PT Study SOP - Core Rules & Invariants
+%% Non-negotiable rules that must NEVER be violated
+
+flowchart TD
+    Start([Session Starts]) --> RuleCheck["CORE RULES CHECKLIST<br/>━━━━━━━━━━━━━━━━━<br/>10 NO-SKIP items<br/>that cannot be omitted"]
+
+    RuleCheck --> R1["R1: M0 PLANNING (MANDATORY)<br/>────────────────────────────<br/>No teaching begins until:<br/>✓ Target declared (exam/block/time)<br/>✓ Sources listed (source-lock)<br/>✓ Plan sketched (3-5 steps)<br/>✓ Pre-test given<br/>✓ Weak anchors reviewed<br/>  (interleaving check)\n\n→ If missing: HALT, return to M0"]
+
+    R1 --> R2["R2: SOURCE-LOCK (INVARIANT)<br/>───────────────────────────<br/>All factual teaching grounded\nin learner's materials\n\n✓ NotebookLM Source Packet required\n✓ Citations in all answers\n✓ If offline/no sources:\n  Mark output UNVERIFIED\n✓ No free hallucination\n\nCONSEQUENCE:\nIf can't source-lock,\nswitch to strategy/planning only"]
+
+    R2 --> R3["R3: SEED-LOCK ASK-FIRST<br/>──────────────────────<br/>Learner attempts hooks first\nAI does NOT build unprompted\n\n✓ Always ask learner to attempt\n  a hook before offering help\n✓ Offer mnemonics only if\n  learner requests OR\n  cannot produce after prompting\n✓ Phonetic override for\n  new/unfamiliar terms\n\nCONSEQUENCE:\nIf learner says 'help me,'\nASK first; don't tell"]
+
+    R3 --> R4["R4: LEVEL GATING (MANDATORY)<br/>──────────────────────────<br/>L2 (teach-back / own words)\nMUST pass BEFORE L4 (detail)\n\n✓ Progression gates:\n  L2 teach-back → approval\n  ↓\n  L4 detail ✓\n✓ Recall failure → rollback\n  to prior level\n\nCONSEQUENCE:\nNo L4 detail without L2 success;\nFailure = step back"]
+
+    R4 --> R5["R5: PEIRRO CYCLE (NO SKIP)<br/>────────────────────────<br/>All sessions follow:<nPrepare → Encode →\nInterrogate → Retrieve →\nRefine → Overlearn\n\n✓ MAP aligns with Prepare\n✓ LOOP spans Encode/Interrogate/\n  Retrieve\n✓ WRAP covers Refine/Overlearn\n\nCONSEQUENCE:\nNo jumping phases;\nno shortcutting to Wrap"]
+
+    R5 --> R6["R6: EXIT TICKET (MANDATORY)<br/>───────────────────────<br/>Every session ends with:\n\n✓ 1. Free recall blurt (2 min)\n✓ 2. Muddiest point\n✓ 3. Next action hook\n\nCONSEQUENCE:\nSession incomplete without\nExit Ticket"]
+
+    R6 --> R7["R7: SESSION LEDGER (MANDATORY)<br/>─────────────────────────────<br/>Every session produces:\n\n✓ session_date (YYYY-MM-DD)\n✓ covered (what was studied)\n✓ not_covered (what wasn't)\n✓ weak_anchors (items to review)\n✓ artifacts_created (cards, etc.)\n✓ timebox_min (actual duration)\n\nCONSEQUENCE:\nSession incomplete without\nSession Ledger\n(Empty fields = 'NONE')"]
+
+    R7 --> R8["R8: NO PHANTOM OUTPUTS (INVARIANT)<br/>───────────────────────────────<br/>If a step did NOT happen,\noutput NOT DONE / UNKNOWN\nNever invent missing data\n\n✓ KWIK hooks: If not locked\n  during Encode, mark NOT DONE\n✓ Metrics not captured:\n  mark UNKNOWN\n✓ Artifacts not created:\n  omit from artifacts_created\n\nCONSEQUENCE:\nAbsolutely no backfilling\nor hallucinating missing steps"]
+
+    R8 --> R9["R9: EVIDENCE NUANCE (GUARDRAILS)<br/>──────────────────────────────<br/>Prevent overclaiming:\n\n✓ Forgetting curves: Never state\n  numeric claims without citing\n✓ Dual coding: Helpful heuristic,\n  never claim '2x' guaranteed\n✓ Zeigarnik effect: Not reliable;\n  use next-action hook only\n✓ RSR thresholds: Adaptive,\n  not fixed; don't state '85%'\n✓ Interleaving: Best within class;\n  3+2 is distributed across classes\n\nCONSEQUENCE:\nBe humble about learning\nscience claims"]
+
+    R9 --> R10["R10: FUNCTION BEFORE STRUCTURE<br/>─────────────────────────────<br/>Always teach WHAT (function)\nbefore HOW (structure)\n\n✓ Anatomy: Landmark Pass\n  (what exists)\n  before OIANA+ details\n✓ Concept: Definition & Context\n  before Mechanism\n\nCONSEQUENCE:\nStructure-first teaching\ngets rolled back"]
+
+    R10 --> Violation{Violation<br/>Detected?}
+    Violation -->|Yes| Halt["🛑 STOP<br/>──────<br/>Halt current flow\nAddress violation\nReturn to proper step\nRestart from that point"]
+    Violation -->|No| Pass["✓ All Rules Honored<br/>──────────────────<br/>Session can continue\nM0-M6 flow proceeding\nas designed"]
+
+    Halt --> RuleCheck
+    Pass --> Session["Session Execution<br/>Continues<br/>─────────────<br/>M0 → M1 → M2 →\nM3 → M4 → M5 →\nM6"]
+
+    style Start fill:#ff6b6b,stroke:#333,color:#fff
+    style RuleCheck fill:#4ecdc4,stroke:#333,color:#fff
+    style R1 fill:#ffab91,stroke:#333,color:#000
+    style R2 fill:#ffcc80,stroke:#333,color:#000
+    style R3 fill:#fff59d,stroke:#333,color:#000
+    style R4 fill:#c5e1a5,stroke:#333,color:#000
+    style R5 fill:#b2dfdb,stroke:#333,color:#000
+    style R6 fill:#b3e5fc,stroke:#333,color:#000
+    style R7 fill:#bbdefb,stroke:#333,color:#000
+    style R8 fill:#c8e6c9,stroke:#333,color:#000
+    style R9 fill:#f8bbd0,stroke:#333,color:#000
+    style R10 fill:#e1bee7,stroke:#333,color:#000
+    style Halt fill:#ff6b6b,stroke:#333,color:#fff
+    style Pass fill:#90ee90,stroke:#333,color:#000
+    style Session fill:#4ecdc4,stroke:#333,color:#fff

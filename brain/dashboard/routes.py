@@ -151,19 +151,62 @@ def api_scholar():
 
 @dashboard_bp.route("/api/scholar/digest")
 def api_scholar_digest():
-    """Generate weekly digest of Scholar outputs from the past 7 days."""
-    result = generate_weekly_digest(days=7)
-    save_param = request.args.get("save", "true").strip().lower()
-    should_save = save_param not in {"0", "false", "no"}
-    if result.get("ok") and result.get("digest") and should_save:
-        try:
-            saved = _save_digest_artifacts(result["digest"], digest_type="weekly")
-            result["saved"] = True
-            result.update(saved)
-        except Exception as e:
-            result["saved"] = False
-            result["save_error"] = str(e)
-    return jsonify(result)
+    """Fetch latest Scholar digest from the database (fast, DB-first)."""
+    try:
+        from dashboard.scholar import get_scholar_run_status
+        run_status = get_scholar_run_status()
+    except Exception:
+        run_status = None
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            SELECT id, filename, filepath, title, digest_type, created_at, content_hash, content, cluster_id
+            FROM scholar_digests
+            ORDER BY created_at DESC
+            LIMIT 1
+            """
+        )
+        row = cur.fetchone()
+    except Exception as e:
+        conn.close()
+        return jsonify({"ok": False, "error": str(e), "run_status": run_status}), 500
+    conn.close()
+
+    if not row:
+        return jsonify(
+            {
+                "ok": True,
+                "digest": None,
+                "message": "No digest yet. Run Scholar.",
+                "run_status": run_status,
+            }
+        )
+
+    content = row["content"] or ""
+    if not content:
+        repo_root = Path(__file__).parent.parent.parent.resolve()
+        filepath = repo_root / row["filepath"]
+        if filepath.exists():
+            content = filepath.read_text(encoding="utf-8")
+
+    return jsonify(
+        {
+            "ok": True,
+            "digest": content,
+            "digest_id": row["id"],
+            "title": row["title"],
+            "digest_type": row["digest_type"],
+            "created_at": row["created_at"],
+            "filename": row["filename"],
+            "content_hash": row["content_hash"],
+            "cluster_id": row["cluster_id"],
+            "run_status": run_status,
+        }
+    )
 
 
 @dashboard_bp.route("/api/scholar/insights")
@@ -550,14 +593,14 @@ def _save_digest_artifacts(digest_content: str, digest_type: str = "strategic") 
     plan_lines.extend(
         [
             "",
-            "## Plan Targets",
-            "- `sop/MASTER_PLAN_PT_STUDY.md`",
-            "- `sop/gpt-knowledge/M0-planning.md`",
-            "",
-            "## Draft Plan Edits (human-in-the-loop)",
-            "- (fill in concrete edits to plan files, then apply manually)",
-            "",
-        ]
+             "## Plan Targets",
+            "- `sop/library/00-overview.md`",
+            "- `sop/library/05-session-flow.md`",
+             "",
+             "## Draft Plan Edits (human-in-the-loop)",
+             "- (fill in concrete edits to plan files, then apply manually)",
+             "",
+         ]
     )
     plan_update_path.write_text("\n".join(plan_lines), encoding="utf-8")
 
@@ -915,6 +958,58 @@ def api_scholar_implementation_bundle():
     result = generate_implementation_bundle()
     status_code = 200 if result.get("ok") else 400
     return jsonify(result), status_code
+
+
+@dashboard_bp.route("/api/scholar/run", methods=["POST"])
+def api_scholar_run():
+    """Trigger a full Scholar orchestration run."""
+    from dashboard.scholar import run_scholar_orchestrator_tracking, get_scholar_run_status
+    import threading
+    
+    data = request.get_json() or {}
+    triggered_by = data.get('triggered_by', 'ui')
+    
+    # Check if a run is already in progress
+    current_status = get_scholar_run_status()
+    if current_status.get('status') == 'running':
+        return jsonify({
+            'ok': False,
+            'message': 'A run is already in progress',
+            'current_run': current_status
+        }), 409
+    
+    # Start run in background thread (don't block request)
+    def run_async():
+        run_scholar_orchestrator_tracking(save_outputs=True, triggered_by=triggered_by)
+    
+    thread = threading.Thread(target=run_async)
+    thread.daemon = True
+    thread.start()
+    
+    # Return current status (will show 'running')
+    return jsonify({
+        'ok': True,
+        'message': 'Scholar run started',
+        'status': get_scholar_run_status()
+    })
+
+
+@dashboard_bp.route("/api/scholar/run/status", methods=["GET"])
+def api_scholar_run_status():
+    """Get the current/latest run status."""
+    from dashboard.scholar import get_scholar_run_status
+    return jsonify(get_scholar_run_status())
+
+
+@dashboard_bp.route("/api/scholar/run/history", methods=["GET"])
+def api_scholar_run_history():
+    """Get run history."""
+    from dashboard.scholar import get_scholar_run_history
+    limit = request.args.get('limit', 10, type=int)
+    return jsonify({
+        'ok': True,
+        'runs': get_scholar_run_history(limit)
+    })
 
 
 @dashboard_bp.route("/api/mastery")
@@ -1290,5 +1385,43 @@ def api_sop_file():
             "content_type": content_type,
             "content": content,
         })
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@dashboard_bp.route("/api/sop/explain", methods=["POST"])
+def api_sop_explain():
+    """
+    Return a hierarchical breakdown + explanation for a SOP excerpt.
+
+    This is designed to support progressive disclosure in the Tutor SOP Explorer:
+    users select a heading, we explain that section into groups/subgroups/concepts.
+    """
+    data = request.get_json() or {}
+    path = (data.get("path") or "").strip()
+    heading = (data.get("heading") or "").strip()
+    level = int(data.get("level") or 0)
+    excerpt = (data.get("excerpt") or "").strip()
+    mode = (data.get("mode") or "teach").strip()
+
+    if not _is_sop_path_allowed(path):
+        return jsonify({"ok": False, "message": "File not found"}), 404
+    if not excerpt:
+        return jsonify({"ok": False, "message": "Missing excerpt"}), 400
+
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    try:
+        from dashboard.sop_explainer import explain_sop_excerpt
+
+        result = explain_sop_excerpt(
+            repo_root=repo_root,
+            sop_path=path,
+            heading=heading,
+            level=level,
+            excerpt=excerpt,
+            mode=mode,
+        )
+        status_code = 200 if result.get("ok") else 400
+        return jsonify(result), status_code
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500

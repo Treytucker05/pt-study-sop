@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { ScholarRunStatus } from "@/components/ScholarRunStatus";
 import {
   Brain,
   Search,
@@ -97,7 +98,7 @@ export default function Scholar() {
     queryFn: api.scholar.getClusters,
   });
 
-  const clusterMutation = useMutation({
+  const runClusteringMutation = useMutation({
     mutationFn: api.scholar.runClustering,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholar-clusters"] });
@@ -137,6 +138,11 @@ export default function Scholar() {
   const unresolvedIssues = sessions
     .filter(s => s.issues && s.issues.length > 0)
     .flatMap(s => s.issues || []);
+
+  const hasConcerns =
+    coursesWithLowActivity.length > 0 ||
+    confusionTopics.length > 0 ||
+    unresolvedIssues.length > 0;
 
   // Handle chat submission - uses real Scholar API
   const handleChatSubmit = async () => {
@@ -187,39 +193,41 @@ export default function Scholar() {
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-140px)] flex flex-col gap-6">
+      <div className="min-h-[calc(100vh-140px)] flex flex-col gap-6">
 
-        {/* Header */}
-        <div className="flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <Brain className="w-6 h-6 text-primary" />
-            <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
-            <Badge variant="outline" className="rounded-none text-[10px] font-terminal border-primary/50">
-              READ ONLY ADVISORY
-            </Badge>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-none font-arcade text-xs border-secondary"
-            onClick={() => queryClient.invalidateQueries()}
-            data-testid="button-refresh-data"
-          >
-            <RefreshCw className="w-3 h-3 mr-2" /> REFRESH DATA
-          </Button>
-        </div>
+         {/* Header */}
+         <div className="space-y-4 shrink-0">
+           <div className="flex items-center justify-between">
+             <div className="flex items-center gap-3">
+               <Brain className="w-6 h-6 text-primary" />
+               <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
+               <Badge variant="outline" className="rounded-none text-[10px] font-terminal border-primary/50">
+                 READ ONLY ADVISORY
+               </Badge>
+             </div>
+             <Button
+               variant="outline"
+               size="sm"
+               className="rounded-none font-arcade text-xs border-secondary"
+               onClick={() => queryClient.invalidateQueries()}
+               data-testid="button-refresh-data"
+             >
+               <RefreshCw className="w-3 h-3 mr-2" /> REFRESH DATA
+             </Button>
+           </div>
+           
+           {/* Run Status Component */}
+           <ScholarRunStatus />
+         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+        <div className="flex-1">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
             <TabsList className="bg-black/60 border border-secondary rounded-none p-1 shrink-0 w-full justify-start overflow-x-auto">
               {[
                 { id: 'summary', label: 'SUMMARY', icon: TrendingUp },
-                { id: 'audit', label: 'TUTOR AUDIT', icon: Search },
-                { id: 'pipeline', label: 'QUESTIONS', icon: HelpCircle },
-                { id: 'evidence', label: 'EVIDENCE', icon: BookOpen },
+                { id: 'analysis', label: 'ANALYSIS', icon: Search },
                 { id: 'proposals', label: 'PROPOSALS', icon: Lightbulb },
-                { id: 'clusters', label: 'CLUSTERS', icon: Layers },
                 { id: 'history', label: 'HISTORY', icon: History },
               ].map(tab => (
                 <TabsTrigger
@@ -235,10 +243,61 @@ export default function Scholar() {
             </TabsList>
 
             {/* SCHOLAR SUMMARY TAB */}
-            <TabsContent value="summary" className="flex-1 overflow-hidden mt-6">
-              <div className="grid lg:grid-cols-3 gap-6 h-full">
+            <TabsContent value="summary" className="flex-1 mt-6">
+              {/* Scholar run flow strip */}
+              <Card className="bg-black/40 border border-secondary/60 rounded-none mb-4">
+                <CardContent className="p-3">
+                  <div className="font-arcade text-[10px] text-secondary mb-2">
+                    SCHOLAR RUN: HIGH-LEVEL → ANALYSIS → DECISIONS
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-3 font-terminal text-[11px] text-muted-foreground">
+                    <div>
+                      <span className="text-primary font-semibold">1. Review study health</span>
+                      <p>Scan totals and recent activity for obvious gaps.</p>
+                    </div>
+                    <div>
+                      <span className="text-primary font-semibold">2. Dive into analysis</span>
+                      <p>Use Tutor audit, questions, and evidence to understand why.</p>
+                    </div>
+                    <div>
+                      <span className="text-primary font-semibold">3. Approve/track proposals</span>
+                      <p>Decide which changes to adopt and track over time.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Proposals banner when work is waiting */}
+              {proposals.length > 0 && (
+                <Card className="bg-black/60 border border-primary/70 rounded-none mb-4">
+                  <CardContent className="p-3 flex flex-col md:flex-row md:items-center gap-3 justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-primary" />
+                      <p className="font-terminal text-xs text-muted-foreground">
+                        You have{" "}
+                        <span className="text-primary">
+                          {proposals.filter(p => p.status !== "REJECTED").length} active Scholar proposal
+                          {proposals.filter(p => p.status !== "REJECTED").length === 1 ? "" : "s"}
+                        </span>{" "}
+                        waiting for a decision.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none font-arcade text-[10px] border-primary text-primary"
+                      onClick={() => setActiveTab("proposals")}
+                      data-testid="cta-review-proposals-from-summary"
+                    >
+                      GO TO PROPOSALS
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="grid lg:grid-cols-3 gap-6">
                 {/* Left: Summary Cards */}
-                <div className="lg:col-span-2 space-y-4 overflow-auto pr-2">
+                <div className="lg:col-span-2 space-y-4 pr-2">
                   {/* Study Health Overview */}
                   <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
                     <CardHeader className="p-4 border-b border-primary/30">
@@ -285,7 +344,10 @@ export default function Scholar() {
                             </li>
                           </>
                         ) : (
-                          <li className="text-muted-foreground">Insufficient data - need more sessions to identify patterns</li>
+                          <li className="text-muted-foreground">
+                            Insufficient data for strong conclusions. Aim for at least ~10 logged sessions
+                            (via the Dashboard Study Wheel) before trusting these patterns.
+                          </li>
                         )}
                       </ul>
                       <div className="mt-3 pt-3 border-t border-secondary/30">
@@ -324,22 +386,49 @@ export default function Scholar() {
                           </li>
                         )}
                         {coursesWithLowActivity.length === 0 && confusionTopics.length === 0 && unresolvedIssues.length === 0 && (
-                          <li className="text-muted-foreground">No significant concerns identified</li>
+                          <li className="text-muted-foreground">
+                            No significant concerns identified yet. Keep logging sessions; Scholar will surface issues
+                            here once patterns emerge.
+                          </li>
                         )}
                       </ul>
+                      {hasConcerns && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-none font-arcade text-[10px] border-primary text-primary"
+                            onClick={() => setActiveTab("analysis")}
+                            data-testid="cta-open-analysis-from-summary"
+                          >
+                            OPEN DETAILED ANALYSIS
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-none font-arcade text-[10px]"
+                            onClick={() => {
+                              window.location.href = "/brain";
+                            }}
+                            data-testid="cta-open-brain-from-summary"
+                          >
+                            REVIEW SESSIONS IN BRAIN
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
 
                 {/* Right: Chat Interface */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none flex flex-col h-full">
-                  <CardHeader className="p-3 border-b border-secondary shrink-0">
+                <Card className="bg-black/40 border-2 border-secondary rounded-none flex flex-col">
+                  <CardHeader className="p-3 border-b border-secondary shrink-0 sticky top-0 bg-black/95 z-10">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" /> ASK SCHOLAR
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
-                    <ScrollArea className="flex-1 p-3">
+                  <CardContent className="p-0 flex-1 flex flex-col">
+                    <ScrollArea className="flex-1 p-3 min-h-[400px]">
                       <div className="space-y-3">
                         {chatMessages.length === 0 && (
                           <div className="text-center py-8">
@@ -402,234 +491,290 @@ export default function Scholar() {
               </div>
             </TabsContent>
 
-            {/* TUTOR AUDIT TAB */}
-            <TabsContent value="audit" className="flex-1 overflow-auto mt-4">
-              <div className="grid lg:grid-cols-2 gap-4">
-                {/* Audit Questions */}
+            {/* ANALYSIS TAB - Consolidated from Audit, Questions, Evidence, Clusters */}
+            <TabsContent value="analysis" className="flex-1 overflow-auto mt-4">
+              <div className="space-y-4">
+                <p className="font-terminal text-[11px] text-muted-foreground">
+                  Scholar analysis walks from how Tutor behaved, to where issues cluster, to concrete questions and
+                  evidence. If something looks important here, expect or create a matching proposal on the next tab.
+                </p>
+                {/* Tutor Audit Section */}
                 <Card className="bg-black/40 border-2 border-secondary rounded-none">
                   <CardHeader className="p-3 border-b border-secondary">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <Search className="w-4 h-4" /> TUTOR BEHAVIOR AUDIT
+                      <Search className="w-4 h-4" /> TUTOR AUDIT
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 space-y-4">
-                    <p className="font-terminal text-xs text-muted-foreground mb-4">
-                      Post-session analysis of Tutor interactions. No live Tutor access.
+                  <CardContent className="p-4">
+                    <div className="grid lg:grid-cols-2 gap-4">
+                      {/* Tutor Behavior Audit */}
+                      <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
+                        <CardHeader className="p-3 border-b border-primary/30">
+                          <CardTitle className="font-arcade text-xs text-primary flex items-center gap-2">
+                            <Brain className="w-4 h-4" /> TUTOR BEHAVIOR AUDIT
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                              {tutorAuditData.length === 0 ? (
+                                <p className="font-terminal text-xs text-muted-foreground">No audit data available</p>
+                              ) : (
+                                tutorAuditData.map((item, i) => (
+                                  <div key={i} className="p-3 bg-primary/5 border border-primary/30">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-terminal text-sm">{item.sessionDate}</span>
+                                      <Badge variant="outline" className="rounded-none text-[9px] border-primary">
+                                        {item.phase}
+                                      </Badge>
+                                    </div>
+                                    <p className="font-terminal text-xs mb-2">{item.observation}</p>
+                                    <div className="flex gap-2">
+                                      <Badge variant="secondary" className="rounded-none text-[8px]">
+                                        {item.impact}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Recurrent Issues */}
+                      <Card className="bg-black/40 border-2 border-secondary rounded-none">
+                        <CardHeader className="p-3 border-b border-secondary">
+                          <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4" /> RECURRENT ISSUES
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            {tutorAuditItems.map((item, i) => (
+                              <div key={i} className="p-3 bg-black/40 border border-secondary/50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-terminal text-sm">{item.issue ?? "Unknown issue"}</span>
+                                  <Badge variant="outline" className="rounded-none text-[9px] border-primary text-primary">
+                                    x{item.frequency ?? 0}
+                                  </Badge>
+                                </div>
+                                <div className="flex gap-1 flex-wrap">
+                                  {(item.courses || []).map((course: string, j: number) => (
+                                    <Badge key={j} variant="secondary" className="rounded-none text-[8px]">
+                                      {course}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Question Pipeline Section */}
+                <Card className="bg-black/40 border-2 border-secondary rounded-none">
+                  <CardHeader className="p-3 border-b border-secondary">
+                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4" /> QUESTION PIPELINE
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <p className="font-terminal text-[11px] text-muted-foreground mb-3">
+                      Scholar turns messy issues into tractable questions. Use this section to see what is still
+                      unanswered and where more Brain data or external research is needed.
                     </p>
-                    {[
-                      { q: "Was the Tutor source-aligned?", status: "pending" },
-                      { q: "Was cognitive load appropriate?", status: "concern" },
-                      { q: "Were confusions resolved or deferred?", status: "ok" },
-                      { q: "Did explanations correlate with outcomes?", status: "pending" },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 bg-black/40 border border-secondary/50">
-                        <span className="font-terminal text-xs">{item.q}</span>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "rounded-none text-[9px]",
-                            item.status === 'ok' ? 'border-primary text-primary' :
-                              item.status === 'concern' ? 'border-destructive text-destructive' :
-                                'border-secondary text-secondary-foreground'
-                          )}
-                        >
-                          {item.status.toUpperCase()}
-                        </Badge>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-
-                {/* Recurrent Issues */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="p-3 border-b border-secondary">
-                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" /> RECURRENT ISSUES
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {tutorAuditItems.map((item, i) => (
-                        <div key={i} className="p-3 bg-black/40 border border-secondary/50">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-terminal text-sm">{item.issue ?? "Unknown issue"}</span>
-                            <Badge variant="outline" className="rounded-none text-[9px] border-primary text-primary">
-                              x{item.frequency ?? 0}
-                            </Badge>
+                    <div className="grid lg:grid-cols-2 gap-4">
+                      {/* Pipeline Stages */}
+                      <Card className="bg-black/40 border-2 border-secondary rounded-none">
+                        <CardHeader className="p-3 border-b border-secondary">
+                          <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                            <HelpCircle className="w-4 h-4" /> QUESTION RESOLUTION PIPELINE
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="space-y-2 font-terminal text-xs text-muted-foreground mb-4">
+                            <p>1. Generate question from identified issue</p>
+                            <p>2. Attempt answer using Brain data</p>
+                            <p>3. If insufficient, research learning science</p>
+                            <p>4. If still unresolved, escalate to user</p>
                           </div>
-                          <div className="flex gap-1 flex-wrap">
-                            {(item.courses || []).map((course: string, j: number) => (
-                              <Badge key={j} variant="secondary" className="rounded-none text-[8px]">
-                                {course}
-                              </Badge>
+                          <div className="space-y-3">
+                            {[
+                              { stage: "Identified", count: 5 },
+                              { stage: "Brain Analysis", count: 3 },
+                              { stage: "Research", count: 1 },
+                              { stage: "User Escalation", count: 2 },
+                            ].map((item, i) => (
+                              <div key={i} className="flex items-center gap-3">
+                                <div className="w-3 h-3 rounded-full bg-primary/60" />
+                                <span className="font-terminal text-sm flex-1">{item.stage}</span>
+                                <Badge variant="outline" className="rounded-none">{item.count}</Badge>
+                              </div>
                             ))}
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+                        </CardContent>
+                      </Card>
 
-            {/* QUESTION PIPELINE TAB */}
-            <TabsContent value="pipeline" className="flex-1 overflow-auto mt-4">
-              <div className="grid lg:grid-cols-2 gap-4">
-                {/* Question Pipeline */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="p-3 border-b border-secondary">
-                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <HelpCircle className="w-4 h-4" /> QUESTION RESOLUTION PIPELINE
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="space-y-2 font-terminal text-xs text-muted-foreground mb-4">
-                      <p>1. Generate question from identified issue</p>
-                      <p>2. Attempt answer using Brain data</p>
-                      <p>3. If insufficient, research learning science</p>
-                      <p>4. If still unresolved, escalate to user</p>
-                    </div>
-                    <div className="space-y-3">
-                      {[
-                        { stage: "Identified", count: 5 },
-                        { stage: "Brain Analysis", count: 3 },
-                        { stage: "Research", count: 1 },
-                        { stage: "User Escalation", count: 2 },
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <div className="w-3 h-3 rounded-full bg-primary/60" />
-                          <span className="font-terminal text-sm flex-1">{item.stage}</span>
-                          <Badge variant="outline" className="rounded-none">{item.count}</Badge>
-                        </div>
-                      ))}
+                      {/* Open Questions */}
+                      <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
+                        <CardHeader className="p-3 border-b border-primary/30">
+                          <CardTitle className="font-arcade text-xs text-primary flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4" /> OPEN QUESTIONS
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="space-y-4">
+                            {openQuestions.map((q) => (
+                              <div key={q.id} className="p-3 bg-primary/5 border border-primary/30">
+                                <p className="font-terminal text-sm mb-3">{q.question}</p>
+                                <div className="space-y-2 text-xs">
+                                  <div className="flex gap-2">
+                                    <span className="text-muted-foreground shrink-0">Context:</span>
+                                    <span>{q.context}</span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <span className="text-muted-foreground shrink-0">Data Gap:</span>
+                                    <span>{q.dataInsufficient}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Open Questions (User Input Required) */}
-                <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
-                  <CardHeader className="p-3 border-b border-primary/30">
-                    <CardTitle className="font-arcade text-xs text-primary flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4" /> OPEN QUESTIONS (YOUR INPUT NEEDED)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <ScrollArea className="h-[400px]">
-                      <div className="space-y-4">
-                        {openQuestions.map((q) => (
-                          <div key={q.id} className="p-3 bg-primary/5 border border-primary/30">
-                            <p className="font-terminal text-sm mb-3">{q.question}</p>
-                            <div className="space-y-2 text-xs">
-                              <div className="flex gap-2">
-                                <span className="text-muted-foreground shrink-0">Context:</span>
-                                <span>{q.context}</span>
-                              </div>
-                              <div className="flex gap-2">
-                                <span className="text-muted-foreground shrink-0">Data Gap:</span>
-                                <span>{q.dataInsufficient}</span>
-                              </div>
-                              <div className="flex gap-2">
-                                <span className="text-muted-foreground shrink-0">Research:</span>
-                                <span>{q.researchAttempted}</span>
-                              </div>
-                            </div>
-                            <div className="mt-3 pt-2 border-t border-primary/20">
-                              <Textarea
-                                placeholder="Your response..."
-                                className="rounded-none bg-black border-secondary text-xs min-h-[60px]"
-                                data-testid={`input-question-response-${q.id}`}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* EVIDENCE TAB */}
-            <TabsContent value="evidence" className="flex-1 overflow-auto mt-4">
-              <div className="grid lg:grid-cols-2 gap-4">
-                {/* Observed Data */}
+                {/* Evidence Review Section */}
                 <Card className="bg-black/40 border-2 border-secondary rounded-none">
                   <CardHeader className="p-3 border-b border-secondary">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <FileText className="w-4 h-4" /> OBSERVED DATA (from Brain)
+                      <BookOpen className="w-4 h-4" /> EVIDENCE REVIEW
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
-                    <ScrollArea className="h-[400px]">
-                      <div className="space-y-3">
-                        <div className="p-3 bg-black/40 border border-secondary/50">
-                          <div className="font-arcade text-xs text-primary mb-2">SESSION DISTRIBUTION</div>
-                          <div className="grid grid-cols-2 gap-2 font-terminal text-xs">
-                            {courses.map(c => (
-                              <div key={c.id} className="flex justify-between">
-                                <span>{c.name}</span>
-                                <span className="text-muted-foreground">{c.totalSessions || 0} sessions</span>
-                              </div>
-                            ))}
+                    <div className="grid lg:grid-cols-2 gap-4">
+                      {/* Observed Data */}
+                      <Card className="bg-black/40 border-2 border-secondary rounded-none">
+                        <CardHeader className="p-3 border-b border-secondary">
+                          <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" /> OBSERVED DATA
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="space-y-4">
+                            {scholarFindings.map((finding, i) => (
+                                <div key={i} className="p-3 bg-black/40 border border-secondary/50">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
+                                      {finding.category}
+                                    </Badge>
+                                    <span className="font-terminal text-xs text-muted-foreground">
+                                      {finding.sessionDate}
+                                    </span>
+                                  </div>
+                                  <p className="font-terminal text-sm">{finding.observation}</p>
+                                </div>
+                              ))}
                           </div>
-                        </div>
-                        <div className="p-3 bg-black/40 border border-secondary/50">
-                          <div className="font-arcade text-xs text-primary mb-2">CONFUSION LOG</div>
-                          <div className="space-y-1 font-terminal text-xs">
-                            {confusionTopics.length > 0 ? confusionTopics.slice(0, 5).map((c, i) => (
-                              <div key={i} className="text-muted-foreground">• {c}</div>
-                            )) : (
-                              <div className="text-muted-foreground">No confusions logged</div>
-                            )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Research Interpretation */}
+                      <Card className="bg-black/40 border-2 border-secondary rounded-none">
+                        <CardHeader className="p-3 border-b border-secondary">
+                          <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" /> RESEARCH INTERPRETATION
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <div className="space-y-4">
+                            {researchFindings.map((finding, i) => (
+                                <div key={i} className="p-3 bg-black/40 border border-secondary/50">
+                                  <div className="font-arcade text-xs text-primary mb-2">{finding.topic ?? finding.title}</div>
+                                  <p className="font-terminal text-xs mb-2">{finding.summary ?? finding.content}</p>
+                                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                                    <span>Source: {finding.source}</span>
+                                  </div>
+                                </div>
+                              ))}
                           </div>
-                        </div>
-                        <div className="p-3 bg-black/40 border border-secondary/50">
-                          <div className="font-arcade text-xs text-primary mb-2">RECENT SESSIONS</div>
-                          <div className="space-y-1 font-terminal text-xs">
-                            {recentSessions.slice(0, 5).map((s, i) => (
-                              <div key={i} className="flex justify-between text-muted-foreground">
-                                <span>{s.topic || 'Untitled'}</span>
-                                <span>{s.minutes || 0}m</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </ScrollArea>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </CardContent>
                 </Card>
 
-                {/* Research Interpretation */}
+                {/* Topic Clusters Section */}
                 <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="p-3 border-b border-secondary">
+                  <CardHeader className="p-3 border-b border-secondary flex flex-row items-center justify-between">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <BookOpen className="w-4 h-4" /> RESEARCH INTERPRETATION
+                      <Layers className="w-4 h-4" /> TOPIC CLUSTERS
                     </CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none font-arcade text-xs"
+                      onClick={() => runClusteringMutation.mutate()}
+                      disabled={runClusteringMutation.isPending}
+                    >
+                      {runClusteringMutation.isPending ? "Running..." : "Run Clustering"}
+                    </Button>
                   </CardHeader>
                   <CardContent className="p-4">
-                    <p className="font-terminal text-xs text-muted-foreground mb-4">
-                      Learning science findings relevant to your study patterns.
+                    <p className="font-terminal text-[11px] text-muted-foreground mb-3">
+                      Clustering works best after you have a healthy volume of sessions and findings. Use it to spot
+                      recurring themes that might deserve their own proposals.
                     </p>
-                    <ScrollArea className="h-[350px]">
-                      <div className="space-y-4">
-                        {researchFindings.map((finding, i) => (
-                          <div key={i} className="p-3 bg-black/40 border border-secondary/50">
-                            <div className="font-arcade text-xs text-primary mb-2">{finding.topic ?? finding.title}</div>
-                            <p className="font-terminal text-xs mb-2">{finding.summary ?? finding.content}</p>
-                            <div className="flex justify-between text-[10px] text-muted-foreground">
-                              <span>Source: {finding.source}</span>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        {clustersData?.clusters?.length === 0 ? (
+                          <p className="font-terminal text-xs text-muted-foreground col-span-2">No clusters yet. Run clustering to analyze.</p>
+                        ) : (
+                          clustersData?.clusters?.map((cluster) => (
+                            <div key={cluster.cluster_id} className="p-3 bg-black/40 border border-secondary/50">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-arcade text-xs text-primary">Cluster {cluster.cluster_id}</span>
+                                <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
+                                  {cluster.count} items
+                                </Badge>
+                              </div>
+                              <div className="space-y-2">
+                                {cluster.items.map((item, i) => (
+                                  <div key={i} className="flex items-center gap-2 font-terminal text-xs">
+                                    <Badge variant="secondary" className="rounded-none text-[8px] shrink-0">
+                                      {item.source === "digest" ? "DIG" : "PROP"}
+                                    </Badge>
+                                    <span className="truncate">{item.title || "Untitled"}</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div className="mt-2 pt-2 border-t border-secondary/30">
-                              <span className="text-[10px] text-primary">Relevance: {finding.relevance ?? "n/a"}</span>
-                            </div>
-                          </div>
-                        ))}
+                          ))
+                        )}
                       </div>
-                    </ScrollArea>
                   </CardContent>
                 </Card>
+
+                {proposals.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none font-arcade text-[10px] mt-2"
+                      onClick={() => setActiveTab("proposals")}
+                      data-testid="cta-next-proposals-from-analysis"
+                    >
+                      NEXT: REVIEW PROPOSALS
+                    </Button>
+                  </div>
+                )}
               </div>
             </TabsContent>
+
+
 
             {/* PROPOSALS TAB */}
             <TabsContent value="proposals" className="flex-1 overflow-auto mt-4">
@@ -641,10 +786,14 @@ export default function Scholar() {
                   <p className="font-terminal text-[10px] text-muted-foreground mt-1">
                     No auto-implementation. All changes require user approval.
                   </p>
+                  <p className="font-terminal text-[10px] text-muted-foreground mt-1">
+                    <span className="font-semibold text-primary">Status legend:</span>{" "}
+                    DRAFT = idea only, APPROVED = you intend to implement, IMPLEMENTED = change applied,
+                    REJECTED = explicitly declined.
+                  </p>
                 </CardHeader>
                 <CardContent className="p-4">
-                  <ScrollArea className="h-[500px]">
-                    <div className="space-y-4">
+                  <div className="space-y-4">
                       {proposals.length === 0 ? (
                         <div className="text-center py-8">
                           <p className="font-arcade text-xs text-primary mb-2">NO PROPOSALS YET</p>
@@ -670,8 +819,10 @@ export default function Scholar() {
 
                             {proposal.targetSystem && (
                               <div className="mb-3">
-                                <span className="text-[10px] text-muted-foreground">Target: </span>
-                                <Badge variant="secondary" className="rounded-none text-[9px]">{proposal.targetSystem}</Badge>
+                                <span className="text-[10px] text-muted-foreground">Target system: </span>
+                                <Badge variant="secondary" className="rounded-none text-[9px]">
+                                  {proposal.targetSystem}
+                                </Badge>
                               </div>
                             )}
 
@@ -702,65 +853,7 @@ export default function Scholar() {
                           </div>
                         ))
                       )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* CLUSTERS TAB */}
-            <TabsContent value="clusters" className="flex-1 overflow-auto mt-4">
-              <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                <CardHeader className="p-3 border-b border-secondary flex flex-row items-center justify-between">
-                  <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                    <Layers className="w-4 h-4" /> TOPIC CLUSTERS
-                  </CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-none font-arcade text-[10px] border-primary text-primary"
-                    onClick={() => clusterMutation.mutate()}
-                    disabled={clusterMutation.isPending}
-                    data-testid="button-run-clustering"
-                  >
-                    {clusterMutation.isPending ? (
-                      <><RefreshCw className="w-3 h-3 mr-1 animate-spin" /> CLUSTERING...</>
-                    ) : (
-                      <><Layers className="w-3 h-3 mr-1" /> RUN CLUSTERING</>
-                    )}
-                  </Button>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <ScrollArea className="h-[500px]">
-                    <div className="space-y-4">
-                      {!clustersData?.clusters || clustersData.clusters.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground font-terminal text-sm">
-                          No clusters yet. Click RUN CLUSTERING to group digests and proposals by topic.
-                        </div>
-                      ) : (
-                        clustersData.clusters.map((cluster) => (
-                          <div key={cluster.cluster_id} className="p-4 bg-black/40 border border-secondary/50">
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-arcade text-xs text-primary uppercase">{cluster.cluster_id}</h4>
-                              <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
-                                {cluster.count} items
-                              </Badge>
-                            </div>
-                            <div className="space-y-2">
-                              {cluster.items.map((item, i) => (
-                                <div key={i} className="flex items-center gap-2 font-terminal text-xs">
-                                  <Badge variant="secondary" className="rounded-none text-[8px] shrink-0">
-                                    {item.source === "digest" ? "DIG" : "PROP"}
-                                  </Badge>
-                                  <span className="truncate">{item.title || "Untitled"}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -774,8 +867,11 @@ export default function Scholar() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
-                  <ScrollArea className="h-[500px]">
-                    <div className="space-y-2">
+                  <p className="font-terminal text-[10px] text-muted-foreground mb-2">
+                    Read-only log of every Scholar proposal and its final status. Use this to see what has already
+                    been tried and decided before creating new changes.
+                  </p>
+                  <div className="space-y-2">
                       {proposals.length === 0 ? (
                         <div className="text-center py-8">
                           <p className="font-arcade text-xs text-primary mb-2">NO HISTORY YET</p>
@@ -804,8 +900,7 @@ export default function Scholar() {
                           </div>
                         ))
                       )}
-                    </div>
-                  </ScrollArea>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

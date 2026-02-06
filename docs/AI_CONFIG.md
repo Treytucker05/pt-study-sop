@@ -1,27 +1,43 @@
-# AI Config Sync
-## Overview
-ai-config/ is the canonical source of truth for AI agent configuration in this repo. We sync from ai-config/ to both the repo root and .claude/ so Codex, OpenCode, and Claude Code always read consistent instructions.
-## What lives where
-- ai-config/: canonical AGENTS, CLAUDE, permissions, commands, subagents.
-- .claude/: Claude Code config surface (commands, subagents/agents, permissions, mcp, settings).
-- Repo root: AGENTS.md, CLAUDE.md, and permissions.json for Codex/OpenCode instruction loading.
-## PowerShell commands
-- Plan (DryRun):
-  powershell -ExecutionPolicy Bypass -File .\scripts\sync_ai_config.ps1 -Mode DryRun
-- Apply sync:
-  powershell -ExecutionPolicy Bypass -File .\scripts\sync_ai_config.ps1 -Mode Apply
-- Drift check:
-  powershell -ExecutionPolicy Bypass -File .\scripts\sync_ai_config.ps1 -Mode Check
-## CI enforcement
-CI enforces drift detection via a dedicated job that runs:
-  pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/sync_ai_config.ps1 -Mode Check
-The job fails if any drift is detected.
+# AI Config and Path Unification
 
-## What to edit
-1) Edit files under ai-config/ (and ai-config/commands, ai-config/subagents).
-2) Run Apply to sync to root and .claude/.
-3) Commit later (git steps are intentionally not covered here).
-## Optional skills
-If ai-config/skills/ exists, it syncs into %USERPROFILE%\.codex\skills\pt-study-sop\.
+This repo and your global agents use a few different "config surfaces". The goal is that every agent/tool can find the same instructions and the same canonical paths.
+
+## Repo-scoped (this git repo)
+
+Canonical instruction entrypoints live at the repo root:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `permissions.json`
+- `.mcp.json`
+
+Claude Code reads repo-local config from `.claude/`. The files `.claude/AGENTS.md` and `.claude/CLAUDE.md` are small pointer stubs that direct Claude Code to the repo-root instruction files.
+
+The `ai-config/` folder is supplemental only (not canonical). It contains:
+
+- `ai-config/agent-workflow.md`
+- `ai-config/agent-prompts.md`
+
+### Drift check (PowerShell)
+
+- Dry run:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\sync_agent_config.ps1 -Mode DryRun`
+- Apply:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\sync_agent_config.ps1 -Mode Apply`
+- Check (CI):
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\sync_agent_config.ps1 -Mode Check`
+
+## Global portable (Obsidian vault)
+
+Portable canonical agent config lives in the Obsidian vault:
+
+- `C:\\Users\\treyt\\Desktop\\PT School Semester 2\\agents\\config\\`
+
+Sync from vault -> standard tool locations using:
+
+- `C:\\Users\\treyt\\Desktop\\PT School Semester 2\\agents\\config\\sync_to_home.ps1`
+- Optional repo wrapper: `scripts/sync_portable_agent_config.ps1`
+
 ## OneDrive note
-OneDrive can lock large folders (like node_modules) and make stash/cleanup operations noisy. Keep AI config changes scoped to ai-config/, .claude/, and root instruction files to avoid that churn.
+
+OneDrive can lock large folders (like `node_modules`) and make git operations noisy. Keep repo config changes scoped to docs and scripts unless you are explicitly working on frontend or other large dependency folders.

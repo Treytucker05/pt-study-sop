@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Play, RefreshCw, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Play, RefreshCw, CheckCircle, XCircle, Clock, Brain, BookOpen } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
@@ -19,11 +20,12 @@ interface ScholarStatus {
 export function ScholarRunStatus() {
   const queryClient = useQueryClient();
   const [pollingEnabled, setPollingEnabled] = useState(false);
+  const [studyMode, setStudyMode] = useState<"brain" | "tutor">("brain");
 
   const { data: status, isLoading } = useQuery<ScholarStatus>({
     queryKey: ["scholarStatus"],
     queryFn: async () => {
-      const response = await fetch("/api/scholar");
+      const response = await fetch("/api/scholar/status");
       if (!response.ok) throw new Error("Failed to fetch Scholar status");
       return response.json();
     },
@@ -35,9 +37,18 @@ export function ScholarRunStatus() {
       const response = await fetch("/api/scholar/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ triggered_by: "ui", mode: studyMode }),
       });
-      if (!response.ok) throw new Error("Failed to start Scholar run");
-      return response.json();
+      const payload = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
+      if (!response.ok) {
+        const msg =
+          (payload && (payload.message || payload.error)) ||
+          `Failed to start Scholar run (${response.status})`;
+        throw new Error(msg);
+      }
+      return payload;
     },
     onSuccess: () => {
       setPollingEnabled(true);
@@ -107,6 +118,15 @@ export function ScholarRunStatus() {
       <CardContent className="p-3 space-y-3">
         {/* Status Info */}
         <div className="space-y-2">
+          {runMutation.isError && (
+            <div className="p-2 bg-red-900/20 border border-red-500/50 rounded-none">
+              <div className="font-terminal text-[10px] text-red-400">Run Error:</div>
+              <div className="font-terminal text-[10px] text-red-300">
+                {(runMutation.error as Error)?.message || "Unknown error"}
+              </div>
+            </div>
+          )}
+
           {status?.running && (
             <>
               {status.current_step && (
@@ -165,6 +185,28 @@ export function ScholarRunStatus() {
           )}
         </div>
 
+        {/* Study mode selector */}
+        <div className="space-y-1">
+          <div className="font-terminal text-[10px] text-muted-foreground">Study mode</div>
+          <Select value={studyMode} onValueChange={(v) => setStudyMode(v as "brain" | "tutor")} disabled={status?.running || runMutation.isPending}>
+            <SelectTrigger className="rounded-none font-terminal text-xs border-secondary h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none bg-black border-primary">
+              <SelectItem value="brain" className="font-terminal text-xs rounded-none">
+                <span className="flex items-center gap-2">
+                  <Brain className="w-3 h-3" /> Brain Study
+                </span>
+              </SelectItem>
+              <SelectItem value="tutor" className="font-terminal text-xs rounded-none">
+                <span className="flex items-center gap-2">
+                  <BookOpen className="w-3 h-3" /> Tutor Study
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Actions */}
         <div className="flex gap-2">
           <Button
@@ -188,7 +230,9 @@ export function ScholarRunStatus() {
         {/* Info */}
         <div className="pt-2 border-t border-secondary/30">
           <p className="font-terminal text-[9px] text-muted-foreground">
-            Runs Scholar orchestrator loop: analyzes SOP, generates questions, creates proposals
+            {studyMode === "brain"
+              ? "Brain Study: session logs + SOP. Tutor Study: SOP library only (no telemetry)."
+              : "Tutor Study: evaluates sop/library, researches learning science, proposes changes."}
           </p>
         </div>
       </CardContent>

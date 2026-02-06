@@ -248,3 +248,34 @@
 -   2 0 2 6 - 0 1 - 3 1 :   A d d e d   L i t e   W r a p   e x a m p l e   h e a d i n g   i n   1 1 - e x a m p l e s   a n d   m a d e   e x a m p l e   e x t r a c t i o n   t o l e r a n t   t o   m i s s i n g   h e a d i n g s   i n   b u i l d _ r u n t i m e _ b u n d l e .  
  - 2026-01-31: Added v9.4 Custom GPT system instructions to SOP library and linked in overview.
 - 2026-01-31: Updated v9.4 Custom GPT system instructions with pre-test guardrail (NO-GUESS), first exposure vs review rule, and LO relabel restriction.
+-   2 0 2 6 - 0 1 - 3 1 :   B u i l t   d a s h b o a r d   f r o n t e n d   a n d   s y n c e d   b r a i n / s t a t i c / d i s t   f r o m   d a s h b o a r d _ r e b u i l d / d i s t / p u b l i c   f o r   l i v e   d e p l o y .  
+ 
+## 2026-01-31
+
+- 2026-01-31 22:10:00: Completed UI Overhaul v9.4.2 boulder work - all core features delivered (11 commits total):
+  - Runtime bundle drift resolved (8ac74c5f)
+  - Scholar runnable backend + frontend (dc97111d, ca985eec, b88e6ac0, 1d320047)
+  - Planner CTA after JSON attach (93490a5b)
+  - Dashboard compact preview with top 3 tasks + Open Brain button (2f05a0da, bdb5207a)
+  - Brain tab reorganization: DAILY/WEEKLY/ADVANCED → TODAY/THIS WEEK/TOOLS/DATA (990cecd1)
+  - Scholar tab consolidation: 7 tabs → 3 tabs (SUMMARY/ANALYSIS/PROPOSALS) with new ANALYSIS section (b88e6ac0, 1d320047)
+  - Documentation and plan completion (07ee0e64, 55989154, e7e5e1e4, 26cbf75b)
+  - Calendar view separation deferred to v9.4.3 (documented in .sisyphus/notepads/ui-overhaul-v9.4.2/calendar-deferred.md)
+  - **Action required:** 4 commits need manual push (26cbf75b, 55989154, 2f05a0da, 1d320047) - git push failed due to WSL auth
+-   2 0 2 6 - 0 1 - 3 1 :   R e b u i l t   d a s h b o a r d   a n d   r e - s y n c e d   b r a i n / s t a t i c / d i s t   f r o m   d a s h b o a r d _ r e b u i l d / d i s t / p u b l i c .  
+ -   2 0 2 6 - 0 1 - 3 1 :   F i x e d   D a s h b o a r d / S c h o l a r   b l a c k   s c r e e n s   ( p l a n n e r   q u e u e   +   c l u s t e r i n g   m u t a t i o n   r e f s ) ;   r e b u i l t   a n d   s y n c e d   d a s h b o a r d   a s s e t s .  
+ -   2 0 2 6 - 0 1 - 3 1 :   F i x e d   S c h o l a r   r u n   b u t t o n   p a y l o a d   ( s e n d   J S O N   b o d y )   a n d   r e b u i l t / s y n c e d   d a s h b o a r d   a s s e t s .  
+ -   2 0 2 6 - 0 1 - 3 1 :   W i r e d   / a p i / s c h o l a r / r u n   t o   t r i g g e r   t h e   C o d e x - b a s e d   o r c h e s t r a t o r   ( p r e v e n t s   n o - o p   r u n s ) .  
+ - 2026-02-01: Added /api/health/db alias and DB health payload fields for smoke test.
+- 2026-02-01: Removed deprecated web_search_request flag from Codex config to silence warning.
+-   2 0 2 6 - 0 2 - 0 1 :   A d d e d   a g e n t   s t r a t e g y   d o c s ,   p r o m p t   p a t t e r n s ,   a n d   s y n c   s c r i p t ;   a l i g n e d   C l a u d e / C o d e x / O p e n C o d e   c o n f i g s   a n d   c o m m a n d s .  
+ - 2026-02-01: Made /api/scholar/digest DB-first, added /api/scholar/proposals alias, fixed duplicate obsidian patch, and ignored scholar outputs.
+- 2026-02-01: Added Custom GPT deployment pack doc and print helper script.
+- 2026-02-01: Moved planning docs into tasks/ and stopped ignoring curated planning files in .gitignore.
+- 2026-02-01: Refined Custom GPT deployment pack content and print script for acceptance test and run history.
+-   2 0 2 6 - 0 2 - 0 1 :   E n a b l e d   a u t o - a p p e n d   p r o m p t   s u f f i x   d e f a u l t s   a c r o s s   C l a u d e / C o d e x / O p e n C o d e   s t r a t e g y   d o c s   a n d   r u l e s .  
+ - 2026-02-01: Added LO Engine protocol pack doc, routing, and templates.
+- 2026-02-03: Appended raw input notes to Obsidian study session sync for Brain chat.
+- 2026-02-03: Added organize-preview flow with destination picker and raw+organized Obsidian sync for Brain ingest.
+
+- 2026-02-05 14:30:08: Unified SOP/agent paths: updated docs/root/PROJECT_ARCHITECTURE.md, refreshed docs/root/ARCHITECTURE_CONTEXT.md, replaced AI config drift with scripts/sync_agent_config.ps1 (CI), updated Scholar allowlists/docs to sop/library + sop/runtime, and updated brain/ingest_knowledge.py to ingest from sop/runtime/knowledge_upload (legacy fallback kept). Added Conductor workflow docs + scripts/sync_portable_agent_config.ps1 wrapper for vault-based agent config.
