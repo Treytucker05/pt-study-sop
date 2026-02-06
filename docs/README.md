@@ -2,6 +2,14 @@
 
 Central documentation for the PT Study system.
 
+## Docs Sync Policy (Single Source Of Truth)
+- Dev/run/build/test workflow: `docs/root/GUIDE_DEV.md`
+- SOP quick start: `README.md`
+- Agent instructions: `AGENTS.md`, `CLAUDE.md` (repo) and `C:\Users\treyt\.claude\CLAUDE.md` (global)
+- Canonical docs index: `docs/README.md`
+
+Basic alignment is enforced by `python scripts/check_docs_sync.py` (CI).
+
 ## Feature → Doc Quick Reference
 
 | Feature | Doc(s) |

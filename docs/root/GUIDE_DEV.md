@@ -14,6 +14,17 @@ This guide covers how to run the stack, update docs, and extend the system safel
 2. Launch dashboard: `Start_Dashboard.bat`
 3. Open: `http://127.0.0.1:5000`
 
+## Frontend Build + Sync (Required For UI Changes)
+The Flask app serves the built frontend from `brain/static/dist/`. If you change anything under `dashboard_rebuild/`, you must:
+1. Build the frontend: `cd dashboard_rebuild; npm run build`
+2. Sync the build output into Flask static dir (PowerShell):
+   - `Remove-Item -Recurse -Force brain/static/dist`
+   - `Copy-Item -Recurse -Force dashboard_rebuild/dist/public brain/static/dist`
+
+Do NOT run `npm run dev` / `vite dev`. Always use `Start_Dashboard.bat` (port 5000).
+
+Skip this section only for backend-only changes under `brain/`.
+
 ## Configuration
 - Calendar/Tasks: `brain/data/api_config.json`
 - OAuth tokens: `brain/data/gcal_token.json`
@@ -33,7 +44,7 @@ This guide covers how to run the stack, update docs, and extend the system safel
 - Scholar reads DB + SOP, writes to `scholar/outputs/`
 
 ## Testing
-- Targeted: `python -m pytest brain/tests`
+- Targeted: `pytest brain/tests/`
 - Release check: `python scripts/release_check.py`
 
 ## Docs Discipline

@@ -21,10 +21,11 @@ Also read `AGENTS.md` for agent behavior rules.
 - Email: Treytucker05@yahoo.com
 
 ## Core Commands
-- Start dashboard: Start_Dashboard.bat
-- Run tests: pytest brain/tests/
-- Build frontend: cd dashboard_rebuild && npm run build (preferred PM: npm)
-- Copy build: copy dashboard_rebuild/dist/public -> brain/static/dist
+Canonical run/build/test commands live in `docs/root/GUIDE_DEV.md`.
+
+- Start dashboard: `Start_Dashboard.bat`
+- Run tests: `pytest brain/tests/`
+- Frontend build + sync: see `docs/root/GUIDE_DEV.md` (required for UI changes)
 
 ## Key Paths
 - Database: brain/data/pt_study.db
@@ -57,8 +58,8 @@ Also read `AGENTS.md` for agent behavior rules.
 - Components: 2px solid red borders; semi-transparent black backgrounds.
 
 ## Post-Implementation Checklist (MANDATORY after any code change)
-1. **Build frontend**: `cd dashboard_rebuild && npm run build`
-2. **Copy to Flask**: `rm -rf brain/static/dist && cp -r dashboard_rebuild/dist/public brain/static/dist`
+1. **Build frontend**: `cd dashboard_rebuild; npm run build`
+2. **Copy to Flask (PowerShell)**: `Remove-Item -Recurse -Force brain/static/dist; Copy-Item -Recurse -Force dashboard_rebuild/dist/public brain/static/dist`
 3. **Never use dev server**: Do NOT run `npm run dev` or `vite dev`. The dashboard is served only via `Start_Dashboard.bat` on port **5000**.
 4. Run relevant tests: `pytest brain/tests/`
 5. **Update relevant docs**: If the change affects a feature, update its doc (see Feature→Doc table in `docs/README.md`). For new features, create a doc and add it to the table.

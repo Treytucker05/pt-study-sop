@@ -34,5 +34,8 @@ jobs:
           fi
           pip install pytest
 
+      - name: Docs sync check
+        run: python scripts/check_docs_sync.py
+
       - name: Run tests
         run: python -m pytest brain/tests
