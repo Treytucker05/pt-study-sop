@@ -13,6 +13,13 @@ Canonical instruction entrypoints live at the repo root:
 
 Claude Code reads repo-local config from `.claude/`. The files `.claude/AGENTS.md` and `.claude/CLAUDE.md` are small pointer stubs that direct Claude Code to the repo-root instruction files.
 
+## MCP servers
+
+This repo includes a few MCP server presets in `.mcp.json` / `.claude/mcp.json`:
+- `codex-cli`: code review loop (see `docs/project/AI_REVIEW_LOOP.md`)
+- `github`: GitHub API operations (requires `GITHUB_PERSONAL_ACCESS_TOKEN` in your environment)
+- `memory`: local knowledge-graph memory
+
 The `ai-config/` folder is supplemental only (not canonical). It contains:
 
 - `ai-config/agent-workflow.md`

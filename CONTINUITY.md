@@ -291,3 +291,12 @@
 - Prevent Start_Dashboard.bat from overwriting brain/static/dist with an older dashboard_rebuild/dist/public build.
 - When syncing, mirror the build output (robocopy /MIR) so stale hashed assets don't linger.
 - Ignore local verification screenshots (_tmp_*.png).
+
+2026-02-06 - Added jules-sdk local smoke test (smoke.ts) and README instructions for running via tsx.
+
+
+## 2026-02-06 - MCP Presets + User Troubleshooting
+
+- Add github + memory MCP server presets to .mcp.json and .claude/mcp.json (GitHub requires GITHUB_PERSONAL_ACCESS_TOKEN).
+- Document the MCP presets in docs/AI_CONFIG.md.
+- Add a quick black-screen troubleshooting note to docs/root/GUIDE_USER.md.
