@@ -18,9 +18,11 @@ This guide covers how to run the stack, update docs, and extend the system safel
 The Flask app serves the built frontend from `brain/static/dist/`. If you change anything under `dashboard_rebuild/`, you must:
 1. Install frontend deps (first time): `cd dashboard_rebuild; npm install`
 2. Build the frontend: `cd dashboard_rebuild; npm run build`
-2. Sync the build output into Flask static dir (PowerShell):
-   - `Remove-Item -Recurse -Force brain/static/dist`
-   - `Copy-Item -Recurse -Force dashboard_rebuild/dist/public brain/static/dist`
+3. Sync the build output into Flask static dir (PowerShell):
+   - Preferred clean mirror: `robocopy dashboard_rebuild/dist/public brain/static/dist /MIR`
+   - Or: `Remove-Item -Recurse -Force brain/static/dist` then `Copy-Item -Recurse -Force dashboard_rebuild/dist/public brain/static/dist`
+
+Note: `Start_Dashboard.bat` will only sync `dashboard_rebuild/dist/public` into `brain/static/dist` when it detects the local build is newer (or when forced via `PT_FORCE_UI_SYNC=1`).
 
 Do NOT run `npm run dev` / `vite dev`. Always use `Start_Dashboard.bat` (port 5000).
 

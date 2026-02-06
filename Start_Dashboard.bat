@@ -62,11 +62,36 @@ echo [3/5] Syncing dashboard UI build (if available)...
 set "REBUILD_DIR=%~dp0dashboard_rebuild"
 set "REBUILD_DIST=%REBUILD_DIR%\\dist\\public"
 set "DIST_DIR=%SERVER_DIR%\\static\\dist"
-if exist "%REBUILD_DIST%\\assets\\index-*.js" (
-    if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
-    robocopy "%REBUILD_DIST%" "%DIST_DIR%" /E /NFL /NDL /NJH /NJS /NC /NS >nul
+set "UI_SHOULD_SYNC=0"
+set "UI_SYNC_DECISION="
+set "UI_SYNC_REASON="
+
+if /I "%PT_FORCE_UI_SYNC%"=="1" (
+    set "UI_SHOULD_SYNC=1"
+    set "UI_SYNC_REASON=forced (PT_FORCE_UI_SYNC=1)"
 ) else (
-    echo [WARN] dashboard_rebuild build not found. Run `npm run build` in dashboard_rebuild to update the UI.
+    if exist "%REBUILD_DIST%\\assets\\index-*.js" (
+        for /f "usebackq delims=" %%I in (`powershell -NoProfile -Command "$srcFiles = Get-ChildItem -Path '%REBUILD_DIST%\\assets\\index-*.js' -ErrorAction SilentlyContinue; if (-not $srcFiles) { 'skip:no_src' ; exit }; $src=(Sort-Object -InputObject $srcFiles -Property LastWriteTime -Descending)[0]; $dstFiles = Get-ChildItem -Path '%DIST_DIR%\\assets\\index-*.js' -ErrorAction SilentlyContinue; if (-not $dstFiles) { 'copy:no_dst' ; exit }; $dst=(Sort-Object -InputObject $dstFiles -Property LastWriteTime -Descending)[0]; if ($src.LastWriteTime -gt $dst.LastWriteTime) { 'copy:newer' } else { 'skip:older_or_equal' }"`) do set "UI_SYNC_DECISION=%%I"
+        if /I "!UI_SYNC_DECISION:~0,4!"=="copy" (
+            set "UI_SHOULD_SYNC=1"
+            set "UI_SYNC_REASON=!UI_SYNC_DECISION!"
+        ) else (
+            echo [INFO] Skipping UI sync (reason: !UI_SYNC_DECISION!). Set PT_FORCE_UI_SYNC=1 to force.
+        )
+    ) else (
+        echo [WARN] dashboard_rebuild build not found. Run `npm run build` in dashboard_rebuild to update the UI.
+    )
+)
+
+if "!UI_SHOULD_SYNC!"=="1" (
+    if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
+    rem Mirror build output to avoid stale hashed assets lingering in brain/static/dist.
+    robocopy "%REBUILD_DIST%" "%DIST_DIR%" /MIR /NFL /NDL /NJH /NJS /NC /NS >nul
+    if !errorlevel! GEQ 8 (
+        echo [ERROR] UI sync failed (robocopy exit code !errorlevel!).
+        goto END
+    )
+    echo [INFO] UI synced (!UI_SYNC_REASON!).
 )
 
 echo [4/5] Starting dashboard server (window titled 'PT Study Brain Dashboard')...

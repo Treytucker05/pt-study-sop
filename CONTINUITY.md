@@ -284,3 +284,10 @@
 2026-02-06 - Add root requirements.txt + fix memory.py so release_check passes; update GUIDE_DEV install steps.
 
 2026-02-06 - Fix dashboard Brain Tools black screen by adding missing Obsidian API client methods (getConfig/getVaultIndex/getGraph) and rebuilding brain/static/dist.
+
+
+## 2026-02-06 - Safer UI Sync in Start_Dashboard
+
+- Prevent Start_Dashboard.bat from overwriting brain/static/dist with an older dashboard_rebuild/dist/public build.
+- When syncing, mirror the build output (robocopy /MIR) so stale hashed assets don't linger.
+- Ignore local verification screenshots (_tmp_*.png).

@@ -59,6 +59,7 @@ tmpclaude-*
 *.tmp
 *.temp
 _codex_backups/
+_tmp_*.png
 
 # Environment variables
 .env
