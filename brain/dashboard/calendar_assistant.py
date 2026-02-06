@@ -1122,6 +1122,178 @@ def parse_nl_to_change_plan(nl_input: str) -> Dict[str, Any]:
     Returns:
         Dict with 'success', 'plan' (list of operations), 'error' keys
     """
+    import re
+
+    text = (nl_input or "").strip()
+    if not text:
+        return {"success": False, "error": "Empty input", "plan": []}
+
+    now = datetime.now()
+
+    def _parse_action(s: str) -> Optional[str]:
+        s = s.strip().lower()
+        if s.startswith(("add ", "create ", "schedule ")):
+            return "add"
+        if s.startswith("move "):
+            return "move"
+        if s.startswith(("reschedule ", "re-schedule ")):
+            return "reschedule"
+        if s.startswith(("delete ", "remove ", "cancel ")):
+            return "delete"
+        return None
+
+    def _parse_event_type(s: str) -> str:
+        s = s.lower()
+        for t in ["exam", "quiz", "lab", "lecture", "assignment", "class"]:
+            if re.search(rf"\b{re.escape(t)}\b", s):
+                return t
+        return "event"
+
+    def _title_from_type(event_type: str) -> str:
+        if event_type and event_type != "event":
+            return event_type.title()
+        return "Event"
+
+    def _parse_time(s: str) -> Optional[str]:
+        s = s.lower()
+
+        m = re.search(r"\b([01]?\d|2[0-3]):([0-5]\d)\b", s)
+        if m:
+            return f"{int(m.group(1)):02d}:{int(m.group(2)):02d}"
+
+        m = re.search(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b", s)
+        if not m:
+            return None
+
+        hour = int(m.group(1))
+        minute = int(m.group(2) or 0)
+        ampm = m.group(3)
+
+        if ampm == "pm" and hour != 12:
+            hour += 12
+        if ampm == "am" and hour == 12:
+            hour = 0
+
+        return f"{hour:02d}:{minute:02d}"
+
+    def _parse_date(s: str) -> Optional[str]:
+        s = s.lower()
+
+        m = re.search(r"\b(20\d{2})-(\d{2})-(\d{2})\b", s)
+        if m:
+            return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+
+        month_map = {
+            "jan": 1,
+            "feb": 2,
+            "mar": 3,
+            "apr": 4,
+            "may": 5,
+            "jun": 6,
+            "jul": 7,
+            "aug": 8,
+            "sep": 9,
+            "oct": 10,
+            "nov": 11,
+            "dec": 12,
+        }
+        m = re.search(
+            r"\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?\b",
+            s,
+        )
+        if m:
+            month_key = m.group(1)[:3]
+            month_num = month_map.get(month_key)
+            day = int(m.group(2))
+            if month_num:
+                year = now.year
+                try:
+                    candidate = datetime(year, month_num, day)
+                except ValueError:
+                    return None
+                if candidate.date() < now.date():
+                    year += 1
+                return f"{year:04d}-{month_num:02d}-{day:02d}"
+
+        weekday_map = {
+            "monday": 0,
+            "tuesday": 1,
+            "wednesday": 2,
+            "thursday": 3,
+            "friday": 4,
+            "saturday": 5,
+            "sunday": 6,
+        }
+        m = re.search(
+            r"\b(next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+            s,
+        )
+        if m:
+            weekday = weekday_map[m.group(2)]
+            days_ahead = (weekday - now.weekday()) % 7
+            if days_ahead == 0:
+                days_ahead = 7
+            return (now + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+
+        return None
+
+    def _parse_clause(clause: str) -> Optional[Dict[str, Any]]:
+        action = _parse_action(clause)
+        if not action:
+            return None
+
+        event_type = _parse_event_type(clause)
+        title = _title_from_type(event_type)
+        date_val = _parse_date(clause)
+        time_val = _parse_time(clause)
+
+        if action == "add":
+            op: Dict[str, Any] = {
+                "action": "add",
+                "event_type": event_type,
+                "title": title,
+            }
+            if date_val:
+                op["date"] = date_val
+            if time_val:
+                op["time"] = time_val
+            return op
+
+        if action in ["move", "reschedule"]:
+            op = {
+                "action": action,
+                "event_type": event_type,
+                "original_title": title,
+            }
+            if date_val:
+                op["new_date"] = date_val
+            return op
+
+        if action == "delete":
+            op = {
+                "action": "delete",
+                "event_type": event_type,
+                "original_title": title,
+            }
+            if date_val:
+                op["date"] = date_val
+            return op
+
+        return None
+
+    # Fast offline parse for basic phrases so tests and local use work without an API key.
+    offline_ops: List[Dict[str, Any]] = []
+    for part in re.split(r"\s+\band\b\s+", text, flags=re.IGNORECASE):
+        part = part.strip()
+        if not part:
+            continue
+        op = _parse_clause(part)
+        if op:
+            offline_ops.append(op)
+
+    if offline_ops:
+        return {"success": True, "plan": offline_ops, "error": None}
+
     from llm_provider import call_llm
     
     system_prompt = """You are a calendar operation parser. Convert natural language into structured JSON operations.
@@ -1166,7 +1338,7 @@ Return ONLY valid JSON, no explanation."""
     if not result.get("success"):
         return {
             "success": False,
-            "error": result.get("content", "LLM call failed"),
+            "error": result.get("error") or result.get("content") or "LLM call failed",
             "plan": []
         }
     

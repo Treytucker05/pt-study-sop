@@ -1188,8 +1188,23 @@ def get_connection():
     """
     Get a database connection.
     """
+    # Ensure the database schema exists so API handlers and tests don't depend on
+    # a pre-existing local DB file.
+    if not os.path.exists(DB_PATH):
+        init_database()
+
     conn = sqlite3.connect(DB_PATH, timeout=15)
     conn.execute("PRAGMA busy_timeout = 5000")
+
+    try:
+        conn.execute("SELECT 1 FROM sessions LIMIT 1")
+    except sqlite3.OperationalError:
+        # Likely a brand-new DB file with no schema yet.
+        conn.close()
+        init_database()
+        conn = sqlite3.connect(DB_PATH, timeout=15)
+        conn.execute("PRAGMA busy_timeout = 5000")
+
     return conn
 
 

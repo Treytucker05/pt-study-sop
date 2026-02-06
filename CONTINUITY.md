@@ -315,3 +315,9 @@
 ## 2026-02-06 - Fix CI Calendar Assistant Typing Import
 
 - Import Any in brain/dashboard/calendar_assistant.py to prevent NameError during pytest collection on Ubuntu GitHub Actions.
+
+
+## 2026-02-06 - Make CI Tests Self-Contained
+
+- Add offline parsing fallback for calendar NL parsing so tests don't require OPENROUTER_API_KEY.
+- Ensure db_setup.get_connection initializes the SQLite schema on first use so /api/sessions works in fresh clones/CI.
