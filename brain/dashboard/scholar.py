@@ -2089,7 +2089,33 @@ def generate_weekly_digest(days: int = 7) -> dict:
         context_parts.append(f"\n## Unanswered Questions ({len(pending_questions)}):")
         for q in pending_questions[:5]:
             context_parts.append(f"- {q}")
-    
+
+    # --- Method Library Summary (Composable Methods) ---
+    try:
+        from dashboard.method_analysis import get_method_library_summary, flag_anomalies
+        ml_summary = get_method_library_summary()
+        if ml_summary.get("total_blocks", 0) > 0:
+            context_parts.append(f"\n## Method Library ({ml_summary['total_blocks']} blocks, {ml_summary['total_chains']} chains)")
+            context_parts.append(f"- Total ratings: {ml_summary['total_ratings']}")
+            if ml_summary.get("avg_effectiveness"):
+                context_parts.append(f"- Avg effectiveness: {ml_summary['avg_effectiveness']}")
+            if ml_summary.get("most_used_block"):
+                context_parts.append(f"- Most used block: {ml_summary['most_used_block']}")
+            if ml_summary.get("most_used_chain"):
+                context_parts.append(f"- Most used chain: {ml_summary['most_used_chain']}")
+            # Flag anomalies for Scholar attention
+            anomalies = flag_anomalies()
+            anomaly_count = sum(len(v) for v in anomalies.values())
+            if anomaly_count > 0:
+                context_parts.append(f"\n### Method Anomalies ({anomaly_count} issues)")
+                for category, items in anomalies.items():
+                    if items:
+                        context_parts.append(f"- **{category}**: {len(items)} items")
+                        for item in items[:3]:
+                            context_parts.append(f"  - {item.get('name', item.get('id', '?'))}")
+    except ImportError:
+        pass
+
     context_text = "\n".join(context_parts)
     
     # --- Call OpenRouter API for AI analysis ---
@@ -2104,6 +2130,8 @@ def generate_weekly_digest(days: int = 7) -> dict:
         if api_key:
             system_prompt = """You are a learning science expert analyzing a PT student's study system improvement tracker.
 You help optimize study methods, track system health, and prioritize improvement proposals.
+You also analyze the Composable Method Library (method blocks and chains) for effectiveness patterns.
+When method library data is present, consider: which methods score low in which contexts? Which chains are untested? What optimizations could improve learning outcomes?
 Be concise, actionable, and use markdown formatting."""
 
             user_prompt = f"""Analyze this study system data and provide strategic recommendations:
@@ -2179,7 +2207,18 @@ Based on this data, provide:
     digest_parts.append(f"- **Improvement Candidates:** {len(improvement_candidates)}")
     digest_parts.append(f"- **Identified Gaps:** {len(topics_to_review)}")
     digest_parts.append(f"- **Unanswered Questions:** {len(pending_questions)}")
-    
+
+    # Method Library stats in digest
+    try:
+        from dashboard.method_analysis import get_method_library_summary
+        ml_summary = get_method_library_summary()
+        if ml_summary.get("total_blocks", 0) > 0:
+            digest_parts.append(f"- **Method Blocks:** {ml_summary['total_blocks']}")
+            digest_parts.append(f"- **Method Chains:** {ml_summary['total_chains']}")
+            digest_parts.append(f"- **Method Ratings:** {ml_summary['total_ratings']}")
+    except ImportError:
+        pass
+
     digest_text = "\n".join(digest_parts)
     
     # Build context summary for UI

@@ -1,10 +1,10 @@
-# Workload System: 3+2 Rotational Interleaving
+# Workload System: 3+2 Rotation & Spacing
+
+> **Key distinction:** The 3+2 rotation is *distributed practice* across classes. Interleaving is used *within* a class for confusable categories. These are different mechanisms — do not conflate them.
 
 ## Overview
 
 The workload system distributes study across 5 concurrent classes using a 3+2 cluster split with daily cross-review, the sandwich method for each session, and spaced retrieval at 1-3-7-21 day intervals.
-
-**Key distinction:** The 3+2 rotation is *distributed practice* across classes. Interleaving is used *within* a class for confusable categories.
 
 ---
 

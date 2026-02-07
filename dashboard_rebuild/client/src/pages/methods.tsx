@@ -1,0 +1,576 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Blocks, Link2, BarChart3, Plus, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import Layout from "@/components/layout";
+import MethodBlockCard from "@/components/MethodBlockCard";
+import ChainBuilder from "@/components/ChainBuilder";
+import MethodAnalytics from "@/components/MethodAnalytics";
+import RatingDialog from "@/components/RatingDialog";
+import { api } from "@/lib/api";
+import type { MethodBlock, MethodChain, MethodChainExpanded } from "@/api";
+
+const CATEGORIES = ["all", "activate", "map", "encode", "retrieve", "connect", "consolidate"] as const;
+
+const TAB_ITEMS = [
+  { id: "library", label: "LIBRARY", icon: Blocks },
+  { id: "chains", label: "CHAINS", icon: Link2 },
+  { id: "analytics", label: "ANALYTICS", icon: BarChart3 },
+] as const;
+
+type TabId = (typeof TAB_ITEMS)[number]["id"];
+
+export default function MethodsPage() {
+  const [activeTab, setActiveTab] = useState<TabId>("library");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showAddBlock, setShowAddBlock] = useState(false);
+  const [showAddChain, setShowAddChain] = useState(false);
+  const [selectedChain, setSelectedChain] = useState<MethodChainExpanded | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<{ id: number; name: string; type: "method" | "chain" } | null>(null);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Queries
+  const { data: blocks = [], isLoading: blocksLoading } = useQuery({
+    queryKey: ["methods"],
+    queryFn: () => api.methods.getAll(),
+  });
+
+  const { data: chains = [], isLoading: chainsLoading } = useQuery({
+    queryKey: ["chains"],
+    queryFn: () => api.chains.getAll(),
+  });
+
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ["methods-analytics"],
+    queryFn: () => api.methods.analytics(),
+    enabled: activeTab === "analytics",
+  });
+
+  // Mutations
+  const createBlockMutation = useMutation({
+    mutationFn: api.methods.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["methods"] });
+      queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
+      setShowAddBlock(false);
+      toast({ title: "Method block created" });
+    },
+  });
+
+  const deleteBlockMutation = useMutation({
+    mutationFn: api.methods.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["methods"] });
+      queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
+      toast({ title: "Method block deleted" });
+    },
+  });
+
+  const createChainMutation = useMutation({
+    mutationFn: api.chains.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chains"] });
+      queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
+      setShowAddChain(false);
+      toast({ title: "Chain created" });
+    },
+  });
+
+  const updateChainMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<MethodChain> }) =>
+      api.chains.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chains"] });
+      toast({ title: "Chain updated" });
+    },
+  });
+
+  const deleteChainMutation = useMutation({
+    mutationFn: api.chains.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chains"] });
+      queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
+      setSelectedChain(null);
+      toast({ title: "Chain deleted" });
+    },
+  });
+
+  const rateMethodMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { effectiveness: number; engagement: number; notes: string } }) =>
+      api.methods.rate(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
+      toast({ title: "Rating submitted" });
+    },
+  });
+
+  const rateChainMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { effectiveness: number; engagement: number; notes: string } }) =>
+      api.chains.rate(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
+      toast({ title: "Rating submitted" });
+    },
+  });
+
+  // Filter blocks
+  const filteredBlocks = blocks.filter((b) => {
+    if (categoryFilter !== "all" && b.category !== categoryFilter) return false;
+    if (searchQuery && !b.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
+  const handleSelectChain = async (chain: MethodChain) => {
+    const expanded = await api.chains.getOne(chain.id);
+    setSelectedChain(expanded);
+  };
+
+  const handleRateSubmit = (rating: { effectiveness: number; engagement: number; notes: string }) => {
+    if (!ratingTarget) return;
+    if (ratingTarget.type === "method") {
+      rateMethodMutation.mutate({ id: ratingTarget.id, data: rating });
+    } else {
+      rateChainMutation.mutate({ id: ratingTarget.id, data: rating });
+    }
+  };
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-arcade text-lg text-primary">METHOD_LIBRARY</h1>
+            <p className="font-terminal text-xs text-muted-foreground">
+              Composable study methods — build, chain, rate, optimize
+            </p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 border-b-2 border-secondary pb-0">
+          {TAB_ITEMS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-2 font-arcade text-[10px] border-b-2 -mb-[2px] transition-colors ${
+                activeTab === tab.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-primary/60"
+              }`}
+            >
+              <tab.icon className="w-3 h-3" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Library Tab */}
+        {activeTab === "library" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Input
+                placeholder="Search methods..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-48 h-8 rounded-none border-2 border-secondary bg-black/40 font-terminal text-xs"
+              />
+              <div className="flex gap-1">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={`px-2 py-1 font-arcade text-[9px] border rounded-none transition-colors ${
+                      categoryFilter === cat
+                        ? "border-primary bg-primary/20 text-primary"
+                        : "border-secondary text-muted-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    {cat.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto rounded-none border-2 font-arcade text-[10px] h-8"
+                onClick={() => setShowAddBlock(true)}
+              >
+                <Plus className="w-3 h-3 mr-1" /> ADD BLOCK
+              </Button>
+            </div>
+
+            {blocksLoading ? (
+              <p className="font-terminal text-xs text-muted-foreground">Loading methods...</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredBlocks.map((block) => (
+                  <div key={block.id} className="relative group">
+                    <MethodBlockCard block={block} />
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                      <button
+                        className="p-1 bg-black/80 border border-primary/40 hover:border-primary"
+                        onClick={() => setRatingTarget({ id: block.id, name: block.name, type: "method" })}
+                        title="Rate"
+                      >
+                        <Star className="w-3 h-3 text-primary" />
+                      </button>
+                      <button
+                        className="p-1 bg-black/80 border border-red-500/40 hover:border-red-500 text-red-400"
+                        onClick={() => {
+                          if (confirm(`Delete "${block.name}"?`)) deleteBlockMutation.mutate(block.id);
+                        }}
+                        title="Delete"
+                      >
+                        <span className="text-[10px]">×</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!blocksLoading && filteredBlocks.length === 0 && (
+              <p className="font-terminal text-xs text-muted-foreground text-center py-8">
+                No methods found. {categoryFilter !== "all" ? "Try a different category." : "Add your first method block."}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Chains Tab */}
+        {activeTab === "chains" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="font-arcade text-xs text-muted-foreground">
+                {chains.length} CHAINS ({chains.filter((c) => c.is_template).length} templates)
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-none border-2 font-arcade text-[10px] h-8"
+                onClick={() => setShowAddChain(true)}
+              >
+                <Plus className="w-3 h-3 mr-1" /> NEW CHAIN
+              </Button>
+            </div>
+
+            {chainsLoading ? (
+              <p className="font-terminal text-xs text-muted-foreground">Loading chains...</p>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Chain List */}
+                <div className="space-y-2">
+                  {chains.map((chain) => (
+                    <div
+                      key={chain.id}
+                      onClick={() => handleSelectChain(chain)}
+                      className={`border-2 p-3 rounded-none cursor-pointer transition-colors ${
+                        selectedChain?.id === chain.id
+                          ? "border-primary bg-primary/10"
+                          : "border-secondary hover:border-primary/40"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-arcade text-xs">{chain.name}</span>
+                        <div className="flex items-center gap-2">
+                          {chain.is_template ? (
+                            <span className="text-[9px] font-arcade bg-primary/20 text-primary px-1.5 py-0.5">TEMPLATE</span>
+                          ) : null}
+                          <button
+                            className="p-0.5 hover:text-primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRatingTarget({ id: chain.id, name: chain.name, type: "chain" });
+                            }}
+                          >
+                            <Star className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      {chain.description && (
+                        <p className="font-terminal text-xs text-muted-foreground line-clamp-1">{chain.description}</p>
+                      )}
+                      <div className="flex gap-1 mt-1.5">
+                        {(chain.block_ids || []).length > 0 && (
+                          <span className="text-[9px] font-terminal text-muted-foreground">
+                            {(chain.block_ids || []).length} blocks
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Chain Detail / Builder */}
+                <div className="border-2 border-secondary bg-black/40 p-4 rounded-none">
+                  {selectedChain ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-arcade text-sm text-primary">{selectedChain.name}</span>
+                        {!selectedChain.is_template && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-400 rounded-none text-[10px] font-arcade h-6"
+                            onClick={() => {
+                              if (confirm(`Delete chain "${selectedChain.name}"?`)) {
+                                deleteChainMutation.mutate(selectedChain.id);
+                              }
+                            }}
+                          >
+                            DELETE
+                          </Button>
+                        )}
+                      </div>
+                      {selectedChain.description && (
+                        <p className="font-terminal text-xs text-muted-foreground">{selectedChain.description}</p>
+                      )}
+                      <ChainBuilder
+                        chain={selectedChain}
+                        allBlocks={blocks}
+                        readOnly={!!selectedChain.is_template}
+                        onSave={(blockIds) => {
+                          updateChainMutation.mutate({
+                            id: selectedChain.id,
+                            data: { block_ids: blockIds },
+                          });
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-40">
+                      <p className="font-terminal text-xs text-muted-foreground">
+                        Select a chain to view or edit
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === "analytics" && (
+          <div>
+            {analyticsLoading ? (
+              <p className="font-terminal text-xs text-muted-foreground">Loading analytics...</p>
+            ) : analytics ? (
+              <MethodAnalytics data={analytics} />
+            ) : (
+              <p className="font-terminal text-xs text-muted-foreground">Failed to load analytics.</p>
+            )}
+          </div>
+        )}
+
+        {/* Add Block Dialog */}
+        <AddBlockDialog
+          open={showAddBlock}
+          onClose={() => setShowAddBlock(false)}
+          onSubmit={(data) => createBlockMutation.mutate(data)}
+        />
+
+        {/* Add Chain Dialog */}
+        <AddChainDialog
+          open={showAddChain}
+          onClose={() => setShowAddChain(false)}
+          onSubmit={(data) => createChainMutation.mutate(data)}
+        />
+
+        {/* Rating Dialog */}
+        {ratingTarget && (
+          <RatingDialog
+            open={!!ratingTarget}
+            onClose={() => setRatingTarget(null)}
+            onSubmit={handleRateSubmit}
+            targetName={ratingTarget.name}
+            targetType={ratingTarget.type}
+          />
+        )}
+      </div>
+    </Layout>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Add Block Dialog
+// ---------------------------------------------------------------------------
+function AddBlockDialog({
+  open,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: Omit<MethodBlock, "id" | "created_at">) => void;
+}) {
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("activate");
+  const [description, setDescription] = useState("");
+  const [duration, setDuration] = useState(5);
+  const [energyCost, setEnergyCost] = useState("medium");
+  const [bestStage, setBestStage] = useState("");
+
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    onSubmit({
+      name: name.trim(),
+      category,
+      description: description.trim() || null,
+      default_duration_min: duration,
+      energy_cost: energyCost,
+      best_stage: bestStage || null,
+      tags: [],
+    });
+    setName("");
+    setDescription("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
+        <DialogTitle className="font-arcade text-xs text-primary">NEW METHOD BLOCK</DialogTitle>
+        <div className="space-y-3 mt-2">
+          <Input
+            placeholder="Method name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm"
+          />
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-black border-2 border-primary rounded-none">
+              {["activate", "map", "encode", "retrieve", "connect", "consolidate"].map((c) => (
+                <SelectItem key={c} value={c} className="font-terminal text-sm">
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Textarea
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="h-16 rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm resize-none"
+          />
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="font-arcade text-[9px] text-muted-foreground">DURATION</label>
+              <Input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+                className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm"
+              />
+            </div>
+            <div>
+              <label className="font-arcade text-[9px] text-muted-foreground">ENERGY</label>
+              <Select value={energyCost} onValueChange={setEnergyCost}>
+                <SelectTrigger className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-black border-2 border-primary rounded-none">
+                  {["low", "medium", "high"].map((e) => (
+                    <SelectItem key={e} value={e} className="font-terminal text-sm">{e}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="font-arcade text-[9px] text-muted-foreground">BEST STAGE</label>
+              <Select value={bestStage} onValueChange={setBestStage}>
+                <SelectTrigger className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-xs">
+                  <SelectValue placeholder="Any" />
+                </SelectTrigger>
+                <SelectContent className="bg-black border-2 border-primary rounded-none">
+                  <SelectItem value="first_exposure" className="font-terminal text-sm">First Exposure</SelectItem>
+                  <SelectItem value="review" className="font-terminal text-sm">Review</SelectItem>
+                  <SelectItem value="exam_prep" className="font-terminal text-sm">Exam Prep</SelectItem>
+                  <SelectItem value="consolidation" className="font-terminal text-sm">Consolidation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button
+            className="w-full font-arcade rounded-none text-xs"
+            onClick={handleSubmit}
+            disabled={!name.trim()}
+          >
+            CREATE BLOCK
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Add Chain Dialog
+// ---------------------------------------------------------------------------
+function AddChainDialog({
+  open,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: Omit<MethodChain, "id" | "created_at" | "blocks">) => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    onSubmit({
+      name: name.trim(),
+      description: description.trim() || null,
+      block_ids: [],
+      context_tags: {},
+      is_template: 0,
+    });
+    setName("");
+    setDescription("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
+        <DialogTitle className="font-arcade text-xs text-primary">NEW CHAIN</DialogTitle>
+        <div className="space-y-3 mt-2">
+          <Input
+            placeholder="Chain name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm"
+          />
+          <Textarea
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="h-16 rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm resize-none"
+          />
+          <p className="font-terminal text-[10px] text-muted-foreground">
+            Add blocks to the chain after creating it.
+          </p>
+          <Button
+            className="w-full font-arcade rounded-none text-xs"
+            onClick={handleSubmit}
+            disabled={!name.trim()}
+          >
+            CREATE CHAIN
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

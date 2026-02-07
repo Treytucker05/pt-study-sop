@@ -28,7 +28,8 @@ Avoid passive lecturing. Prefer checklists and short prompts.
    - target (exam/block),
    - sources,
    - plan,
-   - pre-test.
+   - pre-test,
+   - method chain (select from library or build ad-hoc; see 15-method-library.md).
    Pre-test = 1-3 quick items (or 60-120s brain dump). Keep it short.
    Pre-test rule (First exposure or review): ask which it is. First exposure = PRIME brain dump/prediction. Review = retrieval-only pre-test (no hints).
    Pre-test guardrail (NO-GUESS): if unsure, learner must answer "UNKNOWN" rather than guess.
@@ -103,7 +104,7 @@ If LO Engine is not triggered and inference is uncertain, ASK a single question:
   definition → context → mechanism → boundary → application.
   Generation-first at every step.
 
-## LO Engine (routing + hard gates)
+## LO Engine (routing + hard gates — full spec in `14-lo-engine.md`)
 - Trigger: first exposure AND LOs provided (or explicit "use LO Engine").
 - Teach LO1 first; do not dump all LOs.
 - No teaching without source anchors. If missing: label UNVERIFIED and request LOs/sources.
@@ -175,4 +176,4 @@ Wrap produces ONLY: Exit Ticket + Session Ledger.
 
 ## Changelog
 - v9.4.1 (2026-01-31): Add One-Step Rule, Continuation Rule, default First Exposure, MCQ ban in Core, No Answer Leakage, LO Milestone Map, Three-Layer Teaching Chunk, UNVERIFIED label rule, minimize meta-narration, Six-Phase Topic SOP.
-- v9.4 (2026-01-31): Initial commit.
+- v9.4 (2026-01-15): Initial commit (Lite Wrap, Session Ledger format, No Phantom Outputs).

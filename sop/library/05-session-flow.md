@@ -17,8 +17,15 @@ Run this when materials are new, scattered, or you feel lost. Timebox: 15 min (h
 6. Draft 5-10 retrieval prompts.
 7. Format into a Tutor-Ready Packet and hand off.
 
-**Tutor-Ready Packet (MVP):**
-- LOs, source-lock list, buckets, glossary (function-first), key mechanisms, diagram, retrieval prompts, confusions/boundary cases.
+**Tutor-Ready Packet:**
+- LOs (numbered)
+- Source-lock list (exact files/pages/timestamps)
+- Buckets (2-4 groups)
+- Glossary (function-first definitions)
+- Key mechanisms (input > process > output)
+- 1 diagram/figure with labels
+- 5-10 retrieval prompts
+- Confusions / boundary cases
 
 **Triggers for ingestion:**
 1. Materials are new/unseen.
@@ -42,16 +49,6 @@ From my sources only: extract learning objectives, key definitions,
 mechanisms/steps, differentiators, and 5-10 practice questions;
 include citations.
 ```
-
-**Tutor-Ready Packet (Full):**
-- LOs (numbered)
-- Source-lock list (exact files/pages/timestamps)
-- Buckets (2-4 groups)
-- Glossary (function-first definitions)
-- Key mechanisms (input > process > output)
-- 1 diagram/figure with labels
-- 5-10 retrieval prompts
-- Confusions / boundary cases
 
 **Guardrails:** No teaching during ingestion. Mark unsourced claims UNVERIFIED.
 
@@ -101,6 +98,9 @@ If you need to skip the full protocol:
 7. **Glossary Scan** -- top 5 terms defined at L2.
 8. **Prime** -- 1-3 pre-questions or 60-120s brain dump.
 
+**Method Chain Selection (optional):**
+If using Composable Methods (see `15-method-library.md`), select or build a chain during M0. The chain determines which method blocks run in M1–M5.
+
 **Quick Plan Templates:**
 
 | Format | Flow |
@@ -135,12 +135,7 @@ If you need to skip the full protocol:
 | 20-30 min test burst | Quick Sprint |
 | Repeated misses on one thing | Drill |
 
-**Mode behavior summaries** (full details in [06-modes.md](06-modes.md)):
-- **Core:** AI guides through Prime > Encode > Build with scaffolds and metaphors.
-- **Sprint:** AI tests first, teaches only on miss; rapid-fire gap-finding.
-- **Quick Sprint:** Time-boxed Sprint (20-30 min) with mandatory wrap cards.
-- **Light:** Micro-session (10-15 min), one tiny objective, 1-3 cards.
-- **Drill:** Learner leads reconstruction; AI spots gaps; deep practice on one weak area.
+For full mode descriptions, selection heuristics, and switching rules, see [06-modes.md](06-modes.md).
 
 **4) Difficulty Calibration (opt-in):**
 
@@ -262,18 +257,8 @@ Lite Wrap v9.4 (Close Session).
 2. Muddiest point: name the fuzziest concept.
 3. Next action hook: first step for next session.
 
-**Session Ledger:**
-
-| Field | Format | Rule |
-|-------|--------|------|
-| `session_date` | YYYY-MM-DD | Date of the session |
-| `covered` | semicolon-separated list | Only what was actually studied |
-| `not_covered` | semicolon-separated list | Planned but not reached |
-| `weak_anchors` | semicolon-separated list | Items that need review |
-| `artifacts_created` | semicolon-separated list | Only if actually created (cards, drawings, etc.) |
-| `timebox_min` | number | Actual session duration |
-
-Empty fields: use `NONE`. In JSON (produced later via Brain ingestion), use `"UNKNOWN"` or `"N/A"`.
+**Session Ledger** (schema in `08-logging.md`, fillable template in `09-templates.md` §4):
+Fields: session_date, covered, not_covered, weak_anchors, artifacts_created, timebox_min. Empty fields: use `NONE`.
 
 **Wrap Protocol:**
 1. **Exit Ticket** — run the three prompts above.
@@ -289,10 +274,7 @@ Empty fields: use `NONE`. In JSON (produced later via Brain ingestion), use `"UN
 | Spacing | Knew before, forgot | Card + flag for review |
 | Transfer | Can recall, can't apply | Rebuild hook + drill |
 
-**What Wrap does NOT do (v9.4):**
-- Does NOT output JSON logs (produced via Brain ingestion post-session; see `10-deployment.md`).
-- Does NOT schedule spaced reviews (handled by Planner/Dashboard/Calendar subsystem).
-- Does NOT invent data for steps that didn't happen (No Phantom Outputs).
+**Wrap does NOT:** output JSON (see `10-deployment.md`), schedule spaced reviews, or invent data (No Phantom Outputs — see `01-core-rules.md`).
 
 **Exit:** Exit ticket done, session ledger filled, cards captured if applicable.
 

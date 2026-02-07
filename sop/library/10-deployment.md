@@ -81,7 +81,9 @@ Run the bundle builder, then upload in order:
 python sop/tools/build_runtime_bundle.py
 ```
 
-All files live in `sop/runtime/knowledge_upload/`. Upload in this order:
+If the build fails, verify that all `sop/library/00-14` files exist and are valid markdown. The script reads from `sop/library/` and outputs to `sop/runtime/knowledge_upload/`.
+
+Upload files in this order:
 
 | # | File | Content |
 |---|------|---------|
@@ -112,6 +114,7 @@ Before any teaching:
 6) PLAN OF ATTACK: 3-5 steps
 7) GLOSSARY SCAN: top 5 terms defined at L2
 8) PRIME: 1-3 pre-questions or 60-120s brain dump
+9) METHOD CHAIN: select from library or build ad-hoc (see 15-method-library.md)
 No teaching starts until target, sources, plan, and pre-test are locked.
 NotebookLM Source Packet required for factual teaching. If missing, mark outputs UNVERIFIED and limit to strategy/questions.
 
@@ -213,6 +216,7 @@ TASK:
 8. date: use session_date if provided; else "UNKNOWN".
 9. spaced_reviews: "UNKNOWN" unless the planner provides it (do not generate dates).
 10. anki_cards: ONLY if explicitly pasted; otherwise "NONE".
+11. method_chain: if method_chain was used, record chain_id from method_chains table and post-session rating (effectiveness 1-5, engagement 1-5); otherwise "NONE".
 
 --- PASTE SESSION OUTPUT BELOW ---
 ```

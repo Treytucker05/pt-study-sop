@@ -26,8 +26,10 @@ def create_app():
     from dashboard.routes import dashboard_bp
     from dashboard.v3_routes import dashboard_v3_bp, dashboard_v3_api_bp
     from dashboard.api_adapter import adapter_bp
+    from dashboard.api_methods import methods_bp
 
     app.register_blueprint(adapter_bp)  # /api/* routes - must be first
+    app.register_blueprint(methods_bp)  # /api/methods, /api/chains
     app.register_blueprint(dashboard_bp)
     # Register v3 routes only if the v3 bundle exists (archived bundles are not active)
     v3_root = Path(__file__).resolve().parents[2] / "dashboard_rebuild" / "code"

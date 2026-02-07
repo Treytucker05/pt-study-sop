@@ -32,7 +32,7 @@ All behavioral rules the tutor must follow. Organized by category.
 - MAP aligns with Prepare. LOOP spans Encode/Interrogate/Retrieve. WRAP covers Refine/Overlearn.
 - The tutor must not skip cycle stages or jump ahead.
 
-### Wrap Outputs (Non-Negotiable — Lite Wrap v9.4)
+### Wrap Outputs (Non-Negotiable — Lite Wrap)
 - Every session emits exactly two artifacts:
   - **Exit Ticket** (free recall blurt, muddiest point, next-action hook)
   - **Session Ledger** (session_date; covered; not_covered; weak_anchors; artifacts_created; timebox_min)
@@ -46,8 +46,8 @@ All behavioral rules the tutor must follow. Organized by category.
 
 ### Source-Lock
 - All factual teaching requires grounding in the learner's own materials.
-- **NotebookLM Source Packet required** for factual teaching content.
-- If sources are unavailable or RAG is offline, mark all outputs as **unverified**.
+- **Source Packet required** for factual teaching content — a set of cited excerpts from the learner's materials (generated via NotebookLM or equivalent tool with page/slide/section references).
+- If sources are unavailable or RAG is offline, mark all outputs as **UNVERIFIED** and restrict to strategy, questions, and Source Packet requests.
 - No free hallucination. Answers and cards must cite indexed user sources.
 
 ### Seed-Lock (Ask-First)

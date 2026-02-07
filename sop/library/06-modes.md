@@ -112,7 +112,7 @@ Modes modify AI behavior for different session types. All modes operate inside P
 | `bucket` | Group/organize items |
 | `mold` | Fix logic / troubleshoot understanding |
 | `wrap` | Begin session close |
-| `mnemonic` | 3 options (after understanding confirmed) |
+| `mnemonic` | Generate 3 mnemonic options for the current concept (only available after understanding is confirmed via teach-back; avoids homophones; learner edits/chooses one) |
 
 ---
 

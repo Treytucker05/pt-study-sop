@@ -2,6 +2,8 @@
 
 Quick-reference cards for all H, M, Y, and L frameworks. For PEIRRO and KWIK, see `02-learning-cycle.md`.
 
+**Global rule (all frameworks):** Mark outputs as UNVERIFIED if no learner-provided source is available (Source-Lock — see `01-core-rules.md`).
+
 ---
 
 ## H-Series: Priming and Mapping
@@ -11,12 +13,12 @@ Expose structure before memorization. Used mainly during the Prime/Prepare phase
 | ID | Name | Pattern | Use When |
 |----|------|---------|----------|
 | **H1** | System (default) | System -> Subsystem -> Component -> Element -> Cue | Any complex topic; quick hierarchy |
-| **H2** | Anatomy | Structure -> Function -> Behavior -> Outcome | Opt-in only — when traditional anatomy order is explicitly requested |
-| **H3** | Load Stack | Intrinsic -> Extraneous -> Germane | Diagnosing overwhelm; reducing cognitive load |
-| **H4** | Bloom's Depth | Remember -> Understand -> Apply -> Analyze (-> Evaluate -> Create) | Checking target depth; gating before adding detail |
-| **H5** | ICAP Engagement | Passive -> Active -> Constructive -> Interactive | Auditing engagement level; pushing up the ladder |
-| **H6** | Bruner Modes | Enactive -> Iconic -> Symbolic | Unsticking concepts — move from action to image to words |
-| **H7** | Narrative | Hook -> Context -> Conflict -> Resolution | Writing statements/cases; memorable summaries |
+| **H2** | Anatomy | Structure -> Function -> Behavior -> Outcome | Opt-in only; traditional anatomy order |
+| **H3** | Load Stack | Intrinsic -> Extraneous -> Germane | Diagnosing overwhelm; reducing load |
+| **H4** | Bloom's Depth | Remember -> Understand -> Apply -> Analyze (-> Evaluate -> Create) | Checking target depth; gating detail |
+| **H5** | ICAP Engagement | Passive -> Active -> Constructive -> Interactive | Auditing engagement; pushing up |
+| **H6** | Bruner Modes | Enactive -> Iconic -> Symbolic | Unsticking concepts; action → image → words |
+| **H7** | Narrative | Hook -> Context -> Conflict -> Resolution | Writing statements/cases; summaries |
 | **H8** | Prompt Frame | Role -> Task -> Context -> Constraint | Structuring AI prompts/requests |
 
 ### H1 Worked Example (Shoulder Complex)
@@ -27,16 +29,11 @@ Expose structure before memorization. Used mainly during the Prime/Prepare phase
   - Muscles: Rotator cuff (SITS), Deltoid, Scapular stabilizers
   - Ligaments: GH ligaments, Coracoclavicular
 
-### H2 Note
-
-Default is function-first (use M-series after H1). H2 is opt-in only when traditional anatomy order is explicitly requested.
-
 ### H-Series Rules
 
 - Default to H1 unless another is explicitly requested.
 - Keep scans concise: <=6 bullets or 2 short paragraphs.
 - After scan, bucket into 2-4 groups before encoding.
-- Mark unverified if no source provided.
 
 **Bucket menus:** Spatial, Mechanism, Compare/Contrast, Workflow, Timeline.
 
@@ -67,7 +64,6 @@ Convert information into understanding using function-first logic. Used during E
 - Default to M2 unless another clearly fits better.
 - Function before structure.
 - Keep outputs concise: <=6 bullets or 2 short paragraphs unless asked otherwise.
-- Mark unverified if no source provided.
 
 ---
 
@@ -84,7 +80,7 @@ Rapid orientation lenses when H/M frameworks are insufficient. Keep to <=4 bulle
 
 ### Y-Series Rules
 
-- Mark unverified if no sources provided.
+- Keep to <=4 bullets per Y-series response.
 
 ---
 

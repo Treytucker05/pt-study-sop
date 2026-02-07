@@ -6,9 +6,9 @@
 
 | Claim | Source |
 |-------|--------|
-| Retrieval practice improves long-term retention vs. restudy | Roediger & Karpicke (2006), *Psychological Science*. DOI: 10.1111/j.1467-9280.2006.01693.x |
-| Spaced practice improves long-term retention vs. massed practice | Cepeda et al. (2006), *Psychological Bulletin*. DOI: 10.1037/0033-2909.132.3.354 |
-| Practice testing and distributed practice are high-utility techniques | Dunlosky et al. (2013), *Psychological Science in the Public Interest*. DOI: 10.1177/1529100612453266 |
+| Retrieval practice improves long-term retention vs. restudy | Roediger & Karpicke (2006), *Psychological Science*. [DOI](https://doi.org/10.1111/j.1467-9280.2006.01693.x) |
+| Spaced practice improves long-term retention vs. massed practice | Cepeda et al. (2006), *Psychological Bulletin*. [DOI](https://doi.org/10.1037/0033-2909.132.3.354) |
+| Practice testing and distributed practice are high-utility techniques | Dunlosky et al. (2013), *Psychological Science in the Public Interest*. [DOI](https://doi.org/10.1177/1529100612453266) |
 
 Supporting findings from review literature: dual coding and self-explanation are supported; keep prompts active and brief.
 
@@ -22,8 +22,9 @@ Supporting findings from review literature: dual coding and self-explanation are
 - **Retrospective timetable** red/yellow/green adjustments
 - **RSR thresholds** are adaptive, not fixed
 
-## Evidence Nuance Rules (v9.4)
+## Evidence Nuance Rules
 
+Canonical rules in `01-core-rules.md` § Evidence Nuance Rules. Summary:
 - No numeric forgetting claims unless cited.
 - Dual coding is a helpful heuristic, not a guarantee.
 - Zeigarnik is not a memory guarantee; use next-action hook for friction reduction.
@@ -57,30 +58,11 @@ Supporting findings from review literature: dual coding and self-explanation are
 
 ## NotebookLM Bridge
 
-### Source Packet Format (Required for Factual Teaching)
+A **Source Packet** is a set of cited excerpts from learner materials (generated via NotebookLM or equivalent). It enables Source-Lock compliance for factual teaching. Without one, the AI restricts to strategy and questions.
 
-```
-SOURCE PACKET (NotebookLM)
-- Topic:
-- Sources used:
-- Key excerpts (with citations):
-  - Excerpt A: "..." [citation]
-  - Excerpt B: "..." [citation]
-- Definitions:
-- Mechanism / steps:
-- Differentiators:
-- Practice questions:
-```
-
-### Hard Rule
-Without a Source Packet, the AI may help with study strategy and question-asking but must not assert factual or clinical claims. If excerpts lack citations, request them before teaching. If the packet lacks needed definitions/mechanisms/differentiators, request additional excerpts.
-
-### NotebookLM Prompt Template
-```
-From my sources only: extract learning objectives, key definitions,
-mechanisms/steps, differentiators, and 5-10 practice questions;
-include citations.
-```
+- Source Packet format and extraction prompt: see `05-session-flow.md` § Pre-Session Material Ingestion.
+- Source-Lock rule: see `01-core-rules.md`.
+- Hard rule: without cited excerpts, no factual or clinical claims. Request additional excerpts if the packet is incomplete.
 
 ---
 
@@ -111,24 +93,19 @@ M0-planning, M2-prime, M3-encode, M4-build, M5-modes, M6-wrap
 
 ---
 
-## Artifact Inventory
+## Artifact Inventory (v9.4 Library)
 
-| File | Layer | Cognitive Job | Research Status | Change Status |
-|------|-------|---------------|-----------------|---------------|
-| PEIRRO.md | Learning | Defines the Prepare-Encode-Interrogate-Retrieve-Refine-Overlearn learning cycle | Complete | None |
-| KWIK.md | Learning | Defines Sound -> Function -> Image -> Resonance -> Lock encoding flow | Complete | None |
-| M0-planning.md | Execution | Planning steps before sessions (target, sources, pre-test) | Complete | Implemented |
-| M1-entry.md | Execution | Entry checks and readiness gating | In progress | Candidate |
-| M2-prime.md | Execution | Priming steps to map structure and activate prior knowledge | Complete | Implemented |
-| M3-encode.md | Execution | Encoding activities, dual coding, self-explanation | Complete | Implemented |
-| M4-build.md | Execution | Practice design (interleaving, spacing, faded guidance) | Complete | Implemented |
-| M5-modes.md | Execution | Operating modes and selection rules | In progress | Candidate |
-| M6-wrap.md | Execution | Wrap-up, reflection, cards, and scheduling | Complete | Implemented |
-| anatomy-engine.md | Enforcement | Bone -> landmark -> attachment -> OIANA+ sequence | Complete | Implemented |
-| custom_instructions.md | Enforcement | Runtime identity and behavior rules | In progress | Candidate |
-| runtime_prompt.md | Enforcement | Session startup prompt and gating questions | In progress | Candidate |
-| notebooklm_bridge.md | Enforcement | Source packet rules for NotebookLM-based grounding | Complete | Implemented |
-| 08-logging.md | Measurement | Canonical logging schema (Tracker + Enhanced JSON) | Complete | Implemented |
+All artifacts are consolidated into `sop/library/` files. Originals archived to `sop/archive/`.
+
+| Library File | Layer | Status |
+|-------------|-------|--------|
+| 02-learning-cycle.md | Learning (PEIRRO + KWIK) | Complete |
+| 05-session-flow.md | Execution (M0-M6) | Complete |
+| 06-modes.md | Execution (modes + switching) | Complete |
+| 04-engines.md | Enforcement (Anatomy + Concept) | Complete |
+| 14-lo-engine.md | Enforcement (LO Engine Protocol Pack) | Complete |
+| 13-custom-gpt-system-instructions.md | Enforcement (runtime rules) | Complete |
+| 08-logging.md | Measurement (schema v9.4) | Complete |
 
 ### Refinement Rules
 Changes require an identified gap, supporting research, and an explicit decision. Recording "no change" is acceptable when evidence supports current state.

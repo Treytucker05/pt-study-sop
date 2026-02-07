@@ -2,18 +2,24 @@
 
 ## Purpose
 
-Single, consistent JSON logging format for all study sessions. This file is the **schema reference**. JSON is produced via Brain ingestion prompts (see `10-deployment.md`), **not** by the tutor at Wrap. Missing values must be `"UNKNOWN"` or `"N/A"` — never invented.
+Single, consistent logging format for all study sessions. This file is the **schema reference**.
+
+## Critical Rules
+
+1. **No Phantom Outputs** (invariant): never invent, backfill, or hallucinate data. If a value wasn't captured, use the empty-value convention below.
+2. **JSON is produced post-session** via Brain ingestion prompts (see `10-deployment.md`), NOT by the tutor at Wrap.
+3. **Empty-value convention:**
+   - Session Ledger (plain text at Wrap): use `NONE`
+   - JSON (produced via Brain ingestion): use `"N/A"` for text fields, `null` for numeric fields
 
 ---
 
-## Formatting Rules
+## Formatting Rules (JSON)
 
-- Valid JSON only (double quotes, commas, no comments, no trailing commas)
 - Dates: `YYYY-MM-DD`
 - Multi-item text fields: semicolon-separated
 - No multiline strings; one line per value
 - Numeric fields use numbers (duration_min, ratings, percentages)
-- Unknown required fields: `"N/A"`
 - Field names are fixed; update downstream tools before changing keys
 
 ---
@@ -29,9 +35,10 @@ not_covered: [semicolon-separated list of planned but not reached]
 weak_anchors: [semicolon-separated list of items needing review]
 artifacts_created: [semicolon-separated list — only if actually created]
 timebox_min: [number — actual session duration]
+method_chain: [method chain used during session (from composable method library); NONE if not used]
 ```
 
-Empty fields in the Session Ledger: use `NONE`. In JSON (produced later via Brain ingestion), use `"UNKNOWN"` or `"N/A"`.
+Empty fields: use `NONE` (see Critical Rules above for JSON convention).
 
 ---
 
@@ -142,12 +149,11 @@ Notes: [short, semicolon-separated if used in JSON]
 
 ---
 
-## Output Requirements
+## Output Flow
 
-- The tutor outputs **Exit Ticket + Session Ledger** at Wrap (plain text).
-- JSON (Tracker + Enhanced) is produced **post-session** via Brain ingestion prompts (see `10-deployment.md`).
-- Missing values in JSON must be `"UNKNOWN"` or `"N/A"` — never invented.
-- Use current system date for the `date` field.
+1. **At Wrap:** tutor outputs Exit Ticket + Session Ledger (plain text). Template in `09-templates.md` §4.
+2. **Post-session:** Brain ingestion prompts (see `10-deployment.md`) produce JSON (Tracker + Enhanced).
+3. Use current system date for the `date` field.
 
 ---
 
@@ -167,22 +173,19 @@ Notes: [short, semicolon-separated if used in JSON]
 
 ---
 
-## v9.3 to v9.4 Changes
+## Appendix: Schema Changelog
 
-- Wrap outputs reduced to **Exit Ticket + Session Ledger** only (Lite Wrap).
-- JSON (Tracker + Enhanced) moved to Brain ingestion post-session.
-- Added Session Ledger format (covered, not_covered, weak_anchors, artifacts_created, timebox_min).
-- No Phantom Outputs invariant: missing values must be UNKNOWN/N/A; never invented.
-- Spacing/review scheduling removed from Wrap; handled by Planner/Dashboard/Calendar.
+### v9.3 → v9.4
+- Wrap outputs reduced to Exit Ticket + Session Ledger only (Lite Wrap).
+- JSON moved to Brain ingestion post-session.
+- Added Session Ledger format.
+- No Phantom Outputs invariant enforced.
+- Spacing/review scheduling removed from Wrap.
 - Topic prefix requirement removed.
 
----
-
-## v9.2 to v9.3 Changes
-
-- `system_performance` field: removed
-- `retrieval_success_rate` renamed to `rsr_percent`
-- `wrap_watchlist`, `exit_ticket_zeigarnik`, `runtime_notes`: removed
-- Added: `error_classification`, `error_severity`, `error_recurrence` (Tracker)
-- Added: `confusables_interleaved`, `errors_by_type`, `errors_by_severity`, `error_patterns`, `spacing_algorithm`, `rsr_adaptive_adjustment`, `adaptive_multipliers` (Enhanced)
-- `spaced_reviews` format: `Review1=` changed to `R1=`
+### v9.2 → v9.3
+- Removed: `system_performance`, `wrap_watchlist`, `exit_ticket_zeigarnik`, `runtime_notes`.
+- Renamed: `retrieval_success_rate` → `rsr_percent`.
+- Added (Tracker): `error_classification`, `error_severity`, `error_recurrence`.
+- Added (Enhanced): `confusables_interleaved`, `errors_by_type`, `errors_by_severity`, `error_patterns`, `spacing_algorithm`, `rsr_adaptive_adjustment`, `adaptive_multipliers`.
+- Changed: `spaced_reviews` format `Review1=` → `R1=`.

@@ -466,6 +466,47 @@ export const api = {
       body: JSON.stringify({ path, content }),
     }),
   },
+
+  methods: {
+    getAll: (category?: string) =>
+      request<MethodBlock[]>(category ? `/methods?category=${category}` : "/methods"),
+    getOne: (id: number) => request<MethodBlock>(`/methods/${id}`),
+    create: (data: Omit<MethodBlock, "id" | "created_at">) => request<{ id: number; name: string }>("/methods", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+    update: (id: number, data: Partial<MethodBlock>) => request<{ id: number; updated: boolean }>(`/methods/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+    delete: (id: number) => request<void>(`/methods/${id}`, { method: "DELETE" }),
+    rate: (id: number, data: { effectiveness: number; engagement: number; session_id?: number; notes?: string; context?: Record<string, unknown> }) =>
+      request<{ id: number; rated: boolean }>(`/methods/${id}/rate`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    analytics: () => request<MethodAnalyticsResponse>("/methods/analytics"),
+  },
+
+  chains: {
+    getAll: (template?: boolean) =>
+      request<MethodChain[]>(template !== undefined ? `/chains?template=${template ? 1 : 0}` : "/chains"),
+    getOne: (id: number) => request<MethodChainExpanded>(`/chains/${id}`),
+    create: (data: Omit<MethodChain, "id" | "created_at" | "blocks">) => request<{ id: number; name: string }>("/chains", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+    update: (id: number, data: Partial<MethodChain>) => request<{ id: number; updated: boolean }>(`/chains/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+    delete: (id: number) => request<void>(`/chains/${id}`, { method: "DELETE" }),
+    rate: (id: number, data: { effectiveness: number; engagement: number; session_id?: number; notes?: string; context?: Record<string, unknown> }) =>
+      request<{ id: number; rated: boolean }>(`/chains/${id}/rate`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+  },
 };
 
 // Scholar types
@@ -663,4 +704,62 @@ export interface BrainOrganizePreviewResponse {
   };
   course?: string;
   courseFolder?: string | null;
+}
+
+// Method Library types
+export interface MethodBlock {
+  id: number;
+  name: string;
+  category: string;
+  description: string | null;
+  default_duration_min: number;
+  energy_cost: string;
+  best_stage: string | null;
+  tags: string[];
+  created_at: string;
+}
+
+export interface MethodChain {
+  id: number;
+  name: string;
+  description: string | null;
+  block_ids: number[];
+  context_tags: Record<string, unknown>;
+  created_at: string;
+  is_template: number;
+}
+
+export interface MethodChainExpanded extends MethodChain {
+  blocks: MethodBlock[];
+}
+
+export interface MethodAnalyticsResponse {
+  block_stats: {
+    id: number;
+    name: string;
+    category: string;
+    usage_count: number;
+    avg_effectiveness: number | null;
+    avg_engagement: number | null;
+  }[];
+  chain_stats: {
+    id: number;
+    name: string;
+    is_template: number;
+    usage_count: number;
+    avg_effectiveness: number | null;
+    avg_engagement: number | null;
+  }[];
+  recent_ratings: {
+    id: number;
+    method_block_id: number | null;
+    chain_id: number | null;
+    effectiveness: number;
+    engagement: number;
+    notes: string | null;
+    context: Record<string, unknown>;
+    rated_at: string;
+    method_name: string | null;
+    chain_name: string | null;
+  }[];
 }

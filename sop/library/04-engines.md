@@ -9,9 +9,15 @@ Two engines govern how topics are taught. Select based on content type.
 
 ## Protocol Packs (Workflow Layer)
 
-Protocol Packs choose the cognitive workflow; Modes choose pacing. Content Engines (Anatomy/Concept) supply the content sequence.
+A **Protocol Pack** is a workflow template that determines the cognitive sequence for a session. Protocol Packs choose *what to do and in what order*; Modes (Core, Sprint, etc.) choose *pacing and intensity*. Content Engines (Anatomy/Concept) supply the *content sequence* within each step.
 
-- **LO Engine (Learning Objective Engine):** LO -> source anchors -> milestone map -> cluster map -> teach loop -> note emit. Can wrap the Concept Engine for LO-driven topics.
+| Protocol Pack | Trigger | Details |
+|---------------|---------|---------|
+| **LO Engine** | First exposure + explicit LOs | See `14-lo-engine.md` for full spec |
+| **Anatomy Pack** | Regional/spatial anatomy content | Uses Anatomy Engine sequence below |
+| **Concept Pack** | Abstract/non-spatial content | Uses Concept Engine sequence below |
+
+Routing logic is defined in `13-custom-gpt-system-instructions.md` § Protocol Pack routing.
 
 ---
 
@@ -34,24 +40,15 @@ BONES -> LANDMARKS -> ATTACHMENTS (O/I) -> ACTIONS -> NERVES -> ARTERIAL SUPPLY 
 
 ### Why This Order Works
 
-| Phase | What It Builds |
-|-------|----------------|
-| Bones | The scaffold — what structures exist |
-| Landmarks | The attachment points — where things connect |
-| Attachments | The map — which muscles go where |
-| Actions | The logic — what muscles do (derived from attachments) |
-| Innervation | The wiring — what controls each muscle |
-| Clinical | The application — what happens when things fail |
-
-| Step | Focus | Guiding Question |
-|------|-------|-----------------|
-| 1 | Bones | What bones are in this region? |
-| 2 | Landmarks | Where are the attachment points? |
-| 3 | Attachments | What muscles connect here? |
-| 4 | Actions | What do those attachments do? |
-| 5 | Nerves | What controls those muscles? |
-| 6 | Arterial Supply | Which artery supplies this muscle? |
-| 7 | Clinical | What happens when they fail? |
+| Step | Phase | What It Builds | Guiding Question |
+|------|-------|----------------|-----------------|
+| 1 | Bones | The scaffold — what structures exist | What bones are in this region? |
+| 2 | Landmarks | The attachment points — where things connect | Where are the attachment points? |
+| 3 | Attachments | The map — which muscles go where | What muscles connect here? |
+| 4 | Actions | The logic — what muscles do (derived from attachments) | What do those attachments do? |
+| 5 | Nerves | The wiring — what controls each muscle | What controls those muscles? |
+| 6 | Arterial Supply | The supply — which artery feeds the muscle | Which artery supplies this muscle? |
+| 7 | Clinical | The application — what happens when things fail | What happens when they fail? |
 
 ### Bone-First Attachment Loop
 
@@ -93,12 +90,7 @@ For each new landmark:
 2. **Orientation** -- where it sits in 3D space relative to other landmarks
 3. **Connection** -- what attaches here (origin hub vs insertion hub)
 
-Metaphors may support but never replace visual/spatial understanding.
-
-### Metaphor Restriction
-
 Metaphors may support visual/spatial understanding but cannot replace actual bone/landmark recognition.
-
 - Good: "The ischial tuberosity is like a rough seat cushion bump"
 - Bad: "Just remember IT = hamstrings" (skips visual understanding)
 
@@ -140,8 +132,6 @@ LABEL: "I" at greater trochanter (glute insertion)
 FUNCTION: Hamstrings extend hip & flex knee; glutes abduct & stabilize hip
 ```
 
-**Violation check:** If you're memorizing OIAN without knowing where the landmarks are, you've skipped steps. Roll back.
-
 ### Image Support
 
 - Default: manual-friendly blank/printed worksheets
@@ -151,15 +141,7 @@ FUNCTION: Hamstrings extend hip & flex knee; glutes abduct & stabilize hip
 
 Command: `mnemonic` (only after understanding). Provides 3 options; avoid homophones. Learner edits/chooses one.
 
-### Session Flow
-
-```
-M0 (Planning)  -> Region selected, landmarks identified from LOs/labs
-M2 (Prime)     -> List bones and landmarks (H1 scan)
-M3 (Encode)    -> Run Landmark Pass (visual > spatial > attachments)
-M4 (Build)     -> Layer OIANA+ per muscle, clinical last
-M6 (Wrap)      -> Exit Ticket + Session Ledger; cards created only if actually produced
-```
+For integration with M0-M6 session flow, see `05-session-flow.md`.
 
 ### Anatomy Engine Template
 
@@ -250,9 +232,13 @@ Learner can: state definition, place in context, explain mechanism, distinguish 
 
 ## Creating New Engines
 
-Use the engine template stub. Fill in:
-- Entry prompts
-- State machine / phases
-- Gating rules (Seed-Lock, L2 teach-back, etc.)
-- RAG requirements and source expectations
-- Outputs (session log fields, card payloads)
+New engines must define:
+1. **Purpose** — what content type it handles
+2. **Sequence** — mandatory step order
+3. **Hard Gates** — non-negotiable rules (Source-Lock, L2 teach-back, etc.)
+4. **Rollback Rule** — what to do when the learner struggles
+5. **Commands** — engine-specific command table
+6. **Templates** — fillable output structures
+7. **Exit Condition** — how to know the engine's work is done
+
+See the Anatomy Engine and Concept Engine above as reference implementations. See `14-lo-engine.md` for a Protocol Pack example.

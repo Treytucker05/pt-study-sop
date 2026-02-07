@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Save, Trash2, GripVertical, Pencil, X, Check } from "lucide-react";
+import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Blocks, Save, Trash2, GripVertical, Pencil, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { path: "/calendar", label: "CALENDAR", icon: Calendar },
   { path: "/scholar", label: "SCHOLAR", icon: GraduationCap },
   { path: "/tutor", label: "TUTOR", icon: Bot },
+  { path: "/methods", label: "METHODS", icon: Blocks },
 ];
 
 type NoteCategory = "notes" | "planned" | "ideas";

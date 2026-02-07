@@ -19,7 +19,7 @@ All PEIRRO study templates in one file. Copy and fill in per session/week.
 
 ## 2. Session Log
 
-JSON is the canonical log format. Use this for human-readable recaps.
+JSON is the canonical log format (see `08-logging.md`). Use this template for quick human-readable recaps.
 
 - Date:
 - Topic:
@@ -43,7 +43,7 @@ JSON is the canonical log format. Use this for human-readable recaps.
 - Muddiest point:
 - Next action hook:
 
-**Next Session:**
+**Next Session** (topic + date):
 -
 
 ---
@@ -115,6 +115,7 @@ flowchart LR
 - weak_anchors: _______________
 - artifacts_created: _______________
 - timebox_min: _______________
+- method_chain: _______________
 
 **Rules:**
 - Only list what actually happened. If a field has nothing, write `NONE`.
@@ -171,6 +172,8 @@ flowchart LR
 ---
 
 ## 7. Retrospective Timetable (1-3-7-21)
+
+Spacing logic and RSR-adaptive adjustments in `07-workload.md`.
 
 **Status:** Red = struggled (review sooner) | Yellow = effortful success (keep spacing) | Green = easy (extend interval)
 

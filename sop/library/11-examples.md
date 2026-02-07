@@ -118,11 +118,7 @@ That's MY metaphor. Edit or upgrade it — what would YOU change?"
 
 **User:** "Posterior tibial translation — the backward lock."
 
-**AI:** "Correct. Next."
-
-**AI:** "Correct. Next.
-
-Which rotator cuff muscle initiates abduction?"
+**AI:** "Correct. Next. Which rotator cuff muscle initiates abduction?"
 
 **User:** "Supraspinatus"
 

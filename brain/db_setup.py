@@ -1126,11 +1126,87 @@ def init_database():
         END;
     """)
 
+    # ------------------------------------------------------------------
+    # Composable Method Library (v9.4 - method blocks, chains, ratings)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS method_blocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            description TEXT,
+            default_duration_min INTEGER DEFAULT 5,
+            energy_cost TEXT DEFAULT 'medium',
+            best_stage TEXT,
+            tags TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS method_chains (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            block_ids TEXT,
+            context_tags TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            is_template INTEGER DEFAULT 0
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS method_ratings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            method_block_id INTEGER,
+            chain_id INTEGER,
+            session_id INTEGER,
+            effectiveness INTEGER,
+            engagement INTEGER,
+            notes TEXT,
+            context TEXT,
+            rated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(method_block_id) REFERENCES method_blocks(id),
+            FOREIGN KEY(chain_id) REFERENCES method_chains(id),
+            FOREIGN KEY(session_id) REFERENCES sessions(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_method_blocks_category
+        ON method_blocks(category)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_method_chains_template
+        ON method_chains(is_template)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_method_ratings_block
+        ON method_ratings(method_block_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_method_ratings_chain
+        ON method_ratings(chain_id)
+    """)
+
+    # Add method_chain_id to sessions table if missing
+    cursor.execute("PRAGMA table_info(sessions)")
+    session_cols = {col[1] for col in cursor.fetchall()}
+    if "method_chain_id" not in session_cols:
+        try:
+            cursor.execute("ALTER TABLE sessions ADD COLUMN method_chain_id INTEGER")
+            print("[INFO] Added 'method_chain_id' column to sessions table")
+        except sqlite3.OperationalError:
+            pass
+
     conn.commit()
     conn.close()
 
     print(f"[OK] Database initialized at: {DB_PATH}")
-    print("[OK] Schema version: 9.3 + planning/RAG extensions")
+    print("[OK] Schema version: 9.4 + planning/RAG/methods extensions")
 
 
 def migrate_from_v8():
