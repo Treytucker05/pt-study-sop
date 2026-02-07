@@ -43,6 +43,7 @@ Basic alignment is enforced by `python scripts/check_docs_sync.py` (CI).
 - [User Guide](root/GUIDE_USER.md)
 - [Dev Guide](root/GUIDE_DEV.md)
 - [Architecture Guide](root/GUIDE_ARCHITECTURE.md)
+- [Concept Map: Typical Session Flow](root/CONCEPT_MAP_FLOW.md)
 
 ## Schemas & Contracts
 
