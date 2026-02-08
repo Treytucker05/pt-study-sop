@@ -1,0 +1,21 @@
+id: M-ENC-001
+name: KWIK Hook
+category: encode
+description: Structured 5-step encoding protocol for new terms. Sound (phonetic cue) → Function (true meaning) → Image (vivid
+  visual tied to function) → Resonance (learner confirms it clicks) → Lock (record as card/log). Each step is gated — don't
+  skip ahead.
+default_duration_min: 3
+energy_cost: medium
+best_stage: first_exposure
+status: draft
+tags:
+- mnemonic
+- kwik
+- hook
+- gated
+- sop-core
+evidence:
+  citation: Paivio (1991)
+  finding: dual-coding theory — combining verbal + visual improves retention
+  source: seed_methods.py
+evidence_raw: Paivio (1991); dual-coding theory — combining verbal + visual improves retention

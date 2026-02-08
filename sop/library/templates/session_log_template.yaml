@@ -1,0 +1,81 @@
+# Canonical logging fields for study sessions.
+# Methods and chains reference these field names for logging alignment.
+
+session_fields:
+  - name: date
+    type: string
+    format: "YYYY-MM-DD"
+    required: true
+
+  - name: topic
+    type: string
+    required: true
+
+  - name: mode
+    type: string
+    enum: [core, sprint, drill, diagnostic]
+    required: true
+
+  - name: duration_min
+    type: integer
+    required: true
+
+  - name: understanding
+    type: integer
+    range: [1, 5]
+    required: true
+
+  - name: retention
+    type: integer
+    range: [1, 5]
+    required: true
+
+  - name: method_chain
+    type: string
+    description: "Name or ID of the method chain used"
+    required: false
+
+  - name: method_chain_id
+    type: integer
+    description: "DB ID of the method chain"
+    required: false
+
+  - name: blocks_used
+    type: list
+    description: "List of method block names/IDs actually executed"
+    required: false
+
+  - name: rsr
+    type: float
+    range: [0.0, 1.0]
+    description: "Retrieval success rate"
+    required: false
+
+  - name: errors_count
+    type: integer
+    description: "Number of retrieval errors for error autopsy"
+    required: false
+
+  - name: cards_drafted
+    type: integer
+    description: "Number of Anki cards drafted"
+    required: false
+
+  - name: muddy_points
+    type: list
+    description: "Items still unclear after session"
+    required: false
+
+  - name: next_action
+    type: string
+    description: "Planned follow-up from exit ticket"
+    required: false
+
+  - name: energy_level
+    type: string
+    enum: [low, medium, high]
+    required: false
+
+  - name: notes
+    type: string
+    required: false

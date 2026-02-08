@@ -1,0 +1,19 @@
+id: M-INT-005
+name: Case Walkthrough
+category: interrogate
+description: Walk through a clinical case from presentation to assessment to intervention. Apply learned concepts to patient
+  scenarios. Builds clinical reasoning chains.
+default_duration_min: 10
+energy_cost: high
+best_stage: exam_prep
+status: draft
+tags:
+- clinical
+- case-based
+- reasoning
+- application
+evidence:
+  citation: Thistlethwaite et al. (2012)
+  finding: case-based learning improves clinical reasoning in health professions
+  source: seed_methods.py
+evidence_raw: Thistlethwaite et al. (2012); case-based learning improves clinical reasoning in health professions

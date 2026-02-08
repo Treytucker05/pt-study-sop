@@ -1,0 +1,13 @@
+id: C-QD-001
+name: Quick Drill
+description: Minimal time investment. Prepare → Retrieve → Overlearn. Good for spacing reviews.
+blocks:
+- M-PRE-001
+- M-RET-002
+- M-OVR-001
+context_tags:
+  stage: review
+  energy: medium
+  time_available: 15
+is_template: true
+status: draft

@@ -1,0 +1,17 @@
+id: C-FE-001
+name: First Exposure (Core)
+description: Full PEIRRO cycle for new material. Prepare → Encode → Retrieve → Interrogate → Overlearn. Retrieval before generative
+  encoding per Potts & Shanks (2022).
+blocks:
+- M-PRE-001
+- M-PRE-004
+- M-RET-001
+- M-ENC-001
+- M-INT-001
+- M-OVR-001
+context_tags:
+  stage: first_exposure
+  energy: high
+  time_available: 45
+is_template: true
+status: draft

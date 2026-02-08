@@ -1,0 +1,14 @@
+id: C-RS-001
+name: Review Sprint
+description: Fast review loop. Prepare → Retrieve → Interrogate → Overlearn. Skips encode for known material.
+blocks:
+- M-PRE-002
+- M-RET-002
+- M-INT-003
+- M-OVR-001
+context_tags:
+  stage: review
+  energy: medium
+  time_available: 25
+is_template: true
+status: draft

@@ -1,0 +1,16 @@
+id: C-AD-001
+name: Anatomy Deep Dive
+description: Anatomy-focused chain with drawing. Prepare → Encode (Draw-Label) → Retrieve → Overlearn.
+blocks:
+- M-PRE-003
+- M-PRE-006
+- M-ENC-003
+- M-RET-001
+- M-OVR-002
+context_tags:
+  class_type: anatomy
+  stage: first_exposure
+  energy: high
+  time_available: 40
+is_template: true
+status: draft

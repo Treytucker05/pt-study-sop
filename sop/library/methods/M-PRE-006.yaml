@@ -1,0 +1,17 @@
+id: M-PRE-006
+name: Three-Layer Chunk
+category: prepare
+description: 'Break topic into 3 layers: big picture, key details, edge cases. Process one layer at a time.'
+default_duration_min: 5
+energy_cost: medium
+best_stage: first_exposure
+status: draft
+tags:
+- chunking
+- depth-first
+- structure
+evidence:
+  citation: Miller (1956)
+  finding: Gobet et al. (2001); chunking manages cognitive load
+  source: seed_methods.py
+evidence_raw: Miller (1956); Gobet et al. (2001); chunking manages cognitive load

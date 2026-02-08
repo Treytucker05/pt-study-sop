@@ -1,0 +1,19 @@
+id: M-REF-001
+name: Error Autopsy
+category: refine
+description: 'Review errors from retrieval practice. For each error: (1) What did I say? (2) What''s correct? (3) Why did
+  I confuse them? (4) What cue will prevent this next time? Metacognitive error analysis.'
+default_duration_min: 5
+energy_cost: medium
+best_stage: exam_prep
+status: draft
+tags:
+- error-analysis
+- metacognition
+- correction
+- evidence-based
+evidence:
+  citation: Metcalfe (2017)
+  finding: error correction with feedback is more effective than errorless learning
+  source: seed_methods.py
+evidence_raw: Metcalfe (2017); error correction with feedback is more effective than errorless learning

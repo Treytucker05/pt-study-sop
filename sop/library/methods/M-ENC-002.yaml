@@ -1,0 +1,19 @@
+id: M-ENC-002
+name: Seed-Lock Generation
+category: encode
+description: Learner generates their own encoding hook BEFORE the AI offers help. Start with your own association, metaphor,
+  or mnemonic. AI only assists if you're stuck. Enforces active generation over passive reception.
+default_duration_min: 3
+energy_cost: medium
+best_stage: first_exposure
+status: draft
+tags:
+- seed-lock
+- generation-first
+- active
+- sop-core
+evidence:
+  citation: Slamecka & Graf (1978)
+  finding: generation effect — self-generated items remembered better than read items
+  source: seed_methods.py
+evidence_raw: Slamecka & Graf (1978); generation effect — self-generated items remembered better than read items

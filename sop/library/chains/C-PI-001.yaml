@@ -1,0 +1,16 @@
+id: C-PI-001
+name: Pathophysiology Intake
+description: Pathology first exposure with mechanism tracing. Pre-Test → Self-Explanation → Concept Cluster → Retrieve → Refine.
+blocks:
+- M-PRE-007
+- M-ENC-007
+- M-PRE-005
+- M-RET-001
+- M-REF-001
+context_tags:
+  class_type: pathology
+  stage: first_exposure
+  energy: high
+  time_available: 45
+is_template: true
+status: draft

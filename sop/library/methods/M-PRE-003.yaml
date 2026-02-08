@@ -1,0 +1,16 @@
+id: M-PRE-003
+name: Prior Knowledge Scan
+category: prepare
+description: List related concepts you already know. Identify connections to previous modules.
+default_duration_min: 3
+energy_cost: low
+best_stage: first_exposure
+status: draft
+tags:
+- schema-activation
+- connections
+evidence:
+  citation: Ausubel (1968)
+  finding: meaningful learning requires anchoring to existing schemas
+  source: seed_methods.py
+evidence_raw: Ausubel (1968); meaningful learning requires anchoring to existing schemas

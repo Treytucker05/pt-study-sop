@@ -1,0 +1,19 @@
+id: M-ENC-011
+name: Process Flowchart
+category: encode
+description: Draw a sequential diagram showing a process, pathway, or algorithm. Include decision points where applicable.
+  Use Mermaid graph TD syntax for dashboard editor.
+default_duration_min: 10
+energy_cost: high
+best_stage: first_exposure
+status: draft
+tags:
+- visual
+- mermaid
+- sequential
+- procedural
+evidence:
+  citation: Winn (1991)
+  finding: spatial-sequential diagrams improve procedural understanding
+  source: seed_methods.py
+evidence_raw: Winn (1991); spatial-sequential diagrams improve procedural understanding

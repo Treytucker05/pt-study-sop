@@ -1,0 +1,19 @@
+id: M-RET-004
+name: Mixed Practice
+category: retrieve
+description: Interleave questions from 2-3 different topics in a single retrieval block. Builds discrimination and prevents
+  blocked-practice illusion. Based on interleaving research (Rohrer et al.).
+default_duration_min: 10
+energy_cost: high
+best_stage: exam_prep
+status: draft
+tags:
+- interleaving
+- discrimination
+- mixed
+- evidence-based
+evidence:
+  citation: Rohrer et al. (2015)
+  finding: interleaved practice improves discrimination and transfer
+  source: seed_methods.py
+evidence_raw: Rohrer et al. (2015); interleaved practice improves discrimination and transfer

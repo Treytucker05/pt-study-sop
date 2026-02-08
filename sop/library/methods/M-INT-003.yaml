@@ -1,0 +1,17 @@
+id: M-INT-003
+name: Cross-Topic Link
+category: interrogate
+description: Identify 2-3 connections between this topic and topics from other courses. Look for shared principles.
+default_duration_min: 3
+energy_cost: medium
+best_stage: consolidation
+status: draft
+tags:
+- integration
+- cross-course
+- big-picture
+evidence:
+  citation: Pugh & Bergin (2006)
+  finding: interest deepens when learners see cross-domain connections
+  source: seed_methods.py
+evidence_raw: Pugh & Bergin (2006); interest deepens when learners see cross-domain connections

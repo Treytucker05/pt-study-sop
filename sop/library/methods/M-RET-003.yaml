@@ -1,0 +1,17 @@
+id: M-RET-003
+name: Fill-in-Blank
+category: retrieve
+description: Review notes with key terms blanked out. Fill from memory. Targets specific vocabulary recall.
+default_duration_min: 5
+energy_cost: low
+best_stage: review
+status: draft
+tags:
+- cloze
+- vocabulary
+- targeted
+evidence:
+  citation: Dunlosky et al. (2013)
+  finding: cloze-based retrieval is effective for factual knowledge
+  source: seed_methods.py
+evidence_raw: Dunlosky et al. (2013); cloze-based retrieval is effective for factual knowledge

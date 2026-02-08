@@ -1,0 +1,17 @@
+id: M-PRE-004
+name: AI Skeleton Review
+category: prepare
+description: Have Tutor generate a topic skeleton with main headings and subheadings. Review for 2-3 min to build mental map.
+default_duration_min: 5
+energy_cost: low
+best_stage: first_exposure
+status: draft
+tags:
+- overview
+- structure
+- ai-assisted
+evidence:
+  citation: Lorch & Lorch (1996)
+  finding: advance organizers improve text comprehension
+  source: seed_methods.py
+evidence_raw: Lorch & Lorch (1996); advance organizers improve text comprehension

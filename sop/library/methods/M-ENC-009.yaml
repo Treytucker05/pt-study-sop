@@ -1,0 +1,19 @@
+id: M-ENC-009
+name: Concept Map
+category: encode
+description: Build a node-and-link diagram showing relationships between concepts. Self-constructed maps force elaboration
+  and reveal structural gaps. Use Mermaid syntax for dashboard editor.
+default_duration_min: 10
+energy_cost: high
+best_stage: first_exposure
+status: draft
+tags:
+- visual
+- mermaid
+- relationships
+- elaboration
+evidence:
+  citation: Nesbit & Adesope (2006) d=0.82
+  finding: self-constructed > provided (d=1.00 vs 0.37)
+  source: seed_methods.py
+evidence_raw: Nesbit & Adesope (2006) d=0.82; self-constructed > provided (d=1.00 vs 0.37)

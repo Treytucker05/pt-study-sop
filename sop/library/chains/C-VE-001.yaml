@@ -1,0 +1,15 @@
+id: C-VE-001
+name: Visual Encoding
+description: Visualization-first encoding for topics with confusable concepts. Build visual representations before retrieval.
+blocks:
+- M-PRE-001
+- M-ENC-009
+- M-ENC-010
+- M-RET-001
+- M-OVR-001
+context_tags:
+  stage: first_exposure
+  energy: high
+  time_available: 40
+is_template: true
+status: draft

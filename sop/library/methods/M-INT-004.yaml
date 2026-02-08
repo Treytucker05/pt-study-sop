@@ -1,0 +1,19 @@
+id: M-INT-004
+name: Side-by-Side Comparison
+category: interrogate
+description: Place two confusable concepts in a comparison table (features, functions, clinical signs). Identify discriminating
+  features. Builds differential diagnosis skill.
+default_duration_min: 7
+energy_cost: medium
+best_stage: review
+status: draft
+tags:
+- comparison
+- discrimination
+- differential
+- table
+evidence:
+  citation: Alfieri et al. (2013)
+  finding: comparison-based learning improves discrimination and concept formation
+  source: seed_methods.py
+evidence_raw: Alfieri et al. (2013); comparison-based learning improves discrimination and concept formation

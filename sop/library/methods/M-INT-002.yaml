@@ -1,0 +1,17 @@
+id: M-INT-002
+name: Clinical Application
+category: interrogate
+description: 'Apply the concept to a clinical scenario. Ask: how would this present? What would you test? How would you treat?'
+default_duration_min: 5
+energy_cost: high
+best_stage: exam_prep
+status: draft
+tags:
+- clinical
+- application
+- pt-specific
+evidence:
+  citation: Schmidt & Rikers (2007)
+  finding: clinical application strengthens illness script formation
+  source: seed_methods.py
+evidence_raw: Schmidt & Rikers (2007); clinical application strengthens illness script formation

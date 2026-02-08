@@ -1,0 +1,18 @@
+id: M-ENC-003
+name: Draw-Label
+category: encode
+description: Sketch the structure (anatomy, pathway, concept map) and label from memory. Fill gaps with source material.
+default_duration_min: 10
+energy_cost: high
+best_stage: first_exposure
+status: draft
+tags:
+- visual
+- anatomy
+- drawing
+- active
+evidence:
+  citation: Wammes et al. (2016)
+  finding: drawing effect — drawing produces superior memory compared to writing
+  source: seed_methods.py
+evidence_raw: Wammes et al. (2016); drawing effect — drawing produces superior memory compared to writing

@@ -1,0 +1,18 @@
+id: M-OVR-001
+name: Exit Ticket
+category: overlearn
+description: 'Answer three questions: (1) What did I learn? (2) What''s still muddy? (3) What''s my next action?'
+default_duration_min: 3
+energy_cost: low
+best_stage: consolidation
+status: draft
+tags:
+- reflection
+- meta
+- wrap
+- sop-core
+evidence:
+  citation: Tanner (2012)
+  finding: metacognitive reflection improves self-regulated learning
+  source: seed_methods.py
+evidence_raw: Tanner (2012); metacognitive reflection improves self-regulated learning

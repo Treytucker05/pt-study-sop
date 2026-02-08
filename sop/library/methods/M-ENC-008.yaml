@@ -1,0 +1,19 @@
+id: M-ENC-008
+name: Mechanism Trace
+category: encode
+description: 'Trace the causal mechanism step-by-step: what triggers what, and why. Build a cause→effect chain from input
+  to output. Especially useful for pathophysiology and physiological pathways.'
+default_duration_min: 10
+energy_cost: high
+best_stage: first_exposure
+status: draft
+tags:
+- causal-reasoning
+- mechanism
+- pathophysiology
+- transfer
+evidence:
+  citation: Kulasegaram et al. (2013)
+  finding: causal reasoning with biomedical mechanisms supports diagnostic transfer
+  source: seed_methods.py
+evidence_raw: Kulasegaram et al. (2013); causal reasoning with biomedical mechanisms supports diagnostic transfer

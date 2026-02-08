@@ -1,0 +1,17 @@
+id: M-PRE-005
+name: Concept Cluster
+category: prepare
+description: Group related terms/concepts into 3-5 clusters. Identify hierarchy and relationships.
+default_duration_min: 5
+energy_cost: medium
+best_stage: first_exposure
+status: draft
+tags:
+- organization
+- visual
+- grouping
+evidence:
+  citation: Bower et al. (1969)
+  finding: conceptual organization improves recall by 2-3x
+  source: seed_methods.py
+evidence_raw: Bower et al. (1969); conceptual organization improves recall by 2-3x

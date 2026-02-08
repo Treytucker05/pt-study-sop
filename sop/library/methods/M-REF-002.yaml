@@ -1,0 +1,19 @@
+id: M-REF-002
+name: Mastery Loop
+category: refine
+description: Re-study items missed during retrieval, then immediately re-test. Repeat until all items are recalled correctly.
+  Based on successive relearning (Rawson & Dunlosky).
+default_duration_min: 10
+energy_cost: medium
+best_stage: consolidation
+status: draft
+tags:
+- successive-relearning
+- mastery
+- retest
+- evidence-based
+evidence:
+  citation: Rawson & Dunlosky (2011)
+  finding: successive relearning combines testing + spacing for durable retention
+  source: seed_methods.py
+evidence_raw: Rawson & Dunlosky (2011); successive relearning combines testing + spacing for durable retention

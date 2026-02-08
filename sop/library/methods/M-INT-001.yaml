@@ -1,0 +1,17 @@
+id: M-INT-001
+name: Analogy Bridge
+category: interrogate
+description: Create an analogy linking this concept to something familiar. Test if the analogy holds at the edges.
+default_duration_min: 3
+energy_cost: medium
+best_stage: review
+status: draft
+tags:
+- analogy
+- transfer
+- creative
+evidence:
+  citation: Gentner (1983)
+  finding: analogical reasoning supports structural mapping and transfer
+  source: seed_methods.py
+evidence_raw: Gentner (1983); analogical reasoning supports structural mapping and transfer

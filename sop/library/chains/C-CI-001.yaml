@@ -1,0 +1,16 @@
+id: C-CI-001
+name: Clinical Reasoning Intake
+description: Clinical first exposure with illness scripts. Pre-Test → Illness Script → Compare → Retrieve → Overlearn.
+blocks:
+- M-PRE-007
+- M-INT-006
+- M-INT-004
+- M-RET-001
+- M-OVR-002
+context_tags:
+  class_type: clinical
+  stage: first_exposure
+  energy: high
+  time_available: 45
+is_template: true
+status: draft

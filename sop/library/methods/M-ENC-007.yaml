@@ -1,0 +1,18 @@
+id: M-ENC-007
+name: Self-Explanation Protocol
+category: encode
+description: After reading each paragraph or concept, pause and explain to yourself WHY each step follows from the previous
+  one. Focus on explaining the reasoning, not just restating facts.
+default_duration_min: 7
+energy_cost: medium
+best_stage: first_exposure
+status: draft
+tags:
+- self-explanation
+- comprehension
+- causal-reasoning
+evidence:
+  citation: Chi et al. (1994)
+  finding: Dunlosky et al. (2013); self-explanation rated moderate-high utility across domains
+  source: seed_methods.py
+evidence_raw: Chi et al. (1994); Dunlosky et al. (2013); self-explanation rated moderate-high utility across domains

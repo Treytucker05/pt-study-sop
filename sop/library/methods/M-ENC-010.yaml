@@ -1,0 +1,19 @@
+id: M-ENC-010
+name: Comparison Table
+category: encode
+description: Create a side-by-side table comparing 2-4 confusable concepts across shared features. Highlight discriminating
+  features. Builds differential diagnosis skill.
+default_duration_min: 7
+energy_cost: medium
+best_stage: review
+status: draft
+tags:
+- visual
+- comparison
+- discrimination
+- table
+evidence:
+  citation: Alfieri et al. (2013)
+  finding: comparison improves discrimination and concept formation
+  source: seed_methods.py
+evidence_raw: Alfieri et al. (2013); comparison improves discrimination and concept formation

@@ -1,0 +1,17 @@
+id: C-DA-001
+name: Dense Anatomy Intake
+description: High-detail anatomy first exposure. Pre-Test primes encoding, Draw-Label for spatial memory, retrieval before
+  generative steps.
+blocks:
+- M-PRE-007
+- M-ENC-003
+- M-RET-001
+- M-ENC-001
+- M-OVR-002
+context_tags:
+  class_type: anatomy
+  stage: first_exposure
+  energy: high
+  time_available: 40
+is_template: true
+status: draft

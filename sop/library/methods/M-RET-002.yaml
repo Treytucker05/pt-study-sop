@@ -1,0 +1,18 @@
+id: M-RET-002
+name: Sprint Quiz
+category: retrieve
+description: Rapid-fire Q&A with Tutor. 10-15 questions in 5 min. Track accuracy for RSR.
+default_duration_min: 5
+energy_cost: medium
+best_stage: review
+status: draft
+tags:
+- quiz
+- speed
+- rsr
+- ai-assisted
+evidence:
+  citation: McDaniel et al. (2007)
+  finding: quiz-based retrieval enhances later exam performance
+  source: seed_methods.py
+evidence_raw: McDaniel et al. (2007); quiz-based retrieval enhances later exam performance

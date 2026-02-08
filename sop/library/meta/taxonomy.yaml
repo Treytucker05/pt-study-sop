@@ -1,0 +1,51 @@
+categories:
+  prepare:
+    label: "Prepare"
+    description: "Prime attention, surface prior knowledge, build structure"
+    prefix: PRE
+    aliases: ["prep", "warmup", "prime"]
+  encode:
+    label: "Encode"
+    description: "Attach meaning to material"
+    prefix: ENC
+    aliases: ["encoding", "attach_meaning"]
+  interrogate:
+    label: "Interrogate"
+    description: "Link to other content, apply, compare"
+    prefix: INT
+    aliases: ["apply", "link"]
+  retrieve:
+    label: "Retrieve"
+    description: "Test recall without cues"
+    prefix: RET
+    aliases: ["recall", "test"]
+  refine:
+    label: "Refine"
+    description: "Analyze errors and relearn"
+    prefix: REF
+    aliases: ["error_analysis", "relearn"]
+  overlearn:
+    label: "Overlearn"
+    description: "Close loop, capture artifacts"
+    prefix: OVR
+    aliases: ["wrap", "consolidate"]
+
+energy_levels: [low, medium, high]
+stages: [first_exposure, review, exam_prep, consolidation]
+class_types: [anatomy, physiology, pathology, pharmacology, clinical, general]
+
+mechanisms:
+  - retrieval
+  - spacing
+  - interleaving
+  - elaboration
+  - dual_coding
+  - worked_examples
+  - feedback
+  - discrimination
+  - calibration
+  - transfer
+  - generation
+  - desirable_difficulty
+
+status_values: [draft, validated, deprecated]

@@ -15,5 +15,8 @@ python-dotenv>=1.0,<2
 selenium>=4.0,<5
 webdriver-manager>=4.0,<5
 
+# YAML parsing (used by seed_methods.py for YAML-based library loading)
+PyYAML>=6.0,<7
+
 # Dev/test
 pytest>=8.0,<10

@@ -1,0 +1,17 @@
+id: M-PRE-002
+name: Prediction Questions
+category: prepare
+description: Write 3-5 questions you expect the material to answer. Creates forward hooks for active reading.
+default_duration_min: 3
+energy_cost: low
+best_stage: first_exposure
+status: draft
+tags:
+- priming
+- curiosity
+- metacognition
+evidence:
+  citation: Pressley et al. (1990)
+  finding: question-generation primes elaborative processing
+  source: seed_methods.py
+evidence_raw: Pressley et al. (1990); question-generation primes elaborative processing

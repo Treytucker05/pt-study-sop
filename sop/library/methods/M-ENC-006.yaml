@@ -1,0 +1,19 @@
+id: M-ENC-006
+name: Think-Aloud Protocol
+category: encode
+description: Verbalize your reasoning step-by-step while working through a problem or reading. Exposes gaps in logic and strengthens
+  self-explanation. Based on Chi et al. self-explanation research.
+default_duration_min: 5
+energy_cost: medium
+best_stage: review
+status: draft
+tags:
+- self-explanation
+- metacognition
+- verbal
+- evidence-based
+evidence:
+  citation: Chi et al. (1994)
+  finding: self-explanation leads to deeper understanding and better problem-solving
+  source: seed_methods.py
+evidence_raw: Chi et al. (1994); self-explanation leads to deeper understanding and better problem-solving

@@ -1,0 +1,17 @@
+id: M-PRE-001
+name: Brain Dump
+category: prepare
+description: Free-write everything you already know about the topic for 2-3 min. Surfaces prior knowledge and sets a baseline.
+default_duration_min: 3
+energy_cost: low
+best_stage: first_exposure
+status: draft
+tags:
+- warm-up
+- recall
+- low-stakes
+evidence:
+  citation: Brod et al. (2013)
+  finding: prior knowledge activation improves encoding of new information
+  source: seed_methods.py
+evidence_raw: Brod et al. (2013); prior knowledge activation improves encoding of new information

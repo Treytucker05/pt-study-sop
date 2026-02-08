@@ -1,0 +1,17 @@
+id: M-ENC-004
+name: Teach-Back
+category: encode
+description: Explain the concept aloud as if teaching a classmate. Identify points where explanation breaks down.
+default_duration_min: 5
+energy_cost: high
+best_stage: review
+status: draft
+tags:
+- verbal
+- feynman
+- deep-processing
+evidence:
+  citation: Nestojko et al. (2014)
+  finding: expecting to teach enhances encoding and organization
+  source: seed_methods.py
+evidence_raw: Nestojko et al. (2014); expecting to teach enhances encoding and organization

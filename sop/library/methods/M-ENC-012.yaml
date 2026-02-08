@@ -1,0 +1,19 @@
+id: M-ENC-012
+name: Clinical Decision Tree
+category: encode
+description: 'Build a branching decision diagram: presentation → key findings → differential → tests → diagnosis. Scaffolds
+  clinical reasoning into explicit decision points.'
+default_duration_min: 10
+energy_cost: high
+best_stage: exam_prep
+status: draft
+tags:
+- visual
+- mermaid
+- clinical-reasoning
+- decision-tree
+evidence:
+  citation: Charlin et al. (2000)
+  finding: decision trees scaffold clinical reasoning
+  source: seed_methods.py
+evidence_raw: Charlin et al. (2000); decision trees scaffold clinical reasoning
