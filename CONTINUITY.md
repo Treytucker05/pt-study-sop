@@ -321,3 +321,13 @@
 
 - Add offline parsing fallback for calendar NL parsing so tests don't require OPENROUTER_API_KEY.
 - Ensure db_setup.get_connection initializes the SQLite schema on first use so /api/sessions works in fresh clones/CI.
+
+## 2026-02-08 - v9.5 Split-Track + Method Library Merge
+
+- Merged `v9.4-backlog-implementation` into `main` (Composable Method Library: api_methods.py, method_analysis.py, methods page, 4 components, 18 tests, 15-method-library.md, updates to 14 SOP files).
+- Bumped remaining `Lite Wrap v9.4` references to v9.5 in 05-session-flow.md, 10-deployment.md, 00-overview.md, and README.md.
+- Added `build_custom_instructions()` to `sop/tools/build_runtime_bundle.py` — extracts code block from file 13, writes `sop/runtime/custom_instructions.md`.
+- Added `13-custom-gpt-system-instructions.md` to build script required set.
+- Regenerated all runtime bundles (6 knowledge files + runtime_prompt.md + custom_instructions.md) at v9.5.
+- Frontend rebuilt and synced to `brain/static/dist/`.
+- All 56 tests pass.
