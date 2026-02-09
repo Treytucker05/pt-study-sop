@@ -400,3 +400,17 @@
 - Un-ignored brain/data/seed_methods.py in .gitignore (code file, not data)
 - Generator contract preserved: exact headings for build_methods() parser
 - 79 tests pass (57 brain + 22 SOP)
+
+## 2026-02-08 - SWEEP/DEPTH Chain Runner
+
+- Executable chain runner: orchestrates LLM calls per method block, producing Obsidian notes, Anki card drafts, and session metrics
+- **Commit 1** (`9ad656e1`): `chain_runs` table in db_setup.py, SWEEP (`C-SW-001.yaml`) and DEPTH (`C-DP-001.yaml`) chain definitions, TEMPLATE_CHAINS seed entries
+- **Commit 2** (`14c26696`): `chain_runner.py` (run_chain + helpers), `chain_prompts.py` (12 block prompt templates), 17 unit tests with mocked LLM
+- **Commit 3** (`361d1a1f`): `api_chain_runner.py` Flask Blueprint (POST/GET chain-run endpoints), registered in app.py
+- **Commit 4** (`b5c76b20`): Frontend UI — chainRun API methods + types in api.ts, Run button + ChainRunDialog + ChainRunResultDialog + run history table in methods.tsx
+- **Commit 5**: Polish — full test suite (74 pass), SOP validator (34 methods, 15 chains), CONTINUITY.md update
+- Architecture: One `call_llm()` per block, accumulated context feeds forward, sync execution with spinner
+- Card parsing: CARD/TYPE/FRONT/BACK/TAGS line format from LLM output
+- Session created with study_mode = chain name, method_chain_id linked
+- Obsidian write via lazy-imported `obsidian_append()`, gated by `write_obsidian` option
+- RAG context capped at 2000 chars from `source_doc_ids`
