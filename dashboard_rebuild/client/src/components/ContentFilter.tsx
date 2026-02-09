@@ -260,37 +260,37 @@ export function ContentFilter({
 
       {/* Scrollable body */}
       <ScrollArea className="flex-1 min-h-0">
-        <div className={`${PANEL_PADDING} ${SECTION_GAP}`}>
+        <div className={`${PANEL_PADDING} space-y-2`}>
           {/* Mode selector */}
           <div>
             <SectionLabel>Mode</SectionLabel>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-1">
               {PRIMARY_MODES.map((m) => (
                 <button
                   key={m.value}
                   onClick={() => applyMode(m.value)}
-                  className={`text-left px-2 py-1.5 border-2 transition-colors ${
+                  className={`text-left px-2 py-1 border-2 transition-colors ${
                     mode === m.value
                       ? "border-primary bg-primary/20 text-primary"
                       : "border-muted-foreground/30 text-foreground/80 hover:border-muted-foreground/50 hover:text-foreground hover:bg-black/30"
                   }`}
                 >
-                  <div className="font-arcade text-sm leading-tight truncate">
+                  <div className="font-arcade text-[10px] leading-tight truncate">
                     {m.label}
                   </div>
-                  <div className={`${TEXT_MUTED} text-sm leading-tight truncate`}>
+                  <div className={`${TEXT_MUTED} text-xs leading-tight truncate`}>
                     {m.desc}
                   </div>
                 </button>
               ))}
             </div>
 
-            <div className={`${TEXT_MUTED} text-sm mt-2`}>
+            <div className={`${TEXT_MUTED} text-xs mt-1`}>
               Auto-picks a chain template. Override below.
             </div>
 
             {LEGACY_MODES.includes(mode) && (
-              <div className={`${TEXT_MUTED} text-sm mt-1`}>Legacy mode active: {mode}</div>
+              <div className={`${TEXT_MUTED} text-xs mt-1`}>Legacy mode active: {mode}</div>
             )}
           </div>
 
@@ -301,13 +301,13 @@ export function ContentFilter({
             </SectionLabel>
 
             {/* Recommended chain row */}
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className={`${TEXT_MUTED} text-sm min-w-0`}>
-                <span className="opacity-70">Recommended:</span>{" "}
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className={`${TEXT_MUTED} text-xs min-w-0 truncate`}>
+                <span className="opacity-70">Rec:</span>{" "}
                 {recommendedChain ? (
                   <>
-                    <span className="text-foreground truncate">{recommendedChain.name}</span>
-                    <Badge variant="outline" className={`ml-1.5 ${TEXT_BADGE} h-4 px-1`}>
+                    <span className="text-foreground">{recommendedChain.name}</span>
+                    <Badge variant="outline" className={`ml-1 ${TEXT_BADGE} h-4 px-1`}>
                       {recommendedChain.blocks.length}
                     </Badge>
                   </>
@@ -322,31 +322,31 @@ export function ContentFilter({
                 <Button
                   size="sm"
                   onClick={() => setChainId(recommendedChain.id)}
-                  className="rounded-none h-7 px-3 font-arcade text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="rounded-none h-6 px-2 font-arcade text-[10px] bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   APPLY
                 </Button>
               )}
             </div>
 
-            <label className={`flex items-center gap-2 ${TEXT_BODY} text-muted-foreground mb-2 cursor-pointer`}>
+            <label className={`flex items-center gap-2 ${TEXT_BODY} text-muted-foreground mb-1 cursor-pointer`}>
               <Checkbox
                 checked={autoPickChain}
                 onCheckedChange={(v) => setAutoPickChain(v === true)}
                 className="w-3 h-3"
               />
-              <span className="select-none text-sm">Auto-pick recommended chain</span>
+              <span className="select-none text-xs">Auto-pick recommended chain</span>
             </label>
 
             {/* Scrollable chain list with max-height */}
-            <ScrollArea className="h-48 border border-primary/20">
+            <ScrollArea className="h-32 border border-primary/20">
               <div className="space-y-0.5 p-1">
                 <button
                   onClick={() => {
                     setChainId(undefined);
                     setLastAutoPickMode(mode);
                   }}
-                  className={`w-full text-left px-2 py-1 ${TEXT_BODY} text-sm border-l-2 transition-colors ${
+                  className={`w-full text-left px-2 py-0.5 ${TEXT_BODY} text-xs border-l-2 transition-colors ${
                     !chainId
                       ? "border-primary text-primary bg-primary/10"
                       : "border-transparent text-foreground/80 hover:text-foreground hover:border-muted-foreground/40 hover:bg-black/30"
@@ -356,24 +356,24 @@ export function ContentFilter({
                 </button>
                 {chainsLoading ? (
                   <div className="space-y-1 p-2">
-                    <Skeleton className="w-full h-5 bg-primary/10" />
-                    <Skeleton className="w-full h-5 bg-primary/10" />
-                    <Skeleton className="w-full h-5 bg-primary/10" />
-                    <Skeleton className="w-full h-5 bg-primary/10" />
+                    <Skeleton className="w-full h-4 bg-primary/10" />
+                    <Skeleton className="w-full h-4 bg-primary/10" />
+                    <Skeleton className="w-full h-4 bg-primary/10" />
+                    <Skeleton className="w-full h-4 bg-primary/10" />
                   </div>
                 ) : (
                   templateChains.map((chain) => (
                     <button
                       key={chain.id}
                       onClick={() => setChainId(chain.id)}
-                      className={`w-full text-left px-2 py-1 ${TEXT_BODY} text-sm border-l-2 transition-colors ${
+                      className={`w-full text-left px-2 py-0.5 ${TEXT_BODY} text-xs border-l-2 transition-colors ${
                         chainId === chain.id
                           ? "border-primary text-primary bg-primary/10"
                           : "border-transparent text-foreground/80 hover:text-foreground hover:border-muted-foreground/40 hover:bg-black/30"
                       }`}
                     >
                       <span className="truncate">{chain.name}</span>
-                      <Badge variant="outline" className={`ml-1.5 ${TEXT_BADGE} h-4 px-1`}>
+                      <Badge variant="outline" className={`ml-1 ${TEXT_BADGE} h-3 px-1 text-[10px]`}>
                         {chain.blocks.length}
                       </Badge>
                     </button>
@@ -463,9 +463,9 @@ export function ContentFilter({
               disabled={provider !== "codex"}
             />
             <Globe className={ICON_SM} />
-            <span className={`${TEXT_BODY} text-sm`}>Web search</span>
+            <span className={`${TEXT_BODY} text-xs`}>Web search</span>
             {provider !== "codex" && (
-              <span className="text-xs text-muted-foreground">(Codex only)</span>
+              <span className="text-[10px] text-muted-foreground">(Codex only)</span>
             )}
           </label>
 
@@ -515,7 +515,7 @@ export function ContentFilter({
         <Button
           onClick={onStartSession}
           disabled={isStarting || hasActiveSession}
-          className={`w-full rounded-none border-2 font-arcade text-sm h-10 ${
+          className={`w-full rounded-none border-2 font-arcade text-xs h-9 ${
             hasActiveSession
               ? "border-green-500/50 bg-green-500/10 text-green-400 cursor-default"
               : isStarting
@@ -524,14 +524,14 @@ export function ContentFilter({
           }`}
         >
           {isStarting ? (
-            <Loader2 className={`${ICON_MD} animate-spin mr-1.5`} />
+            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
           ) : hasActiveSession ? (
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               SESSION ACTIVE
             </span>
           ) : (
-            <Zap className={`${ICON_MD} mr-1.5`} />
+            <Zap className={`${ICON_SM} mr-1`} />
           )}
           {!isStarting && !hasActiveSession && "START SESSION"}
         </Button>
