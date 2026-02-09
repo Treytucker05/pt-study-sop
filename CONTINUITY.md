@@ -387,3 +387,16 @@
   - Added 3 method tables to `docs/root/PROJECT_ARCHITECTURE.md` schema section
   - Updated `MEMORY.md` counts: 34 blocks, 13 chains (was 30/12)
   - All 57 tests pass
+
+## 2026-02-08 - SOP Library Upgrade Pipeline (YAML Source of Truth)
+
+- Converted triple-source method library (markdown + Python dicts + SQLite) to YAML as single source of truth
+- **Commit 1**: 34 method YAMLs, 13 chain YAMLs, taxonomy.yaml, version.yaml, Pydantic v2 models, conversion script
+- **Commit 2**: validate_library.py (8 checks), golden test framework, baselines
+- **Commit 3**: build_methods_from_yaml() in build_runtime_bundle.py, seed_methods.py reads YAML (PyYAML only), library_meta DB table
+- **Commit 4**: gap_radar.py (7-category analysis), new_ticket.py (ET scaffolder), bump_version.py, RELEASELOG.md
+- **Commit 5**: CI sop_validate job, sop/README.md, Phase 2 GitHub issue
+- Dependencies: PyYAML in requirements.txt (runtime), Pydantic in requirements-tools.txt (tools only)
+- Un-ignored brain/data/seed_methods.py in .gitignore (code file, not data)
+- Generator contract preserved: exact headings for build_methods() parser
+- 79 tests pass (57 brain + 22 SOP)

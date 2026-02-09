@@ -39,3 +39,26 @@ jobs:
 
       - name: Run tests
         run: python -m pytest brain/tests
+
+  sop_validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-tools.txt pytest
+
+      - name: Validate library (strict)
+        run: python sop/tools/validate_library.py --strict
+
+      - name: Build runtime bundles
+        run: python sop/tools/build_runtime_bundle.py
+
+      - name: Run SOP tests
+        run: python -m pytest sop/tests/ -v
