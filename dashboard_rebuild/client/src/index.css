@@ -28,6 +28,11 @@
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
+
+  /* Component-specific border tokens (used by shadcn/ui Button variants) */
+  --color-primary-border: hsl(var(--primary));
+  --color-secondary-border: hsl(var(--secondary));
+  --color-destructive-border: hsl(var(--destructive));
   
   --radius-sm: 0px;
   --radius-md: 0px;
@@ -68,11 +73,15 @@
   --destructive: 0 100% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 0 0% 20%;
-  --input: 0 0% 15%;
+  /* Prefer red lines across the UI; buttons can override via --button-outline. */
+  --border: 0 100% 25%;
+  --input: 0 100% 25%;
   --ring: 0 100% 50%;
 
   --radius: 0.5rem; /* Slight radius for modern feel, can be kept 0 for strict retro */
+
+  /* Outline/secondary button border color (kept neutral so only selected buttons pop red). */
+  --button-outline: hsl(0 0% 35%);
 }
 
 @layer base {
@@ -80,7 +89,7 @@
     @apply border-border;
   }
   body {
-    @apply font-terminal antialiased bg-background text-foreground tracking-wide text-base leading-relaxed;
+    @apply font-terminal antialiased bg-background text-foreground tracking-wide text-lg leading-relaxed;
     image-rendering: auto; /* Removed pixelated for text readability */
   }
   h1, h2, h3, h4, h5, h6 {

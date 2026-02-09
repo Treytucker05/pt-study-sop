@@ -152,7 +152,7 @@ export default function Library() {
                 {materials.map((mat) => (
                   <div
                     key={mat.id}
-                    className={`grid grid-cols-[1fr_60px_70px_80px_90px] gap-2 px-2 py-1.5 items-center border-b border-muted-foreground/5 hover:bg-primary/5 transition-colors ${
+                    className={`grid grid-cols-[1fr_60px_70px_80px_90px] gap-2 px-2 py-1.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${
                       !mat.enabled ? "opacity-50" : ""
                     }`}
                   >
@@ -163,7 +163,7 @@ export default function Library() {
                           <input
                             value={editTitle}
                             onChange={(e) => setEditTitle(e.target.value)}
-                            className={`${INPUT_BASE} flex-1 h-6 py-0 text-xs`}
+                            className={`${INPUT_BASE} flex-1 h-9 py-1 text-base`}
                             autoFocus
                             onKeyDown={(e) => {
                               if (e.key === "Enter") saveEdit();

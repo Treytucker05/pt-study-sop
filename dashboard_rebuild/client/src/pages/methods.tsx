@@ -171,23 +171,23 @@ export default function MethodsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-arcade text-lg text-primary">METHOD_LIBRARY</h1>
-            <p className="font-terminal text-xs text-muted-foreground">
+            <h1 className="font-arcade text-xl text-primary">METHOD_LIBRARY</h1>
+            <p className="font-terminal text-base text-muted-foreground">
               Composable study methods — build, chain, rate, optimize
             </p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b-2 border-secondary pb-0">
+        <div className="flex gap-1 border-b-2 border-primary/30 pb-0">
           {TAB_ITEMS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 font-arcade text-[10px] border-b-2 -mb-[2px] transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-2 font-arcade text-sm border-b-2 -mb-[2px] transition-colors ${
                 activeTab === tab.id
                   ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-primary/60"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               <tab.icon className="w-3 h-3" />
@@ -204,19 +204,19 @@ export default function MethodsPage() {
                 placeholder="Search methods..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-48 h-8 rounded-none border-2 border-secondary bg-black/40 font-terminal text-xs"
+                className="w-64 bg-black/40"
               />
               <div className="flex gap-1">
                 {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setCategoryFilter(cat)}
-                    className={`px-2 py-1 font-arcade text-[9px] border rounded-none transition-colors ${
-                      categoryFilter === cat
-                        ? "border-primary bg-primary/20 text-primary"
-                        : "border-secondary text-muted-foreground hover:border-primary/40"
-                    }`}
-                  >
+                    <button
+                      key={cat}
+                      onClick={() => setCategoryFilter(cat)}
+                      className={`px-3 py-1.5 font-arcade text-xs border-2 rounded-none transition-colors ${
+                        categoryFilter === cat
+                          ? "border-primary bg-primary/20 text-primary"
+                          : "border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 hover:bg-black/30"
+                      }`}
+                    >
                     {CATEGORY_LABEL[cat] || cat.toUpperCase()}
                   </button>
                 ))}
@@ -224,7 +224,7 @@ export default function MethodsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="ml-auto rounded-none border-2 font-arcade text-[10px] h-8"
+                className="ml-auto rounded-none border-2 font-arcade text-sm h-10"
                 onClick={() => setShowAddBlock(true)}
               >
                 <Plus className="w-3 h-3 mr-1" /> ADD BLOCK
@@ -232,7 +232,7 @@ export default function MethodsPage() {
             </div>
 
             {blocksLoading ? (
-              <p className="font-terminal text-xs text-muted-foreground">Loading methods...</p>
+              <p className="font-terminal text-base text-muted-foreground">Loading methods...</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {filteredBlocks.map((block) => (
@@ -261,7 +261,7 @@ export default function MethodsPage() {
               </div>
             )}
             {!blocksLoading && filteredBlocks.length === 0 && (
-              <p className="font-terminal text-xs text-muted-foreground text-center py-8">
+              <p className="font-terminal text-base text-muted-foreground text-center py-8">
                 No methods found. {categoryFilter !== "all" ? "Try a different category." : "Add your first method block."}
               </p>
             )}
@@ -272,13 +272,13 @@ export default function MethodsPage() {
         {activeTab === "chains" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="font-arcade text-xs text-muted-foreground">
+              <span className="font-arcade text-sm text-muted-foreground">
                 {chains.length} CHAINS ({chains.filter((c) => c.is_template).length} templates)
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-none border-2 font-arcade text-[10px] h-8"
+                className="rounded-none border-2 font-arcade text-sm h-10"
                 onClick={() => setShowAddChain(true)}
               >
                 <Plus className="w-3 h-3 mr-1" /> NEW CHAIN
@@ -286,7 +286,7 @@ export default function MethodsPage() {
             </div>
 
             {chainsLoading ? (
-              <p className="font-terminal text-xs text-muted-foreground">Loading chains...</p>
+              <p className="font-terminal text-base text-muted-foreground">Loading chains...</p>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Chain List */}
@@ -298,14 +298,14 @@ export default function MethodsPage() {
                       className={`border-2 p-3 rounded-none cursor-pointer transition-colors ${
                         selectedChain?.id === chain.id
                           ? "border-primary bg-primary/10"
-                          : "border-secondary hover:border-primary/40"
+                          : "border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-black/30"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-arcade text-xs">{chain.name}</span>
+                        <span className="font-arcade text-sm">{chain.name}</span>
                         <div className="flex items-center gap-2">
                           {chain.is_template ? (
-                            <span className="text-[9px] font-arcade bg-primary/20 text-primary px-1.5 py-0.5">TEMPLATE</span>
+                            <span className="text-xs font-arcade bg-primary/20 text-primary px-1.5 py-0.5">TEMPLATE</span>
                           ) : null}
                           <button
                             className="p-0.5 hover:text-green-400"
@@ -329,11 +329,11 @@ export default function MethodsPage() {
                         </div>
                       </div>
                       {chain.description && (
-                        <p className="font-terminal text-xs text-muted-foreground line-clamp-1">{chain.description}</p>
+                        <p className="font-terminal text-base text-muted-foreground line-clamp-1">{chain.description}</p>
                       )}
                       <div className="flex gap-1 mt-1.5">
                         {(chain.block_ids || []).length > 0 && (
-                          <span className="text-[9px] font-terminal text-muted-foreground">
+                          <span className="text-sm font-terminal text-muted-foreground">
                             {(chain.block_ids || []).length} blocks
                           </span>
                         )}
@@ -343,25 +343,25 @@ export default function MethodsPage() {
                 </div>
 
                 {/* Chain Detail / Builder */}
-                <div className="border-2 border-secondary bg-black/40 p-4 rounded-none">
+                <div className="border-2 border-primary/30 bg-black/40 p-4 rounded-none">
                   {selectedChain ? (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <span className="font-arcade text-sm text-primary">{selectedChain.name}</span>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-none border-2 border-green-600 text-green-400 font-arcade text-[10px] h-6"
-                            onClick={() => setRunTarget({ id: selectedChain.id, name: selectedChain.name })}
-                          >
-                            <Play className="w-3 h-3 mr-1" /> RUN
-                          </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-none border-2 border-green-600 text-green-400 font-arcade text-xs h-8"
+                              onClick={() => setRunTarget({ id: selectedChain.id, name: selectedChain.name })}
+                            >
+                              <Play className="w-3 h-3 mr-1" /> RUN
+                            </Button>
                           {!selectedChain.is_template && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-red-400 rounded-none text-[10px] font-arcade h-6"
+                              className="text-red-400 rounded-none text-xs font-arcade h-8"
                               onClick={() => {
                                 if (confirm(`Delete chain "${selectedChain.name}"?`)) {
                                   deleteChainMutation.mutate(selectedChain.id);
@@ -374,7 +374,7 @@ export default function MethodsPage() {
                         </div>
                       </div>
                       {selectedChain.description && (
-                        <p className="font-terminal text-xs text-muted-foreground">{selectedChain.description}</p>
+                        <p className="font-terminal text-base text-muted-foreground">{selectedChain.description}</p>
                       )}
                       <ChainBuilder
                         chain={selectedChain}
@@ -390,7 +390,7 @@ export default function MethodsPage() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-40">
-                      <p className="font-terminal text-xs text-muted-foreground">
+                      <p className="font-terminal text-base text-muted-foreground">
                         Select a chain to view or edit
                       </p>
                     </div>
@@ -402,32 +402,32 @@ export default function MethodsPage() {
             {/* Run History */}
             {runHistory.length > 0 && (
               <div className="space-y-2">
-                <h3 className="font-arcade text-xs text-muted-foreground">RUN HISTORY</h3>
-                <div className="border-2 border-secondary rounded-none overflow-hidden">
+                <h3 className="font-arcade text-sm text-muted-foreground">RUN HISTORY</h3>
+                <div className="border-2 border-primary/30 rounded-none overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b-2 border-secondary bg-black/60">
-                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">CHAIN</th>
-                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">TOPIC</th>
-                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">STATUS</th>
-                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">STEPS</th>
-                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">DATE</th>
+                      <tr className="border-b-2 border-primary/30 bg-black/60">
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">CHAIN</th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">TOPIC</th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">STATUS</th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">STEPS</th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-xs text-muted-foreground">DATE</th>
                       </tr>
                     </thead>
                     <tbody>
                       {runHistory.slice(0, 10).map((run) => (
                         <tr
                           key={run.id}
-                          className="border-b border-secondary/50 hover:bg-primary/5 cursor-pointer"
+                          className="border-b border-primary/20 hover:bg-primary/5 cursor-pointer"
                           onClick={async () => {
                             const full = await api.chainRun.getOne(run.id);
                             setRunResult(full);
                           }}
                         >
-                          <td className="px-3 py-1.5 font-terminal text-xs">{run.chain_name}</td>
-                          <td className="px-3 py-1.5 font-terminal text-xs text-muted-foreground">{run.topic}</td>
+                          <td className="px-3 py-1.5 font-terminal text-base">{run.chain_name}</td>
+                          <td className="px-3 py-1.5 font-terminal text-base text-muted-foreground">{run.topic}</td>
                           <td className="px-3 py-1.5">
-                            <span className={`text-[9px] font-arcade px-1.5 py-0.5 ${
+                            <span className={`text-xs font-arcade px-1.5 py-0.5 ${
                               run.status === "completed" ? "bg-green-900/40 text-green-400" :
                               run.status === "failed" ? "bg-red-900/40 text-red-400" :
                               "bg-yellow-900/40 text-yellow-400"
@@ -435,10 +435,10 @@ export default function MethodsPage() {
                               {run.status.toUpperCase()}
                             </span>
                           </td>
-                          <td className="px-3 py-1.5 font-terminal text-xs text-muted-foreground">
+                          <td className="px-3 py-1.5 font-terminal text-base text-muted-foreground">
                             {run.current_step}/{run.total_steps}
                           </td>
-                          <td className="px-3 py-1.5 font-terminal text-xs text-muted-foreground">
+                          <td className="px-3 py-1.5 font-terminal text-base text-muted-foreground">
                             {new Date(run.started_at).toLocaleDateString()}
                           </td>
                         </tr>
@@ -455,11 +455,11 @@ export default function MethodsPage() {
         {activeTab === "analytics" && (
           <div>
             {analyticsLoading ? (
-              <p className="font-terminal text-xs text-muted-foreground">Loading analytics...</p>
+              <p className="font-terminal text-base text-muted-foreground">Loading analytics...</p>
             ) : analytics ? (
               <MethodAnalytics data={analytics} />
             ) : (
-              <p className="font-terminal text-xs text-muted-foreground">Failed to load analytics.</p>
+              <p className="font-terminal text-base text-muted-foreground">Failed to load analytics.</p>
             )}
           </div>
         )}
@@ -556,17 +556,17 @@ function AddBlockDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
-        <DialogTitle className="font-arcade text-xs text-primary">NEW METHOD BLOCK</DialogTitle>
+        <DialogTitle className="font-arcade text-sm text-primary">NEW METHOD BLOCK</DialogTitle>
         <DialogDescription className="sr-only">Create a new method block</DialogDescription>
         <div className="space-y-3 mt-2">
           <Input
             placeholder="Method name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm"
+            className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
           />
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm">
+            <SelectTrigger className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-black border-2 border-primary rounded-none">
@@ -581,22 +581,22 @@ function AddBlockDialog({
             placeholder="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="h-16 rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm resize-none"
+            className="h-16 rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base resize-none"
           />
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="font-arcade text-[9px] text-muted-foreground">DURATION</label>
+              <label className="font-arcade text-xs text-muted-foreground">DURATION</label>
               <Input
                 type="number"
                 value={duration}
                 onChange={(e) => setDuration(Number(e.target.value))}
-                className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm"
+                className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
               />
             </div>
             <div>
-              <label className="font-arcade text-[9px] text-muted-foreground">ENERGY</label>
+              <label className="font-arcade text-xs text-muted-foreground">ENERGY</label>
               <Select value={energyCost} onValueChange={setEnergyCost}>
-                <SelectTrigger className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-xs">
+                <SelectTrigger className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-black border-2 border-primary rounded-none">
@@ -607,9 +607,9 @@ function AddBlockDialog({
               </Select>
             </div>
             <div>
-              <label className="font-arcade text-[9px] text-muted-foreground">BEST STAGE</label>
+              <label className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
               <Select value={bestStage} onValueChange={setBestStage}>
-                <SelectTrigger className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-xs">
+                <SelectTrigger className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent className="bg-black border-2 border-primary rounded-none">
@@ -665,22 +665,22 @@ function AddChainDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
-        <DialogTitle className="font-arcade text-xs text-primary">NEW CHAIN</DialogTitle>
+        <DialogTitle className="font-arcade text-sm text-primary">NEW CHAIN</DialogTitle>
         <DialogDescription className="sr-only">Create a new method chain</DialogDescription>
         <div className="space-y-3 mt-2">
           <Input
             placeholder="Chain name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm"
+            className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
           />
           <Textarea
             placeholder="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="h-16 rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm resize-none"
+            className="h-16 rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base resize-none"
           />
-          <p className="font-terminal text-[10px] text-muted-foreground">
+          <p className="font-terminal text-sm text-muted-foreground">
             Add blocks to the chain after creating it.
           </p>
           <Button
@@ -747,25 +747,25 @@ function ChainRunDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !running && onClose()}>
       <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
-        <DialogTitle className="font-arcade text-xs text-primary">
+        <DialogTitle className="font-arcade text-sm text-primary">
           RUN: {chainName}
         </DialogTitle>
         <DialogDescription className="sr-only">Configure and run a method chain</DialogDescription>
         <div className="space-y-3 mt-2">
           <div>
-            <label className="font-arcade text-[9px] text-muted-foreground">TOPIC</label>
+            <label className="font-arcade text-xs text-muted-foreground">TOPIC</label>
             <Input
               placeholder="e.g., Glenohumeral Joint Ligaments"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               disabled={running}
-              className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm"
+              className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
             />
           </div>
           <div>
-            <label className="font-arcade text-[9px] text-muted-foreground">COURSE (OPTIONAL)</label>
+            <label className="font-arcade text-xs text-muted-foreground">COURSE (OPTIONAL)</label>
             <Select value={courseId} onValueChange={setCourseId} disabled={running}>
-              <SelectTrigger className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm">
+              <SelectTrigger className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
                 <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent className="bg-black border-2 border-primary rounded-none">
@@ -778,7 +778,7 @@ function ChainRunDialog({
             </Select>
           </div>
           <div className="flex gap-4">
-            <label className="flex items-center gap-2 font-terminal text-xs cursor-pointer">
+            <label className="flex items-center gap-2 font-terminal text-base cursor-pointer">
               <input
                 type="checkbox"
                 checked={writeObsidian}
@@ -788,7 +788,7 @@ function ChainRunDialog({
               />
               Write to Obsidian
             </label>
-            <label className="flex items-center gap-2 font-terminal text-xs cursor-pointer">
+            <label className="flex items-center gap-2 font-terminal text-base cursor-pointer">
               <input
                 type="checkbox"
                 checked={draftCards}
@@ -800,7 +800,7 @@ function ChainRunDialog({
             </label>
           </div>
           {error && (
-            <p className="font-terminal text-xs text-red-400">{error}</p>
+            <p className="font-terminal text-base text-red-400">{error}</p>
           )}
           <Button
             className="w-full font-arcade rounded-none text-xs"
@@ -819,7 +819,7 @@ function ChainRunDialog({
             )}
           </Button>
           {running && (
-            <p className="font-terminal text-[10px] text-muted-foreground text-center">
+            <p className="font-terminal text-sm text-muted-foreground text-center">
               This may take 15-45 seconds depending on chain length.
             </p>
           )}
@@ -857,9 +857,9 @@ function ChainRunResultDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="bg-black border-2 border-primary rounded-none max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogTitle className="font-arcade text-xs text-primary flex items-center gap-2">
+        <DialogTitle className="font-arcade text-sm text-primary flex items-center gap-2">
           {result.chain_name} RESULTS
-          <span className={`text-[9px] px-1.5 py-0.5 ${
+          <span className={`text-xs px-1.5 py-0.5 ${
             result.status === "completed" ? "bg-green-900/40 text-green-400" :
             "bg-red-900/40 text-red-400"
           }`}>
@@ -871,22 +871,22 @@ function ChainRunResultDialog({
         {/* Metrics Summary */}
         {metrics && (
           <div className="flex gap-4 mt-2">
-            <div className="border border-secondary px-3 py-1.5 bg-black/60">
-              <span className="font-arcade text-[9px] text-muted-foreground block">DURATION</span>
+            <div className="border border-primary/30 px-3 py-1.5 bg-black/60">
+              <span className="font-arcade text-xs text-muted-foreground block">DURATION</span>
               <span className="font-terminal text-sm">{(metrics.total_duration_ms / 1000).toFixed(1)}s</span>
             </div>
-            <div className="border border-secondary px-3 py-1.5 bg-black/60">
-              <span className="font-arcade text-[9px] text-muted-foreground block">STEPS</span>
+            <div className="border border-primary/30 px-3 py-1.5 bg-black/60">
+              <span className="font-arcade text-xs text-muted-foreground block">STEPS</span>
               <span className="font-terminal text-sm">{metrics.steps_completed}</span>
             </div>
-            <div className="border border-secondary px-3 py-1.5 bg-black/60">
-              <span className="font-arcade text-[9px] text-muted-foreground block">CARDS</span>
+            <div className="border border-primary/30 px-3 py-1.5 bg-black/60">
+              <span className="font-arcade text-xs text-muted-foreground block">CARDS</span>
               <span className="font-terminal text-sm">{metrics.cards_drafted}</span>
             </div>
             {result.artifacts?.obsidian_path && (
-              <div className="border border-secondary px-3 py-1.5 bg-black/60">
-                <span className="font-arcade text-[9px] text-muted-foreground block">OBSIDIAN</span>
-                <span className="font-terminal text-[10px] text-green-400">saved</span>
+              <div className="border border-primary/30 px-3 py-1.5 bg-black/60">
+                <span className="font-arcade text-xs text-muted-foreground block">OBSIDIAN</span>
+                <span className="font-terminal text-sm text-green-400">saved</span>
               </div>
             )}
           </div>
@@ -895,7 +895,7 @@ function ChainRunResultDialog({
         {/* Step Outputs */}
         <div className="space-y-2 mt-3">
           {result.steps.map((step) => (
-            <div key={step.step} className="border border-secondary rounded-none">
+            <div key={step.step} className="border border-primary/30 rounded-none">
               <button
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary/5 text-left"
                 onClick={() => toggleStep(step.step)}
@@ -905,15 +905,15 @@ function ChainRunResultDialog({
                 ) : (
                   <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                 )}
-                <span className="font-arcade text-[10px] text-primary">{step.step}.</span>
-                <span className="font-terminal text-xs">{step.method_name}</span>
-                <span className="ml-auto font-terminal text-[10px] text-muted-foreground">
+                <span className="font-arcade text-xs text-primary">{step.step}.</span>
+                <span className="font-terminal text-base">{step.method_name}</span>
+                <span className="ml-auto font-terminal text-sm text-muted-foreground">
                   {step.category} | {(step.duration_ms / 1000).toFixed(1)}s
                 </span>
               </button>
               {expandedSteps.has(step.step) && (
-                <div className="px-3 pb-3 border-t border-secondary/50">
-                  <pre className="font-terminal text-xs text-muted-foreground whitespace-pre-wrap mt-2 leading-relaxed">
+                <div className="px-3 pb-3 border-t border-primary/20">
+                  <pre className="font-terminal text-base text-muted-foreground whitespace-pre-wrap mt-2 leading-relaxed">
                     {step.output}
                   </pre>
                 </div>
@@ -924,8 +924,8 @@ function ChainRunResultDialog({
 
         {result.error && (
           <div className="mt-3 border border-red-500/40 bg-red-900/10 px-3 py-2">
-            <span className="font-arcade text-[9px] text-red-400">ERROR: </span>
-            <span className="font-terminal text-xs text-red-300">{result.error}</span>
+            <span className="font-arcade text-xs text-red-400">ERROR: </span>
+            <span className="font-terminal text-base text-red-300">{result.error}</span>
           </div>
         )}
 

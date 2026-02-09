@@ -204,7 +204,7 @@ export function TutorChat({
           <div className="font-arcade text-sm text-muted-foreground">
             NO ACTIVE SESSION
           </div>
-          <div className="font-terminal text-xs text-muted-foreground/70">
+          <div className="font-terminal text-lg text-muted-foreground/70">
             Configure content filter and start a session
           </div>
         </div>
@@ -224,18 +224,18 @@ export function TutorChat({
               return (
                 <div key={block.id} className="flex items-center shrink-0">
                   {i > 0 && (
-                    <ChevronRight className="w-2.5 h-2.5 text-muted-foreground/40 mx-0.5" />
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/40 mx-0.5" />
                   )}
                   <div
-                    className={`px-1.5 py-0.5 border text-[10px] font-terminal flex items-center gap-1 ${
+                    className={`px-2 py-1 border-2 text-base font-terminal flex items-center gap-1 ${
                       isCurrent
                         ? "border-primary bg-primary/20 text-primary"
                         : isCompleted
-                          ? "border-muted-foreground/30 bg-muted-foreground/10 text-muted-foreground/60 line-through"
-                          : "border-muted-foreground/20 text-muted-foreground/40"
+                          ? "border-primary/30 bg-primary/5 text-muted-foreground/70 line-through"
+                          : "border-primary/20 text-muted-foreground/50"
                     }`}
                   >
-                    {isCompleted && <Check className="w-2.5 h-2.5" />}
+                    {isCompleted && <Check className="w-4 h-4" />}
                     {block.name}
                   </div>
                 </div>
@@ -244,19 +244,19 @@ export function TutorChat({
             {!isChainComplete && onAdvanceBlock && (
               <button
                 onClick={onAdvanceBlock}
-                className="shrink-0 ml-2 px-2 py-0.5 border border-primary text-[10px] font-arcade text-primary hover:bg-primary/20 transition-colors"
+                className="shrink-0 ml-2 px-3 py-1 border-2 border-primary/60 text-xs font-arcade text-primary hover:bg-primary/20 transition-colors"
               >
                 NEXT
               </button>
             )}
             {isChainComplete && (
-              <span className="shrink-0 ml-2 px-2 py-0.5 text-[10px] font-arcade text-green-400 border border-green-400/50">
+              <span className="shrink-0 ml-2 px-3 py-1 text-xs font-arcade text-green-400 border-2 border-green-400/50">
                 COMPLETE
               </span>
             )}
           </div>
           {!isChainComplete && chainBlocks[currentBlockIndex] && (
-            <div className="mt-1 text-[10px] font-terminal text-muted-foreground">
+            <div className="mt-1 text-base font-terminal text-muted-foreground">
               <span className="text-primary">{chainBlocks[currentBlockIndex].category.toUpperCase()}</span>
               {" "}&middot; ~{chainBlocks[currentBlockIndex].duration}min
             </div>
@@ -271,10 +271,10 @@ export function TutorChat({
       >
         {messages.length === 0 && (
           <div className="text-center py-8 space-y-2">
-            <div className="font-arcade text-xs text-primary">
+            <div className="font-arcade text-sm text-primary">
               SESSION STARTED
             </div>
-            <div className="font-terminal text-xs text-muted-foreground">
+            <div className="font-terminal text-lg text-muted-foreground">
               Ask a question to begin learning. Use /note, /card, or /map for artifacts.
             </div>
           </div>
@@ -286,14 +286,14 @@ export function TutorChat({
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] px-3 py-2 text-xs font-terminal ${
+              className={`max-w-[85%] px-3 py-2 text-lg font-terminal ${
                 msg.role === "user"
                   ? "bg-primary/20 border-2 border-primary/50 text-foreground"
-                  : "bg-black/40 border-2 border-muted-foreground/20 text-foreground"
+                  : "bg-black/40 border-2 border-primary/20 text-foreground"
               }`}
             >
               {msg.role === "assistant" ? (
-                <div className="prose prose-invert prose-xs max-w-none [&_p]:my-1 [&_li]:my-0.5 [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-xs [&_code]:text-[10px] [&_pre]:text-[10px]">
+                <div className="prose prose-invert prose-lg max-w-none font-terminal [&_p]:my-2 [&_li]:my-1 [&_code]:text-base [&_pre]:text-base">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {msg.content || (msg.isStreaming ? "..." : "")}
                   </ReactMarkdown>
@@ -307,12 +307,12 @@ export function TutorChat({
 
               {/* Citations */}
               {msg.citations && msg.citations.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-muted-foreground/20">
+                <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-primary/20">
                   {msg.citations.map((c) => (
                     <Badge
                       key={c.index}
                       variant="outline"
-                      className="text-[10px] rounded-none"
+                      className="text-sm rounded-none"
                     >
                       [{c.index}] {c.source}
                     </Badge>
@@ -325,21 +325,21 @@ export function TutorChat({
       </div>
 
       {/* Command hints */}
-      <div className="flex items-center gap-2 px-3 py-1 border-t border-muted-foreground/20">
-        <span className="text-[10px] font-terminal text-muted-foreground/50">
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-primary/20">
+        <span className="text-base font-terminal text-muted-foreground/60">
           Commands:
         </span>
-        <Badge variant="outline" className="text-[10px] rounded-none cursor-pointer hover:bg-primary/10"
+        <Badge variant="outline" className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
           onClick={() => setInput("/note ")}>
-          <FileText className="w-2.5 h-2.5 mr-1" />/note
+          <FileText className="w-4 h-4 mr-1" />/note
         </Badge>
-        <Badge variant="outline" className="text-[10px] rounded-none cursor-pointer hover:bg-primary/10"
+        <Badge variant="outline" className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
           onClick={() => setInput("/card ")}>
-          <CreditCard className="w-2.5 h-2.5 mr-1" />/card
+          <CreditCard className="w-4 h-4 mr-1" />/card
         </Badge>
-        <Badge variant="outline" className="text-[10px] rounded-none cursor-pointer hover:bg-primary/10"
+        <Badge variant="outline" className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
           onClick={() => setInput("/map ")}>
-          <Map className="w-2.5 h-2.5 mr-1" />/map
+          <Map className="w-4 h-4 mr-1" />/map
         </Badge>
 
         <div className="flex-1" />
@@ -348,15 +348,15 @@ export function TutorChat({
           variant="ghost"
           size="sm"
           onClick={onSessionEnd}
-          className="text-[10px] font-terminal text-destructive hover:text-destructive h-5 px-2"
+          className="text-sm font-terminal text-destructive hover:text-destructive h-8 px-3"
         >
-          <Square className="w-2.5 h-2.5 mr-1" />
+          <Square className="w-4 h-4 mr-1" />
           END
         </Button>
       </div>
 
       {/* Input */}
-      <div className="flex items-center gap-2 p-3 border-t-2 border-muted-foreground/30">
+      <div className="flex items-center gap-2 p-3 border-t-2 border-primary/20">
         <input
           ref={inputRef}
           value={input}
@@ -364,17 +364,17 @@ export function TutorChat({
           onKeyDown={handleKeyDown}
           placeholder="Ask a question..."
           disabled={isStreaming}
-          className="flex-1 bg-black/60 border-2 border-muted-foreground/30 px-3 py-2 text-xs font-terminal text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none disabled:opacity-50"
+          className="flex-1 bg-black/60 border-2 border-primary/40 px-3 py-2 text-lg font-terminal text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none disabled:opacity-50"
         />
         <Button
           onClick={sendMessage}
           disabled={!input.trim() || isStreaming}
-          className="rounded-none border-2 border-primary h-9 w-9 p-0"
+          className="rounded-none border-2 border-primary h-11 w-11 p-0"
         >
           {isStreaming ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <Send className="w-4 h-4" />
+            <Send className="w-5 h-5" />
           )}
         </Button>
       </div>

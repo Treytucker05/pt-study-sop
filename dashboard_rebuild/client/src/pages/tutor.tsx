@@ -216,7 +216,7 @@ export default function Tutor() {
         </Card>
 
         {/* Right: Artifacts */}
-        <Card className="w-64 shrink-0 bg-black/40 border-2 border-secondary rounded-none overflow-y-auto">
+        <Card className="w-64 shrink-0 bg-black/40 border-2 border-primary/40 rounded-none overflow-y-auto">
           <TutorArtifacts
             sessionId={activeSessionId}
             artifacts={artifacts}

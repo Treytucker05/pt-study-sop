@@ -260,11 +260,11 @@ export function TutorArtifacts({
                   </button>
 
                   {/* Action buttons */}
-                  <div className="flex items-center border-t border-muted-foreground/10 px-2 py-1">
+                  <div className="flex items-center border-t border-primary/20 px-2 py-1">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 rounded-none text-muted-foreground hover:text-primary font-terminal text-[10px]"
+                      className="h-8 px-3 rounded-none text-muted-foreground hover:text-primary font-terminal text-sm"
                       disabled={savingSession === s.session_id}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -278,7 +278,7 @@ export function TutorArtifacts({
                     <div className="ml-auto">
                       {deleteConfirm === s.session_id ? (
                         <div className="flex items-center gap-0.5">
-                          <span className="font-terminal text-[10px] text-red-400 mr-1">Delete?</span>
+                          <span className="font-terminal text-sm text-red-400 mr-1">Delete?</span>
                           <Button
                             variant="ghost"
                             size="sm"

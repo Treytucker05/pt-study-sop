@@ -56,8 +56,8 @@ export default function MethodBlockCard({ block, compact, onClick, draggable, on
         onDragStart={onDragStart}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="font-terminal text-xs truncate">{block.name}</span>
-          <span className={`text-[9px] font-arcade px-1 py-0.5 rounded-none ${badgeClass}`}>
+          <span className="font-terminal text-base truncate">{block.name}</span>
+          <span className={`text-xs font-arcade px-1 py-0.5 rounded-none ${badgeClass}`}>
             {CATEGORY_LABEL[block.category] || block.category.toUpperCase()}
           </span>
         </div>
@@ -73,28 +73,28 @@ export default function MethodBlockCard({ block, compact, onClick, draggable, on
       onDragStart={onDragStart}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="font-arcade text-xs">{block.name}</span>
-        <span className={`text-[9px] font-arcade px-1.5 py-0.5 rounded-none ${badgeClass}`}>
+        <span className="font-arcade text-sm">{block.name}</span>
+        <span className={`text-xs font-arcade px-1.5 py-0.5 rounded-none ${badgeClass}`}>
           {CATEGORY_LABEL[block.category] || block.category.toUpperCase()}
         </span>
       </div>
       {block.description && (
-        <p className="font-terminal text-xs text-muted-foreground mb-2 line-clamp-2">
+        <p className="font-terminal text-lg text-muted-foreground mb-2 line-clamp-2">
           {block.description}
         </p>
       )}
       {block.evidence && (
-        <p className="font-terminal text-[10px] text-primary/50 italic mb-2 line-clamp-1">
+        <p className="font-terminal text-base text-primary/50 italic mb-2 line-clamp-1">
           {block.evidence}
         </p>
       )}
-      <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-terminal">
+      <div className="flex items-center gap-3 text-base text-muted-foreground font-terminal">
         <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
+          <Clock className="w-4 h-4" />
           {block.default_duration_min}m
         </span>
         <span className={`flex items-center gap-1 ${energyClass}`}>
-          <Zap className="w-3 h-3" />
+          <Zap className="w-4 h-4" />
           {block.energy_cost}
         </span>
         {block.best_stage && (
@@ -104,7 +104,7 @@ export default function MethodBlockCard({ block, compact, onClick, draggable, on
       {block.tags && block.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {block.tags.slice(0, 4).map((tag) => (
-            <span key={tag} className="text-[9px] font-terminal bg-secondary/30 px-1 py-0.5 text-muted-foreground">
+            <span key={tag} className="text-sm font-terminal bg-secondary/30 px-1 py-0.5 text-muted-foreground">
               {tag}
             </span>
           ))}

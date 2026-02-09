@@ -57,11 +57,11 @@ const OPENROUTER_MODELS: { value: string; label: string }[] = [
 ];
 
 const PRIMARY_MODES: { value: TutorMode; label: string; desc: string }[] = [
-  { value: "Core", label: "LEARN", desc: "Teach first" },
-  { value: "Sprint", label: "REVIEW", desc: "Test first" },
-  { value: "Quick Sprint", label: "QUICK", desc: "Fast spacing" },
+  { value: "Core", label: "LEARN", desc: "Prime + encode" },
+  { value: "Sprint", label: "REVIEW", desc: "Retrieve + refine" },
+  { value: "Quick Sprint", label: "QUICK", desc: "Quick retrieval" },
   { value: "Light", label: "LIGHT", desc: "Low energy" },
-  { value: "Drill", label: "FIX", desc: "Targeted" },
+  { value: "Drill", label: "FIX", desc: "Target weak spots" },
 ];
 
 const LEGACY_MODES: TutorMode[] = ["Teaching Sprint", "Diagnostic Sprint"];
@@ -134,12 +134,18 @@ export function ContentFilter({
   isStarting,
   hasActiveSession,
 }: ContentFilterProps) {
-  const { data: sources } = useQuery<TutorContentSources>({
+  const {
+    data: sources,
+    isError: sourcesError,
+  } = useQuery<TutorContentSources>({
     queryKey: ["tutor-content-sources"],
     queryFn: () => api.tutor.getContentSources(),
   });
 
-  const { data: templateChains = [] } = useQuery<TutorTemplateChain[]>({
+  const {
+    data: templateChains = [],
+    isError: templateChainsError,
+  } = useQuery<TutorTemplateChain[]>({
     queryKey: ["tutor-template-chains"],
     queryFn: () => api.tutor.getTemplateChains(),
   });
@@ -230,6 +236,11 @@ export function ContentFilter({
       {/* Fixed header */}
       <div className={`shrink-0 ${PANEL_PADDING} pb-2 border-b-2 border-primary/30`}>
         <div className={TEXT_PANEL_TITLE}>CONTENT FILTER</div>
+        {(sourcesError || templateChainsError) && (
+          <div className={`${TEXT_MUTED} text-red-400`}>
+            Tutor API unavailable. Start the dashboard via <span className="font-arcade">Start_Dashboard.bat</span>.
+          </div>
+        )}
         <div className={`flex items-center gap-2 mt-1 ${TEXT_MUTED}`}>
           <Database className={ICON_SM} />
           {sources?.total_materials ?? 0} materials
@@ -252,10 +263,10 @@ export function ContentFilter({
                   className={`text-left px-2 py-1 border-2 transition-colors ${
                     mode === m.value
                       ? "border-primary bg-primary/20 text-primary"
-                      : "border-muted-foreground/20 hover:border-primary/40 text-muted-foreground"
+                      : "border-muted-foreground/30 text-foreground/80 hover:border-muted-foreground/50 hover:text-foreground hover:bg-black/30"
                   }`}
                 >
-                  <div className="font-arcade text-[10px] leading-tight">
+                  <div className="font-arcade text-xs leading-tight">
                     {m.label}
                   </div>
                   <div className={`${TEXT_MUTED} leading-tight`}>
@@ -263,6 +274,10 @@ export function ContentFilter({
                   </div>
                 </button>
               ))}
+            </div>
+
+            <div className={`${TEXT_MUTED} mt-1`}>
+              Mode auto-picks a chain template (Methods → Chains). Override below.
             </div>
 
             {LEGACY_MODES.includes(mode) && (
@@ -297,7 +312,7 @@ export function ContentFilter({
                   size="sm"
                   variant="outline"
                   onClick={() => setChainId(recommendedChain.id)}
-                  className="rounded-none h-6 px-2 font-arcade text-[9px] border-primary/50 hover:bg-primary/10"
+                  className="rounded-none h-7 px-2 font-arcade text-xs border-primary/50 hover:bg-primary/10"
                 >
                   APPLY
                 </Button>
@@ -324,7 +339,7 @@ export function ContentFilter({
                 className={`w-full text-left px-2 py-0.5 ${TEXT_BODY} border-l-2 transition-colors ${
                   !chainId
                     ? "border-primary text-primary bg-primary/10"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-primary/30"
+                    : "border-transparent text-foreground/80 hover:text-foreground hover:border-muted-foreground/40 hover:bg-black/30"
                 }`}
               >
                 Freeform
@@ -336,7 +351,7 @@ export function ContentFilter({
                   className={`w-full text-left px-2 py-0.5 ${TEXT_BODY} border-l-2 transition-colors ${
                     chainId === chain.id
                       ? "border-primary text-primary bg-primary/10"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-primary/30"
+                      : "border-transparent text-foreground/80 hover:text-foreground hover:border-muted-foreground/40 hover:bg-black/30"
                   }`}
                 >
                   <span className="truncate">{chain.name}</span>
@@ -369,12 +384,12 @@ export function ContentFilter({
                 className={`text-left px-2 py-1 border-2 transition-colors ${
                   provider === "codex"
                     ? "border-primary bg-primary/20 text-primary"
-                    : "border-muted-foreground/20 hover:border-primary/40 text-muted-foreground"
+                    : "border-muted-foreground/30 text-foreground/80 hover:border-muted-foreground/50 hover:text-foreground hover:bg-black/30"
                 }`}
               >
                 <div className="flex items-center gap-1.5">
                   <Cpu className={ICON_SM} />
-                  <div className="font-arcade text-[10px] leading-tight">CODEX</div>
+                  <div className="font-arcade text-xs leading-tight">CODEX</div>
                 </div>
                 <div className={`${TEXT_MUTED} leading-tight`}>ChatGPT login</div>
               </button>
@@ -385,12 +400,12 @@ export function ContentFilter({
                 className={`text-left px-2 py-1 border-2 transition-colors ${
                   provider === "openrouter"
                     ? "border-primary bg-primary/20 text-primary"
-                    : "border-muted-foreground/20 hover:border-primary/40 text-muted-foreground"
+                    : "border-muted-foreground/30 text-foreground/80 hover:border-muted-foreground/50 hover:text-foreground hover:bg-black/30"
                 } ${!openrouterEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <div className="flex items-center gap-1.5">
                   <Cloud className={ICON_SM} />
-                  <div className="font-arcade text-[10px] leading-tight">OPENROUTER</div>
+                  <div className="font-arcade text-xs leading-tight">OPENROUTER</div>
                 </div>
                 <div className={`${TEXT_MUTED} leading-tight`}>
                   {openrouterEnabled ? "API key enabled" : "API key missing"}
