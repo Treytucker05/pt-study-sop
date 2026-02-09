@@ -1,7 +1,9 @@
-import { useState, Component, type ReactNode } from "react";
-import { ConceptMapEditor } from "@/components/ConceptMapEditor";
-import { VaultGraphView } from "@/components/VaultGraphView";
-import { MindMapView } from "@/components/MindMapView";
+import { useState, lazy, Suspense, Component, type ReactNode } from "react";
+import { Loader2 } from "lucide-react";
+
+const ConceptMapEditor = lazy(() => import("@/components/ConceptMapEditor").then(m => ({ default: m.ConceptMapEditor })));
+const VaultGraphView = lazy(() => import("@/components/VaultGraphView").then(m => ({ default: m.VaultGraphView })));
+const MindMapView = lazy(() => import("@/components/MindMapView").then(m => ({ default: m.MindMapView })));
 
 class GraphErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null as string | null };
@@ -25,6 +27,14 @@ class GraphErrorBoundary extends Component<{ children: ReactNode }, { error: str
     }
     return this.props.children;
   }
+}
+
+function GraphLoading() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+    </div>
+  );
 }
 
 type GraphView = "concept" | "vault" | "mindmap";
@@ -60,9 +70,11 @@ export function GraphPanel() {
       {/* Graph content */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <GraphErrorBoundary>
-          {view === "concept" && <ConceptMapEditor />}
-          {view === "vault" && <VaultGraphView />}
-          {view === "mindmap" && <MindMapView />}
+          <Suspense fallback={<GraphLoading />}>
+            {view === "concept" && <ConceptMapEditor />}
+            {view === "vault" && <VaultGraphView />}
+            {view === "mindmap" && <MindMapView />}
+          </Suspense>
         </GraphErrorBoundary>
       </div>
     </div>
