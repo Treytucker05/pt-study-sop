@@ -26,7 +26,10 @@ npm run build
 robocopy dist\public ..\brain\static\dist /MIR
 ```
 
-Then refresh browser (Ctrl+Shift+R to clear cache).
+Then **hard refresh** browser (Ctrl+Shift+R) or add cache buster:
+```
+http://127.0.0.1:5000/brain?t=123
+```
 
 ---
 
@@ -72,6 +75,9 @@ robocopy dist\public ..\brain\static\dist /MIR
 # Check what's running
 tasklist | findstr python
 tasklist | findstr node
+
+# Clear browser cache
+# Press Ctrl+Shift+R in browser
 ```
 
 ---
@@ -86,6 +92,47 @@ tasklist | findstr node
 | Layout/Footer | `dashboard_rebuild/client/src/components/layout.tsx` |
 | Course Config | `dashboard_rebuild/client/src/config/courses.ts` |
 | Error Boundaries | `dashboard_rebuild/client/src/components/ErrorBoundary.tsx` |
+
+---
+
+## Mobile vs Desktop Layout
+
+The Brain page has two layouts:
+
+**Desktop (≥1024px):** Two resizable panels (Vault sidebar + Main content)
+
+**Mobile (<1024px):** Single column with bottom tab bar (Vault/Content buttons)
+
+The mobile tab bar uses `lg:hidden` class - it only appears when viewport is < 1024px.
+
+**Current positioning:**
+- Brain container: `bottom-[48px]` (48px from bottom to clear footer)
+- Mobile nav: Inside container at bottom
+- Footer: `z-20`, Brain container: `z-30` (appears above footer)
+
+---
+
+## Troubleshooting Commands
+
+Run these in browser console (F12):
+
+```javascript
+// Check viewport width
+window.innerWidth
+
+// Check if mobile view should be active
+window.innerWidth < 1024
+
+// See all fixed positioned elements
+Array.from(document.querySelectorAll('.fixed')).map(e => ({
+  class: e.className.slice(0, 50),
+  bottom: getComputedStyle(e).bottom,
+  zIndex: getComputedStyle(e).zIndex
+}))
+
+// Check if mobile nav buttons exist
+document.querySelectorAll('nav[aria-label="Mobile navigation"] button')
+```
 
 ---
 

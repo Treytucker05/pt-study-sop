@@ -203,9 +203,9 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       {/* Search + New Note */}
-      <div className="p-2 space-y-1.5 border-b border-primary/30">
+      <div className="p-2 space-y-1.5 border-b border-primary/30 shrink-0">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
           <Input
@@ -228,7 +228,7 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
       </div>
 
       {/* Course quick-nav */}
-      <div className="flex flex-col gap-0.5 p-1.5 border-b border-primary/30">
+      <div className="flex flex-col gap-0.5 p-1.5 border-b border-primary/30 shrink-0">
         {COURSE_FOLDERS.map((course) => (
           <button
             key={course.path}
@@ -247,7 +247,7 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
 
       {/* Breadcrumb with back arrow */}
       {currentFolder && (
-        <div className="flex items-center gap-1 px-2 py-1 font-terminal text-xs text-muted-foreground border-b border-secondary/20 flex-wrap">
+        <div className="flex items-center gap-1 px-2 py-1 font-terminal text-xs text-muted-foreground border-b border-secondary/20 flex-wrap shrink-0">
           {hasParent && (
             <button
               onClick={navigateToParent}
@@ -279,7 +279,7 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
         key={`filetree-${errorKey}`}
         fallback={<SidebarErrorFallback onReset={() => setErrorKey((k) => k + 1)} />}
       >
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="py-1">
             {filteredFiles.map((file: string | { path: string }) => {
               const filePath = typeof file === "string" ? file : file.path;

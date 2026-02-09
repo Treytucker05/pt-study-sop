@@ -208,7 +208,11 @@ export default function Tutor() {
         </Card>
 
         {/* Center: Chat */}
-        <Card className="flex-1 bg-black/60 border-2 border-primary rounded-none flex flex-col min-w-0">
+        <Card className="flex-1 bg-black/60 border-2 border-primary rounded-none flex flex-col min-w-0 relative">
+          {/* Watermark - REMOVE AFTER TESTING */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+            <span className="text-6xl font-arcade text-green-500/20 rotate-45">UPDATED</span>
+          </div>
           <TutorChat
             sessionId={activeSessionId}
             onArtifactCreated={handleArtifactCreated}
