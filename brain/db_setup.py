@@ -6,6 +6,7 @@ Database setup and schema initialization for PT Study Brain v9.4.
 import sqlite3
 import os
 import sys
+from pathlib import Path
 
 from config import DB_PATH
 
@@ -1720,10 +1721,26 @@ if __name__ == "__main__":
     # (adds any missing columns and creates new planning/RAG tables).
     init_database()
 
-    # Ensure the Composable Method Library is present.
-    # Start_Dashboard.bat runs this script on every launch; if the DB file is new
-    # (or the method tables were wiped), re-seed so /methods and tutor chain
-    # templates don't appear empty after a restart.
+    # Ensure the Composable Method Library is present (or merge any missing YAML items).
+    # Start_Dashboard.bat runs this script on every launch; we keep the library in sync
+    # so /methods and tutor chain templates don't appear empty or partial after a restart.
+    expected_method_count = 0
+    expected_template_chain_count = 0
+    try:
+        repo_root = Path(__file__).resolve().parents[1]
+        methods_dir = repo_root / "sop" / "library" / "methods"
+        chains_dir = repo_root / "sop" / "library" / "chains"
+        if methods_dir.exists():
+            expected_method_count = len(list(methods_dir.glob("*.yaml")))
+        if chains_dir.exists():
+            expected_template_chain_count = len(list(chains_dir.glob("*.yaml")))
+    except Exception as e:
+        print(f"[WARN] Could not compute expected library sizes from YAML: {e}")
+        expected_method_count = 0
+        expected_template_chain_count = 0
+
+    sentinel_method_ok = None
+    sentinel_chain_ok = None
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -1731,16 +1748,56 @@ if __name__ == "__main__":
         method_count = int(cursor.fetchone()[0] or 0)
         cursor.execute("SELECT COUNT(*) FROM method_chains WHERE COALESCE(is_template, 0) = 1")
         template_chain_count = int(cursor.fetchone()[0] or 0)
+        cursor.execute("SELECT 1 FROM method_blocks WHERE name = ? LIMIT 1", ("Brain Dump",))
+        sentinel_method_ok = cursor.fetchone() is not None
+        cursor.execute(
+            "SELECT 1 FROM method_chains WHERE name = ? AND COALESCE(is_template, 0) = 1 LIMIT 1",
+            ("SWEEP",),
+        )
+        sentinel_chain_ok = cursor.fetchone() is not None
         conn.close()
     except Exception as e:
-        print(f"[WARN] Could not check method_blocks count for seeding: {e}")
+        print(f"[WARN] Could not check method library status for seeding: {e}")
         method_count = None
         template_chain_count = None
 
-    if method_count == 0 or template_chain_count == 0:
+    seed_reasons = []
+    needs_seed = False
+    if method_count is None or template_chain_count is None:
+        needs_seed = True
+        seed_reasons.append("counts unavailable")
+    else:
+        # Prefer YAML sizes when available; otherwise fall back to a minimal presence check.
+        if expected_method_count > 0 and method_count < expected_method_count:
+            needs_seed = True
+            seed_reasons.append(f"method_blocks {method_count} < expected {expected_method_count}")
+        elif expected_method_count == 0 and method_count == 0:
+            needs_seed = True
+            seed_reasons.append("method_blocks empty")
+
+        if expected_template_chain_count > 0 and template_chain_count < expected_template_chain_count:
+            needs_seed = True
+            seed_reasons.append(
+                f"template_chains {template_chain_count} < expected {expected_template_chain_count}"
+            )
+        elif expected_template_chain_count == 0 and template_chain_count == 0:
+            needs_seed = True
+            seed_reasons.append("template_chains empty")
+
+        if sentinel_method_ok is False:
+            needs_seed = True
+            seed_reasons.append("missing 'Brain Dump' sentinel method")
+        if sentinel_chain_ok is False:
+            needs_seed = True
+            seed_reasons.append("missing 'SWEEP' sentinel template chain")
+
+    if needs_seed:
+        reason_str = ", ".join(seed_reasons) if seed_reasons else "unknown"
         print(
-            "[INFO] Method library missing ("
-            f"method_blocks={method_count}, template_chains={template_chain_count}"
+            "[INFO] Method library needs seeding/merge ("
+            f"method_blocks={method_count}/{expected_method_count or '?'}, "
+            f"template_chains={template_chain_count}/{expected_template_chain_count or '?'}; "
+            f"reason={reason_str}"
             "); seeding..."
         )
         try:
@@ -1755,7 +1812,7 @@ if __name__ == "__main__":
                     text=True,
                 )
                 if result.returncode == 0:
-                    print("[OK] Seeded method library (method_blocks + method_chains).")
+                    print("[OK] Seeded/merged method library (method_blocks + method_chains).")
                 else:
                     msg = (result.stderr or "").strip() or (result.stdout or "").strip()
                     if not msg:

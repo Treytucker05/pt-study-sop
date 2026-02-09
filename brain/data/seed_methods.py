@@ -5,7 +5,8 @@ Seed the method_blocks and method_chains tables with the PEIRRO-aligned method l
 Run: python brain/data/seed_methods.py
      python brain/data/seed_methods.py --force     # delete existing rows first
      python brain/data/seed_methods.py --migrate   # migrate categories on existing DB
-Idempotent: skips if method_blocks already has rows (unless --force).
+Idempotent by default: inserts any missing YAML/hardcoded blocks + template chains by name.
+Use --force to wipe and re-seed from the source-of-truth library.
 
 Data source priority:
   1. YAML specs in sop/library/methods/ and sop/library/chains/ (if present)
@@ -597,7 +598,7 @@ def _insert_library_meta(conn, version: str, method_count: int, chain_count: int
 
 
 def seed_methods(force: bool = False):
-    """Insert default method blocks and template chains. Idempotent unless --force."""
+    """Insert/merge default method blocks and template chains (idempotent unless --force)."""
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -607,18 +608,18 @@ def seed_methods(force: bool = False):
         cursor.execute("DELETE FROM method_blocks")
         print("[FORCE] Cleared method_blocks, method_chains, method_ratings")
 
-    # Check if already seeded (blocks + at least one template chain)
+    # Current DB state (used for logging only; we merge missing items by name).
     cursor.execute("SELECT COUNT(*) FROM method_blocks")
     block_count = int(cursor.fetchone()[0] or 0)
     cursor.execute("SELECT COUNT(*) FROM method_chains WHERE COALESCE(is_template, 0) = 1")
     template_chain_count = int(cursor.fetchone()[0] or 0)
-    if block_count > 0 and template_chain_count > 0:
+    if block_count == 0 and template_chain_count == 0:
+        print("[INFO] Method library missing; seeding...")
+    else:
         print(
-            f"[SKIP] Method library already present: method_blocks={block_count}, template_chains={template_chain_count}. "
-            "Use --force to re-seed."
+            f"[INFO] Method library partial/exists: method_blocks={block_count}, template_chains={template_chain_count} "
+            "(will merge missing items)"
         )
-        conn.close()
-        return
 
     # Try YAML source first, fall back to hardcoded dicts
     yaml_data = load_from_yaml()
@@ -633,14 +634,35 @@ def seed_methods(force: bool = False):
         version = "legacy"
         print("[DICT] Loading from hardcoded data (YAML not available)")
 
-    # Build name->id lookup from any existing blocks
-    cursor.execute("SELECT id, name FROM method_blocks")
-    name_to_id = {r[1]: r[0] for r in cursor.fetchall()}
+    # Build name->id lookup + a light snapshot of existing rows (for safe patch-up updates).
+    cursor.execute("PRAGMA table_info(method_blocks)")
+    mb_cols = {r[1] for r in cursor.fetchall()}
+    select_cols = [
+        "id",
+        "name",
+        "category",
+        "description",
+        "default_duration_min",
+        "energy_cost",
+        "best_stage",
+        "tags",
+    ]
+    if "evidence" in mb_cols:
+        select_cols.append("evidence")
+
+    cursor.execute(f"SELECT {', '.join(select_cols)} FROM method_blocks")
+    existing_by_name = {}
+    name_to_id = {}
+    for row in cursor.fetchall():
+        rec = dict(zip(select_cols, row))
+        existing_by_name[rec["name"]] = rec
+        name_to_id[rec["name"]] = rec["id"]
 
     inserted_blocks = 0
-    if block_count == 0:
-        # Insert method blocks
-        for block in methods_src:
+    updated_blocks = 0
+    for block in methods_src:
+        existing = existing_by_name.get(block["name"])
+        if not existing:
             cursor.execute(
                 """
                 INSERT INTO method_blocks (name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, created_at)
@@ -659,10 +681,59 @@ def seed_methods(force: bool = False):
             )
             name_to_id[block["name"]] = cursor.lastrowid
             inserted_blocks += 1
+            continue
 
+        # Conservative fix-up: only overwrite rows that look like placeholders.
+        desc = (existing.get("description") or "").strip()
+        tags_raw = existing.get("tags")
+        tags_ok = False
+        if tags_raw and tags_raw != "null":
+            try:
+                tags_val = json.loads(tags_raw) if isinstance(tags_raw, str) else tags_raw
+                tags_ok = bool(tags_val)
+            except Exception:
+                tags_ok = False
+
+        needs_update = False
+        if not desc or desc.lower().startswith("test "):
+            needs_update = True
+        if not tags_ok:
+            needs_update = True
+
+        if needs_update:
+            set_cols = [
+                "category = ?",
+                "description = ?",
+                "default_duration_min = ?",
+                "energy_cost = ?",
+                "best_stage = ?",
+                "tags = ?",
+            ]
+            values = [
+                block["category"],
+                block["description"],
+                block["default_duration_min"],
+                block["energy_cost"],
+                block["best_stage"],
+                json.dumps(block["tags"]),
+            ]
+            if "evidence" in mb_cols:
+                set_cols.append("evidence = ?")
+                values.append(block.get("evidence"))
+            values.append(existing["id"])
+            cursor.execute(
+                f"UPDATE method_blocks SET {', '.join(set_cols)} WHERE id = ?",
+                values,
+            )
+            updated_blocks += 1
+
+    if inserted_blocks:
         print(f"[OK] Inserted {inserted_blocks} method blocks")
     else:
-        print(f"[INFO] method_blocks already has {block_count} rows — skipping block insert")
+        print(f"[OK] No method blocks to insert (method_blocks={block_count})")
+
+    if updated_blocks:
+        print(f"[OK] Updated {updated_blocks} existing method blocks")
 
     # Insert template chains (resolve block names to IDs; skip duplicates)
     cursor.execute("SELECT name FROM method_chains")
@@ -696,14 +767,18 @@ def seed_methods(force: bool = False):
         )
         inserted_chains += 1
 
-    print(f"[OK] Inserted {inserted_chains} template chains")
+    if inserted_chains:
+        print(f"[OK] Inserted {inserted_chains} template chains")
+    else:
+        print(f"[OK] No template chains to insert (template_chains={template_chain_count})")
 
     # Track seed operation in library_meta (store post-seed totals for clarity).
-    cursor.execute("SELECT COUNT(*) FROM method_blocks")
-    mb_total = int(cursor.fetchone()[0] or 0)
-    cursor.execute("SELECT COUNT(*) FROM method_chains")
-    mc_total = int(cursor.fetchone()[0] or 0)
-    _insert_library_meta(conn, version, mb_total, mc_total)
+    if force or inserted_blocks or updated_blocks or inserted_chains:
+        cursor.execute("SELECT COUNT(*) FROM method_blocks")
+        mb_total = int(cursor.fetchone()[0] or 0)
+        cursor.execute("SELECT COUNT(*) FROM method_chains")
+        mc_total = int(cursor.fetchone()[0] or 0)
+        _insert_library_meta(conn, version, mb_total, mc_total)
 
     conn.commit()
     conn.close()

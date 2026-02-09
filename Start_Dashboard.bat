@@ -82,6 +82,14 @@ if not exist "%SERVER_DIR%\dashboard_web.py" (
     goto END
 )
 
+rem Stop any existing dashboard server processes so code/route changes take effect.
+rem This prevents multiple dashboard_web.py instances (stale routes, port conflicts).
+echo [INFO] Closing any existing dashboard server processes (dashboard_web.py)...
+for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -like 'python*' -and $_.CommandLine -like '*dashboard_web.py*' } | Select-Object -ExpandProperty ProcessId"`) do (
+    echo [INFO] Stopping PID %%P
+    taskkill /PID %%P /F >nul 2>nul
+)
+
 rem Check if Frontend Build exists (expects /static/dist/assets/index-*.js)
 if not exist "%DIST_DIR%\assets\index-*.js" (
     echo [ERROR] Frontend build missing in %DIST_DIR%.
