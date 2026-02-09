@@ -609,9 +609,11 @@ def _load_codex_auth() -> Optional[Dict[str, str]]:
     except (json.JSONDecodeError, OSError):
         return None
 
-    access_token = data.get("access_token") or data.get("token")
-    refresh_token = data.get("refresh_token")
-    account_id = data.get("account_id")
+    # Tokens may be nested under a "tokens" key (Codex CLI OAuth format)
+    tokens = data.get("tokens", {})
+    access_token = data.get("access_token") or tokens.get("access_token") or data.get("token")
+    refresh_token = data.get("refresh_token") or tokens.get("refresh_token")
+    account_id = data.get("account_id") or tokens.get("account_id")
 
     if not access_token:
         return None

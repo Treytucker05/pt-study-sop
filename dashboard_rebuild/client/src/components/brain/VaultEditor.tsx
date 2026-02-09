@@ -4,6 +4,7 @@ import { ObsidianRenderer } from "@/components/ObsidianRenderer";
 import { Save, ExternalLink, FileText, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BrainWorkspace } from "./useBrainWorkspace";
+import brainBg from "@assets/TreysStudySystemIMAGE.jpg";
 
 interface VaultEditorProps {
   workspace: BrainWorkspace;
@@ -23,10 +24,17 @@ export function VaultEditor({ workspace }: VaultEditorProps) {
 
   if (!workspace.currentFile) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground font-terminal text-sm gap-2">
-        <FileText className="w-8 h-8 opacity-30" />
-        <p>Select a file from the vault sidebar</p>
-        <p className="text-xs">or create a new note</p>
+      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground font-terminal text-sm gap-2 relative overflow-hidden">
+        <img
+          src={brainBg}
+          alt=""
+          className="absolute inset-0 w-full h-full object-contain opacity-20 pointer-events-none select-none"
+        />
+        <div className="relative z-10 flex flex-col items-center gap-2">
+          <FileText className="w-8 h-8 opacity-30" />
+          <p>Select a file from the vault sidebar</p>
+          <p className="text-xs">or create a new note</p>
+        </div>
       </div>
     );
   }
