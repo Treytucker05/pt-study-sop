@@ -417,4 +417,4 @@
 
 ## 2026-02-09 - Agent Setup Cleanup
 
-- 02:04: Added Agents Conductor track, clarified workflow + track pointers for Claude compatibility, vendored `x-research` skill for Codex, and ignored repo-root planning artifacts. Files: `conductor/tracks/agents_setup_cleanup_20260209/`, `conductor/tracks.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`, `.codex/skills/x-research/`, `.gitignore`.
+- 02:04: Added Agents Conductor track, clarified workflow + track pointers for Claude compatibility, vendored `x-research` skill for Codex, expanded allowlists, and ignored repo-root planning artifacts/scratch. Files: `conductor/tracks/agents_setup_cleanup_20260209/`, `conductor/tracks.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`, `.claude/settings.local.json`, `.codex/skills/x-research/`, `.gitignore`, `permissions.json`.
