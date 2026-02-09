@@ -571,6 +571,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data || {}),
       }),
+    syncVault: (data: { vault_path: string; course_id?: number }) =>
+      request<TutorSyncVaultResult>("/tutor/sync-vault", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
   },
 };
 
@@ -992,7 +997,7 @@ export interface TutorArtifactResult {
 }
 
 export interface TutorContentSources {
-  courses: { id: number; name: string; code: string | null; doc_count: number }[];
+  courses: { id: number | null; name: string; code: string | null; doc_count: number }[];
   folders: { folder_path: string; course_id: number | null; doc_count: number }[];
   total_docs: number;
 }
@@ -1024,6 +1029,12 @@ export interface TutorEmbedResult {
   embedded: number;
   skipped: number;
   total_chunks: number;
+}
+
+export interface TutorSyncVaultResult {
+  processed: number;
+  embedded: number;
+  errors: string[];
 }
 
 // SSE streaming helper for Tutor chat

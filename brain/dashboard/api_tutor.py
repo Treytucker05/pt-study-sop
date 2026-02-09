@@ -491,7 +491,23 @@ def content_sources():
     )
     courses = [dict(r) for r in cur.fetchall()]
 
-    # Distinct folder paths from rag_docs
+    # Count system-level docs (course_id IS NULL) — SOP, methods, chains
+    cur.execute(
+        """SELECT COUNT(*) FROM rag_docs
+           WHERE course_id IS NULL AND COALESCE(enabled, 1) = 1"""
+    )
+    system_doc_count = cur.fetchone()[0]
+
+    # Add a virtual "System / SOP" entry for null-course docs
+    if system_doc_count > 0:
+        courses.insert(0, {
+            "id": None,
+            "name": "System / SOP",
+            "code": "SOP",
+            "doc_count": system_doc_count,
+        })
+
+    # Distinct folder paths from rag_docs (include null course_id docs)
     cur.execute(
         """SELECT DISTINCT folder_path, course_id, COUNT(*) as doc_count
            FROM rag_docs
@@ -602,5 +618,42 @@ def trigger_embed():
         from tutor_rag import embed_rag_docs
         result = embed_rag_docs(course_id=course_id, folder_path=folder_path)
         return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/sync-vault — Sync an Obsidian vault folder into RAG
+# ---------------------------------------------------------------------------
+
+@tutor_bp.route("/sync-vault", methods=["POST"])
+def sync_vault():
+    data = request.get_json(silent=True) or {}
+    vault_path = data.get("vault_path", "").strip()
+    course_id = data.get("course_id")
+
+    if not vault_path:
+        return jsonify({"error": "vault_path is required"}), 400
+
+    try:
+        from rag_notes import sync_folder_to_rag
+        sync_result = sync_folder_to_rag(vault_path, corpus="study")
+
+        # Run embeddings on newly synced docs
+        embedded = 0
+        try:
+            from tutor_rag import embed_rag_docs
+            embed_result = embed_rag_docs()
+            embedded = embed_result.get("embedded", 0)
+        except Exception:
+            pass
+
+        return jsonify({
+            "processed": sync_result.get("processed", 0),
+            "embedded": embedded,
+            "errors": sync_result.get("errors", []),
+        })
+    except FileNotFoundError:
+        return jsonify({"error": f"Vault path not found: {vault_path}"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500

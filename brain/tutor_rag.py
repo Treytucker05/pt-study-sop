@@ -7,6 +7,8 @@ Falls back to keyword search from tutor_engine when ChromaDB is empty.
 
 from __future__ import annotations
 
+import pydantic_v1_patch  # noqa: F401  — must be first (fixes PEP 649 on Python 3.14)
+
 import os
 import json
 import sqlite3

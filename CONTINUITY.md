@@ -418,6 +418,7 @@
 ## 2026-02-09 - Agent Setup Cleanup
 
 - 02:04: Added Agents Conductor track, clarified workflow + track pointers for Claude compatibility, vendored `x-research` skill for Codex, expanded allowlists, and ignored repo-root planning artifacts/scratch. Files: `conductor/tracks/agents_setup_cleanup_20260209/`, `conductor/tracks.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`, `.claude/settings.local.json`, `.codex/skills/x-research/`, `.gitignore`, `permissions.json`.
+- 23:46: Added persistent named worktree tooling and a Codex skill for routing parallel agents to integrate/ui/brain worktrees. Files: `scripts/agent_worktrees.ps1`, `scripts/README.md`, `.codex/skills/agent-worktrees/`.
 
 ## 2026-02-08 - Adaptive Tutor Learning System (Phase 1 MVP)
 
@@ -458,3 +459,15 @@
 - `POST /api/tutor/chain` — Create session chain
 - `GET /api/tutor/chain/<id>` — Get chain with sessions
 - `POST /api/tutor/embed` — Trigger RAG embedding
+- `POST /api/tutor/sync-vault` — Sync Obsidian vault into RAG
+
+- 2026-02-09: Made Adaptive Tutor fully functional:
+  - Re-seeded 34 PEIRRO method blocks + 15 template chains (seed_methods.py --force)
+  - Created brain/data/seed_tutor_content.py: seeds SOP runtime bundle (7), SOP library (17), method blocks (34), method chains (15) into rag_docs (73+ total)
+  - Updated vault path: PT School Semester 2 → Treys School (CLAUDE.md + global CLAUDE.md)
+  - Improved tutor_chains.py: graceful no-content mode (teaches from training knowledge), method awareness (references PEIRRO blocks/chains by name)
+  - Added POST /api/tutor/sync-vault endpoint: syncs Obsidian vault → rag_docs + auto-embeds
+  - Fixed GET /api/tutor/content-sources: now includes System/SOP virtual course for null-course docs
+  - Added SYNC VAULT button to ContentFilter.tsx with vault path input, toast feedback
+  - Updated TutorContentSources type: course id now nullable
+  - Built frontend, synced dist, all 74 tests pass

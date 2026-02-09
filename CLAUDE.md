@@ -11,7 +11,7 @@ Also read `AGENTS.md` for agent behavior rules.
 
 ## Environment
 - Repo root: C:\pt-study-sop
-- Obsidian vault: C:\Users\treyt\Desktop\PT School Semester 2
+- Obsidian vault: C:\Users\treyt\Desktop\Treys School
 - Editor: Codex CLI / Claude Code (no default GUI editor).
 
 ## Git Identity

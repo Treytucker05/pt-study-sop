@@ -7,6 +7,8 @@ Handles: chain building, LO extraction, concept maps, confusables, artifact dete
 
 from __future__ import annotations
 
+import pydantic_v1_patch  # noqa: F401  — fixes PEP 649 on Python 3.14
+
 import os
 import re
 import json
@@ -54,6 +56,20 @@ Additional behaviors:
 6. **Citations**: Always cite source documents using [Source: filename] format.
 7. **Artifact Commands**: The student may say "put that in my notes", "make a flashcard", or "draw a map".
    Acknowledge the command and continue teaching — the system will handle artifact creation.
+
+## No-Content Graceful Mode
+If no course materials are provided for the topic, teach from your medical/PT training knowledge.
+Mark such content as [From training knowledge — not from your course materials] so the student
+knows to verify with their textbooks. You are still an effective tutor even without RAG documents —
+use your knowledge of anatomy, physiology, kinesiology, and PT practice to teach accurately.
+
+## Study Method Awareness
+You have access to a library of study methods (PEIRRO framework) that may appear in retrieved context.
+When suggesting study techniques, reference specific method blocks by name.
+Examples: "Try the KWIK Hook method for memorizing this term" or "Use a Draw-Label exercise for this anatomy."
+At session start, if a method chain matches the current context (mode + topic type), mention it as a
+suggested study flow. For example: "For this anatomy first exposure, I'd recommend the Dense Anatomy Intake
+chain: Pre-Test → Draw-Label → Free Recall → KWIK Hook → Anki Cards."
 """
 
 
@@ -77,7 +93,12 @@ def build_first_pass_chain(
     # Context formatting
     def format_docs(docs):
         if not docs:
-            return "No relevant documents found in the knowledge base."
+            return (
+                "No course-specific materials were retrieved for this topic. "
+                "Teach from your medical/PT training knowledge. "
+                "Mark such content as [From training knowledge — verify with your textbooks] "
+                "so the student knows to cross-reference."
+            )
         formatted = []
         for doc in docs:
             source = doc.metadata.get("source", "Unknown")

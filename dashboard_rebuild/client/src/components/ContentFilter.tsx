@@ -1,11 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { TutorContentSources, TutorMode } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Database, Folder, Loader2, Zap } from "lucide-react";
+import { Database, Folder, Loader2, Zap, RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ContentFilterProps {
   courseId: number | undefined;
@@ -29,6 +31,8 @@ const MODES: { value: TutorMode; label: string; desc: string }[] = [
   { value: "Diagnostic Sprint", label: "DIAG", desc: "Assess knowledge" },
 ];
 
+const DEFAULT_VAULT_PATH = "C:\\Users\\treyt\\Desktop\\Treys School";
+
 export function ContentFilter({
   courseId,
   setCourseId,
@@ -42,6 +46,11 @@ export function ContentFilter({
   isStarting,
   hasActiveSession,
 }: ContentFilterProps) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [vaultPath, setVaultPath] = useState(DEFAULT_VAULT_PATH);
+
   const { data: sources, isLoading } = useQuery<TutorContentSources>({
     queryKey: ["tutor-content-sources"],
     queryFn: () => api.tutor.getContentSources(),
@@ -56,8 +65,29 @@ export function ContentFilter({
   };
 
   const courseFolders = sources?.folders.filter(
-    (f) => !courseId || f.course_id === courseId
+    (f) => !courseId || f.course_id === courseId || (courseId === undefined && f.course_id === null)
   );
+
+  const handleSyncVault = async () => {
+    if (!vaultPath.trim()) return;
+    setIsSyncing(true);
+    try {
+      const result = await api.tutor.syncVault({ vault_path: vaultPath });
+      toast({
+        title: "Vault synced",
+        description: `${result.processed} files processed, ${result.embedded} newly embedded`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+    } catch (err) {
+      toast({
+        title: "Sync failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full gap-3 p-3">
@@ -125,8 +155,8 @@ export function ContentFilter({
             </button>
             {sources?.courses.map((c) => (
               <button
-                key={c.id}
-                onClick={() => setCourseId(c.id)}
+                key={c.id ?? "system"}
+                onClick={() => setCourseId(c.id ?? undefined)}
                 className={`w-full text-left px-2 py-1 text-xs font-terminal border-2 ${
                   courseId === c.id
                     ? "border-primary text-primary"
@@ -171,6 +201,32 @@ export function ContentFilter({
           </ScrollArea>
         </div>
       )}
+
+      {/* Vault sync */}
+      <div className="space-y-1">
+        <label className="text-[10px] font-terminal text-muted-foreground uppercase tracking-wider">
+          Vault Sync
+        </label>
+        <input
+          value={vaultPath}
+          onChange={(e) => setVaultPath(e.target.value)}
+          placeholder="Path to Obsidian vault"
+          className="w-full bg-black/60 border-2 border-muted-foreground/30 px-2 py-1 text-[10px] font-terminal text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+        />
+        <Button
+          onClick={handleSyncVault}
+          disabled={isSyncing || !vaultPath.trim()}
+          variant="outline"
+          className="w-full rounded-none border-2 border-muted-foreground/30 font-arcade text-[10px] h-7"
+        >
+          {isSyncing ? (
+            <Loader2 className="w-3 h-3 animate-spin mr-1" />
+          ) : (
+            <RefreshCw className="w-3 h-3 mr-1" />
+          )}
+          SYNC VAULT
+        </Button>
+      </div>
 
       {/* Start button */}
       <Button
