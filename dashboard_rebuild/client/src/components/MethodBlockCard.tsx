@@ -1,6 +1,15 @@
 import { Clock, Zap } from "lucide-react";
 import type { MethodBlock } from "@/api";
 
+const CATEGORY_LABEL: Record<string, string> = {
+  prepare: "PRIME",
+  encode: "ENCODE",
+  interrogate: "INTERROGATE",
+  retrieve: "RETRIEVE",
+  refine: "REFINE",
+  overlearn: "OVERLEARN",
+};
+
 const CATEGORY_COLORS: Record<string, string> = {
   prepare: "border-yellow-500 bg-yellow-500/10",
   encode: "border-purple-500 bg-purple-500/10",
@@ -49,7 +58,7 @@ export default function MethodBlockCard({ block, compact, onClick, draggable, on
         <div className="flex items-center justify-between gap-2">
           <span className="font-terminal text-xs truncate">{block.name}</span>
           <span className={`text-[9px] font-arcade px-1 py-0.5 rounded-none ${badgeClass}`}>
-            {block.category.toUpperCase()}
+            {CATEGORY_LABEL[block.category] || block.category.toUpperCase()}
           </span>
         </div>
       </div>
@@ -66,7 +75,7 @@ export default function MethodBlockCard({ block, compact, onClick, draggable, on
       <div className="flex items-center justify-between mb-2">
         <span className="font-arcade text-xs">{block.name}</span>
         <span className={`text-[9px] font-arcade px-1.5 py-0.5 rounded-none ${badgeClass}`}>
-          {block.category.toUpperCase()}
+          {CATEGORY_LABEL[block.category] || block.category.toUpperCase()}
         </span>
       </div>
       {block.description && (

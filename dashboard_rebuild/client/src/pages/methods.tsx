@@ -17,6 +17,15 @@ import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, Cha
 
 const CATEGORIES = ["all", "prepare", "encode", "interrogate", "retrieve", "refine", "overlearn"] as const;
 
+const CATEGORY_LABEL: Record<string, string> = {
+  prepare: "PRIME",
+  encode: "ENCODE",
+  interrogate: "INTERROGATE",
+  retrieve: "RETRIEVE",
+  refine: "REFINE",
+  overlearn: "OVERLEARN",
+};
+
 const TAB_ITEMS = [
   { id: "library", label: "LIBRARY", icon: Blocks },
   { id: "chains", label: "CHAINS", icon: Link2 },
@@ -208,7 +217,7 @@ export default function MethodsPage() {
                         : "border-secondary text-muted-foreground hover:border-primary/40"
                     }`}
                   >
-                    {cat.toUpperCase()}
+                    {CATEGORY_LABEL[cat] || cat.toUpperCase()}
                   </button>
                 ))}
               </div>
@@ -563,7 +572,7 @@ function AddBlockDialog({
             <SelectContent className="bg-black border-2 border-primary rounded-none">
               {["prepare", "encode", "interrogate", "retrieve", "refine", "overlearn"].map((c) => (
                 <SelectItem key={c} value={c} className="font-terminal text-sm">
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                  {CATEGORY_LABEL[c] || c.charAt(0).toUpperCase() + c.slice(1)}
                 </SelectItem>
               ))}
             </SelectContent>
