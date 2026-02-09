@@ -1,0 +1,20 @@
+id: C-DP-001
+name: DEPTH
+description: >-
+  Pass 2: Selective mastery on high-priority objectives.
+  Full PEIRRO cycle. Retrieval-driven. Cards only from errors.
+blocks:
+- M-PRE-007
+- M-ENC-005
+- M-ENC-008
+- M-INT-002
+- M-RET-005
+- M-REF-001
+- M-OVR-002
+context_tags:
+  stage: review
+  pass: depth
+  energy: high
+  time_available: 45
+is_template: true
+status: draft

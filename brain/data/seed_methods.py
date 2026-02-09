@@ -480,6 +480,21 @@ TEMPLATE_CHAINS = [
         "context_tags": {"stage": "first_exposure", "energy": "high", "time_available": 40},
         "is_template": 1,
     },
+    # --- SWEEP/DEPTH chain runner chains ---
+    {
+        "name": "SWEEP",
+        "description": "Pass 1: Fast structural understanding. Touch everything once. Produce visual maps, objectives, confusables, seed cards.",
+        "blocks": ["Concept Cluster", "Concept Map", "Comparison Table", "Sprint Quiz", "Anki Card Draft"],
+        "context_tags": {"stage": "first_exposure", "pass": "sweep", "energy": "medium", "time_available": 30},
+        "is_template": 1,
+    },
+    {
+        "name": "DEPTH",
+        "description": "Pass 2: Selective mastery on high-priority objectives. Full PEIRRO cycle. Retrieval-driven. Cards only from errors.",
+        "blocks": ["Pre-Test", "Why-Chain", "Mechanism Trace", "Clinical Application", "Variable Retrieval", "Error Autopsy", "Anki Card Draft"],
+        "context_tags": {"stage": "review", "pass": "depth", "energy": "high", "time_available": 45},
+        "is_template": 1,
+    },
 ]
 
 

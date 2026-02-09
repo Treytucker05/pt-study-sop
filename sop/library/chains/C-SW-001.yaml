@@ -1,0 +1,18 @@
+id: C-SW-001
+name: SWEEP
+description: >-
+  Pass 1: Fast structural understanding. Touch everything once.
+  Produce visual maps, objectives, confusables, seed cards.
+blocks:
+- M-PRE-005
+- M-ENC-009
+- M-ENC-010
+- M-RET-002
+- M-OVR-002
+context_tags:
+  stage: first_exposure
+  pass: sweep
+  energy: medium
+  time_available: 30
+is_template: true
+status: draft

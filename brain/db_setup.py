@@ -1226,11 +1226,44 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
+    # ------------------------------------------------------------------
+    # Chain Runs table (tracks chain runner executions)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chain_runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chain_id INTEGER NOT NULL,
+            session_id INTEGER,
+            topic TEXT NOT NULL,
+            course_id INTEGER,
+            status TEXT DEFAULT 'running',
+            current_step INTEGER DEFAULT 0,
+            total_steps INTEGER NOT NULL,
+            run_state_json TEXT,
+            artifacts_json TEXT,
+            started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            completed_at TEXT,
+            error_message TEXT,
+            FOREIGN KEY(chain_id) REFERENCES method_chains(id),
+            FOREIGN KEY(session_id) REFERENCES sessions(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_chain_runs_chain
+        ON chain_runs(chain_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_chain_runs_status
+        ON chain_runs(status)
+    """)
+
     conn.commit()
     conn.close()
 
     print(f"[OK] Database initialized at: {DB_PATH}")
-    print("[OK] Schema version: 9.4 + planning/RAG/methods extensions")
+    print("[OK] Schema version: 9.4 + planning/RAG/methods/chain-runs extensions")
 
 
 def migrate_method_categories():
