@@ -1,4 +1,4 @@
-# PT Study OS v9.5
+# PT Study OS v9.5 (runtime prompt v9.5.2)
 
 A local-first, AI-powered study operating system for DPT coursework. Every session follows the PEIRRO learning cycle with deterministic logging, citation-first teaching, and continuous improvement via Scholar meta-audits.
 
@@ -206,7 +206,7 @@ M6: WRAP
 ```
 Tutor Output (plain text)            Brain Ingestion
 +------------------------+           +------------------------+
-| Exit Ticket            |  paste    | Tracker JSON           |
+| Exit Ticket            |  paste    | Session Record         |
 | Session Ledger         | -------> | Enhanced JSON          |
 +------------------------+           +----------+-------------+
                                                 |
