@@ -20,7 +20,7 @@ export default function Brain() {
 
   return (
     <Layout>
-      <div className="flex flex-col h-[calc(100vh-64px)] min-w-0 overflow-hidden">
+      <div className="flex flex-col h-[calc(100vh-64px-40px)] min-w-0 overflow-hidden">
         <BrainWorkspaceTopBar workspace={workspace} />
 
         {/* Desktop: 2-column resizable layout */}
