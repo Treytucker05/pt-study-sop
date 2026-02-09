@@ -405,6 +405,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ content, filename }),
     }),
+    ingestSessionJson: (sessionId: number, trackerJson?: Record<string, unknown>, enhancedJson?: Record<string, unknown>) => 
+      request<{ session_id: number; fields_updated: number }>("/brain/session-json", {
+        method: "POST",
+        body: JSON.stringify({ session_id: sessionId, tracker_json: trackerJson, enhanced_json: enhancedJson }),
+      }),
   },
 
   academicDeadlines: {

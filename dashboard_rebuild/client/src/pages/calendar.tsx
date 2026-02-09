@@ -482,10 +482,17 @@ export default function CalendarPage() {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
 
-  const { data: localEvents = [] } = useQuery<LocalCalendarEvent[]>({
+  const { data: rawLocalEvents = [] } = useQuery({
     queryKey: ["events"],
-    queryFn: api.events.getAll as () => Promise<LocalCalendarEvent[]>,
+    queryFn: api.events.getAll,
   });
+  
+  const localEvents: LocalCalendarEvent[] = rawLocalEvents.map((e) => ({
+    ...e,
+    date: new Date(e.date),
+    endDate: e.endDate ? new Date(e.endDate) : null,
+    createdAt: new Date(e.createdAt),
+  }));
 
   const { data: googleEvents = [], isLoading: isLoadingGoogle, refetch: refetchGoogle } = useQuery({
     queryKey: ["google-calendar", currentDate.getFullYear(), currentDate.getMonth()],
@@ -971,33 +978,36 @@ export default function CalendarPage() {
     }
   };
 
+  const isGoogleEvent = (event: CalendarEvent | GoogleCalendarEvent): event is GoogleCalendarEvent => {
+    return 'summary' in event;
+  };
+
   const normalizeEvent = (event: CalendarEvent | GoogleCalendarEvent): NormalizedEvent => {
-    if ('summary' in event) {
-      const gEvent = event as GoogleCalendarEvent;
-      const isAllDay = !!gEvent.start?.date && !gEvent.start?.dateTime;
-      const startStr = gEvent.start?.dateTime || gEvent.start?.date || new Date().toISOString();
-      const endStr = gEvent.end?.dateTime || gEvent.end?.date || startStr;
-      const start = isAllDay && gEvent.start?.date ? parseDateOnly(gEvent.start.date) : new Date(startStr);
-      let end = isAllDay && gEvent.end?.date ? parseDateOnly(gEvent.end.date) : new Date(endStr);
-      if (isAllDay && gEvent.start?.date && gEvent.end?.date && gEvent.end.date > gEvent.start.date) {
-        end = addDays(parseDateOnly(gEvent.end.date), -1);
+    if (isGoogleEvent(event)) {
+      const isAllDay = !!event.start?.date && !event.start?.dateTime;
+      const startStr = event.start?.dateTime || event.start?.date || new Date().toISOString();
+      const endStr = event.end?.dateTime || event.end?.date || startStr;
+      const start = isAllDay && event.start?.date ? parseDateOnly(event.start.date) : new Date(startStr);
+      let end = isAllDay && event.end?.date ? parseDateOnly(event.end.date) : new Date(endStr);
+      if (isAllDay && event.start?.date && event.end?.date && event.end.date > event.start.date) {
+        end = addDays(parseDateOnly(event.end.date), -1);
       }
-      const isOnline = !!(gEvent.conferenceData || gEvent.hangoutLink);
-      const storedEventType = gEvent.eventType || gEvent.extendedProperties?.private?.eventType;
+      const isOnline = !!(event.conferenceData || event.hangoutLink);
+      const storedEventType = event.eventType || event.extendedProperties?.private?.eventType;
       return {
-        id: gEvent.id,
-        title: gEvent.summary || 'Untitled',
+        id: event.id,
+        title: event.summary || 'Untitled',
         start,
         end,
         allDay: isAllDay,
         isGoogle: true,
         eventType: storedEventType || (isOnline ? 'online' : 'synchronous'),
-        calendarColor: gEvent.calendarColor,
-        calendarName: gEvent.calendarSummary,
+        calendarColor: event.calendarColor,
+        calendarName: event.calendarSummary,
         originalEvent: event,
       };
     } else {
-      const localEvent = event as LocalCalendarEvent;
+      const localEvent = event;
       const start = new Date(localEvent.date);
       const end = localEvent.endDate ? new Date(localEvent.endDate) : addHours(start, 1);
       return {
@@ -1133,8 +1143,8 @@ export default function CalendarPage() {
       );
       setSelectedGoogleEvent(nextEvent);
       setGoogleEditMode("series");
-    } catch (err) {
-      toast({ title: "LOAD_FAILED", description: err.message, variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "LOAD_FAILED", description: err?.message || "Unknown error", variant: "destructive" });
     }
   };
 

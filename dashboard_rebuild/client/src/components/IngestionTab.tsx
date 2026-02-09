@@ -314,12 +314,12 @@ export function IngestionTab() {
   const handleWrapSubmit = async () => {
     try {
       setWrapStatus(null);
-      const result = await api.brain.ingest(wrapContent, "pasted_wrap.md");
+      const result = await api.brain.chat(wrapContent, false, "wrap");
       if (result.sessionSaved) {
         setWrapStatus({ type: "success", message: `Session saved! ID: ${result.sessionId}, Cards: ${result.cardsCreated || 0}` });
         setWrapContent("");
       } else {
-        setWrapStatus({ type: "error", message: result.errors?.join(", ") || result.message });
+        setWrapStatus({ type: "error", message: result.sessionError || "Failed to process WRAP content" });
       }
     } catch (err: any) {
       setWrapStatus({ type: "error", message: err.message || "Failed to ingest" });

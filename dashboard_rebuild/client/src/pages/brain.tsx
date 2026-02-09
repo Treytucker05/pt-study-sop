@@ -70,10 +70,11 @@ export default function Brain() {
     <Layout>
       {/* 
         Layout has:
-        - Header: h-16 (64px) + border-b-4 (4px) = 68px
-        - Footer: py-2 + text-xs + h-10 spacer = ~72px total
+        - Header: h-16 (64px) + border-b-4 (4px) = 68px  
+        - Footer: ~32px + we need extra space for mobile tab bar
         
         We use z-30 to appear above the layout footer (z-20)
+        bottom-[72px] gives room for footer + mobile tab bar
       */}
       <div className="fixed inset-x-0 top-[68px] bottom-[72px] flex flex-col min-w-0 overflow-hidden z-30">
         <BrainWorkspaceTopBar workspace={workspace} />
@@ -142,6 +143,33 @@ export default function Brain() {
 
         {/* Modals */}
         <BrainModals workspace={workspace} />
+
+        {/* DEBUG: Yellow reference lines */}
+        <div className="fixed inset-x-0 pointer-events-none z-[100]" style={{ bottom: '0px' }}>
+          <div className="w-full h-[2px] bg-yellow-400 relative">
+            <span className="absolute right-2 -top-4 text-yellow-400 font-arcade text-xs">0</span>
+          </div>
+        </div>
+        <div className="fixed inset-x-0 pointer-events-none z-[100]" style={{ bottom: '20px' }}>
+          <div className="w-full h-[2px] bg-yellow-400 relative">
+            <span className="absolute right-2 -top-4 text-yellow-400 font-arcade text-xs">20</span>
+          </div>
+        </div>
+        <div className="fixed inset-x-0 pointer-events-none z-[100]" style={{ bottom: '40px' }}>
+          <div className="w-full h-[2px] bg-yellow-400 relative">
+            <span className="absolute right-2 -top-4 text-yellow-400 font-arcade text-xs">40</span>
+          </div>
+        </div>
+        <div className="fixed inset-x-0 pointer-events-none z-[100]" style={{ bottom: '60px' }}>
+          <div className="w-full h-[2px] bg-yellow-400 relative">
+            <span className="absolute right-2 -top-4 text-yellow-400 font-arcade text-xs">60</span>
+          </div>
+        </div>
+        <div className="fixed inset-x-0 pointer-events-none z-[100]" style={{ bottom: '80px' }}>
+          <div className="w-full h-[2px] bg-yellow-400 relative">
+            <span className="absolute right-2 -top-4 text-yellow-400 font-arcade text-xs">80</span>
+          </div>
+        </div>
       </div>
     </Layout>
   );

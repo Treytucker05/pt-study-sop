@@ -101,6 +101,7 @@ export function MindMapView() {
     }
     const losByModule = new Map<number, any[]>();
     for (const lo of allLOs) {
+      if (lo.moduleId == null) continue;
       const list = losByModule.get(lo.moduleId) ?? [];
       list.push(lo);
       losByModule.set(lo.moduleId, list);

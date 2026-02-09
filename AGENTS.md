@@ -1,98 +1,93 @@
-# Agent Rules
+# Agent Guidelines - PT Study SOP
 
-Read and obey the global instructions first: `C:\Users\treyt\.claude\CLAUDE.md`. Then read the repo `CLAUDE.md` for project context and key paths.
+## ⚠️ CRITICAL - Read This First
 
-## Scope
+### How To Run The Server (DO NOT SKIP)
 
-Applies to all work under `C:/pt-study-sop`. A nearer `AGENTS.md` overrides this file.
+**NEVER** use `npm run dev` or `vite dev` for this project.
 
-## Defaults
-
-- Keep changes minimal and scoped; avoid broad reformatting.
-- Prefer ASCII; keep filenames and paths stable unless requested.
-- Do not edit `archive/` unless explicitly requested.
-- Ask before destructive or irreversible actions.
-- Run project-required checks or state when they are skipped.
-- When completing work, read and update any docs that correspond to the changed code (see `docs/README.md` Feature→Doc table). Don't read all docs — just the relevant ones.
-- Auto-commit after changes with a conventional commit message if none is provided.
-- Explore the project first (key files/paths), then invoke any skill.
-- For SwiftUI tasks, prefer retrieval-led reasoning over pre-training-led reasoning.
-- Shell: PowerShell by default. Bash/WSL when the tool or command requires it.
-- Prompt suffix defaults: treat every request as if it ends with `use subagents; use bq when asked; explain why; include ASCII diagram when helpful` unless the user says "no suffix" or "no subagents".
-
-## Workflow
-
-- For any multi-step work: create and maintain the Task list; complete tasks one-by-one.
-- Delegate:
-  - Exploration/searching to a read-only subagent when possible
-  - Test running to a test-runner subagent
-  - Final review to code-reviewer subagent
-- Prefer background subagents for long-running tasks; summarize results back in the main thread.
-
-## When to Ask
-
-- Task needs a target (repo, path, env) that is not explicit.
-- Requirements are missing and would change the implementation.
-- Multiple valid choices exist — present 2-4 options with a default.
-- Action is destructive — confirm first.
-- Response style: minimum questions, short numbered lists with lettered options.
-
-## ExecPlans
-
-For complex features or significant refactors, use an ExecPlan per `.agent/PLANS.md`.
-
-## Folder READMEs
-
-Add a concise `README.md` to folders with non-obvious purpose. Skip `archive/`, config dirs, and folders where the name is self-explanatory.
-
-## Docs
-
-Add or maintain a Table of Contents for documentation.
-
-## Continuity
-
-Maintain `CONTINUITY.md` at repo root. Append after every significant change — never delete.
-
-Format:
-```
-## YYYY-MM-DD - Brief Title
-- HH:MM: What changed. Files affected if non-obvious.
+**ALWAYS** use the batch file:
+```batch
+C:\pt-study-sop\Start_Dashboard.bat
 ```
 
-Group same-day entries under one date header.
+This will:
+1. Build the UI: `dashboard_rebuild/dist/public/` → `brain/static/dist/`
+2. Start Python Flask server on **port 5000**
+3. Open browser to `http://127.0.0.1:5000/brain`
 
-## Agent Hygiene
+### After Any Code Changes
 
-- Clean up after each task: remove failed scripts, temp files, obsolete drafts.
-- Mark tasks complete in the relevant plan/ExecPlan and document what changed.
-- If a decision changes direction, add a note explaining why.
-- When a file becomes outdated, update it or mark deprecated with a pointer.
+If you modify React files in `dashboard_rebuild/client/src/`:
 
-## Prompt Blocks (reusable)
-
-### Research + Plan
-```
-Use subagents to map the repo, then propose a concrete plan with files, tests, and risks.
-use subagents
+```powershell
+cd C:\pt-study-sop\dashboard_rebuild
+npm run build
+robocopy dist\public ..\brain\static\dist /MIR
 ```
 
-### Analytics (bq)
+Then refresh browser (Ctrl+Shift+R to clear cache).
+
+---
+
+## Project Structure
+
 ```
-Use bq to answer the question. Show the exact query and a short result summary.
-If dataset/time window is missing, ask first.
+C:\pt-study-sop\
+├── dashboard_rebuild\          # React frontend source
+│   ├── client\src\             # All React components
+│   ├── dist\public\            # Build output (temporary)
+│   └── BUILD.md                # Detailed build instructions
+├── brain\                       # Python Flask server + static files
+│   ├── static\dist\            # ★ CANONICAL BUILD - served on port 5000
+│   ├── dashboard_web.py        # Flask server entry point
+│   └── ...
+├── Start_Dashboard.bat         # ★ USE THIS TO START
+└── docs\                       # Project documentation
 ```
 
-### Learning Mode
+---
+
+## Common Mistakes To Avoid
+
+| Mistake | Why It Fails |
+|---------|--------------|
+| `npm run dev` | Opens port 3000, doesn't serve Python API |
+| Building to wrong folder | Changes go to `dist/public` but Flask serves `brain/static/dist` |
+| Not clearing cache | Browser shows old build even after updates |
+| Multiple servers | Port conflicts, confusing which server has latest build |
+
+---
+
+## Quick Reference
+
+```powershell
+# Build and deploy
+npm run build
+robocopy dist\public ..\brain\static\dist /MIR
+
+# Start server
+..\Start_Dashboard.bat
+
+# Check what's running
+tasklist | findstr python
+tasklist | findstr node
 ```
-Explain why behind each change, then implement.
-Include an ASCII diagram of the flow.
-```
 
-## Conductor Workflow
+---
 
-The `conductor/` directory contains the project's product definition, tech stack, active tracks, and workflow rules. When starting major work:
+## Key Files By Feature
 
-1. Read `conductor/tracks.md` to check for active tracks and their priority.
-2. Follow the task lifecycle defined in `conductor/workflow.md` (TDD phases, git notes, checkpointing).
-3. Respect constraints in `conductor/product-guidelines.md` (local-first, no data invention, preview-first for external writes).
-4. If a change deviates from `conductor/tech-stack.md`, update the tech stack doc before implementing.
+| Feature | Source Location |
+|---------|-----------------|
+| Brain Page | `dashboard_rebuild/client/src/pages/brain.tsx` |
+| Brain Components | `dashboard_rebuild/client/src/components/brain/` |
+| BrainChat | `dashboard_rebuild/client/src/components/BrainChat/` |
+| Layout/Footer | `dashboard_rebuild/client/src/components/layout.tsx` |
+| Course Config | `dashboard_rebuild/client/src/config/courses.ts` |
+| Error Boundaries | `dashboard_rebuild/client/src/components/ErrorBoundary.tsx` |
+
+---
+
+*Read the full guide: `docs/root/GUIDE_DEV.md`*
+*Build details: `dashboard_rebuild/BUILD.md`*

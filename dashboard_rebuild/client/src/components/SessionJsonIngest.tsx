@@ -24,11 +24,20 @@ export function SessionJsonIngest() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: sessions = [] } = useQuery<ApiSession[]>({
+  const { data: rawSessions = [] } = useQuery({
     queryKey: ["sessions"],
-    queryFn: api.sessions.getAll as () => Promise<ApiSession[]>,
+    queryFn: api.sessions.getAll,
   });
+  
+  // Map to ApiSession shape
+  const sessions: ApiSession[] = rawSessions.map((s) => ({
+    id: s.id,
+    date: s.date,
+    topic: s.topic,
+    mainTopic: s.mainTopic,
+    mode: s.mode,
+    createdAt: s.createdAt,
+  }));
 
   const recentSessions = sessions
     .slice()

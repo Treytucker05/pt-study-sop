@@ -41,7 +41,7 @@ function getFolderColor(folder: string): string {
 
 export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const graphRef = useRef<ReturnType<typeof ForceGraph2D> extends React.ComponentType<infer P> ? P : never>();
+  const graphRef = useRef<any>(null);
   const [rawGraphData, setRawGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
