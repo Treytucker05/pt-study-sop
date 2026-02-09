@@ -74,9 +74,9 @@ export default function Brain() {
         - Footer: ~32px + we need extra space for mobile tab bar
         
         We use z-30 to appear above the layout footer (z-20)
-        bottom-[72px] gives room for footer + mobile tab bar
+        bottom-[48px] gives room for footer + mobile tab bar
       */}
-      <div className="fixed inset-x-0 top-[68px] bottom-[72px] flex flex-col min-w-0 overflow-hidden z-30">
+      <div className="fixed inset-x-0 top-[68px] bottom-[48px] flex flex-col min-w-0 overflow-hidden z-30">
         <BrainWorkspaceTopBar workspace={workspace} />
 
         {/* Desktop: 2-column resizable layout */}
