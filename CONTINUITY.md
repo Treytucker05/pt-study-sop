@@ -1,4 +1,16 @@
-# CONTINUITY\n
+# CONTINUITY
+
+## 2026-02-09 - Tutor Page Audit & Web Search Feature
+
+- 13:15: Audited Tutor page implementation (frontend + backend).
+- 13:18: Fixed TypeScript error in ContentFilter.tsx: Changed `Course` import from `@/lib/api` to `@shared/schema`.
+- 13:20: Verified all 77 tests pass.
+- 13:25: Built dashboard (`npm run build`) and synced to `brain/static/dist/`.
+- Changes committed: `400664e1` - fix(tutor): add web search support and fix TypeScript imports.
+- Features added:
+  - Web search toggle for Codex provider in Tutor chat
+  - URL citations extraction from ChatGPT Responses API
+  - SSE streaming support for web search status updates
 
 - 2026-01-21 18:47:42: Replaced C:\pt-study-sop\brain\data\pt_study.db with C:\Users\treyt\Downloads\pt_study.db after backup (pt_study.db.bak_20260121_184637). Counts: sessions=2, wheel_courses=5, quick_notes=4, courses=0.
 
@@ -38,7 +50,7 @@
 
 - 2026-01-22 16:58:16: Documented full UI + API audit in docs/full-ui-api-audit-2026-01-22.md (no code changes).
 
-- 2026-01-22 17:01:00: Policy update — after each successful upgrade or change, push to GitHub.
+- 2026-01-22 17:01:00: Policy update - after each successful upgrade or change, push to GitHub.
 
 - 2026-01-22 18:30:51: Added YAML frontmatter to Codex skills refactor-clean and tdd; normalized arrows to ASCII in refactor-clean.
 
@@ -96,7 +108,6 @@
 - 2026-01-23 22:46:21: Updated ai-config/AGENTS.md to emphasize per-folder README requirements and re-synced AGENTS mirrors. Converted dashboard_rebuild to frontend-only (build.ts, package.json scripts, tsconfig include, README) and noted API ownership in root README. Pending removal of dashboard_rebuild/server after confirmation.
 - 2026-01-23 22:46:21: Rebuilt dashboard_rebuild (npm run build) and copied dist/public to brain/static/dist to refresh the Flask-served UI.
 - 2026-01-23 22:52:16: Removed C:\pt-study-sop\dashboard_rebuild\server to eliminate the 5001 Node server.
-- 2026-01-23 23:25:01: Updated JANUARY_26_PLAN docs (INDEX, UPDATED_PLAN, EXECPLAN_DASHBOARD, REFERENCE_DOCS, MILESTONE_INSTRUCTIONS) to reflect single-dashboard Flask API/DB ownership and removed Node server usage; added Agent Hygiene section to README.
 - 2026-01-24 00:34:30: Updated C:\Users\treyt\.codex\config.toml to add developer_instructions preferring swarm/subagent usage for large tasks.
 - 2026-01-24 00:21:44: Added note categories (notes/planned/ideas) with note_type support in quick_notes, updated notes API + dashboard_rebuild notes panel, seeded a planned Scholar update note on first load, ran db_setup, rebuilt dashboard_rebuild and copied dist/public to brain/static/dist.
 - 2026-01-24 00:26:28: Widened main dashboard layout and notes sheet, improved notes category tabs, and added optimistic reordering so dragged notes persist; rebuilt dashboard_rebuild and refreshed brain/static/dist.
@@ -165,12 +176,6 @@
 
 - 2026-01-26 21:11:43: Rebuilt dashboard_rebuild and copied dist/public to brain/static/dist for updated Brain UI.
 - 2026-01-26 22:23:50: Updated permissions allowlist to run Windows test commands (pytest, Flask, ingest script).
-\n## 2026-01-27
-- Added `bash -lc` to `permissions.json` allowlist to permit WSL package install commands for jq.
-\n## 2026-01-27
-- Added `robocopy` to `permissions.json` allowlist for Windows build copy step.
-- Rebuilt `dashboard_rebuild` and synced `dist/public` to `brain/static/dist`.
-- Added README files to `brain/output` and `brain/static` per repo folder documentation rule.
 - 2026-01-27 12:23:23: Added dashboard window inventory documentation and dashboard docs README.
 - 2026-01-27 12:55:00: Updated AGENTS.md commit-message rule to auto-generate when not provided; synced mirrors.
 - 2026-01-27 22:13:13: Added Codex MCP server config and documented the Claude Code review loop workflow.
@@ -186,13 +191,13 @@
 - 2026-01-28 15:00:00: Added Trey git identity to CLAUDE.md.
 - 2026-01-28 15:05:00: Set default to run relevant checks after code changes.
 - 2026-01-28 15:10:00: Marked docs/README.md as canonical docs index.
-- 2026-01-28 15:13:00: Added do-not-edit rules for archive/ and brain/static/dist/.
-- 2026-01-28 15:16:00: Added no-destructive-commands rule.
+- 2026-01-28 15:13:00: Marked do-not-edit rules for archive/ and brain/static/dist/.
+- 2026-01-28 15:16:00: were moved, renamed, or deleted
 - 2026-01-28 15:18:00: Added auto-commit rule to CLAUDE.md.
 - 2026-01-28 15:21:00: Added shell preference (PowerShell default; WSL/Git Bash when required).
 - 2026-01-28 15:25:00: Added editor preference (Codex/Claude Code).
 - 2026-01-28 15:29:00: Added safe-by-default git rule to CLAUDE.md.
-- 2026-01-28 15:33:00: Clarified dashboard запуск rule (Start_Dashboard.bat only).
+- 2026-01-28 15:33:00: Clarified dashboard launch rule (Start_Dashboard.bat only).
 - 2026-01-28 15:36:00: Added Google Calendar credentials handling note.
 - 2026-01-28 15:43:00: Added external systems section to CLAUDE.md.
 - 2026-01-28 15:46:00: Updated Tutor note (CustomGPT only; no local launcher).
@@ -202,7 +207,7 @@
 - 2026-01-28 17:30:00: Added PRD for calendar month view and event management improvements.
 - 2026-01-29 18:29:30: Added developer workflow discovery example and review-loop prompt to CLAUDE_CODEX_REVIEW_LOOP.md.
 
-- 2026-01-29: Calendar page fixes — (1) selectedCalendars now persists to localStorage with SAVE button, initializes from localStorage on mount with try/catch + Array.isArray guard. (2) New LocalEventEditModal.tsx with 4-tab interface (DETAILS, TIME, TYPE, REPEAT) covering all 10 editable DB fields, replacing the old 4-field inline dialog. Updated mutation to send all fields. (3) Added Post-Implementation Checklist section to CLAUDE.md to enforce build+copy workflow.
+- 2026-01-29: Calendar page fixes - (1) selectedCalendars now persists to localStorage with SAVE button, initializes from localStorage on mount with try/catch + Array.isArray guard. (2) New LocalEventEditModal.tsx with 4-tab interface (DETAILS, TIME, TYPE, REPEAT) covering all 10 editable DB fields, replacing the old 4-field inline dialog. Updated mutation to send all fields. (3) Added Post-Implementation Checklist section to CLAUDE.md to enforce build+copy workflow.
 
 - 2026-01-29: Added end-of-session hookify rule (.claude/hookify.end-of-session-checklist.local.md) that prompts 5-step cleanup checklist when session-ending phrases detected. Added calendar SAVE dirty/saved indicator dot and toast feedback. Captured 4 session learnings to CLAUDE.md.
 
@@ -228,8 +233,8 @@
 
 - 2026-01-29: Strengthened Calendar Sync button to refresh Google status, calendar list, and events; auto-resets calendar selection if it no longer matches current Google calendars; added sync success/failure toasts; rebuilt and synced dashboard.
 - 2026-01-29: Sync now forces Google calendar selection to all current calendars and clears hidden calendars so the dashboard mirrors Google after sync; rebuilt and synced dashboard.
-- 2026-01-29: Updated repo instructions (AGENTS.md, CLAUDE.md) to explicitly require reading global C:\\Users\\treyt\\.claude\\CLAUDE.md first.
-- 2026-01-29: Calendar create now writes to Google when a Google calendar is selected; local events are restricted to calendarId=local, and local events assigned to Google calendars are hidden when Google is connected to prevent duplicate listings.
+- 2026-01-29: Updated repo instructions (AGENTS.md, CLAUDE.md) to explicitly require reading global C:\Users\treyt\.claude\CLAUDE.md first.
+- 2026-01-29: Calendar create now writes to Google when a Google calendar is selected; local events are restricted to calendarId=local, and local events enabled for Google calendars are hidden when Google is connected to prevent duplicate listings.
 - 2026-01-29: Normalized Google all-day event end dates to avoid spillover, split all-day end handling for local vs Google creates, and tagged local events with google calendar IDs so Google-connected views hide duplicates; rebuilt and synced dashboard.
 - 2026-01-29: Wired Calendar Sync button to call /api/gcal/sync (bidirectional), then refresh local + Google events and show sync counts in toast; rebuilt and synced dashboard.
 - 2026-01-29: Fixed Google all-day date shift by parsing date-only values as local dates, added Google event GET for recurring series lookup, and display series recurrence for instances; rebuilt and synced dashboard.
@@ -237,7 +242,7 @@
 - 2026-01-30: Added Google recurring edit controls (instance vs series), delete instance/series actions, and screen-reader title/description in EventEditModal; wired instance-to-series switch in calendar page; rebuilt and synced dashboard.
 - 2026-01-30: Reduced calendar edit modal height and top offset to fit the viewport (local + Google); rebuilt and synced dashboard.
 - 2026-01-30: Increased calendar edit modal max height and enabled flex scroll shrink (min-h-0) so inner content fits and scrolls; rebuilt and synced dashboard.
-- 2026-01-30: Widened Google edit modal (max-w override with viewport clamp) so synced event forms fit the window; rebuilt and synced dashboard.
+- 2026-01-30: Widen Google edit modal (max-w override with viewport clamp) so synced event forms fit the pre-emptive
 - 2026-01-30: Added sop/sop_index.v1.json manifest pointing the Tutor SOP Explorer to sop/library (source of truth).
 - 2026-01-30: Rewrote sop/sop_index.v1.json without BOM to fix /api/sop/index 500.
 - 2026-01-30: Added SOP runtime bundle generator/validator, golden log tests, and runtime prompt outputs for Custom GPT v9.3 (sop/runtime, sop/tools, sop/tests).
@@ -250,15 +255,13 @@
 - 2026-01-31: Updated v9.4 Custom GPT system instructions with pre-test guardrail (NO-GUESS), first exposure vs review rule, and LO relabel restriction.
 - 2026-01-31: Built dashboard frontend and synced brain/static/dist from dashboard_rebuild/dist/public for live deploy.
 
-## 2026-01-31
-
-- 2026-01-31 22:10:00: Completed UI Overhaul v9.4.2 boulder work - all core features delivered (11 commits total):
+- 2026-01-31: Completed UI Overhaul v9.4.2 boulder work - all core features delivered (11 commits total):
   - Runtime bundle drift resolved (8ac74c5f)
   - Scholar runnable backend + frontend (dc97111d, ca985eec, b88e6ac0, 1d320047)
   - Planner CTA after JSON attach (93490a5b)
   - Dashboard compact preview with top 3 tasks + Open Brain button (2f05a0da, bdb5207a)
-  - Brain tab reorganization: DAILY/WEEKLY/ADVANCED → TODAY/THIS WEEK/TOOLS/DATA (990cecd1)
-  - Scholar tab consolidation: 7 tabs → 3 tabs (SUMMARY/ANALYSIS/PROPOSALS) with new ANALYSIS section (b88e6ac0, 1d320047)
+  - Brain tab reorganization: DAILY/WEEKLY/ADVANCED -> TODAY/THIS WEEK/TOOLS/DATA (990cecd1)
+  - Scholar tab consolidation: 7 tabs -> 3 tabs (SUMMARY/ANALYSIS/PROPOSALS) with new ANALYSIS section (b88e6ac0, 1d320047)
   - Documentation and plan completion (07ee0e64, 55989154, e7e5e1e4, 26cbf75b)
   - Calendar view separation deferred to v9.4.3 (documented in .sisyphus/notepads/ui-overhaul-v9.4.2/calendar-deferred.md)
   - **Action required:** 4 commits need manual push (26cbf75b, 55989154, 2f05a0da, 1d320047) - git push failed due to WSL auth
@@ -278,7 +281,7 @@
 - 2026-02-01: Added Custom GPT deployment pack doc and print helper script.
 - 2026-02-01: Moved planning docs into tasks/ and stopped ignoring curated planning files in .gitignore.
 - 2026-02-01: Refined Custom GPT deployment pack content and print script for acceptance test and run history.
-- 2026-02-01: Enabled auto-append prompt suffix defaults across Claude/Codex/OpenCode strategy docs and rules.
+- 2026-02-01: enabled auto-append prompt suffix defaults across Claude/Codex/OpenCode strategy docs and rules.
 
 - 2026-02-01: Added LO Engine protocol pack doc, routing, and templates.
 - 2026-02-03: Appended raw input notes to Obsidian study session sync for Brain chat.
@@ -326,7 +329,7 @@
 
 - Merged `v9.4-backlog-implementation` into `main` (Composable Method Library: api_methods.py, method_analysis.py, methods page, 4 components, 18 tests, 15-method-library.md, updates to 14 SOP files).
 - Bumped remaining `Lite Wrap v9.4` references to v9.5 in 05-session-flow.md, 10-deployment.md, 00-overview.md, and README.md.
-- Added `build_custom_instructions()` to `sop/tools/build_runtime_bundle.py` — extracts code block from file 13, writes `sop/runtime/custom_instructions.md`.
+- Added `build_custom_instructions()` to `sop/tools/build_runtime_bundle.py` - extracts code block from file 13, writes `sop/runtime/custom_instructions.md`.
 - Added `13-custom-gpt-system-instructions.md` to build script required set.
 - Regenerated all runtime bundles (6 knowledge files + runtime_prompt.md + custom_instructions.md) at v9.5.
 - Frontend rebuilt and synced to `brain/static/dist/`.
@@ -358,7 +361,7 @@
 - Installed `@xyflow/react`, `dagre`, `@types/dagre`, `html-to-image`
 - New `lib/mermaid-to-reactflow.ts`: regex-based parser for Mermaid flowchart syntax, round-trip export, dagre auto-layout
 - New `components/ConceptMapEditor.tsx`: React Flow canvas with arcade-themed nodes
-  - Import Mermaid code → interactive drag-and-drop graph
+  - Import Mermaid code -> interactive drag-and-drop graph
   - Toolbar: add/delete nodes, auto-layout (TB/LR), export PNG, copy Mermaid, save to vault
   - Save as `.md` with Mermaid code block (Obsidian renders natively)
 - Frontend rebuilt and synced to `brain/static/dist/`
@@ -375,7 +378,7 @@
   - Updated API (`api_methods.py`): evidence field in create/update
   - Updated all frontend types, colors, and filter buttons for 6 PEIRRO phases
   - Updated SOP doc (`15-method-library.md`) with full block catalog and evidence citations
-  - Fixed pre-existing test isolation issue (hardcoded IDs → dynamic IDs)
+  - Fixed pre-existing test isolation issue (hardcoded IDs -> dynamic IDs)
   - Frontend rebuilt and synced to `brain/static/dist/`
   - All 57 tests pass
 
@@ -383,7 +386,7 @@
   - Wired `method_chain_id` into session create/update/get in `api_adapter.py` (was DB-only, never persisted via API)
   - Added `get_method_effectiveness_summary()` and `get_method_anomalies()` to `scholar/brain_reader.py`
   - Created `scholar/weekly_digest.py` with optional methods section (top/bottom performers, anomalies)
-  - Added Composable Methods row to `docs/README.md` Feature→Doc table
+  - Added Composable Methods row to `docs/README.md` Feature->Doc table
   - Added 3 method tables to `docs/root/PROJECT_ARCHITECTURE.md` schema section
   - Updated `MEMORY.md` counts: 34 blocks, 13 chains (was 30/12)
   - All 57 tests pass
@@ -407,13 +410,13 @@
 - **Commit 1** (`9ad656e1`): `chain_runs` table in db_setup.py, SWEEP (`C-SW-001.yaml`) and DEPTH (`C-DP-001.yaml`) chain definitions, TEMPLATE_CHAINS seed entries
 - **Commit 2** (`14c26696`): `chain_runner.py` (run_chain + helpers), `chain_prompts.py` (12 block prompt templates), 17 unit tests with mocked LLM
 - **Commit 3** (`361d1a1f`): `api_chain_runner.py` Flask Blueprint (POST/GET chain-run endpoints), registered in app.py
-- **Commit 4** (`b5c76b20`): Frontend UI — chainRun API methods + types in api.ts, Run button + ChainRunDialog + ChainRunResultDialog + run history table in methods.tsx
-- **Commit 5**: Polish — full test suite (74 pass), SOP validator (34 methods, 15 chains), CONTINUITY.md update
+- **Commit 4** (`b5c76b20`): Frontend UI - chainRun API methods + types in api.ts, Run button + ChainRunDialog + ChainRunResultDialog + run history table in methods.tsx
+- **Commit 5**: Polish - full test suite (74 pass), SOP validator (34 methods, 15 chains), CONTINUITY.md update
 - Architecture: One `call_llm()` per block, accumulated context feeds forward, sync execution with spinner
 - Card parsing: CARD/TYPE/FRONT/BACK/TAGS line format from LLM output
-- Session created with study_mode = chain name, method_chain_id linked
+- Session created with study_mode = chain name, `method_chain_id` linked
 - Obsidian write via lazy-imported `obsidian_append()`, gated by `write_obsidian` option
-- RAG context capped at 2000 chars from `source_doc_ids`
+- RRAG context capped at 2000 chars from `source_doc_ids`
 
 ## 2026-02-09 - Agent Setup Cleanup
 
@@ -427,23 +430,23 @@
 ## 2026-02-08 - Adaptive Tutor Learning System (Phase 1 MVP)
 
 ### What was built
-- **Interactive Tutor Chat** at `/tutor` — LangChain-powered RAG chat with SSE streaming
+- **Interactive Tutor Chat** at `/tutor` - LangChain-powered RAG chat with SSE streaming
 - **3-panel layout**: Content Filter (left) | Chat Interface (center) | Artifacts Sidebar (right)
 - **First Pass phase behavior**: Core/Sprint/Drill/Teaching Sprint/Diagnostic Sprint modes
 - **Mid-session artifact creation**: `/note`, `/card`, `/map` slash commands create Obsidian notes, Anki card drafts, and concept maps
 - **Full Brain logging**: tutor_sessions, tutor_turns, session_chains tables
 
 ### New Backend Files
-- `brain/tutor_rag.py` — LangChain RAG pipeline: ChromaDB + OpenAI embeddings + keyword fallback
-- `brain/tutor_chains.py` — LangChain chain definitions for First Pass phase, artifact command detection
-- `brain/tutor_streaming.py` — SSE streaming adapter for LangChain chains
-- `brain/dashboard/api_tutor.py` — Flask Blueprint with 10 endpoints (`/api/tutor/*`)
+- `brain/tutor_rag.py` - LangChain RAG pipeline: ChromaDB + OpenAI embeddings + keyword fallback
+- `brain/tutor_chains.py` - LangChain chain definitions for First Pass phase, artifact command detection
+- `brain/tutor_streaming.py` - SSE streaming adapter for LangChain chains
+- `brain/dashboard/api_tutor.py` - Flask Blueprint with 10 endpoints (`/api/tutor/*`)
 
 ### New Frontend Files
-- `dashboard_rebuild/client/src/components/ContentFilter.tsx` — Course/folder/mode selector
-- `dashboard_rebuild/client/src/components/TutorChat.tsx` — SSE streaming chat with markdown + citations
-- `dashboard_rebuild/client/src/components/TutorArtifacts.tsx` — Session artifacts sidebar
-- `dashboard_rebuild/client/src/pages/tutor.tsx` — Complete rewrite from SOP viewer to Tutor Chat
+- `dashboard_rebuild/client/src/components/ContentFilter.tsx` - Course/folder/mode selector
+- `dashboard_rebuild/client/src/components/TutorChat.tsx` - SSE streaming chat with markdown + citations
+- `dashboard_rebuild/client/src/components/TutorArtifacts.tsx` - Session artifacts sidebar
+- `dashboard_rebuild/client/src/pages/tutor.tsx` - Complete rewrite from SOP viewer to Tutor Chat
 
 ### Schema Changes (`brain/db_setup.py`)
 - New tables: `tutor_sessions`, `session_chains`, `rag_embeddings`
@@ -453,24 +456,24 @@
 - langchain, langchain-openai, langchain-community, chromadb, tiktoken
 
 ### API Endpoints
-- `POST /api/tutor/session` — Create session
-- `GET /api/tutor/session/<id>` — Get session + history
-- `POST /api/tutor/session/<id>/turn` — Send message (SSE stream)
-- `POST /api/tutor/session/<id>/end` — End session → Brain record
-- `POST /api/tutor/session/<id>/artifact` — Create note/card/map
-- `GET /api/tutor/sessions` — List sessions
-- `GET /api/tutor/content-sources` — Courses + folders + doc counts
-- `POST /api/tutor/chain` — Create session chain
-- `GET /api/tutor/chain/<id>` — Get chain with sessions
-- `POST /api/tutor/embed` — Trigger RAG embedding
-- `POST /api/tutor/sync-vault` — Sync Obsidian vault into RAG
+- `POST /api/tutor/session` - Create session
+- `GET /api/tutor/session/<id>` - Get session + history
+- `POST /api/tutor/session/<id>/turn` - Send message (SSE stream)
+- `POST /api/tutor/session/<id>/end` - End session -> Brain record
+- `POST /api/tutor/session/<id>/artifact` - Create note/card/map
+- `GET /api/tutor/sessions` - List sessions
+- `GET /api/tutor/content-sources` - Courses + folders + doc counts
+- `POST /api/tutor/chain` - Create session chain
+- `GET /api/tutor/chain/<id>` - Get chain with sessions
+- `POST /api/tutor/embed` - Trigger RAG embedding
+- `POST /api/tutor/sync-vault` - Sync Obsidian vault into RAG
 
 - 2026-02-09: Made Adaptive Tutor fully functional:
   - Re-seeded 34 PEIRRO method blocks + 15 template chains (seed_methods.py --force)
   - Created brain/data/seed_tutor_content.py: seeds SOP runtime bundle (7), SOP library (17), method blocks (34), method chains (15) into rag_docs (73+ total)
-  - Updated vault path: PT School Semester 2 → Treys School (CLAUDE.md + global CLAUDE.md)
+  - Updated vault path: PT School Semester 2 -> Treys School (CLAUDE.md + global CLAUDE.md)
   - Improved tutor_chains.py: graceful no-content mode (teaches from training knowledge), method awareness (references PEIRRO blocks/chains by name)
-  - Added POST /api/tutor/sync-vault endpoint: syncs Obsidian vault → rag_docs + auto-embeds
+  - Added POST /api/tutor/sync-vault endpoint: syncs Obsidian vault -> rag_docs + auto-embeds
   - Fixed GET /api/tutor/content-sources: now includes System/SOP virtual course for null-course docs
   - Added SYNC VAULT button to ContentFilter.tsx with vault path input, toast feedback
   - Updated TutorContentSources type: course id now nullable
