@@ -521,6 +521,16 @@ export const api = {
         body: JSON.stringify(data),
       }),
   },
+
+  chainRun: {
+    start: (data: ChainRunRequest) =>
+      request<ChainRunResult>("/chain-run", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    getOne: (id: number) => request<ChainRunResult>(`/chain-run/${id}`),
+    getHistory: () => request<ChainRunSummary[]>("/chain-run/history"),
+  },
 };
 
 // Scholar types
@@ -797,4 +807,54 @@ export interface MethodAnalyticsResponse {
     method_name: string | null;
     chain_name: string | null;
   }[];
+}
+
+// Chain Runner types
+export interface ChainRunRequest {
+  chain_id: number;
+  topic: string;
+  course_id?: number;
+  source_doc_ids?: number[];
+  options?: {
+    write_obsidian?: boolean;
+    draft_cards?: boolean;
+  };
+}
+
+export interface ChainRunStep {
+  step: number;
+  method_name: string;
+  category: string;
+  output: string;
+  duration_ms: number;
+}
+
+export interface ChainRunResult {
+  run_id: number;
+  chain_name: string;
+  status: "completed" | "failed" | "running";
+  steps: ChainRunStep[];
+  artifacts: {
+    session_id: number;
+    obsidian_path?: string | null;
+    card_draft_ids?: number[];
+    metrics: {
+      total_duration_ms: number;
+      steps_completed: number;
+      cards_drafted: number;
+    };
+  } | null;
+  error?: string;
+}
+
+export interface ChainRunSummary {
+  id: number;
+  chain_id: number;
+  chain_name: string;
+  topic: string;
+  status: string;
+  current_step: number;
+  total_steps: number;
+  started_at: string;
+  completed_at: string | null;
 }

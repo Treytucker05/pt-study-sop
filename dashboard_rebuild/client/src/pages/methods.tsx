@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Blocks, Link2, BarChart3, Plus, Star } from "lucide-react";
+import { Blocks, Link2, BarChart3, Plus, Star, Play, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,7 @@ import ChainBuilder from "@/components/ChainBuilder";
 import MethodAnalytics from "@/components/MethodAnalytics";
 import RatingDialog from "@/components/RatingDialog";
 import { api } from "@/lib/api";
-import type { MethodBlock, MethodChain, MethodChainExpanded } from "@/api";
+import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, ChainRunSummary } from "@/api";
 
 const CATEGORIES = ["all", "prepare", "encode", "interrogate", "retrieve", "refine", "overlearn"] as const;
 
@@ -33,6 +33,8 @@ export default function MethodsPage() {
   const [showAddChain, setShowAddChain] = useState(false);
   const [selectedChain, setSelectedChain] = useState<MethodChainExpanded | null>(null);
   const [ratingTarget, setRatingTarget] = useState<{ id: number; name: string; type: "method" | "chain" } | null>(null);
+  const [runTarget, setRunTarget] = useState<{ id: number; name: string } | null>(null);
+  const [runResult, setRunResult] = useState<ChainRunResult | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -52,6 +54,18 @@ export default function MethodsPage() {
     queryKey: ["methods-analytics"],
     queryFn: () => api.methods.analytics(),
     enabled: activeTab === "analytics",
+  });
+
+  const { data: courses = [] } = useQuery({
+    queryKey: ["courses-active"],
+    queryFn: () => api.courses.getActive(),
+    enabled: !!runTarget,
+  });
+
+  const { data: runHistory = [] } = useQuery({
+    queryKey: ["chain-run-history"],
+    queryFn: () => api.chainRun.getHistory(),
+    enabled: activeTab === "chains",
   });
 
   // Mutations
@@ -230,7 +244,7 @@ export default function MethodsPage() {
                         }}
                         title="Delete"
                       >
-                        <span className="text-[10px]">×</span>
+                        <span className="text-[10px]">x</span>
                       </button>
                     </div>
                   </div>
@@ -285,6 +299,16 @@ export default function MethodsPage() {
                             <span className="text-[9px] font-arcade bg-primary/20 text-primary px-1.5 py-0.5">TEMPLATE</span>
                           ) : null}
                           <button
+                            className="p-0.5 hover:text-green-400"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRunTarget({ id: chain.id, name: chain.name });
+                            }}
+                            title="Run chain"
+                          >
+                            <Play className="w-3 h-3" />
+                          </button>
+                          <button
                             className="p-0.5 hover:text-primary"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -315,20 +339,30 @@ export default function MethodsPage() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <span className="font-arcade text-sm text-primary">{selectedChain.name}</span>
-                        {!selectedChain.is_template && (
+                        <div className="flex items-center gap-2">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            className="text-red-400 rounded-none text-[10px] font-arcade h-6"
-                            onClick={() => {
-                              if (confirm(`Delete chain "${selectedChain.name}"?`)) {
-                                deleteChainMutation.mutate(selectedChain.id);
-                              }
-                            }}
+                            className="rounded-none border-2 border-green-600 text-green-400 font-arcade text-[10px] h-6"
+                            onClick={() => setRunTarget({ id: selectedChain.id, name: selectedChain.name })}
                           >
-                            DELETE
+                            <Play className="w-3 h-3 mr-1" /> RUN
                           </Button>
-                        )}
+                          {!selectedChain.is_template && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-400 rounded-none text-[10px] font-arcade h-6"
+                              onClick={() => {
+                                if (confirm(`Delete chain "${selectedChain.name}"?`)) {
+                                  deleteChainMutation.mutate(selectedChain.id);
+                                }
+                              }}
+                            >
+                              DELETE
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       {selectedChain.description && (
                         <p className="font-terminal text-xs text-muted-foreground">{selectedChain.description}</p>
@@ -352,6 +386,56 @@ export default function MethodsPage() {
                       </p>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Run History */}
+            {runHistory.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-arcade text-xs text-muted-foreground">RUN HISTORY</h3>
+                <div className="border-2 border-secondary rounded-none overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-2 border-secondary bg-black/60">
+                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">CHAIN</th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">TOPIC</th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">STATUS</th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">STEPS</th>
+                        <th className="text-left px-3 py-1.5 font-arcade text-[9px] text-muted-foreground">DATE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {runHistory.slice(0, 10).map((run) => (
+                        <tr
+                          key={run.id}
+                          className="border-b border-secondary/50 hover:bg-primary/5 cursor-pointer"
+                          onClick={async () => {
+                            const full = await api.chainRun.getOne(run.id);
+                            setRunResult(full);
+                          }}
+                        >
+                          <td className="px-3 py-1.5 font-terminal text-xs">{run.chain_name}</td>
+                          <td className="px-3 py-1.5 font-terminal text-xs text-muted-foreground">{run.topic}</td>
+                          <td className="px-3 py-1.5">
+                            <span className={`text-[9px] font-arcade px-1.5 py-0.5 ${
+                              run.status === "completed" ? "bg-green-900/40 text-green-400" :
+                              run.status === "failed" ? "bg-red-900/40 text-red-400" :
+                              "bg-yellow-900/40 text-yellow-400"
+                            }`}>
+                              {run.status.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-3 py-1.5 font-terminal text-xs text-muted-foreground">
+                            {run.current_step}/{run.total_steps}
+                          </td>
+                          <td className="px-3 py-1.5 font-terminal text-xs text-muted-foreground">
+                            {new Date(run.started_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -384,6 +468,32 @@ export default function MethodsPage() {
           onClose={() => setShowAddChain(false)}
           onSubmit={(data) => createChainMutation.mutate(data)}
         />
+
+        {/* Chain Run Dialog */}
+        {runTarget && (
+          <ChainRunDialog
+            open={!!runTarget}
+            chainId={runTarget.id}
+            chainName={runTarget.name}
+            courses={courses}
+            onClose={() => setRunTarget(null)}
+            onComplete={(result) => {
+              setRunResult(result);
+              setRunTarget(null);
+              queryClient.invalidateQueries({ queryKey: ["chain-run-history"] });
+              toast({ title: `${result.chain_name} ${result.status}` });
+            }}
+          />
+        )}
+
+        {/* Run Result Viewer */}
+        {runResult && (
+          <ChainRunResultDialog
+            open={!!runResult}
+            result={runResult}
+            onClose={() => setRunResult(null)}
+          />
+        )}
 
         {/* Rating Dialog */}
         {ratingTarget && (
@@ -572,6 +682,251 @@ function AddChainDialog({
             CREATE CHAIN
           </Button>
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Chain Run Dialog
+// ---------------------------------------------------------------------------
+interface CourseItem {
+  id: number;
+  name: string;
+}
+
+function ChainRunDialog({
+  open,
+  chainId,
+  chainName,
+  courses,
+  onClose,
+  onComplete,
+}: {
+  open: boolean;
+  chainId: number;
+  chainName: string;
+  courses: CourseItem[];
+  onClose: () => void;
+  onComplete: (result: ChainRunResult) => void;
+}) {
+  const [topic, setTopic] = useState("");
+  const [courseId, setCourseId] = useState<string>("");
+  const [writeObsidian, setWriteObsidian] = useState(true);
+  const [draftCards, setDraftCards] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleStart = async () => {
+    if (!topic.trim()) return;
+    setRunning(true);
+    setError(null);
+    try {
+      const result = await api.chainRun.start({
+        chain_id: chainId,
+        topic: topic.trim(),
+        course_id: courseId ? Number(courseId) : undefined,
+        options: { write_obsidian: writeObsidian, draft_cards: draftCards },
+      });
+      onComplete(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Chain run failed");
+      setRunning(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && !running && onClose()}>
+      <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
+        <DialogTitle className="font-arcade text-xs text-primary">
+          RUN: {chainName}
+        </DialogTitle>
+        <DialogDescription className="sr-only">Configure and run a method chain</DialogDescription>
+        <div className="space-y-3 mt-2">
+          <div>
+            <label className="font-arcade text-[9px] text-muted-foreground">TOPIC</label>
+            <Input
+              placeholder="e.g., Glenohumeral Joint Ligaments"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              disabled={running}
+              className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm"
+            />
+          </div>
+          <div>
+            <label className="font-arcade text-[9px] text-muted-foreground">COURSE (OPTIONAL)</label>
+            <Select value={courseId} onValueChange={setCourseId} disabled={running}>
+              <SelectTrigger className="rounded-none border-2 border-secondary bg-black/40 font-terminal text-sm">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent className="bg-black border-2 border-primary rounded-none">
+                {courses.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)} className="font-terminal text-sm">
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 font-terminal text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={writeObsidian}
+                onChange={(e) => setWriteObsidian(e.target.checked)}
+                disabled={running}
+                className="accent-primary"
+              />
+              Write to Obsidian
+            </label>
+            <label className="flex items-center gap-2 font-terminal text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={draftCards}
+                onChange={(e) => setDraftCards(e.target.checked)}
+                disabled={running}
+                className="accent-primary"
+              />
+              Draft Anki cards
+            </label>
+          </div>
+          {error && (
+            <p className="font-terminal text-xs text-red-400">{error}</p>
+          )}
+          <Button
+            className="w-full font-arcade rounded-none text-xs"
+            onClick={handleStart}
+            disabled={!topic.trim() || running}
+          >
+            {running ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                RUNNING...
+              </>
+            ) : (
+              <>
+                <Play className="w-3 h-3 mr-1" /> START
+              </>
+            )}
+          </Button>
+          {running && (
+            <p className="font-terminal text-[10px] text-muted-foreground text-center">
+              This may take 15-45 seconds depending on chain length.
+            </p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Chain Run Result Dialog
+// ---------------------------------------------------------------------------
+function ChainRunResultDialog({
+  open,
+  result,
+  onClose,
+}: {
+  open: boolean;
+  result: ChainRunResult;
+  onClose: () => void;
+}) {
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([1]));
+
+  const toggleStep = (step: number) => {
+    setExpandedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(step)) next.delete(step);
+      else next.add(step);
+      return next;
+    });
+  };
+
+  const metrics = result.artifacts?.metrics;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="bg-black border-2 border-primary rounded-none max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogTitle className="font-arcade text-xs text-primary flex items-center gap-2">
+          {result.chain_name} RESULTS
+          <span className={`text-[9px] px-1.5 py-0.5 ${
+            result.status === "completed" ? "bg-green-900/40 text-green-400" :
+            "bg-red-900/40 text-red-400"
+          }`}>
+            {result.status.toUpperCase()}
+          </span>
+        </DialogTitle>
+        <DialogDescription className="sr-only">Chain run results</DialogDescription>
+
+        {/* Metrics Summary */}
+        {metrics && (
+          <div className="flex gap-4 mt-2">
+            <div className="border border-secondary px-3 py-1.5 bg-black/60">
+              <span className="font-arcade text-[9px] text-muted-foreground block">DURATION</span>
+              <span className="font-terminal text-sm">{(metrics.total_duration_ms / 1000).toFixed(1)}s</span>
+            </div>
+            <div className="border border-secondary px-3 py-1.5 bg-black/60">
+              <span className="font-arcade text-[9px] text-muted-foreground block">STEPS</span>
+              <span className="font-terminal text-sm">{metrics.steps_completed}</span>
+            </div>
+            <div className="border border-secondary px-3 py-1.5 bg-black/60">
+              <span className="font-arcade text-[9px] text-muted-foreground block">CARDS</span>
+              <span className="font-terminal text-sm">{metrics.cards_drafted}</span>
+            </div>
+            {result.artifacts?.obsidian_path && (
+              <div className="border border-secondary px-3 py-1.5 bg-black/60">
+                <span className="font-arcade text-[9px] text-muted-foreground block">OBSIDIAN</span>
+                <span className="font-terminal text-[10px] text-green-400">saved</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step Outputs */}
+        <div className="space-y-2 mt-3">
+          {result.steps.map((step) => (
+            <div key={step.step} className="border border-secondary rounded-none">
+              <button
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-primary/5 text-left"
+                onClick={() => toggleStep(step.step)}
+              >
+                {expandedSteps.has(step.step) ? (
+                  <ChevronDown className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                ) : (
+                  <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                )}
+                <span className="font-arcade text-[10px] text-primary">{step.step}.</span>
+                <span className="font-terminal text-xs">{step.method_name}</span>
+                <span className="ml-auto font-terminal text-[10px] text-muted-foreground">
+                  {step.category} | {(step.duration_ms / 1000).toFixed(1)}s
+                </span>
+              </button>
+              {expandedSteps.has(step.step) && (
+                <div className="px-3 pb-3 border-t border-secondary/50">
+                  <pre className="font-terminal text-xs text-muted-foreground whitespace-pre-wrap mt-2 leading-relaxed">
+                    {step.output}
+                  </pre>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {result.error && (
+          <div className="mt-3 border border-red-500/40 bg-red-900/10 px-3 py-2">
+            <span className="font-arcade text-[9px] text-red-400">ERROR: </span>
+            <span className="font-terminal text-xs text-red-300">{result.error}</span>
+          </div>
+        )}
+
+        <Button
+          variant="outline"
+          className="w-full mt-3 font-arcade rounded-none text-xs"
+          onClick={onClose}
+        >
+          CLOSE
+        </Button>
       </DialogContent>
     </Dialog>
   );
