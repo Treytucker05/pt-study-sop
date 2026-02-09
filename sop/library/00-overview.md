@@ -16,6 +16,8 @@ A structured AI study operating system for DPT coursework. It enforces an end-to
 - **Deterministic logging** -- every session emits a Session Ledger; JSON is produced via Brain ingestion, not by the tutor.
 - **No Phantom Outputs** -- if a step didn't happen, output NOT DONE / UNKNOWN; never invent.
 
+For the theoretical foundation and PPFW paradigm stack underlying this system, see [VISION_PPFW.md](../../docs/root/VISION_PPFW.md).
+
 ## Lifecycle
 
 | Phase | Modules | PEIRRO Alignment |

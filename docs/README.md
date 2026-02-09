@@ -21,6 +21,7 @@ Basic alignment is enforced by `python scripts/check_docs_sync.py` (CI).
 | Architecture | `docs/root/PROJECT_ARCHITECTURE.md` |
 | Data Contracts | `docs/contracts/INDEX.md` |
 | Tutor/SOP Explorer | `docs/dashboard/TUTOR_PAGE_SOP_EXPLORER_v1.0.md` |
+| Vision & Theory | `docs/root/VISION_PPFW.md` |
 | Brain System | `docs/root/PROJECT_ARCHITECTURE.md` (Brain section) |
 | Composable Methods | `sop/library/15-method-library.md` |
 | Release Process | `docs/release/RELEASE_PROCESS.md` |
@@ -45,6 +46,7 @@ Basic alignment is enforced by `python scripts/check_docs_sync.py` (CI).
 - [Dev Guide](root/GUIDE_DEV.md)
 - [Architecture Guide](root/GUIDE_ARCHITECTURE.md)
 - [Concept Map: Typical Session Flow](root/CONCEPT_MAP_FLOW.md)
+- [Vision: PPFW Stack](root/VISION_PPFW.md)
 
 ## Schemas & Contracts
 
