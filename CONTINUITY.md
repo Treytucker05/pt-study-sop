@@ -418,3 +418,43 @@
 ## 2026-02-09 - Agent Setup Cleanup
 
 - 02:04: Added Agents Conductor track, clarified workflow + track pointers for Claude compatibility, vendored `x-research` skill for Codex, expanded allowlists, and ignored repo-root planning artifacts/scratch. Files: `conductor/tracks/agents_setup_cleanup_20260209/`, `conductor/tracks.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`, `.claude/settings.local.json`, `.codex/skills/x-research/`, `.gitignore`, `permissions.json`.
+
+## 2026-02-08 - Adaptive Tutor Learning System (Phase 1 MVP)
+
+### What was built
+- **Interactive Tutor Chat** at `/tutor` — LangChain-powered RAG chat with SSE streaming
+- **3-panel layout**: Content Filter (left) | Chat Interface (center) | Artifacts Sidebar (right)
+- **First Pass phase behavior**: Core/Sprint/Drill/Teaching Sprint/Diagnostic Sprint modes
+- **Mid-session artifact creation**: `/note`, `/card`, `/map` slash commands create Obsidian notes, Anki card drafts, and concept maps
+- **Full Brain logging**: tutor_sessions, tutor_turns, session_chains tables
+
+### New Backend Files
+- `brain/tutor_rag.py` — LangChain RAG pipeline: ChromaDB + OpenAI embeddings + keyword fallback
+- `brain/tutor_chains.py` — LangChain chain definitions for First Pass phase, artifact command detection
+- `brain/tutor_streaming.py` — SSE streaming adapter for LangChain chains
+- `brain/dashboard/api_tutor.py` — Flask Blueprint with 10 endpoints (`/api/tutor/*`)
+
+### New Frontend Files
+- `dashboard_rebuild/client/src/components/ContentFilter.tsx` — Course/folder/mode selector
+- `dashboard_rebuild/client/src/components/TutorChat.tsx` — SSE streaming chat with markdown + citations
+- `dashboard_rebuild/client/src/components/TutorArtifacts.tsx` — Session artifacts sidebar
+- `dashboard_rebuild/client/src/pages/tutor.tsx` — Complete rewrite from SOP viewer to Tutor Chat
+
+### Schema Changes (`brain/db_setup.py`)
+- New tables: `tutor_sessions`, `session_chains`, `rag_embeddings`
+- Column migrations: `tutor_turns` (+tutor_session_id, phase, artifacts_json), `card_drafts` (+tutor_session_id)
+
+### Dependencies Added (`requirements.txt`)
+- langchain, langchain-openai, langchain-community, chromadb, tiktoken
+
+### API Endpoints
+- `POST /api/tutor/session` — Create session
+- `GET /api/tutor/session/<id>` — Get session + history
+- `POST /api/tutor/session/<id>/turn` — Send message (SSE stream)
+- `POST /api/tutor/session/<id>/end` — End session → Brain record
+- `POST /api/tutor/session/<id>/artifact` — Create note/card/map
+- `GET /api/tutor/sessions` — List sessions
+- `GET /api/tutor/content-sources` — Courses + folders + doc counts
+- `POST /api/tutor/chain` — Create session chain
+- `GET /api/tutor/chain/<id>` — Get chain with sessions
+- `POST /api/tutor/embed` — Trigger RAG embedding

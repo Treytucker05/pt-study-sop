@@ -531,6 +531,47 @@ export const api = {
     getOne: (id: number) => request<ChainRunResult>(`/chain-run/${id}`),
     getHistory: () => request<ChainRunSummary[]>("/chain-run/history"),
   },
+
+  tutor: {
+    createSession: (data: TutorCreateSessionRequest) =>
+      request<TutorSession>("/tutor/session", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    getSession: (sessionId: string) =>
+      request<TutorSessionWithTurns>(`/tutor/session/${sessionId}`),
+    endSession: (sessionId: string) =>
+      request<TutorSessionEndResult>(`/tutor/session/${sessionId}/end`, {
+        method: "POST",
+      }),
+    listSessions: (params?: { course_id?: number; status?: string; limit?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.course_id) qs.set("course_id", String(params.course_id));
+      if (params?.status) qs.set("status", params.status);
+      if (params?.limit) qs.set("limit", String(params.limit));
+      const q = qs.toString();
+      return request<TutorSessionSummary[]>(`/tutor/sessions${q ? `?${q}` : ""}`);
+    },
+    createArtifact: (sessionId: string, data: TutorArtifactRequest) =>
+      request<TutorArtifactResult>(`/tutor/session/${sessionId}/artifact`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    getContentSources: () =>
+      request<TutorContentSources>("/tutor/content-sources"),
+    createChain: (data: TutorChainRequest) =>
+      request<TutorChain>("/tutor/chain", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    getChain: (chainId: number) =>
+      request<TutorChainWithSessions>(`/tutor/chain/${chainId}`),
+    triggerEmbed: (data?: { course_id?: number; folder_path?: string }) =>
+      request<TutorEmbedResult>("/tutor/embed", {
+        method: "POST",
+        body: JSON.stringify(data || {}),
+      }),
+  },
 };
 
 // Scholar types
@@ -857,4 +898,139 @@ export interface ChainRunSummary {
   total_steps: number;
   started_at: string;
   completed_at: string | null;
+}
+
+// Adaptive Tutor types
+export type TutorPhase = "first_pass" | "understanding" | "testing";
+export type TutorMode = "Core" | "Sprint" | "Drill" | "Diagnostic Sprint" | "Teaching Sprint";
+export type TutorSessionStatus = "active" | "completed" | "abandoned";
+
+export interface TutorCreateSessionRequest {
+  course_id?: number;
+  phase?: TutorPhase;
+  mode?: TutorMode;
+  topic?: string;
+  content_filter?: { folders?: string[] };
+}
+
+export interface TutorSession {
+  session_id: string;
+  phase: TutorPhase;
+  mode: TutorMode;
+  topic: string;
+  status: TutorSessionStatus;
+  started_at: string;
+}
+
+export interface TutorTurn {
+  id: number;
+  turn_number: number;
+  question: string;
+  answer: string | null;
+  citations_json: TutorCitation[] | string | null;
+  phase: string | null;
+  artifacts_json: unknown;
+  created_at: string;
+}
+
+export interface TutorCitation {
+  source: string;
+  index: number;
+}
+
+export interface TutorSessionWithTurns extends TutorSession {
+  id: number;
+  brain_session_id: number | null;
+  course_id: number | null;
+  content_filter_json: string | null;
+  content_filter: { folders?: string[] } | null;
+  turn_count: number;
+  artifacts_json: string | null;
+  lo_ids_json: string | null;
+  summary_text: string | null;
+  ended_at: string | null;
+  turns: TutorTurn[];
+}
+
+export interface TutorSessionSummary {
+  id: number;
+  session_id: string;
+  course_id: number | null;
+  phase: TutorPhase;
+  mode: TutorMode;
+  topic: string;
+  status: TutorSessionStatus;
+  turn_count: number;
+  started_at: string;
+  ended_at: string | null;
+}
+
+export interface TutorSessionEndResult {
+  session_id: string;
+  status: "completed";
+  brain_session_id: number | null;
+  ended_at: string;
+}
+
+export interface TutorArtifactRequest {
+  type: "note" | "card" | "map";
+  content: string;
+  title?: string;
+  front?: string;
+  back?: string;
+  tags?: string;
+}
+
+export interface TutorArtifactResult {
+  type: string;
+  session_id: string;
+  card_id?: number;
+  content?: string;
+  title?: string;
+  mermaid?: string;
+  status?: string;
+}
+
+export interface TutorContentSources {
+  courses: { id: number; name: string; code: string | null; doc_count: number }[];
+  folders: { folder_path: string; course_id: number | null; doc_count: number }[];
+  total_docs: number;
+}
+
+export interface TutorChainRequest {
+  chain_name?: string;
+  course_id?: number;
+  topic: string;
+  session_ids?: string[];
+}
+
+export interface TutorChain {
+  id: number;
+  chain_name: string | null;
+  topic: string;
+  session_ids: string[];
+}
+
+export interface TutorChainWithSessions extends TutorChain {
+  course_id: number | null;
+  session_ids_json: string;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+  sessions: TutorSession[];
+}
+
+export interface TutorEmbedResult {
+  embedded: number;
+  skipped: number;
+  total_chunks: number;
+}
+
+// SSE streaming helper for Tutor chat
+export interface TutorSSEChunk {
+  type: "token" | "done" | "error";
+  content?: string;
+  citations?: TutorCitation[];
+  artifacts?: unknown[];
+  summary?: string;
 }

@@ -45,6 +45,7 @@ Canonical run/build/test commands live in `docs/root/GUIDE_DEV.md`.
 - Frontend UI: dashboard_rebuild/
 - Scholar research: scholar/
 - SOP definitions: sop/
+- Adaptive Tutor: brain/tutor_rag.py, brain/tutor_chains.py, brain/tutor_streaming.py, brain/dashboard/api_tutor.py
 - Tutor logs: brain/session_logs/ (Tutor itself is external)
 
 ## External Systems (from docs)

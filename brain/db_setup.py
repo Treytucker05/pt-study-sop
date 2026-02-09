@@ -1259,11 +1259,115 @@ def init_database():
         ON chain_runs(status)
     """)
 
+    # ------------------------------------------------------------------
+    # Adaptive Tutor: tutor_sessions (interactive tutor chat sessions)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL UNIQUE,
+            brain_session_id INTEGER,
+            course_id INTEGER,
+            phase TEXT NOT NULL DEFAULT 'first_pass',
+            mode TEXT DEFAULT 'Core',
+            topic TEXT,
+            content_filter_json TEXT,
+            status TEXT DEFAULT 'active',
+            turn_count INTEGER DEFAULT 0,
+            artifacts_json TEXT,
+            lo_ids_json TEXT,
+            summary_text TEXT,
+            started_at TEXT NOT NULL,
+            ended_at TEXT,
+            FOREIGN KEY(brain_session_id) REFERENCES sessions(id),
+            FOREIGN KEY(course_id) REFERENCES courses(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_sessions_session_id
+        ON tutor_sessions(session_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_sessions_status
+        ON tutor_sessions(status)
+    """)
+
+    # ------------------------------------------------------------------
+    # Adaptive Tutor: session_chains (links related tutor sessions)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS session_chains (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chain_name TEXT,
+            course_id INTEGER,
+            topic TEXT NOT NULL,
+            session_ids_json TEXT NOT NULL,
+            status TEXT DEFAULT 'active',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT,
+            FOREIGN KEY(course_id) REFERENCES courses(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_session_chains_topic
+        ON session_chains(topic)
+    """)
+
+    # ------------------------------------------------------------------
+    # Adaptive Tutor: rag_embeddings (vector chunks for ChromaDB)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS rag_embeddings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rag_doc_id INTEGER NOT NULL,
+            chunk_index INTEGER NOT NULL DEFAULT 0,
+            chunk_text TEXT NOT NULL,
+            embedding_model TEXT DEFAULT 'text-embedding-3-small',
+            chroma_id TEXT,
+            token_count INTEGER,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(rag_doc_id) REFERENCES rag_docs(id),
+            UNIQUE(rag_doc_id, chunk_index)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_rag_embeddings_doc
+        ON rag_embeddings(rag_doc_id)
+    """)
+
+    # ------------------------------------------------------------------
+    # Adaptive Tutor: column migrations
+    # ------------------------------------------------------------------
+    # tutor_turns: add tutor_session_id, phase, artifacts_json
+    cursor.execute("PRAGMA table_info(tutor_turns)")
+    tt_cols = {col[1] for col in cursor.fetchall()}
+    for col_name in ["tutor_session_id", "phase", "artifacts_json"]:
+        if col_name not in tt_cols:
+            try:
+                cursor.execute(f"ALTER TABLE tutor_turns ADD COLUMN {col_name} TEXT")
+                print(f"[INFO] Added '{col_name}' column to tutor_turns table")
+            except sqlite3.OperationalError:
+                pass
+
+    # card_drafts: add tutor_session_id
+    cursor.execute("PRAGMA table_info(card_drafts)")
+    cd_cols = {col[1] for col in cursor.fetchall()}
+    if "tutor_session_id" not in cd_cols:
+        try:
+            cursor.execute("ALTER TABLE card_drafts ADD COLUMN tutor_session_id TEXT")
+            print("[INFO] Added 'tutor_session_id' column to card_drafts table")
+        except sqlite3.OperationalError:
+            pass
+
     conn.commit()
     conn.close()
 
     print(f"[OK] Database initialized at: {DB_PATH}")
-    print("[OK] Schema version: 9.4 + planning/RAG/methods/chain-runs extensions")
+    print("[OK] Schema version: 9.4 + planning/RAG/methods/chain-runs/tutor extensions")
 
 
 def migrate_method_categories():
