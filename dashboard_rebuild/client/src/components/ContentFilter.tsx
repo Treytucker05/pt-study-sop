@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
-import type { TutorContentSources, TutorMode, TutorTemplateChain, Course } from "@/lib/api";
+import type { TutorContentSources, TutorMode, TutorTemplateChain } from "@/lib/api";
+import type { Course } from "@shared/schema";
 import {
   TEXT_PANEL_TITLE,
   TEXT_SECTION_LABEL,
@@ -23,6 +24,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Database,
   FileText,
+  Globe,
   Loader2,
   Zap,
   Link,
@@ -45,6 +47,8 @@ interface ContentFilterProps {
   setTopic: (topic: string) => void;
   model: string;
   setModel: (model: string) => void;
+  webSearch: boolean;
+  setWebSearch: (enabled: boolean) => void;
   onStartSession: () => void;
   isStarting: boolean;
   hasActiveSession: boolean;
@@ -130,6 +134,8 @@ export function ContentFilter({
   setTopic,
   model,
   setModel,
+  webSearch,
+  setWebSearch,
   onStartSession,
   isStarting,
   hasActiveSession,
@@ -434,6 +440,18 @@ export function ContentFilter({
               />
             )}
           </div>
+
+          {/* Web search toggle */}
+          {provider === "codex" && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={webSearch}
+                onCheckedChange={(v) => setWebSearch(!!v)}
+              />
+              <Globe className={ICON_SM} />
+              <span className={TEXT_BODY}>Web search</span>
+            </label>
+          )}
 
           {/* Course selector */}
           <div>

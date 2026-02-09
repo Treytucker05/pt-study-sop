@@ -9,14 +9,7 @@ import {
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-
-const COURSE_FOLDERS = [
-  { name: "EBP", path: "School/Evidence Based Practice" },
-  { name: "ExPhys", path: "School/Exercise Physiology" },
-  { name: "MS1", path: "School/Movement Science 1" },
-  { name: "Neuro", path: "School/Neuroscience" },
-  { name: "TI", path: "School/Therapeutic Intervention" },
-];
+import { COURSE_FOLDERS, getCoursePaths } from "@/config/courses";
 
 interface ObsidianVaultBrowserProps {
   onWikilinkClick?: (noteName: string, shiftKey: boolean) => void;
@@ -111,9 +104,9 @@ export function ObsidianVaultBrowser({ onWikilinkClick }: ObsidianVaultBrowserPr
       setPreviewMode(true);
       return;
     }
-    for (const cf of COURSE_FOLDERS) {
+    for (const cf of getCoursePaths()) {
       try {
-        await loadFile(`${cf.path}/${noteName}.md`);
+        await loadFile(`${cf}/${noteName}.md`);
         setPreviewMode(true);
         return;
       } catch { /* continue */ }

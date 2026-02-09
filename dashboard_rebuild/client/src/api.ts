@@ -997,6 +997,7 @@ export interface TutorTurn {
 
 export interface TutorCitation {
   source: string;
+  url?: string;
   index: number;
 }
 
@@ -1005,7 +1006,7 @@ export interface TutorSessionWithTurns extends TutorSession {
   brain_session_id: number | null;
   course_id: number | null;
   content_filter_json: string | null;
-  content_filter: { material_ids?: number[]; model?: string } | null;
+  content_filter: { material_ids?: number[]; model?: string; web_search?: boolean } | null;
   turn_count: number;
   artifacts_json: string | null;
   lo_ids_json: string | null;
@@ -1115,7 +1116,7 @@ export interface MaterialUploadResponse {
 
 // SSE streaming helper for Tutor chat
 export interface TutorSSEChunk {
-  type: "token" | "done" | "error";
+  type: "token" | "done" | "error" | "web_search_searching" | "web_search_completed";
   content?: string;
   citations?: TutorCitation[];
   artifacts?: unknown[];

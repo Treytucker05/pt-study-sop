@@ -134,6 +134,31 @@ export function TutorChat({
               return;
             }
 
+            if (parsed.type === "web_search_searching") {
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  ...updated[updated.length - 1],
+                  content: "Searching the web...\n\n",
+                  isStreaming: true,
+                };
+                return updated;
+              });
+            }
+
+            if (parsed.type === "web_search_completed") {
+              fullText = "";
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  ...updated[updated.length - 1],
+                  content: "",
+                  isStreaming: true,
+                };
+                return updated;
+              });
+            }
+
             if (parsed.type === "token" && parsed.content) {
               fullText += parsed.content;
               setMessages((prev) => {
@@ -312,15 +337,31 @@ export function TutorChat({
               {/* Citations + Model */}
               {(msg.citations?.length || msg.model) && !msg.isStreaming ? (
                 <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
-                  {msg.citations?.map((c) => (
-                    <Badge
-                      key={c.index}
-                      variant="outline"
-                      className="text-sm rounded-none"
-                    >
-                      [{c.index}] {c.source}
-                    </Badge>
-                  ))}
+                  {msg.citations?.map((c) =>
+                    c.url ? (
+                      <a
+                        key={c.index}
+                        href={c.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Badge
+                          variant="outline"
+                          className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
+                        >
+                          [{c.index}] {c.source}
+                        </Badge>
+                      </a>
+                    ) : (
+                      <Badge
+                        key={c.index}
+                        variant="outline"
+                        className="text-sm rounded-none"
+                      >
+                        [{c.index}] {c.source}
+                      </Badge>
+                    )
+                  )}
                   {msg.model && (
                     <Badge variant="outline" className="text-sm rounded-none text-muted-foreground/60 ml-auto">
                       {msg.model}

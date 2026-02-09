@@ -8,15 +8,9 @@ import {
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { ErrorBoundary, SidebarErrorFallback } from "@/components/ErrorBoundary";
+import { COURSE_FOLDERS } from "@/config/courses";
 import type { BrainWorkspace } from "./useBrainWorkspace";
-
-const COURSE_FOLDERS = [
-  { name: "EBP", path: "School/Evidence Based Practice" },
-  { name: "ExPhys", path: "School/Exercise Physiology" },
-  { name: "MS1", path: "School/Movement Science 1" },
-  { name: "Neuro", path: "School/Neuroscience" },
-  { name: "TI", path: "School/Therapeutic Intervention" },
-];
 
 // --- Sub-components for recursive tree rendering ---
 
@@ -39,16 +33,16 @@ function FileItem({ name, isFolder, isExpanded, isActive, depth, onClick }: {
       {isFolder ? (
         <>
           {isExpanded ? (
-            <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
+            <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
           ) : (
-            <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+            <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
           )}
-          <Folder className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
+          <Folder className="w-3.5 h-3.5 text-yellow-500 shrink-0" aria-hidden="true" />
         </>
       ) : (
         <>
           <span className="w-3 shrink-0" />
-          <File className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+          <File className="w-3.5 h-3.5 text-blue-400 shrink-0" aria-hidden="true" />
         </>
       )}
       <span className="truncate">{name}</span>
@@ -133,6 +127,7 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set()
   );
+  const [errorKey, setErrorKey] = useState(0);
 
   const connected = workspace.obsidianStatus?.connected === true;
 
@@ -196,7 +191,7 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
   if (!connected) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4">
-        <FolderOpen className="w-6 h-6 text-red-500 mb-2" />
+        <FolderOpen className="w-6 h-6 text-red-500 mb-2" aria-hidden="true" />
         <p className="font-terminal text-sm text-red-400 text-center">
           Obsidian Offline
         </p>
@@ -212,12 +207,13 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
       {/* Search + New Note */}
       <div className="p-2 space-y-1.5 border-b border-primary/30">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search files..."
             className="h-6 pl-7 text-sm font-terminal rounded-none border-secondary/50 bg-black/40"
+            aria-label="Search files"
           />
         </div>
         <Button
@@ -226,7 +222,7 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
           className="w-full h-5 text-xs font-terminal rounded-none border-primary/50"
           onClick={createNewNote}
         >
-          <FileText className="w-2.5 h-2.5 mr-1" />
+          <FileText className="w-2.5 h-2.5 mr-1" aria-hidden="true" />
           New Note
         </Button>
       </div>
@@ -242,6 +238,7 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
                 ? "bg-primary/20 text-primary border-l-2 border-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/20"
             }`}
+            aria-pressed={currentFolder === course.path}
           >
             {course.name}
           </button>
@@ -256,8 +253,9 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
               onClick={navigateToParent}
               className="hover:text-primary shrink-0"
               title="Go to parent folder"
+              aria-label="Go to parent folder"
             >
-              <ArrowLeft className="w-3 h-3" />
+              <ArrowLeft className="w-3 h-3" aria-hidden="true" />
             </button>
           )}
           {breadcrumbSegments.map((part, i, arr) => (
@@ -276,52 +274,57 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
         </div>
       )}
 
-      {/* File tree */}
-      <ScrollArea className="flex-1">
-        <div className="py-1">
-          {filteredFiles.map((file: string | { path: string }) => {
-            const filePath = typeof file === "string" ? file : file.path;
-            const isFolder = filePath.endsWith("/");
-            const name =
-              filePath.replace(/\/$/, "").split("/").pop() || filePath;
-            const fullPath = currentFolder
-              ? `${currentFolder}/${name}`
-              : name;
-            const isExpanded = expandedFolders.has(fullPath);
-            const isActive =
-              workspace.currentFile?.endsWith(name) || false;
+      {/* File tree with error boundary */}
+      <ErrorBoundary
+        key={`filetree-${errorKey}`}
+        fallback={<SidebarErrorFallback onReset={() => setErrorKey((k) => k + 1)} />}
+      >
+        <ScrollArea className="flex-1">
+          <div className="py-1">
+            {filteredFiles.map((file: string | { path: string }) => {
+              const filePath = typeof file === "string" ? file : file.path;
+              const isFolder = filePath.endsWith("/");
+              const name =
+                filePath.replace(/\/$/, "").split("/").pop() || filePath;
+              const fullPath = currentFolder
+                ? `${currentFolder}/${name}`
+                : name;
+              const isExpanded = expandedFolders.has(fullPath);
+              const isActive =
+                workspace.currentFile?.endsWith(name) || false;
 
-            return (
-              <div key={filePath}>
-                <FileItem
-                  name={name}
-                  isFolder={isFolder}
-                  isExpanded={isExpanded}
-                  isActive={isActive}
-                  depth={0}
-                  onClick={() => {
-                    if (isFolder) {
-                      toggleFolder(fullPath);
-                    } else {
-                      workspace.openFile(fullPath);
-                    }
-                  }}
-                />
-                {isFolder && isExpanded && (
-                  <FolderChildren
-                    folderPath={fullPath}
-                    depth={1}
-                    expandedFolders={expandedFolders}
-                    toggleFolder={toggleFolder}
-                    workspace={workspace}
-                    connected={connected}
+              return (
+                <div key={filePath}>
+                  <FileItem
+                    name={name}
+                    isFolder={isFolder}
+                    isExpanded={isExpanded}
+                    isActive={isActive}
+                    depth={0}
+                    onClick={() => {
+                      if (isFolder) {
+                        toggleFolder(fullPath);
+                      } else {
+                        workspace.openFile(fullPath);
+                      }
+                    }}
                   />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </ScrollArea>
+                  {isFolder && isExpanded && (
+                    <FolderChildren
+                      folderPath={fullPath}
+                      depth={1}
+                      expandedFolders={expandedFolders}
+                      toggleFolder={toggleFolder}
+                      workspace={workspace}
+                      connected={connected}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </ErrorBoundary>
     </div>
   );
 }

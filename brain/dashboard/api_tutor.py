@@ -338,6 +338,9 @@ def send_turn(session_id: str):
     if content_filter and content_filter.get("model"):
         model_override = content_filter["model"]
 
+    # Read web search preference
+    enable_web_search = bool(content_filter and content_filter.get("web_search"))
+
     # Resolve provider selection
     model_str = (str(model_override).strip() if model_override else "")
     model_lower = model_str.lower()
@@ -503,18 +506,25 @@ Remember: cite source documents using [Source: filename] when you use them."""
                 use_streaming = True
                 try:
                     api_model = None
+                    url_citations = []
                     for chunk in stream_chatgpt_responses(
                         system_prompt, user_prompt,
                         model=codex_model or "gpt-5.1",
                         timeout=120,
+                        web_search=enable_web_search,
                     ):
                         if chunk.get("type") == "delta":
                             full_response += chunk.get("text", "")
                             yield format_sse_chunk(chunk.get("text", ""))
+                        elif chunk.get("type") == "web_search":
+                            yield format_sse_chunk(
+                                "", chunk_type=f"web_search_{chunk['status']}"
+                            )
                         elif chunk.get("type") == "error":
                             raise RuntimeError(chunk.get("error", "ChatGPT API failed"))
                         elif chunk.get("type") == "done":
                             api_model = chunk.get("model")
+                            url_citations = chunk.get("url_citations", [])
                 except Exception as stream_err:
                     # Fallback: Codex CLI (slower but reliable)
                     if not full_response:
@@ -536,7 +546,16 @@ Remember: cite source documents using [Source: filename] when you use them."""
                         raise stream_err
 
                 citations = extract_citations(full_response)
-                yield format_sse_done(citations=citations, model=api_model)
+                # Merge document citations with web URL citations
+                all_citations = citations
+                if url_citations:
+                    for uc in url_citations:
+                        all_citations.append({
+                            "source": uc.get("title") or uc.get("url", ""),
+                            "url": uc.get("url", ""),
+                            "index": len(all_citations) + 1,
+                        })
+                yield format_sse_done(citations=all_citations, model=api_model)
 
             except Exception as e:
                 yield format_sse_error(str(e))

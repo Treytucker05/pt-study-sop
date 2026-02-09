@@ -691,12 +691,32 @@ def _refresh_codex_token(refresh_token: str) -> Optional[Dict[str, str]]:
     return None
 
 
+def _extract_url_citations(response_obj: dict) -> list[dict]:
+    """Extract URL citations from a Responses API response.completed object."""
+    citations = []
+    seen_urls = set()
+    for output_item in response_obj.get("output", []):
+        for content_item in output_item.get("content", []):
+            for ann in content_item.get("annotations", []):
+                if ann.get("type") == "url_citation":
+                    url = ann.get("url", "")
+                    if url and url not in seen_urls:
+                        seen_urls.add(url)
+                        citations.append({
+                            "url": url,
+                            "title": ann.get("title", ""),
+                            "index": len(citations) + 1,
+                        })
+    return citations
+
+
 def call_chatgpt_responses(
     system_prompt: str,
     user_prompt: str,
     *,
     model: str = "gpt-5.1",
     timeout: int = 120,
+    web_search: bool = False,
 ) -> Dict[str, Any]:
     """
     Synchronous call to ChatGPT backend API (chatgpt.com/backend-api/codex/responses).
@@ -706,14 +726,18 @@ def call_chatgpt_responses(
     if not auth:
         return {"success": False, "error": "No Codex auth tokens found (~/.codex/auth.json)", "content": None}
 
-    body = json.dumps({
+    payload: dict = {
         "model": model,
         "instructions": system_prompt,
         "input": [{"role": "user", "content": user_prompt}],
         "store": False,
         "stream": True,
         "text": {"verbosity": "low"},
-    })
+    }
+    if web_search:
+        payload["tools"] = [{"type": "web_search", "search_context_size": "low"}]
+
+    body = json.dumps(payload)
 
     headers = {
         "Authorization": f"Bearer {auth['access_token']}",
@@ -778,25 +802,32 @@ def stream_chatgpt_responses(
     *,
     model: str = "gpt-5.1",
     timeout: int = 120,
+    web_search: bool = False,
 ):
     """
     Streaming generator for ChatGPT backend API.
     Yields dicts: {"type": "delta", "text": "..."} or {"type": "done", "usage": {...}}
     or {"type": "error", "error": "..."}.
+    When web_search=True, also yields {"type": "web_search", "status": "searching"|"completed"}.
+    URL citations are included in the "done" dict as "url_citations".
     """
     auth = _load_codex_auth()
     if not auth:
         yield {"type": "error", "error": "No Codex auth tokens found (~/.codex/auth.json)"}
         return
 
-    body = json.dumps({
+    payload: dict = {
         "model": model,
         "instructions": system_prompt,
         "input": [{"role": "user", "content": user_prompt}],
         "store": False,
         "stream": True,
         "text": {"verbosity": "low"},
-    })
+    }
+    if web_search:
+        payload["tools"] = [{"type": "web_search", "search_context_size": "low"}]
+
+    body = json.dumps(payload)
 
     headers = {
         "Authorization": f"Bearer {auth['access_token']}",
@@ -842,13 +873,25 @@ def stream_chatgpt_responses(
                 delta = evt.get("delta", "")
                 if delta:
                     yield {"type": "delta", "text": delta}
+            elif evt_type in (
+                "response.web_search_call.in_progress",
+                "response.web_search_call.searching",
+            ):
+                yield {"type": "web_search", "status": "searching"}
+            elif evt_type == "response.web_search_call.completed":
+                yield {"type": "web_search", "status": "completed"}
             elif evt_type == "response.completed":
                 r = evt.get("response", {})
                 usage = r.get("usage")
                 model_id = r.get("model")
+                # Extract URL citations from output annotations
+                url_citations = _extract_url_citations(r)
 
         conn.close()
-        yield {"type": "done", "usage": usage, "model": model_id}
+        done_payload: dict = {"type": "done", "usage": usage, "model": model_id}
+        if url_citations:
+            done_payload["url_citations"] = url_citations
+        yield done_payload
 
     except Exception as e:
         yield {"type": "error", "error": f"ChatGPT API error: {e}"}

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { getCoursePaths } from "@/config/courses";
 
 export type MainMode = "edit" | "chat" | "graph" | "table" | "anki";
 
@@ -107,14 +108,6 @@ export function useBrainWorkspace() {
     setHasChanges(true);
   }, []);
 
-  const COURSE_FOLDERS = [
-    "School/Evidence Based Practice",
-    "School/Exercise Physiology",
-    "School/Movement Science 1",
-    "School/Neuroscience",
-    "School/Therapeutic Intervention",
-  ];
-
   const handleWikilinkClick = useCallback(async (noteName: string, shiftKey: boolean) => {
     if (shiftKey) {
       const vaultName = obsidianConfig?.vaultName || "Treys School";
@@ -132,7 +125,7 @@ export function useBrainWorkspace() {
       return;
     }
     // Try course folders
-    for (const cf of COURSE_FOLDERS) {
+    for (const cf of getCoursePaths()) {
       try {
         const result = await api.obsidian.getFile(`${cf}/${noteName}.md`);
         if (result.success && result.content !== undefined) {

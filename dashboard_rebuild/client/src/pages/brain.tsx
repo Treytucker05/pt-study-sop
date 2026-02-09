@@ -9,18 +9,73 @@ import { BrainWorkspaceTopBar } from "@/components/brain/BrainWorkspaceTopBar";
 import { VaultSidebar } from "@/components/brain/VaultSidebar";
 import { MainContent } from "@/components/brain/MainContent";
 import { BrainModals } from "@/components/brain/BrainModals";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FolderOpen, Pencil } from "lucide-react";
 
 type MobileTab = "vault" | "main";
 
+const VALID_MOBILE_TABS: MobileTab[] = ["vault", "main"];
+
+function getMobileTabFromUrl(): MobileTab {
+  if (typeof window === "undefined") return "main";
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get("tab");
+  return VALID_MOBILE_TABS.includes(tab as MobileTab) ? (tab as MobileTab) : "main";
+}
+
+function updateUrlWithMobileTab(tab: MobileTab) {
+  if (typeof window === "undefined") return;
+  const params = new URLSearchParams(window.location.search);
+  params.set("tab", tab);
+  const newUrl = `${window.location.pathname}?${params.toString()}`;
+  window.history.replaceState({}, "", newUrl);
+}
+
 export default function Brain() {
   const workspace = useBrainWorkspace();
-  const [mobileTab, setMobileTab] = useState<MobileTab>("main");
+  const [mobileTab, setMobileTabState] = useState<MobileTab>("main");
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Initialize from URL on mount
+  useEffect(() => {
+    setMobileTabState(getMobileTabFromUrl());
+  }, []);
+
+  // Update URL when tab changes
+  const setMobileTab = useCallback((tab: MobileTab) => {
+    setMobileTabState(tab);
+    updateUrlWithMobileTab(tab);
+  }, []);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      setMobileTabState(getMobileTabFromUrl());
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   return (
     <Layout>
-      <div className="fixed inset-x-0 top-[68px] bottom-[33px] flex flex-col min-w-0 overflow-hidden z-10">
+      {/* 
+        Layout has:
+        - Header: h-16 (64px) + border-b-4 (4px) = 68px
+        - Footer: py-2 + text-xs + h-10 spacer = ~72px total
+        
+        We use z-30 to appear above the layout footer (z-20)
+      */}
+      <div className="fixed inset-x-0 top-[68px] bottom-[72px] flex flex-col min-w-0 overflow-hidden z-30">
         <BrainWorkspaceTopBar workspace={workspace} />
 
         {/* Desktop: 2-column resizable layout */}
@@ -55,27 +110,34 @@ export default function Brain() {
             {mobileTab === "main" && <MainContent workspace={workspace} />}
           </div>
 
-          {/* Bottom tab bar */}
-          <div className="flex items-center border-t-2 border-primary/50 bg-black/80 shrink-0">
+          {/* Bottom tab bar - now visible above footer */}
+          <nav 
+            className="flex items-center border-t-2 border-primary/50 bg-black/80 shrink-0"
+            aria-label="Mobile navigation"
+          >
             <button
               onClick={() => setMobileTab("vault")}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-xs font-terminal transition-colors ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-xs font-terminal transition-colors ${
                 mobileTab === "vault" ? "text-primary" : "text-muted-foreground"
               }`}
+              aria-current={mobileTab === "vault" ? "page" : undefined}
+              aria-label="Vault"
             >
-              <FolderOpen className="w-4 h-4" />
+              <FolderOpen className="w-5 h-5" aria-hidden="true" />
               Vault
             </button>
             <button
               onClick={() => setMobileTab("main")}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-xs font-terminal transition-colors ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-xs font-terminal transition-colors ${
                 mobileTab === "main" ? "text-primary" : "text-muted-foreground"
               }`}
+              aria-current={mobileTab === "main" ? "page" : undefined}
+              aria-label="Content"
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="w-5 h-5" aria-hidden="true" />
               Content
             </button>
-          </div>
+          </nav>
         </div>
 
         {/* Modals */}

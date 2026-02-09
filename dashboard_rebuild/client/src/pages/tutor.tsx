@@ -25,6 +25,7 @@ export default function Tutor() {
   const [chainBlocks, setChainBlocks] = useState<TutorTemplateChain["blocks"]>([]);
   const [topic, setTopic] = useState("");
   const [model, setModel] = useState("codex");
+  const [webSearch, setWebSearch] = useState(false);
 
   // Artifacts
   const [artifacts, setArtifacts] = useState<TutorArtifact[]>([]);
@@ -48,6 +49,7 @@ export default function Tutor() {
         content_filter: {
           ...(selectedMaterials.length > 0 ? { material_ids: selectedMaterials } : {}),
           model,
+          ...(webSearch ? { web_search: true } : {}),
         },
         method_chain_id: chainId,
       });
@@ -79,7 +81,7 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, mode, topic, selectedMaterials, model, chainId, queryClient]);
+  }, [courseId, mode, topic, selectedMaterials, model, webSearch, chainId, queryClient]);
 
   const endSession = useCallback(async () => {
     if (!activeSessionId) return;
@@ -197,6 +199,8 @@ export default function Tutor() {
             setTopic={setTopic}
             model={model}
             setModel={setModel}
+            webSearch={webSearch}
+            setWebSearch={setWebSearch}
             onStartSession={startSession}
             isStarting={isStarting}
             hasActiveSession={!!activeSessionId}
