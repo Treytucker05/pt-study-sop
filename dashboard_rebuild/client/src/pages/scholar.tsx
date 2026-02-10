@@ -619,10 +619,10 @@ export default function Scholar() {
                           </div>
                           <div className="space-y-3">
                             {[
-                              { stage: "Identified", count: 5 },
-                              { stage: "Brain Analysis", count: 3 },
-                              { stage: "Research", count: 1 },
-                              { stage: "User Escalation", count: 2 },
+                              { stage: "Open Questions", count: openQuestions.length },
+                              { stage: "Research Findings", count: scholarFindings.length },
+                              { stage: "Tutor Sessions Audited", count: tutorAuditItems.length },
+                              { stage: "Active Proposals", count: proposals.filter(p => p.status !== "REJECTED").length },
                             ].map((item, i) => (
                               <div key={i} className="flex items-center gap-3">
                                 <div className="w-3 h-3 bg-primary/60" />
@@ -683,19 +683,26 @@ export default function Scholar() {
                         </CardHeader>
                         <CardContent className="p-4">
                           <div className="space-y-4">
-                            {scholarFindings.map((finding, i) => (
+                            {scholarFindings.length === 0 ? (
+                              <p className="font-terminal text-xs text-muted-foreground">No findings yet. Run Scholar to generate research findings.</p>
+                            ) : (
+                              scholarFindings.map((finding, i) => (
                                 <div key={i} className="p-3 bg-black/40 border border-secondary/50">
                                   <div className="flex items-center gap-2 mb-2">
                                     <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
-                                      {finding.category}
+                                      {finding.source}
                                     </Badge>
-                                    <span className="font-terminal text-xs text-muted-foreground">
-                                      {finding.sessionDate}
-                                    </span>
+                                    {finding.topic && (
+                                      <span className="font-terminal text-xs text-muted-foreground">
+                                        {finding.topic}
+                                      </span>
+                                    )}
                                   </div>
-                                  <p className="font-terminal text-sm">{finding.observation}</p>
+                                  <p className="font-terminal text-sm font-semibold mb-1">{finding.title}</p>
+                                  <p className="font-terminal text-xs text-muted-foreground">{finding.content}</p>
                                 </div>
-                              ))}
+                              ))
+                            )}
                           </div>
                         </CardContent>
                       </Card>

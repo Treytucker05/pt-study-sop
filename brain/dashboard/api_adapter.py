@@ -2696,9 +2696,19 @@ def _scholar_status_payload() -> dict:
                 # Best-effort: last non-empty line as "current step"
                 current_step = tail[-1][:200]
 
-            # Best-effort: surface explicit error lines
+            # Best-effort: surface explicit error lines (skip noisy matches)
             for ln in tail[-120:]:
-                if re.search(r"\b(error|exception|traceback)\b", ln, re.IGNORECASE):
+                lower = ln.lower()
+                # Skip lines that merely mention error in passing
+                if any(skip in lower for skip in [
+                    "error rate", "error count", "no error", "0 error",
+                    "without error", "error-free", "replication error",
+                ]):
+                    continue
+                if re.search(
+                    r"(^(ERROR|CRITICAL|FATAL)\b|traceback|raise \w+error|exception\s*:|unhandled|failed to)",
+                    ln, re.IGNORECASE,
+                ):
                     errors.append(ln[:300])
             errors = errors[-10:]
 
