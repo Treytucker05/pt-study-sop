@@ -246,7 +246,7 @@ export function ContentFilter({
       <div className={`shrink-0 ${PANEL_PADDING} pb-2 border-b-2 border-primary/30`}>
         <div className={TEXT_PANEL_TITLE}>CONTENT FILTER</div>
         {(sourcesError || templateChainsError) && (
-          <div className={`${TEXT_MUTED} text-red-400`}>
+          <div className={`${TEXT_MUTED} text-destructive`}>
             Tutor API unavailable. Start the dashboard via <span className="font-arcade">Start_Dashboard.bat</span>.
           </div>
         )}
@@ -588,7 +588,7 @@ export function ContentFilter({
           disabled={isStarting || hasActiveSession}
           className={`w-full rounded-none border-2 font-arcade text-xs h-9 ${
             hasActiveSession
-              ? "border-green-500/50 bg-green-500/10 text-green-400 cursor-default"
+              ? "border-success/50 bg-success/10 text-success cursor-default"
               : isStarting
               ? "border-primary/50 bg-primary/10 text-primary cursor-wait"
               : "border-primary bg-primary/10 hover:bg-primary/20"
@@ -598,7 +598,7 @@ export function ContentFilter({
             <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
           ) : hasActiveSession ? (
             <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
               SESSION ACTIVE
             </span>
           ) : (

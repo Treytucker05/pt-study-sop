@@ -325,7 +325,7 @@ export default function Scholar() {
 
                   {/* What's Working */}
                   <Card className="bg-black/40 border-2 border-white/30 rounded-none">
-                    <CardHeader className="p-3 border-b border-white/20">
+                    <CardHeader className="border-b border-white/20">
                       <CardTitle className="font-arcade text-xs text-white flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4" /> WHAT APPEARS TO BE WORKING
                       </CardTitle>
@@ -360,7 +360,7 @@ export default function Scholar() {
 
                   {/* What's Failing */}
                   <Card className="bg-black/40 border-2 border-destructive/50 rounded-none">
-                    <CardHeader className="p-3 border-b border-destructive/30">
+                    <CardHeader className="border-b border-destructive/30">
                       <CardTitle className="font-arcade text-xs text-destructive flex items-center gap-2">
                         <XCircle className="w-4 h-4" /> POTENTIAL CONCERNS
                       </CardTitle>
@@ -422,7 +422,7 @@ export default function Scholar() {
 
                 {/* Right: Chat Interface */}
                 <Card className="bg-black/40 border-2 border-secondary rounded-none flex flex-col">
-                  <CardHeader className="p-3 border-b border-secondary shrink-0 sticky top-0 bg-black/95 z-10">
+                  <CardHeader className="border-b border-secondary shrink-0 sticky top-0 bg-black/95 z-10">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" /> ASK SCHOLAR
                     </CardTitle>
@@ -500,7 +500,7 @@ export default function Scholar() {
                 </p>
                 {/* Tutor Audit Section */}
                 <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="p-3 border-b border-secondary">
+                  <CardHeader className="border-b border-secondary">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <Search className="w-4 h-4" /> TUTOR AUDIT
                     </CardTitle>
@@ -509,7 +509,7 @@ export default function Scholar() {
                     <div className="grid lg:grid-cols-2 gap-4">
                       {/* Tutor Behavior Audit */}
                       <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
-                        <CardHeader className="p-3 border-b border-primary/30">
+                        <CardHeader className="border-b border-primary/30">
                           <CardTitle className="font-arcade text-xs text-primary flex items-center gap-2">
                             <Brain className="w-4 h-4" /> TUTOR BEHAVIOR AUDIT
                           </CardTitle>
@@ -542,7 +542,7 @@ export default function Scholar() {
 
                       {/* Recurrent Issues */}
                       <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                        <CardHeader className="p-3 border-b border-secondary">
+                        <CardHeader className="border-b border-secondary">
                           <CardTitle className="font-arcade text-xs flex items-center gap-2">
                             <AlertCircle className="w-4 h-4" /> RECURRENT ISSUES
                           </CardTitle>
@@ -575,7 +575,7 @@ export default function Scholar() {
 
                 {/* Question Pipeline Section */}
                 <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="p-3 border-b border-secondary">
+                  <CardHeader className="border-b border-secondary">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <HelpCircle className="w-4 h-4" /> QUESTION PIPELINE
                     </CardTitle>
@@ -588,7 +588,7 @@ export default function Scholar() {
                     <div className="grid lg:grid-cols-2 gap-4">
                       {/* Pipeline Stages */}
                       <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                        <CardHeader className="p-3 border-b border-secondary">
+                        <CardHeader className="border-b border-secondary">
                           <CardTitle className="font-arcade text-xs flex items-center gap-2">
                             <HelpCircle className="w-4 h-4" /> QUESTION RESOLUTION PIPELINE
                           </CardTitle>
@@ -619,7 +619,7 @@ export default function Scholar() {
 
                       {/* Open Questions */}
                       <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
-                        <CardHeader className="p-3 border-b border-primary/30">
+                        <CardHeader className="border-b border-primary/30">
                           <CardTitle className="font-arcade text-xs text-primary flex items-center gap-2">
                             <AlertCircle className="w-4 h-4" /> OPEN QUESTIONS
                           </CardTitle>
@@ -650,7 +650,7 @@ export default function Scholar() {
 
                 {/* Evidence Review Section */}
                 <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="p-3 border-b border-secondary">
+                  <CardHeader className="border-b border-secondary">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <BookOpen className="w-4 h-4" /> EVIDENCE REVIEW
                     </CardTitle>
@@ -659,7 +659,7 @@ export default function Scholar() {
                     <div className="grid lg:grid-cols-2 gap-4">
                       {/* Observed Data */}
                       <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                        <CardHeader className="p-3 border-b border-secondary">
+                        <CardHeader className="border-b border-secondary">
                           <CardTitle className="font-arcade text-xs flex items-center gap-2">
                             <BookOpen className="w-4 h-4" /> OBSERVED DATA
                           </CardTitle>
@@ -685,7 +685,7 @@ export default function Scholar() {
 
                       {/* Research Interpretation */}
                       <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                        <CardHeader className="p-3 border-b border-secondary">
+                        <CardHeader className="border-b border-secondary">
                           <CardTitle className="font-arcade text-xs flex items-center gap-2">
                             <BookOpen className="w-4 h-4" /> RESEARCH INTERPRETATION
                           </CardTitle>
@@ -710,7 +710,7 @@ export default function Scholar() {
 
                 {/* Topic Clusters Section */}
                 <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="p-3 border-b border-secondary flex flex-row items-center justify-between">
+                  <CardHeader className="border-b border-secondary flex flex-row items-center justify-between">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <Layers className="w-4 h-4" /> TOPIC CLUSTERS
                     </CardTitle>
@@ -779,7 +779,7 @@ export default function Scholar() {
             {/* PROPOSALS TAB */}
             <TabsContent value="proposals" className="flex-1 overflow-auto mt-4">
               <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                <CardHeader className="p-3 border-b border-secondary">
+                <CardHeader className="border-b border-secondary">
                   <CardTitle className="font-arcade text-xs flex items-center gap-2">
                     <Lightbulb className="w-4 h-4" /> IMPROVEMENT PROPOSALS
                   </CardTitle>
@@ -807,7 +807,7 @@ export default function Scholar() {
                           <div key={proposal.id} className="p-4 bg-black/40 border border-secondary/50">
                             <div className="flex items-start justify-between mb-3">
                               <div>
-                                <span className="font-mono text-xs text-muted-foreground">{proposal.proposalId}</span>
+                                <span className="font-terminal text-xs text-muted-foreground">{proposal.proposalId}</span>
                                 <h4 className="font-terminal text-sm mt-1">{proposal.summary}</h4>
                               </div>
                               <div className="flex gap-2">
@@ -861,7 +861,7 @@ export default function Scholar() {
             {/* HISTORY TAB */}
             <TabsContent value="history" className="flex-1 overflow-auto mt-4">
               <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                <CardHeader className="p-3 border-b border-secondary">
+                <CardHeader className="border-b border-secondary">
                   <CardTitle className="font-arcade text-xs flex items-center gap-2">
                     <History className="w-4 h-4" /> PROPOSAL HISTORY (READ ONLY)
                   </CardTitle>
@@ -886,7 +886,7 @@ export default function Scholar() {
                             className="flex items-center p-3 bg-black/40 border border-secondary/50 font-terminal text-sm"
                             data-testid={`history-proposal-${proposal.id}`}
                           >
-                            <div className="w-20 font-mono text-xs text-muted-foreground">{proposal.proposalId}</div>
+                            <div className="w-20 font-terminal text-xs text-muted-foreground">{proposal.proposalId}</div>
                             <div className="flex-1 truncate">{proposal.summary}</div>
                             <div className="flex gap-2 items-center shrink-0">
                               <Badge variant="outline" className={cn("rounded-none text-[9px]", getStatusColor(proposal.status || 'DRAFT'))}>

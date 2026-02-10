@@ -371,8 +371,8 @@ export function IngestionTab() {
           <CardContent className="p-4">
             {wrapStatus && (
               <div className={`mb-4 p-3 rounded-none font-terminal text-sm ${wrapStatus.type === "success"
-                ? "bg-green-900/30 border border-green-500 text-green-400"
-                : "bg-red-900/30 border border-red-500 text-red-400"
+                ? "bg-success/20 border border-success text-success"
+                : "bg-destructive/20 border border-destructive text-destructive"
               }`}>
                 {wrapStatus.message}
               </div>
@@ -469,7 +469,7 @@ export function IngestionTab() {
                   }}
                 />
                 {scheduleValidation && !scheduleValidation.isValid && (
-                  <div className="p-2 border border-red-500 bg-red-900/30 rounded-none font-terminal text-xs text-red-400">
+                  <div className="p-2 border border-destructive bg-destructive/20 rounded-none font-terminal text-xs text-destructive">
                     <div className="font-bold mb-1">Validation Errors:</div>
                     {scheduleValidation.errors.map((error, idx) => (
                       <div key={idx}>• {error}</div>
@@ -501,7 +501,7 @@ export function IngestionTab() {
                 </button>
                 {scheduleStatus && (
                   <div className={`p-2 border font-terminal text-xs ${scheduleStatus.type === "success"
-                    ? "border-green-500 text-green-400" : "border-red-500 text-red-400"
+                    ? "border-success text-success" : "border-destructive text-destructive"
                   }`}>
                     {scheduleStatus.message}
                   </div>
@@ -542,7 +542,7 @@ export function IngestionTab() {
                   }}
                 />
                 {modulesValidation && !modulesValidation.isValid && (
-                  <div className="p-2 border border-red-500 bg-red-900/30 rounded-none font-terminal text-xs text-red-400">
+                  <div className="p-2 border border-destructive bg-destructive/20 rounded-none font-terminal text-xs text-destructive">
                     <div className="font-bold mb-1">Validation Errors:</div>
                     {modulesValidation.errors.map((error, idx) => (
                       <div key={idx}>• {error}</div>
@@ -565,7 +565,7 @@ export function IngestionTab() {
                 </button>
                 {modulesStatus && (
                   <div className={`p-2 border font-terminal text-xs ${modulesStatus.type === "success"
-                    ? "border-green-500 text-green-400" : "border-red-500 text-red-400"
+                    ? "border-success text-success" : "border-destructive text-destructive"
                   }`}>
                     {modulesStatus.message}
                   </div>
@@ -629,9 +629,9 @@ export function IngestionTab() {
                       {learningObjectives.map((lo: LearningObjective) => (
                         <div key={lo.id} className="text-xs py-1 border-b border-secondary/30 font-terminal">
                           <span className="text-primary">{lo.loCode}</span>: {lo.title}
-                          <span className={`ml-2 text-[10px] px-1 rounded-none ${lo.status === "solid" ? "bg-green-600" :
-                            lo.status === "in_progress" ? "bg-yellow-600" :
-                              lo.status === "need_review" ? "bg-orange-600" :
+                          <span className={`ml-2 text-[10px] px-1 rounded-none ${lo.status === "solid" ? "bg-success" :
+                            lo.status === "in_progress" ? "bg-warning" :
+                              lo.status === "need_review" ? "bg-urgent" :
                                 "bg-secondary"
                           }`}>
                             {lo.status}

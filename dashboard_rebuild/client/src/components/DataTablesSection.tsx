@@ -123,7 +123,7 @@ export function DataTablesSection() {
         <div className="space-y-6">
           {/* Modules Table */}
           <Card className="bg-black/40 border-2 border-primary rounded-none">
-            <CardHeader className="border-b border-primary/50 p-3">
+            <CardHeader className="border-b border-primary/50">
               <CardTitle className="font-arcade text-sm flex items-center gap-2">
                 <Database className="w-4 h-4" />
                 MODULES ({modules.length})
@@ -258,9 +258,9 @@ export function DataTablesSection() {
                             </td>
                             <td className="text-center p-2">
                               {m.filesDownloaded && m.notebooklmLoaded ? (
-                                <span className="text-green-400">Ready</span>
+                                <span className="text-success">Ready</span>
                               ) : (
-                                <span className="text-yellow-400">Pending</span>
+                                <span className="text-warning">Pending</span>
                               )}
                             </td>
                             <td className="text-center p-2 space-x-2">
@@ -301,7 +301,7 @@ export function DataTablesSection() {
 
           {/* Schedule Items Table */}
           <Card className="bg-black/40 border-2 border-primary rounded-none">
-            <CardHeader className="border-b border-primary/50 p-3">
+            <CardHeader className="border-b border-primary/50">
               <CardTitle className="font-arcade text-sm flex items-center gap-2">
                 <Layers className="w-4 h-4" />
                 SCHEDULE ITEMS ({scheduleEvents.length})

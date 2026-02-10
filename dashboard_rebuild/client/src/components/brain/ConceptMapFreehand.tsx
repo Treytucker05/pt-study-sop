@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Tldraw, createTLStore, getSnapshot, loadSnapshot, exportToBlob } from "tldraw";
+import { Tldraw, createTLStore, getSnapshot, loadSnapshot, exportToBlob, type TLShapeId } from "tldraw";
 import "tldraw/tldraw.css";
 import { Save, Download, Undo2, Redo2, FileInput } from "lucide-react";
 import { api } from "@/lib/api";
@@ -35,8 +35,10 @@ export function ConceptMapFreehand({
 
   const updateUndoRedoState = useCallback(() => {
     const editor = editorRef.current;
-    const nextCanUndo = typeof editor?.getCanUndo === "function" ? !!editor.getCanUndo() : false;
-    const nextCanRedo = typeof editor?.getCanRedo === "function" ? !!editor.getCanRedo() : false;
+    const getCanUndo = editor?.getCanUndo;
+    const getCanRedo = editor?.getCanRedo;
+    const nextCanUndo = typeof getCanUndo === "function" ? !!getCanUndo.call(editor) : false;
+    const nextCanRedo = typeof getCanRedo === "function" ? !!getCanRedo.call(editor) : false;
     setCanUndo(nextCanUndo);
     setCanRedo(nextCanRedo);
   }, []);
@@ -90,20 +92,23 @@ export function ConceptMapFreehand({
     editor.user.updateUserPreferences({ colorScheme: "dark" });
     if (pendingClearHistoryRef.current) {
       pendingClearHistoryRef.current = false;
-      editorRef.current?.clearHistory?.();
+      const clearHistory = editorRef.current?.clearHistory;
+      if (typeof clearHistory === "function") clearHistory.call(editorRef.current);
     }
     updateUndoRedoState();
   }, [updateUndoRedoState]);
 
   const handleUndo = useCallback(() => {
     const editor = editorRef.current;
-    if (typeof editor?.undo === "function") editor.undo();
+    const undo = editor?.undo;
+    if (typeof undo === "function") undo.call(editor);
     updateUndoRedoState();
   }, [updateUndoRedoState]);
 
   const handleRedo = useCallback(() => {
     const editor = editorRef.current;
-    if (typeof editor?.redo === "function") editor.redo();
+    const redo = editor?.redo;
+    if (typeof redo === "function") redo.call(editor);
     updateUndoRedoState();
   }, [updateUndoRedoState]);
 
@@ -113,7 +118,7 @@ export function ConceptMapFreehand({
       toast({ title: "Export failed", description: "Editor not ready", variant: "destructive" });
       return;
     }
-    const ids = Array.from(editor.getCurrentPageShapeIds());
+    const ids = Array.from<TLShapeId>(editor.getCurrentPageShapeIds());
     if (ids.length === 0) {
       toast({ title: "Nothing to export", description: "Add shapes to the canvas first", variant: "destructive" });
       return;
@@ -211,7 +216,7 @@ export function ConceptMapFreehand({
           </Button>
         )}
         <div className="flex items-center gap-1.5 text-xs font-terminal text-muted-foreground ml-auto">
-          <span className={cn("w-2 h-2 rounded-full shrink-0", isDirty ? "bg-red-500" : "bg-green-500")} />
+          <span className={cn("w-2 h-2 rounded-full shrink-0", isDirty ? "bg-destructive" : "bg-success")} />
           {isDirty ? "Unsaved" : "Saved"}
         </div>
       </div>

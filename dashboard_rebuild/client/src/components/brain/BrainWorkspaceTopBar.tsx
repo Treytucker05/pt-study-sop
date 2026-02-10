@@ -91,7 +91,7 @@ export function BrainWorkspaceTopBar({ workspace }: BrainWorkspaceTopBarProps) {
             <div key={step.id} className="flex items-center gap-0.5" role="listitem">
               <span
                 className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-terminal ${
-                  done ? "text-green-400" : "text-muted-foreground"
+                  done ? "text-success" : "text-muted-foreground"
                 }`}
                 title={step.label}
                 aria-label={`${step.label}: ${done ? "done" : "pending"}`}
@@ -131,14 +131,14 @@ export function BrainWorkspaceTopBar({ workspace }: BrainWorkspaceTopBarProps) {
           className="flex items-center gap-1"
           aria-label={workspace.obsidianStatus?.connected ? "Obsidian: connected" : "Obsidian: disconnected"}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${workspace.obsidianStatus?.connected ? "bg-green-500" : "bg-red-500"}`} aria-hidden="true" />
+          <span className={`w-1.5 h-1.5 rounded-full ${workspace.obsidianStatus?.connected ? "bg-success" : "bg-destructive"}`} aria-hidden="true" />
           <span className="text-muted-foreground">Obsidian</span>
         </span>
         <span
           className="flex items-center gap-1"
           aria-label={workspace.ankiStatus?.connected ? "Anki: connected" : "Anki: disconnected"}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${workspace.ankiStatus?.connected ? "bg-green-500" : "bg-red-500"}`} aria-hidden="true" />
+          <span className={`w-1.5 h-1.5 rounded-full ${workspace.ankiStatus?.connected ? "bg-success" : "bg-destructive"}`} aria-hidden="true" />
           <span className="text-muted-foreground">Anki</span>
         </span>
         {workspace.pendingDrafts.length > 0 && (

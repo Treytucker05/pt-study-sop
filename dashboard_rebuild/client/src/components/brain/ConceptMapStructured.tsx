@@ -335,7 +335,7 @@ export function ConceptMapStructured({
         </Button>
         <div className="ml-auto flex items-center gap-2 text-[9px] font-terminal text-muted-foreground">
           <span>{nodes.length}N / {edges.length}E</span>
-          <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-red-500" : "bg-green-500")} />
+          <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-destructive" : "bg-success")} />
           <span>{isDirty ? "Unsaved" : "Saved"}</span>
         </div>
       </div>

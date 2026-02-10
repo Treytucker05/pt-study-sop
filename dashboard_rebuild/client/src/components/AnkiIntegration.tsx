@@ -125,7 +125,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
           ) : ankiStatus?.connected ? (
             <>
               <div className="flex flex-wrap items-center gap-4 font-terminal text-xs">
-                <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500">Connected</Badge>
+                <Badge variant="outline" className="bg-success/20 text-success border-success">Connected</Badge>
                 <span className="text-muted-foreground">Cards: <span className="text-primary font-arcade">{totalCards}</span></span>
                 <span className="text-muted-foreground">Due: <span className="text-secondary font-arcade">{ankiDue?.dueCount || 0}</span></span>
                 <span className="text-muted-foreground">Reviewed: <span className="font-arcade">{ankiStatus.reviewedToday || 0}</span></span>
@@ -156,13 +156,13 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                 </Button>
               </div>
               {syncAnkiMutation.isError && (
-                <div className="p-2 bg-red-500/10 border border-red-500/30 text-red-400 font-terminal text-[10px]">
+                <div className="p-2 bg-destructive/10 border border-destructive/30 text-destructive font-terminal text-[10px]">
                   <span className="font-arcade">SYNC ERROR:</span>{" "}
                   {(syncAnkiMutation.error as Error)?.message || "Unknown error"}
                   <Button
                     size="sm"
                     variant="outline"
-                    className="ml-2 h-5 px-2 text-[10px] font-terminal border-red-500/50 text-red-400"
+                    className="ml-2 h-5 px-2 text-[10px] font-terminal border-destructive/50 text-destructive"
                     onClick={() => syncAnkiMutation.mutate()}
                     disabled={syncAnkiMutation.isPending}
                   >
@@ -173,7 +173,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
               {pendingDrafts.length > 0 && (
                 <div className="pt-3 border-t border-secondary/30">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-arcade text-[10px] text-yellow-400">PENDING CARDS ({pendingDrafts.length})</span>
+                    <span className="font-arcade text-[10px] text-warning">PENDING CARDS ({pendingDrafts.length})</span>
                     <div className="flex gap-1">
                       <Button
                         size="sm"
@@ -195,7 +195,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                     <div className="flex gap-1 mb-2">
                       <Button
                         size="sm"
-                        className="h-6 px-2 text-[10px] font-terminal bg-green-600 hover:bg-green-700"
+                        className="h-6 px-2 text-[10px] font-terminal bg-success hover:bg-success/80"
                         onClick={() => {
                           selectedDrafts.forEach(id => approveDraftMutation.mutate(id));
                           setSelectedDrafts(new Set());
@@ -240,13 +240,13 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                               <div className="font-terminal text-primary truncate">{draft.front}</div>
                               <div className="font-terminal text-muted-foreground mt-1 truncate">{draft.back}</div>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-[9px] border-blue-500/50 text-blue-400 shrink-0">
+                                <Badge variant="outline" className="text-[9px] border-info/50 text-info shrink-0">
                                   {draft.deckName}
                                 </Badge>
                                 <Button
                                   size="icon"
                                   variant="outline"
-                                  className="h-5 w-5 shrink-0 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20"
+                                  className="h-5 w-5 shrink-0 border-warning/50 text-warning hover:bg-warning/20"
                                   onClick={() => handleEditDraft(draft)}
                                   title="Edit card"
                                 >
@@ -255,7 +255,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                                 <Button
                                   size="icon"
                                   variant="outline"
-                                  className="h-5 w-5 shrink-0 border-green-500/50 text-green-400 hover:bg-green-500/20"
+                                  className="h-5 w-5 shrink-0 border-success/50 text-success hover:bg-success/20"
                                   onClick={() => approveDraftMutation.mutate(draft.id)}
                                   title="Approve card"
                                 >
@@ -264,7 +264,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                                 <Button
                                   size="icon"
                                   variant="outline"
-                                  className="h-5 w-5 shrink-0 border-red-500/50 text-red-400 hover:bg-red-500/20"
+                                  className="h-5 w-5 shrink-0 border-destructive/50 text-destructive hover:bg-destructive/20"
                                   onClick={() => deleteDraftMutation.mutate(draft.id)}
                                   title="Delete card"
                                 >
@@ -282,7 +282,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
             </>
           ) : (
             <div className="text-center space-y-2">
-              <p className="font-terminal text-xs text-red-400">
+              <p className="font-terminal text-xs text-destructive">
                 {ankiStatus?.error || "Anki not connected"}
               </p>
               <p className="font-terminal text-xs text-muted-foreground">
@@ -311,9 +311,9 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
               <Layers className="w-4 h-4" />
               ANKI INTEGRATION
               {ankiStatus?.connected ? (
-                <Check className="w-3 h-3 text-green-500 ml-auto" />
+                <Check className="w-3 h-3 text-success ml-auto" />
               ) : (
-                <X className="w-3 h-3 text-red-500 ml-auto" />
+                <X className="w-3 h-3 text-destructive ml-auto" />
               )}
             </CardTitle>
           </CardHeader>

@@ -118,7 +118,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
 
     return (
         <Card className="fixed left-0 top-[68px] bottom-[40px] w-[380px] shadow-2xl z-50 flex flex-col border-r-2 border-primary bg-black text-white rounded-none animate-in fade-in slide-in-from-left-4 duration-300">
-            <CardHeader className="p-3 border-b border-primary/50 flex flex-row items-center justify-between bg-primary/10">
+            <CardHeader className="border-b border-primary/50 flex flex-row items-center justify-between bg-primary/10">
                 <div className="flex items-center gap-2">
                     <Bot className="w-5 h-5 text-primary" />
                     <div>
@@ -126,7 +126,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                         <div className="flex items-center gap-2">
                             <CardDescription className="text-[10px] text-muted-foreground font-terminal">Calendar + Tasks Assistant</CardDescription>
                             {!isGoogleStatusLoading && googleStatus?.connected && (
-                                <span className="text-[9px] font-arcade text-green-400">CONNECTED</span>
+                                <span className="text-[9px] font-arcade text-success">CONNECTED</span>
                             )}
                         </div>
                     </div>
@@ -140,12 +140,12 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
             <ScrollArea className="flex-1 p-3" ref={scrollRef}>
                 <div className="space-y-3">
                     {!isGoogleStatusLoading && !googleStatus?.connected && (
-                        <div className="border border-yellow-500/50 bg-yellow-500/10 text-yellow-200 text-[10px] font-terminal px-3 py-2 flex items-center justify-between gap-3">
+                        <div className="border border-warning/50 bg-warning/10 text-warning text-[10px] font-terminal px-3 py-2 flex items-center justify-between gap-3">
                             <span>Calendar not connected.</span>
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-6 px-2 rounded-none border-yellow-500 text-yellow-200 hover:bg-yellow-500/20 font-arcade text-[9px]"
+                                className="h-6 px-2 rounded-none border-warning text-warning hover:bg-warning/20 font-arcade text-[9px]"
                                 onClick={() => connectGoogleMutation.mutate()}
                                 disabled={connectGoogleMutation.isPending}
                             >
@@ -169,7 +169,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                                 className={`max-w-[85%] px-3 py-2 text-xs font-terminal whitespace-pre-wrap ${m.role === 'user'
                                     ? 'bg-primary text-black'
                                     : m.isError
-                                        ? 'bg-red-500/10 border border-red-500/50 text-red-300'
+                                        ? 'bg-destructive/10 border border-destructive/50 text-destructive'
                                         : 'bg-white/10 text-white border border-white/10'
                                     }`}
                             >

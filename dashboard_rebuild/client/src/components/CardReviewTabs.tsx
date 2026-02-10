@@ -74,10 +74,10 @@ export function CardReviewTabs({
                   variant="outline"
                   className={`text-[10px] font-terminal ${
                     confidence >= 0.8
-                      ? "border-green-500/50 text-green-400"
+                      ? "border-success/50 text-success"
                       : confidence >= 0.5
-                      ? "border-yellow-500/50 text-yellow-400"
-                      : "border-red-500/50 text-red-400"
+                      ? "border-warning/50 text-warning"
+                      : "border-destructive/50 text-destructive"
                   }`}
                 >
                   {Math.round(confidence * 100)}%
@@ -119,7 +119,7 @@ export function CardReviewTabs({
       <div className="flex gap-1 mb-2">
         <Button
           size="sm"
-          className="h-6 px-2 text-[10px] font-terminal bg-green-600 hover:bg-green-700"
+          className="h-6 px-2 text-[10px] font-terminal bg-success hover:bg-success/80"
           onClick={() => {
             selectedDrafts.forEach(id => onApprove(id));
             setSelectedDrafts(new Set());
@@ -149,13 +149,13 @@ export function CardReviewTabs({
       <TabsList className="grid w-full grid-cols-3 rounded-none bg-black border border-secondary/40">
         <TabsTrigger
           value="high"
-          className="font-arcade text-[10px] rounded-none data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400"
+          className="font-arcade text-[10px] rounded-none data-[state=active]:bg-success/20 data-[state=active]:text-success"
         >
           HIGH ({highConfidence.length})
         </TabsTrigger>
         <TabsTrigger
           value="low"
-          className="font-arcade text-[10px] rounded-none data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400"
+          className="font-arcade text-[10px] rounded-none data-[state=active]:bg-warning/20 data-[state=active]:text-warning"
         >
           LOW ({lowConfidence.length})
         </TabsTrigger>
@@ -170,7 +170,7 @@ export function CardReviewTabs({
       <TabsContent value="high" className="border border-t-0 border-secondary/40 rounded-none p-2">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="font-terminal text-[10px] text-green-400">
+            <span className="font-terminal text-[10px] text-success">
               High confidence cards - ready for one-click approval
             </span>
             <Button
@@ -205,7 +205,7 @@ export function CardReviewTabs({
       <TabsContent value="low" className="border border-t-0 border-secondary/40 rounded-none p-2">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="font-terminal text-[10px] text-yellow-400">
+            <span className="font-terminal text-[10px] text-warning">
               Low confidence cards - review and edit before approval
             </span>
             <Button

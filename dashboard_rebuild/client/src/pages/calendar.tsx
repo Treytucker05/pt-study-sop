@@ -330,7 +330,7 @@ function SortableCalendarRow({ cal, isHidden, onToggle }: { cal: { id: string; n
       <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: cal.color }} />
       <span className="font-terminal text-sm flex-1 cursor-pointer" onClick={onToggle}>{cal.name}</span>
       <span
-        className={cn("font-arcade text-[10px] px-2 py-0.5 cursor-pointer", isHidden ? "text-red-500" : "text-green-500")}
+        className={cn("font-arcade text-[10px] px-2 py-0.5 cursor-pointer", isHidden ? "text-destructive" : "text-success")}
         onClick={onToggle}
       >
         {isHidden ? 'HIDDEN' : 'VISIBLE'}
@@ -1497,7 +1497,7 @@ export default function CalendarPage() {
                     toast({ title: "SAVED", description: `${selectedCalendars.size} calendar(s) saved` });
                   }}
                 >
-                  <div className={cn("w-2 h-2 rounded-full", calendarSelectionDirty ? "bg-red-500" : "bg-green-500")} />
+                  <div className={cn("w-2 h-2 rounded-full", calendarSelectionDirty ? "bg-destructive" : "bg-success")} />
                   SAVE
                 </Button>
                 <Button
@@ -1514,7 +1514,7 @@ export default function CalendarPage() {
                   MANAGE
                 </Button>
                 {googleStatus?.connected ? (
-                  <div className="flex items-center gap-1 text-green-500">
+                  <div className="flex items-center gap-1 text-success">
                     <div className="w-2 h-2 rounded-full bg-current" />
                     <span className="font-terminal text-[10px]">SYNCED</span>
                   </div>
@@ -1522,7 +1522,7 @@ export default function CalendarPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-6 px-2 rounded-none border-yellow-500 text-yellow-500 hover:bg-yellow-500/20 font-arcade text-[9px]"
+                    className="h-6 px-2 rounded-none border-warning text-warning hover:bg-warning/20 font-arcade text-[9px]"
                     onClick={() => connectGoogleMutation.mutate()}
                     disabled={connectGoogleMutation.isPending}
                   >
@@ -1604,15 +1604,15 @@ export default function CalendarPage() {
                       const isTodayDate = isToday(day);
                       return (
                         <div key={index} onClick={() => goToDay(day)} className={cn("min-h-[180px] border-r border-b border-secondary p-1.5 cursor-pointer transition-colors hover:bg-secondary/30", !isCurrentMonth && "bg-secondary/10 text-muted-foreground", index % 7 === 6 && "border-r-0")} data-testid={`day-cell-${format(day, 'yyyy-MM-dd')}`}>
-                          <div className={cn("text-right font-mono text-sm w-6 h-6 flex items-center justify-center ml-auto", isTodayDate && "bg-red-500 text-white rounded-none font-bold")}>{format(day, 'd')}</div>
+                          <div className={cn("text-right font-terminal text-sm w-6 h-6 flex items-center justify-center ml-auto", isTodayDate && "bg-red-500 text-white rounded-none font-bold")}>{format(day, 'd')}</div>
                           <div className="space-y-0.5 mt-1">
                             {dayEvents.slice(0, 3).map((event, i) => (
-                              <div key={`${event.id}-${i}`} className={cn("text-xs font-mono truncate px-1.5 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} title={event.title} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
+                              <div key={`${event.id}-${i}`} className={cn("text-xs font-terminal truncate px-1.5 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} title={event.title} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
                                 {event.eventType === 'online' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary/60 mr-1 align-middle" title="Online" />}
                                 {event.title}
                               </div>
                             ))}
-                            {dayEvents.length > 3 && <div className="text-[10px] font-mono text-zinc-400 px-1 mt-0.5">+{dayEvents.length - 3} more</div>}
+                            {dayEvents.length > 3 && <div className="text-[10px] font-terminal text-zinc-400 px-1 mt-0.5">+{dayEvents.length - 3} more</div>}
                           </div>
                         </div>
                       );
@@ -1629,20 +1629,20 @@ export default function CalendarPage() {
                     {weekDays.map((day) => (
                       <div key={day.toISOString()} className="p-2 text-center border-r border-secondary last:border-r-0 cursor-pointer hover:bg-secondary/30" onClick={() => goToDay(day)}>
                         <div className="font-arcade text-xs text-zinc-400">{format(day, 'EEE').toUpperCase()}</div>
-                        <div className={cn("font-mono text-lg mt-1 w-8 h-8 flex items-center justify-center mx-auto", isToday(day) && "bg-red-500 text-white rounded-none font-bold")}>{format(day, 'd')}</div>
+                        <div className={cn("font-terminal text-lg mt-1 w-8 h-8 flex items-center justify-center mx-auto", isToday(day) && "bg-red-500 text-white rounded-none font-bold")}>{format(day, 'd')}</div>
                       </div>
                     ))}
                   </div>
 
                   {/* All-day events row */}
                   <div className="grid grid-cols-8 border-b border-secondary bg-secondary/10 shrink-0">
-                    <div className="p-1 w-16 border-r border-secondary text-xs font-mono text-muted-foreground text-right pr-2">ALL DAY</div>
+                    <div className="p-1 w-16 border-r border-secondary text-xs font-terminal text-muted-foreground text-right pr-2">ALL DAY</div>
                     {weekDays.map((day) => {
                       const allDayEvents = getEventsForDay(day).filter(e => e.allDay);
                       return (
                         <div key={`allday-${day.toISOString()}`} className="border-r border-secondary last:border-r-0 p-0.5 min-h-[28px]">
                           {allDayEvents.map((event, i) => (
-                            <div key={i} className={cn("text-[10px] font-mono truncate px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
+                            <div key={i} className={cn("text-[10px] font-terminal truncate px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
                           ))}
                         </div>
                       );
@@ -1654,7 +1654,7 @@ export default function CalendarPage() {
                       {/* Time column */}
                       <div className="w-16 border-r border-secondary">
                         {HOURS.map((hour) => (
-                          <div key={hour} className="border-b border-secondary/50 text-right pr-2 font-mono text-[11px] text-muted-foreground" style={{ height: `${HOUR_HEIGHT}px` }}>
+                          <div key={hour} className="border-b border-secondary/50 text-right pr-2 font-terminal text-[11px] text-muted-foreground" style={{ height: `${HOUR_HEIGHT}px` }}>
                             {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
                           </div>
                         ))}
@@ -1675,8 +1675,8 @@ export default function CalendarPage() {
                               const style = { ...getEventStyle(event, dayStart, colInfo.column, colInfo.totalColumns), ...getEventInlineStyle(event) };
                               return (
                                 <div key={i} className={cn("absolute rounded p-1 cursor-pointer overflow-hidden", getEventColor(event))} style={style} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
-                                  <div className="text-xs font-mono font-medium truncate">{event.title}</div>
-                                  <div className="text-[10px] opacity-80 font-mono">{format(event.start, 'h:mma')}</div>
+                                  <div className="text-xs font-terminal font-medium truncate">{event.title}</div>
+                                  <div className="text-[10px] opacity-80 font-terminal">{format(event.start, 'h:mma')}</div>
                                 </div>
                               );
                             })}
@@ -1694,7 +1694,7 @@ export default function CalendarPage() {
                   <div className="p-4 border-b border-secondary bg-secondary/20 shrink-0 flex items-center justify-between">
                     <div>
                       <div className="font-arcade text-xs text-zinc-400">{format(currentDate, 'EEEE').toUpperCase()}</div>
-                      <div className={cn("font-mono text-2xl font-bold", isToday(currentDate) && "text-red-500")}>{format(currentDate, 'd')}</div>
+                      <div className={cn("font-terminal text-2xl font-bold", isToday(currentDate) && "text-red-500")}>{format(currentDate, 'd')}</div>
                     </div>
                     <Button size="sm" className="rounded-none font-arcade text-xs bg-red-500 text-white hover:bg-red-600" onClick={() => openCreateModal(currentDate)} data-testid="button-create-event">
                       <Plus className="w-4 h-4 mr-1" /> CREATE
@@ -1707,9 +1707,9 @@ export default function CalendarPage() {
                     if (allDayEvents.length === 0) return null;
                     return (
                       <div className="p-3 border-b border-secondary/50 bg-black/40 shrink-0 flex gap-2 flex-wrap items-center">
-                        <span className="font-mono text-sm text-muted-foreground">ALL DAY:</span>
+                        <span className="font-terminal text-sm text-muted-foreground">ALL DAY:</span>
                         {allDayEvents.map((event, i) => (
-                          <div key={i} className={cn("text-sm font-mono px-3 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
+                          <div key={i} className={cn("text-sm font-terminal px-3 py-1 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
                         ))}
                       </div>
                     );
@@ -1719,7 +1719,7 @@ export default function CalendarPage() {
                     <div className="relative" style={{ height: `${24 * HOUR_HEIGHT}px` }}>
                       {HOURS.map((hour) => (
                         <div key={hour} className="flex border-b border-secondary/30 cursor-pointer hover:bg-secondary/20" style={{ height: `${HOUR_HEIGHT}px` }} onClick={() => openCreateModal(currentDate, hour)}>
-                          <div className="w-20 text-right pr-2 font-mono text-xs text-muted-foreground shrink-0 pt-1">
+                          <div className="w-20 text-right pr-2 font-terminal text-xs text-muted-foreground shrink-0 pt-1">
                             {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
                           </div>
                           <div className="flex-1 border-l border-secondary/50"></div>
@@ -1738,8 +1738,8 @@ export default function CalendarPage() {
                               const style = { ...getEventStyle(event, dayStart, colInfo.column, colInfo.totalColumns), ...getEventInlineStyle(event) };
                               return (
                                 <div key={i} className={cn("absolute rounded p-2 cursor-pointer", getEventColor(event))} style={style} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
-                                  <div className="font-bold text-sm font-mono truncate">{event.title}</div>
-                                  <div className="text-xs font-mono opacity-80">{format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}</div>
+                                  <div className="font-bold text-sm font-terminal truncate">{event.title}</div>
+                                  <div className="text-xs font-terminal opacity-80">{format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}</div>
                                 </div>
                               );
                             })}

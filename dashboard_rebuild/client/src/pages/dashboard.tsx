@@ -313,9 +313,9 @@ export default function Dashboard() {
 
   const getUrgencyStyles = (urgency: string) => {
     switch (urgency) {
-      case "overdue": return "border-red-500 bg-red-500/20 text-red-400";
-      case "today": return "border-orange-500 bg-orange-500/20 text-orange-400";
-      case "tomorrow": return "border-yellow-500 bg-yellow-500/20 text-yellow-400";
+      case "overdue": return "border-destructive bg-destructive/20 text-destructive";
+      case "today": return "border-urgent bg-urgent/20 text-urgent";
+      case "tomorrow": return "border-warning bg-warning/20 text-warning";
       case "soon": return "border-secondary bg-secondary/20 text-muted-foreground";
       default: return "border-secondary/30 text-muted-foreground";
     }
@@ -366,7 +366,12 @@ export default function Dashboard() {
       title: editTaskTitle.trim(),
     };
     if (editTaskNotes) updateData.notes = editTaskNotes;
-    if (editTaskDue) updateData.due = new Date(editTaskDue).toISOString();
+    if (editTaskDue) {
+      // Preserve the day the user picked in their local timezone.
+      // `new Date("YYYY-MM-DD")` is parsed as UTC, which can shift the displayed date west of UTC.
+      const [yy, mm, dd] = editTaskDue.split("-").map((x) => Number(x));
+      if (yy && mm && dd) updateData.due = new Date(yy, mm - 1, dd).toISOString();
+    }
 
     updateGoogleTaskMutation.mutate({ task: editingTask, data: updateData });
 
@@ -408,7 +413,7 @@ export default function Dashboard() {
       <div className="space-y-6 max-w-5xl mx-auto">
         {/* Compact Task Preview + Open Brain CTA */}
         <Card className="bg-black/40 border-2 border-secondary rounded-none">
-          <CardHeader className="p-3 border-b border-secondary/50">
+          <CardHeader className="border-b border-secondary/50">
             <CardTitle className="font-arcade text-xs flex items-center justify-between">
               <span>TODAY'S FOCUS</span>
               <Badge variant="outline" className="rounded-none text-[9px]">
@@ -549,7 +554,7 @@ export default function Dashboard() {
                           </button>
                           <button
                             onClick={() => setCourseToDelete({ id: course.id, name: course.name })}
-                            className="p-1 hover:text-red-500 transition-colors text-muted-foreground"
+                            className="p-1 hover:text-destructive transition-colors text-muted-foreground"
                             data-testid={`button-delete-course-${course.id}`}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -645,9 +650,9 @@ export default function Dashboard() {
 
                   {/* Delete Confirmation Dialog */}
                   <AlertDialog open={!!courseToDelete} onOpenChange={(open) => !open && setCourseToDelete(null)}>
-                    <AlertDialogContent className="bg-black border-2 border-red-500 rounded-none translate-y-0" style={dialogAnchorStyle}>
+                    <AlertDialogContent className="bg-black border-2 border-destructive rounded-none translate-y-0" style={dialogAnchorStyle}>
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="font-arcade text-red-500">DELETE_COURSE</AlertDialogTitle>
+                        <AlertDialogTitle className="font-arcade text-destructive">DELETE_COURSE</AlertDialogTitle>
                         <AlertDialogDescription className="font-terminal text-muted-foreground">
                           Are you sure you want to delete <span className="text-primary font-bold">{courseToDelete?.name}</span>?
                           This action cannot be undone.
@@ -659,7 +664,7 @@ export default function Dashboard() {
                         </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={handleConfirmDelete}
-                          className="rounded-none bg-red-500 hover:bg-red-600 font-arcade text-xs text-white"
+                          className="rounded-none bg-destructive hover:bg-destructive/80 font-arcade text-xs text-white"
                         >
                           DELETE
                         </AlertDialogAction>
@@ -741,8 +746,8 @@ export default function Dashboard() {
                 <span className="font-terminal text-muted-foreground">Minutes</span>
                 <span className="font-arcade text-xl text-primary" data-testid="text-today-minutes">{todayMinutes}</span>
               </div>
-              <div className={`p-2 border ${hasStudiedToday ? "border-green-500/50 bg-green-500/10" : "border-orange-500/50 bg-orange-500/10"}`}>
-                <span className={`font-terminal text-xs ${hasStudiedToday ? "text-green-400" : "text-orange-400"}`} data-testid="text-today-status">
+              <div className={`p-2 border ${hasStudiedToday ? "border-success/50 bg-success/10" : "border-urgent/50 bg-urgent/10"}`}>
+                <span className={`font-terminal text-xs ${hasStudiedToday ? "text-success" : "text-urgent"}`} data-testid="text-today-status">
                   {hasStudiedToday ? "STREAK MAINTAINED" : "NO SESSIONS TODAY - STUDY NOW!"}
                 </span>
               </div>
@@ -774,7 +779,7 @@ export default function Dashboard() {
                           <span className="text-white font-bold" data-testid={`course-sessions-${course.id}`}>{course.totalSessions}</span> sess
                         </span>
                         <span className="text-muted-foreground">
-                          <span className={cn("font-bold", course.totalMinutes > 0 ? "text-green-400" : "text-muted-foreground")} data-testid={`course-minutes-${course.id}`}>{course.totalMinutes}</span> min
+                          <span className={cn("font-bold", course.totalMinutes > 0 ? "text-success" : "text-muted-foreground")} data-testid={`course-minutes-${course.id}`}>{course.totalMinutes}</span> min
                         </span>
                       </div>
                     </div>
@@ -832,7 +837,7 @@ export default function Dashboard() {
                     <Button
                       size="sm"
                       onClick={handleAddGoogleTask}
-                      disabled={!newTaskTitle.trim() || createGoogleTaskMutation.isPending}
+                      disabled={!currentTaskList || !newTaskTitle.trim() || createGoogleTaskMutation.isPending}
                       className="rounded-none font-arcade text-xs h-8 px-3"
                     >
                       <Plus className="w-3 h-3" />
@@ -867,7 +872,7 @@ export default function Dashboard() {
                                     {dueLabel && (
                                       <span className={cn(
                                         "font-terminal text-xs",
-                                        isOverdue ? "text-red-400" : "text-muted-foreground"
+                                        isOverdue ? "text-destructive" : "text-muted-foreground"
                                       )}>
                                         {dueLabel}
                                       </span>
@@ -888,7 +893,7 @@ export default function Dashboard() {
                               </button>
                               <button
                                 onClick={() => deleteGoogleTaskMutation.mutate(task)}
-                                className="p-1 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
@@ -907,12 +912,12 @@ export default function Dashboard() {
                                   onClick={() => toggleGoogleTaskMutation.mutate(task)}
                                   className="flex-shrink-0 p-0.5 hover:bg-primary/20 rounded-none"
                                 >
-                                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                  <CheckCircle2 className="w-4 h-4 text-success" />
                                 </button>
                                 <span className="font-terminal text-sm text-muted-foreground line-through flex-1 truncate">{task.title}</span>
                                 <button
                                   onClick={() => deleteGoogleTaskMutation.mutate(task)}
-                                  className="p-1 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
                                   <Trash2 className="w-3 h-3" />
                                 </button>
@@ -1006,7 +1011,7 @@ export default function Dashboard() {
 
           {/* Academic Deadlines — Fix #7: larger checkboxes, Fix #10: smaller ADD */}
           <Card className="bg-black/40 border-2 border-primary rounded-none self-start">
-            <CardHeader className="border-b border-primary/50 p-3 space-y-2">
+            <CardHeader className="border-b border-primary/50 space-y-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="font-arcade text-sm flex items-center gap-2">
                   <GraduationCap className="w-4 h-4" />
@@ -1121,7 +1126,7 @@ export default function Dashboard() {
                             className="flex-shrink-0 p-0.5"
                           >
                             {deadline.completed ? (
-                              <CheckCircle2 className="w-6 h-6 text-green-500" />
+                              <CheckCircle2 className="w-6 h-6 text-success" />
                             ) : (
                               <Circle className="w-6 h-6 text-primary/70 hover:text-primary transition-colors" />
                             )}
@@ -1145,18 +1150,18 @@ export default function Dashboard() {
                               className={cn(
                                 "px-2 py-1 font-terminal text-xs font-bold text-white",
                                 deadline.completed ? "bg-secondary/50" :
-                                urgency === "overdue" ? "bg-red-600" :
-                                urgency === "today" ? "bg-orange-600" :
-                                urgency === "tomorrow" ? "bg-yellow-600" :
-                                urgency === "soon" ? "bg-red-800" :
-                                "bg-red-900"
+                                urgency === "overdue" ? "bg-destructive" :
+                                urgency === "today" ? "bg-urgent" :
+                                urgency === "tomorrow" ? "bg-warning text-warning-foreground" :
+                                urgency === "soon" ? "bg-destructive/60" :
+                                "bg-destructive/40"
                               )}
                             >
                               {isValid(dueDate) ? format(dueDate, "MMM d") : "No date"}
                             </span>
                             <button
                               onClick={() => deleteDeadlineMutation.mutate(deadline.id)}
-                              className="p-1 text-muted-foreground hover:text-red-500 transition-colors"
+                              className="p-1 text-muted-foreground hover:text-destructive transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

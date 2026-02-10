@@ -49,8 +49,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-          <AlertTriangle className="w-10 h-10 text-red-500 mb-3" />
-          <h3 className="font-arcade text-sm text-red-400 mb-2">
+          <AlertTriangle className="w-10 h-10 text-destructive mb-3" />
+          <h3 className="font-arcade text-sm text-destructive mb-2">
             COMPONENT ERROR
           </h3>
           <p className="font-terminal text-xs text-muted-foreground mb-4 max-w-xs">
@@ -77,8 +77,8 @@ export class ErrorBoundary extends Component<Props, State> {
 export function SidebarErrorFallback({ onReset }: { onReset: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-      <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
-      <p className="font-terminal text-xs text-red-400 mb-2">
+      <AlertTriangle className="w-8 h-8 text-destructive mb-2" />
+      <p className="font-terminal text-xs text-destructive mb-2">
         Sidebar Error
       </p>
       <Button
@@ -104,8 +104,8 @@ export function TabErrorFallback({
 }) {
   return (
     <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-      <AlertTriangle className="w-10 h-10 text-red-500 mb-3" />
-      <h3 className="font-arcade text-sm text-red-400 mb-2">
+      <AlertTriangle className="w-10 h-10 text-destructive mb-3" />
+      <h3 className="font-arcade text-sm text-destructive mb-2">
         {tabName} TAB ERROR
       </h3>
       <p className="font-terminal text-xs text-muted-foreground mb-4">

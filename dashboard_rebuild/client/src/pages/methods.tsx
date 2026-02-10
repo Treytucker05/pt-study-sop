@@ -247,7 +247,7 @@ export default function MethodsPage() {
                         <Star className="w-3 h-3 text-primary" />
                       </button>
                       <button
-                        className="p-1 bg-black/80 border border-red-500/40 hover:border-red-500 text-red-400"
+                        className="p-1 bg-black/80 border border-destructive/40 hover:border-destructive text-destructive"
                         onClick={() => {
                           if (confirm(`Delete "${block.name}"?`)) deleteBlockMutation.mutate(block.id);
                         }}
@@ -308,7 +308,7 @@ export default function MethodsPage() {
                             <span className="text-xs font-arcade bg-primary/20 text-primary px-1.5 py-0.5">TEMPLATE</span>
                           ) : null}
                           <button
-                            className="p-0.5 hover:text-green-400"
+                            className="p-0.5 hover:text-success"
                             onClick={(e) => {
                               e.stopPropagation();
                               setRunTarget({ id: chain.id, name: chain.name });
@@ -352,7 +352,7 @@ export default function MethodsPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="rounded-none border-2 border-green-600 text-green-400 font-arcade text-xs h-8"
+                              className="rounded-none border-2 border-success text-success font-arcade text-xs h-8"
                               onClick={() => setRunTarget({ id: selectedChain.id, name: selectedChain.name })}
                             >
                               <Play className="w-3 h-3 mr-1" /> RUN
@@ -361,7 +361,7 @@ export default function MethodsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-red-400 rounded-none text-xs font-arcade h-8"
+                              className="text-destructive rounded-none text-xs font-arcade h-8"
                               onClick={() => {
                                 if (confirm(`Delete chain "${selectedChain.name}"?`)) {
                                   deleteChainMutation.mutate(selectedChain.id);
@@ -428,9 +428,9 @@ export default function MethodsPage() {
                           <td className="px-3 py-1.5 font-terminal text-base text-muted-foreground">{run.topic}</td>
                           <td className="px-3 py-1.5">
                             <span className={`text-xs font-arcade px-1.5 py-0.5 ${
-                              run.status === "completed" ? "bg-green-900/40 text-green-400" :
-                              run.status === "failed" ? "bg-red-900/40 text-red-400" :
-                              "bg-yellow-900/40 text-yellow-400"
+                              run.status === "completed" ? "bg-success/20 text-success" :
+                              run.status === "failed" ? "bg-destructive/20 text-destructive" :
+                              "bg-warning/20 text-warning"
                             }`}>
                               {run.status.toUpperCase()}
                             </span>
@@ -800,7 +800,7 @@ function ChainRunDialog({
             </label>
           </div>
           {error && (
-            <p className="font-terminal text-base text-red-400">{error}</p>
+            <p className="font-terminal text-base text-destructive">{error}</p>
           )}
           <Button
             className="w-full font-arcade rounded-none text-xs"
@@ -860,8 +860,8 @@ function ChainRunResultDialog({
         <DialogTitle className="font-arcade text-sm text-primary flex items-center gap-2">
           {result.chain_name} RESULTS
           <span className={`text-xs px-1.5 py-0.5 ${
-            result.status === "completed" ? "bg-green-900/40 text-green-400" :
-            "bg-red-900/40 text-red-400"
+            result.status === "completed" ? "bg-success/20 text-success" :
+            "bg-destructive/20 text-destructive"
           }`}>
             {result.status.toUpperCase()}
           </span>
@@ -886,7 +886,7 @@ function ChainRunResultDialog({
             {result.artifacts?.obsidian_path && (
               <div className="border border-primary/30 px-3 py-1.5 bg-black/60">
                 <span className="font-arcade text-xs text-muted-foreground block">OBSIDIAN</span>
-                <span className="font-terminal text-sm text-green-400">saved</span>
+                <span className="font-terminal text-sm text-success">saved</span>
               </div>
             )}
           </div>
@@ -923,9 +923,9 @@ function ChainRunResultDialog({
         </div>
 
         {result.error && (
-          <div className="mt-3 border border-red-500/40 bg-red-900/10 px-3 py-2">
-            <span className="font-arcade text-xs text-red-400">ERROR: </span>
-            <span className="font-terminal text-base text-red-300">{result.error}</span>
+          <div className="mt-3 border border-destructive/40 bg-destructive/10 px-3 py-2">
+            <span className="font-arcade text-xs text-destructive">ERROR: </span>
+            <span className="font-terminal text-base text-destructive/80">{result.error}</span>
           </div>
         )}
 
