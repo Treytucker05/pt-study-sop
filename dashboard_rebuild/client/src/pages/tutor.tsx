@@ -8,8 +8,27 @@ import { ContentFilter } from "@/components/ContentFilter";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  PanelRightClose,
+  PanelRightOpen,
+  Clock,
+  MessageSquare,
+  Settings2,
+  FolderOpen,
+  Check,
+  X,
+  Trash2,
+} from "lucide-react";
+import {
+  TEXT_PANEL_TITLE,
+  TEXT_SECTION_LABEL,
+  TEXT_BODY,
+  TEXT_MUTED,
+  TEXT_BADGE,
+  ICON_SM,
+} from "@/lib/theme";
 
 export default function Tutor() {
   const queryClient = useQueryClient();
@@ -30,15 +49,12 @@ export default function Tutor() {
   const [model, setModel] = useState("codex");
   const [webSearch, setWebSearch] = useState(false);
 
-  // Help
-  const [showHelp, setShowHelp] = useState(() => {
-    try { return localStorage.getItem("tutor-help-dismissed") !== "1"; } catch { return true; }
-  });
-
   // Artifacts
   const [artifacts, setArtifacts] = useState<TutorArtifact[]>([]);
   const [turnCount, setTurnCount] = useState(0);
   const [startedAt, setStartedAt] = useState<string | null>(null);
+  const [showArtifacts, setShowArtifacts] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
 
   // Recent sessions
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
@@ -49,7 +65,6 @@ export default function Tutor() {
   const startSession = useCallback(async () => {
     setIsStarting(true);
     try {
-      // If custom blocks are selected (no template chain), create an ad-hoc chain first
       let resolvedChainId = chainId;
       if (!resolvedChainId && customBlockIds.length > 0) {
         const customChain = await api.tutor.createCustomChain(customBlockIds, `Custom ${topic || "Chain"}`);
@@ -73,8 +88,8 @@ export default function Tutor() {
       setArtifacts([]);
       setTurnCount(0);
       setCurrentBlockIndex(session.current_block_index ?? 0);
+      setShowSetup(false);
 
-      // If chain was selected, fetch full session to get chain_blocks
       if (chainId) {
         const full = await api.tutor.getSession(session.session_id);
         if (full.chain_blocks) {
@@ -109,6 +124,7 @@ export default function Tutor() {
       setStartedAt(null);
       setCurrentBlockIndex(0);
       setChainBlocks([]);
+      setShowArtifacts(false);
       queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
     } catch (err) {
       toast.error(`Failed to end session: ${err instanceof Error ? err.message : "Unknown"}`);
@@ -118,14 +134,12 @@ export default function Tutor() {
   const handleArtifactCreated = useCallback(
     async (artifact: { type: string; content: string; title?: string }) => {
       if (!activeSessionId) return;
-
       try {
         const result = await api.tutor.createArtifact(activeSessionId, {
           type: artifact.type as "note" | "card" | "map",
           content: artifact.content,
           title: artifact.title,
         });
-
         const newArtifact: TutorArtifact = {
           type: artifact.type as "note" | "card" | "map",
           title: artifact.title || `${artifact.type} #${artifacts.length + 1}`,
@@ -133,8 +147,8 @@ export default function Tutor() {
           createdAt: new Date().toISOString(),
           cardId: result.card_id,
         };
-
         setArtifacts((prev) => [...prev, newArtifact]);
+        setShowArtifacts(true);
         toast.success(`${artifact.type.charAt(0).toUpperCase() + artifact.type.slice(1)} created`);
       } catch (err) {
         toast.error(`Failed to create artifact: ${err instanceof Error ? err.message : "Unknown"}`);
@@ -168,8 +182,6 @@ export default function Tutor() {
         setMode(session.mode);
         setTopic(session.topic || "");
         setCourseId(session.course_id ?? undefined);
-
-        // Restore artifacts from session
         if (session.artifacts_json) {
           try {
             const parsed = JSON.parse(session.artifacts_json);
@@ -187,7 +199,6 @@ export default function Tutor() {
             setArtifacts([]);
           }
         }
-
         toast.success("Session resumed");
       } catch (err) {
         toast.error(`Failed to resume session: ${err instanceof Error ? err.message : "Unknown"}`);
@@ -196,112 +207,351 @@ export default function Tutor() {
     []
   );
 
-  const dismissHelp = () => {
-    setShowHelp(false);
-    try { localStorage.setItem("tutor-help-dismissed", "1"); } catch { /* noop */ }
-  };
+  // ─── SETUP VIEW ─── (no active session)
+  if (!activeSessionId && !showSetup) {
+    return (
+      <Layout>
+        <div className="flex flex-col h-[calc(100vh-140px)]">
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-5xl mx-auto px-4 py-6">
+              {/* Hero */}
+              <div className="text-center mb-8">
+                <h1 className="font-arcade text-xl text-primary tracking-widest mb-2">ADAPTIVE TUTOR</h1>
+                <p className="font-terminal text-lg text-muted-foreground">
+                  Pick a mode, set a topic, and start learning.
+                </p>
+              </div>
 
+              {/* Two-column: Setup + History */}
+              <div className="grid lg:grid-cols-[1fr_340px] gap-6">
+                {/* Left: Setup form in a card */}
+                <Card className="bg-black/40 border-2 border-primary rounded-none overflow-hidden">
+                  <ContentFilter
+                    courseId={courseId}
+                    setCourseId={setCourseId}
+                    selectedMaterials={selectedMaterials}
+                    setSelectedMaterials={setSelectedMaterials}
+                    mode={mode}
+                    setMode={setMode}
+                    chainId={chainId}
+                    setChainId={setChainId}
+                    customBlockIds={customBlockIds}
+                    setCustomBlockIds={setCustomBlockIds}
+                    topic={topic}
+                    setTopic={setTopic}
+                    model={model}
+                    setModel={setModel}
+                    webSearch={webSearch}
+                    setWebSearch={setWebSearch}
+                    onStartSession={startSession}
+                    isStarting={isStarting}
+                    hasActiveSession={false}
+                  />
+                </Card>
+
+                {/* Right: Recent sessions */}
+                <div className="space-y-3">
+                  <div className={TEXT_SECTION_LABEL}>Recent Sessions</div>
+                  {recentSessions.length === 0 ? (
+                    <div className={`${TEXT_MUTED} text-center py-6`}>
+                      No sessions yet. Start one!
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {recentSessions.slice(0, 8).map((s) => (
+                        <RecentSessionCard
+                          key={s.session_id}
+                          session={s}
+                          onResume={resumeSession}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Setup overlay during active session (toggle setup panel)
+  if (showSetup && activeSessionId) {
+    return (
+      <Layout>
+        <div className="flex flex-col h-[calc(100vh-140px)]">
+          <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-black/60 border-b-2 border-primary/30">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSetup(false)}
+              className="rounded-none font-arcade text-xs text-primary h-8 px-3"
+            >
+              BACK TO CHAT
+            </Button>
+            <span className="font-terminal text-base text-muted-foreground">Editing session settings</span>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-2xl mx-auto py-6 px-4">
+              <Card className="bg-black/40 border-2 border-primary rounded-none overflow-hidden">
+                <ContentFilter
+                  courseId={courseId}
+                  setCourseId={setCourseId}
+                  selectedMaterials={selectedMaterials}
+                  setSelectedMaterials={setSelectedMaterials}
+                  mode={mode}
+                  setMode={setMode}
+                  chainId={chainId}
+                  setChainId={setChainId}
+                  customBlockIds={customBlockIds}
+                  setCustomBlockIds={setCustomBlockIds}
+                  topic={topic}
+                  setTopic={setTopic}
+                  model={model}
+                  setModel={setModel}
+                  webSearch={webSearch}
+                  setWebSearch={setWebSearch}
+                  onStartSession={startSession}
+                  isStarting={isStarting}
+                  hasActiveSession={true}
+                />
+              </Card>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // ─── SESSION VIEW ─── (active session, full-screen chat)
   return (
     <Layout>
-      <div className="flex flex-col h-[calc(100vh-140px)] gap-2">
-        {/* Getting Started Banner */}
-        <div className="shrink-0">
-          <button
-            onClick={() => showHelp ? dismissHelp() : setShowHelp(true)}
-            className="flex items-center gap-2 w-full px-3 py-1.5 bg-black/60 border-2 border-primary/40 text-left"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-primary shrink-0" />
-            <span className="font-arcade text-[10px] text-primary flex-1">QUICK START GUIDE</span>
-            {showHelp ? <ChevronUp className="w-3 h-3 text-primary" /> : <ChevronDown className="w-3 h-3 text-primary" />}
-          </button>
-          {showHelp && (
-            <div className="px-3 py-3 bg-black/80 border-x-2 border-b-2 border-primary/40 grid md:grid-cols-4 gap-4 font-terminal text-xs text-muted-foreground">
-              <div>
-                <p className="text-primary font-semibold text-[10px] mb-1">1. PICK A MODE</p>
-                <p><span className="text-cyan-400">LEARN</span> - New material (prime + encode)</p>
-                <p><span className="text-yellow-400">QUICK</span> - Fast retrieval drill</p>
-                <p><span className="text-red-400">FIX</span> - Target weak spots</p>
-                <p><span className="text-green-400">REVIEW</span> - Spaced repetition</p>
-                <p><span className="text-purple-400">LIGHT</span> - Low-energy review</p>
-              </div>
-              <div>
-                <p className="text-primary font-semibold text-[10px] mb-1">2. SET UP A CHAIN</p>
-                <p><span className="text-white">Templates tab</span> - Pre-built PEIRRO sequences (recommended for starters)</p>
-                <p><span className="text-white">Custom tab</span> - Drag blocks from the 6 PEIRRO categories to build your own sequence</p>
-                <p className="mt-1 text-[10px]">Auto-pick matches a chain to your mode</p>
-              </div>
-              <div>
-                <p className="text-primary font-semibold text-[10px] mb-1">3. ENTER A TOPIC</p>
-                <p>Type your study topic (e.g. "Hip Flexors", "Gait Analysis")</p>
-                <p className="mt-1">Optionally pick a course and upload materials for RAG context</p>
-                <p className="mt-1">Hit <span className="text-primary">START SESSION</span></p>
-              </div>
-              <div>
-                <p className="text-primary font-semibold text-[10px] mb-1">4. STUDY + ARTIFACTS</p>
-                <p>Chat with the tutor. Use slash commands:</p>
-                <p className="mt-1"><span className="text-cyan-400">/note</span> - Save study notes</p>
-                <p><span className="text-yellow-400">/card</span> - Create Anki flashcard</p>
-                <p><span className="text-green-400">/map</span> - Generate concept map</p>
-                <p className="mt-1">Click <span className="text-primary">NEXT</span> to advance chain blocks</p>
-              </div>
+      <div className="flex flex-col h-[calc(100vh-140px)]">
+        {/* Session status bar */}
+        <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-black/60 border-b-2 border-primary/30">
+          <Badge variant="outline" className={`${TEXT_BADGE} h-6 px-2 text-primary border-primary/50`}>
+            {mode}
+          </Badge>
+          {topic && (
+            <span className="font-terminal text-base text-foreground truncate max-w-[300px]">
+              {topic}
+            </span>
+          )}
+
+          <div className={`flex items-center gap-3 ${TEXT_MUTED} ml-auto`}>
+            <span className="flex items-center gap-1">
+              <MessageSquare className={ICON_SM} />
+              {turnCount}
+            </span>
+            {startedAt && (
+              <span className="flex items-center gap-1">
+                <Clock className={ICON_SM} />
+                {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+
+            {/* Settings toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSetup(true)}
+              className="h-7 w-7 p-0 rounded-none text-muted-foreground hover:text-primary"
+              title="Session settings"
+            >
+              <Settings2 className="w-4 h-4" />
+            </Button>
+
+            {/* Artifacts toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowArtifacts(!showArtifacts)}
+              className={`h-7 px-2 rounded-none font-terminal text-sm gap-1 ${
+                showArtifacts ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
+              }`}
+              title="Toggle artifacts panel"
+            >
+              {showArtifacts ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+              {artifacts.length > 0 && (
+                <Badge variant="outline" className="text-xs h-5 px-1 rounded-none">
+                  {artifacts.length}
+                </Badge>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Main content: Chat (+ optional artifacts panel) */}
+        <div className="flex-1 flex min-h-0">
+          {/* Chat — takes all available space */}
+          <div className="flex-1 bg-black/60 border-x-2 border-primary/20 flex flex-col min-w-0">
+            <TutorChat
+              sessionId={activeSessionId}
+              onArtifactCreated={handleArtifactCreated}
+              onSessionEnd={endSession}
+              chainBlocks={chainBlocks}
+              currentBlockIndex={currentBlockIndex}
+              onAdvanceBlock={advanceBlock}
+            />
+          </div>
+
+          {/* Artifacts drawer — collapsible right panel */}
+          {showArtifacts && (
+            <div className="w-80 shrink-0 bg-black/40 border-l-2 border-primary/30 overflow-hidden">
+              <TutorArtifacts
+                sessionId={activeSessionId}
+                artifacts={artifacts}
+                turnCount={turnCount}
+                mode={mode}
+                topic={topic}
+                startedAt={startedAt}
+                onCreateArtifact={handleArtifactCreated}
+                recentSessions={recentSessions}
+                onResumeSession={resumeSession}
+              />
             </div>
           )}
         </div>
-
-        <div className="flex-1 flex gap-2 min-h-0">
-        {/* Left: Content Filter */}
-        <Card className="w-80 shrink-0 bg-black/40 border-2 border-primary rounded-none overflow-hidden">
-          <ContentFilter
-            courseId={courseId}
-            setCourseId={setCourseId}
-            selectedMaterials={selectedMaterials}
-            setSelectedMaterials={setSelectedMaterials}
-            mode={mode}
-            setMode={setMode}
-            chainId={chainId}
-            setChainId={setChainId}
-            customBlockIds={customBlockIds}
-            setCustomBlockIds={setCustomBlockIds}
-            topic={topic}
-            setTopic={setTopic}
-            model={model}
-            setModel={setModel}
-            webSearch={webSearch}
-            setWebSearch={setWebSearch}
-            onStartSession={startSession}
-            isStarting={isStarting}
-            hasActiveSession={!!activeSessionId}
-          />
-        </Card>
-
-        {/* Center: Chat */}
-        <Card className="flex-1 bg-black/60 border-2 border-primary rounded-none flex flex-col min-w-0">
-          <TutorChat
-            sessionId={activeSessionId}
-            onArtifactCreated={handleArtifactCreated}
-            onSessionEnd={endSession}
-            chainBlocks={chainBlocks}
-            currentBlockIndex={currentBlockIndex}
-            onAdvanceBlock={advanceBlock}
-          />
-        </Card>
-
-        {/* Right: Artifacts */}
-        <Card className="w-80 shrink-0 bg-black/40 border-2 border-primary rounded-none overflow-hidden">
-          <TutorArtifacts
-            sessionId={activeSessionId}
-            artifacts={artifacts}
-            turnCount={turnCount}
-            mode={mode}
-            topic={topic}
-            startedAt={startedAt}
-            onCreateArtifact={handleArtifactCreated}
-            recentSessions={recentSessions}
-            onResumeSession={resumeSession}
-          />
-        </Card>
-        </div>
       </div>
     </Layout>
+  );
+}
+
+// ─── Recent Session Card (for setup view) ───
+
+function RecentSessionCard({
+  session: s,
+  onResume,
+}: {
+  session: TutorSessionSummary;
+  onResume: (id: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleDelete = async () => {
+    try {
+      await api.tutor.deleteSession(s.session_id);
+      toast.success("Session deleted");
+      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+    } catch (err) {
+      toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    }
+    setDeleteConfirm(false);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const full = await api.tutor.getSession(s.session_id);
+      if (!full.turns || full.turns.length === 0) {
+        toast.error("No turns to save");
+        return;
+      }
+      const lines: string[] = [
+        `# Tutor: ${s.topic || s.mode}`,
+        `**Date:** ${new Date(s.started_at).toLocaleDateString()}`,
+        `**Mode:** ${s.mode} | **Turns:** ${s.turn_count}`,
+        "", "---", "",
+      ];
+      for (const turn of full.turns) {
+        lines.push(`## Q${turn.turn_number}`);
+        lines.push(turn.question);
+        lines.push("");
+        if (turn.answer) {
+          lines.push(`**Answer:**`);
+          lines.push(turn.answer);
+          lines.push("");
+        }
+      }
+      const filename = `Tutor - ${(s.topic || s.mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
+      await api.obsidian.append(`Study Sessions/${filename}.md`, lines.join("\n"));
+      toast.success("Saved to Obsidian");
+    } catch (err) {
+      toast.error(`Save failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-2 border-muted-foreground/10 hover:border-muted-foreground/30 transition-colors">
+      <button
+        onClick={() => onResume(s.session_id)}
+        className="w-full text-left px-3 py-2.5"
+      >
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className={`${TEXT_BADGE} h-5 px-1.5 shrink-0 ${
+              s.status === "active" ? "text-green-400 border-green-400/50" : "text-muted-foreground"
+            }`}
+          >
+            {s.status === "active" ? "LIVE" : "DONE"}
+          </Badge>
+          <span className="font-terminal text-sm truncate flex-1">{s.topic || s.mode}</span>
+        </div>
+        <div className={`flex items-center gap-2 mt-1.5 ${TEXT_MUTED}`}>
+          <span className="flex items-center gap-1">
+            <MessageSquare className={ICON_SM} />
+            {s.turn_count}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className={ICON_SM} />
+            {new Date(s.started_at).toLocaleDateString()}
+          </span>
+          <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 ml-auto`}>
+            {s.mode}
+          </Badge>
+        </div>
+      </button>
+
+      <div className="flex items-center border-t border-primary/20 px-2 py-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-3 rounded-none text-muted-foreground hover:text-primary font-terminal text-sm"
+          disabled={saving}
+          onClick={handleSave}
+        >
+          <FolderOpen className={`${ICON_SM} mr-1`} />
+          {saving ? "SAVING..." : "SAVE"}
+        </Button>
+        <div className="ml-auto">
+          {deleteConfirm ? (
+            <div className="flex items-center gap-0.5">
+              <span className="font-terminal text-sm text-red-400 mr-1">Delete?</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 rounded-none text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                onClick={handleDelete}
+              >
+                <Check className={ICON_SM} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-foreground"
+                onClick={() => setDeleteConfirm(false)}
+              >
+                <X className={ICON_SM} />
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-red-400"
+              onClick={() => setDeleteConfirm(true)}
+            >
+              <Trash2 className={ICON_SM} />
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
