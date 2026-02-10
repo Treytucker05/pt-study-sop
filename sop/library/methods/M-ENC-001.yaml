@@ -1,7 +1,7 @@
 id: M-ENC-001
 name: KWIK Hook
 category: encode
-description: Structured 5-step encoding protocol for new terms. Sound (phonetic cue) → Function (true meaning) → Image (vivid visual tied to function) → Resonance (learner confirms it clicks) → Lock (record as card/log). Each step is gated — don't skip ahead.
+description: "Structured 6-step encoding protocol for new terms. Sound (phonetic cue) → Function (true meaning) → Image (vivid visual tied to function) → Entwine (PIE method: personal meaning) → Resonance (learner confirms it clicks) → Lock (record as card/log). Each step is gated — don't skip ahead."
 default_duration_min: 3
 energy_cost: medium
 best_stage: first_exposure
@@ -17,6 +17,7 @@ mechanisms:
   - dual_coding
   - elaboration
   - generation
+  - emotional_encoding
 inputs:
   - New term or concept to encode
   - Definition or meaning from source material
@@ -32,9 +33,12 @@ steps:
     action: "Image: Create a vivid mental image that connects sound to function"
     notes: The weirder/more emotional, the better for retention
   - step: 4
+    action: "Entwine: Connect the image with personal meaning (PIE method)"
+    notes: Add emotion, absurdity, or personal experience. Why does this matter to YOU?
+  - step: 5
     action: "Resonance: Confirm aloud that the hook makes sense to you"
     notes: "Say: 'This clicks because...'"
-  - step: 5
+  - step: 6
     action: "Lock: Record the hook as an Anki card or session log entry"
     notes: Capture for spaced repetition
 outputs:
@@ -42,7 +46,7 @@ outputs:
   - Anki card draft (optional)
   - Session log entry
 stop_criteria:
-  - All 5 steps completed
+  - All 6 steps completed
   - Hook feels "locked" (resonance confirmed)
   - 3 minutes elapsed per term
 failure_modes:
@@ -52,6 +56,8 @@ failure_modes:
     mitigation: Make it concrete, visual, and bizarre
   - mode: Sound cue forced
     mitigation: If phonetics don't work, try acronym or first-letter cue
+  - mode: Weak personal connection
+    mitigation: Add emotion, stakes, or personal relevance - why does this matter to YOU?
 logging_fields:
   - term_encoded
   - hook_type

@@ -1,0 +1,66 @@
+id: M-ENC-013
+name: Memory Palace
+category: encode
+description: Use spatial memory to encode ordered sequences by associating items with familiar locations. Based on the ancient Method of Loci used by Greek orators and memory champions.
+default_duration_min: 10
+energy_cost: high
+best_stage: first_exposure
+status: validated
+tags:
+  - memory
+  - spatial
+  - sequence
+  - visualization
+  - kwik-inspired
+mechanisms:
+  - dual_coding
+  - elaboration
+  - visualization
+  - generation
+inputs:
+  - List of items to memorize (5-10 optimal)
+  - Familiar location (home, route, etc.)
+  - Imagination for vivid imagery
+steps:
+  - step: 1
+    action: Choose a familiar location
+    notes: Must be deeply familiar (your home, daily route)
+  - step: 2
+    action: Identify 5-10 specific spots in order
+    notes: Door, couch, kitchen sink, bed, etc.
+  - step: 3
+    action: Create vivid absurd image for item 1
+    notes: Exaggerated, emotional, bizarre
+  - step: 4
+    action: Place image at location 1
+    notes: Mentally "stick" it there
+  - step: 5
+    action: Continue for all items
+    notes: One item per location
+  - step: 6
+    action: Walk through palace mentally
+    notes: Retrieve items in order
+outputs:
+  - Mental palace with placed items
+  - Retrieval accuracy check
+  - Weak links identified
+stop_criteria:
+  - All items placed
+  - Can retrieve forward and backward
+  - Mental walk completed without errors
+failure_modes:
+  - mode: Locations not familiar
+    mitigation: Use your actual home, not imagined places
+  - mode: Images not vivid/absurd
+    mitigation: Add action, emotion, exaggeration
+  - mode: Too many items
+    mitigation: Max 10 per palace; create new palace for more
+logging_fields:
+  - items_memorized
+  - locations_used
+  - retrieval_accuracy
+  - time_to_build
+evidence:
+  citation: Yates (1966)
+  finding: Method of Loci has been used for 2500+ years; spatial memory is evolutionarily privileged
+  source: Cicero, De Oratore

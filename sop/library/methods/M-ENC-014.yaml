@@ -1,0 +1,64 @@
+id: M-ENC-014
+name: Chain Linking
+category: encode
+description: Create a bizarre narrative story connecting unrelated items. The absurdity makes it memorable without spatial locations.
+default_duration_min: 8
+energy_cost: medium
+best_stage: first_exposure
+status: validated
+tags:
+  - memory
+  - narrative
+  - sequence
+  - absurdity
+  - kwik-inspired
+mechanisms:
+  - elaboration
+  - narrative_encoding
+  - generation
+inputs:
+  - List of items to memorize in order
+  - Creativity for bizarre connections
+steps:
+  - step: 1
+    action: List items in order
+    notes: 5-8 items optimal for one chain
+  - step: 2
+    action: Create vivid image for item 1
+    notes: See it clearly
+  - step: 3
+    action: Connect item 1 to 2 with absurd interaction
+    notes: The more bizarre, the better
+  - step: 4
+    action: Continue linking each item
+    notes: Each interacts with the next
+  - step: 5
+    action: Walk through the story
+    notes: Replay the narrative
+  - step: 6
+    action: Test retrieval by "pulling the chain"
+    notes: Start anywhere, follow links
+outputs:
+  - Bizarre story narrative
+  - Retrieval success rate
+  - Weak links (breaks in chain)
+stop_criteria:
+  - Story complete with all items
+  - Can retrieve entire sequence
+  - Backward retrieval also possible
+failure_modes:
+  - mode: Story too logical
+    mitigation: Add absurd elements; gravity-defying, impossible actions
+  - mode: Weak links
+    mitigation: Make interactions sensory and emotional
+  - mode: Chain too long
+    mitigation: Split into multiple chains if >8 items
+logging_fields:
+  - items_linked
+  - story_length
+  - retrieval_accuracy
+  - chain_breaks
+evidence:
+  citation: Bower & Winzenz (1970)
+  finding: Narrative chaining improves serial recall by creating meaningful connections between unrelated items
+  source: Journal of Verbal Learning and Verbal Behavior
