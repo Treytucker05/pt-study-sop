@@ -79,27 +79,32 @@ export function BrainWorkspaceTopBar({ workspace }: BrainWorkspaceTopBarProps) {
       onDragLeave={() => setDropHighlight(false)}
       onDrop={handleDrop}
     >
-      {/* Flow steps — compact */}
-      <div className="flex items-center gap-0.5 mr-2">
+      {/* Flow steps — compact; aria-label so step names are announced when labels are hidden (xl) */}
+      <div
+        role="list"
+        aria-label="Study flow"
+        className="flex items-center gap-0.5 mr-2"
+      >
         {FLOW_STEPS.map((step, i) => {
           const done = stepDone[step.id] ?? false;
           return (
-            <div key={step.id} className="flex items-center gap-0.5">
-              <div
+            <div key={step.id} className="flex items-center gap-0.5" role="listitem">
+              <span
                 className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-terminal ${
                   done ? "text-green-400" : "text-muted-foreground"
                 }`}
                 title={step.label}
+                aria-label={`${step.label}: ${done ? "done" : "pending"}`}
               >
                 {done ? (
-                  <CheckCircle2 className="w-3 h-3" />
+                  <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
                 ) : (
-                  <Circle className="w-3 h-3" />
+                  <Circle className="w-3 h-3" aria-hidden="true" />
                 )}
                 <span className="hidden xl:inline">{step.label}</span>
-              </div>
+              </span>
               {i < FLOW_STEPS.length - 1 && (
-                <ArrowRight className="w-2 h-2 text-muted-foreground/50" />
+                <ArrowRight className="w-2 h-2 text-muted-foreground/50" aria-hidden="true" />
               )}
             </div>
           );
@@ -120,16 +125,22 @@ export function BrainWorkspaceTopBar({ workspace }: BrainWorkspaceTopBarProps) {
         Import
       </Button>
 
-      {/* Status badges — right-aligned */}
-      <div className="flex items-center gap-3 ml-auto font-terminal text-xs">
-        <div className="flex items-center gap-1">
-          <span className={`w-1.5 h-1.5 rounded-full ${workspace.obsidianStatus?.connected ? "bg-green-500" : "bg-red-500"}`} />
+      {/* Status badges — right-aligned; aria-label so status is announced (not color-only) */}
+      <div className="flex items-center gap-3 ml-auto font-terminal text-xs" role="status" aria-label="Connection status">
+        <span
+          className="flex items-center gap-1"
+          aria-label={workspace.obsidianStatus?.connected ? "Obsidian: connected" : "Obsidian: disconnected"}
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${workspace.obsidianStatus?.connected ? "bg-green-500" : "bg-red-500"}`} aria-hidden="true" />
           <span className="text-muted-foreground">Obsidian</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className={`w-1.5 h-1.5 rounded-full ${workspace.ankiStatus?.connected ? "bg-green-500" : "bg-red-500"}`} />
+        </span>
+        <span
+          className="flex items-center gap-1"
+          aria-label={workspace.ankiStatus?.connected ? "Anki: connected" : "Anki: disconnected"}
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${workspace.ankiStatus?.connected ? "bg-green-500" : "bg-red-500"}`} aria-hidden="true" />
           <span className="text-muted-foreground">Anki</span>
-        </div>
+        </span>
         {workspace.pendingDrafts.length > 0 && (
           <Badge variant="outline" className="h-5 px-1.5 text-xs rounded-none border-secondary/50 text-secondary">
             {workspace.pendingDrafts.length} drafts
