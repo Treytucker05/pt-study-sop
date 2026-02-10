@@ -132,7 +132,7 @@ export function TutorArtifacts({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className={`shrink-0 ${PANEL_PADDING} pb-2 border-b-2 border-secondary/30`}>
+      <div className={`shrink-0 ${PANEL_PADDING} pb-2 border-b-2 border-primary/30`}>
         <div className={TEXT_PANEL_TITLE}>ARTIFACTS</div>
       </div>
 

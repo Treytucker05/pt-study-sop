@@ -7,6 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Play, RefreshCw, CheckCircle, XCircle, Clock, Brain, BookOpen } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import {
+  CARD_BORDER_SECONDARY,
+  ICON_SM,
+  STATUS_SUCCESS,
+  STATUS_ERROR,
+} from "@/lib/theme";
 
 interface ScholarStatus {
   running: boolean;
@@ -68,8 +74,8 @@ export function ScholarRunStatus() {
   const getStatusIcon = () => {
     if (isLoading) return <RefreshCw className="w-4 h-4 animate-spin" />;
     if (status?.running) return <RefreshCw className="w-4 h-4 animate-spin text-primary" />;
-    if (status?.status === "complete") return <CheckCircle className="w-4 h-4 text-green-400" />;
-    if (status?.status === "error") return <XCircle className="w-4 h-4 text-red-400" />;
+    if (status?.status === "complete") return <CheckCircle className={`w-4 h-4 ${STATUS_SUCCESS}`} />;
+    if (status?.status === "error") return <XCircle className={`w-4 h-4 ${STATUS_ERROR}`} />;
     return <Clock className="w-4 h-4 text-muted-foreground" />;
   };
 
@@ -83,14 +89,14 @@ export function ScholarRunStatus() {
     }
     if (status?.status === "complete") {
       return (
-        <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
+        <Badge className={`bg-success/20 ${STATUS_SUCCESS}`}>
           Complete
         </Badge>
       );
     }
     if (status?.status === "error") {
       return (
-        <Badge className="bg-red-500/20 text-red-400 border-red-500/50">
+        <Badge className={`bg-destructive/20 ${STATUS_ERROR}`}>
           Error
         </Badge>
       );
@@ -103,8 +109,8 @@ export function ScholarRunStatus() {
   };
 
   return (
-    <Card className="brain-card rounded-none">
-      <CardHeader className="border-b border-secondary/50">
+    <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+      <CardHeader className="border-b border-primary/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {getStatusIcon()}
@@ -119,9 +125,9 @@ export function ScholarRunStatus() {
         {/* Status Info */}
         <div className="space-y-2">
           {runMutation.isError && (
-            <div className="p-2 bg-red-900/20 border border-red-500/50 rounded-none">
-              <div className="font-terminal text-[10px] text-red-400">Run Error:</div>
-              <div className="font-terminal text-[10px] text-red-300">
+            <div className="p-2 bg-destructive/10 border border-destructive/50 rounded-none">
+              <div className={`font-terminal text-[10px] ${STATUS_ERROR}`}>Run Error:</div>
+              <div className="font-terminal text-[10px] text-destructive/80">
                 {(runMutation.error as Error)?.message || "Unknown error"}
               </div>
             </div>
@@ -151,7 +157,7 @@ export function ScholarRunStatus() {
                   </div>
                   <Progress
                     value={status.progress}
-                    className="h-2 bg-black border border-secondary/40"
+                    className="h-2 bg-black border border-primary/30"
                   />
                 </div>
               )}
@@ -171,12 +177,12 @@ export function ScholarRunStatus() {
 
           {status?.errors && status.errors.length > 0 && (
             <div className="space-y-1">
-              <div className="font-terminal text-[10px] text-red-400">
+              <div className={`font-terminal text-[10px] ${STATUS_ERROR}`}>
                 Errors:
               </div>
-              <div className="space-y-1 p-2 bg-red-900/20 border border-red-500/50 rounded-none">
+              <div className="space-y-1 p-2 bg-destructive/10 border border-destructive/50 rounded-none">
                 {status.errors.map((error, idx) => (
-                  <div key={idx} className="font-terminal text-[10px] text-red-400">
+                  <div key={idx} className={`font-terminal text-[10px] ${STATUS_ERROR}`}>
                     • {error}
                   </div>
                 ))}
@@ -189,18 +195,18 @@ export function ScholarRunStatus() {
         <div className="space-y-1">
           <div className="font-terminal text-[10px] text-muted-foreground">Study mode</div>
           <Select value={studyMode} onValueChange={(v) => setStudyMode(v as "brain" | "tutor")} disabled={status?.running || runMutation.isPending}>
-            <SelectTrigger className="rounded-none font-terminal text-xs border-secondary h-8">
+            <SelectTrigger className="rounded-none font-terminal text-xs border-primary/40 h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none bg-black border-primary">
               <SelectItem value="brain" className="font-terminal text-xs rounded-none">
                 <span className="flex items-center gap-2">
-                  <Brain className="w-3 h-3" /> Brain Study
+                  <Brain className={ICON_SM} /> Brain Study
                 </span>
               </SelectItem>
               <SelectItem value="tutor" className="font-terminal text-xs rounded-none">
                 <span className="flex items-center gap-2">
-                  <BookOpen className="w-3 h-3" /> Tutor Study
+                  <BookOpen className={ICON_SM} /> Tutor Study
                 </span>
               </SelectItem>
             </SelectContent>
@@ -214,7 +220,7 @@ export function ScholarRunStatus() {
             disabled={status?.running || runMutation.isPending}
             className="flex-1 bg-primary hover:bg-primary/80 rounded-none font-terminal text-xs"
           >
-            <Play className="w-3 h-3 mr-1" />
+            <Play className={`${ICON_SM} mr-1`} />
             {runMutation.isPending ? "Starting..." : "Run Scholar"}
           </Button>
           <Button
@@ -223,12 +229,12 @@ export function ScholarRunStatus() {
             className="rounded-none font-terminal text-xs"
             disabled={isLoading}
           >
-            <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`${ICON_SM} ${isLoading ? "animate-spin" : ""}`} />
           </Button>
         </div>
 
         {/* Info */}
-        <div className="pt-2 border-t border-secondary/30">
+        <div className="pt-2 border-t border-primary/30">
           <p className="font-terminal text-[9px] text-muted-foreground">
             {studyMode === "brain"
               ? "Brain Study: session logs + SOP. Tutor Study: SOP library only (no telemetry)."

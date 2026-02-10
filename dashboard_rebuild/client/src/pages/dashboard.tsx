@@ -828,10 +828,11 @@ export default function Dashboard() {
                   {/* Add Task Input */}
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Add task..."
+                      placeholder={currentTaskList ? "Add task..." : "Loading task lists..."}
                       value={newTaskTitle}
                       onChange={(e) => setNewTaskTitle(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddGoogleTask()}
+                      disabled={!currentTaskList}
                       className="rounded-none border-secondary bg-black font-terminal text-sm h-8"
                     />
                     <Button

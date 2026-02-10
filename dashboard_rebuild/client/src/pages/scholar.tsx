@@ -32,6 +32,21 @@ import { api, type ScholarQuestion, type ScholarFinding, type TutorAuditItem } f
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { Proposal } from "@shared/schema";
+import {
+  TEXT_PANEL_TITLE,
+  TEXT_SECTION_LABEL,
+  TEXT_MUTED,
+  TEXT_BADGE,
+  TEXT_BUTTON,
+  PANEL_PADDING,
+  CARD_BORDER,
+  CARD_BORDER_SECONDARY,
+  ICON_SM,
+  ICON_MD,
+  ICON_LG,
+  STATUS_SUCCESS,
+  STATUS_ERROR,
+} from "@/lib/theme";
 
 /**
  * SCHOLAR PAGE - Advisory & Analytical Layer
@@ -177,9 +192,9 @@ export default function Scholar() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'APPROVED': return 'bg-primary/20 text-primary border-primary';
-      case 'REJECTED': return 'bg-secondary/40 text-muted-foreground border-secondary';
-      case 'IMPLEMENTED': return 'bg-white/20 text-white border-white';
-      default: return 'bg-secondary/20 text-secondary-foreground border-secondary';
+      case 'REJECTED': return 'bg-destructive/20 text-destructive border-destructive';
+      case 'IMPLEMENTED': return 'bg-success/20 text-success border-success';
+      default: return 'bg-muted/20 text-muted-foreground border-muted-foreground';
     }
   };
 
@@ -199,7 +214,7 @@ export default function Scholar() {
          <div className="space-y-4 shrink-0">
            <div className="flex items-center justify-between">
              <div className="flex items-center gap-3">
-               <Brain className="w-6 h-6 text-primary" />
+               <Brain className={`${ICON_LG} text-primary`} />
                <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
                <Badge variant="outline" className="rounded-none text-[10px] font-terminal border-primary/50">
                  READ ONLY ADVISORY
@@ -208,11 +223,11 @@ export default function Scholar() {
              <Button
                variant="outline"
                size="sm"
-               className="rounded-none font-arcade text-xs border-secondary"
+               className="rounded-none font-arcade text-xs border-primary/40"
                onClick={() => queryClient.invalidateQueries()}
                data-testid="button-refresh-data"
              >
-               <RefreshCw className="w-3 h-3 mr-2" /> REFRESH DATA
+               <RefreshCw className={`${ICON_SM} mr-2`} /> REFRESH DATA
              </Button>
            </div>
            
@@ -223,7 +238,7 @@ export default function Scholar() {
         {/* Main Content */}
         <div className="flex-1">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
-            <TabsList className="bg-black/60 border border-secondary rounded-none p-1 shrink-0 w-full justify-start overflow-x-auto">
+            <TabsList className="bg-black/60 border-2 border-primary/40 rounded-none p-1 shrink-0 w-full justify-start overflow-x-auto">
               {[
                 { id: 'summary', label: 'SUMMARY', icon: TrendingUp },
                 { id: 'analysis', label: 'ANALYSIS', icon: Search },
@@ -236,7 +251,7 @@ export default function Scholar() {
                   className="rounded-none font-arcade text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black px-3"
                   data-testid={`tab-${tab.id}`}
                 >
-                  <tab.icon className="w-3 h-3 mr-1" />
+                  <tab.icon className={`${ICON_SM} mr-1`} />
                   {tab.label}
                 </TabsTrigger>
               ))}
@@ -245,7 +260,7 @@ export default function Scholar() {
             {/* SCHOLAR SUMMARY TAB */}
             <TabsContent value="summary" className="flex-1 mt-6">
               {/* Scholar run flow strip */}
-              <Card className="bg-black/40 border border-secondary/60 rounded-none mb-4">
+              <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY} mb-4`}>
                 <CardContent className="p-3">
                   <div className="font-arcade text-[10px] text-secondary mb-2">
                     SCHOLAR RUN: HIGH-LEVEL → ANALYSIS → DECISIONS
@@ -269,7 +284,7 @@ export default function Scholar() {
 
               {/* Proposals banner when work is waiting */}
               {proposals.length > 0 && (
-                <Card className="bg-black/60 border border-primary/70 rounded-none mb-4">
+                <Card className={`bg-black/60 ${CARD_BORDER} mb-4`}>
                   <CardContent className="p-3 flex flex-col md:flex-row md:items-center gap-3 justify-between">
                     <div className="flex items-center gap-2">
                       <Lightbulb className="w-4 h-4 text-primary" />
@@ -299,7 +314,7 @@ export default function Scholar() {
                 {/* Left: Summary Cards */}
                 <div className="lg:col-span-2 space-y-4 pr-2">
                   {/* Study Health Overview */}
-                  <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
+                  <Card className={`bg-black/40 ${CARD_BORDER}`}>
                     <CardHeader className="p-4 border-b border-primary/30">
                       <CardTitle className="font-arcade text-sm text-primary flex items-center gap-3">
                         <TrendingUp className="w-4 h-4" /> STUDY HEALTH OVERVIEW
@@ -324,8 +339,8 @@ export default function Scholar() {
                   </Card>
 
                   {/* What's Working */}
-                  <Card className="bg-black/40 border-2 border-white/30 rounded-none">
-                    <CardHeader className="border-b border-white/20">
+                  <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                    <CardHeader className="border-b border-primary/30">
                       <CardTitle className="font-arcade text-xs text-white flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4" /> WHAT APPEARS TO BE WORKING
                       </CardTitle>
@@ -350,8 +365,8 @@ export default function Scholar() {
                           </li>
                         )}
                       </ul>
-                      <div className="mt-3 pt-3 border-t border-secondary/30">
-                        <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
+                      <div className="mt-3 pt-3 border-t border-primary/30">
+                        <Badge variant="outline" className="rounded-none text-[9px] border-primary/40">
                           CONFIDENCE: {sessions.length > 10 ? 'MEDIUM' : 'LOW'} (based on {sessions.length} sessions)
                         </Badge>
                       </div>
@@ -421,8 +436,8 @@ export default function Scholar() {
                 </div>
 
                 {/* Right: Chat Interface */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none flex flex-col">
-                  <CardHeader className="border-b border-secondary shrink-0 sticky top-0 bg-black/95 z-10">
+                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY} flex flex-col`}>
+                  <CardHeader className="border-b border-primary/30 shrink-0 sticky top-0 bg-black/95 z-10">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <MessageSquare className="w-4 h-4" /> ASK SCHOLAR
                     </CardTitle>
@@ -453,14 +468,14 @@ export default function Scholar() {
                         ))}
                         {isAnalyzing && (
                           <div className="flex items-center gap-2 text-muted-foreground font-terminal text-xs">
-                            <RefreshCw className="w-3 h-3 animate-spin" />
+                            <RefreshCw className={`${ICON_SM} animate-spin`} />
                             Analyzing Brain data...
                           </div>
                         )}
                         <div ref={chatEndRef} />
                       </div>
                     </ScrollArea>
-                    <div className="p-2 border-t border-secondary shrink-0">
+                    <div className="p-2 border-t border-primary/30 shrink-0">
                       <div className="flex gap-2">
                         <Textarea
                           value={chatInput}
@@ -472,7 +487,7 @@ export default function Scholar() {
                             }
                           }}
                           placeholder="Ask about your study patterns..."
-                          className="rounded-none bg-black border-secondary text-xs min-h-[60px] resize-none"
+                          className="rounded-none bg-black border-primary/40 text-xs min-h-[60px] resize-none"
                           data-testid="input-scholar-chat"
                         />
                         <Button
@@ -499,8 +514,8 @@ export default function Scholar() {
                   evidence. If something looks important here, expect or create a matching proposal on the next tab.
                 </p>
                 {/* Tutor Audit Section */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="border-b border-secondary">
+                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                  <CardHeader className="border-b border-primary/30">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <Search className="w-4 h-4" /> TUTOR AUDIT
                     </CardTitle>
@@ -508,7 +523,7 @@ export default function Scholar() {
                   <CardContent className="p-4">
                     <div className="grid lg:grid-cols-2 gap-4">
                       {/* Tutor Behavior Audit */}
-                      <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
+                      <Card className={`bg-black/40 ${CARD_BORDER}`}>
                         <CardHeader className="border-b border-primary/30">
                           <CardTitle className="font-arcade text-xs text-primary flex items-center gap-2">
                             <Brain className="w-4 h-4" /> TUTOR BEHAVIOR AUDIT
@@ -541,8 +556,8 @@ export default function Scholar() {
                       </Card>
 
                       {/* Recurrent Issues */}
-                      <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                        <CardHeader className="border-b border-secondary">
+                      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                        <CardHeader className="border-b border-primary/30">
                           <CardTitle className="font-arcade text-xs flex items-center gap-2">
                             <AlertCircle className="w-4 h-4" /> RECURRENT ISSUES
                           </CardTitle>
@@ -574,8 +589,8 @@ export default function Scholar() {
                 </Card>
 
                 {/* Question Pipeline Section */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="border-b border-secondary">
+                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                  <CardHeader className="border-b border-primary/30">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <HelpCircle className="w-4 h-4" /> QUESTION PIPELINE
                     </CardTitle>
@@ -587,8 +602,8 @@ export default function Scholar() {
                     </p>
                     <div className="grid lg:grid-cols-2 gap-4">
                       {/* Pipeline Stages */}
-                      <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                        <CardHeader className="border-b border-secondary">
+                      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                        <CardHeader className="border-b border-primary/30">
                           <CardTitle className="font-arcade text-xs flex items-center gap-2">
                             <HelpCircle className="w-4 h-4" /> QUESTION RESOLUTION PIPELINE
                           </CardTitle>
@@ -618,7 +633,7 @@ export default function Scholar() {
                       </Card>
 
                       {/* Open Questions */}
-                      <Card className="bg-black/40 border-2 border-primary/50 rounded-none">
+                      <Card className={`bg-black/40 ${CARD_BORDER}`}>
                         <CardHeader className="border-b border-primary/30">
                           <CardTitle className="font-arcade text-xs text-primary flex items-center gap-2">
                             <AlertCircle className="w-4 h-4" /> OPEN QUESTIONS
@@ -649,8 +664,8 @@ export default function Scholar() {
                 </Card>
 
                 {/* Evidence Review Section */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="border-b border-secondary">
+                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                  <CardHeader className="border-b border-primary/30">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <BookOpen className="w-4 h-4" /> EVIDENCE REVIEW
                     </CardTitle>
@@ -658,8 +673,8 @@ export default function Scholar() {
                   <CardContent className="p-4">
                     <div className="grid lg:grid-cols-2 gap-4">
                       {/* Observed Data */}
-                      <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                        <CardHeader className="border-b border-secondary">
+                      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                        <CardHeader className="border-b border-primary/30">
                           <CardTitle className="font-arcade text-xs flex items-center gap-2">
                             <BookOpen className="w-4 h-4" /> OBSERVED DATA
                           </CardTitle>
@@ -684,8 +699,8 @@ export default function Scholar() {
                       </Card>
 
                       {/* Research Interpretation */}
-                      <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                        <CardHeader className="border-b border-secondary">
+                      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                        <CardHeader className="border-b border-primary/30">
                           <CardTitle className="font-arcade text-xs flex items-center gap-2">
                             <BookOpen className="w-4 h-4" /> RESEARCH INTERPRETATION
                           </CardTitle>
@@ -709,8 +724,8 @@ export default function Scholar() {
                 </Card>
 
                 {/* Topic Clusters Section */}
-                <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                  <CardHeader className="border-b border-secondary flex flex-row items-center justify-between">
+                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                  <CardHeader className="border-b border-primary/30 flex flex-row items-center justify-between">
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <Layers className="w-4 h-4" /> TOPIC CLUSTERS
                     </CardTitle>
@@ -778,8 +793,8 @@ export default function Scholar() {
 
             {/* PROPOSALS TAB */}
             <TabsContent value="proposals" className="flex-1 overflow-auto mt-4">
-              <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                <CardHeader className="border-b border-secondary">
+              <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                <CardHeader className="border-b border-primary/30">
                   <CardTitle className="font-arcade text-xs flex items-center gap-2">
                     <Lightbulb className="w-4 h-4" /> IMPROVEMENT PROPOSALS
                   </CardTitle>
@@ -826,12 +841,12 @@ export default function Scholar() {
                               </div>
                             )}
 
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-secondary/30">
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-primary/30">
                               <div className="flex gap-2">
-                                <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
+                                <Badge variant="outline" className="rounded-none text-[9px] border-primary/40">
                                   Confidence: MED
                                 </Badge>
-                                <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
+                                <Badge variant="outline" className="rounded-none text-[9px] border-primary/40">
                                   Risk: LOW
                                 </Badge>
                               </div>
@@ -860,8 +875,8 @@ export default function Scholar() {
 
             {/* HISTORY TAB */}
             <TabsContent value="history" className="flex-1 overflow-auto mt-4">
-              <Card className="bg-black/40 border-2 border-secondary rounded-none">
-                <CardHeader className="border-b border-secondary">
+              <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+                <CardHeader className="border-b border-primary/30">
                   <CardTitle className="font-arcade text-xs flex items-center gap-2">
                     <History className="w-4 h-4" /> PROPOSAL HISTORY (READ ONLY)
                   </CardTitle>
@@ -893,7 +908,7 @@ export default function Scholar() {
                                 {proposal.status || 'DRAFT'}
                               </Badge>
                               <span className="text-[10px] text-muted-foreground">
-                                <Clock className="w-3 h-3 inline mr-1" />
+                                <Clock className={`${ICON_SM} inline mr-1`} />
                                 {proposal.createdAt ? new Date(proposal.createdAt).toLocaleDateString() : 'N/A'}
                               </span>
                             </div>

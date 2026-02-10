@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, GripVertical, Play, RefreshCw } from "lucide-react";
 import { format, isPast, isToday, isTomorrow, parseISO, isValid } from "date-fns";
 
-import { api, type PlannerTask } from "@/lib/api";
+import { api, type PlannerTask, type PlannerTaskUpdate } from "@/lib/api";
 import { useToast } from "@/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,16 +87,19 @@ function KanbanColumn({
 
 function PlannerTaskCard({
   task,
+  disabled,
   primaryAction,
   onComplete,
 }: {
   task: PlannerTask;
+  disabled?: boolean;
   primaryAction: { label: string; title: string; icon: ReactNode; onClick: () => void };
   onComplete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: String(task.id),
     data: { type: "planner_task", taskId: task.id, status: task.status ?? "pending" },
+    disabled,
   });
 
   const style = {
@@ -178,6 +181,7 @@ function PlannerTaskCard({
               e.stopPropagation();
               primaryAction.onClick();
             }}
+            disabled={disabled}
             title={primaryAction.title}
           >
             {primaryAction.icon}
@@ -191,6 +195,7 @@ function PlannerTaskCard({
               e.stopPropagation();
               onComplete();
             }}
+            disabled={disabled}
             title="Complete"
           >
             <CheckCircle2 className="w-3 h-3 mr-1" />
@@ -212,31 +217,45 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
   );
 
   const updateTaskMutation = useMutation({
-    mutationFn: (vars: { id: number; data: Record<string, unknown> }) =>
+    mutationFn: (vars: { id: number; data: PlannerTaskUpdate }) =>
       api.planner.updateTask(vars.id, vars.data),
     onMutate: async (vars) => {
       await queryClient.cancelQueries({ queryKey: ["planner-queue"] });
       const previous = queryClient.getQueryData<PlannerTask[]>(["planner-queue"]);
+      const previousIndex = previous ? previous.findIndex((t) => t.id === vars.id) : -1;
+      const previousTask = previousIndex >= 0 && previous ? previous[previousIndex] : undefined;
 
-      if (previous) {
-        queryClient.setQueryData<PlannerTask[]>(["planner-queue"], () => {
-          const next = previous.slice();
-          const idx = next.findIndex((t) => t.id === vars.id);
-          if (idx === -1) return next;
-          const nextTask = { ...next[idx], ...(vars.data as Partial<PlannerTask>) };
-          const nextStatus = (vars.data as Partial<PlannerTask>).status;
-          if (nextStatus === "completed") {
-            return next.filter((t) => t.id !== vars.id);
+      queryClient.setQueryData<PlannerTask[]>(["planner-queue"], (current) => {
+        if (!current) return current;
+        const idx = current.findIndex((t) => t.id === vars.id);
+        if (idx === -1) return current;
+
+        const nextStatus = vars.data.status;
+        if (nextStatus === "completed") {
+          return current.filter((t) => t.id !== vars.id);
+        }
+
+        const next = current.slice();
+        next[idx] = { ...next[idx], ...vars.data };
+        return next;
+      });
+
+      return { previousTask, previousIndex };
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.previousTask) {
+        queryClient.setQueryData<PlannerTask[]>(["planner-queue"], (current) => {
+          const next = (current ?? []).slice();
+          const existingIdx = next.findIndex((t) => t.id === ctx.previousTask!.id);
+          if (existingIdx === -1) {
+            const insertAt = ctx.previousIndex >= 0 ? Math.min(ctx.previousIndex, next.length) : next.length;
+            next.splice(insertAt, 0, ctx.previousTask!);
+          } else {
+            next[existingIdx] = ctx.previousTask!;
           }
-          next[idx] = nextTask;
           return next;
         });
       }
-
-      return { previous };
-    },
-    onError: (err, _vars, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(["planner-queue"], ctx.previous);
       toast({ title: "Update failed", description: String(err), variant: "destructive" });
     },
     onSettled: () => {
@@ -308,6 +327,7 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
   };
 
   const activeTask = activeTaskId ? tasksById.get(activeTaskId) : null;
+  const isUpdating = updateTaskMutation.isPending;
 
   return (
     <Card className="bg-black/40 border-2 border-primary rounded-none">
@@ -356,6 +376,7 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
                   <PlannerTaskCard
                     key={t.id}
                     task={t}
+                    disabled={isUpdating}
                     primaryAction={{
                       label: "Start",
                       title: "Start",
@@ -383,6 +404,7 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
                   <PlannerTaskCard
                     key={t.id}
                     task={t}
+                    disabled={isUpdating}
                     primaryAction={{
                       label: "Queue",
                       title: "Move back to queue",

@@ -43,6 +43,10 @@ export interface PlannerTask {
   course_name?: string | null;
 }
 
+export type PlannerTaskUpdate = Partial<
+  Pick<PlannerTask, "status" | "scheduled_date" | "planned_minutes" | "notes" | "actual_session_id">
+>;
+
 export interface SyllabusImportResult {
   modulesCreated: number;
   eventsCreated: number;
@@ -366,7 +370,7 @@ export const api = {
       request<{ ok: boolean; tasks_created: number }>("/planner/generate", {
         method: "POST",
       }),
-    updateTask: (taskId: number, data: Record<string, unknown>) =>
+    updateTask: (taskId: number, data: PlannerTaskUpdate) =>
       request<{ ok: boolean }>(`/planner/tasks/${taskId}`, {
         method: "PATCH",
         body: JSON.stringify(data),
@@ -629,6 +633,13 @@ export const api = {
     advanceBlock: (sessionId: string) =>
       request<TutorBlockProgress>(`/tutor/session/${sessionId}/advance-block`, {
         method: "POST",
+      }),
+    getMethodBlocks: () =>
+      request<TutorMethodBlock[]>("/tutor/blocks"),
+    createCustomChain: (blockIds: number[], name?: string) =>
+      request<{ id: number; name: string; block_ids: number[] }>("/tutor/blocks/chain", {
+        method: "POST",
+        body: JSON.stringify({ block_ids: blockIds, name: name || "Custom Chain" }),
       }),
   },
 };
@@ -986,6 +997,15 @@ export interface TutorTemplateChain {
   description: string;
   blocks: { id: number; name: string; category: string; duration: number }[];
   context_tags: string;
+}
+
+export interface TutorMethodBlock {
+  id: number;
+  name: string;
+  category: string;
+  description: string | null;
+  default_duration_min: number;
+  energy_cost: string;
 }
 
 export interface TutorBlockProgress {

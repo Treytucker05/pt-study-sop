@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { MaterialUploader } from "@/components/MaterialUploader";
 import { MaterialSelector } from "@/components/MaterialSelector";
+import { TutorChainBuilder } from "@/components/TutorChainBuilder";
 
 interface ContentFilterProps {
   courseId: number | undefined;
@@ -44,6 +45,8 @@ interface ContentFilterProps {
   setMode: (mode: TutorMode) => void;
   chainId: number | undefined;
   setChainId: (id: number | undefined) => void;
+  customBlockIds: number[];
+  setCustomBlockIds: (ids: number[]) => void;
   topic: string;
   setTopic: (topic: string) => void;
   model: string;
@@ -131,6 +134,8 @@ export function ContentFilter({
   setMode,
   chainId,
   setChainId,
+  customBlockIds,
+  setCustomBlockIds,
   topic,
   setTopic,
   model,
@@ -186,6 +191,7 @@ export function ContentFilter({
     _lsGetBool(LS_AUTOPICK_CHAIN_KEY, true)
   );
   const [lastAutoPickMode, setLastAutoPickMode] = useState<TutorMode | null>(null);
+  const [chainTab, setChainTab] = useState<"templates" | "custom">("templates");
 
   useEffect(() => {
     _lsSet(LS_AUTOPICK_CHAIN_KEY, String(autoPickChain));
@@ -259,7 +265,7 @@ export function ContentFilter({
       </div>
 
       {/* Scrollable body */}
-      <ScrollArea className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className={`${PANEL_PADDING} space-y-2`}>
           {/* Mode selector */}
           <div>
@@ -351,97 +357,133 @@ export function ContentFilter({
               Chain
             </SectionLabel>
 
-            {/* Recommended chain row */}
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className={`${TEXT_MUTED} text-xs min-w-0 truncate`}>
-                <span className="opacity-70">Rec:</span>{" "}
-                {recommendedChain ? (
-                  <>
-                    <span className="text-foreground font-medium">{recommendedChain.name}</span>
-                    <Badge variant="outline" className={`ml-1 ${TEXT_BADGE} h-4 px-1.5 text-xs`}>
-                      {recommendedChain.blocks.length} blocks
-                    </Badge>
-                  </>
-                ) : chainsLoading ? (
-                  <Skeleton className="inline-block w-20 h-4 bg-primary/10" />
-                ) : (
-                  <span className="opacity-70">—</span>
-                )}
-              </div>
-
-              {recommendedChain && chainId !== recommendedChain.id && (
-                <Button
-                  size="sm"
-                  onClick={() => setChainId(recommendedChain.id)}
-                  className="rounded-none h-6 px-2 font-arcade text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 border border-primary"
-                >
-                  APPLY
-                </Button>
-              )}
+            {/* Tab toggle: Templates vs Custom */}
+            <div className="grid grid-cols-2 gap-1 mb-2 min-w-0">
+              <button
+                onClick={() => setChainTab("templates")}
+                className={`px-1.5 py-1 border-2 font-arcade text-[10px] truncate transition-colors ${
+                  chainTab === "templates"
+                    ? "border-primary bg-primary/20 text-primary"
+                    : "border-primary/30 text-foreground/80 hover:border-primary/50"
+                }`}
+              >
+                TEMPLATES
+              </button>
+              <button
+                onClick={() => {
+                  setChainTab("custom");
+                  setChainId(undefined);
+                }}
+                className={`px-1.5 py-1 border-2 font-arcade text-[10px] truncate transition-colors ${
+                  chainTab === "custom"
+                    ? "border-primary bg-primary/20 text-primary"
+                    : "border-primary/30 text-foreground/80 hover:border-primary/50"
+                }`}
+              >
+                CUSTOM
+              </button>
             </div>
 
-            <label className={`flex items-center gap-2 ${TEXT_BODY} text-muted-foreground mb-2 cursor-pointer`}>
-              <Checkbox
-                checked={autoPickChain}
-                onCheckedChange={(v) => setAutoPickChain(v === true)}
-                className="w-3 h-3"
-              />
-              <span className="select-none text-xs">Auto-pick recommended chain</span>
-            </label>
+            {chainTab === "templates" ? (
+              <>
+                {/* Recommended chain row */}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className={`${TEXT_MUTED} text-xs min-w-0 truncate`}>
+                    <span className="opacity-70">Rec:</span>{" "}
+                    {recommendedChain ? (
+                      <>
+                        <span className="text-foreground font-medium">{recommendedChain.name}</span>
+                        <Badge variant="outline" className={`ml-1 ${TEXT_BADGE} h-4 px-1.5 text-xs`}>
+                          {recommendedChain.blocks.length} blocks
+                        </Badge>
+                      </>
+                    ) : chainsLoading ? (
+                      <Skeleton className="inline-block w-20 h-4 bg-primary/10" />
+                    ) : (
+                      <span className="opacity-70">—</span>
+                    )}
+                  </div>
 
-            {/* Chain list - card style with better borders */}
-            <ScrollArea className="h-40 border-2 border-primary/30 bg-black/20">
-              <div className="p-1 space-y-1">
-                {/* Freeform option as a card */}
-                <button
-                  onClick={() => {
-                    setChainId(undefined);
-                    setLastAutoPickMode(mode);
-                  }}
-                  className={`w-full text-left px-3 py-2 border-2 transition-all ${
-                    !chainId
-                      ? "border-primary bg-primary/20 text-primary"
-                      : "border-primary/20 text-foreground/80 hover:border-primary/40 hover:text-foreground hover:bg-black/30"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-arcade text-xs">FREEFORM</div>
-                      <div className={`${TEXT_MUTED} text-xs`}>No template</div>
-                    </div>
-                    {!chainId && <div className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                </button>
-                
-                {chainsLoading ? (
-                  <div className="space-y-2 p-2">
-                    <Skeleton className="w-full h-10 bg-primary/10" />
-                    <Skeleton className="w-full h-10 bg-primary/10" />
-                    <Skeleton className="w-full h-10 bg-primary/10" />
-                  </div>
-                ) : (
-                  templateChains.map((chain) => (
+                  {recommendedChain && chainId !== recommendedChain.id && (
+                    <Button
+                      size="sm"
+                      onClick={() => setChainId(recommendedChain.id)}
+                      className="rounded-none h-6 px-2 font-arcade text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 border border-primary"
+                    >
+                      APPLY
+                    </Button>
+                  )}
+                </div>
+
+                <label className={`flex items-center gap-2 ${TEXT_BODY} text-muted-foreground mb-2 cursor-pointer`}>
+                  <Checkbox
+                    checked={autoPickChain}
+                    onCheckedChange={(v) => setAutoPickChain(v === true)}
+                    className="w-3 h-3"
+                  />
+                  <span className="select-none text-xs">Auto-pick recommended chain</span>
+                </label>
+
+                {/* Chain list - card style with better borders */}
+                <ScrollArea className="h-40 border-2 border-primary/30 bg-black/20">
+                  <div className="p-1 space-y-1">
+                    {/* Freeform option as a card */}
                     <button
-                      key={chain.id}
-                      onClick={() => setChainId(chain.id)}
+                      onClick={() => {
+                        setChainId(undefined);
+                        setLastAutoPickMode(mode);
+                      }}
                       className={`w-full text-left px-3 py-2 border-2 transition-all ${
-                        chainId === chain.id
+                        !chainId
                           ? "border-primary bg-primary/20 text-primary"
                           : "border-primary/20 text-foreground/80 hover:border-primary/40 hover:text-foreground hover:bg-black/30"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className="min-w-0 flex-1">
-                          <div className="font-arcade text-xs truncate">{chain.name.toUpperCase()}</div>
-                          <div className={`${TEXT_MUTED} text-xs`}>{chain.blocks.length} blocks</div>
+                        <div>
+                          <div className="font-arcade text-xs">FREEFORM</div>
+                          <div className={`${TEXT_MUTED} text-xs`}>No template</div>
                         </div>
-                        {chainId === chain.id && <div className="w-2 h-2 rounded-full bg-primary ml-2" />}
+                        {!chainId && <div className="w-2 h-2 rounded-full bg-primary" />}
                       </div>
                     </button>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+
+                    {chainsLoading ? (
+                      <div className="space-y-2 p-2">
+                        <Skeleton className="w-full h-10 bg-primary/10" />
+                        <Skeleton className="w-full h-10 bg-primary/10" />
+                        <Skeleton className="w-full h-10 bg-primary/10" />
+                      </div>
+                    ) : (
+                      templateChains.map((chain) => (
+                        <button
+                          key={chain.id}
+                          onClick={() => setChainId(chain.id)}
+                          className={`w-full text-left px-3 py-2 border-2 transition-all ${
+                            chainId === chain.id
+                              ? "border-primary bg-primary/20 text-primary"
+                              : "border-primary/20 text-foreground/80 hover:border-primary/40 hover:text-foreground hover:bg-black/30"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-arcade text-xs truncate">{chain.name.toUpperCase()}</div>
+                              <div className={`${TEXT_MUTED} text-xs`}>{chain.blocks.length} blocks</div>
+                            </div>
+                            {chainId === chain.id && <div className="w-2 h-2 rounded-full bg-primary ml-2" />}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </>
+            ) : (
+              <TutorChainBuilder
+                selectedBlockIds={customBlockIds}
+                setSelectedBlockIds={setCustomBlockIds}
+              />
+            )}
           </div>
 
           {/* Topic */}
@@ -579,7 +621,7 @@ export function ContentFilter({
             <MaterialUploader courseId={courseId} />
           </div>
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Fixed footer — Start button */}
       <div className={`shrink-0 ${PANEL_PADDING} pt-2 border-t-2 border-primary/30`}>

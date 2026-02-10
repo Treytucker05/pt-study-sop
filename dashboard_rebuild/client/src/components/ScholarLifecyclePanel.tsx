@@ -7,6 +7,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, XCircle, MessageSquare, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  CARD_BORDER_SECONDARY,
+  ICON_SM,
+} from "@/lib/theme";
 
 interface Question {
   id: number;
@@ -111,7 +115,7 @@ export function ScholarLifecyclePanel() {
     const isExpanded = expandedQuestion === question.id;
 
     return (
-      <div key={question.id} className="border border-secondary/40 rounded-none">
+      <div key={question.id} className="border border-primary/20 rounded-none">
         <button
           onClick={() => setExpandedQuestion(isExpanded ? null : question.id)}
           className="w-full p-3 text-left hover:bg-primary/5 transition-colors flex items-start gap-2"
@@ -134,11 +138,11 @@ export function ScholarLifecyclePanel() {
         </button>
 
         {isExpanded && (
-          <div className="p-3 border-t border-secondary/40 space-y-2 bg-black/20">
+          <div className="p-3 border-t border-primary/20 space-y-2 bg-black/20">
             {question.answer_text && (
               <div className="space-y-1">
                 <div className="font-terminal text-[10px] text-muted-foreground">Answer:</div>
-                <div className="font-terminal text-xs text-secondary p-2 bg-black/40 border border-secondary/30 rounded-none">
+                <div className="font-terminal text-xs text-secondary p-2 bg-black/40 border border-primary/20 rounded-none">
                   {question.answer_text}
                 </div>
                 {question.answered_at && (
@@ -162,7 +166,7 @@ export function ScholarLifecyclePanel() {
                   disabled={!answerText.trim() || answerQuestionMutation.isPending}
                   className="bg-primary hover:bg-primary/80 rounded-none font-terminal text-xs w-full"
                 >
-                  <CheckCircle className="w-3 h-3 mr-1" />
+                  <CheckCircle className={`${ICON_SM} mr-1`} />
                   {answerQuestionMutation.isPending ? "Submitting..." : "Submit Answer"}
                 </Button>
               </div>
@@ -177,7 +181,7 @@ export function ScholarLifecyclePanel() {
     const isExpanded = expandedProposal === proposal.id;
 
     return (
-      <div key={proposal.id} className="border border-secondary/40 rounded-none">
+      <div key={proposal.id} className="border border-primary/20 rounded-none">
         <button
           onClick={() => setExpandedProposal(isExpanded ? null : proposal.id)}
           className="w-full p-3 text-left hover:bg-primary/5 transition-colors flex items-start gap-2"
@@ -203,18 +207,18 @@ export function ScholarLifecyclePanel() {
         </button>
 
         {isExpanded && (
-          <div className="p-3 border-t border-secondary/40 space-y-2 bg-black/20">
+          <div className="p-3 border-t border-primary/20 space-y-2 bg-black/20">
             <div className="space-y-1">
               <div className="font-terminal text-[10px] text-muted-foreground">Description:</div>
-              <div className="font-terminal text-xs text-secondary p-2 bg-black/40 border border-secondary/30 rounded-none whitespace-pre-wrap">
+              <div className="font-terminal text-xs text-secondary p-2 bg-black/40 border border-primary/20 rounded-none whitespace-pre-wrap">
                 {proposal.description}
               </div>
             </div>
 
             {proposal.rejection_reason && (
               <div className="space-y-1">
-                <div className="font-terminal text-[10px] text-red-400">Rejection Reason:</div>
-                <div className="font-terminal text-xs text-red-400 p-2 bg-red-900/20 border border-red-500/50 rounded-none">
+                <div className="font-terminal text-[10px] text-destructive">Rejection Reason:</div>
+                <div className="font-terminal text-xs text-destructive p-2 bg-destructive/10 border border-destructive/50 rounded-none">
                   {proposal.rejection_reason}
                 </div>
               </div>
@@ -226,9 +230,9 @@ export function ScholarLifecyclePanel() {
                   <Button
                     onClick={() => approveProposalMutation.mutate(proposal.id)}
                     disabled={approveProposalMutation.isPending}
-                    className="flex-1 bg-green-600 hover:bg-green-700 rounded-none font-terminal text-xs"
+                    className="flex-1 bg-success hover:bg-success/80 rounded-none font-terminal text-xs"
                   >
-                    <CheckCircle className="w-3 h-3 mr-1" />
+                    <CheckCircle className={`${ICON_SM} mr-1`} />
                     {approveProposalMutation.isPending ? "Approving..." : "Approve"}
                   </Button>
                   <Button
@@ -238,9 +242,9 @@ export function ScholarLifecyclePanel() {
                       }
                     }}
                     disabled={!rejectionReason.trim() || rejectProposalMutation.isPending}
-                    className="flex-1 bg-red-600 hover:bg-red-700 rounded-none font-terminal text-xs"
+                    className="flex-1 bg-destructive hover:bg-destructive/80 rounded-none font-terminal text-xs"
                   >
-                    <XCircle className="w-3 h-3 mr-1" />
+                    <XCircle className={`${ICON_SM} mr-1`} />
                     {rejectProposalMutation.isPending ? "Rejecting..." : "Reject"}
                   </Button>
                 </div>
@@ -260,15 +264,15 @@ export function ScholarLifecyclePanel() {
 
   return (
     <div className="space-y-4">
-      <Card className="brain-card rounded-none">
-        <CardHeader className="border-b border-secondary/50">
+      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+        <CardHeader className="border-b border-primary/30">
           <CardTitle className="font-arcade text-sm text-primary">
             SCHOLAR QUESTIONS
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3">
           <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 rounded-none bg-black border border-secondary/40">
+            <TabsList className="grid w-full grid-cols-2 rounded-none bg-black border border-primary/30">
               <TabsTrigger value="pending" className="font-arcade text-[10px] rounded-none">
                 PENDING ({pendingQuestions.length})
               </TabsTrigger>
@@ -277,7 +281,7 @@ export function ScholarLifecyclePanel() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="pending" className="border border-t-0 border-secondary/40 rounded-none p-2">
+            <TabsContent value="pending" className="border border-t-0 border-primary/30 rounded-none p-2">
               <ScrollArea className="h-[300px]">
                 <div className="space-y-2">
                   {pendingQuestions.length === 0 ? (
@@ -291,7 +295,7 @@ export function ScholarLifecyclePanel() {
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="answered" className="border border-t-0 border-secondary/40 rounded-none p-2">
+            <TabsContent value="answered" className="border border-t-0 border-primary/30 rounded-none p-2">
               <ScrollArea className="h-[300px]">
                 <div className="space-y-2">
                   {answeredQuestions.length === 0 ? (
@@ -308,15 +312,15 @@ export function ScholarLifecyclePanel() {
         </CardContent>
       </Card>
 
-      <Card className="brain-card rounded-none">
-        <CardHeader className="border-b border-secondary/50">
+      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
+        <CardHeader className="border-b border-primary/30">
           <CardTitle className="font-arcade text-sm text-primary">
             SCHOLAR PROPOSALS
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3">
           <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 rounded-none bg-black border border-secondary/40">
+            <TabsList className="grid w-full grid-cols-4 rounded-none bg-black border border-primary/30">
               <TabsTrigger value="pending" className="font-arcade text-[10px] rounded-none">
                 PENDING ({pendingProposals.length})
               </TabsTrigger>
@@ -331,7 +335,7 @@ export function ScholarLifecyclePanel() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="pending" className="border border-t-0 border-secondary/40 rounded-none p-2">
+            <TabsContent value="pending" className="border border-t-0 border-primary/30 rounded-none p-2">
               <ScrollArea className="h-[300px]">
                 <div className="space-y-2">
                   {pendingProposals.length === 0 ? (
@@ -345,7 +349,7 @@ export function ScholarLifecyclePanel() {
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="approved" className="border border-t-0 border-secondary/40 rounded-none p-2">
+            <TabsContent value="approved" className="border border-t-0 border-primary/30 rounded-none p-2">
               <ScrollArea className="h-[300px]">
                 <div className="space-y-2">
                   {approvedProposals.length === 0 ? (
@@ -359,7 +363,7 @@ export function ScholarLifecyclePanel() {
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="implemented" className="border border-t-0 border-secondary/40 rounded-none p-2">
+            <TabsContent value="implemented" className="border border-t-0 border-primary/30 rounded-none p-2">
               <ScrollArea className="h-[300px]">
                 <div className="space-y-2">
                   {implementedProposals.length === 0 ? (
@@ -373,7 +377,7 @@ export function ScholarLifecyclePanel() {
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="rejected" className="border border-t-0 border-secondary/40 rounded-none p-2">
+            <TabsContent value="rejected" className="border border-t-0 border-primary/30 rounded-none p-2">
               <ScrollArea className="h-[300px]">
                 <div className="space-y-2">
                   {rejectedProposals.length === 0 ? (

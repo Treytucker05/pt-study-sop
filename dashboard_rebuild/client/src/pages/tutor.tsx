@@ -23,6 +23,7 @@ export default function Tutor() {
   const [chainId, setChainId] = useState<number | undefined>();
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
   const [chainBlocks, setChainBlocks] = useState<TutorTemplateChain["blocks"]>([]);
+  const [customBlockIds, setCustomBlockIds] = useState<number[]>([]);
   const [topic, setTopic] = useState("");
   const [model, setModel] = useState("codex");
   const [webSearch, setWebSearch] = useState(false);
@@ -41,6 +42,13 @@ export default function Tutor() {
   const startSession = useCallback(async () => {
     setIsStarting(true);
     try {
+      // If custom blocks are selected (no template chain), create an ad-hoc chain first
+      let resolvedChainId = chainId;
+      if (!resolvedChainId && customBlockIds.length > 0) {
+        const customChain = await api.tutor.createCustomChain(customBlockIds, `Custom ${topic || "Chain"}`);
+        resolvedChainId = customChain.id;
+      }
+
       const session = await api.tutor.createSession({
         course_id: courseId,
         phase: "first_pass",
@@ -51,7 +59,7 @@ export default function Tutor() {
           model,
           ...(webSearch ? { web_search: true } : {}),
         },
-        method_chain_id: chainId,
+        method_chain_id: resolvedChainId,
       });
       setActiveSessionId(session.session_id);
       setStartedAt(session.started_at);
@@ -81,7 +89,7 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, mode, topic, selectedMaterials, model, webSearch, chainId, queryClient]);
+  }, [courseId, mode, topic, selectedMaterials, model, webSearch, chainId, customBlockIds, queryClient]);
 
   const endSession = useCallback(async () => {
     if (!activeSessionId) return;
@@ -185,7 +193,7 @@ export default function Tutor() {
     <Layout>
       <div className="h-[calc(100vh-140px)] flex gap-2">
         {/* Left: Content Filter */}
-        <Card className="w-72 shrink-0 bg-black/40 border-2 border-primary rounded-none overflow-hidden">
+        <Card className="w-80 shrink-0 bg-black/40 border-2 border-primary rounded-none overflow-hidden">
           <ContentFilter
             courseId={courseId}
             setCourseId={setCourseId}
@@ -195,6 +203,8 @@ export default function Tutor() {
             setMode={setMode}
             chainId={chainId}
             setChainId={setChainId}
+            customBlockIds={customBlockIds}
+            setCustomBlockIds={setCustomBlockIds}
             topic={topic}
             setTopic={setTopic}
             model={model}
@@ -220,7 +230,7 @@ export default function Tutor() {
         </Card>
 
         {/* Right: Artifacts */}
-        <Card className="w-72 shrink-0 bg-black/40 border-2 border-primary/40 rounded-none overflow-y-auto">
+        <Card className="w-80 shrink-0 bg-black/40 border-2 border-primary rounded-none overflow-hidden">
           <TutorArtifacts
             sessionId={activeSessionId}
             artifacts={artifacts}

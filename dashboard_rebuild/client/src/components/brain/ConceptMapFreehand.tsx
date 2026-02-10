@@ -35,10 +35,32 @@ export function ConceptMapFreehand({
 
   const updateUndoRedoState = useCallback(() => {
     const editor = editorRef.current;
+    if (!editor) {
+      setCanUndo(false);
+      setCanRedo(false);
+      return;
+    }
+
     const getCanUndo = editor?.getCanUndo;
     const getCanRedo = editor?.getCanRedo;
-    const nextCanUndo = typeof getCanUndo === "function" ? !!getCanUndo.call(editor) : false;
-    const nextCanRedo = typeof getCanRedo === "function" ? !!getCanRedo.call(editor) : false;
+
+    const getNumUndos = editor?.history?.getNumUndos;
+    const getNumRedos = editor?.history?.getNumRedos;
+
+    const nextCanUndo =
+      typeof getCanUndo === "function"
+        ? !!getCanUndo.call(editor)
+        : typeof getNumUndos === "function"
+          ? getNumUndos.call(editor.history) > 0
+          : false;
+
+    const nextCanRedo =
+      typeof getCanRedo === "function"
+        ? !!getCanRedo.call(editor)
+        : typeof getNumRedos === "function"
+          ? getNumRedos.call(editor.history) > 0
+          : false;
+
     setCanUndo(nextCanUndo);
     setCanRedo(nextCanRedo);
   }, []);
