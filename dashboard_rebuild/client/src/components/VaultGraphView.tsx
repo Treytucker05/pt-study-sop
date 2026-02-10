@@ -3,6 +3,7 @@ import ForceGraph2D from "react-force-graph-2d";
 import { api } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { VAULT_FOLDER_COLORS } from "@/lib/colors";
 
 interface GraphNode {
   id: string;
@@ -26,13 +27,7 @@ interface VaultGraphViewProps {
   onNodeClick?: (noteName: string) => void;
 }
 
-const FOLDER_COLORS: Record<string, string> = {
-  "": "#6366f1",
-  "School": "#22d3ee",
-  "Clinical": "#f472b6",
-  "Research": "#a78bfa",
-  "Personal": "#34d399",
-};
+const FOLDER_COLORS = VAULT_FOLDER_COLORS;
 
 function getFolderColor(folder: string): string {
   const top = folder.split("/")[0];

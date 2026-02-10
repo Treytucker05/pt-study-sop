@@ -1,6 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
+import { CALLOUT_STYLES } from "@/lib/colors";
 
 interface ObsidianRendererProps {
   content: string;
@@ -18,25 +19,7 @@ const IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp"];
 /** Obsidian callout regex: > [!type] optional title */
 const CALLOUT_RE = /^\[!([\w-]+)\]\s*(.*)?$/;
 
-const CALLOUT_COLORS: Record<string, string> = {
-  note: "border-blue-500/50 bg-blue-500/10",
-  tip: "border-green-500/50 bg-green-500/10",
-  important: "border-purple-500/50 bg-purple-500/10",
-  warning: "border-yellow-500/50 bg-yellow-500/10",
-  caution: "border-red-500/50 bg-red-500/10",
-  info: "border-blue-400/50 bg-blue-400/10",
-  abstract: "border-cyan-500/50 bg-cyan-500/10",
-  summary: "border-cyan-500/50 bg-cyan-500/10",
-  todo: "border-blue-500/50 bg-blue-500/10",
-  success: "border-green-500/50 bg-green-500/10",
-  question: "border-yellow-400/50 bg-yellow-400/10",
-  example: "border-purple-400/50 bg-purple-400/10",
-  quote: "border-gray-400/50 bg-gray-400/10",
-  bug: "border-red-400/50 bg-red-400/10",
-  danger: "border-red-500/50 bg-red-500/10",
-  fail: "border-red-500/50 bg-red-500/10",
-  failure: "border-red-500/50 bg-red-500/10",
-};
+const CALLOUT_COLORS = CALLOUT_STYLES;
 
 function renderWikilinks(text: string, onClick?: (name: string, shiftKey: boolean) => void) {
   return text.split(WIKILINK_RE).map((part, j) => {

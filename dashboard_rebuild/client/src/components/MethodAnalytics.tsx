@@ -1,18 +1,10 @@
 import { BarChart3, TrendingUp, Star } from "lucide-react";
 import type { MethodAnalyticsResponse } from "@/api";
+import { PEIRRO_COLORS } from "@/lib/colors";
 
 interface MethodAnalyticsProps {
   data: MethodAnalyticsResponse;
 }
-
-const CATEGORY_BAR_COLOR: Record<string, string> = {
-  prepare: "bg-yellow-500",
-  encode: "bg-purple-500",
-  interrogate: "bg-green-500",
-  retrieve: "bg-red-500",
-  refine: "bg-blue-500",
-  overlearn: "bg-gray-500",
-};
 
 export default function MethodAnalytics({ data }: MethodAnalyticsProps) {
   const { block_stats, chain_stats, recent_ratings } = data;
@@ -36,7 +28,7 @@ export default function MethodAnalytics({ data }: MethodAnalyticsProps) {
                 <span className="font-terminal text-xs w-32 truncate">{b.name}</span>
                 <div className="flex-1 h-4 bg-secondary/20 rounded-none overflow-hidden">
                   <div
-                    className={`h-full ${CATEGORY_BAR_COLOR[b.category] || "bg-primary"}`}
+                    className={`h-full ${PEIRRO_COLORS[b.category]?.bar || "bg-primary"}`}
                     style={{ width: `${((b.avg_effectiveness ?? 0) / 5) * 100}%` }}
                   />
                 </div>

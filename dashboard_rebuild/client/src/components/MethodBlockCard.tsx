@@ -1,5 +1,6 @@
 import { Clock, Zap } from "lucide-react";
 import type { MethodBlock } from "@/api";
+import { PEIRRO_COLORS, PEIRRO_DEFAULT, ENERGY_COLORS, ENERGY_DEFAULT } from "@/lib/colors";
 
 const CATEGORY_LABEL: Record<string, string> = {
   prepare: "PRIME",
@@ -8,30 +9,6 @@ const CATEGORY_LABEL: Record<string, string> = {
   retrieve: "RETRIEVE",
   refine: "REFINE",
   overlearn: "OVERLEARN",
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  prepare: "border-yellow-500 bg-yellow-500/10",
-  encode: "border-purple-500 bg-purple-500/10",
-  interrogate: "border-green-500 bg-green-500/10",
-  retrieve: "border-red-500 bg-red-500/10",
-  refine: "border-blue-500 bg-blue-500/10",
-  overlearn: "border-gray-500 bg-gray-500/10",
-};
-
-const CATEGORY_BADGE: Record<string, string> = {
-  prepare: "bg-yellow-500/20 text-yellow-400",
-  encode: "bg-purple-500/20 text-purple-400",
-  interrogate: "bg-green-500/20 text-green-400",
-  retrieve: "bg-red-500/20 text-red-400",
-  refine: "bg-blue-500/20 text-blue-400",
-  overlearn: "bg-gray-500/20 text-gray-400",
-};
-
-const ENERGY_ICON: Record<string, string> = {
-  low: "text-green-400",
-  medium: "text-yellow-400",
-  high: "text-red-400",
 };
 
 interface MethodBlockCardProps {
@@ -43,9 +20,10 @@ interface MethodBlockCardProps {
 }
 
 export default function MethodBlockCard({ block, compact, onClick, draggable, onDragStart }: MethodBlockCardProps) {
-  const colorClass = CATEGORY_COLORS[block.category] || "border-secondary bg-secondary/10";
-  const badgeClass = CATEGORY_BADGE[block.category] || "bg-secondary/20 text-muted-foreground";
-  const energyClass = ENERGY_ICON[block.energy_cost] || "text-muted-foreground";
+  const cat = PEIRRO_COLORS[block.category] || PEIRRO_DEFAULT;
+  const colorClass = cat.border;
+  const badgeClass = cat.badge;
+  const energyClass = ENERGY_COLORS[block.energy_cost] || ENERGY_DEFAULT;
 
   if (compact) {
     return (

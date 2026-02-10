@@ -10,6 +10,7 @@ import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, setHours, setMinutes } from "date-fns";
 import type { CalendarEvent } from "@shared/schema";
+import { EVENT_COLOR_PALETTE } from "@/lib/colors";
 
 export interface CalendarAttendee {
   email: string;
@@ -67,17 +68,7 @@ interface LocalEventEditModalProps {
   courseOptions?: CourseOption[];
 }
 
-const COLOR_PALETTE = [
-  { value: "#ef4444", label: "Red" },
-  { value: "#f97316", label: "Orange" },
-  { value: "#eab308", label: "Yellow" },
-  { value: "#22c55e", label: "Green" },
-  { value: "#06b6d4", label: "Cyan" },
-  { value: "#3b82f6", label: "Blue" },
-  { value: "#8b5cf6", label: "Purple" },
-  { value: "#ec4899", label: "Pink" },
-  { value: "#6b7280", label: "Gray" },
-];
+const COLOR_PALETTE = EVENT_COLOR_PALETTE;
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "details", label: "DETAILS" },

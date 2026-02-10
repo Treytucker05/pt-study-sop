@@ -1,29 +1,9 @@
 import { Handle, MarkerType, Position, type NodeProps } from "@xyflow/react";
 import { cn } from "@/lib/utils";
+import { CONCEPT_NODE_COLORS, CONCEPT_EDGE_COLORS } from "@/lib/colors";
 
-export const NODE_COLORS = [
-  { name: "Default", border: "border-secondary", bg: "bg-black/80", text: "text-secondary-foreground", hex: "" },
-  { name: "Red", border: "border-red-500", bg: "bg-red-500/10", text: "text-red-400", hex: "#ef4444" },
-  { name: "Blue", border: "border-blue-500", bg: "bg-blue-500/10", text: "text-blue-400", hex: "#3b82f6" },
-  { name: "Green", border: "border-green-500", bg: "bg-green-500/10", text: "text-green-400", hex: "#22c55e" },
-  { name: "Yellow", border: "border-yellow-500", bg: "bg-yellow-500/10", text: "text-yellow-400", hex: "#eab308" },
-  { name: "Purple", border: "border-purple-500", bg: "bg-purple-500/10", text: "text-purple-400", hex: "#a855f7" },
-  { name: "Cyan", border: "border-cyan-400", bg: "bg-cyan-400/10", text: "text-cyan-400", hex: "#22d3ee" },
-  { name: "Orange", border: "border-orange-500", bg: "bg-orange-500/10", text: "text-orange-400", hex: "#f97316" },
-  { name: "Pink", border: "border-pink-500", bg: "bg-pink-500/10", text: "text-pink-400", hex: "#ec4899" },
-];
-
-export const EDGE_COLORS = [
-  { name: "Primary", stroke: "hsl(var(--primary))" },
-  { name: "Red", stroke: "#ef4444" },
-  { name: "Blue", stroke: "#3b82f6" },
-  { name: "Green", stroke: "#22c55e" },
-  { name: "Yellow", stroke: "#eab308" },
-  { name: "Purple", stroke: "#a855f7" },
-  { name: "Cyan", stroke: "#22d3ee" },
-  { name: "Orange", stroke: "#f97316" },
-  { name: "Pink", stroke: "#ec4899" },
-];
+export const NODE_COLORS = CONCEPT_NODE_COLORS;
+export const EDGE_COLORS = CONCEPT_EDGE_COLORS;
 
 export function ArcadeNode({ data, selected }: NodeProps) {
   const label = (data as { label: string }).label;
