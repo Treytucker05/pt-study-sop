@@ -53,9 +53,9 @@ Use them iteratively — gather data first, then reason about it.
 
 ## Output Format
 
-Produce EXACTLY this markdown structure:
+Produce EXACTLY these markdown sections as your final response. \
+Do NOT wrap the output in code fences or backticks — emit raw markdown directly.
 
-```
 ## What I Learned This Run
 - (up to 5 bullets summarising key findings)
 
@@ -79,7 +79,6 @@ Produce EXACTLY this markdown structure:
 
 ## Next Run Suggestions
 - (concrete improvements for the next Scholar run)
-```
 
 {unanswered_questions_block}
 

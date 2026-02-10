@@ -64,14 +64,27 @@ def _build_agent(llm, tools: list, system_prompt: str):
     )
 
 
+def _strip_code_fences(text: str) -> str:
+    """Remove wrapping code fences if the LLM emits them around the report."""
+    stripped = text.strip()
+    if stripped.startswith("```") and stripped.endswith("```"):
+        # Remove opening fence (with optional language tag) and closing fence
+        lines = stripped.split("\n")
+        lines = lines[1:]  # drop opening ```
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        return "\n".join(lines).strip()
+    return stripped
+
+
 def _extract_final_text(result: dict) -> str:
     """Pull the final assistant text from LangGraph result messages."""
     messages = result.get("messages", [])
     for msg in reversed(messages):
         if hasattr(msg, "content") and isinstance(msg.content, str) and msg.content.strip():
-            return msg.content.strip()
+            return _strip_code_fences(msg.content.strip())
         if isinstance(msg, dict) and msg.get("content"):
-            return str(msg["content"]).strip()
+            return _strip_code_fences(str(msg["content"]).strip())
     return ""
 
 
