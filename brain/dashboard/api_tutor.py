@@ -94,7 +94,7 @@ def _resolve_chain_blocks(conn, chain_id: int) -> list[dict]:
 
     placeholders = ",".join("?" * len(block_ids))
     cur.execute(
-        f"""SELECT id, name, category, description, default_duration_min, evidence
+        f"""SELECT id, name, category, description, default_duration_min, evidence, facilitation_prompt
             FROM method_blocks WHERE id IN ({placeholders})""",
         block_ids,
     )
@@ -131,6 +131,7 @@ def _build_chain_info(conn, chain_id: int, current_index: int) -> tuple[Optional
             "category": b.get("category", ""),
             "evidence": b.get("evidence", ""),
             "duration": b.get("default_duration_min", 5),
+            "facilitation_prompt": b.get("facilitation_prompt", ""),
         }
 
     # Chain overview
@@ -1326,6 +1327,55 @@ def get_chain(chain_id: int):
     conn.close()
 
     return jsonify(chain)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/tutor/blocks — All method blocks for chain builder
+# ---------------------------------------------------------------------------
+
+@tutor_bp.route("/blocks", methods=["GET"])
+def get_method_blocks():
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute(
+        """SELECT id, name, category, description, default_duration_min, energy_cost
+           FROM method_blocks
+           ORDER BY category, name"""
+    )
+    blocks = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    return jsonify(blocks)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/blocks/chain — Create ad-hoc chain from custom block list
+# ---------------------------------------------------------------------------
+
+@tutor_bp.route("/blocks/chain", methods=["POST"])
+def create_custom_chain():
+    data = request.get_json(silent=True) or {}
+    block_ids = data.get("block_ids", [])
+    name = data.get("name", "Custom Chain")
+
+    if not block_ids or not isinstance(block_ids, list):
+        return jsonify({"error": "block_ids is required (non-empty list)"}), 400
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """INSERT INTO method_chains (name, description, block_ids, context_tags, is_template, created_at)
+           VALUES (?, 'User-built custom chain', ?, '{}', 0, datetime('now'))""",
+        (name, json.dumps(block_ids)),
+    )
+    chain_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+
+    return jsonify({"id": chain_id, "name": name, "block_ids": block_ids}), 201
 
 
 # ---------------------------------------------------------------------------

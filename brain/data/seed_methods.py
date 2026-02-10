@@ -499,6 +499,133 @@ TEMPLATE_CHAINS = [
 ]
 
 
+def generate_facilitation_prompt(yaml_data: dict) -> str:
+    """Convert YAML block definition into a structured facilitation prompt for the LLM."""
+    name = yaml_data.get("name", "Unknown")
+    category = yaml_data.get("category", "")
+    duration = yaml_data.get("default_duration_min", 5)
+    description = yaml_data.get("description", "")
+
+    parts: list[str] = []
+    parts.append(f"## Current Activity Block: {name} ({category}, ~{duration} min)")
+    if description:
+        parts.append(f"_{description}_")
+    parts.append(f"\n### Your Task\nFacilitate the **{name}** protocol with the student. Follow the steps below in order and gate each one — do not skip ahead until the student completes the current step.")
+
+    # Steps
+    steps = yaml_data.get("steps", [])
+    if steps:
+        step_lines = ["### Steps (follow in order, gate each one)"]
+        for s in steps:
+            step_num = s.get("step", "?")
+            action = s.get("action", "")
+            notes = s.get("notes", "")
+            step_lines.append(f"{step_num}. {action}")
+            if notes:
+                step_lines.append(f"   - {notes}")
+        parts.append("\n".join(step_lines))
+
+    # Inputs
+    inputs = yaml_data.get("inputs", [])
+    if inputs:
+        parts.append("### Required Inputs\n" + "\n".join(f"- {inp}" for inp in inputs))
+
+    # Outputs
+    outputs = yaml_data.get("outputs", [])
+    if outputs:
+        parts.append("### Expected Outputs\n" + "\n".join(f"- {out}" for out in outputs))
+
+    # Stop criteria
+    stop_criteria = yaml_data.get("stop_criteria", [])
+    if stop_criteria:
+        parts.append("### Stop When\n" + "\n".join(f"- {sc}" for sc in stop_criteria))
+
+    # Failure modes
+    failure_modes = yaml_data.get("failure_modes", [])
+    if failure_modes:
+        fm_lines = ["### Watch For (Failure Modes)"]
+        for fm in failure_modes:
+            mode = fm.get("mode", "")
+            mitigation = fm.get("mitigation", "")
+            fm_lines.append(f"- **{mode}** → {mitigation}")
+        parts.append("\n".join(fm_lines))
+
+    # Evidence
+    ev = yaml_data.get("evidence_raw") or ""
+    if not ev:
+        ev_dict = yaml_data.get("evidence")
+        if isinstance(ev_dict, dict):
+            ev = f"{ev_dict.get('citation', '')}; {ev_dict.get('finding', '')}"
+    if ev:
+        parts.append(f"Evidence: {ev}")
+
+    return "\n\n".join(parts)
+
+
+def regenerate_prompts() -> None:
+    """Read YAML block definitions and update facilitation_prompt in method_blocks."""
+    try:
+        import yaml
+    except ImportError:
+        print("[ERROR] PyYAML not installed — cannot regenerate prompts")
+        return
+
+    if not _METHODS_DIR.exists():
+        print(f"[ERROR] Methods directory not found: {_METHODS_DIR}")
+        return
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Build name->id lookup from DB
+    cursor.execute("SELECT id, name FROM method_blocks")
+    name_to_id: dict[str, int] = {}
+    for row in cursor.fetchall():
+        name_to_id[row[1]] = row[0]
+
+    updated = 0
+    yaml_names_seen: set[str] = set()
+
+    for path in sorted(_METHODS_DIR.glob("*.yaml")):
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not data:
+            continue
+
+        block_name = data.get("name", "")
+        yaml_names_seen.add(block_name)
+        block_id = name_to_id.get(block_name)
+        if block_id is None:
+            print(f"[WARN] YAML block '{block_name}' not found in DB — skipping")
+            continue
+
+        prompt = generate_facilitation_prompt(data)
+        cursor.execute(
+            "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
+            (prompt, block_id),
+        )
+        updated += 1
+
+    # Fallback for blocks without YAML definitions
+    for block_name, block_id in name_to_id.items():
+        if block_name not in yaml_names_seen:
+            cursor.execute(
+                "SELECT facilitation_prompt FROM method_blocks WHERE id = ?",
+                (block_id,),
+            )
+            existing = cursor.fetchone()
+            if not existing or not existing[0]:
+                fallback = f"## Current Activity Block: {block_name}\n\nFacilitate the **{block_name}** method. Guide the student step-by-step through this activity."
+                cursor.execute(
+                    "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
+                    (fallback, block_id),
+                )
+                updated += 1
+
+    conn.commit()
+    conn.close()
+    print(f"[OK] Regenerated facilitation prompts for {updated} blocks")
+
+
 def load_from_yaml() -> dict | None:
     """Load method blocks and chains from YAML specs (no Pydantic — yaml.safe_load only).
 
@@ -787,8 +914,11 @@ def seed_methods(force: bool = False):
 if __name__ == "__main__":
     force = "--force" in sys.argv
     migrate = "--migrate" in sys.argv
+    regen_prompts = "--regenerate-prompts" in sys.argv
 
     if migrate:
         migrate_method_categories()
+    elif regen_prompts:
+        regenerate_prompts()
     else:
         seed_methods(force=force)

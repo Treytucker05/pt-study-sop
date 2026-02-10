@@ -1228,6 +1228,13 @@ def init_database():
         except sqlite3.OperationalError:
             pass
 
+    if "facilitation_prompt" not in mb_cols:
+        try:
+            cursor.execute("ALTER TABLE method_blocks ADD COLUMN facilitation_prompt TEXT")
+            print("[INFO] Added 'facilitation_prompt' column to method_blocks table")
+        except sqlite3.OperationalError:
+            pass
+
     # ------------------------------------------------------------------
     # Library Meta table (tracks YAML library version + source SHA)
     # ------------------------------------------------------------------

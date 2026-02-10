@@ -94,13 +94,17 @@ MODE_POLICIES: dict[str, str] = {
 # Layer 3: RulePacks (global constraints for every session)
 # ---------------------------------------------------------------------------
 
-RULE_PACKS_PROMPT = """## Rules (Non-Negotiable)
-1. **Source discipline**: Cite sources using [Source: filename] format. Mark unverified content as [UNVERIFIED - not backed by your course materials].
-2. **No answer leakage**: Never give away answers before the student attempts. Use Socratic questioning to guide.
-3. **Timeboxing**: Respect block duration hints. When a block's time is up, suggest advancing.
-4. **Logging**: Acknowledge artifact commands (/note, /card, /map) and continue teaching.
-5. **Abbreviation rule**: On first use of any abbreviation, spell out the full term. E.g., "anterior cruciate ligament (ACL)".
-6. **No-Content Graceful Mode**: If no course materials are provided, teach from medical/PT training knowledge. Mark as [From training knowledge — verify with your textbooks]."""
+RULE_PACKS_PROMPT = """## Teaching Rules (Non-Negotiable)
+1. **Source citation**: Cite using [Source: filename]. No source = mark [UNVERIFIED].
+2. **No answer leakage**: Student attempts first. "I don't know" → hint, not answer.
+3. **Three-Layer Chunks**: Facts (with source anchor) → Interpretation (plain language) → Application (clinical/exam).
+4. **No parrot-back**: Ask WHY/HOW/APPLY questions. NEVER "Can you repeat that?"
+5. **Abbreviation rule**: First use → spell out: "anterior cruciate ligament (ACL)".
+6. **Output style**: ≤2 paragraphs or ≤6 bullets. Direct questions. No meta-narration.
+7. **No phantom outputs**: If not done, say NOT DONE. Never invent hooks/cards/metrics.
+8. **Timeboxing**: Respect block duration hints. When time is up, suggest advancing.
+9. **Artifact commands**: Acknowledge /note, /card, /map and continue teaching.
+10. **No-Content Graceful Mode**: If no course materials provided, teach from medical/PT training knowledge. Mark as [From training knowledge — verify with your textbooks]."""
 
 
 # ---------------------------------------------------------------------------
@@ -159,18 +163,22 @@ def build_tutor_system_prompt(
 
     # Layer 2: Chain + block context (injected when active)
     if current_block:
-        cat = current_block.get("category", "")
-        name = current_block.get("name", "")
-        desc = current_block.get("description", "")
-        evidence = current_block.get("evidence", "")
-        duration = current_block.get("duration", 5)
+        facilitation = (current_block.get("facilitation_prompt") or "").strip()
+        if facilitation:
+            parts.append(facilitation)
+        else:
+            cat = current_block.get("category", "")
+            name = current_block.get("name", "")
+            desc = current_block.get("description", "")
+            evidence = current_block.get("evidence", "")
+            duration = current_block.get("duration", 5)
 
-        block_section = f"""## Current Activity Block
+            block_section = f"""## Current Activity Block
 **{name}** ({cat} category, ~{duration} min)
 {desc}"""
-        if evidence:
-            block_section += f"\nEvidence: {evidence}"
-        parts.append(block_section)
+            if evidence:
+                block_section += f"\nEvidence: {evidence}"
+            parts.append(block_section)
 
     if chain_info:
         chain_name = chain_info.get("name", "Study Chain")
@@ -178,7 +186,6 @@ def build_tutor_system_prompt(
         current_idx = chain_info.get("current_index", 0)
         total = chain_info.get("total", len(blocks))
 
-        # Build chain overview with current position highlighted
         step_labels = []
         for i, block_name in enumerate(blocks):
             if i == current_idx:
@@ -244,18 +251,22 @@ def build_prompt_with_contexts(
 
     # 5. Chain + block context (injected when active)
     if current_block:
-        cat = current_block.get("category", "")
-        name = current_block.get("name", "")
-        desc = current_block.get("description", "")
-        evidence = current_block.get("evidence", "")
-        duration = current_block.get("duration", 5)
+        facilitation = (current_block.get("facilitation_prompt") or "").strip()
+        if facilitation:
+            parts.append(facilitation)
+        else:
+            cat = current_block.get("category", "")
+            name = current_block.get("name", "")
+            desc = current_block.get("description", "")
+            evidence = current_block.get("evidence", "")
+            duration = current_block.get("duration", 5)
 
-        block_section = f"""## Current Activity Block
+            block_section = f"""## Current Activity Block
 **{name}** ({cat} category, ~{duration} min)
 {desc}"""
-        if evidence:
-            block_section += f"\nEvidence: {evidence}"
-        parts.append(block_section)
+            if evidence:
+                block_section += f"\nEvidence: {evidence}"
+            parts.append(block_section)
 
     if chain_info:
         chain_name = chain_info.get("name", "Study Chain")
