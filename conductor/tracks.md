@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Agent setup + instruction hygiene.** (active)
+- [x] **Track: Agent setup + instruction hygiene.** (archived 2026-02-10)
   *Link: [./tracks/agents_setup_cleanup_20260209/](./tracks/agents_setup_cleanup_20260209/)*
 
 - [ ] **Track: Refactor the existing frontend and backend to align with the defined tech stack and coding guidelines, focusing on modularity and code quality.** (paused — methods feature shipped first on v9.4 branch)
