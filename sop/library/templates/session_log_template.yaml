@@ -79,3 +79,534 @@ session_fields:
   - name: notes
     type: string
     required: false
+
+  # --- Method-specific logging fields (132 fields, auto-extracted) ---
+
+  - name: accuracy_percent
+    type: float
+    required: false
+
+  - name: ai_assist_used
+    type: boolean
+    required: false
+
+  - name: anki_cards_drafted
+    type: integer
+    required: false
+
+  - name: average_confidence
+    type: float
+    required: false
+
+  - name: average_loops_to_mastery
+    type: float
+    required: false
+
+  - name: bedrock_reached
+    type: boolean
+    required: false
+
+  - name: big_picture_word_count
+    type: integer
+    required: false
+
+  - name: blanks_attempted
+    type: integer
+    required: false
+
+  - name: blanks_correct
+    type: integer
+    required: false
+
+  - name: brain_dump_word_count
+    type: integer
+    required: false
+
+  - name: branch_points
+    type: integer
+    required: false
+
+  - name: breakdown_count
+    type: integer
+    required: false
+
+  - name: breakdown_points
+    type: integer
+    required: false
+
+  - name: card_created
+    type: boolean
+    required: false
+
+  - name: card_format_breakdown
+    type: string
+    required: false
+
+  - name: cards_synced_to_anki
+    type: integer
+    required: false
+
+  - name: case_type
+    type: string
+    required: false
+
+  - name: cells_corrected
+    type: integer
+    required: false
+
+  - name: chain_breaks
+    type: integer
+    required: false
+
+  - name: chain_depth
+    type: integer
+    required: false
+
+  - name: chain_length
+    type: integer
+    required: false
+
+  - name: cluster_count
+    type: integer
+    required: false
+
+  - name: concept_analogized
+    type: string
+    required: false
+
+  - name: concept_applied
+    type: string
+    required: false
+
+  - name: concept_practiced
+    type: string
+    required: false
+
+  - name: concept_taught
+    type: string
+    required: false
+
+  - name: concepts_applied
+    type: integer
+    required: false
+
+  - name: concepts_compared
+    type: integer
+    required: false
+
+  - name: condition_scripted
+    type: string
+    required: false
+
+  - name: confidence_calibration_error
+    type: float
+    required: false
+
+  - name: confusion_count
+    type: integer
+    required: false
+
+  - name: confusion_pairs
+    type: string
+    required: false
+
+  - name: connection_count
+    type: integer
+    required: false
+
+  - name: consequences_count
+    type: integer
+    required: false
+
+  - name: content_processed
+    type: string
+    required: false
+
+  - name: cross_link_count
+    type: integer
+    required: false
+
+  - name: cross_topics
+    type: string
+    required: false
+
+  - name: curiosity_satisfaction_rate
+    type: float
+    required: false
+
+  - name: decision_count
+    type: integer
+    required: false
+
+  - name: decision_depth
+    type: integer
+    required: false
+
+  - name: diagnoses_included
+    type: integer
+    required: false
+
+  - name: diagnosis_reached
+    type: boolean
+    required: false
+
+  - name: dimensions_used
+    type: integer
+    required: false
+
+  - name: discriminators_added
+    type: integer
+    required: false
+
+  - name: discriminators_found
+    type: integer
+    required: false
+
+  - name: edge_case_count
+    type: integer
+    required: false
+
+  - name: enabling_conditions_count
+    type: integer
+    required: false
+
+  - name: errors_analyzed
+    type: integer
+    required: false
+
+  - name: exit_ticket_completed
+    type: boolean
+    required: false
+
+  - name: explanations_generated
+    type: integer
+    required: false
+
+  - name: familiar_domain
+    type: string
+    required: false
+
+  - name: fluency_rating
+    type: integer
+    required: false
+
+  - name: format_1_accuracy
+    type: float
+    required: false
+
+  - name: format_2_accuracy
+    type: float
+    required: false
+
+  - name: format_3_accuracy
+    type: float
+    required: false
+
+  - name: gap_percentage
+    type: float
+    required: false
+
+  - name: gaps_flagged
+    type: integer
+    required: false
+
+  - name: gaps_identified
+    type: integer
+    required: false
+
+  - name: generation_type
+    type: string
+    required: false
+
+  - name: hardest_format
+    type: string
+    required: false
+
+  - name: hook_type
+    type: string
+    required: false
+
+  - name: initial_statement
+    type: string
+    required: false
+
+  - name: inter_cluster_connections
+    type: integer
+    required: false
+
+  - name: interventions_identified
+    type: integer
+    required: false
+
+  - name: items_linked
+    type: integer
+    required: false
+
+  - name: items_mastered
+    type: integer
+    required: false
+
+  - name: items_memorized
+    type: integer
+    required: false
+
+  - name: items_targeted
+    type: integer
+    required: false
+
+  - name: key_detail_count
+    type: integer
+    required: false
+
+  - name: labels_missed
+    type: integer
+    required: false
+
+  - name: labels_recalled
+    type: integer
+    required: false
+
+  - name: link_count
+    type: integer
+    required: false
+
+  - name: locations_used
+    type: integer
+    required: false
+
+  - name: loop_count
+    type: integer
+    required: false
+
+  - name: mapping_count
+    type: integer
+    required: false
+
+  - name: mechanism_traced
+    type: string
+    required: false
+
+  - name: muddy_points_identified
+    type: integer
+    required: false
+
+  - name: next_action_specificity
+    type: string
+    required: false
+
+  - name: node_count
+    type: integer
+    required: false
+
+  - name: overall_accuracy
+    type: float
+    required: false
+
+  - name: paragraphs_processed
+    type: integer
+    required: false
+
+  - name: patient_population
+    type: string
+    required: false
+
+  - name: per_topic_accuracy
+    type: string
+    required: false
+
+  - name: prediction_accuracy
+    type: float
+    required: false
+
+  - name: prerequisite_gaps
+    type: integer
+    required: false
+
+  - name: presentation_type
+    type: string
+    required: false
+
+  - name: pretest_correct_count
+    type: integer
+    required: false
+
+  - name: pretest_question_count
+    type: integer
+    required: false
+
+  - name: prevention_cues_created
+    type: integer
+    required: false
+
+  - name: primary_anchor_topic
+    type: string
+    required: false
+
+  - name: prior_knowledge_level
+    type: string
+    required: false
+
+  - name: priority_layer
+    type: string
+    required: false
+
+  - name: priority_sections
+    type: string
+    required: false
+
+  - name: process_charted
+    type: string
+    required: false
+
+  - name: question_count
+    type: integer
+    required: false
+
+  - name: questions_answered_during_session
+    type: integer
+    required: false
+
+  - name: questions_attempted
+    type: integer
+    required: false
+
+  - name: questions_correct
+    type: integer
+    required: false
+
+  - name: questions_per_topic
+    type: integer
+    required: false
+
+  - name: reasoning_errors
+    type: integer
+    required: false
+
+  - name: recall_word_count
+    type: integer
+    required: false
+
+  - name: red_flags_count
+    type: integer
+    required: false
+
+  - name: redraw_count
+    type: integer
+    required: false
+
+  - name: resonance_confirmed
+    type: boolean
+    required: false
+
+  - name: retrieval_accuracy
+    type: float
+    required: false
+
+  - name: root_causes_identified
+    type: integer
+    required: false
+
+  - name: rsr_estimate
+    type: float
+    required: false
+
+  - name: rsr_percent
+    type: float
+    required: false
+
+  - name: rules_generated
+    type: integer
+    required: false
+
+  - name: second_pass_improvement
+    type: float
+    required: false
+
+  - name: seed_attempted
+    type: boolean
+    required: false
+
+  - name: shared_principles
+    type: integer
+    required: false
+
+  - name: skeleton_section_count
+    type: integer
+    required: false
+
+  - name: step_count
+    type: integer
+    required: false
+
+  - name: story_length
+    type: integer
+    required: false
+
+  - name: structure_drawn
+    type: boolean
+    required: false
+
+  - name: takeaways_count
+    type: integer
+    required: false
+
+  - name: targeted_review_items
+    type: integer
+    required: false
+
+  - name: term_encoded
+    type: string
+    required: false
+
+  - name: terms_per_cluster
+    type: integer
+    required: false
+
+  - name: time_per_unit
+    type: float
+    required: false
+
+  - name: time_to_build
+    type: float
+    required: false
+
+  - name: time_to_seed
+    type: float
+    required: false
+
+  - name: topic_linked
+    type: string
+    required: false
+
+  - name: topics_covered
+    type: string
+    required: false
+
+  - name: topics_interleaved
+    type: integer
+    required: false
+
+  - name: total_time
+    type: float
+    required: false
+
+  - name: total_time_spent
+    type: float
+    required: false
+
+  - name: unfamiliar_terms_count
+    type: integer
+    required: false
+
+  - name: verification_errors
+    type: integer
+    required: false
+
+  - name: verification_status
+    type: string
+    required: false
+
+  - name: weak_anchors_flagged
+    type: integer
+    required: false
+

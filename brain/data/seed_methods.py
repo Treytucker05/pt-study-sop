@@ -32,7 +32,7 @@ _VERSION_PATH = _ROOT / "sop" / "library" / "meta" / "version.yaml"
 
 
 # ---------------------------------------------------------------------------
-# Atomic Method Blocks (34 blocks across 6 PEIRRO phases)
+# Atomic Method Blocks (36 blocks across 6 PEIRRO phases)
 # ---------------------------------------------------------------------------
 METHOD_BLOCKS = [
     # === PREPARE (warm up working memory, set focus, survey structure) ===
