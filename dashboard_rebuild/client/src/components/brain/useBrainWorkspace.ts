@@ -29,12 +29,30 @@ export function useBrainWorkspace() {
   const [previewMode, setPreviewMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Sidebar collapse state
+  const [sidebarExpanded, setSidebarExpandedRaw] = useState<boolean>(
+    () => loadState<boolean>("brain-sidebar-expanded", true)
+  );
+
   // Modal states
   const [importOpen, setImportOpen] = useState(false);
 
   const setMainMode = useCallback((mode: MainMode) => {
     setMainModeRaw(mode);
     saveState("brain-main-mode", mode);
+  }, []);
+
+  const setSidebarExpanded = useCallback((expanded: boolean) => {
+    setSidebarExpandedRaw(expanded);
+    saveState("brain-sidebar-expanded", expanded);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarExpandedRaw((prev) => {
+      const next = !prev;
+      saveState("brain-sidebar-expanded", next);
+      return next;
+    });
   }, []);
 
   // Shared queries
@@ -151,6 +169,9 @@ export function useBrainWorkspace() {
     previewMode, setPreviewMode,
     isSaving,
     openFile, saveFile,
+
+    // Sidebar
+    sidebarExpanded, setSidebarExpanded, toggleSidebar,
 
     // Modals
     importOpen, setImportOpen,

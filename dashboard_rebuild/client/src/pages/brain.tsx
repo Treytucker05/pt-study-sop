@@ -5,8 +5,9 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { useBrainWorkspace } from "@/components/brain/useBrainWorkspace";
-import { BrainWorkspaceTopBar } from "@/components/brain/BrainWorkspaceTopBar";
+import { BrainSessionProgress } from "@/components/brain/BrainSessionProgress";
 import { VaultSidebar } from "@/components/brain/VaultSidebar";
+import { SidebarRail } from "@/components/brain/SidebarRail";
 import { MainContent } from "@/components/brain/MainContent";
 import { BrainModals } from "@/components/brain/BrainModals";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -67,38 +68,57 @@ export default function Brain() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
+  // Ctrl+I keyboard shortcut for import modal
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "i") {
+        e.preventDefault();
+        workspace.setImportOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [workspace]);
+
   return (
     <Layout>
       <div
         className={`brain-workspace fixed inset-x-0 top-[68px] bottom-[48px] flex flex-col min-w-0 overflow-hidden z-30 ${ready ? "brain-workspace--ready" : ""}`}
+        data-active-tab={workspace.mainMode}
       >
-        <div className="brain-workspace__top-bar shrink-0">
-          <BrainWorkspaceTopBar workspace={workspace} />
-        </div>
+        {/* 3px ambient progress bar */}
+        <BrainSessionProgress />
 
-        {/* Desktop: 2-column resizable layout */}
+        {/* Desktop: conditional sidebar (expanded vs collapsed rail) */}
         <div className="hidden lg:flex flex-1 min-h-0">
-          <ResizablePanelGroup
-            direction="horizontal"
-            autoSaveId="brain-workspace-v2"
-            className="h-full"
-          >
-            {/* Left: Vault sidebar */}
-            <ResizablePanel defaultSize={20} minSize={12} maxSize={35}>
-              <div className="brain-workspace__sidebar-wrap h-full border-r border-primary/30 bg-black/40">
-                <VaultSidebar workspace={workspace} />
-              </div>
-            </ResizablePanel>
+          {workspace.sidebarExpanded ? (
+            <ResizablePanelGroup
+              direction="horizontal"
+              autoSaveId="brain-workspace-v2"
+              className="h-full"
+            >
+              <ResizablePanel defaultSize={20} minSize={12} maxSize={35}>
+                <div className="brain-workspace__sidebar-wrap brain-sidebar-expand h-full border-r border-primary/30 bg-black/40">
+                  <VaultSidebar workspace={workspace} onCollapse={workspace.toggleSidebar} />
+                </div>
+              </ResizablePanel>
 
-            <ResizableHandle withHandle className="hover:bg-primary/10 transition-colors data-[resize-handle-active]:bg-primary/20" />
+              <ResizableHandle withHandle className="hover:bg-primary/10 transition-colors data-[resize-handle-active]:bg-primary/20" />
 
-            {/* Main: Editor / Chat / Graph / Table / Anki */}
-            <ResizablePanel defaultSize={80} minSize={50}>
-              <div className="brain-workspace__main-wrap brain-workspace__canvas h-full min-h-0 overflow-hidden">
+              <ResizablePanel defaultSize={80} minSize={50}>
+                <div className="brain-workspace__main-wrap brain-workspace__canvas h-full min-h-0 overflow-hidden">
+                  <MainContent workspace={workspace} />
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          ) : (
+            <div className="flex flex-1 min-h-0">
+              <SidebarRail onExpand={workspace.toggleSidebar} workspace={workspace} />
+              <div className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 overflow-hidden">
                 <MainContent workspace={workspace} />
               </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+            </div>
+          )}
         </div>
 
         {/* Mobile: single column with bottom tabs */}
@@ -108,8 +128,7 @@ export default function Brain() {
             {mobileTab === "main" && <MainContent workspace={workspace} />}
           </div>
 
-          {/* Bottom tab bar */}
-          <nav 
+          <nav
             className="flex items-center border-t-2 border-primary/50 bg-black/80 shrink-0"
             aria-label="Mobile navigation"
           >

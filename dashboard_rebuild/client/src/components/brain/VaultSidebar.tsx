@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import {
   Folder, File, ChevronRight, ChevronDown, FileText,
-  FolderOpen, Search, ArrowLeft,
+  FolderOpen, Search, ArrowLeft, PanelLeftClose,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -37,7 +37,7 @@ function FileItem({ name, isFolder, isExpanded, isActive, depth, onClick }: {
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex items-center gap-2 py-2 font-terminal text-sm text-left transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-inset min-h-[36px] ${
+      className={`w-full flex items-center gap-2 py-2 font-terminal text-sm text-left transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-inset min-h-[36px] ${
         isActive
           ? "bg-primary/15 text-primary border-l-2 border-primary/60"
           : "border-l-2 border-transparent hover:bg-primary/10 text-foreground"
@@ -133,9 +133,10 @@ function FolderChildren({
 
 interface VaultSidebarProps {
   workspace: BrainWorkspace;
+  onCollapse?: () => void;
 }
 
-export function VaultSidebar({ workspace }: VaultSidebarProps) {
+export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
   const [currentFolder, setCurrentFolder] = useState("School");
   const [search, setSearch] = useState("");
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
@@ -205,8 +206,19 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
   if (!connected) {
     return (
       <div className="flex flex-col h-full min-h-0">
-        <div className="section-block border-primary/30">
+        <div className="section-block border-primary/30 flex items-center justify-between">
           <h2 className="section-header">Vault</h2>
+          {onCollapse && (
+            <button
+              type="button"
+              onClick={onCollapse}
+              className="size-7 flex items-center justify-center rounded-sm hover:bg-primary/20 hover:text-primary text-muted-foreground"
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" aria-hidden="true" />
+            </button>
+          )}
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-3 py-6 border border-primary/30 bg-black/30 m-3">
           <FolderOpen className="w-8 h-8 text-primary/80 mb-3" aria-hidden="true" />
@@ -224,8 +236,19 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
       {/* Header — global section-block + section-header */}
-      <div className="section-block border-primary/30">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-primary/20 shrink-0">
         <h2 className="section-header">Vault</h2>
+        {onCollapse && (
+          <button
+            type="button"
+            onClick={onCollapse}
+            className="size-7 flex items-center justify-center rounded-sm hover:bg-primary/20 hover:text-primary text-muted-foreground"
+            title="Collapse sidebar"
+            aria-label="Collapse sidebar"
+          >
+            <PanelLeftClose className="w-4 h-4" aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {/* Search + New Note — subtle borders, no “warning” look */}
@@ -262,10 +285,10 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
                 key={course.path}
                 type="button"
                 onClick={() => navigateToFolder(course.path)}
-                className={`min-h-[36px] px-3 py-2 font-terminal text-sm rounded-none border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-black ${
+                className={`min-h-[36px] px-4 py-2 font-arcade text-xs tracking-wider rounded-none border-2 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-black ${
                   isActive
-                    ? "bg-primary/20 text-primary border-primary/50"
-                    : "border-primary/20 bg-black/30 text-muted-foreground hover:bg-black/50 hover:border-primary/40 hover:text-foreground"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-primary/40 bg-black/50 text-primary/80 hover:bg-primary/20 hover:border-primary/60 hover:text-primary"
                 }`}
                 aria-pressed={isActive}
               >
@@ -278,7 +301,7 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
 
       {/* Breadcrumb — same horizontal padding as sections */}
       {currentFolder && (
-        <div className="flex items-center gap-2 px-3 py-2 font-terminal text-sm border-b border-primary/20 shrink-0 min-h-[40px]">
+        <div className="flex items-center gap-2 px-3 py-2.5 font-arcade text-xs border-b border-primary/20 bg-black/30 shrink-0 min-h-[40px]">
           {hasParent && (
             <button
               type="button"
@@ -290,16 +313,16 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
               <ArrowLeft className="w-4 h-4" aria-hidden="true" />
             </button>
           )}
-          <nav aria-label="Folder breadcrumb" className="flex items-center gap-1 flex-wrap text-muted-foreground min-w-0">
+          <nav aria-label="Folder breadcrumb" className="flex items-center gap-1 flex-wrap text-primary/80 min-w-0">
             {breadcrumbSegments.map((part, i, arr) => (
               <span key={i} className="flex items-center gap-1">
-                {i > 0 && <span aria-hidden="true">/</span>}
+                {i > 0 && <span aria-hidden="true" className="text-primary/40">/</span>}
                 <button
                   type="button"
                   onClick={() =>
                     navigateToFolder(arr.slice(0, i + 1).join("/"))
                   }
-                  className="hover:text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-inset rounded-sm px-1 py-0.5 min-h-[28px] flex items-center"
+                  className="hover:text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-inset rounded-sm px-1.5 py-1 min-h-[28px] flex items-center tracking-wider uppercase"
                 >
                   {part}
                 </button>

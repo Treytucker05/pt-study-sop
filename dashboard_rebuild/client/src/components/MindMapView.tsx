@@ -315,7 +315,7 @@ export function MindMapView() {
   return (
     <div className="flex h-full">
       {/* Sidebar */}
-      <div className="w-[220px] shrink-0 border-r border-secondary/30 bg-black/60">
+      <div className="w-[160px] shrink-0 border-r border-secondary/30 bg-black/60">
         <ScrollArea className="h-full">
           <div className="p-3 space-y-4">
             <div>
@@ -394,7 +394,7 @@ export function MindMapView() {
 
       {/* Mind Map Canvas */}
       <div className="flex-1 flex flex-col min-h-0 bg-black/80">
-        <div className="section-block flex items-center gap-2 px-2 py-1.5 border-b border-secondary/30 shrink-0">
+        <div className="flex items-center gap-2 px-2 py-1.5 border-b border-secondary/30 shrink-0 bg-black/40">
           <span className="font-arcade text-[10px] text-muted-foreground uppercase mr-1">View</span>
           <button
             type="button"

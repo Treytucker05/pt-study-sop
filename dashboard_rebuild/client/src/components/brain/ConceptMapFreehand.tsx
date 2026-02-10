@@ -175,70 +175,34 @@ export function ConceptMapFreehand({
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      <div className="section-block section-block-gap shrink-0 flex-row flex-wrap gap-2 items-center border-primary/20">
+      <div className="flex items-center gap-1 px-2 py-1 border-b border-primary/20 bg-black/40 shrink-0 flex-wrap">
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Map title..."
-          className="h-9 min-w-[180px] text-sm font-terminal bg-black/40 border-primary/20 rounded-none flex-1 max-w-[240px]"
+          className="h-7 min-w-[120px] text-xs font-terminal bg-black/40 border-primary/20 rounded-none flex-1 max-w-[180px]"
         />
-        <div className="flex items-center gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-9 px-2 rounded-none font-terminal text-xs border border-transparent"
-            onClick={handleUndo}
-            disabled={!canUndo}
-            title="Undo"
-          >
-            <Undo2 className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-9 px-2 rounded-none font-terminal text-xs"
-            onClick={handleRedo}
-            disabled={!canRedo}
-            title="Redo"
-          >
-            <Redo2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-        <div className="w-px h-5 bg-primary/20" />
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-9 px-2 rounded-none font-terminal text-xs"
-          onClick={handleExportPng}
-          title="Export PNG"
-        >
-          <Download className="w-3.5 h-3.5 mr-1" />
-          PNG
+        <div className="w-px h-4 bg-primary/20" />
+        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none" onClick={handleUndo} disabled={!canUndo} title="Undo">
+          <Undo2 className="w-3 h-3" />
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-9 px-2 rounded-none font-terminal text-xs"
-          onClick={handleSave}
-          title="Save to vault"
-        >
-          <Save className="w-3.5 h-3.5 mr-1" />
-          Save
+        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none" onClick={handleRedo} disabled={!canRedo} title="Redo">
+          <Redo2 className="w-3 h-3" />
+        </Button>
+        <div className="w-px h-4 bg-primary/20" />
+        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-[10px]" onClick={handleExportPng} title="Export PNG">
+          <Download className="w-3 h-3 mr-1" />PNG
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-[10px]" onClick={handleSave} title="Save to vault">
+          <Save className="w-3 h-3 mr-1" />Save
         </Button>
         {onImportMermaid && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-9 px-2 rounded-none font-terminal text-xs"
-            onClick={() => setShowMermaidImport(true)}
-            title="Import Mermaid (switch to Structured)"
-          >
-            <FileInput className="w-3.5 h-3.5 mr-1" />
-            Import Mermaid
+          <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-[10px]" onClick={() => setShowMermaidImport(true)} title="Import Mermaid">
+            <FileInput className="w-3 h-3 mr-1" />Import
           </Button>
         )}
-        <div className="flex items-center gap-1.5 text-xs font-terminal text-muted-foreground ml-auto">
-          <span className={cn("w-2 h-2 rounded-full shrink-0", isDirty ? "bg-destructive" : "bg-success")} />
+        <div className="flex items-center gap-1 text-[10px] font-terminal text-muted-foreground ml-auto">
+          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isDirty ? "bg-destructive" : "bg-success")} />
           {isDirty ? "Unsaved" : "Saved"}
         </div>
       </div>

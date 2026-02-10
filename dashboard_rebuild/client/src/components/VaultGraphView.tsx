@@ -156,11 +156,13 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
     ctx.fillStyle = isHovered ? "#ffffff" : color;
     ctx.fill();
 
-    if (isHovered || globalScale > 1.5) {
+    // Always show labels — size adapts to zoom
+    const showLabel = isHovered || globalScale > 0.4;
+    if (showLabel) {
       ctx.font = `${fontSize}px monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.fillStyle = isHovered ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.7)";
       ctx.fillText(label, node.x || 0, (node.y || 0) + nodeR + 2);
     }
   }, [graphData.links, hoveredNode]);
@@ -170,7 +172,7 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
   return (
     <div className="flex h-full">
       {/* Folder Filter Sidebar */}
-      <div className="w-[180px] shrink-0 border-r border-secondary/30 bg-black/60">
+      <div className="w-[140px] shrink-0 border-r border-secondary/30 bg-black/60">
         <ScrollArea className="h-full">
           <div className="p-3 space-y-3">
             <div className="font-arcade text-[10px] text-primary mb-2">FOLDERS</div>
@@ -290,8 +292,8 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
               onNodeClick={handleNodeClick}
               onNodeHover={(node: GraphNode | null) => setHoveredNode(node)}
               onZoom={({ k }: { k: number }) => setZoomLevel(k)}
-              linkColor={() => "rgba(99, 102, 241, 0.15)"}
-              linkWidth={0.5}
+              linkColor={() => "rgba(255, 80, 80, 0.35)"}
+              linkWidth={1.5}
               backgroundColor="transparent"
               cooldownTicks={100}
               d3AlphaDecay={0.02}

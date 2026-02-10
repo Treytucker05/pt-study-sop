@@ -6,15 +6,16 @@ import { GraphPanel } from "./GraphPanel";
 import { ComparisonTableEditor } from "@/components/ComparisonTableEditor";
 import { AnkiIntegration } from "@/components/AnkiIntegration";
 import { ErrorBoundary, TabErrorFallback } from "@/components/ErrorBoundary";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { BrainWorkspace } from "./useBrainWorkspace";
 
 const TABS = [
-  { id: "edit" as const, label: "EDIT", icon: Pencil },
-  { id: "chat" as const, label: "CHAT", icon: MessageSquare },
-  { id: "graph" as const, label: "GRAPH", icon: Network },
-  { id: "table" as const, label: "TABLE", icon: Table2 },
-  { id: "anki" as const, label: "ANKI", icon: Layers },
+  { id: "edit" as const, label: "EDIT", icon: Pencil, hint: "Alt+1" },
+  { id: "chat" as const, label: "CHAT", icon: MessageSquare, hint: "Alt+2" },
+  { id: "graph" as const, label: "GRAPH", icon: Network, hint: "Alt+3" },
+  { id: "table" as const, label: "TABLE", icon: Table2, hint: "Alt+4" },
+  { id: "anki" as const, label: "ANKI", icon: Layers, hint: "Alt+5" },
 ] as const;
 
 interface MainContentProps {
@@ -24,7 +25,6 @@ interface MainContentProps {
 export function MainContent({ workspace }: MainContentProps) {
   const [errorKeys, setErrorKeys] = useState<Record<string, number>>({});
 
-  // Reset error boundary when switching tabs
   const resetErrorBoundary = useCallback((tabId: string) => {
     setErrorKeys((prev) => ({
       ...prev,
@@ -66,7 +66,7 @@ export function MainContent({ workspace }: MainContentProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tab list: global tab-bar / tab-item for consistency */}
+      {/* Tab list with status indicators */}
       <div
         role="tablist"
         aria-label="Main content view"
@@ -88,6 +88,7 @@ export function MainContent({ workspace }: MainContentProps) {
               onClick={() => workspace.setMainMode(tab.id)}
               onKeyDown={handleTabKeyDown}
               className={cn("tab-item", isActive && "active")}
+              title={tab.hint}
             >
               <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               {tab.label}
@@ -99,16 +100,46 @@ export function MainContent({ workspace }: MainContentProps) {
             </button>
           );
         })}
+
+        {/* Status dots — right side of tab bar */}
+        <div className="flex items-center gap-3 ml-auto pr-3 font-terminal text-xs" role="status" aria-label="Connection status">
+          <span
+            className="flex items-center gap-1"
+            aria-label={workspace.obsidianStatus?.connected ? "Obsidian: connected" : "Obsidian: disconnected"}
+          >
+            <span className={cn(
+              "w-1.5 h-1.5 rounded-full",
+              workspace.obsidianStatus?.connected ? "bg-success" : "bg-destructive"
+            )} aria-hidden="true" />
+            <span className="text-muted-foreground hidden sm:inline">Obsidian</span>
+          </span>
+          <span
+            className="flex items-center gap-1"
+            aria-label={workspace.ankiStatus?.connected ? "Anki: connected" : "Anki: disconnected"}
+          >
+            <span className={cn(
+              "w-1.5 h-1.5 rounded-full",
+              workspace.ankiStatus?.connected ? "bg-success" : "bg-destructive"
+            )} aria-hidden="true" />
+            <span className="text-muted-foreground hidden sm:inline">Anki</span>
+          </span>
+          {workspace.pendingDrafts.length > 0 && (
+            <Badge variant="outline" className="h-5 px-1.5 text-xs rounded-none border-secondary/50 text-secondary">
+              {workspace.pendingDrafts.length} drafts
+            </Badge>
+          )}
+        </div>
       </div>
 
-      {/* Tab panels with error boundaries */}
+      {/* Tab panels with error boundaries + crossfade */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         {currentTab === "edit" && (
           <div
             id="brain-tabpanel-edit"
             role="tabpanel"
             aria-labelledby="brain-tab-edit"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col"
+            data-tab="edit"
+            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
           <ErrorBoundary
@@ -130,7 +161,8 @@ export function MainContent({ workspace }: MainContentProps) {
             id="brain-tabpanel-chat"
             role="tabpanel"
             aria-labelledby="brain-tab-chat"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col"
+            data-tab="chat"
+            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
           <ErrorBoundary
@@ -152,7 +184,8 @@ export function MainContent({ workspace }: MainContentProps) {
             id="brain-tabpanel-graph"
             role="tabpanel"
             aria-labelledby="brain-tab-graph"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col"
+            data-tab="graph"
+            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
           <ErrorBoundary
@@ -174,7 +207,8 @@ export function MainContent({ workspace }: MainContentProps) {
             id="brain-tabpanel-table"
             role="tabpanel"
             aria-labelledby="brain-tab-table"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col"
+            data-tab="table"
+            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
           <ErrorBoundary
@@ -196,7 +230,8 @@ export function MainContent({ workspace }: MainContentProps) {
             id="brain-tabpanel-anki"
             role="tabpanel"
             aria-labelledby="brain-tab-anki"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col"
+            data-tab="anki"
+            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
           <ErrorBoundary

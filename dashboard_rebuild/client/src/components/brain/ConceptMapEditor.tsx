@@ -33,25 +33,24 @@ export function ConceptMapEditor({
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      <div className="section-block section-block-gap border-primary/30 shrink-0 flex-row flex-wrap gap-2">
-        <span className="section-header text-primary/90 w-full sm:w-auto">Concept Map</span>
-        <div className="flex items-center gap-1 flex-wrap">
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setMode(m.id)}
-              className={cn(
-                "tab-sub-item min-h-[32px]",
-                mode === m.id && "active"
-              )}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-        <span className="text-[10px] font-terminal text-muted-foreground ml-auto">
-          {mode === "freehand" ? "tldraw · infinite canvas" : "Mermaid + React Flow"}
+      <div className="flex items-center gap-2 px-2 py-1 border-b border-primary/20 bg-black/40 shrink-0">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setMode(m.id)}
+            className={cn(
+              "px-2 py-1 font-arcade text-[10px] transition-colors rounded-none",
+              mode === m.id
+                ? "text-primary border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {m.label}
+          </button>
+        ))}
+        <span className="text-[9px] font-terminal text-muted-foreground/50 ml-auto">
+          {mode === "freehand" ? "tldraw" : "mermaid"}
         </span>
       </div>
 

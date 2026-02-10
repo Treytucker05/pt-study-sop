@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ObsidianRenderer } from "@/components/ObsidianRenderer";
 import { Save, ExternalLink, FileText, Maximize2, Minimize2 } from "lucide-react";
@@ -12,6 +12,13 @@ interface VaultEditorProps {
 
 export function VaultEditor({ workspace }: VaultEditorProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  const handleSave = useCallback(async () => {
+    await workspace.saveFile();
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 300);
+  }, [workspace]);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -49,7 +56,10 @@ export function VaultEditor({ workspace }: VaultEditorProps) {
       isFullscreen ? "fixed inset-0 z-50 bg-black" : "h-full"
     )}>
       {/* File toolbar */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-secondary/30 bg-black/40">
+      <div className={cn(
+        "flex items-center justify-between px-3 py-1.5 border-b bg-black/40",
+        savedFlash ? "brain-save-flash" : "border-secondary/30"
+      )}>
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-terminal text-sm text-primary truncate">
             {workspace.currentFile.split("/").pop()}
@@ -82,7 +92,7 @@ export function VaultEditor({ workspace }: VaultEditorProps) {
           <Button
             size="sm"
             variant="ghost"
-            onClick={workspace.saveFile}
+            onClick={handleSave}
             disabled={!workspace.hasChanges || workspace.isSaving}
             className="h-5 px-2 text-xs font-terminal"
           >
