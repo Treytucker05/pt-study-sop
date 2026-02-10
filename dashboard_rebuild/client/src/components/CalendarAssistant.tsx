@@ -124,9 +124,9 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                     <div>
                         <CardTitle className="text-sm font-arcade tracking-wider text-primary">AI_ASSISTANT</CardTitle>
                         <div className="flex items-center gap-2">
-                            <CardDescription className="text-[10px] text-muted-foreground font-terminal">Calendar + Tasks Assistant</CardDescription>
+                            <CardDescription className="text-xs text-muted-foreground font-terminal">Calendar + Tasks Assistant</CardDescription>
                             {!isGoogleStatusLoading && googleStatus?.connected && (
-                                <span className="text-[9px] font-arcade text-success">CONNECTED</span>
+                                <span className="text-xs font-arcade text-success">CONNECTED</span>
                             )}
                         </div>
                     </div>
@@ -140,12 +140,12 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
             <ScrollArea className="flex-1 p-3" ref={scrollRef}>
                 <div className="space-y-3">
                     {!isGoogleStatusLoading && !googleStatus?.connected && (
-                        <div className="border border-warning/50 bg-warning/10 text-warning text-[10px] font-terminal px-3 py-2 flex items-center justify-between gap-3">
+                        <div className="border border-warning/50 bg-warning/10 text-warning text-xs font-terminal px-3 py-2 flex items-center justify-between gap-3">
                             <span>Calendar not connected.</span>
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-6 px-2 rounded-none border-warning text-warning hover:bg-warning/20 font-arcade text-[9px]"
+                                className="h-6 px-2 rounded-none border-warning text-warning hover:bg-warning/20 font-arcade text-xs"
                                 onClick={() => connectGoogleMutation.mutate()}
                                 disabled={connectGoogleMutation.isPending}
                             >
@@ -157,8 +157,8 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                     {messages.length === 0 && (
                         <div className="text-center text-muted-foreground text-xs mt-8 space-y-2">
                             <p className="font-terminal">Ask me to create events or tasks.</p>
-                            <p className="text-[10px] opacity-50 font-terminal">"Add a workout tomorrow at 3pm"</p>
-                            <p className="text-[10px] opacity-50 font-terminal">"Schedule PT study session Friday 2pm"</p>
+                            <p className="text-xs opacity-50 font-terminal">"Add a workout tomorrow at 3pm"</p>
+                            <p className="text-xs opacity-50 font-terminal">"Schedule PT study session Friday 2pm"</p>
                         </div>
                     )}
 
@@ -180,7 +180,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
 
                     {chatMutation.isPending && (
                         <div className="flex justify-start">
-                            <div className="bg-white/5 border border-white/10 px-3 py-2 text-[10px] flex items-center gap-2 text-muted-foreground font-terminal">
+                            <div className="bg-white/5 border border-white/10 px-3 py-2 text-xs flex items-center gap-2 text-muted-foreground font-terminal">
                                 <Loader2 className="h-3 w-3 animate-spin" />
                                 Thinking...
                             </div>
@@ -203,7 +203,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>
-                <div className="text-[9px] text-center mt-1 text-muted-foreground/50 font-terminal">
+                <div className="text-xs text-center mt-1 text-muted-foreground/50 font-terminal">
                     OpenRouter • GPT-4o-mini
                 </div>
             </div>

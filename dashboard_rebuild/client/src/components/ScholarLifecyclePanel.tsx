@@ -126,10 +126,10 @@ export function ScholarLifecyclePanel() {
               {question.question_text}
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[9px] font-terminal">
+              <Badge variant="outline" className="text-xs font-terminal">
                 #{question.id}
               </Badge>
-              <span className="font-terminal text-[10px] text-muted-foreground">
+              <span className="font-terminal text-xs text-muted-foreground">
                 {new Date(question.created_at).toLocaleString()}
               </span>
             </div>
@@ -141,12 +141,12 @@ export function ScholarLifecyclePanel() {
           <div className="p-3 border-t border-primary/20 space-y-2 bg-black/20">
             {question.answer_text && (
               <div className="space-y-1">
-                <div className="font-terminal text-[10px] text-muted-foreground">Answer:</div>
+                <div className="font-terminal text-xs text-muted-foreground">Answer:</div>
                 <div className="font-terminal text-xs text-secondary p-2 bg-black/40 border border-primary/20 rounded-none">
                   {question.answer_text}
                 </div>
                 {question.answered_at && (
-                  <div className="font-terminal text-[9px] text-muted-foreground">
+                  <div className="font-terminal text-xs text-muted-foreground">
                     Answered: {new Date(question.answered_at).toLocaleString()}
                   </div>
                 )}
@@ -191,14 +191,14 @@ export function ScholarLifecyclePanel() {
             <div className="font-terminal text-xs text-primary font-bold">
               {proposal.title}
             </div>
-            <div className="font-terminal text-[10px] text-secondary line-clamp-2">
+            <div className="font-terminal text-xs text-secondary line-clamp-2">
               {proposal.description}
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-[9px] font-terminal">
+              <Badge variant="outline" className="text-xs font-terminal">
                 #{proposal.id}
               </Badge>
-              <span className="font-terminal text-[10px] text-muted-foreground">
+              <span className="font-terminal text-xs text-muted-foreground">
                 {new Date(proposal.created_at).toLocaleString()}
               </span>
             </div>
@@ -209,7 +209,7 @@ export function ScholarLifecyclePanel() {
         {isExpanded && (
           <div className="p-3 border-t border-primary/20 space-y-2 bg-black/20">
             <div className="space-y-1">
-              <div className="font-terminal text-[10px] text-muted-foreground">Description:</div>
+              <div className="font-terminal text-xs text-muted-foreground">Description:</div>
               <div className="font-terminal text-xs text-secondary p-2 bg-black/40 border border-primary/20 rounded-none whitespace-pre-wrap">
                 {proposal.description}
               </div>
@@ -217,7 +217,7 @@ export function ScholarLifecyclePanel() {
 
             {proposal.rejection_reason && (
               <div className="space-y-1">
-                <div className="font-terminal text-[10px] text-destructive">Rejection Reason:</div>
+                <div className="font-terminal text-xs text-destructive">Rejection Reason:</div>
                 <div className="font-terminal text-xs text-destructive p-2 bg-destructive/10 border border-destructive/50 rounded-none">
                   {proposal.rejection_reason}
                 </div>
@@ -273,10 +273,10 @@ export function ScholarLifecyclePanel() {
         <CardContent className="p-3">
           <Tabs defaultValue="pending" className="w-full">
             <TabsList className="grid w-full grid-cols-2 rounded-none bg-black border border-primary/30">
-              <TabsTrigger value="pending" className="font-arcade text-[10px] rounded-none">
+              <TabsTrigger value="pending" className="font-arcade text-xs rounded-none">
                 PENDING ({pendingQuestions.length})
               </TabsTrigger>
-              <TabsTrigger value="answered" className="font-arcade text-[10px] rounded-none">
+              <TabsTrigger value="answered" className="font-arcade text-xs rounded-none">
                 ANSWERED ({answeredQuestions.length})
               </TabsTrigger>
             </TabsList>
@@ -321,16 +321,16 @@ export function ScholarLifecyclePanel() {
         <CardContent className="p-3">
           <Tabs defaultValue="pending" className="w-full">
             <TabsList className="grid w-full grid-cols-4 rounded-none bg-black border border-primary/30">
-              <TabsTrigger value="pending" className="font-arcade text-[10px] rounded-none">
+              <TabsTrigger value="pending" className="font-arcade text-xs rounded-none">
                 PENDING ({pendingProposals.length})
               </TabsTrigger>
-              <TabsTrigger value="approved" className="font-arcade text-[10px] rounded-none">
+              <TabsTrigger value="approved" className="font-arcade text-xs rounded-none">
                 APPROVED ({approvedProposals.length})
               </TabsTrigger>
-              <TabsTrigger value="implemented" className="font-arcade text-[10px] rounded-none">
+              <TabsTrigger value="implemented" className="font-arcade text-xs rounded-none">
                 DONE ({implementedProposals.length})
               </TabsTrigger>
-              <TabsTrigger value="rejected" className="font-arcade text-[10px] rounded-none">
+              <TabsTrigger value="rejected" className="font-arcade text-xs rounded-none">
                 REJECTED ({rejectedProposals.length})
               </TabsTrigger>
             </TabsList>

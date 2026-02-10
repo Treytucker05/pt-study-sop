@@ -175,25 +175,25 @@ export function ComparisonTableEditor({ className }: { className?: string }) {
     <div className={cn("flex flex-col h-full", className)}>
       {/* Toolbar */}
       <div className="flex items-center gap-1 px-2 py-1 border-b border-secondary/30 bg-black/40 shrink-0 flex-wrap">
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={addColumn} disabled={table.columns.length >= 4} title="Add column">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={addColumn} disabled={table.columns.length >= 4} title="Add column">
           <Columns className="w-3 h-3" />
           <Plus className="w-2 h-2" />
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={addRow} title="Add row">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={addRow} title="Add row">
           <Rows className="w-3 h-3" />
           <Plus className="w-2 h-2" />
         </Button>
         <div className="w-px h-4 bg-secondary/30" />
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={copyMarkdown} title="Copy markdown">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={copyMarkdown} title="Copy markdown">
           <Copy className="w-3 h-3" />
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={exportPng} title="Export PNG">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={exportPng} title="Export PNG">
           <Download className="w-3 h-3" />
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={saveToVault} title="Save to vault">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={saveToVault} title="Save to vault">
           <Save className="w-3 h-3" />
         </Button>
-        <span className="ml-auto text-[9px] font-terminal text-muted-foreground">
+        <span className="ml-auto text-xs font-terminal text-muted-foreground">
           {table.columns.length}C / {table.rows.length}R
         </span>
       </div>
@@ -214,14 +214,14 @@ export function ComparisonTableEditor({ className }: { className?: string }) {
           {/* Header row */}
           <div className="flex border-b-2 border-primary/50">
             <div className="w-28 shrink-0 p-1 border-r border-secondary/30 bg-black/60">
-              <span className="font-arcade text-[9px] text-muted-foreground">FEATURE</span>
+              <span className="font-arcade text-xs text-muted-foreground">FEATURE</span>
             </div>
             {table.columns.map((col, i) => (
               <div key={i} className="flex-1 min-w-[100px] p-1 border-r border-secondary/30 bg-black/60 flex items-center gap-1">
                 <Input
                   value={col}
                   onChange={(e) => updateColumn(i, e.target.value)}
-                  className="h-5 text-[10px] font-arcade bg-transparent border-none px-0 text-primary focus-visible:ring-0 flex-1"
+                  className="h-5 text-xs font-arcade bg-transparent border-none px-0 text-primary focus-visible:ring-0 flex-1"
                 />
                 {table.columns.length > 2 && (
                   <button
@@ -259,7 +259,7 @@ export function ComparisonTableEditor({ className }: { className?: string }) {
                   value={row.feature}
                   onChange={(e) => updateFeature(ri, e.target.value)}
                   className={cn(
-                    "h-5 text-[10px] font-terminal bg-transparent border-none px-0 focus-visible:ring-0 flex-1",
+                    "h-5 text-xs font-terminal bg-transparent border-none px-0 focus-visible:ring-0 flex-1",
                     row.isKey ? "text-primary font-bold" : "text-secondary-foreground"
                   )}
                 />
@@ -277,7 +277,7 @@ export function ComparisonTableEditor({ className }: { className?: string }) {
                   <Input
                     value={val}
                     onChange={(e) => updateCell(ri, ci, e.target.value)}
-                    className="h-5 text-[10px] font-terminal bg-transparent border-none px-0 text-secondary-foreground focus-visible:ring-0"
+                    className="h-5 text-xs font-terminal bg-transparent border-none px-0 text-secondary-foreground focus-visible:ring-0"
                     placeholder="..."
                   />
                 </div>

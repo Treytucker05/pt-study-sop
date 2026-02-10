@@ -253,24 +253,24 @@ export function EventEditModal({
                   size="sm"
                   variant="ghost"
                   onClick={onEditSeries}
-                  className="h-6 px-2 border border-green-500/50 text-green-500 hover:bg-green-500/10 rounded-none font-arcade text-[10px]"
+                  className="h-6 px-2 border border-green-500/50 text-green-500 hover:bg-green-500/10 rounded-none font-arcade text-xs"
                 >
                   EDIT SERIES
                 </Button>
               )}
               <div className="flex gap-1">
                 {isInstance && (
-                  <Badge variant="outline" className="text-[10px] border-green-500 text-green-500">
+                  <Badge variant="outline" className="text-xs border-green-500 text-green-500">
                     INSTANCE
                   </Badge>
                 )}
                 {mode === "series" && event.recurrence && (
-                  <Badge variant="outline" className="text-[10px] border-green-500 text-green-500">
+                  <Badge variant="outline" className="text-xs border-green-500 text-green-500">
                     SERIES
                   </Badge>
                 )}
                 {(event.conferenceData || event.hangoutLink) && (
-                  <Badge variant="outline" className="text-[10px] border-blue-400 text-blue-400">
+                  <Badge variant="outline" className="text-xs border-blue-400 text-blue-400">
                     ONLINE
                   </Badge>
                 )}
@@ -284,7 +284,7 @@ export function EventEditModal({
               <button
                 key={tab.id}
                 className={cn(
-                  "flex-1 py-2 text-[10px] font-arcade transition-colors",
+                  "flex-1 py-2 text-xs font-arcade transition-colors",
                   activeTab === tab.id ? "text-green-500 border-b-2 border-green-500 bg-green-500/10" : "text-zinc-500 hover:text-zinc-300"
                 )}
                 onClick={() => setActiveTab(tab.id)}
@@ -478,7 +478,7 @@ export function EventEditModal({
                     <p className="text-xs text-yellow-500 font-terminal">
                       This is a single instance of a recurring event. Recurrence can only be edited on the series.
                     </p>
-                    <p className="text-[10px] text-green-300 font-terminal">
+                    <p className="text-xs text-green-300 font-terminal">
                       Series pattern: {formatRecurrence(event.recurrence?.[0])}
                     </p>
                     {isInstance && onEditSeries && (
@@ -486,7 +486,7 @@ export function EventEditModal({
                         size="sm"
                         variant="ghost"
                         onClick={onEditSeries}
-                        className="mt-2 h-7 px-3 border border-green-500/50 text-green-500 hover:bg-green-500/10 rounded-none font-arcade text-[10px]"
+                        className="mt-2 h-7 px-3 border border-green-500/50 text-green-500 hover:bg-green-500/10 rounded-none font-arcade text-xs"
                       >
                         EDIT SERIES
                       </Button>
@@ -521,7 +521,7 @@ export function EventEditModal({
                           <Textarea
                             value={event.recurrence[0]}
                             onChange={(e) => setField("recurrence", [e.target.value])}
-                            className="bg-black border-green-500/30 text-green-100/70 text-[10px] font-terminal h-12 rounded-none"
+                            className="bg-black border-green-500/30 text-green-100/70 text-xs font-terminal h-12 rounded-none"
                             placeholder="RRULE:FREQ=WEEKLY;BYDAY=MO,WE"
                           />
                         </div>
@@ -554,7 +554,7 @@ export function EventEditModal({
                       <span className="text-green-500">{att.email}</span>
                       <div className="flex items-center gap-2">
                         {att.responseStatus && (
-                          <span className={cn("text-[10px]", att.responseStatus === "accepted" ? "text-green-400" : att.responseStatus === "declined" ? "text-red-400" : "text-yellow-400")}>
+                          <span className={cn("text-xs", att.responseStatus === "accepted" ? "text-green-400" : att.responseStatus === "declined" ? "text-red-400" : "text-yellow-400")}>
                             {att.responseStatus.toUpperCase()}
                           </span>
                         )}
@@ -608,12 +608,12 @@ export function EventEditModal({
                         {event.conferenceData?.conferenceSolution?.name || "Google Meet"}
                       </p>
                       {event.conferenceData?.entryPoints?.map((ep, i) => (
-                        <a key={i} href={ep.uri} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-300 hover:underline block mt-1 font-terminal">
+                        <a key={i} href={ep.uri} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-300 hover:underline block mt-1 font-terminal">
                           {ep.uri}
                         </a>
                       ))}
                       {event.hangoutLink && !event.conferenceData && (
-                        <a href={event.hangoutLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-300 hover:underline block mt-1 font-terminal">
+                        <a href={event.hangoutLink} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-300 hover:underline block mt-1 font-terminal">
                           {event.hangoutLink}
                         </a>
                       )}
@@ -645,7 +645,7 @@ export function EventEditModal({
                     variant="destructive"
                     size="sm"
                     onClick={onDeleteInstance}
-                    className="rounded-none bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/50 font-arcade text-[10px]"
+                    className="rounded-none bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/50 font-arcade text-xs"
                   >
                     <Trash2 className="w-4 h-4 mr-2" /> DELETE INSTANCE
                   </Button>
@@ -653,7 +653,7 @@ export function EventEditModal({
                     variant="destructive"
                     size="sm"
                     onClick={onDeleteSeries}
-                    className="rounded-none bg-red-900/10 text-red-500 hover:bg-red-900/30 border border-red-900/50 font-arcade text-[10px]"
+                    className="rounded-none bg-red-900/10 text-red-500 hover:bg-red-900/30 border border-red-900/50 font-arcade text-xs"
                   >
                     <Trash2 className="w-4 h-4 mr-2" /> DELETE SERIES
                   </Button>

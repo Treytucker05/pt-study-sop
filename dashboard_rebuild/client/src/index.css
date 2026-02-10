@@ -230,7 +230,7 @@
   /* Nav button (header): same control height and border style */
   .nav-btn {
     min-height: var(--control-h-sm);
-    @apply font-arcade rounded-none px-2 lg:px-3 text-[10px] transition-colors border border-transparent;
+    @apply font-arcade rounded-none px-2 lg:px-3 text-xs transition-colors border border-transparent;
   }
   .nav-btn.active {
     @apply bg-primary text-primary-foreground border-primary;

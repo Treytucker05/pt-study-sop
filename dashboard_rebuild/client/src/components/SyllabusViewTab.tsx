@@ -130,7 +130,7 @@ export function SyllabusViewTab() {
                         {/* Learning Objectives */}
                         {objectivesByModule[module.id] && objectivesByModule[module.id].length > 0 && (
                           <div className="space-y-1">
-                            <div className="font-terminal text-[10px] text-muted-foreground uppercase">Objectives</div>
+                            <div className="font-terminal text-xs text-muted-foreground uppercase">Objectives</div>
                             <div className="space-y-1">
                               {objectivesByModule[module.id].map((obj) => (
                                 <div key={obj.id} className="font-terminal text-xs text-secondary">
@@ -144,13 +144,13 @@ export function SyllabusViewTab() {
                         {/* Events */}
                         {eventsByModule[module.id] && eventsByModule[module.id].length > 0 && (
                           <div className="space-y-1">
-                            <div className="font-terminal text-[10px] text-muted-foreground uppercase">Events</div>
+                            <div className="font-terminal text-xs text-muted-foreground uppercase">Events</div>
                             <div className="space-y-1">
                               {eventsByModule[module.id].map((event) => (
                                 <div key={event.id} className="flex items-center gap-2">
                                   <Badge
                                     variant="outline"
-                                    className={`text-[10px] font-terminal ${event.type === "quiz"
+                                    className={`text-xs font-terminal ${event.type === "quiz"
                                         ? "border-yellow-500/50 text-yellow-400"
                                         : event.type === "exam"
                                           ? "border-red-500/50 text-red-400"
@@ -161,7 +161,7 @@ export function SyllabusViewTab() {
                                   </Badge>
                                   <span className="font-terminal text-xs text-muted-foreground">{event.title}</span>
                                   {event.dueDate && (
-                                    <span className="font-terminal text-[10px] text-secondary ml-auto">
+                                    <span className="font-terminal text-xs text-secondary ml-auto">
                                       {new Date(event.dueDate).toLocaleDateString()}
                                     </span>
                                   )}

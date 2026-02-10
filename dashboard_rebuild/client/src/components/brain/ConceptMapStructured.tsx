@@ -252,21 +252,21 @@ export function ConceptMapStructured({
       )}
     >
       <div className="flex items-center gap-1 px-2 py-1 border-b border-secondary/30 bg-black/40 shrink-0 flex-wrap">
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={goBackToImport} title="Back to import">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={goBackToImport} title="Back to import">
           <ArrowLeft className="w-3 h-3" />
         </Button>
         <div className="w-px h-4 bg-secondary/30" />
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={addNode} title="Add node">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={addNode} title="Add node">
           <Plus className="w-3 h-3" />
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={deleteSelected} title="Delete selected">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={deleteSelected} title="Delete selected">
           <Trash2 className="w-3 h-3" />
         </Button>
         <div className="relative">
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 px-1.5 text-[9px] font-terminal"
+            className="h-6 px-1.5 text-xs font-terminal"
             onClick={() => setShowColorPicker(showColorPicker ? null : "node")}
             title="Color selected"
           >
@@ -274,7 +274,7 @@ export function ConceptMapStructured({
           </Button>
           {showColorPicker && (
             <div className="absolute top-full left-0 mt-1 p-2 bg-black border-2 border-primary/50 z-50 space-y-2 min-w-[160px]">
-              <p className="font-terminal text-[9px] text-muted-foreground">NODE COLORS</p>
+              <p className="font-terminal text-xs text-muted-foreground">NODE COLORS</p>
               <div className="flex flex-wrap gap-1">
                 {NODE_COLORS.map((c, i) => (
                   <button
@@ -285,7 +285,7 @@ export function ConceptMapStructured({
                   />
                 ))}
               </div>
-              <p className="font-terminal text-[9px] text-muted-foreground pt-1">EDGE COLORS</p>
+              <p className="font-terminal text-xs text-muted-foreground pt-1">EDGE COLORS</p>
               <div className="flex flex-wrap gap-1">
                 {EDGE_COLORS.map((c) => (
                   <button
@@ -301,29 +301,29 @@ export function ConceptMapStructured({
           )}
         </div>
         <div className="w-px h-4 bg-secondary/30" />
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={autoLayout} title="Auto layout">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={autoLayout} title="Auto layout">
           <LayoutGrid className="w-3 h-3" />
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={toggleDirection} title={`Direction: ${direction}`}>
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={toggleDirection} title={`Direction: ${direction}`}>
           {direction === "TB" ? <ArrowUpDown className="w-3 h-3" /> : <ArrowLeftRight className="w-3 h-3" />}
         </Button>
         <div className="w-px h-4 bg-secondary/30" />
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={exportMermaid} title="Copy Mermaid">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={exportMermaid} title="Copy Mermaid">
           <FileText className="w-3 h-3" />
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={exportPng} title="Export PNG">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={exportPng} title="Export PNG">
           <Download className="w-3 h-3" />
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={saveToVault} title="Save to vault">
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={saveToVault} title="Save to vault">
           <Save className="w-3 h-3" />
         </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px] font-terminal" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
+        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
           {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
         </Button>
         <Button
           size="sm"
           variant="ghost"
-          className="h-6 px-1.5 text-[9px] font-terminal"
+          className="h-6 px-1.5 text-xs font-terminal"
           onClick={() => {
             setShowImport(true);
             setNodes([]);
@@ -333,7 +333,7 @@ export function ConceptMapStructured({
         >
           <Import className="w-3 h-3" />
         </Button>
-        <div className="ml-auto flex items-center gap-2 text-[9px] font-terminal text-muted-foreground">
+        <div className="ml-auto flex items-center gap-2 text-xs font-terminal text-muted-foreground">
           <span>{nodes.length}N / {edges.length}E</span>
           <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-destructive" : "bg-success")} />
           <span>{isDirty ? "Unsaved" : "Saved"}</span>

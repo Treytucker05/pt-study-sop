@@ -175,7 +175,7 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
       <div className="w-[140px] shrink-0 border-r border-secondary/30 bg-black/60">
         <ScrollArea className="h-full">
           <div className="p-3 space-y-3">
-            <div className="font-arcade text-[10px] text-primary mb-2">FOLDERS</div>
+            <div className="font-arcade text-xs text-primary mb-2">FOLDERS</div>
             <label className="flex items-center gap-2 py-1 cursor-pointer">
               <Checkbox
                 checked={selectedFolders.size === folders.length}
@@ -204,16 +204,16 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
 
             {/* Legend */}
             <div className="pt-2 border-t border-secondary/30 space-y-1">
-              <div className="font-arcade text-[10px] text-muted-foreground mb-1">COLORS</div>
+              <div className="font-arcade text-xs text-muted-foreground mb-1">COLORS</div>
               {Object.entries(FOLDER_COLORS).filter(([k]) => k).map(([name, color]) => (
                 <div key={name} className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-                  <span className="font-terminal text-[10px]" style={{ color }}>{name}</span>
+                  <span className="font-terminal text-xs" style={{ color }}>{name}</span>
                 </div>
               ))}
             </div>
 
-            <div className="pt-2 border-t border-secondary/30 font-terminal text-[10px] text-muted-foreground">
+            <div className="pt-2 border-t border-secondary/30 font-terminal text-xs text-muted-foreground">
               <div>Notes: {graphData.nodes.length}</div>
               <div>Links: {graphData.links.length}</div>
             </div>
@@ -272,7 +272,7 @@ export function VaultGraphView({ onNodeClick }: VaultGraphViewProps) {
                 >
                   +
                 </button>
-                <span className="text-[10px] font-terminal text-primary/50 w-8 text-right">
+                <span className="text-xs font-terminal text-primary/50 w-8 text-right">
                   {Math.round(zoomLevel * 100)}%
                 </span>
               </div>

@@ -629,7 +629,7 @@ export function IngestionTab() {
                       {learningObjectives.map((lo: LearningObjective) => (
                         <div key={lo.id} className="text-xs py-1 border-b border-secondary/30 font-terminal">
                           <span className="text-primary">{lo.loCode}</span>: {lo.title}
-                          <span className={`ml-2 text-[10px] px-1 rounded-none ${lo.status === "solid" ? "bg-success" :
+                          <span className={`ml-2 text-xs px-1 rounded-none ${lo.status === "solid" ? "bg-success" :
                             lo.status === "in_progress" ? "bg-warning" :
                               lo.status === "need_review" ? "bg-urgent" :
                                 "bg-secondary"

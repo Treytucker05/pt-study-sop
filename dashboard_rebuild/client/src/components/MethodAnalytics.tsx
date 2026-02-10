@@ -32,10 +32,10 @@ export default function MethodAnalytics({ data }: MethodAnalyticsProps) {
                     style={{ width: `${((b.avg_effectiveness ?? 0) / 5) * 100}%` }}
                   />
                 </div>
-                <span className="font-terminal text-[10px] text-muted-foreground w-8 text-right">
+                <span className="font-terminal text-xs text-muted-foreground w-8 text-right">
                   {b.avg_effectiveness ?? "—"}
                 </span>
-                <span className="font-terminal text-[10px] text-muted-foreground w-6 text-right">
+                <span className="font-terminal text-xs text-muted-foreground w-6 text-right">
                   ({b.usage_count})
                 </span>
               </div>
@@ -63,7 +63,7 @@ export default function MethodAnalytics({ data }: MethodAnalyticsProps) {
                     style={{ width: `${((c.avg_effectiveness ?? 0) / 5) * 100}%` }}
                   />
                 </div>
-                <span className="font-terminal text-[10px] text-muted-foreground w-8 text-right">
+                <span className="font-terminal text-xs text-muted-foreground w-8 text-right">
                   {c.avg_effectiveness ?? "—"}
                 </span>
               </div>
@@ -89,12 +89,12 @@ export default function MethodAnalytics({ data }: MethodAnalyticsProps) {
                     {r.method_name || r.chain_name || "Unknown"}
                   </span>
                   {r.notes && (
-                    <p className="font-terminal text-[10px] text-muted-foreground mt-0.5 truncate max-w-[200px]">
+                    <p className="font-terminal text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">
                       {r.notes}
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-[10px] font-terminal">
+                <div className="flex items-center gap-2 text-xs font-terminal">
                   <span>E:{r.effectiveness}/5</span>
                   <span>G:{r.engagement}/5</span>
                 </div>

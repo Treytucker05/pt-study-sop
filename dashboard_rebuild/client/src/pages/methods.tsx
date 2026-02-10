@@ -253,7 +253,7 @@ export default function MethodsPage() {
                         }}
                         title="Delete"
                       >
-                        <span className="text-[10px]">x</span>
+                        <span className="text-xs">x</span>
                       </button>
                     </div>
                   </div>

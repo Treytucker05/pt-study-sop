@@ -69,7 +69,7 @@ export function PatchApprovalWorkflow({
     return (
       <div
         key={index}
-        className={`font-terminal text-[11px] px-2 ${
+        className={`font-terminal text-sm px-2 ${
           isAddition
             ? "bg-green-900/30 text-green-400"
             : isRemoval
@@ -129,15 +129,15 @@ export function PatchApprovalWorkflow({
                     <div className="flex items-center gap-2">
                       <Badge
                         variant="outline"
-                        className="text-[9px] font-terminal border-secondary/50"
+                        className="text-xs font-terminal border-secondary/50"
                       >
                         {patch.session_id}
                       </Badge>
                     </div>
-                    <div className="font-terminal text-[10px] text-muted-foreground">
+                    <div className="font-terminal text-xs text-muted-foreground">
                       {new Date(patch.timestamp).toLocaleString()}
                     </div>
-                    <div className="font-terminal text-[10px] text-secondary">
+                    <div className="font-terminal text-xs text-secondary">
                       +{patch.modified_length - patch.original_length} lines
                     </div>
                   </div>
@@ -180,7 +180,7 @@ export function PatchApprovalWorkflow({
               <Textarea
                 value={editedDiff}
                 onChange={(e) => setEditedDiff(e.target.value)}
-                className="h-[350px] font-terminal text-[11px] bg-black rounded-none border-secondary"
+                className="h-[350px] font-terminal text-sm bg-black rounded-none border-secondary"
                 placeholder="Edit diff content..."
               />
               <div className="flex gap-2">
@@ -204,7 +204,7 @@ export function PatchApprovalWorkflow({
             <div className="space-y-3">
               {/* Metadata */}
               <div className="p-2 bg-black/40 border border-secondary/40 rounded-none">
-                <div className="grid grid-cols-2 gap-2 font-terminal text-[10px]">
+                <div className="grid grid-cols-2 gap-2 font-terminal text-xs">
                   <div>
                     <span className="text-muted-foreground">Note:</span>{" "}
                     <span className="text-primary">{selected.note_path}</span>
@@ -225,7 +225,7 @@ export function PatchApprovalWorkflow({
                     <span className="text-muted-foreground">Rollback:</span>{" "}
                     <Badge
                       variant="outline"
-                      className={`text-[9px] ml-1 ${
+                      className={`text-xs ml-1 ${
                         selected.can_rollback
                           ? "border-green-500/50 text-green-400"
                           : "border-red-500/50 text-red-400"

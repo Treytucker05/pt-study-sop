@@ -136,7 +136,7 @@ export function DataTablesSection() {
                 <div className="p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <button
-                      className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                      className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-xs font-terminal"
                       type="button"
                       onClick={() => {
                         const next = new Set<number>();
@@ -149,7 +149,7 @@ export function DataTablesSection() {
                       {selectedModuleIds.size === modules.length ? "Uncheck All" : "Check All"}
                     </button>
                     <button
-                      className="bg-destructive hover:bg-destructive/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                      className="bg-destructive hover:bg-destructive/80 px-2 py-1 rounded-none text-xs font-terminal"
                       type="button"
                       disabled={selectedModuleIds.size === 0}
                       onClick={() => {
@@ -159,7 +159,7 @@ export function DataTablesSection() {
                       Delete
                     </button>
                     <button
-                      className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                      className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-xs font-terminal"
                       type="button"
                       disabled={selectedModuleIds.size === 0}
                       onClick={() => {
@@ -265,7 +265,7 @@ export function DataTablesSection() {
                             </td>
                             <td className="text-center p-2 space-x-2">
                               <button
-                                className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                                className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-xs font-terminal"
                                 type="button"
                                 disabled={!moduleEdits[m.id]}
                                 onClick={() => {
@@ -282,7 +282,7 @@ export function DataTablesSection() {
                                 Save
                               </button>
                               <button
-                                className="bg-destructive hover:bg-destructive/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                                className="bg-destructive hover:bg-destructive/80 px-2 py-1 rounded-none text-xs font-terminal"
                                 type="button"
                                 onClick={() => deleteModuleMutation.mutate(m.id)}
                               >
@@ -314,7 +314,7 @@ export function DataTablesSection() {
                 <div className="p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <button
-                      className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                      className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-xs font-terminal"
                       type="button"
                       onClick={() => {
                         const next = new Set<number>();
@@ -327,7 +327,7 @@ export function DataTablesSection() {
                       {selectedScheduleIds.size === scheduleEvents.length ? "Uncheck All" : "Check All"}
                     </button>
                     <button
-                      className="bg-destructive hover:bg-destructive/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                      className="bg-destructive hover:bg-destructive/80 px-2 py-1 rounded-none text-xs font-terminal"
                       type="button"
                       disabled={selectedScheduleIds.size === 0}
                       onClick={() => {
@@ -337,7 +337,7 @@ export function DataTablesSection() {
                       Delete
                     </button>
                     <button
-                      className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                      className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-xs font-terminal"
                       type="button"
                       disabled={selectedScheduleIds.size === 0}
                       onClick={() => {
@@ -499,7 +499,7 @@ export function DataTablesSection() {
                                 </td>
                                 <td className="text-center p-2 space-x-2">
                                   <button
-                                    className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                                    className="bg-secondary hover:bg-secondary/80 px-2 py-1 rounded-none text-xs font-terminal"
                                     type="button"
                                     disabled={!hasEdits}
                                     onClick={() => {
@@ -517,7 +517,7 @@ export function DataTablesSection() {
                                     Save
                                   </button>
                                   <button
-                                    className="bg-destructive hover:bg-destructive/80 px-2 py-1 rounded-none text-[10px] font-terminal"
+                                    className="bg-destructive hover:bg-destructive/80 px-2 py-1 rounded-none text-xs font-terminal"
                                     type="button"
                                     onClick={() => deleteScheduleMutation.mutate(ev.id)}
                                   >

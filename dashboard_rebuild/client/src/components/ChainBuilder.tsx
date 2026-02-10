@@ -44,7 +44,7 @@ export default function ChainBuilder({ chain, allBlocks, onSave, readOnly }: Cha
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-2">
         <span className="font-arcade text-xs text-primary">CHAIN BLOCKS</span>
-        <span className="text-[10px] font-terminal text-muted-foreground">
+        <span className="text-xs font-terminal text-muted-foreground">
           ({orderedBlocks.length} blocks)
         </span>
       </div>
@@ -90,7 +90,7 @@ export default function ChainBuilder({ chain, allBlocks, onSave, readOnly }: Cha
           {showPicker ? (
             <div className="border-2 border-primary/30 bg-black/50 p-3 space-y-2 max-h-48 overflow-y-auto">
               <div className="flex items-center justify-between mb-1">
-                <span className="font-arcade text-[10px] text-primary">ADD BLOCK</span>
+                <span className="font-arcade text-xs text-primary">ADD BLOCK</span>
                 <button onClick={() => setShowPicker(false)}>
                   <X className="w-3 h-3 text-muted-foreground" />
                 </button>

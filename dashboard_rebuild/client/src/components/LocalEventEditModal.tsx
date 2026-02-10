@@ -191,7 +191,7 @@ export function LocalEventEditModal({
               <button
                 key={tab.id}
                 className={cn(
-                  "flex-1 py-2 text-[10px] font-arcade transition-colors",
+                  "flex-1 py-2 text-xs font-arcade transition-colors",
                   activeTab === tab.id ? "text-primary border-b-2 border-primary bg-primary/10" : "text-zinc-500 hover:text-zinc-300"
                 )}
                 onClick={() => setActiveTab(tab.id)}
@@ -414,7 +414,7 @@ export function LocalEventEditModal({
                       <Textarea
                         value={event.recurrence}
                         onChange={(e) => setField("recurrence", e.target.value)}
-                        className="bg-black border-primary/30 text-primary text-[10px] font-mono h-12 rounded-none"
+                        className="bg-black border-primary/30 text-primary text-xs font-mono h-12 rounded-none"
                         placeholder="RRULE:FREQ=WEEKLY;BYDAY=MO,WE"
                       />
                     </div>
@@ -447,7 +447,7 @@ export function LocalEventEditModal({
                         {att.responseStatus && (
                           <span
                             className={cn(
-                              "text-[10px]",
+                              "text-xs",
                               att.responseStatus === "accepted"
                                 ? "text-green-400"
                                 : att.responseStatus === "declined"

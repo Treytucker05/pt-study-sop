@@ -145,7 +145,7 @@ export function ProjectionPreview({
                             <div className="flex items-center gap-2">
                               <Badge
                                 variant="outline"
-                                className={`text-[10px] font-terminal ${
+                                className={`text-xs font-terminal ${
                                   event.type === "quiz"
                                     ? "border-yellow-500/50 text-yellow-400"
                                     : event.type === "exam"
@@ -161,7 +161,7 @@ export function ProjectionPreview({
                                 {event.title}
                               </span>
                             </div>
-                            <div className="font-terminal text-[10px] text-muted-foreground">
+                            <div className="font-terminal text-xs text-muted-foreground">
                               {new Date(event.date).toLocaleDateString()}
                               {event.startTime && ` • ${event.startTime}`}
                               {event.endTime && ` - ${event.endTime}`}

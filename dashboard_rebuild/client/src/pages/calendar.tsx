@@ -330,7 +330,7 @@ function SortableCalendarRow({ cal, isHidden, onToggle }: { cal: { id: string; n
       <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: cal.color }} />
       <span className="font-terminal text-sm flex-1 cursor-pointer" onClick={onToggle}>{cal.name}</span>
       <span
-        className={cn("font-arcade text-[10px] px-2 py-0.5 cursor-pointer", isHidden ? "text-destructive" : "text-success")}
+        className={cn("font-arcade text-xs px-2 py-0.5 cursor-pointer", isHidden ? "text-destructive" : "text-success")}
         onClick={onToggle}
       >
         {isHidden ? 'HIDDEN' : 'VISIBLE'}
@@ -1373,7 +1373,7 @@ export default function CalendarPage() {
   return (
     <Layout>
       {debugModals && (
-        <div className="fixed bottom-12 right-4 z-[70] bg-black/80 border border-primary text-primary font-terminal text-[10px] px-2 py-1 rounded-none">
+        <div className="fixed bottom-12 right-4 z-[70] bg-black/80 border border-primary text-primary font-terminal text-xs px-2 py-1 rounded-none">
           <div>Calendar modals</div>
           <div>Edit event: {showEditModal ? "open" : "closed"}</div>
           <div>Selected event: {selectedEvent?.id ?? "none"}</div>
@@ -1412,7 +1412,7 @@ export default function CalendarPage() {
                       <div className="grid grid-cols-7 gap-1 text-center min-w-[200px]">
                         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (<div key={i} className="font-arcade text-[8px] text-muted-foreground p-1">{d}</div>))}
                         {eachDayOfInterval({ start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }), end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }) }).slice(0, 42).map((day, i) => (
-                          <button key={i} onClick={() => { goToDay(day); setShowMiniCalendar(false); }} className={cn("font-terminal text-[10px] p-1 hover:bg-primary/20 transition-colors", !isSameMonth(day, currentDate) && "text-muted-foreground/50", isToday(day) && "bg-primary text-black", isSameDay(day, currentDate) && !isToday(day) && "ring-1 ring-primary")}>{format(day, 'd')}</button>
+                          <button key={i} onClick={() => { goToDay(day); setShowMiniCalendar(false); }} className={cn("font-terminal text-xs p-1 hover:bg-primary/20 transition-colors", !isSameMonth(day, currentDate) && "text-muted-foreground/50", isToday(day) && "bg-primary text-black", isSameDay(day, currentDate) && !isToday(day) && "ring-1 ring-primary")}>{format(day, 'd')}</button>
                         ))}
                       </div>
                     </div>
@@ -1482,7 +1482,7 @@ export default function CalendarPage() {
                   </div>
                 ))}
                 {hiddenCalendars.length > 0 && (
-                  <span className="font-terminal text-[10px] text-muted-foreground shrink-0">+{hiddenCalendars.length} hidden</span>
+                  <span className="font-terminal text-xs text-muted-foreground shrink-0">+{hiddenCalendars.length} hidden</span>
                 )}
               </div>
               {/* Right: Fixed buttons - always visible */}
@@ -1490,7 +1490,7 @@ export default function CalendarPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-[9px] flex items-center gap-1.5"
+                  className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-xs flex items-center gap-1.5"
                   onClick={() => {
                     localStorage.setItem("selectedCalendars", JSON.stringify(Array.from(selectedCalendars)));
                     setCalendarSelectionDirty(false);
@@ -1503,7 +1503,7 @@ export default function CalendarPage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-[9px]"
+                  className="h-6 px-2 rounded-none hover:bg-primary/20 font-arcade text-xs"
                   onClick={() => {
                     if (debugModals) {
                       console.info("[ModalDebug][Calendar] MANAGE click");
@@ -1516,13 +1516,13 @@ export default function CalendarPage() {
                 {googleStatus?.connected ? (
                   <div className="flex items-center gap-1 text-success">
                     <div className="w-2 h-2 rounded-full bg-current" />
-                    <span className="font-terminal text-[10px]">SYNCED</span>
+                    <span className="font-terminal text-xs">SYNCED</span>
                   </div>
                 ) : (
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-6 px-2 rounded-none border-warning text-warning hover:bg-warning/20 font-arcade text-[9px]"
+                    className="h-6 px-2 rounded-none border-warning text-warning hover:bg-warning/20 font-arcade text-xs"
                     onClick={() => connectGoogleMutation.mutate()}
                     disabled={connectGoogleMutation.isPending}
                   >
@@ -1612,7 +1612,7 @@ export default function CalendarPage() {
                                 {event.title}
                               </div>
                             ))}
-                            {dayEvents.length > 3 && <div className="text-[10px] font-terminal text-zinc-400 px-1 mt-0.5">+{dayEvents.length - 3} more</div>}
+                            {dayEvents.length > 3 && <div className="text-xs font-terminal text-zinc-400 px-1 mt-0.5">+{dayEvents.length - 3} more</div>}
                           </div>
                         </div>
                       );
@@ -1642,7 +1642,7 @@ export default function CalendarPage() {
                       return (
                         <div key={`allday-${day.toISOString()}`} className="border-r border-secondary last:border-r-0 p-0.5 min-h-[28px]">
                           {allDayEvents.map((event, i) => (
-                            <div key={i} className={cn("text-[10px] font-terminal truncate px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
+                            <div key={i} className={cn("text-xs font-terminal truncate px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110", getEventColor(event))} style={getEventInlineStyle(event)} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>{event.title}</div>
                           ))}
                         </div>
                       );
@@ -1654,7 +1654,7 @@ export default function CalendarPage() {
                       {/* Time column */}
                       <div className="w-16 border-r border-secondary">
                         {HOURS.map((hour) => (
-                          <div key={hour} className="border-b border-secondary/50 text-right pr-2 font-terminal text-[11px] text-muted-foreground" style={{ height: `${HOUR_HEIGHT}px` }}>
+                          <div key={hour} className="border-b border-secondary/50 text-right pr-2 font-terminal text-sm text-muted-foreground" style={{ height: `${HOUR_HEIGHT}px` }}>
                             {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
                           </div>
                         ))}
@@ -1676,7 +1676,7 @@ export default function CalendarPage() {
                               return (
                                 <div key={i} className={cn("absolute rounded p-1 cursor-pointer overflow-hidden", getEventColor(event))} style={style} onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}>
                                   <div className="text-xs font-terminal font-medium truncate">{event.title}</div>
-                                  <div className="text-[10px] opacity-80 font-terminal">{format(event.start, 'h:mma')}</div>
+                                  <div className="text-xs opacity-80 font-terminal">{format(event.start, 'h:mma')}</div>
                                 </div>
                               );
                             })}

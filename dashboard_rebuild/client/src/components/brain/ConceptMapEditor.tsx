@@ -40,7 +40,7 @@ export function ConceptMapEditor({
             type="button"
             onClick={() => setMode(m.id)}
             className={cn(
-              "px-2 py-1 font-arcade text-[10px] transition-colors rounded-none",
+              "px-2 py-1 font-arcade text-xs transition-colors rounded-none",
               mode === m.id
                 ? "text-primary border-b-2 border-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -49,7 +49,7 @@ export function ConceptMapEditor({
             {m.label}
           </button>
         ))}
-        <span className="text-[9px] font-terminal text-muted-foreground/50 ml-auto">
+        <span className="text-xs font-terminal text-muted-foreground/50 ml-auto">
           {mode === "freehand" ? "tldraw" : "mermaid"}
         </span>
       </div>

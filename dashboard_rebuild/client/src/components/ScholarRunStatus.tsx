@@ -126,8 +126,8 @@ export function ScholarRunStatus() {
         <div className="space-y-2">
           {runMutation.isError && (
             <div className="p-2 bg-destructive/10 border border-destructive/50 rounded-none">
-              <div className={`font-terminal text-[10px] ${STATUS_ERROR}`}>Run Error:</div>
-              <div className="font-terminal text-[10px] text-destructive/80">
+              <div className={`font-terminal text-xs ${STATUS_ERROR}`}>Run Error:</div>
+              <div className="font-terminal text-xs text-destructive/80">
                 {(runMutation.error as Error)?.message || "Unknown error"}
               </div>
             </div>
@@ -137,7 +137,7 @@ export function ScholarRunStatus() {
             <>
               {status.current_step && (
                 <div className="space-y-1">
-                  <div className="font-terminal text-[10px] text-muted-foreground">
+                  <div className="font-terminal text-xs text-muted-foreground">
                     Current Step:
                   </div>
                   <div className="font-terminal text-xs text-secondary">
@@ -148,10 +148,10 @@ export function ScholarRunStatus() {
               {status.progress !== undefined && (
                 <div className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="font-terminal text-[10px] text-muted-foreground">
+                    <span className="font-terminal text-xs text-muted-foreground">
                       Progress:
                     </span>
-                    <span className="font-terminal text-[10px] text-primary">
+                    <span className="font-terminal text-xs text-primary">
                       {Math.round(status.progress)}%
                     </span>
                   </div>
@@ -166,7 +166,7 @@ export function ScholarRunStatus() {
 
           {!status?.running && status?.last_run && (
             <div className="space-y-1">
-              <div className="font-terminal text-[10px] text-muted-foreground">
+              <div className="font-terminal text-xs text-muted-foreground">
                 Last Run:
               </div>
               <div className="font-terminal text-xs text-secondary">
@@ -177,12 +177,12 @@ export function ScholarRunStatus() {
 
           {status?.errors && status.errors.length > 0 && (
             <div className="space-y-1">
-              <div className={`font-terminal text-[10px] ${STATUS_ERROR}`}>
+              <div className={`font-terminal text-xs ${STATUS_ERROR}`}>
                 Errors:
               </div>
               <div className="space-y-1 p-2 bg-destructive/10 border border-destructive/50 rounded-none">
                 {status.errors.map((error, idx) => (
-                  <div key={idx} className={`font-terminal text-[10px] ${STATUS_ERROR}`}>
+                  <div key={idx} className={`font-terminal text-xs ${STATUS_ERROR}`}>
                     • {error}
                   </div>
                 ))}
@@ -193,7 +193,7 @@ export function ScholarRunStatus() {
 
         {/* Study mode selector */}
         <div className="space-y-1">
-          <div className="font-terminal text-[10px] text-muted-foreground">Study mode</div>
+          <div className="font-terminal text-xs text-muted-foreground">Study mode</div>
           <Select value={studyMode} onValueChange={(v) => setStudyMode(v as "brain" | "tutor")} disabled={status?.running || runMutation.isPending}>
             <SelectTrigger className="rounded-none font-terminal text-xs border-primary/40 h-8">
               <SelectValue />
@@ -235,7 +235,7 @@ export function ScholarRunStatus() {
 
         {/* Info */}
         <div className="pt-2 border-t border-primary/30">
-          <p className="font-terminal text-[9px] text-muted-foreground">
+          <p className="font-terminal text-xs text-muted-foreground">
             {studyMode === "brain"
               ? "Brain Study: session logs + SOP. Tutor Study: SOP library only (no telemetry)."
               : "Tutor Study: evaluates sop/library, researches learning science, proposes changes."}

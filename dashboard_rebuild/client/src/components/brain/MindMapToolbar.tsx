@@ -46,7 +46,7 @@ interface MindMapToolbarProps {
   isDirty: boolean;
 }
 
-const BTN = "h-6 px-1.5 text-[9px] font-terminal";
+const BTN = "h-6 px-1.5 text-xs font-terminal";
 
 export function MindMapToolbar({
   onSeedMap,
@@ -94,7 +94,7 @@ export function MindMapToolbar({
                 <button
                   key={s}
                   onClick={() => { onAddNode(s); setShowDropdown(null); }}
-                  className="flex items-center gap-2 w-full px-2 py-1 text-[9px] font-terminal text-secondary-foreground hover:bg-primary/20"
+                  className="flex items-center gap-2 w-full px-2 py-1 text-xs font-terminal text-secondary-foreground hover:bg-primary/20"
                 >
                   <Icon className="w-3 h-3" />
                   {s}
@@ -122,7 +122,7 @@ export function MindMapToolbar({
         </Button>
         {showDropdown === "color" && (
           <div className="absolute top-full left-0 mt-1 p-2 bg-black border-2 border-primary/50 z-50 space-y-2 min-w-[160px]">
-            <p className="font-terminal text-[9px] text-muted-foreground">NODE COLORS</p>
+            <p className="font-terminal text-xs text-muted-foreground">NODE COLORS</p>
             <div className="flex flex-wrap gap-1">
               {CONCEPT_NODE_COLORS.map((c, i) => (
                 <button
@@ -133,7 +133,7 @@ export function MindMapToolbar({
                 />
               ))}
             </div>
-            <p className="font-terminal text-[9px] text-muted-foreground pt-1">EDGE COLORS</p>
+            <p className="font-terminal text-xs text-muted-foreground pt-1">EDGE COLORS</p>
             <div className="flex flex-wrap gap-1">
               {CONCEPT_EDGE_COLORS.map((c) => (
                 <button
@@ -168,7 +168,7 @@ export function MindMapToolbar({
                 <button
                   key={s}
                   onClick={() => { onSetShape(s); setShowDropdown(null); }}
-                  className="flex items-center gap-2 w-full px-2 py-1 text-[9px] font-terminal text-secondary-foreground hover:bg-primary/20"
+                  className="flex items-center gap-2 w-full px-2 py-1 text-xs font-terminal text-secondary-foreground hover:bg-primary/20"
                 >
                   <Icon className="w-3 h-3" />
                   {s}
@@ -206,7 +206,7 @@ export function MindMapToolbar({
         <Save className="w-3 h-3" />
       </Button>
 
-      <div className="ml-auto flex items-center gap-2 text-[9px] font-terminal text-muted-foreground">
+      <div className="ml-auto flex items-center gap-2 text-xs font-terminal text-muted-foreground">
         <span>{nodeCount}N / {edgeCount}E</span>
         <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-destructive" : "bg-success")} />
         <span>{isDirty ? "Unsaved" : "Saved"}</span>

@@ -30,7 +30,7 @@ function FormatDueDate({ dateStr }: { dateStr?: string }) {
         const isOverdue = isPast(date) && !isToday(date);
 
         return (
-            <div className={`flex items-center gap-1 text-[10px] border px-1.5 py-0.5 rounded-none ${isOverdue ? 'text-red-400 border-red-400/50' : 'text-muted-foreground border-border'}`}>
+            <div className={`flex items-center gap-1 text-xs border px-1.5 py-0.5 rounded-none ${isOverdue ? 'text-red-400 border-red-400/50' : 'text-muted-foreground border-border'}`}>
                 <CalendarIcon className="w-3 h-3" />
                 {label}
             </div>
@@ -91,7 +91,7 @@ export function SortableTaskItem({ task, onToggle, onDelete, onEdit }: {
                         <div className="flex flex-wrap gap-2 items-center mt-1">
                             {task.due && <FormatDueDate dateStr={task.due} />}
                             {task.notes && (
-                                <div className="flex items-center text-[10px] text-muted-foreground gap-1">
+                                <div className="flex items-center text-xs text-muted-foreground gap-1">
                                     <AlignLeft className="w-3 h-3" />
                                     <span className="truncate max-w-[150px] opacity-70 font-terminal">{task.notes.split('\n')[0]}</span>
                                 </div>

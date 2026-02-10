@@ -42,7 +42,7 @@ function DiffLine({ line, index }: { line: string; index: number }) {
 
   return (
     <div
-      className={`font-terminal text-[11px] px-2 ${
+      className={`font-terminal text-sm px-2 ${
         isAddition
           ? "bg-green-900/30 text-green-400"
           : isRemoval
@@ -97,7 +97,7 @@ export function PreviewDialog({
             <FileText className="w-4 h-4" />
             ORGANIZE + REVIEW
           </DialogTitle>
-          <DialogDescription className="font-terminal text-[11px] text-muted-foreground">
+          <DialogDescription className="font-terminal text-sm text-muted-foreground">
             Review the organized notes, compare to raw, then choose where to save.
           </DialogDescription>
         </DialogHeader>
@@ -137,7 +137,7 @@ export function PreviewDialog({
 
               <TabsContent value="raw" className="mt-2">
                 <ScrollArea className="h-[56vh] border border-secondary/40 rounded-none bg-black/40 p-3">
-                  <pre className="whitespace-pre-wrap font-terminal text-[11px] text-foreground">
+                  <pre className="whitespace-pre-wrap font-terminal text-sm text-foreground">
                     {rawNotes}
                   </pre>
                 </ScrollArea>
@@ -165,7 +165,7 @@ export function PreviewDialog({
           <div className="col-span-1 flex flex-col gap-3">
             {/* Destination selection */}
             <div className="border border-secondary/50 bg-black/40 p-3 rounded-none">
-              <div className="font-arcade text-[10px] text-primary mb-2">
+              <div className="font-arcade text-xs text-primary mb-2">
                 DESTINATION
               </div>
               <RadioGroup
@@ -180,15 +180,15 @@ export function PreviewDialog({
                   >
                     <RadioGroupItem value={opt.id} className="mt-1" />
                     <div className="space-y-1">
-                      <div className="font-terminal text-[11px] text-foreground flex items-center gap-1">
+                      <div className="font-terminal text-sm text-foreground flex items-center gap-1">
                         {opt.label}
                         {opt.exists && (
-                          <Badge variant="outline" className="text-[9px]">
+                          <Badge variant="outline" className="text-xs">
                             existing
                           </Badge>
                         )}
                       </div>
-                      <div className="font-terminal text-[10px] text-muted-foreground break-all">
+                      <div className="font-terminal text-xs text-muted-foreground break-all">
                         {opt.path || "Custom path"}
                       </div>
                     </div>
@@ -198,7 +198,7 @@ export function PreviewDialog({
 
               {selectedDestinationId === "custom" && (
                 <div className="mt-2 space-y-1">
-                  <div className="font-terminal text-[10px] text-muted-foreground">
+                  <div className="font-terminal text-xs text-muted-foreground">
                     Custom path
                   </div>
                   <Input
@@ -213,7 +213,7 @@ export function PreviewDialog({
 
             {/* Review checklist */}
             <div className="border border-secondary/50 bg-black/40 p-3 rounded-none">
-              <div className="font-arcade text-[10px] text-primary mb-2">
+              <div className="font-arcade text-xs text-primary mb-2">
                 REVIEW CHECKLIST
               </div>
               <div className="space-y-2">
@@ -226,7 +226,7 @@ export function PreviewDialog({
                       checked={Boolean(checklistState[item])}
                       onCheckedChange={() => onToggleChecklist(item)}
                     />
-                    <span className="font-terminal text-[11px] text-foreground">
+                    <span className="font-terminal text-sm text-foreground">
                       {item}
                     </span>
                   </label>
@@ -237,14 +237,14 @@ export function PreviewDialog({
             {/* Suggested links */}
             {(organized?.suggested_links || []).length > 0 && (
               <div className="border border-secondary/50 bg-black/40 p-3 rounded-none">
-                <div className="font-arcade text-[10px] text-primary mb-2">
+                <div className="font-arcade text-xs text-primary mb-2">
                   SUGGESTED LINKS
                 </div>
                 <div className="space-y-1">
                   {organized?.suggested_links?.map((link) => (
                     <div
                       key={link}
-                      className="font-terminal text-[11px] text-muted-foreground"
+                      className="font-terminal text-sm text-muted-foreground"
                     >
                       [[{link}]]
                     </div>

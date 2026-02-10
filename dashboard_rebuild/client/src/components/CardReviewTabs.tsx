@@ -72,7 +72,7 @@ export function CardReviewTabs({
               {showConfidence && (
                 <Badge
                   variant="outline"
-                  className={`text-[10px] font-terminal ${
+                  className={`text-xs font-terminal ${
                     confidence >= 0.8
                       ? "border-success/50 text-success"
                       : confidence >= 0.5
@@ -87,12 +87,12 @@ export function CardReviewTabs({
                 {draft.front}
               </span>
             </div>
-            <div className="font-terminal text-[10px] text-secondary">
+            <div className="font-terminal text-xs text-secondary">
               {draft.back.substring(0, 100)}
               {draft.back.length > 100 && "..."}
             </div>
             {draft.source_citation && (
-              <div className="font-terminal text-[9px] text-muted-foreground italic">
+              <div className="font-terminal text-xs text-muted-foreground italic">
                 Source: {draft.source_citation}
               </div>
             )}
@@ -119,7 +119,7 @@ export function CardReviewTabs({
       <div className="flex gap-1 mb-2">
         <Button
           size="sm"
-          className="h-6 px-2 text-[10px] font-terminal bg-success hover:bg-success/80"
+          className="h-6 px-2 text-xs font-terminal bg-success hover:bg-success/80"
           onClick={() => {
             selectedDrafts.forEach(id => onApprove(id));
             setSelectedDrafts(new Set());
@@ -131,7 +131,7 @@ export function CardReviewTabs({
         <Button
           size="sm"
           variant="destructive"
-          className="h-6 px-2 text-[10px] font-terminal"
+          className="h-6 px-2 text-xs font-terminal"
           onClick={() => {
             selectedDrafts.forEach(id => onReject(id));
             setSelectedDrafts(new Set());
@@ -149,19 +149,19 @@ export function CardReviewTabs({
       <TabsList className="grid w-full grid-cols-3 rounded-none bg-black border border-secondary/40">
         <TabsTrigger
           value="high"
-          className="font-arcade text-[10px] rounded-none data-[state=active]:bg-success/20 data-[state=active]:text-success"
+          className="font-arcade text-xs rounded-none data-[state=active]:bg-success/20 data-[state=active]:text-success"
         >
           HIGH ({highConfidence.length})
         </TabsTrigger>
         <TabsTrigger
           value="low"
-          className="font-arcade text-[10px] rounded-none data-[state=active]:bg-warning/20 data-[state=active]:text-warning"
+          className="font-arcade text-xs rounded-none data-[state=active]:bg-warning/20 data-[state=active]:text-warning"
         >
           LOW ({lowConfidence.length})
         </TabsTrigger>
         <TabsTrigger
           value="regular"
-          className="font-arcade text-[10px] rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+          className="font-arcade text-xs rounded-none data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
         >
           DRAFT ({regularDrafts.length})
         </TabsTrigger>
@@ -170,13 +170,13 @@ export function CardReviewTabs({
       <TabsContent value="high" className="border border-t-0 border-secondary/40 rounded-none p-2">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="font-terminal text-[10px] text-success">
+            <span className="font-terminal text-xs text-success">
               High confidence cards - ready for one-click approval
             </span>
             <Button
               size="sm"
               variant="outline"
-              className="h-5 px-2 text-[10px] font-terminal"
+              className="h-5 px-2 text-xs font-terminal"
               onClick={() => {
                 if (selectedDrafts.size === highConfidence.length) {
                   setSelectedDrafts(new Set());
@@ -205,13 +205,13 @@ export function CardReviewTabs({
       <TabsContent value="low" className="border border-t-0 border-secondary/40 rounded-none p-2">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="font-terminal text-[10px] text-warning">
+            <span className="font-terminal text-xs text-warning">
               Low confidence cards - review and edit before approval
             </span>
             <Button
               size="sm"
               variant="outline"
-              className="h-5 px-2 text-[10px] font-terminal"
+              className="h-5 px-2 text-xs font-terminal"
               onClick={() => {
                 if (selectedDrafts.size === lowConfidence.length) {
                   setSelectedDrafts(new Set());
@@ -240,13 +240,13 @@ export function CardReviewTabs({
       <TabsContent value="regular" className="border border-t-0 border-secondary/40 rounded-none p-2">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="font-terminal text-[10px] text-muted-foreground">
+            <span className="font-terminal text-xs text-muted-foreground">
               Regular draft cards
             </span>
             <Button
               size="sm"
               variant="outline"
-              className="h-5 px-2 text-[10px] font-terminal"
+              className="h-5 px-2 text-xs font-terminal"
               onClick={() => {
                 if (selectedDrafts.size === regularDrafts.length) {
                   setSelectedDrafts(new Set());

@@ -137,7 +137,7 @@ export function TutorChainBuilder({
                   ) : (
                     <ChevronDown className="w-3 h-3" style={{ color }} />
                   )}
-                  <span className="font-arcade text-[10px] uppercase" style={{ color }}>
+                  <span className="font-arcade text-xs uppercase" style={{ color }}>
                     {CATEGORY_LABELS[cat]} ({blocks.length})
                   </span>
                 </button>
@@ -150,7 +150,7 @@ export function TutorChainBuilder({
                         className="w-full text-left px-2 py-1 text-xs font-terminal text-foreground/80 hover:bg-primary/10 hover:text-foreground transition-colors flex items-center justify-between"
                       >
                         <span className="truncate">{b.name}</span>
-                        <span className={`${TEXT_MUTED} text-[10px] shrink-0 ml-2`}>
+                        <span className={`${TEXT_MUTED} text-xs shrink-0 ml-2`}>
                           ~{b.default_duration_min}m
                         </span>
                       </button>
@@ -171,7 +171,7 @@ export function TutorChainBuilder({
             variant="ghost"
             size="sm"
             onClick={() => setSelectedBlockIds([])}
-            className="h-5 px-2 text-[10px] font-arcade text-destructive hover:text-destructive"
+            className="h-5 px-2 text-xs font-arcade text-destructive hover:text-destructive"
           >
             CLEAR
           </Button>
@@ -204,7 +204,7 @@ export function TutorChainBuilder({
                   <GripVertical className="w-3 h-3 text-muted-foreground/40 cursor-grab shrink-0" />
                   <Badge
                     variant="outline"
-                    className="text-[9px] rounded-none px-1 h-4 shrink-0"
+                    className="text-xs rounded-none px-1 h-4 shrink-0"
                     style={{ borderColor: color, color }}
                   >
                     {b.category.slice(0, 3).toUpperCase()}
@@ -212,7 +212,7 @@ export function TutorChainBuilder({
                   <span className="font-terminal text-xs text-foreground/80 truncate flex-1">
                     {b.name}
                   </span>
-                  <span className={`${TEXT_MUTED} text-[10px] shrink-0`}>~{b.default_duration_min}m</span>
+                  <span className={`${TEXT_MUTED} text-xs shrink-0`}>~{b.default_duration_min}m</span>
                   <button
                     onClick={() => removeBlock(idx)}
                     className="shrink-0 text-muted-foreground/40 hover:text-destructive transition-colors"

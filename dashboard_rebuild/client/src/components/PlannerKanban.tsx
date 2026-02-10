@@ -66,14 +66,14 @@ function KanbanColumn({
     >
       <div className="flex items-center justify-between px-3 py-2 border-b border-secondary/30">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-arcade text-[10px] text-primary/90 tracking-widest uppercase truncate">
+          <span className="font-arcade text-xs text-primary/90 tracking-widest uppercase truncate">
             {label}
           </span>
-          <Badge variant="outline" className="rounded-none text-[9px] px-1.5 py-0">
+          <Badge variant="outline" className="rounded-none text-xs px-1.5 py-0">
             {count}
           </Badge>
         </div>
-        <span className="font-terminal text-[9px] text-muted-foreground hidden sm:inline">
+        <span className="font-terminal text-xs text-muted-foreground hidden sm:inline">
           {hint}
         </span>
       </div>
@@ -138,7 +138,7 @@ function PlannerTaskCard({
             {dueLabel && (
               <span
                 className={cn(
-                  "font-terminal text-[10px] px-1.5 py-0.5 border rounded-none shrink-0",
+                  "font-terminal text-xs px-1.5 py-0.5 border rounded-none shrink-0",
                   isOverdue ? "text-red-400 border-red-500/40 bg-red-500/10" : "text-muted-foreground border-secondary/40"
                 )}
                 title={task.scheduled_date || undefined}
@@ -150,22 +150,22 @@ function PlannerTaskCard({
 
           <div className="flex flex-wrap items-center gap-2 mt-1.5">
             {task.course_name && (
-              <span className="font-terminal text-[10px] text-cyan-300 border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 rounded-none">
+              <span className="font-terminal text-xs text-cyan-300 border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 rounded-none">
                 {task.course_name}
               </span>
             )}
             {typeof task.planned_minutes === "number" && task.planned_minutes > 0 && (
-              <span className="font-terminal text-[10px] text-muted-foreground border border-secondary/30 bg-secondary/10 px-1.5 py-0.5 rounded-none">
+              <span className="font-terminal text-xs text-muted-foreground border border-secondary/30 bg-secondary/10 px-1.5 py-0.5 rounded-none">
                 {task.planned_minutes}m
               </span>
             )}
             {typeof task.review_number === "number" && task.review_number > 0 && (
-              <span className="font-terminal text-[10px] text-yellow-300 border border-yellow-500/30 bg-yellow-500/10 px-1.5 py-0.5 rounded-none">
+              <span className="font-terminal text-xs text-yellow-300 border border-yellow-500/30 bg-yellow-500/10 px-1.5 py-0.5 rounded-none">
                 R{task.review_number}
               </span>
             )}
             {typeof task.priority === "number" && task.priority > 0 && (
-              <span className="font-terminal text-[10px] text-orange-300 border border-orange-500/30 bg-orange-500/10 px-1.5 py-0.5 rounded-none">
+              <span className="font-terminal text-xs text-orange-300 border border-orange-500/30 bg-orange-500/10 px-1.5 py-0.5 rounded-none">
                 P{task.priority}
               </span>
             )}
@@ -176,7 +176,7 @@ function PlannerTaskCard({
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 px-2 rounded-none font-terminal text-[10px]"
+            className="h-7 px-2 rounded-none font-terminal text-xs"
             onClick={(e) => {
               e.stopPropagation();
               primaryAction.onClick();
@@ -190,7 +190,7 @@ function PlannerTaskCard({
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 px-2 rounded-none font-terminal text-[10px] text-green-400 hover:text-green-300"
+            className="h-7 px-2 rounded-none font-terminal text-xs text-green-400 hover:text-green-300"
             onClick={(e) => {
               e.stopPropagation();
               onComplete();
@@ -335,7 +335,7 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
         <CardTitle className="font-arcade text-sm flex items-center justify-between gap-3">
           <span className="truncate">PLANNER_BOARD</span>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="rounded-none text-[9px]">
+            <Badge variant="outline" className="rounded-none text-xs">
               {tasks.length} tasks
             </Badge>
             <Button

@@ -361,7 +361,7 @@ export function ContentFilter({
             <div className="grid grid-cols-2 gap-1 mb-2 min-w-0">
               <button
                 onClick={() => setChainTab("templates")}
-                className={`px-1.5 py-1 border-2 font-arcade text-[10px] truncate transition-colors ${
+                className={`px-1.5 py-1 border-2 font-arcade text-xs truncate transition-colors ${
                   chainTab === "templates"
                     ? "border-primary bg-primary/20 text-primary"
                     : "border-primary/30 text-foreground/80 hover:border-primary/50"
@@ -374,7 +374,7 @@ export function ContentFilter({
                   setChainTab("custom");
                   setChainId(undefined);
                 }}
-                className={`px-1.5 py-1 border-2 font-arcade text-[10px] truncate transition-colors ${
+                className={`px-1.5 py-1 border-2 font-arcade text-xs truncate transition-colors ${
                   chainTab === "custom"
                     ? "border-primary bg-primary/20 text-primary"
                     : "border-primary/30 text-foreground/80 hover:border-primary/50"
@@ -408,7 +408,7 @@ export function ContentFilter({
                     <Button
                       size="sm"
                       onClick={() => setChainId(recommendedChain.id)}
-                      className="rounded-none h-6 px-2 font-arcade text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 border border-primary"
+                      className="rounded-none h-6 px-2 font-arcade text-xs bg-primary text-primary-foreground hover:bg-primary/90 border border-primary"
                     >
                       APPLY
                     </Button>
@@ -578,7 +578,7 @@ export function ContentFilter({
             <Globe className={ICON_SM} />
             <span className={`${TEXT_BODY} text-xs`}>Web search</span>
             {provider !== "codex" && (
-              <span className="text-[10px] text-muted-foreground">(Codex only)</span>
+              <span className="text-xs text-muted-foreground">(Codex only)</span>
             )}
           </label>
 

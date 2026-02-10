@@ -404,7 +404,7 @@ export function MindMapView() {
         <ScrollArea className="h-full">
           <div className="p-3 space-y-4">
             <div>
-              <div className="font-arcade text-[10px] text-primary mb-2">COURSES</div>
+              <div className="font-arcade text-xs text-primary mb-2">COURSES</div>
               {courses.map((c: any) => (
                 <label key={c.id} className="flex items-center gap-2 py-1 cursor-pointer">
                   <Checkbox
@@ -419,7 +419,7 @@ export function MindMapView() {
 
             {activeCourseModules.length > 0 && (
               <div>
-                <div className="font-arcade text-[10px] text-yellow-400 mb-2">MODULES</div>
+                <div className="font-arcade text-xs text-yellow-400 mb-2">MODULES</div>
                 <label className="flex items-center gap-2 py-1 cursor-pointer mb-1">
                   <Checkbox
                     checked={selectedModules.size === 0}
@@ -435,7 +435,7 @@ export function MindMapView() {
                       onCheckedChange={() => toggleModule(m.id)}
                       className="border-yellow-500 data-[state=checked]:bg-yellow-500"
                     />
-                    <span className="font-terminal text-[10px] text-yellow-100 truncate">{m.name}</span>
+                    <span className="font-terminal text-xs text-yellow-100 truncate">{m.name}</span>
                   </label>
                 ))}
               </div>
@@ -454,18 +454,18 @@ export function MindMapView() {
 
             {/* Legend */}
             <div className="pt-2 border-t border-secondary/30 space-y-1">
-              <div className="font-arcade text-[10px] text-muted-foreground mb-1">LEGEND</div>
+              <div className="font-arcade text-xs text-muted-foreground mb-1">LEGEND</div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-sm border-2 border-cyan-400 bg-cyan-400/15" />
-                <span className="font-terminal text-[10px] text-cyan-300">Course</span>
+                <span className="font-terminal text-xs text-cyan-300">Course</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-sm border border-yellow-400 bg-yellow-400/12" />
-                <span className="font-terminal text-[10px] text-yellow-300">Module</span>
+                <span className="font-terminal text-xs text-yellow-300">Module</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-sm border border-green-400 bg-green-400/8" />
-                <span className="font-terminal text-[10px] text-green-300">LO</span>
+                <span className="font-terminal text-xs text-green-300">LO</span>
               </div>
             </div>
 
@@ -473,7 +473,7 @@ export function MindMapView() {
               <Button
                 size="sm"
                 variant="outline"
-                className="w-full h-7 text-[9px] font-terminal border-primary/50 text-primary"
+                className="w-full h-7 text-xs font-terminal border-primary/50 text-primary"
                 onClick={seedMap}
               >
                 Seed Map ({graphData.nodes.length})

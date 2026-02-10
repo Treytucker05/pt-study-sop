@@ -216,7 +216,7 @@ export default function Scholar() {
              <div className="flex items-center gap-3">
                <Brain className={`${ICON_LG} text-primary`} />
                <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
-               <Badge variant="outline" className="rounded-none text-[10px] font-terminal border-primary/50">
+               <Badge variant="outline" className="rounded-none text-xs font-terminal border-primary/50">
                  READ ONLY ADVISORY
                </Badge>
              </div>
@@ -248,7 +248,7 @@ export default function Scholar() {
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="rounded-none font-arcade text-[10px] data-[state=active]:bg-primary data-[state=active]:text-black px-3"
+                  className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black px-3"
                   data-testid={`tab-${tab.id}`}
                 >
                   <tab.icon className={`${ICON_SM} mr-1`} />
@@ -262,10 +262,10 @@ export default function Scholar() {
               {/* Scholar run flow strip */}
               <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY} mb-4`}>
                 <CardContent className="p-3">
-                  <div className="font-arcade text-[10px] text-secondary mb-2">
+                  <div className="font-arcade text-xs text-secondary mb-2">
                     SCHOLAR RUN: HIGH-LEVEL → ANALYSIS → DECISIONS
                   </div>
-                  <div className="grid md:grid-cols-3 gap-3 font-terminal text-[11px] text-muted-foreground">
+                  <div className="grid md:grid-cols-3 gap-3 font-terminal text-sm text-muted-foreground">
                     <div>
                       <span className="text-primary font-semibold">1. Review study health</span>
                       <p>Scan totals and recent activity for obvious gaps.</p>
@@ -300,7 +300,7 @@ export default function Scholar() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-none font-arcade text-[10px] border-primary text-primary"
+                      className="rounded-none font-arcade text-xs border-primary text-primary"
                       onClick={() => setActiveTab("proposals")}
                       data-testid="cta-review-proposals-from-summary"
                     >
@@ -366,7 +366,7 @@ export default function Scholar() {
                         )}
                       </ul>
                       <div className="mt-3 pt-3 border-t border-primary/30">
-                        <Badge variant="outline" className="rounded-none text-[9px] border-primary/40">
+                        <Badge variant="outline" className="rounded-none text-xs border-primary/40">
                           CONFIDENCE: {sessions.length > 10 ? 'MEDIUM' : 'LOW'} (based on {sessions.length} sessions)
                         </Badge>
                       </div>
@@ -412,7 +412,7 @@ export default function Scholar() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="rounded-none font-arcade text-[10px] border-primary text-primary"
+                            className="rounded-none font-arcade text-xs border-primary text-primary"
                             onClick={() => setActiveTab("analysis")}
                             data-testid="cta-open-analysis-from-summary"
                           >
@@ -421,7 +421,7 @@ export default function Scholar() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="rounded-none font-arcade text-[10px]"
+                            className="rounded-none font-arcade text-xs"
                             onClick={() => {
                               window.location.href = "/brain";
                             }}
@@ -509,7 +509,7 @@ export default function Scholar() {
             {/* ANALYSIS TAB - Consolidated from Audit, Questions, Evidence, Clusters */}
             <TabsContent value="analysis" className="flex-1 overflow-auto mt-4">
               <div className="space-y-4">
-                <p className="font-terminal text-[11px] text-muted-foreground">
+                <p className="font-terminal text-sm text-muted-foreground">
                   Scholar analysis walks from how Tutor behaved, to where issues cluster, to concrete questions and
                   evidence. If something looks important here, expect or create a matching proposal on the next tab.
                 </p>
@@ -538,7 +538,7 @@ export default function Scholar() {
                                   <div key={i} className="p-3 bg-primary/5 border border-primary/30">
                                     <div className="flex items-center justify-between mb-2">
                                       <span className="font-terminal text-sm">{item.date}</span>
-                                      <Badge variant="outline" className="rounded-none text-[9px] border-primary">
+                                      <Badge variant="outline" className="rounded-none text-xs border-primary">
                                         {item.status}
                                       </Badge>
                                     </div>
@@ -570,7 +570,7 @@ export default function Scholar() {
                               <div key={i} className="p-3 bg-black/40 border border-secondary/50">
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="font-terminal text-sm">{item.issue ?? "Unknown issue"}</span>
-                                  <Badge variant="outline" className="rounded-none text-[9px] border-primary text-primary">
+                                  <Badge variant="outline" className="rounded-none text-xs border-primary text-primary">
                                     x{item.frequency ?? 0}
                                   </Badge>
                                 </div>
@@ -598,7 +598,7 @@ export default function Scholar() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
-                    <p className="font-terminal text-[11px] text-muted-foreground mb-3">
+                    <p className="font-terminal text-sm text-muted-foreground mb-3">
                       Scholar turns messy issues into tractable questions. Use this section to see what is still
                       unanswered and where more Brain data or external research is needed.
                     </p>
@@ -689,7 +689,7 @@ export default function Scholar() {
                               scholarFindings.map((finding, i) => (
                                 <div key={i} className="p-3 bg-black/40 border border-secondary/50">
                                   <div className="flex items-center gap-2 mb-2">
-                                    <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
+                                    <Badge variant="outline" className="rounded-none text-xs border-secondary">
                                       {finding.source}
                                     </Badge>
                                     {finding.topic && (
@@ -720,7 +720,7 @@ export default function Scholar() {
                                 <div key={i} className="p-3 bg-black/40 border border-secondary/50">
                                   <div className="font-arcade text-xs text-primary mb-2">{finding.topic ?? finding.title}</div>
                                   <p className="font-terminal text-xs mb-2">{finding.summary ?? finding.content}</p>
-                                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                                  <div className="flex justify-between text-xs text-muted-foreground">
                                     <span>Source: {finding.source}</span>
                                   </div>
                                 </div>
@@ -738,12 +738,12 @@ export default function Scholar() {
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <Layers className="w-4 h-4" /> TOPIC CLUSTERS
                     </CardTitle>
-                    <Badge variant="outline" className="rounded-none text-[9px] border-secondary text-muted-foreground">
+                    <Badge variant="outline" className="rounded-none text-xs border-secondary text-muted-foreground">
                       COMING SOON
                     </Badge>
                   </CardHeader>
                   <CardContent className="p-4">
-                    <p className="font-terminal text-[11px] text-muted-foreground mb-3">
+                    <p className="font-terminal text-sm text-muted-foreground mb-3">
                       Clustering works best after you have a healthy volume of sessions and findings. Use it to spot
                       recurring themes that might deserve their own proposals.
                     </p>
@@ -755,7 +755,7 @@ export default function Scholar() {
                             <div key={cluster.cluster_id} className="p-3 bg-black/40 border border-secondary/50">
                               <div className="flex items-center justify-between mb-2">
                                 <span className="font-arcade text-xs text-primary">Cluster {cluster.cluster_id}</span>
-                                <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
+                                <Badge variant="outline" className="rounded-none text-xs border-secondary">
                                   {cluster.count} items
                                 </Badge>
                               </div>
@@ -781,7 +781,7 @@ export default function Scholar() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-none font-arcade text-[10px] mt-2"
+                      className="rounded-none font-arcade text-xs mt-2"
                       onClick={() => setActiveTab("proposals")}
                       data-testid="cta-next-proposals-from-analysis"
                     >
@@ -801,10 +801,10 @@ export default function Scholar() {
                   <CardTitle className="font-arcade text-xs flex items-center gap-2">
                     <Lightbulb className="w-4 h-4" /> IMPROVEMENT PROPOSALS
                   </CardTitle>
-                  <p className="font-terminal text-[10px] text-muted-foreground mt-1">
+                  <p className="font-terminal text-xs text-muted-foreground mt-1">
                     No auto-implementation. All changes require user approval.
                   </p>
-                  <p className="font-terminal text-[10px] text-muted-foreground mt-1">
+                  <p className="font-terminal text-xs text-muted-foreground mt-1">
                     <span className="font-semibold text-primary">Status legend:</span>{" "}
                     DRAFT = idea only, APPROVED = you intend to implement, IMPLEMENTED = change applied,
                     REJECTED = explicitly declined.
@@ -829,7 +829,7 @@ export default function Scholar() {
                                 <h4 className="font-terminal text-sm mt-1">{proposal.summary}</h4>
                               </div>
                               <div className="flex gap-2">
-                                <Badge variant="outline" className={cn("rounded-none text-[9px]", getPriorityColor(proposal.priority || 'MED'))}>
+                                <Badge variant="outline" className={cn("rounded-none text-xs", getPriorityColor(proposal.priority || 'MED'))}>
                                   {proposal.priority || 'MED'}
                                 </Badge>
                               </div>
@@ -837,8 +837,8 @@ export default function Scholar() {
 
                             {proposal.targetSystem && (
                               <div className="mb-3">
-                                <span className="text-[10px] text-muted-foreground">Target system: </span>
-                                <Badge variant="secondary" className="rounded-none text-[9px]">
+                                <span className="text-xs text-muted-foreground">Target system: </span>
+                                <Badge variant="secondary" className="rounded-none text-xs">
                                   {proposal.targetSystem}
                                 </Badge>
                               </div>
@@ -846,10 +846,10 @@ export default function Scholar() {
 
                             <div className="flex items-center justify-between mt-3 pt-3 border-t border-primary/30">
                               <div className="flex gap-2">
-                                <Badge variant="outline" className="rounded-none text-[9px] border-primary/40">
+                                <Badge variant="outline" className="rounded-none text-xs border-primary/40">
                                   Confidence: MED
                                 </Badge>
-                                <Badge variant="outline" className="rounded-none text-[9px] border-primary/40">
+                                <Badge variant="outline" className="rounded-none text-xs border-primary/40">
                                   Risk: LOW
                                 </Badge>
                               </div>
@@ -857,7 +857,7 @@ export default function Scholar() {
                                 value={proposal.status || 'DRAFT'}
                                 onValueChange={(value) => updateProposalMutation.mutate({ id: proposal.id, data: { status: value } })}
                               >
-                                <SelectTrigger className={cn("rounded-none w-28 h-7 text-[10px]", getStatusColor(proposal.status || 'DRAFT'))} data-testid={`select-proposal-status-${proposal.id}`}>
+                                <SelectTrigger className={cn("rounded-none w-28 h-7 text-xs", getStatusColor(proposal.status || 'DRAFT'))} data-testid={`select-proposal-status-${proposal.id}`}>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-none bg-black border-primary">
@@ -885,7 +885,7 @@ export default function Scholar() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
-                  <p className="font-terminal text-[10px] text-muted-foreground mb-2">
+                  <p className="font-terminal text-xs text-muted-foreground mb-2">
                     Read-only log of every Scholar proposal and its final status. Use this to see what has already
                     been tried and decided before creating new changes.
                   </p>
@@ -907,10 +907,10 @@ export default function Scholar() {
                             <div className="w-20 font-terminal text-xs text-muted-foreground">{proposal.proposalId}</div>
                             <div className="flex-1 truncate">{proposal.summary}</div>
                             <div className="flex gap-2 items-center shrink-0">
-                              <Badge variant="outline" className={cn("rounded-none text-[9px]", getStatusColor(proposal.status || 'DRAFT'))}>
+                              <Badge variant="outline" className={cn("rounded-none text-xs", getStatusColor(proposal.status || 'DRAFT'))}>
                                 {proposal.status || 'DRAFT'}
                               </Badge>
-                              <span className="text-[10px] text-muted-foreground">
+                              <span className="text-xs text-muted-foreground">
                                 <Clock className={`${ICON_SM} inline mr-1`} />
                                 {proposal.createdAt ? new Date(proposal.createdAt).toLocaleDateString() : 'N/A'}
                               </span>

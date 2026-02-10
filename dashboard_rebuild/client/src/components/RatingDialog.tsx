@@ -15,7 +15,7 @@ interface RatingDialogProps {
 function StarRating({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
   return (
     <div className="space-y-1">
-      <span className="font-arcade text-[10px] text-muted-foreground">{label}</span>
+      <span className="font-arcade text-xs text-muted-foreground">{label}</span>
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
@@ -80,7 +80,7 @@ export default function RatingDialog({ open, onClose, onSubmit, targetName, targ
           />
 
           <div>
-            <span className="font-arcade text-[10px] text-muted-foreground">NOTES (optional)</span>
+            <span className="font-arcade text-xs text-muted-foreground">NOTES (optional)</span>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}

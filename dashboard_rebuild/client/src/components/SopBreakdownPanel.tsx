@@ -113,7 +113,7 @@ export function SopBreakdownPanel({
             <Button
               size="sm"
               variant={mode === "teach" ? "default" : "ghost"}
-              className="rounded-none font-arcade text-[10px] h-7"
+              className="rounded-none font-arcade text-xs h-7"
               onClick={() => setMode("teach")}
             >
               TEACH
@@ -121,7 +121,7 @@ export function SopBreakdownPanel({
             <Button
               size="sm"
               variant={mode === "drill" ? "default" : "ghost"}
-              className="rounded-none font-arcade text-[10px] h-7"
+              className="rounded-none font-arcade text-xs h-7"
               onClick={() => setMode("drill")}
             >
               DRILL
@@ -147,7 +147,7 @@ export function SopBreakdownPanel({
                     selectedId === n.id && "border-primary/60 bg-primary/10"
                   )}
                 >
-                  <Badge variant="outline" className="rounded-none text-[9px] border-secondary">
+                  <Badge variant="outline" className="rounded-none text-xs border-secondary">
                     H{n.level}
                   </Badge>
                   <span
@@ -172,7 +172,7 @@ export function SopBreakdownPanel({
             </CardTitle>
             <Button
               size="sm"
-              className="rounded-none font-arcade text-[10px] h-8"
+              className="rounded-none font-arcade text-xs h-8"
               onClick={runExplain}
               disabled={!selected || loading}
               data-testid="button-sop-explain"
@@ -189,7 +189,7 @@ export function SopBreakdownPanel({
             </Button>
           </div>
           {selected && (
-            <div className="font-terminal text-[10px] text-muted-foreground mt-1">
+            <div className="font-terminal text-xs text-muted-foreground mt-1">
               {selected.title} (H{selected.level}) • {path}
             </div>
           )}
@@ -202,12 +202,12 @@ export function SopBreakdownPanel({
               </div>
             ) : result?.ok === false ? (
               <div className="p-3 bg-red-900/20 border border-red-500/50 rounded-none">
-                <div className="font-arcade text-[10px] text-red-300 mb-2">EXPLAIN FAILED</div>
+                <div className="font-arcade text-xs text-red-300 mb-2">EXPLAIN FAILED</div>
                 <div className="font-terminal text-xs text-red-200 whitespace-pre-wrap break-words">
                   {result.message || result.error || "Unknown error"}
                 </div>
                 {result.raw && (
-                  <pre className="mt-2 p-2 bg-black/50 border border-secondary/40 font-mono text-[10px] overflow-auto">
+                  <pre className="mt-2 p-2 bg-black/50 border border-secondary/40 font-mono text-xs overflow-auto">
                     {result.raw}
                   </pre>
                 )}
@@ -215,7 +215,7 @@ export function SopBreakdownPanel({
             ) : result?.ok === true ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="rounded-none border-secondary text-[9px]">
+                  <Badge variant="outline" className="rounded-none border-secondary text-xs">
                     {result.cached ? "CACHED" : "FRESH"}
                   </Badge>
                   <div className="font-arcade text-xs text-primary">{result.explanation?.title || selected.title}</div>
@@ -237,26 +237,26 @@ export function SopBreakdownPanel({
                         </div>
                         <div className="grid md:grid-cols-2 gap-3">
                           <div className="space-y-1">
-                            <div className="font-terminal text-[10px] text-muted-foreground">What it is</div>
+                            <div className="font-terminal text-xs text-muted-foreground">What it is</div>
                             <div className="font-terminal text-xs">{g?.what_it_is}</div>
                           </div>
                           <div className="space-y-1">
-                            <div className="font-terminal text-[10px] text-muted-foreground">How it works</div>
+                            <div className="font-terminal text-xs text-muted-foreground">How it works</div>
                             <div className="font-terminal text-xs">{g?.how_it_works}</div>
                           </div>
                           <div className="space-y-1">
-                            <div className="font-terminal text-[10px] text-muted-foreground">Why it matters</div>
+                            <div className="font-terminal text-xs text-muted-foreground">Why it matters</div>
                             <div className="font-terminal text-xs">{g?.why_it_matters}</div>
                           </div>
                           <div className="space-y-1">
-                            <div className="font-terminal text-[10px] text-muted-foreground">Example</div>
+                            <div className="font-terminal text-xs text-muted-foreground">Example</div>
                             <div className="font-terminal text-xs">{g?.example}</div>
                           </div>
                         </div>
 
                         {Array.isArray(g?.failure_modes) && g.failure_modes.length > 0 && (
                           <div className="mt-3">
-                            <div className="font-terminal text-[10px] text-muted-foreground mb-1">Failure modes</div>
+                            <div className="font-terminal text-xs text-muted-foreground mb-1">Failure modes</div>
                             <ul className="space-y-1 font-terminal text-xs">
                               {g.failure_modes.slice(0, 8).map((fm: string, j: number) => (
                                 <li key={j} className="flex items-start gap-2">
@@ -270,7 +270,7 @@ export function SopBreakdownPanel({
 
                         {Array.isArray(g?.children) && g.children.length > 0 && (
                           <div className="mt-3 p-2 bg-black/30 border border-secondary/40 rounded-none">
-                            <div className="font-terminal text-[10px] text-muted-foreground mb-1">
+                            <div className="font-terminal text-xs text-muted-foreground mb-1">
                               Subgroups / Concepts
                             </div>
                             <ul className="space-y-1 font-terminal text-xs">
@@ -287,7 +287,7 @@ export function SopBreakdownPanel({
                                 </li>
                               ))}
                             </ul>
-                            <div className="font-terminal text-[10px] text-muted-foreground mt-2">
+                            <div className="font-terminal text-xs text-muted-foreground mt-2">
                               Tip: if you want deeper breakdown on a subgroup, we can add “click-to-expand” next.
                             </div>
                           </div>
@@ -303,7 +303,7 @@ export function SopBreakdownPanel({
 
                 {Array.isArray(result.explanation?.next_actions) && result.explanation.next_actions.length > 0 && (
                   <div className="p-3 bg-black/40 border border-secondary/50 rounded-none">
-                    <div className="font-arcade text-[10px] text-primary mb-2">NEXT ACTIONS</div>
+                    <div className="font-arcade text-xs text-primary mb-2">NEXT ACTIONS</div>
                     <ul className="space-y-1 font-terminal text-xs">
                       {result.explanation.next_actions.slice(0, 10).map((a: string, i: number) => (
                         <li key={i} className="flex items-start gap-2">

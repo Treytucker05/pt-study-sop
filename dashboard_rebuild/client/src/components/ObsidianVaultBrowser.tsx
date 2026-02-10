@@ -260,7 +260,7 @@ export function ObsidianVaultBrowser({ onWikilinkClick }: ObsidianVaultBrowserPr
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 px-2 text-[10px]"
+                        className="h-6 px-2 text-xs"
                         onClick={() => setPreviewMode(!previewMode)}
                       >
                         {previewMode ? "Edit" : "Preview"}

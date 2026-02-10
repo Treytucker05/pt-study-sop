@@ -416,7 +416,7 @@ export default function Dashboard() {
           <CardHeader className="border-b border-secondary/50">
             <CardTitle className="font-arcade text-xs flex items-center justify-between">
               <span>TODAY'S FOCUS</span>
-              <Badge variant="outline" className="rounded-none text-[9px]">
+              <Badge variant="outline" className="rounded-none text-xs">
                 {duePlannerTasks.length} tasks
               </Badge>
             </CardTitle>
@@ -463,7 +463,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2 bg-black/40 border border-secondary px-3 py-1" data-testid="streak-display">
                   <Flame className="w-4 h-4 text-orange-500" />
                   <span className="font-arcade text-sm text-white" data-testid="text-streak">{streakData?.currentStreak || 0}</span>
-                  <span className="font-terminal text-[10px] text-muted-foreground">DAY STREAK</span>
+                  <span className="font-terminal text-xs text-muted-foreground">DAY STREAK</span>
                 </div>
               </CardTitle>
             </CardHeader>
@@ -1020,7 +1020,7 @@ export default function Dashboard() {
                 </CardTitle>
                 <Dialog open={showAddDeadline} onOpenChange={setShowAddDeadline}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-none border-primary hover:bg-primary/20 font-arcade text-[10px] h-7 px-2">
+                  <Button variant="outline" size="sm" className="rounded-none border-primary hover:bg-primary/20 font-arcade text-xs h-7 px-2">
                     <Plus className="w-3 h-3 mr-1" />
                     ADD
                   </Button>

@@ -147,7 +147,7 @@ export function TopicNoteBuilder() {
     <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
       <CardHeader className="border-b border-secondary/30">
         <CardTitle className="font-arcade text-xs">SIX-PHASE TOPIC NOTE BUILDER</CardTitle>
-        <p className="font-terminal text-[10px] text-muted-foreground mt-1">
+        <p className="font-terminal text-xs text-muted-foreground mt-1">
           Generate an Obsidian-ready topic note following the Six-Phase SOP. No LLM required — template only.
         </p>
       </CardHeader>
@@ -155,7 +155,7 @@ export function TopicNoteBuilder() {
         {/* Inputs */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="font-terminal text-[10px] text-muted-foreground block mb-1">Course</label>
+            <label className="font-terminal text-xs text-muted-foreground block mb-1">Course</label>
             <input
               value={course}
               onChange={e => setCourse(e.target.value)}
@@ -164,7 +164,7 @@ export function TopicNoteBuilder() {
             />
           </div>
           <div>
-            <label className="font-terminal text-[10px] text-muted-foreground block mb-1">Topic Title *</label>
+            <label className="font-terminal text-xs text-muted-foreground block mb-1">Topic Title *</label>
             <input
               value={topic}
               onChange={e => setTopic(e.target.value)}
@@ -175,7 +175,7 @@ export function TopicNoteBuilder() {
         </div>
 
         <div>
-          <label className="font-terminal text-[10px] text-muted-foreground block mb-1">
+          <label className="font-terminal text-xs text-muted-foreground block mb-1">
             Learning Objectives (1 per line)
           </label>
           <textarea
@@ -188,7 +188,7 @@ export function TopicNoteBuilder() {
         </div>
 
         <div>
-          <label className="font-terminal text-[10px] text-muted-foreground block mb-1">
+          <label className="font-terminal text-xs text-muted-foreground block mb-1">
             Source Excerpt (optional — paste key content)
           </label>
           <textarea
@@ -201,7 +201,7 @@ export function TopicNoteBuilder() {
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="font-terminal text-[10px] text-muted-foreground">Clusters (3-5):</label>
+          <label className="font-terminal text-xs text-muted-foreground">Clusters (3-5):</label>
           <input
             type="number"
             min={3}
@@ -222,7 +222,7 @@ export function TopicNoteBuilder() {
         {output && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-arcade text-[10px] text-primary">OUTPUT</span>
+              <span className="font-arcade text-xs text-primary">OUTPUT</span>
               <button
                 onClick={handleCopy}
                 className="px-3 py-1 border border-primary/50 text-xs font-arcade text-primary hover:bg-primary/10 rounded-none"
@@ -230,7 +230,7 @@ export function TopicNoteBuilder() {
                 COPY TO CLIPBOARD
               </button>
             </div>
-            <pre className="bg-black border border-secondary/30 p-3 font-terminal text-[10px] text-white overflow-auto max-h-96 whitespace-pre-wrap">
+            <pre className="bg-black border border-secondary/30 p-3 font-terminal text-xs text-white overflow-auto max-h-96 whitespace-pre-wrap">
               {output}
             </pre>
           </div>

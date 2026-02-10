@@ -111,7 +111,7 @@ export function CalendarNLPreview() {
     return (
       <Badge
         variant="outline"
-        className={`text-[10px] font-terminal ${colors[action as keyof typeof colors] || ""}`}
+        className={`text-xs font-terminal ${colors[action as keyof typeof colors] || ""}`}
       >
         {action.toUpperCase()}
       </Badge>
@@ -124,7 +124,7 @@ export function CalendarNLPreview() {
     if (isEditing && editedOp) {
       return (
         <div key={index} className="p-3 border border-primary bg-primary/10 rounded-none space-y-2">
-          <div className="font-arcade text-[10px] text-primary">EDITING OPERATION</div>
+          <div className="font-arcade text-xs text-primary">EDITING OPERATION</div>
           <div className="grid grid-cols-2 gap-2">
             <Input
               value={editedOp.title || ""}
@@ -185,7 +185,7 @@ export function CalendarNLPreview() {
                 {op.title || op.original_title || `${op.action} event`}
               </span>
             </div>
-            <div className="font-terminal text-[10px] text-muted-foreground space-y-0.5">
+            <div className="font-terminal text-xs text-muted-foreground space-y-0.5">
               {op.event_type && <div>Type: {op.event_type}</div>}
               {op.date && <div>Date: {op.date}</div>}
               {op.new_date && <div>New Date: {op.new_date}</div>}
@@ -215,7 +215,7 @@ export function CalendarNLPreview() {
       <CardContent className="p-3 space-y-3">
         {/* Input Section */}
         <div className="space-y-2">
-          <div className="font-terminal text-[10px] text-muted-foreground">
+          <div className="font-terminal text-xs text-muted-foreground">
             Enter calendar command in natural language:
           </div>
           <div className="flex gap-2">
@@ -249,7 +249,7 @@ export function CalendarNLPreview() {
             {changePlan.success ? (
               <>
                 <div className="flex items-center justify-between">
-                  <div className="font-arcade text-[10px] text-green-400">
+                  <div className="font-arcade text-xs text-green-400">
                     ✓ CHANGE PLAN ({changePlan.plan.length} operation{changePlan.plan.length !== 1 ? "s" : ""})
                   </div>
                   <div className="flex gap-1">
@@ -257,7 +257,7 @@ export function CalendarNLPreview() {
                       onClick={handleDecline}
                       variant="outline"
                       size="sm"
-                      className="h-6 px-2 rounded-none font-terminal text-[10px]"
+                      className="h-6 px-2 rounded-none font-terminal text-xs"
                       disabled={executeMutation.isPending}
                     >
                       <X className="w-3 h-3 mr-1" />
@@ -266,7 +266,7 @@ export function CalendarNLPreview() {
                     <Button
                       onClick={handleAccept}
                       size="sm"
-                      className="h-6 px-2 rounded-none font-terminal text-[10px] bg-green-600 hover:bg-green-700"
+                      className="h-6 px-2 rounded-none font-terminal text-xs bg-green-600 hover:bg-green-700"
                       disabled={executeMutation.isPending}
                     >
                       <Check className="w-3 h-3 mr-1" />
@@ -286,7 +286,7 @@ export function CalendarNLPreview() {
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <div className="space-y-1">
                   <div className="font-terminal text-xs font-bold">Parse Error</div>
-                  <div className="font-terminal text-[10px]">
+                  <div className="font-terminal text-xs">
                     {changePlan.error || "Failed to parse natural language input"}
                   </div>
                 </div>
@@ -298,7 +298,7 @@ export function CalendarNLPreview() {
         {/* Examples */}
         {!changePlan && (
           <div className="pt-2 border-t border-secondary/30">
-            <div className="font-terminal text-[9px] text-muted-foreground space-y-1">
+            <div className="font-terminal text-xs text-muted-foreground space-y-1">
               <div>Examples:</div>
               <div>• "Add exam on March 15 at 2pm"</div>
               <div>• "Move quiz to next Tuesday"</div>

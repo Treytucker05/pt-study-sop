@@ -190,18 +190,18 @@ export function ConceptMapFreehand({
           <Redo2 className="w-3 h-3" />
         </Button>
         <div className="w-px h-4 bg-primary/20" />
-        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-[10px]" onClick={handleExportPng} title="Export PNG">
+        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={handleExportPng} title="Export PNG">
           <Download className="w-3 h-3 mr-1" />PNG
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-[10px]" onClick={handleSave} title="Save to vault">
+        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={handleSave} title="Save to vault">
           <Save className="w-3 h-3 mr-1" />Save
         </Button>
         {onImportMermaid && (
-          <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-[10px]" onClick={() => setShowMermaidImport(true)} title="Import Mermaid">
+          <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => setShowMermaidImport(true)} title="Import Mermaid">
             <FileInput className="w-3 h-3 mr-1" />Import
           </Button>
         )}
-        <div className="flex items-center gap-1 text-[10px] font-terminal text-muted-foreground ml-auto">
+        <div className="flex items-center gap-1 text-xs font-terminal text-muted-foreground ml-auto">
           <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isDirty ? "bg-destructive" : "bg-success")} />
           {isDirty ? "Unsaved" : "Saved"}
         </div>
@@ -209,7 +209,7 @@ export function ConceptMapFreehand({
 
       {showMermaidImport && (
         <div className="shrink-0 px-3 py-2 border-b border-primary/20 bg-black/40 flex flex-col gap-2">
-          <p className="font-arcade text-[10px] text-primary">PASTE MERMAID → SWITCH TO STRUCTURED</p>
+          <p className="font-arcade text-xs text-primary">PASTE MERMAID → SWITCH TO STRUCTURED</p>
           <textarea
             value={mermaidInput}
             onChange={(e) => setMermaidInput(e.target.value)}

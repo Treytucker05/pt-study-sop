@@ -156,13 +156,13 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                 </Button>
               </div>
               {syncAnkiMutation.isError && (
-                <div className="p-2 bg-destructive/10 border border-destructive/30 text-destructive font-terminal text-[10px]">
+                <div className="p-2 bg-destructive/10 border border-destructive/30 text-destructive font-terminal text-xs">
                   <span className="font-arcade">SYNC ERROR:</span>{" "}
                   {(syncAnkiMutation.error as Error)?.message || "Unknown error"}
                   <Button
                     size="sm"
                     variant="outline"
-                    className="ml-2 h-5 px-2 text-[10px] font-terminal border-destructive/50 text-destructive"
+                    className="ml-2 h-5 px-2 text-xs font-terminal border-destructive/50 text-destructive"
                     onClick={() => syncAnkiMutation.mutate()}
                     disabled={syncAnkiMutation.isPending}
                   >
@@ -173,12 +173,12 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
               {pendingDrafts.length > 0 && (
                 <div className="pt-3 border-t border-secondary/30">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-arcade text-[10px] text-warning">PENDING CARDS ({pendingDrafts.length})</span>
+                    <span className="font-arcade text-xs text-warning">PENDING CARDS ({pendingDrafts.length})</span>
                     <div className="flex gap-1">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-5 px-2 text-[10px] font-terminal"
+                        className="h-5 px-2 text-xs font-terminal"
                         onClick={() => {
                           if (selectedDrafts.size === pendingDrafts.length) {
                             setSelectedDrafts(new Set());
@@ -195,7 +195,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                     <div className="flex gap-1 mb-2">
                       <Button
                         size="sm"
-                        className="h-6 px-2 text-[10px] font-terminal bg-success hover:bg-success/80"
+                        className="h-6 px-2 text-xs font-terminal bg-success hover:bg-success/80"
                         onClick={() => {
                           selectedDrafts.forEach(id => approveDraftMutation.mutate(id));
                           setSelectedDrafts(new Set());
@@ -207,7 +207,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                       <Button
                         size="sm"
                         variant="destructive"
-                        className="h-6 px-2 text-[10px] font-terminal"
+                        className="h-6 px-2 text-xs font-terminal"
                         onClick={() => {
                           selectedDrafts.forEach(id => deleteDraftMutation.mutate(id));
                           setSelectedDrafts(new Set());
@@ -240,7 +240,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                               <div className="font-terminal text-primary truncate">{draft.front}</div>
                               <div className="font-terminal text-muted-foreground mt-1 truncate">{draft.back}</div>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-[9px] border-info/50 text-info shrink-0">
+                                <Badge variant="outline" className="text-xs border-info/50 text-info shrink-0">
                                   {draft.deckName}
                                 </Badge>
                                 <Button
@@ -387,7 +387,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Current: <span className="text-blue-400">{editDraftData.deckName}</span>
               </p>
             </div>

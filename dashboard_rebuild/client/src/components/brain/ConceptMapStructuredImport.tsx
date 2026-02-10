@@ -21,9 +21,9 @@ export function ConceptMapStructuredImport({
 }: ConceptMapStructuredImportProps) {
   return (
     <div className={cn("flex flex-col items-center h-full p-4 gap-3 overflow-auto", className)}>
-      <p className="font-arcade text-[10px] text-primary">CONCEPT MAP EDITOR</p>
+      <p className="font-arcade text-xs text-primary">CONCEPT MAP EDITOR</p>
 
-      <p className="font-terminal text-[10px] text-muted-foreground">START FROM TEMPLATE</p>
+      <p className="font-terminal text-xs text-muted-foreground">START FROM TEMPLATE</p>
       <div className="grid grid-cols-2 gap-2 w-full max-w-md">
         {DIAGRAM_TEMPLATES.map((t) => (
           <button
@@ -31,14 +31,14 @@ export function ConceptMapStructuredImport({
             onClick={() => onImport(t.mermaid)}
             className="border-2 border-secondary/50 hover:border-primary p-3 cursor-pointer text-left transition-colors bg-black/40"
           >
-            <p className="font-terminal text-[10px] text-primary">{t.name}</p>
-            <p className="font-terminal text-[9px] text-muted-foreground mt-0.5">{t.description}</p>
+            <p className="font-terminal text-xs text-primary">{t.name}</p>
+            <p className="font-terminal text-xs text-muted-foreground mt-0.5">{t.description}</p>
           </button>
         ))}
       </div>
 
       <div className="w-px h-2" />
-      <p className="font-terminal text-[10px] text-muted-foreground">OR PASTE MERMAID CODE</p>
+      <p className="font-terminal text-xs text-muted-foreground">OR PASTE MERMAID CODE</p>
       <Textarea
         value={mermaidInput}
         onChange={(e) => onMermaidInputChange(e.target.value)}

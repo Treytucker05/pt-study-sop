@@ -362,7 +362,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         size="sm"
                         variant={activeTab === "all" ? "default" : "ghost"}
                         className={cn(
-                          "font-arcade rounded-none text-[9px] h-7 px-3 whitespace-nowrap",
+                          "font-arcade rounded-none text-xs h-7 px-3 whitespace-nowrap",
                           activeTab === "all"
                             ? "bg-primary text-primary-foreground"
                             : "border border-secondary text-muted-foreground hover:text-primary"
@@ -377,7 +377,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           size="sm"
                           variant={activeTab === category.value ? "default" : "ghost"}
                           className={cn(
-                            "font-arcade rounded-none text-[9px] h-7 px-3 whitespace-nowrap",
+                            "font-arcade rounded-none text-xs h-7 px-3 whitespace-nowrap",
                             activeTab === category.value
                               ? "bg-primary text-primary-foreground"
                               : "border border-secondary text-muted-foreground hover:text-primary"
@@ -424,7 +424,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               onDragLeave={() => handleCategoryDragLeave(category.value)}
                               onDrop={(e) => handleDropOnCategory(e, category.value)}
                             >
-                              <div className="font-arcade text-[10px] text-muted-foreground">
+                              <div className="font-arcade text-xs text-muted-foreground">
                                 {category.label} ({sectionNotes.length})
                               </div>
                               <div
