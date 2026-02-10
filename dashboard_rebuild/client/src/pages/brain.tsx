@@ -5,7 +5,6 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { useBrainWorkspace } from "@/components/brain/useBrainWorkspace";
-import { BrainSessionProgress } from "@/components/brain/BrainSessionProgress";
 import { VaultSidebar } from "@/components/brain/VaultSidebar";
 import { SidebarRail } from "@/components/brain/SidebarRail";
 import { MainContent } from "@/components/brain/MainContent";
@@ -86,9 +85,6 @@ export default function Brain() {
         className={`brain-workspace fixed inset-x-0 top-[68px] bottom-[48px] flex flex-col min-w-0 overflow-hidden z-30 ${ready ? "brain-workspace--ready" : ""}`}
         data-active-tab={workspace.mainMode}
       >
-        {/* 3px ambient progress bar */}
-        <BrainSessionProgress />
-
         {/* Desktop: conditional sidebar (expanded vs collapsed rail) */}
         <div className="hidden lg:flex flex-1 min-h-0">
           {workspace.sidebarExpanded ? (
@@ -112,9 +108,9 @@ export default function Brain() {
               </ResizablePanel>
             </ResizablePanelGroup>
           ) : (
-            <div className="flex flex-1 min-h-0">
+            <div className="flex flex-1 min-h-0 h-full">
               <SidebarRail onExpand={workspace.toggleSidebar} workspace={workspace} />
-              <div className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 overflow-hidden">
+              <div className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 h-full overflow-hidden">
                 <MainContent workspace={workspace} />
               </div>
             </div>

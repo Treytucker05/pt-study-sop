@@ -249,6 +249,7 @@
     background-color: hsl(0 0% 4%);
     background-image: var(--brain-grid);
     background-size: 24px 24px;
+    border: 3px solid var(--color-primary);
   }
   .brain-workspace::before {
     content: "";
@@ -330,23 +331,6 @@
   .brain-empty-icon {
     animation: brain-pulse-soft 2.5s ease-in-out infinite;
   }
-  /* Session progress bar (3px ambient) */
-  .brain-progress {
-    height: 3px;
-    display: flex;
-    gap: 2px;
-    background: hsl(0 0% 6%);
-    flex-shrink: 0;
-  }
-  .brain-progress__segment {
-    flex: 1;
-    background: hsl(0 100% 15% / 0.3);
-    transition: background 600ms ease;
-  }
-  .brain-progress__segment--done {
-    background: var(--color-success);
-  }
-
   /* Sidebar rail (collapsed state) */
   .brain-sidebar-rail {
     width: 48px;
