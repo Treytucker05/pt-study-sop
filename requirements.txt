@@ -18,10 +18,11 @@ webdriver-manager>=4.0,<5
 # YAML parsing (used by seed_methods.py for YAML-based library loading)
 PyYAML>=6.0,<7
 
-# LangChain + RAG (Adaptive Tutor)
+# LangChain + RAG (Adaptive Tutor) + LangGraph (Scholar Deep Agent)
 langchain>=0.3,<0.4
 langchain-openai>=0.3,<0.4
 langchain-community>=0.3,<0.4
+langgraph>=1.0.7,<1.1
 chromadb>=0.5,<1
 tiktoken>=0.7,<1
 

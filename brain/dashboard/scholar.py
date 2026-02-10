@@ -1468,6 +1468,128 @@ def run_scholar_orchestrator_multi(manifest: Dict[str, Any], mode: str = "brain"
         "preserved_questions": preserved_count,
     }
 
+def run_scholar_orchestrator_deep(manifest: Dict[str, Any], mode: str = "brain") -> Dict[str, Any]:
+    """
+    Trigger a LangGraph deep-agent Scholar run (single ReAct agent with tools).
+    Follows the same file/thread/marker pattern as run_scholar_orchestrator_multi().
+    """
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    log_path = run_dir / f"unattended_{timestamp}.log"
+    final_path = run_dir / f"unattended_final_{timestamp}.md"
+    questions_path = run_dir / f"questions_needed_{timestamp}.md"
+    running_marker = run_dir / f"unattended_{timestamp}.running"
+
+    preserved_questions = collect_unanswered_questions(run_dir)
+    preserved_count = len(preserved_questions)
+
+    def _run_deep_agent_thread():
+        running_marker.write_text("running", encoding="utf-8")
+        try:
+            with open(log_path, "w", encoding="utf-8") as log_file:
+                log_file.write(f"Scholar Deep-Agent Run Started: {datetime.now().isoformat()}\n")
+                log_file.write(f"Run ID: {timestamp}\n")
+                log_file.write(f"Mode: {mode}\n")
+                deep_cfg = (manifest or {}).get("deep_agent", {})
+                log_file.write(f"Model: {deep_cfg.get('model', 'google/gemini-2.0-flash-001')}\n")
+                log_file.write(f"Max iterations: {deep_cfg.get('max_iterations', 15)}\n\n")
+
+                # Lazy import to avoid loading LangGraph at module level
+                sys.path.insert(0, str(repo_root / "scholar"))
+                from deep_agent.agent import run_deep_agent
+
+                log_file.write(f"Agent invoked at {datetime.now().isoformat()}\n")
+                log_file.flush()
+
+                result = run_deep_agent(
+                    run_id=timestamp,
+                    mode=mode,
+                    manifest=manifest,
+                    unanswered_questions=preserved_questions or None,
+                )
+
+                raw_md = result.get("raw_markdown", "")
+                questions = result.get("questions", [])
+
+                log_file.write(f"Agent returned at {datetime.now().isoformat()}\n")
+                log_file.write(f"Output length: {len(raw_md)} chars\n")
+                log_file.write(f"Questions extracted: {len(questions)}\n")
+
+                # Write final output
+                final_path.write_text(raw_md or "(empty output)", encoding="utf-8")
+
+                # Write questions file
+                if questions:
+                    q_lines = []
+                    for q in questions:
+                        q_lines.append(f"Q: {q}")
+                        q_lines.append("A: (pending)")
+                    questions_path.write_text("\n".join(q_lines) + "\n", encoding="utf-8")
+                else:
+                    questions_path.write_text("(none)\n", encoding="utf-8")
+
+                # Preserve prior questions
+                if preserved_questions:
+                    preserved_block = "\n".join([f"- {q}" for q in preserved_questions])
+                    try:
+                        existing = questions_path.read_text(encoding="utf-8")
+                        questions_path.write_text(
+                            existing + "\n\n# Preserved:\n" + preserved_block + "\n",
+                            encoding="utf-8",
+                        )
+                    except Exception:
+                        pass
+
+                log_file.write(f"\n===== Scholar Deep-Agent Run Completed at {datetime.now().isoformat()} =====\n")
+        except Exception as exc:
+            try:
+                with open(log_path, "a", encoding="utf-8") as log_file:
+                    log_file.write(f"\n\n===== SCHOLAR DEEP-AGENT RUN ERROR =====\nError: {exc}\nTime: {datetime.now().isoformat()}\n")
+            except Exception:
+                pass
+        finally:
+            try:
+                if running_marker.exists():
+                    running_marker.unlink()
+            except Exception:
+                pass
+            try:
+                status_script = repo_root / "scripts" / "update_status.ps1"
+                if status_script.exists():
+                    subprocess.run(
+                        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(status_script)],
+                        cwd=str(repo_root),
+                        capture_output=True,
+                        timeout=30,
+                    )
+            except Exception:
+                pass
+            try:
+                _ensure_plan_update(timestamp, repo_root, run_dir, final_path)
+            except Exception:
+                pass
+            try:
+                _write_verification_report(timestamp, repo_root, run_dir, questions_path)
+            except Exception:
+                pass
+
+    thread = threading.Thread(target=_run_deep_agent_thread, daemon=True)
+    thread.start()
+
+    return {
+        "ok": True,
+        "message": "Scholar deep-agent run started",
+        "run_id": timestamp,
+        "mode": mode,
+        "log_file": str(log_path.relative_to(repo_root)),
+        "final_file": str(final_path.relative_to(repo_root)),
+        "preserved_questions": preserved_count,
+    }
+
+
 def run_scholar_orchestrator(mode: str = "brain"):
     """
     Trigger a Scholar orchestrator run.
@@ -1475,6 +1597,8 @@ def run_scholar_orchestrator(mode: str = "brain"):
     Returns result dict (not jsonify).
     """
     manifest = load_audit_manifest()
+    if manifest.get("deep_agent", {}).get("enabled"):
+        return run_scholar_orchestrator_deep(manifest, mode=mode)
     if manifest.get("multi_agent", {}).get("enabled"):
         return run_scholar_orchestrator_multi(manifest, mode=mode)
     repo_root = Path(__file__).parent.parent.parent.resolve()
