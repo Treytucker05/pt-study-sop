@@ -487,3 +487,49 @@
   - Added SYNC VAULT button to ContentFilter.tsx with vault path input, toast feedback
   - Updated TutorContentSources type: course id now nullable
   - Built frontend, synced dist, all 74 tests pass
+
+## 2026-02-10 - CSS Consistency Cleanup
+
+- Replaced hardcoded colors with semantic theme tokens across 6 components
+- Fixed font-mono usage and removed redundant padding
+- Centralized color palettes and added status utilities
+- Rebuilt frontend dist
+
+## 2026-02-10 - LangGraph Deep Agent for Scholar Pipeline
+
+- Replaced Codex CLI subprocess approach with in-process LangGraph ReAct agent
+- New package: `scholar/deep_agent/` (4 files: __init__, tools, agent, prompts)
+- 7 LangChain @tool wrappers: telemetry snapshot, friction alerts, weekly digest, SOP file reader, session metrics, method effectiveness, recent sessions
+- Consolidated 5 specialist roles (telemetry auditor, SOP auditor, pedagogy questioner, research scout, supervisor) into single system prompt
+- LLM via OpenRouter (Gemini Flash), same pattern as tutor_chains.py
+- Routing priority in scholar.py: `deep_agent.enabled` > `multi_agent.enabled` > single-agent Codex
+- Background thread pattern matches existing multi-agent flow (marker files, log, questions extraction, preserved questions)
+- Output format: raw markdown with ## sections (What I Learned, Signals, Risks, Action Items, Warnings, Questions Needed, Research Directions, Next Run Suggestions)
+- Fixed code fence wrapping: removed fenced example from prompt + added defensive `_strip_code_fences()` parser
+- Tested end-to-end: ~11-20s per run, output files created correctly
+- Dependencies: `langgraph>=1.0.7,<1.1` (matched to langchain 1.2.9 requirement)
+- Files: `scholar/deep_agent/`, `brain/dashboard/scholar.py`, `requirements.txt`, `scholar/inputs/audit_manifest.json`
+- All 77 tests pass
+
+## 2026-02-10 - Tutor Facilitation Prompts + Chain Builder
+
+- Added `facilitation_prompt` column to `method_blocks` table (db_setup migration)
+- `seed_methods.py`: generates structured prompts from YAML block definitions (`--regenerate-prompts` flag)
+- New endpoints: `GET /api/tutor/blocks`, `POST /api/tutor/blocks/chain`
+- `tutor_prompt_builder.py`: injects facilitation_prompt into system prompt when available
+- New `TutorChainBuilder.tsx` component: custom chain builder UI with drag-drop reorder, category picker, duration totals
+- `ContentFilter.tsx`: tab toggle for Templates vs Custom chain building
+- `tutor.tsx`: integrated custom chain creation flow, widened panels to 80
+
+## 2026-02-10 - Frontend Fixes + Build
+
+- `PlannerKanban.tsx`: fixed optimistic update rollback at correct index
+- `ConceptMapFreehand.tsx`: fixed undo/redo state detection for tldraw API changes
+- `ScholarLifecyclePanel/ScholarRunStatus/scholar.tsx`: migrated hardcoded colors to semantic theme tokens
+- `Start_Dashboard.bat`: replaced robocopy with PowerShell build-and-sync script, added SKIP_UI_BUILD support
+- Rebuilt frontend dist and synced to brain/static/dist
+- Updated .gitignore: audit screenshots (audit-*.png) and temp planning files
+
+## 2026-02-10 - Track Archived
+
+- Archived `agents_setup_cleanup_20260209` track (all tasks complete)
