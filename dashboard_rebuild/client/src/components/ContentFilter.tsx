@@ -56,6 +56,7 @@ interface ContentFilterProps {
   onStartSession: () => void;
   isStarting: boolean;
   hasActiveSession: boolean;
+  compact?: boolean;
 }
 
 const OPENROUTER_MODELS: { value: string; label: string }[] = [
@@ -145,6 +146,7 @@ export function ContentFilter({
   onStartSession,
   isStarting,
   hasActiveSession,
+  compact = false,
 }: ContentFilterProps) {
   const {
     data: sources,
@@ -246,6 +248,120 @@ export function ContentFilter({
     setModel(OPENROUTER_MODELS[0].value);
   }, [provider, model, setModel]);
 
+  // ─── COMPACT: inline toolbar ───
+  if (compact) {
+    const selectedChainName = templateChains.find((c) => c.id === chainId)?.name;
+    return (
+      <div className="flex flex-wrap items-end gap-3 p-3">
+        {/* Mode */}
+        <div>
+          <div className={`${TEXT_SECTION_LABEL} mb-1`}>Mode</div>
+          <select
+            value={mode}
+            onChange={(e) => applyMode(e.target.value as TutorMode)}
+            className={`${SELECT_BASE} border-2 border-primary/30 h-9 w-[140px]`}
+          >
+            {PRIMARY_MODES.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Chain */}
+        <div>
+          <div className={`${TEXT_SECTION_LABEL} mb-1`}>Chain</div>
+          <select
+            value={chainId ?? ""}
+            onChange={(e) => setChainId(e.target.value ? Number(e.target.value) : undefined)}
+            className={`${SELECT_BASE} border-2 border-primary/30 h-9 w-[180px]`}
+          >
+            <option value="">Freeform</option>
+            {templateChains.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Topic */}
+        <div>
+          <div className={`${TEXT_SECTION_LABEL} mb-1`}>Topic</div>
+          <input
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="e.g. Hip Flexors"
+            className={`${INPUT_BASE} border-2 border-primary/30 h-9 w-[180px]`}
+          />
+        </div>
+
+        {/* Model */}
+        <div>
+          <div className={`${TEXT_SECTION_LABEL} mb-1`}>Model</div>
+          <div className="flex gap-1">
+            <button
+              onClick={toCodex}
+              className={`px-3 h-9 border-2 font-arcade text-xs transition-colors ${
+                provider === "codex"
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-primary/30 text-foreground/80 hover:border-primary/50"
+              }`}
+            >
+              CODEX
+            </button>
+            <button
+              onClick={toOpenrouter}
+              disabled={!openrouterEnabled}
+              className={`px-3 h-9 border-2 font-arcade text-xs transition-colors ${
+                provider === "openrouter"
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-primary/30 text-foreground/80 hover:border-primary/50"
+              } ${!openrouterEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              OR
+            </button>
+          </div>
+        </div>
+
+        {/* Web search */}
+        <label className={`flex items-center gap-1.5 h-9 cursor-pointer ${provider !== "codex" ? "opacity-50" : ""}`}>
+          <Checkbox
+            checked={webSearch}
+            onCheckedChange={(v) => provider === "codex" && setWebSearch(!!v)}
+            disabled={provider !== "codex"}
+            className="w-3.5 h-3.5"
+          />
+          <Globe className={ICON_SM} />
+          <span className="font-terminal text-xs">Web</span>
+        </label>
+
+        {/* Start button */}
+        <Button
+          onClick={onStartSession}
+          disabled={isStarting || hasActiveSession}
+          className={`h-9 px-5 rounded-none border-2 font-arcade text-xs ${
+            hasActiveSession
+              ? "border-success/50 bg-success/10 text-success cursor-default"
+              : isStarting
+              ? "border-primary/50 bg-primary/10 text-primary cursor-wait"
+              : "border-primary bg-primary/10 hover:bg-primary/20"
+          }`}
+        >
+          {isStarting ? (
+            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+          ) : hasActiveSession ? (
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+              ACTIVE
+            </span>
+          ) : (
+            <Zap className={`${ICON_SM} mr-1`} />
+          )}
+          {!isStarting && !hasActiveSession && "START"}
+        </Button>
+      </div>
+    );
+  }
+
+  // ─── FULL: vertical panel ───
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Fixed header */}
@@ -628,7 +744,7 @@ export function ContentFilter({
         <Button
           onClick={onStartSession}
           disabled={isStarting || hasActiveSession}
-          className={`w-full rounded-none border-2 font-arcade text-xs h-9 ${
+          className={`w-full h-9 rounded-none border-2 font-arcade text-xs ${
             hasActiveSession
               ? "border-success/50 bg-success/10 text-success cursor-default"
               : isStarting

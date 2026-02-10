@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { TutorMode, TutorSessionSummary, TutorTemplateChain } from "@/lib/api";
 import { ContentFilter } from "@/components/ContentFilter";
+import { VaultPicker } from "@/components/VaultPicker";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts";
 import { toast } from "sonner";
@@ -49,6 +50,18 @@ export default function Tutor() {
   const [model, setModel] = useState("codex");
   const [webSearch, setWebSearch] = useState(false);
 
+  // Vault file picker
+  const [selectedPaths, setSelectedPaths] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("tutor.vault_selected.v1");
+      if (saved) {
+        const p = JSON.parse(saved);
+        if (Array.isArray(p)) return p;
+      }
+    } catch { /* corrupted */ }
+    return [];
+  });
+
   // Artifacts
   const [artifacts, setArtifacts] = useState<TutorArtifact[]>([]);
   const [turnCount, setTurnCount] = useState(0);
@@ -77,6 +90,7 @@ export default function Tutor() {
         mode,
         topic: topic || undefined,
         content_filter: {
+          ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
           ...(selectedMaterials.length > 0 ? { material_ids: selectedMaterials } : {}),
           model,
           ...(webSearch ? { web_search: true } : {}),
@@ -111,7 +125,7 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, mode, topic, selectedMaterials, model, webSearch, chainId, customBlockIds, queryClient]);
+  }, [courseId, mode, topic, selectedPaths, selectedMaterials, model, webSearch, chainId, customBlockIds, queryClient]);
 
   const endSession = useCallback(async () => {
     if (!activeSessionId) return;
@@ -211,66 +225,62 @@ export default function Tutor() {
   if (!activeSessionId && !showSetup) {
     return (
       <Layout>
-        <div className="flex flex-col h-[calc(100vh-140px)]">
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-5xl mx-auto px-4 py-6">
-              {/* Hero */}
-              <div className="text-center mb-8">
-                <h1 className="font-arcade text-xl text-primary tracking-widest mb-2">ADAPTIVE TUTOR</h1>
-                <p className="font-terminal text-lg text-muted-foreground">
-                  Pick a mode, set a topic, and start learning.
-                </p>
-              </div>
-
-              {/* Two-column: Setup + History */}
-              <div className="grid lg:grid-cols-[1fr_340px] gap-6">
-                {/* Left: Setup form in a card */}
-                <Card className="bg-black/40 border-2 border-primary rounded-none overflow-hidden">
-                  <ContentFilter
-                    courseId={courseId}
-                    setCourseId={setCourseId}
-                    selectedMaterials={selectedMaterials}
-                    setSelectedMaterials={setSelectedMaterials}
-                    mode={mode}
-                    setMode={setMode}
-                    chainId={chainId}
-                    setChainId={setChainId}
-                    customBlockIds={customBlockIds}
-                    setCustomBlockIds={setCustomBlockIds}
-                    topic={topic}
-                    setTopic={setTopic}
-                    model={model}
-                    setModel={setModel}
-                    webSearch={webSearch}
-                    setWebSearch={setWebSearch}
-                    onStartSession={startSession}
-                    isStarting={isStarting}
-                    hasActiveSession={false}
-                  />
-                </Card>
-
-                {/* Right: Recent sessions */}
-                <div className="space-y-3">
-                  <div className={TEXT_SECTION_LABEL}>Recent Sessions</div>
-                  {recentSessions.length === 0 ? (
-                    <div className={`${TEXT_MUTED} text-center py-6`}>
-                      No sessions yet. Start one!
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {recentSessions.slice(0, 8).map((s) => (
-                        <RecentSessionCard
-                          key={s.session_id}
-                          session={s}
-                          onResume={resumeSession}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+        <div className="flex flex-col h-[calc(100vh-140px)] px-4 pb-2">
+          {/* Vault file picker — fills all available height */}
+          <Card className="flex-1 min-h-0 bg-black/40 border-2 border-primary rounded-none overflow-hidden flex flex-col">
+            <div className="shrink-0 px-3 py-1.5 border-b-2 border-primary/30 flex items-center justify-between">
+              <div className={TEXT_PANEL_TITLE}>VAULT FILES</div>
+              <span className="font-arcade text-xs text-primary/50 tracking-widest">TUTOR</span>
             </div>
-          </div>
+            <VaultPicker
+              selectedPaths={selectedPaths}
+              onSelectedPathsChange={setSelectedPaths}
+            />
+          </Card>
+
+          {/* Toolbar — thin horizontal strip */}
+          <Card className="shrink-0 mt-2 bg-black/40 border-2 border-primary rounded-none overflow-hidden">
+              <ContentFilter
+                courseId={courseId}
+                setCourseId={setCourseId}
+                selectedMaterials={selectedMaterials}
+                setSelectedMaterials={setSelectedMaterials}
+                mode={mode}
+                setMode={setMode}
+                chainId={chainId}
+                setChainId={setChainId}
+                customBlockIds={customBlockIds}
+                setCustomBlockIds={setCustomBlockIds}
+                topic={topic}
+                setTopic={setTopic}
+                model={model}
+                setModel={setModel}
+                webSearch={webSearch}
+                setWebSearch={setWebSearch}
+                onStartSession={startSession}
+                isStarting={isStarting}
+                hasActiveSession={false}
+                compact
+              />
+            </Card>
+
+            {/* Recent sessions — single-line chips */}
+            {recentSessions.length > 0 && (
+              <div className="shrink-0 flex items-center gap-2 mt-1 overflow-x-auto pb-1">
+                <span className="font-arcade text-xs text-primary/60 shrink-0">RECENT:</span>
+                {recentSessions.slice(0, 8).map((s) => (
+                  <button
+                    key={s.session_id}
+                    onClick={() => resumeSession(s.session_id)}
+                    className="shrink-0 border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/10 px-2 py-0.5 font-terminal text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${s.status === "active" ? "bg-green-400" : "bg-muted-foreground/40"}`} />
+                    <span className="truncate max-w-[100px]">{s.topic || s.mode}</span>
+                    <span className="text-muted-foreground/50">{s.turn_count}t</span>
+                  </button>
+                ))}
+              </div>
+            )}
         </div>
       </Layout>
     );
