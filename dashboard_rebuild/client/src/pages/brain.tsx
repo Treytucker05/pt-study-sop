@@ -9,7 +9,7 @@ import { BrainWorkspaceTopBar } from "@/components/brain/BrainWorkspaceTopBar";
 import { VaultSidebar } from "@/components/brain/VaultSidebar";
 import { MainContent } from "@/components/brain/MainContent";
 import { BrainModals } from "@/components/brain/BrainModals";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { FolderOpen, Pencil } from "lucide-react";
 
 type MobileTab = "vault" | "main";
@@ -34,10 +34,22 @@ function updateUrlWithMobileTab(tab: MobileTab) {
 export default function Brain() {
   const workspace = useBrainWorkspace();
   const [mobileTab, setMobileTabState] = useState<MobileTab>("main");
+  const [ready, setReady] = useState(false);
+  const mounted = useRef(false);
 
   // Initialize from URL on mount
   useEffect(() => {
     setMobileTabState(getMobileTabFromUrl());
+  }, []);
+
+  // Staggered reveal: add --ready after paint (respects prefers-reduced-motion in CSS)
+  useEffect(() => {
+    if (mounted.current) return;
+    mounted.current = true;
+    const t = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setReady(true));
+    });
+    return () => cancelAnimationFrame(t);
   }, []);
 
   // Update URL when tab changes
@@ -57,8 +69,12 @@ export default function Brain() {
 
   return (
     <Layout>
-      <div className="fixed inset-x-0 top-[68px] bottom-[48px] flex flex-col min-w-0 overflow-hidden z-30">
-        <BrainWorkspaceTopBar workspace={workspace} />
+      <div
+        className={`brain-workspace fixed inset-x-0 top-[68px] bottom-[48px] flex flex-col min-w-0 overflow-hidden z-30 ${ready ? "brain-workspace--ready" : ""}`}
+      >
+        <div className="brain-workspace__top-bar shrink-0">
+          <BrainWorkspaceTopBar workspace={workspace} />
+        </div>
 
         {/* Desktop: 2-column resizable layout */}
         <div className="hidden lg:flex flex-1 min-h-0">
@@ -69,16 +85,16 @@ export default function Brain() {
           >
             {/* Left: Vault sidebar */}
             <ResizablePanel defaultSize={20} minSize={12} maxSize={35}>
-              <div className="h-full border-r border-primary/30 bg-black/30">
+              <div className="brain-workspace__sidebar-wrap h-full border-r border-primary/30 bg-black/40">
                 <VaultSidebar workspace={workspace} />
               </div>
             </ResizablePanel>
 
-            <ResizableHandle withHandle />
+            <ResizableHandle withHandle className="hover:bg-primary/10 transition-colors data-[resize-handle-active]:bg-primary/20" />
 
             {/* Main: Editor / Chat / Graph / Table / Anki */}
             <ResizablePanel defaultSize={80} minSize={50}>
-              <div className="h-full">
+              <div className="brain-workspace__main-wrap brain-workspace__canvas h-full min-h-0 overflow-hidden">
                 <MainContent workspace={workspace} />
               </div>
             </ResizablePanel>
@@ -87,7 +103,7 @@ export default function Brain() {
 
         {/* Mobile: single column with bottom tabs */}
         <div className="flex flex-col flex-1 min-h-0 lg:hidden">
-          <div className="flex-1 min-h-0 overflow-auto">
+          <div className="brain-workspace__canvas flex-1 min-h-0 overflow-auto">
             {mobileTab === "vault" && <VaultSidebar workspace={workspace} />}
             {mobileTab === "main" && <MainContent workspace={workspace} />}
           </div>

@@ -82,6 +82,12 @@
 
   /* Outline/secondary button border color (kept neutral so only selected buttons pop red). */
   --button-outline: hsl(0 0% 35%);
+
+  /* Design system: 8px grid — use across all pages for consistent spacing/sizing */
+  --space-section: 0.75rem;   /* 12px = px-3 / py-3 */
+  --space-gap: 0.5rem;       /* 8px = gap-2 */
+  --control-h: 2.25rem;      /* 36px = h-9 */
+  --control-h-sm: 2rem;      /* 32px = h-8 for dense nav */
 }
 
 @layer base {
@@ -152,6 +158,178 @@
 
   .notes-offset-height {
     height: calc(100vh - 4rem) !important;
+  }
+
+  /* --- Global design system (use on all pages for consistent look) --- */
+
+  /* Section headers: sidebars, panels (e.g. VAULT, COURSES, FILES) */
+  .section-header {
+    @apply font-arcade text-xs uppercase tracking-widest text-primary;
+  }
+
+  /* Section container: same padding everywhere */
+  .section-block {
+    padding: var(--space-section);
+    @apply flex flex-col border-b border-primary/20 shrink-0;
+  }
+  .section-block-gap {
+    gap: var(--space-gap);
+  }
+
+  /* Main tab bar (EDIT | CHAT | GRAPH | TABLE | ANKI) — one style app-wide */
+  .tab-bar {
+    @apply flex items-center gap-0 border-b border-primary/40 bg-black/40 shrink-0;
+  }
+  .tab-item {
+    min-height: var(--control-h);
+    @apply flex items-center gap-2 px-3 py-2 font-arcade text-xs transition-colors rounded-none;
+  }
+  .tab-item[aria-selected="true"],
+  .tab-item.active {
+    @apply bg-primary text-primary-foreground;
+  }
+  .tab-item[aria-selected="false"]:not(.active),
+  .tab-item:not(.active) {
+    @apply text-muted-foreground hover:text-foreground;
+  }
+
+  /* Sub-tab bar (Concept Map | Vault Graph | Mind Map) — same height/padding, secondary font */
+  .tab-sub-bar {
+    @apply flex items-center gap-1 border-b border-primary/30 bg-black/40 shrink-0;
+    padding: 0 var(--space-section);
+    min-height: var(--control-h);
+  }
+  .tab-sub-item {
+    min-height: var(--control-h);
+    @apply flex items-center gap-2 px-3 py-2 font-terminal text-sm transition-colors rounded-none border border-transparent;
+  }
+  .tab-sub-item[aria-selected="true"],
+  .tab-sub-item.active {
+    @apply bg-primary/20 text-primary border-primary/50;
+  }
+  .tab-sub-item[aria-selected="false"]:not(.active):hover,
+  .tab-sub-item:not(.active):hover {
+    @apply text-foreground border-primary/30;
+  }
+  .tab-sub-item[aria-selected="false"]:not(.active),
+  .tab-sub-item:not(.active) {
+    @apply text-muted-foreground;
+  }
+
+  /* Nav button (header): same control height and border style */
+  .nav-btn {
+    min-height: var(--control-h-sm);
+    @apply font-arcade rounded-none px-2 lg:px-3 text-[10px] transition-colors border border-transparent;
+  }
+  .nav-btn.active {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+  .nav-btn:not(.active) {
+    @apply hover:bg-primary/20 border-primary/20;
+  }
+
+  /* --- Brain tab: retro-futuristic "cabinet terminal" --- */
+  .brain-workspace {
+    --brain-glow: hsl(0 100% 50% / 0.08);
+    --brain-vignette: radial-gradient(ellipse 120% 100% at 50% 50%, transparent 40%, hsl(0 0% 0% / 0.4) 100%);
+    --brain-grid: linear-gradient(hsl(0 100% 25% / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 100% 25% / 0.03) 1px, transparent 1px);
+    position: relative;
+    background-color: hsl(0 0% 4%);
+    background-image: var(--brain-grid);
+    background-size: 24px 24px;
+  }
+  .brain-workspace::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--brain-vignette);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .brain-workspace::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+  .brain-workspace > * {
+    position: relative;
+    z-index: 1;
+  }
+  .brain-workspace__top-bar {
+    box-shadow: 0 4px 24px -4px var(--brain-glow);
+  }
+  .brain-workspace__sidebar-wrap {
+    box-shadow: 4px 0 24px -4px var(--brain-glow);
+  }
+  .brain-workspace__canvas {
+    background: hsl(0 0% 5% / 0.6);
+    box-shadow: inset 0 0 60px -12px var(--brain-glow), inset 0 0 0 1px hsl(0 100% 25% / 0.15);
+  }
+  .brain-workspace__empty {
+    background-image: var(--brain-grid);
+    background-size: 20px 20px;
+  }
+  @keyframes brain-reveal-bar {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes brain-reveal-panel {
+    from {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes brain-reveal-main {
+    from {
+      opacity: 0;
+      transform: translateX(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes brain-pulse-soft {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+  }
+  .brain-workspace.brain-workspace--ready .brain-workspace__top-bar {
+    animation: brain-reveal-bar 0.35s ease-out forwards;
+  }
+  .brain-workspace.brain-workspace--ready .brain-workspace__sidebar-wrap {
+    animation: brain-reveal-panel 0.4s ease-out 0.06s both;
+  }
+  .brain-workspace.brain-workspace--ready .brain-workspace__main-wrap {
+    animation: brain-reveal-main 0.4s ease-out 0.1s both;
+  }
+  .brain-empty-icon {
+    animation: brain-pulse-soft 2.5s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brain-workspace.brain-workspace--ready .brain-workspace__top-bar,
+    .brain-workspace.brain-workspace--ready .brain-workspace__sidebar-wrap,
+    .brain-workspace.brain-workspace--ready .brain-workspace__main-wrap {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+    .brain-empty-icon {
+      animation: none;
+    }
   }
 }
 

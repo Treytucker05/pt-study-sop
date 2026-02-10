@@ -24,16 +24,20 @@ export function VaultEditor({ workspace }: VaultEditorProps) {
 
   if (!workspace.currentFile) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground font-terminal text-sm gap-2 relative overflow-hidden">
+      <div className="brain-workspace__empty flex-1 flex flex-col items-center justify-center gap-4 relative overflow-hidden min-h-[200px]">
         <img
           src={brainBg}
           alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none select-none"
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.12] pointer-events-none select-none"
         />
-        <div className="relative z-10 flex flex-col items-center gap-2">
-          <FileText className="w-8 h-8 opacity-30" />
-          <p>Select a file from the vault sidebar</p>
-          <p className="text-xs">or create a new note</p>
+        <div className="relative z-10 flex flex-col items-center gap-3 text-center px-4">
+          <FileText className="brain-empty-icon w-10 h-10 text-primary/60" aria-hidden="true" />
+          <p className="font-arcade text-xs text-primary/90 tracking-widest uppercase">
+            No file open
+          </p>
+          <p className="font-terminal text-sm text-muted-foreground max-w-[260px]">
+            Select a file from the vault sidebar or create a new note
+          </p>
         </div>
       </div>
     );

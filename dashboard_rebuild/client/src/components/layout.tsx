@@ -311,29 +311,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </Link>
 
-            <nav className="hidden md:flex gap-0.5">
-              {NAV_ITEMS.map((item) => (
-                <Link key={item.path} href={item.path}>
-                  <Button 
-                    variant={location === item.path ? "default" : "ghost"}
-                    size="sm"
-                    className={cn(
-                      "font-arcade rounded-none h-8 px-2 lg:px-3 text-[10px] transition-all hover:bg-primary/20",
-                      location === item.path && "bg-primary text-primary-foreground hover:bg-primary/90"
-                    )}
-                  >
-                    <item.icon className="w-3 h-3 lg:mr-1" />
-                    <span className="hidden lg:inline">{item.label}</span>
-                  </Button>
-                </Link>
-              ))}
+            <nav className="hidden md:flex gap-1">
+              {NAV_ITEMS.map((item) => {
+                const isActive = currentPath === item.path;
+                return (
+                  <Link key={item.path} href={item.path}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn("nav-btn", isActive && "active")}
+                    >
+                      <item.icon className="w-3 h-3 lg:mr-1" />
+                      <span className="hidden lg:inline">{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
             </nav>
           </div>
 
           <div className="flex items-center gap-2">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="font-arcade rounded-none border-2 text-xs h-8 px-2">
+                <Button variant="outline" size="sm" className="nav-btn border-primary/40 text-xs px-3">
                   NOTES
                 </Button>
               </SheetTrigger>

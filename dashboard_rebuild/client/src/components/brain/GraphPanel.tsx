@@ -1,5 +1,6 @@
 import { useState, lazy, Suspense, Component, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const ConceptMapEditor = lazy(() => import("@/components/ConceptMapEditor").then(m => ({ default: m.ConceptMapEditor })));
 const VaultGraphView = lazy(() => import("@/components/VaultGraphView").then(m => ({ default: m.VaultGraphView })));
@@ -50,17 +51,15 @@ export function GraphPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Sub-selector pills */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-secondary/30 bg-black/40 shrink-0">
+      {/* Sub-tabs: same height/padding as main tabs, global tab-sub-bar */}
+      <div className="tab-sub-bar" role="tablist" aria-label="Graph view">
         {views.map((v) => (
           <button
             key={v.id}
+            role="tab"
+            aria-selected={view === v.id}
             onClick={() => setView(v.id)}
-            className={`px-2.5 py-1 font-terminal text-xs transition-colors ${
-              view === v.id
-                ? "bg-primary/20 text-primary border border-primary/40"
-                : "text-muted-foreground hover:text-foreground border border-transparent"
-            }`}
+            className={cn("tab-sub-item", view === v.id && "active")}
           >
             {v.label}
           </button>

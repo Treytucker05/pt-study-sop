@@ -45,12 +45,14 @@ import { ConceptMapStructuredImport } from "./ConceptMapStructuredImport";
 interface ConceptMapStructuredProps {
   initialMermaid?: string;
   onSave?: (mermaid: string) => void;
+  onInitialMermaidConsumed?: () => void;
   className?: string;
 }
 
 export function ConceptMapStructured({
   initialMermaid,
   onSave,
+  onInitialMermaidConsumed,
   className,
 }: ConceptMapStructuredProps) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>([]);
@@ -63,7 +65,34 @@ export function ConceptMapStructured({
   const [showColorPicker, setShowColorPicker] = useState<"node" | "edge" | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const reactFlowRef = useRef<HTMLDivElement>(null);
+  const initialMermaidConsumedRef = useRef(false);
   const { toast } = useToast();
+
+  const importMermaid = useCallback(
+    (code: string) => {
+      if (!code.trim()) return;
+      const result = parseMermaid(code);
+      setDirection(result.direction);
+      const layoutNodes = applyDagreLayout(result.nodes, result.edges, {
+        direction: result.direction,
+      });
+      setNodes(layoutNodes);
+      setEdges(result.edges);
+      setNodeCounter(result.nodes.length);
+      setShowImport(false);
+      setIsDirty(true);
+    },
+    [setNodes, setEdges]
+  );
+
+  useEffect(() => {
+    if (initialMermaid?.trim() && !initialMermaidConsumedRef.current) {
+      initialMermaidConsumedRef.current = true;
+      importMermaid(initialMermaid);
+      setMermaidInput(initialMermaid);
+      onInitialMermaidConsumed?.();
+    }
+  }, [initialMermaid, importMermaid, onInitialMermaidConsumed]);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -96,23 +125,6 @@ export function ConceptMapStructured({
       setEdges((eds) => addEdge(connection, eds));
     },
     [setEdges]
-  );
-
-  const importMermaid = useCallback(
-    (code: string) => {
-      if (!code.trim()) return;
-      const result = parseMermaid(code);
-      setDirection(result.direction);
-      const layoutNodes = applyDagreLayout(result.nodes, result.edges, {
-        direction: result.direction,
-      });
-      setNodes(layoutNodes);
-      setEdges(result.edges);
-      setNodeCounter(result.nodes.length);
-      setShowImport(false);
-      setIsDirty(true);
-    },
-    [setNodes, setEdges]
   );
 
   const autoLayout = useCallback(() => {

@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import { useQuery } from "@tanstack/react-query";
+import { Tldraw, createTLStore, createShapeId } from "tldraw";
+import "tldraw/tldraw.css";
 import { api } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface MindMapNode {
   id: string;
@@ -30,6 +33,74 @@ const TYPE_BG: Record<string, string> = {
   lo: "rgba(74,222,128,0.08)",
 };
 
+const NODE_W = 200;
+const NODE_H = 40;
+const LEVEL_STEP = 260;
+const ROW_STEP = 52;
+
+function seedMindMapToTldraw(
+  editor: { createShapes: (shapes: unknown[]) => void; getCurrentPageShapes: () => { id: string }[] },
+  data: { nodes: MindMapNode[]; links: MindMapLink[] }
+) {
+  const { nodes, links } = data;
+  if (nodes.length === 0) return;
+
+  const byLevel = { course: 0, module: 1, lo: 2 } as const;
+  const levelIndex = { course: 0, module: 0, lo: 0 };
+  const positions = new Map<string, { x: number; y: number }>();
+  for (const n of nodes) {
+    const level = byLevel[n.type];
+    const idx = levelIndex[n.type]++;
+    const x = level * LEVEL_STEP + 40;
+    const y = idx * ROW_STEP + 40;
+    positions.set(n.id, { x, y });
+  }
+
+  const prevMindIds = editor.getCurrentPageShapes().filter((s) => String(s.id).includes("mind-")).map((s) => s.id);
+  if (prevMindIds.length > 0) {
+    (editor as { deleteShapes: (ids: unknown[]) => void }).deleteShapes(prevMindIds);
+  }
+  const shapeIds = nodes.map((n) => createShapeId(`mind-${n.id}`));
+  editor.createShapes(
+    nodes.map((n, i) => {
+      const pos = positions.get(n.id)!;
+      return {
+        id: shapeIds[i],
+        type: "note",
+        x: pos.x,
+        y: pos.y,
+        props: { text: n.name },
+      };
+    })
+  );
+
+  const linkShapes: { id: string; type: string; x: number; y: number; props: { start: { x: number; y: number }; end: { x: number; y: number } } }[] = [];
+  links.forEach((link, i) => {
+    const from = positions.get(link.source);
+    const to = positions.get(link.target);
+    if (!from || !to) return;
+    const sx = from.x + NODE_W / 2;
+    const sy = from.y + NODE_H / 2;
+    const ex = to.x + NODE_W / 2;
+    const ey = to.y + NODE_H / 2;
+    const minX = Math.min(sx, ex) - 20;
+    const minY = Math.min(sy, ey) - 20;
+    linkShapes.push({
+      id: createShapeId(`mind-arrow-${i}`) as string,
+      type: "arrow",
+      x: minX,
+      y: minY,
+      props: {
+        start: { x: sx - minX, y: sy - minY },
+        end: { x: ex - minX, y: ey - minY },
+      },
+    });
+  });
+  if (linkShapes.length > 0) {
+    editor.createShapes(linkShapes as any);
+  }
+}
+
 export function MindMapView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
@@ -39,6 +110,9 @@ export function MindMapView() {
   const [selectedModules, setSelectedModules] = useState<Set<number>>(new Set());
   const [includeLOs, setIncludeLOs] = useState(true);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"force" | "whiteboard">("force");
+  const whiteboardStore = useMemo(() => createTLStore(), []);
+  const whiteboardEditorRef = useRef<any>(null);
 
   const { data: courses = [] } = useQuery({
     queryKey: ["courses"],
@@ -319,32 +393,85 @@ export function MindMapView() {
       </div>
 
       {/* Mind Map Canvas */}
-      <div ref={containerRef} className="flex-1 relative bg-black/80 overflow-hidden">
-        {dimensions && graphData.nodes.length > 0 && (
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={graphData}
-            width={dimensions.width}
-            height={dimensions.height}
-            dagMode="lr"
-            dagLevelDistance={120}
-            nodeCanvasObject={nodeCanvasObject}
-            nodePointerAreaPaint={nodePointerAreaPaint}
-            linkCanvasObject={linkCanvasObject}
-            onNodeHover={(node: MindMapNode | null) => setHoveredNode(node?.id ?? null)}
-            linkColor={() => "transparent"}
-            linkWidth={0}
-            backgroundColor="transparent"
-            cooldownTicks={100}
-            d3AlphaDecay={0.025}
-            d3VelocityDecay={0.35}
-          />
-        )}
-        {graphData.nodes.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center font-terminal text-xs text-muted-foreground">
-            Select courses to build mind map
-          </div>
-        )}
+      <div className="flex-1 flex flex-col min-h-0 bg-black/80">
+        <div className="section-block flex items-center gap-2 px-2 py-1.5 border-b border-secondary/30 shrink-0">
+          <span className="font-arcade text-[10px] text-muted-foreground uppercase mr-1">View</span>
+          <button
+            type="button"
+            onClick={() => setViewMode("force")}
+            className={cn(
+              "tab-sub-item text-xs",
+              viewMode === "force" && "active"
+            )}
+          >
+            Force graph
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("whiteboard")}
+            className={cn(
+              "tab-sub-item text-xs",
+              viewMode === "whiteboard" && "active"
+            )}
+          >
+            Whiteboard
+          </button>
+          {viewMode === "whiteboard" && (
+            <button
+              type="button"
+              onClick={() => {
+                const ed = whiteboardEditorRef.current;
+                if (ed && graphData.nodes.length > 0) seedMindMapToTldraw(ed, graphData);
+              }}
+              className="tab-sub-item text-xs ml-2"
+              disabled={graphData.nodes.length === 0}
+            >
+              Seed from selection
+            </button>
+          )}
+        </div>
+        <div ref={containerRef} className="flex-1 relative overflow-hidden min-h-0">
+          {viewMode === "force" && (
+            <>
+              {dimensions && graphData.nodes.length > 0 && (
+                <ForceGraph2D
+                  ref={graphRef}
+                  graphData={graphData}
+                  width={dimensions.width}
+                  height={dimensions.height}
+                  dagMode="lr"
+                  dagLevelDistance={120}
+                  nodeCanvasObject={nodeCanvasObject}
+                  nodePointerAreaPaint={nodePointerAreaPaint}
+                  linkCanvasObject={linkCanvasObject}
+                  onNodeHover={(node: MindMapNode | null) => setHoveredNode(node?.id ?? null)}
+                  linkColor={() => "transparent"}
+                  linkWidth={0}
+                  backgroundColor="transparent"
+                  cooldownTicks={100}
+                  d3AlphaDecay={0.025}
+                  d3VelocityDecay={0.35}
+                />
+              )}
+              {graphData.nodes.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center font-terminal text-xs text-muted-foreground">
+                  Select courses to build mind map
+                </div>
+              )}
+            </>
+          )}
+          {viewMode === "whiteboard" && (
+            <div className="absolute inset-0">
+              <Tldraw
+                store={whiteboardStore}
+                onMount={(editor) => {
+                  whiteboardEditorRef.current = editor;
+                  editor.user.updateUserPreferences({ colorScheme: "dark" });
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

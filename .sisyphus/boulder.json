@@ -1,13 +1,6 @@
 {
-  "active_plan": "/mnt/c/pt-study-sop/.sisyphus/plans/ui-overhaul-v9.4.2.md",
-  "started_at": "2026-01-31T11:21:06.162Z",
-  "session_ids": [
-    "ses_408985a41ffeLvN0y5sbNtZ2PG",
-    "ses_404af8946ffeg92Qlvo0PPokA8",
-    "ses_40324c643ffekuC2FunKTlaj46",
-    "ses_402be368bffeQbZu6aCoxLCwzQ",
-    "ses_402945c68ffeRhCTj4DFIvrYRA",
-    "ses_3ec6b0559ffetx4A592FyvOZ0i"
-  ],
-  "plan_name": "ui-overhaul-v9.4.2"
+  "active_plan": "/mnt/c/pt-study-sop/.sisyphus/plans/vision-ppfw.md",
+  "started_at": "2026-02-09T23:46:30.460Z",
+  "session_ids": ["ses_3bb4a080bffeh2OwKsbAE4psp4"],
+  "plan_name": "vision-ppfw"
 }

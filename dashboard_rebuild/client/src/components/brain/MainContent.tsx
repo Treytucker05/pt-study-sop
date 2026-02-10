@@ -6,6 +6,7 @@ import { GraphPanel } from "./GraphPanel";
 import { ComparisonTableEditor } from "@/components/ComparisonTableEditor";
 import { AnkiIntegration } from "@/components/AnkiIntegration";
 import { ErrorBoundary, TabErrorFallback } from "@/components/ErrorBoundary";
+import { cn } from "@/lib/utils";
 import type { BrainWorkspace } from "./useBrainWorkspace";
 
 const TABS = [
@@ -65,11 +66,11 @@ export function MainContent({ workspace }: MainContentProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tab list: proper semantics for screen readers and keyboard */}
+      {/* Tab list: global tab-bar / tab-item for consistency */}
       <div
         role="tablist"
         aria-label="Main content view"
-        className="flex items-center gap-0 border-b border-primary/40 bg-black/40 shrink-0"
+        className="tab-bar"
       >
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -86,16 +87,12 @@ export function MainContent({ workspace }: MainContentProps) {
               tabIndex={isActive ? 0 : -1}
               onClick={() => workspace.setMainMode(tab.id)}
               onKeyDown={handleTabKeyDown}
-              className={`flex items-center gap-1.5 px-3 py-1.5 font-arcade text-xs transition-colors ${
-                isActive
-                  ? "bg-primary text-black"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={cn("tab-item", isActive && "active")}
             >
-              <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+              <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               {tab.label}
               {tab.id === "anki" && workspace.pendingDrafts.length > 0 && (
-                <span className="ml-1 px-1 py-0 text-xs bg-secondary text-black font-arcade">
+                <span className="ml-1 px-1 py-0 text-xs bg-secondary text-primary-foreground font-arcade">
                   {workspace.pendingDrafts.length}
                 </span>
               )}

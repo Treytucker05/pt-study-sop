@@ -12,6 +12,10 @@
   - URL citations extraction from ChatGPT Responses API
   - SSE streaming support for web search status updates
 
+## 2026-02-09 - Mind Map Whiteboard (tldraw)
+
+- MindMapView: added view-mode toggle "Force graph" | "Whiteboard". Whiteboard uses tldraw (dark theme) with "Seed from selection" to create note shapes and arrows from current Course/Module/LO graphData; previous seed shapes are cleared before re-seeding. Toolbar uses section-block/tab-sub-item tokens.
+
 ## 2026-02-09 - Brain Concept Map Freehand Mode
 
 - Added tldraw freehand canvas as the default Concept Map mode with dark theme support and vault save to `.tldraw.json`.

@@ -14,6 +14,17 @@ import type { BrainWorkspace } from "./useBrainWorkspace";
 
 // --- Sub-components for recursive tree rendering ---
 
+/**
+ * Sidebar spacing (Vercel-style 8px grid):
+ * - Section padding: px-3 (12px) py-3 (12px)
+ * - In-section gap: gap-2 (8px)
+ * - Control height: h-9 (36px) or min-h-[36px] for tap targets
+ * - Section titles: font-arcade text-xs uppercase
+ * - Body/chips: font-terminal text-sm
+ */
+const SIDEBAR_PX = 12;
+const TREE_INDENT = 16;
+
 function FileItem({ name, isFolder, isExpanded, isActive, depth, onClick }: {
   name: string;
   isFolder: boolean;
@@ -26,29 +37,29 @@ function FileItem({ name, isFolder, isExpanded, isActive, depth, onClick }: {
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex items-center gap-1.5 py-1.5 font-terminal text-sm text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
+      className={`w-full flex items-center gap-2 py-2 font-terminal text-sm text-left transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-inset min-h-[36px] ${
         isActive
-          ? "bg-primary/20 text-primary border-l-2 border-primary"
+          ? "bg-primary/15 text-primary border-l-2 border-primary/60"
           : "border-l-2 border-transparent hover:bg-primary/10 text-foreground"
       }`}
-      style={{ paddingLeft: `${depth * 14 + 10}px` }}
+      style={{ paddingLeft: `${SIDEBAR_PX + depth * TREE_INDENT}px` }}
     >
       {isFolder ? (
         <>
           {isExpanded ? (
-            <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
+            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
           ) : (
-            <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
           )}
-          <Folder className="w-3.5 h-3.5 text-yellow-500 shrink-0" aria-hidden="true" />
+          <Folder className="w-4 h-4 text-yellow-500 shrink-0" aria-hidden="true" />
         </>
       ) : (
         <>
-          <span className="w-3 shrink-0" />
-          <File className="w-3.5 h-3.5 text-blue-400 shrink-0" aria-hidden="true" />
+          <span className="w-3.5 shrink-0" />
+          <File className="w-4 h-4 text-blue-400 shrink-0" aria-hidden="true" />
         </>
       )}
-      <span className="truncate">{name}</span>
+      <span className="truncate min-w-0">{name}</span>
     </button>
   );
 }
@@ -193,16 +204,16 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
 
   if (!connected) {
     return (
-      <div className="flex flex-col h-full min-h-0 p-4">
-        <div className="font-arcade text-xs text-primary tracking-widest border-b-2 border-primary/50 pb-2 mb-3">
-          VAULT
+      <div className="flex flex-col h-full min-h-0">
+        <div className="section-block border-primary/30">
+          <h2 className="section-header">Vault</h2>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center border-2 border-primary/50 bg-black/40 p-6 rounded-sm">
-          <FolderOpen className="w-8 h-8 text-primary mb-3" aria-hidden="true" />
-          <p className="font-arcade text-sm text-primary text-center">
-            OBSIDIAN OFFLINE
+        <div className="flex-1 flex flex-col items-center justify-center px-3 py-6 border border-primary/30 bg-black/30 m-3">
+          <FolderOpen className="w-8 h-8 text-primary/80 mb-3" aria-hidden="true" />
+          <p className="font-arcade text-sm text-primary/90 text-center">
+            Obsidian offline
           </p>
-          <p className="font-terminal text-xs text-muted-foreground text-center mt-2">
+          <p className="font-terminal text-sm text-muted-foreground text-center mt-2">
             Open Obsidian with Local REST API enabled
           </p>
         </div>
@@ -212,42 +223,38 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
 
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
-      {/* Header */}
-      <div className="shrink-0 border-b-2 border-primary/50 pb-2 px-2 pt-1">
-        <h2 className="font-arcade text-xs text-primary tracking-widest">
-          VAULT
-        </h2>
+      {/* Header — global section-block + section-header */}
+      <div className="section-block border-primary/30">
+        <h2 className="section-header">Vault</h2>
       </div>
 
-      {/* Search + New Note */}
-      <div className="p-2 space-y-2 border-b-2 border-primary/30 bg-black/30 shrink-0">
+      {/* Search + New Note — subtle borders, no “warning” look */}
+      <div className="section-block section-block-gap">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" aria-hidden="true" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search files..."
-            className="h-8 pl-8 pr-2 text-sm font-terminal rounded-none border-2 border-primary/40 bg-black/50 focus-visible:ring-2 focus-visible:ring-primary"
+            placeholder="Search files…"
+            className="h-9 pl-9 pr-3 text-sm font-terminal rounded-none border border-primary/20 bg-black/40 placeholder:text-muted-foreground/80 focus-visible:ring-1 focus-visible:ring-primary/60 focus-visible:border-primary/40"
             aria-label="Search files"
           />
         </div>
         <Button
           size="sm"
-          variant="outline"
-          className="w-full h-8 text-xs font-terminal rounded-none border-2 border-primary/50 hover:bg-primary/10 hover:border-primary hover:text-primary"
+          variant="ghost"
+          className="w-full h-9 text-sm font-terminal rounded-none border border-primary/20 bg-black/30 text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary justify-start gap-2"
           onClick={createNewNote}
         >
-          <FileText className="w-3 h-3 mr-1.5" aria-hidden="true" />
+          <FileText className="w-4 h-4 shrink-0" aria-hidden="true" />
           New Note
         </Button>
       </div>
 
-      {/* Course quick-nav */}
-      <div className="flex flex-col gap-1.5 p-2 border-b-2 border-primary/30 shrink-0">
-        <h3 className="font-arcade text-xs text-primary tracking-widest px-1">
-          COURSES
-        </h3>
-        <div className="flex flex-wrap gap-1">
+      {/* Courses — section-block + gap */}
+      <div className="section-block section-block-gap">
+        <h3 className="section-header">Courses</h3>
+        <div className="flex flex-wrap gap-2">
           {COURSE_FOLDERS.map((course) => {
             const isActive = currentFolder === course.path;
             return (
@@ -255,10 +262,10 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
                 key={course.path}
                 type="button"
                 onClick={() => navigateToFolder(course.path)}
-                className={`px-2.5 py-1.5 font-terminal text-xs rounded-none border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-black ${
+                className={`min-h-[36px] px-3 py-2 font-terminal text-sm rounded-none border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-black ${
                   isActive
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-primary/40 bg-black/40 text-muted-foreground hover:border-primary/70 hover:text-foreground"
+                    ? "bg-primary/20 text-primary border-primary/50"
+                    : "border-primary/20 bg-black/30 text-muted-foreground hover:bg-black/50 hover:border-primary/40 hover:text-foreground"
                 }`}
                 aria-pressed={isActive}
               >
@@ -269,30 +276,30 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
         </div>
       </div>
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb — same horizontal padding as sections */}
       {currentFolder && (
-        <div className="flex items-center gap-1 px-2 py-1.5 font-terminal text-xs border-b-2 border-primary/30 bg-black/20 shrink-0 min-h-[2rem]">
+        <div className="flex items-center gap-2 px-3 py-2 font-terminal text-sm border-b border-primary/20 shrink-0 min-h-[40px]">
           {hasParent && (
             <button
               type="button"
               onClick={navigateToParent}
-              className="p-0.5 rounded-sm hover:bg-primary/20 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary shrink-0"
+              className="size-8 flex items-center justify-center rounded-sm hover:bg-primary/20 hover:text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-primary shrink-0"
               title="Go to parent folder"
               aria-label="Go to parent folder"
             >
-              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
             </button>
           )}
-          <nav aria-label="Folder breadcrumb" className="flex items-center gap-0.5 flex-wrap text-muted-foreground">
+          <nav aria-label="Folder breadcrumb" className="flex items-center gap-1 flex-wrap text-muted-foreground min-w-0">
             {breadcrumbSegments.map((part, i, arr) => (
-              <span key={i} className="flex items-center gap-0.5">
+              <span key={i} className="flex items-center gap-1">
                 {i > 0 && <span aria-hidden="true">/</span>}
                 <button
                   type="button"
                   onClick={() =>
                     navigateToFolder(arr.slice(0, i + 1).join("/"))
                   }
-                  className="hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset rounded-sm px-0.5"
+                  className="hover:text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-inset rounded-sm px-1 py-0.5 min-h-[28px] flex items-center"
                 >
                   {part}
                 </button>
@@ -302,19 +309,17 @@ export function VaultSidebar({ workspace }: VaultSidebarProps) {
         </div>
       )}
 
-      {/* File list */}
-      <div className="flex-1 min-h-0 flex flex-col border-t border-primary/20">
-        <div className="shrink-0 px-2 py-1 border-b border-primary/20 bg-black/20">
-          <span className="font-arcade text-xs text-primary/80 tracking-wider">
-            FILES
-          </span>
+      {/* File list — section-header for label */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="shrink-0 px-3 py-2 border-b border-primary/20">
+          <span className="section-header text-primary/90">Files</span>
         </div>
         <ErrorBoundary
           key={`filetree-${errorKey}`}
           fallback={<SidebarErrorFallback onReset={() => setErrorKey((k) => k + 1)} />}
         >
           <ScrollArea className="flex-1 min-h-0">
-            <div className="py-1">
+            <div className="py-2">
             {filteredFiles.map((file: string | { path: string }) => {
               const filePath = typeof file === "string" ? file : file.path;
               const isFolder = filePath.endsWith("/");
