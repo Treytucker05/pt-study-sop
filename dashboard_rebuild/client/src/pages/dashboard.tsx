@@ -399,6 +399,10 @@ export default function Dashboard() {
     return format(date, "MMM d");
   };
 
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const duePlannerTasks = plannerQueue.filter((t) => t.scheduled_date && t.scheduled_date <= todayStr);
+
   return (
     <Layout>
       <div className="space-y-6 max-w-5xl mx-auto">
@@ -408,17 +412,16 @@ export default function Dashboard() {
             <CardTitle className="font-arcade text-xs flex items-center justify-between">
               <span>TODAY'S FOCUS</span>
               <Badge variant="outline" className="rounded-none text-[9px]">
-                {plannerQueue.filter(t => t.scheduled_date && t.scheduled_date <= new Date().toISOString().slice(0, 10)).length} tasks
+                {duePlannerTasks.length} tasks
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
-            {plannerQueue.filter(t => t.scheduled_date && t.scheduled_date <= new Date().toISOString().slice(0, 10)).length === 0 ? (
+            {duePlannerTasks.length === 0 ? (
               <p className="font-terminal text-xs text-muted-foreground">No tasks due today</p>
             ) : (
               <ul className="space-y-2 mb-4">
-                {plannerQueue
-                  .filter(t => t.scheduled_date && t.scheduled_date <= new Date().toISOString().slice(0, 10))
+                {duePlannerTasks
                   .slice(0, 3)
                   .map(task => (
                     <li key={task.id} className="font-terminal text-xs flex items-center gap-2">

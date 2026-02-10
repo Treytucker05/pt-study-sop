@@ -280,6 +280,9 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
       return bp - ap;
     });
 
+  const pendingSorted = useMemo(() => sortTasks(pending), [pending]);
+  const inProgressSorted = useMemo(() => sortTasks(inProgress), [inProgress]);
+
   const handleMove = (taskId: number, status: PlannerKanbanColumnId) => {
     updateTaskMutation.mutate({ id: taskId, data: { status } });
   };
@@ -290,11 +293,9 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
 
   const onDragEnd = (event: DragEndEvent) => {
     setActiveTaskId(null);
-    const overId = event.over?.id;
+    const nextStatus = event.over?.data.current?.status as PlannerKanbanColumnId | undefined;
     const activeId = event.active?.id;
-    if (!overId || !activeId) return;
-
-    const nextStatus = String(overId) as PlannerKanbanColumnId;
+    if (!nextStatus || !activeId) return;
     if (!COLUMNS.some((c) => c.id === nextStatus)) return;
 
     const task = tasksById.get(String(activeId));
@@ -336,6 +337,7 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
         <DndContext
           sensors={sensors}
           onDragStart={(e) => setActiveTaskId(String(e.active.id))}
+          onDragCancel={() => setActiveTaskId(null)}
           onDragEnd={onDragEnd}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -345,12 +347,12 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
               hint="Drag to start"
               count={pending.length}
             >
-              {sortTasks(pending).length === 0 ? (
+              {pendingSorted.length === 0 ? (
                 <div className="px-2 py-8 text-center font-terminal text-xs text-muted-foreground">
                   No pending tasks
                 </div>
               ) : (
-                sortTasks(pending).map((t) => (
+                pendingSorted.map((t) => (
                   <PlannerTaskCard
                     key={t.id}
                     task={t}
@@ -372,12 +374,12 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
               hint="Drag back to queue"
               count={inProgress.length}
             >
-              {sortTasks(inProgress).length === 0 ? (
+              {inProgressSorted.length === 0 ? (
                 <div className="px-2 py-8 text-center font-terminal text-xs text-muted-foreground">
                   Nothing in progress
                 </div>
               ) : (
-                sortTasks(inProgress).map((t) => (
+                inProgressSorted.map((t) => (
                   <PlannerTaskCard
                     key={t.id}
                     task={t}
