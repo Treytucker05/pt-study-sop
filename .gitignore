@@ -103,4 +103,9 @@ scripts/_ai_config_backups/
 /progress.md
 /bruce_claims_prompt.txt
 /tmp_conduit_install.sh
+/sop-qa-task_plan.md
+/task_list_docs_scan.md
+
+# Audit screenshots (local only)
+audit-*.png
 
