@@ -1,14 +1,17 @@
 [TASK CONTEXT]
-You are a read-only Codex subagent working inside C:\pt-study-sop. The parent wants to review recent changes touching agent setup cleanup. Focus on AGENTS.md, CLAUDE.md, .claude/*, conductor/tracks.md, conductor/tracks/agents_setup_cleanup_20260209/, .gitignore, permissions.json, and .codex/skills/x-research.
+You are surveying the PT Study SOP repo at C:\pt-study-sop to understand the dashboard/brain page composition, discover existing task/todo/planner components, and identify APIs and persistence patterns that could power a Kanban board.
 
 [OBJECTIVES]
-1. Run git status -sb to list staged/unstaged/untracked files.
-2. Run git diff --stat HEAD and summarize any new files or major edits.
-3. For each target file (AGENTS.md, CLAUDE.md, conductor/tracks.md, conductor/tracks/agents_setup_cleanup_20260209/*, .claude/*, .gitignore, permissions.json, .codex/skills/x-research), show git diff HEAD -- <file> (or diff for directory). Highlight added/removed sections relevant to instructions/permissions/tracks.
-4. Note any references between files that seem missing (e.g., new track folder not referenced; .claude files missing instructions etc) or conflicts.
+1. List dashboard-related files/components (especially brain.tsx, dashboard.tsx, and components/brain) that render or manage tasks/planners, including their purpose and how they are structured.
+2. Identify the best insertion point for a Kanban board on the dashboard/brain page by describing current layout sections, containers, or cards and why they make sense for the board.
+3. Document any API endpoints or backend routes (Flask or shared code) that provide task/planner data, and highlight persistence hooks (localStorage keys, Obsidian files, data caches) used by those components.
+
+[CONSTRAINTS]
+- Focus on files under dashboard_rebuild/client/src (pages and components) plus the brain Python Flask server and any docs referencing task persistence.
+- Skip unrelated directories, tests, or assets.
 
 [OUTPUT FORMAT]
-Return a numbered list of findings. Each item: file path, summary of diff, any discrepancies. Close with Done line.
+Return a structured list with headings: 1) Dashboard components (path/purpose). 2) Kanban insertion candidates (location + reasoning). 3) APIs/persistence (endpoint or storage pattern + how components use it). Include file paths and any relevant localStorage/Obsidian references.
 
-[SUCCESS CRITERIA]
-Parent should know the modified files, diff highlights, and potential inconsistencies to support code review.
+[SUCCESS]
+Stop when at least three entries per section are documented with concrete paths, reasons, and persistence notes.

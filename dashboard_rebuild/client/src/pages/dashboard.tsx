@@ -9,6 +9,7 @@ import { Flame, Clock, BookOpen, AlertTriangle, Play, Check, Plus, Pencil, Trash
 import type { GoogleTask } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type AcademicDeadline, type InsertAcademicDeadline } from "@/lib/api";
+import { PlannerKanban } from "@/components/PlannerKanban";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -437,6 +438,8 @@ export default function Dashboard() {
             </Button>
           </CardContent>
         </Card>
+
+        <PlannerKanban tasks={plannerQueue} />
 
         {/* Main Grid — Fix #1: auto rows so cards size to content */}
         <div className="grid md:grid-cols-2 gap-6 grid-rows-[auto]">

@@ -24,6 +24,25 @@ export interface GoogleTask {
   listTitle?: string;
 }
 
+export interface PlannerTask {
+  id: number;
+  course_id?: number | null;
+  topic_id?: number | null;
+  course_event_id?: number | null;
+  scheduled_date?: string | null;
+  planned_minutes?: number | null;
+  status: "pending" | "in_progress" | "completed" | "deferred" | string;
+  actual_session_id?: number | null;
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  source?: string | null;
+  priority?: number | null;
+  review_number?: number | null;
+  anchor_text?: string | null;
+  course_name?: string | null;
+}
+
 export interface SyllabusImportResult {
   modulesCreated: number;
   eventsCreated: number;
@@ -336,7 +355,7 @@ export const api = {
   },
 
   planner: {
-    getQueue: () => request<unknown[]>("/planner/queue"),
+    getQueue: () => request<PlannerTask[]>("/planner/queue"),
     getSettings: () => request<Record<string, unknown>>("/planner/settings"),
     updateSettings: (data: Record<string, unknown>) =>
       request<{ ok: boolean }>("/planner/settings", {

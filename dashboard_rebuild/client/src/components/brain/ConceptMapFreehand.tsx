@@ -23,33 +23,49 @@ export function ConceptMapFreehand({
 }: ConceptMapFreehandProps) {
   const store = useMemo(() => createTLStore(), []);
   const editorRef = useRef<any>(null);
+  const pendingClearHistoryRef = useRef(false);
   const [title, setTitle] = useState(initialTitle);
   const [isDirty, setIsDirty] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const [showMermaidImport, setShowMermaidImport] = useState(false);
   const [mermaidInput, setMermaidInput] = useState("");
   const suppressDirtyRef = useRef(false);
   const { toast } = useToast();
+
+  const updateUndoRedoState = useCallback(() => {
+    const editor = editorRef.current;
+    const nextCanUndo = typeof editor?.getCanUndo === "function" ? !!editor.getCanUndo() : false;
+    const nextCanRedo = typeof editor?.getCanRedo === "function" ? !!editor.getCanRedo() : false;
+    setCanUndo(nextCanUndo);
+    setCanRedo(nextCanRedo);
+  }, []);
 
   useEffect(() => {
     if (!initialSnapshot) return;
     suppressDirtyRef.current = true;
     try {
       loadSnapshot(store, initialSnapshot as any);
+      const editor = editorRef.current;
+      if (typeof editor?.clearHistory === "function") editor.clearHistory();
+      else pendingClearHistoryRef.current = true;
       setIsDirty(false);
+      updateUndoRedoState();
     } catch (err) {
       console.error("Failed to load tldraw snapshot:", err);
     } finally {
       suppressDirtyRef.current = false;
     }
-  }, [initialSnapshot, store]);
+  }, [initialSnapshot, store, updateUndoRedoState]);
 
   useEffect(() => {
     const cleanup = store.listen(() => {
       if (suppressDirtyRef.current) return;
       setIsDirty(true);
-    });
+      updateUndoRedoState();
+    }, { source: "user", scope: "document" });
     return cleanup;
-  }, [store]);
+  }, [store, updateUndoRedoState]);
 
   const handleSave = useCallback(async () => {
     const snapshot = getSnapshot(store);
@@ -72,12 +88,24 @@ export function ConceptMapFreehand({
   const handleMount = useCallback((editor: any) => {
     editorRef.current = editor;
     editor.user.updateUserPreferences({ colorScheme: "dark" });
-  }, []);
+    if (pendingClearHistoryRef.current) {
+      pendingClearHistoryRef.current = false;
+      editorRef.current?.clearHistory?.();
+    }
+    updateUndoRedoState();
+  }, [updateUndoRedoState]);
 
-  const canUndo = store.getCanUndo();
-  const canRedo = store.getCanRedo();
-  const handleUndo = useCallback(() => store.undo(), [store]);
-  const handleRedo = useCallback(() => store.redo(), [store]);
+  const handleUndo = useCallback(() => {
+    const editor = editorRef.current;
+    if (typeof editor?.undo === "function") editor.undo();
+    updateUndoRedoState();
+  }, [updateUndoRedoState]);
+
+  const handleRedo = useCallback(() => {
+    const editor = editorRef.current;
+    if (typeof editor?.redo === "function") editor.redo();
+    updateUndoRedoState();
+  }, [updateUndoRedoState]);
 
   const handleExportPng = useCallback(async () => {
     const editor = editorRef.current;

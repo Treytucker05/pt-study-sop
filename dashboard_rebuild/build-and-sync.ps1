@@ -17,11 +17,11 @@ function Write-Header($text) {
 }
 
 function Write-Success($text) {
-    Write-Host "✓ $text" -ForegroundColor Green
+    Write-Host "[OK] $text" -ForegroundColor Green
 }
 
 function Write-Error($text) {
-    Write-Host "✗ $text" -ForegroundColor Red
+    Write-Host "[ERR] $text" -ForegroundColor Red
 }
 
 # Check if we're in the right directory
@@ -32,18 +32,29 @@ if (-not (Test-Path "$PSScriptRoot\package.json")) {
 
 # Build (now goes directly to brain/static/dist)
 Write-Header "Building Dashboard"
+Set-Location $PSScriptRoot
+
+# `npm run build` can emit warnings to stderr even when it succeeds (exit code 0).
+# In Windows PowerShell, stderr output becomes non-terminating errors; with `$ErrorActionPreference = "Stop"`
+# that would incorrectly trip the catch. Temporarily relax error handling and rely on `$LASTEXITCODE`.
+$prevErrorActionPreference = $ErrorActionPreference
 try {
-    Set-Location $PSScriptRoot
+    $ErrorActionPreference = "Continue"
     npm run build 2>&1 | ForEach-Object {
         if ($_ -match "error|Error") { Write-Host $_ -ForegroundColor Red }
-        elseif ($_ -match "built|✓") { Write-Host $_ -ForegroundColor Green }
+        elseif ($_ -match "built|modules transformed|rendering chunks|computing gzip size") { Write-Host $_ -ForegroundColor Green }
         else { Write-Host $_ }
     }
-    Write-Success "Build completed - files now in brain/static/dist"
-} catch {
-    Write-Error "Build failed: $_"
-    exit 1
+} finally {
+    $ErrorActionPreference = $prevErrorActionPreference
 }
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Build failed (exit code $LASTEXITCODE)"
+    exit $LASTEXITCODE
+}
+
+Write-Success "Build completed - files now in brain/static/dist"
 
 # Get timestamp for cache busting
 $timestamp = Get-Date -Format "HHmmss"

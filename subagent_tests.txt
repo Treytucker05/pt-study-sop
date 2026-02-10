@@ -1,0 +1,50 @@
+**Commands run**
+- `cd C:\pt-study-sop\dashboard_rebuild; npm run check`
+- `cd C:\pt-study-sop\dashboard_rebuild; npm run deploy`
+
+**Result (success/failure)**
+- `npm run check`: **Failure** (TypeScript errors)
+- `npm run deploy`: **Success** (build completed)
+
+**Key errors/warnings**
+- `client/src/components/brain/ConceptMapFreehand.tsx(124,9)` TS2322: `unknown[]` not assignable to `TLShapeId[]`.
+- `client/src/components/EventEditModal.tsx(94,29)` TS2339: `Intl.supportedValuesOf` does not exist.
+- `client/src/components/LocalEventEditModal.tsx(104,29)` TS2339: `Intl.supportedValuesOf` does not exist.
+- `client/src/components/MindMapView.tsx(61,6)` TS2352: conversion missing `deleteShapes`.
+- `client/src/components/NextActions.tsx(42,14)` TS2352: `Promise<Record<string, unknown>>` not assignable to `Promise<PlannerSettings>`.
+- `client/src/components/SessionJsonIngest.tsx(33,9)` TS2322: `Date` not assignable to `string` for `ApiSession.date`.
+- `client/src/components/SessionJsonIngest.tsx(37,18)` TS2339: `mainTopic` does not exist on session type.
+- `client/src/pages/calendar.tsx(490,9)` TS2322: `LocalCalendarEvent[]` mismatch (`attendees` type).
+- `client/src/pages/calendar.tsx(1155,21)` TS2352: conversion to `LocalCalendarEvent` may be a mistake.
+- `client/src/pages/calendar.tsx(1168,39)` TS2345: `visibility` possibly `undefined`.
+- `client/src/pages/calendar.tsx(1194,38)` TS2345: `visibility` possibly `undefined`.
+- `client/src/pages/calendar.tsx(1912,17)` TS2322: `CalendarReminders | null` not assignable.
+- `client/src/pages/dashboard.tsx(135,34)` TS2353: `code` not in type.
+- `client/src/pages/dashboard.tsx(151,38)` TS2353: `code` not in type.
+- `client/src/pages/dashboard.tsx(411,43)` TS18046: `t` is `unknown`.
+- `client/src/pages/dashboard.tsx(411,63)` TS18046: `t` is `unknown`.
+- `client/src/pages/dashboard.tsx(416,39)` TS18046: `t` is `unknown`.
+- `client/src/pages/dashboard.tsx(416,59)` TS18046: `t` is `unknown`.
+- `client/src/pages/dashboard.tsx(421,32)` TS18046: `t` is `unknown`.
+- `client/src/pages/dashboard.tsx(421,52)` TS18046: `t` is `unknown`.
+- `client/src/pages/dashboard.tsx(424,30)` TS18046: `task` is `unknown`.
+- `client/src/pages/dashboard.tsx(426,51)` TS18046: `task` is `unknown`.
+- `client/src/pages/dashboard.tsx(426,71)` TS18046: `task` is `unknown`.
+- `client/src/pages/dashboard.tsx(541,109)` TS2339: `code` does not exist on type.
+- `client/src/pages/methods.tsx(545,7)` TS2322: `string` not assignable to `MethodCategory`.
+- `client/src/pages/scholar.tsx(98,26)` TS2339: `getClusters` missing.
+- `client/src/pages/scholar.tsx(102,29)` TS2339: `runClustering` missing.
+- `client/src/pages/scholar.tsx(525,85)` TS2551: `sessionDate` missing on `TutorAuditItem`.
+- `client/src/pages/scholar.tsx(527,47)` TS2339: `phase` missing on `TutorAuditItem`.
+- `client/src/pages/scholar.tsx(530,85)` TS2339: `observation` missing on `TutorAuditItem`.
+- `client/src/pages/scholar.tsx(533,47)` TS2339: `impact` missing on `TutorAuditItem`.
+- `client/src/pages/scholar.tsx(673,48)` TS2339: `category` missing on `ScholarFinding`.
+- `client/src/pages/scholar.tsx(676,48)` TS2339: `sessionDate` missing on `ScholarFinding`.
+- `client/src/pages/scholar.tsx(679,81)` TS2339: `observation` missing on `ScholarFinding`.
+- `client/src/pages/scholar.tsx(733,40)` TS2339: `clusters` missing on `{}`.
+- `client/src/pages/scholar.tsx(736,41)` TS2339: `clusters` missing on `{}`.
+- `client/src/pages/scholar.tsx(736,56)` TS7006: `cluster` implicitly `any`.
+- `client/src/pages/scholar.tsx(745,53)` TS7006: `item` implicitly `any`.
+- `client/src/pages/scholar.tsx(745,59)` TS7006: `i` implicitly `any`.
+- Deploy build warning: `[meta-images] no Replit deployment domain found, skipping meta tag updates`.
+- Deploy build warning: chunks larger than 500 kB after minification (Rollup warning).

@@ -1,0 +1,11 @@
+🔴 Critical  
+No issues found.
+
+🟡 Suggestions  
+- `dashboard_rebuild/client/src/components/PlannerKanban.tsx:349` Add `onDragCancel={() => setActiveTaskId(null)}` to clear the overlay/state when a drag is canceled (Esc/pointer loss), otherwise the overlay can get “stuck.”  
+- `dashboard_rebuild/client/src/components/PlannerKanban.tsx:304` Guard `onDragEnd` with `event.over?.data.current?.type === "planner_column"` (and `event.active.data.current?.type === "planner_task"`), not just `id`, so future droppables don’t accidentally trigger status changes.  
+- `dashboard_rebuild/client/src/api.ts:338` Change `planner.getQueue` to return a typed array (e.g., `PlannerTask[]` or a shared `PlannerQueueTask[]`) instead of `unknown[]`; this removes unsafe property access and avoids downstream casts.  
+- `dashboard_rebuild/client/src/pages/dashboard.tsx:442` Remove `as PlannerTask[]` once `getQueue` is typed (and set `useQuery<PlannerTask[]>` at `dashboard_rebuild/client/src/pages/dashboard.tsx:85`), so `plannerQueue` filtering/mapping is type-safe across the file.
+
+🟢 Nits  
+- `dashboard_rebuild/client/src/components/PlannerKanban.tsx:223` Consider adding `KeyboardSensor` in `useSensors` for basic keyboard DnD support and better accessibility fallback.

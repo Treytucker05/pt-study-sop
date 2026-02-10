@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PT Study SOP — Architecture Audit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #ff2d2d;
+    --border-dim: #661111;
+    --accent: #ff2d2d;
+    --accent-glow: rgba(255, 45, 45, 0.15);
+    --text: #e0e0e0;
+    --text-dim: #888;
+    --blue: #4da6ff;
+    --blue-dim: #1a3d66;
+    --green: #44ff88;
+    --green-dim: #114422;
+    --yellow: #ffcc00;
+    --yellow-dim: #4d3d00;
+    --purple: #b366ff;
+    --purple-dim: #331a66;
+    --orange: #ff8844;
+    --orange-dim: #4d2200;
+    --cyan: #00cccc;
+    --cyan-dim: #003d3d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding: 32px 20px 24px;
+    border-bottom: 2px solid var(--border);
+    background: linear-gradient(180deg, var(--accent-glow) 0%, transparent 100%);
+  }
+  .header h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 20px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+  .header .subtitle {
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+  .header .stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    background: var(--surface);
+    border: 1px solid var(--border-dim);
+    padding: 6px 14px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .stat-pill .num {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  /* LAYOUT */
+  .main {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* SECTION */
+  .section {
+    border: 2px solid var(--border-dim);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header:hover { background: var(--surface2); }
+  .section-icon {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .section-badge {
+    margin-left: auto;
+    padding: 2px 8px;
+    font-size: 10px;
+    border: 1px solid;
+    opacity: 0.7;
+  }
+  .section-body {
+    padding: 16px;
+  }
+
+  /* COLOR THEMES */
+  .theme-red .section-icon { background: var(--accent); }
+  .theme-red .section-title { color: var(--accent); }
+  .theme-red .section-badge { border-color: var(--accent); color: var(--accent); }
+
+  .theme-blue .section-icon { background: var(--blue); }
+  .theme-blue .section-title { color: var(--blue); }
+  .theme-blue .section-badge { border-color: var(--blue); color: var(--blue); }
+
+  .theme-green .section-icon { background: var(--green); }
+  .theme-green .section-title { color: var(--green); }
+  .theme-green .section-badge { border-color: var(--green); color: var(--green); }
+
+  .theme-yellow .section-icon { background: var(--yellow); }
+  .theme-yellow .section-title { color: var(--yellow); }
+  .theme-yellow .section-badge { border-color: var(--yellow); color: var(--yellow); }
+
+  .theme-purple .section-icon { background: var(--purple); }
+  .theme-purple .section-title { color: var(--purple); }
+  .theme-purple .section-badge { border-color: var(--purple); color: var(--purple); }
+
+  .theme-orange .section-icon { background: var(--orange); }
+  .theme-orange .section-title { color: var(--orange); }
+  .theme-orange .section-badge { border-color: var(--orange); color: var(--orange); }
+
+  .theme-cyan .section-icon { background: var(--cyan); }
+  .theme-cyan .section-title { color: var(--cyan); }
+  .theme-cyan .section-badge { border-color: var(--cyan); color: var(--cyan); }
+
+  /* CARD GRID */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .card-grid-wide {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface2);
+    border: 1px solid var(--border-dim);
+    padding: 12px;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+  .card:hover {
+    border-color: var(--accent);
+  }
+  .card-title {
+    font-weight: 700;
+    font-size: 12px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-title .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .card-desc {
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1.6;
+  }
+  .card-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 9px;
+    border: 1px solid;
+    margin: 2px 2px 0 0;
+    opacity: 0.8;
+  }
+
+  /* FLOW ARROW */
+  .flow-arrow {
+    text-align: center;
+    padding: 8px 0;
+    color: var(--text-dim);
+    font-size: 18px;
+    letter-spacing: 4px;
+  }
+
+  /* TABLE */
+  .mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+  .mini-table th {
+    text-align: left;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border-dim);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .mini-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #1f1f1f;
+  }
+  .mini-table tr:hover td { background: var(--surface); }
+
+  /* COLUMNS */
+  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  @media (max-width: 900px) {
+    .cols-2, .cols-3 { grid-template-columns: 1fr; }
+  }
+
+  /* API GROUP */
+  .api-group {
+    margin-bottom: 12px;
+  }
+  .api-group-title {
+    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed var(--border-dim);
+  }
+  .api-endpoint {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 2px 0;
+    font-size: 10px;
+  }
+  .method-badge {
+    font-size: 8px;
+    font-weight: 700;
+    padding: 1px 4px;
+    min-width: 36px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .method-GET { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+  .method-POST { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue); }
+  .method-PATCH { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow); }
+  .method-PUT { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--orange); }
+  .method-DELETE { background: #3d1111; color: var(--accent); border: 1px solid var(--accent); }
+
+  .api-path { color: var(--text); }
+
+  /* DB TABLE LIST */
+  .db-table-chip {
+    display: inline-block;
+    background: var(--surface);
+    border: 1px solid var(--border-dim);
+    padding: 3px 8px;
+    margin: 3px;
+    font-size: 10px;
+    transition: all 0.2s;
+  }
+  .db-table-chip:hover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-dim);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* CONNECTOR */
+  .connector-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+  }
+  .connector-line {
+    width: 2px;
+    height: 24px;
+    background: var(--border-dim);
+  }
+  .connector-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    border: 1px dashed var(--border-dim);
+    padding: 4px 12px;
+  }
+
+  /* SCROLLABLE PANEL */
+  .scroll-panel {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  .scroll-panel::-webkit-scrollbar { width: 4px; }
+  .scroll-panel::-webkit-scrollbar-track { background: var(--surface); }
+  .scroll-panel::-webkit-scrollbar-thumb { background: var(--border-dim); }
+
+  /* PRINT STYLES */
+  @media print {
+    body { background: white; color: black; }
+    .section { border-color: #ccc; }
+    .card { border-color: #ddd; background: #f9f9f9; }
+  }
+
+  /* FILE TREE */
+  .file-tree {
+    font-size: 10px;
+    line-height: 1.8;
+  }
+  .file-tree .dir {
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .file-tree .file {
+    color: var(--text-dim);
+    padding-left: 16px;
+  }
+
+  .two-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 1000px) {
+    .two-panel { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<div class="header">
+  <h1>PT STUDY SOP</h1>
+  <div class="subtitle">Full Architecture Audit &mdash; February 2026</div>
+  <div class="stats">
+    <div class="stat-pill"><span class="num">9</span> Pages</div>
+    <div class="stat-pill"><span class="num">40+</span> Components</div>
+    <div class="stat-pill"><span class="num">100+</span> API Endpoints</div>
+    <div class="stat-pill"><span class="num">30</span> DB Tables</div>
+    <div class="stat-pill"><span class="num">4</span> Blueprints</div>
+    <div class="stat-pill"><span class="num">5</span> External Integrations</div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ============ HIGH-LEVEL ARCHITECTURE ============ -->
+<div class="section theme-red">
+  <div class="section-header">
+    <div class="section-icon"></div>
+    <div class="section-title">SYSTEM OVERVIEW</div>
+    <div class="section-badge">Full Stack</div>
+  </div>
+  <div class="section-body">
+    <div class="card-grid" style="grid-template-columns: repeat(5, 1fr);">
+      <div class="card" style="border-left: 3px solid var(--blue);">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Frontend</div>
+        <div class="card-desc">React 18 + TypeScript<br>Vite build &rarr; Flask static<br>TanStack Query + shadcn/ui<br>Retro arcade theme</div>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--green);">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>API Layer</div>
+        <div class="card-desc">Flask Blueprints<br>4 blueprint files<br>100+ REST endpoints<br>SSE streaming for chat</div>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--yellow);">
+        <div class="card-title"><span class="dot" style="background:var(--yellow)"></span>Core Engine</div>
+        <div class="card-desc">LLM Provider (OpenRouter)<br>RAG (ChromaDB + notes)<br>Chain Runner (prompts)<br>Tutor Engine</div>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--purple);">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span>Data Layer</div>
+        <div class="card-desc">SQLite (30 tables)<br>ChromaDB (vectors)<br>File system (logs, SOP)<br>Obsidian vault</div>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--orange);">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span>External</div>
+        <div class="card-desc">Google Calendar/Tasks<br>Anki (AnkiConnect)<br>Obsidian (REST API)<br>OpenRouter (LLM)<br>Scholar (research)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&darr;&darr;&darr;</div>
+
+<!-- ============ FRONTEND ============ -->
+<div class="section theme-blue">
+  <div class="section-header">
+    <div class="section-icon"></div>
+    <div class="section-title">FRONTEND &mdash; React + TypeScript</div>
+    <div class="section-badge">dashboard_rebuild/</div>
+  </div>
+  <div class="section-body">
+
+    <h3 style="font-size:11px; color:var(--blue); margin-bottom:12px; font-family:'Press Start 2P',monospace; font-size:9px;">PAGES (Lazy-loaded in App.tsx)</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Dashboard</div>
+        <div class="card-desc">Main overview — streak, today's sessions, study wheel, weakness queue, quick notes, next actions</div>
+        <div><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /sessions/today</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /streak</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /study-wheel/current</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /notes</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Brain</div>
+        <div class="card-desc">Knowledge workspace — vault browser, concept maps (structured + freehand), graph view, chat, ingestion, materials</div>
+        <div><span class="card-tag" style="color:var(--green);border-color:var(--green);">POST /brain/chat</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">POST /brain/ingest</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /obsidian/*</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Calendar</div>
+        <div class="card-desc">Google Calendar integration — event CRUD, calendar filtering, schedule events, academic deadlines, calendar assistant, tasks</div>
+        <div><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /google-calendar/*</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /google-tasks</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">POST /calendar/assistant</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Scholar</div>
+        <div class="card-desc">Research engine — run scholar, view digests, proposals, findings, chat, lifecycle panel</div>
+        <div><span class="card-tag" style="color:var(--green);border-color:var(--green);">POST /scholar/run</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /scholar/questions</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /proposals</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Library</div>
+        <div class="card-desc">Session history — session list, create/edit/delete, evidence review, JSON ingest, course & module management, LO tracking</div>
+        <div><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /sessions</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /courses</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /modules</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /learning-objectives</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Methods</div>
+        <div class="card-desc">Composable study methods — method blocks (PEIRRO), method chains, ratings, analytics</div>
+        <div><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /methods</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /chains</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">GET /methods/analytics</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>Tutor</div>
+        <div class="card-desc">Adaptive tutor — content filtering, chat (SSE streaming), artifacts, block transitions, materials upload</div>
+        <div><span class="card-tag" style="color:var(--green);border-color:var(--green);">POST /tutor/session</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">POST /tutor/session/turn</span><span class="card-tag" style="color:var(--green);border-color:var(--green);">POST /tutor/embed</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--text-dim)"></span>Home</div>
+        <div class="card-desc">Landing page / redirect</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--text-dim)"></span>Not Found</div>
+        <div class="card-desc">404 fallback page</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:9px; color:var(--blue); margin:20px 0 12px; font-family:'Press Start 2P',monospace;">COMPONENTS (40+ custom)</h3>
+    <div class="two-panel">
+      <div>
+        <div class="api-group">
+          <div class="api-group-title" style="color:var(--blue);">Brain Workspace (12 files)</div>
+          <div class="file-tree">
+            <div class="file">BrainModals.tsx — dialog overlays</div>
+            <div class="file">BrainWorkspaceTopBar.tsx — mode switcher</div>
+            <div class="file">ConceptMapEditor.tsx — tldraw canvas</div>
+            <div class="file">ConceptMapFreehand.tsx — freehand drawing</div>
+            <div class="file">ConceptMapStructured.tsx — node-edge map</div>
+            <div class="file">ConceptMapStructuredConfig/Import.tsx</div>
+            <div class="file">GraphPanel.tsx — force-graph visualization</div>
+            <div class="file">MainContent.tsx — workspace layout</div>
+            <div class="file">useBrainWorkspace.ts — state hook</div>
+            <div class="file">VaultEditor.tsx — markdown editor</div>
+            <div class="file">VaultSidebar.tsx — file tree</div>
+          </div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-title" style="color:var(--blue);">Brain Chat (8 files)</div>
+          <div class="file-tree">
+            <div class="file">index.tsx — chat container</div>
+            <div class="file">ChatInput.tsx — message input</div>
+            <div class="file">MessageList.tsx — message display</div>
+            <div class="file">ModeToggle.tsx — chat mode switch</div>
+            <div class="file">PendingImages.tsx — image queue</div>
+            <div class="file">PreviewDialog.tsx — content preview</div>
+            <div class="file">types.ts / usePreview.ts — types & hooks</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="api-group">
+          <div class="api-group-title" style="color:var(--blue);">Feature Components (20+)</div>
+          <div class="file-tree">
+            <div class="file">AnkiIntegration.tsx — Anki sync/drafts</div>
+            <div class="file">CalendarAssistant.tsx — NL calendar</div>
+            <div class="file">CardReviewTabs.tsx — card review</div>
+            <div class="file">ChainBuilder.tsx — method chains</div>
+            <div class="file">ContentFilter.tsx — tutor filtering</div>
+            <div class="file">DataTablesSection.tsx — data grids</div>
+            <div class="file">EventEditModal.tsx — event CRUD</div>
+            <div class="file">GoogleTasksComponents.tsx — tasks UI</div>
+            <div class="file">IngestionTab.tsx — file ingestion</div>
+            <div class="file">MaterialUploader.tsx — upload files</div>
+            <div class="file">MethodAnalytics.tsx — analytics view</div>
+            <div class="file">MethodBlockCard.tsx — block cards</div>
+            <div class="file">MindMapView.tsx — mind map</div>
+            <div class="file">ObsidianVaultBrowser.tsx — vault nav</div>
+            <div class="file">ScholarLifecyclePanel.tsx — scholar UI</div>
+            <div class="file">SessionEvidence.tsx — evidence view</div>
+            <div class="file">SyllabusViewTab.tsx — syllabus display</div>
+            <div class="file">TutorChat.tsx — tutor chat</div>
+            <div class="file">TutorArtifacts.tsx — tutor outputs</div>
+            <div class="file">VaultGraphView.tsx — vault graph</div>
+          </div>
+        </div>
+        <div class="api-group">
+          <div class="api-group-title" style="color:var(--blue);">UI Primitives (60+ shadcn)</div>
+          <div class="card-desc">accordion, alert, badge, button, calendar, card, chart, checkbox, command, dialog, drawer, dropdown, form, input, label, menubar, pagination, popover, progress, radio, resizable, scroll-area, select, sheet, sidebar, skeleton, slider, switch, table, tabs, textarea, toast, toggle, tooltip &hellip;</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:9px; color:var(--blue); margin:20px 0 12px; font-family:'Press Start 2P',monospace;">TECH STACK</h3>
+    <div class="card-grid" style="grid-template-columns: repeat(6, 1fr);">
+      <div class="card"><div class="card-title">React 18</div><div class="card-desc">UI framework</div></div>
+      <div class="card"><div class="card-title">TypeScript</div><div class="card-desc">Strict mode</div></div>
+      <div class="card"><div class="card-title">Vite</div><div class="card-desc">Build tool</div></div>
+      <div class="card"><div class="card-title">TanStack Query</div><div class="card-desc">Server state</div></div>
+      <div class="card"><div class="card-title">shadcn/ui</div><div class="card-desc">Component library</div></div>
+      <div class="card"><div class="card-title">Tailwind v4</div><div class="card-desc">Utility CSS</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="connector-row">
+  <div class="connector-line"></div>
+  <div class="connector-label">fetch() + SSE streams &rarr; /api/*</div>
+  <div class="connector-line"></div>
+</div>
+
+<!-- ============ BACKEND ============ -->
+<div class="section theme-green">
+  <div class="section-header">
+    <div class="section-icon"></div>
+    <div class="section-title">BACKEND &mdash; Flask + Python</div>
+    <div class="section-badge">brain/</div>
+  </div>
+  <div class="section-body">
+
+    <h3 style="font-size:9px; color:var(--green); margin-bottom:12px; font-family:'Press Start 2P',monospace;">API BLUEPRINTS (4 Blueprints)</h3>
+    <div class="two-panel">
+      <div>
+        <div class="api-group">
+          <div class="api-group-title" style="color:var(--green);">adapter_bp &mdash; api_adapter.py (Main API)</div>
+          <div class="scroll-panel">
+            <div style="color:var(--text-dim);font-size:10px;margin-bottom:8px;font-weight:700;">Sessions & Study</div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/sessions</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/sessions/stats</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/sessions/today</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/sessions/last-context</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/sessions/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/sessions</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/sessions/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/sessions/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/sessions/bulk-delete</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/brain/session-json</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/streak</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/weakness-queue</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/study-wheel/current</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/study-wheel/complete-session</span></div>
+
+            <div style="color:var(--text-dim);font-size:10px;margin:10px 0 8px;font-weight:700;">Courses & Learning</div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/courses</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/courses/active</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/courses</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/courses/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/courses/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/modules</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/modules</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/modules/bulk</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/modules/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/modules/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/learning-objectives</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/learning-objectives</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/learning-objectives/bulk</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/learning-objectives/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/learning-objectives/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/lo-sessions</span></div>
+
+            <div style="color:var(--text-dim);font-size:10px;margin:10px 0 8px;font-weight:700;">Events & Calendar</div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/events</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/events</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/events/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/events/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/schedule-events</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/schedule-events</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/schedule-events/bulk</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/schedule-events/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/schedule-events/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/academic-deadlines</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/academic-deadlines</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/academic-deadlines/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/academic-deadlines/:id</span></div>
+
+            <div style="color:var(--text-dim);font-size:10px;margin:10px 0 8px;font-weight:700;">Google Calendar & Tasks</div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/google/status</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/google/auth</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/gcal/oauth/callback</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/google/disconnect</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/google-calendar/calendars</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/google-calendar/events</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/google-calendar/events</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/google-calendar/events/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/google-calendar/events/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/google-tasks</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/google-tasks</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/google-tasks/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/google-tasks/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/google-tasks/:id/move</span></div>
+
+            <div style="color:var(--text-dim);font-size:10px;margin:10px 0 8px;font-weight:700;">Brain & AI</div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/brain/metrics</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/brain/llm-status</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/brain/chat (SSE)</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/brain/quick-chat (SSE)</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/brain/ingest</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/brain/organize-preview</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/chat/:session_id</span></div>
+
+            <div style="color:var(--text-dim);font-size:10px;margin:10px 0 8px;font-weight:700;">Scholar</div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/scholar</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/scholar/run</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/scholar/status</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/scholar/logs</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/scholar/questions</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/scholar/chat</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/scholar/findings</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/scholar/tutor-audit</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/proposals</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/proposals</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/proposals/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/proposals/:id</span></div>
+
+            <div style="color:var(--text-dim);font-size:10px;margin:10px 0 8px;font-weight:700;">Obsidian & Anki</div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/obsidian/status</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/obsidian/append</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/obsidian/files</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/obsidian/file</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PUT">PUT</span><span class="api-path">/obsidian/file</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/obsidian/graph</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/obsidian/vault-index</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/anki/status</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/anki/decks</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/anki/due</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/anki/sync</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/anki/drafts</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/anki/drafts/:id/approve</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/anki/drafts/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/anki/drafts/:id</span></div>
+
+            <div style="color:var(--text-dim);font-size:10px;margin:10px 0 8px;font-weight:700;">Notes & Misc</div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/notes</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/notes</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PATCH">PATCH</span><span class="api-path">/notes/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/notes/:id</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/notes/reorder</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/planner/settings</span></div>
+            <div class="api-endpoint"><span class="method-badge method-PUT">PUT</span><span class="api-path">/planner/settings</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/planner/queue</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/planner/generate</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/db/health</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/tutor-issues</span></div>
+            <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/tutor-issues</span></div>
+            <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/calendar-order</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="api-group">
+          <div class="api-group-title" style="color:var(--green);">methods_bp &mdash; api_methods.py</div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/methods</span></div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/methods/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/methods</span></div>
+          <div class="api-endpoint"><span class="method-badge method-PUT">PUT</span><span class="api-path">/methods/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/methods/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/chains</span></div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/chains/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/chains</span></div>
+          <div class="api-endpoint"><span class="method-badge method-PUT">PUT</span><span class="api-path">/chains/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/chains/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/methods/:id/rate</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/chains/:id/rate</span></div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/methods/analytics</span></div>
+        </div>
+
+        <div class="api-group" style="margin-top:16px;">
+          <div class="api-group-title" style="color:var(--green);">tutor_bp &mdash; api_tutor.py</div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/tutor/session</span></div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/tutor/session/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/tutor/session/:id/turn (SSE)</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/tutor/session/:id/advance-block</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/tutor/session/:id/end</span></div>
+          <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/tutor/session/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/tutor/session/:id/artifact</span></div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/tutor/sessions</span></div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/tutor/content-sources</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/tutor/materials/upload</span></div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/tutor/materials</span></div>
+          <div class="api-endpoint"><span class="method-badge method-PUT">PUT</span><span class="api-path">/tutor/materials/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-DELETE">DEL</span><span class="api-path">/tutor/materials/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/tutor/chain</span></div>
+          <div class="api-endpoint"><span class="method-badge method-GET">GET</span><span class="api-path">/tutor/chain/:id</span></div>
+          <div class="api-endpoint"><span class="method-badge method-POST">POST</span><span class="api-path">/tutor/embed</span></div>
+        </div>
+
+        <div class="api-group" style="margin-top:16px;">
+          <div class="api-group-title" style="color:var(--green);">chain_bp &mdash; api_chain_runner.py</div>
+          <div class="card-desc">Chain execution for study method workflows</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:9px; color:var(--green); margin:20px 0 12px; font-family:'Press Start 2P',monospace;">CORE MODULES (brain/*.py)</h3>
+    <div class="card-grid" style="grid-template-columns: repeat(4, 1fr);">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>llm_provider.py</div>
+        <div class="card-desc">OpenRouter LLM interface. Model selection, streaming, token tracking.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>chain_runner.py</div>
+        <div class="card-desc">Chain prompt execution. Multi-step reasoning workflows.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>chain_prompts.py</div>
+        <div class="card-desc">Prompt templates for study chains and analysis.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>rag_notes.py</div>
+        <div class="card-desc">RAG pipeline for Obsidian notes. Similarity search + context injection.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>tutor_engine.py</div>
+        <div class="card-desc">Adaptive tutor core engine. Session management, block transitions.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>tutor_chains.py</div>
+        <div class="card-desc">LangChain RunnableSequence. First-pass chain, artifact detection.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>tutor_rag.py</div>
+        <div class="card-desc">ChromaDB + OpenAI embeddings. Keyword fallback search.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>tutor_streaming.py</div>
+        <div class="card-desc">SSE adapter for tutor chat. Token-by-token streaming.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>db_setup.py</div>
+        <div class="card-desc">Schema init + migration. 30 tables, column migrations.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>config.py</div>
+        <div class="card-desc">Global config. DB path, API keys, model settings.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>anki_sync.py</div>
+        <div class="card-desc">AnkiConnect integration. Card sync, deck management.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>obsidian_index.py</div>
+        <div class="card-desc">Obsidian vault indexer. File tree, search, graph.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>ingest_session.py</div>
+        <div class="card-desc">Session ingestion pipeline. Parse, validate, store.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>text_extractor.py</div>
+        <div class="card-desc">PDF/DOCX text extraction for ingestion.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>wrap_parser.py</div>
+        <div class="card-desc">Session wrap-up parser. Structured output extraction.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>import_syllabus.py</div>
+        <div class="card-desc">Syllabus importer. Course, module, LO creation.</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:9px; color:var(--green); margin:20px 0 12px; font-family:'Press Start 2P',monospace;">SCHOLAR MODULE (scholar/)</h3>
+    <div class="card-grid" style="grid-template-columns: repeat(4, 1fr);">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span>brain_reader.py</div>
+        <div class="card-desc">Reads session data + method library for Scholar analysis.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span>weekly_digest.py</div>
+        <div class="card-desc">Weekly performance digest generation.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span>friction_alerts.py</div>
+        <div class="card-desc">Identifies study friction points and alerts.</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span>telemetry_snapshot.py</div>
+        <div class="card-desc">System telemetry and performance metrics.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="connector-row">
+  <div class="connector-line"></div>
+  <div class="connector-label">SQLite + ChromaDB + File I/O</div>
+  <div class="connector-line"></div>
+</div>
+
+<!-- ============ DATABASE ============ -->
+<div class="section theme-yellow">
+  <div class="section-header">
+    <div class="section-icon"></div>
+    <div class="section-title">DATA LAYER &mdash; SQLite + ChromaDB</div>
+    <div class="section-badge">brain/data/</div>
+  </div>
+  <div class="section-body">
+    <h3 style="font-size:9px; color:var(--yellow); margin-bottom:12px; font-family:'Press Start 2P',monospace;">DATABASE TABLES (30 tables in pt_study.db)</h3>
+    <div class="cols-3">
+      <div>
+        <div style="color:var(--yellow);font-size:10px;font-weight:700;margin-bottom:8px;">Core Study</div>
+        <div class="db-table-chip">sessions</div>
+        <div class="db-table-chip">courses</div>
+        <div class="db-table-chip">course_events</div>
+        <div class="db-table-chip">topics</div>
+        <div class="db-table-chip">modules</div>
+        <div class="db-table-chip">learning_objectives</div>
+        <div class="db-table-chip">lo_sessions</div>
+        <div class="db-table-chip">study_tasks</div>
+        <div class="db-table-chip">planner_settings</div>
+        <div class="db-table-chip">topic_mastery</div>
+      </div>
+      <div>
+        <div style="color:var(--yellow);font-size:10px;font-weight:700;margin-bottom:8px;">AI & Knowledge</div>
+        <div class="db-table-chip">rag_docs</div>
+        <div class="db-table-chip">rag_embeddings</div>
+        <div class="db-table-chip">ingested_files</div>
+        <div class="db-table-chip">card_drafts</div>
+        <div class="db-table-chip">quick_notes</div>
+        <div class="db-table-chip">tutor_turns</div>
+        <div class="db-table-chip">tutor_issues</div>
+        <div class="db-table-chip">tutor_sessions</div>
+        <div class="db-table-chip">tutor_block_transitions</div>
+        <div class="db-table-chip">session_chains</div>
+      </div>
+      <div>
+        <div style="color:var(--yellow);font-size:10px;font-weight:700;margin-bottom:8px;">Methods & Scholar</div>
+        <div class="db-table-chip">method_blocks</div>
+        <div class="db-table-chip">method_chains</div>
+        <div class="db-table-chip">method_ratings</div>
+        <div class="db-table-chip">chain_runs</div>
+        <div class="db-table-chip">library_meta</div>
+        <div class="db-table-chip">scholar_digests</div>
+        <div class="db-table-chip">scholar_proposals</div>
+        <div class="db-table-chip">scholar_runs</div>
+        <div class="db-table-chip">scraped_events</div>
+        <div class="db-table-chip">calendar_action_ledger</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <h3 style="font-size:9px; color:var(--yellow); margin-bottom:8px; font-family:'Press Start 2P',monospace;">OTHER DATA STORES</h3>
+      <div class="card-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--cyan)"></span>ChromaDB</div>
+          <div class="card-desc">brain/data/chroma_tutor/<br>Vector store for tutor RAG. OpenAI text-embedding-3-small.</div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--cyan)"></span>Session Logs</div>
+          <div class="card-desc">brain/session_logs/<br>JSON files per study session. Chat history, evidence.</div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot" style="background:var(--cyan)"></span>SOP Library</div>
+          <div class="card-desc">sop/library/ (15 files)<br>00-overview through 15-method-library. Source of truth for protocols.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="connector-row">
+  <div class="connector-line"></div>
+  <div class="connector-label">HTTP/OAuth/API &larr;&rarr; External Services</div>
+  <div class="connector-line"></div>
+</div>
+
+<!-- ============ EXTERNAL SYSTEMS ============ -->
+<div class="section theme-orange">
+  <div class="section-header">
+    <div class="section-icon"></div>
+    <div class="section-title">EXTERNAL INTEGRATIONS</div>
+    <div class="section-badge">5 systems</div>
+  </div>
+  <div class="section-body">
+    <div class="card-grid" style="grid-template-columns: repeat(5, 1fr);">
+      <div class="card" style="border-top: 3px solid var(--orange);">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span>Google Calendar</div>
+        <div class="card-desc">OAuth 2.0 flow<br>Event CRUD<br>Calendar list<br>Multi-calendar support</div>
+        <div><span class="card-tag" style="color:var(--orange);border-color:var(--orange);">gcal.py</span></div>
+      </div>
+      <div class="card" style="border-top: 3px solid var(--orange);">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span>Google Tasks</div>
+        <div class="card-desc">Task lists<br>Task CRUD<br>Reorder/move<br>Toggle complete</div>
+        <div><span class="card-tag" style="color:var(--orange);border-color:var(--orange);">api_adapter.py</span></div>
+      </div>
+      <div class="card" style="border-top: 3px solid var(--purple);">
+        <div class="card-title"><span class="dot" style="background:var(--purple)"></span>Anki</div>
+        <div class="card-desc">AnkiConnect (localhost)<br>Deck listing<br>Card sync<br>Draft approval</div>
+        <div><span class="card-tag" style="color:var(--purple);border-color:var(--purple);">anki_sync.py</span></div>
+      </div>
+      <div class="card" style="border-top: 3px solid var(--cyan);">
+        <div class="card-title"><span class="dot" style="background:var(--cyan)"></span>Obsidian</div>
+        <div class="card-desc">Local REST API (:27123)<br>Vault browse/edit<br>Graph data<br>Index + search</div>
+        <div><span class="card-tag" style="color:var(--cyan);border-color:var(--cyan);">obsidian_index.py</span></div>
+      </div>
+      <div class="card" style="border-top: 3px solid var(--accent);">
+        <div class="card-title"><span class="dot" style="background:var(--accent)"></span>OpenRouter (LLM)</div>
+        <div class="card-desc">Chat completions<br>SSE streaming<br>Model selection<br>Token tracking</div>
+        <div><span class="card-tag" style="color:var(--accent);border-color:var(--accent);">llm_provider.py</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FILE TREE ============ -->
+<div class="section theme-cyan">
+  <div class="section-header">
+    <div class="section-icon"></div>
+    <div class="section-title">PROJECT FILE TREE</div>
+    <div class="section-badge">C:\pt-study-sop</div>
+  </div>
+  <div class="section-body">
+    <div class="cols-3">
+      <div class="file-tree">
+        <div class="dir">brain/</div>
+        <div class="file">├── dashboard/        (API blueprints)</div>
+        <div class="file">├── data/             (SQLite DB, seeds)</div>
+        <div class="file">├── session_logs/     (JSON logs)</div>
+        <div class="file">├── static/dist/      (built frontend)</div>
+        <div class="file">├── tests/            (pytest)</div>
+        <div class="file">├── config.py</div>
+        <div class="file">├── db_setup.py</div>
+        <div class="file">├── llm_provider.py</div>
+        <div class="file">├── chain_runner.py</div>
+        <div class="file">├── tutor_*.py        (4 files)</div>
+        <div class="file">├── rag_notes.py</div>
+        <div class="file">├── anki_sync.py</div>
+        <div class="file">├── obsidian_index.py</div>
+        <div class="file">└── dashboard_web.py  (Flask entry)</div>
+      </div>
+      <div class="file-tree">
+        <div class="dir">dashboard_rebuild/</div>
+        <div class="file">└── client/src/</div>
+        <div class="file">    ├── pages/        (9 pages)</div>
+        <div class="file">    ├── components/    (40+ components)</div>
+        <div class="file">    │   ├── brain/    (12 workspace)</div>
+        <div class="file">    │   ├── BrainChat/ (8 chat)</div>
+        <div class="file">    │   └── ui/       (60 primitives)</div>
+        <div class="file">    ├── api.ts         (API client)</div>
+        <div class="file">    ├── App.tsx        (routes)</div>
+        <div class="file">    └── index.css      (Tailwind)</div>
+        <div class="dir" style="margin-top:8px;">scholar/</div>
+        <div class="file">├── brain_reader.py</div>
+        <div class="file">├── weekly_digest.py</div>
+        <div class="file">├── friction_alerts.py</div>
+        <div class="file">└── telemetry_snapshot.py</div>
+      </div>
+      <div class="file-tree">
+        <div class="dir">sop/</div>
+        <div class="file">├── library/          (15 SOP files)</div>
+        <div class="file">├── archive/          (original 75)</div>
+        <div class="file">└── runtime/          (generated)</div>
+        <div class="dir" style="margin-top:8px;">conductor/</div>
+        <div class="file">├── product-definition.md</div>
+        <div class="file">├── tech-stack.md</div>
+        <div class="file">├── tracks.md</div>
+        <div class="file">├── workflow.md</div>
+        <div class="file">└── tracks/           (active tracks)</div>
+        <div class="dir" style="margin-top:8px;">docs/</div>
+        <div class="file">├── README.md         (docs index)</div>
+        <div class="file">└── root/</div>
+        <div class="file">    ├── PROJECT_ARCHITECTURE.md</div>
+        <div class="file">    └── GUIDE_DEV.md</div>
+        <div class="dir" style="margin-top:8px;">Root Files</div>
+        <div class="file">├── CLAUDE.md</div>
+        <div class="file">├── AGENTS.md</div>
+        <div class="file">├── Start_Dashboard.bat</div>
+        <div class="file">├── requirements.txt</div>
+        <div class="file">└── permissions.json</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Frontend</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Backend API</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>Data Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>External Systems</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Scholar/Research</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div>File System</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Core System</div>
+</div>
+
+<div style="text-align:center; padding:16px; color:var(--text-dim); font-size:10px;">
+  PT Study SOP &mdash; Architecture Audit &mdash; Generated Feb 2026 &mdash; Open in browser, zoom to fit, screenshot.
+</div>
+
+</div><!-- /main -->
+</body>
+</html>
