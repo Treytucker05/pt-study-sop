@@ -1,19 +1,65 @@
 id: M-ENC-002
 name: Seed-Lock Generation
 category: encode
-description: Learner generates their own encoding hook BEFORE the AI offers help. Start with your own association, metaphor,
-  or mnemonic. AI only assists if you're stuck. Enforces active generation over passive reception.
+description: Learner generates their own encoding hook BEFORE the AI offers help. Start with your own association, metaphor, or mnemonic. AI only assists if you're stuck. Enforces active generation over passive reception.
 default_duration_min: 3
 energy_cost: medium
 best_stage: first_exposure
-status: draft
+status: validated
 tags:
-- seed-lock
-- generation-first
-- active
-- sop-core
+  - seed-lock
+  - generation-first
+  - active
+  - sop-core
+mechanisms:
+  - generation
+  - elaboration
+  - desirable_difficulty
+inputs:
+  - New term or concept to encode
+  - Definition from source material
+  - 90-second timer
+steps:
+  - step: 1
+    action: Read the term and its definition
+    notes: Understand what you're encoding before generating
+  - step: 2
+    action: Set timer for 90 seconds
+    notes: Time pressure forces retrieval attempt
+  - step: 3
+    action: Generate your OWN hook — association, metaphor, mnemonic, or image
+    notes: This is the "Seed" — your first attempt
+  - step: 4
+    action: Write down your Seed even if imperfect
+    notes: Any attempt is better than waiting for AI
+  - step: 5
+    action: If stuck after 90s, ask Tutor for a suggestion
+    notes: AI provides only if you've tried first
+  - step: 6
+    action: Lock the final hook (yours or AI-assisted)
+    notes: Record for spaced repetition
+outputs:
+  - Learner-generated Seed (primary hook attempt)
+  - Final locked hook
+  - Generation success flag (self vs AI-assisted)
+stop_criteria:
+  - Hook generated (self or AI-assisted)
+  - 90-second attempt completed
+  - Hook locked for retention
+failure_modes:
+  - mode: Asking AI immediately
+    mitigation: Enforce 90-second wait before AI help
+  - mode: Giving up too fast
+    mitigation: Require written attempt even if "bad"
+  - mode: Over-relying on AI hooks
+    mitigation: Track self-generation rate; flag if <50%
+logging_fields:
+  - generation_type
+  - seed_attempted
+  - ai_assist_used
+  - time_to_seed
 evidence:
   citation: Slamecka & Graf (1978)
-  finding: generation effect — self-generated items remembered better than read items
+  finding: Generation effect — self-generated items are remembered significantly better than items simply read
   source: seed_methods.py
 evidence_raw: Slamecka & Graf (1978); generation effect — self-generated items remembered better than read items

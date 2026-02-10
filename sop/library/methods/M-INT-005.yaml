@@ -1,19 +1,67 @@
 id: M-INT-005
 name: Case Walkthrough
 category: interrogate
-description: Walk through a clinical case from presentation to assessment to intervention. Apply learned concepts to patient
-  scenarios. Builds clinical reasoning chains.
+description: Walk through a clinical case from presentation to assessment to intervention. Apply learned concepts to patient scenarios. Builds clinical reasoning chains.
 default_duration_min: 10
 energy_cost: high
 best_stage: exam_prep
-status: draft
+status: validated
 tags:
-- clinical
-- case-based
-- reasoning
-- application
+  - clinical
+  - case-based
+  - reasoning
+  - application
+mechanisms:
+  - transfer
+  - elaboration
+  - generation
+inputs:
+  - Clinical case (real or constructed)
+  - Concepts to apply
+  - Source material for verification
+steps:
+  - step: 1
+    action: Read the case presentation (chief complaint, history)
+    notes: Note key features that narrow the differential
+  - step: 2
+    action: Generate a differential diagnosis (3-5 possibilities)
+    notes: Most likely to least likely
+  - step: 3
+    action: Identify key assessments to distinguish diagnoses
+    notes: What tests or exams would help?
+  - step: 4
+    action: Walk through the reasoning for each step
+    notes: "Why this test? What would positive/negative mean?"
+  - step: 5
+    action: Reach a diagnosis and plan intervention
+    notes: Connect back to learned concepts
+  - step: 6
+    action: Verify reasoning against case key/source
+    notes: Flag reasoning errors
+outputs:
+  - Case walkthrough narrative
+  - Differential diagnosis list
+  - Assessment plan
+  - Intervention plan
+  - Reasoning verification
+stop_criteria:
+  - Case fully walked through (presentation to intervention)
+  - Reasoning documented
+  - Verified against source
+failure_modes:
+  - mode: Jumping to diagnosis too fast
+    mitigation: Require explicit differential before diagnosis
+  - mode: Skipping assessment rationale
+    mitigation: Every test needs a "because I want to rule in/out..."
+  - mode: Not connecting to concepts studied
+    mitigation: Explicitly name which concepts the case applies
+logging_fields:
+  - case_type
+  - diagnosis_reached
+  - concepts_applied
+  - reasoning_errors
 evidence:
   citation: Thistlethwaite et al. (2012)
-  finding: case-based learning improves clinical reasoning in health professions
+  finding: Case-based learning improves clinical reasoning in health professions education
   source: seed_methods.py
 evidence_raw: Thistlethwaite et al. (2012); case-based learning improves clinical reasoning in health professions

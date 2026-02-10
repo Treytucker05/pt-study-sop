@@ -1,17 +1,62 @@
 id: M-INT-002
 name: Clinical Application
 category: interrogate
-description: 'Apply the concept to a clinical scenario. Ask: how would this present? What would you test? How would you treat?'
+description: "Apply the concept to a clinical scenario. Ask: how would this present? What would you test? How would you treat?"
 default_duration_min: 5
 energy_cost: high
 best_stage: exam_prep
-status: draft
+status: validated
 tags:
-- clinical
-- application
-- pt-specific
+  - clinical
+  - application
+  - pt-specific
+  - sop-core
+mechanisms:
+  - transfer
+  - elaboration
+  - generation
+inputs:
+  - Concept to apply clinically
+  - Clinical scenario or patient type
+  - Source material for verification
+steps:
+  - step: 1
+    action: State the concept and choose a patient population
+    notes: "Example: 'ACE inhibitors in a 65yo with CHF and diabetes'"
+  - step: 2
+    action: "Ask: How would dysfunction/pathology present?"
+    notes: What symptoms and signs would you see?
+  - step: 3
+    action: "Ask: What would you test or assess?"
+    notes: Physical exam findings, lab tests, imaging
+  - step: 4
+    action: "Ask: How would you intervene?"
+    notes: Treatment, precautions, patient education
+  - step: 5
+    action: Verify your clinical reasoning against source
+    notes: Flag any errors or gaps
+outputs:
+  - Clinical application narrative
+  - Presentation, testing, intervention summary
+  - Verification notes
+stop_criteria:
+  - All three questions answered (present, test, treat)
+  - Verified against source
+  - 5 minutes elapsed
+failure_modes:
+  - mode: Generic application
+    mitigation: Require specific patient characteristics
+  - mode: Skipping assessment phase
+    mitigation: Must include at least 2 tests/assessments
+  - mode: Treatment without rationale
+    mitigation: Explain WHY this treatment for this patient
+logging_fields:
+  - concept_applied
+  - patient_population
+  - interventions_identified
+  - verification_status
 evidence:
   citation: Schmidt & Rikers (2007)
-  finding: clinical application strengthens illness script formation
+  finding: Clinical application strengthens illness script formation and diagnostic reasoning
   source: seed_methods.py
 evidence_raw: Schmidt & Rikers (2007); clinical application strengthens illness script formation

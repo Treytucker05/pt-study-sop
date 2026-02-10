@@ -5,13 +5,55 @@ description: Identify 2-3 connections between this topic and topics from other c
 default_duration_min: 3
 energy_cost: medium
 best_stage: consolidation
-status: draft
+status: validated
 tags:
-- integration
-- cross-course
-- big-picture
+  - integration
+  - cross-course
+  - big-picture
+  - transfer
+mechanisms:
+  - elaboration
+  - transfer
+inputs:
+  - Current topic
+  - Access to previous course notes (optional)
+steps:
+  - step: 1
+    action: State the current topic clearly
+    notes: What's the core concept?
+  - step: 2
+    action: Brainstorm connections to other courses
+    notes: "Think: anatomy, physiology, pathology, pharmacology, clinical"
+  - step: 3
+    action: Identify 2-3 strongest cross-topic links
+    notes: "Look for: shared mechanisms, shared structures, cause-effect chains"
+  - step: 4
+    action: Write a sentence explaining each connection
+    notes: "Format: '[Topic A] connects to [Topic B] because...'"
+  - step: 5
+    action: Identify the shared principle underlying the connection
+    notes: What general rule applies to both?
+outputs:
+  - Cross-topic connection list (2-3)
+  - Explanatory sentences
+  - Shared principles identified
+stop_criteria:
+  - 2-3 connections identified
+  - Each explained in one sentence
+  - Shared principle stated
+failure_modes:
+  - mode: Connections too vague
+    mitigation: Require specific shared mechanism or structure
+  - mode: Only within-course connections
+    mitigation: At least one must be from a different course
+  - mode: Listing without explaining
+    mitigation: Each connection needs a "because" statement
+logging_fields:
+  - topic_linked
+  - cross_topics
+  - shared_principles
 evidence:
   citation: Pugh & Bergin (2006)
-  finding: interest deepens when learners see cross-domain connections
+  finding: Interest and retention deepen when learners see cross-domain connections
   source: seed_methods.py
 evidence_raw: Pugh & Bergin (2006); interest deepens when learners see cross-domain connections

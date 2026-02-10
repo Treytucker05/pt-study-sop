@@ -1,17 +1,66 @@
 id: M-REF-001
 name: Error Autopsy
 category: refine
-description: 'Review errors from retrieval practice. For each error: (1) What did I say? (2) What''s correct? (3) Why did
-  I confuse them? (4) What cue will prevent this next time? Metacognitive error analysis.'
+description: 'Review errors from retrieval practice. For each error: (1) What did I say? (2) What''s correct? (3) Why did I confuse them? (4) What cue will prevent this next time? Metacognitive error analysis.'
 default_duration_min: 5
 energy_cost: medium
 best_stage: exam_prep
-status: draft
+status: validated
 tags:
-- error-analysis
-- metacognition
-- correction
-- evidence-based
+  - error-analysis
+  - metacognition
+  - correction
+  - evidence-based
+mechanisms:
+  - error_correction
+  - metacognition
+  - elaboration
+  - discrimination
+inputs:
+  - List of errors from recent retrieval practice
+  - Correct answers for each error
+  - Reference materials for deep understanding
+  - Error autopsy template (4-column format)
+steps:
+  - step: 1
+    action: Collect all errors from recent retrieval session
+    notes: Use sprint quiz misses, free recall gaps, or exam review errors
+  - step: 2
+    action: "For each error, write Column 1: 'What did I say?'"
+    notes: Record your exact wrong answer — no sanitizing
+  - step: 3
+    action: "Write Column 2: 'What's correct?'"
+    notes: Record the accurate answer with source citation if possible
+  - step: 4
+    action: "Write Column 3: 'Why did I confuse them?'"
+    notes: This is the key insight — identify the conceptual confusion or memory interference
+  - step: 5
+    action: "Write Column 4: 'What cue will prevent this next time?'"
+    notes: Create a discrimination cue or mnemonic to prevent recurrence
+  - step: 6
+    action: Convert high-value autopsies into Anki cards
+    notes: Error-based cards are high-yield for exam prep
+outputs:
+  - Completed error autopsy table
+  - Root cause analysis for each error
+  - Discrimination cues created
+  - Anki card candidates identified
+stop_criteria:
+  - All errors from session analyzed
+  - Each error has a prevention cue
+  - High-value errors converted to study artifacts
+failure_modes:
+  - mode: Superficial analysis (just noting "I was wrong")
+    mitigation: Column 3 (Why confused?) is mandatory — dig into the root cause
+  - mode: Skipping the prevention cue (Column 4)
+    mitigation: No closure without a specific cue to prevent recurrence
+  - mode: Defensive attribution ("trick question", "unfair")
+    mitigation: Assume the error reveals something to learn — own it
+logging_fields:
+  - errors_analyzed
+  - root_causes_identified
+  - prevention_cues_created
+  - anki_cards_drafted
 evidence:
   citation: Metcalfe (2017)
   finding: error correction with feedback is more effective than errorless learning

@@ -5,12 +5,62 @@ description: Rapid-fire Q&A with Tutor. 10-15 questions in 5 min. Track accuracy
 default_duration_min: 5
 energy_cost: medium
 best_stage: review
-status: draft
+status: validated
 tags:
-- quiz
-- speed
-- rsr
-- ai-assisted
+  - quiz
+  - speed
+  - rsr
+  - ai-assisted
+mechanisms:
+  - retrieval
+  - testing
+  - calibration
+  - spacing
+inputs:
+  - Topic or concept set for quiz
+  - Tutor AI (or pre-made question set)
+  - Timer (5 min recommended)
+  - Scoring tracker (correct/incorrect tally)
+steps:
+  - step: 1
+    action: Request sprint quiz from Tutor on the target topic
+    notes: Specify topic scope and number of questions (10-15 typical)
+  - step: 2
+    action: Set timer for 5 minutes
+    notes: Speed adds desirable difficulty and prevents overthinking
+  - step: 3
+    action: Answer each question aloud or in writing before seeing feedback
+    notes: Must commit to an answer — no "I think maybe..."
+  - step: 4
+    action: Track correct/incorrect for each question immediately
+    notes: Keep running tally for RSR calculation
+  - step: 5
+    action: Note any questions that felt uncertain even if correct
+    notes: Near-misses are weak anchors — flag for review
+  - step: 6
+    action: Calculate RSR percentage at end (correct / total × 100)
+    notes: RSR < 80% = needs more encoding; RSR > 90% = ready to advance
+outputs:
+  - RSR percentage (correct/total)
+  - List of missed questions
+  - Weak anchor flags (uncertain but correct)
+  - Topics needing re-encoding
+stop_criteria:
+  - Timer ends
+  - All planned questions answered
+  - RSR threshold achieved (if targeting specific level)
+failure_modes:
+  - mode: Looking up answers during quiz
+    mitigation: Treat as test conditions — no references allowed
+  - mode: Not committing to answers (hedging)
+    mitigation: Force binary commit before seeing correct answer
+  - mode: Skipping RSR calculation
+    mitigation: RSR is the whole point — always calculate and log
+logging_fields:
+  - questions_attempted
+  - questions_correct
+  - rsr_percent
+  - weak_anchors_flagged
 evidence:
   citation: McDaniel et al. (2007)
   finding: quiz-based retrieval enhances later exam performance

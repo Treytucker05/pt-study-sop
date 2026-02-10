@@ -5,13 +5,56 @@ description: Have Tutor generate a topic skeleton with main headings and subhead
 default_duration_min: 5
 energy_cost: low
 best_stage: first_exposure
-status: draft
+status: validated
 tags:
-- overview
-- structure
-- ai-assisted
+  - overview
+  - structure
+  - ai-assisted
+  - advance-organizer
+mechanisms:
+  - elaboration
+  - worked_examples
+inputs:
+  - Topic name
+  - Source materials (uploaded to Tutor)
+  - Request for skeleton generation
+steps:
+  - step: 1
+    action: "Ask Tutor: 'Generate a skeleton outline for [topic] with main headings and 2-3 subheadings each'"
+    notes: Tutor uses Source-Lock to ensure accuracy
+  - step: 2
+    action: Review the skeleton for 2-3 minutes
+    notes: Don't try to memorize — just get the shape
+  - step: 3
+    action: Identify the 3 most important sections
+    notes: These become priority targets for encoding
+  - step: 4
+    action: Note any unfamiliar terms in headings
+    notes: These need definition before deep study
+  - step: 5
+    action: Keep skeleton visible during study as navigation aid
+    notes: Check off sections as you complete them
+outputs:
+  - Topic skeleton (hierarchical outline)
+  - Priority sections identified (top 3)
+  - Unfamiliar term list
+stop_criteria:
+  - Skeleton reviewed
+  - Priority sections marked
+  - 5 minutes elapsed
+failure_modes:
+  - mode: Skeleton too detailed
+    mitigation: Request 2 levels only (headings + subheadings)
+  - mode: Trying to memorize the skeleton
+    mitigation: Goal is orientation, not retention
+  - mode: Skeleton contains errors
+    mitigation: Cross-check against source materials; flag discrepancies
+logging_fields:
+  - skeleton_section_count
+  - priority_sections
+  - unfamiliar_terms_count
 evidence:
   citation: Lorch & Lorch (1996)
-  finding: advance organizers improve text comprehension
+  finding: Advance organizers improve text comprehension by providing structural scaffolding
   source: seed_methods.py
 evidence_raw: Lorch & Lorch (1996); advance organizers improve text comprehension

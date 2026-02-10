@@ -5,13 +5,55 @@ description: Group related terms/concepts into 3-5 clusters. Identify hierarchy 
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
-status: draft
+status: validated
 tags:
-- organization
-- visual
-- grouping
+  - organization
+  - visual
+  - grouping
+  - chunking
+mechanisms:
+  - elaboration
+  - discrimination
+inputs:
+  - List of terms/concepts from the topic (10-20 items)
+  - Blank paper or whiteboard
+steps:
+  - step: 1
+    action: List all key terms from the topic
+    notes: Extract from headings, bold text, or term lists
+  - step: 2
+    action: Sort terms into 3-5 natural groupings
+    notes: "Look for: shared function, shared location, shared mechanism"
+  - step: 3
+    action: Name each cluster with a descriptive label
+    notes: The label should capture what unifies the group
+  - step: 4
+    action: Arrange clusters spatially to show relationships
+    notes: Related clusters closer together; hierarchies top-to-bottom
+  - step: 5
+    action: Draw connecting lines between related clusters
+    notes: Label connections with relationship type
+outputs:
+  - Cluster diagram (3-5 labeled groups)
+  - Inter-cluster relationships mapped
+  - Visual organization of topic
+stop_criteria:
+  - All terms assigned to clusters
+  - Clusters named
+  - 5 minutes elapsed
+failure_modes:
+  - mode: Too many clusters (>5)
+    mitigation: Force consolidation; look for super-categories
+  - mode: Clusters too uneven (one has 80% of terms)
+    mitigation: Split large clusters by sub-function
+  - mode: Terms don't fit any cluster
+    mitigation: Create "Misc" cluster; these may be edge cases or prerequisites
+logging_fields:
+  - cluster_count
+  - terms_per_cluster
+  - inter_cluster_connections
 evidence:
   citation: Bower et al. (1969)
-  finding: conceptual organization improves recall by 2-3x
+  finding: Conceptual organization improves recall by 2-3x compared to random presentation
   source: seed_methods.py
 evidence_raw: Bower et al. (1969); conceptual organization improves recall by 2-3x

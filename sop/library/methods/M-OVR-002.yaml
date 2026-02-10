@@ -5,11 +5,61 @@ description: Draft 3-5 Anki cards for the session's key concepts. Use cloze or b
 default_duration_min: 5
 energy_cost: low
 best_stage: consolidation
-status: draft
+status: validated
 tags:
-- anki
-- spaced-repetition
-- artifacts
+  - anki
+  - spaced-repetition
+  - artifacts
+mechanisms:
+  - spacing
+  - retrieval
+  - generation
+  - artifact_creation
+inputs:
+  - Session notes and key concepts
+  - Anki card template (cloze or basic)
+  - Card draft staging area (Brain or text file)
+  - Target deck name
+steps:
+  - step: 1
+    action: Review session notes and identify 3-5 highest-value concepts
+    notes: Prioritize weak anchors, new vocabulary, and easily confused items
+  - step: 2
+    action: Choose card format for each concept (cloze vs. basic Q&A)
+    notes: Cloze for vocabulary/facts; Basic for "why" questions and processes
+  - step: 3
+    action: Draft the front of each card (question or cloze deletion)
+    notes: One fact per card — no "double-barreled" cards
+  - step: 4
+    action: Draft the back of each card (answer)
+    notes: Keep answers concise — elaboration goes in the "Extra" field
+  - step: 5
+    action: Add context tags (topic, source, date)
+    notes: Tags enable filtered study and tracking
+  - step: 6
+    action: Stage cards for sync to Anki via Brain
+    notes: Brain's Anki integration handles the actual sync
+outputs:
+  - 3-5 drafted Anki cards
+  - Cards tagged by topic and source
+  - Cards staged in Brain for Anki sync
+  - Card count logged to session record
+stop_criteria:
+  - 3-5 cards drafted (minimum 3)
+  - All cards follow single-fact rule
+  - Cards staged for sync
+failure_modes:
+  - mode: Double-barreled cards (multiple facts per card)
+    mitigation: Split into separate cards — one fact each
+  - mode: Cards too complex (essay answers)
+    mitigation: If answer takes > 10 seconds to recall, simplify
+  - mode: Drafting cards for material not yet understood
+    mitigation: Only card concepts you can already explain — cards are for retention, not learning
+logging_fields:
+  - cards_drafted
+  - card_format_breakdown
+  - topics_covered
+  - cards_synced_to_anki
 evidence:
   citation: Kornell (2009)
   finding: Cepeda et al. (2006); spaced retrieval via flashcards is high-utility

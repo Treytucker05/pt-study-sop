@@ -5,13 +5,57 @@ description: Create an analogy linking this concept to something familiar. Test 
 default_duration_min: 3
 energy_cost: medium
 best_stage: review
-status: draft
+status: validated
 tags:
-- analogy
-- transfer
-- creative
+  - analogy
+  - transfer
+  - creative
+  - sop-core
+mechanisms:
+  - elaboration
+  - transfer
+  - generation
+inputs:
+  - Concept to analogize
+  - Familiar domain for comparison
+steps:
+  - step: 1
+    action: State the concept you want to understand better
+    notes: Be specific about what aspect needs clarification
+  - step: 2
+    action: Find a familiar domain with similar structure
+    notes: "Good sources: everyday objects, sports, cooking, machines"
+  - step: 3
+    action: "Map the analogy: A is to B as X is to Y"
+    notes: Identify 3+ corresponding elements
+  - step: 4
+    action: Test the edges — where does the analogy break down?
+    notes: All analogies have limits; knowing them is part of learning
+  - step: 5
+    action: Note what the breakdown teaches you
+    notes: The failure points often reveal important nuances
+outputs:
+  - Analogy statement (A is to B as X is to Y)
+  - Mapping table (3+ correspondences)
+  - Breakdown points (where analogy fails)
+stop_criteria:
+  - Analogy created with 3+ mappings
+  - At least 1 breakdown point identified
+  - 3 minutes elapsed
+failure_modes:
+  - mode: Analogy too superficial
+    mitigation: Require structural mapping, not just surface similarity
+  - mode: Ignoring breakdown points
+    mitigation: Force identification of at least one limitation
+  - mode: Familiar domain not actually familiar
+    mitigation: Choose domains you know well
+logging_fields:
+  - concept_analogized
+  - familiar_domain
+  - mapping_count
+  - breakdown_points
 evidence:
   citation: Gentner (1983)
-  finding: analogical reasoning supports structural mapping and transfer
+  finding: Analogical reasoning supports structural mapping and transfer across domains
   source: seed_methods.py
 evidence_raw: Gentner (1983); analogical reasoning supports structural mapping and transfer

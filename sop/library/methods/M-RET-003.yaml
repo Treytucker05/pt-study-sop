@@ -5,11 +5,59 @@ description: Review notes with key terms blanked out. Fill from memory. Targets 
 default_duration_min: 5
 energy_cost: low
 best_stage: review
-status: draft
+status: validated
 tags:
-- cloze
-- vocabulary
-- targeted
+  - cloze
+  - vocabulary
+  - targeted
+mechanisms:
+  - retrieval
+  - cued_recall
+  - vocabulary_encoding
+inputs:
+  - Notes or text with key terms identified
+  - Cloze deletion tool (or manually blanked printout)
+  - Answer key for verification
+steps:
+  - step: 1
+    action: Prepare cloze material by blanking key terms (or use pre-made)
+    notes: Target vocabulary, definitions, key names, and critical facts
+  - step: 2
+    action: Read each sentence with the blank
+    notes: Use context clues — this is cued recall, not free recall
+  - step: 3
+    action: Write or speak the missing term before checking
+    notes: Commit to answer first — no peeking at answer key
+  - step: 4
+    action: Check answer immediately after each item
+    notes: Immediate feedback strengthens correct memories, corrects errors
+  - step: 5
+    action: Mark items missed for targeted review
+    notes: Create a miss list for focused re-study
+  - step: 6
+    action: Re-attempt missed items after completing all blanks
+    notes: Second pass often shows improvement — track this
+outputs:
+  - Completed cloze exercise
+  - Accuracy count (correct/total blanks)
+  - Miss list for targeted review
+  - Second-pass improvement rate
+stop_criteria:
+  - All blanks attempted
+  - Second pass on missed items complete
+  - Accuracy threshold reached (e.g., 90%)
+failure_modes:
+  - mode: Blanking too many terms (cognitive overload)
+    mitigation: 1 blank per sentence maximum; focus on highest-value terms
+  - mode: Using blanks that have no context clues
+    mitigation: Ensure surrounding context provides retrieval cues
+  - mode: Rushing without committing to answers
+    mitigation: Say/write answer before looking — no peeking
+logging_fields:
+  - blanks_attempted
+  - blanks_correct
+  - accuracy_percent
+  - second_pass_improvement
 evidence:
   citation: Dunlosky et al. (2013)
   finding: cloze-based retrieval is effective for factual knowledge

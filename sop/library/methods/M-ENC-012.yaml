@@ -1,19 +1,68 @@
 id: M-ENC-012
 name: Clinical Decision Tree
 category: encode
-description: 'Build a branching decision diagram: presentation → key findings → differential → tests → diagnosis. Scaffolds
-  clinical reasoning into explicit decision points.'
+description: "Build a branching decision diagram: presentation → key findings → differential → tests → diagnosis. Scaffolds clinical reasoning into explicit decision points."
 default_duration_min: 10
 energy_cost: high
 best_stage: exam_prep
-status: draft
+status: validated
 tags:
-- visual
-- mermaid
-- clinical-reasoning
-- decision-tree
+  - visual
+  - mermaid
+  - clinical-reasoning
+  - decision-tree
+  - differential
+mechanisms:
+  - elaboration
+  - discrimination
+  - transfer
+inputs:
+  - Clinical presentation or chief complaint
+  - Differential diagnosis list
+  - Source material with diagnostic criteria
+steps:
+  - step: 1
+    action: Start with the chief complaint at top
+    notes: "Example: 'Chest Pain'"
+  - step: 2
+    action: Branch by key discriminating questions
+    notes: "What single question best splits the differential?"
+  - step: 3
+    action: At each branch, add the most likely diagnoses
+    notes: Narrow the differential with each decision point
+  - step: 4
+    action: Add the confirmatory test or finding for each diagnosis
+    notes: "What clinches the diagnosis?"
+  - step: 5
+    action: Verify each branch against clinical guidelines
+    notes: Use Source-Lock for accuracy
+  - step: 6
+    action: Add "red flags" that skip the tree (emergencies)
+    notes: Safety-critical findings that override the algorithm
+outputs:
+  - Clinical decision tree
+  - Red flag list
+  - Confirmatory test per diagnosis
+  - Mermaid code (if using dashboard)
+stop_criteria:
+  - All major diagnoses included
+  - Decision points are truly discriminating
+  - Tree verified against guidelines
+failure_modes:
+  - mode: Too many branches at one node
+    mitigation: Limit to 2-3 branches per decision point
+  - mode: Non-discriminating questions
+    mitigation: Each question must meaningfully narrow differential
+  - mode: Missing red flags
+    mitigation: Always include "skip to emergency" path
+logging_fields:
+  - presentation_type
+  - diagnoses_included
+  - decision_depth
+  - red_flags_count
+  - verification_status
 evidence:
   citation: Charlin et al. (2000)
-  finding: decision trees scaffold clinical reasoning
+  finding: Decision trees scaffold clinical reasoning and support diagnostic accuracy
   source: seed_methods.py
 evidence_raw: Charlin et al. (2000); decision trees scaffold clinical reasoning

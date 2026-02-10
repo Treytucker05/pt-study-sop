@@ -1,19 +1,68 @@
 id: M-ENC-010
 name: Comparison Table
 category: encode
-description: Create a side-by-side table comparing 2-4 confusable concepts across shared features. Highlight discriminating
-  features. Builds differential diagnosis skill.
+description: Create a side-by-side table comparing 2-4 confusable concepts across shared features. Highlight discriminating features. Builds differential diagnosis skill.
 default_duration_min: 7
 energy_cost: medium
 best_stage: review
-status: draft
+status: validated
 tags:
-- visual
-- comparison
-- discrimination
-- table
+  - visual
+  - comparison
+  - discrimination
+  - table
+  - clinical
+mechanisms:
+  - discrimination
+  - elaboration
+  - dual_coding
+inputs:
+  - 2-4 confusable concepts to compare
+  - List of comparison dimensions/features
+  - Source material for accuracy
+steps:
+  - step: 1
+    action: Create table with concepts as columns
+    notes: 2-4 concepts optimal; more gets unwieldy
+  - step: 2
+    action: List comparison dimensions as rows
+    notes: "Common dimensions: mechanism, presentation, treatment, prognosis"
+  - step: 3
+    action: Fill each cell from memory first
+    notes: Retrieval before lookup
+  - step: 4
+    action: Check source material and correct errors
+    notes: Note which cells you got wrong
+  - step: 5
+    action: Highlight the discriminating features
+    notes: These are the key differentiators
+  - step: 6
+    action: Generate 1-2 "If...then" rules from discriminators
+    notes: "Example: 'If painless jaundice → think pancreatic head cancer'"
+outputs:
+  - Completed comparison table
+  - Discriminating features highlighted
+  - Differential rules (1-2 per comparison)
+  - Error list from initial attempt
+stop_criteria:
+  - All cells filled
+  - Discriminators identified
+  - Rules generated
+failure_modes:
+  - mode: Too many comparison dimensions
+    mitigation: Limit to 5-7 rows; prioritize clinical relevance
+  - mode: No discriminators identified
+    mitigation: Force ranking — which row is MOST differentiating?
+  - mode: Looking up before trying
+    mitigation: Fill from memory first, then verify
+logging_fields:
+  - concepts_compared
+  - dimensions_used
+  - discriminators_found
+  - rules_generated
+  - cells_corrected
 evidence:
   citation: Alfieri et al. (2013)
-  finding: comparison improves discrimination and concept formation
+  finding: Comparison improves discrimination and concept formation by highlighting distinctive features
   source: seed_methods.py
 evidence_raw: Alfieri et al. (2013); comparison improves discrimination and concept formation

@@ -1,21 +1,64 @@
 id: M-ENC-001
 name: KWIK Hook
 category: encode
-description: Structured 5-step encoding protocol for new terms. Sound (phonetic cue) → Function (true meaning) → Image (vivid
-  visual tied to function) → Resonance (learner confirms it clicks) → Lock (record as card/log). Each step is gated — don't
-  skip ahead.
+description: Structured 5-step encoding protocol for new terms. Sound (phonetic cue) → Function (true meaning) → Image (vivid visual tied to function) → Resonance (learner confirms it clicks) → Lock (record as card/log). Each step is gated — don't skip ahead.
 default_duration_min: 3
 energy_cost: medium
 best_stage: first_exposure
-status: draft
+status: validated
 tags:
-- mnemonic
-- kwik
-- hook
-- gated
-- sop-core
+  - mnemonic
+  - kwik
+  - hook
+  - gated
+  - sop-core
+  - dual-coding
+mechanisms:
+  - dual_coding
+  - elaboration
+  - generation
+inputs:
+  - New term or concept to encode
+  - Definition or meaning from source material
+  - Blank note area for hook creation
+steps:
+  - step: 1
+    action: "Sound: Find a phonetic cue or rhyme that sounds like the term"
+    notes: "Example: 'Sartorius' sounds like 'Sartorial' (relating to tailoring)"
+  - step: 2
+    action: "Function: State the true meaning/function in one sentence"
+    notes: Must come from source material (Source-Lock)
+  - step: 3
+    action: "Image: Create a vivid mental image that connects sound to function"
+    notes: The weirder/more emotional, the better for retention
+  - step: 4
+    action: "Resonance: Confirm aloud that the hook makes sense to you"
+    notes: "Say: 'This clicks because...'"
+  - step: 5
+    action: "Lock: Record the hook as an Anki card or session log entry"
+    notes: Capture for spaced repetition
+outputs:
+  - KWIK hook (sound-function-image triplet)
+  - Anki card draft (optional)
+  - Session log entry
+stop_criteria:
+  - All 5 steps completed
+  - Hook feels "locked" (resonance confirmed)
+  - 3 minutes elapsed per term
+failure_modes:
+  - mode: Skipping steps
+    mitigation: Gate each step; don't proceed without completion
+  - mode: Image too abstract
+    mitigation: Make it concrete, visual, and bizarre
+  - mode: Sound cue forced
+    mitigation: If phonetics don't work, try acronym or first-letter cue
+logging_fields:
+  - term_encoded
+  - hook_type
+  - resonance_confirmed
+  - card_created
 evidence:
   citation: Paivio (1991)
-  finding: dual-coding theory — combining verbal + visual improves retention
+  finding: Dual-coding theory — combining verbal + visual improves retention by creating multiple retrieval paths
   source: seed_methods.py
 evidence_raw: Paivio (1991); dual-coding theory — combining verbal + visual improves retention

@@ -1,17 +1,60 @@
 id: M-PRE-006
 name: Three-Layer Chunk
 category: prepare
-description: 'Break topic into 3 layers: big picture, key details, edge cases. Process one layer at a time.'
+description: "Break topic into 3 layers: big picture, key details, edge cases. Process one layer at a time."
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
-status: draft
+status: validated
 tags:
-- chunking
-- depth-first
-- structure
+  - chunking
+  - depth-first
+  - structure
+  - cognitive-load
+mechanisms:
+  - elaboration
+  - desirable_difficulty
+inputs:
+  - Topic content (slides, notes, textbook section)
+  - Three-column template (Big Picture | Key Details | Edge Cases)
+steps:
+  - step: 1
+    action: "Layer 1 — Big Picture: Write the main concept in 1-2 sentences"
+    notes: "Answer: What is this topic fundamentally about?"
+  - step: 2
+    action: "Layer 2 — Key Details: List 3-5 must-know facts"
+    notes: These are the core testable items
+  - step: 3
+    action: "Layer 3 — Edge Cases: Note exceptions, special cases, clinical pearls"
+    notes: These differentiate good from great understanding
+  - step: 4
+    action: Review layers in order — don't jump ahead
+    notes: Each layer builds on the previous
+  - step: 5
+    action: Identify which layer needs most study time
+    notes: Usually Layer 2 for exams; Layer 3 for clinical
+outputs:
+  - Three-layer breakdown document
+  - Study priority assignment
+  - Layered mental model
+stop_criteria:
+  - All three layers populated
+  - Study priority identified
+  - 5 minutes elapsed
+failure_modes:
+  - mode: Layers too unbalanced
+    mitigation: Big Picture should be 1-2 sentences max; force brevity
+  - mode: Skipping to edge cases too early
+    mitigation: Gate Layer 3 until Layer 2 is solid
+  - mode: Key details too vague
+    mitigation: Require specific facts, not summaries
+logging_fields:
+  - big_picture_word_count
+  - key_detail_count
+  - edge_case_count
+  - priority_layer
 evidence:
   citation: Miller (1956)
-  finding: Gobet et al. (2001); chunking manages cognitive load
+  finding: Chunking manages cognitive load by organizing information into meaningful units
   source: seed_methods.py
 evidence_raw: Miller (1956); Gobet et al. (2001); chunking manages cognitive load

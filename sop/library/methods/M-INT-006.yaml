@@ -1,18 +1,66 @@
 id: M-INT-006
 name: Illness Script Builder
 category: interrogate
-description: 'For a condition, build the illness script: (1) enabling conditions, (2) pathophysiological fault, (3) clinical
-  consequences. Compare your script to the textbook version.'
+description: "For a condition, build the illness script: (1) enabling conditions, (2) pathophysiological fault, (3) clinical consequences. Compare your script to the textbook version."
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
-status: draft
+status: validated
 tags:
-- illness-script
-- clinical-reasoning
-- pathology
+  - illness-script
+  - clinical-reasoning
+  - pathology
+  - sop-core
+mechanisms:
+  - elaboration
+  - generation
+  - transfer
+inputs:
+  - Condition/disease to script
+  - Source material with pathophysiology
+  - Illness script template
+steps:
+  - step: 1
+    action: "Write Enabling Conditions: Who gets this? Risk factors? Epidemiology?"
+    notes: "Example: 'Elderly, smoker, male, hypertension'"
+  - step: 2
+    action: "Write Pathophysiological Fault: What goes wrong? Mechanism?"
+    notes: "Example: 'Atherosclerotic plaque rupture leads to thrombosis'"
+  - step: 3
+    action: "Write Clinical Consequences: What symptoms and signs result?"
+    notes: "Example: 'Chest pain, dyspnea, diaphoresis, ST elevation'"
+  - step: 4
+    action: Connect the three parts with causal arrows
+    notes: Enabling leads to Fault leads to Consequences
+  - step: 5
+    action: Compare your script to textbook/source version
+    notes: Note what you missed or got wrong
+  - step: 6
+    action: Add discriminating features vs. similar conditions
+    notes: What separates this illness script from look-alikes?
+outputs:
+  - Complete illness script (3 parts)
+  - Causal chain diagram
+  - Comparison to textbook
+  - Discriminating features
+stop_criteria:
+  - All three script parts completed
+  - Causal chain drawn
+  - Compared to source
+failure_modes:
+  - mode: Consequences without mechanism
+    mitigation: Require explicit pathophysiological link
+  - mode: Generic enabling conditions
+    mitigation: Be specific — which risk factors are most important?
+  - mode: Not discriminating from similar conditions
+    mitigation: Always add "unlike [X] which has..."
+logging_fields:
+  - condition_scripted
+  - enabling_conditions_count
+  - consequences_count
+  - discriminators_added
 evidence:
   citation: Schmidt & Rikers (2007)
-  finding: illness scripts are the cognitive structure underlying expert clinical reasoning
+  finding: Illness scripts are the cognitive structure underlying expert clinical reasoning
   source: seed_methods.py
 evidence_raw: Schmidt & Rikers (2007); illness scripts are the cognitive structure underlying expert clinical reasoning

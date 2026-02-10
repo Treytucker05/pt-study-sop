@@ -1,19 +1,64 @@
 id: M-INT-004
 name: Side-by-Side Comparison
 category: interrogate
-description: Place two confusable concepts in a comparison table (features, functions, clinical signs). Identify discriminating
-  features. Builds differential diagnosis skill.
+description: Place two confusable concepts in a comparison table (features, functions, clinical signs). Identify discriminating features. Builds differential diagnosis skill.
 default_duration_min: 7
 energy_cost: medium
 best_stage: review
-status: draft
+status: validated
 tags:
-- comparison
-- discrimination
-- differential
-- table
+  - comparison
+  - discrimination
+  - differential
+  - table
+mechanisms:
+  - discrimination
+  - elaboration
+inputs:
+  - Two confusable concepts
+  - Comparison dimensions (features to compare)
+  - Source material for accuracy
+steps:
+  - step: 1
+    action: Choose two concepts you frequently confuse
+    notes: The more confusable, the more valuable
+  - step: 2
+    action: Create a two-column table
+    notes: One column per concept
+  - step: 3
+    action: List 5-7 comparison dimensions as rows
+    notes: "Include: definition, mechanism, presentation, treatment, prognosis"
+  - step: 4
+    action: Fill each cell from memory first
+    notes: Retrieval before verification
+  - step: 5
+    action: Verify and correct against source
+    notes: Note which cells you got wrong
+  - step: 6
+    action: Highlight the key discriminating features
+    notes: What's the ONE thing that distinguishes them?
+outputs:
+  - Side-by-side comparison table
+  - Discriminating features highlighted
+  - Error list from initial attempt
+stop_criteria:
+  - Table complete (5-7 rows filled)
+  - Discriminators identified
+  - Verified against source
+failure_modes:
+  - mode: Features too similar across concepts
+    mitigation: Focus on dimensions where they differ
+  - mode: Not identifying discriminators
+    mitigation: Force ranking — which row is MOST differentiating?
+  - mode: Looking up before trying
+    mitigation: Fill from memory first
+logging_fields:
+  - concepts_compared
+  - dimensions_used
+  - discriminators_found
+  - cells_corrected
 evidence:
   citation: Alfieri et al. (2013)
-  finding: comparison-based learning improves discrimination and concept formation
+  finding: Comparison-based learning improves discrimination and concept formation
   source: seed_methods.py
 evidence_raw: Alfieri et al. (2013); comparison-based learning improves discrimination and concept formation
