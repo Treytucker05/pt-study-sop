@@ -58,22 +58,27 @@ if %errorlevel% NEQ 0 (
 )
 
 
-echo [3/5] Syncing dashboard UI build (if available)...
+echo [3/5] Building dashboard UI (if available)...
 set "REBUILD_DIR=%~dp0dashboard_rebuild"
-set "REBUILD_DIST=%REBUILD_DIR%\dist\public"
 set "DIST_DIR=%SERVER_DIR%\static\dist"
 
-if exist "%REBUILD_DIST%\assets\index-*.js" (
-    if not exist "%DIST_DIR%" mkdir "%DIST_DIR%"
-    rem robocopy /MIR mirrors source to dest, only copying newer files.
-    robocopy "%REBUILD_DIST%" "%DIST_DIR%" /MIR /NFL /NDL /NJH /NJS /NC /NS >nul
-    if !errorlevel! GEQ 8 (
-        echo [ERROR] UI sync failed (robocopy exit code !errorlevel!^).
-        goto END
+rem Allow skipping UI build (useful when you just want the server up fast)
+if /I "%SKIP_UI_BUILD%"=="1" (
+    echo [INFO] SKIP_UI_BUILD=1 - skipping UI build.
+) else if exist "%REBUILD_DIR%\package.json" (
+    where npm >nul 2>nul
+    if errorlevel 1 (
+        echo [WARN] npm not found on PATH. Skipping UI build.
+    ) else (
+        powershell -NoProfile -ExecutionPolicy Bypass -File "%REBUILD_DIR%\build-and-sync.ps1"
+        if errorlevel 1 (
+            echo [ERROR] UI build failed.
+            goto END
+        )
+        echo [INFO] UI build completed.
     )
-    echo [INFO] UI synced.
 ) else (
-    echo [WARN] dashboard_rebuild build not found. Run `npm run build` in dashboard_rebuild to update the UI.
+    echo [WARN] dashboard_rebuild not found at %REBUILD_DIR% - skipping UI build.
 )
 
 echo [4/5] Starting dashboard server (window titled 'PT Study Brain Dashboard')...
