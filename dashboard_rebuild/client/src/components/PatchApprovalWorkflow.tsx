@@ -103,7 +103,7 @@ export function PatchApprovalWorkflow({
     <div className="grid grid-cols-3 gap-4">
       {/* Patch List */}
       <Card className="brain-card rounded-none col-span-1">
-        <CardHeader className="border-b border-secondary/50 p-3">
+        <CardHeader className="border-b border-secondary/50">
           <CardTitle className="font-arcade text-sm text-primary">
             PENDING PATCHES ({patches.length})
           </CardTitle>
@@ -150,7 +150,7 @@ export function PatchApprovalWorkflow({
 
       {/* Diff Viewer/Editor */}
       <Card className="brain-card rounded-none col-span-2">
-        <CardHeader className="border-b border-secondary/50 p-3">
+        <CardHeader className="border-b border-secondary/50">
           <div className="flex items-center justify-between">
             <CardTitle className="font-arcade text-sm text-primary">
               {selected ? (editMode ? "EDIT PATCH" : "DIFF PREVIEW") : "SELECT A PATCH"}

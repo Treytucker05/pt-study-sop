@@ -521,7 +521,7 @@ export function EventEditModal({
                           <Textarea
                             value={event.recurrence[0]}
                             onChange={(e) => setField("recurrence", [e.target.value])}
-                            className="bg-black border-green-500/30 text-green-100/70 text-[10px] font-mono h-12 rounded-none"
+                            className="bg-black border-green-500/30 text-green-100/70 text-[10px] font-terminal h-12 rounded-none"
                             placeholder="RRULE:FREQ=WEEKLY;BYDAY=MO,WE"
                           />
                         </div>
@@ -608,12 +608,12 @@ export function EventEditModal({
                         {event.conferenceData?.conferenceSolution?.name || "Google Meet"}
                       </p>
                       {event.conferenceData?.entryPoints?.map((ep, i) => (
-                        <a key={i} href={ep.uri} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-300 hover:underline block mt-1 font-mono">
+                        <a key={i} href={ep.uri} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-300 hover:underline block mt-1 font-terminal">
                           {ep.uri}
                         </a>
                       ))}
                       {event.hangoutLink && !event.conferenceData && (
-                        <a href={event.hangoutLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-300 hover:underline block mt-1 font-mono">
+                        <a href={event.hangoutLink} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-300 hover:underline block mt-1 font-terminal">
                           {event.hangoutLink}
                         </a>
                       )}

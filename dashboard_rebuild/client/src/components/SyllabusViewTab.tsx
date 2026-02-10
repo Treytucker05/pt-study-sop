@@ -71,7 +71,7 @@ export function SyllabusViewTab() {
     <div className="space-y-4 p-4">
       {/* Course Selector */}
       <Card className="bg-black/40 border-2 border-primary rounded-none">
-        <CardHeader className="border-b border-primary/50 p-3">
+        <CardHeader className="border-b border-primary/50">
           <CardTitle className="font-arcade text-sm">SELECT COURSE</CardTitle>
         </CardHeader>
         <CardContent className="p-3">
@@ -119,7 +119,7 @@ export function SyllabusViewTab() {
               .sort(([weekA], [weekB]) => parseInt(weekA) - parseInt(weekB))
               .map(([week, weekModules]) => (
                 <Card key={week} className="bg-black/40 border-2 border-primary rounded-none">
-                  <CardHeader className="border-b border-primary/50 p-3">
+                  <CardHeader className="border-b border-primary/50">
                     <CardTitle className="font-arcade text-sm">WEEK {week}</CardTitle>
                   </CardHeader>
                   <CardContent className="p-3 space-y-3">

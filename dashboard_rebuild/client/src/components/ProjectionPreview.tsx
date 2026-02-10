@@ -82,7 +82,7 @@ export function ProjectionPreview({
           <div className="space-y-4">
             {Object.entries(eventsByModule).map(([moduleName, moduleEvents]) => (
               <Card key={moduleName} className="brain-card rounded-none">
-                <CardHeader className="border-b border-secondary/50 p-3">
+                <CardHeader className="border-b border-secondary/50">
                   <CardTitle className="font-arcade text-sm text-primary">
                     {moduleName}
                   </CardTitle>

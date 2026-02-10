@@ -104,7 +104,7 @@ export function ScholarRunStatus() {
 
   return (
     <Card className="brain-card rounded-none">
-      <CardHeader className="border-b border-secondary/50 p-3">
+      <CardHeader className="border-b border-secondary/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {getStatusIcon()}

@@ -261,7 +261,7 @@ export function ScholarLifecyclePanel() {
   return (
     <div className="space-y-4">
       <Card className="brain-card rounded-none">
-        <CardHeader className="border-b border-secondary/50 p-3">
+        <CardHeader className="border-b border-secondary/50">
           <CardTitle className="font-arcade text-sm text-primary">
             SCHOLAR QUESTIONS
           </CardTitle>
@@ -309,7 +309,7 @@ export function ScholarLifecyclePanel() {
       </Card>
 
       <Card className="brain-card rounded-none">
-        <CardHeader className="border-b border-secondary/50 p-3">
+        <CardHeader className="border-b border-secondary/50">
           <CardTitle className="font-arcade text-sm text-primary">
             SCHOLAR PROPOSALS
           </CardTitle>

@@ -107,7 +107,7 @@ export function SopBreakdownPanel({
   return (
     <div className="grid lg:grid-cols-3 gap-4">
       <Card className="bg-black/40 border-2 border-primary rounded-none lg:col-span-1 flex flex-col">
-        <CardHeader className="border-b border-secondary p-3 sticky top-0 bg-black/95 z-10">
+        <CardHeader className="border-b border-secondary sticky top-0 bg-black/95 z-10">
           <CardTitle className="font-arcade text-sm text-primary">BREAKDOWN OUTLINE</CardTitle>
           <div className="flex gap-2 mt-2">
             <Button
@@ -165,7 +165,7 @@ export function SopBreakdownPanel({
       </Card>
 
       <Card className="bg-black/60 border-2 border-primary rounded-none lg:col-span-2 flex flex-col">
-        <CardHeader className="border-b border-secondary p-3 sticky top-0 bg-black/95 z-10">
+        <CardHeader className="border-b border-secondary sticky top-0 bg-black/95 z-10">
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="font-arcade text-sm text-primary">
               {selected ? "SECTION EXPLANATION" : "SELECT A HEADING"}

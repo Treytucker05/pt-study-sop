@@ -145,7 +145,7 @@ export function TopicNoteBuilder() {
 
   return (
     <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
-      <CardHeader className="p-3 border-b border-secondary/30">
+      <CardHeader className="border-b border-secondary/30">
         <CardTitle className="font-arcade text-xs">SIX-PHASE TOPIC NOTE BUILDER</CardTitle>
         <p className="font-terminal text-[10px] text-muted-foreground mt-1">
           Generate an Obsidian-ready topic note following the Six-Phase SOP. No LLM required — template only.
