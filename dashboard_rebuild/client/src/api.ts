@@ -461,6 +461,8 @@ export const api = {
     }),
     getFindings: () => request<ScholarFinding[]>("/scholar/findings"),
     getTutorAudit: () => request<TutorAuditItem[]>("/scholar/tutor-audit"),
+    getClusters: () => Promise.resolve({ clusters: [] } as ScholarClustersResponse),
+    runClustering: () => Promise.resolve({ clusters: [] } as ScholarClustersResponse),
   },
 
   anki: {
@@ -680,6 +682,21 @@ export interface TutorAuditItem {
   issue?: string;
   frequency?: number;
   courses?: string[];
+}
+
+export interface ScholarClusterItem {
+  title: string;
+  source: string;
+}
+
+export interface ScholarCluster {
+  cluster_id: number;
+  count: number;
+  items: ScholarClusterItem[];
+}
+
+export interface ScholarClustersResponse {
+  clusters: ScholarCluster[];
 }
 
 export interface InsertAcademicDeadline {

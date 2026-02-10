@@ -28,7 +28,7 @@ import {
   Layers,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type ScholarQuestion, type ScholarFinding, type TutorAuditItem } from "@/lib/api";
+import { api, type ScholarQuestion, type ScholarFinding, type TutorAuditItem, type ScholarClustersResponse } from "@/lib/api";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { Proposal } from "@shared/schema";
@@ -537,15 +537,17 @@ export default function Scholar() {
                                 tutorAuditData.map((item, i) => (
                                   <div key={i} className="p-3 bg-primary/5 border border-primary/30">
                                     <div className="flex items-center justify-between mb-2">
-                                      <span className="font-terminal text-sm">{item.sessionDate}</span>
+                                      <span className="font-terminal text-sm">{item.date}</span>
                                       <Badge variant="outline" className="rounded-none text-[9px] border-primary">
-                                        {item.phase}
+                                        {item.status}
                                       </Badge>
                                     </div>
-                                    <p className="font-terminal text-xs mb-2">{item.observation}</p>
+                                    <p className="font-terminal text-xs mb-2">
+                                      {item.userMessages} user / {item.assistantMessages} assistant messages
+                                    </p>
                                     <div className="flex gap-2">
                                       <Badge variant="secondary" className="rounded-none text-[8px]">
-                                        {item.impact}
+                                        Session {item.sessionId}
                                       </Badge>
                                     </div>
                                   </div>
@@ -729,15 +731,9 @@ export default function Scholar() {
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <Layers className="w-4 h-4" /> TOPIC CLUSTERS
                     </CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-none font-arcade text-xs"
-                      onClick={() => runClusteringMutation.mutate()}
-                      disabled={runClusteringMutation.isPending}
-                    >
-                      {runClusteringMutation.isPending ? "Running..." : "Run Clustering"}
-                    </Button>
+                    <Badge variant="outline" className="rounded-none text-[9px] border-secondary text-muted-foreground">
+                      COMING SOON
+                    </Badge>
                   </CardHeader>
                   <CardContent className="p-4">
                     <p className="font-terminal text-[11px] text-muted-foreground mb-3">

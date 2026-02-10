@@ -1,44 +1,69 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import ForceGraph2D from "react-force-graph-2d";
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+  addEdge,
+  MarkerType,
+  type Connection,
+  type Node,
+  type Edge,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { toPng } from "html-to-image";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { applyDagreLayout } from "@/lib/mermaid-to-reactflow";
+import {
+  MIND_MAP_NODE_TYPES,
+  MIND_MAP_DEFAULT_EDGE_OPTIONS,
+  type MindMapShape,
+} from "@/components/brain/MindMapNodes";
+import { MindMapToolbar } from "@/components/brain/MindMapToolbar";
+import { MindMapDrawLayer, type DrawStroke } from "@/components/brain/MindMapDrawLayer";
 
-interface MindMapNode {
+// Color indices for curriculum seed: Cyan=6, Yellow=4, Green=3 in CONCEPT_NODE_COLORS
+const SEED_COLOR: Record<string, number> = { course: 6, module: 4, lo: 3 };
+const SEED_SHAPE: Record<string, MindMapShape> = {
+  course: "hexagon",
+  module: "rectangle",
+  lo: "circle",
+};
+
+interface CurriculumNode {
   id: string;
   name: string;
   type: "course" | "module" | "lo";
-  x?: number;
-  y?: number;
 }
 
-interface MindMapLink {
+interface CurriculumLink {
   source: string;
   target: string;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  course: "#22d3ee",
-  module: "#facc15",
-  lo: "#4ade80",
-};
-
-const TYPE_BG: Record<string, string> = {
-  course: "rgba(34,211,238,0.15)",
-  module: "rgba(250,204,21,0.12)",
-  lo: "rgba(74,222,128,0.08)",
-};
-
 export function MindMapView() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const graphRef = useRef<any>(null);
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
+  const [direction, setDirection] = useState<"TB" | "LR">("LR");
+  const [nodeCounter, setNodeCounter] = useState(0);
+  const [isDirty, setIsDirty] = useState(false);
+  const [drawMode, setDrawMode] = useState(false);
+  const [drawStrokes, setDrawStrokes] = useState<DrawStroke[]>([]);
+  const reactFlowRef = useRef<HTMLDivElement>(null);
   const didInitRef = useRef(false);
-  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+  const { toast } = useToast();
+
+  // --- Curriculum sidebar state (kept from original) ---
   const [selectedCourses, setSelectedCourses] = useState<Set<number>>(new Set());
   const [selectedModules, setSelectedModules] = useState<Set<number>>(new Set());
   const [includeLOs, setIncludeLOs] = useState(true);
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
   const { data: courses = [] } = useQuery({
     queryKey: ["courses"],
@@ -70,19 +95,6 @@ export function MindMapView() {
   });
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const update = () => {
-      const rect = el.getBoundingClientRect();
-      setDimensions({ width: Math.max(1, Math.floor(rect.width) - 2), height: Math.max(1, Math.floor(rect.height) - 2) });
-    };
-    update();
-    const obs = new ResizeObserver(update);
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  useEffect(() => {
     if (courses.length > 0 && !didInitRef.current) {
       didInitRef.current = true;
       setSelectedCourses(new Set(courses.map((c: any) => c.id)));
@@ -90,8 +102,8 @@ export function MindMapView() {
   }, [courses]);
 
   const graphData = useMemo(() => {
-    const nodes: MindMapNode[] = [];
-    const links: MindMapLink[] = [];
+    const gNodes: CurriculumNode[] = [];
+    const gLinks: CurriculumLink[] = [];
 
     const modulesByCourse = new Map<number, any[]>();
     for (const m of allModules) {
@@ -110,27 +122,26 @@ export function MindMapView() {
     for (const course of courses) {
       if (!selectedCourses.has(course.id)) continue;
       const courseId = `course-${course.id}`;
-      nodes.push({ id: courseId, name: course.name, type: "course" });
+      gNodes.push({ id: courseId, name: course.name, type: "course" });
 
       const courseModules = modulesByCourse.get(course.id) ?? [];
       for (const mod of courseModules) {
         if (selectedModules.size > 0 && !selectedModules.has(mod.id)) continue;
         const modId = `module-${mod.id}`;
-        nodes.push({ id: modId, name: mod.name, type: "module" });
-        links.push({ source: courseId, target: modId });
+        gNodes.push({ id: modId, name: mod.name, type: "module" });
+        gLinks.push({ source: courseId, target: modId });
 
         if (includeLOs) {
           const modLOs = losByModule.get(mod.id) ?? [];
           for (const lo of modLOs) {
             const loId = `lo-${lo.id}`;
-            nodes.push({ id: loId, name: `${lo.loCode}: ${lo.title}`, type: "lo" });
-            links.push({ source: modId, target: loId });
+            gNodes.push({ id: loId, name: `${lo.loCode}: ${lo.title}`, type: "lo" });
+            gLinks.push({ source: modId, target: loId });
           }
         }
       }
     }
-
-    return { nodes, links };
+    return { nodes: gNodes, links: gLinks };
   }, [courses, allModules, allLOs, selectedCourses, selectedModules, includeLOs]);
 
   const toggleCourse = (id: number) => {
@@ -151,87 +162,243 @@ export function MindMapView() {
     });
   };
 
-  const nodeCanvasObject = useCallback(
-    (node: MindMapNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-      const color = TYPE_COLORS[node.type] || "#6366f1";
-      const bg = TYPE_BG[node.type] || "rgba(99,102,241,0.1)";
-      const isHovered = hoveredNode === node.id;
-      const x = node.x || 0;
-      const y = node.y || 0;
-
-      const baseFontSize = node.type === "course" ? 14 : node.type === "module" ? 11 : 9;
-      const fontSize = Math.max(baseFontSize / globalScale, 2);
-      ctx.font = `${node.type === "course" ? "bold " : ""}${fontSize}px monospace`;
-
-      const maxChars = node.type === "lo" ? 50 : 35;
-      const label = node.name.length > maxChars ? node.name.slice(0, maxChars) + "..." : node.name;
-      const textWidth = ctx.measureText(label).width;
-
-      const padX = 8 / globalScale;
-      const padY = 5 / globalScale;
-      const boxW = textWidth + padX * 2;
-      const boxH = fontSize + padY * 2;
-      const radius = 4 / globalScale;
-
-      ctx.beginPath();
-      ctx.roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, radius);
-      ctx.fillStyle = isHovered ? color : bg;
-      ctx.fill();
-      ctx.strokeStyle = isHovered ? "#ffffff" : color;
-      ctx.lineWidth = (node.type === "course" ? 2 : 1) / globalScale;
-      ctx.stroke();
-
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = isHovered ? "#000000" : color;
-      ctx.fillText(label, x, y);
+  // --- ReactFlow change wrappers (mark dirty) ---
+  const onNodesChange = useCallback(
+    (changes: any) => { setIsDirty(true); onNodesChangeBase(changes); },
+    [onNodesChangeBase]
+  );
+  const onEdgesChange = useCallback(
+    (changes: any) => { setIsDirty(true); onEdgesChangeBase(changes); },
+    [onEdgesChangeBase]
+  );
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      setIsDirty(true);
+      setEdges((eds) => addEdge(connection, eds));
     },
-    [hoveredNode]
+    [setEdges]
   );
 
-  const nodePointerAreaPaint = useCallback(
-    (node: MindMapNode, color: string, ctx: CanvasRenderingContext2D, globalScale: number) => {
-      const x = node.x || 0;
-      const y = node.y || 0;
-      const size = node.type === "course" ? 60 : node.type === "module" ? 45 : 30;
-      const s = size / globalScale;
-      ctx.fillStyle = color;
-      ctx.fillRect(x - s / 2, y - s / 2, s, s);
+  // --- Listen for node label edits from MindMapShapeNode ---
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { id, label } = (e as CustomEvent).detail;
+      setNodes((nds) =>
+        nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, label } } : n))
+      );
+      setIsDirty(true);
+    };
+    window.addEventListener("mindmap:node-label", handler);
+    return () => window.removeEventListener("mindmap:node-label", handler);
+  }, [setNodes]);
+
+  // --- Seed map from curriculum ---
+  const seedMap = useCallback(() => {
+    const { nodes: curNodes, links: curLinks } = graphData;
+    if (curNodes.length === 0) {
+      toast({ title: "No data", description: "Select courses first", variant: "destructive" });
+      return;
+    }
+
+    const existingCustomIds = new Set(
+      nodes.filter((n) => !n.id.startsWith("course-") && !n.id.startsWith("module-") && !n.id.startsWith("lo-"))
+        .map((n) => n.id)
+    );
+    const customNodes = nodes.filter((n) => existingCustomIds.has(n.id));
+    const customEdges = edges.filter(
+      (e) => existingCustomIds.has(e.source) || existingCustomIds.has(e.target)
+    );
+
+    const seedNodes: Node[] = curNodes.map((cn) => ({
+      id: cn.id,
+      type: "mindmapShape",
+      position: { x: 0, y: 0 },
+      data: {
+        label: cn.name,
+        colorIdx: SEED_COLOR[cn.type] ?? 0,
+        shape: SEED_SHAPE[cn.type] ?? "rectangle",
+      },
+      style: { width: 180, height: 50 },
+    }));
+
+    const seedEdges: Edge[] = curLinks.map((cl, i) => ({
+      id: `seed-e-${i}`,
+      source: cl.source,
+      target: cl.target,
+      ...MIND_MAP_DEFAULT_EDGE_OPTIONS,
+    }));
+
+    const allNodes = [...seedNodes, ...customNodes];
+    const allEdges = [...seedEdges, ...customEdges];
+    const laid = applyDagreLayout(allNodes, allEdges, { direction });
+    setNodes(laid);
+    setEdges(allEdges);
+    setNodeCounter(allNodes.length);
+    setIsDirty(true);
+    toast({ title: "Map seeded", description: `${curNodes.length} curriculum nodes` });
+  }, [graphData, nodes, edges, direction, setNodes, setEdges, toast]);
+
+  // --- Add node ---
+  const addNode = useCallback(
+    (shape: MindMapShape) => {
+      const id = `mm-${nodeCounter + 1}`;
+      setNodeCounter((c) => c + 1);
+      const newNode: Node = {
+        id,
+        type: "mindmapShape",
+        position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
+        data: { label: `Node ${nodeCounter + 1}`, colorIdx: 0, shape },
+        style: { width: 180, height: 50 },
+      };
+      setNodes((nds) => [...nds, newNode]);
+      setIsDirty(true);
     },
-    []
+    [nodeCounter, setNodes]
   );
 
-  const linkCanvasObject = useCallback(
-    (link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-      const src = link.source;
-      const tgt = link.target;
-      if (!src || !tgt) return;
-      const sx = src.x || 0;
-      const sy = src.y || 0;
-      const tx = tgt.x || 0;
-      const ty = tgt.y || 0;
+  // --- Delete selected ---
+  const deleteSelected = useCallback(() => {
+    setNodes((nds) => nds.filter((n) => !n.selected));
+    setEdges((eds) => eds.filter((e) => !e.selected));
+    setIsDirty(true);
+  }, [setNodes, setEdges]);
 
-      const mx = (sx + tx) / 2;
-      const my = (sy + ty) / 2;
-      const dx = tx - sx;
-      const dy = ty - sy;
-      const cpx = mx - dy * 0.15;
-      const cpy = my + dx * 0.15;
-
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.quadraticCurveTo(cpx, cpy, tx, ty);
-      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
-      ctx.lineWidth = Math.max(1.5 / globalScale, 0.3);
-      ctx.stroke();
+  // --- Color / shape changes ---
+  const setSelectedNodeColor = useCallback(
+    (colorIdx: number) => {
+      setNodes((nds) =>
+        nds.map((n) => (n.selected ? { ...n, data: { ...n.data, colorIdx } } : n))
+      );
+      setIsDirty(true);
     },
-    []
+    [setNodes]
   );
 
-  const activeCourseModules = allModules.filter((m: any) => selectedCourses.has(m.courseId));
+  const setSelectedEdgeColor = useCallback(
+    (stroke: string) => {
+      setEdges((eds) =>
+        eds.map((e) =>
+          e.selected
+            ? {
+                ...e,
+                style: { ...e.style, stroke, strokeWidth: 2 },
+                markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
+              }
+            : e
+        )
+      );
+      setIsDirty(true);
+    },
+    [setEdges]
+  );
+
+  const setSelectedShape = useCallback(
+    (shape: MindMapShape) => {
+      setNodes((nds) =>
+        nds.map((n) => (n.selected ? { ...n, data: { ...n.data, shape } } : n))
+      );
+      setIsDirty(true);
+    },
+    [setNodes]
+  );
+
+  // --- Layout ---
+  const autoLayout = useCallback(() => {
+    const laid = applyDagreLayout(nodes, edges, { direction });
+    setNodes(laid);
+    setIsDirty(true);
+  }, [nodes, edges, direction, setNodes]);
+
+  const toggleDirection = useCallback(() => {
+    const newDir = direction === "TB" ? "LR" : "TB";
+    setDirection(newDir);
+    const laid = applyDagreLayout(nodes, edges, { direction: newDir });
+    setNodes(laid);
+    setIsDirty(true);
+  }, [direction, nodes, edges, setNodes]);
+
+  // --- Paste images ---
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (!item.type.startsWith("image/")) continue;
+        const file = item.getAsFile();
+        if (!file) continue;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const id = `mm-img-${nodeCounter + 1}`;
+          setNodeCounter((c) => c + 1);
+          const newNode: Node = {
+            id,
+            type: "mindmapImage",
+            position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
+            data: { src: reader.result as string },
+            style: { width: 200, height: 150 },
+          };
+          setNodes((nds) => [...nds, newNode]);
+          setIsDirty(true);
+        };
+        reader.readAsDataURL(file);
+        break;
+      }
+    },
+    [nodeCounter, setNodes]
+  );
+
+  // --- Export PNG ---
+  const exportPng = useCallback(async () => {
+    if (!reactFlowRef.current) return;
+    try {
+      const viewport = reactFlowRef.current.querySelector(
+        ".react-flow__viewport"
+      ) as HTMLElement;
+      if (!viewport) return;
+      const dataUrl = await toPng(viewport, { backgroundColor: "#000", quality: 1 });
+      const link = document.createElement("a");
+      link.download = "mind-map.png";
+      link.href = dataUrl;
+      link.click();
+      toast({ title: "PNG exported" });
+    } catch (err) {
+      toast({ title: "Export failed", description: String(err), variant: "destructive" });
+    }
+  }, [toast]);
+
+  // --- Save to Obsidian vault ---
+  const saveToVault = useCallback(async () => {
+    const title = (
+      (nodes[0]?.data as { label?: string })?.label || "Untitled"
+    ).replace(/[/\\?%*:|"<>]/g, "-");
+    const payload = JSON.stringify({
+      nodes: nodes.map((n) => ({ id: n.id, type: n.type, position: n.position, data: n.data, style: n.style })),
+      edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, style: e.style, markerEnd: e.markerEnd })),
+      drawStrokes,
+      meta: { direction, created: new Date().toISOString() },
+    }, null, 2);
+    const path = `Mind Maps/${title}.mindmap.json`;
+    try {
+      await api.obsidian.saveFile(path, payload);
+      toast({ title: "Saved to vault", description: path });
+      setIsDirty(false);
+    } catch (err) {
+      toast({ title: "Save failed", description: String(err), variant: "destructive" });
+    }
+  }, [nodes, edges, drawStrokes, direction, toast]);
+
+  // --- Draw layer ---
+  const handleStrokeAdd = useCallback((stroke: DrawStroke) => {
+    setDrawStrokes((prev) => [...prev, stroke]);
+    setIsDirty(true);
+  }, []);
+
+  const activeCourseModules = allModules.filter((m: any) =>
+    selectedCourses.has(m.courseId)
+  );
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full" onPaste={handlePaste}>
       {/* Sidebar */}
       <div className="w-[160px] shrink-0 border-r border-secondary/30 bg-black/60">
         <ScrollArea className="h-full">
@@ -281,7 +448,7 @@ export function MindMapView() {
                   onCheckedChange={(checked) => setIncludeLOs(!!checked)}
                   className="border-green-500 data-[state=checked]:bg-green-500"
                 />
-                <span className="font-terminal text-xs text-green-300">Show Learning Objectives</span>
+                <span className="font-terminal text-xs text-green-300">Show LOs</span>
               </label>
             </div>
 
@@ -298,45 +465,76 @@ export function MindMapView() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-sm border border-green-400 bg-green-400/8" />
-                <span className="font-terminal text-[10px] text-green-300">Learning Objective</span>
+                <span className="font-terminal text-[10px] text-green-300">LO</span>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-secondary/30 font-terminal text-[10px] text-muted-foreground">
-              <div>Nodes: {graphData.nodes.length}</div>
-              <div>Links: {graphData.links.length}</div>
+            <div className="pt-2 border-t border-secondary/30">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-7 text-[9px] font-terminal border-primary/50 text-primary"
+                onClick={seedMap}
+              >
+                Seed Map ({graphData.nodes.length})
+              </Button>
             </div>
           </div>
         </ScrollArea>
       </div>
 
-      {/* Mind Map Canvas */}
-      <div ref={containerRef} className="flex-1 relative overflow-hidden min-h-0 bg-black/80">
-        {dimensions && graphData.nodes.length > 0 && (
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={graphData}
-            width={dimensions.width}
-            height={dimensions.height}
-            dagMode="lr"
-            dagLevelDistance={120}
-            nodeCanvasObject={nodeCanvasObject}
-            nodePointerAreaPaint={nodePointerAreaPaint}
-            linkCanvasObject={linkCanvasObject}
-            onNodeHover={(node: MindMapNode | null) => setHoveredNode(node?.id ?? null)}
-            linkColor={() => "transparent"}
-            linkWidth={0}
-            backgroundColor="transparent"
-            cooldownTicks={100}
-            d3AlphaDecay={0.025}
-            d3VelocityDecay={0.35}
+      {/* Main canvas area */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <MindMapToolbar
+          onSeedMap={seedMap}
+          onAddNode={addNode}
+          onDeleteSelected={deleteSelected}
+          onSetNodeColor={setSelectedNodeColor}
+          onSetEdgeColor={setSelectedEdgeColor}
+          onSetShape={setSelectedShape}
+          onAutoLayout={autoLayout}
+          onToggleDirection={toggleDirection}
+          direction={direction}
+          drawMode={drawMode}
+          onToggleDraw={() => setDrawMode((d) => !d)}
+          onExportPng={exportPng}
+          onSaveToVault={saveToVault}
+          nodeCount={nodes.length}
+          edgeCount={edges.length}
+          isDirty={isDirty}
+        />
+        <div className="flex-1 min-h-0 relative" ref={reactFlowRef}>
+          <MindMapDrawLayer
+            active={drawMode}
+            strokes={drawStrokes}
+            onStrokeAdd={handleStrokeAdd}
           />
-        )}
-        {graphData.nodes.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center font-terminal text-xs text-muted-foreground">
-            Select courses to build mind map
-          </div>
-        )}
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            nodeTypes={MIND_MAP_NODE_TYPES}
+            defaultEdgeOptions={MIND_MAP_DEFAULT_EDGE_OPTIONS}
+            fitView
+            className="bg-black/80"
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background color="hsl(var(--primary) / 0.1)" gap={20} />
+            <Controls className="!bg-black !border-primary [&_button]:!bg-black/80 [&_button]:!border-primary/50 [&_button]:!text-primary" />
+            <MiniMap
+              className="!bg-black/80 !border-primary"
+              nodeColor="hsl(var(--primary))"
+              maskColor="rgba(0,0,0,0.5)"
+            />
+          </ReactFlow>
+          {nodes.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center font-terminal text-xs text-muted-foreground pointer-events-none">
+              Select courses & click "Seed Map", or add nodes manually
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
