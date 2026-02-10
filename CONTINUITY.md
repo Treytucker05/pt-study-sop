@@ -533,3 +533,26 @@
 ## 2026-02-10 - Track Archived
 
 - Archived `agents_setup_cleanup_20260209` track (all tasks complete)
+
+## 2026-02-10 - Rich Mind Map Editor + Scholar/Tutor Fixes
+
+### Mind Map Editor (MindMapView rewrite)
+- Replaced `react-force-graph-2d` with `@xyflow/react` for full interactive editing
+- New files: `MindMapNodes.tsx` (shape + image node types), `MindMapToolbar.tsx`, `MindMapDrawLayer.tsx`
+- Features: 4 shapes (rectangle/circle/diamond/hexagon), inline label editing (double-click), NodeResizer, color picker (9 node + 9 edge colors), shape picker, dagre auto-layout (TB/LR), image paste from clipboard, freehand canvas draw overlay, PNG export, save to Obsidian vault as JSON
+- Curriculum seed: courses → hexagon/cyan, modules → rectangle/yellow, LOs → circle/green
+- Sidebar with course/module/LO filters preserved from original
+
+### Scholar Page Fixes
+- Fixed runtime TypeError: `api.scholar.getClusters` and `api.scholar.runClustering` were called but never defined — added stub resolvers returning empty clusters, added `ScholarClustersResponse` type
+- Replaced "Run Clustering" button with "COMING SOON" badge (backend not yet implemented)
+- Fixed Tutor Audit section: was rendering non-existent fields (`sessionDate`, `phase`, `observation`, `impact`) — now uses actual API fields (`date`, `status`, message counts, `sessionId`)
+
+### Tutor Onboarding
+- Added collapsible "Quick Start Guide" banner at top of Tutor page
+- 4-column layout: Pick a Mode | Set Up a Chain | Enter a Topic | Study + Artifacts
+- Explains all 5 modes, template vs custom chains, topic setup, slash commands
+- Auto-shows for new users, dismissal persists in localStorage
+
+- Build: 0 errors, 77/77 tests pass
+- Commit: `bfd8031b`
