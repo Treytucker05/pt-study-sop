@@ -16,6 +16,11 @@ export type StudyStage =
 
 export type RuleSetScope = "global" | "chain" | "module";
 
+export type ICAPLevel = "passive" | "active" | "constructive" | "interactive";
+export type CLTTarget = "reduce-extraneous" | "manage-intrinsic" | "increase-germane";
+export type AssessmentType = "recall" | "application" | "transfer" | "calibration";
+export type ArtifactType = "outline" | "concept-map" | "mindmap" | "decision-tree" | "cards" | "error-log" | "comparison-table" | "flowchart" | "illness-script";
+
 export interface RuleCondition {
   type: "gate" | "skip" | "branch" | "require";
   block_index?: number;
@@ -66,6 +71,11 @@ export interface MethodBlock {
   failure_modes: FailureMode[];
   variants: ModuleVariant[];
   scoring_hooks: ScoringHook[];
+  icap_level: ICAPLevel | null;
+  clt_target: CLTTarget | null;
+  assessment_type: AssessmentType | null;
+  artifact_type: ArtifactType | null;
+  research_terms: string[];
   created_at: string;
 }
 

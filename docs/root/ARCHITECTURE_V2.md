@@ -293,6 +293,37 @@ Freeze these, keep everything else flexible:
 
 ---
 
+## Research Taxonomy Integration
+
+The system's architecture is grounded in a formal research taxonomy. The file `sop/library/16-research-terms.md` provides the canonical vocabulary used by the Scholar for meta-audits and by developers for module design. This taxonomy ensures that every system component is tied to established learning science.
+
+### Mapping: 7-Level Ladder to Research Categories
+
+| Ladder Level | Informing Research Categories |
+| --- | --- |
+| **Level 1 - Paradigm** | Systems Thinking, Metacognition/SRL |
+| **Level 2 - Principles** | CLT, Retrieval/Memory, ICAP, Assessment |
+| **Level 3 - Blueprints** | Instructional Design, Knowledge Representation |
+| **Level 4 - Workflows** | Instructional Design, Adaptive Sequencing |
+| **Level 5 - LearningModules** | CLT, Retrieval/Memory, ICAP, Knowledge Representation |
+| **Level 6 - Tutor RuleSets** | Tutoring Dialogue, CLT |
+| **Level 7 - Tools** | Individual Differences, Assessment |
+
+### Mapping: Primitives to Research Categories
+
+| Primitive | Informing Research Categories |
+| --- | --- |
+| **LearningModule** | CLT, Retrieval/Memory, ICAP, Knowledge Representation |
+| **Chain** | Instructional Design, Adaptive Sequencing |
+| **Session** | Metacognition/SRL, Individual Differences |
+| **RuleSet** | Tutoring Dialogue, CLT |
+| **Artifact** | Knowledge Representation, ICAP |
+| **Metric** | Assessment, Metacognition/SRL |
+| **Hypothesis** | Systems Thinking, Metacognition/SRL |
+| **Proposal** | Systems Thinking, Instructional Design |
+
+> **Note:** The `method_blocks` (LearningModules) now include explicit tagging dimensions for **ICAP** (Passive/Active/Constructive/Interactive), **CLT** (Intrinsic/Extraneous/Germane), and **Assessment** (Recall/Application/Transfer/Calibration) to enable precise Scholar analysis.
+
 ## Implementation Status (as of 2026-02-11, updated after V2 architecture implementation)
 
 This section tracks how far the actual codebase has implemented the vision above.

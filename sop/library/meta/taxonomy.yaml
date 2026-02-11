@@ -47,5 +47,42 @@ mechanisms:
   - transfer
   - generation
   - desirable_difficulty
+  - scaffolding
+  - self_explanation
+  - error_correction
+  - metacognitive_monitoring
+
+icap_levels: [passive, active, constructive, interactive]
+
+clt_targets:
+  - reduce-extraneous
+  - manage-intrinsic
+  - increase-germane
+
+assessment_types: [recall, application, transfer, calibration]
+
+artifact_types:
+  - outline
+  - concept-map
+  - mindmap
+  - decision-tree
+  - cards
+  - error-log
+  - comparison-table
+  - flowchart
+  - illness-script
+
+research_categories:
+  - individual_differences
+  - metacognition_srl
+  - cognitive_load
+  - retrieval_memory
+  - instructional_design
+  - engagement_icap
+  - knowledge_representation
+  - tutoring_dialogue
+  - assessment_measurement
+  - adaptive_sequencing
+  - systems_thinking
 
 status_values: [draft, validated, deprecated]

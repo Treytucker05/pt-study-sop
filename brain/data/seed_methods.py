@@ -35,7 +35,6 @@ _VERSION_PATH = _ROOT / "sop" / "library" / "meta" / "version.yaml"
 # Atomic Method Blocks (36 blocks across 6 PEIRRO phases)
 # ---------------------------------------------------------------------------
 METHOD_BLOCKS = [
-    # === PREPARE (warm up working memory, set focus, survey structure) ===
     {
         "name": "Brain Dump",
         "category": "prepare",
@@ -45,6 +44,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["warm-up", "recall", "low-stakes"],
         "evidence": "Brod et al. (2013); prior knowledge activation improves encoding of new information",
+        "icap_level": "active",
+        "clt_target": "manage-intrinsic",
+        "assessment_type": "recall",
+        "research_terms": ["prior_knowledge_effects", "metacognitive_monitoring"],
     },
     {
         "name": "Prediction Questions",
@@ -55,6 +58,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["priming", "curiosity", "metacognition"],
         "evidence": "Pressley et al. (1990); question-generation primes elaborative processing",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "assessment_type": "calibration",
+        "research_terms": ["elaborative_interrogation", "generation_effect"],
     },
     {
         "name": "Prior Knowledge Scan",
@@ -65,6 +72,9 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["schema-activation", "connections"],
         "evidence": "Ausubel (1968); meaningful learning requires anchoring to existing schemas",
+        "icap_level": "active",
+        "clt_target": "manage-intrinsic",
+        "research_terms": ["schema_theory", "advance_organizers", "prior_knowledge_effects"],
     },
     {
         "name": "AI Skeleton Review",
@@ -75,6 +85,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["overview", "structure", "ai-assisted"],
         "evidence": "Lorch & Lorch (1996); advance organizers improve text comprehension",
+        "icap_level": "passive",
+        "clt_target": "reduce-extraneous",
+        "artifact_type": "outline",
+        "research_terms": ["advance_organizers", "pretraining_principle"],
     },
     {
         "name": "Concept Cluster",
@@ -85,6 +99,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["organization", "visual", "grouping"],
         "evidence": "Bower et al. (1969); conceptual organization improves recall by 2-3x",
+        "icap_level": "constructive",
+        "clt_target": "manage-intrinsic",
+        "artifact_type": "mindmap",
+        "research_terms": ["chunking", "schema_theory", "cognitive_flexibility"],
     },
     {
         "name": "Three-Layer Chunk",
@@ -95,6 +113,9 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["chunking", "depth-first", "structure"],
         "evidence": "Miller (1956); Gobet et al. (2001); chunking manages cognitive load",
+        "icap_level": "active",
+        "clt_target": "manage-intrinsic",
+        "research_terms": ["chunking", "segmenting_principle", "cognitive_load"],
     },
     {
         "name": "Pre-Test",
@@ -105,6 +126,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["pre-testing", "priming", "desirable-difficulty"],
         "evidence": "Richland et al. (2009); Kornell et al. (2009); pre-testing primes encoding even when initial answers are wrong",
+        "icap_level": "active",
+        "clt_target": "increase-germane",
+        "assessment_type": "calibration",
+        "research_terms": ["pretest_posttest", "desirable_difficulties", "productive_failure"],
     },
     # === ENCODE (attach meaning, create hooks) ===
     {
@@ -116,6 +141,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["mnemonic", "kwik", "hook", "gated", "sop-core"],
         "evidence": "Paivio (1991); dual-coding theory — combining verbal + visual improves retention",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "cards",
+        "research_terms": ["dual_coding", "generation_effect", "elaborative_interrogation"],
     },
     {
         "name": "Seed-Lock Generation",
@@ -126,6 +155,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["seed-lock", "generation-first", "active", "sop-core"],
         "evidence": "Slamecka & Graf (1978); generation effect — self-generated items remembered better than read items",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "cards",
+        "research_terms": ["generation_effect", "elaborative_interrogation", "metacognitive_monitoring"],
     },
     {
         "name": "Draw-Label",
@@ -136,6 +169,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["visual", "anatomy", "drawing", "active"],
         "evidence": "Wammes et al. (2016); drawing effect — drawing produces superior memory compared to writing",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "outline",
+        "research_terms": ["dual_coding", "generation_effect", "worked_example_effect"],
     },
     {
         "name": "Teach-Back",
@@ -146,6 +183,9 @@ METHOD_BLOCKS = [
         "best_stage": "review",
         "tags": ["verbal", "feynman", "deep-processing"],
         "evidence": "Nestojko et al. (2014); expecting to teach enhances encoding and organization",
+        "icap_level": "interactive",
+        "clt_target": "increase-germane",
+        "research_terms": ["self_explanation", "elaborative_interrogation", "contingent_tutoring"],
     },
     {
         "name": "Why-Chain",
@@ -156,6 +196,9 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["elaboration", "causal", "depth", "evidence-based"],
         "evidence": "Dunlosky et al. (2013); elaborative interrogation rated moderate utility for learning",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "research_terms": ["elaborative_interrogation", "self_explanation", "schema_theory"],
     },
     {
         "name": "Think-Aloud Protocol",
@@ -166,6 +209,9 @@ METHOD_BLOCKS = [
         "best_stage": "review",
         "tags": ["self-explanation", "metacognition", "verbal", "evidence-based"],
         "evidence": "Chi et al. (1994); self-explanation leads to deeper understanding and better problem-solving",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "research_terms": ["self_explanation", "metacognitive_monitoring", "cognitive_apprenticeship"],
     },
     {
         "name": "Self-Explanation Protocol",
@@ -176,6 +222,9 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["self-explanation", "comprehension", "causal-reasoning"],
         "evidence": "Chi et al. (1994); Dunlosky et al. (2013); self-explanation rated moderate-high utility across domains",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "research_terms": ["self_explanation", "elaborative_interrogation", "transfer_appropriate_processing"],
     },
     {
         "name": "Mechanism Trace",
@@ -186,6 +235,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["causal-reasoning", "mechanism", "pathophysiology", "transfer"],
         "evidence": "Kulasegaram et al. (2013); causal reasoning with biomedical mechanisms supports diagnostic transfer",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "flowchart",
+        "research_terms": ["schema_theory", "case_based_reasoning", "transfer_appropriate_processing"],
     },
     {
         "name": "Concept Map",
@@ -196,6 +249,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["visual", "mermaid", "relationships", "elaboration"],
         "evidence": "Nesbit & Adesope (2006) d=0.82; self-constructed > provided (d=1.00 vs 0.37)",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "concept-map",
+        "research_terms": ["concept_mapping", "schema_theory", "cognitive_flexibility"],
     },
     {
         "name": "Comparison Table",
@@ -206,6 +263,10 @@ METHOD_BLOCKS = [
         "best_stage": "review",
         "tags": ["visual", "comparison", "discrimination", "table"],
         "evidence": "Alfieri et al. (2013); comparison improves discrimination and concept formation",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "comparison-table",
+        "research_terms": ["comparison_based_learning", "schema_theory", "transfer_appropriate_processing"],
     },
     {
         "name": "Process Flowchart",
@@ -216,6 +277,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["visual", "mermaid", "sequential", "procedural"],
         "evidence": "Winn (1991); spatial-sequential diagrams improve procedural understanding",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "flowchart",
+        "research_terms": ["dual_coding", "worked_example_effect", "schema_theory"],
     },
     {
         "name": "Clinical Decision Tree",
@@ -226,6 +291,10 @@ METHOD_BLOCKS = [
         "best_stage": "exam_prep",
         "tags": ["visual", "mermaid", "clinical-reasoning", "decision-tree"],
         "evidence": "Charlin et al. (2000); decision trees scaffold clinical reasoning",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "decision-tree",
+        "research_terms": ["clinical_reasoning", "illness_scripts", "case_based_reasoning"],
     },
     # === RETRIEVE (test recall, strengthen pathways) ===
     {
@@ -237,6 +306,10 @@ METHOD_BLOCKS = [
         "best_stage": "review",
         "tags": ["recall", "testing-effect", "self-assessment"],
         "evidence": "Roediger & Karpicke (2006); testing effect — retrieval practice > re-reading for long-term retention",
+        "icap_level": "active",
+        "clt_target": "increase-germane",
+        "assessment_type": "recall",
+        "research_terms": ["retrieval_practice", "testing_effect", "spacing_effect"],
     },
     {
         "name": "Sprint Quiz",
@@ -247,6 +320,10 @@ METHOD_BLOCKS = [
         "best_stage": "review",
         "tags": ["quiz", "speed", "rsr", "ai-assisted"],
         "evidence": "McDaniel et al. (2007); quiz-based retrieval enhances later exam performance",
+        "icap_level": "active",
+        "clt_target": "increase-germane",
+        "assessment_type": "recall",
+        "research_terms": ["retrieval_practice", "testing_effect", "calibration"],
     },
     {
         "name": "Fill-in-Blank",
@@ -257,6 +334,10 @@ METHOD_BLOCKS = [
         "best_stage": "review",
         "tags": ["cloze", "vocabulary", "targeted"],
         "evidence": "Dunlosky et al. (2013); cloze-based retrieval is effective for factual knowledge",
+        "icap_level": "active",
+        "clt_target": "increase-germane",
+        "assessment_type": "recall",
+        "research_terms": ["retrieval_practice", "testing_effect", "encoding_specificity"],
     },
     {
         "name": "Mixed Practice",
@@ -267,6 +348,10 @@ METHOD_BLOCKS = [
         "best_stage": "exam_prep",
         "tags": ["interleaving", "discrimination", "mixed", "evidence-based"],
         "evidence": "Rohrer et al. (2015); interleaved practice improves discrimination and transfer",
+        "icap_level": "active",
+        "clt_target": "increase-germane",
+        "assessment_type": "application",
+        "research_terms": ["interleaving", "contextual_interference", "transfer_appropriate_processing"],
     },
     {
         "name": "Variable Retrieval",
@@ -277,6 +362,10 @@ METHOD_BLOCKS = [
         "best_stage": "review",
         "tags": ["varied-practice", "transfer", "flexible-retrieval"],
         "evidence": "Morris et al. (1977); PNAS 2024; varied retrieval practice produces more durable and transferable knowledge than constant retrieval",
+        "icap_level": "active",
+        "clt_target": "increase-germane",
+        "assessment_type": "transfer",
+        "research_terms": ["retrieval_practice", "transfer_appropriate_processing", "spacing_effect"],
     },
     # === INTERROGATE (link to prior knowledge, apply, compare) ===
     {
@@ -288,6 +377,10 @@ METHOD_BLOCKS = [
         "best_stage": "review",
         "tags": ["analogy", "transfer", "creative"],
         "evidence": "Gentner (1983); analogical reasoning supports structural mapping and transfer",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "assessment_type": "transfer",
+        "research_terms": ["transfer_appropriate_processing", "schema_theory", "cognitive_flexibility"],
     },
     {
         "name": "Clinical Application",
@@ -298,6 +391,10 @@ METHOD_BLOCKS = [
         "best_stage": "exam_prep",
         "tags": ["clinical", "application", "pt-specific"],
         "evidence": "Schmidt & Rikers (2007); clinical application strengthens illness script formation",
+        "icap_level": "interactive",
+        "clt_target": "increase-germane",
+        "assessment_type": "application",
+        "research_terms": ["case_based_reasoning", "illness_scripts", "clinical_reasoning"],
     },
     {
         "name": "Cross-Topic Link",
@@ -308,6 +405,9 @@ METHOD_BLOCKS = [
         "best_stage": "consolidation",
         "tags": ["integration", "cross-course", "big-picture"],
         "evidence": "Pugh & Bergin (2006); interest deepens when learners see cross-domain connections",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "research_terms": ["transfer_appropriate_processing", "schema_theory", "cognitive_flexibility"],
     },
     {
         "name": "Side-by-Side Comparison",
@@ -318,6 +418,10 @@ METHOD_BLOCKS = [
         "best_stage": "review",
         "tags": ["comparison", "discrimination", "differential", "table"],
         "evidence": "Alfieri et al. (2013); comparison-based learning improves discrimination and concept formation",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "comparison-table",
+        "research_terms": ["comparison_based_learning", "schema_theory", "transfer_appropriate_processing"],
     },
     {
         "name": "Case Walkthrough",
@@ -328,6 +432,10 @@ METHOD_BLOCKS = [
         "best_stage": "exam_prep",
         "tags": ["clinical", "case-based", "reasoning", "application"],
         "evidence": "Thistlethwaite et al. (2012); case-based learning improves clinical reasoning in health professions",
+        "icap_level": "interactive",
+        "clt_target": "increase-germane",
+        "assessment_type": "application",
+        "research_terms": ["case_based_reasoning", "clinical_reasoning", "illness_scripts"],
     },
     {
         "name": "Illness Script Builder",
@@ -338,6 +446,10 @@ METHOD_BLOCKS = [
         "best_stage": "first_exposure",
         "tags": ["illness-script", "clinical-reasoning", "pathology"],
         "evidence": "Schmidt & Rikers (2007); illness scripts are the cognitive structure underlying expert clinical reasoning",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "illness-script",
+        "research_terms": ["illness_scripts", "case_based_reasoning", "schema_theory"],
     },
     # === REFINE (error analysis, relearning loops) ===
     {
@@ -349,6 +461,10 @@ METHOD_BLOCKS = [
         "best_stage": "exam_prep",
         "tags": ["error-analysis", "metacognition", "correction", "evidence-based"],
         "evidence": "Metcalfe (2017); error correction with feedback is more effective than errorless learning",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "error-log",
+        "research_terms": ["error_based_learning", "metacognitive_monitoring", "calibration"],
     },
     {
         "name": "Mastery Loop",
@@ -359,6 +475,10 @@ METHOD_BLOCKS = [
         "best_stage": "consolidation",
         "tags": ["successive-relearning", "mastery", "retest", "evidence-based"],
         "evidence": "Rawson & Dunlosky (2011); successive relearning combines testing + spacing for durable retention",
+        "icap_level": "active",
+        "clt_target": "increase-germane",
+        "assessment_type": "recall",
+        "research_terms": ["successive_relearning", "mastery_learning", "spacing_effect"],
     },
     # === OVERLEARN (close loop, capture artifacts) ===
     {
@@ -370,6 +490,9 @@ METHOD_BLOCKS = [
         "best_stage": "consolidation",
         "tags": ["reflection", "meta", "wrap", "sop-core"],
         "evidence": "Tanner (2012); metacognitive reflection improves self-regulated learning",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "research_terms": ["metacognitive_monitoring", "calibration", "self_explanation"],
     },
     {
         "name": "Anki Card Draft",
@@ -380,6 +503,10 @@ METHOD_BLOCKS = [
         "best_stage": "consolidation",
         "tags": ["anki", "spaced-repetition", "artifacts"],
         "evidence": "Kornell (2009); Cepeda et al. (2006); spaced retrieval via flashcards is high-utility",
+        "icap_level": "constructive",
+        "clt_target": "increase-germane",
+        "artifact_type": "cards",
+        "research_terms": ["spacing_effect", "retrieval_practice", "successive_relearning"],
     },
 ]
 

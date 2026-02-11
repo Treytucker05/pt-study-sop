@@ -1268,6 +1268,11 @@ def init_database():
         ("failure_modes", "TEXT"),
         ("variants", "TEXT"),
         ("scoring_hooks", "TEXT"),
+        ("icap_level", "TEXT"),
+        ("clt_target", "TEXT"),
+        ("assessment_type", "TEXT"),
+        ("artifact_type", "TEXT"),
+        ("research_terms", "TEXT"),
     ]
     for col_name, col_type in module_card_cols:
         if col_name not in mb_cols:

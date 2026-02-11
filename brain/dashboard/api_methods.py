@@ -39,7 +39,7 @@ def list_methods():
     rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
     conn.close()
     for row in rows:
-        for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks"):
+        for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks", "research_terms"):
             row[json_field] = _parse_json(row.get(json_field))
     return jsonify(rows)
 
@@ -55,7 +55,7 @@ def get_method(method_id: int):
         return jsonify({"error": "Method not found"}), 404
     columns = [desc[0] for desc in cursor.description]
     result = dict(zip(columns, row))
-    for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks"):
+    for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks", "research_terms"):
         result[json_field] = _parse_json(result.get(json_field))
     return jsonify(result)
 
@@ -71,8 +71,8 @@ def create_method():
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO method_blocks (name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, inputs, outputs, strategy_label, failure_modes, variants, scoring_hooks, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            INSERT INTO method_blocks (name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, inputs, outputs, strategy_label, failure_modes, variants, scoring_hooks, icap_level, clt_target, assessment_type, artifact_type, research_terms, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """,
             (
                 data["name"],
@@ -89,6 +89,11 @@ def create_method():
                 json.dumps(data.get("failure_modes", [])),
                 json.dumps(data.get("variants", [])),
                 json.dumps(data.get("scoring_hooks", [])),
+                data.get("icap_level"),
+                data.get("clt_target"),
+                data.get("assessment_type"),
+                data.get("artifact_type"),
+                json.dumps(data.get("research_terms", [])),
             ),
         )
         new_id = cursor.lastrowid
@@ -106,11 +111,11 @@ def update_method(method_id: int):
 
     fields = []
     values = []
-    for key in ("name", "category", "description", "default_duration_min", "energy_cost", "best_stage", "evidence", "strategy_label"):
+    for key in ("name", "category", "description", "default_duration_min", "energy_cost", "best_stage", "evidence", "strategy_label", "icap_level", "clt_target", "assessment_type", "artifact_type"):
         if key in data:
             fields.append(f"{key} = ?")
             values.append(data[key])
-    for json_key in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks"):
+    for json_key in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks", "research_terms"):
         if json_key in data:
             fields.append(f"{json_key} = ?")
             values.append(json.dumps(data[json_key]))
@@ -201,7 +206,8 @@ def get_chain(chain_id: int):
         blocks_map = {}
         for b_row in cursor.fetchall():
             block = dict(zip(block_cols, b_row))
-            block["tags"] = _parse_json(block.get("tags"))
+            for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks", "research_terms"):
+                block[json_field] = _parse_json(block.get(json_field))
             blocks_map[block["id"]] = block
         result["blocks"] = [blocks_map[bid] for bid in block_ids if bid in blocks_map]
     else:
