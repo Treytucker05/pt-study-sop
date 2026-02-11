@@ -1,5 +1,8 @@
 # PT Study SOP — Hierarchical Breakdown
 
+> Legacy hierarchical breakdown. Canonical v2 domain primitives + learning loop: `docs/root/ARCHITECTURE_V2.md`.
+> Terminology note: prefer LearningModule vs CourseModule as defined in `docs/root/ARCHITECTURE_V2.md`.
+
 ## LEVEL 1: System Vision (North Star)
 ```
 PT STUDY OS

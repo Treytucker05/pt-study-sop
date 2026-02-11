@@ -5,15 +5,16 @@
 **Scope:** Entire repository (SOP, Brain, Scholar, Scripts)
 **Purpose:** Canonical technical documentation for system architecture, dependencies, and integration.
 
+> Canonical domain primitives + learning loop (V2): `docs/root/ARCHITECTURE_V2.md`.
+> Terminology note: current DB/UI `modules` are CourseModules (course material units), not LearningModules.
+
 ---
 
 ## 1. Executive Summary
 
 The **PT Study System** is a personal AI operating system for DPT coursework, integrating four main pillars. Canonical dashboard behavior and flows are documented in `docs/dashboard_audit.md`.
 
-The **PT Study System** is a personal AI operating system for DPT coursework, integrating four main pillars:
-
-
+Core pillars:
 1.  **SOP System (`sop/`)**: A rigorous learning methodology (PEIR-RO cycle) and runtime protocol for "Structured Architect" (Custom GPT).
 2.  **Scholar System (`scholar/`)**: A meta-system that audits study logs, detects friction, and proposes optimizations.
 3.  **Brain System (`brain/`)**: The central database, ingestion engine, and Flask-based analytics dashboard.

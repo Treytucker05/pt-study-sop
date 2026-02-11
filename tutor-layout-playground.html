@@ -44,9 +44,20 @@
     display: flex;
     align-items: center;
     padding: 0 10px;
-    gap: 8px;
+    gap: 4px;
     flex-shrink: 0;
     z-index: 1000;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .toolbar::-webkit-scrollbar { height: 2px; }
+  .toolbar::-webkit-scrollbar-thumb { background: var(--primary-dim); }
+
+  .tb-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
   }
   .toolbar h1 {
     font-family: var(--font-arcade);
@@ -172,6 +183,7 @@
     flex: 1;
     position: relative;
     overflow: hidden;
+    border-right: 2px solid var(--primary-dim);
     background:
       radial-gradient(circle at 50% 50%, rgba(239,68,68,0.02) 0%, transparent 70%),
       repeating-linear-gradient(0deg, transparent, transparent calc(var(--grid) - 1px), rgba(239,68,68,0.03) var(--grid)),
@@ -237,8 +249,139 @@
     flex-direction: column;
   }
 
-  /* resize handles */
-  .rh { position: absolute; z-index: 10; }
+  /* zone resize dividers (between inner boxes) */
+  .zone-divider {
+    height: 6px;
+    cursor: row-resize;
+    background: transparent;
+    position: relative;
+    flex-shrink: 0;
+    z-index: 5;
+    user-select: none;
+  }
+  .zone-divider::after {
+    content: '';
+    position: absolute;
+    left: 25%;
+    right: 25%;
+    top: 2px;
+    height: 2px;
+    background: var(--primary-dim);
+    border-radius: 1px;
+    transition: background 0.15s;
+  }
+  .zone-divider:hover::after,
+  .zone-divider.active::after {
+    background: var(--primary);
+    left: 10%;
+    right: 10%;
+  }
+
+  /* column resize dividers (between side-by-side zones) */
+  .zone-col-divider {
+    width: 6px;
+    cursor: col-resize;
+    background: transparent;
+    position: relative;
+    flex-shrink: 0;
+    z-index: 5;
+    user-select: none;
+  }
+  .zone-col-divider::after {
+    content: '';
+    position: absolute;
+    top: 25%;
+    bottom: 25%;
+    left: 2px;
+    width: 2px;
+    background: var(--primary-dim);
+    border-radius: 1px;
+    transition: background 0.15s;
+  }
+  .zone-col-divider:hover::after,
+  .zone-col-divider.active::after {
+    background: var(--primary);
+    top: 10%;
+    bottom: 10%;
+  }
+
+  /* row container for side-by-side zones */
+  .zone-row {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* nested inner box */
+  .inner-box {
+    border: 2px solid var(--primary-dim);
+    background: rgba(0,0,0,0.15);
+    min-height: 48px;
+    min-width: 80px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .inner-box.drop-zone.highlight {
+    border-color: var(--green);
+    background: rgba(74,222,128,0.08);
+  }
+  .inner-box .box-label {
+    font-family: var(--font-arcade);
+    font-size: 8px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    user-select: none;
+    pointer-events: none;
+    position: absolute;
+    top: 1px; right: 4px;
+    opacity: 0.4;
+  }
+
+  /* border toggle */
+  body.hide-borders .inner-box { border-color: transparent !important; }
+  body.hide-borders .drop-zone { border-color: transparent !important; }
+  body.hide-borders .c-divider,
+  body.hide-borders .c-divider-thick { background: transparent !important; }
+  body.hide-borders .zone-divider::after,
+  body.hide-borders .zone-col-divider::after { background: transparent !important; }
+
+  /* hand tool cursor */
+  .canvas.hand-mode { cursor: grab; }
+  .canvas.hand-mode .panel,
+  .canvas.hand-mode .drop-zone,
+  .canvas.hand-mode .inner-box,
+  .canvas.hand-mode .drag-item { cursor: grab; }
+  .canvas.hand-mode .panel.dragging,
+  .canvas.hand-mode .drop-zone.hand-dragging { cursor: grabbing; }
+
+  /* hand-selected element highlight */
+  .hand-target {
+    outline: 2px dashed var(--cyan) !important;
+    outline-offset: -1px;
+  }
+
+  /* locked-on element selection */
+  .element-selected {
+    outline: 3px solid var(--cyan) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 12px rgba(34,211,238,0.5), inset 0 0 8px rgba(34,211,238,0.1) !important;
+  }
+  .element-grouped {
+    outline: 2px solid var(--cyan) !important;
+    outline-offset: 1px;
+    box-shadow: 0 0 8px rgba(34,211,238,0.3) !important;
+  }
+
+  /* resize handles — pointer-events only active when panel is selected */
+  .rh { position: absolute; z-index: 10; pointer-events: none; }
+  .panel.selected > .rh { pointer-events: auto; }
   .rh.n  { top:-3px; left:6px; right:6px; height:6px; cursor:n-resize; }
   .rh.s  { bottom:-3px; left:6px; right:6px; height:6px; cursor:s-resize; }
   .rh.e  { right:-3px; top:6px; bottom:6px; width:6px; cursor:e-resize; }
@@ -260,7 +403,8 @@
     padding: 3px 6px;
   }
   .drop-zone.highlight { border-color: var(--green); background: rgba(74,222,128,0.05); }
-  .drop-zone.vertical { flex-direction: column; align-items: stretch; }
+  .drop-zone.vertical { flex-direction: column; align-items: stretch; flex: 1; min-height: 0; overflow-y: auto; }
+  .drop-zone.horizontal-fill { flex: 1; justify-content: space-between; }
 
   /* ═══ DRAGGABLE ITEMS ═══ */
   .drag-item {
@@ -274,6 +418,23 @@
   }
   .drag-item:active { cursor: grabbing; }
   .drag-item.dragging-item { opacity: 0.5; outline: 1px dashed var(--primary); }
+
+  /* Item resize handle — visible only when selected */
+  .item-rh {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--cyan);
+    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s;
+  }
+  .item-rh.se { bottom: -3px; right: -3px; cursor: se-resize; }
+  .item-rh.e  { top: 50%; right: -3px; transform: translateY(-50%); width: 6px; height: 14px; cursor: e-resize; }
+  .item-rh.s  { bottom: -3px; left: 50%; transform: translateX(-50%); width: 14px; height: 6px; cursor: s-resize; }
+  .element-selected > .item-rh,
+  .element-grouped > .item-rh { opacity: 1; pointer-events: auto; }
 
   /* ═══ COMPONENT STYLES ═══ */
 
@@ -626,6 +787,34 @@
   <button class="tb-btn" onclick="loadPage('empty')">BLANK</button>
   <div class="sep"></div>
   <button class="tb-btn" onclick="toggleSnap()" id="snapBtn">SNAP: ON</button>
+  <button class="tb-btn active" onclick="togglePush()" id="pushBtn">PUSH: ON</button>
+  <button class="tb-btn" onclick="toggleHand()" id="handBtn">✋ HAND</button>
+  <div class="sep"></div>
+  <button class="tb-btn" onclick="addHSplit()">H-SPLIT</button>
+  <button class="tb-btn" onclick="addVSplit()">V-SPLIT</button>
+  <button class="tb-btn" onclick="addBox()">+BOX</button>
+  <button class="tb-btn" onclick="toggleBorders()" id="borderBtn">BORDERS: ON</button>
+  <div class="sep"></div>
+  <button class="tb-btn" onclick="splitPanel('2-col')">2-COL</button>
+  <button class="tb-btn" onclick="splitPanel('3-col')">3-COL</button>
+  <button class="tb-btn" onclick="splitPanel('2-row')">2-ROW</button>
+  <button class="tb-btn" onclick="splitPanel('grid')">GRID</button>
+  <div class="sep"></div>
+  <div class="tb-group">
+    <button class="tb-btn" onclick="alignPanels('left')" title="Align left">◀</button>
+    <button class="tb-btn" onclick="alignPanels('center')" title="Center">◆</button>
+    <button class="tb-btn" onclick="alignPanels('right')" title="Align right">▶</button>
+  </div>
+  <div class="sep"></div>
+  <button class="tb-btn" onclick="autoSpace()" title="Even vertical spacing">SPACE</button>
+  <div class="tb-group">
+    <button class="tb-btn" onclick="adjustGap(-8)" title="Decrease gap">−</button>
+    <button class="tb-btn" onclick="adjustGap(8)" title="Increase gap">+</button>
+  </div>
+  <div class="sep"></div>
+  <button class="tb-btn" onclick="undo()" title="Undo (Ctrl+Z)">UNDO</button>
+  <button class="tb-btn" onclick="detachElement()" title="Break selected element out of its container">DETACH</button>
+  <button class="tb-btn" onclick="explodePanel()">EXPLODE</button>
   <button class="tb-btn danger" onclick="deleteSelected()">DELETE</button>
   <button class="tb-copy" onclick="copyPrompt()">COPY LAYOUT</button>
 </div>
@@ -653,6 +842,11 @@
   <span>Size: <span class="val" id="infoSize">--</span></span>
   <span style="margin-left:auto;color:var(--muted)">Drag from palette to add • headers to move • edges to resize • items to reorder</span>
 </div>
+<div class="info-bar" style="border-top:1px solid var(--primary-dim);font-size:10px;color:var(--cyan)">
+  <span>DEBUG Click: <span class="val" id="debugTarget">--</span></span>
+  <span>Action: <span class="val" id="debugAction">--</span></span>
+  <span>Pointer-events: <span class="val" id="debugPE">--</span></span>
+</div>
 
 <!-- ═══ PROMPT BAR ═══ -->
 <div class="prompt-bar" id="promptBar">
@@ -676,11 +870,243 @@ let selectedPanelId = null;
 let dragState = null;     // panel move/resize
 let itemDragState = null; // item reorder
 let paletteDrag = null;   // dragging from palette
+let pushEnabled = true;   // push siblings on overlap
+let zoneDragState = null; // inner zone resize
+let bordersVisible = true;
+let handMode = false;
+let handDragState = null; // hand tool drag
+let selectedElement = null; // locked-on inner element
+let groupedElements = new Set(); // shift-click multi-select group
+let itemResizeState = null; // inner item resize drag
+
+// Undo history
+const undoStack = [];
+const MAX_UNDO = 50;
 
 const canvas = document.getElementById('canvas');
 const ghost = document.getElementById('dragGhost');
 
+// Safety: reset any stuck pointer-events/opacity from incomplete drags
+function cleanupStuckDragStyles() {
+  // Reset stuck pointer-events on canvas elements
+  canvas.querySelectorAll('.drag-item, .inner-box').forEach(el => {
+    if (el.style.pointerEvents === 'none') el.style.pointerEvents = '';
+    if (el.style.opacity && el.style.opacity !== '1') el.style.opacity = '';
+  });
+  // Clean floated elements stuck on document.body
+  document.querySelectorAll('body > .drag-item, body > .inner-box').forEach(el => {
+    el.style.position = '';
+    el.style.left = '';
+    el.style.top = '';
+    el.style.width = '';
+    el.style.zIndex = '';
+    el.style.boxShadow = '';
+    el.style.opacity = '';
+    el.style.pointerEvents = '';
+  });
+  canvas.querySelectorAll('.dragging-item').forEach(el => el.classList.remove('dragging-item'));
+  canvas.querySelectorAll('.hand-target').forEach(el => el.classList.remove('hand-target'));
+}
+
+// If user tabs away mid-drag, clean up all drag state
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (handDragState || itemDragState || dragState || zoneDragState) {
+      cleanupStuckDragStyles();
+      handDragState = null;
+      itemDragState = null;
+      dragState = null;
+      zoneDragState = null;
+      itemResizeState = null;
+      document.querySelectorAll('.panel.dragging').forEach(p => p.classList.remove('dragging'));
+      document.querySelectorAll('.drop-zone.highlight').forEach(z => z.classList.remove('highlight'));
+    }
+  }
+});
+
 function snapV(v) { return snap ? Math.round(v / SNAP_SZ) * SNAP_SZ : v; }
+
+// ══════════════════════════════════════════════════════════
+// SHARED: insert element at cursor position in a zone
+// ══════════════════════════════════════════════════════════
+function insertAtCursor(el, zone, e) {
+  const siblings = [...zone.children].filter(c => c !== el);
+  const style = window.getComputedStyle(zone);
+  const isVert = style.flexDirection === 'column';
+  let inserted = false;
+  for (const sib of siblings) {
+    if (sib.classList.contains('zone-divider') || sib.classList.contains('zone-col-divider') || sib.classList.contains('box-label')) continue;
+    const rect = sib.getBoundingClientRect();
+    const mid = isVert ? rect.top + rect.height / 2 : rect.left + rect.width / 2;
+    const pos = isVert ? e.clientY : e.clientX;
+    if (pos < mid) { zone.insertBefore(el, sib); inserted = true; break; }
+  }
+  if (!inserted) zone.appendChild(el);
+}
+
+// ══════════════════════════════════════════════════════════
+// CLOSE GAPS — slide panels up when space opens below resize
+// ══════════════════════════════════════════════════════════
+function closeGaps() {
+  if (!pushEnabled) return;
+  const ids = Object.keys(panels);
+  if (ids.length < 2) return;
+
+  const sorted = [...ids].sort((a, b) =>
+    (parseInt(panels[a].el.style.top) || 0) - (parseInt(panels[b].el.style.top) || 0)
+  );
+
+  for (let i = 1; i < sorted.length; i++) {
+    const above = panels[sorted[i - 1]].el;
+    const below = panels[sorted[i]].el;
+    const aboveBottom = (parseInt(above.style.top) || 0) + (parseInt(above.style.height) || 48);
+    const belowTop = parseInt(below.style.top) || 0;
+
+    // Only close if panels overlap horizontally
+    const aL = parseInt(above.style.left) || 0, aR = aL + (parseInt(above.style.width) || 120);
+    const bL = parseInt(below.style.left) || 0, bR = bL + (parseInt(below.style.width) || 120);
+    if (aR > bL && bR > aL) {
+      const gap = belowTop - aboveBottom;
+      if (gap > PUSH_GAP) {
+        below.style.top = snapV(aboveBottom + PUSH_GAP) + 'px';
+        updateDims(sorted[i]);
+      }
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// COLLISION DETECTION — push siblings out of the way
+// ══════════════════════════════════════════════════════════
+const PUSH_GAP = 8;
+
+function getPanelRect(el) {
+  return {
+    x: parseInt(el.style.left) || 0,
+    y: parseInt(el.style.top) || 0,
+    w: parseInt(el.style.width) || 120,
+    h: parseInt(el.style.height) || 48,
+  };
+}
+
+function rectsOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x &&
+         a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function clampToCanvas(el) {
+  const cr = canvas.getBoundingClientRect();
+  let x = parseInt(el.style.left) || 0;
+  let y = parseInt(el.style.top) || 0;
+  const w = parseInt(el.style.width) || 120;
+  const h = parseInt(el.style.height) || 48;
+  x = Math.max(0, Math.min(x, cr.width - 40));
+  y = Math.max(0, Math.min(y, cr.height - 24));
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+}
+
+function resolveCollisions(movedId) {
+  if (!pushEnabled) return;
+
+  const cRect = canvas.getBoundingClientRect();
+
+  // BFS: start from movedId, push overlapping panels, cascade
+  const queue = [movedId];
+  const processed = new Set();
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    if (processed.has(currentId)) continue;
+    processed.add(currentId);
+
+    const current = panels[currentId];
+    if (!current) continue;
+    const cr = getPanelRect(current.el);
+
+    for (const [otherId, other] of Object.entries(panels)) {
+      if (otherId === currentId || processed.has(otherId)) continue;
+
+      const or = getPanelRect(other.el);
+      if (!rectsOverlap(cr, or)) continue;
+
+      // Calculate overlap on each push direction
+      const pushRight = (cr.x + cr.w) - or.x;
+      const pushLeft  = (or.x + or.w) - cr.x;
+      const pushDown  = (cr.y + cr.h) - or.y;
+      const pushUp    = (or.y + or.h) - cr.y;
+
+      const min = Math.min(pushRight, pushLeft, pushDown, pushUp);
+
+      if (min === pushRight) {
+        other.el.style.left = snapV(cr.x + cr.w + PUSH_GAP) + 'px';
+      } else if (min === pushLeft) {
+        other.el.style.left = snapV(cr.x - or.w - PUSH_GAP) + 'px';
+      } else if (min === pushDown) {
+        other.el.style.top = snapV(cr.y + cr.h + PUSH_GAP) + 'px';
+      } else {
+        other.el.style.top = snapV(cr.y - or.h - PUSH_GAP) + 'px';
+      }
+
+      // Clamp so panels can't leave the canvas
+      clampToCanvas(other.el);
+      updateDims(otherId);
+      queue.push(otherId);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// ZONE DIVIDERS — resize inner boxes within panels
+// ══════════════════════════════════════════════════════════
+function initZoneDividers(panelId) {
+  const el = panels[panelId].el;
+  const body = el.querySelector('.panel-body');
+  if (!body) return;
+
+  const zones = [...body.querySelectorAll(':scope > .drop-zone')];
+  if (zones.length < 2) return;
+
+  // Fix zone heights from their current rendered size
+  zones.forEach(z => {
+    const h = z.getBoundingClientRect().height;
+    z.style.height = Math.max(16, h) + 'px';
+    z.style.flex = 'none';
+    z.style.minHeight = '16px';
+    z.style.overflow = 'auto';
+  });
+
+  // Insert dividers between zones
+  for (let i = zones.length - 1; i > 0; i--) {
+    const div = document.createElement('div');
+    div.className = 'zone-divider';
+    body.insertBefore(div, zones[i]);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// UNDO
+// ══════════════════════════════════════════════════════════
+function saveUndoState() {
+  const pd = {};
+  for (const [id, p] of Object.entries(panels)) {
+    pd[id] = { template: p.template, title: p.title };
+  }
+  undoStack.push({ html: canvas.innerHTML, pd, counter: panelCounter, sel: selectedPanelId });
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  const s = undoStack.pop();
+  canvas.innerHTML = s.html;
+  panelCounter = s.counter;
+  panels = {};
+  canvas.querySelectorAll('.panel').forEach(el => {
+    panels[el.id] = { el, template: s.pd[el.id]?.template || 'card', title: s.pd[el.id]?.title || 'PANEL' };
+  });
+  selectPanel(s.sel);
+}
 
 // ══════════════════════════════════════════════════════════
 // COMPONENT LIBRARY
@@ -805,7 +1231,7 @@ function getWindowTemplate(template) {
           { html: '<span class="c-chip">TI</span>' },
           { html: '<span class="c-input">🔍 Filter...</span>' },
         ]},
-        { id: 'tree', dir: 'v', items: [
+        { id: 'tree', dir: 'v', fill: true, items: [
           { html: '<div class="c-tree-folder"><span class="box"></span><span style="color:var(--muted);font-size:9px">▼</span><span style="color:var(--yellow)">📂</span>Evidence Based Practice</div>' },
           { html: '<div class="c-tree-file"><span class="box"></span><span style="color:var(--blue)">📄</span>Week 1 - Intro to EBP.md</div>' },
           { html: '<div class="c-tree-file"><span class="box"></span><span style="color:var(--blue)">📄</span>Week 2 - PICO Framework.md</div>' },
@@ -825,7 +1251,7 @@ function getWindowTemplate(template) {
     };
     case 'toolbar': return {
       title: 'TOOLBAR', w: 600, h: 44,
-      zones: [{ id: 'controls', dir: 'h', items: [
+      zones: [{ id: 'controls', dir: 'h', fill: true, items: [
         { html: '<span class="c-select">Mode: LEARN ▾</span>' },
         { html: '<span class="c-select">Chain: First Exposure ▾</span>' },
         { html: '<span class="c-input">Topic...</span>' },
@@ -837,7 +1263,7 @@ function getWindowTemplate(template) {
     case 'chat': return {
       title: 'CHAT', w: 450, h: 350,
       zones: [
-        { id: 'messages', dir: 'v', items: [
+        { id: 'messages', dir: 'v', fill: true, items: [
           { html: '<div class="c-chat-user">What muscles make up the rotator cuff?</div>' },
           { html: '<div class="c-chat-ai">The rotator cuff is composed of four muscles: supraspinatus, infraspinatus, teres minor, and subscapularis (SITS).</div>' },
         ]},
@@ -854,7 +1280,7 @@ function getWindowTemplate(template) {
           { html: '<span class="c-label">ARTIFACTS</span>' },
           { html: '<span class="c-badge">3</span>' },
         ]},
-        { id: 'list', dir: 'v', items: [
+        { id: 'list', dir: 'v', fill: true, items: [
           { html: '<div style="padding:4px 8px;border:1px solid var(--primary-dim);width:100%"><span class="c-badge blue">CARD</span> <span class="c-text" style="margin-left:4px">Brachial Plexus</span></div>' },
           { html: '<div style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06);width:100%"><span class="c-badge">NOTE</span> <span class="c-text" style="margin-left:4px">Muscle Origins</span></div>' },
           { html: '<div style="padding:4px 8px;border:1px solid rgba(255,255,255,0.06);width:100%"><span class="c-badge green">MAP</span> <span class="c-text" style="margin-left:4px">Spinal Nerves</span></div>' },
@@ -882,7 +1308,7 @@ function getWindowTemplate(template) {
     };
     case 'settings': return {
       title: 'SETTINGS', w: 280, h: 240,
-      zones: [{ id: 'options', dir: 'v', items: [
+      zones: [{ id: 'options', dir: 'v', fill: true, items: [
         { html: '<span class="c-label">MODE</span>' },
         { html: '<span class="c-select" style="width:100%">Core ▾</span>' },
         { html: '<span class="c-label">CHAIN</span>' },
@@ -994,6 +1420,120 @@ document.addEventListener('mousemove', (e) => {
     return;
   }
 
+  // Zone divider drag (inner box resize — row or col)
+  if (zoneDragState) {
+    if (zoneDragState.direction === 'col') {
+      const dx = e.clientX - zoneDragState.startY;
+      const newLeftW = Math.max(40, zoneDragState.startAboveH + dx);
+      const newRightW = Math.max(40, zoneDragState.startBelowH - dx);
+      if (newLeftW >= 40 && newRightW >= 40) {
+        zoneDragState.zoneAbove.style.width = snapV(newLeftW) + 'px';
+        zoneDragState.zoneBelow.style.width = snapV(newRightW) + 'px';
+      }
+    } else {
+      const dy = e.clientY - zoneDragState.startY;
+      const newAboveH = Math.max(16, zoneDragState.startAboveH + dy);
+      const newBelowH = Math.max(16, zoneDragState.startBelowH - dy);
+      if (newAboveH >= 16 && newBelowH >= 16) {
+        zoneDragState.zoneAbove.style.height = snapV(newAboveH) + 'px';
+        zoneDragState.zoneBelow.style.height = snapV(newBelowH) + 'px';
+      }
+    }
+    return;
+  }
+
+  // Item resize drag
+  if (itemResizeState) {
+    const dx = e.clientX - itemResizeState.startX;
+    const dy = e.clientY - itemResizeState.startY;
+    const d = itemResizeState.dir;
+    const el = itemResizeState.el;
+    if (d === 'se' || d === 'e') {
+      el.style.width = Math.max(40, itemResizeState.startW + dx) + 'px';
+    }
+    if (d === 'se' || d === 's') {
+      el.style.height = Math.max(20, itemResizeState.startH + dy) + 'px';
+    }
+    return;
+  }
+
+  // Hand tool drag — Push ON: reorder in place, Push OFF: float out
+  if (handDragState) {
+    const dx = e.clientX - handDragState.startX;
+    const dy = e.clientY - handDragState.startY;
+    const allEls = handDragState.group || [handDragState.el];
+    if (!handDragState.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+      handDragState.moved = true;
+
+      if (pushEnabled) {
+        // Push ON: stay in DOM, reorder among siblings
+        allEls.forEach(el => { el.style.pointerEvents = 'none'; el.style.opacity = '0.6'; });
+      } else {
+        // Push OFF: detach and float
+        handDragState.groupRects = [];
+        const primaryRect = handDragState.el.getBoundingClientRect();
+        allEls.forEach(el => {
+          const rect = el.getBoundingClientRect();
+          handDragState.groupRects.push({
+            el,
+            origParent: el.parentElement,
+            origNext: el.nextElementSibling,
+            offX: rect.left - primaryRect.left,
+            offY: rect.top - primaryRect.top,
+            w: rect.width,
+          });
+          el.style.pointerEvents = 'none';
+          el.remove();
+          el.style.position = 'fixed';
+          el.style.left = rect.left + 'px';
+          el.style.top = rect.top + 'px';
+          el.style.width = rect.width + 'px';
+          el.style.zIndex = '10000';
+          el.style.opacity = '0.85';
+          el.style.boxShadow = '0 0 16px rgba(34,211,238,0.6)';
+          document.body.appendChild(el);
+        });
+        handDragState.floating = true;
+        handDragState.offsetX = e.clientX - primaryRect.left;
+        handDragState.offsetY = e.clientY - primaryRect.top;
+      }
+    }
+    if (handDragState.moved) {
+      document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('highlight'));
+
+      if (handDragState.floating) {
+        // Float mode: follow cursor
+        const baseX = e.clientX - handDragState.offsetX;
+        const baseY = e.clientY - handDragState.offsetY;
+        (handDragState.groupRects || []).forEach(gr => {
+          gr.el.style.left = (baseX + gr.offX) + 'px';
+          gr.el.style.top = (baseY + gr.offY) + 'px';
+        });
+        const hoverTarget = document.elementFromPoint(e.clientX, e.clientY);
+        const targetZone = hoverTarget?.closest('.drop-zone');
+        if (targetZone) targetZone.classList.add('highlight');
+      } else {
+        // Push ON: reorder among siblings — items push each other
+        const hoverTarget = document.elementFromPoint(e.clientX, e.clientY);
+        const targetZone = hoverTarget?.closest('.drop-zone');
+        if (targetZone) {
+          targetZone.classList.add('highlight');
+          insertAtCursor(handDragState.el, targetZone, e);
+          if (handDragState.group) {
+            let ref = handDragState.el;
+            for (const gel of handDragState.group) {
+              if (gel === handDragState.el) continue;
+              if (ref.nextSibling) targetZone.insertBefore(gel, ref.nextSibling);
+              else targetZone.appendChild(gel);
+              ref = gel;
+            }
+          }
+        }
+      }
+    }
+    return;
+  }
+
   // Panel drag/resize
   if (dragState) {
     const dx = e.clientX - dragState.startX;
@@ -1004,6 +1544,7 @@ document.addEventListener('mousemove', (e) => {
     if (dragState.type === 'move') {
       el.style.left = snapV(sr.x + dx) + 'px';
       el.style.top = snapV(sr.y + dy) + 'px';
+      clampToCanvas(el);
     } else {
       let nx = sr.x, ny = sr.y, nw = sr.w, nh = sr.h;
       const d = dragState.dir;
@@ -1018,34 +1559,83 @@ document.addEventListener('mousemove', (e) => {
     }
     updateDims(dragState.panelId);
     updateInfoBar(dragState.panelId);
+    resolveCollisions(dragState.panelId);
+    closeGaps();
     return;
   }
 
-  // Item reorder
+  // Item drag — Push ON: reorder in place, Push OFF: float out
   if (itemDragState) {
     const dx = e.clientX - itemDragState.startX;
     const dy = e.clientY - itemDragState.startY;
+    const allItems = itemDragState.group || [itemDragState.el];
     if (!itemDragState.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
       itemDragState.moved = true;
-      itemDragState.el.classList.add('dragging-item');
+
+      if (pushEnabled) {
+        // Push ON: stay in DOM, reorder among siblings
+        allItems.forEach(el => { el.classList.add('dragging-item'); el.style.pointerEvents = 'none'; });
+      } else {
+        // Push OFF: detach and float
+        itemDragState.groupRects = [];
+        const primaryRect = itemDragState.el.getBoundingClientRect();
+        allItems.forEach(el => {
+          const rect = el.getBoundingClientRect();
+          itemDragState.groupRects.push({
+            el,
+            origParent: el.parentElement,
+            origNext: el.nextElementSibling,
+            offX: rect.left - primaryRect.left,
+            offY: rect.top - primaryRect.top,
+            w: rect.width,
+          });
+          el.classList.add('dragging-item');
+          el.style.pointerEvents = 'none';
+          el.remove();
+          el.style.position = 'fixed';
+          el.style.left = rect.left + 'px';
+          el.style.top = rect.top + 'px';
+          el.style.width = rect.width + 'px';
+          el.style.zIndex = '10000';
+          el.style.opacity = '0.85';
+          el.style.boxShadow = '0 0 16px rgba(34,211,238,0.6)';
+          document.body.appendChild(el);
+        });
+        itemDragState.floating = true;
+        itemDragState.offsetX = e.clientX - primaryRect.left;
+        itemDragState.offsetY = e.clientY - primaryRect.top;
+      }
     }
     if (itemDragState.moved) {
       document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('highlight'));
-      const target = document.elementFromPoint(e.clientX, e.clientY);
-      const targetZone = target?.closest('.drop-zone');
-      if (targetZone) {
-        targetZone.classList.add('highlight');
-        // Reorder within zone
-        const items = [...targetZone.querySelectorAll(':scope > .drag-item')];
-        const dragged = itemDragState.el;
-        for (const item of items) {
-          if (item === dragged) continue;
-          const rect = item.getBoundingClientRect();
-          const isVert = targetZone.classList.contains('vertical');
-          const mid = isVert ? rect.top + rect.height / 2 : rect.left + rect.width / 2;
-          const pos = isVert ? e.clientY : e.clientX;
-          if (pos < mid) { targetZone.insertBefore(dragged, item); break; }
-          else if (item === items[items.length - 1]) targetZone.appendChild(dragged);
+
+      if (itemDragState.floating) {
+        // Float mode: follow cursor
+        const baseX = e.clientX - itemDragState.offsetX;
+        const baseY = e.clientY - itemDragState.offsetY;
+        (itemDragState.groupRects || []).forEach(gr => {
+          gr.el.style.left = (baseX + gr.offX) + 'px';
+          gr.el.style.top = (baseY + gr.offY) + 'px';
+        });
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        const targetZone = target?.closest('.drop-zone');
+        if (targetZone) targetZone.classList.add('highlight');
+      } else {
+        // Push ON: reorder — items push each other
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        const targetZone = target?.closest('.drop-zone');
+        if (targetZone) {
+          targetZone.classList.add('highlight');
+          insertAtCursor(itemDragState.el, targetZone, e);
+          if (itemDragState.group) {
+            let ref = itemDragState.el;
+            for (const gel of itemDragState.group) {
+              if (gel === itemDragState.el) continue;
+              if (ref.nextSibling) targetZone.insertBefore(gel, ref.nextSibling);
+              else targetZone.appendChild(gel);
+              ref = gel;
+            }
+          }
         }
       }
     }
@@ -1053,6 +1643,66 @@ document.addEventListener('mousemove', (e) => {
 });
 
 document.addEventListener('mouseup', (e) => {
+  // Zone divider end
+  if (zoneDragState) {
+    zoneDragState.divider.classList.remove('active');
+    zoneDragState = null;
+    updatePrompt();
+    return;
+  }
+
+  // Item resize end
+  if (itemResizeState) {
+    itemResizeState = null;
+    updatePrompt();
+    return;
+  }
+
+  // Hand tool end
+  if (handDragState) {
+    const allEls = handDragState.group || [handDragState.el];
+
+    if (handDragState.floating && handDragState.groupRects) {
+      // Float mode drop: find target zone under cursor
+      allEls.forEach(el => { el.style.pointerEvents = ''; });
+      const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+      const targetZone = dropTarget?.closest('.drop-zone');
+
+      handDragState.groupRects.forEach(gr => {
+        gr.el.style.position = '';
+        gr.el.style.left = '';
+        gr.el.style.top = '';
+        gr.el.style.width = '';
+        gr.el.style.zIndex = '';
+        gr.el.style.boxShadow = '';
+        gr.el.style.opacity = '';
+        gr.el.classList.remove('hand-target');
+        if (gr.el.parentElement === document.body) gr.el.remove();
+
+        if (targetZone) {
+          insertAtCursor(gr.el, targetZone, e);
+        } else {
+          if (gr.origNext && gr.origParent?.contains(gr.origNext)) {
+            gr.origParent.insertBefore(gr.el, gr.origNext);
+          } else if (gr.origParent) {
+            gr.origParent.appendChild(gr.el);
+          }
+        }
+      });
+    } else {
+      // Push ON or no movement — clean up styles
+      allEls.forEach(el => {
+        el.classList.remove('hand-target');
+        el.style.opacity = '';
+        el.style.pointerEvents = '';
+      });
+    }
+    document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('highlight'));
+    handDragState = null;
+    updatePrompt();
+    return;
+  }
+
   // Palette drop
   if (paletteDrag && paletteDrag.active) {
     ghost.style.display = 'none';
@@ -1068,6 +1718,7 @@ document.addEventListener('mouseup', (e) => {
     const target = document.elementFromPoint(e.clientX, e.clientY);
     const targetZone = target?.closest('.drop-zone');
 
+    saveUndoState();
     if (targetZone && paletteDrag.html) {
       // Add item to existing zone
       const itemEl = document.createElement('div');
@@ -1105,18 +1756,49 @@ document.addEventListener('mouseup', (e) => {
     updatePrompt();
   }
 
-  // Item reorder end
+  // Item drag end
   if (itemDragState) {
-    itemDragState.el.classList.remove('dragging-item');
-    if (itemDragState.moved) {
-      const target = document.elementFromPoint(e.clientX, e.clientY);
-      const targetZone = target?.closest('.drop-zone');
-      if (targetZone && targetZone !== itemDragState.zone) {
-        targetZone.appendChild(itemDragState.el);
-      }
-      document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('highlight'));
-      updatePrompt();
+    const allItems = itemDragState.group || [itemDragState.el];
+
+    if (itemDragState.floating) {
+      // Float mode drop
+      const rects = itemDragState.groupRects || [];
+      rects.forEach(gr => { gr.el.style.pointerEvents = ''; });
+      const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+      const targetZone = dropTarget?.closest('.drop-zone');
+
+      rects.forEach(gr => {
+        gr.el.style.position = '';
+        gr.el.style.left = '';
+        gr.el.style.top = '';
+        gr.el.style.width = '';
+        gr.el.style.zIndex = '';
+        gr.el.style.boxShadow = '';
+        gr.el.style.opacity = '';
+        gr.el.classList.remove('dragging-item');
+        if (gr.el.parentElement === document.body) gr.el.remove();
+
+        if (targetZone) {
+          insertAtCursor(gr.el, targetZone, e);
+        } else {
+          if (gr.origNext && gr.origParent?.contains(gr.origNext)) {
+            gr.origParent.insertBefore(gr.el, gr.origNext);
+          } else if (gr.origParent) {
+            gr.origParent.appendChild(gr.el);
+          }
+        }
+      });
+    } else {
+      // Push ON or no movement — clean up styles
+      allItems.forEach(el => {
+        el.classList.remove('dragging-item');
+        el.style.pointerEvents = '';
+        el.style.opacity = '';
+      });
     }
+
+    document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('highlight'));
+    updatePrompt();
     itemDragState = null;
   }
 });
@@ -1147,7 +1829,7 @@ function createPanel(template, x, y) {
   // Header
   const header = document.createElement('div');
   header.className = 'panel-header';
-  header.innerHTML = `<span class="title">${tmpl.title}</span><span class="dims">${tmpl.w}×${tmpl.h}</span><button class="close-btn" onclick="removePanel('${id}')" title="Delete">✕</button>`;
+  header.innerHTML = `<span class="title">${tmpl.title}</span><span class="dims">${tmpl.w}×${tmpl.h}</span><button class="close-btn" onclick="saveUndoState(); removePanel('${id}')" title="Delete">✕</button>`;
   el.appendChild(header);
 
   // Body
@@ -1156,7 +1838,10 @@ function createPanel(template, x, y) {
 
   tmpl.zones.forEach(zone => {
     const zoneEl = document.createElement('div');
-    zoneEl.className = `drop-zone ${zone.dir === 'v' ? 'vertical' : ''}`;
+    let cls = 'drop-zone';
+    if (zone.dir === 'v') cls += ' vertical';
+    if (zone.fill && zone.dir === 'h') cls += ' horizontal-fill';
+    zoneEl.className = cls;
     zoneEl.dataset.zoneId = `${id}-${zone.id}`;
 
     zone.items.forEach(item => {
@@ -1175,6 +1860,10 @@ function createPanel(template, x, y) {
   panels[id] = { el, template, title: tmpl.title };
   selectPanel(id);
   updateDims(id);
+
+  // Init zone dividers after layout is computed
+  requestAnimationFrame(() => initZoneDividers(id));
+
   return id;
 }
 
@@ -1187,20 +1876,174 @@ function removePanel(id) {
 }
 
 function deleteSelected() {
-  if (selectedPanelId) removePanel(selectedPanelId);
+  if (selectedPanelId) { saveUndoState(); removePanel(selectedPanelId); }
+}
+
+function detachElement() {
+  const els = getSelectedGroup();
+  if (els.length === 0) return;
+  saveUndoState();
+
+  els.forEach(el => {
+    const parentZone = el.parentElement;
+    if (!parentZone) return;
+
+    // Walk up: find an outer zone that isn't the current parent
+    // parentZone → its parent → look for a drop-zone ancestor
+    const grandparent = parentZone.parentElement;
+    if (!grandparent) return;
+
+    // Option 1: grandparent IS a zone (nested box inside zone)
+    if (grandparent.classList.contains('drop-zone')) {
+      const ref = parentZone.nextSibling;
+      if (ref) grandparent.insertBefore(el, ref);
+      else grandparent.appendChild(el);
+      return;
+    }
+
+    // Option 2: walk up further to find ANY ancestor zone
+    const outerZone = grandparent.closest('.drop-zone');
+    if (outerZone) {
+      // Insert after the current parent zone in the outer zone
+      const ancestor = parentZone.closest('.drop-zone:not(:scope)') || parentZone;
+      let insertRef = ancestor;
+      // Walk up to find the direct child of outerZone
+      while (insertRef.parentElement && insertRef.parentElement !== outerZone) insertRef = insertRef.parentElement;
+      if (insertRef.nextSibling) outerZone.insertBefore(el, insertRef.nextSibling);
+      else outerZone.appendChild(el);
+      return;
+    }
+
+    // Option 3: panel body — find or use the first zone
+    const panelBody = grandparent.closest('.panel-body') || parentZone.closest('.panel-body');
+    if (panelBody) {
+      const firstZone = panelBody.querySelector(':scope > .drop-zone');
+      if (firstZone && firstZone !== parentZone) {
+        firstZone.appendChild(el);
+      }
+      // If already in the top zone, nothing more to detach
+    }
+  });
+  updatePrompt();
 }
 
 // ══════════════════════════════════════════════════════════
 // CANVAS MOUSE HANDLERS (move/resize/select)
 // ══════════════════════════════════════════════════════════
 canvas.addEventListener('mousedown', (e) => {
+  // Safety: reset any stuck pointer-events from prior incomplete drags
+  cleanupStuckDragStyles();
+
+  // DEBUG: show what was clicked
+  const dbgTag = e.target.tagName.toLowerCase();
+  const dbgClass = e.target.className?.toString().substring(0, 40) || '';
+  const dbgText = (e.target.textContent || '').substring(0, 20).trim();
+  const dbgPE = getComputedStyle(e.target).pointerEvents;
+  const dbgDI = e.target.closest('.drag-item');
+  const dbgIB = e.target.closest('.inner-box');
+  document.getElementById('debugTarget').textContent = `<${dbgTag} class="${dbgClass}"> "${dbgText}"`;
+  document.getElementById('debugPE').textContent = dbgPE;
+
+  let dbgAction = 'none';
+  if (e.target.closest('.zone-divider') || e.target.closest('.zone-col-divider')) dbgAction = 'zone-divider';
+  else if (e.target.closest('.item-rh')) dbgAction = 'item-resize';
+  else if (e.target.closest('.rh')) dbgAction = 'panel-resize';
+  else if (e.target.closest('.panel-header')) dbgAction = 'panel-header';
+  else if (dbgDI) dbgAction = `drag-item(${dbgDI.children[0]?.className || '?'})`;
+  else if (dbgIB) dbgAction = 'inner-box';
+  else if (e.target.closest('.panel')) dbgAction = 'panel-bg';
+  else dbgAction = 'canvas-bg';
+  document.getElementById('debugAction').textContent = dbgAction;
+
   if (paletteDrag) return;
+
+  // Zone divider drag (inner box resize — row or column)
+  const rowDivider = e.target.closest('.zone-divider');
+  const colDivider = e.target.closest('.zone-col-divider');
+  const anyDivider = rowDivider || colDivider;
+  if (anyDivider) {
+    const panel = anyDivider.closest('.panel');
+    if (panel) selectPanel(panel.id);
+
+    const isCol = !!colDivider;
+    const div = anyDivider;
+    let zoneBefore = div.previousElementSibling;
+    let zoneAfter = div.nextElementSibling;
+    while (zoneBefore && !zoneBefore.classList.contains('drop-zone') && !zoneBefore.classList.contains('zone-row')) zoneBefore = zoneBefore.previousElementSibling;
+    while (zoneAfter && !zoneAfter.classList.contains('drop-zone') && !zoneAfter.classList.contains('zone-row')) zoneAfter = zoneAfter.nextElementSibling;
+
+    if (zoneBefore && zoneAfter) {
+      saveUndoState();
+      div.classList.add('active');
+      zoneDragState = {
+        direction: isCol ? 'col' : 'row',
+        divider: div,
+        zoneAbove: zoneBefore,
+        zoneBelow: zoneAfter,
+        startY: isCol ? e.clientX : e.clientY,
+        startAboveH: isCol ? zoneBefore.getBoundingClientRect().width : zoneBefore.getBoundingClientRect().height,
+        startBelowH: isCol ? zoneAfter.getBoundingClientRect().width : zoneAfter.getBoundingClientRect().height,
+      };
+      e.preventDefault();
+      return;
+    }
+  }
+
+  // Hand tool — grab any element to move/reorder it
+  if (handMode) {
+    let target = e.target.closest('.inner-box') || e.target.closest('.drag-item');
+    // Fallback: walk up to direct zone child, then nearest-child by distance
+    if (!target) {
+      const z = e.target.closest('.drop-zone');
+      if (z) {
+        let w = e.target;
+        while (w && w.parentElement !== z) w = w.parentElement;
+        if (w && w !== z && !w.classList.contains('zone-divider') && !w.classList.contains('zone-col-divider') && !w.classList.contains('box-label')) {
+          target = w;
+        } else {
+          // Nearest child by distance
+          let bestDist = Infinity;
+          for (const child of z.children) {
+            if (child.classList.contains('zone-divider') || child.classList.contains('zone-col-divider') || child.classList.contains('box-label')) continue;
+            const r = child.getBoundingClientRect();
+            const cx = Math.max(r.left, Math.min(e.clientX, r.right));
+            const cy = Math.max(r.top, Math.min(e.clientY, r.bottom));
+            const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+            if (dist < bestDist) { bestDist = dist; target = child; }
+          }
+          if (bestDist > 20) target = null;
+        }
+      }
+    }
+    if (target) {
+      const panel = target.closest('.panel');
+      if (panel) selectPanel(panel.id);
+      selectElement(target, e.shiftKey);
+      saveUndoState();
+      target.classList.add('hand-target');
+      // Collect group elements if dragging a grouped item
+      const group = getSelectedGroup();
+      const isGroupDrag = group.length > 1 && group.includes(target);
+      handDragState = {
+        el: target,
+        parentZone: target.parentElement,
+        startX: e.clientX,
+        startY: e.clientY,
+        moved: false,
+        group: isGroupDrag ? group : null,
+      };
+      e.preventDefault();
+      return;
+    }
+  }
 
   const handle = e.target.closest('.rh');
   if (handle) {
     const panel = handle.closest('.panel');
     const id = panel.id;
+    deselectElement();
     selectPanel(id);
+    saveUndoState();
     dragState = {
       type: 'resize', panelId: id,
       startX: e.clientX, startY: e.clientY,
@@ -1216,7 +2059,9 @@ canvas.addEventListener('mousedown', (e) => {
   if (header && !e.target.closest('.close-btn')) {
     const panel = header.closest('.panel');
     const id = panel.id;
+    deselectElement();
     selectPanel(id);
+    saveUndoState();
     dragState = {
       type: 'move', panelId: id,
       startX: e.clientX, startY: e.clientY,
@@ -1227,21 +2072,75 @@ canvas.addEventListener('mousedown', (e) => {
     return;
   }
 
-  const dragItem = e.target.closest('.drag-item');
-  if (dragItem) {
-    const zone = dragItem.closest('.drop-zone');
-    if (zone) {
-      const panel = zone.closest('.panel');
+  // Item resize handle — must come before drag-item detection
+  const itemRH = e.target.closest('.item-rh');
+  if (itemRH) {
+    const resizeTarget = itemRH.parentElement;
+    saveUndoState();
+    const rect = resizeTarget.getBoundingClientRect();
+    itemResizeState = {
+      el: resizeTarget,
+      dir: itemRH.dataset.resizedir,
+      startX: e.clientX,
+      startY: e.clientY,
+      startW: rect.width,
+      startH: rect.height,
+    };
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  // Selectable: drag-item, inner-box, or any direct child of a drop-zone
+  let selectable = e.target.closest('.drag-item') || e.target.closest('.inner-box');
+  if (!selectable) {
+    // Fallback 1: walk up from click target to find direct zone child
+    const clickZone = e.target.closest('.drop-zone');
+    if (clickZone) {
+      let walker = e.target;
+      while (walker && walker.parentElement !== clickZone) walker = walker.parentElement;
+      if (walker && walker !== clickZone && !walker.classList.contains('zone-divider') && !walker.classList.contains('zone-col-divider') && !walker.classList.contains('box-label')) {
+        selectable = walker;
+      }
+      // Fallback 2: click landed on zone background (gap/padding) — find nearest child
+      if (!selectable) {
+        let bestDist = Infinity;
+        for (const child of clickZone.children) {
+          if (child.classList.contains('zone-divider') || child.classList.contains('zone-col-divider') || child.classList.contains('box-label')) continue;
+          const r = child.getBoundingClientRect();
+          const cx = Math.max(r.left, Math.min(e.clientX, r.right));
+          const cy = Math.max(r.top, Math.min(e.clientY, r.bottom));
+          const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+          if (dist < bestDist) { bestDist = dist; selectable = child; }
+        }
+        // Only pick nearest if within 20px — otherwise treat as empty zone click
+        if (bestDist > 20) selectable = null;
+      }
+    }
+  }
+  if (selectable) {
+    // Find parent zone — for elements directly in panel-body, use nearest zone
+    let zone = selectable.closest('.drop-zone');
+    if (!zone) {
+      const body = selectable.closest('.panel-body');
+      if (body) zone = body.querySelector('.drop-zone');
+    }
+    if (zone || selectable.closest('.panel')) {
+      const panel = selectable.closest('.panel');
       if (panel) selectPanel(panel.id);
-      itemDragState = { el: dragItem, zone, startX: e.clientX, startY: e.clientY, moved: false };
+      selectElement(selectable, e.shiftKey);
+      saveUndoState();
+      const iGroup = getSelectedGroup();
+      const isIGroupDrag = iGroup.length > 1 && iGroup.includes(selectable);
+      itemDragState = { el: selectable, zone: zone || selectable.parentElement, startX: e.clientX, startY: e.clientY, moved: false, group: isIGroupDrag ? iGroup : null };
       e.preventDefault();
       return;
     }
   }
 
   const panel = e.target.closest('.panel');
-  if (panel) selectPanel(panel.id);
-  else selectPanel(null);
+  if (panel) { deselectElement(); selectPanel(panel.id); }
+  else { deselectElement(); selectPanel(null); }
 });
 
 // ══════════════════════════════════════════════════════════
@@ -1258,6 +2157,65 @@ function selectPanel(id) {
     document.getElementById('infoPos').textContent = '--';
     document.getElementById('infoSize').textContent = '--';
   }
+}
+
+function addItemResizeHandles(el) {
+  if (el.querySelector('.item-rh')) return;
+  ['se', 'e', 's'].forEach(dir => {
+    const h = document.createElement('div');
+    h.className = `item-rh ${dir}`;
+    h.dataset.resizedir = dir;
+    el.appendChild(h);
+  });
+}
+
+function removeItemResizeHandles(el) {
+  el.querySelectorAll('.item-rh').forEach(h => h.remove());
+}
+
+function selectElement(el, shiftKey) {
+  if (shiftKey && selectedElement) {
+    // Shift+click: add to group
+    if (!groupedElements.has(selectedElement)) {
+      groupedElements.add(selectedElement);
+      selectedElement.classList.remove('element-selected');
+      selectedElement.classList.add('element-grouped');
+      addItemResizeHandles(selectedElement);
+    }
+    groupedElements.add(el);
+    el.classList.add('element-grouped');
+    addItemResizeHandles(el);
+    selectedElement = el;
+    return;
+  }
+
+  // Normal click: clear group, select one
+  deselectElement();
+  selectedElement = el;
+  if (el) {
+    el.classList.add('element-selected');
+    addItemResizeHandles(el);
+  }
+}
+
+function deselectElement() {
+  if (selectedElement) {
+    selectedElement.classList.remove('element-selected');
+    removeItemResizeHandles(selectedElement);
+    selectedElement = null;
+  }
+  groupedElements.forEach(el => {
+    el.classList.remove('element-grouped');
+    removeItemResizeHandles(el);
+  });
+  groupedElements.clear();
+}
+
+function getSelectedGroup() {
+  // Returns all selected elements (group + primary)
+  if (groupedElements.size > 0) return [...groupedElements];
+  if (selectedElement) return [selectedElement];
+  return [];
 }
 
 function updateDims(id) {
@@ -1279,6 +2237,15 @@ function updateInfoBar(id) {
 // ══════════════════════════════════════════════════════════
 // PRESETS / PAGES
 // ══════════════════════════════════════════════════════════
+function lastId() { return Object.keys(panels).pop(); }
+
+function setPanelSize(id, w, h) {
+  const el = panels[id].el;
+  el.style.width = w + 'px';
+  el.style.height = h + 'px';
+  updateDims(id);
+}
+
 function clearCanvas() {
   Object.keys(panels).forEach(id => { panels[id].el.remove(); });
   panels = {};
@@ -1287,53 +2254,42 @@ function clearCanvas() {
 }
 
 function loadPage(name) {
+  saveUndoState();
   clearCanvas();
   const c = canvas.getBoundingClientRect();
   const pad = 16;
   const iw = c.width - pad * 2;
 
   if (name === 'tutor-setup') {
-    createPanel('vault', pad, pad);
-    // Stretch vault to fill
-    const vEl = panels[Object.keys(panels)[0]].el;
-    vEl.style.width = iw + 'px';
-    vEl.style.height = Math.floor(c.height * 0.76) + 'px';
-    updateDims(Object.keys(panels)[0]);
+    // VAULT FILES — left column, full height
+    createPanel('vault', 0, 0);
+    setPanelSize(lastId(), 304, 584);
 
-    const toolY = pad + Math.floor(c.height * 0.76) + 8;
-    createPanel('toolbar', pad, toolY);
-    const tEl = panels[Object.keys(panels)[1]].el;
-    tEl.style.width = iw + 'px';
-    updateDims(Object.keys(panels)[1]);
+    // TOOLBAR — top right
+    createPanel('toolbar', 304, 0);
+    setPanelSize(lastId(), 512, 104);
 
-    createPanel('sessions', pad, toolY + 56);
-    const sEl = panels[Object.keys(panels)[2]].el;
-    sEl.style.width = iw + 'px';
-    updateDims(Object.keys(panels)[2]);
+    // RECENT SESSIONS — below toolbar, takes remaining right area
+    createPanel('sessions', 304, 104);
+    setPanelSize(lastId(), 512, 480);
 
     selectPanel(null);
   } else if (name === 'tutor-chat') {
-    // Status bar
+    const gap = 8;
+    const barH = 40;
+    const contentH = c.height - pad * 2 - barH - gap;
+    const chatW = Math.floor(iw * 0.7);
+    const artW = iw - chatW - gap;
+
     createPanel('toolbar', pad, pad);
-    const barEl = panels[Object.keys(panels)[0]].el;
-    barEl.style.width = iw + 'px';
-    barEl.style.height = '36px';
-    barEl.querySelector('.title').textContent = 'STATUS BAR';
-    updateDims(Object.keys(panels)[0]);
+    setPanelSize(lastId(), iw, barH);
+    panels[lastId()].el.querySelector('.title').textContent = 'STATUS BAR';
 
-    // Chat
-    createPanel('chat', pad, pad + 48);
-    const chatEl = panels[Object.keys(panels)[1]].el;
-    chatEl.style.width = Math.floor(iw * 0.7) + 'px';
-    chatEl.style.height = (c.height - pad * 2 - 56) + 'px';
-    updateDims(Object.keys(panels)[1]);
+    createPanel('chat', pad, pad + barH + gap);
+    setPanelSize(lastId(), chatW, contentH);
 
-    // Artifacts
-    createPanel('artifacts', pad + Math.floor(iw * 0.7) + 8, pad + 48);
-    const artEl = panels[Object.keys(panels)[2]].el;
-    artEl.style.width = (iw - Math.floor(iw * 0.7) - 8) + 'px';
-    artEl.style.height = (c.height - pad * 2 - 56) + 'px';
-    updateDims(Object.keys(panels)[2]);
+    createPanel('artifacts', pad + chatW + gap, pad + barH + gap);
+    setPanelSize(lastId(), artW, contentH);
 
     selectPanel(null);
   } else {
@@ -1346,6 +2302,490 @@ function toggleSnap() {
   const btn = document.getElementById('snapBtn');
   btn.textContent = `SNAP: ${snap ? 'ON' : 'OFF'}`;
   btn.classList.toggle('active', snap);
+}
+
+function togglePush() {
+  pushEnabled = !pushEnabled;
+  const btn = document.getElementById('pushBtn');
+  btn.textContent = `PUSH: ${pushEnabled ? 'ON' : 'OFF'}`;
+  btn.classList.toggle('active', pushEnabled);
+}
+
+function toggleHand() {
+  handMode = !handMode;
+  const btn = document.getElementById('handBtn');
+  btn.classList.toggle('active', handMode);
+  canvas.classList.toggle('hand-mode', handMode);
+}
+
+function toggleBorders() {
+  bordersVisible = !bordersVisible;
+  document.body.classList.toggle('hide-borders', !bordersVisible);
+  const btn = document.getElementById('borderBtn');
+  btn.textContent = `BORDERS: ${bordersVisible ? 'ON' : 'OFF'}`;
+  btn.classList.toggle('active', bordersVisible);
+}
+
+// ══════════════════════════════════════════════════════════
+// TOOLBAR TOOLS — H-SPLIT, V-SPLIT, BOX, SPLIT PRESETS
+// ══════════════════════════════════════════════════════════
+
+function addHSplit() {
+  if (!selectedPanelId || !panels[selectedPanelId]) return;
+  saveUndoState();
+  const body = panels[selectedPanelId].el.querySelector('.panel-body');
+  if (!body) return;
+
+  // Find direct-child zones, pick the tallest to split
+  const directZones = [...body.querySelectorAll(':scope > .drop-zone')];
+  if (directZones.length === 0) return;
+
+  let tallest = directZones[0];
+  let maxH = tallest.getBoundingClientRect().height;
+  directZones.forEach(z => {
+    const h = z.getBoundingClientRect().height;
+    if (h > maxH) { maxH = h; tallest = z; }
+  });
+
+  const halfH = Math.max(16, Math.floor(maxH / 2));
+  tallest.style.height = halfH + 'px';
+  tallest.style.flex = 'none';
+  tallest.style.minHeight = '16px';
+  tallest.style.overflow = 'auto';
+
+  const div = document.createElement('div');
+  div.className = 'zone-divider';
+
+  const newZone = document.createElement('div');
+  newZone.className = 'drop-zone vertical';
+  newZone.style.height = halfH + 'px';
+  newZone.style.flex = 'none';
+  newZone.style.minHeight = '16px';
+  newZone.style.overflow = 'auto';
+
+  if (tallest.nextSibling) {
+    body.insertBefore(div, tallest.nextSibling);
+    body.insertBefore(newZone, div.nextSibling);
+  } else {
+    body.appendChild(div);
+    body.appendChild(newZone);
+  }
+}
+
+function addVSplit() {
+  if (!selectedPanelId || !panels[selectedPanelId]) return;
+  saveUndoState();
+  const body = panels[selectedPanelId].el.querySelector('.panel-body');
+  if (!body) return;
+
+  let row = body.querySelector(':scope > .zone-row');
+
+  if (row) {
+    // Add another column to existing row
+    const existingZones = [...row.querySelectorAll(':scope > .drop-zone')];
+    const totalW = row.getBoundingClientRect().width;
+    const newCount = existingZones.length + 1;
+    const divCount = row.querySelectorAll(':scope > .zone-col-divider').length + 1;
+    const colW = Math.floor((totalW - divCount * 6) / newCount);
+
+    existingZones.forEach(z => {
+      z.style.width = colW + 'px';
+      z.style.flex = 'none';
+    });
+
+    const div = document.createElement('div');
+    div.className = 'zone-col-divider';
+    const newZone = document.createElement('div');
+    newZone.className = 'drop-zone vertical';
+    newZone.style.width = colW + 'px';
+    newZone.style.flex = 'none';
+    newZone.style.minWidth = '40px';
+    newZone.style.overflow = 'auto';
+
+    row.appendChild(div);
+    row.appendChild(newZone);
+  } else {
+    // Wrap current content into a two-column row
+    const children = [...body.children];
+    row = document.createElement('div');
+    row.className = 'zone-row';
+
+    const leftZone = document.createElement('div');
+    leftZone.className = 'drop-zone vertical';
+    leftZone.style.flex = '1';
+    leftZone.style.minWidth = '40px';
+    leftZone.style.overflow = 'auto';
+    children.forEach(c => leftZone.appendChild(c));
+
+    const div = document.createElement('div');
+    div.className = 'zone-col-divider';
+
+    const rightZone = document.createElement('div');
+    rightZone.className = 'drop-zone vertical';
+    rightZone.style.flex = '1';
+    rightZone.style.minWidth = '40px';
+    rightZone.style.overflow = 'auto';
+
+    row.appendChild(leftZone);
+    row.appendChild(div);
+    row.appendChild(rightZone);
+    body.appendChild(row);
+
+    requestAnimationFrame(() => {
+      const totalW = row.getBoundingClientRect().width;
+      const colW = Math.floor((totalW - 6) / 2);
+      leftZone.style.width = colW + 'px';
+      leftZone.style.flex = 'none';
+      rightZone.style.width = colW + 'px';
+      rightZone.style.flex = 'none';
+    });
+  }
+}
+
+function addBox() {
+  if (!selectedPanelId || !panels[selectedPanelId]) return;
+  saveUndoState();
+  const body = panels[selectedPanelId].el.querySelector('.panel-body');
+  if (!body) return;
+
+  const zones = [...body.querySelectorAll('.drop-zone')];
+  const targetZone = zones.length > 0 ? zones[0] : body;
+
+  const box = document.createElement('div');
+  box.className = 'inner-box drop-zone vertical';
+  box.style.minHeight = '40px';
+  box.innerHTML = '<span class="box-label">BOX</span>';
+  targetZone.appendChild(box);
+}
+
+function splitPanel(type) {
+  if (!selectedPanelId || !panels[selectedPanelId]) return;
+  saveUndoState();
+  const el = panels[selectedPanelId].el;
+  const body = el.querySelector('.panel-body');
+  if (!body) return;
+
+  const existingItems = [...body.querySelectorAll('.drag-item')];
+  body.innerHTML = '';
+
+  const makeZone = (dir = 'v') => {
+    const z = document.createElement('div');
+    z.className = 'drop-zone' + (dir === 'v' ? ' vertical' : '');
+    z.style.minHeight = '16px';
+    z.style.minWidth = '40px';
+    z.style.overflow = 'auto';
+    return z;
+  };
+
+  if (type === '2-col') {
+    const row = document.createElement('div');
+    row.className = 'zone-row';
+    row.style.flex = '1';
+    const left = makeZone(); left.style.flex = '1';
+    const div = document.createElement('div'); div.className = 'zone-col-divider';
+    const right = makeZone(); right.style.flex = '1';
+    row.appendChild(left); row.appendChild(div); row.appendChild(right);
+    body.appendChild(row);
+    existingItems.forEach(item => left.appendChild(item));
+    requestAnimationFrame(() => {
+      const w = row.getBoundingClientRect().width;
+      const cw = Math.floor((w - 6) / 2);
+      left.style.width = cw + 'px'; left.style.flex = 'none';
+      right.style.width = cw + 'px'; right.style.flex = 'none';
+    });
+
+  } else if (type === '3-col') {
+    const row = document.createElement('div');
+    row.className = 'zone-row';
+    row.style.flex = '1';
+    const z1 = makeZone(); z1.style.flex = '1';
+    const d1 = document.createElement('div'); d1.className = 'zone-col-divider';
+    const z2 = makeZone(); z2.style.flex = '1';
+    const d2 = document.createElement('div'); d2.className = 'zone-col-divider';
+    const z3 = makeZone(); z3.style.flex = '1';
+    row.appendChild(z1); row.appendChild(d1); row.appendChild(z2); row.appendChild(d2); row.appendChild(z3);
+    body.appendChild(row);
+    existingItems.forEach(item => z1.appendChild(item));
+    requestAnimationFrame(() => {
+      const w = row.getBoundingClientRect().width;
+      const cw = Math.floor((w - 12) / 3);
+      [z1,z2,z3].forEach(z => { z.style.width = cw + 'px'; z.style.flex = 'none'; });
+    });
+
+  } else if (type === '2-row') {
+    const bh = body.getBoundingClientRect().height;
+    const zh = Math.floor((bh - 6) / 2);
+    const z1 = makeZone(); z1.style.height = zh + 'px'; z1.style.flex = 'none';
+    const div = document.createElement('div'); div.className = 'zone-divider';
+    const z2 = makeZone(); z2.style.height = zh + 'px'; z2.style.flex = 'none';
+    body.appendChild(z1); body.appendChild(div); body.appendChild(z2);
+    existingItems.forEach(item => z1.appendChild(item));
+
+  } else if (type === 'grid') {
+    const bh = body.getBoundingClientRect().height;
+    const rh = Math.floor((bh - 6) / 2);
+
+    const makeRow = () => {
+      const row = document.createElement('div');
+      row.className = 'zone-row';
+      row.style.height = rh + 'px';
+      row.style.flex = 'none';
+      const l = makeZone(); l.style.flex = '1';
+      const d = document.createElement('div'); d.className = 'zone-col-divider';
+      const r = makeZone(); r.style.flex = '1';
+      row.appendChild(l); row.appendChild(d); row.appendChild(r);
+      return { row, left: l, right: r };
+    };
+
+    const top = makeRow();
+    const rowDiv = document.createElement('div'); rowDiv.className = 'zone-divider';
+    const bot = makeRow();
+
+    body.appendChild(top.row);
+    body.appendChild(rowDiv);
+    body.appendChild(bot.row);
+
+    existingItems.forEach(item => top.left.appendChild(item));
+
+    requestAnimationFrame(() => {
+      [top.row, bot.row].forEach(row => {
+        const w = row.getBoundingClientRect().width;
+        const cw = Math.floor((w - 6) / 2);
+        [...row.querySelectorAll(':scope > .drop-zone')].forEach(z => {
+          z.style.width = cw + 'px'; z.style.flex = 'none';
+        });
+      });
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// ALIGN — panels globally OR inner zones when a panel is selected
+// ══════════════════════════════════════════════════════════
+function alignPanels(direction) {
+  saveUndoState();
+  // --- Inner mode: align zone contents inside selected panel ---
+  if (selectedPanelId && panels[selectedPanelId]) {
+    const body = panels[selectedPanelId].el.querySelector('.panel-body');
+    if (!body) return;
+    const zones = [...body.querySelectorAll('.drop-zone')];
+    const map = { left: 'flex-start', center: 'center', right: 'flex-end' };
+    zones.forEach(z => {
+      const isVert = window.getComputedStyle(z).flexDirection === 'column';
+      if (isVert) {
+        z.style.alignItems = map[direction] || 'stretch';
+      } else {
+        z.style.justifyContent = map[direction] || 'flex-start';
+      }
+    });
+    return;
+  }
+
+  // --- Global mode: move all panels ---
+  const cr = canvas.getBoundingClientRect();
+  const pad = 16;
+  const ids = Object.keys(panels);
+  if (ids.length === 0) return;
+
+  ids.forEach(id => {
+    const el = panels[id].el;
+    const w = parseInt(el.style.width) || 120;
+
+    if (direction === 'left') {
+      el.style.left = pad + 'px';
+    } else if (direction === 'center') {
+      el.style.left = snapV(Math.floor((cr.width - w) / 2)) + 'px';
+    } else if (direction === 'right') {
+      el.style.left = snapV(cr.width - w - pad) + 'px';
+    }
+
+    clampToCanvas(el);
+    updateDims(id);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// AUTO-SPACE — panels globally OR inner zones when selected
+// ══════════════════════════════════════════════════════════
+function autoSpace() {
+  saveUndoState();
+  // --- Inner mode: equalize zone heights inside selected panel ---
+  if (selectedPanelId && panels[selectedPanelId]) {
+    const body = panels[selectedPanelId].el.querySelector('.panel-body');
+    if (!body) return;
+
+    // Find direct-child zones (may be inside a zone-row too)
+    const directZones = [...body.querySelectorAll(':scope > .drop-zone')];
+    const rows = [...body.querySelectorAll(':scope > .zone-row')];
+    const dividers = [...body.querySelectorAll(':scope > .zone-divider')];
+    const bodyH = body.getBoundingClientRect().height;
+
+    if (directZones.length > 0) {
+      const divH = dividers.length * 6;
+      const rowH = rows.reduce((s, r) => s + r.getBoundingClientRect().height, 0);
+      const available = bodyH - divH - rowH;
+      const zoneH = Math.max(16, Math.floor(available / directZones.length));
+      directZones.forEach(z => {
+        z.style.height = zoneH + 'px';
+        z.style.flex = 'none';
+      });
+    }
+
+    // Also equalize columns inside any zone-row
+    rows.forEach(row => {
+      const cols = [...row.querySelectorAll(':scope > .drop-zone')];
+      const colDivs = row.querySelectorAll(':scope > .zone-col-divider').length;
+      const rowW = row.getBoundingClientRect().width;
+      const colW = Math.max(40, Math.floor((rowW - colDivs * 6) / cols.length));
+      cols.forEach(c => {
+        c.style.width = colW + 'px';
+        c.style.flex = 'none';
+      });
+    });
+    return;
+  }
+
+  // --- Global mode: even vertical spacing ---
+  const cr = canvas.getBoundingClientRect();
+  const ids = Object.keys(panels);
+  if (ids.length === 0) return;
+
+  const sorted = [...ids].sort((a, b) =>
+    (parseInt(panels[a].el.style.top) || 0) - (parseInt(panels[b].el.style.top) || 0)
+  );
+
+  const pad = 16;
+  const totalH = sorted.reduce((s, id) => s + (parseInt(panels[id].el.style.height) || 48), 0);
+  const available = cr.height - pad * 2;
+  const gapCount = sorted.length - 1;
+  const gap = gapCount > 0 ? Math.max(0, snapV((available - totalH) / gapCount)) : 0;
+
+  let y = pad;
+  sorted.forEach(id => {
+    panels[id].el.style.top = snapV(y) + 'px';
+    clampToCanvas(panels[id].el);
+    y += (parseInt(panels[id].el.style.height) || 48) + gap;
+    updateDims(id);
+  });
+}
+
+function adjustGap(delta) {
+  saveUndoState();
+  // --- Inner mode: grow/shrink dividers inside selected panel ---
+  if (selectedPanelId && panels[selectedPanelId]) {
+    const body = panels[selectedPanelId].el.querySelector('.panel-body');
+    if (!body) return;
+
+    // Row dividers (horizontal gaps between zones)
+    const rowDivs = [...body.querySelectorAll(':scope > .zone-divider')];
+    rowDivs.forEach(d => {
+      const cur = parseInt(d.style.height) || 6;
+      d.style.height = Math.max(2, cur + delta) + 'px';
+    });
+
+    // Col dividers (vertical gaps in zone-rows)
+    const colDivs = [...body.querySelectorAll('.zone-col-divider')];
+    colDivs.forEach(d => {
+      const cur = parseInt(d.style.width) || 6;
+      d.style.width = Math.max(2, cur + delta) + 'px';
+    });
+
+    // Recalculate zone sizes to fit
+    const directZones = [...body.querySelectorAll(':scope > .drop-zone')];
+    if (directZones.length > 0) {
+      const bodyH = body.getBoundingClientRect().height;
+      const divH = rowDivs.reduce((s, d) => s + (parseInt(d.style.height) || 6), 0);
+      const rows = [...body.querySelectorAll(':scope > .zone-row')];
+      const rowH = rows.reduce((s, r) => s + r.getBoundingClientRect().height, 0);
+      const available = bodyH - divH - rowH;
+      const zoneH = Math.max(16, Math.floor(available / directZones.length));
+      directZones.forEach(z => {
+        z.style.height = zoneH + 'px';
+        z.style.flex = 'none';
+      });
+    }
+
+    body.querySelectorAll('.zone-row').forEach(row => {
+      const cols = [...row.querySelectorAll(':scope > .drop-zone')];
+      const cDivs = row.querySelectorAll(':scope > .zone-col-divider');
+      const totalDivW = [...cDivs].reduce((s, d) => s + (parseInt(d.style.width) || 6), 0);
+      const rowW = row.getBoundingClientRect().width;
+      const colW = Math.max(40, Math.floor((rowW - totalDivW) / cols.length));
+      cols.forEach(c => {
+        c.style.width = colW + 'px';
+        c.style.flex = 'none';
+      });
+    });
+    return;
+  }
+
+  // --- Global mode: shift panels apart/together ---
+  const ids = Object.keys(panels);
+  if (ids.length < 2) return;
+
+  const sorted = [...ids].sort((a, b) =>
+    (parseInt(panels[a].el.style.top) || 0) - (parseInt(panels[b].el.style.top) || 0)
+  );
+
+  for (let i = 1; i < sorted.length; i++) {
+    const el = panels[sorted[i]].el;
+    const curY = parseInt(el.style.top) || 0;
+    el.style.top = snapV(Math.max(0, curY + delta * i)) + 'px';
+    clampToCanvas(el);
+    updateDims(sorted[i]);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// EXPLODE — turn items inside a panel into individual panels
+// ══════════════════════════════════════════════════════════
+function explodePanel() {
+  if (!selectedPanelId || !panels[selectedPanelId]) return;
+  saveUndoState();
+  const srcPanel = panels[selectedPanelId].el;
+  const srcRect = getPanelRect(srcPanel);
+  const zones = [...srcPanel.querySelectorAll('.drop-zone')];
+
+  // Collect all zones with their items
+  const pieces = [];
+  zones.forEach((zone, zi) => {
+    const items = [...zone.querySelectorAll(':scope > .drag-item')];
+    if (items.length === 0) return;
+    // Each zone becomes its own panel
+    pieces.push({ items, zoneIndex: zi });
+  });
+
+  if (pieces.length === 0) return;
+
+  // Calculate layout: stack new panels below the original
+  const gap = 8;
+  let nextY = srcRect.y;
+  const panelW = Math.max(200, srcRect.w);
+  const panelH = 80;
+
+  // Remove the original panel
+  const origTitle = panels[selectedPanelId].title;
+  removePanel(selectedPanelId);
+
+  // Create a new card panel for each zone's contents
+  pieces.forEach((piece, i) => {
+    const pid = createPanel('card', srcRect.x, nextY);
+    setPanelSize(pid, panelW, panelH);
+    panels[pid].title = `${origTitle} #${i + 1}`;
+    const titleEl = panels[pid].el.querySelector('.title');
+    if (titleEl) titleEl.textContent = panels[pid].title;
+
+    const zone = panels[pid].el.querySelector('.drop-zone');
+    if (zone) {
+      piece.items.forEach(item => zone.appendChild(item));
+    }
+
+    nextY += panelH + gap;
+  });
+
+  // Resolve any collisions from new panels
+  const allIds = Object.keys(panels);
+  if (allIds.length > 0) resolveCollisions(allIds[allIds.length - 1]);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1403,6 +2843,7 @@ function copyPrompt() {
 // KEYBOARD
 // ══════════════════════════════════════════════════════════
 document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); return; }
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (selectedPanelId && !e.target.closest('input,textarea')) {
       removePanel(selectedPanelId);

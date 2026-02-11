@@ -1,5 +1,8 @@
 # PT Study System — Architecture Spec
 
+> Canonical domain primitives + learning loop (V2): `docs/root/ARCHITECTURE_V2.md`.
+> This guide focuses on technical/system architecture (subsystems, integrations, data flow).
+
 ## Purpose
 A high-level architecture guide describing subsystems, integrations, and data flow.
 
