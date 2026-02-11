@@ -1,1 +1,0 @@
-Count and report the total number of files and directories under `C:\Users\treyt\OneDrive\Desktop\pt-study-sop`.

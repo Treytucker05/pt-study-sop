@@ -1,1 +1,0 @@
-Enumerate every file under `C:\Users\treyt\OneDrive\Desktop\pt-study-sop` and output a flat list of relative paths.

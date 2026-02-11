@@ -1,1 +1,0 @@
-Created `DISPATCHER_TEST.txt` with the line `dispatcher ok`.

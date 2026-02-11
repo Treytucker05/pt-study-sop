@@ -1,6 +1,0 @@
-You are a planner. Split the goal into exactly 1 concrete tasks that can run in parallel.
-Each task must be a single sentence, start with an action verb, and be specific about expected outputs.
-Do not include dependencies between tasks.
-Return only JSON that matches the schema.
-Goal:
-Create a file named DISPATCHER_TEST.txt in the workspace with a single line "dispatcher ok".

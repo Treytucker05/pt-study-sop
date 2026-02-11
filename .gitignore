@@ -105,7 +105,40 @@ scripts/_ai_config_backups/
 /tmp_conduit_install.sh
 /sop-qa-task_plan.md
 /task_list_docs_scan.md
+/prompt.txt
+/subagent*.txt
+/tutor_subagent_prompt.txt
+/*_prompt*.txt
+/run_*.py
+/run_*.ps1
+/write_prompt.ps1
+/print_lines.py
+/snippet_routes.py
+/codex_test_out.txt
 
-# Audit screenshots (local only)
+# Playwright MCP screenshots (local only)
+.playwright-mcp/*.png
+
+# Large generated files
+/filetree.txt
+
+# Audit screenshots and HTML (local only)
 audit-*.png
+audit-*.html
+
+# Old planning directories (archived)
+/JANUARY_26_PLAN/
+/gpt_bundle_v9.3/
+/pt-study-sop-docs-and-manifest/
+/tasks/
+/tools/ralph-dispatcher/
+
+# Root-level screenshots (move to docs/screenshots/)
+/builder-*.png
+/playground-*.png
+/scholar-*.png
+/tutor-*.png
+
+# Archive folder
+/archive/
 

@@ -25,7 +25,7 @@ Single canonical entrypoint for planning and execution. Start here.
 
 ## Where things live
 - [docs/README.md](../README.md)
-- [JANUARY_26_PLAN/INDEX.md](../../JANUARY_26_PLAN/INDEX.md)
+- [Implementation Plan](../../../conductor/tracks/FINISH_PLANNING_20260210/plan.md)
 
 ## AI workflows
 - [AI Review Loop](AI_REVIEW_LOOP.md)

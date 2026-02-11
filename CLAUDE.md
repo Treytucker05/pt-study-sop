@@ -33,10 +33,10 @@ Canonical run/build/test commands live in `docs/root/GUIDE_DEV.md`.
 - Frontend build output: brain/static/dist/
 - SOP canon: sop/library/
 - Scholar outputs: scholar/outputs/
-- Docs index (canonical): docs/README.md (DOCS_INDEX.md is legacy)
+- Docs index (canonical): docs/README.md
 - Architecture doc: docs/root/PROJECT_ARCHITECTURE.md
 - SOP manifest: (archived — replaced by sop/library/00-overview.md file map)
-- Google Calendar credentials: GoogleCalendarTasksAPI.json (handle as sensitive; do not modify unless asked).
+- Google Calendar credentials: docs/GoogleCalendarTasksAPI.json (handle as sensitive; do not modify unless asked).
 - Conductor: conductor/ (product def, tech stack, tracks, workflow)
 - Agents track: conductor/tracks/agents_setup_cleanup_20260209/ (agent instruction + skill wiring)
 
@@ -63,21 +63,20 @@ Canonical run/build/test commands live in `docs/root/GUIDE_DEV.md`.
 Canonical steps: `docs/root/GUIDE_DEV.md` section "Frontend Build + Sync".
 
 Quick summary:
-1. Build: `cd dashboard_rebuild && npm run build`
-2. Sync: `robocopy dashboard_rebuild/dist/public brain/static/dist /MIR`
-3. Never use dev server. Dashboard served via Start_Dashboard.bat on port 5000.
-4. Tests: `pytest brain/tests/`
-5. Update relevant docs (see Feature->Doc table in docs/README.md).
+1. Build: `cd dashboard_rebuild && npm run build` (outputs directly to brain/static/dist/)
+2. Never use dev server. Dashboard served via Start_Dashboard.bat on port 5000.
+3. Tests: `pytest brain/tests/`
+4. Update relevant docs (see Feature->Doc table in docs/README.md).
 
-Skip 1-2 for backend-only changes.
+Skip step 1 for backend-only changes.
 
 ## Rules
 1. Plan before coding for any non-trivial change.
 2. dashboard_rebuild is frontend-only; API lives in brain/.
 3. Only serve the dashboard via Start_Dashboard.bat on port 5000. Do not run a separate dev server or python brain/dashboard_web.py directly.
 4. After frontend changes: rebuild and copy dist/public -> brain/static/dist. (See Post-Implementation Checklist above.)
-5. Check `permissions.json` (repo root) before executing new shell commands.
-6. Update CONTINUITY.md after every significant change (append only).
+5. Check `.claude/permissions.json` before executing new shell commands.
+6. Update `docs/CONTINUITY.md` after every significant change (append only).
 7. Push to remote after every change (auto).
 8. After code changes, run relevant checks by default (pytest brain/tests/; frontend build already required).
 9. Do not edit archive/ unless explicitly requested.

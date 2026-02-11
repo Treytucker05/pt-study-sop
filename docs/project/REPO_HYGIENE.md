@@ -9,12 +9,12 @@
 - Stub "moved to ..." README files or placeholders.
 
 ## Audit enforcement
-- Planning-keyword warnings ignore `.agent/` and `JANUARY_26_PLAN/`.
-- Disallowed-name patterns are fatal only in `docs/project/`, `docs/prd/`, and `workstreams/`.
+- Planning-keyword warnings ignore `.agent/`, `.sisyphus/`, `archive/`.
+- Disallowed-name patterns are fatal only in `docs/project/`, `docs/prd/`, and `conductor/tracks/`.
 
 ## Hygiene audit exemptions
-- Planning-keyword warnings ignore generated/bundled dirs: `scholar/outputs/`, `scholar/knowledge/`, `gpt_bundle_v9.3/`, `sop/runtime/`, `docs/logs/`.
-- Governance docs remain in scope: `AGENTS.md`, `CLAUDE.md`, `CONTINUITY.md`, `docs/project/`, `docs/prd/`, `workstreams/`.
+- Planning-keyword warnings ignore generated/bundled dirs: `scholar/outputs/`, `scholar/knowledge/`, `sop/runtime/`, `docs/logs/`, `archive/`.
+- Governance docs remain in scope: `AGENTS.md`, `CLAUDE.md`, `docs/CONTINUITY.md`, `docs/project/`, `docs/prd/`, `conductor/tracks/`.
 
 ## Workstream closeout rules
 - Each workstream ends with `FINAL.md`.

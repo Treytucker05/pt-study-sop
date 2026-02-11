@@ -122,10 +122,11 @@ Start_Dashboard.bat
 # Or manually:
 pip install -r requirements.txt
 cd dashboard_rebuild && npm install && npm run build
-robocopy dashboard_rebuild/dist/public brain/static/dist /MIR
 python brain/dashboard_web.py
 # Open http://localhost:5000
 ```
+
+> **Note:** Vite outputs directly to `brain/static/dist/` - no copy step needed.
 
 ---
 
@@ -522,11 +523,8 @@ SQLite at `brain/data/pt_study.db`. Schema managed in `brain/db_setup.py`.
 # Run tests
 pytest brain/tests/
 
-# Build frontend
+# Build frontend (outputs directly to brain/static/dist/)
 cd dashboard_rebuild && npm run build
-
-# Copy build to Flask static
-robocopy dashboard_rebuild/dist/public brain/static/dist /MIR
 
 # Start dashboard
 Start_Dashboard.bat
