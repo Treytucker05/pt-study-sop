@@ -2449,6 +2449,149 @@ def delete_proposal(prop_id):
         return jsonify({"error": str(e)}), 500
 
 
+@adapter_bp.route("/scholar/hypotheses", methods=["GET"])
+def list_hypotheses():
+    status = request.args.get("status")
+    conn = get_connection()
+    cur = conn.cursor()
+    query = "SELECT * FROM scholar_hypotheses WHERE 1=1"
+    params = []
+    if status:
+        query += " AND status = ?"
+        params.append(status)
+    query += " ORDER BY created_at DESC"
+    cur.execute(query, params)
+    columns = [desc[0] for desc in cur.description]
+    rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+    conn.close()
+    return jsonify(rows)
+
+
+@adapter_bp.route("/scholar/hypotheses/<int:hyp_id>", methods=["GET"])
+def get_hypothesis(hyp_id):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM scholar_hypotheses WHERE id = ?", (hyp_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": "Hypothesis not found"}), 404
+    columns = [desc[0] for desc in cur.description]
+    return jsonify(dict(zip(columns, row)))
+
+
+@adapter_bp.route("/scholar/hypotheses", methods=["POST"])
+def create_hypothesis():
+    data = request.json
+    if not data or not data.get("pattern_detected") or not data.get("explanation"):
+        return jsonify({"error": "pattern_detected and explanation are required"}), 400
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO scholar_hypotheses 
+            (pattern_detected, explanation, metrics_involved, target_module_id, target_chain_id, status, evidence_strength, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            (
+                data["pattern_detected"],
+                data["explanation"],
+                data.get("metrics_involved"),
+                data.get("target_module_id"),
+                data.get("target_chain_id"),
+                data.get("status", "draft"),
+                data.get("evidence_strength", "weak"),
+            ),
+        )
+        new_id = cur.lastrowid
+        conn.commit()
+        return jsonify({"id": new_id, "pattern_detected": data["pattern_detected"]}), 201
+    finally:
+        conn.close()
+
+
+@adapter_bp.route("/scholar/hypotheses/<int:hyp_id>", methods=["PATCH"])
+def update_hypothesis(hyp_id):
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    
+    fields = []
+    values = []
+    for key in ("pattern_detected", "explanation", "metrics_involved", "target_module_id", "target_chain_id", "status", "evidence_strength"):
+        if key in data:
+            fields.append(f"{key} = ?")
+            values.append(data[key])
+    
+    if data.get("status") == "tested":
+        fields.append("tested_at = datetime('now')")
+    elif data.get("status") == "validated":
+        fields.append("validated_at = datetime('now')")
+    elif data.get("status") == "rejected":
+        fields.append("rejected_at = datetime('now')")
+    
+    if not fields:
+        return jsonify({"error": "No valid fields to update"}), 400
+    
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        values.append(hyp_id)
+        cur.execute(f"UPDATE scholar_hypotheses SET {', '.join(fields)} WHERE id = ?", tuple(values))
+        conn.commit()
+        if cur.rowcount == 0:
+            return jsonify({"error": "Hypothesis not found"}), 404
+        return jsonify({"id": hyp_id, "updated": True})
+    finally:
+        conn.close()
+
+
+@adapter_bp.route("/scholar/hypotheses/<int:hyp_id>", methods=["DELETE"])
+def delete_hypothesis(hyp_id):
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM scholar_hypotheses WHERE id = ?", (hyp_id,))
+        conn.commit()
+        if cur.rowcount == 0:
+            return jsonify({"error": "Hypothesis not found"}), 404
+        return "", 204
+    finally:
+        conn.close()
+
+
+@adapter_bp.route("/scholar/proposals/cull", methods=["POST"])
+def cull_proposals_endpoint():
+    try:
+        from scholar.proposal_cull import cull_proposals, get_proposal_scores
+    except ImportError as e:
+        return jsonify({"error": f"Import failed: {e}"}), 500
+    
+    data = request.json or {}
+    dry_run = data.get("dry_run", True)
+    threshold = data.get("similarity_threshold", 0.7)
+    keep_top_n = data.get("keep_top_n", 20)
+    
+    result = cull_proposals(
+        dry_run=dry_run,
+        similarity_threshold=threshold,
+        keep_top_n=keep_top_n,
+    )
+    return jsonify(result)
+
+
+@adapter_bp.route("/scholar/proposals/scores", methods=["GET"])
+def get_proposal_scores_endpoint():
+    try:
+        from scholar.proposal_cull import get_proposal_scores
+    except ImportError as e:
+        return jsonify({"error": f"Import failed: {e}"}), 500
+    
+    return jsonify(get_proposal_scores())
+
+
 @adapter_bp.route("/tasks", methods=["POST"])
 def create_task():
     """

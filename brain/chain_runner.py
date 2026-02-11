@@ -118,7 +118,7 @@ def _load_chain(chain_id: int) -> dict | None:
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, description, block_ids, context_tags, is_template "
+        "SELECT id, name, description, block_ids, context_tags, is_template, ruleset_id "
         "FROM method_chains WHERE id = ?",
         (chain_id,),
     )
@@ -134,7 +134,18 @@ def _load_chain(chain_id: int) -> dict | None:
         "block_ids_raw": row[3],
         "context_tags": _safe_json(row[4]),
         "is_template": row[5],
+        "ruleset_id": row[6],
     }
+    
+    if chain["ruleset_id"]:
+        cursor.execute("SELECT rules_json FROM rulesets WHERE id = ?", (chain["ruleset_id"],))
+        rs_row = cursor.fetchone()
+        if rs_row:
+            chain["ruleset"] = _safe_json(rs_row[0]) or []
+        else:
+            chain["ruleset"] = []
+    else:
+        chain["ruleset"] = []
 
     block_ids = _safe_json(chain["block_ids_raw"]) or []
     if not block_ids:

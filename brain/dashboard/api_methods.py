@@ -38,9 +38,9 @@ def list_methods():
     columns = [desc[0] for desc in cursor.description]
     rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
     conn.close()
-    # Parse JSON fields
     for row in rows:
-        row["tags"] = _parse_json(row.get("tags"))
+        for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks"):
+            row[json_field] = _parse_json(row.get(json_field))
     return jsonify(rows)
 
 
@@ -55,7 +55,8 @@ def get_method(method_id: int):
         return jsonify({"error": "Method not found"}), 404
     columns = [desc[0] for desc in cursor.description]
     result = dict(zip(columns, row))
-    result["tags"] = _parse_json(result.get("tags"))
+    for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks"):
+        result[json_field] = _parse_json(result.get(json_field))
     return jsonify(result)
 
 
@@ -70,8 +71,8 @@ def create_method():
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO method_blocks (name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            INSERT INTO method_blocks (name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, inputs, outputs, strategy_label, failure_modes, variants, scoring_hooks, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """,
             (
                 data["name"],
@@ -82,6 +83,12 @@ def create_method():
                 data.get("best_stage"),
                 json.dumps(data.get("tags", [])),
                 data.get("evidence"),
+                json.dumps(data.get("inputs", [])),
+                json.dumps(data.get("outputs", [])),
+                data.get("strategy_label"),
+                json.dumps(data.get("failure_modes", [])),
+                json.dumps(data.get("variants", [])),
+                json.dumps(data.get("scoring_hooks", [])),
             ),
         )
         new_id = cursor.lastrowid
@@ -97,16 +104,16 @@ def update_method(method_id: int):
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
-    # Build dynamic SET clause
     fields = []
     values = []
-    for key in ("name", "category", "description", "default_duration_min", "energy_cost", "best_stage", "evidence"):
+    for key in ("name", "category", "description", "default_duration_min", "energy_cost", "best_stage", "evidence", "strategy_label"):
         if key in data:
             fields.append(f"{key} = ?")
             values.append(data[key])
-    if "tags" in data:
-        fields.append("tags = ?")
-        values.append(json.dumps(data["tags"]))
+    for json_key in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks"):
+        if json_key in data:
+            fields.append(f"{json_key} = ?")
+            values.append(json.dumps(data[json_key]))
 
     if not fields:
         return jsonify({"error": "No valid fields to update"}), 400
@@ -170,7 +177,7 @@ def list_chains():
 
 @methods_bp.route("/chains/<int:chain_id>", methods=["GET"])
 def get_chain(chain_id: int):
-    """Get single chain with expanded blocks."""
+    """Get single chain with expanded blocks and ruleset."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM method_chains WHERE id = ?", (chain_id,))
@@ -183,7 +190,6 @@ def get_chain(chain_id: int):
     result["block_ids"] = _parse_json(result.get("block_ids"))
     result["context_tags"] = _parse_json(result.get("context_tags"))
 
-    # Expand blocks
     block_ids = result["block_ids"] or []
     if block_ids:
         placeholders = ",".join("?" * len(block_ids))
@@ -197,10 +203,19 @@ def get_chain(chain_id: int):
             block = dict(zip(block_cols, b_row))
             block["tags"] = _parse_json(block.get("tags"))
             blocks_map[block["id"]] = block
-        # Maintain order from block_ids
         result["blocks"] = [blocks_map[bid] for bid in block_ids if bid in blocks_map]
     else:
         result["blocks"] = []
+
+    ruleset_id = result.get("ruleset_id")
+    if ruleset_id:
+        cursor.execute("SELECT * FROM rulesets WHERE id = ?", (ruleset_id,))
+        rs_row = cursor.fetchone()
+        if rs_row:
+            rs_cols = [desc[0] for desc in cursor.description]
+            ruleset = dict(zip(rs_cols, rs_row))
+            ruleset["rules_json"] = _parse_json(ruleset.get("rules_json"))
+            result["ruleset"] = ruleset
 
     conn.close()
     return jsonify(result)
@@ -286,6 +301,86 @@ def delete_chain(chain_id: int):
         return "", 204
     finally:
         conn.close()
+
+
+@methods_bp.route("/chains/<int:chain_id>/run", methods=["POST"])
+def run_chain_endpoint(chain_id: int):
+    from chain_runner import run_chain
+    
+    data = request.get_json() or {}
+    topic = data.get("topic")
+    if not topic:
+        return jsonify({"error": "topic is required"}), 400
+    
+    course_id = data.get("course_id")
+    source_doc_ids = data.get("source_doc_ids")
+    options = data.get("options", {})
+    
+    try:
+        result = run_chain(
+            chain_id=chain_id,
+            topic=topic,
+            course_id=course_id,
+            source_doc_ids=source_doc_ids,
+            options=options,
+        )
+        
+        status_code = 200 if result["status"] == "completed" else 500
+        return jsonify(result), status_code
+    except Exception as e:
+        return jsonify({"error": str(e), "status": "failed"}), 500
+
+
+@methods_bp.route("/chain-runs", methods=["GET"])
+def list_chain_runs():
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    limit = request.args.get("limit", 20, type=int)
+    status = request.args.get("status")
+    
+    query = "SELECT cr.*, mc.name as chain_name FROM chain_runs cr LEFT JOIN method_chains mc ON cr.chain_id = mc.id WHERE 1=1"
+    params = []
+    
+    if status:
+        query += " AND cr.status = ?"
+        params.append(status)
+    
+    query += " ORDER BY cr.started_at DESC LIMIT ?"
+    params.append(limit)
+    
+    cursor.execute(query, params)
+    columns = [desc[0] for desc in cursor.description]
+    rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    conn.close()
+    
+    for row in rows:
+        row["artifacts_json"] = _parse_json(row.get("artifacts_json"))
+        row["run_state_json"] = _parse_json(row.get("run_state_json"))
+    
+    return jsonify(rows)
+
+
+@methods_bp.route("/chain-runs/<int:run_id>", methods=["GET"])
+def get_chain_run(run_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT cr.*, mc.name as chain_name FROM chain_runs cr LEFT JOIN method_chains mc ON cr.chain_id = mc.id WHERE cr.id = ?",
+        (run_id,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        return jsonify({"error": "Chain run not found"}), 404
+    
+    columns = [desc[0] for desc in cursor.description]
+    result = dict(zip(columns, row))
+    result["artifacts_json"] = _parse_json(result.get("artifacts_json"))
+    result["run_state_json"] = _parse_json(result.get("run_state_json"))
+    
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------
@@ -434,6 +529,268 @@ def method_analytics():
         "block_stats": block_stats,
         "chain_stats": chain_stats,
         "recent_ratings": recent_ratings,
+    })
+
+
+# ---------------------------------------------------------------------------
+# RuleSets (V2 architecture - tutor behavior constraints)
+# ---------------------------------------------------------------------------
+
+@methods_bp.route("/rulesets", methods=["GET"])
+def list_rulesets():
+    conn = get_connection()
+    cursor = conn.cursor()
+    scope = request.args.get("scope")
+    active_only = request.args.get("active", "1") == "1"
+    
+    query = "SELECT * FROM rulesets WHERE 1=1"
+    params = []
+    if scope:
+        query += " AND scope = ?"
+        params.append(scope)
+    if active_only:
+        query += " AND is_active = 1"
+    query += " ORDER BY name"
+    
+    cursor.execute(query, params)
+    columns = [desc[0] for desc in cursor.description]
+    rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+    conn.close()
+    for row in rows:
+        row["rules_json"] = _parse_json(row.get("rules_json"))
+    return jsonify(rows)
+
+
+@methods_bp.route("/rulesets/<int:ruleset_id>", methods=["GET"])
+def get_ruleset(ruleset_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM rulesets WHERE id = ?", (ruleset_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": "RuleSet not found"}), 404
+    columns = [desc[0] for desc in cursor.description]
+    result = dict(zip(columns, row))
+    result["rules_json"] = _parse_json(result.get("rules_json"))
+    return jsonify(result)
+
+
+@methods_bp.route("/rulesets", methods=["POST"])
+def create_ruleset():
+    data = request.get_json()
+    if not data or not data.get("name"):
+        return jsonify({"error": "name is required"}), 400
+
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO rulesets (name, description, scope, rules_json, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?, datetime('now'))
+            """,
+            (
+                data["name"],
+                data.get("description"),
+                data.get("scope", "chain"),
+                json.dumps(data.get("rules_json", [])),
+                1 if data.get("is_active", True) else 0,
+            ),
+        )
+        new_id = cursor.lastrowid
+        conn.commit()
+        return jsonify({"id": new_id, "name": data["name"]}), 201
+    finally:
+        conn.close()
+
+
+@methods_bp.route("/rulesets/<int:ruleset_id>", methods=["PUT"])
+def update_ruleset(ruleset_id: int):
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    fields = []
+    values = []
+    for key in ("name", "description", "scope", "is_active"):
+        if key in data:
+            fields.append(f"{key} = ?")
+            values.append(data[key] if key != "is_active" else (1 if data[key] else 0))
+    if "rules_json" in data:
+        fields.append("rules_json = ?")
+        values.append(json.dumps(data["rules_json"]))
+    
+    fields.append("updated_at = datetime('now')")
+
+    if len(fields) == 1:
+        return jsonify({"error": "No valid fields to update"}), 400
+
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        values.append(ruleset_id)
+        cursor.execute(
+            f"UPDATE rulesets SET {', '.join(fields)} WHERE id = ?",
+            values,
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return jsonify({"error": "RuleSet not found"}), 404
+        return jsonify({"id": ruleset_id, "updated": True})
+    finally:
+        conn.close()
+
+
+@methods_bp.route("/rulesets/<int:ruleset_id>", methods=["DELETE"])
+def delete_ruleset(ruleset_id: int):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM rulesets WHERE id = ?", (ruleset_id,))
+        conn.commit()
+        deleted = cursor.rowcount > 0
+        if not deleted:
+            return jsonify({"error": "RuleSet not found"}), 404
+        return "", 204
+    finally:
+        conn.close()
+
+
+@methods_bp.route("/chains/<int:chain_id>/attach-ruleset", methods=["POST"])
+def attach_ruleset_to_chain(chain_id: int):
+    data = request.get_json()
+    ruleset_id = data.get("ruleset_id") if data else None
+    
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE method_chains SET ruleset_id = ? WHERE id = ?",
+            (ruleset_id, chain_id),
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Chain not found"}), 404
+        return jsonify({"chain_id": chain_id, "ruleset_id": ruleset_id})
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# User Scoring Weights (multi-objective chain ranking)
+# ---------------------------------------------------------------------------
+
+DEFAULT_WEIGHTS = {
+    "learning_gain_weight": 0.20,
+    "time_cost_weight": 0.15,
+    "error_rate_weight": 0.15,
+    "hint_dependence_weight": 0.10,
+    "confidence_calibration_weight": 0.15,
+    "cognitive_strain_weight": 0.10,
+    "artifact_quality_weight": 0.15,
+}
+
+
+@methods_bp.route("/scoring/weights/<user_id>", methods=["GET"])
+def get_user_weights(user_id: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user_scoring_weights WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"user_id": user_id, **DEFAULT_WEIGHTS, "is_default": True})
+    columns = [desc[0] for desc in cursor.description]
+    result = dict(zip(columns, row))
+    result["is_default"] = False
+    return jsonify(result)
+
+
+@methods_bp.route("/scoring/weights/<user_id>", methods=["PUT"])
+def update_user_weights(user_id: str):
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    weight_keys = list(DEFAULT_WEIGHTS.keys())
+    weights = {k: data.get(k, DEFAULT_WEIGHTS[k]) for k in weight_keys}
+    
+    total = sum(weights.values())
+    if abs(total - 1.0) > 0.01:
+        return jsonify({"error": f"Weights must sum to 1.0, got {total:.2f}"}), 400
+
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM user_scoring_weights WHERE user_id = ?", (user_id,))
+        exists = cursor.fetchone()
+        
+        if exists:
+            set_clause = ", ".join(f"{k} = ?" for k in weight_keys)
+            cursor.execute(
+                f"UPDATE user_scoring_weights SET {set_clause}, updated_at = datetime('now') WHERE user_id = ?",
+                (*weights.values(), user_id),
+            )
+        else:
+            cols = ", ".join(["user_id"] + weight_keys)
+            placeholders = ", ".join(["?"] * (len(weight_keys) + 1))
+            cursor.execute(
+                f"INSERT INTO user_scoring_weights ({cols}, created_at) VALUES ({placeholders}, datetime('now'))",
+                (user_id, *weights.values()),
+            )
+        
+        conn.commit()
+        return jsonify({"user_id": user_id, **weights, "updated": True})
+    finally:
+        conn.close()
+
+
+@methods_bp.route("/scoring/compute", methods=["POST"])
+def compute_composite_score():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    
+    user_id = data.get("user_id", "default")
+    hooks = data.get("hooks", {})
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user_scoring_weights WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        columns = [desc[0] for desc in cursor.description]
+        weights_row = dict(zip(columns, row))
+        weights = {k: weights_row.get(k, v) for k, v in DEFAULT_WEIGHTS.items()}
+    else:
+        weights = DEFAULT_WEIGHTS
+    
+    hook_mapping = {
+        "learning_gain": "learning_gain_weight",
+        "time_cost": "time_cost_weight",
+        "error_rate": "error_rate_weight",
+        "hint_dependence": "hint_dependence_weight",
+        "confidence_calibration": "confidence_calibration_weight",
+        "cognitive_strain": "cognitive_strain_weight",
+        "artifact_quality": "artifact_quality_weight",
+    }
+    
+    composite = 0.0
+    breakdown = {}
+    for hook_name, weight_key in hook_mapping.items():
+        hook_value = hooks.get(hook_name, 0.0)
+        weight = weights[weight_key]
+        contribution = hook_value * weight
+        composite += contribution
+        breakdown[hook_name] = {"value": hook_value, "weight": weight, "contribution": contribution}
+    
+    return jsonify({
+        "composite_score": round(composite, 4),
+        "breakdown": breakdown,
+        "weights_source": "custom" if row else "default",
     })
 
 

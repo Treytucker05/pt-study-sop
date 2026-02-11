@@ -1218,6 +1218,32 @@ def init_database():
         ON method_ratings(chain_id)
     """)
 
+    # ------------------------------------------------------------------
+    # RuleSets table (V2 architecture - tutor behavior constraints)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS rulesets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            scope TEXT DEFAULT 'chain',
+            rules_json TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_rulesets_scope
+        ON rulesets(scope)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_rulesets_active
+        ON rulesets(is_active)
+    """)
+
     # Add evidence column to method_blocks if missing (PEIRRO v2 migration)
     cursor.execute("PRAGMA table_info(method_blocks)")
     mb_cols = {col[1] for col in cursor.fetchall()}
@@ -1232,6 +1258,32 @@ def init_database():
         try:
             cursor.execute("ALTER TABLE method_blocks ADD COLUMN facilitation_prompt TEXT")
             print("[INFO] Added 'facilitation_prompt' column to method_blocks table")
+        except sqlite3.OperationalError:
+            pass
+
+    module_card_cols = [
+        ("inputs", "TEXT"),
+        ("outputs", "TEXT"),
+        ("strategy_label", "TEXT"),
+        ("failure_modes", "TEXT"),
+        ("variants", "TEXT"),
+        ("scoring_hooks", "TEXT"),
+    ]
+    for col_name, col_type in module_card_cols:
+        if col_name not in mb_cols:
+            try:
+                cursor.execute(f"ALTER TABLE method_blocks ADD COLUMN {col_name} {col_type}")
+                print(f"[INFO] Added '{col_name}' column to method_blocks table")
+            except sqlite3.OperationalError:
+                pass
+
+    # Add ruleset_id to method_chains if missing (V2 architecture migration)
+    cursor.execute("PRAGMA table_info(method_chains)")
+    mc_cols = {col[1] for col in cursor.fetchall()}
+    if "ruleset_id" not in mc_cols:
+        try:
+            cursor.execute("ALTER TABLE method_chains ADD COLUMN ruleset_id INTEGER")
+            print("[INFO] Added 'ruleset_id' column to method_chains table")
         except sqlite3.OperationalError:
             pass
 
@@ -1290,6 +1342,44 @@ def init_database():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_chain_runs_status
         ON chain_runs(status)
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_scoring_weights (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL UNIQUE,
+            learning_gain_weight REAL DEFAULT 0.20,
+            time_cost_weight REAL DEFAULT 0.15,
+            error_rate_weight REAL DEFAULT 0.15,
+            hint_dependence_weight REAL DEFAULT 0.10,
+            confidence_calibration_weight REAL DEFAULT 0.15,
+            cognitive_strain_weight REAL DEFAULT 0.10,
+            artifact_quality_weight REAL DEFAULT 0.15,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS session_scoring_hooks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER NOT NULL,
+            learning_gain REAL,
+            time_cost REAL,
+            error_rate REAL,
+            hint_dependence REAL,
+            confidence_calibration REAL,
+            cognitive_strain REAL,
+            artifact_quality REAL,
+            composite_score REAL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(session_id) REFERENCES sessions(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_session_scoring_hooks_session
+        ON session_scoring_hooks(session_id)
     """)
 
     # ------------------------------------------------------------------
@@ -1434,6 +1524,96 @@ def init_database():
         CREATE INDEX IF NOT EXISTS idx_tutor_block_transitions_session
         ON tutor_block_transitions(tutor_session_id)
     """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scholar_runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            started_at TEXT NOT NULL,
+            ended_at TEXT,
+            status TEXT DEFAULT 'running',
+            mode TEXT DEFAULT 'full',
+            proposals_created INTEGER DEFAULT 0,
+            digests_created INTEGER DEFAULT 0,
+            error_message TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scholar_digests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER,
+            filename TEXT NOT NULL,
+            filepath TEXT,
+            digest_type TEXT,
+            content TEXT,
+            cluster_id TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(run_id) REFERENCES scholar_runs(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scholar_proposals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER,
+            filename TEXT NOT NULL,
+            title TEXT NOT NULL,
+            proposal_type TEXT DEFAULT 'change',
+            status TEXT DEFAULT 'draft',
+            target_system TEXT,
+            expected_impact TEXT,
+            evidence_summary TEXT,
+            content TEXT,
+            reviewed_at TEXT,
+            superseded_by INTEGER,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(run_id) REFERENCES scholar_runs(id),
+            FOREIGN KEY(superseded_by) REFERENCES scholar_proposals(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scholar_hypotheses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pattern_detected TEXT NOT NULL,
+            explanation TEXT NOT NULL,
+            metrics_involved TEXT,
+            target_module_id INTEGER,
+            target_chain_id INTEGER,
+            status TEXT DEFAULT 'draft',
+            evidence_strength TEXT DEFAULT 'weak',
+            tested_at TEXT,
+            validated_at TEXT,
+            rejected_at TEXT,
+            experiment_id INTEGER,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(target_module_id) REFERENCES method_blocks(id),
+            FOREIGN KEY(target_chain_id) REFERENCES method_chains(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scholar_experiments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hypothesis_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            control_condition TEXT,
+            test_condition TEXT,
+            metrics_json TEXT,
+            success_criteria TEXT,
+            status TEXT DEFAULT 'planned',
+            outcome TEXT,
+            results_json TEXT,
+            started_at TEXT,
+            completed_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(hypothesis_id) REFERENCES scholar_hypotheses(id)
+        )
+    """)
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scholar_proposals_status ON scholar_proposals(status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scholar_hypotheses_status ON scholar_hypotheses(status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scholar_experiments_status ON scholar_experiments(status)")
 
     conn.commit()
     conn.close()

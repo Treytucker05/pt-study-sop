@@ -14,6 +14,42 @@ export type StudyStage =
   | "exam_prep"
   | "consolidation";
 
+export type RuleSetScope = "global" | "chain" | "module";
+
+export interface RuleCondition {
+  type: "gate" | "skip" | "branch" | "require";
+  block_index?: number;
+  condition: string;
+  alternate_block_id?: number;
+}
+
+export interface RuleSet {
+  id: number;
+  name: string;
+  description: string | null;
+  scope: RuleSetScope;
+  rules_json: RuleCondition[];
+  is_active: number;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface FailureMode {
+  mode: string;
+  mitigation: string;
+}
+
+export interface ModuleVariant {
+  name: string;
+  description: string;
+}
+
+export interface ScoringHook {
+  metric: string;
+  threshold?: number;
+  weight?: number;
+}
+
 export interface MethodBlock {
   id: number;
   name: string;
@@ -24,6 +60,12 @@ export interface MethodBlock {
   best_stage: StudyStage | null;
   tags: string[];
   evidence: string | null;
+  inputs: string[];
+  outputs: string[];
+  strategy_label: string | null;
+  failure_modes: FailureMode[];
+  variants: ModuleVariant[];
+  scoring_hooks: ScoringHook[];
   created_at: string;
 }
 
@@ -43,6 +85,8 @@ export interface MethodChain {
   created_at: string;
   is_template: number;
   blocks?: MethodBlock[];
+  ruleset_id?: number | null;
+  ruleset?: RuleSet;
 }
 
 export interface MethodRating {
@@ -81,6 +125,37 @@ export interface MethodAnalytics {
   block_stats: BlockStats[];
   chain_stats: ChainStats[];
   recent_ratings: MethodRating[];
+}
+
+export interface UserScoringWeights {
+  id?: number;
+  user_id: string;
+  learning_gain_weight: number;
+  time_cost_weight: number;
+  error_rate_weight: number;
+  hint_dependence_weight: number;
+  confidence_calibration_weight: number;
+  cognitive_strain_weight: number;
+  artifact_quality_weight: number;
+  is_default?: boolean;
+  created_at?: string;
+  updated_at?: string | null;
+}
+
+export interface ScoringHooks {
+  learning_gain: number;
+  time_cost: number;
+  error_rate: number;
+  hint_dependence: number;
+  confidence_calibration: number;
+  cognitive_strain: number;
+  artifact_quality: number;
+}
+
+export interface CompositeScoreResult {
+  composite_score: number;
+  breakdown: Record<string, { value: number; weight: number; contribution: number }>;
+  weights_source: "custom" | "default";
 }
 
 export const CATEGORY_COLORS: Record<MethodCategory, string> = {
