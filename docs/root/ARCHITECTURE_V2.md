@@ -1,8 +1,8 @@
 # PT Study System - Domain Primitives and Learning Loop (V2)
 
-Status: CANONICAL (domain primitives + learning loop)
-Last updated: 2026-02-10
-Scope: Domain model + roles + scoring philosophy (not implementation details)
+Status: CANONICAL (domain primitives + learning loop + implementation status)
+Last updated: 2026-02-11
+Scope: Domain model + roles + scoring philosophy + current implementation gaps
 
 If anything conflicts with this document about the meaning of the domain primitives (LearningModule, Chain, Session, RuleSet, Artifact, Metric, Hypothesis, Proposal), this document wins.
 
@@ -290,4 +290,138 @@ Freeze these, keep everything else flexible:
 - No code renames or DB/schema migrations in this step.
 - No path cleanup or doc reorganization beyond adding canonical pointers.
 - No changes to the repo/README layer.
+
+---
+
+## Implementation Status (as of 2026-02-11)
+
+This section tracks how far the actual codebase has implemented the vision above.
+
+### Entity Implementation Matrix
+
+| Entity | DB Table | API | UI | Status | Gap |
+|--------|----------|-----|-----|--------|-----|
+| **LearningModule** | `method_blocks` (36 rows) | ✅ CRUD | ✅ Methods page | ⚠️ 80% | Missing: inputs, outputs, failure_modes, variants, scoring_hooks |
+| **Chain** | `method_chains` (15 templates) | ✅ CRUD | ✅ Chain builder | ⚠️ 75% | Missing: RuleSet attachment, complete execution handler |
+| **Session** | `sessions` (90+ columns, v9.4) | ✅ CRUD | ✅ Brain page | ✅ 95% | Comprehensive schema |
+| **RuleSet** | ❌ None | ❌ None | ❌ None | ⚠️ 60% | Rules in SOP markdown + Python; NOT a DB entity |
+| **Artifact** | `card_drafts`, notes, diagrams | ✅ Partial | ✅ Brain page | ✅ 85% | Cards, notes stored; quality scoring partial |
+| **Metric** | In `sessions` + `method_ratings` | ✅ Partial | ✅ Dashboard | ⚠️ 70% | Missing: learning_gain, hint_dependence, user_weights |
+| **Hypothesis** | ❌ None | ❌ None | ❌ None | ❌ 0% | Only in experiment templates, not tracked |
+| **Proposal** | `scholar_proposals` | ✅ CRUD | ✅ Scholar page | ✅ 85% | Lifecycle exists; missing cull logic |
+
+### Module Card Fields: What Exists
+
+```
+IMPLEMENTED:
+  ✅ name
+  ✅ category (prepare|encode|interrogate|retrieve|refine|overlearn)
+  ✅ description
+  ✅ default_duration_min (time box)
+  ✅ energy_cost (cognitive load proxy: low|medium|high)
+  ✅ best_stage (first_exposure|review|exam_prep|consolidation)
+  ✅ tags (JSON array)
+  ✅ evidence (research citations)
+  ✅ facilitation_prompt (tutor behavior - unstructured)
+
+MISSING:
+  ❌ inputs — what learner brings (source pages, topic list, prior artifacts)
+  ❌ outputs — what learner produces (artifact types + where stored)
+  ❌ strategy_label — pedagogical strategy name (e.g., "elaborative interrogation")
+  ❌ failure_modes — common mistakes + mitigations
+  ❌ variants — alternative implementations (ASCII|Canvas|Table|Oral)
+  ❌ scoring_hooks — what gets measured for this module
+```
+
+### Chain Scoring Hooks: What Exists
+
+```
+IMPLEMENTED:
+  ✅ effectiveness (1-5, from method_ratings)
+  ✅ engagement (1-5, from method_ratings)
+  ✅ understanding_level (1-5, from sessions)
+  ✅ retention_confidence (1-5, from sessions)
+  ✅ calibration_gap (integer, from sessions)
+  ✅ rsr_percent (0-100, from sessions)
+  ✅ cognitive_load (low|medium|high, from sessions)
+  ✅ card_confidence_score (0-1, from anki_sync.py)
+
+MISSING:
+  ❌ learning_gain — pre/post-test delta (no pre-test tracking)
+  ❌ time_cost — normalized time efficiency
+  ❌ error_rate — weighted by severity/recurrence
+  ❌ hint_dependence — scaffold usage count
+  ❌ artifact_quality — quality scoring beyond cards
+  ❌ user_weight_vectors — per-user customizable weights
+  ❌ composite_score — multi-objective weighted sum
+```
+
+### Scholar Loop: What Exists
+
+```
+IMPLEMENTED:
+  ✅ 1. Detect — friction_alerts.py (8 alert types)
+  ⚠️ 2. Hypothesize — only in experiment_design.md template
+  ⚠️ 3. Design experiment — template exists, no execution tracking
+  ✅ 4. Research — research_notebook/ output lane
+  ✅ 5. Propose — promotion_queue/ with RFC templates
+  ❌ 6. Cull — no deduplication, no proposal scoring
+  ⚠️ 7. Feed back — manual only; no automated application
+
+MISSING ENTITIES:
+  ❌ scholar_hypotheses table (hypothesis lifecycle)
+  ❌ scholar_experiments table (experiment tracking)
+  ❌ Cull stage with deduplication logic
+  ❌ Automated feedback loop (approved → SOP edits)
+```
+
+### RuleSet Implementation: Current State
+
+Rules exist but are NOT a first-class DB entity:
+
+```
+WHERE RULES LIVE TODAY:
+  - sop/library/01-core-rules.md — Global invariants (Source-Lock, Seed-Lock, etc.)
+  - sop/library/05-session-flow.md — Per-module gates (M0-M6)
+  - sop/library/06-modes.md — Per-mode policies (Core, Sprint, Drill, Light)
+  - brain/tutor_prompt_builder.py — MODE_POLICIES dict + RULE_PACKS_PROMPT
+  - brain/data/seed_methods.py — Per-block facilitation prompts
+
+ENFORCEMENT MECHANISM:
+  3-layer prompt composition: Base → Mode → RulePacks → Block
+  Rules are injected as LLM system prompt text, not DB constraints
+
+WHAT'S MISSING FOR FIRST-CLASS RULESETS:
+  ❌ rulesets table (id, name, rules_json, scope)
+  ❌ method_chains.ruleset_id foreign key
+  ❌ RuleSet CRUD API endpoints
+  ❌ RuleSet attachment UI in chain builder
+  ❌ Runtime rule evaluation in chain_runner.py
+```
+
+### Priority Gaps (Recommended Build Order)
+
+| Priority | Gap | Impact | Effort |
+|----------|-----|--------|--------|
+| **1. High** | RuleSet as DB entity | Enables chain-level rule customization | Medium |
+| **2. High** | Module Card missing fields | Enables proper module testing/swapping | Low |
+| **3. High** | User weight vectors | Enables multi-objective chain ranking | Medium |
+| **4. Medium** | Hypothesis entity | Enables Scholar evidence tracking | Medium |
+| **5. Medium** | Cull logic | Prevents proposal overload | Low |
+| **6. Medium** | Chain execution handler | Completes chain runner backend | High |
+| **7. Low** | Experiment tracking | Enables A/B testing | High |
+| **8. Low** | Automated feedback loop | Closes Scholar loop fully | High |
+
+### Key Files by Entity
+
+| Entity | Primary Files |
+|--------|---------------|
+| LearningModule | `brain/db_setup.py` (method_blocks), `brain/data/seed_methods.py`, `dashboard_rebuild/client/src/pages/methods.tsx` |
+| Chain | `brain/db_setup.py` (method_chains), `brain/dashboard/api_methods.py`, `dashboard_rebuild/client/src/components/ChainBuilder.tsx` |
+| Session | `brain/db_setup.py` (sessions), `brain/dashboard/api_adapter.py`, `dashboard_rebuild/client/src/pages/brain.tsx` |
+| RuleSet | `sop/library/01-core-rules.md`, `brain/tutor_prompt_builder.py` (MODE_POLICIES) |
+| Artifact | `brain/db_setup.py` (card_drafts), `brain/anki_sync.py` |
+| Metric | `brain/dashboard/stats.py`, `brain/dashboard/method_analysis.py`, `brain/config.py` (READINESS_WEIGHTS) |
+| Hypothesis | `scholar/TEMPLATES/experiment_design.md` (template only) |
+| Proposal | `brain/db_setup.py` (scholar_proposals), `brain/dashboard/api_adapter.py`, `scholar/TEMPLATES/change_proposal.md` |
 
