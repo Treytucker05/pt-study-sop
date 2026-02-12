@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Scholar Research Hub (V1 Match)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff2e2e",
+                        "background-light": "#f0f2f5",
+                        "background-dark": "#0a0a0f",
+                        "metal-dark": "#1a1a24",
+                        "metal-panel": "#1f2228",
+                        "neon-red": "#ff2e2e"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    boxShadow: {
+                        'industrial': 'inset 2px 2px 0px rgba(255,255,255,0.05), inset -2px -2px 0px rgba(0,0,0,0.5)',
+                        'glow': '0 0 15px rgba(255, 46, 46, 0.4)',
+                        'arcade': '4px 4px 0px #4b2020',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        .recessed-panel {
+            box-shadow: inset 4px 4px 10px rgba(0,0,0,0.8), inset -2px -2px 4px rgba(255,255,255,0.05);
+            border: 1px solid #2d2d3a;
+        }
+        .metal-bezel {
+            border: 2px solid #3a3a4a;
+            border-right-color: #1a1a24;
+            border-bottom-color: #1a1a24;
+        }
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 10;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 46, 46, 0.1) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            pointer-events: none;
+        }
+        .segment-font {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -1px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white selection:bg-primary selection:text-white min-h-screen relative overflow-x-hidden">
+<!-- CRT Effect Layer -->
+<div class="fixed inset-0 crt-overlay z-50 pointer-events-none"></div>
+<div class="layout-container flex flex-col min-h-screen">
+<!-- TopNavBar: 90s Industrial Style -->
+<header class="border-b-4 border-[#1f2228] bg-metal-dark px-6 py-4 flex items-center justify-between sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<div class="bg-primary p-1 rounded-sm shadow-glow">
+<span class="material-symbols-outlined text-white text-3xl font-bold">terminal</span>
+</div>
+<div>
+<h1 class="text-2xl font-black tracking-tighter leading-none italic uppercase">Scholar Research Hub</h1>
+<p class="text-[10px] text-primary font-mono tracking-widest opacity-80">TACTICAL ACADEMIC DATA MINING UNIT V1</p>
+</div>
+</div>
+<nav class="flex items-center gap-1">
+<a class="px-4 py-2 bg-metal-panel border-b-2 border-primary text-white text-xs font-bold tracking-widest hover:bg-primary/10 transition-colors" href="#">DASHBOARD</a>
+<a class="px-4 py-2 bg-primary text-white text-xs font-bold tracking-widest shadow-glow" href="#">RESEARCH</a>
+<a class="px-4 py-2 bg-metal-panel text-gray-400 text-xs font-bold tracking-widest hover:text-white" href="#">ARCHIVE</a>
+<a class="px-4 py-2 bg-metal-panel text-gray-400 text-xs font-bold tracking-widest hover:text-white" href="#">CONFIG</a>
+</nav>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 px-3 py-1 bg-black/40 border border-white/10 rounded-sm">
+<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]"></div>
+<span class="text-[10px] font-mono font-bold text-green-500">SYSTEM: ONLINE</span>
+</div>
+<div class="px-3 py-1 bg-primary/20 border border-primary/40 rounded-sm">
+<span class="text-[10px] font-mono font-bold text-primary">V1 MATCH: ACTIVE</span>
+</div>
+</div>
+</header>
+<main class="flex-1 p-8 max-w-[1400px] mx-auto w-full grid grid-cols-12 gap-8">
+<!-- Left Column: Config & Control -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-8">
+<!-- API Configuration Panel -->
+<section class="recessed-panel bg-metal-panel p-6 relative overflow-hidden">
+<div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+<h2 class="text-xl font-black tracking-widest uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">settings_input_component</span>
+                            API Config Panel
+                        </h2>
+<span class="text-[10px] font-mono text-white/40">ID: CNFG-88-22</span>
+</div>
+<div class="space-y-6">
+<div class="grid grid-cols-1 gap-4">
+<label class="block">
+<span class="text-xs font-bold text-primary tracking-widest mb-2 block uppercase">Research Provider</span>
+<div class="relative">
+<select class="w-full bg-black/60 border-2 border-white/10 text-white font-mono p-4 rounded-none focus:border-primary focus:ring-0 appearance-none">
+<option>GOOGLE_SCHOLAR_V2</option>
+<option>IEEE_XPLORE_DENSE</option>
+<option>PUBMED_CORE_ALPHA</option>
+<option>ARXIV_DEEP_LINK</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-4 pointer-events-none text-primary">expand_more</span>
+</div>
+</label>
+<label class="block">
+<span class="text-xs font-bold text-primary tracking-widest mb-2 block uppercase">API Key Entry</span>
+<input class="w-full bg-black/60 border-2 border-white/10 text-white font-mono p-4 rounded-none focus:border-primary focus:ring-0 placeholder:text-white/20" placeholder="ENTER ENCRYPTED KEY" type="password" value="************************"/>
+</label>
+<div class="grid grid-cols-2 gap-4">
+<label class="block">
+<span class="text-xs font-bold text-primary tracking-widest mb-2 block uppercase">Depth Level</span>
+<input class="w-full bg-black/60 border-2 border-white/10 text-white font-mono p-4 rounded-none focus:border-primary focus:ring-0" type="number" value="4"/>
+</label>
+<label class="block">
+<span class="text-xs font-bold text-primary tracking-widest mb-2 block uppercase">Thread Count</span>
+<input class="w-full bg-black/60 border-2 border-white/10 text-white font-mono p-4 rounded-none focus:border-primary focus:ring-0" type="number" value="16"/>
+</label>
+</div>
+</div>
+</div>
+<!-- Bolted Detail -->
+<div class="absolute top-2 left-2 w-1.5 h-1.5 rounded-full bg-white/20 shadow-inner"></div>
+<div class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-white/20 shadow-inner"></div>
+<div class="absolute bottom-2 left-2 w-1.5 h-1.5 rounded-full bg-white/20 shadow-inner"></div>
+<div class="absolute bottom-2 right-2 w-1.5 h-1.5 rounded-full bg-white/20 shadow-inner"></div>
+</section>
+<!-- Run Scholar Panel -->
+<section class="recessed-panel bg-metal-panel p-6 relative">
+<div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+<h2 class="text-xl font-black tracking-widest uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">bolt</span>
+                            Run Scholar
+                        </h2>
+</div>
+<div class="space-y-6">
+<div class="grid grid-cols-2 gap-6">
+<!-- Toggle Switches -->
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-black/30 border border-white/5">
+<span class="text-xs font-bold tracking-tighter uppercase">Deep Scan</span>
+<div class="w-12 h-6 bg-metal-dark border-2 border-white/20 relative cursor-pointer group">
+<div class="absolute top-0 right-0 w-1/2 h-full bg-primary shadow-glow transition-all"></div>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 bg-black/30 border border-white/5">
+<span class="text-xs font-bold tracking-tighter uppercase">Recursive Search</span>
+<div class="w-12 h-6 bg-metal-dark border-2 border-white/20 relative cursor-pointer">
+<div class="absolute top-0 left-0 w-1/2 h-full bg-white/10"></div>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 bg-black/30 border border-white/5">
+<span class="text-xs font-bold tracking-tighter uppercase">Auto-Export</span>
+<div class="w-12 h-6 bg-metal-dark border-2 border-white/20 relative cursor-pointer">
+<div class="absolute top-0 right-0 w-1/2 h-full bg-primary shadow-glow"></div>
+</div>
+</div>
+</div>
+<!-- Big Start Button -->
+<div class="flex flex-col justify-center items-center gap-4">
+<button class="group relative w-32 h-32 bg-[#4b2020] rounded-full border-8 border-metal-dark shadow-arcade active:translate-y-1 active:translate-x-1 active:shadow-none transition-all duration-75">
+<div class="absolute inset-0 bg-primary rounded-full opacity-20 group-hover:opacity-40 transition-opacity"></div>
+<div class="absolute inset-2 bg-primary rounded-full flex items-center justify-center border-4 border-[#ff4f4f] shadow-[inset_0_4px_10px_rgba(255,255,255,0.4)]">
+<span class="text-white font-black text-xl tracking-tighter leading-none text-center uppercase drop-shadow-md">START<br/>RUN</span>
+</div>
+</button>
+<div class="text-[10px] font-mono text-primary animate-pulse font-bold tracking-widest uppercase">Warning: High Load</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Monitoring & Logs -->
+<div class="col-span-12 lg:col-span-7 flex flex-col gap-8">
+<!-- Live Monitoring Panel -->
+<section class="recessed-panel bg-metal-panel p-8 relative flex flex-col h-full min-h-[600px]">
+<div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+<h2 class="text-xl font-black tracking-widest uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">monitoring</span>
+                            System Telemetry
+                        </h2>
+<div class="flex gap-4">
+<div class="text-right">
+<div class="text-[10px] font-mono text-white/40 uppercase">Nodes Active</div>
+<div class="text-2xl font-black text-primary segment-font">128</div>
+</div>
+<div class="text-right">
+<div class="text-[10px] font-mono text-white/40 uppercase">Matches</div>
+<div class="text-2xl font-black text-primary segment-font">0,412</div>
+</div>
+</div>
+</div>
+<!-- Progress Bar Area -->
+<div class="mb-10 space-y-4">
+<div class="flex justify-between items-end">
+<span class="text-xs font-bold uppercase tracking-[0.2em]">Deployment Progress</span>
+<span class="text-2xl font-black text-primary font-mono italic">72.4%</span>
+</div>
+<div class="h-10 bg-black/60 border-2 border-white/10 p-1 relative overflow-hidden">
+<div class="h-full bg-primary shadow-[0_0_20px_#ff2e2e] relative" style="width: 72.4%">
+<div class="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_10px,rgba(0,0,0,0.2)_10px,rgba(0,0,0,0.2)_12px)]"></div>
+<div class="scanline"></div>
+</div>
+</div>
+</div>
+<!-- Terminal Logs -->
+<div class="flex-1 flex flex-col min-h-0">
+<div class="flex items-center gap-2 mb-2">
+<span class="text-[10px] font-mono text-white/40 uppercase tracking-widest">Operation Log</span>
+<div class="h-[1px] flex-1 bg-white/10"></div>
+</div>
+<div class="flex-1 bg-black/80 border-2 border-white/10 p-4 font-mono text-sm overflow-y-auto custom-scrollbar">
+<div class="space-y-1">
+<p class="text-green-500"><span class="opacity-40 text-white">[14:22:01]</span> INITIALIZING SCANNERS...</p>
+<p class="text-primary"><span class="opacity-40 text-white">[14:22:03]</span> HANDSHAKE SUCCESSFUL: GOOGLE_API_PROXY_01</p>
+<p class="text-white/80"><span class="opacity-40 text-white">[14:22:05]</span> QUERY: "LARGE LANGUAGE MODEL OPTIMIZATION"</p>
+<p class="text-white/80"><span class="opacity-40 text-white">[14:22:08]</span> EXTRACTING METADATA FROM ID_88291...</p>
+<p class="text-white/80"><span class="opacity-40 text-white">[14:22:10]</span> PARSING CITATION TREE [DEPTH=2]</p>
+<p class="text-green-500"><span class="opacity-40 text-white">[14:22:12]</span> MATCH FOUND: "NEURAL SCALING LAWS" (98.2% RELEVANCE)</p>
+<p class="text-white/80"><span class="opacity-40 text-white">[14:22:15]</span> DOWNLOADING COMPRESSED ARCHIVE...</p>
+<p class="text-white/40 animate-pulse"><span class="opacity-40 text-white">[14:22:18]</span> _</p>
+</div>
+</div>
+</div>
+<!-- Action Bar Footer -->
+<div class="mt-8 pt-6 border-t border-white/10 flex justify-between items-center">
+<div class="flex gap-2">
+<button class="px-6 py-2 bg-metal-panel border-2 border-white/10 text-[10px] font-bold tracking-widest uppercase hover:border-primary transition-all">Export CSV</button>
+<button class="px-6 py-2 bg-metal-panel border-2 border-white/10 text-[10px] font-bold tracking-widest uppercase hover:border-primary transition-all">Pause Hub</button>
+</div>
+<button class="px-8 py-3 bg-transparent border-2 border-primary text-primary text-xs font-bold tracking-[0.3em] uppercase hover:bg-primary hover:text-white transition-all shadow-glow">Abort Mission</button>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer Stats Bar -->
+<footer class="bg-metal-dark border-t-2 border-[#1f2228] px-6 py-3 flex justify-between items-center">
+<div class="flex gap-8">
+<div class="flex flex-col">
+<span class="text-[8px] font-mono text-white/40 uppercase">Memory Load</span>
+<span class="text-xs font-bold text-white tracking-widest">4.2 GB / 64 GB</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[8px] font-mono text-white/40 uppercase">Requests / Min</span>
+<span class="text-xs font-bold text-white tracking-widest">1,482 RPM</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[8px] font-mono text-white/40 uppercase">Uptime</span>
+<span class="text-xs font-bold text-white tracking-widest">14:02:44:11</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-mono text-white/60">SCHOLAR_OS_V1.02_STABLE</span>
+<span class="material-symbols-outlined text-sm text-primary animate-spin">autorenew</span>
+</div>
+</footer>
+</div>
+<!-- Background Grid Decoration -->
+<div class="fixed inset-0 pointer-events-none z-0 opacity-10">
+<div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+</div>
+</body></html>

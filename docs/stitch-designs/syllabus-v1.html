@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Syllabus Tactical Grid (V1 Match)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Space+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff2e2e",
+                        "background-light": "#f0f2f5",
+                        "background-dark": "#0a0a0f",
+                        "panel": "#1a1a24",
+                        "border-red": "#6b2e2e",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "mono": ["Space Mono", "monospace"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scanline {
+            background: linear-gradient(to bottom, rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+        }
+        .beveled {
+            box-shadow: inset 2px 2px 0px rgba(255,255,255,0.1), inset -2px -2px 0px rgba(0,0,0,0.5);
+        }
+        .beveled-out {
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.8), -1px -1px 0px rgba(255,255,255,0.1);
+        }
+        .recessed {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.8), 1px 1px 0px rgba(255,255,255,0.05);
+            background: #0d0d14;
+        }
+        .glow-red {
+            text-shadow: 0 0 8px #ff2e2e;
+        }
+        .seven-segment {
+            font-family: 'Space Mono', monospace;
+            letter-spacing: -2px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white selection:bg-primary selection:text-white min-h-screen overflow-x-hidden relative">
+<!-- CRT Overlay -->
+<div class="fixed inset-0 scanline z-50 pointer-events-none opacity-30"></div>
+<div class="layout-container flex h-full min-h-screen flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between border-b-2 border-primary/30 bg-[#15151e] px-8 py-3 z-40 relative">
+<div class="flex items-center gap-12">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-primary flex items-center justify-center rounded-sm">
+<span class="material-symbols-outlined text-black font-bold">grid_view</span>
+</div>
+<h2 class="text-xl font-black leading-tight tracking-tighter uppercase italic">Syllabus Tactical Grid</h2>
+</div>
+<nav class="flex items-center gap-2">
+<a class="px-4 py-1 text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary" href="#">Dashboard</a>
+<a class="px-4 py-1 text-xs font-bold uppercase tracking-widest text-primary bg-primary/10 border-b-2 border-primary" href="#">Syllabus</a>
+<a class="px-4 py-1 text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary" href="#">Intel</a>
+<a class="px-4 py-1 text-xs font-bold uppercase tracking-widest text-primary/60 hover:text-primary transition-colors border-b-2 border-transparent hover:border-primary" href="#">Logout</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 bg-black/40 border border-primary/20 px-3 py-1 rounded">
+<span class="material-symbols-outlined text-primary text-sm">database</span>
+<span class="text-[10px] font-mono uppercase text-primary/80">Syncing: Sector 04</span>
+</div>
+<div class="relative group">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-sm size-10 border-2 border-primary/50 group-hover:border-primary cursor-pointer transition-all" data-alt="Avatar of military officer pilot character" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB2XHVo-l6zl4cjNcDEL5xfXv5NNH6I09pik4_mP6LOaWYs7oyjJ8d8Q3whJrlA6nKKrFVCv3ceP1U6cH7OQAlXMzfLmT-mDwX2z6vop-Ba7PL5A490tkA8UFzE53p2FHBvAnEiCDfL1WHkYgW3Mtg_WFkYmlmucNUSPuCmruf325Veb1JQ4DDXMeZaiS5xVl0OTMM6trzvbhGzMv9LEIZOYJlHHyClZvr5pNEaFUzfw2mGkNaoA4OcEwlsKtVf9bgWHFUYslvFuE4");'></div>
+</div>
+</div>
+</header>
+<main class="flex flex-1 overflow-hidden p-6 gap-6 relative">
+<!-- Left Sidebar: Mission Parameters -->
+<aside class="w-72 flex flex-col gap-6 z-10">
+<div class="bg-panel border-2 border-border-red p-4 beveled h-full flex flex-col gap-6">
+<div>
+<h1 class="text-primary text-lg font-black tracking-tighter uppercase italic">Mission Parameters</h1>
+<p class="text-white/40 text-[10px] font-mono uppercase">V1 Tactical Interface // Active</p>
+</div>
+<div class="flex flex-col gap-1">
+<div class="group flex items-center justify-between p-2 bg-primary/10 border border-primary/30 cursor-pointer hover:bg-primary/20 transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">calculate</span>
+<p class="text-xs font-bold uppercase tracking-tighter">Math Missions</p>
+</div>
+<div class="size-2 bg-primary animate-pulse"></div>
+</div>
+<div class="group flex items-center justify-between p-2 border border-transparent hover:border-primary/30 cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-white/40 text-xl">terminal</span>
+<p class="text-xs font-bold uppercase tracking-tighter text-white/60">CS Objectives</p>
+</div>
+</div>
+<div class="group flex items-center justify-between p-2 border border-transparent hover:border-primary/30 cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-white/40 text-xl">menu_book</span>
+<p class="text-xs font-bold uppercase tracking-tighter text-white/60">History Intel</p>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-6 border-t border-primary/20">
+<div class="bg-black p-3 recessed mb-4">
+<p class="text-[10px] text-primary font-mono uppercase mb-1">Grid Density</p>
+<div class="h-1 w-full bg-white/10 relative">
+<div class="absolute inset-y-0 left-0 bg-primary w-2/3 shadow-[0_0_8px_#ff2e2e]"></div>
+</div>
+</div>
+<button class="w-full bg-primary text-black font-black py-3 beveled-out flex items-center justify-center gap-2 hover:bg-red-500 active:translate-y-0.5 transition-all">
+<span class="material-symbols-outlined font-bold">add_task</span>
+<span class="uppercase tracking-tighter italic">New Objective</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Center Content: Tactical Calendar -->
+<section class="flex-1 flex flex-col gap-6">
+<!-- Top Status Bar -->
+<div class="flex items-end justify-between px-2">
+<div>
+<p class="text-white text-4xl font-black leading-none tracking-tighter uppercase italic">Tactical Calendar Grid</p>
+<p class="text-primary text-xs font-mono uppercase tracking-[0.2em] mt-1">Sector Status: <span class="animate-pulse">Active Scanning...</span></p>
+</div>
+<div class="flex gap-2">
+<button class="bg-[#1a1a24] border border-primary/30 px-3 py-1 flex items-center gap-2 beveled hover:bg-primary/10">
+<span class="material-symbols-outlined text-primary text-sm">warning</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-primary">High Priority</span>
+</button>
+<button class="bg-[#1a1a24] border border-white/10 px-3 py-1 flex items-center gap-2 beveled hover:bg-white/5">
+<span class="material-symbols-outlined text-white/60 text-sm">skull</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-white/60">Boss Fights</span>
+</button>
+</div>
+</div>
+<!-- Recessed Metallic Grid -->
+<div class="flex-1 recessed border-4 border-[#252530] p-4 relative overflow-hidden">
+<!-- Grid Background Lines -->
+<div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: radial-gradient(circle, #fff 1px, transparent 1px); background-size: 40px 40px;"></div>
+<div class="grid grid-cols-7 gap-1 h-full font-mono relative z-10">
+<!-- Day Headers -->
+<div class="contents">
+<div class="text-center p-2 text-[10px] text-white/40 uppercase font-black tracking-widest border-b border-primary/20">Mon</div>
+<div class="text-center p-2 text-[10px] text-white/40 uppercase font-black tracking-widest border-b border-primary/20">Tue</div>
+<div class="text-center p-2 text-[10px] text-white/40 uppercase font-black tracking-widest border-b border-primary/20">Wed</div>
+<div class="text-center p-2 text-[10px] text-white/40 uppercase font-black tracking-widest border-b border-primary/20">Thu</div>
+<div class="text-center p-2 text-[10px] text-white/40 uppercase font-black tracking-widest border-b border-primary/20">Fri</div>
+<div class="text-center p-2 text-[10px] text-white/40 uppercase font-black tracking-widest border-b border-primary/20">Sat</div>
+<div class="text-center p-2 text-[10px] text-white/40 uppercase font-black tracking-widest border-b border-primary/20">Sun</div>
+</div>
+<!-- Calendar Days -->
+<!-- Row 1 -->
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between opacity-30">
+<span class="text-xs">28</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between opacity-30">
+<span class="text-xs">29</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between opacity-30">
+<span class="text-xs">30</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">01</span>
+<div class="bg-primary/20 border border-primary/40 p-1 text-[8px] uppercase font-bold leading-tight">Objective 1A</div>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">02</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">03</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">04</span>
+</div>
+<!-- Row 2 -->
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between bg-white/[0.02]">
+<span class="text-xs">05</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">06</span>
+</div>
+<div class="border border-primary/60 p-2 min-h-[100px] flex flex-col justify-between relative bg-primary/5">
+<div class="absolute top-1 right-1 size-2 bg-primary shadow-[0_0_8px_#ff2e2e] rounded-full animate-ping"></div>
+<span class="text-xs font-bold text-primary">07</span>
+<div class="flex flex-col gap-1">
+<div class="bg-primary p-1 text-[8px] text-black font-black uppercase">Boss Encounter: Quiz 04</div>
+<div class="bg-white/10 p-1 text-[8px] uppercase font-bold">Lab Submission</div>
+</div>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">08</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">09</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">10</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">11</span>
+</div>
+<!-- Row 3 -->
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">12</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">13</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between bg-white/[0.02]">
+<span class="text-xs">14</span>
+<div class="border-t-2 border-primary pt-1">
+<div class="bg-primary/10 border border-primary/30 p-1 text-[8px] uppercase font-bold">Midterm Phase</div>
+</div>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">15</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">16</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">17</span>
+</div>
+<div class="border border-white/5 p-2 min-h-[100px] flex flex-col justify-between">
+<span class="text-xs">18</span>
+</div>
+</div>
+<!-- Corner Bolts -->
+<div class="absolute top-1 left-1 size-3 border-2 border-[#333] rounded-full flex items-center justify-center"><div class="w-1 h-0.5 bg-[#333]"></div></div>
+<div class="absolute top-1 right-1 size-3 border-2 border-[#333] rounded-full flex items-center justify-center"><div class="w-1 h-0.5 bg-[#333]"></div></div>
+<div class="absolute bottom-1 left-1 size-3 border-2 border-[#333] rounded-full flex items-center justify-center"><div class="w-1 h-0.5 bg-[#333]"></div></div>
+<div class="absolute bottom-1 right-1 size-3 border-2 border-[#333] rounded-full flex items-center justify-center"><div class="w-1 h-0.5 bg-[#333]"></div></div>
+</div>
+</section>
+<!-- Right Sidebar: Stats & Spaced Repetition -->
+<aside class="w-80 flex flex-col gap-6 z-10">
+<!-- Stats Grid -->
+<div class="flex flex-col gap-4">
+<div class="bg-panel border-2 border-border-red p-4 beveled">
+<p class="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Days to Finals</p>
+<div class="flex items-baseline justify-between">
+<p class="seven-segment text-4xl font-bold text-primary glow-red">14</p>
+<p class="text-xs font-mono text-primary animate-pulse">-2%</p>
+</div>
+</div>
+<div class="bg-panel border-2 border-border-red p-4 beveled">
+<p class="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Memory Integrity</p>
+<div class="flex items-baseline justify-between">
+<p class="seven-segment text-4xl font-bold text-primary glow-red">88%</p>
+<p class="text-xs font-mono text-green-500">+5%</p>
+</div>
+</div>
+</div>
+<!-- Spaced Repetition Log -->
+<div class="flex-1 bg-panel border-2 border-border-red p-4 beveled flex flex-col">
+<div class="mb-4">
+<h3 class="text-xs font-black uppercase italic tracking-tighter">Combat Log: Memory</h3>
+<div class="h-px bg-primary/30 mt-1"></div>
+</div>
+<div class="flex-1 font-mono text-[10px] text-white/70 overflow-y-auto pr-2 flex flex-col gap-3">
+<div class="flex flex-col gap-1 border-l border-primary/40 pl-2">
+<span class="text-primary/50">[12:44:02]</span>
+<span class="text-white">DEPLOYING: CALCULUS_II RECAP</span>
+<span class="text-primary text-[8px]">PROBABILITY: 0.94</span>
+</div>
+<div class="flex flex-col gap-1 border-l border-primary/40 pl-2">
+<span class="text-primary/50">[13:01:55]</span>
+<span class="text-white">UPCOMING: DATA_STRUCTS_OBJ</span>
+<span class="text-yellow-500/80 text-[8px]">URGENCY: CRITICAL</span>
+</div>
+<div class="flex flex-col gap-1 border-l border-primary/40 pl-2">
+<span class="text-primary/50">[13:15:20]</span>
+<span class="text-white">SYNCING: HIST_202_INTEL</span>
+<span class="text-green-500 text-[8px]">READY FOR DEPLOYMENT</span>
+</div>
+<div class="flex flex-col gap-1 border-l border-white/10 pl-2 opacity-40">
+<span class="text-white/30">[14:00:00]</span>
+<span class="text-white">SYSTEM_IDLE: PENDING_INPUT</span>
+</div>
+</div>
+<div class="mt-4 recessed p-2 border border-white/5">
+<div class="flex items-center gap-2">
+<div class="size-2 bg-primary rounded-full animate-pulse"></div>
+<span class="text-[9px] font-mono text-primary uppercase">Recording Session...</span>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Bottom Stats Bar -->
+<footer class="h-8 bg-[#0a0a0f] border-t-2 border-primary/30 px-8 flex items-center justify-between text-[10px] font-mono font-bold text-white/40 uppercase tracking-widest z-40">
+<div class="flex items-center gap-8">
+<span class="flex items-center gap-2"><span class="size-1 bg-primary rounded-full"></span> SYSTEM STATUS: OPTIMAL</span>
+<span class="flex items-center gap-2"><span class="size-1 bg-green-500 rounded-full"></span> CONNECTION: STABLE</span>
+</div>
+<div class="flex items-center gap-4">
+<span>COORD: 34.0522 N, 118.2437 W</span>
+<span class="text-primary">V1.0.4-TACTICAL</span>
+</div>
+</footer>
+</div>
+</body></html>

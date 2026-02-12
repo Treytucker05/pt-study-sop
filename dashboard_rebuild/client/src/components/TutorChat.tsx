@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
   Send,
@@ -33,6 +32,7 @@ interface ChainBlock {
 
 interface TutorChatProps {
   sessionId: string | null;
+  engine?: string;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
   onSessionEnd: () => void;
   chainBlocks?: ChainBlock[];
@@ -42,6 +42,7 @@ interface TutorChatProps {
 
 export function TutorChat({
   sessionId,
+  engine,
   onArtifactCreated,
   onSessionEnd,
   chainBlocks = [],
@@ -93,8 +94,26 @@ export function TutorChat({
       const response = await fetch(`/api/tutor/session/${sessionId}/turn`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ message: userMessage, ...(engine ? { engine } : {}) }),
       });
+
+      if (!response.ok) {
+        let message = `HTTP ${response.status} ${response.statusText}`;
+        try {
+          const text = await response.text();
+          if (text) {
+            try {
+              const parsed = JSON.parse(text) as { error?: string };
+              message = parsed.error || text;
+            } catch {
+              message = text;
+            }
+          }
+        } catch {
+          // ignore parse failures and keep status text
+        }
+        throw new Error(message);
+      }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -217,7 +236,7 @@ export function TutorChat({
     } finally {
       setIsStreaming(false);
     }
-  }, [input, sessionId, isStreaming, onArtifactCreated]);
+  }, [input, sessionId, isStreaming, engine, onArtifactCreated]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -405,7 +424,6 @@ export function TutorChat({
         </Button>
       </div>
 
-      {/* Input */}
       <div className="flex items-center gap-2 p-3 border-t-2 border-primary/20">
         <input
           ref={inputRef}

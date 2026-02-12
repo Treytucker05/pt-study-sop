@@ -1,23 +1,27 @@
 {
   "mcpServers": {
-    "filesystem": { "command": "cmd", "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "."] },
+    "filesystem": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "."]
+    },
     "github": {
       "command": "cmd",
-      "args": [
-        "/c",
-        "set PATH=C:\\nvm4w\\nodejs;C:\\Users\\treyt\\AppData\\Roaming\\npm;%PATH%&& npx -y @modelcontextprotocol/server-github"
-      ]
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-github"]
     },
     "memory": {
       "command": "cmd",
-      "args": [
-        "/c",
-        "set PATH=C:\\nvm4w\\nodejs;C:\\Users\\treyt\\AppData\\Roaming\\npm;%PATH%&& npx -y @modelcontextprotocol/server-memory"
-      ]
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-memory"]
     },
     "codex-cli": {
       "command": "cmd",
-      "args": ["/c", "set PATH=C:\\nvm4w\\nodejs;C:\\Users\\treyt\\AppData\\Roaming\\npm;%PATH%&& npx -y @cexll/codex-mcp-server"]
+      "args": ["/c", "npx", "-y", "@cexll/codex-mcp-server"]
+    },
+    "stitch": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@_davideast/stitch-mcp", "proxy"],
+      "env": {
+        "STITCH_API_KEY": "AQ.Ab8RN6KbQ9kwkEBoB99ilag-pk1Gt-uCHIBf3uoMpSziCaT4PQ"
+      }
     }
   }
 }

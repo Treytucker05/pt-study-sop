@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Brain Session Terminal (V1 Match)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff2e2e",
+                        "background-light": "#f0f2f5",
+                        "background-dark": "#0a0a0f",
+                        "panel": "#1a1a24",
+                        "accent-green": "#50FF00"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .arcade-bevel {
+            box-shadow: inset 2px 2px 0px rgba(255,255,255,0.1), inset -2px -2px 0px rgba(0,0,0,0.8);
+        }
+        .arcade-button-active {
+            box-shadow: 0 0 15px #ff2e2e, inset 0 0 5px #ff2e2e;
+            border: 2px solid #ff2e2e;
+        }
+        .digital-glow {
+            text-shadow: 0 0 8px #ff2e2e;
+        }
+        .recessed-panel {
+            background: #14141d;
+            border: 2px solid #2d2d3d;
+            box-shadow: inset 4px 4px 10px rgba(0,0,0,0.5);
+        }
+        .scanline-flicker {
+            animation: flicker 0.15s infinite;
+        }
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-background-dark font-display text-white selection:bg-primary/40 overflow-x-hidden selection:text-white">
+<div class="crt-overlay"></div>
+<!-- Main Container -->
+<div class="relative flex min-h-screen flex-col">
+<!-- Header / TopNavBar -->
+<header class="sticky top-0 z-50 bg-background-dark/95 border-b-4 border-[#1f1f2e] px-4 md:px-10 py-4 flex items-center justify-between arcade-bevel">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<div class="size-10 bg-primary rounded flex items-center justify-center shadow-[0_0_15px_rgba(255,46,46,0.5)]">
+<span class="material-symbols-outlined text-white text-3xl">psychology</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-xl font-bold tracking-tighter leading-none italic uppercase">Brain Terminal</h1>
+<span class="text-[10px] text-primary font-mono tracking-[0.2em] font-bold">VERSION 1.0.4-ALPHA</span>
+</div>
+</div>
+<nav class="hidden lg:flex items-center gap-2 ml-8">
+<a class="px-4 py-2 bg-[#1f1f2e] arcade-bevel text-xs font-bold tracking-widest hover:bg-primary/20 transition-all border-2 border-transparent arcade-button-active" href="#">SYSTEM</a>
+<a class="px-4 py-2 bg-[#1f1f2e] arcade-bevel text-xs font-bold tracking-widest hover:bg-primary/20 transition-all border-2 border-transparent" href="#">HISTORY</a>
+<a class="px-4 py-2 bg-[#1f1f2e] arcade-bevel text-xs font-bold tracking-widest hover:bg-primary/20 transition-all border-2 border-transparent" href="#">CORE</a>
+<a class="px-4 py-2 bg-[#1f1f2e] arcade-bevel text-xs font-bold tracking-widest text-primary hover:bg-primary/10 transition-all border-2 border-primary/30" href="#">UPGRADE</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex flex-col items-end mr-4">
+<span class="text-[10px] text-gray-500 font-mono">CONNECTION_STABLE</span>
+<span class="text-xs text-accent-green font-mono">LATENCY: 14MS</span>
+</div>
+<div class="size-10 rounded-full border-2 border-primary/50 p-0.5 arcade-bevel">
+<img class="w-full h-full rounded-full object-cover grayscale brightness-125 contrast-125" data-alt="Cyberpunk character portrait with neon highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA50ZLWu7lBGjNm-zEQAfadoVlVkbKmy_gUQ1T2P9ia2M9EYn9WC9gvA4k-7CnSKb3HsZzeXjlHnPFhkRjkzlEzWCRR957ntLgbA0k8BWhlQOL-x6H_Yh1Xh3vMwn9fyIDW9i5S65m_RQIlxHVE5DKOWtBXvvWXL_HTjlObEDElAVH3oWsPUnpzfLvryOBTfIC4fbc-o9oTD7KFhIiJs2U_azAbS9dBnD9HBgFQR6clvKqnh2dx7m8EYaV96uAmIwWa5XBJlxTn6Sw"/>
+</div>
+</div>
+</header>
+<!-- Main Layout Content -->
+<main class="flex-1 max-w-[1400px] mx-auto w-full p-6 lg:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Fast Entry Terminal -->
+<section class="lg:col-span-5 flex flex-col gap-6">
+<div class="bg-[#1f1f2e] p-1 arcade-bevel rounded-lg">
+<div class="recessed-panel p-6 rounded">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-primary font-bold tracking-[0.1em] uppercase text-sm flex items-center gap-2">
+<span class="size-2 bg-primary rounded-full animate-pulse"></span>
+                                Fast Entry Terminal
+                            </h2>
+<span class="material-symbols-outlined text-gray-600">terminal</span>
+</div>
+<div class="relative group">
+<div class="absolute -inset-1 bg-primary/20 rounded blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
+<textarea class="relative w-full h-64 bg-black/50 border-2 border-[#2d2d3d] p-4 font-mono text-sm text-accent-green focus:ring-0 focus:border-primary transition-colors placeholder:text-gray-700 resize-none" placeholder="&gt; ENTER NEURAL PROMPT HERE..."></textarea>
+</div>
+<div class="mt-6 flex flex-wrap gap-3">
+<button class="flex-1 bg-primary px-6 py-4 rounded text-sm font-black tracking-widest uppercase arcade-bevel active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 hover:bg-primary/90">
+<span class="material-symbols-outlined text-lg">bolt</span>
+                                Transmit
+                            </button>
+<button class="bg-[#2d2d3d] px-6 py-4 rounded text-sm font-black tracking-widest uppercase arcade-bevel active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 hover:bg-[#3d3d4d]">
+<span class="material-symbols-outlined text-lg">content_copy</span>
+                                Duplicate
+                            </button>
+</div>
+</div>
+</div>
+<!-- Mini Status Widgets -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-[#1f1f2e] p-4 arcade-bevel rounded flex flex-col items-center justify-center">
+<span class="text-[10px] text-gray-400 uppercase tracking-tighter mb-1">Total Sync Time</span>
+<span class="text-3xl font-mono digital-glow text-primary leading-none">142:08</span>
+</div>
+<div class="bg-[#1f1f2e] p-4 arcade-bevel rounded flex flex-col items-center justify-center">
+<span class="text-[10px] text-gray-400 uppercase tracking-tighter mb-1">Cores Active</span>
+<span class="text-3xl font-mono digital-glow text-accent-green leading-none">09</span>
+</div>
+</div>
+</section>
+<!-- Right Column: Latest Neural Logs -->
+<section class="lg:col-span-7 flex flex-col">
+<div class="bg-[#1f1f2e] p-1 arcade-bevel rounded-lg h-full">
+<div class="recessed-panel h-full rounded flex flex-col">
+<div class="p-6 flex items-center justify-between border-b border-[#2d2d3d]">
+<h2 class="text-white font-bold tracking-[0.1em] uppercase text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">analytics</span>
+                                Latest Neural Logs
+                            </h2>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 text-[10px] font-mono text-gray-500">
+<span class="size-2 bg-accent-green rounded-full"></span>
+                                    ONLINE
+                                </div>
+<button class="text-gray-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-x-auto">
+<table class="w-full text-left font-mono text-xs border-collapse">
+<thead class="bg-black/40 text-gray-400 uppercase tracking-widest sticky top-0">
+<tr>
+<th class="px-6 py-4 font-bold border-b border-[#2d2d3d]">Rank</th>
+<th class="px-6 py-4 font-bold border-b border-[#2d2d3d]">Session_ID</th>
+<th class="px-6 py-4 font-bold border-b border-[#2d2d3d]">Time</th>
+<th class="px-6 py-4 font-bold border-b border-[#2d2d3d]">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#2d2d3d]">
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-5 text-primary digital-glow font-bold">01</td>
+<td class="px-6 py-5 text-white">NEURAL_SYNC_09 <span class="text-[10px] text-gray-600 block">ALPHA_SEC_7</span></td>
+<td class="px-6 py-5">
+<span class="bg-[#2d2d3d] px-2 py-1 rounded text-accent-green">00:45:12</span>
+</td>
+<td class="px-6 py-5">
+<span class="px-3 py-1 bg-accent-green/10 text-accent-green border border-accent-green/30 rounded-full text-[10px] font-black uppercase tracking-widest">Completed</span>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-5 text-primary digital-glow font-bold">02</td>
+<td class="px-6 py-5 text-white">CORE_DUMP_ALPHA <span class="text-[10px] text-gray-600 block">SYS_ADMIN</span></td>
+<td class="px-6 py-5">
+<span class="bg-[#2d2d3d] px-2 py-1 rounded text-accent-green">01:12:05</span>
+</td>
+<td class="px-6 py-5">
+<span class="px-3 py-1 bg-accent-green/10 text-accent-green border border-accent-green/30 rounded-full text-[10px] font-black uppercase tracking-widest">Completed</span>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-5 text-primary digital-glow font-bold">03</td>
+<td class="px-6 py-5 text-white">VOID_PROTOCOL <span class="text-[10px] text-gray-600 block">EXT_BRIDGE</span></td>
+<td class="px-6 py-5">
+<span class="bg-[#2d2d3d] px-2 py-1 rounded text-primary">00:05:30</span>
+</td>
+<td class="px-6 py-5">
+<span class="px-3 py-1 bg-primary/10 text-primary border border-primary/30 rounded-full text-[10px] font-black uppercase tracking-widest">Failed</span>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-5 text-primary digital-glow font-bold">04</td>
+<td class="px-6 py-5 text-white">BRAIN_WAVE_X <span class="text-[10px] text-gray-600 block">NEURO_LAB</span></td>
+<td class="px-6 py-5">
+<span class="bg-[#2d2d3d] px-2 py-1 rounded text-accent-green">00:32:15</span>
+</td>
+<td class="px-6 py-5">
+<span class="px-3 py-1 bg-accent-green/10 text-accent-green border border-accent-green/30 rounded-full text-[10px] font-black uppercase tracking-widest">Completed</span>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-5 text-primary digital-glow font-bold">05</td>
+<td class="px-6 py-5 text-white">DATA_HARVEST <span class="text-[10px] text-gray-600 block">GIGA_NODE</span></td>
+<td class="px-6 py-5">
+<span class="bg-[#2d2d3d] px-2 py-1 rounded text-gray-400">00:15:00</span>
+</td>
+<td class="px-6 py-5">
+<span class="px-3 py-1 bg-gray-500/10 text-gray-500 border border-gray-500/30 rounded-full text-[10px] font-black uppercase tracking-widest">Aborted</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pager -->
+<div class="p-4 border-t border-[#2d2d3d] flex items-center justify-between">
+<span class="text-[10px] text-gray-500 font-mono italic">PAGE_01_OF_24</span>
+<div class="flex gap-2">
+<button class="size-8 bg-[#1f1f2e] arcade-bevel flex items-center justify-center text-gray-400 hover:text-white"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="size-8 bg-[#1f1f2e] arcade-bevel flex items-center justify-center text-gray-400 hover:text-white"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Status Bar Footer -->
+<footer class="mt-auto bg-background-dark border-t-2 border-[#1f1f2e] p-3 flex items-center justify-between px-6 arcade-bevel">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold tracking-widest text-gray-500 uppercase">System Status:</span>
+<span class="text-[10px] font-bold tracking-widest text-accent-green uppercase animate-pulse">Optimal</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold tracking-widest text-gray-500 uppercase">CPU Load:</span>
+<div class="w-32 h-2 bg-[#1a1a24] rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-primary shadow-[0_0_5px_#ff2e2e]" style="width: 42%"></div>
+</div>
+</div>
+</div>
+<div class="hidden md:block">
+<span class="text-[10px] font-mono text-gray-600 tracking-widest uppercase">Encryption_Enabled // Session_Active</span>
+</div>
+</footer>
+</div>
+</body></html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Retro Arcade Study Dashboard V1 - Terminal Edition</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=VT323&amp;family=Share+Tech+Mono&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        :root {
+            --bg-color: #050505;
+            --text-primary: #ff0000;
+            --text-secondary: #ffffff;
+            --text-dim: #888888;
+            --border-color: #333333;
+        }
+        body {
+            background-color: var(--bg-color);
+            background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            font-family: 'VT323', monospace;
+            color: var(--text-primary);
+            text-transform: uppercase;
+        }
+        .terminal-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .command-line::before {
+            content: "> ";
+            color: var(--text-secondary);
+        }
+        .progress-bar {
+            letter-spacing: -1px;
+        }
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 10;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.1;
+            position: fixed;
+            bottom: 100%;
+            pointer-events: none;
+        }
+        h1, h2, h3 {
+            font-family: 'VT323', monospace;
+            letter-spacing: 2px;
+        }
+        .nav-link:hover {
+            background-color: var(--text-primary);
+            color: black;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+<div class="scanline"></div>
+<div class="terminal-container">
+<header class="mb-12 border-b border-[var(--border-color)] pb-6">
+<div class="flex items-start gap-4 mb-8">
+<span class="text-4xl leading-none">&gt;</span>
+<div>
+<h1 class="text-6xl font-bold mb-2 tracking-tighter">TREY'S STUDY SYSTEM</h1>
+<p class="text-[var(--text-dim)]">V.1.0.90 ARCADE_CORE INITIALIZED...</p>
+</div>
+</div>
+<nav class="flex flex-wrap gap-x-8 gap-y-2 text-xl">
+<a class="nav-link px-2 underline decoration-double" href="#">DASHBOARD</a>
+<a class="nav-link px-2" href="#">BRAIN</a>
+<a class="nav-link px-2" href="#">SYLLABUS</a>
+<a class="nav-link px-2" href="#">SCHOLAR</a>
+<a class="nav-link px-2" href="#">TUTOR</a>
+<a class="nav-link px-2" href="#">SYNC_LINK</a>
+</nav>
+</header>
+<main class="space-y-12">
+<section>
+<div class="flex items-center gap-2 mb-6">
+<span class="text-2xl">[SECTION]</span>
+<h2 class="text-3xl font-bold underline">DASHBOARD OVERVIEW</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+<div class="border border-[var(--border-color)] p-4">
+<div class="text-[var(--text-dim)] text-lg mb-1">SESSIONS</div>
+<div class="text-5xl font-bold text-[var(--text-secondary)]">04</div>
+</div>
+<div class="border border-[var(--border-color)] p-4">
+<div class="text-[var(--text-dim)] text-lg mb-1">UPTIME</div>
+<div class="text-5xl font-bold text-[var(--text-secondary)]">3h 41m</div>
+</div>
+<div class="border border-[var(--border-color)] p-4">
+<div class="text-[var(--text-dim)] text-lg mb-1">RANK</div>
+<div class="text-5xl font-bold text-[var(--text-secondary)]">90%</div>
+</div>
+<div class="border border-[var(--border-color)] p-4">
+<div class="text-[var(--text-dim)] text-lg mb-1">CARDS</div>
+<div class="text-5xl font-bold text-[var(--text-secondary)]">0</div>
+</div>
+</div>
+</section>
+<section class="space-y-8">
+<div class="flex items-center gap-2">
+<span class="text-2xl">[SUB-PROCESS]</span>
+<h2 class="text-3xl font-bold underline">ACTIVE INTEL</h2>
+</div>
+<div class="space-y-10">
+<div>
+<h3 class="text-2xl mb-4 text-[var(--text-secondary)] font-bold">PATTERNS &amp; INSIGHTS</h3>
+<div class="space-y-6">
+<div class="font-mono text-2xl">
+<span class="mr-4 text-[var(--text-dim)]">CORE_STABILITY:</span>
+<span class="text-[var(--text-secondary)] progress-bar">[####################]</span>
+<span class="ml-4">100%</span>
+</div>
+<div class="space-y-4">
+<h4 class="text-xl font-bold">FOCUS AREAS:</h4>
+<ul class="list-none space-y-2 pl-4 border-l-2 border-[var(--text-dim)]">
+<li><span class="text-[var(--text-dim)]">•</span> WEAK: <span class="text-[var(--text-secondary)]">None flagged.</span></li>
+<li class="flex flex-wrap gap-x-2">
+<span class="text-[var(--text-dim)]">•</span> STRONG: 
+                                        <span class="text-[var(--text-secondary)] leading-relaxed">
+                                            Week 1 Neuroscience – Glial Cells and Demyelination (MS &amp; GBS), Glial Cells – Astrocyte, Microglia, Ependymal, Myelin &amp; Glial Cells, Neuroscience Introduction – The Neuron.
+                                        </span>
+</li>
+</ul>
+</div>
+<div class="space-y-4 pt-4 border-t border-[var(--border-color)]">
+<h4 class="text-xl font-bold">RETROSPECTIVE:</h4>
+<p class="text-[var(--text-secondary)] text-xl leading-relaxed font-mono">
+                                    Used small-step microloops for each glial cell; Incorporated visual mind maps for dual coding; Stayed fully source-locked to lecture and slides; Connected cell functions to clinical patterns (MS and GBS) effectively. Used hand-drawn mind maps for dual coding; Followed true small-step method for each cell; Clear structure kept notes coordinated; Function-first teaching reinforced understanding; Visual node-jump diagram clarified myelin mechanism; Student-created KWIIK hooks increased retention (Octopus, Swaddle); Active recall and teach-back reinforced long-term retention.
+                                </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="mt-16 pt-8 border-t border-[var(--border-color)] text-[var(--text-dim)]">
+<div class="flex items-center gap-3 text-2xl">
+<span class="text-[var(--text-secondary)] animate-pulse">_</span>
+<span>SYSTEM_LINK_STRBLE</span>
+</div>
+<div class="mt-4 text-sm opacity-50">
+                90S_RETRO_TERMINAL // USER: TREY // AUTH: LVL_9
+            </div>
+</footer>
+</div>
+
+</body></html>

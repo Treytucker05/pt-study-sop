@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aggressive Wavy Battle Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Space+Mono&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff2e2e",
+                        "background-dark": "#0a0a0c",
+                        "panel": "#1a1a1c",
+                        "border-metal": "#3d1818",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "mono": ["Space Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @keyframes scanline-wave {
+            0% { transform: translateY(-100%) skewY(0deg); }
+            50% { transform: translateY(0%) skewY(1deg); }
+            100% { transform: translateY(100%) skewY(0deg); }
+        }
+        @keyframes flicker {
+            0% { opacity: 0.9; stroke-width: 2; }
+            5% { opacity: 0.5; stroke-width: 1; }
+            10% { opacity: 1; stroke-width: 3; }
+            15% { opacity: 0.8; stroke-width: 2; }
+            100% { opacity: 1; stroke-width: 2; }
+        }
+        .scanlines {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%);
+            background-size: 100% 3px;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .scanlines::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent 0%, rgba(255, 46, 46, 0.05) 50%, transparent 100%);
+            animation: scanline-wave 8s linear infinite;
+        }
+        .jagged-panel {
+            clip-path: polygon(
+                0% 5px, 5px 0%, 
+                calc(100% - 20px) 0%, 100% 20px, 
+                100% calc(100% - 5px), calc(100% - 5px) 100%, 
+                15px 100%, 0% calc(100% - 15px)
+            );
+        }
+        .nav-plate {
+            clip-path: polygon(0% 0%, 90% 0%, 100% 100%, 10% 100%);
+        }
+        .crt-warp {
+            transform: perspective(1000px) rotateX(1deg) scale(1.02);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
+        }
+        .electric-border {
+            filter: drop-shadow(0 0 2px #ff2e2e) drop-shadow(0 0 5px rgba(255,46,46,0.5));
+            border-image: linear-gradient(45deg, #ff2e2e, #800000, #ff2e2e) 1;
+        }
+        .electric-glow {
+            animation: flicker 0.15s infinite;
+        }
+        .beveled-metal {
+            box-shadow: inset 2px 2px 0px rgba(255,255,255,0.05), 4px 4px 0px rgba(0,0,0,0.9);
+        }
+        .staggered-shadow {
+            filter: drop-shadow(-4px 4px 0px rgba(0,0,0,0.5));
+        }
+    </style>
+</head>
+<body class="bg-background-dark font-display text-white selection:bg-primary selection:text-white overflow-hidden">
+<div class="relative flex h-screen flex-col">
+<header class="relative z-30 flex h-24 w-full items-center justify-between bg-zinc-900 border-b-4 border-black px-8 staggered-shadow">
+<div class="flex items-center gap-6">
+<div class="relative flex size-16 items-center justify-center bg-black border-2 border-primary/40 jagged-panel electric-glow">
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-4xl animate-pulse">psychology</span>
+</div>
+<svg class="size-full -rotate-90 opacity-40">
+<circle class="text-primary" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="140" stroke-dashoffset="30" stroke-width="4"></circle>
+</svg>
+<div class="absolute -top-1 -right-1 bg-primary text-[8px] font-black px-1 border border-black italic">SYNC:ULTRA</div>
+</div>
+<div class="flex flex-col">
+<h1 class="text-3xl font-black uppercase italic tracking-tighter text-white drop-shadow-[2px_2px_0_rgba(255,46,46,0.5)]">
+                    Trey's <span class="text-primary">Battle System</span>
+</h1>
+<div class="flex items-center gap-2">
+<div class="h-1.5 w-32 bg-black border border-white/10 jagged-panel overflow-hidden">
+<div class="h-full bg-primary w-4/5 shadow-[0_0_10px_#ff2e2e]"></div>
+</div>
+<span class="text-[9px] uppercase font-black text-primary/70 tracking-tighter">Combat Status: Active</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex flex-col items-end mr-4">
+<span class="text-[10px] font-mono text-primary font-bold uppercase tracking-widest bg-black px-2 py-0.5 border-l-2 border-primary">VETERAN_ID: TREY_01</span>
+<span class="text-[9px] font-mono text-white/40 mt-1">CORE_TEMP: OPTIMAL</span>
+</div>
+<div class="size-12 bg-black border-2 border-primary/50 jagged-panel overflow-hidden p-1">
+<img alt="16-bit avatar" class="size-full object-cover grayscale brightness-125" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0ljqsUbgzrD3yVVOXvGXeAfChwnm_fVJdPrzgsE8ZnX1Gousa2pfAhvlOi0cy5nJcP0EUSqX9hrVWU8DPxfFbguxqvQ7VIGVppOkUjLoIflYc1ATFJz_hlndkGGViN5H4iEMOOhF36Bsw7SF-eXBhFfBfogA0dlqcQGp47SXF0J68e8Kl7RuDhv07XI1mqz2gRrBiYekcQRZq6fWQZobJlElPypkzYRcgEu0u2_ZiEJiFRrMMNbfN_7YNKAfwwcb5qIjvOUopAic"/>
+</div>
+</div>
+</header>
+<nav class="relative z-20 flex h-12 w-full items-center bg-[#111113] border-b-2 border-black">
+<div class="flex -ml-4">
+<a class="nav-plate relative flex h-10 items-center px-10 -mr-6 bg-[#2a2a2d] border-r-2 border-black text-white/40 font-black uppercase text-[10px] tracking-tighter hover:bg-white/5 transition-all z-10" href="#">Home</a>
+<a class="nav-plate relative flex h-11 items-center px-12 -mr-6 -mt-1 bg-primary border-r-4 border-black text-white font-black uppercase text-[11px] tracking-widest z-30 shadow-xl electric-glow" href="#">Tutor_Core</a>
+<a class="nav-plate relative flex h-10 items-center px-10 -mr-6 bg-[#2a2a2d] border-r-2 border-black text-white/40 font-black uppercase text-[10px] tracking-tighter hover:bg-white/5 z-20" href="#">Tactics</a>
+<a class="nav-plate relative flex h-10 items-center px-10 -mr-6 bg-[#2a2a2d] border-r-2 border-black text-white/40 font-black uppercase text-[10px] tracking-tighter hover:bg-white/5 z-10" href="#">Vault</a>
+<a class="nav-plate relative flex h-10 items-center px-10 bg-[#2a2a2d] border-r-2 border-black text-white/40 font-black uppercase text-[10px] tracking-tighter hover:bg-white/5 z-0" href="#">Link</a>
+</div>
+</nav>
+<main class="relative flex flex-1 overflow-hidden bg-black p-4 gap-4 crt-warp">
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,46,46,0.05)_0%,transparent_100%)] pointer-events-none"></div>
+<div class="relative flex flex-[3] flex-col bg-zinc-900/50 border-[3px] border-zinc-800 jagged-panel shadow-2xl overflow-hidden">
+<div class="scanlines absolute inset-0 z-40 opacity-40"></div>
+<div class="relative z-50 flex items-center justify-between border-b-2 border-primary/20 bg-black/80 px-6 py-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-lg electric-glow">bolt</span>
+<span class="text-[11px] font-mono font-black uppercase tracking-[0.25em] text-primary">Heavy_Assault_Interface_V9</span>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-1 text-[9px] font-black uppercase bg-primary text-white jagged-panel">Assault</button>
+<button class="px-4 py-1 text-[9px] font-black uppercase bg-zinc-800 text-white/40 hover:text-white jagged-panel">Tactical</button>
+</div>
+</div>
+<div class="relative z-30 flex flex-1 flex-col gap-8 overflow-y-auto p-8 font-mono">
+<div class="flex items-start gap-4">
+<div class="flex-shrink-0 size-14 jagged-panel border-2 border-primary bg-black p-1 electric-glow">
+<img alt="tutor avatar" class="size-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDS3tnTKUi3TQNgIBw8Khp86oaQGrXR5Dcd2VbZDLxpjmRcuZQOJAxLkawjVI9drrM2Zvj9oakafYP5DkDmpuJPsCd2pZRLSKSxXN0__55-3hAaptfypq765G89BT68JpTl5zx02XF2b0-kflh3NYAI-M86i_2WQsdGk1-PRYMDa3ts857EZsiU6Zp2Y2McZhjteYfDYzXUKw6g2tNcQ170QABZ1L80MSS_JMrmX5TYMuenGKdqZzbZuKFU6bt7m0FRypyx7LzdGGo"/>
+</div>
+<div class="flex flex-col gap-2">
+<p class="text-[10px] font-black text-primary tracking-widest uppercase flex items-center gap-2">
+<span class="w-2 h-2 bg-primary animate-pulse"></span> SYSTEM_OVERRIDE
+                        </p>
+<div class="relative max-w-[85%] jagged-panel bg-primary/10 border-l-8 border-primary p-5 text-primary">
+<p class="text-sm leading-relaxed uppercase italic font-bold">READY FOR DEPLOYMENT. NEURAL CHANNELS ARE OVERCLOCKED. INITIATE DATA EXTRACTION SEQUENCE IMMEDIATELY.</p>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-4 flex-row-reverse">
+<div class="flex-shrink-0 size-14 jagged-panel border-2 border-white/20 bg-black p-1">
+<img alt="user avatar" class="size-full object-cover grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHXcIPWDPDomGN0A0Ua3Ti6ElHYtugfwXRmu1KR1EYBGHRbYZCTZIyVsXc4uBjUef2x4BD6LDJ8uSiBFgLYHxsCQ6e1hYkI7s3p6UodiBg6LfiPaeFXQrtVai6SpoVb79laUyOknVG_1qIsJWKQDaVJ_X9LzCNjWp5w0_K2JABcBPFLr5SFKAN7Xsaq79O6BOM6fCLQhlFFhPgczcp009ZADlm6t97XSyVRRnKz7wy1-iShLIk1Z9f49yOFNsPeidDOUvl_7KRXsc"/>
+</div>
+<div class="flex flex-col gap-2 items-end">
+<p class="text-[10px] font-black text-white/30 tracking-widest uppercase">OPERATOR_TREY</p>
+<div class="relative max-w-[85%] jagged-panel bg-white/5 border-r-8 border-zinc-700 p-5 text-white/70">
+<p class="text-sm leading-relaxed uppercase">EXECUTE ANALYSIS ON BACKPROPAGATION VECTORS. I NEED THE RAW CALCULATIONS FOR GRADIENT DESCENT OPTIMIZATION.</p>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="flex-shrink-0 size-14 jagged-panel border-2 border-primary bg-black p-1 electric-glow">
+<img alt="tutor avatar" class="size-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzYnuK2EvY7hwge9G4YEMofgI6zW8vnsdOfe3KsUg-S6xLBmc91p6LQHz67HFKTY4UYNAlkxXj9NO6IpMy_44jbmVaDA3q3ZRsVXB7ARwRCOCtIedtW1WJ_yBD-L07OFq_nGpBWcvNQzrv1BltaWQ7XfwU92TkjJMr7ttxPy4z8IYWpVTJ3ekq9uQite-ftaIMZrc0cDX3m6zE3spQ8uhFLQHD6iMQ363iP2LyIKJelrordF7_1ZOz4DlCYYHja0GsDnLYNqG_Hu4"/>
+</div>
+<div class="flex flex-col gap-2">
+<p class="text-[10px] font-black text-primary tracking-widest uppercase flex items-center gap-2">
+<span class="w-2 h-2 bg-primary animate-pulse"></span> PROCESSING_STRIKE
+                        </p>
+<div class="relative max-w-[85%] jagged-panel bg-primary/20 border-l-8 border-primary p-5 text-primary shadow-[0_0_20px_rgba(255,46,46,0.15)]">
+<p class="text-sm leading-relaxed uppercase italic font-black">TARGET LOCKED. CALCULATING VECTORS... ERROR: AMBIENT NOISE DETECTED. BYPASSING... KNOWLEDGE PAYLOAD INBOUND.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="relative z-50 bg-black/80 p-5 border-t-2 border-zinc-800">
+<div class="flex items-center gap-4 bg-zinc-950 p-3 jagged-panel border-2 border-zinc-800">
+<span class="text-primary font-mono font-black pl-2 text-xl italic">&gt;&gt;</span>
+<input class="flex-1 bg-transparent border-none focus:ring-0 font-mono text-sm text-primary uppercase placeholder:text-primary/10 tracking-widest" placeholder="ENTER COMBAT QUERY..." type="text"/>
+<button class="flex items-center gap-2 bg-primary px-8 py-3 jagged-panel text-xs font-black uppercase text-white hover:brightness-125 electric-glow transition-all">
+                        ENGAGE
+                    </button>
+</div>
+</div>
+</div>
+<aside class="flex flex-1 flex-col gap-4">
+<div class="flex flex-col flex-[2] bg-zinc-900 border-[3px] border-black jagged-panel staggered-shadow overflow-hidden">
+<div class="bg-primary/90 p-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm font-black text-black">radar</span>
+<h2 class="text-[10px] font-black uppercase tracking-widest text-black">Data_Intercept_Array</h2>
+</div>
+<div class="flex-1 p-4 flex flex-col gap-3 overflow-y-auto">
+<div class="group relative flex flex-col gap-1 p-3 bg-black border-l-4 border-primary jagged-panel cursor-pointer hover:translate-x-1 transition-transform">
+<span class="text-[9px] font-black text-primary uppercase">INTEL_NODE_77.X</span>
+<p class="text-[10px] text-white/50 leading-tight">ML_PERCEPTRON_SCHEMATICS_V4.PDF</p>
+</div>
+<div class="group relative flex flex-col gap-1 p-3 bg-black border-l-4 border-zinc-700 jagged-panel cursor-pointer hover:translate-x-1 transition-transform opacity-60">
+<span class="text-[9px] font-black text-zinc-500 uppercase">INTEL_NODE_04.X</span>
+<p class="text-[10px] text-white/50 leading-tight">MULTIDIM_COST_VISUAL.MP4</p>
+</div>
+<div class="group relative flex flex-col gap-1 p-3 bg-black border-l-4 border-zinc-700 jagged-panel cursor-pointer hover:translate-x-1 transition-transform opacity-60">
+<span class="text-[9px] font-black text-zinc-500 uppercase">CORE_WHITE_PAPER</span>
+<p class="text-[10px] text-white/50 leading-tight">ADAM_OPTIM_SEQUENCE.DAT</p>
+</div>
+</div>
+</div>
+<div class="flex-1 grid grid-cols-1 gap-3">
+<div class="bg-black border-2 border-primary/30 jagged-panel p-4 flex flex-col justify-between electric-border">
+<div class="flex justify-between items-center">
+<span class="text-[9px] font-black text-primary/60 uppercase">CORE_LOAD</span>
+<span class="text-xs font-black text-primary animate-pulse">94%</span>
+</div>
+<div class="h-1 bg-zinc-800 mt-2">
+<div class="h-full bg-primary w-[94%] shadow-[0_0_8px_#ff2e2e]"></div>
+</div>
+</div>
+<div class="bg-black border-2 border-zinc-800 jagged-panel p-4 flex flex-col justify-between">
+<div class="flex justify-between items-center">
+<span class="text-[9px] font-black text-white/30 uppercase">MEM_FLUX</span>
+<span class="text-xs font-black text-white/80">4.2GB</span>
+</div>
+<div class="h-1 bg-zinc-800 mt-2">
+<div class="h-full bg-zinc-600 w-[42%]"></div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<footer class="h-8 w-full bg-black flex items-center px-6 justify-between border-t-2 border-primary/20 z-50">
+<div class="flex items-center gap-6">
+<span class="text-[10px] font-mono text-primary flex items-center gap-2 font-bold italic">
+<span class="size-2 bg-primary rounded-full electric-glow"></span> TERMINAL_ONLINE_MASTER_FRAME
+            </span>
+<div class="h-4 w-px bg-zinc-800"></div>
+<span class="text-[9px] font-mono text-white/20 uppercase tracking-widest">LATENCY_MS: 0.003</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1 bg-primary/10 px-2 py-0.5 jagged-panel">
+<span class="text-[9px] font-mono text-primary font-black">ENCRYPTED_LINE_7F</span>
+</div>
+<span class="text-[10px] font-mono text-white/10">v4.0.1_BATTLE_STABLE</span>
+</div>
+</footer>
+</div>
+
+</body></html>

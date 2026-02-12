@@ -196,6 +196,23 @@ export default function Tutor() {
         setMode(session.mode);
         setTopic(session.topic || "");
         setCourseId(session.course_id ?? undefined);
+        setChainId(session.method_chain_id ?? undefined);
+        setCurrentBlockIndex(session.current_block_index ?? 0);
+        setChainBlocks(
+          (session.chain_blocks || []).map((block) => ({
+            id: block.id,
+            name: block.name,
+            category: block.category,
+            duration: block.default_duration_min,
+          }))
+        );
+        if (session.content_filter?.material_ids) {
+          setSelectedMaterials(session.content_filter.material_ids);
+        }
+        if (session.content_filter?.model) {
+          setModel(session.content_filter.model);
+        }
+        setWebSearch(Boolean(session.content_filter?.web_search));
         if (session.artifacts_json) {
           try {
             const parsed = JSON.parse(session.artifacts_json);
@@ -398,6 +415,7 @@ export default function Tutor() {
           <div className="flex-1 bg-black/60 border-x-2 border-primary/20 flex flex-col min-w-0">
             <TutorChat
               sessionId={activeSessionId}
+              engine={model === "buster" ? "buster" : undefined}
               onArtifactCreated={handleArtifactCreated}
               onSessionEnd={endSession}
               chainBlocks={chainBlocks}

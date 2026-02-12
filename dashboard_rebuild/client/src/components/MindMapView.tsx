@@ -20,22 +20,31 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { applyDagreLayout } from "@/lib/mermaid-to-reactflow";
+import { applyDagreLayout, parseMermaid, toMermaid } from "@/lib/mermaid-to-reactflow";
 import {
   MIND_MAP_NODE_TYPES,
   MIND_MAP_DEFAULT_EDGE_OPTIONS,
+  getMindMapNodeStyle,
   type MindMapShape,
 } from "@/components/brain/MindMapNodes";
 import { MindMapToolbar } from "@/components/brain/MindMapToolbar";
 import { MindMapDrawLayer, type DrawStroke } from "@/components/brain/MindMapDrawLayer";
+import { buildBrainCanvasMarkdown, sanitizeCanvasTitle } from "@/components/brain/brainDoc";
+import type { GraphCanvasCommand, GraphCanvasStatus } from "@/components/brain/graph-canvas-types";
 
 // Color indices for curriculum seed: Cyan=6, Yellow=4, Green=3 in CONCEPT_NODE_COLORS
 const SEED_COLOR: Record<string, number> = { course: 6, module: 4, lo: 3 };
 const SEED_SHAPE: Record<string, MindMapShape> = {
-  course: "hexagon",
+  course: "rectangle",
   module: "rectangle",
-  lo: "circle",
+  lo: "rectangle",
 };
+
+interface MindMapViewProps {
+  hideToolbar?: boolean;
+  externalCommand?: GraphCanvasCommand | null;
+  onStatusChange?: (status: GraphCanvasStatus) => void;
+}
 
 interface CurriculumNode {
   id: string;
@@ -48,7 +57,11 @@ interface CurriculumLink {
   target: string;
 }
 
-export function MindMapView() {
+export function MindMapView({
+  hideToolbar = false,
+  externalCommand,
+  onStatusChange,
+}: MindMapViewProps) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChangeBase] = useEdgesState<Edge>([]);
   const [direction, setDirection] = useState<"TB" | "LR">("LR");
@@ -56,8 +69,11 @@ export function MindMapView() {
   const [isDirty, setIsDirty] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
   const [drawStrokes, setDrawStrokes] = useState<DrawStroke[]>([]);
+  const [showMermaidImport, setShowMermaidImport] = useState(false);
+  const [mermaidInput, setMermaidInput] = useState("");
   const reactFlowRef = useRef<HTMLDivElement>(null);
   const didInitRef = useRef(false);
+  const lastCommandIdRef = useRef(0);
   const { toast } = useToast();
 
   // --- Curriculum sidebar state (kept from original) ---
@@ -213,12 +229,15 @@ export function MindMapView() {
       id: cn.id,
       type: "mindmapShape",
       position: { x: 0, y: 0 },
-      data: {
-        label: cn.name,
-        colorIdx: SEED_COLOR[cn.type] ?? 0,
-        shape: SEED_SHAPE[cn.type] ?? "rectangle",
-      },
-      style: { width: 180, height: 50 },
+      data: (() => {
+        const shape = SEED_SHAPE[cn.type] ?? "rectangle";
+        return {
+          label: cn.name,
+          colorIdx: SEED_COLOR[cn.type] ?? 0,
+          shape,
+        };
+      })(),
+      style: getMindMapNodeStyle(SEED_SHAPE[cn.type] ?? "rectangle"),
     }));
 
     const seedEdges: Edge[] = curLinks.map((cl, i) => ({
@@ -248,7 +267,7 @@ export function MindMapView() {
         type: "mindmapShape",
         position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
         data: { label: `Node ${nodeCounter + 1}`, colorIdx: 0, shape },
-        style: { width: 180, height: 50 },
+        style: getMindMapNodeStyle(shape),
       };
       setNodes((nds) => [...nds, newNode]);
       setIsDirty(true);
@@ -281,7 +300,7 @@ export function MindMapView() {
           e.selected
             ? {
                 ...e,
-                style: { ...e.style, stroke, strokeWidth: 2 },
+                style: { ...e.style, stroke, strokeWidth: 2.5 },
                 markerEnd: { type: MarkerType.ArrowClosed, color: stroke },
               }
             : e
@@ -295,7 +314,15 @@ export function MindMapView() {
   const setSelectedShape = useCallback(
     (shape: MindMapShape) => {
       setNodes((nds) =>
-        nds.map((n) => (n.selected ? { ...n, data: { ...n.data, shape } } : n))
+        nds.map((n) =>
+          n.selected && n.type === "mindmapShape"
+            ? {
+                ...n,
+                data: { ...n.data, shape },
+                style: getMindMapNodeStyle(shape),
+              }
+            : n
+        )
       );
       setIsDirty(true);
     },
@@ -366,21 +393,136 @@ export function MindMapView() {
     }
   }, [toast]);
 
+  // --- Mermaid export/import ---
+  const exportMermaid = useCallback(() => {
+    if (nodes.length === 0) {
+      toast({ title: "Nothing to export", description: "Add nodes first", variant: "destructive" });
+      return;
+    }
+
+    const alias = new Map<string, string>();
+    nodes.forEach((node, idx) => {
+      alias.set(node.id, `N${idx + 1}`);
+    });
+
+    const normalizedNodes = nodes.map((node) => ({
+      ...node,
+      id: alias.get(node.id) || node.id,
+      data: {
+        ...node.data,
+        label: String((node.data as { label?: string })?.label || node.id),
+      },
+    }));
+    const normalizedEdges = edges
+      .filter((edge) => alias.has(edge.source) && alias.has(edge.target))
+      .map((edge) => ({
+        ...edge,
+        source: alias.get(edge.source) || edge.source,
+        target: alias.get(edge.target) || edge.target,
+      }));
+
+    const mermaid = toMermaid(normalizedNodes, normalizedEdges, direction);
+    navigator.clipboard.writeText(mermaid);
+    toast({ title: "Mermaid copied to clipboard" });
+  }, [nodes, edges, direction, toast]);
+
+  const importMermaid = useCallback((code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+
+    const parsed = parseMermaid(trimmed);
+    const mappedNodes: Node[] = parsed.nodes.map((node, idx) => ({
+      ...node,
+      id: `mm-import-${idx + 1}`,
+      type: "mindmapShape",
+      data: {
+        label: String((node.data as { label?: string })?.label || node.id),
+        colorIdx: 0,
+        shape: "rectangle",
+      },
+      style: getMindMapNodeStyle("rectangle"),
+    }));
+
+    const idBySource = new Map<string, string>();
+    parsed.nodes.forEach((node, idx) => {
+      idBySource.set(node.id, `mm-import-${idx + 1}`);
+    });
+
+    const mappedEdges: Edge[] = parsed.edges
+      .map((edge, idx) => {
+        const source = idBySource.get(edge.source);
+        const target = idBySource.get(edge.target);
+        if (!source || !target) return null;
+        return {
+          id: `mm-import-e-${idx + 1}`,
+          source,
+          target,
+          ...MIND_MAP_DEFAULT_EDGE_OPTIONS,
+        };
+      })
+      .filter((edge): edge is Edge => edge !== null);
+
+    const laidOut = applyDagreLayout(mappedNodes, mappedEdges, {
+      direction: parsed.direction,
+    });
+
+    setDirection(parsed.direction);
+    setNodes(laidOut);
+    setEdges(mappedEdges);
+    setNodeCounter(mappedNodes.length);
+    setIsDirty(true);
+    toast({ title: "Mermaid imported", description: `${mappedNodes.length} nodes` });
+  }, [setNodes, setEdges, toast]);
+
   // --- Save to Obsidian vault ---
   const saveToVault = useCallback(async () => {
-    const title = (
-      (nodes[0]?.data as { label?: string })?.label || "Untitled"
-    ).replace(/[/\\?%*:|"<>]/g, "-");
-    const payload = JSON.stringify({
+    const title = sanitizeCanvasTitle((nodes[0]?.data as { label?: string })?.label || "Untitled Canvas");
+    const basePath = `Brain Canvas/${title}`;
+    const markdownPath = `${basePath}.md`;
+    const layoutPath = `${basePath}.layout.json`;
+    const strokesPath = `${basePath}.strokes.json`;
+
+    const alias = new Map<string, string>();
+    nodes.forEach((node, idx) => alias.set(node.id, `N${idx + 1}`));
+    const mermaidNodes = nodes.map((node) => ({
+      ...node,
+      id: alias.get(node.id) || node.id,
+      data: {
+        ...node.data,
+        label: String((node.data as { label?: string })?.label || node.id),
+      },
+    }));
+    const mermaidEdges = edges
+      .filter((edge) => alias.has(edge.source) && alias.has(edge.target))
+      .map((edge) => ({
+        ...edge,
+        source: alias.get(edge.source) || edge.source,
+        target: alias.get(edge.target) || edge.target,
+      }));
+    const mermaid = toMermaid(mermaidNodes, mermaidEdges, direction);
+
+    const layoutPayload = JSON.stringify({
       nodes: nodes.map((n) => ({ id: n.id, type: n.type, position: n.position, data: n.data, style: n.style })),
       edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, style: e.style, markerEnd: e.markerEnd })),
-      drawStrokes,
-      meta: { direction, created: new Date().toISOString() },
+      meta: { direction, updated: new Date().toISOString() },
     }, null, 2);
-    const path = `Mind Maps/${title}.mindmap.json`;
+    const strokesPayload = JSON.stringify({
+      strokes: drawStrokes,
+      updated: new Date().toISOString(),
+    }, null, 2);
+    const markdown = buildBrainCanvasMarkdown({
+      mode: "mindmap",
+      title,
+      mermaid,
+      layoutPath,
+      strokesPath,
+    });
+
     try {
-      await api.obsidian.saveFile(path, payload);
-      toast({ title: "Saved to vault", description: path });
+      await api.obsidian.saveFile(layoutPath, layoutPayload);
+      await api.obsidian.saveFile(strokesPath, strokesPayload);
+      await api.obsidian.saveFile(markdownPath, markdown);
+      toast({ title: "Saved to vault", description: markdownPath });
       setIsDirty(false);
     } catch (err) {
       toast({ title: "Save failed", description: String(err), variant: "destructive" });
@@ -392,6 +534,80 @@ export function MindMapView() {
     setDrawStrokes((prev) => [...prev, stroke]);
     setIsDirty(true);
   }, []);
+
+  useEffect(() => {
+    onStatusChange?.({
+      mode: "mindmap",
+      isDirty,
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      canUndo: false,
+      canRedo: false,
+      supportsMermaid: true,
+      supportsDraw: true,
+      selectedLabels: nodes
+        .filter((node) => node.selected)
+        .map((node) => String((node.data as { label?: string })?.label || node.id)),
+    });
+  }, [onStatusChange, isDirty, nodes, edges]);
+
+  useEffect(() => {
+    if (!externalCommand || externalCommand.target !== "mindmap") return;
+    if (externalCommand.id === lastCommandIdRef.current) return;
+    lastCommandIdRef.current = externalCommand.id;
+
+    switch (externalCommand.type) {
+      case "save":
+        void saveToVault();
+        break;
+      case "export_png":
+        void exportPng();
+        break;
+      case "export_mermaid":
+        exportMermaid();
+        break;
+      case "import_mermaid": {
+        const code = typeof externalCommand.payload === "string"
+          ? externalCommand.payload.trim()
+          : "";
+        if (code) {
+          importMermaid(code);
+          setMermaidInput(code);
+          setShowMermaidImport(false);
+        } else {
+          setShowMermaidImport(true);
+        }
+        break;
+      }
+      case "add_node":
+        addNode("rectangle");
+        break;
+      case "delete_selected":
+        deleteSelected();
+        break;
+      case "auto_layout":
+        autoLayout();
+        break;
+      case "toggle_direction":
+        toggleDirection();
+        break;
+      case "toggle_draw":
+        setDrawMode((prev) => !prev);
+        break;
+      default:
+        break;
+    }
+  }, [
+    externalCommand,
+    saveToVault,
+    exportPng,
+    exportMermaid,
+    importMermaid,
+    addNode,
+    deleteSelected,
+    autoLayout,
+    toggleDirection,
+  ]);
 
   const activeCourseModules = allModules.filter((m: any) =>
     selectedCourses.has(m.courseId)
@@ -485,24 +701,59 @@ export function MindMapView() {
 
       {/* Main canvas area */}
       <div className="flex-1 flex flex-col min-h-0">
-        <MindMapToolbar
-          onSeedMap={seedMap}
-          onAddNode={addNode}
-          onDeleteSelected={deleteSelected}
-          onSetNodeColor={setSelectedNodeColor}
-          onSetEdgeColor={setSelectedEdgeColor}
-          onSetShape={setSelectedShape}
-          onAutoLayout={autoLayout}
-          onToggleDirection={toggleDirection}
-          direction={direction}
-          drawMode={drawMode}
-          onToggleDraw={() => setDrawMode((d) => !d)}
-          onExportPng={exportPng}
-          onSaveToVault={saveToVault}
-          nodeCount={nodes.length}
-          edgeCount={edges.length}
-          isDirty={isDirty}
-        />
+        {!hideToolbar && (
+          <MindMapToolbar
+            onSeedMap={seedMap}
+            onAddNode={addNode}
+            onDeleteSelected={deleteSelected}
+            onSetNodeColor={setSelectedNodeColor}
+            onSetEdgeColor={setSelectedEdgeColor}
+            onSetShape={setSelectedShape}
+            onAutoLayout={autoLayout}
+            onToggleDirection={toggleDirection}
+            direction={direction}
+            drawMode={drawMode}
+            onToggleDraw={() => setDrawMode((d) => !d)}
+            onExportPng={exportPng}
+            onSaveToVault={saveToVault}
+            nodeCount={nodes.length}
+            edgeCount={edges.length}
+            isDirty={isDirty}
+          />
+        )}
+        {showMermaidImport && (
+          <div className="shrink-0 px-3 py-2 border-b border-primary/20 bg-black/40 flex flex-col gap-2">
+            <p className="font-arcade text-xs text-primary">PASTE MERMAID TO IMPORT</p>
+            <textarea
+              value={mermaidInput}
+              onChange={(e) => setMermaidInput(e.target.value)}
+              placeholder="graph LR&#10;  A[Course] --> B[Module]"
+              className="min-h-[64px] w-full px-2 py-1.5 font-mono text-xs bg-black/60 border border-primary/30 rounded-none text-foreground placeholder:text-muted-foreground resize-y"
+              rows={4}
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="rounded-none font-terminal text-xs"
+                disabled={!mermaidInput.trim()}
+                onClick={() => {
+                  importMermaid(mermaidInput);
+                  setShowMermaidImport(false);
+                }}
+              >
+                Import
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-none font-terminal text-xs border-primary/30"
+                onClick={() => setShowMermaidImport(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="flex-1 min-h-0 relative" ref={reactFlowRef}>
           <MindMapDrawLayer
             active={drawMode}

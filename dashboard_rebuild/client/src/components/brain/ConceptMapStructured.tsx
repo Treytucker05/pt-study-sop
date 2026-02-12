@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { parseMermaid, toMermaid, applyDagreLayout } from "@/lib/mermaid-to-reactflow";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { buildBrainCanvasMarkdown, sanitizeCanvasTitle } from "./brainDoc";
 import {
   DEFAULT_EDGE_OPTIONS,
   EDGE_COLORS,
@@ -41,11 +42,15 @@ import {
   NODE_TYPES,
 } from "./ConceptMapStructuredConfig";
 import { ConceptMapStructuredImport } from "./ConceptMapStructuredImport";
+import type { GraphCanvasCommand, GraphCanvasStatus } from "./graph-canvas-types";
 
 interface ConceptMapStructuredProps {
   initialMermaid?: string;
   onSave?: (mermaid: string) => void;
   onInitialMermaidConsumed?: () => void;
+  hideToolbar?: boolean;
+  externalCommand?: GraphCanvasCommand | null;
+  onStatusChange?: (status: GraphCanvasStatus) => void;
   className?: string;
 }
 
@@ -53,6 +58,9 @@ export function ConceptMapStructured({
   initialMermaid,
   onSave,
   onInitialMermaidConsumed,
+  hideToolbar = false,
+  externalCommand,
+  onStatusChange,
   className,
 }: ConceptMapStructuredProps) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState<Node>([]);
@@ -66,6 +74,7 @@ export function ConceptMapStructured({
   const [isDirty, setIsDirty] = useState(false);
   const reactFlowRef = useRef<HTMLDivElement>(null);
   const initialMermaidConsumedRef = useRef(false);
+  const lastCommandIdRef = useRef(0);
   const { toast } = useToast();
 
   const importMermaid = useCallback(
@@ -210,12 +219,39 @@ export function ConceptMapStructured({
 
   const saveToVault = useCallback(async () => {
     const code = toMermaid(nodes, edges, direction);
-    const title = ((nodes[0]?.data as { label?: string })?.label || "Untitled").replace(/[/\\?%*:|"<>]/g, "-");
-    const md = `---\ntype: concept-map\ncreated: ${new Date().toISOString()}\n---\n\n# ${title} Concept Map\n\n\`\`\`mermaid\n${code}\n\`\`\`\n`;
-    const path = `Concept Maps/${title}.md`;
+    const title = sanitizeCanvasTitle((nodes[0]?.data as { label?: string })?.label || "Untitled Canvas");
+    const basePath = `Brain Canvas/${title}`;
+    const markdownPath = `${basePath}.md`;
+    const layoutPath = `${basePath}.layout.json`;
+    const layoutJson = JSON.stringify({
+      direction,
+      nodes: nodes.map((n) => ({
+        id: n.id,
+        type: n.type,
+        position: n.position,
+        data: n.data,
+        style: n.style,
+      })),
+      edges: edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        label: e.label,
+        style: e.style,
+        markerEnd: e.markerEnd,
+      })),
+      updated: new Date().toISOString(),
+    }, null, 2);
+    const markdown = buildBrainCanvasMarkdown({
+      mode: "structured",
+      title,
+      mermaid: code,
+      layoutPath,
+    });
     try {
-      await api.obsidian.saveFile(path, md);
-      toast({ title: "Saved to vault", description: path });
+      await api.obsidian.saveFile(layoutPath, layoutJson);
+      await api.obsidian.saveFile(markdownPath, markdown);
+      toast({ title: "Saved to vault", description: markdownPath });
       onSave?.(code);
       setIsDirty(false);
     } catch (err) {
@@ -227,6 +263,77 @@ export function ConceptMapStructured({
     setShowImport(true);
     setMermaidInput(nodes.length > 0 ? toMermaid(nodes, edges, direction) : "");
   }, [nodes, edges, direction]);
+
+  useEffect(() => {
+    onStatusChange?.({
+      mode: "structured",
+      isDirty,
+      nodeCount: nodes.length,
+      edgeCount: edges.length,
+      canUndo: false,
+      canRedo: false,
+      supportsMermaid: true,
+      supportsDraw: false,
+      selectedLabels: nodes
+        .filter((n) => n.selected)
+        .map((n) => String((n.data as { label?: string })?.label || n.id)),
+    });
+  }, [onStatusChange, isDirty, nodes, edges]);
+
+  useEffect(() => {
+    if (!externalCommand || externalCommand.target !== "structured") return;
+    if (externalCommand.id === lastCommandIdRef.current) return;
+    lastCommandIdRef.current = externalCommand.id;
+
+    switch (externalCommand.type) {
+      case "save":
+        void saveToVault();
+        break;
+      case "export_png":
+        void exportPng();
+        break;
+      case "export_mermaid":
+        exportMermaid();
+        break;
+      case "import_mermaid": {
+        const code = typeof externalCommand.payload === "string"
+          ? externalCommand.payload.trim()
+          : "";
+        if (code) {
+          importMermaid(code);
+          setMermaidInput(code);
+        } else {
+          goBackToImport();
+        }
+        break;
+      }
+      case "add_node":
+        addNode();
+        break;
+      case "delete_selected":
+        deleteSelected();
+        break;
+      case "auto_layout":
+        autoLayout();
+        break;
+      case "toggle_direction":
+        toggleDirection();
+        break;
+      default:
+        break;
+    }
+  }, [
+    externalCommand,
+    saveToVault,
+    exportPng,
+    exportMermaid,
+    importMermaid,
+    goBackToImport,
+    addNode,
+    deleteSelected,
+    autoLayout,
+    toggleDirection,
+  ]);
 
   if (showImport && nodes.length === 0) {
     return (
@@ -251,94 +358,96 @@ export function ConceptMapStructured({
         className
       )}
     >
-      <div className="flex items-center gap-1 px-2 py-1 border-b border-secondary/30 bg-black/40 shrink-0 flex-wrap">
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={goBackToImport} title="Back to import">
-          <ArrowLeft className="w-3 h-3" />
-        </Button>
-        <div className="w-px h-4 bg-secondary/30" />
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={addNode} title="Add node">
-          <Plus className="w-3 h-3" />
-        </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={deleteSelected} title="Delete selected">
-          <Trash2 className="w-3 h-3" />
-        </Button>
-        <div className="relative">
+      {!hideToolbar && (
+        <div className="flex items-center gap-1 px-2 py-1 border-b border-secondary/30 bg-black/40 shrink-0 flex-wrap">
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={goBackToImport} title="Back to import">
+            <ArrowLeft className="w-3 h-3" />
+          </Button>
+          <div className="w-px h-4 bg-secondary/30" />
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={addNode} title="Add node">
+            <Plus className="w-3 h-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={deleteSelected} title="Delete selected">
+            <Trash2 className="w-3 h-3" />
+          </Button>
+          <div className="relative">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-1.5 text-xs font-terminal"
+              onClick={() => setShowColorPicker(showColorPicker ? null : "node")}
+              title="Color selected"
+            >
+              <Palette className="w-3 h-3" />
+            </Button>
+            {showColorPicker && (
+              <div className="absolute top-full left-0 mt-1 p-2 bg-black border-2 border-primary/50 z-50 space-y-2 min-w-[160px]">
+                <p className="font-terminal text-xs text-muted-foreground">NODE COLORS</p>
+                <div className="flex flex-wrap gap-1">
+                  {NODE_COLORS.map((c, i) => (
+                    <button
+                      key={c.name}
+                      onClick={() => setSelectedNodeColor(i)}
+                      className={cn("w-5 h-5 border-2 rounded-none", c.border, c.bg)}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+                <p className="font-terminal text-xs text-muted-foreground pt-1">EDGE COLORS</p>
+                <div className="flex flex-wrap gap-1">
+                  {EDGE_COLORS.map((c) => (
+                    <button
+                      key={c.name}
+                      onClick={() => setSelectedEdgeColor(c.stroke)}
+                      className="w-5 h-5 border-2 border-secondary/50 rounded-none"
+                      style={{ backgroundColor: c.stroke }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="w-px h-4 bg-secondary/30" />
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={autoLayout} title="Auto layout">
+            <LayoutGrid className="w-3 h-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={toggleDirection} title={`Direction: ${direction}`}>
+            {direction === "TB" ? <ArrowUpDown className="w-3 h-3" /> : <ArrowLeftRight className="w-3 h-3" />}
+          </Button>
+          <div className="w-px h-4 bg-secondary/30" />
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={exportMermaid} title="Copy Mermaid">
+            <FileText className="w-3 h-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={exportPng} title="Export PNG">
+            <Download className="w-3 h-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={saveToVault} title="Save to vault">
+            <Save className="w-3 h-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
+            {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+          </Button>
           <Button
             size="sm"
             variant="ghost"
             className="h-6 px-1.5 text-xs font-terminal"
-            onClick={() => setShowColorPicker(showColorPicker ? null : "node")}
-            title="Color selected"
+            onClick={() => {
+              setShowImport(true);
+              setNodes([]);
+              setEdges([]);
+            }}
+            title="Import Mermaid"
           >
-            <Palette className="w-3 h-3" />
+            <Import className="w-3 h-3" />
           </Button>
-          {showColorPicker && (
-            <div className="absolute top-full left-0 mt-1 p-2 bg-black border-2 border-primary/50 z-50 space-y-2 min-w-[160px]">
-              <p className="font-terminal text-xs text-muted-foreground">NODE COLORS</p>
-              <div className="flex flex-wrap gap-1">
-                {NODE_COLORS.map((c, i) => (
-                  <button
-                    key={c.name}
-                    onClick={() => setSelectedNodeColor(i)}
-                    className={cn("w-5 h-5 border-2 rounded-none", c.border, c.bg)}
-                    title={c.name}
-                  />
-                ))}
-              </div>
-              <p className="font-terminal text-xs text-muted-foreground pt-1">EDGE COLORS</p>
-              <div className="flex flex-wrap gap-1">
-                {EDGE_COLORS.map((c) => (
-                  <button
-                    key={c.name}
-                    onClick={() => setSelectedEdgeColor(c.stroke)}
-                    className="w-5 h-5 border-2 border-secondary/50 rounded-none"
-                    style={{ backgroundColor: c.stroke }}
-                    title={c.name}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="ml-auto flex items-center gap-2 text-xs font-terminal text-muted-foreground">
+            <span>{nodes.length}N / {edges.length}E</span>
+            <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-destructive" : "bg-success")} />
+            <span>{isDirty ? "Unsaved" : "Saved"}</span>
+          </div>
         </div>
-        <div className="w-px h-4 bg-secondary/30" />
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={autoLayout} title="Auto layout">
-          <LayoutGrid className="w-3 h-3" />
-        </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={toggleDirection} title={`Direction: ${direction}`}>
-          {direction === "TB" ? <ArrowUpDown className="w-3 h-3" /> : <ArrowLeftRight className="w-3 h-3" />}
-        </Button>
-        <div className="w-px h-4 bg-secondary/30" />
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={exportMermaid} title="Copy Mermaid">
-          <FileText className="w-3 h-3" />
-        </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={exportPng} title="Export PNG">
-          <Download className="w-3 h-3" />
-        </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={saveToVault} title="Save to vault">
-          <Save className="w-3 h-3" />
-        </Button>
-        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
-          {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1.5 text-xs font-terminal"
-          onClick={() => {
-            setShowImport(true);
-            setNodes([]);
-            setEdges([]);
-          }}
-          title="Import Mermaid"
-        >
-          <Import className="w-3 h-3" />
-        </Button>
-        <div className="ml-auto flex items-center gap-2 text-xs font-terminal text-muted-foreground">
-          <span>{nodes.length}N / {edges.length}E</span>
-          <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-destructive" : "bg-success")} />
-          <span>{isDirty ? "Unsaved" : "Saved"}</span>
-        </div>
-      </div>
+      )}
 
       <div className="flex-1 min-h-0" ref={reactFlowRef}>
         <ReactFlow

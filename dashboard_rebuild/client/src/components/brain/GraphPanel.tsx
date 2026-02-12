@@ -1,10 +1,8 @@
-import { useState, lazy, Suspense, Component, type ReactNode } from "react";
+import { lazy, Suspense, Component, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const ConceptMapEditor = lazy(() => import("@/components/ConceptMapEditor").then(m => ({ default: m.ConceptMapEditor })));
-const VaultGraphView = lazy(() => import("@/components/VaultGraphView").then(m => ({ default: m.VaultGraphView })));
-const MindMapView = lazy(() => import("@/components/MindMapView").then(m => ({ default: m.MindMapView })));
+const UnifiedBrainCanvas = lazy(() =>
+  import("./UnifiedBrainCanvas").then((m) => ({ default: m.UnifiedBrainCanvas }))
+);
 
 class GraphErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null as string | null };
@@ -38,41 +36,13 @@ function GraphLoading() {
   );
 }
 
-type GraphView = "concept" | "vault" | "mindmap";
-
 export function GraphPanel() {
-  const [view, setView] = useState<GraphView>("concept");
-
-  const views: { id: GraphView; label: string }[] = [
-    { id: "concept", label: "Concept Map" },
-    { id: "vault", label: "Vault Graph" },
-    { id: "mindmap", label: "Mind Map" },
-  ];
-
   return (
     <div className="flex flex-col h-full">
-      {/* Sub-tabs: same height/padding as main tabs, global tab-sub-bar */}
-      <div className="tab-sub-bar" role="tablist" aria-label="Graph view">
-        {views.map((v) => (
-          <button
-            key={v.id}
-            role="tab"
-            aria-selected={view === v.id}
-            onClick={() => setView(v.id)}
-            className={cn("tab-sub-item", view === v.id && "active")}
-          >
-            {v.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Graph content */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <GraphErrorBoundary>
           <Suspense fallback={<GraphLoading />}>
-            {view === "concept" && <ConceptMapEditor />}
-            {view === "vault" && <VaultGraphView />}
-            {view === "mindmap" && <MindMapView />}
+            <UnifiedBrainCanvas />
           </Suspense>
         </GraphErrorBoundary>
       </div>

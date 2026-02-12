@@ -29,8 +29,9 @@ import {
   Loader2,
   Zap,
   Link,
-  Cpu,
+  Bot,
   Cloud,
+  Cpu,
 } from "lucide-react";
 import { MaterialUploader } from "@/components/MaterialUploader";
 import { MaterialSelector } from "@/components/MaterialSelector";
@@ -59,6 +60,8 @@ interface ContentFilterProps {
   compact?: boolean;
 }
 
+
+
 const OPENROUTER_MODELS: { value: string; label: string }[] = [
   { value: "arcee-ai/trinity-large-preview:free", label: "Trinity Large (free)" },
   { value: "qwen/qwen3-coder-next", label: "Qwen3 Coder Next" },
@@ -86,8 +89,6 @@ const MODE_TO_RECOMMENDED_CHAIN: Partial<Record<TutorMode, string>> = {
 };
 
 const LS_AUTOPICK_CHAIN_KEY = "tutor.autopick_chain.v1";
-const LS_LAST_OPENROUTER_MODEL_KEY = "tutor.last_openrouter_model.v1";
-const LS_LAST_CODEX_MODEL_KEY = "tutor.last_codex_model.v1";
 
 function _lsGet(key: string): string | null {
   try {
@@ -172,22 +173,29 @@ export function ContentFilter({
   });
 
   const openrouterEnabled = sources?.openrouter_enabled ?? false;
-
-  const provider: "codex" | "openrouter" = model.includes("/") ? "openrouter" : "codex";
+  const busterEnabled = sources?.buster_enabled ?? false;
+  const provider: "codex" | "openrouter" | "buster" =
+    model === "buster" ? "buster" : model.includes("/") ? "openrouter" : "codex";
 
   useEffect(() => {
-    if (!openrouterEnabled && provider === "openrouter") {
-      // Prevent an OpenRouter model from being selected when the key is missing.
+    if (!openrouterEnabled && provider === "openrouter") setModel("codex");
+    if (!busterEnabled && provider === "buster") setModel("codex");
+  }, [openrouterEnabled, busterEnabled, provider, setModel]);
+
+  const setProvider = (next: "codex" | "openrouter" | "buster") => {
+    if (next === "codex") {
       setModel("codex");
+      return;
     }
-  }, [openrouterEnabled, provider, setModel]);
-
-  // Persist last-used model per provider for quick switching.
-  useEffect(() => {
-    if (!model) return;
-    if (model.includes("/")) _lsSet(LS_LAST_OPENROUTER_MODEL_KEY, model);
-    else _lsSet(LS_LAST_CODEX_MODEL_KEY, model);
-  }, [model]);
+    if (next === "openrouter") {
+      if (!openrouterEnabled) return;
+      const fallback = OPENROUTER_MODELS[0]?.value ?? "arcee-ai/trinity-large-preview:free";
+      setModel(model.includes("/") ? model : fallback);
+      return;
+    }
+    if (!busterEnabled) return;
+    setModel("buster");
+  };
 
   const [autoPickChain, setAutoPickChain] = useState<boolean>(() =>
     _lsGetBool(LS_AUTOPICK_CHAIN_KEY, true)
@@ -227,26 +235,6 @@ export function ContentFilter({
       setLastAutoPickMode(next);
     }
   };
-
-  const toCodex = () => {
-    const last = _lsGet(LS_LAST_CODEX_MODEL_KEY);
-    const next = last && !last.includes("/") ? last : "codex";
-    setModel(next);
-  };
-
-  const toOpenrouter = () => {
-    if (!openrouterEnabled) return;
-    const last = _lsGet(LS_LAST_OPENROUTER_MODEL_KEY);
-    const next = last && last.includes("/") ? last : OPENROUTER_MODELS[0].value;
-    setModel(next);
-  };
-
-  // Keep OpenRouter models constrained to the curated list.
-  useEffect(() => {
-    if (provider !== "openrouter") return;
-    if (OPENROUTER_MODELS.some((m) => m.value === model)) return;
-    setModel(OPENROUTER_MODELS[0].value);
-  }, [provider, model, setModel]);
 
   // ─── COMPACT: inline toolbar ───
   if (compact) {
@@ -293,32 +281,29 @@ export function ContentFilter({
           />
         </div>
 
-        {/* Model */}
+        {/* Model/provider */}
         <div>
-          <div className={`${TEXT_SECTION_LABEL} mb-1`}>Model</div>
-          <div className="flex gap-1">
-            <button
-              onClick={toCodex}
-              className={`px-3 h-9 border-2 font-arcade text-xs transition-colors ${
-                provider === "codex"
-                  ? "border-primary bg-primary/20 text-primary"
-                  : "border-primary/30 text-foreground/80 hover:border-primary/50"
-              }`}
+          <div className={`${TEXT_SECTION_LABEL} mb-1`}>Engine</div>
+          <select
+            value={provider}
+            onChange={(e) => setProvider(e.target.value as "codex" | "openrouter" | "buster")}
+            className={`${SELECT_BASE} border-2 border-primary/30 h-9 w-[150px]`}
+          >
+            <option value="codex">Codex</option>
+            <option value="openrouter" disabled={!openrouterEnabled}>OpenRouter</option>
+            <option value="buster" disabled={!busterEnabled}>OpenClaw (Buster)</option>
+          </select>
+          {provider === "openrouter" && (
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className={`${SELECT_BASE} border-2 border-primary/30 h-9 w-[180px] mt-1`}
             >
-              CODEX
-            </button>
-            <button
-              onClick={toOpenrouter}
-              disabled={!openrouterEnabled}
-              className={`px-3 h-9 border-2 font-arcade text-xs transition-colors ${
-                provider === "openrouter"
-                  ? "border-primary bg-primary/20 text-primary"
-                  : "border-primary/30 text-foreground/80 hover:border-primary/50"
-              } ${!openrouterEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              OR
-            </button>
-          </div>
+              {OPENROUTER_MODELS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Web search */}
@@ -613,56 +598,53 @@ export function ContentFilter({
             />
           </div>
 
-          {/* Model selector - vertical stack */}
+          {/* Engine selector */}
           <div>
-            <SectionLabel>Model</SectionLabel>
-
-            <div className="space-y-1 mb-2">
+            <SectionLabel>Engine</SectionLabel>
+            <div className="grid grid-cols-3 gap-1 mb-2">
               <button
-                onClick={toCodex}
-                className={`w-full text-left px-3 py-2 border-2 transition-colors ${
+                onClick={() => setProvider("codex")}
+                className={`text-left px-2 py-2 border-2 transition-colors ${
                   provider === "codex"
                     ? "border-primary bg-primary/20 text-primary"
                     : "border-primary/30 text-foreground/80 hover:border-primary/50 hover:text-foreground hover:bg-black/30"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Cpu className={ICON_SM} />
-                    <div>
-                      <div className="font-arcade text-xs leading-tight">CODEX</div>
-                      <div className={`${TEXT_MUTED} text-xs leading-tight`}>ChatGPT login</div>
-                    </div>
-                  </div>
-                  {provider === "codex" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                <div className="flex items-center gap-1">
+                  <Cpu className={ICON_SM} />
+                  <span className="font-arcade text-xs">CODEX</span>
                 </div>
               </button>
-
               <button
-                onClick={toOpenrouter}
+                onClick={() => setProvider("openrouter")}
                 disabled={!openrouterEnabled}
-                className={`w-full text-left px-3 py-2 border-2 transition-colors ${
+                className={`text-left px-2 py-2 border-2 transition-colors ${
                   provider === "openrouter"
                     ? "border-primary bg-primary/20 text-primary"
                     : "border-primary/30 text-foreground/80 hover:border-primary/50 hover:text-foreground hover:bg-black/30"
                 } ${!openrouterEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Cloud className={ICON_SM} />
-                    <div>
-                      <div className="font-arcade text-xs leading-tight">OPENROUTER</div>
-                      <div className={`${TEXT_MUTED} text-xs leading-tight`}>
-                        {openrouterEnabled ? "API key enabled" : "API key missing"}
-                      </div>
-                    </div>
-                  </div>
-                  {provider === "openrouter" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                <div className="flex items-center gap-1">
+                  <Cloud className={ICON_SM} />
+                  <span className="font-arcade text-xs">OPENROUTER</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setProvider("buster")}
+                disabled={!busterEnabled}
+                className={`text-left px-2 py-2 border-2 transition-colors ${
+                  provider === "buster"
+                    ? "border-amber-400 bg-amber-400/20 text-amber-400"
+                    : "border-primary/30 text-foreground/80 hover:border-amber-400/50 hover:text-foreground hover:bg-black/30"
+                } ${!busterEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <div className="flex items-center gap-1">
+                  <Bot className={ICON_SM} />
+                  <span className="font-arcade text-xs">OPENCLAW</span>
                 </div>
               </button>
             </div>
-
-            {provider === "openrouter" ? (
+            {provider === "openrouter" && (
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
@@ -674,17 +656,10 @@ export function ContentFilter({
                   </option>
                 ))}
               </select>
-            ) : (
-              <input
-                value={model === "codex" ? "" : model}
-                onChange={(e) => setModel(e.target.value.trim() ? e.target.value : "codex")}
-                placeholder="Codex model override (optional)"
-                className={`${INPUT_BASE} border-2 border-primary/30`}
-              />
             )}
           </div>
 
-          {/* Web search toggle - always visible to prevent layout shift */}
+          {/* Web search */}
           <label className={`flex items-center gap-2 cursor-pointer ${provider !== "codex" ? "opacity-50" : ""}`}>
             <Checkbox
               checked={webSearch}
@@ -693,9 +668,6 @@ export function ContentFilter({
             />
             <Globe className={ICON_SM} />
             <span className={`${TEXT_BODY} text-xs`}>Web search</span>
-            {provider !== "codex" && (
-              <span className="text-xs text-muted-foreground">(Codex only)</span>
-            )}
           </label>
 
           {/* Course selector */}

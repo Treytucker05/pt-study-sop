@@ -7,11 +7,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { buildBrainCanvasMarkdown, sanitizeCanvasTitle } from "./brainDoc";
+import type { GraphCanvasCommand, GraphCanvasStatus } from "./graph-canvas-types";
 
 interface ConceptMapFreehandProps {
   className?: string;
   initialSnapshot?: unknown;
   initialTitle?: string;
+  hideToolbar?: boolean;
+  externalCommand?: GraphCanvasCommand | null;
+  onStatusChange?: (status: GraphCanvasStatus) => void;
   onImportMermaid?: (mermaid: string) => void;
 }
 
@@ -19,6 +24,9 @@ export function ConceptMapFreehand({
   className,
   initialSnapshot,
   initialTitle = "Untitled",
+  hideToolbar = false,
+  externalCommand,
+  onStatusChange,
   onImportMermaid,
 }: ConceptMapFreehandProps) {
   const store = useMemo(() => createTLStore(), []);
@@ -31,6 +39,7 @@ export function ConceptMapFreehand({
   const [showMermaidImport, setShowMermaidImport] = useState(false);
   const [mermaidInput, setMermaidInput] = useState("");
   const suppressDirtyRef = useRef(false);
+  const lastCommandIdRef = useRef(0);
   const { toast } = useToast();
 
   const updateUndoRedoState = useCallback(() => {
@@ -93,13 +102,20 @@ export function ConceptMapFreehand({
 
   const handleSave = useCallback(async () => {
     const snapshot = getSnapshot(store);
-    const safeTitle = (title || "Untitled").trim() || "Untitled";
-    const safeName = safeTitle.replace(/[/\\?%*:|"<>]/g, "-");
-    const path = `Concept Maps/${safeName}.tldraw.json`;
+    const safeName = sanitizeCanvasTitle(title);
+    const basePath = `Brain Canvas/${safeName}`;
+    const markdownPath = `${basePath}.md`;
+    const snapshotPath = `${basePath}.tldraw.json`;
+    const markdown = buildBrainCanvasMarkdown({
+      mode: "freehand",
+      title: safeName,
+      snapshotPath,
+    });
     try {
-      await api.obsidian.saveFile(path, JSON.stringify(snapshot, null, 2));
+      await api.obsidian.saveFile(snapshotPath, JSON.stringify(snapshot, null, 2));
+      await api.obsidian.saveFile(markdownPath, markdown);
       setIsDirty(false);
-      toast({ title: "Freehand map saved", description: path });
+      toast({ title: "Freehand map saved", description: markdownPath });
     } catch (err) {
       toast({
         title: "Save failed",
@@ -173,39 +189,78 @@ export function ConceptMapFreehand({
     }
   }, [mermaidInput, onImportMermaid]);
 
+  useEffect(() => {
+    onStatusChange?.({
+      mode: "freehand",
+      isDirty,
+      nodeCount: 0,
+      edgeCount: 0,
+      canUndo,
+      canRedo,
+      supportsMermaid: false,
+      supportsDraw: true,
+      selectedLabels: [],
+    });
+  }, [onStatusChange, isDirty, canUndo, canRedo]);
+
+  useEffect(() => {
+    if (!externalCommand || externalCommand.target !== "freehand") return;
+    if (externalCommand.id === lastCommandIdRef.current) return;
+    lastCommandIdRef.current = externalCommand.id;
+
+    switch (externalCommand.type) {
+      case "save":
+        void handleSave();
+        break;
+      case "export_png":
+        void handleExportPng();
+        break;
+      case "undo":
+        handleUndo();
+        break;
+      case "redo":
+        handleRedo();
+        break;
+      default:
+        break;
+    }
+  }, [externalCommand, handleSave, handleExportPng, handleUndo, handleRedo]);
+
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      <div className="flex items-center gap-1 px-2 py-1 border-b border-primary/20 bg-black/40 shrink-0 flex-wrap">
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Map title..."
-          className="h-7 min-w-[120px] text-xs font-terminal bg-black/40 border-primary/20 rounded-none flex-1 max-w-[180px]"
-        />
-        <div className="w-px h-4 bg-primary/20" />
-        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none" onClick={handleUndo} disabled={!canUndo} title="Undo">
-          <Undo2 className="w-3 h-3" />
-        </Button>
-        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none" onClick={handleRedo} disabled={!canRedo} title="Redo">
-          <Redo2 className="w-3 h-3" />
-        </Button>
-        <div className="w-px h-4 bg-primary/20" />
-        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={handleExportPng} title="Export PNG">
-          <Download className="w-3 h-3 mr-1" />PNG
-        </Button>
-        <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={handleSave} title="Save to vault">
-          <Save className="w-3 h-3 mr-1" />Save
-        </Button>
-        {onImportMermaid && (
-          <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => setShowMermaidImport(true)} title="Import Mermaid">
-            <FileInput className="w-3 h-3 mr-1" />Import
+      {!hideToolbar && (
+        <div className="flex items-center gap-1 px-2 py-1 border-b border-primary/20 bg-black/40 shrink-0 flex-wrap">
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Map title..."
+            className="h-7 min-w-[120px] text-xs font-terminal bg-black/40 border-primary/20 rounded-none flex-1 max-w-[180px]"
+          />
+          <div className="w-px h-4 bg-primary/20" />
+          <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none" onClick={handleUndo} disabled={!canUndo} title="Undo">
+            <Undo2 className="w-3 h-3" />
           </Button>
-        )}
-        <div className="flex items-center gap-1 text-xs font-terminal text-muted-foreground ml-auto">
-          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isDirty ? "bg-destructive" : "bg-success")} />
-          {isDirty ? "Unsaved" : "Saved"}
+          <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none" onClick={handleRedo} disabled={!canRedo} title="Redo">
+            <Redo2 className="w-3 h-3" />
+          </Button>
+          <div className="w-px h-4 bg-primary/20" />
+          <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={handleExportPng} title="Export PNG">
+            <Download className="w-3 h-3 mr-1" />PNG
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={handleSave} title="Save to vault">
+            <Save className="w-3 h-3 mr-1" />Save
+          </Button>
+          {onImportMermaid && (
+            <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => setShowMermaidImport(true)} title="Import Mermaid">
+              <FileInput className="w-3 h-3 mr-1" />Import
+            </Button>
+          )}
+          <div className="flex items-center gap-1 text-xs font-terminal text-muted-foreground ml-auto">
+            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isDirty ? "bg-destructive" : "bg-success")} />
+            {isDirty ? "Unsaved" : "Saved"}
+          </div>
         </div>
-      </div>
+      )}
 
       {showMermaidImport && (
         <div className="shrink-0 px-3 py-2 border-b border-primary/20 bg-black/40 flex flex-col gap-2">

@@ -20,7 +20,19 @@ export interface MindMapImageData {
 
 const NODE_COLORS = CONCEPT_NODE_COLORS;
 
+const DIAMOND_CLIP = "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)";
 const HEXAGON_CLIP = "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)";
+
+const SHAPE_SIZES: Record<MindMapShape, { width: number; height: number }> = {
+  rectangle: { width: 200, height: 72 },
+  circle: { width: 110, height: 110 },
+  diamond: { width: 130, height: 130 },
+  hexagon: { width: 180, height: 96 },
+};
+
+export function getMindMapNodeStyle(shape: MindMapShape): { width: number; height: number } {
+  return { ...SHAPE_SIZES[shape] };
+}
 
 function ShapeWrapper({
   shape,
@@ -33,28 +45,28 @@ function ShapeWrapper({
 }) {
   if (shape === "circle") {
     return (
-      <div className={cn("flex items-center justify-center aspect-square rounded-full", className)}>
-        {children}
+      <div className={cn("w-full h-full rounded-full", className)}>
+        <div className="w-full h-full flex items-center justify-center p-3">{children}</div>
       </div>
     );
   }
   if (shape === "diamond") {
     return (
-      <div className={cn("flex items-center justify-center rotate-45", className)}>
-        <div className="-rotate-45">{children}</div>
+      <div className={cn("w-full h-full", className)} style={{ clipPath: DIAMOND_CLIP }}>
+        <div className="w-full h-full flex items-center justify-center p-3">{children}</div>
       </div>
     );
   }
   if (shape === "hexagon") {
     return (
-      <div className={cn("flex items-center justify-center", className)} style={{ clipPath: HEXAGON_CLIP }}>
-        {children}
+      <div className={cn("w-full h-full", className)} style={{ clipPath: HEXAGON_CLIP }}>
+        <div className="w-full h-full flex items-center justify-center p-3">{children}</div>
       </div>
     );
   }
   return (
-    <div className={cn("flex items-center justify-center rounded-md", className)}>
-      {children}
+    <div className={cn("w-full h-full rounded-md", className)}>
+      <div className="w-full h-full flex items-center justify-center px-3 py-2">{children}</div>
     </div>
   );
 }
@@ -92,8 +104,9 @@ export function MindMapShapeNode({ data, selected, id }: NodeProps) {
     <>
       <NodeResizer
         isVisible={!!selected}
-        minWidth={60}
-        minHeight={30}
+        minWidth={shape === "rectangle" ? 110 : 80}
+        minHeight={shape === "rectangle" ? 48 : 80}
+        keepAspectRatio={shape !== "rectangle"}
         lineClassName="!border-primary"
         handleClassName="!bg-primary !border-primary !w-2 !h-2"
       />
@@ -102,7 +115,7 @@ export function MindMapShapeNode({ data, selected, id }: NodeProps) {
       <ShapeWrapper
         shape={shape}
         className={cn(
-          "w-full h-full px-3 py-2 border-2 font-terminal text-xs text-center min-w-[60px]",
+          "w-full h-full border-2 font-terminal text-xs text-center min-w-[60px]",
           selected
             ? "border-primary text-primary ring-1 ring-primary"
             : `${color.border} ${color.text}`,
