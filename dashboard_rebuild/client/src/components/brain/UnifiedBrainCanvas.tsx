@@ -151,6 +151,10 @@ export function UnifiedBrainCanvas() {
           hideToolbar
           externalCommand={command}
           onStatusChange={handleStatusChange}
+          onImportMermaid={(mermaid) => {
+            setMode("structured");
+            issueCommand("import_mermaid", mermaid, "structured");
+          }}
         />
       );
     }
