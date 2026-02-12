@@ -605,6 +605,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data || {}),
       }),
+    syncMaterialsFolder: (payload: { folder_path: string; allowed_exts?: string[] }) =>
+      request<any>("/tutor/materials/sync", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     uploadMaterial: async (file: File, opts?: { course_id?: number; title?: string; tags?: string }) => {
       const form = new FormData();
       form.append("file", file);
@@ -1156,10 +1161,11 @@ export interface TutorEmbedResult {
 
 export interface Material {
   id: number;
-  title: string;
-  source_path: string;
-  file_type: string;
-  file_size: number;
+  title: string | null;
+  source_path: string | null;
+  folder_path: string | null;
+  file_type: string | null;
+  file_size: number | null;
   course_id: number | null;
   enabled: boolean;
   extraction_error: string | null;

@@ -234,7 +234,7 @@ export default function MethodsPage() {
             {blocksLoading ? (
               <p className="font-terminal text-base text-muted-foreground">Loading methods...</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 card-stagger">
                 {filteredBlocks.map((block) => (
                   <div key={block.id} className="relative group">
                     <MethodBlockCard block={block} />

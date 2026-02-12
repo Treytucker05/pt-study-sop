@@ -372,10 +372,14 @@ def get_retriever(
         def _get_relevant_documents(
             self, query: str, *, run_manager: CallbackManagerForRetrieverRun
         ) -> list[Document]:
+            folder_filter = self.folder_paths_filter
+            if self.material_ids_filter:
+                folder_filter = None
+
             return search_with_embeddings(
                 query,
                 course_id=self.course_id_filter,
-                folder_paths=self.folder_paths_filter,
+                folder_paths=folder_filter,
                 material_ids=self.material_ids_filter,
                 collection_name=self.collection,
                 k=self.top_k,

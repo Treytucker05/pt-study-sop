@@ -93,4 +93,4 @@ Yes, but keep the concurrency model simple:
 ## Repo Helpers
 
 - Create/manage named worktrees: `scripts/agent_worktrees.ps1`
-- One-off session worktrees (timestamped): `scripts/launch_codex_session.ps1`, `scripts/launch_opencode_session.ps1`
+- One-off session worktrees (timestamped): `scripts/launch_codex_session.ps1` (use `-Tool opencode` for Opencode sessions).

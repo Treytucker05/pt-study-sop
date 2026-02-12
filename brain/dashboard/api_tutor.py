@@ -14,6 +14,7 @@ Endpoints:
   POST   /api/tutor/chain                 — Create/extend session chain
   GET    /api/tutor/chain/<id>            — Get chain with linked sessions
   POST   /api/tutor/embed                 — Trigger embedding for rag_docs
+  POST   /api/tutor/materials/sync         — Sync local materials folder to rag_docs
   POST   /api/tutor/materials/upload      — Upload study material
   GET    /api/tutor/materials             — List materials library
   PUT    /api/tutor/materials/<id>        — Update material metadata
@@ -1309,7 +1310,31 @@ def list_materials():
     where = " AND ".join(conditions)
 
     cur.execute(
-        f"""SELECT id, title, file_type, file_size, course_id, topic_tags,
+        f"""SELECT id,
+                   COALESCE(NULLIF(TRIM(title), ''), source_path, 'Material ' || id) as title,
+                   source_path,
+                   COALESCE(folder_path, '') as folder_path,
+                   COALESCE(
+                     file_type,
+                     CASE
+                       WHEN source_path LIKE '%.pdf' THEN 'pdf'
+                       WHEN source_path LIKE '%.PDF' THEN 'pdf'
+                       WHEN source_path LIKE '%.docx' THEN 'docx'
+                       WHEN source_path LIKE '%.DOCX' THEN 'docx'
+                       WHEN source_path LIKE '%.pptx' THEN 'pptx'
+                       WHEN source_path LIKE '%.PPTX' THEN 'pptx'
+                       WHEN source_path LIKE '%.ppt' THEN 'pptx'
+                       WHEN source_path LIKE '%.PPT' THEN 'pptx'
+                       WHEN source_path LIKE '%.md' THEN 'md'
+                       WHEN source_path LIKE '%.MD' THEN 'md'
+                       WHEN source_path LIKE '%.markdown' THEN 'md'
+                       WHEN source_path LIKE '%.txt' THEN 'txt'
+                       WHEN source_path LIKE '%.TXT' THEN 'txt'
+                       WHEN source_path LIKE '%.text' THEN 'txt'
+                       ELSE 'FILE'
+                     END
+                   ) as file_type,
+                   COALESCE(file_size, 0) as file_size, course_id, topic_tags,
                    COALESCE(enabled, 1) as enabled, extraction_error,
                    created_at, updated_at
             FROM rag_docs
@@ -1319,6 +1344,24 @@ def list_materials():
     )
 
     materials = [dict(r) for r in cur.fetchall()]
+    file_size_updates: list[tuple[int, int]] = []
+    for material in materials:
+        try:
+            if int(material.get("file_size") or 0) <= 0:
+                source_path = (material.get("source_path") or "").strip()
+                if source_path and os.path.isfile(source_path):
+                    material["file_size"] = os.path.getsize(source_path)
+                    file_size_updates.append((material["file_size"], material["id"]))
+        except Exception:
+            # Keep safe zero fallback on any filesystem issue.
+            material["file_size"] = int(material.get("file_size") or 0)
+
+    if file_size_updates:
+        cur.executemany(
+            "UPDATE rag_docs SET file_size = ? WHERE id = ?",
+            file_size_updates,
+        )
+        conn.commit()
     conn.close()
 
     return jsonify(materials)
@@ -1563,5 +1606,43 @@ def trigger_embed():
         from tutor_rag import embed_rag_docs
         result = embed_rag_docs(course_id=course_id, folder_path=folder_path, corpus=corpus)
         return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/materials/sync — Sync local materials folder to rag_docs
+# ---------------------------------------------------------------------------
+
+@tutor_bp.route("/materials/sync", methods=["POST"])
+def sync_materials_folder():
+    data = request.get_json(silent=True) or {}
+    folder_path = data.get("folder_path") or os.environ.get("TUTOR_MATERIALS_DIR") or os.environ.get("PT_SCHOOL_MATERIALS_DIR")
+    if not folder_path:
+        return jsonify({"error": "folder_path is required (or set TUTOR_MATERIALS_DIR/PT_SCHOOL_MATERIALS_DIR)"}), 400
+
+    root = Path(folder_path).expanduser()
+    if not root.exists() or not root.is_dir():
+        return jsonify({"error": f"Folder not found: {folder_path}"}), 400
+
+    allowed_exts_raw = data.get("allowed_exts")
+    allowed_exts = set(allowed_exts_raw) if isinstance(allowed_exts_raw, list) and allowed_exts_raw else None
+
+    try:
+        from rag_notes import sync_folder_to_rag
+        from tutor_rag import embed_rag_docs
+
+        sync_result = sync_folder_to_rag(
+            str(root),
+            corpus="materials",
+            allowed_exts=allowed_exts,
+        )
+        embed_result = embed_rag_docs(corpus="materials")
+        return jsonify({
+            "ok": True,
+            "folder": str(root),
+            "sync": sync_result,
+            "embed": embed_result,
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

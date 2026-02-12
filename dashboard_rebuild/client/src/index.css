@@ -49,10 +49,44 @@
 
   --animate-scanline: scanline 8s linear infinite;
   --animate-flicker: flicker 0.15s infinite;
+  --animate-page-enter: page-enter 0.4s ease-out forwards;
+  --animate-card-enter: card-enter 0.35s ease-out forwards;
+  --animate-shimmer: shimmer 1.5s ease-in-out infinite;
+  --animate-phosphor: phosphor-flicker 4s ease-in-out infinite;
+  --animate-accent-pulse: accent-pulse 2s ease-in-out infinite;
+  --animate-scanline-sweep: scanline-sweep 6s linear infinite;
 
   @keyframes scanline {
     0% { transform: translateY(-100%); }
     100% { transform: translateY(100%); }
+  }
+  @keyframes page-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes card-enter {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes phosphor-flicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.8; }
+    94% { opacity: 1; }
+    96% { opacity: 0.9; }
+    97% { opacity: 1; }
+  }
+  @keyframes accent-pulse {
+    0%, 100% { box-shadow: 0 0 4px rgba(204,46,72,0.2); }
+    50% { box-shadow: 0 0 12px rgba(204,46,72,0.4), 0 0 24px rgba(204,46,72,0.1); }
+  }
+  @keyframes scanline-sweep {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
   }
 }
 
@@ -456,6 +490,103 @@
     box-shadow: var(--ds-focus-shadow);
   }
 
+  /* --- Layer 2: Polish — animations & transitions --- */
+
+  /* Page entrance: fade-in + slide up on mount */
+  .page-enter {
+    animation: page-enter 0.4s ease-out forwards;
+  }
+
+  /* Card entrance with stagger: apply to parent, children auto-stagger */
+  .card-stagger > * {
+    opacity: 0;
+    animation: card-enter 0.35s ease-out forwards;
+  }
+  .card-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+  .card-stagger > *:nth-child(2) { animation-delay: 0.1s; }
+  .card-stagger > *:nth-child(3) { animation-delay: 0.15s; }
+  .card-stagger > *:nth-child(4) { animation-delay: 0.2s; }
+  .card-stagger > *:nth-child(5) { animation-delay: 0.25s; }
+  .card-stagger > *:nth-child(6) { animation-delay: 0.3s; }
+  .card-stagger > *:nth-child(n+7) { animation-delay: 0.35s; }
+
+  /* Skeleton loading shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(0 0% 10%) 25%,
+      hsl(0 0% 14%) 50%,
+      hsl(0 0% 10%) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 0;
+  }
+
+  /* --- Layer 3: Personality — CRT effects & glow --- */
+
+  /* CRT scanline overlay — apply to a fixed pseudo-element */
+  .crt-scanlines {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.08) 2px,
+      rgba(0, 0, 0, 0.08) 4px
+    );
+    opacity: 0.4;
+  }
+
+  /* Scanline sweep — single bright line moving down */
+  .crt-sweep {
+    pointer-events: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 9998;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(204, 46, 72, 0.15) 20%,
+      rgba(204, 46, 72, 0.3) 50%,
+      rgba(204, 46, 72, 0.15) 80%,
+      transparent 100%
+    );
+    animation: scanline-sweep 6s linear infinite;
+  }
+
+  /* Phosphor flicker — subtle brightness variation on text */
+  .phosphor-flicker {
+    animation: phosphor-flicker 4s ease-in-out infinite;
+  }
+
+  /* Accent glow — pulsing border glow for key stats */
+  .accent-glow {
+    animation: accent-pulse 2s ease-in-out infinite;
+  }
+
+  /* Background grid texture for page bg */
+  .bg-grid {
+    background-image:
+      linear-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* Card hover lift — combines CRT glow with slight elevation */
+  .card-hover-fx {
+    transition: all var(--ds-transition, 0.12s) ease;
+  }
+  .card-hover-fx:hover {
+    box-shadow: var(--ds-card-hover-shadow);
+    border-color: hsl(var(--primary));
+  }
+
   .hover-elevate {
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
@@ -546,6 +677,18 @@
     .brain-status-dot-pulse,
     .brain-save-flash {
       animation: none;
+    }
+    .page-enter,
+    .card-stagger > *,
+    .phosphor-flicker,
+    .accent-glow {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+    .crt-scanlines,
+    .crt-sweep {
+      display: none;
     }
   }
 }

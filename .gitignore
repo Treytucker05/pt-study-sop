@@ -9,8 +9,6 @@ __pycache__/
 build/
 develop-eggs/
 dist/
-# Exception: track the React dashboard build so fresh clones work
-!brain/static/dist/
 downloads/
 eggs/
 .eggs/

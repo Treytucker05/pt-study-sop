@@ -412,7 +412,7 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-6 max-w-5xl mx-auto">
         {/* Compact Task Preview + Open Brain CTA */}
-        <Card className="bg-black/40 border-2 border-secondary rounded-none">
+        <Card className="bg-black/40 border-2 border-secondary rounded-none card-hover-fx">
           <CardHeader className="border-b border-secondary/50">
             <CardTitle className="font-arcade text-xs flex items-center justify-between">
               <span>TODAY'S FOCUS</span>
@@ -450,7 +450,7 @@ export default function Dashboard() {
         <PlannerKanban tasks={plannerQueue} />
 
         {/* Main Grid — Fix #1: auto rows so cards size to content */}
-        <div className="grid md:grid-cols-2 gap-6 grid-rows-[auto]">
+        <div className="grid md:grid-cols-2 gap-6 grid-rows-[auto] card-stagger">
 
           {/* Study Wheel - Fix #2/#3: streak badge in header, no orphaned heading */}
           <Card className="bg-black/40 border-2 border-primary rounded-none md:col-span-2">
@@ -460,7 +460,7 @@ export default function Dashboard() {
                   <Play className="w-4 h-4" />
                   STUDY_WHEEL
                 </div>
-                <div className="flex items-center gap-2 bg-black/40 border border-secondary px-3 py-1" data-testid="streak-display">
+                <div className="flex items-center gap-2 bg-black/40 border border-secondary px-3 py-1 accent-glow" data-testid="streak-display">
                   <Flame className="w-4 h-4 text-orange-500" />
                   <span className="font-arcade text-sm text-white" data-testid="text-streak">{streakData?.currentStreak || 0}</span>
                   <span className="font-terminal text-xs text-muted-foreground">DAY STREAK</span>

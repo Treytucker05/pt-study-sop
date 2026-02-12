@@ -1,5 +1,6 @@
 param(
   [string]$Task = "",
+  [string]$SessionName = "",
   [string]$WorktreesRoot = "C:\\Users\\treyt\\OneDrive\\Desktop\\pt-study-sop-worktrees",
   [string]$BaseRef = "HEAD",
   [string]$OpenCodeCmd = "opencode",
@@ -8,19 +9,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$scriptRoot = $PSScriptRoot
-$launcher = Join-Path $scriptRoot "new_session_worktree.ps1"
+Write-Host "launch_opencode_session.ps1 is deprecated. Use launch_codex_session.ps1 with -Tool opencode instead."
 
-$output = & $launcher -Task $Task -WorktreesRoot $WorktreesRoot -BaseRef $BaseRef -CopyBacklogEnv
-$worktreeLine = $output | Where-Object { $_ -like "Worktree created:*" } | Select-Object -First 1
-if (-not $worktreeLine) {
-  throw "Unable to parse worktree path from launcher output."
-}
-$worktreePath = $worktreeLine -replace "^Worktree created:\s*", ""
-
-$cmd = $OpenCodeCmd
-if (-not [string]::IsNullOrWhiteSpace($OpenCodeArgs)) {
-  $cmd = "$OpenCodeCmd $OpenCodeArgs"
-}
-
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd `"$worktreePath`"; $cmd"
+& (Join-Path $PSScriptRoot "launch_codex_session.ps1") `
+  -Task $Task `
+  -SessionName $SessionName `
+  -WorktreesRoot $WorktreesRoot `
+  -BaseRef $BaseRef `
+  -Tool "opencode" `
+  -ToolArgs $OpenCodeArgs `
+  -OpenCodeCmd $OpenCodeCmd

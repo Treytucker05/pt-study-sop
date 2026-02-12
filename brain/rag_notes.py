@@ -63,6 +63,27 @@ def _checksum_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _infer_file_type(source_path: str, fallback: str = "other") -> str:
+    path_suffix = Path(source_path).suffix.lower()
+    if path_suffix in {".md", ".markdown"}:
+        return "md"
+    if path_suffix == ".txt":
+        return "txt"
+    if path_suffix == ".docx":
+        return "docx"
+    if path_suffix in {".ppt", ".pptx"}:
+        return "pptx"
+    if path_suffix == ".pdf":
+        return "pdf"
+    if path_suffix == ".mp4":
+        return "mp4"
+    if path_suffix == ".py":
+        return "py"
+    if path_suffix == ".json":
+        return "json"
+    return fallback or "other"
+
+
 def _upsert_rag_doc(
     *,
     source_path: str,
@@ -75,10 +96,16 @@ def _upsert_rag_doc(
     corpus: str = "runtime",
     folder_path: str = "",
     enabled: int = 1,
+    file_type: Optional[str] = None,
+    file_size: Optional[int] = None,
 ) -> int:
     now = datetime.now().isoformat(timespec="seconds")
     conn = _connect()
     cur = conn.cursor()
+    normalized_file_type = (file_type or "").strip().lower()
+    if not normalized_file_type:
+        normalized_file_type = _infer_file_type(source_path, fallback=doc_type)
+    normalized_file_size = int(file_size) if file_size is not None else None
 
     cur.execute(
         "SELECT id, checksum FROM rag_docs WHERE source_path = ? AND COALESCE(corpus, 'runtime') = ?",
@@ -89,6 +116,24 @@ def _upsert_rag_doc(
     if row:
         existing_id = int(row["id"])
         if (row["checksum"] or "") == checksum:
+            cur.execute(
+                """
+                UPDATE rag_docs
+                SET file_type = COALESCE(?, file_type),
+                    file_size = COALESCE(?, file_size),
+                    metadata_json = COALESCE(?, metadata_json),
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    normalized_file_type,
+                    normalized_file_size,
+                    str(metadata),
+                    now,
+                    existing_id,
+                ),
+            )
+            conn.commit()
             conn.close()
             return existing_id
 
@@ -99,6 +144,8 @@ def _upsert_rag_doc(
                 topic_tags = ?,
                 content = ?,
                 doc_type = ?,
+                file_type = ?,
+                file_size = COALESCE(?, file_size),
                 checksum = ?,
                 metadata_json = ?,
                 corpus = ?,
@@ -112,6 +159,8 @@ def _upsert_rag_doc(
                 topic_tags,
                 content,
                 doc_type,
+                normalized_file_type,
+                normalized_file_size,
                 checksum,
                 str(metadata),
                 corpus,
@@ -132,6 +181,8 @@ def _upsert_rag_doc(
             course_id,
             topic_tags,
             doc_type,
+            file_type,
+            file_size,
             content,
             checksum,
             metadata_json,
@@ -140,13 +191,15 @@ def _upsert_rag_doc(
             enabled,
             created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             source_path,
             course_id,
             topic_tags,
             doc_type,
+            normalized_file_type,
+            normalized_file_size,
             content,
             checksum,
             str(metadata),
@@ -241,6 +294,7 @@ def _ingest_document(
 
     checksum = _checksum(content)
     now = datetime.now().isoformat(timespec="seconds")
+    file_size = file_path.stat().st_size if file_path.exists() else None
 
     conn = _connect()
     cur = conn.cursor()
@@ -261,6 +315,22 @@ def _ingest_document(
     if row:
         existing_id = row["id"]
         if row["checksum"] == checksum:
+            cur.execute(
+                """
+                UPDATE rag_docs
+                SET file_size = COALESCE(?, file_size),
+                    metadata_json = COALESCE(?, metadata_json),
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    file_size,
+                    str(metadata),
+                    now,
+                    existing_id,
+                ),
+            )
+            conn.commit()
             conn.close()
             return existing_id
 
@@ -272,6 +342,7 @@ def _ingest_document(
                 content = ?,
                 checksum = ?,
                 metadata_json = ?,
+                file_size = COALESCE(?, file_size),
                 updated_at = ?
             WHERE id = ?
             """,
@@ -281,6 +352,7 @@ def _ingest_document(
                 content,
                 checksum,
                 str(metadata),
+                file_size,
                 now,
                 existing_id,
             ),
@@ -297,18 +369,22 @@ def _ingest_document(
             course_id,
             topic_tags,
             doc_type,
+            file_type,
+            file_size,
             content,
             checksum,
             metadata_json,
             created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             str(file_path),
             course_val,
             tags,
             doc_type,
+            _infer_file_type(str(file_path), fallback=doc_type),
+            file_size,
             content,
             checksum,
             str(metadata),
@@ -334,7 +410,7 @@ def ingest_document(
     """Public ingestion API for any RAG document.
 
     - For text-backed docs, stores full content for retrieval.
-    - For binary docs (e.g., pdf/powerpoint/mp4), stores metadata-only (content empty).
+    - For media/docs that may need extraction (pdf/powerpoint/mp4), tries to extract text first.
     """
     binary_types = {"pdf", "powerpoint", "mp4"}
     if doc_type in binary_types:
@@ -342,26 +418,47 @@ def ingest_document(
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
-        # Still compute a checksum so updates are detected.
-        checksum = _checksum_bytes(file_path.read_bytes())
+        # Try text extraction for PDFs/PPTX, but keep a safe metadata-only fallback.
+        content = ""
+        extraction_error = None
+        if doc_type in {"pdf", "powerpoint"}:
+            from text_extractor import extract_text
+
+            try:
+                extracted = extract_text(str(file_path))
+                content = extracted.get("content", "") or ""
+                extraction_error = extracted.get("error")
+            except Exception as exc:
+                extraction_error = str(exc)
+                content = ""
+
+        # Use content hash when content is available for stable updates; otherwise file bytes.
+        if content:
+            checksum = _checksum(content)
+        else:
+            checksum = _checksum_bytes(file_path.read_bytes())
+        file_size = file_path.stat().st_size
         tags = ", ".join(t.strip() for t in (topic_tags or []) if t.strip())
         metadata = {
             "binary": True,
             "ingest_source": "rag_notes.py",
             "ingested_at": datetime.now().isoformat(timespec="seconds"),
-            "note": "Binary file stored; content not indexed (v1).",
+            "note": "Binary file processed with extractor when available; content may be empty when extraction fails.",
         }
+        if extraction_error:
+            metadata["extraction_error"] = extraction_error
         return _upsert_rag_doc(
             source_path=str(file_path),
             doc_type=doc_type,
             course_id=course_id,
             topic_tags=tags,
-            content="",
+            content=content,
             checksum=checksum,
             metadata=metadata,
             corpus=corpus,
             folder_path=folder_path,
             enabled=enabled,
+            file_size=file_size,
         )
 
     # Text-backed docs
@@ -652,6 +749,7 @@ def index_repo_to_rag(repo_root: str) -> dict:
                 try:
                     content = file_path.read_text(encoding="utf-8")
                     rel_path = file_path.relative_to(root).as_posix()
+                    file_size = file_path.stat().st_size
                     
                     # Determine doc type based on extension
                     ext = file_path.suffix.lower()
@@ -693,6 +791,7 @@ def index_repo_to_rag(repo_root: str) -> dict:
                             corpus="repo",
                             folder_path=folder_name,
                             enabled=1,
+                            file_size=file_size,
                         )
                         chunks_created += 1
                     

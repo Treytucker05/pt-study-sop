@@ -1,5 +1,6 @@
 param(
   [string]$Task = "",
+  [string]$SessionName = "",
   [string]$WorktreesRoot = "C:\\Users\\treyt\\OneDrive\\Desktop\\pt-study-sop-worktrees",
   [string]$BaseRef = "HEAD",
   [switch]$OpenShell,
@@ -16,16 +17,33 @@ function Get-RepoRoot {
   return $root.Trim()
 }
 
-function New-SessionName {
-  param([string]$TaskName)
+function New-NameSlug {
+  param([string]$Value)
+  $slug = $Value.ToLowerInvariant()
+  $slug = $slug -replace "[^a-z0-9\- ]", ""
+  $slug = $slug -replace "\s+", "-"
+  return $slug.Trim("-")
+}
+
+function Resolve-SessionName {
+  param(
+    [string]$TaskName,
+    [string]$ProvidedSessionName
+  )
+
   $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+  if (-not [string]::IsNullOrWhiteSpace($ProvidedSessionName)) {
+    $custom = New-NameSlug -Value $ProvidedSessionName
+    if ([string]::IsNullOrWhiteSpace($custom)) {
+      return "session_$stamp"
+    }
+    return $custom
+  }
+
   if ([string]::IsNullOrWhiteSpace($TaskName)) {
     return "session_$stamp"
   }
-  $slug = $TaskName.ToLowerInvariant()
-  $slug = $slug -replace "[^a-z0-9\- ]", ""
-  $slug = $slug -replace "\s+", "-"
-  $slug = $slug.Trim("-")
+  $slug = New-NameSlug -Value $TaskName
   if ([string]::IsNullOrWhiteSpace($slug)) {
     return "session_$stamp"
   }
@@ -37,7 +55,7 @@ if (!(Test-Path $WorktreesRoot)) {
   New-Item -ItemType Directory -Force -Path $WorktreesRoot | Out-Null
 }
 
-$sessionName = New-SessionName -TaskName $Task
+$sessionName = Resolve-SessionName -TaskName $Task -ProvidedSessionName $SessionName
 $worktreePath = Join-Path $WorktreesRoot $sessionName
 $branchName = "session/$sessionName"
 

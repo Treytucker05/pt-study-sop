@@ -598,6 +598,28 @@ def init_database():
     try:
         cursor.execute("UPDATE rag_docs SET corpus = COALESCE(corpus, 'runtime')")
         cursor.execute("UPDATE rag_docs SET enabled = COALESCE(enabled, 1)")
+        cursor.execute(
+            """
+            UPDATE rag_docs
+            SET file_type = COALESCE(
+                NULLIF(TRIM(file_type), ''),
+                CASE
+                    WHEN LOWER(source_path) LIKE '%.pdf' THEN 'pdf'
+                    WHEN LOWER(source_path) LIKE '%.docx' THEN 'docx'
+                    WHEN LOWER(source_path) LIKE '%.pptx' THEN 'pptx'
+                    WHEN LOWER(source_path) LIKE '%.ppt' THEN 'pptx'
+                    WHEN LOWER(source_path) LIKE '%.md' THEN 'md'
+                    WHEN LOWER(source_path) LIKE '%.markdown' THEN 'md'
+                    WHEN LOWER(source_path) LIKE '%.txt' THEN 'txt'
+                    WHEN LOWER(source_path) LIKE '%.text' THEN 'txt'
+                    WHEN LOWER(source_path) LIKE '%.py' THEN 'py'
+                    WHEN LOWER(source_path) LIKE '%.json' THEN 'json'
+                    ELSE COALESCE(NULLIF(doc_type, ''), 'other')
+                END
+            )
+            WHERE COALESCE(NULLIF(TRIM(file_type), ''), '') = ''
+            """
+        )
     except sqlite3.OperationalError:
         # Column might not exist in some edge cases; ignore.
         pass

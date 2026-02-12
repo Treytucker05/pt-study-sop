@@ -1,6 +1,6 @@
 import Layout from "@/components/layout";
 import { Card } from "@/components/ui/card";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { TutorMode, TutorSessionSummary, TutorTemplateChain } from "@/lib/api";
@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import {
   TEXT_PANEL_TITLE,
-  TEXT_SECTION_LABEL,
   TEXT_BODY,
   TEXT_MUTED,
   TEXT_BADGE,
@@ -33,6 +32,7 @@ import {
 
 export default function Tutor() {
   const queryClient = useQueryClient();
+  const tutorMaterialStorageKey = "tutor.selected_material_ids.v1";
 
   // Session state
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -40,7 +40,16 @@ export default function Tutor() {
 
   // Filter state
   const [courseId, setCourseId] = useState<number | undefined>();
-  const [selectedMaterials, setSelectedMaterials] = useState<number[]>([]);
+  const [selectedMaterials, setSelectedMaterials] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem(tutorMaterialStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.filter((v) => typeof v === "number");
+      }
+    } catch { /* corrupted */ }
+    return [];
+  });
   const [mode, setMode] = useState<TutorMode>("Core");
   const [chainId, setChainId] = useState<number | undefined>();
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
@@ -68,6 +77,12 @@ export default function Tutor() {
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(selectedMaterials));
+    } catch { /* ignore */ }
+  }, [tutorMaterialStorageKey, selectedMaterials]);
 
   // Recent sessions
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
@@ -209,6 +224,12 @@ export default function Tutor() {
         if (session.content_filter?.material_ids) {
           setSelectedMaterials(session.content_filter.material_ids);
         }
+        try {
+          localStorage.setItem(
+            tutorMaterialStorageKey,
+            JSON.stringify(session.content_filter?.material_ids || []),
+          );
+        } catch { /* ignore */ }
         if (session.content_filter?.model) {
           setModel(session.content_filter.model);
         }
@@ -254,6 +275,19 @@ export default function Tutor() {
               onSelectedPathsChange={setSelectedPaths}
             />
           </Card>
+
+          {selectedMaterials.length > 0 && (
+            <Card className="shrink-0 mt-2 bg-black/40 border-[3px] border-double border-primary/70 rounded-none">
+              <div className="px-3 py-2 border-b-2 border-primary/30 font-arcade text-xs tracking-widest">
+                PROJECT FILES FOR THIS SESSION
+              </div>
+              <div className="px-3 py-2">
+                <span className={TEXT_BODY}>
+                  {selectedMaterials.length} library file{selectedMaterials.length === 1 ? "" : "s"} selected
+                </span>
+              </div>
+            </Card>
+          )}
 
           {/* Toolbar — thin horizontal strip */}
           <Card className="shrink-0 mt-2 bg-black/40 border-[3px] border-double border-primary rounded-none overflow-hidden">

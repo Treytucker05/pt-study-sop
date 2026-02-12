@@ -312,7 +312,7 @@ export default function Scholar() {
 
               <div className="grid lg:grid-cols-3 gap-6">
                 {/* Left: Summary Cards */}
-                <div className="lg:col-span-2 space-y-4 pr-2">
+                <div className="lg:col-span-2 space-y-4 pr-2 card-stagger">
                   {/* Study Health Overview */}
                   <Card className={`bg-black/40 ${CARD_BORDER}`}>
                     <CardHeader className="p-4 border-b border-primary/30">

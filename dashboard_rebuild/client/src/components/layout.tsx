@@ -300,6 +300,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       />
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />
 
+      {/* CRT Scanlines + Sweep */}
+      <div className="crt-scanlines" />
+      <div className="crt-sweep" />
+
       {/* Top Nav */}
       <header className="relative z-20 bg-black/80 backdrop-blur-sm sticky top-0" style={{ borderBottom: '4px double hsl(350 63% 49%)' }}>
         <div className="w-full px-3 h-12 flex items-center justify-between">
@@ -307,7 +311,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Link href="/">
               <div className="flex items-center gap-2 cursor-pointer group">
                 <img src={logoImg} alt="Logo" className="w-8 h-8 object-cover" />
-                <span className="hidden lg:block font-arcade text-xs text-white group-hover:text-primary transition-colors whitespace-nowrap">TREY'S STUDY SYSTEM</span>
+                <span className="hidden lg:block font-arcade text-xs text-white group-hover:text-primary transition-colors whitespace-nowrap phosphor-flicker">TREY'S STUDY SYSTEM</span>
               </div>
             </Link>
 
@@ -531,8 +535,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 w-full px-3 md:px-6 py-3 pb-16">
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <main className="relative z-10 flex-1 w-full px-3 md:px-6 py-3 pb-16 bg-grid">
+        <div className="page-enter">
           {children}
         </div>
       </main>

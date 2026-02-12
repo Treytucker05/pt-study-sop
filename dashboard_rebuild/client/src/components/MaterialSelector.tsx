@@ -19,6 +19,12 @@ const FILE_TYPE_ICONS: Record<string, string> = {
   txt: "TXT",
 };
 
+function getMaterialTypeLabel(fileType: string | null | undefined): string {
+  const normalizedRaw = (fileType || "").toLowerCase().trim();
+  const normalized = ["", "null", "none"].includes(normalizedRaw) ? "" : normalizedRaw;
+  return FILE_TYPE_ICONS[normalized] || (normalized ? normalized.toUpperCase() : "FILE");
+}
+
 interface MaterialSelectorProps {
   courseId?: number;
   selectedMaterials: number[];
@@ -94,9 +100,9 @@ export function MaterialSelector({
             className="w-3 h-3"
           />
           <FileText className={`${ICON_SM} text-primary/60 shrink-0`} />
-          <span className="truncate flex-1">{mat.title}</span>
+          <span className="truncate flex-1">{(mat.title || `Material ${mat.id}`).trim() || `Material ${mat.id}`}</span>
           <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 shrink-0`}>
-            {FILE_TYPE_ICONS[mat.file_type] || mat.file_type.toUpperCase()}
+            {getMaterialTypeLabel(mat.file_type)}
           </Badge>
         </label>
       ))}

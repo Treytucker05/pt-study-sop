@@ -114,6 +114,8 @@ function TreeItem({
   );
 }
 
+const VAULT_ROOT = "School";
+
 // --- Recursive folder children ---
 
 function FolderChildren({
@@ -191,8 +193,8 @@ export function VaultPicker({ selectedPaths, onSelectedPathsChange }: VaultPicke
   const connected = statusData?.connected === true;
 
   const { data: rootFiles } = useQuery({
-    queryKey: ["obsidian", "files", "School"],
-    queryFn: () => api.obsidian.getFiles("School"),
+    queryKey: ["obsidian", "files", VAULT_ROOT],
+    queryFn: () => api.obsidian.getFiles(VAULT_ROOT),
     enabled: connected,
   });
 
@@ -227,7 +229,7 @@ export function VaultPicker({ selectedPaths, onSelectedPathsChange }: VaultPicke
   const folderCount = selectedPaths.filter((p) =>
     rootFiles?.files?.some((f: string | { path: string }) => {
       const fp = typeof f === "string" ? f : f.path;
-      return fp.endsWith("/") && `School/${fp.replace(/\/$/, "").split("/").pop()}` === p;
+      return fp.endsWith("/") && `${VAULT_ROOT}/${fp.replace(/\/$/, "").split("/").pop()}` === p;
     }) || p.endsWith("/")
   ).length;
 
@@ -300,7 +302,7 @@ export function VaultPicker({ selectedPaths, onSelectedPathsChange }: VaultPicke
             const filePath = typeof file === "string" ? file : file.path;
             const isFolder = filePath.endsWith("/");
             const name = filePath.replace(/\/$/, "").split("/").pop() || filePath;
-            const fullPath = `School/${name}`;
+            const fullPath = `${VAULT_ROOT}/${name}`;
 
             if (q && !name.toLowerCase().includes(q)) return null;
 
