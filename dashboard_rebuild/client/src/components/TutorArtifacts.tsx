@@ -132,7 +132,7 @@ export function TutorArtifacts({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className={`shrink-0 ${PANEL_PADDING} pb-2 border-b-2 border-primary/30`}>
+      <div className={`shrink-0 ${PANEL_PADDING} pb-2 border-b-[3px] border-double border-primary/30`}>
         <div className={TEXT_PANEL_TITLE}>ARTIFACTS</div>
       </div>
 
@@ -184,7 +184,7 @@ export function TutorArtifacts({
                 return (
                   <div
                     key={i}
-                    className="border-2 border-muted-foreground/20 p-2.5 hover:border-primary/30 transition-colors"
+                    className="border-[3px] border-double border-muted-foreground/20 p-2.5 hover:border-primary/30 transition-colors"
                   >
                     <div className="flex items-center gap-1.5">
                       <Icon className={`${ICON_MD} ${color}`} />
@@ -222,7 +222,7 @@ export function TutorArtifacts({
               {recentSessions.slice(0, 8).map((s) => (
                 <div
                   key={s.session_id}
-                  className="border-2 border-muted-foreground/10 hover:border-muted-foreground/30 transition-colors"
+                  className="border-[3px] border-double border-muted-foreground/10 hover:border-muted-foreground/30 transition-colors"
                 >
                   {/* Clickable session info */}
                   <button

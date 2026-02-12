@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design System Compare — TREY'S STUDY SYSTEM</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=JetBrains+Mono:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&family=Share+Tech+Mono&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #080808;
+    --surface-1: #121212;
+    --surface-2: #1A1A1A;
+    --surface-3: #222222;
+    --border: #2A2A2A;
+    --accent: #CC2E48;
+    --accent-muted: rgba(204, 46, 72, 0.10);
+    --text-primary: #EEEEEE;
+    --text-secondary: #777777;
+    --text-muted: #555555;
+    --font-heading: 'VT323', monospace;
+    --font-body: 'VT323', monospace;
+    --h1-size: 42px;
+    --h2-size: 32px;
+    --h3-size: 26px;
+    --h4-size: 22px;
+    --body-size: 20px;
+    --small-size: 18px;
+    --caption-size: 14px;
+    --h-weight: 400;
+    --h3-weight: 400;
+    --body-weight: 400;
+    --h-spacing: 3px;
+    --h-transform: uppercase;
+    --caption-spacing: 3px;
+    --caption-transform: uppercase;
+    --body-line-height: 1.5;
+    --label-spacing: 3px;
+    --label-transform: uppercase;
+    --container-width: 1200px;
+    --container-pad: 20px 16px;
+    --section-gap: 28px;
+    --card-pad: 14px;
+    --grid-gap: 10px;
+    --btn-pad: 5px 14px;
+    --btn-sm-pad: 3px 10px;
+    --btn-lg-pad: 8px 20px;
+    --input-pad: 7px 10px;
+    --nav-gap: 2px;
+    --nav-pad: 4px 8px;
+    --row-gap: 8px;
+    --header-height: 48px;
+    --header-pad: 0 12px;
+    --header-gap: 16px;
+    --tab-pad: 7px 14px;
+    --toast-pad: 8px 12px;
+    --state-pad: 20px;
+    --border-width: 3px;
+    --border-style: double;
+    --radius: 0px;
+    --divider-width: 3px;
+    --accent-border: 4px;
+    --card-border: 3px;
+    --input-border: 3px;
+    --btn-border: 3px;
+    --toast-left: 5px;
+    --hover-bg: rgba(200, 53, 74, 0.1);
+    --hover-border: var(--accent);
+    --hover-text: var(--accent);
+    --hover-shadow: 0 0 6px rgba(200, 53, 74, 0.3), inset 0 0 6px rgba(200, 53, 74, 0.1);
+    --hover-transform: none;
+    --active-transform: translateY(1px);
+    --active-shadow: 0 0 15px rgba(200, 53, 74, 0.5);
+    --active-brightness: 1.1;
+    --focus-shadow: 0 0 0 2px var(--accent), 0 0 8px rgba(200, 53, 74, 0.3);
+    --disabled-opacity: 0.25;
+    --card-hover-border: var(--accent);
+    --card-hover-shadow: 0 0 8px rgba(200, 53, 74, 0.2), inset 0 0 8px rgba(200, 53, 74, 0.05);
+    --card-hover-transform: none;
+    --transition-speed: 0.12s;
+    transition: all 0.3s ease;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    transition: background 0.3s ease;
+  }
+
+  /* Force font inheritance on all form/interactive elements */
+  button, input, textarea, select, option {
+    font-family: var(--font-body) !important;
+  }
+
+  /* ── Theme Switcher ── */
+  .theme-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #000;
+    border-bottom: 2px solid #333;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .theme-bar-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #666;
+    margin-right: 8px;
+  }
+  .theme-btn {
+    padding: 8px 20px;
+    border: 2px solid #333;
+    background: transparent;
+    color: #999;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .theme-btn:hover { border-color: #666; color: #fff; }
+  .theme-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-muted); }
+  .theme-desc {
+    margin-left: auto;
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+  }
+
+  /* ── Layout ── */
+  .container { max-width: var(--container-width); margin: 0 auto; padding: var(--container-pad); transition: all 0.3s ease; }
+  .section { margin-bottom: var(--section-gap); transition: margin 0.3s ease; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: var(--divider-width) var(--border-style) var(--border);
+  }
+
+  /* ── Header Demo ── */
+  .demo-header {
+    display: flex;
+    align-items: center;
+    background: var(--surface-1);
+    border: var(--card-border) var(--border-style) var(--border);
+    border-bottom: var(--accent-border) var(--border-style) var(--accent);
+    border-radius: var(--radius);
+    padding: var(--header-pad);
+    height: var(--header-height);
+    gap: var(--header-gap);
+    transition: all 0.3s ease;
+  }
+  .demo-logo {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px; color: #fff;
+  }
+  .demo-title { font-family: var(--font-heading); font-size: 13px; font-weight: var(--h-weight); letter-spacing: 2px; color: var(--text-primary); }
+  .demo-nav { display: flex; gap: var(--nav-gap); margin-left: 16px; }
+  .demo-nav-item {
+    padding: var(--nav-pad);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    border-bottom: var(--border-width) solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    border-radius: var(--radius);
+  }
+  .demo-nav-item:hover { color: var(--hover-text); background: var(--hover-bg); }
+  .demo-nav-item.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+  .demo-notes-btn {
+    margin-left: auto;
+    padding: 6px 14px;
+    border: var(--input-border) solid var(--accent);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--accent);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+  }
+
+  /* ── Typography ── */
+  .type-row { margin-bottom: var(--row-gap); display: flex; align-items: baseline; gap: 16px; }
+  .type-label { font-size: 11px; color: var(--text-muted); width: 60px; flex-shrink: 0; font-family: var(--font-body); }
+  .type-h1 { font-family: var(--font-heading); font-size: var(--h1-size); font-weight: var(--h-weight); letter-spacing: var(--h-spacing); text-transform: var(--h-transform); }
+  .type-h2 { font-family: var(--font-heading); font-size: var(--h2-size); font-weight: var(--h-weight); letter-spacing: var(--h-spacing); text-transform: var(--h-transform); }
+  .type-h3 { font-family: var(--font-heading); font-size: var(--h3-size); font-weight: var(--h3-weight); letter-spacing: var(--h-spacing); text-transform: var(--h-transform); }
+  .type-h4 { font-family: var(--font-heading); font-size: var(--h4-size); font-weight: var(--h3-weight); letter-spacing: var(--h-spacing); text-transform: var(--h-transform); }
+  .type-body { font-family: var(--font-body); font-size: var(--body-size); font-weight: var(--body-weight); color: var(--text-secondary); line-height: var(--body-line-height); }
+  .type-small { font-family: var(--font-body); font-size: var(--small-size); font-weight: var(--body-weight); color: var(--text-secondary); }
+  .type-caption { font-family: var(--font-body); font-size: var(--caption-size); font-weight: 500; letter-spacing: var(--caption-spacing); text-transform: var(--caption-transform); color: var(--text-muted); }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; gap: var(--row-gap); flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .btn-row-label { font-size: 11px; color: var(--text-muted); width: 80px; flex-shrink: 0; }
+  button.btn {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: var(--btn-pad);
+    border: var(--btn-border) solid transparent;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+  }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { filter: brightness(var(--active-brightness)); box-shadow: var(--hover-shadow); transform: var(--hover-transform); }
+  .btn-primary:active { transform: var(--active-transform); filter: brightness(var(--active-brightness)); box-shadow: var(--active-shadow); }
+  .btn-primary:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .btn-secondary { background: var(--surface-2); color: var(--text-primary); border-color: var(--border); }
+  .btn-secondary:hover { border-color: var(--hover-border); background: var(--hover-bg); box-shadow: var(--hover-shadow); transform: var(--hover-transform); }
+  .btn-secondary:active { transform: var(--active-transform); box-shadow: var(--active-shadow); }
+  .btn-secondary:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .btn-ghost { background: transparent; color: var(--text-primary); border-color: transparent; }
+  .btn-ghost:hover { background: var(--hover-bg); color: var(--hover-text); transform: var(--hover-transform); }
+  .btn-ghost:active { transform: var(--active-transform); }
+  .btn-outline { background: transparent; color: var(--accent); border-color: var(--accent); }
+  .btn-outline:hover { background: var(--hover-bg); box-shadow: var(--hover-shadow); transform: var(--hover-transform); }
+  .btn-outline:active { transform: var(--active-transform); box-shadow: var(--active-shadow); }
+  .btn-outline:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .btn-destructive { background: #7f1d1d; color: #fca5a5; border-color: #991b1b; }
+  .btn-destructive:hover { box-shadow: var(--hover-shadow); transform: var(--hover-transform); }
+  .btn-destructive:active { transform: var(--active-transform); }
+  .btn-icon { width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--surface-1); border-color: var(--border); color: var(--text-secondary); }
+  .btn-icon:hover { border-color: var(--hover-border); color: var(--hover-text); box-shadow: var(--hover-shadow); }
+  .btn:disabled { opacity: var(--disabled-opacity); cursor: not-allowed; pointer-events: none; }
+  .btn-sm { padding: var(--btn-sm-pad); font-size: 12px; }
+  .btn-lg { padding: var(--btn-lg-pad); font-size: 15px; }
+
+  /* ── Cards ── */
+  .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap); }
+  .card {
+    background: var(--surface-1);
+    border: var(--card-border) var(--border-style) var(--border);
+    border-radius: var(--radius);
+    padding: var(--card-pad);
+    transition: all 0.3s ease;
+  }
+  .card:hover { border-color: var(--card-hover-border); box-shadow: var(--card-hover-shadow); transform: var(--card-hover-transform); }
+  .card-stat-number { font-family: var(--font-heading); font-size: 42px; font-weight: var(--h-weight); color: var(--accent); }
+  .card-stat-label { font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: var(--label-spacing); text-transform: var(--label-transform); color: var(--text-secondary); margin-top: 4px; }
+  .card-stat-trend { font-size: 12px; color: #4ade80; margin-top: 8px; }
+  .card-title { font-family: var(--font-heading); font-size: 16px; font-weight: var(--h-weight); margin-bottom: 8px; }
+  .card-text { font-family: var(--font-body); font-size: 14px; color: var(--text-secondary); line-height: var(--body-line-height); margin-bottom: 16px; }
+
+  /* ── Forms ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--grid-gap); }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-family: var(--font-body); font-size: 12px; font-weight: 600; letter-spacing: var(--label-spacing); text-transform: var(--label-transform); color: var(--text-secondary); }
+  .form-input, .form-textarea, .form-select {
+    font-family: var(--font-body);
+    font-size: 14px;
+    padding: var(--input-pad);
+    background: var(--surface-1);
+    border: var(--input-border) var(--border-style) var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+  .form-select { cursor: pointer; }
+  .form-input::placeholder { color: var(--text-muted); }
+
+  .toggle-row { display: flex; gap: 24px; align-items: center; }
+  .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .toggle-track { width: 40px; height: 22px; border: var(--border-width) solid var(--border); border-radius: var(--radius); background: var(--surface-1); position: relative; transition: all 0.2s; }
+  .toggle-track.on { background: var(--accent); border-color: var(--accent); }
+  .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; transition: left 0.2s; }
+  .toggle-track.on .toggle-thumb { left: 20px; }
+  .toggle-label { font-size: 13px; color: var(--text-secondary); }
+
+  .checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .checkbox-box { width: 18px; height: 18px; border: var(--border-width) solid var(--border); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 12px; color: transparent; }
+  .checkbox-box.checked { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .checkbox-label { font-size: 13px; color: var(--text-secondary); }
+
+  /* ── Table ── */
+  .table { width: 100%; border-collapse: collapse; }
+  .table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    padding: 10px 16px;
+    border-bottom: var(--border-width) var(--border-style) var(--border);
+  }
+  .table td {
+    font-size: 14px;
+    padding: 12px 16px;
+    border-bottom: var(--divider-width) var(--border-style) var(--border);
+    color: var(--text-secondary);
+  }
+  .table tr:hover td { background: var(--hover-bg); color: var(--hover-text); }
+
+  /* ── Tabs ── */
+  .tab-bar { display: flex; border-bottom: var(--border-width) var(--border-style) var(--border); }
+  .tab-item {
+    padding: var(--tab-pad);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: var(--border-width) solid transparent;
+    margin-bottom: calc(var(--border-width) * -1);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-item:hover { color: var(--hover-text); background: var(--hover-bg); }
+  .tab-item.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+  .tab-content { padding: 20px; background: var(--surface-1); border: var(--divider-width) var(--border-style) var(--border); border-top: none; border-radius: var(--radius); }
+  .tab-content p { font-size: 14px; color: var(--text-secondary); }
+
+  /* ── Feedback ── */
+  .toast {
+    padding: var(--toast-pad);
+    border-left: var(--toast-left) solid;
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface-1);
+  }
+  .toast-success { border-color: #4ade80; color: #4ade80; }
+  .toast-error { border-color: var(--accent); color: var(--accent); }
+  .toast-warning { border-color: #facc15; color: #facc15; }
+  .toast-info { border-color: var(--text-secondary); color: var(--text-secondary); }
+
+  .badge-row { display: flex; gap: 8px; margin-top: 16px; }
+  .badge {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border: var(--input-border) solid;
+    border-radius: var(--radius);
+  }
+  .badge-red { border-color: var(--accent); color: var(--accent); background: var(--accent-muted); }
+  .badge-green { border-color: #4ade80; color: #4ade80; background: rgba(74,222,128,0.1); }
+  .badge-gray { border-color: var(--text-muted); color: var(--text-secondary); background: var(--surface-1); }
+
+  .progress-wrap { margin-top: 20px; }
+  .progress-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .progress-bar { height: 8px; background: var(--surface-2); border: var(--input-border) var(--border-style) var(--border); border-radius: var(--radius); }
+  .progress-fill { height: 100%; background: var(--accent); width: 65%; transition: all 0.3s; }
+
+  /* ── States ── */
+  .states-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap); }
+  .state-card { background: var(--surface-1); border: var(--card-border) var(--border-style) var(--border); border-radius: var(--radius); padding: var(--state-pad); text-align: center; }
+  .state-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+  .state-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .state-text { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .state-error { border-color: var(--accent); }
+  .skeleton { background: var(--surface-2); height: 16px; margin-bottom: 10px; animation: shimmer 1.5s infinite; }
+  .skeleton-wide { width: 80%; }
+  .skeleton-med { width: 55%; }
+  .skeleton-short { width: 35%; }
+  .skeleton-block { height: 48px; width: 100%; margin-bottom: 10px; }
+  @keyframes shimmer {
+    0% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+    100% { opacity: 0.4; }
+  }
+
+  /* ── Transitions on all themed elements ── */
+  .card, .demo-header, .form-input, .form-textarea, .form-select,
+  .table td, .tab-content, .toast, .state-card, .progress-bar {
+    transition: all 0.3s ease;
+  }
+</style>
+</head>
+<body>
+
+<!-- Theme Switcher -->
+<div class="theme-bar">
+  <span class="theme-bar-label">Colors:</span>
+  <button class="theme-btn active" id="btn-layered" style="border-color: #4ade80; color: #4ade80; cursor: default;">Layered Dark &#10003;</button>
+  <span class="theme-desc" id="theme-desc">LOCKED — Layered depth, VS Code / Linear feel</span>
+</div>
+<div class="theme-bar" style="top: 50px; border-top: none;">
+  <span class="theme-bar-label">Type:</span>
+  <button class="theme-btn active" id="tbtn-full_terminal" style="border-color: #4ade80; color: #4ade80; cursor: default;">VT323 Full Terminal &#10003;</button>
+  <span class="theme-desc" id="type-desc">LOCKED — VT323 everywhere</span>
+</div>
+<div class="theme-bar" style="top: 100px; border-top: none;">
+  <span class="theme-bar-label">Space:</span>
+  <button class="theme-btn active" id="sbtn-tight" style="border-color: #4ade80; color: #4ade80; cursor: default;">Tight &#10003;</button>
+  <span class="theme-desc" id="space-desc">LOCKED — compact, dense</span>
+</div>
+<div class="theme-bar" style="top: 150px; border-top: none;">
+  <span class="theme-bar-label">Border:</span>
+  <button class="theme-btn active" id="bbtn-pixel_double" style="border-color: #4ade80; color: #4ade80; cursor: default;">Pixel Double &#10003;</button>
+  <span class="theme-desc" id="border-desc">LOCKED — 3px double, retro OS window chrome</span>
+</div>
+<div class="theme-bar" style="top: 200px; border-top: none;">
+  <span class="theme-bar-label">States:</span>
+  <button class="theme-btn active" id="stbtn-flicker" style="border-color: #4ade80; color: #4ade80; cursor: default;">CRT Flicker &#10003;</button>
+  <span class="theme-desc" id="state-desc">LOCKED — CRT phosphor glow, text turns red, double glow</span>
+</div>
+
+<div class="container">
+
+  <!-- HOVER TEST ZONE — all interactive elements grouped for state comparison -->
+  <div class="section" style="background: var(--surface-1); border: var(--card-border) var(--border-style) var(--accent); padding: 20px; margin-top: 12px;">
+    <div class="section-label" style="border-color: var(--accent); color: var(--accent);">Hover Test Zone — Switch states with Z / X / C / V</div>
+
+    <!-- Row 1: Buttons -->
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 12px; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 8px;">BUTTONS — hover & click each</div>
+      <div class="btn-row" style="margin-bottom: 8px;">
+        <button class="btn btn-primary">Primary</button>
+        <button class="btn btn-secondary">Secondary</button>
+        <button class="btn btn-ghost">Ghost</button>
+        <button class="btn btn-outline">Outline</button>
+        <button class="btn btn-destructive">Destructive</button>
+        <button class="btn btn-icon">&#9881;</button>
+        <button class="btn btn-primary btn-sm">Small</button>
+        <button class="btn btn-primary btn-lg">Large</button>
+      </div>
+    </div>
+
+    <!-- Row 2: Nav Items -->
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 12px; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 8px;">NAV ITEMS — hover each</div>
+      <div style="display: flex; gap: var(--nav-gap); background: var(--bg); padding: 8px; border: var(--card-border) var(--border-style) var(--border);">
+        <span class="demo-nav-item active">DASHBOARD</span>
+        <span class="demo-nav-item">BRAIN</span>
+        <span class="demo-nav-item">CALENDAR</span>
+        <span class="demo-nav-item">SCHOLAR</span>
+        <span class="demo-nav-item">TUTOR</span>
+        <span class="demo-nav-item">METHODS</span>
+      </div>
+    </div>
+
+    <!-- Row 3: Cards -->
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 12px; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 8px;">CARDS — hover each</div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap);">
+        <div class="card">
+          <div class="card-stat-number">847</div>
+          <div class="card-stat-label">SESSIONS</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Module 3</div>
+          <div class="card-text">Hover me to see the card state effect.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Quick Review</div>
+          <button class="btn btn-outline btn-sm">Launch</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Table Rows -->
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 12px; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 8px;">TABLE ROWS — hover each row</div>
+      <table class="table">
+        <thead><tr><th>DATE</th><th>TOPIC</th><th>SCORE</th></tr></thead>
+        <tbody>
+          <tr><td>Feb 11</td><td>Anatomy — Upper Limb</td><td>87%</td></tr>
+          <tr><td>Feb 10</td><td>Biomechanics — Gait</td><td>92%</td></tr>
+          <tr><td>Feb 9</td><td>Neuroscience — Cranial Nerves</td><td>78%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Row 5: Tabs -->
+    <div>
+      <div style="font-size: 12px; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 8px;">TABS — hover each</div>
+      <div class="tab-bar">
+        <span class="tab-item active">Overview</span>
+        <span class="tab-item">History</span>
+        <span class="tab-item">Settings</span>
+        <span class="tab-item">Analytics</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="section">
+    <div class="section-label">Header / Navigation</div>
+    <div class="demo-header">
+      <div class="demo-logo">T</div>
+      <span class="demo-title">TREY'S STUDY SYSTEM</span>
+      <nav class="demo-nav">
+        <span class="demo-nav-item active">DASHBOARD</span>
+        <span class="demo-nav-item">BRAIN</span>
+        <span class="demo-nav-item">CALENDAR</span>
+        <span class="demo-nav-item">SCHOLAR</span>
+        <span class="demo-nav-item">TUTOR</span>
+        <span class="demo-nav-item">METHODS</span>
+        <span class="demo-nav-item">LIBRARY</span>
+      </nav>
+      <button class="demo-notes-btn">NOTES</button>
+    </div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div class="section">
+    <div class="section-label">Typography</div>
+    <div class="type-row"><span class="type-label">H1</span><span class="type-h1">Study Dashboard</span></div>
+    <div class="type-row"><span class="type-label">H2</span><span class="type-h2">Weekly Progress</span></div>
+    <div class="type-row"><span class="type-label">H3</span><span class="type-h3">Session History</span></div>
+    <div class="type-row"><span class="type-label">H4</span><span class="type-h4">Active Methods</span></div>
+    <div class="type-row"><span class="type-label">Body</span><span class="type-body">This is body text used for descriptions, paragraphs, and general content throughout the application.</span></div>
+    <div class="type-row"><span class="type-label">Small</span><span class="type-small">Supplementary info like timestamps, metadata, and secondary labels.</span></div>
+    <div class="type-row"><span class="type-label">Caption</span><span class="type-caption">Section headers and category labels</span></div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="section">
+    <div class="section-label">Buttons</div>
+    <div class="btn-row">
+      <span class="btn-row-label">Default</span>
+      <button class="btn btn-primary">Primary</button>
+      <button class="btn btn-secondary">Secondary</button>
+      <button class="btn btn-ghost">Ghost</button>
+      <button class="btn btn-outline">Outline</button>
+      <button class="btn btn-destructive">Destructive</button>
+      <button class="btn btn-icon">&#9881;</button>
+    </div>
+    <div class="btn-row">
+      <span class="btn-row-label">Disabled</span>
+      <button class="btn btn-primary" disabled>Primary</button>
+      <button class="btn btn-secondary" disabled>Secondary</button>
+      <button class="btn btn-ghost" disabled>Ghost</button>
+      <button class="btn btn-outline" disabled>Outline</button>
+    </div>
+    <div class="btn-row">
+      <span class="btn-row-label">Sizes</span>
+      <button class="btn btn-primary btn-sm">Small</button>
+      <button class="btn btn-primary">Default</button>
+      <button class="btn btn-primary btn-lg">Large</button>
+    </div>
+  </div>
+
+  <!-- FORMS -->
+  <div class="section">
+    <div class="section-label">Form Inputs</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">TEXT INPUT</label>
+        <input type="text" class="form-input" placeholder="Enter topic name...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">SEARCH</label>
+        <input type="text" class="form-input" placeholder="&#128269; Search sessions...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">TEXTAREA</label>
+        <textarea class="form-textarea" placeholder="Session notes..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SELECT</label>
+        <select class="form-select">
+          <option>Select a course...</option>
+          <option>Anatomy</option>
+          <option>Biomechanics</option>
+          <option>Neuroscience</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top: 20px;">
+      <div class="toggle-row">
+        <div class="checkbox"><div class="checkbox-box checked">&#10003;</div><span class="checkbox-label">Checked</span></div>
+        <div class="checkbox"><div class="checkbox-box"></div><span class="checkbox-label">Unchecked</span></div>
+        <div class="toggle"><div class="toggle-track on"><div class="toggle-thumb"></div></div><span class="toggle-label">Active</span></div>
+        <div class="toggle"><div class="toggle-track"><div class="toggle-thumb"></div></div><span class="toggle-label">Inactive</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="section">
+    <div class="section-label">Cards</div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-stat-number">847</div>
+        <div class="card-stat-label">SESSIONS COMPLETED</div>
+        <div class="card-stat-trend">&#9650; 12% this week</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Neuroscience Module 3</div>
+        <div class="card-text">Review cranial nerve pathways and complete practice questions for upcoming exam.</div>
+        <button class="btn btn-primary btn-sm">Start Session</button>
+      </div>
+      <div class="card">
+        <div style="font-size: 28px; margin-bottom: 12px;">&#9889;</div>
+        <div class="card-title">Quick Review</div>
+        <div class="card-text">Jump into a 15-minute retrieval practice session.</div>
+        <button class="btn btn-outline btn-sm">Launch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="section">
+    <div class="section-label">Table</div>
+    <table class="table">
+      <thead>
+        <tr><th>DATE</th><th>TOPIC</th><th>DURATION</th><th>SCORE</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Feb 11, 2026</td><td>Anatomy — Upper Limb</td><td>45 min</td><td>87%</td></tr>
+        <tr><td>Feb 10, 2026</td><td>Biomechanics — Gait</td><td>32 min</td><td>92%</td></tr>
+        <tr><td>Feb 9, 2026</td><td>Neuroscience — Cranial Nerves</td><td>55 min</td><td>78%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TABS -->
+  <div class="section">
+    <div class="section-label">Tabs</div>
+    <div class="tab-bar">
+      <span class="tab-item active">Overview</span>
+      <span class="tab-item">History</span>
+      <span class="tab-item">Settings</span>
+    </div>
+    <div class="tab-content">
+      <p>Tab content area — this is where page-specific content renders based on the selected tab above.</p>
+    </div>
+  </div>
+
+  <!-- FEEDBACK -->
+  <div class="section">
+    <div class="section-label">Feedback</div>
+    <div class="toast toast-success">&#10003; Session saved successfully</div>
+    <div class="toast toast-error">&#10007; Failed to sync with server</div>
+    <div class="toast toast-warning">&#9888; Low confidence score detected</div>
+    <div class="toast toast-info">&#8505; New study material available</div>
+    <div class="badge-row">
+      <span class="badge badge-red">ACTIVE</span>
+      <span class="badge badge-green">COMPLETE</span>
+      <span class="badge badge-gray">PENDING</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label">Course Progress — 65%</div>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- STATES -->
+  <div class="section">
+    <div class="section-label">States</div>
+    <div class="states-grid">
+      <div class="state-card">
+        <div class="state-icon">&#128196;</div>
+        <div class="state-title">No sessions yet</div>
+        <div class="state-text">Start your first study session to see data here.</div>
+        <button class="btn btn-primary btn-sm">Get Started</button>
+      </div>
+      <div class="state-card">
+        <div class="skeleton skeleton-block"></div>
+        <div class="skeleton skeleton-wide"></div>
+        <div class="skeleton skeleton-med"></div>
+        <div class="skeleton skeleton-short"></div>
+      </div>
+      <div class="state-card state-error">
+        <div class="state-icon" style="opacity:1; color: var(--accent);">&#9888;</div>
+        <div class="state-title">Connection Error</div>
+        <div class="state-text">Unable to reach the server. Check your connection.</div>
+        <button class="btn btn-outline btn-sm">Retry</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const themes = {
+  warm: {
+    '--bg': '#0F0A0A',
+    '--surface-1': '#1A1214',
+    '--surface-2': '#1A1214',
+    '--surface-3': '#1A1214',
+    '--border': '#2A1E20',
+    '--accent': '#C8354A',
+    '--accent-muted': 'rgba(200, 53, 74, 0.12)',
+    '--text-primary': '#F5F0F0',
+    '--text-secondary': '#8A7E7E',
+    '--text-muted': '#5A5050',
+    desc: 'Rich, warm — dark leather & velvet'
+  },
+  layered: {
+    '--bg': '#080808',
+    '--surface-1': '#121212',
+    '--surface-2': '#1A1A1A',
+    '--surface-3': '#222222',
+    '--border': '#2A2A2A',
+    '--accent': '#CC2E48',
+    '--accent-muted': 'rgba(204, 46, 72, 0.10)',
+    '--text-primary': '#EEEEEE',
+    '--text-secondary': '#777777',
+    '--text-muted': '#555555',
+    desc: 'Layered depth — VS Code / Linear feel'
+  }
+};
+
+const typeThemes = {
+  current: {
+    '--font-heading': "'Press Start 2P', cursive",
+    '--font-body': "'VT323', monospace",
+    '--h1-size': '24px', '--h2-size': '18px', '--h3-size': '14px', '--h4-size': '12px',
+    '--body-size': '18px', '--small-size': '16px', '--caption-size': '10px',
+    '--h-weight': '400', '--h3-weight': '400', '--body-weight': '400',
+    '--h-spacing': '2px', '--h-transform': 'uppercase',
+    '--caption-spacing': '2px', '--caption-transform': 'uppercase',
+    '--body-line-height': '1.6',
+    '--label-spacing': '2px', '--label-transform': 'uppercase',
+    desc: 'Press Start 2P + VT323 — current app fonts'
+  },
+  pixel_mono: {
+    '--font-heading': "'Press Start 2P', cursive",
+    '--font-body': "'Fira Code', monospace",
+    '--h1-size': '22px', '--h2-size': '16px', '--h3-size': '13px', '--h4-size': '11px',
+    '--body-size': '14px', '--small-size': '13px', '--caption-size': '10px',
+    '--h-weight': '400', '--h3-weight': '400', '--body-weight': '400',
+    '--h-spacing': '2px', '--h-transform': 'uppercase',
+    '--caption-spacing': '2px', '--caption-transform': 'uppercase',
+    '--body-line-height': '1.7',
+    '--label-spacing': '1px', '--label-transform': 'uppercase',
+    desc: 'Pixel headers + modern mono body — more readable'
+  },
+  full_terminal: {
+    '--font-heading': "'VT323', monospace",
+    '--font-body': "'VT323', monospace",
+    '--h1-size': '42px', '--h2-size': '32px', '--h3-size': '26px', '--h4-size': '22px',
+    '--body-size': '20px', '--small-size': '18px', '--caption-size': '14px',
+    '--h-weight': '400', '--h3-weight': '400', '--body-weight': '400',
+    '--h-spacing': '3px', '--h-transform': 'uppercase',
+    '--caption-spacing': '3px', '--caption-transform': 'uppercase',
+    '--body-line-height': '1.5',
+    '--label-spacing': '3px', '--label-transform': 'uppercase',
+    desc: 'All VT323 — pure CRT terminal, everything glows'
+  },
+  silkscreen: {
+    '--font-heading': "'Silkscreen', cursive",
+    '--font-body': "'Share Tech Mono', monospace",
+    '--h1-size': '28px', '--h2-size': '22px', '--h3-size': '17px', '--h4-size': '14px',
+    '--body-size': '15px', '--small-size': '14px', '--caption-size': '11px',
+    '--h-weight': '700', '--h3-weight': '400', '--body-weight': '400',
+    '--h-spacing': '1px', '--h-transform': 'uppercase',
+    '--caption-spacing': '2px', '--caption-transform': 'uppercase',
+    '--body-line-height': '1.6',
+    '--label-spacing': '1px', '--label-transform': 'uppercase',
+    desc: 'Silkscreen + Share Tech Mono — clean pixel + retro mono'
+  }
+};
+
+const spacingThemes = {
+  tight: {
+    '--container-width': '1200px', '--container-pad': '20px 16px',
+    '--section-gap': '28px', '--card-pad': '14px', '--grid-gap': '10px',
+    '--btn-pad': '5px 14px', '--btn-sm-pad': '3px 10px', '--btn-lg-pad': '8px 20px',
+    '--input-pad': '7px 10px', '--nav-gap': '2px', '--nav-pad': '4px 8px',
+    '--row-gap': '8px', '--header-height': '48px', '--header-pad': '0 12px',
+    '--header-gap': '16px', '--tab-pad': '7px 14px', '--toast-pad': '8px 12px',
+    '--state-pad': '20px',
+    desc: 'Compact, dense — max data visible'
+  },
+  standard: {
+    '--container-width': '1200px', '--container-pad': '32px 24px',
+    '--section-gap': '48px', '--card-pad': '24px', '--grid-gap': '16px',
+    '--btn-pad': '8px 20px', '--btn-sm-pad': '5px 14px', '--btn-lg-pad': '12px 28px',
+    '--input-pad': '10px 12px', '--nav-gap': '4px', '--nav-pad': '6px 12px',
+    '--row-gap': '12px', '--header-height': '56px', '--header-pad': '0 16px',
+    '--header-gap': '24px', '--tab-pad': '10px 20px', '--toast-pad': '12px 16px',
+    '--state-pad': '32px',
+    desc: 'Balanced — current spacing'
+  },
+  generous: {
+    '--container-width': '1200px', '--container-pad': '40px 32px',
+    '--section-gap': '64px', '--card-pad': '32px', '--grid-gap': '24px',
+    '--btn-pad': '12px 28px', '--btn-sm-pad': '8px 18px', '--btn-lg-pad': '16px 36px',
+    '--input-pad': '14px 16px', '--nav-gap': '8px', '--nav-pad': '8px 16px',
+    '--row-gap': '16px', '--header-height': '64px', '--header-pad': '0 24px',
+    '--header-gap': '32px', '--tab-pad': '14px 28px', '--toast-pad': '16px 20px',
+    '--state-pad': '40px',
+    desc: 'Breathing room — relaxed, premium feel'
+  },
+  wide: {
+    '--container-width': '1400px', '--container-pad': '48px 40px',
+    '--section-gap': '80px', '--card-pad': '40px', '--grid-gap': '32px',
+    '--btn-pad': '14px 32px', '--btn-sm-pad': '10px 22px', '--btn-lg-pad': '18px 44px',
+    '--input-pad': '16px 20px', '--nav-gap': '12px', '--nav-pad': '10px 20px',
+    '--row-gap': '20px', '--header-height': '72px', '--header-pad': '0 32px',
+    '--header-gap': '40px', '--tab-pad': '16px 32px', '--toast-pad': '20px 24px',
+    '--state-pad': '48px',
+    desc: 'Extra spacious — big dashboard energy'
+  }
+};
+
+function setSpacing(name) {
+  const t = spacingThemes[name];
+  const root = document.documentElement;
+  for (const [prop, val] of Object.entries(t)) {
+    if (prop === 'desc') continue;
+    root.style.setProperty(prop, val);
+  }
+  document.getElementById('space-desc').textContent = t.desc;
+  document.querySelectorAll('#sbtn-tight, #sbtn-standard, #sbtn-generous, #sbtn-wide').forEach(b => b.classList.remove('active'));
+  document.getElementById('sbtn-' + name).classList.add('active');
+}
+
+const borderThemes = {
+  pixel_light: {
+    '--border-width': '2px', '--border-style': 'solid', '--radius': '0px',
+    '--divider-width': '1px', '--accent-border': '2px', '--card-border': '2px',
+    '--input-border': '2px', '--btn-border': '2px', '--toast-left': '3px',
+    desc: '2px solid, 0px radius — light pixel frame'
+  },
+  pixel_standard: {
+    '--border-width': '3px', '--border-style': 'solid', '--radius': '0px',
+    '--divider-width': '2px', '--accent-border': '3px', '--card-border': '3px',
+    '--input-border': '3px', '--btn-border': '3px', '--toast-left': '4px',
+    desc: '3px solid, 0px radius — classic 8-bit window border'
+  },
+  pixel_heavy: {
+    '--border-width': '4px', '--border-style': 'solid', '--radius': '0px',
+    '--divider-width': '2px', '--accent-border': '4px', '--card-border': '4px',
+    '--input-border': '4px', '--btn-border': '4px', '--toast-left': '6px',
+    desc: '4px solid, 0px radius — thick arcade cabinet bezel'
+  },
+  pixel_double: {
+    '--border-width': '3px', '--border-style': 'double', '--radius': '0px',
+    '--divider-width': '3px', '--accent-border': '4px', '--card-border': '3px',
+    '--input-border': '3px', '--btn-border': '3px', '--toast-left': '5px',
+    desc: '3px double, 0px radius — retro OS window chrome'
+  }
+};
+
+function setBorder(name) {
+  const t = borderThemes[name];
+  const root = document.documentElement;
+  for (const [prop, val] of Object.entries(t)) {
+    if (prop === 'desc') continue;
+    root.style.setProperty(prop, val);
+  }
+  document.getElementById('border-desc').textContent = t.desc;
+  document.querySelectorAll('#bbtn-pixel_light, #bbtn-pixel_standard, #bbtn-pixel_heavy, #bbtn-pixel_double').forEach(b => b.classList.remove('active'));
+  document.getElementById('bbtn-' + name).classList.add('active');
+}
+
+const stateThemes = {
+  glow: {
+    '--hover-bg': 'rgba(200, 53, 74, 0.08)',
+    '--hover-border': 'var(--accent)',
+    '--hover-text': 'var(--text-primary)',
+    '--hover-shadow': '0 0 8px rgba(200, 53, 74, 0.4)',
+    '--hover-transform': 'none',
+    '--active-transform': 'translateY(1px)',
+    '--active-shadow': '0 0 12px rgba(200, 53, 74, 0.6)',
+    '--active-brightness': '0.85',
+    '--focus-shadow': '0 0 0 2px var(--accent)',
+    '--disabled-opacity': '0.35',
+    '--card-hover-border': 'var(--accent)',
+    '--card-hover-shadow': '0 0 10px rgba(200, 53, 74, 0.3)',
+    '--card-hover-transform': 'none',
+    '--transition-speed': '0.15s',
+    desc: 'Red glow on hover, press down on click'
+  },
+  invert: {
+    '--hover-bg': 'var(--accent)',
+    '--hover-border': 'var(--accent)',
+    '--hover-text': '#fff',
+    '--hover-shadow': 'none',
+    '--hover-transform': 'none',
+    '--active-transform': 'translateY(1px)',
+    '--active-shadow': 'none',
+    '--active-brightness': '0.8',
+    '--focus-shadow': '0 0 0 2px var(--accent)',
+    '--disabled-opacity': '0.3',
+    '--card-hover-border': 'var(--accent)',
+    '--card-hover-shadow': 'none',
+    '--card-hover-transform': 'none',
+    '--transition-speed': '0.1s',
+    desc: 'Colors flip on hover — bg becomes accent'
+  },
+  press: {
+    '--hover-bg': 'rgba(200, 53, 74, 0.06)',
+    '--hover-border': 'var(--accent)',
+    '--hover-text': 'var(--text-primary)',
+    '--hover-shadow': 'inset 0 -2px 0 var(--accent)',
+    '--hover-transform': 'none',
+    '--active-transform': 'translateY(2px) scale(0.98)',
+    '--active-shadow': 'inset 0 2px 4px rgba(0,0,0,0.5)',
+    '--active-brightness': '0.85',
+    '--focus-shadow': '0 0 0 2px var(--accent)',
+    '--disabled-opacity': '0.3',
+    '--card-hover-border': 'var(--text-muted)',
+    '--card-hover-shadow': 'inset 0 -3px 0 var(--accent)',
+    '--card-hover-transform': 'none',
+    '--transition-speed': '0.08s',
+    desc: 'Physical button press — pushes in, fast snap'
+  },
+  flicker: {
+    '--hover-bg': 'rgba(200, 53, 74, 0.1)',
+    '--hover-border': 'var(--accent)',
+    '--hover-text': 'var(--accent)',
+    '--hover-shadow': '0 0 6px rgba(200, 53, 74, 0.3), inset 0 0 6px rgba(200, 53, 74, 0.1)',
+    '--hover-transform': 'none',
+    '--active-transform': 'translateY(1px)',
+    '--active-shadow': '0 0 15px rgba(200, 53, 74, 0.5)',
+    '--active-brightness': '1.1',
+    '--focus-shadow': '0 0 0 2px var(--accent), 0 0 8px rgba(200, 53, 74, 0.3)',
+    '--disabled-opacity': '0.25',
+    '--card-hover-border': 'var(--accent)',
+    '--card-hover-shadow': '0 0 8px rgba(200, 53, 74, 0.2), inset 0 0 8px rgba(200, 53, 74, 0.05)',
+    '--card-hover-transform': 'none',
+    '--transition-speed': '0.12s',
+    desc: 'CRT phosphor glow — text turns red, double glow'
+  }
+};
+
+function setState(name) {
+  const t = stateThemes[name];
+  const root = document.documentElement;
+  for (const [prop, val] of Object.entries(t)) {
+    if (prop === 'desc') continue;
+    root.style.setProperty(prop, val);
+  }
+  document.getElementById('state-desc').textContent = t.desc;
+  document.querySelectorAll('#stbtn-glow, #stbtn-invert, #stbtn-press, #stbtn-flicker').forEach(b => b.classList.remove('active'));
+  document.getElementById('stbtn-' + name).classList.add('active');
+}
+
+function setTheme(name) {
+  const t = themes[name];
+  const root = document.documentElement;
+  for (const [prop, val] of Object.entries(t)) {
+    if (prop === 'desc') continue;
+    root.style.setProperty(prop, val);
+  }
+  document.getElementById('theme-desc').textContent = t.desc;
+  document.querySelectorAll('#btn-warm, #btn-layered').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + name).classList.add('active');
+}
+
+function setType(name) {
+  const t = typeThemes[name];
+  const root = document.documentElement;
+  for (const [prop, val] of Object.entries(t)) {
+    if (prop === 'desc') continue;
+    root.style.setProperty(prop, val);
+  }
+  document.getElementById('type-desc').textContent = t.desc;
+  document.querySelectorAll('#tbtn-current, #tbtn-pixel_mono, #tbtn-full_terminal, #tbtn-silkscreen').forEach(b => b.classList.remove('active'));
+  document.getElementById('tbtn-' + name).classList.add('active');
+}
+
+// All tokens locked — no keyboard shortcuts needed
+</script>
+
+</body>
+</html>

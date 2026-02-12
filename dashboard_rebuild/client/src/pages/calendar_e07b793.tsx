@@ -668,7 +668,7 @@ export default function CalendarPage() {
         
         {/* Main Calendar */}
         <div className="lg:col-span-3 flex flex-col min-h-0">
-          <Card className="bg-black/40 border-2 border-primary rounded-none flex-1 flex flex-col overflow-hidden min-h-0">
+          <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none flex-1 flex flex-col overflow-hidden min-h-0">
             {/* Header */}
             <CardHeader className="border-b border-primary/30 p-2 md:p-3 flex flex-row justify-between items-center shrink-0 flex-wrap gap-2">
               <div className="flex items-center gap-2 md:gap-3">
@@ -963,7 +963,7 @@ export default function CalendarPage() {
 
         {/* Sidebar */}
         <div className="space-y-2 flex flex-col overflow-auto">
-          <Card className="bg-black/40 border-2 border-secondary rounded-none shrink-0">
+          <Card className="bg-black/40 border-[3px] border-double border-secondary rounded-none shrink-0">
             <CardContent className="p-1.5">
               <div className="grid grid-cols-7 gap-0.5 text-center">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (<div key={i} className="font-arcade text-[7px] text-muted-foreground p-0.5">{d}</div>))}
@@ -986,7 +986,7 @@ export default function CalendarPage() {
           </div>
           
           {searchQuery && filteredEvents.length > 0 && (
-            <Card className="bg-black/40 border-2 border-secondary rounded-none max-h-[200px] overflow-auto">
+            <Card className="bg-black/40 border-[3px] border-double border-secondary rounded-none max-h-[200px] overflow-auto">
               <CardContent className="p-2 space-y-1">
                 {filteredEvents.map((event, i) => (
                   <div 
@@ -1014,7 +1014,7 @@ export default function CalendarPage() {
             <Plus className="w-4 h-4 mr-2" /> CREATE EVENT
           </Button>
 
-          <Card className="bg-black/40 border-2 border-primary/50 rounded-none shrink-0">
+          <Card className="bg-black/40 border-[3px] border-double border-primary/50 rounded-none shrink-0">
             <CardHeader className="p-3 border-b border-primary/50">
               <CardTitle className="font-arcade text-sm text-primary">GOOGLE</CardTitle>
             </CardHeader>
@@ -1052,7 +1052,7 @@ export default function CalendarPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-black/40 border-2 border-secondary rounded-none shrink-0">
+          <Card className="bg-black/40 border-[3px] border-double border-secondary rounded-none shrink-0">
             <CardHeader className="p-3 border-b border-secondary flex flex-row justify-between items-center cursor-pointer" onClick={() => setCalendarsCollapsed(!calendarsCollapsed)}>
               <CardTitle className="font-arcade text-sm">CALENDARS</CardTitle>
               {calendarsCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -1122,7 +1122,7 @@ export default function CalendarPage() {
             )}
           </Card>
 
-          <Card className="bg-black/40 border-2 border-secondary rounded-none flex-1">
+          <Card className="bg-black/40 border-[3px] border-double border-secondary rounded-none flex-1">
             <CardHeader className="p-3 border-b border-secondary flex flex-row justify-between items-center">
               <CardTitle className="font-arcade text-sm">TASKS</CardTitle>
               <Badge variant="secondary" className="rounded-none font-terminal text-sm" data-testid="badge-pending-tasks">{totalPendingTasks}</Badge>
@@ -1167,7 +1167,7 @@ export default function CalendarPage() {
 
       {/* Create Modal */}
       <Dialog open={showEventModal} onOpenChange={setShowEventModal}>
-        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-arcade text-primary">CREATE EVENT</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -1275,7 +1275,7 @@ export default function CalendarPage() {
 
       {/* Edit Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-arcade text-primary">EDIT EVENT</DialogTitle></DialogHeader>
           {selectedEvent && (
             <div className="space-y-4 py-4">
@@ -1396,7 +1396,7 @@ export default function CalendarPage() {
 
       {/* Google Event View Modal */}
       <Dialog open={showGoogleEditModal} onOpenChange={setShowGoogleEditModal}>
-        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
+        <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-md">
           <DialogHeader>
             <DialogTitle className="font-arcade text-primary flex items-center gap-2">
               GOOGLE_EVENT

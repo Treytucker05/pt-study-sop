@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brain V2 - Excalidraw Canvas Layout Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: hsl(0 0% 5%);
+    --fg: hsl(0 0% 95%);
+    --primary: hsl(0 100% 50%);
+    --primary-dim: hsl(0 100% 25%);
+    --primary-glow: hsl(0 100% 50% / 0.08);
+    --secondary: hsl(0 0% 20%);
+    --muted: hsl(0 0% 70%);
+    --surface: hsl(0 0% 8%);
+    --surface-2: hsl(0 0% 4%);
+    --border: hsl(0 100% 25%);
+    --success: hsl(142 76% 36%);
+    --font-arcade: 'Press Start 2P', cursive;
+    --font-terminal: 'VT323', monospace;
+    --header-h: 68px;
+    --footer-h: 48px;
+  }
+
+  body {
+    font-family: var(--font-terminal);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 18px;
+    letter-spacing: 0.04em;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ========== HEADER (simulated, fixed) ========== */
+  .header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--header-h);
+    background: hsl(0 0% 0% / 0.8);
+    border-bottom: 4px solid var(--primary);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .header .logo { 
+    width: 40px; height: 40px; 
+    background: var(--primary-dim); 
+    border-radius: 4px; 
+    margin-right: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-arcade); font-size: 8px; color: var(--fg);
+  }
+  .header .title { 
+    font-family: var(--font-arcade); font-size: 9px; color: white; 
+    margin-right: 24px; white-space: nowrap;
+  }
+  .header nav { display: flex; gap: 4px; }
+  .header nav button {
+    font-family: var(--font-arcade);
+    font-size: 8px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .header nav button:hover { color: var(--fg); border-color: var(--primary-dim); }
+  .header nav button.active { 
+    background: var(--primary); color: white; border-color: var(--primary); 
+  }
+
+  /* Footer removed — hint-bar serves as the footer */
+
+  /* ========== BRAIN WORKSPACE (fills between header & footer) ========== */
+  .brain-workspace {
+    position: fixed;
+    top: var(--header-h);
+    bottom: var(--footer-h);
+    left: 0; right: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-2);
+    border-left: 3px solid var(--primary);
+    border-right: 3px solid var(--primary);
+    background-image: 
+      linear-gradient(hsl(0 100% 25% / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 100% 25% / 0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+    overflow: hidden;
+  }
+
+  /* ========== LAYOUT SWITCHER BAR ========== */
+  .layout-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 1px solid hsl(0 100% 50% / 0.4);
+    background: hsl(0 0% 0% / 0.4);
+    flex-shrink: 0;
+    height: 36px;
+  }
+  .layout-bar .tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 14px;
+    height: 36px;
+    font-family: var(--font-arcade);
+    font-size: 9px;
+    color: var(--muted);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .layout-bar .tab:hover { color: var(--fg); }
+  .layout-bar .tab.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: inset 0 -3px 0 0 hsl(0 100% 70%);
+  }
+  .layout-bar .tab .icon { font-size: 12px; }
+  .layout-bar .spacer { flex: 1; }
+  .layout-bar .status-dots {
+    display: flex; align-items: center; gap: 12px;
+    padding-right: 12px;
+    font-size: 13px;
+  }
+  .layout-bar .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+  }
+  .dot.green { background: var(--success); }
+  .dot.red { background: var(--primary); }
+
+  /* ========== MAIN CONTENT AREA ========== */
+  .main-area {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* ========== SIDEBAR (Vault) ========== */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    border-right: 1px solid hsl(0 100% 50% / 0.3);
+    background: hsl(0 0% 0% / 0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 4px 0 24px -4px var(--primary-glow);
+    transition: width 0.2s ease;
+  }
+  .sidebar.collapsed {
+    width: 32px;
+    cursor: pointer;
+  }
+  .sidebar.collapsed .sidebar-content { display: none; }
+  .sidebar.collapsed .sidebar-rail { display: flex; }
+  .sidebar .sidebar-rail {
+    display: none;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-family: var(--font-arcade);
+    font-size: 8px;
+    color: var(--primary);
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    user-select: none;
+    padding: 8px 0;
+    gap: 8px;
+  }
+  .sidebar .sidebar-rail:hover { background: hsl(0 100% 50% / 0.08); }
+  .sidebar .sidebar-rail .rail-arrow {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .sidebar .section-title {
+    font-family: var(--font-arcade);
+    font-size: 10px;
+    color: var(--primary);
+    padding: 14px 12px 8px;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-bottom: 1px solid hsl(0 100% 50% / 0.2);
+    margin-left: 8px;
+    margin-right: 8px;
+    margin-bottom: 6px;
+  }
+  .sidebar .file-tree {
+    overflow-y: auto;
+    flex: 1;
+    padding-bottom: 8px;
+  }
+  .sidebar .file-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 12px;
+    font-size: 15px;
+    color: var(--fg);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .sidebar .file-item:hover {
+    background: hsl(0 100% 50% / 0.1);
+    border-left-color: hsl(0 100% 50% / 0.4);
+  }
+  .sidebar .file-item.active {
+    background: hsl(0 100% 50% / 0.15);
+    border-left-color: var(--primary);
+    color: var(--primary);
+  }
+  .sidebar .file-item .file-icon { color: hsl(217 91% 60%); font-size: 14px; }
+  .sidebar .file-item .folder-icon { color: hsl(43 96% 56%); font-size: 14px; }
+  .sidebar .file-item .chevron {
+    font-size: 10px;
+    color: var(--muted);
+    transition: transform 0.15s;
+    display: inline-block;
+    width: 12px;
+    text-align: center;
+  }
+  .sidebar .file-item .chevron.open { transform: rotate(90deg); }
+  .sidebar .file-item.depth-1 { padding-left: 28px; }
+  .sidebar .file-item.depth-2 { padding-left: 44px; }
+  .sidebar .file-item.depth-3 { padding-left: 60px; }
+  .sidebar .folder-children {
+    overflow: hidden;
+    transition: max-height 0.2s ease;
+  }
+  .sidebar .folder-children.collapsed { max-height: 0 !important; }
+  .sidebar .indent-guide {
+    position: absolute;
+    left: 22px;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: hsl(0 100% 50% / 0.1);
+  }
+  .sidebar .folder-group { position: relative; }
+  .sidebar .search-box {
+    margin: 8px 12px;
+    padding: 6px 10px;
+    background: hsl(0 0% 0% / 0.4);
+    border: 1px solid hsl(0 100% 50% / 0.2);
+    color: var(--fg);
+    font-family: var(--font-terminal);
+    font-size: 15px;
+    outline: none;
+  }
+  .sidebar .search-box:focus { border-color: hsl(0 100% 50% / 0.5); }
+
+  /* ========== EXCALIDRAW CANVAS (primary workspace) ========== */
+  .canvas-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: hsl(0 0% 5% / 0.6);
+    box-shadow: inset 0 0 60px -12px var(--primary-glow);
+    position: relative;
+  }
+
+  /* Canvas toolbar */
+  .canvas-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-bottom: 1px solid hsl(0 100% 50% / 0.2);
+    background: hsl(0 0% 0% / 0.4);
+    flex-shrink: 0;
+    height: 32px;
+  }
+  .canvas-toolbar .tool-btn {
+    padding: 2px 8px;
+    height: 24px;
+    font-family: var(--font-terminal);
+    font-size: 13px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+    transition: all 0.15s;
+  }
+  .canvas-toolbar .tool-btn:hover { color: var(--fg); background: hsl(0 100% 50% / 0.1); }
+  .canvas-toolbar .tool-btn.active { color: var(--primary); background: hsl(0 100% 50% / 0.2); }
+  .canvas-toolbar .sep { width: 1px; height: 16px; background: hsl(0 100% 50% / 0.2); margin: 0 4px; }
+  .canvas-toolbar .label {
+    font-family: var(--font-arcade);
+    font-size: 7px;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+
+  /* The actual "Excalidraw" area */
+  .excalidraw-placeholder {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .excalidraw-placeholder .canvas-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(hsl(0 0% 15% / 0.15) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 15% / 0.15) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .excalidraw-placeholder .label-hint {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-arcade);
+    font-size: 11px;
+    color: hsl(0 100% 50% / 0.3);
+    text-align: center;
+    line-height: 2;
+  }
+
+  /* ========== CHAT PANEL (right side, toggleable) ========== */
+  .chat-panel {
+    width: 320px;
+    flex-shrink: 0;
+    border-left: 1px solid hsl(0 100% 50% / 0.3);
+    background: hsl(0 0% 0% / 0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width 0.2s ease;
+  }
+  .chat-panel.collapsed {
+    width: 32px;
+    cursor: pointer;
+  }
+  .chat-panel.collapsed .chat-content { display: none; }
+  .chat-panel.collapsed .chat-rail { display: flex; }
+  .chat-panel .chat-rail {
+    display: none;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-family: var(--font-arcade);
+    font-size: 8px;
+    color: var(--primary);
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    user-select: none;
+    padding: 8px 0;
+    gap: 8px;
+  }
+  .chat-panel .chat-rail:hover { background: hsl(0 100% 50% / 0.08); }
+  .chat-panel .chat-rail .rail-arrow {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .chat-panel .chat-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid hsl(0 100% 50% / 0.2);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chat-panel .chat-header .chat-title {
+    font-family: var(--font-arcade);
+    font-size: 8px;
+    color: var(--primary);
+  }
+  .chat-panel .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .chat-panel .chat-msg {
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border: 1px solid hsl(0 0% 20%);
+    background: hsl(0 0% 8%);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .chat-panel .chat-msg.ai {
+    border-color: hsl(0 100% 50% / 0.3);
+    background: hsl(0 100% 50% / 0.05);
+  }
+  .chat-panel .chat-msg .role {
+    font-family: var(--font-arcade);
+    font-size: 7px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .chat-panel .chat-msg.ai .role { color: var(--primary); }
+  .chat-panel .chat-input-area {
+    padding: 8px 12px;
+    border-top: 1px solid hsl(0 100% 50% / 0.2);
+  }
+  .chat-panel .chat-input {
+    width: 100%;
+    padding: 8px 10px;
+    background: hsl(0 0% 0% / 0.5);
+    border: 1px solid hsl(0 100% 50% / 0.3);
+    color: var(--fg);
+    font-family: var(--font-terminal);
+    font-size: 15px;
+    outline: none;
+  }
+  .chat-panel .chat-input:focus { border-color: var(--primary); }
+  .chat-panel .mcp-hint {
+    font-family: var(--font-arcade);
+    font-size: 7px;
+    color: hsl(0 100% 50% / 0.5);
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  /* ========== BOTTOM TRAY (Anki / Table / Vault Graph) ========== */
+  .bottom-tray {
+    height: 0;
+    flex-shrink: 0;
+    border-top: 1px solid hsl(0 100% 50% / 0.3);
+    background: hsl(0 0% 0% / 0.5);
+    overflow: hidden;
+    transition: height 0.25s ease;
+    display: flex;
+  }
+  .bottom-tray.open {
+    height: 220px;
+  }
+  .bottom-tray .tray-header {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    padding: 8px 6px;
+    font-family: var(--font-arcade);
+    font-size: 7px;
+    color: var(--primary);
+    letter-spacing: 0.15em;
+    border-right: 1px solid hsl(0 100% 50% / 0.2);
+    cursor: pointer;
+  }
+  .bottom-tray .tray-content {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* ========== LAYOUT TEMPLATES (shown on canvas) ========== */
+  .template-picker {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+  }
+  .template-picker .tp-title {
+    font-family: var(--font-arcade);
+    font-size: 10px;
+    color: var(--primary);
+  }
+  .template-picker .tp-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .template-picker .tp-card {
+    width: 180px;
+    height: 130px;
+    border: 2px solid hsl(0 100% 50% / 0.3);
+    background: hsl(0 0% 4%);
+    cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+  .template-picker .tp-card:hover {
+    border-color: var(--primary);
+    background: hsl(0 100% 50% / 0.08);
+    transform: translateY(-2px);
+  }
+  .template-picker .tp-card .tp-preview {
+    width: 140px; height: 70px;
+    border: 1px solid hsl(0 0% 20%);
+    background: hsl(0 0% 6%);
+    position: relative;
+    overflow: hidden;
+  }
+  .template-picker .tp-card .tp-name {
+    font-family: var(--font-arcade);
+    font-size: 7px;
+    color: var(--muted);
+  }
+
+  /* Mini layout previews inside template cards */
+  .mini-layout { position: absolute; inset: 4px; }
+  .mini-box {
+    position: absolute;
+    border: 1px solid hsl(0 100% 50% / 0.4);
+    background: hsl(0 100% 50% / 0.08);
+  }
+  .mini-label {
+    position: absolute;
+    font-family: var(--font-arcade);
+    font-size: 5px;
+    color: hsl(0 100% 50% / 0.5);
+  }
+
+  /* View state controls */
+  .view-controls {
+    position: absolute;
+    top: 12px; right: 12px;
+    z-index: 20;
+    display: flex; gap: 4px;
+  }
+  .view-controls button {
+    padding: 4px 10px;
+    font-family: var(--font-terminal);
+    font-size: 13px;
+    background: hsl(0 0% 0% / 0.7);
+    border: 1px solid hsl(0 100% 50% / 0.3);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .view-controls button:hover { color: var(--fg); border-color: var(--primary); }
+  .view-controls button.active { color: var(--primary); background: hsl(0 100% 50% / 0.15); }
+
+  /* Interactive hint - sits as actual footer, not overlay */
+  .hint-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--footer-h);
+    background: hsl(0 100% 50% / 0.1);
+    border-top: 1px solid hsl(0 100% 50% / 0.3);
+    border-left: 3px solid var(--primary);
+    border-right: 3px solid var(--primary);
+    border-bottom: 3px solid var(--primary);
+    padding: 0 16px;
+    font-family: var(--font-arcade);
+    font-size: 8px;
+    color: var(--primary);
+    text-align: center;
+    z-index: 101;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+  .hint-bar kbd {
+    padding: 2px 6px;
+    background: hsl(0 0% 10%);
+    border: 1px solid var(--primary-dim);
+    font-family: var(--font-terminal);
+    font-size: 12px;
+    color: var(--fg);
+    margin: 0 2px;
+  }
+
+  /* Responsive: hide sidebar on small screens */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .chat-panel { width: 260px; }
+  }
+
+  /* ========== INTERACTIVITY (JS toggles) ========== */
+  .hidden-panel { display: none !important; }
+
+  /* Chat textarea (auto-expanding) */
+  .chat-panel .chat-input {
+    resize: none;
+    min-height: 36px;
+    max-height: 140px;
+    overflow-y: auto;
+    line-height: 1.4;
+    word-wrap: break-word;
+  }
+
+  /* Fullscreen canvas mode */
+  .brain-workspace.fullscreen {
+    position: fixed;
+    top: 0; bottom: 0; left: 0; right: 0;
+    z-index: 200;
+    border: none;
+  }
+  .brain-workspace.fullscreen .layout-bar,
+  .brain-workspace.fullscreen .sidebar,
+  .brain-workspace.fullscreen .chat-panel,
+  .brain-workspace.fullscreen .bottom-tray { display: none !important; }
+  .brain-workspace.fullscreen .canvas-area { border: none; }
+  .fullscreen-active .header,
+  .fullscreen-active .hint-bar { display: none !important; }
+
+  /* Fullscreen toggle button */
+  .fullscreen-btn {
+    padding: 4px 10px;
+    font-family: var(--font-terminal);
+    font-size: 13px;
+    background: hsl(0 0% 0% / 0.7);
+    border: 1px solid hsl(0 100% 50% / 0.3);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .fullscreen-btn:hover { color: var(--fg); border-color: var(--primary); }
+  .fullscreen-btn.active { color: var(--primary); background: hsl(0 100% 50% / 0.15); }
+
+  /* Resize handles (drag to resize sidebar/chat) */
+  .resize-handle {
+    width: 5px;
+    cursor: col-resize;
+    background: transparent;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+    transition: background 0.15s;
+  }
+  .resize-handle:hover,
+  .resize-handle.dragging {
+    background: hsl(0 100% 50% / 0.3);
+  }
+  .resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px; height: 32px;
+    border-left: 1px solid hsl(0 100% 50% / 0.3);
+    border-right: 1px solid hsl(0 100% 50% / 0.3);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .resize-handle:hover::after { opacity: 1; }
+
+  /* Vault collapse button */
+  .sidebar .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 8px;
+  }
+  .sidebar .sidebar-header .collapse-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    transition: color 0.15s;
+  }
+  .sidebar .sidebar-header .collapse-btn:hover { color: var(--primary); }
+</style>
+</head>
+<body>
+
+<!-- ====== HEADER ====== -->
+<div class="header">
+  <div class="logo">PT</div>
+  <div class="title">TREY'S STUDY SYSTEM</div>
+  <nav>
+    <button>DASHBOARD</button>
+    <button class="active">BRAIN</button>
+    <button>CALENDAR</button>
+    <button>SCHOLAR</button>
+    <button>TUTOR</button>
+    <button>METHODS</button>
+  </nav>
+</div>
+
+<!-- ====== BRAIN WORKSPACE ====== -->
+<div class="brain-workspace">
+
+  <!-- Layout Tab Bar -->
+  <div class="layout-bar">
+    <button class="tab active" data-layout="canvas" onclick="switchLayout('canvas')">
+      <span class="icon">&#9998;</span> CANVAS
+    </button>
+    <button class="tab" data-layout="edit" onclick="switchLayout('edit')">
+      <span class="icon">&#128221;</span> EDIT
+    </button>
+    <button class="tab" data-layout="anki" onclick="switchLayout('anki')">
+      <span class="icon">&#128218;</span> ANKI
+    </button>
+    <button class="tab" data-layout="table" onclick="switchLayout('table')">
+      <span class="icon">&#9638;</span> TABLE
+    </button>
+
+    <div class="spacer"></div>
+
+    <div class="status-dots">
+      <span><span class="dot green"></span> Obsidian</span>
+      <span><span class="dot green"></span> Anki</span>
+      <span><span class="dot red"></span> MCP</span>
+    </div>
+  </div>
+
+  <!-- Main Area: Sidebar + Canvas + Chat -->
+  <div class="main-area">
+
+    <!-- Vault Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-rail" onclick="toggleSidebar()">
+        <span class="rail-arrow">&#9654;</span>VAULT
+      </div>
+      <div class="sidebar-content">
+      <div class="sidebar-header">
+        <div class="section-title" style="margin: 0; border: none;">VAULT</div>
+        <button class="collapse-btn" onclick="toggleSidebar()" title="Collapse vault">&#9664;</button>
+      </div>
+      <input class="search-box" placeholder="Search files..." />
+      <div class="section-title">COURSES</div>
+      <div style="padding: 6px 12px; display: flex; gap: 6px; flex-wrap: wrap;">
+        <button style="font-family: var(--font-arcade); font-size: 8px; padding: 5px 10px; border: 1px solid var(--primary); background: var(--primary); color: white; cursor: pointer;">ANAT</button>
+        <button style="font-family: var(--font-arcade); font-size: 8px; padding: 5px 10px; border: 1px solid var(--primary-dim); background: transparent; color: var(--muted); cursor: pointer;">PHYS</button>
+        <button style="font-family: var(--font-arcade); font-size: 8px; padding: 5px 10px; border: 1px solid var(--primary-dim); background: transparent; color: var(--muted); cursor: pointer;">KINES</button>
+      </div>
+      <div class="section-title">FILES</div>
+      <div class="file-tree">
+        <!-- Folder: Brachial Plexus (expanded) -->
+        <div class="folder-group">
+          <div class="file-item" onclick="toggleFolder(this)">
+            <span class="chevron open">&#9654;</span>
+            <span class="folder-icon">&#128193;</span> Brachial Plexus
+          </div>
+          <div class="folder-children" style="max-height: 300px;">
+            <div class="file-item depth-1 active"><span class="file-icon">&#128196;</span> Session-2026-02-12.md</div>
+            <div class="file-item depth-1"><span class="file-icon">&#128196;</span> Rotator Cuff Notes.md</div>
+            <div class="file-item depth-1"><span class="file-icon">&#128196;</span> Shoulder Anatomy.md</div>
+            <!-- Nested folder -->
+            <div class="folder-group">
+              <div class="file-item depth-1" onclick="toggleFolder(this)">
+                <span class="chevron open">&#9654;</span>
+                <span class="folder-icon">&#128193;</span> Images
+              </div>
+              <div class="folder-children" style="max-height: 200px;">
+                <div class="file-item depth-2"><span class="file-icon">&#128444;</span> plexus-diagram.png</div>
+                <div class="file-item depth-2"><span class="file-icon">&#128444;</span> dermatomes.png</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Folder: Brain Canvas (collapsed) -->
+        <div class="folder-group">
+          <div class="file-item" onclick="toggleFolder(this)">
+            <span class="chevron">&#9654;</span>
+            <span class="folder-icon">&#128193;</span> Brain Canvas
+          </div>
+          <div class="folder-children collapsed">
+            <div class="file-item depth-1"><span class="file-icon">&#9998;</span> Plexus Map.excalidraw</div>
+            <div class="file-item depth-1"><span class="file-icon">&#9998;</span> Nerve Roots.excalidraw</div>
+          </div>
+        </div>
+
+        <!-- Folder: Kinesiology (collapsed) -->
+        <div class="folder-group">
+          <div class="file-item" onclick="toggleFolder(this)">
+            <span class="chevron">&#9654;</span>
+            <span class="folder-icon">&#128193;</span> Kinesiology
+          </div>
+          <div class="folder-children collapsed">
+            <div class="file-item depth-1"><span class="file-icon">&#128196;</span> Gait Cycle.md</div>
+            <div class="file-item depth-1"><span class="file-icon">&#128196;</span> Joint ROM Table.md</div>
+          </div>
+        </div>
+
+        <!-- Top-level file -->
+        <div class="file-item"><span class="file-icon">&#128196;</span> Quick Notes.md</div>
+      </div>
+      </div>
+    </div>
+
+    <div class="resize-handle" id="sidebarHandle" onmousedown="startResize(event, 'sidebar')"></div>
+
+    <!-- Canvas Area -->
+    <div class="canvas-area" id="canvasArea">
+
+      <!-- Canvas Toolbar -->
+      <div class="canvas-toolbar">
+        <span class="label">TOOLS</span>
+        <button class="tool-btn" title="Select">&#9670; Select</button>
+        <button class="tool-btn active" title="Draw">&#9998; Draw</button>
+        <button class="tool-btn" title="Shape">&#9632; Shape</button>
+        <button class="tool-btn" title="Arrow">&#8594; Arrow</button>
+        <button class="tool-btn" title="Text">A Text</button>
+        <div class="sep"></div>
+        <span class="label">ACTIONS</span>
+        <button class="tool-btn" title="Seed from curriculum">&#127793; Seed</button>
+        <button class="tool-btn" title="Import Mermaid">&#8645; Mermaid</button>
+        <button class="tool-btn" title="AI Generate">&#9733; AI Draw</button>
+        <div class="sep"></div>
+        <button class="tool-btn" title="Undo">&#8617;</button>
+        <button class="tool-btn" title="Redo">&#8618;</button>
+        <div class="sep"></div>
+        <button class="tool-btn" title="Export PNG">&#128190; PNG</button>
+        <button class="tool-btn" title="Save to Vault">&#128190; Save</button>
+        <div style="flex:1"></div>
+        <span style="font-family: var(--font-terminal); font-size: 13px; color: var(--muted);">
+          12N / 8E &nbsp;
+          <span class="dot green" style="vertical-align: middle;"></span> Saved
+        </span>
+      </div>
+
+      <!-- Excalidraw Canvas Placeholder -->
+      <div class="excalidraw-placeholder" id="excalidrawArea">
+        <div class="canvas-bg"></div>
+
+        <!-- View toggle (top right of canvas) -->
+        <div class="view-controls">
+          <button class="active" onclick="showView('canvas')">Canvas</button>
+          <button onclick="showView('templates')">Templates</button>
+          <button id="chatToggle" onclick="toggleChat()">Chat &#9656;</button>
+          <button id="trayToggle" onclick="toggleTray()">Tray &#9662;</button>
+          <button class="fullscreen-btn" id="fsToggle" onclick="toggleFullscreen()">&#9974; Full</button>
+        </div>
+
+        <!-- Default: shows Excalidraw canvas mockup -->
+        <div id="view-canvas" class="label-hint">
+          &#9998; EXCALIDRAW CANVAS<br>
+          <span style="font-size: 9px; color: hsl(0 100% 50% / 0.2);">
+            Freehand drawing &bull; Shapes &bull; Mind maps &bull; Concept maps<br>
+            LLM-generated diagrams via MCP &bull; Mermaid import<br>
+            All in one infinite canvas
+          </span>
+
+          <!-- Simulated drawing elements -->
+          <div style="position: absolute; top: 60px; left: 80px; width: 160px; height: 70px; border: 2px solid hsl(0 100% 50% / 0.5); background: hsl(0 100% 50% / 0.06); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--primary); transform: rotate(-1deg);">
+            Brachial Plexus
+          </div>
+          <div style="position: absolute; top: 60px; right: 200px; width: 120px; height: 55px; border: 2px solid hsl(217 91% 60% / 0.5); background: hsl(217 91% 60% / 0.06); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: hsl(217 91% 60%); transform: rotate(1deg);">
+            C5-T1
+          </div>
+          <div style="position: absolute; top: 170px; left: 200px; width: 100px; height: 45px; border: 2px solid hsl(142 76% 36% / 0.5); background: hsl(142 76% 36% / 0.06); display: flex; align-items: center; justify-content: center; font-size: 12px; color: hsl(142 76% 36%); transform: rotate(-0.5deg);">
+            Upper Trunk
+          </div>
+          <div style="position: absolute; top: 170px; left: 360px; width: 100px; height: 45px; border: 2px solid hsl(43 96% 56% / 0.5); background: hsl(43 96% 56% / 0.06); display: flex; align-items: center; justify-content: center; font-size: 12px; color: hsl(43 96% 56%); transform: rotate(0.5deg);">
+            Middle Trunk
+          </div>
+          <!-- Simulated hand-drawn arrow -->
+          <svg style="position: absolute; top: 120px; left: 160px; width: 200px; height: 80px; pointer-events: none;" viewBox="0 0 200 80">
+            <path d="M 20 10 C 40 30, 80 50, 100 60" stroke="hsl(0 100% 50% / 0.4)" fill="none" stroke-width="2" stroke-dasharray="4 4"/>
+            <path d="M 100 10 C 120 30, 140 50, 140 60" stroke="hsl(0 100% 50% / 0.4)" fill="none" stroke-width="2" stroke-dasharray="4 4"/>
+          </svg>
+        </div>
+
+        <!-- Template Picker (hidden by default) -->
+        <div id="view-templates" class="template-picker" style="display: none;">
+          <div class="tp-title">CHOOSE A LAYOUT TEMPLATE</div>
+          <div class="tp-grid">
+
+            <!-- Template 1: Blank Canvas -->
+            <div class="tp-card" onclick="alert('Blank Canvas - Fresh infinite canvas, no structure')">
+              <div class="tp-preview">
+                <div class="mini-layout">
+                  <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-family: var(--font-terminal); font-size: 10px; color: hsl(0 0% 30%);">blank</span>
+                  </div>
+                </div>
+              </div>
+              <div class="tp-name">BLANK CANVAS</div>
+            </div>
+
+            <!-- Template 2: Mind Map -->
+            <div class="tp-card" onclick="alert('Mind Map - Central topic with radiating branches. Auto-seeds from curriculum if connected.')">
+              <div class="tp-preview">
+                <div class="mini-layout">
+                  <div class="mini-box" style="left: 35%; top: 30%; width: 30%; height: 30%; border-color: hsl(0 100% 50% / 0.6);"></div>
+                  <div class="mini-box" style="left: 5%; top: 5%; width: 20%; height: 20%;"></div>
+                  <div class="mini-box" style="right: 5%; top: 5%; width: 20%; height: 20%;"></div>
+                  <div class="mini-box" style="left: 5%; bottom: 5%; width: 20%; height: 20%;"></div>
+                  <div class="mini-box" style="right: 5%; bottom: 5%; width: 20%; height: 20%;"></div>
+                </div>
+              </div>
+              <div class="tp-name">MIND MAP</div>
+            </div>
+
+            <!-- Template 3: Concept Map / Flowchart -->
+            <div class="tp-card" onclick="alert('Flowchart - Top-down structured diagram. Mermaid import auto-lays out nodes.')">
+              <div class="tp-preview">
+                <div class="mini-layout">
+                  <div class="mini-box" style="left: 30%; top: 5%; width: 40%; height: 18%;"></div>
+                  <div class="mini-box" style="left: 10%; top: 40%; width: 30%; height: 18%;"></div>
+                  <div class="mini-box" style="right: 10%; top: 40%; width: 30%; height: 18%;"></div>
+                  <div class="mini-box" style="left: 30%; bottom: 5%; width: 40%; height: 18%;"></div>
+                </div>
+              </div>
+              <div class="tp-name">FLOWCHART</div>
+            </div>
+
+            <!-- Template 4: Cornell Notes -->
+            <div class="tp-card" onclick="alert('Cornell Notes - Left column for cues, right for notes, bottom for summary. Great for study sessions.')">
+              <div class="tp-preview">
+                <div class="mini-layout">
+                  <div class="mini-box" style="left: 0; top: 0; width: 30%; height: 75%;"></div>
+                  <div class="mini-box" style="right: 0; top: 0; width: 68%; height: 75%;"></div>
+                  <div class="mini-box" style="left: 0; bottom: 0; width: 100%; height: 22%;"></div>
+                  <span class="mini-label" style="left: 3px; top: 3px;">CUES</span>
+                  <span class="mini-label" style="right: 10px; top: 3px;">NOTES</span>
+                  <span class="mini-label" style="left: 3px; bottom: 4px;">SUMMARY</span>
+                </div>
+              </div>
+              <div class="tp-name">CORNELL NOTES</div>
+            </div>
+
+            <!-- Template 5: Anatomy Diagram -->
+            <div class="tp-card" onclick="alert('Anatomy Workspace - Large central image area with labeled regions + annotation sidebar. Perfect for pasting reference images and annotating.')">
+              <div class="tp-preview">
+                <div class="mini-layout">
+                  <div class="mini-box" style="left: 0; top: 0; width: 65%; height: 100%; border-color: hsl(217 91% 60% / 0.4);"></div>
+                  <div class="mini-box" style="right: 0; top: 0; width: 32%; height: 45%;"></div>
+                  <div class="mini-box" style="right: 0; bottom: 0; width: 32%; height: 50%;"></div>
+                  <span class="mini-label" style="left: 15px; top: 25px;">IMAGE</span>
+                  <span class="mini-label" style="right: 8px; top: 3px;">LABELS</span>
+                  <span class="mini-label" style="right: 8px; bottom: 22px;">NOTES</span>
+                </div>
+              </div>
+              <div class="tp-name">ANATOMY</div>
+            </div>
+
+            <!-- Template 6: Comparison -->
+            <div class="tp-card" onclick="alert('Comparison - Two-column layout for comparing concepts side by side. Title row at top, shared notes at bottom.')">
+              <div class="tp-preview">
+                <div class="mini-layout">
+                  <div class="mini-box" style="left: 0; top: 0; width: 100%; height: 18%;"></div>
+                  <div class="mini-box" style="left: 0; top: 22%; width: 48%; height: 55%;"></div>
+                  <div class="mini-box" style="right: 0; top: 22%; width: 48%; height: 55%;"></div>
+                  <div class="mini-box" style="left: 0; bottom: 0; width: 100%; height: 18%;"></div>
+                  <span class="mini-label" style="left: 3px; top: 3px;">TOPIC</span>
+                  <span class="mini-label" style="left: 3px; top: 25px;">A</span>
+                  <span class="mini-label" style="right: 15px; top: 25px;">B</span>
+                  <span class="mini-label" style="left: 3px; bottom: 3px;">SHARED</span>
+                </div>
+              </div>
+              <div class="tp-name">COMPARISON</div>
+            </div>
+
+          </div>
+          <div style="font-family: var(--font-terminal); font-size: 14px; color: var(--muted); margin-top: 8px;">
+            Templates pre-place Excalidraw frames + shapes. You can modify everything after.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="resize-handle" id="chatHandle" onmousedown="startResize(event, 'chat')"></div>
+
+    <!-- Chat Panel (toggleable) -->
+    <div class="chat-panel" id="chatPanel">
+      <div class="chat-rail" onclick="toggleChat()">
+        <span class="rail-arrow">&#9664;</span>CHAT
+      </div>
+      <div class="chat-content">
+      <div class="chat-header">
+        <span class="chat-title">BRAIN CHAT + MCP</span>
+        <button style="background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px;" onclick="toggleChat()">&#9654;</button>
+      </div>
+      <div class="chat-messages">
+        <div class="chat-msg">
+          <div class="role">YOU</div>
+          Draw a concept map of the brachial plexus showing roots, trunks, divisions, cords, and terminal branches
+        </div>
+        <div class="chat-msg ai">
+          <div class="role">AI (via Excalidraw MCP)</div>
+          Drawing brachial plexus concept map...<br><br>
+          &#9989; Created 12 nodes (C5-T1 roots, 3 trunks, 6 divisions, 3 cords, 5 branches)<br>
+          &#9989; Connected with labeled arrows<br>
+          &#9989; Color-coded by level (roots=cyan, trunks=yellow, cords=green, branches=red)<br><br>
+          <span style="color: var(--primary);">Canvas updated. See diagram on left.</span>
+        </div>
+        <div class="chat-msg">
+          <div class="role">YOU</div>
+          Add clinical correlations - Erb's palsy for upper trunk, Klumpke's for lower trunk
+        </div>
+        <div class="chat-msg ai">
+          <div class="role">AI (via Excalidraw MCP)</div>
+          Added 2 clinical correlation boxes:<br>
+          &#8226; Erb's Palsy (C5-C6) linked to Upper Trunk<br>
+          &#8226; Klumpke's Palsy (C8-T1) linked to Lower Trunk<br><br>
+          <span style="color: var(--primary);">Canvas updated with annotations.</span>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <textarea class="chat-input" rows="1" placeholder="Ask AI to draw, modify, or explain..." oninput="autoGrow(this)"></textarea>
+        <div class="mcp-hint">MCP: EXCALIDRAW + OBSIDIAN CONNECTED</div>
+      </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Tray (Anki / Table / Vault Graph) -->
+  <div class="bottom-tray" id="bottomTray">
+    <div class="tray-header" onclick="toggleTray()">ANKI DRAFTS</div>
+    <div class="tray-content">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <div style="border: 1px solid var(--primary-dim); padding: 8px 12px; min-width: 200px;">
+          <div style="font-family: var(--font-arcade); font-size: 7px; color: var(--primary); margin-bottom: 4px;">CARD #1</div>
+          <div style="font-size: 14px;"><strong>Q:</strong> What nerve roots form the upper trunk?</div>
+          <div style="font-size: 14px; color: var(--muted);"><strong>A:</strong> C5, C6</div>
+        </div>
+        <div style="border: 1px solid var(--primary-dim); padding: 8px 12px; min-width: 200px;">
+          <div style="font-family: var(--font-arcade); font-size: 7px; color: var(--primary); margin-bottom: 4px;">CARD #2</div>
+          <div style="font-size: 14px;"><strong>Q:</strong> Erb's palsy affects which trunk?</div>
+          <div style="font-size: 14px; color: var(--muted);"><strong>A:</strong> Upper trunk (C5-C6)</div>
+        </div>
+        <div style="border: 1px solid var(--primary-dim); padding: 8px 12px; min-width: 200px;">
+          <div style="font-family: var(--font-arcade); font-size: 7px; color: var(--primary); margin-bottom: 4px;">CARD #3</div>
+          <div style="font-size: 14px;"><strong>Q:</strong> What is the waiter's tip position?</div>
+          <div style="font-size: 14px; color: var(--muted);"><strong>A:</strong> Arm adducted, medially rotated (Erb's palsy)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ====== HINT BAR (replaces old footer — solid, not overlaying) ====== -->
+<div class="hint-bar">
+  <span><kbd>Click tabs</kbd> to switch layouts</span>
+  <span><kbd>Chat</kbd> / <kbd>Tray</kbd> buttons toggle panels</span>
+  <span><kbd>Templates</kbd> shows layout templates</span>
+  <span>This is an interactive mockup &mdash; try clicking around!</span>
+</div>
+
+<script>
+  // Layout switching
+  function switchLayout(id) {
+    document.querySelectorAll('.layout-bar .tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.layout-bar .tab[data-layout="${id}"]`).classList.add('active');
+    
+    // Update canvas content based on tab
+    const canvasLabel = document.querySelector('#view-canvas .label-hint') || document.querySelector('#view-canvas');
+    // For now just switch the active tab visually
+  }
+
+  // View toggle (canvas vs templates)
+  function showView(view) {
+    document.getElementById('view-canvas').style.display = view === 'canvas' ? '' : 'none';
+    document.getElementById('view-templates').style.display = view === 'templates' ? '' : 'none';
+    document.querySelectorAll('.view-controls button').forEach(b => b.classList.remove('active'));
+    if (view === 'canvas') document.querySelector('.view-controls button:nth-child(1)').classList.add('active');
+    if (view === 'templates') document.querySelector('.view-controls button:nth-child(2)').classList.add('active');
+  }
+
+  // Toggle chat panel slide in/out
+  function toggleChat() {
+    const panel = document.getElementById('chatPanel');
+    const handle = document.getElementById('chatHandle');
+    const btn = document.getElementById('chatToggle');
+    panel.classList.toggle('collapsed');
+    if (panel.classList.contains('collapsed')) {
+      handle.style.display = 'none';
+      btn.classList.remove('active');
+    } else {
+      handle.style.display = '';
+      btn.classList.add('active');
+    }
+  }
+
+  // Toggle bottom tray
+  function toggleTray() {
+    const tray = document.getElementById('bottomTray');
+    const btn = document.getElementById('trayToggle');
+    tray.classList.toggle('open');
+    btn.classList.toggle('active');
+  }
+
+  // Toggle folder collapse/expand
+  function toggleFolder(el) {
+    const chevron = el.querySelector('.chevron');
+    const children = el.parentElement.querySelector('.folder-children');
+    if (!children) return;
+    chevron.classList.toggle('open');
+    children.classList.toggle('collapsed');
+    if (!children.classList.contains('collapsed')) {
+      children.style.maxHeight = children.scrollHeight + 'px';
+    }
+  }
+
+  // Toggle sidebar slide in/out
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const handle = document.getElementById('sidebarHandle');
+    sidebar.classList.toggle('collapsed');
+    if (sidebar.classList.contains('collapsed')) {
+      handle.style.display = 'none';
+    } else {
+      handle.style.display = '';
+    }
+  }
+
+  // Fullscreen toggle
+  function toggleFullscreen() {
+    const ws = document.querySelector('.brain-workspace');
+    const btn = document.getElementById('fsToggle');
+    ws.classList.toggle('fullscreen');
+    document.body.classList.toggle('fullscreen-active');
+    btn.classList.toggle('active');
+    btn.textContent = ws.classList.contains('fullscreen') ? '\u2716 Exit' : '\u26CE Full';
+  }
+
+  // Auto-grow textarea
+  function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  }
+
+  // Resize handle drag
+  function startResize(e, target) {
+    e.preventDefault();
+    const handle = e.target;
+    handle.classList.add('dragging');
+    const sidebar = document.getElementById('sidebar');
+    const chatPanel = document.getElementById('chatPanel');
+    const startX = e.clientX;
+    const startWidth = target === 'sidebar' ? sidebar.offsetWidth : chatPanel.offsetWidth;
+
+    function onMove(ev) {
+      const dx = ev.clientX - startX;
+      if (target === 'sidebar') {
+        const w = Math.max(160, Math.min(500, startWidth + dx));
+        sidebar.style.width = w + 'px';
+      } else {
+        const w = Math.max(200, Math.min(600, startWidth - dx));
+        chatPanel.style.width = w + 'px';
+      }
+    }
+    function onUp() {
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  // ESC exits fullscreen
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.querySelector('.brain-workspace.fullscreen')) {
+      toggleFullscreen();
+    }
+  });
+</script>
+
+</body>
+</html>

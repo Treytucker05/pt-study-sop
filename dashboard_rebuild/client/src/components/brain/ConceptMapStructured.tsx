@@ -13,7 +13,6 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
 import {
   LayoutGrid,
@@ -200,12 +199,40 @@ export function ConceptMapStructured({
     try {
       const viewport = reactFlowRef.current.querySelector(".react-flow__viewport") as HTMLElement;
       if (!viewport) return;
-      const dataUrl = await toPng(viewport, { backgroundColor: "#000", quality: 1 });
-      const link = document.createElement("a");
-      link.download = "concept-map.png";
-      link.href = dataUrl;
-      link.click();
-      toast({ title: "PNG exported" });
+      const { width, height } = viewport.getBoundingClientRect();
+      const clone = viewport.cloneNode(true) as HTMLElement;
+      clone.style.backgroundColor = "#000";
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+        <foreignObject width="100%" height="100%">
+          <div xmlns="http://www.w3.org/1999/xhtml">${new XMLSerializer().serializeToString(clone)}</div>
+        </foreignObject>
+      </svg>`;
+      const img = new Image();
+      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = width * 2;
+        canvas.height = height * 2;
+        const ctx = canvas.getContext("2d")!;
+        ctx.scale(2, 2);
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((pngBlob) => {
+          if (!pngBlob) return;
+          const link = document.createElement("a");
+          link.download = "concept-map.png";
+          link.href = URL.createObjectURL(pngBlob);
+          link.click();
+          URL.revokeObjectURL(link.href);
+          toast({ title: "PNG exported" });
+        }, "image/png");
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        toast({ title: "Export failed", variant: "destructive" });
+      };
+      img.src = url;
     } catch (err) {
       toast({ title: "Export failed", description: String(err), variant: "destructive" });
     }
@@ -381,7 +408,7 @@ export function ConceptMapStructured({
               <Palette className="w-3 h-3" />
             </Button>
             {showColorPicker && (
-              <div className="absolute top-full left-0 mt-1 p-2 bg-black border-2 border-primary/50 z-50 space-y-2 min-w-[160px]">
+              <div className="absolute top-full left-0 mt-1 p-2 bg-black border-[3px] border-double border-primary/50 z-50 space-y-2 min-w-[160px]">
                 <p className="font-terminal text-xs text-muted-foreground">NODE COLORS</p>
                 <div className="flex flex-wrap gap-1">
                   {NODE_COLORS.map((c, i) => (
@@ -399,7 +426,7 @@ export function ConceptMapStructured({
                     <button
                       key={c.name}
                       onClick={() => setSelectedEdgeColor(c.stroke)}
-                      className="w-5 h-5 border-2 border-secondary/50 rounded-none"
+                      className="w-5 h-5 border-[3px] border-double border-secondary/50 rounded-none"
                       style={{ backgroundColor: c.stroke }}
                       title={c.name}
                     />

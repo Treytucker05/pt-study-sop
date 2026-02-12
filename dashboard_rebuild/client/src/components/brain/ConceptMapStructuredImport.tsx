@@ -29,7 +29,7 @@ export function ConceptMapStructuredImport({
           <button
             key={t.id}
             onClick={() => onImport(t.mermaid)}
-            className="border-2 border-secondary/50 hover:border-primary p-3 cursor-pointer text-left transition-colors bg-black/40"
+            className="border-[3px] border-double border-secondary/50 hover:border-primary p-3 cursor-pointer text-left transition-colors bg-black/40"
           >
             <p className="font-terminal text-xs text-primary">{t.name}</p>
             <p className="font-terminal text-xs text-muted-foreground mt-0.5">{t.description}</p>

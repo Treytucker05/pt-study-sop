@@ -53,7 +53,7 @@ export default function RatingDialog({ open, onClose, onSubmit, targetName, targ
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="bg-black border-2 border-primary rounded-none max-w-sm">
+      <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-sm">
         <div className="flex items-center justify-between mb-4">
           <DialogTitle className="font-arcade text-xs text-primary">
             RATE {targetType.toUpperCase()}
@@ -85,7 +85,7 @@ export default function RatingDialog({ open, onClose, onSubmit, targetName, targ
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="What worked? What didn't?"
-              className="h-16 bg-secondary/20 border-2 border-secondary font-terminal text-sm rounded-none resize-none mt-1"
+              className="h-16 bg-secondary/20 border-[3px] border-double border-secondary font-terminal text-sm rounded-none resize-none mt-1"
             />
           </div>
 

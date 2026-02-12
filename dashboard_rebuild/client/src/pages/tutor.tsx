@@ -244,7 +244,7 @@ export default function Tutor() {
       <Layout>
         <div className="flex flex-col h-[calc(100vh-140px)] px-4 pb-2">
           {/* Vault file picker — fills all available height */}
-          <Card className="flex-1 min-h-0 bg-black/40 border-2 border-primary rounded-none overflow-hidden flex flex-col">
+          <Card className="flex-1 min-h-0 bg-black/40 border-[3px] border-double border-primary rounded-none overflow-hidden flex flex-col">
             <div className="shrink-0 px-3 py-1.5 border-b-2 border-primary/30 flex items-center justify-between">
               <div className={TEXT_PANEL_TITLE}>VAULT FILES</div>
               <span className="font-arcade text-xs text-primary/50 tracking-widest">TUTOR</span>
@@ -256,7 +256,7 @@ export default function Tutor() {
           </Card>
 
           {/* Toolbar — thin horizontal strip */}
-          <Card className="shrink-0 mt-2 bg-black/40 border-2 border-primary rounded-none overflow-hidden">
+          <Card className="shrink-0 mt-2 bg-black/40 border-[3px] border-double border-primary rounded-none overflow-hidden">
               <ContentFilter
                 courseId={courseId}
                 setCourseId={setCourseId}
@@ -321,7 +321,7 @@ export default function Tutor() {
           </div>
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-2xl mx-auto py-6 px-4">
-              <Card className="bg-black/40 border-2 border-primary rounded-none overflow-hidden">
+              <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none overflow-hidden">
                 <ContentFilter
                   courseId={courseId}
                   setCourseId={setCourseId}
@@ -505,7 +505,7 @@ function RecentSessionCard({
   };
 
   return (
-    <div className="border-2 border-muted-foreground/10 hover:border-muted-foreground/30 transition-colors">
+    <div className="border-[3px] border-double border-muted-foreground/10 hover:border-muted-foreground/30 transition-colors">
       <button
         onClick={() => onResume(s.session_id)}
         className="w-full text-left px-3 py-2.5"

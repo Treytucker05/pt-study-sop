@@ -1,5 +1,5 @@
 param(
-  [ValidateSet("ensure", "list", "path", "route", "open", "dispatch")]
+  [ValidateSet("ensure", "list", "path", "route", "open", "dispatch", "open-many", "dispatch-many", "status", "help")]
   [string]$Action = "list",
 
   # Where to keep persistent named worktrees (outside the repo).
@@ -17,11 +17,21 @@ param(
   [ValidateSet("powershell", "codex", "claude", "opencode", "custom")]
   [string]$Tool = "powershell",
 
-  # Optional tool args appended verbatim (keep it simple; quote carefully).
+  # For open-many/dispatch-many, pass explicit agent list (e.g. -Agents codex,claude,opencode).
+  [string[]]$Agents = @(),
+
+  # Quick preset when -Agents is omitted.
+  [ValidateSet("single", "review", "swarm")]
+  [string]$Profile = "single",
+
+  # Optional tool args appended verbatim. For open-many these apply to all tools.
   [string]$ToolArgs = "",
 
-  # For Tool=custom, run this command in the new window.
+  # For Tool=custom (or Agents including custom), run this command in the new window.
   [string]$CustomCommand = "",
+
+  # Optional label added to each terminal title.
+  [string]$SessionTag = "",
 
   # Include a docs/tests-focused worktree.
   [switch]$IncludeDocs
@@ -33,7 +43,7 @@ function Normalize-FsPath {
   param([string]$Path)
 
   if ([string]::IsNullOrWhiteSpace($Path)) { return "" }
-  $p = $Path.Trim() -replace '/', '\\'
+  $p = $Path.Trim() -replace '/', '\'
   try {
     return [System.IO.Path]::GetFullPath($p)
   } catch {
@@ -112,6 +122,211 @@ function Ensure-Worktree {
   & git worktree add -b $BranchName $worktreeFull $BaseRef | Out-Null
 }
 
+function Find-RoleEntry {
+  param([object[]]$RoleMap, [string]$WantedRole)
+  return $RoleMap | Where-Object { $_.role -eq $WantedRole } | Select-Object -First 1
+}
+
+function Route-RoleFromPaths {
+  param(
+    [string[]]$InputPaths,
+    [string]$RepoRoot,
+    [switch]$IncludeDocsRole
+  )
+
+  if (-not $InputPaths -or $InputPaths.Count -eq 0) {
+    return "integrate"
+  }
+
+  $repoRootLower = $RepoRoot.ToLowerInvariant()
+  $roles = New-Object System.Collections.Generic.HashSet[string]
+
+  foreach ($p in $InputPaths) {
+    if ([string]::IsNullOrWhiteSpace($p)) { continue }
+
+    $full = if ([System.IO.Path]::IsPathRooted($p)) {
+      [System.IO.Path]::GetFullPath($p)
+    } else {
+      [System.IO.Path]::GetFullPath((Join-Path $RepoRoot $p))
+    }
+
+    $fullLower = $full.ToLowerInvariant()
+    if (-not $fullLower.StartsWith($repoRootLower)) {
+      $roles.Add("integrate") | Out-Null
+      continue
+    }
+
+    $rel = $full.Substring($RepoRoot.Length).TrimStart([char[]]@('\', '/')) -replace '\\', '/'
+    $top = ($rel -split "/", 2)[0].ToLowerInvariant()
+
+    switch ($top) {
+      "dashboard_rebuild" { $roles.Add("ui") | Out-Null }
+      "brain"             { $roles.Add("brain") | Out-Null }
+      "docs"              { if ($IncludeDocsRole) { $roles.Add("docs") | Out-Null } else { $roles.Add("integrate") | Out-Null } }
+      "conductor"         { if ($IncludeDocsRole) { $roles.Add("docs") | Out-Null } else { $roles.Add("integrate") | Out-Null } }
+      "scripts"           { if ($IncludeDocsRole) { $roles.Add("docs") | Out-Null } else { $roles.Add("integrate") | Out-Null } }
+      default             { $roles.Add("integrate") | Out-Null }
+    }
+  }
+
+  if ($roles.Count -eq 1) { return ($roles | Select-Object -First 1) }
+  return "integrate"
+}
+
+function Get-DefaultArgsForTool {
+  param([string]$ToolName)
+
+  switch ($ToolName.ToLowerInvariant()) {
+    "codex"    { return $env:AGENT_WORKTREE_CODEX_ARGS }
+    "claude"   { return $env:AGENT_WORKTREE_CLAUDE_ARGS }
+    "opencode" { return $env:AGENT_WORKTREE_OPENCODE_ARGS }
+    default    { return "" }
+  }
+}
+
+function Build-ToolCommand {
+  param(
+    [string]$ToolName,
+    [string]$CommonArgs,
+    [string]$CustomCmd
+  )
+
+  $toolLower = $ToolName.Trim().ToLowerInvariant()
+  $effectiveArgs = $CommonArgs
+  if ([string]::IsNullOrWhiteSpace($effectiveArgs)) {
+    $effectiveArgs = Get-DefaultArgsForTool -ToolName $toolLower
+  }
+
+  switch ($toolLower) {
+    "powershell" { return "" }
+    "codex"      { return "codex $effectiveArgs".Trim() }
+    "claude"     { return "claude $effectiveArgs".Trim() }
+    "opencode"   { return "opencode $effectiveArgs".Trim() }
+    "custom" {
+      if ([string]::IsNullOrWhiteSpace($CustomCmd)) {
+        throw "Tool 'custom' requires -CustomCommand."
+      }
+      return $CustomCmd
+    }
+    default { throw "Unsupported tool: $ToolName" }
+  }
+}
+
+function Resolve-AgentList {
+  param(
+    [string[]]$Requested,
+    [string]$ProfileName,
+    [string]$SingleTool
+  )
+
+  $source = @()
+  if ($Requested -and $Requested.Count -gt 0) {
+    $source = $Requested
+  } else {
+    switch ($ProfileName) {
+      "single" { $source = @($SingleTool) }
+      "review" { $source = @("codex", "claude") }
+      "swarm"  { $source = @("codex", "claude", "opencode") }
+      default  { $source = @($SingleTool) }
+    }
+  }
+
+  $allowed = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+  @("powershell", "codex", "claude", "opencode", "custom") | ForEach-Object { [void]$allowed.Add($_) }
+  $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+  $result = New-Object System.Collections.Generic.List[string]
+
+  foreach ($item in $source) {
+    if ([string]::IsNullOrWhiteSpace($item)) { continue }
+    $parts = $item -split ","
+    foreach ($part in $parts) {
+      $name = $part.Trim().ToLowerInvariant()
+      if ([string]::IsNullOrWhiteSpace($name)) { continue }
+      if (-not $allowed.Contains($name)) {
+        throw "Unknown agent/tool '$name'. Allowed: powershell, codex, claude, opencode, custom"
+      }
+      if ($seen.Add($name)) {
+        $result.Add($name) | Out-Null
+      }
+    }
+  }
+
+  if ($result.Count -eq 0) {
+    throw "No valid agents/tools resolved. Use -Agents or choose a different -Profile."
+  }
+
+  return @($result)
+}
+
+function Open-ToolInWorktree {
+  param(
+    [object]$Entry,
+    [string]$ToolName,
+    [string]$CommonArgs,
+    [string]$CustomCmd,
+    [string]$Tag
+  )
+
+  Ensure-Worktree -WorktreePath $Entry.dir -BranchName $Entry.branch
+  $cmd = Build-ToolCommand -ToolName $ToolName -CommonArgs $CommonArgs -CustomCmd $CustomCmd
+
+  $titleParts = @("pt-study-sop", $Entry.role, $ToolName)
+  if (-not [string]::IsNullOrWhiteSpace($Tag)) {
+    $titleParts += $Tag
+  }
+  $title = ($titleParts -join ":").Replace("'", "''")
+
+  $safeRole = $Entry.role.Replace("'", "''")
+  $safeTool = $ToolName.Replace("'", "''")
+  $safeTag = $Tag.Replace("'", "''")
+  $safeWorktree = $Entry.dir.Replace("'", "''")
+  $agentNameParts = @($ToolName, $Entry.role)
+  if (-not [string]::IsNullOrWhiteSpace($Tag)) {
+    $agentNameParts += $Tag
+  }
+  $agentName = ($agentNameParts -join "-").Replace(" ", "_")
+  $safeAgentName = $agentName.Replace("'", "''")
+
+  $command = "`$host.UI.RawUI.WindowTitle = '$title'; if (-not `$env:TERM -or `$env:TERM -eq 'dumb') { `$env:TERM = 'xterm-256color' }; `$env:PT_AGENT_NAME = '$safeAgentName'; `$env:PT_AGENT_ROLE = '$safeRole'; `$env:PT_AGENT_TOOL = '$safeTool'; `$env:PT_AGENT_WORKTREE = '$safeWorktree'; `$env:PT_AGENT_SESSION = '$safeTag'; cd `"$($Entry.dir)`"; if (Test-Path '.\scripts\agent_task_board.py') { function task-board { python .\scripts\agent_task_board.py @args }; Write-Host '[task-board] use: task-board list | task-board claim --task-id T-001' -ForegroundColor Cyan }"
+  if (-not [string]::IsNullOrWhiteSpace($cmd)) {
+    $command = "$command $cmd"
+  }
+
+  Start-Process powershell -ArgumentList "-NoExit", "-Command", $command | Out-Null
+}
+
+function Print-Help {
+  Write-Host "agent_worktrees.ps1"
+  Write-Host ""
+  Write-Host "Actions:"
+  Write-Host "  ensure        Ensure named worktrees exist (integrate/ui/brain[/docs])"
+  Write-Host "  list          Show role -> branch -> path mapping and git worktree list"
+  Write-Host "  status        Show branch + dirty count per role worktree"
+  Write-Host "  route         Pick role from -Paths"
+  Write-Host "  open          Open one tool in one role worktree"
+  Write-Host "  open-many     Open multiple tools in one role worktree"
+  Write-Host "  dispatch      Route by -Paths then open one tool"
+  Write-Host "  dispatch-many Route by -Paths then open multiple tools"
+  Write-Host "  path          Print filesystem path for a role"
+  Write-Host "  help          Show this help"
+  Write-Host ""
+  Write-Host "Profiles:"
+  Write-Host "  single (default): one tool (from -Tool)"
+  Write-Host "  review: codex + claude"
+  Write-Host "  swarm: codex + claude + opencode"
+  Write-Host ""
+  Write-Host "Examples:"
+  Write-Host "  pwsh -File .\scripts\agent_worktrees.ps1 -Action ensure -IncludeDocs"
+  Write-Host "  pwsh -File .\scripts\agent_worktrees.ps1 -Action open -Role ui -Tool codex -SessionTag ui-pass"
+  Write-Host "  pwsh -File .\scripts\agent_worktrees.ps1 -Action open-many -Role brain -Profile swarm -SessionTag bugfix"
+  Write-Host "  pwsh -File .\scripts\agent_worktrees.ps1 -Action dispatch-many -Paths dashboard_rebuild\client\src\pages\brain.tsx -Agents codex,opencode"
+  Write-Host ""
+  Write-Host "Optional per-tool default args env vars:"
+  Write-Host "  AGENT_WORKTREE_CODEX_ARGS"
+  Write-Host "  AGENT_WORKTREE_CLAUDE_ARGS"
+  Write-Host "  AGENT_WORKTREE_OPENCODE_ARGS"
+}
+
 $repoRoot = Get-RepoRoot
 if (-not (Test-Path $WorktreesRoot)) {
   New-Item -ItemType Directory -Force -Path $WorktreesRoot | Out-Null
@@ -126,54 +341,12 @@ if ($IncludeDocs) {
   $map += [ordered]@{ role = "docs"; branch = "wt/docs"; dir = (Join-Path $WorktreesRoot "docs") }
 }
 
-function Find-RoleEntry {
-  param([string]$WantedRole)
-  return $map | Where-Object { $_.role -eq $WantedRole } | Select-Object -First 1
-}
-
-function Route-RoleFromPaths {
-  param([string[]]$InputPaths)
-
-  if (-not $InputPaths -or $InputPaths.Count -eq 0) {
-    return "integrate"
-  }
-
-  $repoRootLower = $repoRoot.ToLowerInvariant()
-  $roles = New-Object System.Collections.Generic.HashSet[string]
-
-  foreach ($p in $InputPaths) {
-    if ([string]::IsNullOrWhiteSpace($p)) { continue }
-
-    $full = if ([System.IO.Path]::IsPathRooted($p)) {
-      [System.IO.Path]::GetFullPath($p)
-    } else {
-      [System.IO.Path]::GetFullPath((Join-Path $repoRoot $p))
-    }
-
-    $fullLower = $full.ToLowerInvariant()
-    if (-not $fullLower.StartsWith($repoRootLower)) {
-      $roles.Add("integrate") | Out-Null
-      continue
-    }
-
-    $rel = $full.Substring($repoRoot.Length).TrimStart([char[]]@('\', '/')) -replace '\\', '/'
-    $top = ($rel -split "/", 2)[0].ToLowerInvariant()
-
-    switch ($top) {
-      "dashboard_rebuild" { $roles.Add("ui") | Out-Null }
-      "brain"            { $roles.Add("brain") | Out-Null }
-      "docs"             { if ($IncludeDocs) { $roles.Add("docs") | Out-Null } else { $roles.Add("integrate") | Out-Null } }
-      "conductor"        { if ($IncludeDocs) { $roles.Add("docs") | Out-Null } else { $roles.Add("integrate") | Out-Null } }
-      "scripts"          { if ($IncludeDocs) { $roles.Add("docs") | Out-Null } else { $roles.Add("integrate") | Out-Null } }
-      default            { $roles.Add("integrate") | Out-Null }
-    }
-  }
-
-  if ($roles.Count -eq 1) { return ($roles | Select-Object -First 1) }
-  return "integrate"
-}
-
 switch ($Action) {
+  "help" {
+    Print-Help
+    exit 0
+  }
+
   "ensure" {
     Write-Host "Repo: $repoRoot"
     Write-Host "WorktreesRoot: $WorktreesRoot"
@@ -198,68 +371,78 @@ switch ($Action) {
     exit 0
   }
 
+  "status" {
+    Write-Host "Repo: $repoRoot"
+    Write-Host "WorktreesRoot: $WorktreesRoot"
+    Write-Host ""
+    foreach ($e in $map) {
+      $dir = Normalize-FsPath $e.dir
+      if (-not (Test-Path $dir)) {
+        Write-Host ("- {0,-10} missing       {1}" -f $e.role, $dir)
+        continue
+      }
+
+      $branch = (& git -C $dir branch --show-current 2>$null).Trim()
+      if ([string]::IsNullOrWhiteSpace($branch)) { $branch = "(detached)" }
+      $dirtyCount = @(& git -C $dir status --short 2>$null).Count
+      Write-Host ("- {0,-10} branch={1,-16} dirty={2,-4} {3}" -f $e.role, $branch, $dirtyCount, $dir)
+    }
+    exit 0
+  }
+
   "path" {
-    $entry = Find-RoleEntry -WantedRole $Role
+    $entry = Find-RoleEntry -RoleMap $map -WantedRole $Role
     if (-not $entry) { throw "Unknown role: $Role" }
     Write-Output $entry.dir
     exit 0
   }
 
   "route" {
-    $r = Route-RoleFromPaths -InputPaths $Paths
+    $r = Route-RoleFromPaths -InputPaths $Paths -RepoRoot $repoRoot -IncludeDocsRole:$IncludeDocs
     Write-Output $r
     exit 0
   }
 
   "open" {
-    $entry = Find-RoleEntry -WantedRole $Role
+    $entry = Find-RoleEntry -RoleMap $map -WantedRole $Role
     if (-not $entry) { throw "Unknown role: $Role" }
-
-    # Ensure just the requested role exists.
-    Ensure-Worktree -WorktreePath $entry.dir -BranchName $entry.branch
-
-    $cmd = ""
-    switch ($Tool) {
-      "powershell" { $cmd = "" }
-      "codex"      { $cmd = "codex $ToolArgs" }
-      "claude"     { $cmd = "claude $ToolArgs" }
-      "opencode"   { $cmd = "opencode $ToolArgs" }
-      "custom"     { $cmd = $CustomCommand }
-    }
-
-    $command = "cd `"$($entry.dir)`";"
-    if (-not [string]::IsNullOrWhiteSpace($cmd)) {
-      $command = "$command $cmd"
-    }
-
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", $command
+    Open-ToolInWorktree -Entry $entry -ToolName $Tool -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag
     Write-Host "Opened $Tool for role '$Role' at: $($entry.dir)"
     exit 0
   }
 
+  "open-many" {
+    $entry = Find-RoleEntry -RoleMap $map -WantedRole $Role
+    if (-not $entry) { throw "Unknown role: $Role" }
+
+    $toolList = Resolve-AgentList -Requested $Agents -ProfileName $Profile -SingleTool $Tool
+    foreach ($toolName in $toolList) {
+      Open-ToolInWorktree -Entry $entry -ToolName $toolName -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag
+      Write-Host "Opened $toolName for role '$Role' at: $($entry.dir)"
+    }
+    exit 0
+  }
+
   "dispatch" {
-    $r = Route-RoleFromPaths -InputPaths $Paths
-    $entry = Find-RoleEntry -WantedRole $r
+    $r = Route-RoleFromPaths -InputPaths $Paths -RepoRoot $repoRoot -IncludeDocsRole:$IncludeDocs
+    $entry = Find-RoleEntry -RoleMap $map -WantedRole $r
     if (-not $entry) { throw "Role not available (try -IncludeDocs?): $r" }
 
-    Ensure-Worktree -WorktreePath $entry.dir -BranchName $entry.branch
-
-    $cmd = ""
-    switch ($Tool) {
-      "powershell" { $cmd = "" }
-      "codex"      { $cmd = "codex $ToolArgs" }
-      "claude"     { $cmd = "claude $ToolArgs" }
-      "opencode"   { $cmd = "opencode $ToolArgs" }
-      "custom"     { $cmd = $CustomCommand }
-    }
-
-    $command = "cd `"$($entry.dir)`";"
-    if (-not [string]::IsNullOrWhiteSpace($cmd)) {
-      $command = "$command $cmd"
-    }
-
-    Start-Process powershell -ArgumentList "-NoExit", "-Command", $command
+    Open-ToolInWorktree -Entry $entry -ToolName $Tool -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag
     Write-Host "Dispatched $Tool to role '$r' at: $($entry.dir)"
+    exit 0
+  }
+
+  "dispatch-many" {
+    $r = Route-RoleFromPaths -InputPaths $Paths -RepoRoot $repoRoot -IncludeDocsRole:$IncludeDocs
+    $entry = Find-RoleEntry -RoleMap $map -WantedRole $r
+    if (-not $entry) { throw "Role not available (try -IncludeDocs?): $r" }
+
+    $toolList = Resolve-AgentList -Requested $Agents -ProfileName $Profile -SingleTool $Tool
+    foreach ($toolName in $toolList) {
+      Open-ToolInWorktree -Entry $entry -ToolName $toolName -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag
+      Write-Host "Dispatched $toolName to role '$r' at: $($entry.dir)"
+    }
     exit 0
   }
 }

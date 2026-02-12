@@ -144,7 +144,7 @@ export function TopicNoteBuilder() {
   };
 
   return (
-    <Card className="bg-black/40 border-2 border-secondary/50 rounded-none">
+    <Card className="bg-black/40 border-[3px] border-double border-secondary/50 rounded-none">
       <CardHeader className="border-b border-secondary/30">
         <CardTitle className="font-arcade text-xs">SIX-PHASE TOPIC NOTE BUILDER</CardTitle>
         <p className="font-terminal text-xs text-muted-foreground mt-1">

@@ -361,7 +361,7 @@ export function IngestionTab() {
 
       {/* WRAP SESSION INGESTION */}
       {selectedCourseId && (
-        <Card className="bg-black/40 border-2 border-primary rounded-none mb-6">
+        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none mb-6">
           <CardHeader className="border-b border-primary/50 p-4">
             <CardTitle className="font-arcade text-sm flex items-center gap-2">
               <Database className="w-4 h-4" />
@@ -439,7 +439,7 @@ export function IngestionTab() {
 
           {/* SCHEDULE TAB */}
           {activeSubTab === "schedule" && (
-            <Card className="bg-black/40 border-2 border-primary rounded-none">
+            <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
               <CardHeader className="border-b border-primary/50 p-4">
                 <CardTitle className="font-arcade text-sm flex items-center gap-2">
                   <CalendarDays className="w-4 h-4" />
@@ -512,7 +512,7 @@ export function IngestionTab() {
 
           {/* MODULES TAB */}
           {activeSubTab === "modules" && (
-            <Card className="bg-black/40 border-2 border-primary rounded-none">
+            <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
               <CardHeader className="border-b border-primary/50 p-4">
                 <CardTitle className="font-arcade text-sm flex items-center gap-2">
                   <Layers className="w-4 h-4" />
@@ -576,7 +576,7 @@ export function IngestionTab() {
 
           {/* OBJECTIVES TAB */}
           {activeSubTab === "objectives" && (
-            <Card className="bg-black/40 border-2 border-primary rounded-none">
+            <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
               <CardHeader className="border-b border-primary/50 p-4">
                 <CardTitle className="font-arcade text-sm flex items-center gap-2">
                   <BookOpen className="w-4 h-4" />

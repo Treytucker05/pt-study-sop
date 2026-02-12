@@ -301,12 +301,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />
 
       {/* Top Nav */}
-      <header className="relative z-20 border-b-4 border-primary bg-black/80 backdrop-blur-sm sticky top-0">
-        <div className="w-full px-2 md:px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-4">
+      <header className="relative z-20 bg-black/80 backdrop-blur-sm sticky top-0" style={{ borderBottom: '4px double hsl(350 63% 49%)' }}>
+        <div className="w-full px-3 h-12 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <Link href="/">
               <div className="flex items-center gap-2 cursor-pointer group">
-                <img src={logoImg} alt="Logo" className="w-10 h-10 object-cover rounded" />
+                <img src={logoImg} alt="Logo" className="w-8 h-8 object-cover" />
                 <span className="hidden lg:block font-arcade text-xs text-white group-hover:text-primary transition-colors whitespace-nowrap">TREY'S STUDY SYSTEM</span>
               </div>
             </Link>
@@ -338,7 +338,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Button>
               </SheetTrigger>
                 <SheetContent
-                  className="bg-black border-l-4 border-t-2 border-b-2 border-primary w-[340px] sm:w-[480px] lg:w-[520px] shadow-2xl overflow-y-auto z-[100001] inset-y-3 h-auto [&>button]:hidden"
+                  className="bg-black border-l-4 border-t-[3px] border-b-[3px] border-double border-primary w-[340px] sm:w-[480px] lg:w-[520px] shadow-2xl overflow-y-auto z-[100001] inset-y-3 h-auto [&>button]:hidden"
                   style={{ zIndex: 100001 }}
                 >
                 <div className="flex items-center gap-2 mb-4">
@@ -531,7 +531,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 w-full max-w-[1600px] mx-auto p-4 md:p-8 pb-24">
+      <main className="relative z-10 flex-1 w-full px-3 md:px-6 py-3 pb-16">
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           {children}
         </div>

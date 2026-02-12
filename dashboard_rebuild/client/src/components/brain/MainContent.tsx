@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { Pencil, MessageSquare, Network, Table2, Layers } from "lucide-react";
+import { PenTool, Pencil, MessageSquare, Network, Table2, Layers } from "lucide-react";
 import { BrainChat } from "@/components/BrainChat";
 import { VaultEditor } from "./VaultEditor";
 import { GraphPanel } from "./GraphPanel";
+import { ExcalidrawCanvas } from "./ExcalidrawCanvas";
 import { ComparisonTableEditor } from "@/components/ComparisonTableEditor";
 import { AnkiIntegration } from "@/components/AnkiIntegration";
 import { ErrorBoundary, TabErrorFallback } from "@/components/ErrorBoundary";
@@ -11,11 +12,12 @@ import { cn } from "@/lib/utils";
 import type { BrainWorkspace } from "./useBrainWorkspace";
 
 const TABS = [
-  { id: "edit" as const, label: "EDIT", icon: Pencil, hint: "Alt+1" },
-  { id: "chat" as const, label: "CHAT", icon: MessageSquare, hint: "Alt+2" },
-  { id: "graph" as const, label: "GRAPH", icon: Network, hint: "Alt+3" },
-  { id: "table" as const, label: "TABLE", icon: Table2, hint: "Alt+4" },
-  { id: "anki" as const, label: "ANKI", icon: Layers, hint: "Alt+5" },
+  { id: "canvas" as const, label: "CANVAS", icon: PenTool, hint: "Alt+1" },
+  { id: "edit" as const, label: "EDIT", icon: Pencil, hint: "Alt+2" },
+  { id: "chat" as const, label: "CHAT", icon: MessageSquare, hint: "Alt+3" },
+  { id: "graph" as const, label: "GRAPH", icon: Network, hint: "Alt+4" },
+  { id: "table" as const, label: "TABLE", icon: Table2, hint: "Alt+5" },
+  { id: "anki" as const, label: "ANKI", icon: Layers, hint: "Alt+6" },
 ] as const;
 
 interface MainContentProps {
@@ -131,8 +133,30 @@ export function MainContent({ workspace }: MainContentProps) {
         </div>
       </div>
 
-      {/* Tab panels with error boundaries + crossfade */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        {currentTab === "canvas" && (
+          <div
+            id="brain-tabpanel-canvas"
+            role="tabpanel"
+            aria-labelledby="brain-tab-canvas"
+            data-tab="canvas"
+            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
+            tabIndex={0}
+          >
+          <ErrorBoundary
+            key={`canvas-${errorKeys["canvas"] || 0}`}
+            fallback={
+              <TabErrorFallback
+                tabName="CANVAS"
+                onReset={() => resetErrorBoundary("canvas")}
+              />
+            }
+          >
+            <ExcalidrawCanvas workspace={workspace} />
+          </ErrorBoundary>
+          </div>
+        )}
+
         {currentTab === "edit" && (
           <div
             id="brain-tabpanel-edit"

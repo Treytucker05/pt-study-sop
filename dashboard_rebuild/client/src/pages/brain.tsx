@@ -8,6 +8,7 @@ import { useBrainWorkspace } from "@/components/brain/useBrainWorkspace";
 import { VaultSidebar } from "@/components/brain/VaultSidebar";
 import { SidebarRail } from "@/components/brain/SidebarRail";
 import { MainContent } from "@/components/brain/MainContent";
+import { ChatSidePanel } from "@/components/brain/ChatSidePanel";
 import { BrainModals } from "@/components/brain/BrainModals";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { FolderOpen, Pencil } from "lucide-react";
@@ -82,12 +83,26 @@ export default function Brain() {
   return (
     <Layout>
       <div
-        className={`brain-workspace fixed inset-x-0 top-[68px] bottom-[48px] flex flex-col min-w-0 overflow-hidden z-30 ${ready ? "brain-workspace--ready" : ""}`}
+        className={`brain-workspace fixed inset-x-0 top-[68px] bottom-[48px] flex flex-col min-w-0 overflow-hidden z-30 ${ready ? "brain-workspace--ready" : ""} ${workspace.isFullscreen ? "brain-fullscreen" : ""}`}
         data-active-tab={workspace.mainMode}
       >
         {/* Desktop: conditional sidebar (expanded vs collapsed rail) */}
         <div className="hidden lg:flex flex-1 min-h-0">
-          {workspace.sidebarExpanded ? (
+          {workspace.isFullscreen ? (
+            <div className="flex flex-1 min-h-0 h-full">
+              <div className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 h-full overflow-hidden flex">
+                <div className="flex-1 min-w-0 min-h-0 overflow-hidden">
+                  <MainContent workspace={workspace} />
+                </div>
+                {workspace.mainMode === "canvas" && (
+                  <ChatSidePanel
+                    expanded={workspace.chatExpanded}
+                    onToggle={workspace.toggleChat}
+                  />
+                )}
+              </div>
+            </div>
+          ) : workspace.sidebarExpanded ? (
             <ResizablePanelGroup
               direction="horizontal"
               autoSaveId="brain-workspace-v2"
@@ -102,16 +117,32 @@ export default function Brain() {
               <ResizableHandle withHandle className="hover:bg-primary/10 transition-colors data-[resize-handle-active]:bg-primary/20" />
 
               <ResizablePanel defaultSize={80} minSize={50}>
-                <div className="brain-workspace__main-wrap brain-workspace__canvas h-full min-h-0 overflow-hidden">
-                  <MainContent workspace={workspace} />
+                <div className="brain-workspace__main-wrap brain-workspace__canvas h-full min-h-0 overflow-hidden flex">
+                  <div className="flex-1 min-w-0 min-h-0 overflow-hidden">
+                    <MainContent workspace={workspace} />
+                  </div>
+                  {workspace.mainMode === "canvas" && (
+                    <ChatSidePanel
+                      expanded={workspace.chatExpanded}
+                      onToggle={workspace.toggleChat}
+                    />
+                  )}
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>
           ) : (
             <div className="flex flex-1 min-h-0 h-full">
               <SidebarRail onExpand={workspace.toggleSidebar} workspace={workspace} />
-              <div className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 h-full overflow-hidden">
-                <MainContent workspace={workspace} />
+              <div className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 h-full overflow-hidden flex">
+                <div className="flex-1 min-w-0 min-h-0 overflow-hidden">
+                  <MainContent workspace={workspace} />
+                </div>
+                {workspace.mainMode === "canvas" && (
+                  <ChatSidePanel
+                    expanded={workspace.chatExpanded}
+                    onToggle={workspace.toggleChat}
+                  />
+                )}
               </div>
             </div>
           )}

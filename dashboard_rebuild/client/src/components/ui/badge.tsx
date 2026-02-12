@@ -6,8 +6,7 @@ import { cn } from "@/lib/utils"
 const badgeVariants = cva(
   // @replit
   // Whitespace-nowrap: Badges should never wrap.
-  "whitespace-nowrap inline-flex items-center rounded-none border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" +
-  " hover-elevate ",
+  "whitespace-nowrap inline-flex items-center rounded-none border-[3px] border-double px-2.5 py-0.5 text-xs font-semibold focus:outline-none crt-hover",
   {
     variants: {
       variant: {

@@ -122,7 +122,7 @@ export function DataTablesSection() {
       {selectedCourseId && (
         <div className="space-y-6">
           {/* Modules Table */}
-          <Card className="bg-black/40 border-2 border-primary rounded-none">
+          <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
             <CardHeader className="border-b border-primary/50">
               <CardTitle className="font-arcade text-sm flex items-center gap-2">
                 <Database className="w-4 h-4" />
@@ -300,7 +300,7 @@ export function DataTablesSection() {
           </Card>
 
           {/* Schedule Items Table */}
-          <Card className="bg-black/40 border-2 border-primary rounded-none">
+          <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
             <CardHeader className="border-b border-primary/50">
               <CardTitle className="font-arcade text-sm flex items-center gap-2">
                 <Layers className="w-4 h-4" />
@@ -540,7 +540,7 @@ export function DataTablesSection() {
 
       <AlertDialog open={!!bulkDelete} onOpenChange={(open) => !open && setBulkDelete(null)}>
         <AlertDialogContent
-          className="bg-black border-2 border-primary rounded-none font-terminal text-primary shadow-none max-w-md translate-y-0"
+          className="bg-black border-[3px] border-double border-primary rounded-none font-terminal text-primary shadow-none max-w-md translate-y-0"
           style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
         >
           <AlertDialogHeader className="text-left">

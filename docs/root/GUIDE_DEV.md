@@ -22,6 +22,7 @@ If you change anything under `dashboard_rebuild/`, you must:
 2. Build the frontend: `cd dashboard_rebuild; npm run build`
 
 > **Note:** No copy/sync step needed - Vite outputs directly to `brain/static/dist/`.
+> Legacy reference: `dashboard_rebuild/dist/public` is no longer the active output path.
 
 Do NOT run `npm run dev` / `vite dev`. Always use `Start_Dashboard.bat` (port 5000).
 

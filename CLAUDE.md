@@ -23,7 +23,7 @@ Canonical run/build/test commands live in `docs/root/GUIDE_DEV.md`.
 
 - Start dashboard: `Start_Dashboard.bat`
 - Run tests: `pytest brain/tests/`
-- Frontend build + sync: see `docs/root/GUIDE_DEV.md` (required for UI changes)
+- Frontend build (direct to Flask static): see `docs/root/GUIDE_DEV.md` (required for UI changes)
 
 ## Key Paths
 - Database: brain/data/pt_study.db
@@ -60,7 +60,7 @@ Canonical run/build/test commands live in `docs/root/GUIDE_DEV.md`.
 
 ## Post-Implementation Checklist (MANDATORY after any code change)
 
-Canonical steps: `docs/root/GUIDE_DEV.md` section "Frontend Build + Sync".
+Canonical steps: `docs/root/GUIDE_DEV.md` section "Frontend Build".
 
 Quick summary:
 1. Build: `cd dashboard_rebuild && npm run build` (outputs directly to brain/static/dist/)
@@ -74,13 +74,13 @@ Skip step 1 for backend-only changes.
 1. Plan before coding for any non-trivial change.
 2. dashboard_rebuild is frontend-only; API lives in brain/.
 3. Only serve the dashboard via Start_Dashboard.bat on port 5000. Do not run a separate dev server or python brain/dashboard_web.py directly.
-4. After frontend changes: rebuild and copy dist/public -> brain/static/dist. (See Post-Implementation Checklist above.)
+4. After frontend changes: run `npm run build` in `dashboard_rebuild` (Vite writes directly to `brain/static/dist`). (See Post-Implementation Checklist above.)
 5. Check `.claude/permissions.json` before executing new shell commands.
 6. Update `docs/CONTINUITY.md` after every significant change (append only).
 7. Push to remote after every change (auto).
 8. After code changes, run relevant checks by default (pytest brain/tests/; frontend build already required).
 9. Do not edit archive/ unless explicitly requested.
-10. Do not edit brain/static/dist/ except when copying a new build output.
+10. Do not hand-edit `brain/static/dist/`; update it via frontend build commands only.
 11. No destructive commands (e.g., reset --hard, clean, rm) unless explicitly requested.
 12. Auto-commit after changes; use a conventional commit message if none is provided.
 13. Safe-by-default git: check status/diff before edits.
@@ -98,7 +98,7 @@ Never place `useSensors`, `useSensor`, or any `use*` hook inside JSX or callback
 When filtering Google events by `selectedCalendars`, always use `event.calendarId || ''` — never rely on a truthy check on `calendarId` since some events have undefined/empty calendarId and would bypass the filter.
 
 ### Build & Deploy
-After frontend changes, run `npm run build` in `dashboard_rebuild/`, then copy `dist/public/` to `brain/static/dist/`. The Flask server serves static files from there. Without this step, changes won't appear in the browser. NEVER run `npm run dev` or `vite dev` — always build and copy. See Post-Implementation Checklist above.
+After frontend changes, run `npm run build` in `dashboard_rebuild/`. Vite writes directly to `brain/static/dist/`, which Flask serves. Without this step, changes won't appear in the browser. NEVER run `npm run dev` or `vite dev` — always run the build path. See Post-Implementation Checklist above.
 
 ### localStorage in React useState Initializers
 When initializing state from `localStorage` with `JSON.parse`, always wrap in try/catch and validate the parsed type (e.g. `Array.isArray`). Corrupted or stale localStorage data will crash the component on mount otherwise.
@@ -127,3 +127,4 @@ Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks f
 ## Detailed Guidelines
 - Project Workflow: conductor/workflow.md
 - Conductor Tracks: conductor/tracks.md
+- Parallel agent workflow: docs/project/PARALLEL_AGENT_WORKFLOW.md

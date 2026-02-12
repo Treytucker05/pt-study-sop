@@ -168,7 +168,7 @@ export function TaskDialog({ task, isOpen, onClose, onSave, onDelete, isCreating
 
     return (
         <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="sm:max-w-[500px] border-2 border-primary bg-black text-foreground p-0 gap-0 overflow-hidden shadow-2xl rounded-none">
+            <DialogContent className="sm:max-w-[500px] border-[3px] border-double border-primary bg-black text-foreground p-0 gap-0 overflow-hidden rounded-none">
                 <DialogTitle className="sr-only">
                     {isCreating ? "Create New Task" : "Edit Task"}
                 </DialogTitle>
@@ -285,7 +285,7 @@ export function TaskListContainer({ listId, title, tasks, onAddTask, onEdit, onT
     const completedTasks = tasks.filter(t => t.status === 'completed');
 
     return (
-        <div ref={setNodeRef} className="flex-1 min-w-[260px] max-w-[300px] flex flex-col h-full bg-black/40 rounded-none overflow-hidden border-2 border-secondary my-1">
+        <div ref={setNodeRef} className="flex-1 min-w-[260px] max-w-[300px] flex flex-col h-full bg-black/40 rounded-none overflow-hidden border-[3px] border-double border-secondary my-1">
             {/* Header */}
             <div className="p-4 flex items-center justify-between pb-2 border-b border-secondary">
                 <h3 className="font-arcade text-xs text-primary tracking-wide truncate uppercase">

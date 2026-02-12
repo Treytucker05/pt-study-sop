@@ -65,7 +65,7 @@ function ShapeWrapper({
     );
   }
   return (
-    <div className={cn("w-full h-full rounded-md", className)}>
+    <div className={cn("w-full h-full rounded-none", className)}>
       <div className="w-full h-full flex items-center justify-center px-3 py-2">{children}</div>
     </div>
   );
@@ -163,7 +163,7 @@ export function MindMapImageNode({ data, selected }: NodeProps) {
         src={src}
         alt="pasted"
         className={cn(
-          "w-full h-full object-contain border-2 rounded-md",
+          "w-full h-full object-contain border-[3px] border-double rounded-none",
           selected ? "border-primary ring-1 ring-primary" : "border-secondary/50"
         )}
         draggable={false}

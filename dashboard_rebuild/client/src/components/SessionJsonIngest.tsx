@@ -150,7 +150,7 @@ export function SessionJsonIngest() {
   }
 
   return (
-    <Card className="bg-black/40 border-2 border-primary rounded-none">
+    <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
       <CardHeader className="border-b border-primary/50 p-4">
         <CardTitle className="font-arcade text-sm flex items-center gap-2">
           <div className="w-4 h-4 bg-primary inline-block" />

@@ -220,7 +220,7 @@ export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
             </button>
           )}
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center px-3 py-6 border border-primary/30 bg-black/30 m-3">
+        <div className="flex-1 flex flex-col items-center justify-center px-3 py-6 border-[3px] border-double border-primary/30 bg-black/30 m-3">
           <FolderOpen className="w-8 h-8 text-primary/80 mb-3" aria-hidden="true" />
           <p className="font-arcade text-sm text-primary/90 text-center">
             Obsidian offline
@@ -259,14 +259,14 @@ export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search files…"
-            className="h-9 pl-9 pr-3 text-sm font-terminal rounded-none border border-primary/20 bg-black/40 placeholder:text-muted-foreground/80 focus-visible:ring-1 focus-visible:ring-primary/60 focus-visible:border-primary/40"
+            className="h-9 pl-9 pr-3 text-sm font-terminal rounded-none border-[3px] border-double border-primary/20 bg-black/40 placeholder:text-muted-foreground/80 focus-visible:ring-1 focus-visible:ring-primary/60 focus-visible:border-primary/40"
             aria-label="Search files"
           />
         </div>
         <Button
           size="sm"
           variant="ghost"
-          className="w-full h-9 text-sm font-terminal rounded-none border border-primary/20 bg-black/30 text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary justify-start gap-2"
+          className="w-full h-9 text-sm font-terminal rounded-none border-[3px] border-double border-primary/20 bg-black/30 text-foreground hover:bg-primary/10 hover:border-primary/40 hover:text-primary justify-start gap-2"
           onClick={createNewNote}
         >
           <FileText className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -285,7 +285,7 @@ export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
                 key={course.path}
                 type="button"
                 onClick={() => navigateToFolder(course.path)}
-                className={`min-h-[36px] px-4 py-2 font-arcade text-xs tracking-wider rounded-none border-2 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-black ${
+                className={`min-h-[36px] px-4 py-2 font-arcade text-xs tracking-wider rounded-none border-[3px] border-double transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-black ${
                   isActive
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-primary/40 bg-black/50 text-primary/80 hover:bg-primary/20 hover:border-primary/60 hover:text-primary"

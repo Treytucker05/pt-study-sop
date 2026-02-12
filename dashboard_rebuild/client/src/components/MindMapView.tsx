@@ -13,7 +13,6 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { toPng } from "html-to-image";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -382,12 +381,40 @@ export function MindMapView({
         ".react-flow__viewport"
       ) as HTMLElement;
       if (!viewport) return;
-      const dataUrl = await toPng(viewport, { backgroundColor: "#000", quality: 1 });
-      const link = document.createElement("a");
-      link.download = "mind-map.png";
-      link.href = dataUrl;
-      link.click();
-      toast({ title: "PNG exported" });
+      const { width, height } = viewport.getBoundingClientRect();
+      const clone = viewport.cloneNode(true) as HTMLElement;
+      clone.style.backgroundColor = "#000";
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+        <foreignObject width="100%" height="100%">
+          <div xmlns="http://www.w3.org/1999/xhtml">${new XMLSerializer().serializeToString(clone)}</div>
+        </foreignObject>
+      </svg>`;
+      const img = new Image();
+      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = width * 2;
+        canvas.height = height * 2;
+        const ctx = canvas.getContext("2d")!;
+        ctx.scale(2, 2);
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((pngBlob) => {
+          if (!pngBlob) return;
+          const link = document.createElement("a");
+          link.download = "mind-map.png";
+          link.href = URL.createObjectURL(pngBlob);
+          link.click();
+          URL.revokeObjectURL(link.href);
+          toast({ title: "PNG exported" });
+        }, "image/png");
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        toast({ title: "Export failed", variant: "destructive" });
+      };
+      img.src = url;
     } catch (err) {
       toast({ title: "Export failed", description: String(err), variant: "destructive" });
     }

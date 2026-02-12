@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -144,15 +143,41 @@ export function ComparisonTableEditor({ className }: { className?: string }) {
   const exportPng = useCallback(async () => {
     if (!tableRef.current) return;
     try {
-      const dataUrl = await toPng(tableRef.current, {
-        backgroundColor: "#000",
-        quality: 1,
-      });
-      const link = document.createElement("a");
-      link.download = `${table.title.replace(/[/\\?%*:|"<>]/g, "-")}.png`;
-      link.href = dataUrl;
-      link.click();
-      toast({ title: "PNG exported" });
+      const node = tableRef.current;
+      const { width, height } = node.getBoundingClientRect();
+      const clone = node.cloneNode(true) as HTMLElement;
+      clone.style.backgroundColor = "#000";
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+        <foreignObject width="100%" height="100%">
+          <div xmlns="http://www.w3.org/1999/xhtml">${new XMLSerializer().serializeToString(clone)}</div>
+        </foreignObject>
+      </svg>`;
+      const img = new Image();
+      const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = width * 2;
+        canvas.height = height * 2;
+        const ctx = canvas.getContext("2d")!;
+        ctx.scale(2, 2);
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((pngBlob) => {
+          if (!pngBlob) return;
+          const link = document.createElement("a");
+          link.download = `${table.title.replace(/[/\\?%*:|"<>]/g, "-")}.png`;
+          link.href = URL.createObjectURL(pngBlob);
+          link.click();
+          URL.revokeObjectURL(link.href);
+          toast({ title: "PNG exported" });
+        }, "image/png");
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        toast({ title: "Export failed", variant: "destructive" });
+      };
+      img.src = url;
     } catch (err) {
       toast({ title: "Export failed", description: String(err), variant: "destructive" });
     }
@@ -210,7 +235,7 @@ export function ComparisonTableEditor({ className }: { className?: string }) {
 
       {/* Table */}
       <div className="flex-1 overflow-auto p-2">
-        <div ref={tableRef} className="bg-black/80 border-2 border-primary/50">
+        <div ref={tableRef} className="bg-black/80 border-[3px] border-double border-primary/50">
           {/* Header row */}
           <div className="flex border-b-2 border-primary/50">
             <div className="w-28 shrink-0 p-1 border-r border-secondary/30 bg-black/60">

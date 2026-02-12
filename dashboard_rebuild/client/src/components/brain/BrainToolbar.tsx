@@ -31,7 +31,7 @@ export function BrainToolbar({ workspace, currentFolder, onFolderChange }: Brain
        type="button"
        onClick={() => onFolderChange(course.path)}
        className={cn(
-        "h-7 px-2.5 text-xs font-[var(--font-clean)] rounded-md border transition-all duration-150",
+        "h-7 px-2.5 text-xs font-[var(--font-clean)] rounded-none border-[3px] border-double transition-all duration-150",
         isActive
          ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] border-[hsl(var(--primary)/0.3)]"
          : "border-[var(--border-subtle)] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[var(--surface-2)] hover:border-[var(--border-muted)]"
@@ -43,7 +43,7 @@ export function BrainToolbar({ workspace, currentFolder, onFolderChange }: Brain
     })}
    </div>
 
-   <div className="flex items-center gap-0.5 shrink-0 rounded-md p-0.5" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
+   <div className="flex items-center gap-0.5 shrink-0 rounded-none p-0.5" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}>
     {MODES.map((mode) => {
      const Icon = mode.icon;
      const isActive = workspace.mainMode === mode.id;
@@ -53,16 +53,16 @@ export function BrainToolbar({ workspace, currentFolder, onFolderChange }: Brain
        type="button"
        onClick={() => workspace.setMainMode(mode.id)}
        className={cn(
-        "h-7 px-2.5 flex items-center gap-1.5 text-xs font-[var(--font-clean)] rounded-md transition-all duration-150",
+        "h-7 px-2.5 flex items-center gap-1.5 text-xs font-[var(--font-clean)] rounded-none transition-all duration-150",
         isActive
-         ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] shadow-sm"
+         ? "bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))]"
          : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[var(--surface-3)]"
        )}
       >
        <Icon className="w-3.5 h-3.5 shrink-0" />
        <span className="hidden lg:inline">{mode.label}</span>
        {mode.id === "anki" && workspace.pendingDrafts.length > 0 && (
-        <span className="ml-0.5 px-1 text-[10px] bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))] rounded-md">
+        <span className="ml-0.5 px-1 text-[10px] bg-[hsl(var(--primary)/0.15)] text-[hsl(var(--primary))] rounded-none">
          {workspace.pendingDrafts.length}
         </span>
        )}

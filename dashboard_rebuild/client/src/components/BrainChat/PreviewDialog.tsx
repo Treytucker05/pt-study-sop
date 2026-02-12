@@ -91,7 +91,7 @@ export function PreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-full h-[85vh] bg-black border-2 border-primary rounded-none p-4 overflow-hidden">
+      <DialogContent className="max-w-6xl w-full h-[85vh] bg-black border-[3px] border-double border-primary rounded-none p-4 overflow-hidden">
         <DialogHeader className="space-y-1">
           <DialogTitle className="font-arcade text-sm text-primary flex items-center gap-2">
             <FileText className="w-4 h-4" />
@@ -103,7 +103,7 @@ export function PreviewDialog({
         </DialogHeader>
 
         {error && (
-          <div className="border border-red-500/50 bg-red-900/20 text-red-200 font-terminal text-xs p-2 rounded-none">
+          <div className="border-[3px] border-double border-red-500/50 bg-red-900/20 text-red-200 font-terminal text-xs p-2 rounded-none">
             {error}
           </div>
         )}
@@ -125,7 +125,7 @@ export function PreviewDialog({
               </TabsList>
 
               <TabsContent value="preview" className="mt-2">
-                <ScrollArea className="h-[56vh] border border-secondary/40 rounded-none bg-black/40 p-3">
+                <ScrollArea className="h-[56vh] border-[3px] border-double border-secondary/40 rounded-none bg-black/40 p-3">
                   <div className="space-y-2">
                     <div className="font-arcade text-xs text-primary">
                       {organized?.title || "Untitled"}
@@ -136,7 +136,7 @@ export function PreviewDialog({
               </TabsContent>
 
               <TabsContent value="raw" className="mt-2">
-                <ScrollArea className="h-[56vh] border border-secondary/40 rounded-none bg-black/40 p-3">
+                <ScrollArea className="h-[56vh] border-[3px] border-double border-secondary/40 rounded-none bg-black/40 p-3">
                   <pre className="whitespace-pre-wrap font-terminal text-sm text-foreground">
                     {rawNotes}
                   </pre>
@@ -144,7 +144,7 @@ export function PreviewDialog({
               </TabsContent>
 
               <TabsContent value="diff" className="mt-2">
-                <ScrollArea className="h-[56vh] border border-secondary/40 rounded-none bg-black/40 p-0">
+                <ScrollArea className="h-[56vh] border-[3px] border-double border-secondary/40 rounded-none bg-black/40 p-0">
                   <div className="p-2">
                     {diffLines.length === 0 ? (
                       <div className="text-muted-foreground font-terminal text-xs">
@@ -164,7 +164,7 @@ export function PreviewDialog({
           {/* Right column: Destination, Checklist, Actions */}
           <div className="col-span-1 flex flex-col gap-3">
             {/* Destination selection */}
-            <div className="border border-secondary/50 bg-black/40 p-3 rounded-none">
+            <div className="border-[3px] border-double border-secondary/50 bg-black/40 p-3 rounded-none">
               <div className="font-arcade text-xs text-primary mb-2">
                 DESTINATION
               </div>
@@ -212,7 +212,7 @@ export function PreviewDialog({
             </div>
 
             {/* Review checklist */}
-            <div className="border border-secondary/50 bg-black/40 p-3 rounded-none">
+            <div className="border-[3px] border-double border-secondary/50 bg-black/40 p-3 rounded-none">
               <div className="font-arcade text-xs text-primary mb-2">
                 REVIEW CHECKLIST
               </div>
@@ -236,7 +236,7 @@ export function PreviewDialog({
 
             {/* Suggested links */}
             {(organized?.suggested_links || []).length > 0 && (
-              <div className="border border-secondary/50 bg-black/40 p-3 rounded-none">
+              <div className="border-[3px] border-double border-secondary/50 bg-black/40 p-3 rounded-none">
                 <div className="font-arcade text-xs text-primary mb-2">
                   SUGGESTED LINKS
                 </div>

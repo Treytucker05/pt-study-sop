@@ -113,7 +113,7 @@ export default function Library() {
         </div>
 
         {/* Upload section */}
-        <Card className="bg-black/40 border-2 border-primary rounded-none">
+        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
           <div className={PANEL_PADDING}>
             <div className={`${TEXT_PANEL_TITLE} mb-3`}>UPLOAD MATERIALS</div>
             <MaterialUploader />
@@ -121,7 +121,7 @@ export default function Library() {
         </Card>
 
         {/* Materials table */}
-        <Card className="bg-black/40 border-2 border-primary rounded-none">
+        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
           <div className={PANEL_PADDING}>
             <div className={`${TEXT_PANEL_TITLE} mb-3`}>YOUR MATERIALS</div>
 

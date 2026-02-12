@@ -119,7 +119,7 @@ export function TutorChainBuilder({
     <div className="space-y-2">
       {/* Block picker by category */}
       <div className={`${TEXT_SECTION_LABEL} text-xs`}>BLOCK PICKER</div>
-      <ScrollArea className="h-36 border-2 border-primary/30 bg-black/20">
+      <ScrollArea className="h-36 border-[3px] border-double border-primary/30 bg-black/20">
         <div className="p-1">
           {CATEGORY_ORDER.map((cat) => {
             const blocks = byCategory[cat] || [];
@@ -178,7 +178,7 @@ export function TutorChainBuilder({
         )}
       </div>
 
-      <div className="border-2 border-primary/30 bg-black/20 min-h-[60px]">
+      <div className="border-[3px] border-double border-primary/30 bg-black/20 min-h-[60px]">
         {selectedBlocks.length === 0 ? (
           <div className={`${TEXT_MUTED} text-xs p-3 text-center`}>
             Click blocks above to build your study chain
@@ -195,7 +195,7 @@ export function TutorChainBuilder({
                   onDragOver={(e) => handleDragOver(e, idx)}
                   onDrop={() => handleDrop(idx)}
                   onDragEnd={handleDragEnd}
-                  className={`flex items-center gap-1 px-2 py-1 border transition-all ${
+                  className={`flex items-center gap-1 px-2 py-1 border-[3px] border-double transition-all ${
                     dragOverIdx === idx
                       ? "border-primary bg-primary/20"
                       : "border-primary/20 bg-black/30"

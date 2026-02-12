@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-arcade: 'Press Start 2P', cursive;
+  --font-arcade: 'VT323', monospace;
   --font-terminal: 'VT323', monospace;
 
   --color-background: hsl(var(--background));
@@ -57,61 +57,80 @@
 }
 
 :root {
-  /* Arcade Theme Base - UNIFIED RED THEME */
-  --background: 0 0% 5%;
-  --foreground: 0 0% 95%;
+  /* Layered Dark — VS Code / Linear depth */
+  --background: 0 0% 3%;        /* #080808 */
+  --foreground: 0 0% 93%;       /* #EEEEEE */
 
-  --card: 0 0% 8%;
-  --card-foreground: 0 0% 95%;
+  --card: 0 0% 7%;              /* #121212 — surface-1 */
+  --card-foreground: 0 0% 93%;
 
-  --popover: 0 0% 8%;
-  --popover-foreground: 0 0% 95%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 93%;
 
-  --primary: 0 100% 50%; /* Neon Red */
+  --primary: 350 63% 49%;       /* #CC2E48 — toned-down arcade red */
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 20%; /* Dark Grey */
-  --secondary-foreground: 0 0% 100%;
+  --secondary: 0 0% 10%;        /* #1A1A1A — surface-2 */
+  --secondary-foreground: 0 0% 93%;
 
-  --muted: 0 0% 15%;
-  --muted-foreground: 0 0% 70%; /* Lightened for better contrast */
+  --muted: 0 0% 13%;            /* #222222 — surface-3 */
+  --muted-foreground: 0 0% 47%; /* #777777 */
 
-  --accent: 0 100% 20%; /* Darker Red */
+  --accent: 350 50% 12%;        /* Dark red tint for hover backgrounds */
   --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 100% 50%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
 
-  /* Prefer red lines across the UI; buttons can override via --button-outline. */
-  --border: 0 100% 25%;
-  --input: 0 100% 25%;
-  --ring: 0 100% 50%;
+  --border: 0 0% 16%;           /* #2A2A2A — neutral gray */
+  --input: 0 0% 16%;
+  --ring: 350 63% 49%;
 
-  --radius: 0.5rem; /* Slight radius for modern feel, can be kept 0 for strict retro */
+  --radius: 0px;
 
-  /* Outline/secondary button border color (kept neutral so only selected buttons pop red). */
-  --button-outline: hsl(0 0% 35%);
-  --badge-outline: hsl(0 0% 35%);
+  /* Button / badge outline — neutral gray for non-active state */
+  --button-outline: hsl(0 0% 25%);
+  --badge-outline: hsl(0 0% 25%);
 
-  /* Design system: 8px grid — use across all pages for consistent spacing/sizing */
-  --space-section: 0.75rem;   /* 12px = px-3 / py-3 */
-  --space-gap: 0.5rem;       /* 8px = gap-2 */
-  --control-h: 2.25rem;      /* 36px = h-9 */
-  --control-h-sm: 2rem;      /* 32px = h-8 for dense nav */
+  /* Tight spacing grid */
+  --space-section: 0.75rem;
+  --space-gap: 0.5rem;
+  --control-h: 2.25rem;
+  --control-h-sm: 2rem;
+
+  /* Pixel Double borders */
+  --ds-border-width: 3px;
+  --ds-border-style: double;
+
+  /* CRT Flicker state tokens */
+  --ds-transition: 0.12s;
+  --ds-hover-shadow: 0 0 6px rgba(204, 46, 72, 0.3), inset 0 0 6px rgba(204, 46, 72, 0.1);
+  --ds-active-shadow: 0 0 15px rgba(204, 46, 72, 0.5);
+  --ds-focus-shadow: 0 0 0 2px hsl(350 63% 49%), 0 0 8px rgba(204, 46, 72, 0.3);
+  --ds-card-hover-shadow: 0 0 8px rgba(204, 46, 72, 0.2), inset 0 0 8px rgba(204, 46, 72, 0.05);
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+  /* Force VT323 on form elements that don't inherit */
+  button, input, textarea, select, option {
+    font-family: var(--font-terminal) !important;
+  }
   body {
-    @apply font-terminal antialiased bg-background text-foreground tracking-wide text-lg leading-relaxed;
-    image-rendering: auto; /* Removed pixelated for text readability */
+    @apply font-terminal antialiased bg-background text-foreground tracking-wide leading-relaxed;
+    font-size: 20px;
+    image-rendering: auto;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-arcade uppercase tracking-widest text-primary mb-4;
+    @apply font-arcade uppercase tracking-[3px] text-primary mb-4;
     text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
   }
+  h1 { font-size: 42px; }
+  h2 { font-size: 32px; }
+  h3 { font-size: 26px; }
+  h4 { font-size: 22px; }
 }
 
 @layer utilities {
@@ -154,11 +173,13 @@
   }
 
   .brain-card {
-    @apply bg-black/40 border-2 border-primary shadow-sm p-6 mb-4;
+    @apply bg-black/40 border-primary shadow-sm p-6 mb-4;
+    border: var(--ds-border-width) var(--ds-border-style) hsl(var(--primary));
   }
 
   .brain-card-strong {
-    @apply bg-black/40 border-2 border-primary shadow-md p-6 mb-4;
+    @apply bg-black/40 border-primary shadow-md p-6 mb-4;
+    border: var(--ds-border-width) var(--ds-border-style) hsl(var(--primary));
   }
 
   /* Notes sheet positioning */
@@ -197,7 +218,7 @@
   .tab-item[aria-selected="true"],
   .tab-item.active {
     @apply bg-primary text-primary-foreground;
-    box-shadow: inset 0 -3px 0 0 hsl(0 100% 70%);
+    box-shadow: inset 0 -3px 0 0 hsl(var(--primary));
   }
   .tab-item[aria-selected="false"]:not(.active),
   .tab-item:not(.active) {
@@ -227,24 +248,32 @@
     @apply text-muted-foreground;
   }
 
-  /* Nav button (header): same control height and border style */
+  /* Nav button (header): tight spacing, pixel double, CRT Flicker */
   .nav-btn {
     min-height: var(--control-h-sm);
-    @apply font-arcade rounded-none px-2 lg:px-3 text-xs transition-colors border border-transparent;
+    @apply font-arcade rounded-none px-2 lg:px-3 text-xs;
+    border: var(--ds-border-width) var(--ds-border-style) transparent;
+    transition: all var(--ds-transition) ease;
   }
   .nav-btn.active {
-    @apply bg-primary text-primary-foreground border-primary;
+    @apply bg-primary text-primary-foreground;
+    border-color: hsl(var(--primary));
+  }
+  .nav-btn:not(.active):hover {
+    border-color: hsl(var(--primary));
+    color: hsl(var(--primary));
+    box-shadow: var(--ds-hover-shadow);
   }
   .nav-btn:not(.active) {
-    @apply hover:bg-primary/20 border-primary/20;
+    border-color: hsl(var(--border));
   }
 
   /* --- Brain tab: retro-futuristic "cabinet terminal" --- */
   .brain-workspace {
-    --brain-glow: hsl(0 100% 50% / 0.08);
+    --brain-glow: hsl(var(--primary) / 0.08);
     --brain-vignette: radial-gradient(ellipse 120% 100% at 50% 50%, transparent 40%, hsl(0 0% 0% / 0.4) 100%);
-    --brain-grid: linear-gradient(hsl(0 100% 25% / 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(0 100% 25% / 0.03) 1px, transparent 1px);
+    --brain-grid: linear-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.03) 1px, transparent 1px);
     position: relative;
     background-color: hsl(0 0% 4%);
     background-image: var(--brain-grid);
@@ -279,7 +308,7 @@
   }
   .brain-workspace__canvas {
     background: hsl(0 0% 5% / 0.6);
-    box-shadow: inset 0 0 60px -12px var(--brain-glow), inset 0 0 0 1px hsl(0 100% 25% / 0.15);
+    box-shadow: inset 0 0 60px -12px var(--brain-glow), inset 0 0 0 1px hsl(var(--primary) / 0.15);
   }
   .brain-workspace__empty {
     background-image: var(--brain-grid);
@@ -340,7 +369,7 @@
     align-items: center;
     gap: 4px;
     padding-top: 8px;
-    border-right: 1px solid hsl(0 100% 50% / 0.15);
+    border-right: 1px solid hsl(var(--primary) / 0.15);
     background: hsl(0 0% 3% / 0.8);
   }
   .brain-sidebar-rail__btn {
@@ -354,7 +383,7 @@
     transition: background 150ms, color 150ms;
   }
   .brain-sidebar-rail__btn:hover {
-    background: hsl(0 100% 50% / 0.15);
+    background: hsl(var(--primary) / 0.15);
     color: var(--color-primary);
   }
   .brain-sidebar-rail__course {
@@ -370,7 +399,7 @@
     transition: background 150ms, color 150ms;
   }
   .brain-sidebar-rail__course:hover {
-    background: hsl(0 100% 50% / 0.12);
+    background: hsl(var(--primary) / 0.12);
     color: var(--color-primary);
   }
 
@@ -407,7 +436,24 @@
   }
   @keyframes brain-save-glow {
     from { border-color: var(--color-success); }
-    to { border-color: hsl(0 100% 50% / 0.15); }
+    to { border-color: hsl(var(--primary) / 0.15); }
+  }
+
+  /* CRT Flicker — interactive state for buttons, cards, nav */
+  .crt-hover {
+    transition: all var(--ds-transition, 0.12s) ease;
+  }
+  .crt-hover:hover {
+    box-shadow: var(--ds-hover-shadow);
+  }
+  .crt-hover:active {
+    transform: translateY(1px);
+    box-shadow: var(--ds-active-shadow);
+    filter: brightness(1.1);
+  }
+  .crt-hover:focus-visible {
+    outline: none;
+    box-shadow: var(--ds-focus-shadow);
   }
 
   .hover-elevate {
@@ -416,6 +462,74 @@
   .hover-elevate:hover {
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .brain-workspace.brain-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    z-index: 200;
+    border: none;
+  }
+  .brain-workspace.brain-fullscreen .tab-bar {
+    display: none;
+  }
+  .brain-workspace.brain-fullscreen .brain-workspace__sidebar-wrap,
+  .brain-workspace.brain-fullscreen .brain-sidebar-rail {
+    display: none;
+  }
+
+  .chat-side-panel {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid hsl(var(--primary) / 0.3);
+    background: hsl(0 0% 0% / 0.4);
+    overflow: hidden;
+  }
+  .chat-side-rail {
+    width: 32px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    border-left: 1px solid hsl(var(--primary) / 0.15);
+    background: hsl(0 0% 3% / 0.8);
+    cursor: pointer;
+    transition: background 150ms;
+    padding: 8px 0;
+  }
+  .chat-side-rail:hover {
+    background: hsl(var(--primary) / 0.08);
+  }
+  .chat-side-rail__label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-family: var(--font-arcade);
+    font-size: 8px;
+    color: hsl(var(--primary));
+    letter-spacing: 0.15em;
+    user-select: none;
+  }
+
+  .excalidraw-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  .excalidraw-wrapper .excalidraw {
+    --color-surface-high: transparent;
+    --color-surface-low: hsl(0 0% 5%);
+    --color-on-surface: hsl(0 0% 95%);
+  }
+  .excalidraw-wrapper .excalidraw .App-menu,
+  .excalidraw-wrapper .excalidraw .main-menu-trigger {
+    display: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -436,21 +550,21 @@
   }
 }
 
-/* Arcade-themed scrollbars */
+/* Arcade-themed scrollbars — Layered Dark */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(0 100% 25%) hsl(0 0% 8%);
+  scrollbar-color: hsl(350 63% 30%) hsl(0 0% 5%);
 }
 *::-webkit-scrollbar {
   width: 8px;
 }
 *::-webkit-scrollbar-track {
-  background: hsl(0 0% 8%);
+  background: hsl(0 0% 5%);
 }
 *::-webkit-scrollbar-thumb {
-  background: hsl(0 100% 25%);
-  border: 1px solid hsl(0 0% 15%);
+  background: hsl(350 63% 30%);
+  border: 1px solid hsl(0 0% 12%);
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: hsl(0 100% 40%);
+  background: hsl(350 63% 45%);
 }

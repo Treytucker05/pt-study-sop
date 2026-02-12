@@ -292,7 +292,7 @@ export function TutorChat({
             {!isChainComplete && onAdvanceBlock && (
               <button
                 onClick={onAdvanceBlock}
-                className="shrink-0 ml-2 px-3 py-1 border-2 border-primary/60 text-xs font-arcade text-primary hover:bg-primary/20 transition-colors"
+                className="shrink-0 ml-2 px-3 py-1 border-[3px] border-double border-primary/60 text-xs font-arcade text-primary hover:bg-primary/20 transition-colors"
               >
                 NEXT
               </button>
@@ -336,8 +336,8 @@ export function TutorChat({
             <div
               className={`max-w-[85%] px-3 py-2 text-lg font-terminal ${
                 msg.role === "user"
-                  ? "bg-primary/20 border-2 border-primary/50 text-foreground"
-                  : "bg-black/40 border-2 border-primary/20 text-foreground"
+                  ? "bg-primary/20 border-[3px] border-double border-primary/50 text-foreground"
+                  : "bg-black/40 border-[3px] border-double border-primary/20 text-foreground"
               }`}
             >
               {msg.role === "assistant" ? (
@@ -432,12 +432,12 @@ export function TutorChat({
           onKeyDown={handleKeyDown}
           placeholder="Ask a question..."
           disabled={isStreaming}
-          className="flex-1 bg-black/60 border-2 border-primary/40 rounded-none px-3 py-2 text-lg font-terminal text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none disabled:opacity-50"
+          className="flex-1 bg-black/60 border-[3px] border-double border-primary/40 rounded-none px-3 py-2 text-lg font-terminal text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none disabled:opacity-50"
         />
         <Button
           onClick={sendMessage}
           disabled={!input.trim() || isStreaming}
-          className="rounded-none border-2 border-primary h-11 w-11 p-0"
+          className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0"
         >
           {isStreaming ? (
             <Loader2 className="w-5 h-5 animate-spin" />

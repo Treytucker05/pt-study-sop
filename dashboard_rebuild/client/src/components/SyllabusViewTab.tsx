@@ -70,7 +70,7 @@ export function SyllabusViewTab() {
   return (
     <div className="space-y-4 p-4">
       {/* Course Selector */}
-      <Card className="bg-black/40 border-2 border-primary rounded-none">
+      <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
         <CardHeader className="border-b border-primary/50">
           <CardTitle className="font-arcade text-sm">SELECT COURSE</CardTitle>
         </CardHeader>
@@ -95,19 +95,19 @@ export function SyllabusViewTab() {
 
       {/* Syllabus Content */}
       {!selectedCourseId ? (
-        <Card className="bg-black/40 border-2 border-primary rounded-none">
+        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
           <CardContent className="p-8 text-center">
             <p className="font-terminal text-xs text-muted-foreground">Select a course to view syllabus</p>
           </CardContent>
         </Card>
       ) : modulesLoading ? (
-        <Card className="bg-black/40 border-2 border-primary rounded-none">
+        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
           <CardContent className="p-8 text-center">
             <p className="font-terminal text-xs text-muted-foreground">Loading syllabus...</p>
           </CardContent>
         </Card>
       ) : !hasData ? (
-        <Card className="bg-black/40 border-2 border-primary rounded-none">
+        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
           <CardContent className="p-8 text-center">
             <p className="font-terminal text-xs text-muted-foreground">No syllabus imported</p>
           </CardContent>
@@ -118,7 +118,7 @@ export function SyllabusViewTab() {
             {Object.entries(modulesByWeek)
               .sort(([weekA], [weekB]) => parseInt(weekA) - parseInt(weekB))
               .map(([week, weekModules]) => (
-                <Card key={week} className="bg-black/40 border-2 border-primary rounded-none">
+                <Card key={week} className="bg-black/40 border-[3px] border-double border-primary rounded-none">
                   <CardHeader className="border-b border-primary/50">
                     <CardTitle className="font-arcade text-sm">WEEK {week}</CardTitle>
                   </CardHeader>

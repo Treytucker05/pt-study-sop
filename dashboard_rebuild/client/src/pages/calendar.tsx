@@ -1388,7 +1388,7 @@ export default function CalendarPage() {
 
         {/* Main Calendar - Full Width */}
         <div className="flex flex-col h-full">
-          <Card className="bg-black/40 border-2 border-primary rounded-none flex-1 flex flex-col overflow-hidden">
+          <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none flex-1 flex flex-col overflow-hidden">
             {/* Header */}
             <CardHeader className="border-b border-primary/30 p-4 flex flex-row justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
@@ -1408,7 +1408,7 @@ export default function CalendarPage() {
                     <ChevronDown className={cn("w-4 h-4 transition-transform", showMiniCalendar && "rotate-180")} />
                   </button>
                   {showMiniCalendar && (
-                    <div className="absolute top-full left-0 mt-2 z-50 bg-black border-2 border-primary p-2 shadow-lg">
+                    <div className="absolute top-full left-0 mt-2 z-50 bg-black border-[3px] border-double border-primary p-2">
                       <div className="grid grid-cols-7 gap-1 text-center min-w-[200px]">
                         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (<div key={i} className="font-arcade text-[8px] text-muted-foreground p-1">{d}</div>))}
                         {eachDayOfInterval({ start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 0 }), end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 0 }) }).slice(0, 42).map((day, i) => (
@@ -1540,7 +1540,7 @@ export default function CalendarPage() {
             >
               <DialogContent
                 data-modal="calendar-manage"
-                className="bg-black border-2 border-primary rounded-none max-w-md pointer-events-auto translate-y-0 data-[state=open]:animate-none data-[state=closed]:animate-none"
+                className="bg-black border-[3px] border-double border-primary rounded-none max-w-md pointer-events-auto translate-y-0 data-[state=open]:animate-none data-[state=closed]:animate-none"
                 style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
               >
                 <DialogHeader>
@@ -1765,7 +1765,7 @@ export default function CalendarPage() {
       <Dialog open={showEventModal} onOpenChange={setShowEventModal}>
         <DialogContent
           data-modal="calendar-create"
-          className="bg-black border-2 border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto translate-y-0"
+          className="bg-black border-[3px] border-double border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto translate-y-0"
           style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
         >
           <DialogHeader>

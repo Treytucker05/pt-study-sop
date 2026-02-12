@@ -211,7 +211,7 @@ export default function MethodsPage() {
                     <button
                       key={cat}
                       onClick={() => setCategoryFilter(cat)}
-                      className={`px-3 py-1.5 font-arcade text-xs border-2 rounded-none transition-colors ${
+                      className={`px-3 py-1.5 font-arcade text-xs border-[3px] border-double rounded-none transition-colors ${
                         categoryFilter === cat
                           ? "border-primary bg-primary/20 text-primary"
                           : "border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 hover:bg-black/30"
@@ -224,7 +224,7 @@ export default function MethodsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="ml-auto rounded-none border-2 font-arcade text-sm h-10"
+                className="ml-auto rounded-none border-[3px] border-double font-arcade text-sm h-10"
                 onClick={() => setShowAddBlock(true)}
               >
                 <Plus className="w-3 h-3 mr-1" /> ADD BLOCK
@@ -278,7 +278,7 @@ export default function MethodsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-none border-2 font-arcade text-sm h-10"
+                className="rounded-none border-[3px] border-double font-arcade text-sm h-10"
                 onClick={() => setShowAddChain(true)}
               >
                 <Plus className="w-3 h-3 mr-1" /> NEW CHAIN
@@ -295,7 +295,7 @@ export default function MethodsPage() {
                     <div
                       key={chain.id}
                       onClick={() => handleSelectChain(chain)}
-                      className={`border-2 p-3 rounded-none cursor-pointer transition-colors ${
+                      className={`border-[3px] border-double p-3 rounded-none cursor-pointer transition-colors ${
                         selectedChain?.id === chain.id
                           ? "border-primary bg-primary/10"
                           : "border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-black/30"
@@ -343,7 +343,7 @@ export default function MethodsPage() {
                 </div>
 
                 {/* Chain Detail / Builder */}
-                <div className="border-2 border-primary/30 bg-black/40 p-4 rounded-none">
+                <div className="border-[3px] border-double border-primary/30 bg-black/40 p-4 rounded-none">
                   {selectedChain ? (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -352,7 +352,7 @@ export default function MethodsPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="rounded-none border-2 border-success text-success font-arcade text-xs h-8"
+                              className="rounded-none border-[3px] border-double border-success text-success font-arcade text-xs h-8"
                               onClick={() => setRunTarget({ id: selectedChain.id, name: selectedChain.name })}
                             >
                               <Play className="w-3 h-3 mr-1" /> RUN
@@ -403,7 +403,7 @@ export default function MethodsPage() {
             {runHistory.length > 0 && (
               <div className="space-y-2">
                 <h3 className="font-arcade text-sm text-muted-foreground">RUN HISTORY</h3>
-                <div className="border-2 border-primary/30 rounded-none overflow-hidden">
+                <div className="border-[3px] border-double border-primary/30 rounded-none overflow-hidden">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b-2 border-primary/30 bg-black/60">
@@ -555,7 +555,7 @@ function AddBlockDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
+      <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-md">
         <DialogTitle className="font-arcade text-sm text-primary">NEW METHOD BLOCK</DialogTitle>
         <DialogDescription className="sr-only">Create a new method block</DialogDescription>
         <div className="space-y-3 mt-2">
@@ -664,7 +664,7 @@ function AddChainDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
+      <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-md">
         <DialogTitle className="font-arcade text-sm text-primary">NEW CHAIN</DialogTitle>
         <DialogDescription className="sr-only">Create a new method chain</DialogDescription>
         <div className="space-y-3 mt-2">
@@ -746,7 +746,7 @@ function ChainRunDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !running && onClose()}>
-      <DialogContent className="bg-black border-2 border-primary rounded-none max-w-md">
+      <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-md">
         <DialogTitle className="font-arcade text-sm text-primary">
           RUN: {chainName}
         </DialogTitle>
@@ -856,7 +856,7 @@ function ChainRunResultDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="bg-black border-2 border-primary rounded-none max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-black border-[3px] border-double border-primary rounded-none max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogTitle className="font-arcade text-sm text-primary flex items-center gap-2">
           {result.chain_name} RESULTS
           <span className={`text-xs px-1.5 py-0.5 ${

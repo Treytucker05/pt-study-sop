@@ -305,7 +305,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
   return (
     <>
       {compact ? content : (
-        <Card className="bg-black/40 border-2 border-primary rounded-none">
+        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
           <CardHeader className="border-b border-primary/50 p-4">
             <CardTitle className="font-arcade text-sm flex items-center gap-3">
               <Layers className="w-4 h-4" />
@@ -332,7 +332,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
       >
         <DialogContent
           data-modal="brain-edit-draft"
-          className="bg-black border-2 border-primary rounded-none max-w-lg translate-y-0"
+          className="bg-black border-[3px] border-double border-primary rounded-none max-w-lg translate-y-0"
           style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
         >
           <DialogHeader>

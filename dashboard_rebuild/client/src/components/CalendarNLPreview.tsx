@@ -206,7 +206,7 @@ export function CalendarNLPreview() {
   };
 
   return (
-    <Card className="brain-card rounded-none">
+    <Card className="brain-card border-[3px] border-double border-secondary rounded-none">
       <CardHeader className="border-b border-secondary/50">
         <CardTitle className="font-arcade text-sm text-primary">
           NATURAL LANGUAGE CALENDAR

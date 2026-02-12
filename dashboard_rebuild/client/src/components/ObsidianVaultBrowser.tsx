@@ -116,7 +116,7 @@ export function ObsidianVaultBrowser({ onWikilinkClick }: ObsidianVaultBrowserPr
   };
 
   return (
-    <Card className="bg-black/40 border-2 border-primary rounded-none">
+    <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
       <CardHeader className="border-b border-primary/50 p-4">
         <div className="flex items-center justify-between">
           <CardTitle className="font-arcade text-sm flex items-center gap-3">

@@ -247,7 +247,7 @@ export function ContentFilter({
           <select
             value={mode}
             onChange={(e) => applyMode(e.target.value as TutorMode)}
-            className={`${SELECT_BASE} border-2 border-primary/30 h-9 w-[140px]`}
+            className={`${SELECT_BASE} border-[3px] border-double border-primary/30 h-9 w-[140px]`}
           >
             {PRIMARY_MODES.map((m) => (
               <option key={m.value} value={m.value}>{m.label}</option>
@@ -261,7 +261,7 @@ export function ContentFilter({
           <select
             value={chainId ?? ""}
             onChange={(e) => setChainId(e.target.value ? Number(e.target.value) : undefined)}
-            className={`${SELECT_BASE} border-2 border-primary/30 h-9 w-[180px]`}
+            className={`${SELECT_BASE} border-[3px] border-double border-primary/30 h-9 w-[180px]`}
           >
             <option value="">Freeform</option>
             {templateChains.map((c) => (
@@ -277,7 +277,7 @@ export function ContentFilter({
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g. Hip Flexors"
-            className={`${INPUT_BASE} border-2 border-primary/30 h-9 w-[180px]`}
+            className={`${INPUT_BASE} border-[3px] border-double border-primary/30 h-9 w-[180px]`}
           />
         </div>
 
@@ -287,7 +287,7 @@ export function ContentFilter({
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as "codex" | "openrouter" | "buster")}
-            className={`${SELECT_BASE} border-2 border-primary/30 h-9 w-[150px]`}
+            className={`${SELECT_BASE} border-[3px] border-double border-primary/30 h-9 w-[150px]`}
           >
             <option value="codex">Codex</option>
             <option value="openrouter" disabled={!openrouterEnabled}>OpenRouter</option>
@@ -297,7 +297,7 @@ export function ContentFilter({
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className={`${SELECT_BASE} border-2 border-primary/30 h-9 w-[180px] mt-1`}
+              className={`${SELECT_BASE} border-[3px] border-double border-primary/30 h-9 w-[180px] mt-1`}
             >
               {OPENROUTER_MODELS.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
@@ -350,7 +350,7 @@ export function ContentFilter({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Fixed header */}
-      <div className={`shrink-0 ${PANEL_PADDING} pb-2 border-b-2 border-primary/30`}>
+      <div className={`shrink-0 ${PANEL_PADDING} pb-2 border-b-[3px] border-double border-primary/30`}>
         <div className={TEXT_PANEL_TITLE}>CONTENT FILTER</div>
         {(sourcesError || templateChainsError) && (
           <div className={`${TEXT_MUTED} text-destructive`}>
@@ -526,7 +526,7 @@ export function ContentFilter({
                 </label>
 
                 {/* Chain list - card style with better borders */}
-                <ScrollArea className="h-40 border-2 border-primary/30 bg-black/20">
+                <ScrollArea className="h-40 border-[3px] border-double border-primary/30 bg-black/20">
                   <div className="p-1 space-y-1">
                     {/* Freeform option as a card */}
                     <button
@@ -594,7 +594,7 @@ export function ContentFilter({
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. Hip Flexors"
-              className={`${INPUT_BASE} border-2 border-primary/30`}
+              className={`${INPUT_BASE} border-[3px] border-double border-primary/30`}
             />
           </div>
 
@@ -648,7 +648,7 @@ export function ContentFilter({
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className={`${SELECT_BASE} border-2 border-primary/30`}
+                className={`${SELECT_BASE} border-[3px] border-double border-primary/30`}
               >
                 {OPENROUTER_MODELS.map((m) => (
                   <option key={m.value} value={m.value}>
@@ -679,7 +679,7 @@ export function ContentFilter({
               <select
                 value={courseId ?? ""}
                 onChange={(e) => setCourseId(e.target.value ? Number(e.target.value) : undefined)}
-                className={`${SELECT_BASE} border-2 border-primary/30`}
+                className={`${SELECT_BASE} border-[3px] border-double border-primary/30`}
               >
                 <option value="">All courses</option>
                 {courses.map((c) => (

@@ -173,7 +173,7 @@ export function LocalEventEditModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-modal="calendar-edit-local"
-        className="font-arcade bg-black border-2 border-primary rounded-none max-w-lg p-0 overflow-hidden translate-y-0 max-h-[calc(100vh-4rem)]"
+        className="font-arcade bg-black border-[3px] border-double border-primary rounded-none max-w-lg p-0 overflow-hidden translate-y-0 max-h-[calc(100vh-4rem)]"
         style={{ zIndex: 100005, top: "3rem", left: "50%", transform: "translate(-50%, 0)" }}
       >
         <DialogTitle className="sr-only">Edit Event</DialogTitle>

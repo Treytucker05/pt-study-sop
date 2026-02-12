@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getCoursePaths } from "@/config/courses";
 
-export type MainMode = "edit" | "chat" | "graph" | "table" | "anki";
+export type MainMode = "canvas" | "edit" | "chat" | "graph" | "table" | "anki";
 
 function loadState<T>(key: string, fallback: T): T {
   try {
@@ -21,7 +21,7 @@ function saveState(key: string, value: unknown) {
 
 export function useBrainWorkspace() {
   const [mainMode, setMainModeRaw] = useState<MainMode>(
-    () => loadState<MainMode>("brain-main-mode", "edit")
+    () => loadState<MainMode>("brain-main-mode", "canvas")
   );
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState("");
@@ -29,12 +29,15 @@ export function useBrainWorkspace() {
   const [previewMode, setPreviewMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sidebar collapse state
   const [sidebarExpanded, setSidebarExpandedRaw] = useState<boolean>(
     () => loadState<boolean>("brain-sidebar-expanded", true)
   );
 
-  // Modal states
+  const [chatExpanded, setChatExpandedRaw] = useState<boolean>(
+    () => loadState<boolean>("brain-chat-expanded", true)
+  );
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const [importOpen, setImportOpen] = useState(false);
 
   const setMainMode = useCallback((mode: MainMode) => {
@@ -55,7 +58,22 @@ export function useBrainWorkspace() {
     });
   }, []);
 
-  // Shared queries
+  const setChatExpanded = useCallback((expanded: boolean) => {
+    setChatExpandedRaw(expanded);
+    saveState("brain-chat-expanded", expanded);
+  }, []);
+
+  const toggleChat = useCallback(() => {
+    setChatExpandedRaw((prev) => {
+      const next = !prev;
+      saveState("brain-chat-expanded", next);
+      return next;
+    });
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((prev) => !prev);
+  }, []);
   const { data: obsidianStatus } = useQuery({
     queryKey: ["obsidian", "status"],
     queryFn: api.obsidian.getStatus,
@@ -170,10 +188,10 @@ export function useBrainWorkspace() {
     isSaving,
     openFile, saveFile,
 
-    // Sidebar
     sidebarExpanded, setSidebarExpanded, toggleSidebar,
+    chatExpanded, setChatExpanded, toggleChat,
+    isFullscreen, toggleFullscreen,
 
-    // Modals
     importOpen, setImportOpen,
 
     // Wikilink navigation

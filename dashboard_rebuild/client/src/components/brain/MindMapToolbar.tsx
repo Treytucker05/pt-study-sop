@@ -87,7 +87,7 @@ export function MindMapToolbar({
           <Plus className="w-3 h-3" />
         </Button>
         {showDropdown === "add" && (
-          <div className="absolute top-full left-0 mt-1 p-1 bg-black border-2 border-primary/50 z-50 space-y-0.5 min-w-[120px]">
+          <div className="absolute top-full left-0 mt-1 p-1 bg-black border-[3px] border-double border-primary/50 z-50 space-y-0.5 min-w-[120px]">
             {MIND_MAP_SHAPES.map((s) => {
               const Icon = SHAPE_ICONS[s];
               return (
@@ -121,7 +121,7 @@ export function MindMapToolbar({
           <Palette className="w-3 h-3" />
         </Button>
         {showDropdown === "color" && (
-          <div className="absolute top-full left-0 mt-1 p-2 bg-black border-2 border-primary/50 z-50 space-y-2 min-w-[160px]">
+          <div className="absolute top-full left-0 mt-1 p-2 bg-black border-[3px] border-double border-primary/50 z-50 space-y-2 min-w-[160px]">
             <p className="font-terminal text-xs text-muted-foreground">NODE COLORS</p>
             <div className="flex flex-wrap gap-1">
               {CONCEPT_NODE_COLORS.map((c, i) => (
@@ -139,7 +139,7 @@ export function MindMapToolbar({
                 <button
                   key={c.name}
                   onClick={() => { onSetEdgeColor(c.stroke); setShowDropdown(null); }}
-                  className="w-5 h-5 border-2 border-secondary/50 rounded-none"
+                  className="w-5 h-5 border-[3px] border-double border-secondary/50 rounded-none"
                   style={{ backgroundColor: c.stroke }}
                   title={c.name}
                 />
@@ -161,7 +161,7 @@ export function MindMapToolbar({
           <Hexagon className="w-3 h-3" />
         </Button>
         {showDropdown === "shape" && (
-          <div className="absolute top-full left-0 mt-1 p-1 bg-black border-2 border-primary/50 z-50 space-y-0.5 min-w-[120px]">
+          <div className="absolute top-full left-0 mt-1 p-1 bg-black border-[3px] border-double border-primary/50 z-50 space-y-0.5 min-w-[120px]">
             {MIND_MAP_SHAPES.map((s) => {
               const Icon = SHAPE_ICONS[s];
               return (

@@ -50,7 +50,7 @@ export default function ChainBuilder({ chain, allBlocks, onSave, readOnly }: Cha
       </div>
 
       {orderedBlocks.length === 0 && (
-        <div className="border-2 border-dashed border-secondary p-4 text-center">
+        <div className="border-[3px] border-dashed border-secondary p-4 text-center">
           <p className="font-terminal text-xs text-muted-foreground">No blocks in this chain yet</p>
         </div>
       )}
@@ -88,7 +88,7 @@ export default function ChainBuilder({ chain, allBlocks, onSave, readOnly }: Cha
       {!readOnly && (
         <div>
           {showPicker ? (
-            <div className="border-2 border-primary/30 bg-black/50 p-3 space-y-2 max-h-48 overflow-y-auto">
+            <div className="border-[3px] border-double border-primary/30 bg-black/50 p-3 space-y-2 max-h-48 overflow-y-auto">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-arcade text-xs text-primary">ADD BLOCK</span>
                 <button onClick={() => setShowPicker(false)}>
@@ -110,7 +110,7 @@ export default function ChainBuilder({ chain, allBlocks, onSave, readOnly }: Cha
             <Button
               variant="outline"
               size="sm"
-              className="w-full rounded-none border-2 border-dashed border-secondary font-arcade text-xs"
+              className="w-full rounded-none border-[3px] border-dashed border-secondary font-arcade text-xs"
               onClick={() => setShowPicker(true)}
             >
               <Plus className="w-3 h-3 mr-1" /> ADD BLOCK
