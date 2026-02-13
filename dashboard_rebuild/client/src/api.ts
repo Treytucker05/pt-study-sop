@@ -1127,7 +1127,6 @@ export interface TutorContentSources {
   total_instructions: number;
   total_docs: number;
   openrouter_enabled: boolean;
-  buster_enabled?: boolean;
 }
 
 export interface TutorChainRequest {
