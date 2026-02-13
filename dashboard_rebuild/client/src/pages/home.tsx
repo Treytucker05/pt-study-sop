@@ -13,7 +13,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Joystick, Gamepad2, Trophy, Skull, Zap, Play, Settings, Volume2 } from "lucide-react";
-import arcadeBg from "@assets/generated_images/dark_retro_arcade_grid_background_texture.png";
+import arcadeBg from "@assets/generated_images/arcade_tutor_chat_interface.png";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("ui-elements");
@@ -21,11 +21,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
       {/* Background with overlay */}
-      <div 
-        className="fixed inset-0 z-0 opacity-20 pointer-events-none" 
-        style={{ 
-          backgroundImage: `url(${arcadeBg})`, 
-          backgroundSize: '300px' 
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.2), rgba(10, 10, 10, 0.2)), url(${arcadeBg})`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+          opacity: 0.6,
         }}
       />
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />

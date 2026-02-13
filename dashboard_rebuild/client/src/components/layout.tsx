@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import arcadeBg from "@assets/generated_images/dark_retro_arcade_grid_background_texture.png";
+import arcadeBg from "@assets/generated_images/arcade_tutor_chat_interface.png";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -291,11 +291,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground relative flex flex-col font-terminal">
       {/* Background with overlay */}
-      <div 
-        className="fixed inset-0 z-0 opacity-[0.06] pointer-events-none" 
-        style={{ 
-          backgroundImage: `url(${arcadeBg})`, 
-          backgroundSize: '420px' 
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.25), rgba(10, 10, 10, 0.25)), url(${arcadeBg})`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+          opacity: 0.55,
         }}
       />
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />
