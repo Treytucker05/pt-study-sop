@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { TutorMode, TutorSessionSummary, TutorTemplateChain } from "@/lib/api";
 import { ContentFilter } from "@/components/ContentFilter";
-import { VaultPicker } from "@/components/VaultPicker";
+import { TutorWizard } from "@/components/TutorWizard";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts";
 import { toast } from "sonner";
@@ -21,9 +21,11 @@ import {
   Check,
   X,
   Trash2,
+  Square,
+  Send,
+  Loader2,
 } from "lucide-react";
 import {
-  TEXT_PANEL_TITLE,
   TEXT_BODY,
   TEXT_MUTED,
   TEXT_BADGE,
@@ -77,6 +79,8 @@ export default function Tutor() {
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [isShipping, setIsShipping] = useState(false);
 
   useEffect(() => {
     try {
@@ -159,6 +163,45 @@ export default function Tutor() {
       toast.error(`Failed to end session: ${err instanceof Error ? err.message : "Unknown"}`);
     }
   }, [activeSessionId, queryClient]);
+
+  const shipToBrainAndEnd = useCallback(async () => {
+    if (!activeSessionId) return;
+    setIsShipping(true);
+    try {
+      const full = await api.tutor.getSession(activeSessionId);
+      if (full.turns && full.turns.length > 0) {
+        const lines: string[] = [
+          `# Tutor: ${topic || mode}`,
+          `**Date:** ${new Date(startedAt || Date.now()).toLocaleDateString()}`,
+          `**Mode:** ${mode} | **Turns:** ${turnCount}`,
+          `**Artifacts:** ${artifacts.length}`,
+          "",
+          "---",
+          "",
+        ];
+        for (const turn of full.turns) {
+          lines.push(`## Q${turn.turn_number}`);
+          lines.push(turn.question);
+          lines.push("");
+          if (turn.answer) {
+            lines.push(`**Answer:**`);
+            lines.push(turn.answer);
+            lines.push("");
+          }
+        }
+        const filename = `Tutor - ${(topic || mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
+        const path = `Study Sessions/${filename}.md`;
+        await api.obsidian.append(path, lines.join("\n"));
+      }
+      toast.success("Session shipped to Brain");
+    } catch (err) {
+      toast.error(`Ship failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    } finally {
+      setIsShipping(false);
+    }
+    await endSession();
+    setShowEndConfirm(false);
+  }, [activeSessionId, topic, mode, startedAt, turnCount, artifacts.length, endSession]);
 
   const handleArtifactCreated = useCallback(
     async (artifact: { type: string; content: string; title?: string }) => {
@@ -263,75 +306,29 @@ export default function Tutor() {
   if (!activeSessionId && !showSetup) {
     return (
       <Layout>
-        <div className="flex flex-col h-[calc(100vh-140px)] px-4 pb-2">
-          {/* Vault file picker — fills all available height */}
-          <Card className="flex-1 min-h-0 bg-black/40 border-[3px] border-double border-primary rounded-none overflow-hidden flex flex-col">
-            <div className="shrink-0 px-3 py-1.5 border-b-2 border-primary/30 flex items-center justify-between">
-              <div className={TEXT_PANEL_TITLE}>VAULT FILES</div>
-              <span className="font-arcade text-xs text-primary/50 tracking-widest">TUTOR</span>
-            </div>
-            <VaultPicker
-              selectedPaths={selectedPaths}
-              onSelectedPathsChange={setSelectedPaths}
-            />
-          </Card>
-
-          {selectedMaterials.length > 0 && (
-            <Card className="shrink-0 mt-2 bg-black/40 border-[3px] border-double border-primary/70 rounded-none">
-              <div className="px-3 py-2 border-b-2 border-primary/30 font-arcade text-xs tracking-widest">
-                PROJECT FILES FOR THIS SESSION
-              </div>
-              <div className="px-3 py-2">
-                <span className={TEXT_BODY}>
-                  {selectedMaterials.length} library file{selectedMaterials.length === 1 ? "" : "s"} selected
-                </span>
-              </div>
-            </Card>
-          )}
-
-          {/* Toolbar — thin horizontal strip */}
-          <Card className="shrink-0 mt-2 bg-black/40 border-[3px] border-double border-primary rounded-none overflow-hidden">
-              <ContentFilter
-                courseId={courseId}
-                setCourseId={setCourseId}
-                selectedMaterials={selectedMaterials}
-                setSelectedMaterials={setSelectedMaterials}
-                mode={mode}
-                setMode={setMode}
-                chainId={chainId}
-                setChainId={setChainId}
-                customBlockIds={customBlockIds}
-                setCustomBlockIds={setCustomBlockIds}
-                topic={topic}
-                setTopic={setTopic}
-                model={model}
-                setModel={setModel}
-                webSearch={webSearch}
-                setWebSearch={setWebSearch}
-                onStartSession={startSession}
-                isStarting={isStarting}
-                hasActiveSession={false}
-                compact
-              />
-            </Card>
-
-            {/* Recent sessions — single-line chips */}
-            {recentSessions.length > 0 && (
-              <div className="shrink-0 flex items-center gap-2 mt-1 overflow-x-auto pb-1">
-                <span className="font-arcade text-xs text-primary/60 shrink-0">RECENT:</span>
-                {recentSessions.slice(0, 8).map((s) => (
-                  <button
-                    key={s.session_id}
-                    onClick={() => resumeSession(s.session_id)}
-                    className="shrink-0 border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/10 px-2 py-0.5 font-terminal text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${s.status === "active" ? "bg-green-400" : "bg-muted-foreground/40"}`} />
-                    <span className="truncate max-w-[100px]">{s.topic || s.mode}</span>
-                    <span className="text-muted-foreground/50">{s.turn_count}t</span>
-                  </button>
-                ))}
-              </div>
-            )}
+        <div className="flex flex-col h-[calc(100vh-140px)]">
+          <TutorWizard
+            courseId={courseId}
+            setCourseId={setCourseId}
+            selectedMaterials={selectedMaterials}
+            setSelectedMaterials={setSelectedMaterials}
+            topic={topic}
+            setTopic={setTopic}
+            chainId={chainId}
+            setChainId={setChainId}
+            customBlockIds={customBlockIds}
+            setCustomBlockIds={setCustomBlockIds}
+            mode={mode}
+            setMode={setMode}
+            model={model}
+            setModel={setModel}
+            webSearch={webSearch}
+            setWebSearch={setWebSearch}
+            onStartSession={startSession}
+            isStarting={isStarting}
+            recentSessions={recentSessions}
+            onResumeSession={resumeSession}
+          />
         </div>
       </Layout>
     );
@@ -440,22 +437,75 @@ export default function Tutor() {
                 </Badge>
               )}
             </Button>
+
+            <div className="w-px h-5 bg-primary/20" />
+
+            {/* End session */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowEndConfirm(true)}
+              className="h-7 px-2 rounded-none font-terminal text-sm text-red-400/70 hover:text-red-400 hover:bg-red-400/10 gap-1"
+              title="End session"
+            >
+              <Square className="w-3.5 h-3.5" />
+              END
+            </Button>
           </div>
         </div>
 
         {/* Main content: Chat (+ optional artifacts panel) */}
         <div className="flex-1 flex min-h-0">
-          {/* Chat — takes all available space */}
-          <div className="flex-1 bg-black/60 border-x-2 border-primary/20 flex flex-col min-w-0">
+          <div className="flex-1 bg-black/60 border-x-2 border-primary/20 flex flex-col min-w-0 relative">
             <TutorChat
               sessionId={activeSessionId}
-              engine={model === "buster" ? "buster" : undefined}
+              engine={undefined}
               onArtifactCreated={handleArtifactCreated}
               onSessionEnd={endSession}
               chainBlocks={chainBlocks}
               currentBlockIndex={currentBlockIndex}
               onAdvanceBlock={advanceBlock}
             />
+
+            {showEndConfirm && (
+              <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4">
+                <div className="max-w-md mx-auto space-y-3">
+                  <div className="font-arcade text-sm text-primary tracking-wider">SESSION COMPLETE</div>
+                  <div className="flex items-center gap-4 font-terminal text-xs text-muted-foreground">
+                    <span>{mode}</span>
+                    <span className="text-foreground">{topic || "No topic"}</span>
+                    <span>{turnCount} turns</span>
+                    {artifacts.length > 0 && <span>{artifacts.length} artifacts</span>}
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button
+                      onClick={shipToBrainAndEnd}
+                      disabled={isShipping}
+                      className="rounded-none font-arcade text-xs bg-primary/10 hover:bg-primary/20 border-2 border-primary text-primary gap-1.5 h-9 px-4"
+                    >
+                      {isShipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                      {isShipping ? "SHIPPING..." : "SHIP TO BRAIN"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => { endSession(); setShowEndConfirm(false); }}
+                      disabled={isShipping}
+                      className="rounded-none font-terminal text-xs text-muted-foreground hover:text-foreground h-9 px-3"
+                    >
+                      END WITHOUT SAVING
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowEndConfirm(false)}
+                      disabled={isShipping}
+                      className="rounded-none font-terminal text-xs text-muted-foreground hover:text-foreground h-9 px-3 ml-auto"
+                    >
+                      CANCEL
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Artifacts drawer — collapsible right panel */}
