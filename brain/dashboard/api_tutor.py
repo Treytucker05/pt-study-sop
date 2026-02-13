@@ -173,11 +173,11 @@ def _format_dual_context(dual: dict) -> tuple[str, str]:
 
 
 def _sanitize_filename(name: str) -> str:
-    """Make a filename safe for disk storage."""
     import re
     safe = re.sub(r'[^\w\s\-.]', '', name)
     safe = re.sub(r'\s+', '_', safe)
     return safe[:200]
+
 
 
 # ---------------------------------------------------------------------------

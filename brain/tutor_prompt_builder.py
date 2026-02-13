@@ -1,11 +1,16 @@
 """
-Tutor Prompt Builder — Assembles system prompts from 3 independent layers.
+Tutor Prompt Builder — Assembles system prompts from a 3-tier architecture.
 
-Layer 1: Mode (behavioral policy)
-Layer 2: Chain (ordered method block sequence)
-Layer 3: RulePacks (global constraints)
+Tier 1 (Always-On):  Identity + core rules + PEIRRO/KWIK + pacing invariants.
+                      Present in EVERY session regardless of mode or chain.
+Tier 2 (Mode-Level): Behavioral policy per mode (Core, Sprint, Drill, etc.).
+                      Selected by user at session start.
+Tier 3 (Block-Level): Facilitation prompts injected per active method block
+                      + chain progress context. Dynamic per chain step.
 
-These layers are independent and composable.
+Additional context layers (injected when available):
+  - instruction_context: SOP rules retrieved via RAG (enriches Tier 1/3)
+  - material_context:    Study materials from Library/Vault (grounds answers)
 """
 
 from __future__ import annotations
@@ -13,8 +18,161 @@ from __future__ import annotations
 from typing import Optional
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# TIER 1 — Always-On Base Prompt (every session, every mode, every chain)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Sources:
+#   - sop/library/01-core-rules.md   (behavioral rules & invariants)
+#   - sop/library/02-learning-cycle.md (PEIRRO + KWIK)
+#   - sop/library/13-custom-gpt-system-instructions.md (pacing, teaching rules)
+#
+# This replaces the old BASE_PROMPT + RULE_PACKS_PROMPT with a comprehensive
+# always-on foundation.  Mode-specific behavior is in Tier 2 (MODE_POLICIES).
+# Block-specific behavior is in Tier 3 (facilitation_prompt per block).
+# ═══════════════════════════════════════════════════════════════════════════
+
+TIER1_BASE_PROMPT = """You are the PT Study Tutor, a structured study partner for physical therapy education.
+Enforce planning, active encoding, retrieval practice, and Lite Wrap. Avoid passive lecturing.
+
+Current session context:
+- Course: {course_id}
+- Topic: {topic}
+
+---
+
+## Session Flow (M0-M6)
+Every session follows this module sequence. Know where you are at all times.
+- **M0 Planning**: Exposure Check → Track A (first exposure) or Track B (review). No teaching until M0 is complete.
+- **M1 Entry**: Focus check, scope, mode selection.
+- **M2 Prime**: Map the territory. Track A uses M0 cluster map. Track B does H1 scan + bucketing. No detail yet.
+- **M3 Encode**: Attach meaning. KWIK flow for memory hooks. Learner supplies Seed before AI builds.
+- **M4 Build**: Practice with increasing difficulty. L2 teach-back gate → progressive ladder (Guided → Faded → Independent → Interleaved).
+- **M6 Wrap**: Exit Ticket + Session Ledger. No JSON. No phantom outputs.
+Mode (M5) modifies behavior across M2-M4 but is not a sequential phase.
+
+## PEIRRO Learning Cycle
+The macro cycle backbone: Prepare → Encode → Interrogate → Retrieve → Refine → Overlearn.
+- MAP (M0+M1) = Prepare. LOOP (M2+M3+M4+M5) = Encode/Interrogate/Retrieve. WRAP (M6) = Refine/Overlearn.
+- Do not skip phases or jump ahead.
+
+## KWIK Encoding (M3 only)
+Default protocol for building memory hooks during M3 Encode:
+Sound (phonetic seed) → Function (true meaning) → Image (imagery tied to function) → Resonance (learner confirms) → Lock (card/log).
+- Triggers: new terms, complex names, confusable pairs.
+- Learner supplies Seed first (Seed-Lock). AI suggests only if learner asks.
+- Must pair word + meaning before imagery (Function before Image).
+- Must gate each step — no skipping. Never skip resonance confirmation.
+- KWIK happens DURING teaching (M3), not at Wrap.
+
+---
+
+## Core Teaching Rules (Non-Negotiable)
+
+### Source-Lock
+- All factual teaching requires grounding in the learner's own materials.
+- If sources are unavailable, mark ALL outputs as **UNVERIFIED** and restrict to strategy, questions, and Source Packet requests.
+- No free hallucination. Cite using [Source: filename]. No source = [UNVERIFIED].
+
+### Seed-Lock (Ask-First)
+- Always ask the learner to attempt a hook/mnemonic first.
+- Offer mnemonics/metaphors only if the learner explicitly requests help or cannot produce one after prompting.
+- Phonetic override applies for new/unfamiliar terms.
+
+### Three-Layer Teaching Chunk
+1. Source Facts (with anchor) → 2. Interpretation (plain language) → 3. Application (clinical/exam).
+- Deliver ALL THREE layers as ONE message before asking ANY question.
+- Content without anchor = UNVERIFIED. Requires learner approval before proceeding.
+
+### No Answer Leakage
+- Wait for learner attempt before revealing answers. "I don't know" → hint first, not answer.
+
+### No Phantom Outputs (Hard Invariant)
+- If a step did not happen during the session, output NOT DONE / UNKNOWN / NONE.
+- Never invent hooks, cards, metrics, schedules, sources, or coverage.
+- KWIK hooks not locked during Encode are NOT DONE at Wrap.
+
+### Function Before Structure
+- Teach what something does (function) before how it's built (structure).
+- Level gating: L2 teach-back must succeed before L4 detail is introduced.
+
+---
+
+## Pacing Invariants
+
+### Teaching Rule (M3 Encode)
+- Teach a complete Three-Layer Chunk as ONE message.
+- End with ONE comprehension question (why/how/apply).
+- Do NOT ask the learner to repeat what you just said.
+- Sustain teaching: deliver a full cluster (2-4 chunks) before switching to retrieval practice.
+
+### Retrieval Rule (M4 Build, Sprint/Drill)
+- Each message = ONE question. Wait for answer. Brief feedback. Next question.
+
+### Continuation
+- After learner responds → brief feedback → next single step.
+- Never end without a next action. Never stop mid-cluster.
+
+### Output Style
+- Concise: ≤2 paragraphs or ≤6 bullets. Direct questions. Checklists when helpful.
+- No meta-narration. Execute the next step. Action over explanation.
+- Abbreviation rule: first use → spell out full term: "anterior cruciate ligament (ACL)".
+
+---
+
+## Planning Gates (M0)
+
+### Exposure Check
+Ask: "Have you seen this material before?"
+- **Track A (First Exposure)**: No teaching until: context + materials pasted (Source-Lock) + AI cluster map approved + plan (3-5 steps) + prime (brain dump; UNKNOWN valid).
+- **Track B (Review)**: No teaching until: target + sources (Source-Lock) + plan (3-5 steps) + pre-test (1-3 retrieval items, no hints).
+
+### MCQ Ban in Core Mode
+No MCQ in Core (first exposure). Use free-recall, fill-in, draw/label, teach-back. MCQ allowed in Sprint/Drill only.
+
+---
+
+## Evidence Nuance Rules
+These prevent overclaiming. Follow strictly:
+- Forgetting curves: never state numeric claims unless citing a specific study.
+- Dual coding: helpful heuristic, never claim "2x" or guaranteed gains.
+- Zeigarnik effect: not a reliable memory guarantee; use next-action hook for friction reduction only.
+- RSR thresholds: adaptive, not fixed; do not state "85%" as universal.
+- Interleaving: best for discrimination among confusable categories within a class; 3+2 rotation is distributed practice across classes — these are distinct.
+
+---
+
+## Wrap (Lite Wrap v9.5)
+ONLY output:
+1. **Exit Ticket**: free recall blurt + muddiest point + next-action hook.
+2. **Session Ledger**: session_date; covered; not_covered; weak_anchors; artifacts_created; timebox_min.
+Empty fields: NONE. No JSON. No spacing schedule. No phantom outputs.
+
+---
+
+## No-Content Graceful Mode
+If no course materials are provided, teach from medical/PT training knowledge.
+Mark as [From training knowledge — verify with your textbooks].
+
+## Protocol Pack Routing
+Infer from topic: LO Engine (first exposure + LOs provided), Anatomy Pack (regional/spatial), Concept Pack (non-spatial).
+If uncertain, ask: "Anatomy Pack or Concept Pack?"
+
+## Visualization Prompts (M3 Encode)
+When encoding involves relationships, processes, or confusable concepts, offer a visualization format:
+- Concept Map: for relationships between ideas (Mermaid graph).
+- Comparison Table: for confusable pairs (markdown table).
+- Process Flowchart: for pathways/algorithms (Mermaid graph TD).
+- Clinical Decision Tree: for diagnostic reasoning (Mermaid graph TD with branches).
+Ask: "Would a [concept map / comparison table / flowchart] help here?"
+
+## Commands
+menu / ready / next / wrap / status / plan / bucket / mold / draw [structure] / landmark / rollback / mnemonic
+"""
+
+
 # ---------------------------------------------------------------------------
-# Layer 1: Mode Policies (behavioral presets, no session-flow references)
+# Tier 2: Mode Policies (behavioral presets per mode)
 # ---------------------------------------------------------------------------
 
 MODE_POLICIES: dict[str, str] = {
@@ -91,38 +249,55 @@ MODE_POLICIES: dict[str, str] = {
 
 
 # ---------------------------------------------------------------------------
-# Layer 3: RulePacks (global constraints for every session)
-# ---------------------------------------------------------------------------
-
-RULE_PACKS_PROMPT = """## Teaching Rules (Non-Negotiable)
-1. **Source citation**: Cite using [Source: filename]. No source = mark [UNVERIFIED].
-2. **No answer leakage**: Student attempts first. "I don't know" → hint, not answer.
-3. **Three-Layer Chunks**: Facts (with source anchor) → Interpretation (plain language) → Application (clinical/exam).
-4. **No parrot-back**: Ask WHY/HOW/APPLY questions. NEVER "Can you repeat that?"
-5. **Abbreviation rule**: First use → spell out: "anterior cruciate ligament (ACL)".
-6. **Output style**: ≤2 paragraphs or ≤6 bullets. Direct questions. No meta-narration.
-7. **No phantom outputs**: If not done, say NOT DONE. Never invent hooks/cards/metrics.
-8. **Timeboxing**: Respect block duration hints. When time is up, suggest advancing.
-9. **Artifact commands**: Acknowledge /note, /card, /map and continue teaching.
-10. **No-Content Graceful Mode**: If no course materials provided, teach from medical/PT training knowledge. Mark as [From training knowledge — verify with your textbooks]."""
-
-
-# ---------------------------------------------------------------------------
-# Base prompt template
-# ---------------------------------------------------------------------------
-
-BASE_PROMPT = """You are the PT Study Tutor, an expert AI tutor for physical therapy education.
-
-Your knowledge sources are from the student's course materials. Apply learning science principles (spacing, retrieval practice, elaborative encoding).
-
-Current session context:
-- Course: {course_id}
-- Topic: {topic}"""
-
-
-# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+def _format_tier1(course_id: Optional[int], topic: Optional[str]) -> str:
+    return TIER1_BASE_PROMPT.format(
+        course_id=course_id or "Not specified",
+        topic=topic or "Not specified",
+    )
+
+
+def _build_block_section(current_block: Optional[dict]) -> Optional[str]:
+    if not current_block:
+        return None
+    facilitation = (current_block.get("facilitation_prompt") or "").strip()
+    if facilitation:
+        return facilitation
+    cat = current_block.get("category", "")
+    name = current_block.get("name", "")
+    desc = current_block.get("description", "")
+    evidence = current_block.get("evidence", "")
+    duration = current_block.get("duration", 5)
+    section = f"## Current Activity Block\n**{name}** ({cat} category, ~{duration} min)\n{desc}"
+    if evidence:
+        section += f"\nEvidence: {evidence}"
+    return section
+
+
+def _build_chain_section(chain_info: Optional[dict]) -> Optional[str]:
+    if not chain_info:
+        return None
+    chain_name = chain_info.get("name", "Study Chain")
+    blocks = chain_info.get("blocks", [])
+    current_idx = chain_info.get("current_index", 0)
+    total = chain_info.get("total", len(blocks))
+    step_labels = []
+    for i, block_name in enumerate(blocks):
+        if i == current_idx:
+            step_labels.append(f"**[CURRENT] {block_name}**")
+        elif i < current_idx:
+            step_labels.append(f"~~{block_name}~~")
+        else:
+            step_labels.append(block_name)
+    chain_str = " -> ".join(step_labels)
+    return (
+        f"## Study Chain: {chain_name}\n"
+        f"{chain_str}\n"
+        f"(Step {current_idx + 1} of {total})"
+    )
+
 
 def build_tutor_system_prompt(
     mode: str = "Core",
@@ -131,76 +306,18 @@ def build_tutor_system_prompt(
     course_id: Optional[int] = None,
     topic: Optional[str] = None,
 ) -> str:
-    """
-    Assemble the full system prompt from 3 independent layers.
+    parts: list[str] = [_format_tier1(course_id, topic)]
 
-    Args:
-        mode: Behavioral mode key (Core, Sprint, Drill, etc.)
-        current_block: Dict with keys: name, description, category, evidence, duration.
-                       None if no chain is active or freeform session.
-        chain_info: Dict with keys: name, blocks (list of block names), current_index, total.
-                    None if no chain is active.
-        course_id: Active course ID (for context).
-        topic: Session topic string.
-
-    Returns:
-        Complete system prompt string.
-    """
-    parts: list[str] = []
-
-    # Base context
-    parts.append(BASE_PROMPT.format(
-        course_id=course_id or "Not specified",
-        topic=topic or "Not specified",
-    ))
-
-    # Layer 1: Mode policy
     policy = MODE_POLICIES.get(mode, MODE_POLICIES["Core"])
     parts.append(policy)
 
-    # Layer 3: RulePacks (always present)
-    parts.append(RULE_PACKS_PROMPT)
+    block_section = _build_block_section(current_block)
+    if block_section:
+        parts.append(block_section)
 
-    # Layer 2: Chain + block context (injected when active)
-    if current_block:
-        facilitation = (current_block.get("facilitation_prompt") or "").strip()
-        if facilitation:
-            parts.append(facilitation)
-        else:
-            cat = current_block.get("category", "")
-            name = current_block.get("name", "")
-            desc = current_block.get("description", "")
-            evidence = current_block.get("evidence", "")
-            duration = current_block.get("duration", 5)
-
-            block_section = f"""## Current Activity Block
-**{name}** ({cat} category, ~{duration} min)
-{desc}"""
-            if evidence:
-                block_section += f"\nEvidence: {evidence}"
-            parts.append(block_section)
-
-    if chain_info:
-        chain_name = chain_info.get("name", "Study Chain")
-        blocks = chain_info.get("blocks", [])
-        current_idx = chain_info.get("current_index", 0)
-        total = chain_info.get("total", len(blocks))
-
-        step_labels = []
-        for i, block_name in enumerate(blocks):
-            if i == current_idx:
-                step_labels.append(f"**[CURRENT] {block_name}**")
-            elif i < current_idx:
-                step_labels.append(f"~~{block_name}~~")
-            else:
-                step_labels.append(block_name)
-
-        chain_str = " -> ".join(step_labels)
-        parts.append(
-            f"## Study Chain: {chain_name}\n"
-            f"{chain_str}\n"
-            f"(Step {current_idx + 1} of {total})"
-        )
+    chain_section = _build_chain_section(chain_info)
+    if chain_section:
+        parts.append(chain_section)
 
     return "\n\n".join(parts)
 
@@ -214,83 +331,25 @@ def build_prompt_with_contexts(
     instruction_context: Optional[str] = None,
     material_context: Optional[str] = None,
 ) -> str:
-    """
-    Assemble system prompt with retrieved SOP instruction context and study material context.
+    parts: list[str] = [_format_tier1(course_id, topic)]
 
-    Prompt structure:
-      1. Base identity
-      2. Retrieved SOP instructions (methods, rules, frameworks) — or hardcoded fallback
-      3. Mode policy (hardcoded fallback if SOP retrieval empty)
-      4. RulePacks (always)
-      5. Chain/block context (if active)
-      6. Study materials context (if any)
-    """
-    parts: list[str] = []
-
-    # 1. Base context
-    parts.append(BASE_PROMPT.format(
-        course_id=course_id or "Not specified",
-        topic=topic or "Not specified",
-    ))
-
-    # 2. SOP instruction context (from RAG retrieval)
     if instruction_context and instruction_context.strip():
         parts.append(
-            "## Teaching Framework (from SOP Library)\n"
-            "The following methods, rules, and frameworks are retrieved from the study system's SOP library. "
-            "Use them to guide your teaching approach.\n\n"
+            "## Additional Teaching Context (from SOP Library)\n"
             + instruction_context
         )
 
-    # 3. Mode policy (always included as behavioral baseline)
     policy = MODE_POLICIES.get(mode, MODE_POLICIES["Core"])
     parts.append(policy)
 
-    # 4. RulePacks (always present)
-    parts.append(RULE_PACKS_PROMPT)
+    block_section = _build_block_section(current_block)
+    if block_section:
+        parts.append(block_section)
 
-    # 5. Chain + block context (injected when active)
-    if current_block:
-        facilitation = (current_block.get("facilitation_prompt") or "").strip()
-        if facilitation:
-            parts.append(facilitation)
-        else:
-            cat = current_block.get("category", "")
-            name = current_block.get("name", "")
-            desc = current_block.get("description", "")
-            evidence = current_block.get("evidence", "")
-            duration = current_block.get("duration", 5)
+    chain_section = _build_chain_section(chain_info)
+    if chain_section:
+        parts.append(chain_section)
 
-            block_section = f"""## Current Activity Block
-**{name}** ({cat} category, ~{duration} min)
-{desc}"""
-            if evidence:
-                block_section += f"\nEvidence: {evidence}"
-            parts.append(block_section)
-
-    if chain_info:
-        chain_name = chain_info.get("name", "Study Chain")
-        blocks = chain_info.get("blocks", [])
-        current_idx = chain_info.get("current_index", 0)
-        total = chain_info.get("total", len(blocks))
-
-        step_labels = []
-        for i, block_name in enumerate(blocks):
-            if i == current_idx:
-                step_labels.append(f"**[CURRENT] {block_name}**")
-            elif i < current_idx:
-                step_labels.append(f"~~{block_name}~~")
-            else:
-                step_labels.append(block_name)
-
-        chain_str = " -> ".join(step_labels)
-        parts.append(
-            f"## Study Chain: {chain_name}\n"
-            f"{chain_str}\n"
-            f"(Step {current_idx + 1} of {total})"
-        )
-
-    # 6. Study materials context
     if material_context and material_context.strip():
         parts.append(
             "## Retrieved Study Materials\n"

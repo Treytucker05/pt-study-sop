@@ -300,9 +300,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       />
       <div className="fixed inset-0 z-10 crt-overlay pointer-events-none" />
 
-      {/* CRT Scanlines + Sweep */}
+      {/* CRT Scanlines */}
       <div className="crt-scanlines" />
-      <div className="crt-sweep" />
 
       {/* Top Nav */}
       <header className="relative z-20 bg-black/80 backdrop-blur-sm sticky top-0" style={{ borderBottom: '4px double hsl(350 63% 49%)' }}>
