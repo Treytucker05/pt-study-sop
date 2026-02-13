@@ -91,11 +91,11 @@ class TestRealLibrary:
 
     def test_real_library_method_count(self) -> None:
         methods_dir = Path(__file__).resolve().parents[1] / "library" / "methods"
-        assert len(list(methods_dir.glob("*.yaml"))) == 34
+        assert len(list(methods_dir.glob("*.yaml"))) == 36
 
     def test_real_library_chain_count(self) -> None:
         chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"
-        assert len(list(chains_dir.glob("*.yaml"))) == 13
+        assert len(list(chains_dir.glob("*.yaml"))) == 15
 
 
 # ---------------------------------------------------------------------------

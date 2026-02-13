@@ -32,7 +32,7 @@ Each method block represents a single study activity.
 **Categories (PEIRRO phases):**
 
 1. **Prepare** — Prime attention, surface prior knowledge, build structure (e.g., brain dump, prediction questions, prior knowledge scan, ai skeleton review, concept cluster, three-layer chunk, pre-test)
-2. **Encode** — Attach meaning to material (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, think-aloud protocol, self-explanation protocol, mechanism trace, concept map, comparison table, process flowchart, clinical decision tree)
+2. **Encode** — Attach meaning to material (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, think-aloud protocol, self-explanation protocol, mechanism trace, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking)
 3. **Retrieve** — Test recall without cues (e.g., free recall blurt, sprint quiz, fill-in-blank, mixed practice, variable retrieval)
 4. **Interrogate** — Link to other content, apply, compare (e.g., analogy bridge, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder)
 5. **Refine** — Analyze errors and relearn (e.g., error autopsy, mastery loop)
@@ -42,34 +42,36 @@ Each method block represents a single study activity.
 
 ---
 
-## §2.1 Block Catalog (34 blocks)
+## §2.1 Block Catalog (36 blocks)
 
 ### Prepare (7 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
-| Brain Dump | 3 min | low | Brod et al. (2013); prior knowledge activation improves encoding of new information |
-| Prediction Questions | 3 min | low | Pressley et al. (1990); question-generation primes elaborative processing |
-| Prior Knowledge Scan | 3 min | low | Ausubel (1968); meaningful learning requires anchoring to existing schemas |
-| AI Skeleton Review | 5 min | low | Lorch & Lorch (1996); advance organizers improve text comprehension |
-| Concept Cluster | 5 min | medium | Bower et al. (1969); conceptual organization improves recall by 2-3x |
-| Three-Layer Chunk | 5 min | medium | Miller (1956); Gobet et al. (2001); chunking manages cognitive load |
-| Pre-Test | 5 min | low | Richland et al. (2009); Kornell et al. (2009); pre-testing primes encoding even when initial answers are wrong |
+| Brain Dump | 3 min | low | Brod et al. (2013); Prior knowledge activation improves encoding of new information by providing anchoring schemas |
+| Prediction Questions | 3 min | low | Pressley et al. (1990); Question-generation primes elaborative processing and improves comprehension |
+| Prior Knowledge Scan | 3 min | low | Ausubel (1968); Meaningful learning requires anchoring new information to existing schemas |
+| AI Skeleton Review | 5 min | low | Lorch & Lorch (1996); Advance organizers improve text comprehension by providing structural scaffolding |
+| Concept Cluster | 5 min | medium | Bower et al. (1969); Conceptual organization improves recall by 2-3x compared to random presentation |
+| Three-Layer Chunk | 5 min | medium | Miller (1956); Chunking manages cognitive load by organizing information into meaningful units |
+| Pre-Test | 5 min | low | Richland et al. (2009); Pre-testing primes encoding even when initial answers are wrong; the attempt creates retrieval hooks |
 
-### Encode (12 blocks)
+### Encode (14 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
-| KWIK Hook | 3 min | medium | Paivio (1991); dual-coding theory — combining verbal + visual improves retention |
-| Seed-Lock Generation | 3 min | medium | Slamecka & Graf (1978); generation effect — self-generated items remembered better than read items |
-| Draw-Label | 10 min | high | Wammes et al. (2016); drawing effect — drawing produces superior memory compared to writing |
-| Teach-Back | 5 min | high | Nestojko et al. (2014); expecting to teach enhances encoding and organization |
-| Why-Chain | 5 min | medium | Dunlosky et al. (2013); elaborative interrogation rated moderate utility for learning |
-| Think-Aloud Protocol | 5 min | medium | Chi et al. (1994); self-explanation leads to deeper understanding and better problem-solving |
-| Self-Explanation Protocol | 7 min | medium | Chi et al. (1994); Dunlosky et al. (2013); self-explanation rated moderate-high utility across domains |
-| Mechanism Trace | 10 min | high | Kulasegaram et al. (2013); causal reasoning with biomedical mechanisms supports diagnostic transfer |
-| Concept Map | 10 min | high | Nesbit & Adesope (2006) d=0.82; self-constructed > provided (d=1.00 vs 0.37) |
-| Comparison Table | 7 min | medium | Alfieri et al. (2013); comparison improves discrimination and concept formation |
-| Process Flowchart | 10 min | high | Winn (1991); spatial-sequential diagrams improve procedural understanding |
-| Clinical Decision Tree | 10 min | high | Charlin et al. (2000); decision trees scaffold clinical reasoning |
+| KWIK Hook | 3 min | medium | Paivio (1991); Dual-coding theory — combining verbal + visual improves retention by creating multiple retrieval paths |
+| Seed-Lock Generation | 3 min | medium | Slamecka & Graf (1978); Generation effect — self-generated items are remembered significantly better than items simply read |
+| Draw-Label | 10 min | high | Wammes et al. (2016); Drawing effect — drawing produces superior memory compared to writing, especially for visual-spatial content |
+| Teach-Back | 5 min | high | Nestojko et al. (2014); Expecting to teach enhances encoding and organization of information |
+| Why-Chain | 5 min | medium | Dunlosky et al. (2013); Elaborative interrogation rated moderate utility for learning; builds causal understanding |
+| Think-Aloud Protocol | 5 min | medium | Chi et al. (1994); Self-explanation leads to deeper understanding and better problem-solving across domains |
+| Self-Explanation Protocol | 7 min | medium | Chi et al. (1994); Self-explanation rated moderate-high utility across domains; works by generating inferences |
+| Mechanism Trace | 10 min | high | Kulasegaram et al. (2013); Causal reasoning with biomedical mechanisms supports diagnostic transfer to novel cases |
+| Concept Map | 10 min | high | Nesbit & Adesope (2006); Concept maps d=0.82; self-constructed > provided (d=1.00 vs 0.37) |
+| Comparison Table | 7 min | medium | Alfieri et al. (2013); Comparison improves discrimination and concept formation by highlighting distinctive features |
+| Process Flowchart | 10 min | high | Winn (1991); Spatial-sequential diagrams improve procedural understanding and memory |
+| Clinical Decision Tree | 10 min | high | Charlin et al. (2000); Decision trees scaffold clinical reasoning and support diagnostic accuracy |
+| Memory Palace | 10 min | high | Yates (1966); Method of Loci has been used for 2500+ years; spatial memory is evolutionarily privileged |
+| Chain Linking | 8 min | medium | Bower & Winzenz (1970); Narrative chaining improves serial recall by creating meaningful connections between unrelated items |
 
 ### Retrieve (5 blocks)
 | Block | Duration | Energy | Evidence |
@@ -83,12 +85,12 @@ Each method block represents a single study activity.
 ### Interrogate (6 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
-| Analogy Bridge | 3 min | medium | Gentner (1983); analogical reasoning supports structural mapping and transfer |
-| Clinical Application | 5 min | high | Schmidt & Rikers (2007); clinical application strengthens illness script formation |
-| Cross-Topic Link | 3 min | medium | Pugh & Bergin (2006); interest deepens when learners see cross-domain connections |
-| Side-by-Side Comparison | 7 min | medium | Alfieri et al. (2013); comparison-based learning improves discrimination and concept formation |
-| Case Walkthrough | 10 min | high | Thistlethwaite et al. (2012); case-based learning improves clinical reasoning in health professions |
-| Illness Script Builder | 10 min | high | Schmidt & Rikers (2007); illness scripts are the cognitive structure underlying expert clinical reasoning |
+| Analogy Bridge | 3 min | medium | Gentner (1983); Analogical reasoning supports structural mapping and transfer across domains |
+| Clinical Application | 5 min | high | Schmidt & Rikers (2007); Clinical application strengthens illness script formation and diagnostic reasoning |
+| Cross-Topic Link | 3 min | medium | Pugh & Bergin (2006); Interest and retention deepen when learners see cross-domain connections |
+| Side-by-Side Comparison | 7 min | medium | Alfieri et al. (2013); Comparison-based learning improves discrimination and concept formation |
+| Case Walkthrough | 10 min | high | Thistlethwaite et al. (2012); Case-based learning improves clinical reasoning in health professions education |
+| Illness Script Builder | 10 min | high | Schmidt & Rikers (2007); Illness scripts are the cognitive structure underlying expert clinical reasoning |
 
 ### Refine (2 blocks)
 | Block | Duration | Energy | Evidence |
@@ -120,7 +122,7 @@ A chain is an ordered sequence of method blocks with context tags.
 
 ---
 
-## §4 Template Chains (13 chains)
+## §4 Template Chains (15 chains)
 
 ### Core Chains
 
