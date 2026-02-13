@@ -35,13 +35,6 @@ from flask import Blueprint, Response, jsonify, request
 
 from db_setup import DB_PATH, get_connection
 
-# ---------------------------------------------------------------------------
-# Buster (OpenClaw) engine — OpenAI-compatible streaming via env vars
-# ---------------------------------------------------------------------------
-BUSTER_API_BASE = os.environ.get("BUSTER_API_BASE", "").rstrip("/")
-BUSTER_API_KEY = os.environ.get("BUSTER_API_KEY", "")
-BUSTER_MODEL = os.environ.get("BUSTER_MODEL", "gpt-4o")
-
 tutor_bp = Blueprint("tutor", __name__, url_prefix="/api/tutor")
 
 UPLOADS_DIR = Path(__file__).parent.parent / "data" / "uploads"
@@ -288,122 +281,19 @@ def get_session(session_id: str):
 
 
 # ---------------------------------------------------------------------------
-# Buster (OpenClaw) streaming generator — OpenAI-compatible /chat/completions
-# ---------------------------------------------------------------------------
-
-def _stream_buster(
-    system_prompt: str,
-    user_prompt: str,
-    *,
-    timeout: int = 120,
-):
-    """
-    Streaming generator for the Buster (OpenClaw) engine.
-    Connects to an OpenAI-compatible /v1/chat/completions endpoint.
-    Yields SSE-formatted strings using the same shape as the main tutor
-    (token / done / error).
-    """
-    import http.client
-    import ssl
-    from urllib.parse import urlparse
-
-    from tutor_streaming import format_sse_chunk, format_sse_done, format_sse_error
-
-    if not BUSTER_API_BASE or not BUSTER_API_KEY:
-        yield format_sse_error(
-            "Buster engine is not configured. "
-            "Set BUSTER_API_BASE and BUSTER_API_KEY in brain/.env, then restart."
-        )
-        return
-
-    parsed = urlparse(BUSTER_API_BASE)
-    host = parsed.hostname or ""
-    port = parsed.port
-    use_ssl = parsed.scheme == "https"
-    base_path = (parsed.path or "").rstrip("/")
-
-    payload = json.dumps({
-        "model": BUSTER_MODEL,
-        "stream": True,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-    })
-
-    headers = {
-        "Authorization": f"Bearer {BUSTER_API_KEY}",
-        "Content-Type": "application/json",
-        "Accept": "text/event-stream",
-    }
-
-    full_response = ""
-    model_id = None
-
-    try:
-        if use_ssl:
-            ctx = ssl.create_default_context()
-            conn = http.client.HTTPSConnection(host, port=port, context=ctx, timeout=timeout)
-        else:
-            conn = http.client.HTTPConnection(host, port=port, timeout=timeout)
-
-        endpoint = f"{base_path}/v1/chat/completions"
-        conn.request("POST", endpoint, body=payload, headers=headers)
-        resp = conn.getresponse()
-
-        if resp.status != 200:
-            err_body = resp.read().decode("utf-8", errors="replace")[:500]
-            yield format_sse_error(f"Buster API {resp.status}: {err_body}")
-            return
-
-        while True:
-            line = resp.readline()
-            if not line:
-                break
-            line = line.decode("utf-8", errors="replace").strip()
-            if not line.startswith("data: "):
-                continue
-            data_str = line[6:]
-            if data_str == "[DONE]":
-                break
-            try:
-                evt = json.loads(data_str)
-            except json.JSONDecodeError:
-                continue
-
-            # OpenAI-compatible: choices[0].delta.content
-            choices = evt.get("choices", [])
-            if choices:
-                delta = choices[0].get("delta", {})
-                content = delta.get("content")
-                if content:
-                    full_response += content
-                    yield format_sse_chunk(content)
-                # Check for finish_reason
-                if choices[0].get("finish_reason"):
-                    model_id = evt.get("model")
-
-        conn.close()
-        yield format_sse_done(model=model_id)
-
-    except Exception as e:
-        yield format_sse_error(f"Buster engine error: {e}")
-
-
-# ---------------------------------------------------------------------------
 # POST /api/tutor/session/<id>/turn — Send a message, SSE stream response
 # ---------------------------------------------------------------------------
 
 @tutor_bp.route("/session/<session_id>/turn", methods=["POST"])
 def send_turn(session_id: str):
-    VALID_ENGINES = {"codex", "openrouter", "buster", "default"}
+    VALID_ENGINES = {"codex", "openrouter", "default"}
     data = request.get_json(silent=True) or {}
     question = data.get("message", "").strip()
     engine = data.get("engine", "default").strip().lower()
     if not question:
         return jsonify({"error": "message is required"}), 400
     if engine not in VALID_ENGINES:
-        return jsonify({"error": f"Unknown engine '{engine}'. Valid: codex, openrouter, buster"}), 400
+        return jsonify({"error": f"Unknown engine '{engine}'. Valid: codex, openrouter, default"}), 400
 
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)
@@ -549,61 +439,7 @@ def send_turn(session_id: str):
             stream_tutor_response,
         )
 
-        if engine == "buster":
-            # ---- Buster (OpenClaw) engine path ----
-            try:
-                from tutor_prompt_builder import build_prompt_with_contexts
-
-                system_prompt = build_prompt_with_contexts(
-                    mode=session.get("mode", "Core"),
-                    current_block=block_info,
-                    chain_info=chain_info,
-                    course_id=session.get("course_id"),
-                    topic=session.get("topic"),
-                    instruction_context=None,
-                    material_context=None,
-                )
-
-                # Build chat history for context
-                recent_turns = turns[-6:] if len(turns) > 6 else turns
-                history_lines: list[str] = []
-                for t in recent_turns:
-                    if t.get("question"):
-                        history_lines.append(f"User: {t['question']}")
-                    if t.get("answer"):
-                        ans = t["answer"]
-                        if len(ans) > 400:
-                            ans = ans[:400] + "..."
-                        history_lines.append(f"Assistant: {ans}")
-                history_text = "\n".join(history_lines).strip() or "(no prior turns)"
-
-                user_prompt = f"""## Chat History
-{history_text}
-
-## Current Question
-{question}"""
-
-                for chunk_str in _stream_buster(system_prompt, user_prompt):
-                    # Accumulate full response from token chunks
-                    if chunk_str.startswith("data: "):
-                        data_part = chunk_str.split("data: ", 1)[1].split("\n")[0]
-                        if data_part != "[DONE]":
-                            try:
-                                parsed = json.loads(data_part)
-                                if parsed.get("type") == "token":
-                                    full_response += parsed.get("content", "")
-                                elif parsed.get("type") == "done":
-                                    citations = parsed.get("citations", [])
-                            except (json.JSONDecodeError, KeyError):
-                                pass
-                    yield chunk_str
-
-            except Exception as e:
-                yield format_sse_error(str(e))
-                full_response = f"[Error: {e}]"
-                citations = []
-
-        elif provider == "codex":
+        if provider == "codex":
             try:
                 from llm_provider import stream_chatgpt_responses, call_codex_json
                 from tutor_rag import keyword_search_dual
@@ -1173,7 +1009,6 @@ def content_sources():
     conn.close()
 
     openrouter_enabled = bool((os.environ.get("OPENROUTER_API_KEY") or "").strip())
-    buster_enabled = bool((BUSTER_API_BASE or "").strip() and (BUSTER_API_KEY or "").strip())
 
     return jsonify({
         "courses": courses,
@@ -1181,7 +1016,6 @@ def content_sources():
         "total_instructions": total_instructions,
         "total_docs": total_materials + total_instructions,
         "openrouter_enabled": openrouter_enabled,
-        "buster_enabled": buster_enabled,
     })
 
 
