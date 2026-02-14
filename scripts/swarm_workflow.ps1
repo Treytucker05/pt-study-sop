@@ -15,11 +15,17 @@ param(
   [int]$GeminiCount = 1,
 
   [ValidateRange(0, 32)]
-  [int]$OhMyCount = 1
+  [int]$OhMyCount = 1,
+
+  [ValidateSet("windows", "tabs")]
+  [string]$Layout = "windows"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$script:SwarmUseTabs = $false
+$script:SwarmWtExe = ""
+$script:SwarmBootstrapLog = "C:\pt-study-sop\logs\agents\swarm_bootstrap.log"
 
 function Write-Section {
   param([string]$Message)
@@ -27,6 +33,69 @@ function Write-Section {
   Write-Host ("=" * 72)
   Write-Host $Message -ForegroundColor Cyan
   Write-Host ("=" * 72)
+}
+
+function Quote-CommandPart {
+  param([string]$Value)
+  if ($null -eq $Value) { return "''" }
+  return "'" + $Value.Replace("'", "''") + "'"
+}
+
+function Write-BootstrapLog {
+  param([string]$Message)
+
+  if ([string]::IsNullOrWhiteSpace($script:SwarmBootstrapLog)) { return }
+
+  $logDir = Split-Path -Parent $script:SwarmBootstrapLog
+  if (-not [string]::IsNullOrWhiteSpace($logDir) -and -not (Test-Path -LiteralPath $logDir)) {
+    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+  }
+
+  $line = "{0} {1}" -f (Get-Date).ToString("o"), $Message
+  Add-Content -LiteralPath $script:SwarmBootstrapLog -Value $line -Encoding UTF8
+}
+
+function Format-StartProcessCommandLine {
+  param(
+    [string]$FilePath,
+    [string[]]$Arguments,
+    [string]$WorkingDirectory
+  )
+
+  $parts = @(
+    "Start-Process",
+    "-FilePath",
+    (Quote-CommandPart -Value $FilePath)
+  )
+
+  if ($Arguments -and $Arguments.Count -gt 0) {
+    $argText = ($Arguments | ForEach-Object { Quote-CommandPart -Value ([string]$_) }) -join ", "
+    $parts += "-ArgumentList"
+    $parts += "@($argText)"
+  }
+
+  if (-not [string]::IsNullOrWhiteSpace($WorkingDirectory)) {
+    $parts += "-WorkingDirectory"
+    $parts += (Quote-CommandPart -Value $WorkingDirectory)
+  }
+
+  return ($parts -join " ")
+}
+
+function Log-StartProcessCommand {
+  param(
+    [string]$FilePath,
+    [string[]]$Arguments,
+    [string]$WorkingDirectory
+  )
+
+  $startProcessLine = Format-StartProcessCommandLine -FilePath $FilePath -Arguments $Arguments -WorkingDirectory $WorkingDirectory
+  Write-BootstrapLog -Message $startProcessLine
+
+  if (-not [string]::IsNullOrWhiteSpace($FilePath) -and [System.IO.Path]::GetFileName($FilePath).StartsWith("wt", [System.StringComparison]::OrdinalIgnoreCase)) {
+    $wtLine = "{0} {1}" -f (Quote-CommandPart -Value $FilePath), (($Arguments | ForEach-Object { Quote-CommandPart -Value ([string]$_) }) -join " ")
+    Write-BootstrapLog -Message ("wt command line: {0}" -f $wtLine)
+  }
 }
 
 function Escape-SingleQuoted {
@@ -204,7 +273,7 @@ function Ensure-CodexWorktrees {
     $result.Add([pscustomobject]@{ Name = $name; Path = $fullPath; Branch = $branch }) | Out-Null
   }
 
-  return @($result)
+  return $result.ToArray()
 }
 
 function Ensure-TaskBoard {
@@ -219,7 +288,7 @@ function Ensure-TaskBoard {
 
   if ((Test-Path -LiteralPath $taskBoardScript) -and $pythonCmd) {
     $args = @($taskBoardScript, "--board", $boardPath, "init")
-    & $pythonCmd.Source @args
+    & $pythonCmd.Source @args | Out-Null
     if ($LASTEXITCODE -eq 0) {
       return [pscustomobject]@{
         Kind = "agent_task_board"
@@ -269,40 +338,88 @@ function Start-PwshWindow {
     [string]$WorkingDirectory
   )
 
-  Start-Process -FilePath "pwsh" `
-    -ArgumentList @("-NoExit", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $ScriptPath) `
-    -WorkingDirectory $WorkingDirectory | Out-Null
+  $titleText = [string]$Title
+  $scriptPathText = [string]$ScriptPath
+  $workingDirectoryText = [string]$WorkingDirectory
+  $escapedScriptPath = Escape-SingleQuoted -Value $scriptPathText
+  $launchCommand = "try { & '$escapedScriptPath' } catch { Write-Host ('ERROR: ' + `$_.Exception.Message) -ForegroundColor Red; Write-Host `$_.ScriptStackTrace -ForegroundColor DarkRed; Read-Host 'Press Enter to keep this window open' | Out-Null }"
+  $pwshArgs = @(
+    "-NoExit",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    $launchCommand
+  ) | ForEach-Object { [string]$_ }
+
+  if ($script:SwarmUseTabs -and -not [string]::IsNullOrWhiteSpace($script:SwarmWtExe)) {
+    $wtArgs = @(
+      "-w",
+      "0",
+      "new-tab",
+      "--title",
+      $titleText,
+      "-d",
+      $workingDirectoryText,
+      "pwsh"
+    ) + $pwshArgs
+    $wtArgs = $wtArgs | ForEach-Object { [string]$_ }
+    Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $wtArgs -WorkingDirectory ""
+    Start-Process -FilePath $script:SwarmWtExe -ArgumentList $wtArgs | Out-Null
+  }
+  else {
+    Log-StartProcessCommand -FilePath "pwsh" -Arguments $pwshArgs -WorkingDirectory $workingDirectoryText
+    Start-Process -FilePath "pwsh" -ArgumentList $pwshArgs -WorkingDirectory $workingDirectoryText | Out-Null
+  }
+
   Write-Host "Launched window: $Title"
 }
 
-Write-Section "Windows Swarm Workflow Bootstrap"
+try {
+  Write-Section "Windows Swarm Workflow Bootstrap"
 
-$RepoRoot = [System.IO.Path]::GetFullPath($RepoRoot)
-if (-not (Test-Path -LiteralPath $RepoRoot)) {
-  throw "RepoRoot not found: $RepoRoot"
-}
+  $RepoRoot = [System.IO.Path]::GetFullPath($RepoRoot)
+  if (-not (Test-Path -LiteralPath $RepoRoot)) {
+    throw "RepoRoot not found: $RepoRoot"
+  }
 
-$gitCmd = Get-FirstCommand -Names @("git")
-if (-not $gitCmd) {
-  throw "git is required but not found in PATH."
-}
+  Write-BootstrapLog -Message ("=" * 72)
+  Write-BootstrapLog -Message ("Swarm bootstrap start RepoRoot={0} Mode={1} Layout={2}" -f $RepoRoot, $Mode, $Layout)
 
-& git -C $RepoRoot rev-parse --show-toplevel 1>$null 2>$null
-if ($LASTEXITCODE -ne 0) {
-  throw "RepoRoot is not a git repository: $RepoRoot"
-}
+  $gitCmd = Get-FirstCommand -Names @("git")
+  if (-not $gitCmd) {
+    throw "git is required but not found in PATH."
+  }
 
-$runtimeRoot = Join-Path $RepoRoot ".swarm"
-$runtimeScripts = Join-Path $runtimeRoot "runtime"
-New-Item -ItemType Directory -Path $runtimeScripts -Force | Out-Null
+  & git -C $RepoRoot rev-parse --show-toplevel 1>$null 2>$null
+  if ($LASTEXITCODE -ne 0) {
+    throw "RepoRoot is not a git repository: $RepoRoot"
+  }
 
-Write-Section "CLI Preflight"
-$nodeCmd = Get-FirstCommand -Names @("node")
-$npmCmd = Get-FirstCommand -Names @("npm")
-$codexCmd = Get-FirstCommand -Names @("codex")
-$ohMyCmd = Get-FirstCommand -Names @("oh-my-opencode", "ohmyopencode")
-$claudeCmd = Get-FirstCommand -Names @("claude")
-$geminiCmd = Get-FirstCommand -Names @("gemini")
+  $wtCmd = $null
+  if ($Layout -eq "tabs") {
+    $wtCmd = Get-FirstCommand -Names @("wt.exe", "wt")
+    if (-not $wtCmd) {
+      Write-Warning "Layout 'tabs' requested but wt.exe was not found; falling back to separate windows."
+    }
+  }
+
+  $script:SwarmUseTabs = ($Layout -eq "tabs") -and ($null -ne $wtCmd)
+  if ($script:SwarmUseTabs) {
+    $script:SwarmWtExe = [string]$wtCmd.Source
+  }
+
+  $runtimeRoot = Join-Path $RepoRoot ".swarm"
+  $runtimeScripts = Join-Path $runtimeRoot "runtime"
+  New-Item -ItemType Directory -Path $runtimeScripts -Force | Out-Null
+
+  Write-Section "CLI Preflight"
+  $nodeCmd = Get-FirstCommand -Names @("node")
+  $npmCmd = Get-FirstCommand -Names @("npm")
+  $codexCmd = Get-FirstCommand -Names @("codex")
+  $ohMyCmd = Get-FirstCommand -Names @("oh-my-opencode", "ohmyopencode")
+  $claudeCmd = Get-FirstCommand -Names @("claude")
+  $geminiCmd = Get-FirstCommand -Names @("gemini")
 
 if (-not $nodeCmd) {
   Write-Warning "Missing required dependency: node"
@@ -329,27 +446,23 @@ if ($npmCmd) {
 }
 
 if (-not $codexCmd) {
-  Write-Warning "codex CLI not found; Codex windows will be skipped."
+  Write-Warning "codex CLI not found; requested Codex windows will open and show an error."
   Show-InstallSteps -Tool "codex"
-  $CodexCount = 0
 }
 
 if (-not $ohMyCmd) {
-  Write-Warning "Oh My OpenCode CLI not found; planner window will be skipped."
+  Write-Warning "Oh My OpenCode CLI not found; requested planner windows will open and show an error."
   Show-InstallSteps -Tool "oh-my-opencode"
-  $OhMyCount = 0
 }
 
 if (-not $claudeCmd) {
-  Write-Warning "claude CLI not found; claude-review window will be skipped."
+  Write-Warning "claude CLI not found; requested claude-review windows will open and show an error."
   Show-InstallSteps -Tool "claude"
-  $ClaudeCount = 0
 }
 
 if (-not $geminiCmd) {
-  Write-Warning "gemini CLI not found; gemini-research window will be skipped."
+  Write-Warning "gemini CLI not found; requested gemini-research windows will open and show an error."
   Show-InstallSteps -Tool "gemini"
-  $GeminiCount = 0
 }
 
 Write-Section "Workspace Prep"
@@ -383,24 +496,35 @@ $escapedPlannerPrompt = Escape-SingleQuoted -Value $plannerPrompt
 $escapedReviewerPrompt = Escape-SingleQuoted -Value $reviewerPrompt
 $escapedTaskScript = Escape-SingleQuoted -Value $taskBoard.Script
 $escapedPython = Escape-SingleQuoted -Value $taskBoard.Python
+$ohMyExe = if ($ohMyCmd) { [string]$ohMyCmd.Source } else { "" }
+$codexExe = if ($codexCmd) { [string]$codexCmd.Source } else { "" }
+$claudeExe = if ($claudeCmd) { [string]$claudeCmd.Source } else { "" }
+$geminiExe = if ($geminiCmd) { [string]$geminiCmd.Source } else { "" }
 
 if ($OhMyCount -gt 0) {
   for ($i = 1; $i -le $OhMyCount; $i++) {
     $title = if ($OhMyCount -eq 1) { "planner" } else { "planner-$i" }
     $escapedTitle = Escape-SingleQuoted -Value $title
-    $escapedOhMy = Escape-SingleQuoted -Value $ohMyCmd.Source
+    $escapedOhMy = Escape-SingleQuoted -Value $ohMyExe
 
     $plannerBody = @"
+`$ErrorActionPreference = 'Stop'
 `$host.UI.RawUI.WindowTitle = '$escapedTitle'
 Set-Location -LiteralPath '$escapedRepoRoot'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
+`$agentExe = '$escapedOhMy'
+`$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
+if (-not `$resolved) {
+  throw "Planner executable not found: `$agentExe"
+}
+`$agentExe = [string]`$resolved.Source
 `$promptPath = '$escapedPlannerPrompt'
 `$startupPrompt = Get-Content -LiteralPath `$promptPath -Raw
 Write-Host "Using planner prompt file: `$promptPath" -ForegroundColor Cyan
 `$launched = `$false
 if (-not [string]::IsNullOrWhiteSpace(`$startupPrompt)) {
-  & '$escapedOhMy' `$startupPrompt
+  & `$agentExe `$startupPrompt
   if (`$LASTEXITCODE -eq 0) {
     `$launched = `$true
   } else {
@@ -408,7 +532,7 @@ if (-not [string]::IsNullOrWhiteSpace(`$startupPrompt)) {
   }
 }
 if (-not `$launched -and -not [string]::IsNullOrWhiteSpace(`$startupPrompt)) {
-  `$startupPrompt | & '$escapedOhMy'
+  `$startupPrompt | & `$agentExe
   if (`$LASTEXITCODE -eq 0) {
     `$launched = `$true
   } else {
@@ -416,7 +540,7 @@ if (-not `$launched -and -not [string]::IsNullOrWhiteSpace(`$startupPrompt)) {
   }
 }
 if (-not `$launched) {
-  & '$escapedOhMy'
+  & `$agentExe
 }
 "@
     $plannerScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $plannerBody
@@ -429,15 +553,22 @@ if ($CodexCount -gt 0) {
     $title = $wt.Name
     $escapedTitle = Escape-SingleQuoted -Value $title
     $escapedWorktree = Escape-SingleQuoted -Value $wt.Path
-    $escapedCodex = Escape-SingleQuoted -Value $codexCmd.Source
+    $escapedCodex = Escape-SingleQuoted -Value $codexExe
 
     $codexBody = @"
+`$ErrorActionPreference = 'Stop'
 `$host.UI.RawUI.WindowTitle = '$escapedTitle'
 Set-Location -LiteralPath '$escapedWorktree'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
 `$env:SWARM_AGENT_NAME = '$escapedTitle'
-& '$escapedCodex'
+`$agentExe = '$escapedCodex'
+`$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
+if (-not `$resolved) {
+  throw "Codex executable not found: `$agentExe"
+}
+`$agentExe = [string]`$resolved.Source
+& `$agentExe
 "@
     $codexScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $codexBody
     Start-PwshWindow -Title $title -ScriptPath $codexScript -WorkingDirectory $wt.Path
@@ -448,22 +579,29 @@ if ($ClaudeCount -gt 0) {
   for ($i = 1; $i -le $ClaudeCount; $i++) {
     $title = if ($ClaudeCount -eq 1) { "claude-review" } else { "claude-review-$i" }
     $escapedTitle = Escape-SingleQuoted -Value $title
-    $escapedClaude = Escape-SingleQuoted -Value $claudeCmd.Source
+    $escapedClaude = Escape-SingleQuoted -Value $claudeExe
 
     $claudeBody = @"
+`$ErrorActionPreference = 'Stop'
 `$host.UI.RawUI.WindowTitle = '$escapedTitle'
 Set-Location -LiteralPath '$escapedRepoRoot'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
+`$agentExe = '$escapedClaude'
+`$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
+if (-not `$resolved) {
+  throw "Claude executable not found: `$agentExe"
+}
+`$agentExe = [string]`$resolved.Source
 `$promptPath = '$escapedReviewerPrompt'
 `$startupPrompt = Get-Content -LiteralPath `$promptPath -Raw
 Write-Host "Reviewer prompt file: `$promptPath" -ForegroundColor Cyan
 if (-not [string]::IsNullOrWhiteSpace(`$startupPrompt)) {
-  & '$escapedClaude' `$startupPrompt
+  & `$agentExe `$startupPrompt
   if (`$LASTEXITCODE -eq 0) { return }
   Write-Warning "Could not pass startup prompt directly; opening interactive Claude CLI."
 }
-& '$escapedClaude'
+& `$agentExe
 "@
     $claudeScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $claudeBody
     Start-PwshWindow -Title $title -ScriptPath $claudeScript -WorkingDirectory $RepoRoot
@@ -474,22 +612,29 @@ if ($GeminiCount -gt 0) {
   for ($i = 1; $i -le $GeminiCount; $i++) {
     $title = if ($GeminiCount -eq 1) { "gemini-research" } else { "gemini-research-$i" }
     $escapedTitle = Escape-SingleQuoted -Value $title
-    $escapedGemini = Escape-SingleQuoted -Value $geminiCmd.Source
+    $escapedGemini = Escape-SingleQuoted -Value $geminiExe
 
     $geminiBody = @"
+`$ErrorActionPreference = 'Stop'
 `$host.UI.RawUI.WindowTitle = '$escapedTitle'
 Set-Location -LiteralPath '$escapedRepoRoot'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
+`$agentExe = '$escapedGemini'
+`$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
+if (-not `$resolved) {
+  throw "Gemini executable not found: `$agentExe"
+}
+`$agentExe = [string]`$resolved.Source
 `$promptPath = '$escapedReviewerPrompt'
 `$startupPrompt = Get-Content -LiteralPath `$promptPath -Raw
 Write-Host "Research/review prompt file: `$promptPath" -ForegroundColor Cyan
 if (-not [string]::IsNullOrWhiteSpace(`$startupPrompt)) {
-  & '$escapedGemini' `$startupPrompt
+  & `$agentExe `$startupPrompt
   if (`$LASTEXITCODE -eq 0) { return }
   Write-Warning "Could not pass startup prompt directly; opening interactive Gemini CLI."
 }
-& '$escapedGemini'
+& `$agentExe
 "@
     $geminiScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $geminiBody
     Start-PwshWindow -Title $title -ScriptPath $geminiScript -WorkingDirectory $RepoRoot
@@ -574,3 +719,13 @@ Write-Host "RepoRoot: $RepoRoot"
 Write-Host "Mode: $Mode"
 Write-Host "Task board: $($taskBoard.BoardPath)"
 Write-Host "Runtime scripts: $runtimeScripts"
+Write-BootstrapLog -Message "Swarm bootstrap completed successfully."
+}
+catch {
+  $fatal = $_
+  $fatalMessage = if ($fatal.Exception) { $fatal.Exception.Message } else { [string]$fatal }
+  Write-Host ""
+  Write-Host ("FATAL: {0}" -f $fatalMessage) -ForegroundColor Red
+  Write-BootstrapLog -Message ("FATAL: {0}" -f $fatal)
+  Read-Host "Press Enter to keep this window open" | Out-Null
+}
