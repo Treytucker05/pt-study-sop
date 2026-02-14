@@ -123,6 +123,7 @@ export function TutorChat({
       let fullText = "";
       let citations: TutorCitation[] = [];
       let modelId: string | undefined;
+      let serverArtifactCmd: { type?: string; raw?: string } | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -195,6 +196,13 @@ export function TutorChat({
             if (parsed.type === "done") {
               citations = parsed.citations ?? [];
               modelId = parsed.model;
+              // Backend detected natural language artifact command
+              if (parsed.artifacts?.length) {
+                const cmd = parsed.artifacts[0] as { type?: string; raw?: string };
+                if (cmd.type && !isNoteCmd && !isCardCmd && !isMapCmd) {
+                  serverArtifactCmd = cmd;
+                }
+              }
             }
           } catch {
             /* skip malformed */
@@ -222,6 +230,13 @@ export function TutorChat({
           type: artifactType,
           content: fullText,
           title: userMessage.replace(/^\/(note|card|flashcard|map|diagram|save)\s*/i, "").trim(),
+        });
+      } else if (serverArtifactCmd?.type) {
+        // Backend detected natural language artifact command (e.g. "put that in my notes")
+        onArtifactCreated({
+          type: serverArtifactCmd.type as "note" | "card" | "map",
+          content: fullText,
+          title: userMessage.slice(0, 80).trim(),
         });
       }
     } catch (err) {

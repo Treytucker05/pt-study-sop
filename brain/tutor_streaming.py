@@ -45,6 +45,7 @@ def stream_tutor_response(
     chain,
     input_dict: dict,
     session_id: str,
+    artifact_cmd: Optional[dict] = None,
 ) -> Generator[str, None, dict]:
     """
     Stream a LangChain chain response as SSE events.
@@ -79,7 +80,8 @@ def stream_tutor_response(
     citations = extract_citations(full_response)
 
     # Send done event
-    yield format_sse_done(citations=citations)
+    artifacts = [artifact_cmd] if artifact_cmd else None
+    yield format_sse_done(citations=citations, artifacts=artifacts)
 
     return {
         "full_response": full_response,

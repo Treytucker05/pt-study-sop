@@ -34,6 +34,12 @@ Additional behaviors:
 5. **Light Recall**: After each major concept, ask ONE recall question before moving on.
 6. **Artifact Commands**: The student may say "put that in my notes", "make a flashcard", or "draw a map".
    Acknowledge the command and continue teaching — the system will handle artifact creation.
+   Slash commands also work: `/note`, `/card`, `/map`.
+7. **Brain Page Integration**: Artifacts you create (notes, cards, concept maps) are saved to the student's
+   Brain dashboard. Notes appear in Quick Notes, cards go to Card Drafts, and concept maps (Mermaid diagrams)
+   can be sent to the Brain canvas. When the student asks to "send this to the brain page" or "save this
+   to brain", treat it as a note or map command depending on the content. You DO have this ability — the
+   system handles the storage and routing automatically.
 
 ## Study Method Awareness
 You have access to a library of study methods (PEIRRO framework) that may appear in retrieved context.
@@ -245,6 +251,8 @@ _NOTE_PATTERNS = [
     r"put\s+(?:that|this)\s+in\s+(?:my\s+)?notes?",
     r"save\s+(?:that|this)\s+(?:as\s+a\s+)?note",
     r"add\s+(?:that|this)\s+to\s+(?:my\s+)?(?:obsidian|notes?)",
+    r"send\s+(?:that|this|it)\s+to\s+(?:the\s+)?(?:brain|notes?)(?:\s+page)?",
+    r"save\s+(?:that|this|it)\s+to\s+(?:the\s+)?brain(?:\s+page)?",
     r"/note\b",
 ]
 

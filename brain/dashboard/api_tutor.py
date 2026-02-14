@@ -561,7 +561,8 @@ Remember: cite source documents using [Source: filename] when you use them."""
                             "url": uc.get("url", ""),
                             "index": len(all_citations) + 1,
                         })
-                yield format_sse_done(citations=all_citations, model=api_model)
+                artifact_payload = [artifact_cmd] if artifact_cmd else None
+                yield format_sse_done(citations=all_citations, model=api_model, artifacts=artifact_payload)
 
             except Exception as e:
                 yield format_sse_error(str(e))
@@ -569,7 +570,7 @@ Remember: cite source documents using [Source: filename] when you use them."""
                 citations = []
         else:
             try:
-                for chunk_str in stream_tutor_response(chain, input_dict, session_id):
+                for chunk_str in stream_tutor_response(chain, input_dict, session_id, artifact_cmd=artifact_cmd):
                     yield chunk_str
 
                     if chunk_str.startswith("data: "):
