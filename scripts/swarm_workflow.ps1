@@ -442,42 +442,124 @@ function Invoke-SplitPaneSwarmLaunch {
     [string]$firstPane.WorkingDirectory
   ) + $firstPaneArgs
 
-  $topRowCount = [int][Math]::Ceiling($orderedPanes.Count / 2.0)
-  $bottomRowCount = $orderedPanes.Count - $topRowCount
+  $plannerPane = @($orderedPanes | Where-Object { $title = [string]$_.Title; $title.Equals("planner", [System.StringComparison]::OrdinalIgnoreCase) -or $title.StartsWith("planner-", [System.StringComparison]::OrdinalIgnoreCase) }) | Select-Object -First 1
+  $claudePane = @($orderedPanes | Where-Object { ([string]$_.Title).StartsWith("claude-review", [System.StringComparison]::OrdinalIgnoreCase) }) | Select-Object -First 1
+  $geminiPane = @($orderedPanes | Where-Object { ([string]$_.Title).StartsWith("gemini-research", [System.StringComparison]::OrdinalIgnoreCase) }) | Select-Object -First 1
+  $statusPane = @($orderedPanes | Where-Object { ([string]$_.Title).Equals("status", [System.StringComparison]::OrdinalIgnoreCase) }) | Select-Object -First 1
+  $codexOrdered = @($orderedPanes | Where-Object { ([string]$_.Title).StartsWith("codex-", [System.StringComparison]::OrdinalIgnoreCase) } | Sort-Object { [string]$_.Title })
 
-  for ($i = 1; $i -lt $topRowCount; $i++) {
-    $pane = $orderedPanes[$i]
-    $paneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$pane.ScriptPath)
+  $topPanes = New-Object System.Collections.Generic.List[object]
+  $bottomPanes = New-Object System.Collections.Generic.List[object]
+  $layoutUsed = @{}
+
+  function Add-LayoutPane {
+    param(
+      [System.Collections.Generic.List[object]]$Target,
+      [object]$Pane
+    )
+
+    if ($null -eq $Pane) { return }
+    $paneKey = "{0}|{1}" -f [string]$Pane.Title, [string]$Pane.ScriptPath
+    if ($layoutUsed.ContainsKey($paneKey)) { return }
+    $Target.Add($Pane) | Out-Null
+    $layoutUsed[$paneKey] = $true
+  }
+
+  Add-LayoutPane -Target $topPanes -Pane $plannerPane
+  foreach ($pane in $codexOrdered) {
+    if ($topPanes.Count -ge 3) { break }
+    Add-LayoutPane -Target $topPanes -Pane $pane
+  }
+  foreach ($pane in $orderedPanes) {
+    if ($topPanes.Count -ge 3) { break }
+    Add-LayoutPane -Target $topPanes -Pane $pane
+  }
+
+  Add-LayoutPane -Target $bottomPanes -Pane $claudePane
+  Add-LayoutPane -Target $bottomPanes -Pane $geminiPane
+  Add-LayoutPane -Target $bottomPanes -Pane $statusPane
+  foreach ($pane in $orderedPanes) {
+    if ($bottomPanes.Count -ge 3) { break }
+    Add-LayoutPane -Target $bottomPanes -Pane $pane
+  }
+
+  $topRowCount = $topPanes.Count
+  $bottomRowCount = $bottomPanes.Count
+
+  if ($topRowCount -ge 3) {
+    $topRightPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$topPanes[2].ScriptPath)
     $wtArgs += ";"
     $wtArgs += @(
       "split-pane",
       "-H",
+      "-s",
+      "0.333",
       "-d",
-      [string]$pane.WorkingDirectory
+      [string]$topPanes[2].WorkingDirectory
     )
-    $wtArgs += $paneArgs
+    $wtArgs += $topRightPaneArgs
+
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "left")
+
+    $topMiddlePaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$topPanes[1].ScriptPath)
+    $wtArgs += ";"
+    $wtArgs += @(
+      "split-pane",
+      "-H",
+      "-s",
+      "0.5",
+      "-d",
+      [string]$topPanes[1].WorkingDirectory
+    )
+    $wtArgs += $topMiddlePaneArgs
+  }
+  elseif ($topRowCount -eq 2) {
+    $topRightPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$topPanes[1].ScriptPath)
+    $wtArgs += ";"
+    $wtArgs += @(
+      "split-pane",
+      "-H",
+      "-s",
+      "0.5",
+      "-d",
+      [string]$topPanes[1].WorkingDirectory
+    )
+    $wtArgs += $topRightPaneArgs
   }
 
-  if ($bottomRowCount -gt 0) {
-    for ($offset = $bottomRowCount - 1; $offset -ge 0; $offset--) {
-      $paneIndex = $topRowCount + $offset
-      $pane = $orderedPanes[$paneIndex]
-      $paneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$pane.ScriptPath)
+  if ($topRowCount -ge 3) {
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "left")
+  }
+  elseif ($topRowCount -eq 2) {
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "left")
+  }
+
+  for ($col = 0; $col -lt $topRowCount; $col++) {
+    if ($col -lt $bottomRowCount) {
+      $bottomPane = $bottomPanes[$col]
+      $bottomPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$bottomPane.ScriptPath)
       $wtArgs += ";"
       $wtArgs += @(
         "split-pane",
         "-V",
+        "-s",
+        "0.5",
         "-d",
-        [string]$pane.WorkingDirectory
+        [string]$bottomPane.WorkingDirectory
       )
-      $wtArgs += $paneArgs
+      $wtArgs += $bottomPaneArgs
+    }
 
-      if ($offset -gt 0) {
+    if ($col -lt ($topRowCount - 1)) {
+      if ($col -lt $bottomRowCount) {
         $wtArgs += ";"
         $wtArgs += @("move-focus", "up")
-        $wtArgs += ";"
-        $wtArgs += @("move-focus", "left")
       }
+      $wtArgs += ";"
+      $wtArgs += @("move-focus", "right")
     }
   }
 
