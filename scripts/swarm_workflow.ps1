@@ -680,8 +680,10 @@ $escapedRepoRoot = Escape-SingleQuoted -Value $RepoRoot
 $escapedBoardPath = Escape-SingleQuoted -Value $taskBoard.BoardPath
 $escapedPlannerPrompt = Escape-SingleQuoted -Value $plannerPrompt
 $escapedReviewerPrompt = Escape-SingleQuoted -Value $reviewerPrompt
-$escapedTaskScript = Escape-SingleQuoted -Value $taskBoard.Script
-$escapedPython = Escape-SingleQuoted -Value $taskBoard.Python
+$statusOncePath = "C:\pt-study-sop\scripts\status_once.ps1"
+$escapedStatusOncePath = Escape-SingleQuoted -Value $statusOncePath
+$statusWorktreesRoot = Join-Path $RepoRoot "worktrees"
+$escapedStatusWorktreesRoot = Escape-SingleQuoted -Value $statusWorktreesRoot
 $ohMyLauncherBat = "C:\Users\treyt\OneDrive\Desktop\Travel Laptop\OHMYOpenCode.bat"
 $escapedOhMyLauncherBat = Escape-SingleQuoted -Value $ohMyLauncherBat
 $codexExe = if ($codexCmd) { [string]$codexCmd.Source } else { "" }
@@ -809,42 +811,19 @@ if (-not [string]::IsNullOrWhiteSpace(`$startupPrompt)) {
 $statusBody = @"
 `$host.UI.RawUI.WindowTitle = 'status'
 Set-Location -LiteralPath '$escapedRepoRoot'
-`$repoRoot = '$escapedRepoRoot'
-`$boardPath = '$escapedBoardPath'
-`$taskKind = '$($taskBoard.Kind)'
-`$taskScript = '$escapedTaskScript'
-`$pythonExe = '$escapedPython'
-`$codexCount = $CodexCount
+`$statusScriptPath = '$escapedStatusOncePath'
+`$statusRepoRoot = '$escapedRepoRoot'
+`$statusWorktreesRoot = '$escapedStatusWorktreesRoot'
+`$statusBoardPath = '$escapedBoardPath'
 
 while (`$true) {
   Clear-Host
-  Write-Host ("Swarm Status - {0}" -f (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Cyan
-  Write-Host ("Mode: {0}" -f '$Mode')
-  Write-Host ""
-  Write-Host "Task Board" -ForegroundColor Yellow
-  if (`$taskKind -eq 'agent_task_board' -and (Test-Path -LiteralPath `$taskScript)) {
-    & `$pythonExe `$taskScript --board `$boardPath list
-    if (`$LASTEXITCODE -ne 0) {
-      Write-Warning "Task board list command failed."
-    }
-  } elseif (Test-Path -LiteralPath `$boardPath) {
-    Get-Content -LiteralPath `$boardPath -TotalCount 120
+  if (-not (Test-Path -LiteralPath `$statusScriptPath)) {
+    Write-Host ("Missing status dashboard script: {0}" -f `$statusScriptPath) -ForegroundColor Red
   } else {
-    Write-Host "No task board available."
-  }
-
-  Write-Host ""
-  Write-Host "Git Status (repo root)" -ForegroundColor Yellow
-  & git -C `$repoRoot status --short --branch
-
-  for (`$i = 1; `$i -le `$codexCount; `$i++) {
-    `$wt = Join-Path `$repoRoot "worktrees\codex-`$i"
-    Write-Host ""
-    Write-Host ("Git Status ({0})" -f `$wt) -ForegroundColor Yellow
-    if (Test-Path -LiteralPath `$wt) {
-      & git -C `$wt status --short --branch
-    } else {
-      Write-Host "Missing worktree: `$wt"
+    & pwsh -NoProfile -ExecutionPolicy Bypass -File `$statusScriptPath -RepoRoot `$statusRepoRoot -WorktreesRoot `$statusWorktreesRoot -BoardPath `$statusBoardPath
+    if (`$LASTEXITCODE -ne 0) {
+      Write-Warning ("status_once.ps1 exited with code {0}." -f `$LASTEXITCODE)
     }
   }
 
