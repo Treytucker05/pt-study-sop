@@ -17,15 +17,17 @@ param(
   [ValidateRange(0, 32)]
   [int]$OhMyCount = 1,
 
-  [ValidateSet("windows", "tabs")]
+  [ValidateSet("windows", "tabs", "splits")]
   [string]$Layout = "windows"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $script:SwarmUseTabs = $false
+$script:SwarmUseSplits = $false
 $script:SwarmWtExe = ""
 $script:SwarmBootstrapLog = "C:\pt-study-sop\logs\agents\swarm_bootstrap.log"
+$script:SwarmSplitLaunches = New-Object System.Collections.Generic.List[object]
 
 function Write-Section {
   param([string]$Message)
@@ -350,6 +352,65 @@ function New-PwshKeepOpenCommand {
   return ($lines -join "`n")
 }
 
+function New-PwshTabCommandArgs {
+  param([string]$ScriptPath)
+
+  $psCommand = New-PwshKeepOpenCommand -ScriptPath ([string]$ScriptPath)
+  return @(
+    "pwsh",
+    "-NoExit",
+    "-Command",
+    $psCommand
+  ) | ForEach-Object { [string]$_ }
+}
+
+function New-PwshWindowCommandArgs {
+  param([string]$ScriptPath)
+
+  $psCommand = New-PwshKeepOpenCommand -ScriptPath ([string]$ScriptPath)
+  return @(
+    "-NoExit",
+    "-Command",
+    $psCommand
+  ) | ForEach-Object { [string]$_ }
+}
+
+function Invoke-SplitPaneSwarmLaunch {
+  if (-not $script:SwarmUseSplits) { return }
+  if ($script:SwarmSplitLaunches.Count -le 0) { return }
+  if ([string]::IsNullOrWhiteSpace($script:SwarmWtExe)) {
+    throw "Layout 'splits' requires wt.exe, but it was not resolved."
+  }
+
+  $firstPane = $script:SwarmSplitLaunches[0]
+  $wtArgs = @(
+    "-w",
+    "0",
+    "new-tab",
+    "--title",
+    "Swarm",
+    "-d",
+    [string]$firstPane.WorkingDirectory
+  ) + (New-PwshTabCommandArgs -ScriptPath ([string]$firstPane.ScriptPath))
+
+  for ($i = 1; $i -lt $script:SwarmSplitLaunches.Count; $i++) {
+    $pane = $script:SwarmSplitLaunches[$i]
+    $wtArgs += ";"
+    $wtArgs += @(
+      "split-pane",
+      "-d",
+      [string]$pane.WorkingDirectory
+    )
+    $wtArgs += (New-PwshTabCommandArgs -ScriptPath ([string]$pane.ScriptPath))
+  }
+
+  $wtArgs = $wtArgs | ForEach-Object { [string]$_ }
+  Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $wtArgs -WorkingDirectory ""
+  Start-Process -FilePath $script:SwarmWtExe -ArgumentList $wtArgs | Out-Null
+  Write-Host ("Launched split swarm: tab 'Swarm' with {0} panes." -f $script:SwarmSplitLaunches.Count)
+  Write-BootstrapLog -Message ("Split layout launched with {0} panes in one tab." -f $script:SwarmSplitLaunches.Count)
+}
+
 function Start-PwshWindow {
   param(
     [string]$Title,
@@ -360,13 +421,16 @@ function Start-PwshWindow {
   $titleText = [string]$Title
   $scriptPathText = [string]$ScriptPath
   $workingDirectoryText = [string]$WorkingDirectory
-  $psCommand = New-PwshKeepOpenCommand -ScriptPath $scriptPathText
-  $pwshTabArgs = @(
-    "pwsh",
-    "-NoExit",
-    "-Command",
-    $psCommand
-  ) | ForEach-Object { [string]$_ }
+
+  if ($script:SwarmUseSplits) {
+    $script:SwarmSplitLaunches.Add([pscustomobject]@{
+      Title = $titleText
+      ScriptPath = $scriptPathText
+      WorkingDirectory = $workingDirectoryText
+    }) | Out-Null
+    Write-Host "Queued pane: $Title"
+    return
+  }
 
   if ($script:SwarmUseTabs -and -not [string]::IsNullOrWhiteSpace($script:SwarmWtExe)) {
     $wtArgs = @(
@@ -377,17 +441,13 @@ function Start-PwshWindow {
       $titleText,
       "-d",
       $workingDirectoryText
-    ) + $pwshTabArgs
+    ) + (New-PwshTabCommandArgs -ScriptPath $scriptPathText)
     $wtArgs = $wtArgs | ForEach-Object { [string]$_ }
     Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $wtArgs -WorkingDirectory ""
     Start-Process -FilePath $script:SwarmWtExe -ArgumentList $wtArgs | Out-Null
   }
   else {
-    $pwshWindowArgs = @(
-      "-NoExit",
-      "-Command",
-      $psCommand
-    ) | ForEach-Object { [string]$_ }
+    $pwshWindowArgs = New-PwshWindowCommandArgs -ScriptPath $scriptPathText
     Log-StartProcessCommand -FilePath "pwsh" -Arguments $pwshWindowArgs -WorkingDirectory $workingDirectoryText
     Start-Process -FilePath "pwsh" -ArgumentList $pwshWindowArgs -WorkingDirectory $workingDirectoryText | Out-Null
   }
@@ -417,15 +477,16 @@ try {
   }
 
   $wtCmd = $null
-  if ($Layout -eq "tabs") {
+  if ($Layout -in @("tabs", "splits")) {
     $wtCmd = Get-FirstCommand -Names @("wt.exe", "wt")
     if (-not $wtCmd) {
-      Write-Warning "Layout 'tabs' requested but wt.exe was not found; falling back to separate windows."
+      Write-Warning ("Layout '{0}' requested but wt.exe was not found; falling back to separate windows." -f $Layout)
     }
   }
 
   $script:SwarmUseTabs = ($Layout -eq "tabs") -and ($null -ne $wtCmd)
-  if ($script:SwarmUseTabs) {
+  $script:SwarmUseSplits = ($Layout -eq "splits") -and ($null -ne $wtCmd)
+  if ($script:SwarmUseTabs -or $script:SwarmUseSplits) {
     $script:SwarmWtExe = [string]$wtCmd.Source
   }
 
@@ -710,6 +771,7 @@ while (`$true) {
 "@
 $statusScript = New-WindowScript -RuntimeDir $runtimeScripts -Name "status" -Content $statusBody
 Start-PwshWindow -Title "status" -ScriptPath $statusScript -WorkingDirectory $RepoRoot
+Invoke-SplitPaneSwarmLaunch
 
 $stateFile = Join-Path $runtimeRoot "last_launch.json"
 $state = [ordered]@{
