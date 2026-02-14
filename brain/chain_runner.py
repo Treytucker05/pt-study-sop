@@ -154,7 +154,7 @@ def _load_chain(chain_id: int) -> dict | None:
 
     placeholders = ",".join("?" * len(block_ids))
     cursor.execute(
-        f"SELECT id, name, category, description, default_duration_min, energy_cost "
+        f"SELECT id, name, category, description, default_duration_min, energy_cost, facilitation_prompt "
         f"FROM method_blocks WHERE id IN ({placeholders})",
         block_ids,
     )
@@ -167,6 +167,7 @@ def _load_chain(chain_id: int) -> dict | None:
             "description": b[3],
             "default_duration_min": b[4],
             "energy_cost": b[5],
+            "facilitation_prompt": b[6] or "",
         }
     conn.close()
 

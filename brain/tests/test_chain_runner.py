@@ -280,6 +280,65 @@ class TestRunChain:
         assert row[1] == chain_id  # method_chain_id linked
 
 
+class TestFacilitationPromptInjection:
+    """Smoke tests verifying facilitation_prompt flows into assembled prompts."""
+
+    def test_chain_prompts_uses_facilitation_prompt(self):
+        """chain_prompts.get_step_prompt uses facilitation_prompt when present."""
+        block = {
+            "name": "Brain Dump",
+            "category": "prepare",
+            "facilitation_prompt": "## Current Activity Block: Brain Dump (prepare, ~3 min)\nFacilitate the **Brain Dump** protocol.",
+        }
+        prompt = get_step_prompt(block, "Shoulder Anatomy", "source text", "")
+        assert "## Current Activity Block: Brain Dump" in prompt["system"]
+        assert "Facilitate the **Brain Dump** protocol" in prompt["system"]
+
+    def test_chain_prompts_falls_back_without_facilitation(self):
+        """Without facilitation_prompt, falls back to hardcoded templates."""
+        block = {"name": "Concept Cluster", "category": "prepare", "facilitation_prompt": ""}
+        prompt = get_step_prompt(block, "Topic", "ctx", "acc")
+        assert "clusters" in prompt["user"].lower()
+
+    def test_tutor_prompt_builder_uses_facilitation_prompt(self):
+        """tutor_prompt_builder._build_block_section returns facilitation_prompt."""
+        from tutor_prompt_builder import build_tutor_system_prompt
+        block_info = {
+            "name": "Brain Dump",
+            "category": "prepare",
+            "description": "Free-write everything you know",
+            "evidence": "",
+            "duration": 3,
+            "facilitation_prompt": "## Current Activity Block: Brain Dump (prepare, ~3 min)\n_Free-write_\n\n### Steps (follow in order)",
+        }
+        prompt = build_tutor_system_prompt(mode="Core", current_block=block_info)
+        assert "## Current Activity Block: Brain Dump" in prompt
+        assert "### Steps (follow in order)" in prompt
+
+    def test_load_chain_includes_facilitation_prompt(self):
+        """_load_chain selects facilitation_prompt from DB."""
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Update a test block with facilitation_prompt
+        cursor.execute("SELECT id FROM method_blocks WHERE name = 'Concept Cluster'")
+        block_id = cursor.fetchone()[0]
+        cursor.execute(
+            "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
+            ("## Current Activity Block: Concept Cluster\nTest facilitation.", block_id),
+        )
+        conn.commit()
+
+        cursor.execute("SELECT id FROM method_chains LIMIT 1")
+        chain_id = cursor.fetchone()[0]
+        conn.close()
+
+        chain = _load_chain(chain_id)
+        first_block = chain["blocks"][0]
+        assert first_block["name"] == "Concept Cluster"
+        assert "## Current Activity Block: Concept Cluster" in first_block["facilitation_prompt"]
+
+
 @pytest.fixture(autouse=True, scope="session")
 def cleanup():
     yield

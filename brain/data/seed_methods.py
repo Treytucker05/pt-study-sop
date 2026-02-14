@@ -1037,6 +1037,9 @@ def seed_methods(force: bool = False):
     conn.commit()
     conn.close()
 
+    # Auto-populate facilitation_prompt from YAML definitions
+    regenerate_prompts()
+
 
 if __name__ == "__main__":
     force = "--force" in sys.argv

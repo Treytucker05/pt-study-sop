@@ -39,6 +39,21 @@ def get_step_prompt(
         {"system": str, "user": str}
     """
     name = block["name"]
+
+    # Use facilitation_prompt from DB when available (Tier 3 block-level prompt)
+    facilitation = (block.get("facilitation_prompt") or "").strip()
+    if facilitation:
+        system = f"{SYSTEM_BASE}\n\n{facilitation}"
+        return {
+            "system": system,
+            "user": (
+                f"Topic: {topic}\n\n"
+                f"Source Material:\n{rag_context}\n\n"
+                f"Prior Steps:\n{accumulated}\n\n"
+                f"Execute this activity block now."
+            ),
+        }
+
     entry = _TEMPLATES.get(name)
     if not entry:
         # Fallback: generic prompt for unknown blocks
