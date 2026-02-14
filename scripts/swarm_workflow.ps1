@@ -656,6 +656,8 @@ $escapedReviewerPrompt = Escape-SingleQuoted -Value $reviewerPrompt
 $escapedTaskScript = Escape-SingleQuoted -Value $taskBoard.Script
 $escapedPython = Escape-SingleQuoted -Value $taskBoard.Python
 $ohMyExe = if ($ohMyCmd) { [string]$ohMyCmd.Source } else { "" }
+$ohMyLauncherBat = "C:\Users\treyt\OneDrive\Desktop\Travel Laptop\OHMYOpenCode.bat"
+$escapedOhMyLauncherBat = Escape-SingleQuoted -Value $ohMyLauncherBat
 $codexExe = if ($codexCmd) { [string]$codexCmd.Source } else { "" }
 $claudeExe = if ($claudeCmd) { [string]$claudeCmd.Source } else { "" }
 $geminiExe = if ($geminiCmd) { [string]$geminiCmd.Source } else { "" }
@@ -664,7 +666,6 @@ if ($OhMyCount -gt 0) {
   for ($i = 1; $i -le $OhMyCount; $i++) {
     $title = if ($OhMyCount -eq 1) { "planner" } else { "planner-$i" }
     $escapedTitle = Escape-SingleQuoted -Value $title
-    $escapedOhMy = Escape-SingleQuoted -Value $ohMyExe
 
     $plannerBody = @"
 `$ErrorActionPreference = 'Stop'
@@ -672,35 +673,12 @@ if ($OhMyCount -gt 0) {
 Set-Location -LiteralPath '$escapedRepoRoot'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
-`$agentExe = '$escapedOhMy'
-`$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
-if (-not `$resolved) {
-  throw "Planner executable not found: `$agentExe"
+`$launcherBat = '$escapedOhMyLauncherBat'
+if (-not (Test-Path -LiteralPath `$launcherBat)) {
+  throw "OHMYOpenCode launcher not found: `$launcherBat"
 }
-`$agentExe = [string]`$resolved.Source
-`$promptPath = '$escapedPlannerPrompt'
-`$startupPrompt = Get-Content -LiteralPath `$promptPath -Raw
-Write-Host "Using planner prompt file: `$promptPath" -ForegroundColor Cyan
-`$launched = `$false
-if (-not [string]::IsNullOrWhiteSpace(`$startupPrompt)) {
-  & `$agentExe `$startupPrompt
-  if (`$LASTEXITCODE -eq 0) {
-    `$launched = `$true
-  } else {
-    Write-Warning "Direct prompt argument failed; retrying with stdin."
-  }
-}
-if (-not `$launched -and -not [string]::IsNullOrWhiteSpace(`$startupPrompt)) {
-  `$startupPrompt | & `$agentExe
-  if (`$LASTEXITCODE -eq 0) {
-    `$launched = `$true
-  } else {
-    Write-Warning "Startup prompt via stdin failed; launching interactive session."
-  }
-}
-if (-not `$launched) {
-  & `$agentExe
-}
+Write-Host "Launching OhMyOpenCode via launcher: `$launcherBat" -ForegroundColor Cyan
+& cmd /k ('"' + `$launcherBat + '"')
 "@
     $plannerScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $plannerBody
     Start-PwshWindow -Title $title -ScriptPath $plannerScript -WorkingDirectory $RepoRoot
