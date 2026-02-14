@@ -403,7 +403,7 @@ function Invoke-SplitPaneSwarmLaunch {
     Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f [string]$statusPane.Title, (Format-ArgumentListForLog -Arguments $statusOnlyPaneArgs))
     $statusOnlyArgs = @(
       "-w",
-      "0",
+      "new",
       "new-tab",
       "--title",
       "Swarm",
@@ -466,7 +466,7 @@ function Invoke-SplitPaneSwarmLaunch {
 
   $wtArgs = @(
     "-w",
-    "0",
+    "new",
     "new-tab",
     "--title",
     "Swarm",
@@ -539,7 +539,7 @@ function Start-PwshWindow {
     Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f $titleText, (Format-ArgumentListForLog -Arguments $tabPaneArgs))
     $wtArgs = @(
       "-w",
-      "0",
+      "new",
       "new-tab",
       "--title",
       $titleText,
