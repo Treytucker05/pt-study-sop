@@ -674,11 +674,13 @@ Set-Location -LiteralPath '$escapedRepoRoot'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
 `$launcherBat = '$escapedOhMyLauncherBat'
+`$plannerTarget = '$escapedRepoRoot'
 if (-not (Test-Path -LiteralPath `$launcherBat)) {
   throw "OHMYOpenCode launcher not found: `$launcherBat"
 }
-Write-Host "Launching OhMyOpenCode via launcher: `$launcherBat" -ForegroundColor Cyan
-& cmd /k ('"' + `$launcherBat + '"')
+Write-Host "Launching OhMyOpenCode via launcher: `$launcherBat (target=`$plannerTarget, /nopause)" -ForegroundColor Cyan
+`$launcherCmd = '""' + `$launcherBat + '" /nopause "' + `$plannerTarget + '""'
+& cmd /k `$launcherCmd
 "@
     $plannerScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $plannerBody
     Start-PwshWindow -Title $title -ScriptPath $plannerScript -WorkingDirectory $RepoRoot
