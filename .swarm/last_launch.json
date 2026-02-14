@@ -1,20 +1,20 @@
 {
-  "launched_at": "2026-02-14T00:07:28.1410285-06:00",
+  "launched_at": "2026-02-14T01:21:08.7654448-06:00",
   "repo_root": "C:\\pt-study-sop",
   "mode": "fast",
   "counts": {
-    "claude": 1,
-    "gemini": 1,
     "planner": 1,
+    "claude": 2,
+    "gemini": 0,
     "codex": 2
   },
   "task_board": {
-    "path": "C:\\pt-study-sop\\tasks\\swarm_task_board.json",
-    "kind": "agent_task_board"
+    "kind": "agent_task_board",
+    "path": "C:\\pt-study-sop\\tasks\\swarm_task_board.json"
   },
   "prompts": {
-    "reviewer": "C:\\pt-study-sop\\scripts\\swarm_prompts\\reviewer.txt",
-    "planner": "C:\\pt-study-sop\\scripts\\swarm_prompts\\planner_fast.txt"
+    "planner": "C:\\pt-study-sop\\scripts\\swarm_prompts\\planner_fast.txt",
+    "reviewer": "C:\\pt-study-sop\\scripts\\swarm_prompts\\reviewer.txt"
   }
 }
 

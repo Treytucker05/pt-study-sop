@@ -17,7 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ConceptMapStructured } from "./ConceptMapStructured";
-import { ConceptMapFreehand } from "./ConceptMapFreehand";
 import { MindMapView } from "@/components/MindMapView";
 import { VaultGraphView } from "@/components/VaultGraphView";
 import {
@@ -30,14 +29,12 @@ import {
 const MODES: { id: GraphCanvasMode; label: string }[] = [
   { id: "mindmap", label: "Mind Map" },
   { id: "structured", label: "Structured" },
-  { id: "freehand", label: "Freehand" },
   { id: "vault", label: "Vault Graph" },
 ];
 
 const EMPTY_BY_MODE: Record<GraphCanvasMode, GraphCanvasStatus> = {
   mindmap: { ...EMPTY_GRAPH_STATUS, mode: "mindmap", supportsMermaid: true, supportsDraw: true },
   structured: { ...EMPTY_GRAPH_STATUS, mode: "structured", supportsMermaid: true },
-  freehand: { ...EMPTY_GRAPH_STATUS, mode: "freehand", supportsDraw: true },
   vault: { ...EMPTY_GRAPH_STATUS, mode: "vault" },
 };
 
@@ -73,7 +70,7 @@ export function UnifiedBrainCanvas() {
       localStorage.removeItem("tutor-mermaid-import");
       setImportText(pending);
       setShowImport(true);
-      if (mode === "freehand" || mode === "vault") setMode("structured");
+      if (mode === "vault") setMode("structured");
     }
   }, []);
 
@@ -101,13 +98,11 @@ export function UnifiedBrainCanvas() {
   const applyImport = useCallback(() => {
     const code = importText.trim();
     if (!code) return;
-    const target = mode === "freehand" ? "structured" : mode;
-    if (target === "vault") {
+    if (mode === "vault") {
       toast({ title: "Import not available", description: "Switch to Mind Map or Structured mode", variant: "destructive" });
       return;
     }
-    if (mode === "freehand") setMode("structured");
-    issueCommand("import_mermaid", code, target);
+    issueCommand("import_mermaid", code, mode);
     setShowImport(false);
     setImportText("");
   }, [importText, mode, issueCommand, toast]);
@@ -152,19 +147,6 @@ export function UnifiedBrainCanvas() {
           hideToolbar
           externalCommand={command}
           onStatusChange={handleStatusChange}
-        />
-      );
-    }
-    if (mode === "freehand") {
-      return (
-        <ConceptMapFreehand
-          hideToolbar
-          externalCommand={command}
-          onStatusChange={handleStatusChange}
-          onImportMermaid={(mermaid) => {
-            setMode("structured");
-            issueCommand("import_mermaid", mermaid, "structured");
-          }}
         />
       );
     }
@@ -273,10 +255,8 @@ export function UnifiedBrainCanvas() {
                     key={template.name}
                     className="text-left px-3 py-2 border border-primary/30 hover:border-primary/60 hover:bg-primary/10 rounded-none"
                     onClick={() => {
-                      const target = mode === "freehand" ? "structured" : mode;
-                      if (target === "vault") return;
-                      if (mode === "freehand") setMode("structured");
-                      issueCommand("import_mermaid", template.mermaid, target);
+                      if (mode === "vault") return;
+                      issueCommand("import_mermaid", template.mermaid, mode);
                       setTemplateOpen(false);
                     }}
                   >

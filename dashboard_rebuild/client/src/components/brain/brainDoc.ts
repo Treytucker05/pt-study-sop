@@ -1,5 +1,5 @@
 interface BrainDocMetaOptions {
-  mode: "structured" | "mindmap" | "freehand";
+  mode: "structured" | "mindmap";
   title: string;
   mermaid?: string;
   layoutPath?: string;
@@ -31,8 +31,6 @@ export function buildBrainCanvasMarkdown(opts: BrainDocMetaOptions): string {
 
   if (opts.mermaid?.trim()) {
     lines.push("```mermaid", opts.mermaid.trim(), "```", "");
-  } else {
-    lines.push("> Freehand canvas content is stored in sidecar JSON files.", "");
   }
 
   return lines.join("\n");

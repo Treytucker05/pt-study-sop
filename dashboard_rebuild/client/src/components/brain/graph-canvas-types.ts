@@ -1,4 +1,4 @@
-export type GraphCanvasMode = "mindmap" | "structured" | "freehand" | "vault";
+export type GraphCanvasMode = "mindmap" | "structured" | "vault";
 
 export type GraphCanvasCommandType =
   | "save"

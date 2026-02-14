@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Redesign — PT Study SOP</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #ffffff; color: #000000; line-height: 1.5; }
+
+  /* Title bar */
+  .title-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-bottom: 3px solid #000; background: #eeeeee; position: sticky; top: 0; z-index: 100; }
+  .title-bar h1 { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+  .title-bar .rec { font-size: 13px; color: #333; }
+
+  /* Tabs */
+  .tab-bar { display: flex; border-bottom: 2px solid #cccccc; background: #ffffff; position: sticky; top: 51px; z-index: 99; }
+  .tab-bar button { padding: 10px 20px; font-size: 13px; font-weight: 600; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid transparent; color: #666; transition: all 0.15s; }
+  .tab-bar button:hover { color: #000; background: #eeeeee; }
+  .tab-bar button.active { color: #000; border-bottom-color: #000; background: #eeeeee; }
+
+  /* Content area */
+  .tab-content { display: none; padding: 32px 24px; max-width: 1200px; margin: 0 auto; }
+  .tab-content.active { display: block; }
+
+  /* Section divider */
+  .section-divider { border: none; border-top: 2px solid #cccccc; margin: 40px 0; }
+
+  /* Option header */
+  .opt-header { margin-bottom: 8px; }
+  .opt-header h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .opt-header p { font-size: 14px; color: #333; margin-bottom: 20px; }
+
+  /* Wireframe container */
+  .wireframe { border: 2px solid #cccccc; background: #ffffff; padding: 0; margin-bottom: 20px; overflow: hidden; }
+
+  /* Common wireframe elements */
+  .wf-header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #cccccc; background: #eeeeee; }
+  .wf-header .logo { width: 24px; height: 24px; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+  .wf-header .title { font-size: 13px; font-weight: 700; letter-spacing: 2px; }
+  .wf-nav { display: flex; gap: 2px; margin-left: auto; }
+  .wf-nav span { padding: 4px 10px; font-size: 11px; border: 1px solid #cccccc; cursor: pointer; }
+  .wf-nav span.wf-active { background: #000; color: #fff; border-color: #000; }
+
+  /* Cards */
+  .wf-card { border: 2px solid #cccccc; background: #fff; }
+  .wf-card-header { padding: 8px 12px; border-bottom: 1px solid #cccccc; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #333; display: flex; align-items: center; justify-content: space-between; }
+  .wf-card-body { padding: 12px; }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  /* Stat badge */
+  .stat { text-align: center; padding: 12px 8px; border: 1px solid #cccccc; }
+  .stat .num { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat .label { font-size: 10px; color: #666; letter-spacing: 1px; margin-top: 4px; }
+
+  /* List items */
+  .list-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #eeeeee; font-size: 13px; }
+  .list-item:last-child { border-bottom: none; }
+  .list-item .meta { font-size: 11px; color: #666; }
+
+  /* Buttons */
+  .wf-btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; font-size: 12px; font-weight: 600; border: 2px solid #000; background: #fff; cursor: pointer; letter-spacing: 1px; }
+  .wf-btn:hover { background: #eeeeee; }
+  .wf-btn-primary { background: #000; color: #fff; }
+  .wf-btn-primary:hover { background: #333; }
+  .wf-btn-sm { padding: 4px 10px; font-size: 11px; border-width: 1px; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 600; border: 1px solid #cccccc; letter-spacing: 0.5px; }
+  .badge-dark { background: #000; color: #fff; border-color: #000; }
+  .badge-outline { background: transparent; }
+  .badge-urgent { background: #333; color: #fff; border-color: #333; }
+
+  /* Study wheel */
+  .wheel { position: relative; }
+  .wheel-course { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border: 1px solid #eeeeee; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .wheel-course:hover { background: #eeeeee; }
+  .wheel-course.current { border: 2px solid #000; font-weight: 700; background: #eeeeee; }
+  .wheel-course .idx { width: 20px; height: 20px; border: 1px solid #999; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666; }
+  .wheel-course.current .idx { background: #000; color: #fff; border-color: #000; }
+
+  /* Kanban */
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .kanban-col { border: 1px solid #cccccc; min-height: 100px; }
+  .kanban-col-header { padding: 6px 8px; font-size: 10px; font-weight: 700; letter-spacing: 1px; border-bottom: 1px solid #cccccc; background: #eeeeee; color: #333; }
+  .kanban-card { margin: 6px; padding: 8px; border: 1px solid #cccccc; font-size: 12px; background: #fff; }
+  .kanban-empty { padding: 20px 8px; text-align: center; font-size: 11px; color: #999; }
+
+  /* Progress bar */
+  .progress-bar { height: 6px; background: #eeeeee; border: 1px solid #cccccc; }
+  .progress-fill { height: 100%; background: #000; }
+
+  /* Timeline */
+  .timeline-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eeeeee; }
+  .timeline-dot { width: 10px; height: 10px; border: 2px solid #000; margin-top: 4px; flex-shrink: 0; }
+  .timeline-dot.filled { background: #000; }
+  .timeline-content { flex: 1; }
+  .timeline-content .title { font-size: 13px; font-weight: 600; }
+  .timeline-content .desc { font-size: 11px; color: #666; margin-top: 2px; }
+
+  /* Annotations */
+  .annotation { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: #000; color: #fff; font-size: 10px; font-weight: 700; vertical-align: super; margin-left: 4px; }
+  .notes { margin-top: 16px; padding: 12px; background: #eeeeee; border: 1px solid #cccccc; }
+  .notes p { font-size: 12px; color: #333; margin-bottom: 4px; }
+
+  /* Accordion */
+  .accordion-item { border: 1px solid #cccccc; margin-bottom: -1px; }
+  .accordion-trigger { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; border: none; width: 100%; text-align: left; }
+  .accordion-trigger:hover { background: #eeeeee; }
+  .accordion-trigger .arrow { transition: transform 0.2s; }
+  .accordion-trigger.open .arrow { transform: rotate(180deg); }
+  .accordion-body { padding: 12px 14px; border-top: 1px solid #eeeeee; display: none; }
+  .accordion-body.open { display: block; }
+
+  /* Tab sub-bar */
+  .sub-tabs { display: flex; gap: 0; margin-bottom: 16px; }
+  .sub-tab { padding: 6px 14px; font-size: 11px; font-weight: 600; border: 1px solid #cccccc; cursor: pointer; background: #fff; margin-right: -1px; }
+  .sub-tab.active { background: #000; color: #fff; border-color: #000; }
+
+  /* Sidebar layout */
+  .layout-sidebar { display: grid; grid-template-columns: 260px 1fr; gap: 0; min-height: 600px; }
+  .sidebar { border-right: 2px solid #cccccc; padding: 16px; }
+  .sidebar-section { margin-bottom: 20px; }
+  .sidebar-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #666; margin-bottom: 8px; }
+  .sidebar-item { padding: 6px 10px; font-size: 12px; cursor: pointer; border: 1px solid transparent; margin-bottom: 2px; }
+  .sidebar-item:hover { background: #eeeeee; }
+  .sidebar-item.active { background: #eeeeee; border-color: #cccccc; font-weight: 600; }
+  .main-panel { padding: 20px; }
+
+  /* Inline edit */
+  .editable { border-bottom: 1px dashed #cccccc; cursor: text; }
+  .editable:hover { border-bottom-color: #000; }
+
+  /* Summary table */
+  .summary-table { width: 100%; border-collapse: collapse; }
+  .summary-table th, .summary-table td { padding: 8px 12px; text-align: left; border: 1px solid #cccccc; font-size: 13px; }
+  .summary-table th { background: #eeeeee; font-weight: 700; font-size: 11px; letter-spacing: 0.5px; }
+  .summary-table .stars { letter-spacing: 2px; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4, .kanban, .layout-sidebar { grid-template-columns: 1fr; }
+    .wf-nav { display: none; }
+    .tab-bar { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="title-bar">
+  <h1>Dashboard Redesign &mdash; PT Study SOP</h1>
+  <span class="rec">&#9733; Recommended: Option 2 (Command Center)</span>
+</div>
+
+<div class="tab-bar" id="mainTabs">
+  <button class="active" data-tab="opt1">1: Safe</button>
+  <button data-tab="opt2">2: Command Center</button>
+  <button data-tab="opt3">3: Focus Flow</button>
+  <button data-tab="opt4">4: Timeline</button>
+  <button data-tab="summary">Summary</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 1: SAFE -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="tab-content active" id="opt1">
+  <div class="opt-header">
+    <h2>Option 1: Safe Option</h2>
+    <p>Keeps the existing layout structure but reorders sections for logical top-to-bottom flow: action first, context second, planning third.</p>
+  </div>
+
+  <div class="wireframe">
+    <!-- Header -->
+    <div class="wf-header">
+      <div class="logo">TS</div>
+      <span class="title">TREY'S STUDY SYSTEM</span>
+      <div class="wf-nav">
+        <span class="wf-active">DASHBOARD</span>
+        <span>BRAIN</span>
+        <span>CALENDAR</span>
+        <span>SCHOLAR</span>
+        <span>TUTOR</span>
+        <span>METHODS</span>
+        <span>LIBRARY</span>
+      </div>
+    </div>
+
+    <div style="padding: 20px;">
+      <!-- Row 1: Study Wheel (full width, hero) -->
+      <div class="wf-card" style="margin-bottom: 16px;">
+        <div class="wf-card-header">
+          STUDY WHEEL <span class="annotation">1</span>
+          <span style="font-weight: 400; font-size: 10px; color: #999;">Session #11 today</span>
+        </div>
+        <div class="wf-card-body">
+          <div style="display: flex; gap: 20px; align-items: start;">
+            <div style="flex: 1;">
+              <div style="font-size: 11px; color: #666; margin-bottom: 6px; letter-spacing: 1px;">NEXT UP</div>
+              <div style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">Therapeutic Interventions</div>
+              <div class="wheel">
+                <div class="wheel-course current"><span class="idx">1</span> Therapeutic Interventions</div>
+                <div class="wheel-course"><span class="idx">2</span> Evidence Based Practice</div>
+                <div class="wheel-course"><span class="idx">3</span> Exercise Physiology</div>
+                <div class="wheel-course"><span class="idx">4</span> Movement Science I</div>
+                <div class="wheel-course"><span class="idx">5</span> Neuroscience</div>
+              </div>
+            </div>
+            <div style="width: 200px; text-align: center; padding-top: 20px;">
+              <button class="wf-btn wf-btn-primary" style="width: 100%; padding: 14px; font-size: 14px;">COMPLETE SESSION</button>
+              <div style="font-size: 10px; color: #666; margin-top: 8px;">+ ADD COURSE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Stats bar -->
+      <div class="grid-4" style="margin-bottom: 16px;">
+        <div class="stat"><div class="num">10</div><div class="label">SESSIONS</div></div>
+        <div class="stat"><div class="num">13</div><div class="label">MINUTES</div></div>
+        <div class="stat"><div class="num">5</div><div class="label">DAY STREAK</div></div>
+        <div class="stat"><div class="num">3</div><div class="label">WEAKNESSES</div></div>
+      </div>
+
+      <!-- Row 3: Courses + Deadlines (2-col) -->
+      <div class="grid-2" style="margin-bottom: 16px;">
+        <div class="wf-card">
+          <div class="wf-card-header">COURSES <span class="annotation">2</span></div>
+          <div class="wf-card-body" style="padding: 0;">
+            <div class="list-item"><span>Therapeutic Interventions</span> <span class="meta">8 sess &middot; 9 hrs</span></div>
+            <div class="list-item"><span>Evidence Based Practice</span> <span class="meta">3 sess &middot; 45 min</span></div>
+            <div class="list-item"><span>Exercise Physiology</span> <span class="meta">3 sess &middot; 55 min</span></div>
+            <div class="list-item"><span>Movement Science I</span> <span class="meta">1 sess &middot; 15 min</span></div>
+          </div>
+        </div>
+        <div class="wf-card">
+          <div class="wf-card-header">DEADLINES <span style="font-weight:400;font-size:10px;color:#999;">ALL COURSES &#9662;</span> <button class="wf-btn-sm wf-btn" style="margin-left:auto;">+ ADD</button></div>
+          <div class="wf-card-body" style="padding: 0;">
+            <div class="list-item" style="background:#eeeeee;"><span>Prepare &middot; Exercise Physiology</span> <span class="badge badge-urgent">Jan 29</span></div>
+            <div class="list-item" style="background:#eeeeee;"><span>Complete Advanced PathFit Lit Review</span> <span class="badge badge-urgent">Feb 24</span></div>
+            <div class="list-item"><span>Prepare &middot; Exercise Physiology</span> <span class="badge badge-outline">Feb 1</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 4: Focus + Tasks (2-col) -->
+      <div class="grid-2" style="margin-bottom: 16px;">
+        <div class="wf-card">
+          <div class="wf-card-header">TODAY'S FOCUS <span class="annotation">3</span> <button class="wf-btn-sm wf-btn" style="margin-left:auto;">+ Tasks</button></div>
+          <div class="wf-card-body">
+            <div style="font-size: 13px;">Be ready for class</div>
+            <button class="wf-btn-sm wf-btn" style="margin-top: 8px;">Open Brain &rarr;</button>
+          </div>
+        </div>
+        <div class="wf-card">
+          <div class="wf-card-header">GOOGLE TASKS</div>
+          <div class="wf-card-body" style="text-align: center; padding: 24px; color: #999; font-size: 12px;">
+            Connect Google to see your tasks.
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 5: Planner Board (full width) -->
+      <div class="wf-card">
+        <div class="wf-card-header">
+          PLANNER BOARD
+          <div style="margin-left: auto; display: flex; gap: 4px;">
+            <button class="wf-btn-sm wf-btn" style="background:#000;color:#fff;">Board</button>
+            <button class="wf-btn-sm wf-btn">List</button>
+          </div>
+        </div>
+        <div class="wf-card-body">
+          <div class="kanban">
+            <div class="kanban-col">
+              <div class="kanban-col-header">READY &middot; 1</div>
+              <div class="kanban-card">Study Troubleshooting</div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">DROP TO START</div>
+              <div class="kanban-empty">Drop here</div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">IN PROGRESS &middot; 0</div>
+              <div class="kanban-empty">Nothing in progress</div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">DRAG BACK TO QUEUE</div>
+              <div class="kanban-empty">Archive</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <p><span class="annotation">1</span> Study Wheel kept as hero section — matches user preference. Moved "COMPLETE SESSION" inline for single-action flow.</p>
+    <p><span class="annotation">2</span> Courses and Deadlines paired side-by-side — natural reading: "what am I studying" next to "what's due".</p>
+    <p><span class="annotation">3</span> Today's Focus elevated above Planner Board — sets daily intent before diving into task management.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 2: COMMAND CENTER -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="opt2">
+  <div class="opt-header">
+    <h2>Option 2: Command Center</h2>
+    <p>Dashboard-first density layout. Three horizontal zones: Action (study wheel + CTA), Awareness (stats + deadlines + focus), and Planning (kanban + tasks). Everything visible at a glance with no scrolling needed on desktop.</p>
+  </div>
+
+  <div class="wireframe">
+    <div class="wf-header">
+      <div class="logo">TS</div>
+      <span class="title">TREY'S STUDY SYSTEM</span>
+      <div class="wf-nav">
+        <span class="wf-active">DASHBOARD</span>
+        <span>BRAIN</span>
+        <span>CALENDAR</span>
+        <span>SCHOLAR</span>
+        <span>TUTOR</span>
+        <span>METHODS</span>
+        <span>LIBRARY</span>
+      </div>
+    </div>
+
+    <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+
+      <!-- ZONE 1: ACTION (Study Wheel + Session CTA + Stats) -->
+      <div style="display: grid; grid-template-columns: 1fr 280px; gap: 12px;">
+        <div class="wf-card">
+          <div class="wf-card-header">STUDY WHEEL <span class="annotation">1</span></div>
+          <div class="wf-card-body" style="display: flex; align-items: center; gap: 16px;">
+            <div style="flex: 1;">
+              <div style="font-size: 10px; color: #666; letter-spacing: 1px;">NEXT UP</div>
+              <div style="font-size: 18px; font-weight: 700; margin: 4px 0 8px;">Therapeutic Interventions</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <span class="badge badge-dark">1. Therapeutic Interventions</span>
+                <span class="badge badge-outline">2. EBP</span>
+                <span class="badge badge-outline">3. ExPhys</span>
+                <span class="badge badge-outline">4. MovSci</span>
+                <span class="badge badge-outline">5. Neuro</span>
+              </div>
+            </div>
+            <div style="text-align: center;">
+              <button class="wf-btn wf-btn-primary" style="padding: 16px 32px; font-size: 14px;">COMPLETE<br>SESSION</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column: stats stack -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div class="stat"><div class="num">10</div><div class="label">SESSIONS</div></div>
+            <div class="stat"><div class="num">13</div><div class="label">MINUTES</div></div>
+            <div class="stat"><div class="num">5</div><div class="label">STREAK</div></div>
+            <div class="stat"><div class="num">3</div><div class="label">WEAK</div></div>
+          </div>
+          <div class="wf-card" style="flex: 1;">
+            <div class="wf-card-header">TODAY'S FOCUS</div>
+            <div class="wf-card-body">
+              <div style="font-size: 13px; font-weight: 600;">Be ready for class</div>
+              <button class="wf-btn-sm wf-btn" style="margin-top: 6px;">Open Brain &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ZONE 2: AWARENESS (Deadlines + Courses side by side) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="wf-card">
+          <div class="wf-card-header">
+            UPCOMING DEADLINES <span class="annotation">2</span>
+            <div style="margin-left: auto; display: flex; gap: 4px;">
+              <span class="badge badge-outline" style="cursor:pointer;">All</span>
+              <button class="wf-btn-sm wf-btn">+ ADD</button>
+            </div>
+          </div>
+          <div class="wf-card-body" style="padding: 0;">
+            <div class="list-item" style="background: #eeeeee;">
+              <div>
+                <div style="font-size: 12px; font-weight: 600;">Prepare &middot; Exercise Physiology</div>
+                <div style="font-size: 10px; color: #666;">Assignment</div>
+              </div>
+              <span class="badge badge-urgent">OVERDUE</span>
+            </div>
+            <div class="list-item" style="background: #eeeeee;">
+              <div>
+                <div style="font-size: 12px; font-weight: 600;">PathFit Lit Review &middot; EBP</div>
+                <div style="font-size: 10px; color: #666;">Assignment</div>
+              </div>
+              <span class="badge badge-urgent">10 DAYS</span>
+            </div>
+            <div class="list-item">
+              <div>
+                <div style="font-size: 12px; font-weight: 600;">Prepare &middot; Exercise Physiology</div>
+                <div style="font-size: 10px; color: #666;">Quiz</div>
+              </div>
+              <span class="badge badge-outline">Feb 1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-card">
+          <div class="wf-card-header">COURSES <span class="annotation">3</span> <button class="wf-btn-sm wf-btn" style="margin-left:auto;">+ ADD</button></div>
+          <div class="wf-card-body" style="padding: 0;">
+            <div class="list-item">
+              <div>
+                <div style="font-size: 12px; font-weight: 600;">Therapeutic Interventions</div>
+                <div style="font-size: 10px; color: #666;">8 sessions &middot; 9 hrs total</div>
+              </div>
+              <div style="width: 60px;">
+                <div class="progress-bar"><div class="progress-fill" style="width: 65%;"></div></div>
+              </div>
+            </div>
+            <div class="list-item">
+              <div>
+                <div style="font-size: 12px; font-weight: 600;">Evidence Based Practice</div>
+                <div style="font-size: 10px; color: #666;">3 sessions &middot; 45 min</div>
+              </div>
+              <div style="width: 60px;">
+                <div class="progress-bar"><div class="progress-fill" style="width: 25%;"></div></div>
+              </div>
+            </div>
+            <div class="list-item">
+              <div>
+                <div style="font-size: 12px; font-weight: 600;">Exercise Physiology</div>
+                <div style="font-size: 10px; color: #666;">3 sessions &middot; 55 min</div>
+              </div>
+              <div style="width: 60px;">
+                <div class="progress-bar"><div class="progress-fill" style="width: 30%;"></div></div>
+              </div>
+            </div>
+            <div class="list-item">
+              <div>
+                <div style="font-size: 12px; font-weight: 600;">Movement Science I</div>
+                <div style="font-size: 10px; color: #666;">1 session &middot; 15 min</div>
+              </div>
+              <div style="width: 60px;">
+                <div class="progress-bar"><div class="progress-fill" style="width: 10%;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ZONE 3: PLANNING (Full-width Planner + Tasks) -->
+      <div style="display: grid; grid-template-columns: 1fr 280px; gap: 12px;">
+        <div class="wf-card">
+          <div class="wf-card-header">
+            PLANNER <span class="annotation">4</span>
+            <div style="margin-left: auto; display: flex; gap: 4px;">
+              <button class="wf-btn-sm wf-btn" style="background:#000;color:#fff;">Board</button>
+              <button class="wf-btn-sm wf-btn">List</button>
+            </div>
+          </div>
+          <div class="wf-card-body">
+            <div class="kanban">
+              <div class="kanban-col">
+                <div class="kanban-col-header">QUEUE &middot; 1</div>
+                <div class="kanban-card">Study Troubleshooting</div>
+              </div>
+              <div class="kanban-col">
+                <div class="kanban-col-header">TODAY</div>
+                <div class="kanban-empty">Drag tasks here</div>
+              </div>
+              <div class="kanban-col">
+                <div class="kanban-col-header">IN PROGRESS</div>
+                <div class="kanban-empty">&mdash;</div>
+              </div>
+              <div class="kanban-col">
+                <div class="kanban-col-header">DONE</div>
+                <div class="kanban-empty">&mdash;</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wf-card">
+          <div class="wf-card-header">GOOGLE TASKS</div>
+          <div class="wf-card-body" style="text-align: center; padding: 24px; color: #999; font-size: 12px;">
+            <div style="margin-bottom: 8px;">&#9745;</div>
+            Connect Google<br>to see your tasks
+            <div style="margin-top: 12px;"><button class="wf-btn-sm wf-btn">Connect</button></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="notes">
+    <p><span class="annotation">1</span> Study Wheel compressed to single row with badge-based course list — preserves wheel but reduces vertical space by ~60%.</p>
+    <p><span class="annotation">2</span> Deadlines show urgency badges (OVERDUE, 10 DAYS) instead of just dates — faster triage at a glance.</p>
+    <p><span class="annotation">3</span> Courses get mini progress bars showing relative study investment — motivates balanced coverage.</p>
+    <p><span class="annotation">4</span> Three horizontal zones (Action → Awareness → Planning) create a natural top-to-bottom decision flow: "What do I study?" → "What's coming up?" → "What tasks do I have?"</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 3: FOCUS FLOW -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="opt3">
+  <div class="opt-header">
+    <h2>Option 3: Focus Flow</h2>
+    <p>Progressive disclosure — start with one big action (study session), then reveal everything else in collapsible sections. Minimizes cognitive load by hiding what you don't need right now.</p>
+  </div>
+
+  <div class="wireframe">
+    <div class="wf-header">
+      <div class="logo">TS</div>
+      <span class="title">TREY'S STUDY SYSTEM</span>
+      <div class="wf-nav">
+        <span class="wf-active">DASHBOARD</span>
+        <span>BRAIN</span>
+        <span>CALENDAR</span>
+        <span>SCHOLAR</span>
+        <span>TUTOR</span>
+        <span>METHODS</span>
+        <span>LIBRARY</span>
+      </div>
+    </div>
+
+    <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+
+      <!-- Hero: Study Session -->
+      <div class="wf-card" style="margin-bottom: 24px; text-align: center; padding: 32px;">
+        <div style="font-size: 10px; color: #666; letter-spacing: 2px; margin-bottom: 4px;">SESSION #11 &middot; TODAY</div>
+        <div style="font-size: 28px; font-weight: 700; margin-bottom: 4px;">Therapeutic Interventions</div>
+        <div style="font-size: 12px; color: #666; margin-bottom: 20px;">Up next: Evidence Based Practice &rarr; Exercise Physiology &rarr; Movement Science I</div>
+        <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 16px;">
+          <div class="stat" style="min-width: 80px;"><div class="num">10</div><div class="label">SESSIONS</div></div>
+          <div class="stat" style="min-width: 80px;"><div class="num">13</div><div class="label">MINUTES</div></div>
+          <div class="stat" style="min-width: 80px;"><div class="num">5</div><div class="label">STREAK</div></div>
+        </div>
+        <button class="wf-btn wf-btn-primary" style="padding: 16px 48px; font-size: 16px;" id="completeBtn">COMPLETE SESSION</button>
+        <div style="font-size: 10px; color: #999; margin-top: 8px;">Press Enter or click to complete</div>
+      </div>
+
+      <!-- Collapsible sections -->
+      <div class="accordion-item" id="acc-focus">
+        <button class="accordion-trigger open" onclick="toggleAccordion('acc-focus')">
+          <span>TODAY'S FOCUS <span class="annotation">1</span></span>
+          <span class="arrow">&#9660;</span>
+        </button>
+        <div class="accordion-body open">
+          <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Be ready for class</div>
+          <div style="display: flex; gap: 8px;">
+            <button class="wf-btn-sm wf-btn">Open Brain &rarr;</button>
+            <button class="wf-btn-sm wf-btn">+ Add Task</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item" id="acc-deadlines">
+        <button class="accordion-trigger" onclick="toggleAccordion('acc-deadlines')">
+          <span>DEADLINES <span class="badge badge-urgent" style="margin-left: 8px;">2 overdue</span></span>
+          <span class="arrow">&#9660;</span>
+        </button>
+        <div class="accordion-body">
+          <div class="list-item" style="background: #eeeeee;">
+            <div><div style="font-size: 12px; font-weight: 600;">Prepare &middot; Exercise Physiology</div></div>
+            <span class="badge badge-urgent">OVERDUE</span>
+          </div>
+          <div class="list-item" style="background: #eeeeee;">
+            <div><div style="font-size: 12px; font-weight: 600;">PathFit Lit Review</div></div>
+            <span class="badge badge-urgent">10 DAYS</span>
+          </div>
+          <div class="list-item">
+            <div><div style="font-size: 12px; font-weight: 600;">Prepare &middot; Exercise Physiology</div></div>
+            <span class="badge badge-outline">Feb 1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item" id="acc-courses">
+        <button class="accordion-trigger" onclick="toggleAccordion('acc-courses')">
+          <span>COURSES <span style="font-size:11px;color:#999;margin-left:8px;">5 active</span></span>
+          <span class="arrow">&#9660;</span>
+        </button>
+        <div class="accordion-body">
+          <div class="list-item"><span>Therapeutic Interventions</span> <span class="meta">8 sess</span></div>
+          <div class="list-item"><span>Evidence Based Practice</span> <span class="meta">3 sess</span></div>
+          <div class="list-item"><span>Exercise Physiology</span> <span class="meta">3 sess</span></div>
+          <div class="list-item"><span>Movement Science I</span> <span class="meta">1 sess</span></div>
+          <div class="list-item"><span>Neuroscience</span> <span class="meta">0 sess</span></div>
+          <div style="margin-top: 8px;"><button class="wf-btn-sm wf-btn">+ Add Course</button></div>
+        </div>
+      </div>
+
+      <div class="accordion-item" id="acc-planner">
+        <button class="accordion-trigger" onclick="toggleAccordion('acc-planner')">
+          <span>PLANNER <span style="font-size:11px;color:#999;margin-left:8px;">1 task queued</span></span>
+          <span class="arrow">&#9660;</span>
+        </button>
+        <div class="accordion-body">
+          <div class="kanban" style="grid-template-columns: 1fr 1fr;">
+            <div class="kanban-col">
+              <div class="kanban-col-header">QUEUE</div>
+              <div class="kanban-card">Study Troubleshooting</div>
+            </div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">IN PROGRESS</div>
+              <div class="kanban-empty">&mdash;</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item" id="acc-tasks">
+        <button class="accordion-trigger" onclick="toggleAccordion('acc-tasks')">
+          <span>GOOGLE TASKS</span>
+          <span class="arrow">&#9660;</span>
+        </button>
+        <div class="accordion-body">
+          <div style="text-align: center; padding: 16px; color: #999; font-size: 12px;">
+            Connect Google to see your tasks.
+            <div style="margin-top: 8px;"><button class="wf-btn-sm wf-btn">Connect</button></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="notes">
+    <p><span class="annotation">1</span> Only Focus is open by default — the rest stay collapsed until needed. Deadlines badge shows "2 overdue" without expanding, giving awareness without clutter.</p>
+    <p>Progressive disclosure reduces the dashboard from 5+ scrollable screens to one focused view. Power users can expand all; casual users just hit "Complete Session" and go.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 4: TIMELINE -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="opt4">
+  <div class="opt-header">
+    <h2>Option 4: Timeline</h2>
+    <p>Sidebar navigation with a chronological main panel. Left sidebar shows study wheel + quick stats. Main area presents today's agenda as a vertical timeline: focus, sessions, deadlines, tasks — all in temporal order.</p>
+  </div>
+
+  <div class="wireframe">
+    <div class="wf-header">
+      <div class="logo">TS</div>
+      <span class="title">TREY'S STUDY SYSTEM</span>
+      <div class="wf-nav">
+        <span class="wf-active">DASHBOARD</span>
+        <span>BRAIN</span>
+        <span>CALENDAR</span>
+        <span>SCHOLAR</span>
+        <span>TUTOR</span>
+        <span>METHODS</span>
+        <span>LIBRARY</span>
+      </div>
+    </div>
+
+    <div class="layout-sidebar">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-label">STUDY WHEEL <span class="annotation">1</span></div>
+          <div class="sidebar-item active">Therapeutic Interventions</div>
+          <div class="sidebar-item">Evidence Based Practice</div>
+          <div class="sidebar-item">Exercise Physiology</div>
+          <div class="sidebar-item">Movement Science I</div>
+          <div class="sidebar-item">Neuroscience</div>
+          <div style="margin-top: 8px;"><button class="wf-btn-sm wf-btn" style="width: 100%;">+ ADD COURSE</button></div>
+        </div>
+
+        <div style="border-top: 1px solid #cccccc; padding-top: 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div class="stat" style="padding: 8px;"><div class="num" style="font-size: 20px;">10</div><div class="label">SESS</div></div>
+            <div class="stat" style="padding: 8px;"><div class="num" style="font-size: 20px;">13</div><div class="label">MIN</div></div>
+            <div class="stat" style="padding: 8px;"><div class="num" style="font-size: 20px;">5</div><div class="label">STREAK</div></div>
+            <div class="stat" style="padding: 8px;"><div class="num" style="font-size: 20px;">3</div><div class="label">WEAK</div></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <button class="wf-btn wf-btn-primary" style="width: 100%; padding: 14px; font-size: 13px;">COMPLETE SESSION</button>
+        </div>
+      </div>
+
+      <!-- Main: Timeline -->
+      <div class="main-panel">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <div>
+            <div style="font-size: 18px; font-weight: 700;">Today's Agenda</div>
+            <div style="font-size: 12px; color: #666;">Friday, February 14, 2026</div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="wf-btn-sm wf-btn">+ Task</button>
+            <button class="wf-btn-sm wf-btn">+ Deadline</button>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline-item">
+          <div class="timeline-dot filled"></div>
+          <div class="timeline-content">
+            <div class="title">Focus: Be ready for class <span class="annotation">2</span></div>
+            <div class="desc">Daily priority &middot; <a href="#" style="color:#000;">Open Brain &rarr;</a></div>
+          </div>
+        </div>
+
+        <div class="timeline-item" style="background: #eeeeee; margin: 0 -20px; padding: 12px 20px 12px 32px;">
+          <div class="timeline-dot" style="background: #333; border-color: #333;"></div>
+          <div class="timeline-content">
+            <div class="title" style="color: #333;">OVERDUE: Prepare &middot; Exercise Physiology</div>
+            <div class="desc">Assignment &middot; Was due Jan 29</div>
+          </div>
+        </div>
+
+        <div class="timeline-item" style="background: #eeeeee; margin: 0 -20px; padding: 12px 20px 12px 32px;">
+          <div class="timeline-dot" style="background: #333; border-color: #333;"></div>
+          <div class="timeline-content">
+            <div class="title" style="color: #333;">DUE FEB 24: PathFit Lit Review</div>
+            <div class="desc">Assignment &middot; Evidence Based Practice</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="title">Session: Therapeutic Interventions</div>
+            <div class="desc">Next in study wheel rotation</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="title">Task: Study Troubleshooting <span class="annotation">3</span></div>
+            <div class="desc">Planner &middot; Queued</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <div class="title">Prepare &middot; Exercise Physiology</div>
+            <div class="desc">Quiz &middot; Feb 1</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; border-top: 1px solid #cccccc; padding-top: 16px;">
+          <div style="font-size: 11px; font-weight: 700; color: #666; letter-spacing: 1px; margin-bottom: 8px;">GOOGLE TASKS</div>
+          <div style="text-align: center; padding: 16px; color: #999; font-size: 12px; border: 1px dashed #cccccc;">
+            Connect Google to see your tasks
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <p><span class="annotation">1</span> Study Wheel lives in the sidebar — always visible, never scrolled past. Compact course list + stats + CTA in a persistent column.</p>
+    <p><span class="annotation">2</span> Timeline merges deadlines, tasks, and sessions into one chronological stream. Overdue items highlighted with filled background. This answers "what should I do next?" in reading order.</p>
+    <p><span class="annotation">3</span> Tasks from Planner Board appear inline in the timeline — no need to context-switch to a separate kanban view for daily work.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SUMMARY -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="summary">
+  <div class="opt-header">
+    <h2>Summary</h2>
+    <p>Comparative scoring against the optimization goal: <strong>better flow</strong> (smoother navigation, logical grouping, reduced cognitive load).</p>
+  </div>
+
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th>Option</th>
+        <th>Approach</th>
+        <th>Flow Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1: Safe</strong></td>
+        <td>Existing card grid, reordered for logical top-to-bottom flow</td>
+        <td class="stars">&#9733;&#9733;&#9733;&#9734;&#9734;</td>
+      </tr>
+      <tr style="background: #eeeeee;">
+        <td><strong>2: Command Center &#9733;</strong></td>
+        <td>Three horizontal zones (Action → Awareness → Planning) with density</td>
+        <td class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</td>
+      </tr>
+      <tr>
+        <td><strong>3: Focus Flow</strong></td>
+        <td>Progressive disclosure — hero CTA + collapsible sections</td>
+        <td class="stars">&#9733;&#9733;&#9733;&#9733;&#9734;</td>
+      </tr>
+      <tr>
+        <td><strong>4: Timeline</strong></td>
+        <td>Sidebar wheel + chronological agenda stream</td>
+        <td class="stars">&#9733;&#9733;&#9733;&#9733;&#9734;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top: 20px; padding: 16px; border: 2px solid #000; background: #eeeeee;">
+    <p style="font-size: 14px;"><strong>&#9733; Recommended: Option 2 (Command Center)</strong></p>
+    <p style="font-size: 13px; color: #333; margin-top: 4px;">Best serves the "better flow" goal by organizing the dashboard into three clear decision zones that map to the user's mental model: "What do I study?" → "What's coming up?" → "What tasks do I have?" Everything fits on one screen without scrolling, and the compressed study wheel preserves the user's preferred interaction while freeing space for awareness content. Course progress bars add motivational context without extra clicks.</p>
+  </div>
+</div>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab-bar button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Accordion toggle
+  function toggleAccordion(id) {
+    const item = document.getElementById(id);
+    const trigger = item.querySelector('.accordion-trigger');
+    const body = item.querySelector('.accordion-body');
+    trigger.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+
+  // Complete session interaction
+  const completeBtn = document.getElementById('completeBtn');
+  if (completeBtn) {
+    completeBtn.addEventListener('click', () => {
+      completeBtn.textContent = 'SESSION LOGGED';
+      completeBtn.style.background = '#666';
+      setTimeout(() => {
+        completeBtn.textContent = 'COMPLETE SESSION';
+        completeBtn.style.background = '#000';
+      }, 1500);
+    });
+  }
+</script>
+</body>
+</html>
