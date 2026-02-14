@@ -331,6 +331,25 @@ function New-WindowScript {
   return $scriptPath
 }
 
+function New-PwshKeepOpenCommand {
+  param([string]$ScriptPath)
+
+  $escapedScriptPath = Escape-SingleQuoted -Value ([string]$ScriptPath)
+  $lines = @(
+    "& {"
+    "  `$ErrorActionPreference = 'Stop'"
+    "  try {"
+    "    & '$escapedScriptPath'"
+    "  } catch {"
+    "    Write-Host (`$_ | Out-String) -ForegroundColor Red"
+    "    Read-Host 'Press Enter to keep this tab open' | Out-Null"
+    "  }"
+    "}"
+  )
+
+  return ($lines -join "`n")
+}
+
 function Start-PwshWindow {
   param(
     [string]$Title,
@@ -341,15 +360,12 @@ function Start-PwshWindow {
   $titleText = [string]$Title
   $scriptPathText = [string]$ScriptPath
   $workingDirectoryText = [string]$WorkingDirectory
-  $escapedScriptPath = Escape-SingleQuoted -Value $scriptPathText
-  $launchCommand = "try { & '$escapedScriptPath' } catch { Write-Host ('ERROR: ' + `$_.Exception.Message) -ForegroundColor Red; Write-Host `$_.ScriptStackTrace -ForegroundColor DarkRed; Read-Host 'Press Enter to keep this window open' | Out-Null }"
-  $pwshArgs = @(
+  $psCommand = New-PwshKeepOpenCommand -ScriptPath $scriptPathText
+  $pwshTabArgs = @(
+    "pwsh",
     "-NoExit",
-    "-NoProfile",
-    "-ExecutionPolicy",
-    "Bypass",
     "-Command",
-    $launchCommand
+    $psCommand
   ) | ForEach-Object { [string]$_ }
 
   if ($script:SwarmUseTabs -and -not [string]::IsNullOrWhiteSpace($script:SwarmWtExe)) {
@@ -360,16 +376,20 @@ function Start-PwshWindow {
       "--title",
       $titleText,
       "-d",
-      $workingDirectoryText,
-      "pwsh"
-    ) + $pwshArgs
+      $workingDirectoryText
+    ) + $pwshTabArgs
     $wtArgs = $wtArgs | ForEach-Object { [string]$_ }
     Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $wtArgs -WorkingDirectory ""
     Start-Process -FilePath $script:SwarmWtExe -ArgumentList $wtArgs | Out-Null
   }
   else {
-    Log-StartProcessCommand -FilePath "pwsh" -Arguments $pwshArgs -WorkingDirectory $workingDirectoryText
-    Start-Process -FilePath "pwsh" -ArgumentList $pwshArgs -WorkingDirectory $workingDirectoryText | Out-Null
+    $pwshWindowArgs = @(
+      "-NoExit",
+      "-Command",
+      $psCommand
+    ) | ForEach-Object { [string]$_ }
+    Log-StartProcessCommand -FilePath "pwsh" -Arguments $pwshWindowArgs -WorkingDirectory $workingDirectoryText
+    Start-Process -FilePath "pwsh" -ArgumentList $pwshWindowArgs -WorkingDirectory $workingDirectoryText | Out-Null
   }
 
   Write-Host "Launched window: $Title"
