@@ -686,6 +686,44 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
     if ev:
         parts.append(f"Evidence: {ev}")
 
+    # Artifact format requirements (canonical spec for machine-readable outputs)
+    artifact_type = yaml_data.get("artifact_type", "")
+    if artifact_type == "cards":
+        parts.append(
+            "### Required Output Format (Anki Cards)\n"
+            "When producing card drafts, use EXACTLY this format:\n"
+            "```\n"
+            "CARD 1:\n"
+            "TYPE: basic\n"
+            "FRONT: [question]\n"
+            "BACK: [answer]\n"
+            "TAGS: [comma-separated]\n"
+            "\n"
+            "CARD 2:\n"
+            "TYPE: cloze\n"
+            "FRONT: The {{c1::answer}} is important because...\n"
+            "BACK: [answer word/phrase]\n"
+            "TAGS: [comma-separated]\n"
+            "```\n"
+            "TYPE must be `basic` or `cloze`. FRONT and BACK are required. "
+            "Cloze cards must use `{{c1::...}}` syntax in FRONT."
+        )
+    elif artifact_type in ("concept-map", "flowchart", "decision-tree"):
+        graph_dir = "LR" if artifact_type == "concept-map" else "TD"
+        parts.append(
+            f"### Required Output Format (Mermaid Diagram)\n"
+            f"Wrap the diagram in a mermaid fence. Use `graph` (NOT `flowchart`):\n"
+            f"````\n"
+            f"```mermaid\n"
+            f"graph {graph_dir}\n"
+            f'    A["Main Topic"]\n'
+            f'    B["Subtopic 1"]\n'
+            f"    A -->|relates to| B\n"
+            f"```\n"
+            f"````\n"
+            f"Node labels: `A[\"Label\"]`. Edges: `A --> B` or `A -->|text| B`."
+        )
+
     return "\n\n".join(parts)
 
 
@@ -704,11 +742,13 @@ def regenerate_prompts() -> None:
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Build name->id lookup from DB
-    cursor.execute("SELECT id, name FROM method_blocks")
+    # Build name->id and name->artifact_type lookups from DB
+    cursor.execute("SELECT id, name, artifact_type FROM method_blocks")
     name_to_id: dict[str, int] = {}
+    name_to_artifact: dict[str, str] = {}
     for row in cursor.fetchall():
         name_to_id[row[1]] = row[0]
+        name_to_artifact[row[1]] = row[2] or ""
 
     updated = 0
     yaml_names_seen: set[str] = set()
@@ -725,6 +765,9 @@ def regenerate_prompts() -> None:
             print(f"[WARN] YAML block '{block_name}' not found in DB — skipping")
             continue
 
+        # Inject artifact_type from DB so format examples are embedded
+        if "artifact_type" not in data:
+            data["artifact_type"] = name_to_artifact.get(block_name, "")
         prompt = generate_facilitation_prompt(data)
         cursor.execute(
             "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
@@ -767,6 +810,9 @@ def load_from_yaml() -> dict | None:
         print("[WARN] PyYAML not installed — falling back to hardcoded data")
         return None
 
+    # Build name->artifact_type lookup from hardcoded dicts (YAML doesn't carry this)
+    _artifact_type_lookup = {b["name"]: b.get("artifact_type", "") for b in METHOD_BLOCKS}
+
     methods = []
     for path in sorted(_METHODS_DIR.glob("*.yaml")):
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -790,6 +836,7 @@ def load_from_yaml() -> dict | None:
                 "best_stage": data.get("best_stage"),
                 "tags": data.get("tags", []),
                 "evidence": evidence_str,
+                "artifact_type": _artifact_type_lookup.get(data["name"], ""),
             })
 
     chains = []
@@ -919,8 +966,8 @@ def seed_methods(force: bool = False):
         if not existing:
             cursor.execute(
                 """
-                INSERT INTO method_blocks (name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                INSERT INTO method_blocks (name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, artifact_type, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                 """,
                 (
                     block["name"],
@@ -931,6 +978,7 @@ def seed_methods(force: bool = False):
                     block["best_stage"],
                     json.dumps(block["tags"]),
                     block.get("evidence"),
+                    block.get("artifact_type", ""),
                 ),
             )
             name_to_id[block["name"]] = cursor.lastrowid
@@ -974,6 +1022,9 @@ def seed_methods(force: bool = False):
             if "evidence" in mb_cols:
                 set_cols.append("evidence = ?")
                 values.append(block.get("evidence"))
+            if "artifact_type" in mb_cols:
+                set_cols.append("artifact_type = ?")
+                values.append(block.get("artifact_type", ""))
             values.append(existing["id"])
             cursor.execute(
                 f"UPDATE method_blocks SET {', '.join(set_cols)} WHERE id = ?",

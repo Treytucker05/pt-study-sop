@@ -18,6 +18,7 @@ from config import DB_PATH
 from db_setup import get_connection
 from llm_provider import call_llm
 from chain_prompts import get_step_prompt
+from artifact_validators import validate_step_output
 
 # Cap RAG context to avoid prompt overflow
 MAX_RAG_CHARS = 2000
@@ -69,12 +70,26 @@ def run_chain(
         if result["success"]:
             step_output = result["content"]
             accumulated += f"\n\n--- Step {i + 1}: {block['name']} ---\n{step_output}"
+
+            # Validate artifact format if block declares a machine-readable type
+            validation = validate_step_output(block, step_output)
+            validation_info = None
+            if validation and not validation.valid:
+                validation_info = {
+                    "valid": False,
+                    "errors": validation.errors,
+                    "warnings": validation.warnings,
+                }
+            elif validation:
+                validation_info = {"valid": True, "warnings": validation.warnings}
+
             steps.append({
                 "step": i + 1,
                 "method_name": block["name"],
                 "category": block["category"],
                 "output": step_output,
                 "duration_ms": duration_ms,
+                "validation": validation_info,
             })
         else:
             error_msg = result.get("error", "LLM call failed")
@@ -154,7 +169,7 @@ def _load_chain(chain_id: int) -> dict | None:
 
     placeholders = ",".join("?" * len(block_ids))
     cursor.execute(
-        f"SELECT id, name, category, description, default_duration_min, energy_cost, facilitation_prompt "
+        f"SELECT id, name, category, description, default_duration_min, energy_cost, facilitation_prompt, artifact_type "
         f"FROM method_blocks WHERE id IN ({placeholders})",
         block_ids,
     )
@@ -168,6 +183,7 @@ def _load_chain(chain_id: int) -> dict | None:
             "default_duration_min": b[4],
             "energy_cost": b[5],
             "facilitation_prompt": b[6] or "",
+            "artifact_type": b[7] or "",
         }
     conn.close()
 
