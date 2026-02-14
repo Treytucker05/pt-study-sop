@@ -19,6 +19,7 @@ from db_setup import get_connection
 from llm_provider import call_llm
 from chain_prompts import get_step_prompt
 from artifact_validators import validate_step_output
+from chain_logger import log_block_run
 
 # Cap RAG context to avoid prompt overflow
 MAX_RAG_CHARS = 2000
@@ -91,8 +92,34 @@ def run_chain(
                 "duration_ms": duration_ms,
                 "validation": validation_info,
             })
+
+            # Log block run
+            log_block_run(
+                chain_id=chain_id,
+                chain_name=chain["name"],
+                run_id=run_id,
+                block_id=block["id"],
+                block_name=block["name"],
+                category=block["category"],
+                duration_seconds=duration_ms / 1000,
+                success=True,
+                artifact_validation_pass=(
+                    validation_info["valid"] if validation_info else None
+                ),
+            )
         else:
             error_msg = result.get("error", "LLM call failed")
+            duration_seconds = (time.time() - step_start)
+            log_block_run(
+                chain_id=chain_id,
+                chain_name=chain["name"],
+                run_id=run_id,
+                block_id=block["id"],
+                block_name=block["name"],
+                category=block["category"],
+                duration_seconds=duration_seconds,
+                success=False,
+            )
             _fail_run(run_id, f"Step {i + 1} ({block['name']}): {error_msg}")
             return {
                 "run_id": run_id,

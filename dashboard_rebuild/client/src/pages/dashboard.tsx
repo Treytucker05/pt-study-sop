@@ -411,49 +411,11 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="space-y-6 max-w-5xl mx-auto">
-        {/* Compact Task Preview + Open Brain CTA */}
-        <Card className="bg-black/40 border-2 border-secondary rounded-none card-hover-fx">
-          <CardHeader className="border-b border-secondary/50">
-            <CardTitle className="font-arcade text-xs flex items-center justify-between">
-              <span>TODAY'S FOCUS</span>
-              <Badge variant="outline" className="rounded-none text-xs">
-                {duePlannerTasks.length} tasks
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            {duePlannerTasks.length === 0 ? (
-              <p className="font-terminal text-xs text-muted-foreground">No tasks due today</p>
-            ) : (
-              <ul className="space-y-2 mb-4">
-                {duePlannerTasks
-                  .slice(0, 3)
-                  .map(task => (
-                    <li key={task.id} className="font-terminal text-xs flex items-center gap-2">
-                      <Circle className="w-2 h-2 text-primary" />
-                      <span className="truncate">{task.anchor_text || task.notes || 'Untitled task'}</span>
-                    </li>
-                  ))}
-              </ul>
-            )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full rounded-none font-arcade text-xs border-primary"
-              onClick={() => window.location.href = '/brain'}
-            >
-              Open Brain →
-            </Button>
-          </CardContent>
-        </Card>
 
-        <PlannerKanban tasks={plannerQueue} />
+        {/* ═══ Zone 1 — Action ═══ */}
 
-        {/* Main Grid — Fix #1: auto rows so cards size to content */}
-        <div className="grid md:grid-cols-2 gap-6 grid-rows-[auto] card-stagger">
-
-          {/* Study Wheel - Fix #2/#3: streak badge in header, no orphaned heading */}
-          <Card className="bg-black/40 border-2 border-primary rounded-none md:col-span-2">
+        {/* Study Wheel */}
+        <Card className="bg-black/40 border-2 border-primary rounded-none">
             <CardHeader className="border-b border-primary/50 p-4">
               <CardTitle className="font-arcade text-sm flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -729,8 +691,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Fix #4: Today's Activity — tighter, no wasted space */}
-          <Card className="bg-black/40 border-2 border-primary rounded-none self-start">
+        {/* Stats + Focus — side by side */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Today's Activity */}
+          <Card className="bg-black/40 border-2 border-primary rounded-none">
             <CardHeader className="border-b border-primary/50 p-4">
               <CardTitle className="font-arcade text-sm flex items-center gap-2">
                 <Clock className="w-4 h-4" />
@@ -754,264 +718,48 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Fix #5: Course Summary — bolder values */}
-          <Card className="bg-black/40 border-2 border-primary rounded-none self-start">
-            <CardHeader className="border-b border-primary/50 p-4">
-              <CardTitle className="font-arcade text-sm flex items-center gap-2">
-                <BookOpen className="w-4 h-4" />
-                COURSES
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 max-h-64 overflow-y-auto">
-              {courses.length === 0 ? (
-                <p className="font-terminal text-muted-foreground text-center py-4">No courses yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {courses.map((course) => (
-                    <div
-                      key={course.id}
-                      className="flex items-center justify-between p-2 border border-secondary/30 hover:border-secondary transition-colors"
-                      data-testid={`summary-course-${course.id}`}
-                    >
-                      <span className="font-terminal text-white">{course.name}</span>
-                      <div className="flex items-center gap-4 text-sm font-terminal">
-                        <span className="text-muted-foreground">
-                          <span className="text-white font-bold" data-testid={`course-sessions-${course.id}`}>{course.totalSessions}</span> sess
-                        </span>
-                        <span className="text-muted-foreground">
-                          <span className={cn("font-bold", course.totalMinutes > 0 ? "text-success" : "text-muted-foreground")} data-testid={`course-minutes-${course.id}`}>{course.totalMinutes}</span> min
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Fix #6: Tasks — styled list switcher with pill */}
-          <Card className="bg-black/40 border-2 border-primary rounded-none self-start">
-            <CardHeader className="border-b border-primary/50 p-4">
-              <CardTitle className="font-arcade text-sm flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ListTodo className="w-4 h-4" />
-                  TASKS
-                </div>
-                {googleTaskLists.length > 1 && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setCurrentTaskListIndex(prev => (prev - 1 + googleTaskLists.length) % googleTaskLists.length)}
-                      className="p-1 hover:bg-white/10 transition-colors"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="font-terminal text-xs text-white bg-secondary/40 border border-secondary/60 px-2 py-0.5 min-w-[80px] text-center">
-                      {currentTaskList?.title || "Tasks"}
-                    </span>
-                    <button
-                      onClick={() => setCurrentTaskListIndex(prev => (prev + 1) % googleTaskLists.length)}
-                      className="p-1 hover:bg-white/10 transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+          {/* Today's Focus */}
+          <Card className="bg-black/40 border-2 border-secondary rounded-none card-hover-fx">
+            <CardHeader className="border-b border-secondary/50">
+              <CardTitle className="font-arcade text-xs flex items-center justify-between">
+                <span>TODAY'S FOCUS</span>
+                <Badge variant="outline" className="rounded-none text-xs">
+                  {duePlannerTasks.length} tasks
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              {googleTaskLists.length === 0 ? (
-                <p className="font-terminal text-muted-foreground text-center py-4">
-                  Connect Google to see your tasks.
-                </p>
+              {duePlannerTasks.length === 0 ? (
+                <p className="font-terminal text-xs text-muted-foreground">No tasks due today</p>
               ) : (
-                <div className="space-y-3">
-                  {/* Add Task Input */}
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder={currentTaskList ? "Add task..." : "Loading task lists..."}
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddGoogleTask()}
-                      disabled={!currentTaskList}
-                      className="rounded-none border-secondary bg-black font-terminal text-sm h-8"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleAddGoogleTask}
-                      disabled={!currentTaskList || !newTaskTitle.trim() || createGoogleTaskMutation.isPending}
-                      className="rounded-none font-arcade text-xs h-8 px-3"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
-                  </div>
-
-                  <div className="max-h-52 overflow-y-auto pr-1">
-                    {currentListTasks.length === 0 ? (
-                      <p className="font-terminal text-muted-foreground text-center py-4 text-sm">
-                        No tasks in this list.
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {incompleteTasks.map((task: GoogleTask) => {
-                          const dueLabel = formatTaskDue(task.due);
-                          const isOverdue = task.due && isPast(new Date(task.due)) && !isToday(new Date(task.due));
-                          return (
-                            <div
-                              key={task.id}
-                              className="flex items-center gap-2 p-2 border border-secondary/30 hover:border-primary/50 transition-colors group"
-                            >
-                              <button
-                                onClick={() => toggleGoogleTaskMutation.mutate(task)}
-                                className="flex-shrink-0 p-0.5 hover:bg-primary/20 rounded"
-                              >
-                                <Circle className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                              </button>
-                              <div className="flex-1 min-w-0">
-                                <span className="font-terminal text-sm text-white block truncate">{task.title}</span>
-                                {(dueLabel || task.notes) && (
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    {dueLabel && (
-                                      <span className={cn(
-                                        "font-terminal text-xs",
-                                        isOverdue ? "text-destructive" : "text-muted-foreground"
-                                      )}>
-                                        {dueLabel}
-                                      </span>
-                                    )}
-                                    {task.notes && (
-                                      <span className="font-terminal text-xs text-muted-foreground truncate max-w-[120px]">
-                                        {task.notes}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                              <button
-                                onClick={() => startEditTask(task)}
-                                className="p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => deleteGoogleTaskMutation.mutate(task)}
-                                className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          );
-                        })}
-                        {completedTasks.length > 0 && (
-                          <div className="pt-2 border-t border-secondary/20 mt-2">
-                            <p className="font-terminal text-xs text-muted-foreground mb-2">Completed ({completedTasks.length})</p>
-                            {completedTasks.slice(0, 5).map((task: GoogleTask) => (
-                              <div
-                                key={task.id}
-                                className="flex items-center gap-2 p-2 opacity-50 group hover:opacity-75 transition-opacity"
-                              >
-                                <button
-                                  onClick={() => toggleGoogleTaskMutation.mutate(task)}
-                                  className="flex-shrink-0 p-0.5 hover:bg-primary/20 rounded-none"
-                                >
-                                  <CheckCircle2 className="w-4 h-4 text-success" />
-                                </button>
-                                <span className="font-terminal text-sm text-muted-foreground line-through flex-1 truncate">{task.title}</span>
-                                <button
-                                  onClick={() => deleteGoogleTaskMutation.mutate(task)}
-                                  className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ul className="space-y-2 mb-4">
+                  {duePlannerTasks
+                    .slice(0, 3)
+                    .map(task => (
+                      <li key={task.id} className="font-terminal text-xs flex items-center gap-2">
+                        <Circle className="w-2 h-2 text-primary" />
+                        <span className="truncate">{task.anchor_text || task.notes || 'Untitled task'}</span>
+                      </li>
+                    ))}
+                </ul>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full rounded-none font-arcade text-xs border-primary"
+                onClick={() => window.location.href = '/brain'}
+              >
+                Open Brain →
+              </Button>
             </CardContent>
           </Card>
+        </div>
 
-          {/* Edit Task Dialog */}
-          <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
-            <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
-              <DialogHeader>
-                <DialogTitle className="font-arcade">EDIT_TASK</DialogTitle>
-                <DialogDescription className="sr-only">Edit the selected task.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div>
-                  <label className="font-terminal text-xs text-muted-foreground block mb-1">Title</label>
-                  <Input
-                    placeholder="Task title"
-                    value={editTaskTitle}
-                    onChange={(e) => setEditTaskTitle(e.target.value)}
-                    className="rounded-none border-secondary bg-black font-terminal"
-                    autoFocus
-                  />
-                </div>
-                <div>
-                  <label className="font-terminal text-xs text-muted-foreground block mb-1">Notes</label>
-                  <Input
-                    placeholder="Add notes..."
-                    value={editTaskNotes}
-                    onChange={(e) => setEditTaskNotes(e.target.value)}
-                    className="rounded-none border-secondary bg-black font-terminal"
-                  />
-                </div>
-                <div>
-                  <label className="font-terminal text-xs text-muted-foreground block mb-1">Due Date</label>
-                  <Input
-                    type="date"
-                    value={editTaskDue}
-                    onChange={(e) => setEditTaskDue(e.target.value)}
-                    className="rounded-none border-secondary bg-black font-terminal"
-                  />
-                </div>
-                <div>
-                  <label className="font-terminal text-xs text-muted-foreground block mb-1">Add to Deadlines</label>
-                  <Select
-                    value={editTaskDeadlineType}
-                    onValueChange={(value) => setEditTaskDeadlineType(value as "none" | "assignment" | "quiz" | "exam")}
-                  >
-                    <SelectTrigger className="rounded-none border-secondary bg-black font-terminal">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-black border-secondary rounded-none">
-                      <SelectItem value="none">NONE - Don't add to deadlines</SelectItem>
-                      <SelectItem value="assignment">📋 ASSIGNMENT</SelectItem>
-                      <SelectItem value="quiz">❓ QUIZ</SelectItem>
-                      <SelectItem value="exam">📝 EXAM</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {editTaskDeadlineType !== "none" && !editTaskDue && (
-                    <p className="font-terminal text-xs text-orange-400 mt-1">⚠ Set a due date to add to deadlines</p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditingTask(null)}
-                    className="flex-1 rounded-none font-arcade border-secondary"
-                  >
-                    CANCEL
-                  </Button>
-                  <Button
-                    onClick={handleEditTask}
-                    disabled={!editTaskTitle.trim() || updateGoogleTaskMutation.isPending}
-                    className="flex-1 rounded-none font-arcade"
-                  >
-                    SAVE
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+        {/* ═══ Zone 2 — Awareness ═══ */}
 
-          {/* Academic Deadlines — Fix #7: larger checkboxes, Fix #10: smaller ADD */}
-          <Card className="bg-black/40 border-2 border-primary rounded-none self-start">
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Deadlines */}
+          <Card className="bg-black/40 border-2 border-primary rounded-none">
             <CardHeader className="border-b border-primary/50 space-y-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="font-arcade text-sm flex items-center gap-2">
@@ -1121,7 +869,6 @@ export default function Dashboard() {
                               : getUrgencyStyles(urgency)
                           )}
                         >
-                          {/* Fix #7: larger checkbox */}
                           <button
                             onClick={() => toggleDeadlineMutation.mutate(deadline.id)}
                             className="flex-shrink-0 p-0.5"
@@ -1176,41 +923,302 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Fix #8: Weakness Queue — collapsed when empty, full-width when has content */}
-          {weaknessQueue.length > 0 ? (
-            <Card className="bg-black/40 border-2 border-primary rounded-none md:col-span-2">
-              <CardHeader className="border-b border-primary/50 p-4">
-                <CardTitle className="font-arcade text-sm flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-500" />
-                  WEAKNESS_QUEUE
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="flex flex-wrap gap-2">
-                  {weaknessQueue.map((item) => (
+          {/* Courses */}
+          <Card className="bg-black/40 border-2 border-primary rounded-none">
+            <CardHeader className="border-b border-primary/50 p-4">
+              <CardTitle className="font-arcade text-sm flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                COURSES
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 max-h-64 overflow-y-auto">
+              {courses.length === 0 ? (
+                <p className="font-terminal text-muted-foreground text-center py-4">No courses yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {courses.map((course) => (
                     <div
-                      key={item.id}
-                      className="px-3 py-1 border border-orange-500/50 bg-orange-500/10 font-terminal text-sm text-orange-300"
-                      data-testid={`weakness-${item.id}`}
+                      key={course.id}
+                      className="flex items-center justify-between p-2 border border-secondary/30 hover:border-secondary transition-colors"
+                      data-testid={`summary-course-${course.id}`}
                     >
-                      {item.topic}
-                      {item.reason && <span className="text-xs text-muted-foreground ml-2">({item.reason})</span>}
+                      <span className="font-terminal text-white">{course.name}</span>
+                      <div className="flex items-center gap-4 text-sm font-terminal">
+                        <span className="text-muted-foreground">
+                          <span className="text-white font-bold" data-testid={`course-sessions-${course.id}`}>{course.totalSessions}</span> sess
+                        </span>
+                        <span className="text-muted-foreground">
+                          <span className={cn("font-bold", course.totalMinutes > 0 ? "text-success" : "text-muted-foreground")} data-testid={`course-minutes-${course.id}`}>{course.totalMinutes}</span> min
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="bg-black/40 border border-secondary/30 rounded-none md:col-span-2">
-              <CardContent className="p-3 flex items-center justify-center gap-2">
-                <AlertTriangle className="w-3 h-3 text-muted-foreground" />
-                <span className="font-terminal text-xs text-muted-foreground">
-                  No flagged weaknesses — topics you struggle with will appear here.
-                </span>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Weakness Queue */}
+        {weaknessQueue.length > 0 ? (
+          <Card className="bg-black/40 border-2 border-primary rounded-none">
+            <CardHeader className="border-b border-primary/50 p-4">
+              <CardTitle className="font-arcade text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                WEAKNESS_QUEUE
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="flex flex-wrap gap-2">
+                {weaknessQueue.map((item) => (
+                  <div
+                    key={item.id}
+                    className="px-3 py-1 border border-orange-500/50 bg-orange-500/10 font-terminal text-sm text-orange-300"
+                    data-testid={`weakness-${item.id}`}
+                  >
+                    {item.topic}
+                    {item.reason && <span className="text-xs text-muted-foreground ml-2">({item.reason})</span>}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="bg-black/40 border border-secondary/30 rounded-none">
+            <CardContent className="p-3 flex items-center justify-center gap-2">
+              <AlertTriangle className="w-3 h-3 text-muted-foreground" />
+              <span className="font-terminal text-xs text-muted-foreground">
+                No flagged weaknesses — topics you struggle with will appear here.
+              </span>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ═══ Zone 3 — Planning ═══ */}
+
+        <PlannerKanban tasks={plannerQueue} />
+
+        {/* Tasks (Google) */}
+        <Card className="bg-black/40 border-2 border-primary rounded-none">
+          <CardHeader className="border-b border-primary/50 p-4">
+            <CardTitle className="font-arcade text-sm flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ListTodo className="w-4 h-4" />
+                TASKS
+              </div>
+              {googleTaskLists.length > 1 && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setCurrentTaskListIndex(prev => (prev - 1 + googleTaskLists.length) % googleTaskLists.length)}
+                    className="p-1 hover:bg-white/10 transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="font-terminal text-xs text-white bg-secondary/40 border border-secondary/60 px-2 py-0.5 min-w-[80px] text-center">
+                    {currentTaskList?.title || "Tasks"}
+                  </span>
+                  <button
+                    onClick={() => setCurrentTaskListIndex(prev => (prev + 1) % googleTaskLists.length)}
+                    className="p-1 hover:bg-white/10 transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            {googleTaskLists.length === 0 ? (
+              <p className="font-terminal text-muted-foreground text-center py-4">
+                Connect Google to see your tasks.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {/* Add Task Input */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={currentTaskList ? "Add task..." : "Loading task lists..."}
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddGoogleTask()}
+                    disabled={!currentTaskList}
+                    className="rounded-none border-secondary bg-black font-terminal text-sm h-8"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleAddGoogleTask}
+                    disabled={!currentTaskList || !newTaskTitle.trim() || createGoogleTaskMutation.isPending}
+                    className="rounded-none font-arcade text-xs h-8 px-3"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </div>
+
+                <div className="max-h-52 overflow-y-auto pr-1">
+                  {currentListTasks.length === 0 ? (
+                    <p className="font-terminal text-muted-foreground text-center py-4 text-sm">
+                      No tasks in this list.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {incompleteTasks.map((task: GoogleTask) => {
+                        const dueLabel = formatTaskDue(task.due);
+                        const isOverdue = task.due && isPast(new Date(task.due)) && !isToday(new Date(task.due));
+                        return (
+                          <div
+                            key={task.id}
+                            className="flex items-center gap-2 p-2 border border-secondary/30 hover:border-primary/50 transition-colors group"
+                          >
+                            <button
+                              onClick={() => toggleGoogleTaskMutation.mutate(task)}
+                              className="flex-shrink-0 p-0.5 hover:bg-primary/20 rounded"
+                            >
+                              <Circle className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-terminal text-sm text-white block truncate">{task.title}</span>
+                              {(dueLabel || task.notes) && (
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {dueLabel && (
+                                    <span className={cn(
+                                      "font-terminal text-xs",
+                                      isOverdue ? "text-destructive" : "text-muted-foreground"
+                                    )}>
+                                      {dueLabel}
+                                    </span>
+                                  )}
+                                  {task.notes && (
+                                    <span className="font-terminal text-xs text-muted-foreground truncate max-w-[120px]">
+                                      {task.notes}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => startEditTask(task)}
+                              className="p-1 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => deleteGoogleTaskMutation.mutate(task)}
+                              className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {completedTasks.length > 0 && (
+                        <div className="pt-2 border-t border-secondary/20 mt-2">
+                          <p className="font-terminal text-xs text-muted-foreground mb-2">Completed ({completedTasks.length})</p>
+                          {completedTasks.slice(0, 5).map((task: GoogleTask) => (
+                            <div
+                              key={task.id}
+                              className="flex items-center gap-2 p-2 opacity-50 group hover:opacity-75 transition-opacity"
+                            >
+                              <button
+                                onClick={() => toggleGoogleTaskMutation.mutate(task)}
+                                className="flex-shrink-0 p-0.5 hover:bg-primary/20 rounded-none"
+                              >
+                                <CheckCircle2 className="w-4 h-4 text-success" />
+                              </button>
+                              <span className="font-terminal text-sm text-muted-foreground line-through flex-1 truncate">{task.title}</span>
+                              <button
+                                onClick={() => deleteGoogleTaskMutation.mutate(task)}
+                                className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Edit Task Dialog */}
+        <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
+          <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
+            <DialogHeader>
+              <DialogTitle className="font-arcade">EDIT_TASK</DialogTitle>
+              <DialogDescription className="sr-only">Edit the selected task.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div>
+                <label className="font-terminal text-xs text-muted-foreground block mb-1">Title</label>
+                <Input
+                  placeholder="Task title"
+                  value={editTaskTitle}
+                  onChange={(e) => setEditTaskTitle(e.target.value)}
+                  className="rounded-none border-secondary bg-black font-terminal"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="font-terminal text-xs text-muted-foreground block mb-1">Notes</label>
+                <Input
+                  placeholder="Add notes..."
+                  value={editTaskNotes}
+                  onChange={(e) => setEditTaskNotes(e.target.value)}
+                  className="rounded-none border-secondary bg-black font-terminal"
+                />
+              </div>
+              <div>
+                <label className="font-terminal text-xs text-muted-foreground block mb-1">Due Date</label>
+                <Input
+                  type="date"
+                  value={editTaskDue}
+                  onChange={(e) => setEditTaskDue(e.target.value)}
+                  className="rounded-none border-secondary bg-black font-terminal"
+                />
+              </div>
+              <div>
+                <label className="font-terminal text-xs text-muted-foreground block mb-1">Add to Deadlines</label>
+                <Select
+                  value={editTaskDeadlineType}
+                  onValueChange={(value) => setEditTaskDeadlineType(value as "none" | "assignment" | "quiz" | "exam")}
+                >
+                  <SelectTrigger className="rounded-none border-secondary bg-black font-terminal">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black border-secondary rounded-none">
+                    <SelectItem value="none">NONE - Don't add to deadlines</SelectItem>
+                    <SelectItem value="assignment">📋 ASSIGNMENT</SelectItem>
+                    <SelectItem value="quiz">❓ QUIZ</SelectItem>
+                    <SelectItem value="exam">📝 EXAM</SelectItem>
+                  </SelectContent>
+                </Select>
+                {editTaskDeadlineType !== "none" && !editTaskDue && (
+                  <p className="font-terminal text-xs text-orange-400 mt-1">⚠ Set a due date to add to deadlines</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingTask(null)}
+                  className="flex-1 rounded-none font-arcade border-secondary"
+                >
+                  CANCEL
+                </Button>
+                <Button
+                  onClick={handleEditTask}
+                  disabled={!editTaskTitle.trim() || updateGoogleTaskMutation.isPending}
+                  className="flex-1 rounded-none font-arcade"
+                >
+                  SAVE
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </Layout>
   );
