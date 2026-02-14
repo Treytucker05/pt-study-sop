@@ -282,10 +282,10 @@ export default function Tutor() {
             const parsed = JSON.parse(session.artifacts_json);
             if (Array.isArray(parsed)) {
               setArtifacts(
-                parsed.map((a: { type: string; title: string; created_at: string }) => ({
+                parsed.map((a: { type: string; title: string; content?: string; created_at: string }) => ({
                   type: a.type as "note" | "card" | "map",
                   title: a.title,
-                  content: "",
+                  content: a.content || "",
                   createdAt: a.created_at,
                 }))
               );

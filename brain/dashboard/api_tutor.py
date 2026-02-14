@@ -811,6 +811,12 @@ def end_session(session_id: str):
         (now.isoformat(), brain_session_id, session_id),
     )
 
+    if brain_session_id:
+        cur.execute(
+            "UPDATE card_drafts SET session_id = ? WHERE tutor_session_id = ?",
+            (str(brain_session_id), session_id),
+        )
+
     conn.commit()
     conn.close()
 
@@ -895,6 +901,19 @@ def create_artifact(session_id: str):
         result["content"] = content
         result["title"] = title
         result["status"] = "created"
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT MAX(position) FROM quick_notes WHERE note_type = 'tutor'")
+            max_pos = (cur.fetchone()[0] or 0)
+            now_str = datetime.now().isoformat()
+            cur.execute(
+                """INSERT INTO quick_notes (title, content, note_type, position, created_at, updated_at)
+                   VALUES (?, ?, 'tutor', ?, ?, ?)""",
+                (title, content, max_pos + 1, now_str, now_str),
+            )
+            conn.commit()
+        except Exception:
+            pass
 
     elif artifact_type == "map":
         result["mermaid"] = content
@@ -909,11 +928,14 @@ def create_artifact(session_id: str):
         except (json.JSONDecodeError, TypeError):
             pass
 
-    artifacts.append({
+    artifact_entry = {
         "type": artifact_type,
         "title": title,
         "created_at": datetime.now().isoformat(),
-    })
+    }
+    if artifact_type in ("note", "map"):
+        artifact_entry["content"] = content
+    artifacts.append(artifact_entry)
 
     cur.execute(
         "UPDATE tutor_sessions SET artifacts_json = ? WHERE session_id = ?",

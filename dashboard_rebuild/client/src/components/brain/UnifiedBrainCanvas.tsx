@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
   Download,
@@ -66,6 +66,16 @@ export function UnifiedBrainCanvas() {
   const [studyBusy, setStudyBusy] = useState(false);
   const seqRef = useRef(0);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const pending = localStorage.getItem("tutor-mermaid-import");
+    if (pending) {
+      localStorage.removeItem("tutor-mermaid-import");
+      setImportText(pending);
+      setShowImport(true);
+      if (mode === "freehand" || mode === "vault") setMode("structured");
+    }
+  }, []);
 
   const currentStatus = statusByMode[mode] || EMPTY_BY_MODE[mode];
 

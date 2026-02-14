@@ -117,6 +117,24 @@ export function TutorArtifacts({
         }
       }
 
+      if (full.artifacts_json) {
+        try {
+          const artifacts = JSON.parse(full.artifacts_json);
+          if (Array.isArray(artifacts) && artifacts.length > 0) {
+            lines.push("---", "", "## Artifacts", "");
+            for (const a of artifacts) {
+              if (a.type === "note" && a.content) {
+                lines.push(`### Note: ${a.title}`, a.content, "");
+              } else if (a.type === "map" && a.content) {
+                lines.push(`### Mind Map: ${a.title}`, "```mermaid", a.content, "```", "");
+              } else if (a.type === "card") {
+                lines.push(`### Card: ${a.title}`, `**Front:** ${a.title}`, `**Back:** ${a.content || ""}`, "");
+              }
+            }
+          }
+        } catch { /* ignore parse errors */ }
+      }
+
       const filename = `Tutor - ${(session.topic || session.mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
       const path = `Study Sessions/${filename}.md`;
 
@@ -196,6 +214,19 @@ export function TutorArtifacts({
                       <div className={`${TEXT_MUTED} mt-1 line-clamp-2`}>
                         {a.content.slice(0, 100)}
                       </div>
+                    )}
+                    {a.type === "map" && a.content && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`${BTN_OUTLINE} mt-1`}
+                        onClick={() => {
+                          localStorage.setItem("tutor-mermaid-import", a.content);
+                          window.location.href = "/brain";
+                        }}
+                      >
+                        <Map className={ICON_SM} /> Send to Brain
+                      </Button>
                     )}
                   </div>
                 );
