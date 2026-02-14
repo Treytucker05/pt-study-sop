@@ -142,6 +142,10 @@ function Show-InstallSteps {
       Write-Host "Install Oh My OpenCode:"
       Write-Host "  npm install -g oh-my-opencode"
     }
+    "opencode" {
+      Write-Host "Install OpenCode CLI:"
+      Write-Host "  npm install -g opencode-ai"
+    }
     "claude" {
       Write-Host "Optional Claude CLI install:"
       Write-Host "  npm install -g @anthropic-ai/claude-code"
@@ -391,78 +395,43 @@ function Invoke-SplitPaneSwarmLaunch {
   }
 
   $queuedPanes = @($script:SwarmSplitLaunches.ToArray())
-  $statusPane = @($queuedPanes | Where-Object { [string]$_.Title -eq "status" }) | Select-Object -First 1
-  if ($null -eq $statusPane) {
-    throw "Split layout requires a status pane, but none was queued."
+  if ($queuedPanes.Count -le 0) {
+    throw "Split layout requested, but no panes were queued."
   }
 
-  $workerPanes = @($queuedPanes | Where-Object { [string]$_.Title -ne "status" })
-  if ($workerPanes.Count -le 0) {
-    $statusOnlyPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$statusPane.ScriptPath)
-    Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f [string]$statusPane.Title, (Format-ArgumentListForLog -Arguments $statusOnlyPaneArgs))
-    $statusOnlyArgs = @(
-      "-w",
-      "new",
-      "new-tab",
-      "--title",
-      "Swarm",
-      "-d",
-      [string]$statusPane.WorkingDirectory
-    ) + $statusOnlyPaneArgs
-    $statusOnlyArgs = $statusOnlyArgs | ForEach-Object { [string]$_ }
-    Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $statusOnlyArgs -WorkingDirectory ""
-    Start-Process -FilePath $script:SwarmWtExe -ArgumentList $statusOnlyArgs | Out-Null
-    Write-Host "Launched split swarm: tab 'Swarm' with status-only pane."
-    Write-BootstrapLog -Message "Split layout launched with status-only pane."
-    return
-  }
+  $orderedPanes = New-Object System.Collections.Generic.List[object]
+  $seenPanes = @{}
 
-  $plannerPane = $null
-  foreach ($pane in $workerPanes) {
-    $paneTitle = [string]$pane.Title
-    if ($paneTitle.Equals("planner", [System.StringComparison]::OrdinalIgnoreCase) -or $paneTitle.StartsWith("planner-", [System.StringComparison]::OrdinalIgnoreCase)) {
-      $plannerPane = $pane
-      break
-    }
-  }
-  if ($null -eq $plannerPane) {
-    $plannerPane = $workerPanes[0]
-  }
-
-  $orderedWorkers = New-Object System.Collections.Generic.List[object]
-  $seenWorkers = @{}
-
-  function Add-OrderedWorkerPane {
+  function Add-OrderedPane {
     param([object]$Pane)
 
     if ($null -eq $Pane) { return }
     $paneKey = "{0}|{1}" -f [string]$Pane.Title, [string]$Pane.ScriptPath
-    if ($seenWorkers.ContainsKey($paneKey)) { return }
-    $orderedWorkers.Add($Pane) | Out-Null
-    $seenWorkers[$paneKey] = $true
+    if ($seenPanes.ContainsKey($paneKey)) { return }
+    $orderedPanes.Add($Pane) | Out-Null
+    $seenPanes[$paneKey] = $true
   }
 
-  $codexPanes = @($workerPanes | Where-Object { ([string]$_.Title).StartsWith("codex-", [System.StringComparison]::OrdinalIgnoreCase) })
-  $claudePanes = @($workerPanes | Where-Object { ([string]$_.Title).StartsWith("claude-review", [System.StringComparison]::OrdinalIgnoreCase) })
-  $geminiPanes = @($workerPanes | Where-Object { ([string]$_.Title).StartsWith("gemini-research", [System.StringComparison]::OrdinalIgnoreCase) })
+  $plannerPanes = @($queuedPanes | Where-Object { $title = [string]$_.Title; $title.Equals("planner", [System.StringComparison]::OrdinalIgnoreCase) -or $title.StartsWith("planner-", [System.StringComparison]::OrdinalIgnoreCase) })
+  $codexPanes = @($queuedPanes | Where-Object { ([string]$_.Title).StartsWith("codex-", [System.StringComparison]::OrdinalIgnoreCase) })
+  $claudePanes = @($queuedPanes | Where-Object { ([string]$_.Title).StartsWith("claude-review", [System.StringComparison]::OrdinalIgnoreCase) })
+  $geminiPanes = @($queuedPanes | Where-Object { ([string]$_.Title).StartsWith("gemini-research", [System.StringComparison]::OrdinalIgnoreCase) })
+  $statusPanes = @($queuedPanes | Where-Object { ([string]$_.Title).Equals("status", [System.StringComparison]::OrdinalIgnoreCase) })
 
-  Add-OrderedWorkerPane -Pane $plannerPane
-  foreach ($pane in $codexPanes) { Add-OrderedWorkerPane -Pane $pane }
-  foreach ($pane in $claudePanes) { Add-OrderedWorkerPane -Pane $pane }
-  foreach ($pane in $geminiPanes) { Add-OrderedWorkerPane -Pane $pane }
-  foreach ($pane in $workerPanes) { Add-OrderedWorkerPane -Pane $pane }
+  foreach ($pane in $plannerPanes) { Add-OrderedPane -Pane $pane }
+  foreach ($pane in $codexPanes) { Add-OrderedPane -Pane $pane }
+  foreach ($pane in $claudePanes) { Add-OrderedPane -Pane $pane }
+  foreach ($pane in $geminiPanes) { Add-OrderedPane -Pane $pane }
+  foreach ($pane in $statusPanes) { Add-OrderedPane -Pane $pane }
+  foreach ($pane in $queuedPanes) { Add-OrderedPane -Pane $pane }
 
-  $leftTopPane = $orderedWorkers[0]
-  $leftTopPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$leftTopPane.ScriptPath)
-  $statusPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$statusPane.ScriptPath)
-  Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f [string]$leftTopPane.Title, (Format-ArgumentListForLog -Arguments $leftTopPaneArgs))
-  Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f [string]$statusPane.Title, (Format-ArgumentListForLog -Arguments $statusPaneArgs))
-  for ($i = 1; $i -lt $orderedWorkers.Count; $i++) {
-    $pane = $orderedWorkers[$i]
+  foreach ($pane in $orderedPanes) {
     $paneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$pane.ScriptPath)
     Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f [string]$pane.Title, (Format-ArgumentListForLog -Arguments $paneArgs))
   }
 
+  $firstPane = $orderedPanes[0]
+  $firstPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$firstPane.ScriptPath)
   $wtArgs = @(
     "-w",
     "new",
@@ -470,44 +439,53 @@ function Invoke-SplitPaneSwarmLaunch {
     "--title",
     "Swarm",
     "-d",
-    [string]$leftTopPane.WorkingDirectory
-  ) + $leftTopPaneArgs
+    [string]$firstPane.WorkingDirectory
+  ) + $firstPaneArgs
 
-  # Create right status column.
-  $wtArgs += ";"
-  $wtArgs += @(
-    "split-pane",
-    "-H",
-    "-d",
-    [string]$statusPane.WorkingDirectory
-  )
-  $wtArgs += $statusPaneArgs
+  $topRowCount = [int][Math]::Ceiling($orderedPanes.Count / 2.0)
+  $bottomRowCount = $orderedPanes.Count - $topRowCount
 
-  # Move focus back to left column before stacking workers.
-  $wtArgs += ";"
-  $wtArgs += @(
-    "move-focus",
-    "left"
-  )
-
-  for ($i = 1; $i -lt $orderedWorkers.Count; $i++) {
-    $pane = $orderedWorkers[$i]
+  for ($i = 1; $i -lt $topRowCount; $i++) {
+    $pane = $orderedPanes[$i]
     $paneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$pane.ScriptPath)
     $wtArgs += ";"
     $wtArgs += @(
       "split-pane",
-      "-V",
+      "-H",
       "-d",
       [string]$pane.WorkingDirectory
     )
     $wtArgs += $paneArgs
   }
 
+  if ($bottomRowCount -gt 0) {
+    for ($offset = $bottomRowCount - 1; $offset -ge 0; $offset--) {
+      $paneIndex = $topRowCount + $offset
+      $pane = $orderedPanes[$paneIndex]
+      $paneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$pane.ScriptPath)
+      $wtArgs += ";"
+      $wtArgs += @(
+        "split-pane",
+        "-V",
+        "-d",
+        [string]$pane.WorkingDirectory
+      )
+      $wtArgs += $paneArgs
+
+      if ($offset -gt 0) {
+        $wtArgs += ";"
+        $wtArgs += @("move-focus", "up")
+        $wtArgs += ";"
+        $wtArgs += @("move-focus", "left")
+      }
+    }
+  }
+
   $wtArgs = $wtArgs | ForEach-Object { [string]$_ }
   Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $wtArgs -WorkingDirectory ""
   Start-Process -FilePath $script:SwarmWtExe -ArgumentList $wtArgs | Out-Null
-  Write-Host ("Launched split swarm: tab 'Swarm' with {0} panes." -f ($orderedWorkers.Count + 1))
-  Write-BootstrapLog -Message ("Split layout launched with {0} panes in one tab (left workers, right status)." -f ($orderedWorkers.Count + 1))
+  Write-Host ("Launched split swarm: tab 'Swarm' with {0} panes ({1} top / {2} bottom)." -f $orderedPanes.Count, $topRowCount, $bottomRowCount)
+  Write-BootstrapLog -Message ("Split layout launched with {0} panes in one tab ({1} top / {2} bottom)." -f $orderedPanes.Count, $topRowCount, $bottomRowCount)
 }
 
 function Start-PwshWindow {
@@ -602,7 +580,7 @@ try {
   $nodeCmd = Get-FirstCommand -Names @("node")
   $npmCmd = Get-FirstCommand -Names @("npm")
   $codexCmd = Get-FirstCommand -Names @("codex")
-  $ohMyCmd = Get-FirstCommand -Names @("oh-my-opencode", "ohmyopencode")
+  $opencodeCmd = Get-FirstCommand -Names @("opencode")
   $claudeCmd = Get-FirstCommand -Names @("claude")
   $geminiCmd = Get-FirstCommand -Names @("gemini")
 
@@ -635,9 +613,9 @@ if (-not $codexCmd) {
   Show-InstallSteps -Tool "codex"
 }
 
-if (-not $ohMyCmd) {
-  Write-Warning "Oh My OpenCode CLI not found; requested planner windows will open and show an error."
-  Show-InstallSteps -Tool "oh-my-opencode"
+if (-not $opencodeCmd) {
+  Write-Warning "OpenCode CLI not found; requested planner windows will open and show an error."
+  Show-InstallSteps -Tool "opencode"
 }
 
 if (-not $claudeCmd) {
@@ -683,8 +661,7 @@ $statusOncePath = "C:\pt-study-sop\scripts\status_once.ps1"
 $escapedStatusOncePath = Escape-SingleQuoted -Value $statusOncePath
 $statusWorktreesRoot = Join-Path $RepoRoot "worktrees"
 $escapedStatusWorktreesRoot = Escape-SingleQuoted -Value $statusWorktreesRoot
-$ohMyLauncherBat = "C:\Users\treyt\OneDrive\Desktop\Travel Laptop\OHMYOpenCode.bat"
-$escapedOhMyLauncherBat = Escape-SingleQuoted -Value $ohMyLauncherBat
+$opencodeExe = if ($opencodeCmd) { [string]$opencodeCmd.Source } else { "" }
 $codexExe = if ($codexCmd) { [string]$codexCmd.Source } else { "" }
 $claudeExe = if ($claudeCmd) { [string]$claudeCmd.Source } else { "" }
 $geminiExe = if ($geminiCmd) { [string]$geminiCmd.Source } else { "" }
@@ -693,6 +670,7 @@ if ($OhMyCount -gt 0) {
   for ($i = 1; $i -le $OhMyCount; $i++) {
     $title = if ($OhMyCount -eq 1) { "planner" } else { "planner-$i" }
     $escapedTitle = Escape-SingleQuoted -Value $title
+    $escapedOpenCode = Escape-SingleQuoted -Value $opencodeExe
 
     $plannerBody = @"
 `$ErrorActionPreference = 'Stop'
@@ -700,15 +678,17 @@ if ($OhMyCount -gt 0) {
 Set-Location -LiteralPath '$escapedRepoRoot'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
-`$launcherBat = '$escapedOhMyLauncherBat'
+`$agentExe = '$escapedOpenCode'
 `$plannerTarget = '$escapedRepoRoot'
-if (-not (Test-Path -LiteralPath `$launcherBat)) {
-  throw "OHMYOpenCode launcher not found: `$launcherBat"
+`$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
+if (-not `$resolved) {
+  throw "OpenCode executable not found: `$agentExe"
 }
-Write-Host "Launching OhMyOpenCode via launcher: `$launcherBat (target=`$plannerTarget, /nopause)" -ForegroundColor Cyan
-& `$launcherBat /target `$plannerTarget /nopause
-if (`$LASTEXITCODE -ne 0) {
-  throw ("OHMYOpenCode launcher exited with code {0}." -f `$LASTEXITCODE)
+`$agentExe = [string]`$resolved.Source
+Write-Host "Launching OpenCode: `$agentExe `$plannerTarget" -ForegroundColor Cyan
+& `$agentExe `$plannerTarget
+if (`$LASTEXITCODE -ne `$null -and `$LASTEXITCODE -ne 0) {
+  throw ("OpenCode exited with code {0}." -f `$LASTEXITCODE)
 }
 "@
     $plannerScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $plannerBody
