@@ -357,7 +357,6 @@ function New-PwshKeepOpenCommand {
     "  }"
     "}"
   )
-
   return ($lines -join "`n")
 }
 
@@ -487,8 +486,8 @@ function Invoke-SplitPaneSwarmLaunch {
   # Move focus back to left column before stacking workers.
   $wtArgs += ";"
   $wtArgs += @(
-    "focus-pane",
-    "-L"
+    "move-focus",
+    "left"
   )
 
   for ($i = 1; $i -lt $orderedWorkers.Count; $i++) {
