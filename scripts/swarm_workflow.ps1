@@ -560,8 +560,36 @@ function Invoke-SplitPaneSwarmLaunch {
     [string]$firstPane.WorkingDirectory
   ) + $firstPaneArgs
 
-  if ($bottomRowCount -gt 0) {
-    $bottomFirstArgs = New-PwshTabCommandArgs -ScriptPath ([string]$bottomRowPanes[0].ScriptPath)
+  if ($topRowCount -eq 3 -and $bottomRowCount -eq 3) {
+    $topRightArgs = New-PwshTabCommandArgs -ScriptPath ([string]$topRowPanes[2].ScriptPath)
+    $wtArgs += ";"
+    $wtArgs += @(
+      "split-pane",
+      "-H",
+      "-s",
+      "0.333",
+      "-d",
+      [string]$topRowPanes[2].WorkingDirectory
+    )
+    $wtArgs += $topRightArgs
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "left")
+
+    $topMiddleArgs = New-PwshTabCommandArgs -ScriptPath ([string]$topRowPanes[1].ScriptPath)
+    $wtArgs += ";"
+    $wtArgs += @(
+      "split-pane",
+      "-H",
+      "-s",
+      "0.5",
+      "-d",
+      [string]$topRowPanes[1].WorkingDirectory
+    )
+    $wtArgs += $topMiddleArgs
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "left")
+
+    $bottomLeftArgs = New-PwshTabCommandArgs -ScriptPath ([string]$bottomRowPanes[0].ScriptPath)
     $wtArgs += ";"
     $wtArgs += @(
       "split-pane",
@@ -571,17 +599,70 @@ function Invoke-SplitPaneSwarmLaunch {
       "-d",
       [string]$bottomRowPanes[0].WorkingDirectory
     )
-    $wtArgs += $bottomFirstArgs
+    $wtArgs += $bottomLeftArgs
     $wtArgs += ";"
     $wtArgs += @("move-focus", "up")
-  }
-
-  $wtArgs += Get-HorizontalRowCommands -RowPanes $topRowPanes
-
-  if ($bottomRowCount -gt 0) {
     $wtArgs += ";"
-    $wtArgs += @("move-focus", "down")
-    $wtArgs += Get-HorizontalRowCommands -RowPanes $bottomRowPanes
+    $wtArgs += @("move-focus", "right")
+
+    $bottomMiddleArgs = New-PwshTabCommandArgs -ScriptPath ([string]$bottomRowPanes[1].ScriptPath)
+    $wtArgs += ";"
+    $wtArgs += @(
+      "split-pane",
+      "-V",
+      "-s",
+      "0.5",
+      "-d",
+      [string]$bottomRowPanes[1].WorkingDirectory
+    )
+    $wtArgs += $bottomMiddleArgs
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "up")
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "right")
+
+    $bottomRightArgs = New-PwshTabCommandArgs -ScriptPath ([string]$bottomRowPanes[2].ScriptPath)
+    $wtArgs += ";"
+    $wtArgs += @(
+      "split-pane",
+      "-V",
+      "-s",
+      "0.5",
+      "-d",
+      [string]$bottomRowPanes[2].WorkingDirectory
+    )
+    $wtArgs += $bottomRightArgs
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "up")
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "left")
+    $wtArgs += ";"
+    $wtArgs += @("move-focus", "left")
+  }
+  else {
+    if ($bottomRowCount -gt 0) {
+      $bottomFirstArgs = New-PwshTabCommandArgs -ScriptPath ([string]$bottomRowPanes[0].ScriptPath)
+      $wtArgs += ";"
+      $wtArgs += @(
+        "split-pane",
+        "-V",
+        "-s",
+        "0.5",
+        "-d",
+        [string]$bottomRowPanes[0].WorkingDirectory
+      )
+      $wtArgs += $bottomFirstArgs
+      $wtArgs += ";"
+      $wtArgs += @("move-focus", "up")
+    }
+
+    $wtArgs += Get-HorizontalRowCommands -RowPanes $topRowPanes
+
+    if ($bottomRowCount -gt 0) {
+      $wtArgs += ";"
+      $wtArgs += @("move-focus", "down")
+      $wtArgs += Get-HorizontalRowCommands -RowPanes $bottomRowPanes
+    }
   }
 
   $wtArgs = $wtArgs | ForEach-Object { [string]$_ }
