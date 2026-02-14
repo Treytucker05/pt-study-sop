@@ -84,6 +84,13 @@ function Format-StartProcessCommandLine {
   return ($parts -join " ")
 }
 
+function Format-ArgumentListForLog {
+  param([string[]]$Arguments)
+
+  if (-not $Arguments -or $Arguments.Count -le 0) { return "" }
+  return ($Arguments | ForEach-Object { Quote-CommandPart -Value ([string]$_) }) -join " "
+}
+
 function Log-StartProcessCommand {
   param(
     [string]$FilePath,
@@ -390,6 +397,8 @@ function Invoke-SplitPaneSwarmLaunch {
 
   $workerPanes = @($queuedPanes | Where-Object { [string]$_.Title -ne "status" })
   if ($workerPanes.Count -le 0) {
+    $statusOnlyPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$statusPane.ScriptPath)
+    Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f [string]$statusPane.Title, (Format-ArgumentListForLog -Arguments $statusOnlyPaneArgs))
     $statusOnlyArgs = @(
       "-w",
       "0",
@@ -398,7 +407,7 @@ function Invoke-SplitPaneSwarmLaunch {
       "Swarm",
       "-d",
       [string]$statusPane.WorkingDirectory
-    ) + (New-PwshTabCommandArgs -ScriptPath ([string]$statusPane.ScriptPath))
+    ) + $statusOnlyPaneArgs
     $statusOnlyArgs = $statusOnlyArgs | ForEach-Object { [string]$_ }
     Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $statusOnlyArgs -WorkingDirectory ""
     Start-Process -FilePath $script:SwarmWtExe -ArgumentList $statusOnlyArgs | Out-Null
@@ -443,6 +452,16 @@ function Invoke-SplitPaneSwarmLaunch {
   foreach ($pane in $workerPanes) { Add-OrderedWorkerPane -Pane $pane }
 
   $leftTopPane = $orderedWorkers[0]
+  $leftTopPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$leftTopPane.ScriptPath)
+  $statusPaneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$statusPane.ScriptPath)
+  Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f [string]$leftTopPane.Title, (Format-ArgumentListForLog -Arguments $leftTopPaneArgs))
+  Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f [string]$statusPane.Title, (Format-ArgumentListForLog -Arguments $statusPaneArgs))
+  for ($i = 1; $i -lt $orderedWorkers.Count; $i++) {
+    $pane = $orderedWorkers[$i]
+    $paneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$pane.ScriptPath)
+    Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f [string]$pane.Title, (Format-ArgumentListForLog -Arguments $paneArgs))
+  }
+
   $wtArgs = @(
     "-w",
     "0",
@@ -451,7 +470,7 @@ function Invoke-SplitPaneSwarmLaunch {
     "Swarm",
     "-d",
     [string]$leftTopPane.WorkingDirectory
-  ) + (New-PwshTabCommandArgs -ScriptPath ([string]$leftTopPane.ScriptPath))
+  ) + $leftTopPaneArgs
 
   # Create right status column.
   $wtArgs += ";"
@@ -461,7 +480,7 @@ function Invoke-SplitPaneSwarmLaunch {
     "-d",
     [string]$statusPane.WorkingDirectory
   )
-  $wtArgs += (New-PwshTabCommandArgs -ScriptPath ([string]$statusPane.ScriptPath))
+  $wtArgs += $statusPaneArgs
 
   # Move focus back to left column before stacking workers.
   $wtArgs += ";"
@@ -472,6 +491,7 @@ function Invoke-SplitPaneSwarmLaunch {
 
   for ($i = 1; $i -lt $orderedWorkers.Count; $i++) {
     $pane = $orderedWorkers[$i]
+    $paneArgs = New-PwshTabCommandArgs -ScriptPath ([string]$pane.ScriptPath)
     $wtArgs += ";"
     $wtArgs += @(
       "split-pane",
@@ -479,7 +499,7 @@ function Invoke-SplitPaneSwarmLaunch {
       "-d",
       [string]$pane.WorkingDirectory
     )
-    $wtArgs += (New-PwshTabCommandArgs -ScriptPath ([string]$pane.ScriptPath))
+    $wtArgs += $paneArgs
   }
 
   $wtArgs = $wtArgs | ForEach-Object { [string]$_ }
@@ -501,6 +521,8 @@ function Start-PwshWindow {
   $workingDirectoryText = [string]$WorkingDirectory
 
   if ($script:SwarmUseSplits) {
+    $splitPaneArgs = New-PwshTabCommandArgs -ScriptPath $scriptPathText
+    Write-BootstrapLog -Message ("Pane queued [{0}] {1}" -f $titleText, (Format-ArgumentListForLog -Arguments $splitPaneArgs))
     $script:SwarmSplitLaunches.Add([pscustomobject]@{
       Title = $titleText
       ScriptPath = $scriptPathText
@@ -511,6 +533,8 @@ function Start-PwshWindow {
   }
 
   if ($script:SwarmUseTabs -and -not [string]::IsNullOrWhiteSpace($script:SwarmWtExe)) {
+    $tabPaneArgs = New-PwshTabCommandArgs -ScriptPath $scriptPathText
+    Write-BootstrapLog -Message ("Pane launch [{0}] {1}" -f $titleText, (Format-ArgumentListForLog -Arguments $tabPaneArgs))
     $wtArgs = @(
       "-w",
       "0",
@@ -519,13 +543,14 @@ function Start-PwshWindow {
       $titleText,
       "-d",
       $workingDirectoryText
-    ) + (New-PwshTabCommandArgs -ScriptPath $scriptPathText)
+    ) + $tabPaneArgs
     $wtArgs = $wtArgs | ForEach-Object { [string]$_ }
     Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $wtArgs -WorkingDirectory ""
     Start-Process -FilePath $script:SwarmWtExe -ArgumentList $wtArgs | Out-Null
   }
   else {
     $pwshWindowArgs = New-PwshWindowCommandArgs -ScriptPath $scriptPathText
+    Write-BootstrapLog -Message ("Pane launch [{0}] pwsh {1}" -f $titleText, (Format-ArgumentListForLog -Arguments $pwshWindowArgs))
     Log-StartProcessCommand -FilePath "pwsh" -Arguments $pwshWindowArgs -WorkingDirectory $workingDirectoryText
     Start-Process -FilePath "pwsh" -ArgumentList $pwshWindowArgs -WorkingDirectory $workingDirectoryText | Out-Null
   }
@@ -655,7 +680,6 @@ $escapedPlannerPrompt = Escape-SingleQuoted -Value $plannerPrompt
 $escapedReviewerPrompt = Escape-SingleQuoted -Value $reviewerPrompt
 $escapedTaskScript = Escape-SingleQuoted -Value $taskBoard.Script
 $escapedPython = Escape-SingleQuoted -Value $taskBoard.Python
-$ohMyExe = if ($ohMyCmd) { [string]$ohMyCmd.Source } else { "" }
 $ohMyLauncherBat = "C:\Users\treyt\OneDrive\Desktop\Travel Laptop\OHMYOpenCode.bat"
 $escapedOhMyLauncherBat = Escape-SingleQuoted -Value $ohMyLauncherBat
 $codexExe = if ($codexCmd) { [string]$codexCmd.Source } else { "" }
@@ -679,7 +703,7 @@ if (-not (Test-Path -LiteralPath `$launcherBat)) {
   throw "OHMYOpenCode launcher not found: `$launcherBat"
 }
 Write-Host "Launching OhMyOpenCode via launcher: `$launcherBat (target=`$plannerTarget, /nopause)" -ForegroundColor Cyan
-`$launcherCmd = '""' + `$launcherBat + '" /nopause "' + `$plannerTarget + '""'
+`$launcherCmd = '""' + `$launcherBat + '" /target "' + `$plannerTarget + '" /nopause"'
 & cmd /k `$launcherCmd
 "@
     $plannerScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $plannerBody
