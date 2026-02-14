@@ -382,7 +382,67 @@ function Invoke-SplitPaneSwarmLaunch {
     throw "Layout 'splits' requires wt.exe, but it was not resolved."
   }
 
-  $firstPane = $script:SwarmSplitLaunches[0]
+  $queuedPanes = @($script:SwarmSplitLaunches.ToArray())
+  $statusPane = @($queuedPanes | Where-Object { [string]$_.Title -eq "status" }) | Select-Object -First 1
+  if ($null -eq $statusPane) {
+    throw "Split layout requires a status pane, but none was queued."
+  }
+
+  $workerPanes = @($queuedPanes | Where-Object { [string]$_.Title -ne "status" })
+  if ($workerPanes.Count -le 0) {
+    $statusOnlyArgs = @(
+      "-w",
+      "0",
+      "new-tab",
+      "--title",
+      "Swarm",
+      "-d",
+      [string]$statusPane.WorkingDirectory
+    ) + (New-PwshTabCommandArgs -ScriptPath ([string]$statusPane.ScriptPath))
+    $statusOnlyArgs = $statusOnlyArgs | ForEach-Object { [string]$_ }
+    Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $statusOnlyArgs -WorkingDirectory ""
+    Start-Process -FilePath $script:SwarmWtExe -ArgumentList $statusOnlyArgs | Out-Null
+    Write-Host "Launched split swarm: tab 'Swarm' with status-only pane."
+    Write-BootstrapLog -Message "Split layout launched with status-only pane."
+    return
+  }
+
+  $plannerPane = $null
+  foreach ($pane in $workerPanes) {
+    $paneTitle = [string]$pane.Title
+    if ($paneTitle.Equals("planner", [System.StringComparison]::OrdinalIgnoreCase) -or $paneTitle.StartsWith("planner-", [System.StringComparison]::OrdinalIgnoreCase)) {
+      $plannerPane = $pane
+      break
+    }
+  }
+  if ($null -eq $plannerPane) {
+    $plannerPane = $workerPanes[0]
+  }
+
+  $orderedWorkers = New-Object System.Collections.Generic.List[object]
+  $seenWorkers = @{}
+
+  function Add-OrderedWorkerPane {
+    param([object]$Pane)
+
+    if ($null -eq $Pane) { return }
+    $paneKey = "{0}|{1}" -f [string]$Pane.Title, [string]$Pane.ScriptPath
+    if ($seenWorkers.ContainsKey($paneKey)) { return }
+    $orderedWorkers.Add($Pane) | Out-Null
+    $seenWorkers[$paneKey] = $true
+  }
+
+  $codexPanes = @($workerPanes | Where-Object { ([string]$_.Title).StartsWith("codex-", [System.StringComparison]::OrdinalIgnoreCase) })
+  $claudePanes = @($workerPanes | Where-Object { ([string]$_.Title).StartsWith("claude-review", [System.StringComparison]::OrdinalIgnoreCase) })
+  $geminiPanes = @($workerPanes | Where-Object { ([string]$_.Title).StartsWith("gemini-research", [System.StringComparison]::OrdinalIgnoreCase) })
+
+  Add-OrderedWorkerPane -Pane $plannerPane
+  foreach ($pane in $codexPanes) { Add-OrderedWorkerPane -Pane $pane }
+  foreach ($pane in $claudePanes) { Add-OrderedWorkerPane -Pane $pane }
+  foreach ($pane in $geminiPanes) { Add-OrderedWorkerPane -Pane $pane }
+  foreach ($pane in $workerPanes) { Add-OrderedWorkerPane -Pane $pane }
+
+  $leftTopPane = $orderedWorkers[0]
   $wtArgs = @(
     "-w",
     "0",
@@ -390,14 +450,32 @@ function Invoke-SplitPaneSwarmLaunch {
     "--title",
     "Swarm",
     "-d",
-    [string]$firstPane.WorkingDirectory
-  ) + (New-PwshTabCommandArgs -ScriptPath ([string]$firstPane.ScriptPath))
+    [string]$leftTopPane.WorkingDirectory
+  ) + (New-PwshTabCommandArgs -ScriptPath ([string]$leftTopPane.ScriptPath))
 
-  for ($i = 1; $i -lt $script:SwarmSplitLaunches.Count; $i++) {
-    $pane = $script:SwarmSplitLaunches[$i]
+  # Create right status column.
+  $wtArgs += ";"
+  $wtArgs += @(
+    "split-pane",
+    "-H",
+    "-d",
+    [string]$statusPane.WorkingDirectory
+  )
+  $wtArgs += (New-PwshTabCommandArgs -ScriptPath ([string]$statusPane.ScriptPath))
+
+  # Move focus back to left column before stacking workers.
+  $wtArgs += ";"
+  $wtArgs += @(
+    "focus-pane",
+    "-L"
+  )
+
+  for ($i = 1; $i -lt $orderedWorkers.Count; $i++) {
+    $pane = $orderedWorkers[$i]
     $wtArgs += ";"
     $wtArgs += @(
       "split-pane",
+      "-V",
       "-d",
       [string]$pane.WorkingDirectory
     )
@@ -407,8 +485,8 @@ function Invoke-SplitPaneSwarmLaunch {
   $wtArgs = $wtArgs | ForEach-Object { [string]$_ }
   Log-StartProcessCommand -FilePath $script:SwarmWtExe -Arguments $wtArgs -WorkingDirectory ""
   Start-Process -FilePath $script:SwarmWtExe -ArgumentList $wtArgs | Out-Null
-  Write-Host ("Launched split swarm: tab 'Swarm' with {0} panes." -f $script:SwarmSplitLaunches.Count)
-  Write-BootstrapLog -Message ("Split layout launched with {0} panes in one tab." -f $script:SwarmSplitLaunches.Count)
+  Write-Host ("Launched split swarm: tab 'Swarm' with {0} panes." -f ($orderedWorkers.Count + 1))
+  Write-BootstrapLog -Message ("Split layout launched with {0} panes in one tab (left workers, right status)." -f ($orderedWorkers.Count + 1))
 }
 
 function Start-PwshWindow {
