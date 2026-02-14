@@ -368,6 +368,38 @@ export function TutorChat({
                 <div>{msg.content}</div>
               )}
 
+              {/* Action buttons for completed assistant messages */}
+              {msg.role === "assistant" && msg.content && !msg.isStreaming && (
+                <div className="flex items-center gap-1 mt-2 pt-2 border-t border-primary/20">
+                  <button
+                    onClick={() => onArtifactCreated({ type: "note", content: msg.content, title: `Tutor note ${i}` })}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-terminal text-muted-foreground hover:text-primary hover:bg-primary/10 border border-primary/20 hover:border-primary/50 transition-colors"
+                  >
+                    <FileText className="w-3 h-3" /> Save Note
+                  </button>
+                  <button
+                    onClick={() => onArtifactCreated({ type: "card", content: msg.content, title: `Tutor card ${i}` })}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-terminal text-muted-foreground hover:text-primary hover:bg-primary/10 border border-primary/20 hover:border-primary/50 transition-colors"
+                  >
+                    <CreditCard className="w-3 h-3" /> Create Card
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Save as note for persistence
+                      onArtifactCreated({ type: "note", content: msg.content, title: `Tutor brain ${i}` });
+                      // Extract mermaid content if present, otherwise use full text
+                      const mermaidMatch = msg.content.match(/```mermaid\n([\s\S]*?)```/);
+                      const importContent = mermaidMatch ? mermaidMatch[1].trim() : msg.content;
+                      localStorage.setItem("tutor-mermaid-import", importContent);
+                      window.location.href = "/brain";
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-terminal text-muted-foreground hover:text-primary hover:bg-primary/10 border border-primary/20 hover:border-primary/50 transition-colors"
+                  >
+                    <Map className="w-3 h-3" /> Send to Brain
+                  </button>
+                </div>
+              )}
+
               {/* Citations + Model */}
               {(msg.citations?.length || msg.model) && !msg.isStreaming ? (
                 <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">

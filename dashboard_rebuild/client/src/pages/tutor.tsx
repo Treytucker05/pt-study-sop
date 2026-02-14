@@ -215,7 +215,7 @@ export default function Tutor() {
         const newArtifact: TutorArtifact = {
           type: artifact.type as "note" | "card" | "map",
           title: artifact.title || `${artifact.type} #${artifacts.length + 1}`,
-          content: artifact.content.slice(0, 200),
+          content: artifact.content,
           createdAt: new Date().toISOString(),
           cardId: result.card_id,
         };
