@@ -1188,6 +1188,7 @@ export interface Material {
   course_id: number | null;
   enabled: boolean;
   extraction_error: string | null;
+  checksum: string | null;
   created_at: string;
   updated_at: string | null;
 }
@@ -1199,6 +1200,7 @@ export interface MaterialUploadResponse {
   file_size: number;
   char_count: number;
   embedded: boolean;
+  duplicate_of: { id: number; title: string } | null;
 }
 
 // SSE streaming helper for Tutor chat

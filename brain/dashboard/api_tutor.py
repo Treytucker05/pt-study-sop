@@ -1066,6 +1066,17 @@ def upload_material():
     cur = conn.cursor()
     now = datetime.now().isoformat()
 
+    # Check for existing material with same checksum
+    duplicate_of = None
+    if checksum:
+        cur.execute(
+            "SELECT id, title FROM rag_docs WHERE checksum = ? AND COALESCE(corpus, 'materials') = 'materials'",
+            (checksum,),
+        )
+        existing = cur.fetchone()
+        if existing:
+            duplicate_of = {"id": existing["id"], "title": existing["title"]}
+
     cur.execute(
         """INSERT INTO rag_docs
            (source_path, content, checksum, corpus, title, file_path, file_size,
@@ -1111,6 +1122,7 @@ def upload_material():
         "extraction_error": extraction_error,
         "embedded": embedded,
         "char_count": len(content) if content else 0,
+        "duplicate_of": duplicate_of,
     }), 201
 
 
@@ -1170,6 +1182,7 @@ def list_materials():
                    ) as file_type,
                    COALESCE(file_size, 0) as file_size, course_id, topic_tags,
                    COALESCE(enabled, 1) as enabled, extraction_error,
+                   COALESCE(checksum, '') as checksum,
                    created_at, updated_at
             FROM rag_docs
             WHERE {where}
