@@ -6,29 +6,15 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   addEdge,
+  reconnectEdge,
   MarkerType,
   type Connection,
   type Node,
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Button } from "@/components/ui/button";
-import {
-  LayoutGrid,
-  Download,
-  FileText,
-  Plus,
-  Trash2,
-  ArrowLeftRight,
-  ArrowUpDown,
-  Import,
-  ArrowLeft,
-  Maximize2,
-  Minimize2,
-  Palette,
-  Save,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseMermaid, toMermaid, applyDagreLayout } from "@/lib/mermaid-to-reactflow";
 import { api } from "@/lib/api";
@@ -36,12 +22,31 @@ import { useToast } from "@/hooks/use-toast";
 import { buildBrainCanvasMarkdown, sanitizeCanvasTitle } from "./brainDoc";
 import {
   DEFAULT_EDGE_OPTIONS,
-  EDGE_COLORS,
-  NODE_COLORS,
+  EDGE_TYPES,
   NODE_TYPES,
 } from "./ConceptMapStructuredConfig";
 import { ConceptMapStructuredImport } from "./ConceptMapStructuredImport";
+import { CanvasToolbox, type EdgeType } from "./CanvasToolbox";
+import { SHAPE_SIZES, type StructuredShape } from "./StructuredShapeNode";
 import type { GraphCanvasCommand, GraphCanvasStatus } from "./graph-canvas-types";
+
+// ─── localStorage helpers ────────────────────────────────────────────────────
+
+const LS_PREFIX = "structured-canvas";
+
+function lsGet<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(`${LS_PREFIX}-${key}`);
+    if (raw) return JSON.parse(raw) as T;
+  } catch { /* corrupted */ }
+  return fallback;
+}
+
+function lsSet(key: string, val: unknown): void {
+  localStorage.setItem(`${LS_PREFIX}-${key}`, JSON.stringify(val));
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 interface ConceptMapStructuredProps {
   initialMermaid?: string;
@@ -69,12 +74,54 @@ export function ConceptMapStructured({
   const [mermaidInput, setMermaidInput] = useState(initialMermaid || "");
   const [nodeCounter, setNodeCounter] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState<"node" | "edge" | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+
+  // New toolbox state
+  const [edgeType, setEdgeType] = useState<EdgeType>(() => lsGet("edgeType", "smoothstep"));
+  const [nodeShape, setNodeShape] = useState<StructuredShape>(() => lsGet("nodeShape", "rectangle"));
+  const [snapToGrid, setSnapToGrid] = useState(() => lsGet("snapToGrid", false));
+  const [locked, setLocked] = useState(false);
+
   const reactFlowRef = useRef<HTMLDivElement>(null);
   const initialMermaidConsumedRef = useRef(false);
   const lastCommandIdRef = useRef(0);
   const { toast } = useToast();
+
+  // ─── Label editing via custom event ──────────────────────────────────────
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { label: string };
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.selected ? { ...n, data: { ...n.data, label: detail.label } } : n
+        )
+      );
+      setIsDirty(true);
+    };
+    window.addEventListener("structured:node-label", handler);
+    return () => window.removeEventListener("structured:node-label", handler);
+  }, [setNodes]);
+
+  // ─── Edge label editing via custom event ────────────────────────────────
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { edgeId: string; label: string };
+      setEdges((eds) =>
+        eds.map((edge) =>
+          edge.id === detail.edgeId
+            ? { ...edge, data: { ...edge.data, label: detail.label } }
+            : edge
+        )
+      );
+      setIsDirty(true);
+    };
+    window.addEventListener("structured:edge-label", handler);
+    return () => window.removeEventListener("structured:edge-label", handler);
+  }, [setEdges]);
+
+  // ─── Import & init ──────────────────────────────────────────────────────
 
   const importMermaid = useCallback(
     (code: string) => {
@@ -111,6 +158,8 @@ export function ConceptMapStructured({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isFullscreen]);
 
+  // ─── Node/edge change handlers ──────────────────────────────────────────
+
   const onNodesChange = useCallback(
     (changes: any) => {
       setIsDirty(true);
@@ -135,6 +184,16 @@ export function ConceptMapStructured({
     [setEdges]
   );
 
+  const onReconnect = useCallback(
+    (oldEdge: Edge, newConnection: Connection) => {
+      setIsDirty(true);
+      setEdges((eds) => reconnectEdge(oldEdge, newConnection, eds));
+    },
+    [setEdges]
+  );
+
+  // ─── Canvas actions ────────────────────────────────────────────────────
+
   const autoLayout = useCallback(() => {
     const layoutNodes = applyDagreLayout(nodes, edges, { direction });
     setNodes(layoutNodes);
@@ -152,15 +211,17 @@ export function ConceptMapStructured({
   const addNode = useCallback(() => {
     const id = `N${nodeCounter + 1}`;
     setNodeCounter((c) => c + 1);
+    const size = SHAPE_SIZES[nodeShape];
     const newNode: Node = {
       id,
-      type: "arcade",
+      type: "structured",
       position: { x: Math.random() * 300 + 50, y: Math.random() * 200 + 50 },
-      data: { label: `New Node ${nodeCounter + 1}`, colorIdx: 0 },
+      data: { label: `New Node ${nodeCounter + 1}`, colorIdx: 0, shape: nodeShape },
+      style: { width: size.width, height: size.height },
     };
     setNodes((nds) => [...nds, newNode]);
     setIsDirty(true);
-  }, [nodeCounter, setNodes]);
+  }, [nodeCounter, nodeShape, setNodes]);
 
   const deleteSelected = useCallback(() => {
     setNodes((nds) => nds.filter((n) => !n.selected));
@@ -174,7 +235,6 @@ export function ConceptMapStructured({
         n.selected ? { ...n, data: { ...n.data, colorIdx } } : n
       )
     );
-    setShowColorPicker(null);
     setIsDirty(true);
   }, [setNodes]);
 
@@ -190,9 +250,82 @@ export function ConceptMapStructured({
           : e
       )
     );
-    setShowColorPicker(null);
     setIsDirty(true);
   }, [setEdges]);
+
+  const setSelectedNodeShape = useCallback((shape: StructuredShape) => {
+    const size = SHAPE_SIZES[shape];
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.selected
+          ? {
+              ...n,
+              data: { ...n.data, shape },
+              style: { ...n.style, width: size.width, height: size.height },
+            }
+          : n
+      )
+    );
+    setIsDirty(true);
+  }, [setNodes]);
+
+  // ─── Edge type change — affects new AND existing edges ─────────────────
+
+  const handleEdgeTypeChange = useCallback((newType: EdgeType) => {
+    setEdgeType(newType);
+    lsSet("edgeType", newType);
+    setEdges((eds) =>
+      eds.map((e) => ({ ...e, data: { ...e.data, edgeType: newType } }))
+    );
+    setIsDirty(true);
+  }, [setEdges]);
+
+  const handleNodeShapeChange = useCallback((shape: StructuredShape) => {
+    setNodeShape(shape);
+    lsSet("nodeShape", shape);
+  }, []);
+
+  const handleSnapToggle = useCallback(() => {
+    setSnapToGrid((prev) => {
+      const next = !prev;
+      lsSet("snapToGrid", next);
+      return next;
+    });
+  }, []);
+
+  const handleLockToggle = useCallback(() => {
+    setLocked((prev) => !prev);
+  }, []);
+
+  // ─── Toolbox action dispatcher ─────────────────────────────────────────
+
+  const handleToolAction = useCallback((id: string) => {
+    switch (id) {
+      case "add_node": addNode(); break;
+      case "delete": deleteSelected(); break;
+      case "auto_layout": autoLayout(); break;
+      case "direction": toggleDirection(); break;
+      case "fit_view":
+        // handled via useReactFlow in inner component
+        window.dispatchEvent(new CustomEvent("structured:fit-view"));
+        break;
+      case "snap_grid": handleSnapToggle(); break;
+      case "lock": handleLockToggle(); break;
+      case "edge_label":
+        // Add empty label to selected edges so they enter edit mode
+        setEdges((eds) =>
+          eds.map((e) =>
+            e.selected && !(e.data as any)?.label
+              ? { ...e, data: { ...e.data, label: " " } }
+              : e
+          )
+        );
+        setIsDirty(true);
+        break;
+    }
+  }, [addNode, deleteSelected, autoLayout, toggleDirection, handleSnapToggle, handleLockToggle]);
+
+  // ─── Export / save ─────────────────────────────────────────────────────
 
   const exportPng = useCallback(async () => {
     if (!reactFlowRef.current) return;
@@ -266,6 +399,7 @@ export function ConceptMapStructured({
         label: e.label,
         style: e.style,
         markerEnd: e.markerEnd,
+        type: e.type,
       })),
       updated: new Date().toISOString(),
     }, null, 2);
@@ -291,6 +425,8 @@ export function ConceptMapStructured({
     setMermaidInput(nodes.length > 0 ? toMermaid(nodes, edges, direction) : "");
   }, [nodes, edges, direction]);
 
+  // ─── Status reporting ──────────────────────────────────────────────────
+
   useEffect(() => {
     onStatusChange?.({
       mode: "structured",
@@ -306,6 +442,8 @@ export function ConceptMapStructured({
         .map((n) => String((n.data as { label?: string })?.label || n.id)),
     });
   }, [onStatusChange, isDirty, nodes, edges]);
+
+  // ─── External commands ─────────────────────────────────────────────────
 
   useEffect(() => {
     if (!externalCommand || externalCommand.target !== "structured") return;
@@ -362,6 +500,15 @@ export function ConceptMapStructured({
     toggleDirection,
   ]);
 
+  // ─── Computed edge options based on current edgeType ────────────────────
+
+  const currentEdgeOptions = {
+    ...DEFAULT_EDGE_OPTIONS,
+    data: { edgeType },
+  };
+
+  // ─── Import screen ────────────────────────────────────────────────────
+
   if (showImport && nodes.length === 0) {
     return (
       <ConceptMapStructuredImport
@@ -377,6 +524,8 @@ export function ConceptMapStructured({
     );
   }
 
+  // ─── Render ────────────────────────────────────────────────────────────
+
   return (
     <div
       className={cn(
@@ -385,110 +534,25 @@ export function ConceptMapStructured({
         className
       )}
     >
-      {!hideToolbar && (
-        <div className="flex items-center gap-1 px-2 py-1 border-b border-secondary/30 bg-black/40 shrink-0 flex-wrap">
-          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={goBackToImport} title="Back to import">
-            <ArrowLeft className="w-3 h-3" />
-          </Button>
-          <div className="w-px h-4 bg-secondary/30" />
-          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={addNode} title="Add node">
-            <Plus className="w-3 h-3" />
-          </Button>
-          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={deleteSelected} title="Delete selected">
-            <Trash2 className="w-3 h-3" />
-          </Button>
-          <div className="relative">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 px-1.5 text-xs font-terminal"
-              onClick={() => setShowColorPicker(showColorPicker ? null : "node")}
-              title="Color selected"
-            >
-              <Palette className="w-3 h-3" />
-            </Button>
-            {showColorPicker && (
-              <div className="absolute top-full left-0 mt-1 p-2 bg-black border-[3px] border-double border-primary/50 z-50 space-y-2 min-w-[160px]">
-                <p className="font-terminal text-xs text-muted-foreground">NODE COLORS</p>
-                <div className="flex flex-wrap gap-1">
-                  {NODE_COLORS.map((c, i) => (
-                    <button
-                      key={c.name}
-                      onClick={() => setSelectedNodeColor(i)}
-                      className={cn("w-5 h-5 border-2 rounded-none", c.border, c.bg)}
-                      title={c.name}
-                    />
-                  ))}
-                </div>
-                <p className="font-terminal text-xs text-muted-foreground pt-1">EDGE COLORS</p>
-                <div className="flex flex-wrap gap-1">
-                  {EDGE_COLORS.map((c) => (
-                    <button
-                      key={c.name}
-                      onClick={() => setSelectedEdgeColor(c.stroke)}
-                      className="w-5 h-5 border-[3px] border-double border-secondary/50 rounded-none"
-                      style={{ backgroundColor: c.stroke }}
-                      title={c.name}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="w-px h-4 bg-secondary/30" />
-          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={autoLayout} title="Auto layout">
-            <LayoutGrid className="w-3 h-3" />
-          </Button>
-          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={toggleDirection} title={`Direction: ${direction}`}>
-            {direction === "TB" ? <ArrowUpDown className="w-3 h-3" /> : <ArrowLeftRight className="w-3 h-3" />}
-          </Button>
-          <div className="w-px h-4 bg-secondary/30" />
-          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={exportMermaid} title="Copy Mermaid">
-            <FileText className="w-3 h-3" />
-          </Button>
-          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={exportPng} title="Export PNG">
-            <Download className="w-3 h-3" />
-          </Button>
-          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={saveToVault} title="Save to vault">
-            <Save className="w-3 h-3" />
-          </Button>
-          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs font-terminal" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}>
-            {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-xs font-terminal"
-            onClick={() => {
-              setShowImport(true);
-              setNodes([]);
-              setEdges([]);
-            }}
-            title="Import Mermaid"
-          >
-            <Import className="w-3 h-3" />
-          </Button>
-          <div className="ml-auto flex items-center gap-2 text-xs font-terminal text-muted-foreground">
-            <span>{nodes.length}N / {edges.length}E</span>
-            <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-destructive" : "bg-success")} />
-            <span>{isDirty ? "Unsaved" : "Saved"}</span>
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 min-h-0" ref={reactFlowRef}>
+      <div className="flex-1 min-h-0 relative" ref={reactFlowRef}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onReconnect={onReconnect}
+          edgesReconnectable={!locked}
           nodeTypes={NODE_TYPES}
-          defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+          edgeTypes={EDGE_TYPES}
+          defaultEdgeOptions={currentEdgeOptions}
+          snapToGrid={snapToGrid}
+          snapGrid={[20, 20]}
+          nodesDraggable={!locked}
+          connectionMode="loose"
           fitView
           className="bg-black/80"
           proOptions={{ hideAttribution: true }}
-          onPaneClick={() => setShowColorPicker(null)}
         >
           <Background color="hsl(var(--primary) / 0.1)" gap={20} />
           <Controls className="!bg-black !border-primary [&_button]:!bg-black/80 [&_button]:!border-primary/50 [&_button]:!text-primary" />
@@ -497,8 +561,40 @@ export function ConceptMapStructured({
             nodeColor="hsl(var(--primary))"
             maskColor="rgba(0,0,0,0.5)"
           />
+          <FitViewListener />
         </ReactFlow>
+
+        {/* Floating toolbox */}
+        <CanvasToolbox
+          onAction={handleToolAction}
+          edgeType={edgeType}
+          onEdgeTypeChange={handleEdgeTypeChange}
+          nodeShape={nodeShape}
+          onNodeShapeChange={handleNodeShapeChange}
+          snapToGrid={snapToGrid}
+          locked={locked}
+          onNodeColorChange={setSelectedNodeColor}
+          onEdgeColorChange={setSelectedEdgeColor}
+        />
+      </div>
+
+      {/* Status bar */}
+      <div className="flex items-center gap-2 px-2 py-0.5 border-t border-secondary/30 bg-black/40 text-xs font-terminal text-muted-foreground">
+        <span>{nodes.length}N / {edges.length}E</span>
+        <span className={cn("w-2 h-2 rounded-full", isDirty ? "bg-destructive" : "bg-success")} />
+        <span>{isDirty ? "Unsaved" : "Saved"}</span>
       </div>
     </div>
   );
+}
+
+/** Listens for the fit-view custom event and calls fitView from ReactFlow */
+function FitViewListener() {
+  const { fitView } = useReactFlow();
+  useEffect(() => {
+    const handler = () => fitView({ padding: 0.2 });
+    window.addEventListener("structured:fit-view", handler);
+    return () => window.removeEventListener("structured:fit-view", handler);
+  }, [fitView]);
+  return null;
 }
