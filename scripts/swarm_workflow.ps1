@@ -707,8 +707,10 @@ if (-not (Test-Path -LiteralPath `$launcherBat)) {
   throw "OHMYOpenCode launcher not found: `$launcherBat"
 }
 Write-Host "Launching OhMyOpenCode via launcher: `$launcherBat (target=`$plannerTarget, /nopause)" -ForegroundColor Cyan
-`$launcherCmd = '""' + `$launcherBat + '" /target "' + `$plannerTarget + '" /nopause"'
-& cmd /k `$launcherCmd
+& `$launcherBat /target `$plannerTarget /nopause
+if (`$LASTEXITCODE -ne 0) {
+  throw ("OHMYOpenCode launcher exited with code {0}." -f `$LASTEXITCODE)
+}
 "@
     $plannerScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $plannerBody
     Start-PwshWindow -Title $title -ScriptPath $plannerScript -WorkingDirectory $RepoRoot
