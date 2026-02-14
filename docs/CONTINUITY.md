@@ -556,3 +556,15 @@
 
 - Build: 0 errors, 77/77 tests pass
 - Commit: `bfd8031b`
+
+## 2026-02-14 - Tutor Artifact Persistence & Cross-Feature Wiring
+
+- **Artifact content persistence**: Note and map artifacts now store `content` in `artifacts_json` (was metadata-only). Resumed sessions restore full content instead of empty strings.
+- **Card-to-Brain linking**: `card_drafts.session_id` updated to the Brain `sessions` record ID at end-session, so cards appear under the correct Brain session.
+- **Notes to dashboard**: Creating a tutor note artifact also inserts into `quick_notes` with `note_type='tutor'`, making tutor notes visible in the dashboard Notes panel.
+- **Obsidian export enriched**: "Save to Obsidian" now appends an Artifacts section with notes (raw content), maps (mermaid code fences), and cards (front/back).
+- **Mind map → Brain bridge**: Map artifacts show a "Send to Brain" button that stores Mermaid code in localStorage and navigates to `/brain`, where the import dialog opens pre-filled.
+- **Method blocks seeded**: 36 blocks with facilitation prompts via `seed_methods.py --force` + `--regenerate-prompts`.
+- Files: `brain/dashboard/api_tutor.py`, `dashboard_rebuild/client/src/pages/tutor.tsx`, `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`, `dashboard_rebuild/client/src/components/brain/UnifiedBrainCanvas.tsx`
+- Build: 0 errors, 77/77 tests pass
+- Commit: `9118c1f3`
