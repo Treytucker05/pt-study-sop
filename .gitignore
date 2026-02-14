@@ -26,6 +26,7 @@ wheels/
 venv/
 .venv/
 .venv*/
+.venv-mineru/
 ENV/
 env/
 

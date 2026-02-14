@@ -26,5 +26,8 @@ langgraph>=1.0.7,<1.1
 chromadb>=0.5,<1
 tiktoken>=0.7,<1
 
+# PDF extraction (tiered: pymupdf4llm for markdown output + OCR)
+pymupdf4llm>=0.0.17
+
 # Dev/test
 pytest>=8.0,<10

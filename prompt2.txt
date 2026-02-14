@@ -1,0 +1,1 @@
+You are reading C:/pt-study-sop/scripts/agent_task_board.py to identify which data fields capture claimed tasks (task id and owner). Document the field names, their purpose, and the relevant line numbers. Output should be a Markdown list with '- [lines] field -

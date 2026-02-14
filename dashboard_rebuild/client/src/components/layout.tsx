@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Blocks, BookOpen, Save, Trash2, GripVertical, Pencil, X, Check } from "lucide-react";
+import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Blocks, BookOpen, Save, Trash2, GripVertical, Pencil, X, Check, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,6 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [dragOverNote, setDragOverNote] = useState<{ id: number; type: NoteCategory } | null>(null);
   const [dragOverCategory, setDragOverCategory] = useState<NoteCategory | null>(null);
   const [showTutor, setShowTutor] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Expose tutor toggle to window for integration
@@ -311,6 +312,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <header className="relative z-20 bg-black/80 backdrop-blur-sm sticky top-0" style={{ borderBottom: '4px double hsl(350 63% 49%)' }}>
         <div className="w-full px-3 h-12 flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden nav-btn p-1"
+              onClick={() => setMobileNavOpen(!mobileNavOpen)}
+              aria-label="Toggle navigation"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+
             <Link href="/">
               <div className="flex items-center gap-2 cursor-pointer group">
                 <img src={logoImg} alt="Logo" className="w-8 h-8 object-cover" />
@@ -535,6 +546,28 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Sheet>
           </div>
         </div>
+
+        {/* Mobile nav dropdown */}
+        {mobileNavOpen && (
+          <nav className="md:hidden border-t border-primary/30 bg-black/95 px-3 py-2 flex flex-wrap gap-1">
+            {NAV_ITEMS.map((item) => {
+              const isActive = currentPath === item.path;
+              return (
+                <Link key={item.path} href={item.path}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("nav-btn", isActive && "active")}
+                    onClick={() => setMobileNavOpen(false)}
+                  >
+                    <item.icon className="w-3 h-3 mr-1" />
+                    <span className="text-xs">{item.label}</span>
+                  </Button>
+                </Link>
+              );
+            })}
+          </nav>
+        )}
       </header>
 
       <main
