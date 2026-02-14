@@ -20,7 +20,33 @@ _VAULT_INDEX_CACHE: Dict = {
     "ttl_seconds": 300,  # 5 minutes
 }
 
-OBSIDIAN_API_URL = "https://127.0.0.1:27124"
+OBSIDIAN_API_URL = os.environ.get("OBSIDIAN_API_URL", "https://127.0.0.1:27124")
+_OBSIDIAN_FALLBACK_URLS = [
+    "https://127.0.0.1:27124",
+    "https://localhost:27124",
+    "https://host.docker.internal:27124",
+]
+
+
+def _obsidian_api_urls() -> List[str]:
+    urls = []
+    seen = set()
+
+    explicit_url = os.environ.get("OBSIDIAN_API_URL", "").strip()
+    extra_urls = os.environ.get("OBSIDIAN_API_URLS", "").strip()
+
+    candidates = [explicit_url, OBSIDIAN_API_URL] + _OBSIDIAN_FALLBACK_URLS
+    if extra_urls:
+        candidates.extend([u.strip() for u in extra_urls.split(",") if u.strip()])
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        url = candidate.rstrip("/")
+        if url not in seen:
+            urls.append(url)
+            seen.add(url)
+    return urls
 
 
 def _get_api_key() -> str:
@@ -42,29 +68,34 @@ def _list_folder(folder: str) -> List[dict]:
     if not api_key:
         return []
 
-    url = f"{OBSIDIAN_API_URL}/vault/"
+    folder_path = "/vault/"
     if folder:
-        url = f"{OBSIDIAN_API_URL}/vault/{folder}/"
+        folder_path = f"/vault/{folder}/"
 
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    req = urllib.request.Request(url, headers={
-        "Authorization": f"Bearer {api_key}",
-        "Accept": "application/json",
-    })
-
-    try:
-        with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            if isinstance(data, dict) and "files" in data:
-                return data["files"]
-            if isinstance(data, list):
-                return data
-            return []
-    except Exception:
-        return []
+    for base_url in _obsidian_api_urls():
+        url = f"{base_url}{folder_path}"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Accept": "application/json",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if isinstance(data, dict) and "files" in data:
+                    return data["files"]
+                if isinstance(data, list):
+                    return data
+                return []
+        except Exception:
+            continue
+    return []
 
 
 def _recursive_scan(folder: str, notes: Set[str], paths: Dict[str, str]) -> None:

@@ -1,12 +1,19 @@
 import json
 import re
+import os
 from typing import Dict, Optional
 
 import requests
 
 from llm_provider import call_llm
 
-OBSIDIAN_API_URL = "https://127.0.0.1:27124"
+OBSIDIAN_API_URL = os.environ.get("OBSIDIAN_API_URL", "")
+_DEFAULT_OBSIDIAN_API_URL = "https://127.0.0.1:27124"
+_OBSIDIAN_FALLBACK_URLS = [
+    "https://127.0.0.1:27124",
+    "https://localhost:27124",
+    "https://host.docker.internal:27124",
+]
 MANAGED_START = "<!-- BRAIN_MANAGED_START -->"
 MANAGED_END = "<!-- BRAIN_MANAGED_END -->"
 
@@ -16,17 +23,22 @@ def read_existing_note(path: str) -> str:
     api_key = _get_obsidian_api_key()
     if not api_key:
         return ""
-    try:
-        resp = requests.get(
-            f"{OBSIDIAN_API_URL}/vault/{path}",
-            headers={"Authorization": f"Bearer {api_key}"},
-            timeout=10,
-            verify=False,
-        )
-        if resp.status_code == 200:
-            return resp.text or ""
-    except Exception:
-        return ""
+    api_url = OBSIDIAN_API_URL or _DEFAULT_OBSIDIAN_API_URL
+    for base_url in [api_url] + _OBSIDIAN_FALLBACK_URLS:
+        candidate_url = base_url.rstrip("/")
+        if not candidate_url:
+            continue
+        try:
+            resp = requests.get(
+                f"{candidate_url}/vault/{path}",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=10,
+                verify=False,
+            )
+            if resp.status_code == 200:
+                return resp.text or ""
+        except Exception:
+            continue
     return ""
 
 

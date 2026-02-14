@@ -43,6 +43,21 @@ export interface PlannerTask {
   course_name?: string | null;
 }
 
+export interface PlannerTaskCreate {
+  course_id?: number | null;
+  topic_id?: number | null;
+  course_event_id?: number | null;
+  scheduled_date?: string | null;
+  planned_minutes?: number | null;
+  status?: "pending" | "in_progress" | "completed" | "deferred";
+  actual_session_id?: number | null;
+  notes?: string | null;
+  source?: string | null;
+  priority?: number | null;
+  review_number?: number | null;
+  anchor_text?: string | null;
+}
+
 export type PlannerTaskUpdate = Partial<
   Pick<PlannerTask, "status" | "scheduled_date" | "planned_minutes" | "notes" | "actual_session_id">
 >;
@@ -364,6 +379,11 @@ export const api = {
     updateSettings: (data: Record<string, unknown>) =>
       request<{ ok: boolean }>("/planner/settings", {
         method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    createTask: (data: PlannerTaskCreate) =>
+      request<PlannerTask>("/planner/tasks", {
+        method: "POST",
         body: JSON.stringify(data),
       }),
     generate: () =>

@@ -19,7 +19,12 @@ from dashboard.utils import load_api_config
 # ==============================================================================
 # OBSIDIAN LOCAL REST API CONFIG
 # ==============================================================================
-OBSIDIAN_API_URL = "https://127.0.0.1:27124"
+OBSIDIAN_API_URL = os.environ.get("OBSIDIAN_API_URL", "https://127.0.0.1:27124")
+_OBSIDIAN_FALLBACK_URLS = [
+    "https://127.0.0.1:27124",
+    "https://localhost:27124",
+    "https://host.docker.internal:27124",
+]
 
 # Load .env so OBSIDIAN_API_KEY is available if set there
 load_env()
@@ -52,27 +57,78 @@ def _obsidian_api_key() -> str:
     return get_obsidian_api_key()
 
 
+def _obsidian_api_urls() -> List[str]:
+    """Collect candidate Obsidian API URLs for fallback retries."""
+    urls: List[str] = []
+    seen = set()
+
+    explicit_url = os.environ.get("OBSIDIAN_API_URL", "").strip()
+    if explicit_url:
+        candidate = explicit_url.rstrip("/")
+        if candidate not in seen:
+            urls.append(candidate)
+            seen.add(candidate)
+
+    for candidate in [OBSIDIAN_API_URL] + _OBSIDIAN_FALLBACK_URLS:
+        candidate = candidate.rstrip("/")
+        if candidate and candidate not in seen:
+            urls.append(candidate)
+            seen.add(candidate)
+
+    extra_urls = os.environ.get("OBSIDIAN_API_URLS", "")
+    if extra_urls:
+        for candidate in extra_urls.split(","):
+            candidate = candidate.strip().rstrip("/")
+            if candidate and candidate not in seen:
+                urls.append(candidate)
+                seen.add(candidate)
+
+    return urls
+
+
+def _request_obsidian(method: str, path: str, timeout: int = 10, **kwargs):
+    """Run an Obsidian request with URL fallback support."""
+    headers = dict(kwargs.pop("headers", {}) or {})
+    headers.setdefault("Authorization", f"Bearer {_obsidian_api_key()}")
+
+    global OBSIDIAN_API_URL
+    last_error = None
+
+    for base_url in _obsidian_api_urls():
+        request_url = f"{base_url}{('/' + path.lstrip('/'))}"
+        try:
+            resp = requests.request(
+                method,
+                request_url,
+                headers=headers,
+                timeout=timeout,
+                verify=False,  # Self-signed cert
+                **kwargs,
+            )
+            if base_url != OBSIDIAN_API_URL:
+                OBSIDIAN_API_URL = base_url
+            return resp, None
+        except requests.exceptions.ConnectionError as e:
+            last_error = str(e)
+            logger.warning("Obsidian connection failed for %s: %s", request_url, e)
+        except Exception as e:
+            return None, str(e)
+
+    return None, last_error
+
+
 def obsidian_health_check() -> dict:
     """Check if Obsidian Local REST API is running."""
     try:
-        resp = requests.get(
-            f"{OBSIDIAN_API_URL}/",
-            headers={"Authorization": f"Bearer {_obsidian_api_key()}"},
-            timeout=3,
-            verify=False,  # Self-signed cert
-        )
+        resp, error = _request_obsidian("GET", "/", timeout=3)
+        if error:
+            return {"connected": False, "status": "offline", "error": error}
         if resp.status_code == 200:
             return {"connected": True, "status": "online"}
         return {
             "connected": False,
             "status": "error",
             "error": f"Status {resp.status_code}",
-        }
-    except requests.exceptions.ConnectionError:
-        return {
-            "connected": False,
-            "status": "offline",
-            "error": "Obsidian not running or plugin disabled",
         }
     except Exception as e:
         return {"connected": False, "status": "error", "error": str(e)}
@@ -82,16 +138,18 @@ def obsidian_append(path: str, content: str) -> dict:
     """Append content to a file in Obsidian vault using Local REST API."""
     try:
         # Local REST API uses POST to append content
-        resp = requests.post(
-            f"{OBSIDIAN_API_URL}/vault/{path}",
+        resp, error = _request_obsidian(
+            "POST",
+            f"/vault/{path}",
             data=content.encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {_obsidian_api_key()}",
                 "Content-Type": "text/markdown",
             },
             timeout=10,
-            verify=False,  # Self-signed cert
         )
+        if error:
+            return {"success": False, "error": error}
         if resp.status_code in [200, 204]:
             return {"success": True, "path": path, "bytes": len(content)}
         return {"success": False, "error": f"Status {resp.status_code}: {resp.text}"}
@@ -104,20 +162,18 @@ def obsidian_append(path: str, content: str) -> dict:
 def obsidian_list_files(folder: str = "") -> dict:
     """List files in Obsidian vault folder."""
     try:
-        url = (
-            f"{OBSIDIAN_API_URL}/vault/"
-            if not folder
-            else f"{OBSIDIAN_API_URL}/vault/{folder}/"
-        )
-        resp = requests.get(
-            url,
+        path = "/vault/" if not folder else f"/vault/{folder}/"
+        resp, error = _request_obsidian(
+            "GET",
+            path,
             headers={
                 "Authorization": f"Bearer {_obsidian_api_key()}",
                 "Accept": "application/json",
             },
             timeout=10,
-            verify=False,  # Self-signed cert
         )
+        if error:
+            return {"success": False, "error": error}
         if resp.status_code == 200:
             try:
                 data = resp.json()
@@ -170,15 +226,17 @@ def obsidian_list_files(folder: str = "") -> dict:
 def obsidian_get_file(path: str) -> dict:
     """Get content of a file from Obsidian vault."""
     try:
-        resp = requests.get(
-            f"{OBSIDIAN_API_URL}/vault/{path}",
+        resp, error = _request_obsidian(
+            "GET",
+            f"/vault/{path}",
             headers={
                 "Authorization": f"Bearer {_obsidian_api_key()}",
                 "Accept": "text/markdown",
             },
             timeout=10,
-            verify=False,  # Self-signed cert
         )
+        if error:
+            return {"success": False, "error": error}
         if resp.status_code == 200:
             return {"success": True, "content": resp.text, "path": path}
         return {"success": False, "error": f"Status {resp.status_code}"}
@@ -189,16 +247,18 @@ def obsidian_get_file(path: str) -> dict:
 def obsidian_save_file(path: str, content: str) -> dict:
     """Save/overwrite a file in Obsidian vault."""
     try:
-        resp = requests.put(
-            f"{OBSIDIAN_API_URL}/vault/{path}",
+        resp, error = _request_obsidian(
+            "PUT",
+            f"/vault/{path}",
             data=content.encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {_obsidian_api_key()}",
                 "Content-Type": "text/markdown",
             },
             timeout=10,
-            verify=False,  # Self-signed cert
         )
+        if error:
+            return {"success": False, "error": error}
         if resp.status_code in [200, 204]:
             return {"success": True, "path": path}
         return {"success": False, "error": f"Status {resp.status_code}: {resp.text}"}
@@ -2681,6 +2741,116 @@ def get_planner_queue():
             conn.close()
 
 
+def _coerce_optional_int(value):
+    if value is None or value == "":
+        return None
+    return int(value)
+
+
+@adapter_bp.route("/planner/tasks", methods=["POST"])
+def create_planner_task():
+    """Create a manual planner task."""
+    conn = None
+    try:
+        data = request.get_json() or {}
+
+        anchor_text = (data.get("anchor_text") or "").strip()
+        notes = (data.get("notes") or "").strip()
+        if not anchor_text and not notes:
+            return jsonify({"error": "Task title is required"}), 400
+
+        status = data.get("status", "pending")
+        if status not in {"pending", "in_progress", "completed", "deferred"}:
+            return jsonify({"error": "Invalid status"}), 400
+
+        scheduled_date = data.get("scheduled_date") or None
+        if scheduled_date:
+            try:
+                datetime.fromisoformat(scheduled_date)
+            except ValueError:
+                # Accept a date string like YYYY-MM-DD commonly used by the UI.
+                try:
+                    datetime.strptime(scheduled_date, "%Y-%m-%d")
+                except ValueError:
+                    return jsonify({"error": "Invalid scheduled_date format"}), 400
+
+        try:
+            planned_minutes = _coerce_optional_int(data.get("planned_minutes"))
+            priority = _coerce_optional_int(data.get("priority"))
+            review_number = _coerce_optional_int(data.get("review_number"))
+            course_id = _coerce_optional_int(data.get("course_id"))
+            topic_id = _coerce_optional_int(data.get("topic_id"))
+            course_event_id = _coerce_optional_int(data.get("course_event_id"))
+            actual_session_id = _coerce_optional_int(data.get("actual_session_id"))
+        except ValueError:
+            return jsonify({"error": "Invalid numeric value"}), 400
+
+        payload = {
+            "course_id": course_id,
+            "topic_id": topic_id,
+            "course_event_id": course_event_id,
+            "scheduled_date": scheduled_date,
+            "planned_minutes": planned_minutes,
+            "status": status,
+            "actual_session_id": actual_session_id,
+            "notes": notes or None,
+            "source": data.get("source", "manual"),
+            "priority": priority,
+            "review_number": review_number,
+            "anchor_text": anchor_text,
+            "created_at": datetime.now().isoformat(),
+        }
+
+        columns = [
+            "course_id", "topic_id", "course_event_id",
+            "scheduled_date", "planned_minutes", "status",
+            "actual_session_id", "notes", "source", "priority",
+            "review_number", "anchor_text", "created_at",
+        ]
+        values = [payload[col] for col in columns]
+        columns_str = ", ".join(columns)
+        placeholders = ", ".join(["?"] * len(columns))
+
+        conn = get_connection()
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            INSERT INTO study_tasks ({columns_str})
+            VALUES ({placeholders})
+            """,
+            values,
+        )
+        task_id = cur.lastrowid
+        conn.commit()
+
+        cur.execute(
+            """
+            SELECT
+                st.id, st.course_id, st.topic_id, st.course_event_id,
+                st.scheduled_date, st.planned_minutes, st.status,
+                st.actual_session_id, st.notes, st.created_at, st.updated_at,
+                st.source, st.priority, st.review_number, st.anchor_text,
+                c.name as course_name
+            FROM study_tasks st
+            LEFT JOIN courses c ON st.course_id = c.id
+            WHERE st.id = ?
+            """,
+            (task_id,),
+        )
+        row = cur.fetchone()
+        conn.close()
+        if not row:
+            return jsonify({"error": "Task save failed"}), 500
+
+        return jsonify(dict(row)), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
+
+
 @adapter_bp.route("/planner/generate", methods=["POST"])
 def generate_planner_tasks():
     """Generate study_tasks from recent session weak_anchors using spacing heuristic.
@@ -3219,6 +3389,8 @@ def get_google_calendars():
 
     calendars, error = gcal.fetch_calendar_list()
     if error:
+        if str(error).lower() == "not authenticated":
+            return jsonify({"error": error}), 401
         return jsonify({"error": error}), 500
 
     # Inject backgroundColor if missing (gcal.py doesn't always expose it raw)
@@ -3264,6 +3436,8 @@ def get_google_events():
         service=service,
     )
     if error:
+        if str(error).lower() == "not authenticated":
+            return jsonify({"error": error}), 401
         return jsonify({"error": error}), 500
 
     recurrence_cache = {}
@@ -3681,6 +3855,8 @@ def get_google_tasks():
 
     task_lists, error = gcal.fetch_task_lists()
     if error:
+        if str(error).lower() == "not authenticated":
+            return jsonify({"error": error}), 401
         return jsonify({"error": error}), 500
 
     all_tasks = []
@@ -3718,6 +3894,8 @@ def get_google_task_lists():
 
     task_lists, error = gcal.fetch_task_lists()
     if error:
+        if str(error).lower() == "not authenticated":
+            return jsonify({"error": error}), 401
         return jsonify({"error": error}), 500
 
     return jsonify(task_lists)
@@ -3745,6 +3923,8 @@ def create_google_task_endpoint():
 
     result, error = gcal.create_google_task(list_id, body)
     if error:
+        if str(error).lower() == "not authenticated":
+            return jsonify({"error": error}), 401
         return jsonify({"error": error}), 500
     return jsonify(result)
 
@@ -3775,6 +3955,8 @@ def patch_google_task_endpoint(task_id):
 
     result, error = gcal.patch_google_task(list_id, task_id, body)
     if error:
+        if str(error).lower() == "not authenticated":
+            return jsonify({"error": error}), 401
         return jsonify({"error": error}), 500
     return jsonify(result)
 
@@ -3789,6 +3971,8 @@ def delete_google_task_endpoint(task_id):
 
     success, error = gcal.delete_google_task(list_id, task_id)
     if not success:
+        if str(error).lower() == "not authenticated":
+            return jsonify({"error": error}), 401
         return jsonify({"error": error}), 500
     return jsonify({"success": True})
 
@@ -3849,11 +4033,16 @@ def move_google_task_endpoint(task_id):
             service.tasks().delete(tasklist=list_id, task=task_id).execute()
             return jsonify(new_task)
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            msg = str(e)
+            if "invalid credentials" in msg.lower() or "not authenticated" in msg.lower():
+                return jsonify({"error": msg}), 401
+            return jsonify({"error": msg}), 500
 
     # Same-list Reorder
     result, error = gcal.move_google_task(list_id, task_id, previous, parent)
     if error:
+        if str(error).lower() == "not authenticated":
+            return jsonify({"error": error}), 401
         return jsonify({"error": error}), 500
     return jsonify(result)
 

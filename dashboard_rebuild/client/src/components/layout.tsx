@@ -43,6 +43,7 @@ const resolveNoteType = (note: Note): NoteCategory => {
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const currentPath = location === "/" ? "/" : "/" + location.split("/")[1];
+  const isBrainPage = currentPath === "/brain";
   const [newNote, setNewNote] = useState("");
   const [newNoteType, setNewNoteType] = useState<NoteCategory>("notes");
   const [activeTab, setActiveTab] = useState<"all" | NoteCategory>("all");
@@ -289,7 +290,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative flex flex-col font-terminal">
+    <div className="h-[100dvh] bg-background text-foreground relative grid grid-rows-[auto_1fr_auto] font-terminal overflow-hidden">
       {/* Background with overlay */}
       <div
         className="fixed inset-0 z-0 pointer-events-none"
@@ -536,11 +537,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="relative z-10 flex-1 w-full px-3 md:px-6 py-3 pb-16 bg-grid">
-        <div className="page-enter">
-          {children}
-        </div>
+      <main
+        className={cn(
+          "relative z-10 w-full bg-grid h-full min-h-0",
+          isBrainPage
+            ? "overflow-hidden"
+            : "overflow-y-auto px-3 md:px-6 py-3"
+        )}
+      >
+        <div className={cn("page-enter", isBrainPage && "h-full")}>{children}</div>
       </main>
 
       {/* Tutor Modal Integration */}
@@ -560,7 +565,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </Dialog>
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-secondary bg-black/95 py-2">
+      <footer className="z-20 border-t border-secondary bg-black/95 py-2">
         <div className="container mx-auto px-4 flex justify-between items-center text-xs text-muted-foreground font-terminal">
           <div className="flex gap-4">
             <span>STATUS: <span className="text-primary">ONLINE</span></span>
@@ -569,8 +574,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div>v2.0.25 [BETA]</div>
         </div>
       </footer>
-      {/* Footer spacer */}
-      <div className="h-10" />
     </div>
   );
 }

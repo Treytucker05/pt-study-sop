@@ -2,14 +2,18 @@ import { useMemo, useState, type ReactNode } from "react";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, GripVertical, Play, RefreshCw } from "lucide-react";
+import { ArrowLeft, CheckCircle2, GripVertical, Play, Plus, RefreshCw } from "lucide-react";
 import { format, isPast, isToday, isTomorrow, parseISO, isValid } from "date-fns";
 
-import { api, type PlannerTask, type PlannerTaskUpdate } from "@/lib/api";
+import { api, type PlannerTask, type PlannerTaskCreate, type PlannerTaskUpdate } from "@/lib/api";
 import { useToast } from "@/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 type PlannerKanbanColumnId = "pending" | "in_progress";
@@ -263,6 +267,30 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
     },
   });
 
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [newTaskMinutes, setNewTaskMinutes] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState("");
+  const [newTaskNotes, setNewTaskNotes] = useState("");
+
+  const createTaskMutation = useMutation({
+    mutationFn: (data: PlannerTaskCreate) => api.planner.createTask(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["planner-queue"] });
+      setShowAddTask(false);
+      setNewTaskTitle("");
+      setNewTaskDueDate("");
+      setNewTaskMinutes("");
+      setNewTaskPriority("");
+      setNewTaskNotes("");
+      toast({ title: "Task added", description: "Planner task created." });
+    },
+    onError: (err) => {
+      toast({ title: "Create task failed", description: String(err), variant: "destructive" });
+    },
+  });
+
   const generateMutation = useMutation({
     mutationFn: () => api.planner.generate(),
     onSuccess: (res) => {
@@ -310,6 +338,51 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
     updateTaskMutation.mutate({ id: taskId, data: { status: "completed" } });
   };
 
+  const resetNewTaskForm = () => {
+    setShowAddTask(false);
+    setNewTaskTitle("");
+    setNewTaskDueDate("");
+    setNewTaskMinutes("");
+    setNewTaskPriority("");
+    setNewTaskNotes("");
+  };
+
+  const handleCreateTask = () => {
+    const title = newTaskTitle.trim();
+    if (!title) return;
+
+    const minutes = newTaskMinutes.trim();
+    const priority = newTaskPriority.trim();
+
+    const payload: PlannerTaskCreate = {
+      anchor_text: title,
+      source: "manual",
+      status: "pending",
+      notes: newTaskNotes.trim() || undefined,
+      scheduled_date: newTaskDueDate || undefined,
+    };
+
+    if (minutes) {
+      const parsedMinutes = Number.parseInt(minutes, 10);
+      if (Number.isNaN(parsedMinutes) || parsedMinutes < 0) {
+        toast({ title: "Invalid minutes", description: "Planned minutes must be a positive number.", variant: "destructive" });
+        return;
+      }
+      payload.planned_minutes = parsedMinutes;
+    }
+
+    if (priority) {
+      const parsedPriority = Number.parseInt(priority, 10);
+      if (Number.isNaN(parsedPriority) || parsedPriority < 0) {
+        toast({ title: "Invalid priority", description: "Priority must be 0 or greater.", variant: "destructive" });
+        return;
+      }
+      payload.priority = parsedPriority;
+    }
+
+    createTaskMutation.mutate(payload);
+  };
+
   const onDragEnd = (event: DragEndEvent) => {
     setActiveTaskId(null);
     const nextStatus = event.over?.data.current?.status as PlannerKanbanColumnId | undefined;
@@ -327,7 +400,7 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
   };
 
   const activeTask = activeTaskId ? tasksById.get(activeTaskId) : null;
-  const isUpdating = updateTaskMutation.isPending;
+  const isUpdating = updateTaskMutation.isPending || createTaskMutation.isPending;
 
   return (
     <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
@@ -342,8 +415,19 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
               size="sm"
               variant="outline"
               className="rounded-none font-arcade text-xs border-primary"
+              onClick={() => setShowAddTask(true)}
+              disabled={isUpdating}
+              title="Add manual planner task"
+            >
+              <Plus className="w-3.5 h-3.5 mr-2" />
+              Add
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-none font-arcade text-xs border-primary"
               onClick={() => generateMutation.mutate()}
-              disabled={generateMutation.isPending}
+              disabled={generateMutation.isPending || isUpdating}
               title="Generate tasks from recent weak anchors"
             >
               <RefreshCw className={cn("w-3.5 h-3.5 mr-2", generateMutation.isPending && "animate-spin")} />
@@ -352,6 +436,114 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
           </div>
         </CardTitle>
       </CardHeader>
+
+      <Dialog open={showAddTask} onOpenChange={(open) => (open ? setShowAddTask(open) : resetNewTaskForm())}>
+        <DialogContent className="bg-black border-2 border-primary rounded-none">
+          <DialogHeader>
+            <DialogTitle className="font-arcade text-sm">ADD_PLANNER_TASK</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Add a manual task to your planner queue.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1">
+              <Label htmlFor="planner-task-title" className="font-arcade text-xs">
+                TASK TEXT
+              </Label>
+              <Input
+                id="planner-task-title"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                className="rounded-none border-secondary bg-black font-terminal"
+                placeholder="Enter task text"
+                autoFocus
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="planner-task-due-date" className="font-arcade text-xs">
+                DUE DATE
+              </Label>
+              <Input
+                id="planner-task-due-date"
+                type="date"
+                value={newTaskDueDate}
+                onChange={(e) => setNewTaskDueDate(e.target.value)}
+                className="rounded-none border-secondary bg-black font-terminal"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="planner-task-minutes" className="font-arcade text-xs">
+                  PLANNED MINUTES
+                </Label>
+                <Input
+                  id="planner-task-minutes"
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={newTaskMinutes}
+                  onChange={(e) => setNewTaskMinutes(e.target.value)}
+                  className="rounded-none border-secondary bg-black font-terminal"
+                  placeholder="45"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="planner-task-priority" className="font-arcade text-xs">
+                  PRIORITY
+                </Label>
+                <Input
+                  id="planner-task-priority"
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={newTaskPriority}
+                  onChange={(e) => setNewTaskPriority(e.target.value)}
+                  className="rounded-none border-secondary bg-black font-terminal"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="planner-task-notes" className="font-arcade text-xs">
+                NOTES
+              </Label>
+              <Textarea
+                id="planner-task-notes"
+                value={newTaskNotes}
+                onChange={(e) => setNewTaskNotes(e.target.value)}
+                className="rounded-none border-secondary bg-black font-terminal min-h-20"
+                placeholder="Optional notes"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-none font-arcade text-xs"
+                onClick={handleCreateTask}
+                disabled={!newTaskTitle.trim() || isUpdating}
+              >
+                CREATE
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-none font-arcade text-xs border-secondary"
+                onClick={() => resetNewTaskForm()}
+              >
+                CANCEL
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <CardContent className="p-4">
         <DndContext

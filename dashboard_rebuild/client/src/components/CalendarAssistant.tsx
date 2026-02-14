@@ -117,7 +117,7 @@ export function CalendarAssistant({ isOpen, onClose }: CalendarAssistantProps) {
     if (!isOpen) return null;
 
     return (
-        <Card className="fixed left-0 top-[68px] bottom-[40px] w-[380px] z-50 flex flex-col border-r-[3px] border-double border-primary bg-black text-white rounded-none animate-in fade-in slide-in-from-left-4 duration-300">
+        <Card className="fixed left-0 top-0 bottom-10 w-[380px] z-50 flex flex-col border-r-[3px] border-double border-primary bg-black text-white rounded-none animate-in fade-in slide-in-from-left-4 duration-300">
             <CardHeader className="border-b border-primary/50 flex flex-row items-center justify-between bg-primary/10">
                 <div className="flex items-center gap-2">
                     <Bot className="w-5 h-5 text-primary" />

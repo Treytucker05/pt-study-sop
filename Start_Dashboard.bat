@@ -4,6 +4,14 @@ rem One-click: sync logs -> regenerate resume -> start dashboard -> open browser
 
 cd /d "%~dp0"
 
+rem Stop any existing dashboard server processes so code changes take effect.
+rem This prevents multiple dashboard_web.py instances (stale routes, port conflicts).
+echo [0/6] Closing any existing dashboard server processes...
+for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq 'C:\\Python314\\python.exe' -and $_.CommandLine -and $_.CommandLine.Trim().EndsWith('dashboard_web.py') } | Select-Object -ExpandProperty ProcessId"`) do (
+    echo [INFO] Stopping PID %%P
+    taskkill /PID %%P /F >nul 2>nul
+)
+
 rem Configure Study RAG drop-folder (used by Tutor -> Study sync)
 set "ONEDRIVE_RAG=C:\Users\treyt\OneDrive\Desktop\PT School"
 set "LOCAL_RAG=%~dp0PT School"
@@ -32,7 +40,7 @@ goto END
 if /I "%PYEXE%"=="py" set "PYEXE_ARGS=-3"
 
 set "SERVER_DIR=%~dp0brain"
-echo [1/5] Ensuring Brain database is initialized...
+echo [1/6] Ensuring Brain database is initialized...
 cd /d "%SERVER_DIR%"
 if not exist "db_setup.py" (
     echo [ERROR] Could not find brain\db_setup.py from %~dp0.
@@ -45,7 +53,7 @@ if %errorlevel% NEQ 0 (
 )
 
 cd /d "%~dp0"
-echo [2/5] Syncing logs and regenerating resume...
+echo [2/6] Syncing logs and regenerating resume...
 if not exist "brain\sync_all.ps1" (
     echo [ERROR] Could not find brain\sync_all.ps1 from %~dp0.
     goto END
@@ -58,7 +66,7 @@ if %errorlevel% NEQ 0 (
 )
 
 
-echo [3/5] Building dashboard UI (if available)...
+echo [3/6] Building dashboard UI (if available)...
 set "REBUILD_DIR=%~dp0dashboard_rebuild"
 set "DIST_DIR=%SERVER_DIR%\static\dist"
 
@@ -81,18 +89,10 @@ if /I "%SKIP_UI_BUILD%"=="1" (
     echo [WARN] dashboard_rebuild not found at %REBUILD_DIR% - skipping UI build.
 )
 
-echo [4/5] Starting dashboard server (window titled 'PT Study Brain Dashboard')...
+echo [4/6] Starting dashboard server (window titled 'PT Study Brain Dashboard')...
 if not exist "%SERVER_DIR%\dashboard_web.py" (
     echo [ERROR] Could not find brain\dashboard_web.py from %~dp0.
     goto END
-)
-
-rem Stop any existing dashboard server processes so code/route changes take effect.
-rem This prevents multiple dashboard_web.py instances (stale routes, port conflicts).
-echo [INFO] Closing any existing dashboard server processes (dashboard_web.py)...
-for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -like 'python*' -and $_.CommandLine -like '*dashboard_web.py*' } | Select-Object -ExpandProperty ProcessId"`) do (
-    echo [INFO] Stopping PID %%P
-    taskkill /PID %%P /F >nul 2>nul
 )
 
 rem Check if Frontend Build exists (expects /static/dist/assets/index-*.js)
@@ -105,7 +105,7 @@ if not exist "%DIST_DIR%\assets\index-*.js" (
 
 start "PT Study Brain Dashboard" cmd /k "cd /d "%SERVER_DIR%" && "%PYEXE%" %PYEXE_ARGS% dashboard_web.py"
 
-echo [5/5] Giving the server a few seconds to start...
+echo [5/6] Giving the server a few seconds to start...
 timeout /t 5 /nobreak >nul
 
 :OPEN_BROWSER
