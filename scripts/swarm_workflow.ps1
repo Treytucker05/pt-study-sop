@@ -18,7 +18,9 @@ param(
   [int]$OhMyCount = 1,
 
   [ValidateSet("windows", "tabs", "splits")]
-  [string]$Layout = "windows"
+  [string]$Layout = "windows",
+
+  [switch]$NoPause
 )
 
 Set-StrictMode -Version Latest
@@ -884,6 +886,9 @@ Write-Host "Mode: $Mode"
 Write-Host "Task board: $($taskBoard.BoardPath)"
 Write-Host "Runtime scripts: $runtimeScripts"
 Write-BootstrapLog -Message "Swarm bootstrap completed successfully."
+if ($NoPause) {
+  exit 0
+}
 }
 catch {
   $fatal = $_
@@ -891,5 +896,8 @@ catch {
   Write-Host ""
   Write-Host ("FATAL: {0}" -f $fatalMessage) -ForegroundColor Red
   Write-BootstrapLog -Message ("FATAL: {0}" -f $fatal)
-  Read-Host "Press Enter to keep this window open" | Out-Null
+  if (-not $NoPause) {
+    Read-Host "Press Enter to keep this window open" | Out-Null
+  }
+  exit 1
 }
