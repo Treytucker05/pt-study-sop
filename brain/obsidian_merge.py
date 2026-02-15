@@ -232,7 +232,7 @@ def _deterministic_merge(existing_body: str, new_body: str) -> str:
 
 
 def _link_term(content: str, term: str) -> str:
-    pattern = re.compile(rf"(?<!\\[)\\b{re.escape(term)}\\b")
+    pattern = re.compile(rf"(?<!\[)\b{re.escape(term)}\b")
 
     def replace(match):
         text = match.group(0)
