@@ -358,9 +358,8 @@ def validate_step_output(block: dict, output: str) -> Optional[ValidationResult]
 
     if artifact_type == "cards":
         method_id = block.get("method_id")
-        if method_id != "M-OVR-002":
-            return None
-        output = normalize_anki_output(output)
+        if method_id == "M-OVR-002":
+            output = normalize_anki_output(output)
 
     validator = _VALIDATORS[artifact_type]
     return validator(output, block_name=block.get("name", "Unknown"))
