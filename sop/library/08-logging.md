@@ -1,4 +1,4 @@
-# Logging Schema v9.4 (Canonical)
+# Logging Schema v9.4 (Canonical) + Control-Plane ErrorLog
 
 ## Purpose
 
@@ -132,6 +132,34 @@ Did you connect this session's content to another class? `yes` | `no`.
 - `errors_by_type` (Enhanced): Aggregate counts per type
 - `errors_by_severity` (Enhanced): Aggregate counts per severity
 - `error_patterns` (Enhanced): Recurring error descriptions (e.g., `"origin vs insertion confusion recurring 3 sessions"`)
+
+---
+
+## Control-Plane ErrorLog.csv Schema (Required for retrieval-like stages)
+
+For operational stage adaptation, use a separate row-level error log:
+
+```csv
+topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied
+```
+
+`error_type` enum is fixed:
+
+- `Recall`
+- `Confusion`
+- `Rule`
+- `Representation`
+- `Procedure`
+- `Computation`
+- `Speed`
+
+Notes:
+- `stage_detected` should be the operational stage label (`calibrate`, `retrieve`, or `overlearn` as applicable).
+- `confidence` uses `H`, `M`, `L`.
+- `time_to_answer` is seconds.
+- `fix_applied` records the method override or corrective action.
+
+Example rows are provided in `sop/library/templates/ErrorLog.csv`.
 
 ---
 

@@ -1,6 +1,6 @@
 # 09 — Templates
 
-All PEIRRO study templates in one file. Copy and fill in per session/week.
+Core study templates for the operational flow (CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN). Copy and fill in per session/week.
 
 ---
 
@@ -243,3 +243,24 @@ Use within 24 hours. Answer from memory first, then check sources.
 **Error Check:**
 - What did I get wrong in the session?
 - What is the corrected version?
+
+---
+
+## 10. Control-Plane Artifact Pack (file templates)
+
+Use the dedicated template files in `sop/library/templates/` for deterministic stage artifacts:
+
+- `Spine.md`
+- `Unknowns.md`
+- `Predictions.md`
+- `GoalTargets.md`
+- `CalibrateItems.md`
+- `CalibrateResults.csv`
+- `PrioritySet.md`
+- `OnePageAnchor.md`
+- `QuestionBankSeed.md`
+- `CoverageCheck.md`
+- `ErrorLog.csv`
+- `DrillSheet.md`
+- `CrossSessionValidation.md`
+- `topic.yaml`

@@ -10,6 +10,9 @@ The "Interrogate" PEIRRO category is NOT a PERO stage. Methods in that
 category are mapped to Encoding (structure-building) or Retrieval
 (case-based application) based on each method's cognitive intent.
 
+Within PERO "P" (prepare), runtime may display PRIME vs CALIBRATE
+as operational substages while keeping canonical PEIRRO category names.
+
 YAML categories are NEVER renamed. This mapping is computed at runtime.
 
 Usage:
@@ -106,6 +109,17 @@ def get_pero_stage(method_name: str, category: str = "") -> str:
     return _CATEGORY_DEFAULT.get(category, "E")
 
 
+def get_prepare_substage(method_name: str) -> str:
+    """Return PRIME vs CALIBRATE operational substage for prepare methods."""
+    calibrate_names = {
+        "Pre-Test",
+        "Micro Precheck",
+        "Confidence Tagging",
+        "Priority Set",
+    }
+    return "CALIBRATE" if method_name in calibrate_names else "PRIME"
+
+
 def get_pero_info(method_name: str, category: str = "") -> dict:
     """Return full PERO mapping info for a method.
 
@@ -114,21 +128,27 @@ def get_pero_info(method_name: str, category: str = "") -> dict:
     override = _METHOD_OVERRIDES.get(method_name)
     if override:
         stage = override["pero"]
-        return {
+        info = {
             "pero": stage,
             "label": PERO_LABELS[stage],
             "subtag": override.get("subtag", ""),
             "exception": override.get("exception", False),
             "category": category,
         }
+        if stage == "P":
+            info["micro_stage"] = get_prepare_substage(method_name)
+        return info
     stage = _CATEGORY_DEFAULT.get(category, "E")
-    return {
+    info = {
         "pero": stage,
         "label": PERO_LABELS[stage],
         "subtag": "",
         "exception": False,
         "category": category,
     }
+    if stage == "P":
+        info["micro_stage"] = get_prepare_substage(method_name)
+    return info
 
 
 def get_pero_sequence(

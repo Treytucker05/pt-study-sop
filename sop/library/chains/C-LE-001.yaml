@@ -1,9 +1,10 @@
 id: C-LE-001
 name: Low Energy
-description: Low-effort chain for tired days. Prepare → Overlearn. Maintain streak without burning out.
+description: Low-effort chain for tired days. Prepare → Reference → Retrieve → Overlearn. Maintain streak without burning out.
 blocks:
 - M-PRE-001
 - M-PRE-004
+- M-RET-003
 - M-OVR-001
 context_tags:
   energy: low

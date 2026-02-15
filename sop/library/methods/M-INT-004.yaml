@@ -11,6 +11,7 @@ tags:
   - discrimination
   - differential
   - table
+required_when_confusable: true
 mechanisms:
   - discrimination
   - elaboration

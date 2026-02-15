@@ -44,7 +44,8 @@ You can't plan what you haven't mapped. Materials come first, then the AI maps s
 3. **AI Maps Structure** -- AI reads the materials and produces a concept/cluster map (3-5 clusters). Learner approves the map before proceeding.
 4. **Plan from Map** -- 3-5 steps derived from the approved cluster map.
 5. **Prime** -- 60-120s brain dump. UNKNOWN is a valid answer (you haven't learned this yet).
-6. **Method Chain** (optional) -- select from library or build ad-hoc (see `15-method-library.md`).
+6. **Calibrate** -- 2-5 min diagnostic set (5-10 items), confidence tags H/M/L, no grading. Build top-3 Priority Set.
+7. **Method Chain** (optional) -- select from library or build ad-hoc (see `15-method-library.md`).
 
 **Optional NotebookLM Workflow:**
 1. Upload source materials to NotebookLM.
@@ -52,7 +53,7 @@ You can't plan what you haven't mapped. Materials come first, then the AI maps s
 3. Format output into a Tutor-Ready Packet (LOs, source-lock list, buckets, glossary, mechanisms, diagram, retrieval prompts, confusions).
 4. Hand off to session.
 
-**Track A Exit:** Context, materials pasted, cluster map approved, plan locked, prime done.
+**Track A Exit:** Context, materials pasted, cluster map approved, plan locked, prime done, calibrate done, Priority Set recorded.
 
 ---
 
@@ -66,10 +67,11 @@ You've seen this before. Test what you retained, then plan around the gaps.
 3. **Materials + Source-Lock** -- LOs, slides, labs, practice Qs, notes. List specific pages/files for today. NotebookLM packet satisfies Source-Lock.
 4. **Interleave** -- review 1-2 weak anchors from prior Wrap Watchlist.
 5. **Plan** -- 3-5 steps.
-6. **Pre-test** -- 1-3 retrieval items (no hints). Establishes baseline before instruction.
-7. **Method Chain** (optional) -- select from library or build ad-hoc (see `15-method-library.md`).
+6. **Calibrate** -- 2-5 min diagnostic set (5-10 items, no grading) with confidence tags; items >45s are marked miss and skipped.
+7. **Priority Set** -- top 3 weaknesses used to drive ENCODE method selection.
+8. **Method Chain** (optional) -- select from library or build ad-hoc (see `15-method-library.md`).
 
-**Track B Exit:** Target, sources, plan, and pre-test confirmed.
+**Track B Exit:** Target, sources, plan, calibrate results, and Priority Set confirmed.
 
 ---
 
@@ -131,9 +133,9 @@ For full mode descriptions, selection heuristics, and switching rules, see Modes
 
 ---
 
-## M2: Prime (Map the Territory)
+## M2: Prime (Map the Territory — No Scoring)
 
-Build the structural map. Do not teach details yet.
+Build the structural map. Do not teach details and do not score performance in this stage.
 
 **Track A note:** Cluster map was already approved in M0. Select the first bucket and proceed directly — no H1 Scan needed.
 
@@ -147,13 +149,30 @@ Build the structural map. Do not teach details yet.
 
 **Guardrails:** Map only -- no detail. 2-3 buckets max per session. Mark unverified if no source.
 
-**Exit:** Scan done (or map carried from M0), buckets chosen, first bucket selected, pre-questions answered and corrected.
+**Exit:** Scan done (or map carried from M0), buckets chosen, first bucket selected, orientation artifacts captured (Spine, Unknowns, Predictions, GoalTargets).
+
+---
+
+## M2.5: Calibrate (Diagnostic, Not Testing)
+
+Run a short diagnostic calibration pass to determine what ENCODE should prioritize.
+
+**Protocol:**
+1. 2-5 minute timer.
+2. 5-10 short items aligned to assessment mode.
+3. Tag each item confidence as H/M/L.
+4. If an item exceeds 45 seconds, mark miss and move on.
+5. No grading language; output top-3 **Priority Set** weaknesses.
+
+**Guardrails:** Calibration is a routing signal, not a score report.
+
+**Exit:** CalibrateResults captured and Priority Set (top 3) locked for ENCODE.
 
 ---
 
 ## M3: Encode (Attach Meaning)
 
-Turn buckets into understanding. Learner supplies the Seed; AI does not build without it.
+Turn buckets into understanding. ENCODE selection is deterministic from Priority Set. Learner supplies the Seed; AI does not build without it.
 
 **KWIK Flow (default for hooks):**
 Sound > Function > Image > Resonance > Lock
@@ -179,7 +198,9 @@ Sound > Function > Image > Resonance > Lock
 
 **Guardrails:** Function before structure. No advancing without learner Seed/approval.
 
-**Exit:** Bucket encoded, learner can explain in own words, hooks locked.
+**Reference handoff required:** produce One-Page Anchor + Question Bank Seed + Coverage Check before retrieval-heavy work.
+
+**Exit:** Bucket encoded, learner can explain in own words, hooks locked, reference artifacts generated.
 
 ---
 
@@ -201,6 +222,7 @@ Practice with increasing difficulty. Lock understanding.
 | Interleaved | Mixed items from multiple buckets | Discriminate and solve |
 
 5. Capture all misses for Wrap.
+6. Log misses in `ErrorLog.csv` format for adaptation.
 
 **+1 Difficulty start rule:** If difficulty calibration is set to +1, begin at Faded (skip Guided).
 
@@ -208,9 +230,9 @@ Practice with increasing difficulty. Lock understanding.
 
 **Anatomy drawing integration:** During Build for anatomy sessions, use the Drawing Protocol from `04-engines.md` — draw bone outline, mark landmarks, add muscle lines, label O/I, annotate actions.
 
-**Toolkit:** Interleaving, spacing (successive relearning), variability across contexts, retrieval + self-explanation, error reflection. Feedback: immediate on factual errors; brief delay is OK for reasoning.
+**Toolkit:** Interleaving, spacing (successive relearning), variability across contexts, retrieval + self-explanation, adversarial near-miss prompts, timed sprint sets with latency logging. Feedback: immediate on factual errors; brief delay is OK for reasoning.
 
-**Exit:** Learner handles mixed items accurately, 2-3 correct spaced recalls on key items.
+**Exit:** Learner handles mixed items accurately, timed latency captured, and ErrorLog updated for misses.
 
 ---
 
@@ -263,9 +285,11 @@ M1 Entry -- state check, scope, mode selection
 M2 Prime -- Track A: use M0 map, select bucket
             Track B: H1 scan, bucket, select first bucket
   |
-M3 Encode -- KWIK flow, generation, hooks locked
+M2.5 Calibrate -- 2-5 min diagnostic, confidence tags, Priority Set (top 3)
   |
-M4 Build -- teach-back gate, progressive ladder, misses captured
+M3 Encode/Reference -- Priority-driven encoding, KWIK flow, anchor + question bank artifacts
+  |
+M4 Build/Retrieve -- teach-back gate, progressive ladder, adversarial + timed sets, ErrorLog updates
   |
   (Mode modifies behavior across M2-M4; see Modes section)
   |

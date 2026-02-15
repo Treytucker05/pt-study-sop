@@ -7,6 +7,7 @@ This is the canonical source of truth for the PT Study OS. Runtime bundles in `s
 ## How to Use This Library
 
 - **New to the system?** Start with `00-overview.md` for the big picture, then `05-session-flow.md` for execution.
+- **Need stage contracts and adaptation rules?** Use `17-control-plane.md`.
 - **Running a session?** Follow `05-session-flow.md` (M0-M6). Pick your engine from `04-engines.md` or `14-lo-engine.md`.
 - **Deploying the Custom GPT?** Use `10-deployment.md` + `13-custom-gpt-system-instructions.md`.
 - **Looking for templates?** `09-templates.md` has every fillable form.
@@ -18,7 +19,7 @@ This is the canonical source of truth for the PT Study OS. Runtime bundles in `s
 |---|------|-------|---------|
 | 00 | [00-overview.md](00-overview.md) | Foundation | System identity, vision, architecture, file map |
 | 01 | [01-core-rules.md](01-core-rules.md) | Foundation | Behavioral rules and invariants |
-| 02 | [02-learning-cycle.md](02-learning-cycle.md) | Foundation | PEIRRO macro cycle + KWIK micro-loop |
+| 02 | [02-learning-cycle.md](02-learning-cycle.md) | Foundation | Control-plane operational flow + PEIRRO compatibility + KWIK micro-loop |
 | 03 | [03-frameworks.md](03-frameworks.md) | Execution | H/M/Y/L series frameworks |
 | 04 | [04-engines.md](04-engines.md) | Execution | Anatomy Engine + Concept Engine |
 | 05 | [05-session-flow.md](05-session-flow.md) | Execution | M0-M6 module sequence |
@@ -32,6 +33,7 @@ This is the canonical source of truth for the PT Study OS. Runtime bundles in `s
 | 13 | [13-custom-gpt-system-instructions.md](13-custom-gpt-system-instructions.md) | Reference | GPT system prompt (v9.5) |
 | 14 | [14-lo-engine.md](14-lo-engine.md) | Reference | Learning Objective Engine |
 | 15 | [15-method-library.md](15-method-library.md) | Reference | Composable Method Library |
+| 17 | [17-control-plane.md](17-control-plane.md) | Reference | Control plane gates, adaptation, and deterministic bundles |
 
 ## Key Cross-References
 
@@ -39,3 +41,4 @@ This is the canonical source of truth for the PT Study OS. Runtime bundles in `s
 - **Source-Lock rule**: canonical in `01-core-rules.md`
 - **No Phantom Outputs**: canonical in `01-core-rules.md`
 - **Protocol Pack routing**: canonical in `13-custom-gpt-system-instructions.md`
+- **Control Plane contracts**: canonical in `17-control-plane.md`

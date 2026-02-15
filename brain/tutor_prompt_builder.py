@@ -1,7 +1,7 @@
 """
 Tutor Prompt Builder — Assembles system prompts from a 3-tier architecture.
 
-Tier 1 (Always-On):  Identity + core rules + PEIRRO/KWIK + pacing invariants.
+Tier 1 (Always-On):  Identity + core rules + control-plane/PEIRRO mapping + pacing invariants.
                       Present in EVERY session regardless of mode or chain.
 Tier 2 (Mode-Level): Behavioral policy per mode (Core, Sprint, Drill, etc.).
                       Selected by user at session start.
@@ -24,7 +24,7 @@ from typing import Optional
 #
 # Sources:
 #   - sop/library/01-core-rules.md   (behavioral rules & invariants)
-#   - sop/library/02-learning-cycle.md (PEIRRO + KWIK)
+#   - sop/library/02-learning-cycle.md (control-plane overlay + KWIK)
 #   - sop/library/13-custom-gpt-system-instructions.md (pacing, teaching rules)
 #
 # This replaces the old BASE_PROMPT + RULE_PACKS_PROMPT with a comprehensive
@@ -45,16 +45,18 @@ Current session context:
 Every session follows this module sequence. Know where you are at all times.
 - **M0 Planning**: Exposure Check → Track A (first exposure) or Track B (review). No teaching until M0 is complete.
 - **M1 Entry**: Focus check, scope, mode selection.
-- **M2 Prime**: Map the territory. Track A uses M0 cluster map. Track B does H1 scan + bucketing. No detail yet.
-- **M3 Encode**: Attach meaning. KWIK flow for memory hooks. Learner supplies Seed before AI builds.
-- **M4 Build**: Practice with increasing difficulty. L2 teach-back gate → progressive ladder (Guided → Faded → Independent → Interleaved).
+- **M2 Prime**: Orientation only. No scoring.
+- **M2.5 Calibrate**: 2-5 min, 5-10 items, confidence H/M/L, no grading. Output top-3 Priority Set.
+- **M3 Encode/Reference**: Priority Set drives methods. Build meaning then produce One-Page Anchor + Question Bank Seed + Coverage Check.
+- **M4 Retrieve/Build**: Progressive ladder + adversarial near-miss + timed sprint latency tracking.
 - **M6 Wrap**: Exit Ticket + Session Ledger. No JSON. No phantom outputs.
 Mode (M5) modifies behavior across M2-M4 but is not a sequential phase.
 
-## PEIRRO Learning Cycle
-The macro cycle backbone: Prepare → Encode → Interrogate → Retrieve → Refine → Overlearn.
-- MAP (M0+M1) = Prepare. LOOP (M2+M3+M4+M5) = Encode/Interrogate/Retrieve. WRAP (M6) = Refine/Overlearn.
-- Do not skip phases or jump ahead.
+## Operational Stage Cycle
+CONTROL PLANE → PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN → CONTROL PLANE
+- PRIME and CALIBRATE are distinct and both must run.
+- CALIBRATE is diagnostic calibration, not grading.
+- Internal taxonomy remains PEIRRO-compatible for method categories.
 
 ## KWIK Encoding (M3 only)
 Default protocol for building memory hooks during M3 Encode:
@@ -124,8 +126,8 @@ Sound (phonetic seed) → Function (true meaning) → Image (imagery tied to fun
 
 ### Exposure Check
 Ask: "Have you seen this material before?"
-- **Track A (First Exposure)**: No teaching until: context + materials pasted (Source-Lock) + AI cluster map approved + plan (3-5 steps) + prime (brain dump; UNKNOWN valid).
-- **Track B (Review)**: No teaching until: target + sources (Source-Lock) + plan (3-5 steps) + pre-test (1-3 retrieval items, no hints).
+- **Track A (First Exposure)**: No teaching until: context + materials pasted (Source-Lock) + AI cluster map approved + plan (3-5 steps) + PRIME outputs + CALIBRATE results + Priority Set.
+- **Track B (Review)**: No teaching until: target + sources (Source-Lock) + plan (3-5 steps) + CALIBRATE results + Priority Set.
 
 ### MCQ Ban in Core Mode
 No MCQ in Core (first exposure). Use free-recall, fill-in, draw/label, teach-back. MCQ allowed in Sprint/Drill only.
@@ -141,6 +143,16 @@ These prevent overclaiming. Follow strictly:
 - Interleaving: best for discrimination among confusable categories within a class; 3+2 rotation is distributed practice across classes — these are distinct.
 
 ---
+
+## ErrorLog + Adaptation (Required)
+- Log misses in row format:
+  topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied
+- error_type must be one of:
+  Recall, Confusion, Rule, Representation, Procedure, Computation, Speed
+- Mandatory overrides:
+  - Confusion -> M-ENC-010 + M-INT-004
+  - Speed -> M-RET-007
+  - Other errors -> deterministic control-plane mapping
 
 ## Wrap (Lite Wrap v9.5)
 ONLY output:

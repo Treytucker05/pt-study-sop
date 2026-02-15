@@ -1,0 +1,42 @@
+id: M-REF-004
+name: Question Bank Seed
+category: interrogate
+description: Generate a mode-tagged seed bank of 10-20 retrieval questions from objectives and anchor artifacts.
+default_duration_min: 8
+energy_cost: medium
+best_stage: exam_prep
+status: draft
+artifact_type: outline
+tags:
+  - reference
+  - question-bank
+  - retrieval-design
+mechanisms:
+  - retrieval
+  - transfer
+inputs:
+  - Objectives
+  - One-Page Anchor
+  - Assessment mode selector
+steps:
+  - step: 1
+    action: Generate 10-20 questions tied to objective IDs
+    notes: Distribute across selected assessment mode
+  - step: 2
+    action: Tag each item with mode and objective_id
+    notes: Ensure coverage across objectives
+  - step: 3
+    action: Mark high-risk confusable items for adversarial drills
+    notes: Feed directly into RETRIEVE stage
+outputs:
+  - Question Bank Seed (10-20 items, mode-tagged)
+  - Coverage check draft
+stop_criteria:
+  - At least 10 and at most 20 items
+  - Every item tagged by objective and assessment mode
+evidence:
+  citation: Roediger & Karpicke (2006)
+  finding: Retrieval-oriented item generation improves durable recall performance
+  source: control-plane migration
+evidence_raw: Roediger & Karpicke (2006); retrieval practice outperforms rereading for retention
+

@@ -1,0 +1,41 @@
+id: M-RET-007
+name: Timed Sprint Sets
+category: retrieve
+description: Execute timed retrieval sprints and record latency per item to expose speed bottlenecks.
+default_duration_min: 8
+energy_cost: high
+best_stage: review
+status: draft
+tags:
+  - retrieval
+  - timing
+  - latency
+mechanisms:
+  - retrieval
+  - desirable_difficulty
+inputs:
+  - Question Bank Seed
+  - Timer
+steps:
+  - step: 1
+    action: Run short timed sets with strict item clocks
+    notes: Mark misses at >45s and move on
+  - step: 2
+    action: Record time_to_answer for each item
+    notes: Capture accuracy and confidence together
+  - step: 3
+    action: Push misses to ErrorLog.csv
+    notes: Tag Speed when latency is the limiting factor
+outputs:
+  - Timed sprint result set
+  - Latency log
+  - ErrorLog updates
+stop_criteria:
+  - Item-level latency captured
+  - Misses and speed failures logged
+evidence:
+  citation: Cepeda et al. (2006)
+  finding: Spaced retrieval with repeated timed attempts improves long-term access speed
+  source: control-plane migration
+evidence_raw: Cepeda et al. (2006); repeated retrieval improves recall and response fluency
+

@@ -10,7 +10,7 @@ A structured AI study operating system for DPT coursework. It enforces an end-to
 ## North Star Vision
 
 - **Durable context** -- remembers across sessions with no drift.
-- **End-to-end study flows** -- MAP (plan) -> LOOP (learn) -> WRAP (log) with minimal manual steps.
+- **End-to-end study flows** -- CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN -> CONTROL PLANE with minimal manual steps.
 - **RAG-first, citation-first** -- all generated content grounded in the learner's indexed materials. Unverified outputs are explicitly marked.
 - **Spaced, high-quality Anki cards** -- source-tagged, deduplicated, retained over years.
 - **Deterministic logging** -- every session emits a Session Ledger; JSON is produced via Brain ingestion, not by the tutor.
@@ -20,11 +20,11 @@ For the theoretical foundation and PPFW paradigm stack underlying this system, s
 
 ## Lifecycle
 
-| Phase | Modules | PEIRRO Alignment |
-|-------|---------|------------------|
-| **MAP** | M0 Planning, M1 Entry | Prepare |
-| **LOOP** | M2 Prime, M3 Encode, M4 Build, M5 Modes | Encode, Interrogate, Retrieve |
-| **WRAP** | M6 Wrap | Refine, Overlearn |
+| Phase | Modules | PEIRRO Alignment | Operational Stage Overlay |
+|-------|---------|------------------|-------------------------|
+| **MAP** | M0 Planning, M1 Entry | Prepare | CONTROL PLANE entry -> PRIME -> CALIBRATE |
+| **LOOP** | M2 Prime, M3 Encode, M4 Build, M5 Modes | Encode, Interrogate, Retrieve | ENCODE -> REFERENCE -> RETRIEVE |
+| **WRAP** | M6 Wrap | Refine, Overlearn | OVERLEARN -> CONTROL PLANE exit |
 
 ## Quick-Start: Study Session
 
@@ -39,7 +39,7 @@ For the theoretical foundation and PPFW paradigm stack underlying this system, s
 1. **Orchestration Agent** -- accepts NL tasks, calls tools with audit trail.
 2. **Content Pipeline** -- normalize, transcode, transcribe, index course docs.
 3. **RAG Index & Search** -- ingest API; returns snippets + citations.
-4. **Study Engine (SOP Runner)** -- enforces MAP->LOOP->WRAP, Seed-Lock, gating.
+4. **Study Engine (SOP Runner)** -- enforces control-plane gates, MAP->LOOP->WRAP, Seed-Lock, and deterministic stage contracts.
 5. **Card/Anki Bridge** -- add/update cards; dedupe by deck+guid; source-tag.
 6. **Brain (DB + Resume)** -- ingest session logs; generate resume/readiness; versioned schemas.
 7. **Multi-AI Router** -- route by task; audit model+tool used.
@@ -51,7 +51,7 @@ For the theoretical foundation and PPFW paradigm stack underlying this system, s
 |---|------|-------------|
 | 00 | `00-overview.md` | System identity, vision, quick-start, and library map (this file) |
 | 01 | `01-core-rules.md` | All behavioral rules the tutor must follow |
-| 02 | `02-learning-cycle.md` | PEIRRO macro cycle + KWIK encoding micro-loop |
+| 02 | `02-learning-cycle.md` | Control-plane operational flow + PEIRRO compatibility + KWIK encoding micro-loop |
 | 03 | `03-frameworks.md` | H/M/Y series, Levels |
 | 04 | `04-engines.md` | Anatomy Engine and Concept Engine |
 | 05 | `05-session-flow.md` | M0-M6 execution flow, planning through Wrap |
@@ -65,6 +65,7 @@ For the theoretical foundation and PPFW paradigm stack underlying this system, s
 | 13 | `13-custom-gpt-system-instructions.md` | Custom GPT system instructions (v9.5 Split-Track) |
 | 14 | `14-lo-engine.md` | Learning Objective Engine (LO Engine) protocol pack + outputs |
 | 15 | `15-method-library.md` | Composable Method Library: blocks, chains, ratings, context matching |
+| 17 | `17-control-plane.md` | Control plane selector, coverage map, stage gates, adaptation, override policy |
 
 ## Schemas / Contracts
 

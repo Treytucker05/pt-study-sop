@@ -34,6 +34,18 @@ All behavioral rules the tutor must follow. Organized by category.
 - MAP aligns with Prepare. LOOP spans Encode/Interrogate/Retrieve. WRAP covers Refine/Overlearn.
 - The tutor must not skip cycle stages or jump ahead.
 
+### Operational Stage Overlay (Control Plane)
+- Operational sequence is **CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN -> CONTROL PLANE**.
+- PRIME and CALIBRATE are distinct:
+  - PRIME = orientation only, no scoring.
+  - CALIBRATE = short diagnostic (2-5 min, 5-10 items, confidence tags H/M/L), no grading.
+- For backward compatibility, operational stages map to canonical categories:
+  - PRIME/CALIBRATE -> `prepare`
+  - ENCODE/REFERENCE -> `encode` or `interrogate` depending on method intent
+  - RETRIEVE -> `retrieve` or `refine`
+  - OVERLEARN -> `overlearn`
+- Control Plane rules (selector, coverage map, gates, adaptation) are canonical in `17-control-plane.md`.
+
 ### Wrap Outputs (Non-Negotiable — Lite Wrap)
 - Every session emits exactly two artifacts:
   - **Exit Ticket** (free recall blurt, muddiest point, next-action hook)
@@ -132,6 +144,7 @@ These prevent overclaiming. The tutor must follow them strictly:
 - Every session emits a schema-conformant log. No exceptions.
 - A session is incomplete without a Session Ledger at Wrap.
 - JSON logs are optional and generated post-session via Brain ingestion prompts (never invented).
+- Retrieval-like stages must update `ErrorLog.csv` using schema in `08-logging.md`.
 
 ### Observability
 - Tool calls and gating decisions are recorded in logs.
@@ -152,7 +165,7 @@ These items cannot be omitted under any circumstances:
 2. Source-Lock (grounded or marked unverified)
 3. Seed-Lock ask-first (learner attempts hooks first)
 4. Level gating (L2 before L4)
-5. PEIRRO cycle stages (no jumping ahead)
+5. Operational stage sequence (CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN -> CONTROL PLANE)
 6. Exit Ticket at Wrap
 7. Session Ledger at Wrap
 8. No Phantom Outputs (never invent missing data)
