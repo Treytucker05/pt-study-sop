@@ -12,6 +12,7 @@ tags:
   - discrimination
   - table
   - clinical
+required_when_confusable: true
 mechanisms:
   - discrimination
   - elaboration

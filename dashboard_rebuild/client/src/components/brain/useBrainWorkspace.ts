@@ -20,6 +20,7 @@ function saveState(key: string, value: unknown) {
 }
 
 export function useBrainWorkspace() {
+  const defaultFolder = "";
   const [mainMode, setMainModeRaw] = useState<MainMode>(
     () => loadState<MainMode>("brain-main-mode", "canvas")
   );
@@ -37,6 +38,9 @@ export function useBrainWorkspace() {
     () => loadState<boolean>("brain-chat-expanded", true)
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentFolder, setCurrentFolderRaw] = useState<string>(
+    () => defaultFolder
+  );
 
   const [importOpen, setImportOpen] = useState(false);
 
@@ -74,6 +78,12 @@ export function useBrainWorkspace() {
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen((prev) => !prev);
   }, []);
+
+  const setCurrentFolder = useCallback((_folder: string) => {
+    const next = defaultFolder;
+    setCurrentFolderRaw(next);
+    saveState("brain-current-folder", next);
+  }, [defaultFolder]);
   const { data: obsidianStatus } = useQuery({
     queryKey: ["obsidian", "status"],
     queryFn: api.obsidian.getStatus,
@@ -193,6 +203,7 @@ export function useBrainWorkspace() {
     isFullscreen, toggleFullscreen,
 
     importOpen, setImportOpen,
+    currentFolder, setCurrentFolder,
 
     // Wikilink navigation
     handleWikilinkClick,

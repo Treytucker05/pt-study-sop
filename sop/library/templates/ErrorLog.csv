@@ -1,0 +1,4 @@
+topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied
+T-EXAMPLE-001,Q-014,Confusion,retrieve,M,38,"Added M-ENC-010 + M-INT-004 comparison pass"
+T-EXAMPLE-001,Q-023,Speed,retrieve,H,57,"Moved item into M-RET-007 timed sprint set"
+

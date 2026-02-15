@@ -180,7 +180,7 @@ class TestGetStepPrompt:
 
 
 class TestRunChain:
-    @patch("chain_runner.call_llm", side_effect=_mock_llm_success)
+    @patch("chain_runner.model_call", side_effect=_mock_llm_success)
     def test_successful_run(self, mock_llm):
         conn = get_connection()
         cursor = conn.cursor()
@@ -207,7 +207,7 @@ class TestRunChain:
         assert row[1] == 4
         assert row[2] == 4
 
-    @patch("chain_runner.call_llm", side_effect=_mock_llm_success)
+    @patch("chain_runner.model_call", side_effect=_mock_llm_success)
     def test_card_drafts_created(self, mock_llm):
         conn = get_connection()
         cursor = conn.cursor()
@@ -230,7 +230,7 @@ class TestRunChain:
         conn.close()
         assert len(cards) == 2
 
-    @patch("chain_runner.call_llm", side_effect=_mock_llm_failure)
+    @patch("chain_runner.model_call", side_effect=_mock_llm_failure)
     def test_failed_run(self, mock_llm):
         conn = get_connection()
         cursor = conn.cursor()
@@ -257,7 +257,7 @@ class TestRunChain:
         assert result["status"] == "failed"
         assert "not found" in result["error"].lower()
 
-    @patch("chain_runner.call_llm", side_effect=_mock_llm_success)
+    @patch("chain_runner.model_call", side_effect=_mock_llm_success)
     def test_session_created_with_chain_mode(self, mock_llm):
         conn = get_connection()
         cursor = conn.cursor()

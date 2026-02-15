@@ -1,0 +1,40 @@
+id: M-REF-003
+name: One-Page Anchor
+category: interrogate
+description: Build a single-page reference anchor containing minimal definitions, decision rules, canonical examples, near-misses, and traps.
+default_duration_min: 8
+energy_cost: medium
+best_stage: exam_prep
+status: draft
+artifact_type: outline
+tags:
+  - reference
+  - anchor
+  - synthesis
+mechanisms:
+  - elaboration
+  - discrimination
+inputs:
+  - PrioritySet
+  - Source-grounded notes
+steps:
+  - step: 1
+    action: Capture minimal definitions only
+    notes: Keep to high-value distinctions
+  - step: 2
+    action: Write decision rules and triggers
+    notes: Focus on rapid discrimination cues
+  - step: 3
+    action: Add 3 canonical examples and 3 near-miss examples
+    notes: Include trap notes for common errors
+outputs:
+  - One-Page Anchor
+  - Trap list and near-miss set
+stop_criteria:
+  - Definitions, decision rules, examples, near-miss, traps all present
+evidence:
+  citation: Schmidt & Rikers (2007)
+  finding: Structured scripts and discriminators improve transfer and diagnostic reasoning
+  source: control-plane migration
+evidence_raw: Schmidt & Rikers (2007); structured reference schemas improve clinical reasoning
+

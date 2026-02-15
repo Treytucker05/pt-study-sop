@@ -19,6 +19,7 @@ import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, Cha
 const DISPLAY_STAGES: Array<DisplayStage | "all"> = [
   "all",
   "priming",
+  "calibrate",
   "encoding",
   "reference",
   "retrieval",

@@ -1,0 +1,40 @@
+id: M-PRE-008
+name: Structural Extraction
+category: prepare
+description: Extract a compact structural spine from source material before detail work. Build at most 12 high-signal nodes and link each node to one objective.
+default_duration_min: 5
+energy_cost: medium
+best_stage: first_exposure
+status: draft
+tags:
+  - prime
+  - structure
+  - orientation
+mechanisms:
+  - scaffolding
+  - metacognitive_monitoring
+inputs:
+  - Topic objectives
+  - Source packet
+steps:
+  - step: 1
+    action: List objective IDs for the topic
+    notes: Keep objective wording verbatim
+  - step: 2
+    action: Extract no more than 12 structural nodes
+    notes: Prefer mechanism or decision nodes over trivia
+  - step: 3
+    action: Link each node to at least one objective ID
+    notes: Unlinked nodes are removed
+outputs:
+  - Spine (<=12 nodes)
+  - Objective linkage map
+stop_criteria:
+  - Spine has <=12 nodes
+  - Every node links to >=1 objective
+evidence:
+  citation: Ausubel (1968)
+  finding: Advance organizers improve comprehension when structure is established before detail
+  source: control-plane migration
+evidence_raw: Ausubel (1968); structural organizers improve meaningful learning
+

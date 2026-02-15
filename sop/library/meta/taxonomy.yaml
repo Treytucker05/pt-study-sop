@@ -61,6 +61,16 @@ clt_targets:
 
 assessment_types: [recall, application, transfer, calibration]
 
+assessment_modes:
+  - classification
+  - mechanism
+  - computation
+  - definition
+  - procedure
+  - spatial
+  - recognition
+  - synthesis
+
 artifact_types:
   - outline
   - concept-map

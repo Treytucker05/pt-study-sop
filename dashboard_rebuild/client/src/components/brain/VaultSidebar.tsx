@@ -3,13 +3,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import {
   Folder, File, ChevronRight, ChevronDown, FileText,
-  FolderOpen, Search, ArrowLeft, PanelLeftClose,
+  FolderOpen, Search, PanelLeftClose,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ErrorBoundary, SidebarErrorFallback } from "@/components/ErrorBoundary";
-import { COURSE_FOLDERS } from "@/config/courses";
 import type { BrainWorkspace } from "./useBrainWorkspace";
 
 // --- Sub-components for recursive tree rendering ---
@@ -137,7 +136,7 @@ interface VaultSidebarProps {
 }
 
 export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
-  const [currentFolder, setCurrentFolder] = useState("School");
+  const currentFolder = "";
   const [search, setSearch] = useState("");
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set()
@@ -147,21 +146,10 @@ export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
   const connected = workspace.obsidianStatus?.connected === true;
 
   const { data: obsidianFiles } = useQuery({
-    queryKey: ["obsidian", "files", currentFolder],
-    queryFn: () => api.obsidian.getFiles(currentFolder),
+    queryKey: ["obsidian", "files"],
+    queryFn: () => api.obsidian.getFiles(),
     enabled: connected,
   });
-
-  const navigateToFolder = useCallback((folder: string) => {
-    setCurrentFolder(folder);
-    setExpandedFolders(new Set());
-  }, []);
-
-  const navigateToParent = useCallback(() => {
-    const parts = currentFolder.split("/");
-    parts.pop();
-    navigateToFolder(parts.join("/"));
-  }, [currentFolder, navigateToFolder]);
 
   const toggleFolder = useCallback((path: string) => {
     setExpandedFolders((prev) => {
@@ -195,13 +183,6 @@ export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
       return filePath.toLowerCase().includes(q);
     });
   }, [obsidianFiles, search]);
-
-  const hasParent = currentFolder.includes("/");
-
-  const breadcrumbSegments = useMemo(() => {
-    if (!currentFolder) return [];
-    return currentFolder.split("/");
-  }, [currentFolder]);
 
   if (!connected) {
     return (
@@ -273,64 +254,6 @@ export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
           New Note
         </Button>
       </div>
-
-      {/* Courses — section-block + gap */}
-      <div className="section-block section-block-gap">
-        <h3 className="section-header">Courses</h3>
-        <div className="flex flex-wrap gap-2">
-          {COURSE_FOLDERS.map((course) => {
-            const isActive = currentFolder === course.path;
-            return (
-              <button
-                key={course.path}
-                type="button"
-                onClick={() => navigateToFolder(course.path)}
-                className={`min-h-[36px] px-4 py-2 font-arcade text-xs tracking-wider rounded-none border-[3px] border-double transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-black ${
-                  isActive
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-primary/40 bg-black/50 text-primary/80 hover:bg-primary/20 hover:border-primary/60 hover:text-primary"
-                }`}
-                aria-pressed={isActive}
-              >
-                {course.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Breadcrumb — same horizontal padding as sections */}
-      {currentFolder && (
-        <div className="flex items-center gap-2 px-3 py-2.5 font-arcade text-xs border-b border-primary/20 bg-black/30 shrink-0 min-h-[40px]">
-          {hasParent && (
-            <button
-              type="button"
-              onClick={navigateToParent}
-              className="size-8 flex items-center justify-center rounded-sm hover:bg-primary/20 hover:text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-primary shrink-0"
-              title="Go to parent folder"
-              aria-label="Go to parent folder"
-            >
-              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-            </button>
-          )}
-          <nav aria-label="Folder breadcrumb" className="flex items-center gap-1 flex-wrap text-primary/80 min-w-0">
-            {breadcrumbSegments.map((part, i, arr) => (
-              <span key={i} className="flex items-center gap-1">
-                {i > 0 && <span aria-hidden="true" className="text-primary/40">/</span>}
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigateToFolder(arr.slice(0, i + 1).join("/"))
-                  }
-                  className="hover:text-primary focus:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-inset rounded-sm px-1.5 py-1 min-h-[28px] flex items-center tracking-wider uppercase"
-                >
-                  {part}
-                </button>
-              </span>
-            ))}
-          </nav>
-        </div>
-      )}
 
       {/* File list — section-header for label */}
       <div className="flex-1 min-h-0 flex flex-col">

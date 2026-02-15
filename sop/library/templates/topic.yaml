@@ -1,0 +1,28 @@
+topic_id: T-EXAMPLE-001
+title: Example Topic
+assessment_mode: mechanism
+objectives:
+  - id: O1
+    text: ""
+  - id: O2
+    text: ""
+coverage_map:
+  - objective_id: O1
+    required_artifacts: [Spine, OnePageAnchor, QuestionBankSeed]
+    required_retrieval_checks: [mixed, adversarial, timed]
+confusables: []
+priority_set: []
+required_artifacts:
+  - Spine
+  - Unknowns
+  - Predictions
+  - GoalTargets
+  - CalibrateResults
+  - PrioritySet
+  - OnePageAnchor
+  - QuestionBankSeed
+  - CoverageCheck
+  - ErrorLog
+  - DrillSheet
+  - CrossSessionValidation
+

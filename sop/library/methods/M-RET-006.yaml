@@ -1,0 +1,40 @@
+id: M-RET-006
+name: Adversarial Drill
+category: retrieve
+description: Run near-miss adversarial prompts that force distinction between confusable concepts under low support.
+default_duration_min: 8
+energy_cost: high
+best_stage: exam_prep
+status: draft
+tags:
+  - retrieval
+  - adversarial
+  - confusables
+mechanisms:
+  - discrimination
+  - retrieval
+inputs:
+  - Confusable pairs from Spine or ErrorLog
+  - Question Bank Seed
+steps:
+  - step: 1
+    action: Select confusable pairs with highest error risk
+    notes: Use recent Confusion errors first
+  - step: 2
+    action: Ask near-miss prompts with minimal cues
+    notes: Require explicit discriminator in each response
+  - step: 3
+    action: Log misses to ErrorLog.csv
+    notes: Include error_type and fix_applied
+outputs:
+  - Adversarial near-miss results
+  - ErrorLog updates
+stop_criteria:
+  - Near-miss set completed
+  - All misses logged
+evidence:
+  citation: Rohrer et al. (2015)
+  finding: Interleaved discrimination practice improves transfer on confusable categories
+  source: control-plane migration
+evidence_raw: Rohrer et al. (2015); discrimination practice strengthens near-miss recognition
+

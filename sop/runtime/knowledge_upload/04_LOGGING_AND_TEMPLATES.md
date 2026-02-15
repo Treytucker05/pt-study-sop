@@ -20,7 +20,7 @@ Sources:
 
 ## Source: sop/library/08-logging.md
 
-# Logging Schema v9.4 (Canonical)
+# Logging Schema v9.4 (Canonical) + Control-Plane ErrorLog
 
 ## Purpose
 
@@ -157,6 +157,34 @@ Did you connect this session's content to another class? `yes` | `no`.
 
 ---
 
+## Control-Plane ErrorLog.csv Schema (Required for retrieval-like stages)
+
+For operational stage adaptation, use a separate row-level error log:
+
+```csv
+topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied
+```
+
+`error_type` enum is fixed:
+
+- `Recall`
+- `Confusion`
+- `Rule`
+- `Representation`
+- `Procedure`
+- `Computation`
+- `Speed`
+
+Notes:
+- `stage_detected` should be the operational stage label (`calibrate`, `retrieve`, or `overlearn` as applicable).
+- `confidence` uses `H`, `M`, `L`.
+- `time_to_answer` is seconds.
+- `fix_applied` records the method override or corrective action.
+
+Example rows are provided in `sop/library/templates/ErrorLog.csv`.
+
+---
+
 ## Metrics Fill-In Template
 
 Copy and fill after each session:
@@ -216,7 +244,7 @@ Notes: [short, semicolon-separated if used in JSON]
 
 # 09 — Templates
 
-All PEIRRO study templates in one file. Copy and fill in per session/week.
+Core study templates for the operational flow (CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN). Copy and fill in per session/week.
 
 ---
 
@@ -459,3 +487,24 @@ Use within 24 hours. Answer from memory first, then check sources.
 **Error Check:**
 - What did I get wrong in the session?
 - What is the corrected version?
+
+---
+
+## 10. Control-Plane Artifact Pack (file templates)
+
+Use the dedicated template files in `sop/library/templates/` for deterministic stage artifacts:
+
+- `Spine.md`
+- `Unknowns.md`
+- `Predictions.md`
+- `GoalTargets.md`
+- `CalibrateItems.md`
+- `CalibrateResults.csv`
+- `PrioritySet.md`
+- `OnePageAnchor.md`
+- `QuestionBankSeed.md`
+- `CoverageCheck.md`
+- `ErrorLog.csv`
+- `DrillSheet.md`
+- `CrossSessionValidation.md`
+- `topic.yaml`

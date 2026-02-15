@@ -1,0 +1,38 @@
+id: M-CAL-002
+name: Confidence Tagging
+category: prepare
+description: Add confidence tags (H/M/L) for each calibrate item to separate knowledge gaps from confidence miscalibration.
+default_duration_min: 3
+energy_cost: low
+best_stage: first_exposure
+status: draft
+tags:
+  - calibrate
+  - confidence
+  - metacognition
+mechanisms:
+  - metacognitive_monitoring
+  - calibration
+inputs:
+  - Calibrate item responses
+steps:
+  - step: 1
+    action: Tag each item as H, M, or L confidence
+    notes: Tag before reviewing correctness
+  - step: 2
+    action: Flag high-confidence misses
+    notes: These become top priority for ENCODE
+  - step: 3
+    action: Record confidence with response latency
+    notes: Keep item-level detail
+outputs:
+  - Confidence-tagged calibrate set
+  - High-confidence miss list
+stop_criteria:
+  - Every calibrate item has an H/M/L tag
+evidence:
+  citation: Metcalfe (2017)
+  finding: Confidence monitoring improves targeting of corrective study actions
+  source: control-plane migration
+evidence_raw: Metcalfe (2017); metacognitive calibration improves error correction
+

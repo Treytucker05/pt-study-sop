@@ -7,6 +7,11 @@ cd /d "%~dp0"
 rem Stop any existing dashboard server processes so code changes take effect.
 rem This prevents multiple dashboard_web.py instances (stale routes, port conflicts).
 echo [0/6] Closing any existing dashboard server processes...
+rem Kill any process currently listening on port 5000 (stale Flask instances, old dev servers, etc.)
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:"127.0.0.1:5000 .*LISTENING"') do (
+    echo [INFO] Stopping port 5000 listener PID %%P
+    taskkill /PID %%P /F >nul 2>nul
+)
 for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq 'C:\\Python314\\python.exe' -and $_.CommandLine -and $_.CommandLine.Trim().EndsWith('dashboard_web.py') } | Select-Object -ExpandProperty ProcessId"`) do (
     echo [INFO] Stopping PID %%P
     taskkill /PID %%P /F >nul 2>nul

@@ -39,22 +39,25 @@ Each method block represents a single study activity.
 
 **Categories (PEIRRO phases):**
 
-1. **Prepare** — Prime attention, surface prior knowledge, build structure (e.g., brain dump, prediction questions, prior knowledge scan, ai skeleton review, concept cluster, three-layer chunk, pre-test)
+1. **Prepare** — Prime attention, surface prior knowledge, build structure (e.g., micro precheck, confidence tagging, priority set, brain dump, prediction questions, prior knowledge scan, ai skeleton review, concept cluster, three-layer chunk, pre-test, structural extraction, emphasis audit)
 2. **Encode** — Attach meaning to material (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, think-aloud protocol, self-explanation protocol, mechanism trace, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking)
-3. **Retrieve** — Test recall without cues (e.g., free recall blurt, sprint quiz, fill-in-blank, mixed practice, variable retrieval)
-4. **Interrogate** — Link to other content, apply, compare (e.g., analogy bridge, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder)
+3. **Retrieve** — Test recall without cues (e.g., free recall blurt, sprint quiz, fill-in-blank, mixed practice, variable retrieval, adversarial drill, timed sprint sets)
+4. **Interrogate** — Link to other content, apply, compare (e.g., analogy bridge, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder, one-page anchor, question bank seed)
 5. **Refine** — Analyze errors and relearn (e.g., error autopsy, mastery loop)
-6. **Overlearn** — Close loop, capture artifacts (e.g., exit ticket, anki card draft)
+6. **Overlearn** — Close loop, capture artifacts (e.g., exit ticket, anki card draft, drill sheet builder)
 
 **Evidence citation format:** `Author (Year); brief finding`
 
 ---
 
-## §2.1 Block Catalog (36 blocks)
+## §2.1 Block Catalog (46 blocks)
 
-### Prepare (7 blocks)
+### Prepare (12 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
+| Micro Precheck | 4 min | medium | Kornell et al. (2009); Pretesting improves subsequent encoding and reveals calibration gaps |
+| Confidence Tagging | 3 min | low | Metcalfe (2017); Confidence monitoring improves targeting of corrective study actions |
+| Priority Set | 3 min | low | Rawson & Dunlosky (2011); Targeted corrective practice improves long-term retention more than broad restudy |
 | Brain Dump | 3 min | low | Brod et al. (2013); Prior knowledge activation improves encoding of new information by providing anchoring schemas |
 | Prediction Questions | 3 min | low | Pressley et al. (1990); Question-generation primes elaborative processing and improves comprehension |
 | Prior Knowledge Scan | 3 min | low | Ausubel (1968); Meaningful learning requires anchoring new information to existing schemas |
@@ -62,6 +65,8 @@ Each method block represents a single study activity.
 | Concept Cluster | 5 min | medium | Bower et al. (1969); Conceptual organization improves recall by 2-3x compared to random presentation |
 | Three-Layer Chunk | 5 min | medium | Miller (1956); Chunking manages cognitive load by organizing information into meaningful units |
 | Pre-Test | 5 min | low | Richland et al. (2009); Pre-testing primes encoding even when initial answers are wrong; the attempt creates retrieval hooks |
+| Structural Extraction | 5 min | medium | Ausubel (1968); Advance organizers improve comprehension when structure is established before detail |
+| Emphasis Audit | 4 min | low | Dunlosky et al. (2013); Metacognitive planning improves study efficiency and calibration |
 
 ### Encode (14 blocks)
 | Block | Duration | Energy | Evidence |
@@ -81,7 +86,7 @@ Each method block represents a single study activity.
 | Memory Palace | 10 min | high | Yates (1966); Method of Loci has been used for 2500+ years; spatial memory is evolutionarily privileged |
 | Chain Linking | 8 min | medium | Bower & Winzenz (1970); Narrative chaining improves serial recall by creating meaningful connections between unrelated items |
 
-### Retrieve (5 blocks)
+### Retrieve (7 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Free Recall Blurt | 5 min | medium | Roediger & Karpicke (2006); testing effect — retrieval practice > re-reading for long-term retention |
@@ -89,8 +94,10 @@ Each method block represents a single study activity.
 | Fill-in-Blank | 5 min | low | Dunlosky et al. (2013); cloze-based retrieval is effective for factual knowledge |
 | Mixed Practice | 10 min | high | Rohrer et al. (2015); interleaved practice improves discrimination and transfer |
 | Variable Retrieval | 10 min | medium | Morris et al. (1977); PNAS 2024; varied retrieval practice produces more durable and transferable knowledge than constant retrieval |
+| Adversarial Drill | 8 min | high | Rohrer et al. (2015); Interleaved discrimination practice improves transfer on confusable categories |
+| Timed Sprint Sets | 8 min | high | Cepeda et al. (2006); Spaced retrieval with repeated timed attempts improves long-term access speed |
 
-### Interrogate (6 blocks)
+### Interrogate (8 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Analogy Bridge | 3 min | medium | Gentner (1983); Analogical reasoning supports structural mapping and transfer across domains |
@@ -99,6 +106,8 @@ Each method block represents a single study activity.
 | Side-by-Side Comparison | 7 min | medium | Alfieri et al. (2013); Comparison-based learning improves discrimination and concept formation |
 | Case Walkthrough | 10 min | high | Thistlethwaite et al. (2012); Case-based learning improves clinical reasoning in health professions education |
 | Illness Script Builder | 10 min | high | Schmidt & Rikers (2007); Illness scripts are the cognitive structure underlying expert clinical reasoning |
+| One-Page Anchor | 8 min | medium | Schmidt & Rikers (2007); Structured scripts and discriminators improve transfer and diagnostic reasoning |
+| Question Bank Seed | 8 min | medium | Roediger & Karpicke (2006); Retrieval-oriented item generation improves durable recall performance |
 
 ### Refine (2 blocks)
 | Block | Duration | Energy | Evidence |
@@ -106,11 +115,12 @@ Each method block represents a single study activity.
 | Error Autopsy | 5 min | medium | Metcalfe (2017); error correction with feedback is more effective than errorless learning |
 | Mastery Loop | 10 min | medium | Rawson & Dunlosky (2011); successive relearning combines testing + spacing for durable retention |
 
-### Overlearn (2 blocks)
+### Overlearn (3 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Exit Ticket | 3 min | low | Tanner (2012); metacognitive reflection improves self-regulated learning |
 | Anki Card Draft | 5 min | low | Kornell (2009); Cepeda et al. (2006); spaced retrieval via flashcards is high-utility |
+| Drill Sheet Builder | 10 min | medium | Rawson & Dunlosky (2011); Successive relearning with repeated retrieval strengthens durable mastery |
 
 ---
 
@@ -119,9 +129,9 @@ Each method block represents a single study activity.
 ### Core Chains
 
 #### 1. First Exposure (Core)
-**Blocks:** Brain Dump → AI Skeleton Review → Free Recall Blurt → KWIK Hook → Analogy Bridge → Exit Ticket
-**Context:** first exposure, high energy, 45 min
-**Use for:** Full PEIRRO cycle for new material. Prepare → Encode → Retrieve → Interrogate → Overlearn. Retrieval before generative encoding per Potts & Shanks (2022).
+**Blocks:** Brain Dump → Structural Extraction → Emphasis Audit → Micro Precheck → Confidence Tagging → Priority Set → KWIK Hook → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Adversarial Drill → Timed Sprint Sets → Anki Card Draft → Drill Sheet Builder
+**Context:** first exposure, high energy, 55 min
+**Use for:** Control-plane first exposure flow. PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN with deterministic Priority Set routing.
 **Note:** Retrieval (Free Recall) comes before generative encoding (KWIK Hook) per Potts & Shanks (2022) — lower cognitive load, higher gains.
 
 #### 2. Review Sprint
