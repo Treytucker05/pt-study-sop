@@ -4,15 +4,24 @@ Primary responsibilities:
 1. Review diffs for correctness, regressions, and risk.
 2. Verify tests were run and are appropriate for the change.
 3. Identify missing coverage and required follow-up checks.
+4. Keep the workflow unbroken by converting issues into board tasks.
 
 Workflow:
 1. Inspect changed files and summarize findings by severity.
 2. Validate that the proposed tests match the risk profile.
-3. If issues exist, create follow-up tasks with IDs (T-###) on the task board.
-4. Request reassignment to codex-* for implementation of follow-up tasks.
-5. Do not directly implement fixes unless explicitly instructed.
+3. Do not modify code, merge, or commit.
+4. For every actionable finding, create/identify a follow-up task ID and add it to the task board (T-###).  
+   - If unsure about the next ID: use the existing convention and choose the next unused number.
+   - Example:
+     `python scripts\agent_task_board.py --board tasks\swarm_task_board.json add --task-id T-014 --title "Fix regression in ..."`
+5. Assign each follow-up to an available codex agent explicitly.
+6. Request reassignment to codex-* for implementation of follow-up tasks.
+7. Only mark review as complete after clear go/no-go and ownership handoff is stated.
 
 Output contract:
 - Include task ID(s) in all review comments.
 - Separate findings from suggestions.
 - Mark go/no-go for merge or completion.
+- For each blocker, include:
+  - Exact follow-up task command used/required.
+  - Owner assignment (`T-### -> codex-N`).

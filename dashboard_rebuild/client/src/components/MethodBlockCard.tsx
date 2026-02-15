@@ -1,15 +1,7 @@
 import { Clock, Zap } from "lucide-react";
 import type { MethodBlock } from "@/api";
-import { PEIRRO_COLORS, PEIRRO_DEFAULT, ENERGY_COLORS, ENERGY_DEFAULT } from "@/lib/colors";
-
-const CATEGORY_LABEL: Record<string, string> = {
-  prepare: "PRIME",
-  encode: "ENCODE",
-  interrogate: "INTERROGATE",
-  retrieve: "RETRIEVE",
-  refine: "REFINE",
-  overlearn: "OVERLEARN",
-};
+import { DISPLAY_STAGE_LABELS, getDisplayStage } from "@/lib/displayStage";
+import { PERO_COLORS, PERO_DEFAULT, ENERGY_COLORS, ENERGY_DEFAULT } from "@/lib/colors";
 
 interface MethodBlockCardProps {
   block: MethodBlock;
@@ -17,12 +9,22 @@ interface MethodBlockCardProps {
   onClick?: () => void;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
+  showLegacyCategory?: boolean;
 }
 
-export default function MethodBlockCard({ block, compact, onClick, draggable, onDragStart }: MethodBlockCardProps) {
-  const cat = PEIRRO_COLORS[block.category] || PEIRRO_DEFAULT;
-  const colorClass = cat.border;
-  const badgeClass = cat.badge;
+export default function MethodBlockCard({
+  block,
+  compact,
+  onClick,
+  draggable,
+  onDragStart,
+  showLegacyCategory,
+}: MethodBlockCardProps) {
+  const stage = getDisplayStage(block);
+  const stageColors = PERO_COLORS[stage] || PERO_DEFAULT;
+  const colorClass = stageColors.border;
+  const badgeClass = stageColors.badge;
+  const stageLabel = DISPLAY_STAGE_LABELS[stage] || stage.toUpperCase();
   const energyClass = ENERGY_COLORS[block.energy_cost] || ENERGY_DEFAULT;
 
   if (compact) {
@@ -36,9 +38,12 @@ export default function MethodBlockCard({ block, compact, onClick, draggable, on
         <div className="flex items-center justify-between gap-2">
           <span className="font-terminal text-base truncate">{block.name}</span>
           <span className={`text-xs font-arcade px-1 py-0.5 rounded-none ${badgeClass}`}>
-            {CATEGORY_LABEL[block.category] || block.category.toUpperCase()}
+            {stageLabel}
           </span>
         </div>
+        {showLegacyCategory && (
+          <div className="text-[10px] font-terminal text-muted-foreground/70">legacy: {block.category}</div>
+        )}
       </div>
     );
   }
@@ -53,9 +58,12 @@ export default function MethodBlockCard({ block, compact, onClick, draggable, on
       <div className="flex items-center justify-between mb-2">
         <span className="font-arcade text-sm">{block.name}</span>
         <span className={`text-xs font-arcade px-1.5 py-0.5 rounded-none ${badgeClass}`}>
-          {CATEGORY_LABEL[block.category] || block.category.toUpperCase()}
+          {stageLabel}
         </span>
       </div>
+      {showLegacyCategory && (
+        <div className="text-xs font-terminal text-muted-foreground/70 mb-2">legacy: {block.category}</div>
+      )}
       {block.description && (
         <p className="font-terminal text-lg text-muted-foreground mb-2 line-clamp-2">
           {block.description}

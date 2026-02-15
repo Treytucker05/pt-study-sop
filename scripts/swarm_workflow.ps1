@@ -125,6 +125,45 @@ function Get-FirstCommand {
   return $null
 }
 
+function Resolve-OpenCodeLauncherPath {
+  param()
+
+  $candidates = New-Object System.Collections.Generic.List[string]
+
+  $envKeys = @(
+    "OHMYOPENCODE_SWARM_LAUNCHER",
+    "OHMYOPENCODE_LAUNCHER",
+    "OHMY_OPENCODE_LAUNCHER",
+    "PT_STUDY_OHMY_OPENCODE_LAUNCHER"
+  )
+  foreach ($key in $envKeys) {
+    $value = [Environment]::GetEnvironmentVariable($key)
+    if (-not [string]::IsNullOrWhiteSpace($value)) {
+      $candidates.Add($value)
+    }
+  }
+
+  if ($env:USERPROFILE) {
+    $candidates.Add((Join-Path $env:USERPROFILE "OneDrive\Desktop\Travel Laptop\Parallel Work\00_Parallel_Work_Center.bat"))
+    $candidates.Add((Join-Path $env:USERPROFILE "OneDrive\Desktop\Travel Laptop\OHMYOpenCode.bat"))
+  }
+
+  foreach ($candidate in $candidates) {
+    if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+    try {
+      $resolved = [System.IO.Path]::GetFullPath($candidate)
+    } catch {
+      $resolved = $candidate
+    }
+
+    if (Test-Path -LiteralPath $resolved -PathType Leaf) {
+      return $resolved
+    }
+  }
+
+  return ""
+}
+
 function Show-InstallSteps {
   param([string]$Tool)
 
@@ -764,7 +803,12 @@ try {
   $nodeCmd = Get-FirstCommand -Names @("node")
   $npmCmd = Get-FirstCommand -Names @("npm")
   $codexCmd = Get-FirstCommand -Names @("codex")
-  $opencodeCmd = Get-FirstCommand -Names @("opencode")
+  $opencodeLauncherPath = Resolve-OpenCodeLauncherPath
+  $opencodeCmd = if (-not [string]::IsNullOrWhiteSpace($opencodeLauncherPath)) {
+    $opencodeLauncherPath
+  } else {
+    Get-FirstCommand -Names @("opencode")
+  }
   $claudeCmd = Get-FirstCommand -Names @("claude")
   $geminiCmd = Get-FirstCommand -Names @("gemini")
 
@@ -845,23 +889,62 @@ $statusOncePath = "C:\pt-study-sop\scripts\status_once.ps1"
 $escapedStatusOncePath = Escape-SingleQuoted -Value $statusOncePath
 $statusWorktreesRoot = Join-Path $RepoRoot "worktrees"
 $escapedStatusWorktreesRoot = Escape-SingleQuoted -Value $statusWorktreesRoot
-$opencodeExe = if ($opencodeCmd) { [string]$opencodeCmd.Source } else { "" }
+$opencodeExe = if ($opencodeCmd) {
+  if ($opencodeCmd -is [string]) {
+    [string]$opencodeCmd
+  } else {
+    [string]$opencodeCmd.Source
+  }
+} else { "" }
+$opencodeIsLauncher = -not [string]::IsNullOrWhiteSpace($opencodeLauncherPath)
 $codexExe = if ($codexCmd) { [string]$codexCmd.Source } else { "" }
 $claudeExe = if ($claudeCmd) { [string]$claudeCmd.Source } else { "" }
 $geminiExe = if ($geminiCmd) { [string]$geminiCmd.Source } else { "" }
+$swarmSession = Get-Date -Format "yyyyMMdd_HHmmss"
 
 if ($OhMyCount -gt 0) {
   for ($i = 1; $i -le $OhMyCount; $i++) {
     $title = if ($OhMyCount -eq 1) { "planner" } else { "planner-$i" }
     $escapedTitle = Escape-SingleQuoted -Value $title
+    $escapedSession = Escape-SingleQuoted -Value ("{0}:{1}" -f $swarmSession, $title)
     $escapedOpenCode = Escape-SingleQuoted -Value $opencodeExe
-
-    $plannerBody = @"
+    if ($opencodeIsLauncher) {
+      $plannerBody = @"
 `$ErrorActionPreference = 'Stop'
 `$host.UI.RawUI.WindowTitle = '$escapedTitle'
 Set-Location -LiteralPath '$escapedRepoRoot'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
+`$env:PT_AGENT_NAME = '$escapedTitle'
+`$env:PT_AGENT_ROLE = 'planner'
+`$env:PT_AGENT_TOOL = 'opencode'
+`$env:PT_AGENT_WORKTREE = '$escapedRepoRoot'
+`$env:PT_AGENT_SESSION = '$escapedSession'
+`$agentExe = '$escapedOpenCode'
+`$plannerTarget = '$escapedRepoRoot'
+`$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
+if (-not `$resolved) {
+  throw "OpenCode executable not found: `$agentExe"
+}
+`$agentExe = [string]`$resolved.Source
+Write-Host "Launching OpenCode: `$agentExe `$plannerTarget" -ForegroundColor Cyan
+& `$agentExe /nopause `$plannerTarget
+if (`$LASTEXITCODE -ne `$null -and `$LASTEXITCODE -ne 0) {
+  throw ("OpenCode exited with code {0}." -f `$LASTEXITCODE)
+}
+"@
+    } else {
+      $plannerBody = @"
+`$ErrorActionPreference = 'Stop'
+`$host.UI.RawUI.WindowTitle = '$escapedTitle'
+Set-Location -LiteralPath '$escapedRepoRoot'
+`$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
+`$env:SWARM_TASK_BOARD = '$escapedBoardPath'
+`$env:PT_AGENT_NAME = '$escapedTitle'
+`$env:PT_AGENT_ROLE = 'planner'
+`$env:PT_AGENT_TOOL = 'opencode'
+`$env:PT_AGENT_WORKTREE = '$escapedRepoRoot'
+`$env:PT_AGENT_SESSION = '$escapedSession'
 `$agentExe = '$escapedOpenCode'
 `$plannerTarget = '$escapedRepoRoot'
 `$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
@@ -875,6 +958,8 @@ if (`$LASTEXITCODE -ne `$null -and `$LASTEXITCODE -ne 0) {
   throw ("OpenCode exited with code {0}." -f `$LASTEXITCODE)
 }
 "@
+    }
+
     $plannerScript = New-WindowScript -RuntimeDir $runtimeScripts -Name $title -Content $plannerBody
     Start-PwshWindow -Title $title -ScriptPath $plannerScript -WorkingDirectory $RepoRoot
   }
@@ -885,6 +970,7 @@ if ($CodexCount -gt 0) {
     $title = $wt.Name
     $escapedTitle = Escape-SingleQuoted -Value $title
     $escapedWorktree = Escape-SingleQuoted -Value $wt.Path
+    $escapedSession = Escape-SingleQuoted -Value ("{0}:{1}" -f $swarmSession, $title)
     $escapedCodex = Escape-SingleQuoted -Value $codexExe
 
     $codexBody = @"
@@ -894,6 +980,11 @@ Set-Location -LiteralPath '$escapedWorktree'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
 `$env:SWARM_AGENT_NAME = '$escapedTitle'
+`$env:PT_AGENT_NAME = '$escapedTitle'
+`$env:PT_AGENT_ROLE = 'codex'
+`$env:PT_AGENT_TOOL = 'codex'
+`$env:PT_AGENT_WORKTREE = '$escapedWorktree'
+`$env:PT_AGENT_SESSION = '$escapedSession'
 `$agentExe = '$escapedCodex'
 `$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
 if (-not `$resolved) {
@@ -911,6 +1002,7 @@ if ($ClaudeCount -gt 0) {
   for ($i = 1; $i -le $ClaudeCount; $i++) {
     $title = if ($ClaudeCount -eq 1) { "claude-review" } else { "claude-review-$i" }
     $escapedTitle = Escape-SingleQuoted -Value $title
+    $escapedSession = Escape-SingleQuoted -Value ("{0}:{1}" -f $swarmSession, $title)
     $escapedClaude = Escape-SingleQuoted -Value $claudeExe
 
     $claudeBody = @"
@@ -919,6 +1011,11 @@ if ($ClaudeCount -gt 0) {
 Set-Location -LiteralPath '$escapedRepoRoot'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
+`$env:PT_AGENT_NAME = '$escapedTitle'
+`$env:PT_AGENT_ROLE = 'reviewer'
+`$env:PT_AGENT_TOOL = 'claude'
+`$env:PT_AGENT_WORKTREE = '$escapedRepoRoot'
+`$env:PT_AGENT_SESSION = '$escapedSession'
 `$agentExe = '$escapedClaude'
 `$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
 if (-not `$resolved) {
@@ -944,6 +1041,7 @@ if ($GeminiCount -gt 0) {
   for ($i = 1; $i -le $GeminiCount; $i++) {
     $title = if ($GeminiCount -eq 1) { "gemini-research" } else { "gemini-research-$i" }
     $escapedTitle = Escape-SingleQuoted -Value $title
+    $escapedSession = Escape-SingleQuoted -Value ("{0}:{1}" -f $swarmSession, $title)
     $escapedGemini = Escape-SingleQuoted -Value $geminiExe
 
     $geminiBody = @"
@@ -952,6 +1050,11 @@ if ($GeminiCount -gt 0) {
 Set-Location -LiteralPath '$escapedRepoRoot'
 `$env:SWARM_REPO_ROOT = '$escapedRepoRoot'
 `$env:SWARM_TASK_BOARD = '$escapedBoardPath'
+`$env:PT_AGENT_NAME = '$escapedTitle'
+`$env:PT_AGENT_ROLE = 'reviewer'
+`$env:PT_AGENT_TOOL = 'gemini'
+`$env:PT_AGENT_WORKTREE = '$escapedRepoRoot'
+`$env:PT_AGENT_SESSION = '$escapedSession'
 `$agentExe = '$escapedGemini'
 `$resolved = if ([string]::IsNullOrWhiteSpace(`$agentExe)) { `$null } else { Get-Command -Name `$agentExe -ErrorAction SilentlyContinue }
 if (-not `$resolved) {

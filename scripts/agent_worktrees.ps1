@@ -39,6 +39,73 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Resolve-OpenCodeLauncherPath {
+  param([string]$Mode = "solo")
+
+  $candidates = New-Object System.Collections.Generic.List[string]
+
+  $envKeys = @(
+    "OHMYOPENCODE_LAUNCHER",
+    "OHMY_OPENCODE_LAUNCHER",
+    "PT_STUDY_OHMY_OPENCODE_LAUNCHER"
+  )
+
+  if ($Mode.ToLowerInvariant() -eq "swarm") {
+    $envKeys = @(
+      "OHMYOPENCODE_SWARM_LAUNCHER",
+      "OHMYOPENCODE_LAUNCHER",
+      "OHMY_OPENCODE_LAUNCHER",
+      "PT_STUDY_OHMY_OPENCODE_LAUNCHER",
+      "OPENCODE_SWARM_LAUNCHER",
+      "OPEN_CODE_SWARM_LAUNCHER"
+    ) + $envKeys
+  } else {
+    $envKeys = @(
+      "OHMYOPENCODE_SOLO_LAUNCHER",
+      "OPENCODE_REGULAR_LAUNCHER",
+      "OPEN_CODE_REGULAR_LAUNCHER"
+    ) + $envKeys
+  }
+
+  foreach ($key in $envKeys) {
+    $value = [Environment]::GetEnvironmentVariable($key)
+    if (-not [string]::IsNullOrWhiteSpace($value)) {
+      $candidates.Add($value)
+    }
+  }
+
+  if ($env:USERPROFILE) {
+    if ($Mode.ToLowerInvariant() -eq "swarm") {
+      $candidates.Add((Join-Path $env:USERPROFILE "OneDrive\Desktop\Travel Laptop\Parallel Work\00_Parallel_Work_Center.bat"))
+    } else {
+      $candidates.Add((Join-Path $env:USERPROFILE "OneDrive\Desktop\Travel Laptop\OHMYOpenCode.bat"))
+      $candidates.Add((Join-Path $env:USERPROFILE "OneDrive\Desktop\Travel Laptop\OpenCodeReg.bat"))
+    }
+  }
+
+  foreach ($candidate in $candidates) {
+    if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+    try {
+      $resolved = [System.IO.Path]::GetFullPath($candidate)
+    } catch {
+      $resolved = $candidate
+    }
+
+    if (Test-Path -LiteralPath $resolved -PathType Leaf) {
+      return $resolved
+    }
+  }
+
+  return ""
+}
+
+function Quote-CommandPart {
+  param([string]$Value)
+  if ([string]::IsNullOrWhiteSpace($Value)) { return "" }
+  if ($Value -match '\s') { return '"' + $Value + '"' }
+  return $Value
+}
+
 function Normalize-FsPath {
   param([string]$Path)
 
@@ -188,7 +255,8 @@ function Build-ToolCommand {
   param(
     [string]$ToolName,
     [string]$CommonArgs,
-    [string]$CustomCmd
+    [string]$CustomCmd,
+    [string]$OpenCodeMode = "solo"
   )
 
   $toolLower = $ToolName.Trim().ToLowerInvariant()
@@ -201,7 +269,15 @@ function Build-ToolCommand {
     "powershell" { return "" }
     "codex"      { return "codex $effectiveArgs".Trim() }
     "claude"     { return "claude $effectiveArgs".Trim() }
-    "opencode"   { return "opencode $effectiveArgs".Trim() }
+    "opencode"   {
+      $launcher = Resolve-OpenCodeLauncherPath -Mode $OpenCodeMode
+      if ([string]::IsNullOrWhiteSpace($launcher)) {
+        return "opencode $effectiveArgs".Trim()
+      }
+      $cmd = "$(Quote-CommandPart $launcher) /nopause"
+      if ([string]::IsNullOrWhiteSpace($effectiveArgs)) { return $cmd }
+      return "$cmd $effectiveArgs".Trim()
+    }
     "custom" {
       if ([string]::IsNullOrWhiteSpace($CustomCmd)) {
         throw "Tool 'custom' requires -CustomCommand."
@@ -264,11 +340,12 @@ function Open-ToolInWorktree {
     [string]$ToolName,
     [string]$CommonArgs,
     [string]$CustomCmd,
-    [string]$Tag
+    [string]$Tag,
+    [string]$OpenCodeMode = "solo"
   )
 
   Ensure-Worktree -WorktreePath $Entry.dir -BranchName $Entry.branch
-  $cmd = Build-ToolCommand -ToolName $ToolName -CommonArgs $CommonArgs -CustomCmd $CustomCmd
+  $cmd = Build-ToolCommand -ToolName $ToolName -CommonArgs $CommonArgs -CustomCmd $CustomCmd -OpenCodeMode $OpenCodeMode
 
   $titleParts = @("pt-study-sop", $Entry.role, $ToolName)
   if (-not [string]::IsNullOrWhiteSpace($Tag)) {
@@ -406,7 +483,7 @@ switch ($Action) {
   "open" {
     $entry = Find-RoleEntry -RoleMap $map -WantedRole $Role
     if (-not $entry) { throw "Unknown role: $Role" }
-    Open-ToolInWorktree -Entry $entry -ToolName $Tool -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag
+    Open-ToolInWorktree -Entry $entry -ToolName $Tool -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag -OpenCodeMode "solo"
     Write-Host "Opened $Tool for role '$Role' at: $($entry.dir)"
     exit 0
   }
@@ -417,7 +494,8 @@ switch ($Action) {
 
     $toolList = Resolve-AgentList -Requested $Agents -ProfileName $Profile -SingleTool $Tool
     foreach ($toolName in $toolList) {
-      Open-ToolInWorktree -Entry $entry -ToolName $toolName -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag
+      $toolMode = if ($Profile -eq "swarm" -and $toolName -eq "opencode") { "swarm" } else { "solo" }
+      Open-ToolInWorktree -Entry $entry -ToolName $toolName -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag -OpenCodeMode $toolMode
       Write-Host "Opened $toolName for role '$Role' at: $($entry.dir)"
     }
     exit 0
@@ -428,7 +506,7 @@ switch ($Action) {
     $entry = Find-RoleEntry -RoleMap $map -WantedRole $r
     if (-not $entry) { throw "Role not available (try -IncludeDocs?): $r" }
 
-    Open-ToolInWorktree -Entry $entry -ToolName $Tool -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag
+    Open-ToolInWorktree -Entry $entry -ToolName $Tool -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag -OpenCodeMode "solo"
     Write-Host "Dispatched $Tool to role '$r' at: $($entry.dir)"
     exit 0
   }
@@ -440,7 +518,8 @@ switch ($Action) {
 
     $toolList = Resolve-AgentList -Requested $Agents -ProfileName $Profile -SingleTool $Tool
     foreach ($toolName in $toolList) {
-      Open-ToolInWorktree -Entry $entry -ToolName $toolName -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag
+      $toolMode = if ($Profile -eq "swarm" -and $toolName -eq "opencode") { "swarm" } else { "solo" }
+      Open-ToolInWorktree -Entry $entry -ToolName $toolName -CommonArgs $ToolArgs -CustomCmd $CustomCommand -Tag $SessionTag -OpenCodeMode $toolMode
       Write-Host "Dispatched $toolName to role '$r' at: $($entry.dir)"
     }
     exit 0

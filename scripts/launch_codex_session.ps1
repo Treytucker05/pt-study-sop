@@ -13,6 +13,54 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Resolve-OpenCodeLauncherPath {
+  param()
+
+  $candidates = New-Object System.Collections.Generic.List[string]
+
+  $envKeys = @(
+    "OHMYOPENCODE_SOLO_LAUNCHER",
+    "OHMYOPENCODE_LAUNCHER",
+    "OHMY_OPENCODE_LAUNCHER",
+    "PT_STUDY_OHMY_OPENCODE_LAUNCHER",
+    "OPENCODE_REGULAR_LAUNCHER",
+    "OPEN_CODE_REGULAR_LAUNCHER"
+  )
+  foreach ($key in $envKeys) {
+    $value = [Environment]::GetEnvironmentVariable($key)
+    if (-not [string]::IsNullOrWhiteSpace($value)) {
+      $candidates.Add($value)
+    }
+  }
+
+  if ($env:USERPROFILE) {
+    $candidates.Add((Join-Path $env:USERPROFILE "OneDrive\Desktop\Travel Laptop\OHMYOpenCode.bat"))
+    $candidates.Add((Join-Path $env:USERPROFILE "OneDrive\Desktop\Travel Laptop\OpenCodeReg.bat"))
+  }
+
+  foreach ($candidate in $candidates) {
+    if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+    try {
+      $resolved = [System.IO.Path]::GetFullPath($candidate)
+    } catch {
+      $resolved = $candidate
+    }
+
+    if (Test-Path -LiteralPath $resolved -PathType Leaf) {
+      return $resolved
+    }
+  }
+
+  return ""
+}
+
+function Quote-CommandPart {
+  param([string]$Value)
+  if ([string]::IsNullOrWhiteSpace($Value)) { return "" }
+  if ($Value -match '\s') { return '"' + $Value + '"' }
+  return $Value
+}
+
 $scriptRoot = $PSScriptRoot
 $launcher = Join-Path $scriptRoot "new_session_worktree.ps1"
 
@@ -34,10 +82,17 @@ switch ($Tool.ToLowerInvariant()) {
     }
   }
   "opencode" {
-    if ([string]::IsNullOrWhiteSpace($ToolArgs)) {
-      $launchCommand = $OpenCodeCmd
+    $openCodeLauncher = Resolve-OpenCodeLauncherPath
+    $openCodeBase = if (($OpenCodeCmd -eq "opencode") -and -not [string]::IsNullOrWhiteSpace($openCodeLauncher)) {
+      "$(Quote-CommandPart $openCodeLauncher) /nopause"
     } else {
-      $launchCommand = "$OpenCodeCmd $ToolArgs"
+      $OpenCodeCmd
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ToolArgs)) {
+      $launchCommand = $openCodeBase
+    } else {
+      $launchCommand = "$openCodeBase $ToolArgs"
     }
   }
   "custom" {

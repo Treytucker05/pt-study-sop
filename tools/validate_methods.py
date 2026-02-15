@@ -1,132 +1,72 @@
-#!/usr/bin/env python3
-"""CLI: Validate facilitation_prompt coverage for all method blocks.
-
-Usage:
-    python tools/validate_methods.py           # human-readable report
-    python tools/validate_methods.py --json    # machine-readable JSON
-    python tools/validate_methods.py --strict  # exit code 1 if any method fails
-
-Checks:
-  1. Every method has a non-trivial facilitation_prompt (>50 chars)
-  2. Methods with machine-readable artifact_type include a format example
-"""
-
-import json
-import os
+import argparse
+import importlib.util
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "brain"))
-
-from db_setup import get_connection
-
-# artifact_type values that require format examples in the prompt
-_ARTIFACT_TYPES_NEEDING_EXAMPLES = {
-    "cards": ["CARD", "FRONT:", "BACK:"],
-    "concept-map": ["```mermaid", "graph"],
-    "flowchart": ["```mermaid", "graph"],
-    "decision-tree": ["```mermaid", "graph"],
-    "comparison-table": ["|"],
-}
-
-MIN_PROMPT_LENGTH = 50
+ROOT = Path(__file__).resolve().parents[1]
 
 
-def validate_methods() -> list[dict]:
-    """Check every method_block for facilitation_prompt coverage."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT id, name, category, artifact_type, facilitation_prompt "
-        "FROM method_blocks ORDER BY id"
-    )
-    rows = cursor.fetchall()
-    conn.close()
-
-    results = []
-    for row in rows:
-        block_id, name, category, artifact_type, prompt = row
-        prompt = (prompt or "").strip()
-        issues = []
-
-        if not prompt:
-            issues.append("missing_prompt")
-        elif len(prompt) < MIN_PROMPT_LENGTH:
-            issues.append("trivial_prompt")
-
-        artifact_type = (artifact_type or "").strip()
-        if artifact_type and artifact_type in _ARTIFACT_TYPES_NEEDING_EXAMPLES:
-            markers = _ARTIFACT_TYPES_NEEDING_EXAMPLES[artifact_type]
-            if prompt and not any(m in prompt for m in markers):
-                issues.append("missing_artifact_format")
-
-        results.append({
-            "id": block_id,
-            "name": name,
-            "category": category,
-            "artifact_type": artifact_type or None,
-            "prompt_length": len(prompt),
-            "issues": issues,
-            "valid": len(issues) == 0,
-        })
-
-    return results
-
-
-def print_report(results: list[dict]) -> None:
-    """Print human-readable validation report."""
-    total = len(results)
-    passing = sum(1 for r in results if r["valid"])
-    missing_prompt = [r for r in results if "missing_prompt" in r["issues"]]
-    trivial_prompt = [r for r in results if "trivial_prompt" in r["issues"]]
-    missing_format = [r for r in results if "missing_artifact_format" in r["issues"]]
-
-    print("=" * 60)
-    print("Method Prompt Coverage Report")
-    print("=" * 60)
-    print(f"Total methods:           {total}")
-    print(f"Passing:                 {passing}/{total}")
-    print(f"Missing prompt:          {len(missing_prompt)}")
-    print(f"Trivial prompt (<{MIN_PROMPT_LENGTH}ch):  {len(trivial_prompt)}")
-    print(f"Missing artifact format: {len(missing_format)}")
-    print("-" * 60)
-
-    if missing_prompt:
-        print("\nMethods MISSING facilitation_prompt:")
-        for r in missing_prompt:
-            print(f"  [{r['id']}] {r['name']} ({r['category']})")
-
-    if trivial_prompt:
-        print("\nMethods with TRIVIAL prompt:")
-        for r in trivial_prompt:
-            print(f"  [{r['id']}] {r['name']} — {r['prompt_length']} chars")
-
-    if missing_format:
-        print("\nMethods missing ARTIFACT FORMAT example:")
-        for r in missing_format:
-            print(f"  [{r['id']}] {r['name']} — artifact_type={r['artifact_type']}")
-
-    if passing == total:
-        print(f"\n[OK] All {total} methods have valid facilitation prompts.")
-    else:
-        print(f"\n[WARN] {total - passing} method(s) need attention.")
+def load_db_setup():
+    module_path = ROOT / "brain" / "db_setup.py"
+    sys.path.append(str(ROOT / "brain"))
+    spec = importlib.util.spec_from_file_location("db_setup", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Failed to load db_setup")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def main() -> int:
-    json_mode = "--json" in sys.argv
-    strict = "--strict" in sys.argv
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--min-len", type=int, default=200)
+    args = parser.parse_args()
 
-    results = validate_methods()
+    db_setup = load_db_setup()
+    conn = db_setup.get_connection()
+    conn.row_factory = None
+    cursor = conn.cursor()
 
-    if json_mode:
-        print(json.dumps(results, indent=2))
-    else:
-        print_report(results)
-
-    failing = sum(1 for r in results if not r["valid"])
-    if strict and failing > 0:
+    try:
+        cursor.execute(
+            "SELECT id, name, facilitation_prompt FROM method_blocks ORDER BY id"
+        )
+    except Exception:
+        conn.close()
+        print("ERROR: method_blocks table not found")
         return 1
-    return 0
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    total = len(rows)
+    missing = []
+    short = []
+
+    for row in rows:
+        method_id, name, prompt = row
+        value = (prompt or "").strip()
+        if not value:
+            missing.append((method_id, name))
+        elif len(value) < args.min_len:
+            short.append((method_id, name, len(value)))
+
+    print(f"total methods: {total}")
+    print(f"missing facilitation_prompt: {len(missing)}")
+    print(f"facilitation_prompt < {args.min_len}: {len(short)}")
+
+    if missing:
+        print("\nMissing prompts:")
+        for method_id, name in missing:
+            print(f"- {method_id}: {name}")
+
+    if short:
+        print("\nShort prompts:")
+        for method_id, name, length in short:
+            print(f"- {method_id}: {name} ({length} chars)")
+
+    return 1 if missing or short else 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

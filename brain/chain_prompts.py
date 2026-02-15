@@ -43,7 +43,8 @@ def get_step_prompt(
     # Use facilitation_prompt from DB when available (Tier 3 block-level prompt)
     facilitation = (block.get("facilitation_prompt") or "").strip()
     if facilitation:
-        system = f"{SYSTEM_BASE}\n\n{facilitation}"
+        header = f"## {name} Facilitation Prompt"
+        system = f"{SYSTEM_BASE}\n\n{header}\n{facilitation}"
         return {
             "system": system,
             "user": (

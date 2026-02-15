@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { TutorMethodBlock } from "@/lib/api";
-import { CATEGORY_COLORS, CATEGORY_LABELS, type MethodCategory } from "@/lib/api";
+import type { MethodBlock, MethodCategory } from "@/lib/api";
+import { CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,6 +22,7 @@ const CATEGORY_ORDER: MethodCategory[] = [
   "overlearn",
 ];
 
+
 interface TutorChainBuilderProps {
   selectedBlockIds: number[];
   setSelectedBlockIds: (ids: number[]) => void;
@@ -31,9 +32,9 @@ export function TutorChainBuilder({
   selectedBlockIds,
   setSelectedBlockIds,
 }: TutorChainBuilderProps) {
-  const { data: allBlocks = [], isLoading } = useQuery<TutorMethodBlock[]>({
+  const { data: allBlocks = [], isLoading } = useQuery<MethodBlock[]>({
     queryKey: ["tutor-method-blocks"],
-    queryFn: () => api.tutor.getMethodBlocks(),
+    queryFn: () => api.methods.getAll(),
   });
 
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
@@ -41,13 +42,13 @@ export function TutorChainBuilder({
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const blockMap = useMemo(() => {
-    const m = new Map<number, TutorMethodBlock>();
+    const m = new Map<number, MethodBlock>();
     for (const b of allBlocks) m.set(b.id, b);
     return m;
   }, [allBlocks]);
 
   const byCategory = useMemo(() => {
-    const groups: Record<string, TutorMethodBlock[]> = {};
+    const groups: Record<string, MethodBlock[]> = {};
     for (const cat of CATEGORY_ORDER) groups[cat] = [];
     for (const b of allBlocks) {
       if (!groups[b.category]) groups[b.category] = [];
@@ -57,7 +58,7 @@ export function TutorChainBuilder({
   }, [allBlocks]);
 
   const selectedBlocks = useMemo(
-    () => selectedBlockIds.map((id) => blockMap.get(id)).filter(Boolean) as TutorMethodBlock[],
+    () => selectedBlockIds.map((id) => blockMap.get(id)).filter(Boolean) as MethodBlock[],
     [selectedBlockIds, blockMap],
   );
 

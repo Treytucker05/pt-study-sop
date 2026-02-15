@@ -16,9 +16,9 @@ from typing import Any
 
 from config import DB_PATH
 from db_setup import get_connection
-from llm_provider import call_llm
+from llm_provider import model_call
 from chain_prompts import get_step_prompt
-from artifact_validators import validate_step_output
+from artifact_validators import normalize_anki_output, validate_step_output
 from chain_logger import log_block_run
 
 # Cap RAG context to avoid prompt overflow
@@ -38,11 +38,16 @@ def run_chain(
     options = options or {}
     write_obsidian = options.get("write_obsidian", True)
     draft_cards = options.get("draft_cards", True)
+    force_invalid_artifact = options.get("force_invalid_artifact", False)
 
     # 1. Load chain + blocks from DB
     chain = _load_chain(chain_id)
     if not chain:
-        return {"run_id": None, "status": "failed", "error": f"Chain {chain_id} not found"}
+        return {
+            "run_id": None,
+            "status": "failed",
+            "error": f"Chain {chain_id} not found",
+        }
 
     blocks = chain["blocks"]
     total_steps = len(blocks)
@@ -51,18 +56,51 @@ def run_chain(
     run_id = _create_run(chain_id, topic, course_id, total_steps)
 
     # 3. Load RAG context
-    rag_context = _load_rag_context(source_doc_ids, topic, course_id) if source_doc_ids else ""
+    rag_context = (
+        _load_rag_context(source_doc_ids, topic, course_id) if source_doc_ids else ""
+    )
 
     # 4. Execute each block
     accumulated = ""
     steps: list[dict] = []
+    force_invalid_targets = {
+        "M-OVR-002": "cards",
+        "M-ENC-009": "concept-map",
+        "M-ENC-011": "flowchart",
+        "M-ENC-012": "decision-tree",
+    }
+    validator_artifact_types = {
+        "cards",
+        "concept-map",
+        "flowchart",
+        "decision-tree",
+        "comparison-table",
+    }
+    force_invalid_index = None
+    force_invalid_override_type = None
+    if force_invalid_artifact:
+        for idx, block in enumerate(blocks):
+            method_id = block.get("method_id")
+            artifact_type = block.get("artifact_type")
+            if method_id in force_invalid_targets:
+                force_invalid_index = idx
+                force_invalid_override_type = force_invalid_targets[method_id]
+                break
+            if artifact_type in validator_artifact_types:
+                force_invalid_index = idx
+                force_invalid_override_type = artifact_type
+                break
+        if force_invalid_index is None and blocks:
+            force_invalid_index = len(blocks) - 1
+            force_invalid_override_type = "cards"
+
     for i, block in enumerate(blocks):
         step_start = time.time()
         prompt = get_step_prompt(block, topic, rag_context, accumulated)
-        result = call_llm(
+        result = model_call(
             prompt["system"],
             prompt["user"],
-            provider="openrouter",
+            provider="codex",
             timeout=STEP_TIMEOUT,
         )
 
@@ -70,10 +108,29 @@ def run_chain(
 
         if result["success"]:
             step_output = result["content"]
+            if block.get("method_id") == "M-OVR-002":
+                step_output = normalize_anki_output(step_output)
+            validation_block = block
+            if not block.get("artifact_type"):
+                method_id = block.get("method_id")
+                if method_id in force_invalid_targets:
+                    validation_block = {
+                        **block,
+                        "artifact_type": force_invalid_targets[method_id],
+                    }
+            if force_invalid_artifact and force_invalid_index == i:
+                if force_invalid_override_type == "cards":
+                    step_output = "CARD 1:\nFRONT: missing type/back/tags"
+                else:
+                    step_output = "```mermaid\ninvalid\n```"
+                validation_block = {
+                    **block,
+                    "artifact_type": force_invalid_override_type,
+                }
             accumulated += f"\n\n--- Step {i + 1}: {block['name']} ---\n{step_output}"
 
             # Validate artifact format if block declares a machine-readable type
-            validation = validate_step_output(block, step_output)
+            validation = validate_step_output(validation_block, step_output)
             validation_info = None
             if validation and not validation.valid:
                 validation_info = {
@@ -84,14 +141,55 @@ def run_chain(
             elif validation:
                 validation_info = {"valid": True, "warnings": validation.warnings}
 
-            steps.append({
-                "step": i + 1,
-                "method_name": block["name"],
-                "category": block["category"],
-                "output": step_output,
-                "duration_ms": duration_ms,
-                "validation": validation_info,
-            })
+            if validation_info and validation_info.get("valid") is False:
+                error_msg = "Artifact validation failed: " + "; ".join(
+                    validation_info.get("errors", [])
+                )
+                steps.append(
+                    {
+                        "step": i + 1,
+                        "method_name": block["name"],
+                        "category": block["category"],
+                        "output": step_output,
+                        "duration_ms": duration_ms,
+                        "validation": validation_info,
+                        "success": False,
+                        "error": error_msg,
+                    }
+                )
+                log_block_run(
+                    chain_id=chain_id,
+                    chain_name=chain["name"],
+                    run_id=run_id,
+                    block_id=block["id"],
+                    block_name=block["name"],
+                    category=block["category"],
+                    duration_seconds=duration_ms / 1000,
+                    success=False,
+                    artifact_validation_pass=False,
+                )
+                _fail_run(run_id, error_msg)
+                return {
+                    "run_id": run_id,
+                    "chain_name": chain["name"],
+                    "status": "failed",
+                    "steps": steps,
+                    "error": error_msg,
+                    "artifacts": None,
+                }
+
+            steps.append(
+                {
+                    "step": i + 1,
+                    "method_name": block["name"],
+                    "category": block["category"],
+                    "output": step_output,
+                    "duration_ms": duration_ms,
+                    "validation": validation_info,
+                    "success": True,
+                    "error": None,
+                }
+            )
 
             # Log block run
             log_block_run(
@@ -109,7 +207,7 @@ def run_chain(
             )
         else:
             error_msg = result.get("error", "LLM call failed")
-            duration_seconds = (time.time() - step_start)
+            duration_seconds = time.time() - step_start
             log_block_run(
                 chain_id=chain_id,
                 chain_name=chain["name"],
@@ -134,7 +232,11 @@ def run_chain(
 
     # 5. Write artifacts
     artifacts = _write_artifacts(
-        chain, topic, course_id, steps, run_id,
+        chain,
+        topic,
+        course_id,
+        steps,
+        run_id,
         write_obsidian=write_obsidian,
         draft_cards=draft_cards,
     )
@@ -153,6 +255,7 @@ def run_chain(
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _load_chain(chain_id: int) -> dict | None:
     """Load a chain and its expanded method blocks from the DB."""
@@ -178,9 +281,11 @@ def _load_chain(chain_id: int) -> dict | None:
         "is_template": row[5],
         "ruleset_id": row[6],
     }
-    
+
     if chain["ruleset_id"]:
-        cursor.execute("SELECT rules_json FROM rulesets WHERE id = ?", (chain["ruleset_id"],))
+        cursor.execute(
+            "SELECT rules_json FROM rulesets WHERE id = ?", (chain["ruleset_id"],)
+        )
         rs_row = cursor.fetchone()
         if rs_row:
             chain["ruleset"] = _safe_json(rs_row[0]) or []
@@ -196,7 +301,7 @@ def _load_chain(chain_id: int) -> dict | None:
 
     placeholders = ",".join("?" * len(block_ids))
     cursor.execute(
-        f"SELECT id, name, category, description, default_duration_min, energy_cost, facilitation_prompt, artifact_type "
+        f"SELECT id, method_id, name, category, description, default_duration_min, energy_cost, facilitation_prompt, artifact_type "
         f"FROM method_blocks WHERE id IN ({placeholders})",
         block_ids,
     )
@@ -204,13 +309,14 @@ def _load_chain(chain_id: int) -> dict | None:
     for b in cursor.fetchall():
         blocks_map[b[0]] = {
             "id": b[0],
-            "name": b[1],
-            "category": b[2],
-            "description": b[3],
-            "default_duration_min": b[4],
-            "energy_cost": b[5],
-            "facilitation_prompt": b[6] or "",
-            "artifact_type": b[7] or "",
+            "method_id": b[1],
+            "name": b[2],
+            "category": b[3],
+            "description": b[4],
+            "default_duration_min": b[5],
+            "energy_cost": b[6],
+            "facilitation_prompt": b[7] or "",
+            "artifact_type": b[8] or "",
         }
     conn.close()
 
@@ -219,9 +325,7 @@ def _load_chain(chain_id: int) -> dict | None:
     return {**chain, "blocks": ordered_blocks}
 
 
-def _load_rag_context(
-    doc_ids: list[int], topic: str, course_id: int | None
-) -> str:
+def _load_rag_context(doc_ids: list[int], topic: str, course_id: int | None) -> str:
     """Load RAG document content by ID, capped at MAX_RAG_CHARS."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -260,9 +364,12 @@ def _create_run(
         (chain_id, topic, course_id, total_steps),
     )
     run_id = cursor.lastrowid
+    if run_id is None:
+        conn.close()
+        raise RuntimeError("Failed to create chain run")
     conn.commit()
     conn.close()
-    return run_id
+    return int(run_id)
 
 
 def _update_step(run_id: int, step: int) -> None:
@@ -342,10 +449,13 @@ def _write_artifacts(
 
     # Write Obsidian note
     if write_obsidian:
-        obsidian_path = f"Study Notes/{chain_name}/{slug}-{chain_name.lower()}-{date_str}.md"
+        obsidian_path = (
+            f"Study Notes/{chain_name}/{slug}-{chain_name.lower()}-{date_str}.md"
+        )
         note_content = _build_obsidian_note(chain_name, topic, steps)
         try:
             from dashboard.api_adapter import obsidian_append
+
             result = obsidian_append(obsidian_path, note_content)
             if result.get("success"):
                 artifacts["obsidian_path"] = obsidian_path
@@ -386,9 +496,12 @@ def _create_session(
         ),
     )
     session_id = cursor.lastrowid
+    if session_id is None:
+        conn.close()
+        raise RuntimeError("Failed to create session")
     conn.commit()
     conn.close()
-    return session_id
+    return int(session_id)
 
 
 def _build_obsidian_note(chain_name: str, topic: str, steps: list[dict]) -> str:
@@ -440,7 +553,9 @@ def _extract_and_save_cards(
                     card.get("tags", topic),
                 ),
             )
-            card_ids.append(cursor.lastrowid)
+            card_id = cursor.lastrowid
+            if card_id is not None:
+                card_ids.append(int(card_id))
         conn.commit()
         conn.close()
 

@@ -6,6 +6,8 @@ Database setup and schema initialization for PT Study Brain v9.4.
 import sqlite3
 import os
 import sys
+import importlib.util
+from typing import Optional
 from pathlib import Path
 
 from config import DB_PATH
@@ -461,14 +463,16 @@ def init_database():
     cursor.execute("PRAGMA table_info(study_tasks)")
     st_cols = {c[1] for c in cursor.fetchall()}
     for col_name, col_type in [
-        ("source", "TEXT"),          # 'weak_anchor' | 'exit_ticket' | 'manual' | 'spacing'
+        ("source", "TEXT"),  # 'weak_anchor' | 'exit_ticket' | 'manual' | 'spacing'
         ("priority", "INTEGER DEFAULT 0"),
         ("review_number", "INTEGER"),  # R1=1, R2=2, R3=3, R4=4
-        ("anchor_text", "TEXT"),       # the weak anchor or topic text
+        ("anchor_text", "TEXT"),  # the weak anchor or topic text
     ]:
         if col_name not in st_cols:
             try:
-                cursor.execute(f"ALTER TABLE study_tasks ADD COLUMN {col_name} {col_type}")
+                cursor.execute(
+                    f"ALTER TABLE study_tasks ADD COLUMN {col_name} {col_type}"
+                )
             except sqlite3.OperationalError:
                 pass
 
@@ -1111,7 +1115,9 @@ def init_database():
         for col_name, col_type in cols:
             if col_name not in existing:
                 try:
-                    cursor.execute(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type}")
+                    cursor.execute(
+                        f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type}"
+                    )
                     print(f"[INFO] Added '{col_name}' to {table}")
                 except sqlite3.OperationalError:
                     pass
@@ -1134,7 +1140,9 @@ def init_database():
     quick_notes_cols = {col[1] for col in cursor.fetchall()}
     if "note_type" not in quick_notes_cols:
         try:
-            cursor.execute("ALTER TABLE quick_notes ADD COLUMN note_type TEXT DEFAULT 'notes'")
+            cursor.execute(
+                "ALTER TABLE quick_notes ADD COLUMN note_type TEXT DEFAULT 'notes'"
+            )
         except Exception:
             pass
     cursor.execute("UPDATE quick_notes SET note_type = COALESCE(note_type, 'notes')")
@@ -1159,7 +1167,7 @@ def init_database():
             description TEXT
         )
     """)
-    
+
     # Pruning Trigger: Keep only last 10 rows
     cursor.execute("""
         CREATE TRIGGER IF NOT EXISTS prune_ledger
@@ -1180,6 +1188,7 @@ def init_database():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS method_blocks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            method_id TEXT,
             name TEXT NOT NULL,
             category TEXT NOT NULL,
             description TEXT,
@@ -1278,8 +1287,17 @@ def init_database():
 
     if "facilitation_prompt" not in mb_cols:
         try:
-            cursor.execute("ALTER TABLE method_blocks ADD COLUMN facilitation_prompt TEXT")
+            cursor.execute(
+                "ALTER TABLE method_blocks ADD COLUMN facilitation_prompt TEXT"
+            )
             print("[INFO] Added 'facilitation_prompt' column to method_blocks table")
+        except sqlite3.OperationalError:
+            pass
+
+    if "method_id" not in mb_cols:
+        try:
+            cursor.execute("ALTER TABLE method_blocks ADD COLUMN method_id TEXT")
+            print("[INFO] Added 'method_id' column to method_blocks table")
         except sqlite3.OperationalError:
             pass
 
@@ -1299,7 +1317,9 @@ def init_database():
     for col_name, col_type in module_card_cols:
         if col_name not in mb_cols:
             try:
-                cursor.execute(f"ALTER TABLE method_blocks ADD COLUMN {col_name} {col_type}")
+                cursor.execute(
+                    f"ALTER TABLE method_blocks ADD COLUMN {col_name} {col_type}"
+                )
                 print(f"[INFO] Added '{col_name}' column to method_blocks table")
             except sqlite3.OperationalError:
                 pass
@@ -1524,7 +1544,9 @@ def init_database():
     ]:
         if col_name not in ts_cols:
             try:
-                cursor.execute(f"ALTER TABLE tutor_sessions ADD COLUMN {col_name} {col_type}")
+                cursor.execute(
+                    f"ALTER TABLE tutor_sessions ADD COLUMN {col_name} {col_type}"
+                )
                 print(f"[INFO] Added '{col_name}' column to tutor_sessions table")
             except sqlite3.OperationalError:
                 pass
@@ -1638,9 +1660,15 @@ def init_database():
         )
     """)
 
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scholar_proposals_status ON scholar_proposals(status)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scholar_hypotheses_status ON scholar_hypotheses(status)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_scholar_experiments_status ON scholar_experiments(status)")
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scholar_proposals_status ON scholar_proposals(status)"
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scholar_hypotheses_status ON scholar_hypotheses(status)"
+    )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scholar_experiments_status ON scholar_experiments(status)"
+    )
 
     conn.commit()
     conn.close()
@@ -1692,7 +1720,9 @@ def migrate_method_categories():
     if total > 0:
         print(f"[OK] Migrated {total} method block(s) to PEIRRO categories")
     else:
-        print("[INFO] Method categories already use PEIRRO phases (no migration needed)")
+        print(
+            "[INFO] Method categories already use PEIRRO phases (no migration needed)"
+        )
 
 
 def migrate_from_v8():
@@ -1770,6 +1800,40 @@ def get_connection():
     return conn
 
 
+def _load_seed_methods_module():
+    seed_path = Path(__file__).resolve().parent / "data" / "seed_methods.py"
+    if not seed_path.exists():
+        return None
+    spec = importlib.util.spec_from_file_location("seed_methods", seed_path)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def ensure_method_library_seeded() -> None:
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM method_blocks")
+        block_count = int(cursor.fetchone()[0] or 0)
+        cursor.execute(
+            "SELECT COUNT(*) FROM method_chains WHERE COALESCE(is_template, 0) = 1"
+        )
+        template_chain_count = int(cursor.fetchone()[0] or 0)
+        conn.close()
+    except sqlite3.OperationalError:
+        return
+
+    if block_count > 0 and template_chain_count > 0:
+        return
+
+    module = _load_seed_methods_module()
+    if module and hasattr(module, "seed_methods"):
+        module.seed_methods(force=False)
+
+
 # ------------------------------------------------------------------
 # Ingestion tracking helper functions
 # ------------------------------------------------------------------
@@ -1803,7 +1867,9 @@ def is_file_ingested(conn, filepath: str, checksum: str) -> tuple:
     return False, None
 
 
-def mark_file_ingested(conn, filepath: str, checksum: str, session_id: int = None):
+def mark_file_ingested(
+    conn, filepath: str, checksum: str, session_id: Optional[int] = None
+):
     """
     Mark a file as ingested. Updates if filepath exists, inserts otherwise.
     """
@@ -1833,7 +1899,7 @@ def remove_ingested_file(conn, filepath: str):
     conn.commit()
 
 
-def get_ingested_session_id(conn, filepath: str) -> int:
+def get_ingested_session_id(conn, filepath: str) -> Optional[int]:
     """
     Get the session_id linked to an ingested file, if any.
     """
@@ -1908,7 +1974,9 @@ if __name__ == "__main__":
 
         if version not in {"9.1", "9.2", "9.3", "9.4"}:
             if not sys.stdin or not sys.stdin.isatty():
-                auto_migrate = os.environ.get("PT_BRAIN_AUTO_MIGRATE", "").strip().lower() in {
+                auto_migrate = os.environ.get(
+                    "PT_BRAIN_AUTO_MIGRATE", ""
+                ).strip().lower() in {
                     "1",
                     "true",
                     "yes",
@@ -1960,9 +2028,13 @@ if __name__ == "__main__":
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM method_blocks")
         method_count = int(cursor.fetchone()[0] or 0)
-        cursor.execute("SELECT COUNT(*) FROM method_chains WHERE COALESCE(is_template, 0) = 1")
+        cursor.execute(
+            "SELECT COUNT(*) FROM method_chains WHERE COALESCE(is_template, 0) = 1"
+        )
         template_chain_count = int(cursor.fetchone()[0] or 0)
-        cursor.execute("SELECT 1 FROM method_blocks WHERE name = ? LIMIT 1", ("Brain Dump",))
+        cursor.execute(
+            "SELECT 1 FROM method_blocks WHERE name = ? LIMIT 1", ("Brain Dump",)
+        )
         sentinel_method_ok = cursor.fetchone() is not None
         cursor.execute(
             "SELECT 1 FROM method_chains WHERE name = ? AND COALESCE(is_template, 0) = 1 LIMIT 1",
@@ -1984,12 +2056,17 @@ if __name__ == "__main__":
         # Prefer YAML sizes when available; otherwise fall back to a minimal presence check.
         if expected_method_count > 0 and method_count < expected_method_count:
             needs_seed = True
-            seed_reasons.append(f"method_blocks {method_count} < expected {expected_method_count}")
+            seed_reasons.append(
+                f"method_blocks {method_count} < expected {expected_method_count}"
+            )
         elif expected_method_count == 0 and method_count == 0:
             needs_seed = True
             seed_reasons.append("method_blocks empty")
 
-        if expected_template_chain_count > 0 and template_chain_count < expected_template_chain_count:
+        if (
+            expected_template_chain_count > 0
+            and template_chain_count < expected_template_chain_count
+        ):
             needs_seed = True
             seed_reasons.append(
                 f"template_chains {template_chain_count} < expected {expected_template_chain_count}"
@@ -2026,7 +2103,9 @@ if __name__ == "__main__":
                     text=True,
                 )
                 if result.returncode == 0:
-                    print("[OK] Seeded/merged method library (method_blocks + method_chains).")
+                    print(
+                        "[OK] Seeded/merged method library (method_blocks + method_chains)."
+                    )
                 else:
                     msg = (result.stderr or "").strip() or (result.stdout or "").strip()
                     if not msg:
@@ -2038,7 +2117,11 @@ if __name__ == "__main__":
             print(f"[WARN] Method library seed raised: {e}")
 
     # Optional one-time data correction for session minutes
-    if os.environ.get("PT_BRAIN_BACKFILL_MINUTES", "").strip().lower() in {"1", "true", "yes"}:
+    if os.environ.get("PT_BRAIN_BACKFILL_MINUTES", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }:
         updated_time, updated_duration = backfill_session_minutes()
         print(f"[INFO] Backfilled time_spent_minutes for {updated_time} sessions.")
         print(f"[INFO] Backfilled duration_minutes for {updated_duration} sessions.")

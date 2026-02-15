@@ -14,6 +14,7 @@ Non-negotiable rules:
 5. Codex does implementation only for assigned tasks.
 6. Reviewer gate is required before marking implementation tasks done.
 7. If review finds issues, create follow-up tasks with new IDs.
+8. Codex owns implementation and commit/merge actions; reviewers only gate.
 
 High-confidence workflow:
 1. Build task list with acceptance criteria and test expectations.

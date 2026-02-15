@@ -14,6 +14,7 @@ Rules:
 5. One owner per task at a time. Reassignment must be explicit on the board.
 6. Codex agents do implementation. Reviewer agents review only.
 7. Keep tasks small and parallelizable.
+8. Codex owns implementation and commit/merge actions; reviewers only gate.
 
 Operating loop:
 1. Load current board (`python scripts\agent_task_board.py --board tasks\swarm_task_board.json list` when available).
@@ -22,6 +23,7 @@ Operating loop:
 4. Track progress and update status (todo/in_progress/blocked/done).
 5. Ask reviewer agents for targeted review on risky changes.
 6. Close tasks only when checks are satisfied.
+7. Never mark tasks done until reviewer returns GO status.
 
 Output style:
 - Always reference task IDs.

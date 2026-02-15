@@ -330,14 +330,14 @@ export function TutorChat({
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-3 space-y-3"
+        className="flex-1 overflow-y-auto p-3 space-y-3 bg-zinc-950/30"
       >
         {messages.length === 0 && (
           <div className="text-center py-8 space-y-2">
             <div className="font-arcade text-sm text-primary">
               SESSION STARTED
             </div>
-            <div className="font-terminal text-lg text-muted-foreground">
+            <div className="font-sans text-lg text-muted-foreground leading-7">
               Ask a question to begin learning. Use /note, /card, or /map for artifacts.
             </div>
           </div>
@@ -349,14 +349,14 @@ export function TutorChat({
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] px-3 py-2 text-lg font-terminal ${
+              className={`max-w-[85%] px-3 py-2 text-[17px] leading-7 font-sans ${
                 msg.role === "user"
-                  ? "bg-primary/20 border-[3px] border-double border-primary/50 text-foreground"
-                  : "bg-black/40 border-[3px] border-double border-primary/20 text-foreground"
+                  ? "bg-primary/15 border-2 border-primary/40 text-foreground"
+                  : "bg-zinc-900/95 border-2 border-zinc-600 text-zinc-100"
               }`}
             >
               {msg.role === "assistant" ? (
-                <div className="prose prose-invert prose-lg max-w-none font-terminal [&_p]:my-2 [&_li]:my-1 [&_code]:text-base [&_pre]:text-base">
+                <div className="prose prose-invert prose-lg max-w-none font-sans [&_p]:my-2 [&_li]:my-1 [&_p]:leading-7 [&_li]:leading-7 [&_code]:text-base [&_pre]:text-base">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {msg.content || (msg.isStreaming ? "..." : "")}
                   </ReactMarkdown>
@@ -479,7 +479,7 @@ export function TutorChat({
           onKeyDown={handleKeyDown}
           placeholder="Ask a question..."
           disabled={isStreaming}
-          className="flex-1 bg-black/60 border-[3px] border-double border-primary/40 rounded-none px-3 py-2 text-lg font-terminal text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none disabled:opacity-50"
+          className="flex-1 bg-zinc-950 border-2 border-zinc-600 rounded-none px-3 py-2 text-[17px] leading-7 font-sans text-zinc-100 placeholder:text-zinc-400 focus:border-primary focus:outline-none disabled:opacity-50"
         />
         <Button
           onClick={sendMessage}

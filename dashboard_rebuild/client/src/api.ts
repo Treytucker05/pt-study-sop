@@ -611,6 +611,11 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+    deleteArtifacts: (sessionId: string, indexes: number[]) =>
+      request<{ deleted: number; session_id: string }>(`/tutor/session/${sessionId}/artifacts`, {
+        method: "DELETE",
+        body: JSON.stringify({ indexes }),
+      }),
     getContentSources: () =>
       request<TutorContentSources>("/tutor/content-sources"),
     createChain: (data: TutorChainRequest) =>
@@ -662,11 +667,16 @@ export const api = {
         method: "POST",
       }),
     getMethodBlocks: () =>
-      request<TutorMethodBlock[]>("/tutor/blocks"),
+      request<MethodBlock[]>("/methods"),
     createCustomChain: (blockIds: number[], name?: string) =>
-      request<{ id: number; name: string; block_ids: number[] }>("/tutor/blocks/chain", {
+      request<{ id: number; name: string }>("/chains", {
         method: "POST",
-        body: JSON.stringify({ block_ids: blockIds, name: name || "Custom Chain" }),
+        body: JSON.stringify({
+          name: name || "Custom Chain",
+          block_ids: blockIds,
+          is_template: 0,
+          context_tags: {},
+        }),
       }),
   },
 };
@@ -1029,7 +1039,7 @@ export interface TutorCreateSessionRequest {
   phase?: TutorPhase;
   mode?: TutorMode;
   topic?: string;
-  content_filter?: { material_ids?: number[]; model?: string };
+  content_filter?: { material_ids?: number[]; model?: string; folders?: string[]; web_search?: boolean };
   method_chain_id?: number;
 }
 

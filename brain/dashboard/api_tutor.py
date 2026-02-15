@@ -33,7 +33,7 @@ from typing import Optional
 
 from flask import Blueprint, Response, jsonify, request
 
-from db_setup import DB_PATH, get_connection
+from db_setup import DB_PATH, get_connection, ensure_method_library_seeded
 
 tutor_bp = Blueprint("tutor", __name__, url_prefix="/api/tutor")
 
@@ -43,6 +43,7 @@ UPLOADS_DIR = Path(__file__).parent.parent / "data" / "uploads"
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _gen_session_id() -> str:
     """Generate a unique tutor session ID."""
@@ -105,7 +106,9 @@ def _resolve_chain_blocks(conn, chain_id: int) -> list[dict]:
     return [block_map[bid] for bid in block_ids if bid in block_map]
 
 
-def _build_chain_info(conn, chain_id: int, current_index: int) -> tuple[Optional[dict], Optional[dict]]:
+def _build_chain_info(
+    conn, chain_id: int, current_index: int
+) -> tuple[Optional[dict], Optional[dict]]:
     """
     Build block_info and chain_info dicts for prompt builder.
     Returns (block_info, chain_info) — either may be None.
@@ -113,7 +116,9 @@ def _build_chain_info(conn, chain_id: int, current_index: int) -> tuple[Optional
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    cur.execute("SELECT id, name, description FROM method_chains WHERE id = ?", (chain_id,))
+    cur.execute(
+        "SELECT id, name, description FROM method_chains WHERE id = ?", (chain_id,)
+    )
     chain_row = cur.fetchone()
     if not chain_row:
         return None, None
@@ -151,31 +156,34 @@ def _format_dual_context(dual: dict) -> tuple[str, str]:
     Format dual context dicts into (material_context_text, instruction_context_text).
     """
     material_parts = []
-    for d in (dual.get("materials") or []):
+    for d in dual.get("materials") or []:
         source = (d.metadata or {}).get("source", "Unknown")
         material_parts.append(f"[Source: {source}]\n{d.page_content}")
     material_text = "\n\n---\n\n".join(material_parts) if material_parts else ""
 
     instruction_parts = []
-    for d in (dual.get("instructions") or []):
+    for d in dual.get("instructions") or []:
         source = (d.metadata or {}).get("source", "Unknown")
         instruction_parts.append(f"[SOP: {source}]\n{d.page_content}")
-    instruction_text = "\n\n---\n\n".join(instruction_parts) if instruction_parts else ""
+    instruction_text = (
+        "\n\n---\n\n".join(instruction_parts) if instruction_parts else ""
+    )
 
     return material_text, instruction_text
 
 
 def _sanitize_filename(name: str) -> str:
     import re
-    safe = re.sub(r'[^\w\s\-.]', '', name)
-    safe = re.sub(r'\s+', '_', safe)
-    return safe[:200]
 
+    safe = re.sub(r"[^\w\s\-.]", "", name)
+    safe = re.sub(r"\s+", "_", safe)
+    return safe[:200]
 
 
 # ---------------------------------------------------------------------------
 # POST /api/tutor/session — Create a new tutor session
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/session", methods=["POST"])
 def create_session():
@@ -227,22 +235,25 @@ def create_session():
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "session_id": session_id,
-        "phase": phase,
-        "mode": mode,
-        "topic": topic,
-        "status": "active",
-        "method_chain_id": method_chain_id,
-        "current_block_index": 0,
-        "current_block_name": first_block_name,
-        "started_at": now,
-    }), 201
+    return jsonify(
+        {
+            "session_id": session_id,
+            "phase": phase,
+            "mode": mode,
+            "topic": topic,
+            "status": "active",
+            "method_chain_id": method_chain_id,
+            "current_block_index": 0,
+            "current_block_name": first_block_name,
+            "started_at": now,
+        }
+    ), 201
 
 
 # ---------------------------------------------------------------------------
 # GET /api/tutor/session/<id> — Get session + history
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/session/<session_id>", methods=["GET"])
 def get_session(session_id: str):
@@ -284,6 +295,7 @@ def get_session(session_id: str):
 # POST /api/tutor/session/<id>/turn — Send a message, SSE stream response
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/session/<session_id>/turn", methods=["POST"])
 def send_turn(session_id: str):
     VALID_ENGINES = {"codex", "openrouter", "default"}
@@ -293,7 +305,9 @@ def send_turn(session_id: str):
     if not question:
         return jsonify({"error": "message is required"}), 400
     if engine not in VALID_ENGINES:
-        return jsonify({"error": f"Unknown engine '{engine}'. Valid: codex, openrouter, default"}), 400
+        return jsonify(
+            {"error": f"Unknown engine '{engine}'. Valid: codex, openrouter, default"}
+        ), 400
 
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)
@@ -313,12 +327,15 @@ def send_turn(session_id: str):
     chain_info = None
     if session.get("method_chain_id"):
         current_idx = session.get("current_block_index", 0) or 0
-        block_info, chain_info = _build_chain_info(conn, session["method_chain_id"], current_idx)
+        block_info, chain_info = _build_chain_info(
+            conn, session["method_chain_id"], current_idx
+        )
 
     conn.close()
 
     # Detect artifact commands
     from tutor_chains import detect_artifact_command
+
     artifact_cmd = detect_artifact_command(question)
 
     # Parse content filter for retriever
@@ -348,7 +365,7 @@ def send_turn(session_id: str):
     enable_web_search = bool(content_filter and content_filter.get("web_search"))
 
     # Resolve provider selection
-    model_str = (str(model_override).strip() if model_override else "")
+    model_str = str(model_override).strip() if model_override else ""
     model_lower = model_str.lower()
     provider = os.environ.get("TUTOR_PROVIDER", "").strip().lower() or None
     codex_model: Optional[str] = None
@@ -367,9 +384,14 @@ def send_turn(session_id: str):
     # Guard: if UI selects an OpenRouter-style model (contains "/") but OpenRouter
     # isn't configured, fail fast with a readable SSE error instead of attempting
     # OpenAI with an incompatible model id (e.g. "google/gemini-*").
-    if provider == "openrouter" and not (os.environ.get("OPENROUTER_API_KEY") or "").strip():
+    if (
+        provider == "openrouter"
+        and not (os.environ.get("OPENROUTER_API_KEY") or "").strip()
+    ):
+
         def _unconfigured():
             from tutor_streaming import format_sse_error
+
             yield format_sse_error(
                 "OpenRouter is not configured (OPENROUTER_API_KEY missing). "
                 "Select Codex or set OPENROUTER_API_KEY in brain/.env, then restart the dashboard."
@@ -510,11 +532,12 @@ Remember: cite source documents using [Source: filename] when you use them."""
 
                 # Primary: stream via ChatGPT backend API (fast)
                 use_streaming = True
+                api_model = codex_model or "gpt-5.1"
+                url_citations: list[object] = []
                 try:
-                    api_model = None
-                    url_citations = []
                     for chunk in stream_chatgpt_responses(
-                        system_prompt, user_prompt,
+                        system_prompt,
+                        user_prompt,
                         model=codex_model or "gpt-5.1",
                         timeout=120,
                         web_search=enable_web_search,
@@ -529,8 +552,10 @@ Remember: cite source documents using [Source: filename] when you use them."""
                         elif chunk.get("type") == "error":
                             raise RuntimeError(chunk.get("error", "ChatGPT API failed"))
                         elif chunk.get("type") == "done":
-                            api_model = chunk.get("model")
-                            url_citations = chunk.get("url_citations", [])
+                            api_model = chunk.get("model") or api_model
+                            url_citations_raw = chunk.get("url_citations", [])
+                            if isinstance(url_citations_raw, list):
+                                url_citations = url_citations_raw
                 except Exception as stream_err:
                     # Fallback: Codex CLI (slower but reliable)
                     if not full_response:
@@ -556,13 +581,23 @@ Remember: cite source documents using [Source: filename] when you use them."""
                 all_citations = citations
                 if url_citations:
                     for uc in url_citations:
-                        all_citations.append({
-                            "source": uc.get("title") or uc.get("url", ""),
-                            "url": uc.get("url", ""),
-                            "index": len(all_citations) + 1,
-                        })
+                        if isinstance(uc, dict):
+                            source = uc.get("title") or uc.get("url", "")
+                            url = uc.get("url", "")
+                        else:
+                            source = str(uc)
+                            url = ""
+                        all_citations.append(
+                            {
+                                "source": source,
+                                "url": url,
+                                "index": len(all_citations) + 1,
+                            }
+                        )
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
-                yield format_sse_done(citations=all_citations, model=api_model, artifacts=artifact_payload)
+                yield format_sse_done(
+                    citations=all_citations, model=api_model, artifacts=artifact_payload
+                )
 
             except Exception as e:
                 yield format_sse_error(str(e))
@@ -570,7 +605,11 @@ Remember: cite source documents using [Source: filename] when you use them."""
                 citations = []
         else:
             try:
-                for chunk_str in stream_tutor_response(chain, input_dict, session_id, artifact_cmd=artifact_cmd):
+                if input_dict is None:
+                    raise RuntimeError("Missing input payload for tutor chain")
+                for chunk_str in stream_tutor_response(
+                    chain, input_dict, session_id, artifact_cmd=artifact_cmd
+                ):
                     yield chunk_str
 
                     if chunk_str.startswith("data: "):
@@ -648,6 +687,7 @@ Remember: cite source documents using [Source: filename] when you use them."""
 # POST /api/tutor/session/<id>/advance-block — Advance to next block in chain
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/session/<session_id>/advance-block", methods=["POST"])
 def advance_block(session_id: str):
     conn = get_connection()
@@ -666,13 +706,17 @@ def advance_block(session_id: str):
 
     if current_idx >= len(blocks) - 1:
         conn.close()
-        return jsonify({
-            "block_index": current_idx,
-            "block_name": blocks[current_idx]["name"] if blocks else "",
-            "block_description": blocks[current_idx].get("description", "") if blocks else "",
-            "is_last": True,
-            "complete": True,
-        })
+        return jsonify(
+            {
+                "block_index": current_idx,
+                "block_name": blocks[current_idx]["name"] if blocks else "",
+                "block_description": blocks[current_idx].get("description", "")
+                if blocks
+                else "",
+                "is_last": True,
+                "complete": True,
+            }
+        )
 
     now = datetime.now().isoformat()
     cur = conn.cursor()
@@ -702,20 +746,24 @@ def advance_block(session_id: str):
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "block_index": next_idx,
-        "block_name": next_block["name"],
-        "block_description": next_block.get("description", ""),
-        "is_last": next_idx >= len(blocks) - 1,
-    })
+    return jsonify(
+        {
+            "block_index": next_idx,
+            "block_name": next_block["name"],
+            "block_description": next_block.get("description", ""),
+            "is_last": next_idx >= len(blocks) - 1,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # GET /api/tutor/chains/templates — Template chains with resolved blocks
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/chains/templates", methods=["GET"])
 def get_template_chains():
+    ensure_method_library_seeded()
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
@@ -742,21 +790,23 @@ def get_template_chains():
             except (json.JSONDecodeError, TypeError):
                 context_tags = chain["context_tags"] or ""
 
-        result.append({
-            "id": chain["id"],
-            "name": chain["name"],
-            "description": chain.get("description", ""),
-            "blocks": [
-                {
-                    "id": b["id"],
-                    "name": b["name"],
-                    "category": b.get("category", ""),
-                    "duration": b.get("default_duration_min", 5),
-                }
-                for b in blocks
-            ],
-            "context_tags": context_tags,
-        })
+        result.append(
+            {
+                "id": chain["id"],
+                "name": chain["name"],
+                "description": chain.get("description", ""),
+                "blocks": [
+                    {
+                        "id": b["id"],
+                        "name": b["name"],
+                        "category": b.get("category", ""),
+                        "duration": b.get("default_duration_min", 5),
+                    }
+                    for b in blocks
+                ],
+                "context_tags": context_tags,
+            }
+        )
 
     conn.close()
     return jsonify(result)
@@ -765,6 +815,7 @@ def get_template_chains():
 # ---------------------------------------------------------------------------
 # POST /api/tutor/session/<id>/end — End session
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/session/<session_id>/end", methods=["POST"])
 def end_session(session_id: str):
@@ -821,17 +872,20 @@ def end_session(session_id: str):
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "session_id": session_id,
-        "status": "completed",
-        "brain_session_id": brain_session_id,
-        "ended_at": now.isoformat(),
-    })
+    return jsonify(
+        {
+            "session_id": session_id,
+            "status": "completed",
+            "brain_session_id": brain_session_id,
+            "ended_at": now.isoformat(),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # DELETE /api/tutor/session/<id> — Delete a tutor session and its turns
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/session/<session_id>", methods=["DELETE"])
 def delete_session(session_id: str):
@@ -845,7 +899,9 @@ def delete_session(session_id: str):
         return jsonify({"error": "Session not found"}), 404
 
     cur.execute("DELETE FROM tutor_turns WHERE tutor_session_id = ?", (session_id,))
-    cur.execute("DELETE FROM tutor_block_transitions WHERE tutor_session_id = ?", (session_id,))
+    cur.execute(
+        "DELETE FROM tutor_block_transitions WHERE tutor_session_id = ?", (session_id,)
+    )
     cur.execute("DELETE FROM tutor_sessions WHERE session_id = ?", (session_id,))
     conn.commit()
     conn.close()
@@ -856,6 +912,7 @@ def delete_session(session_id: str):
 # ---------------------------------------------------------------------------
 # POST /api/tutor/session/<id>/artifact — Create artifact mid-session
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/session/<session_id>/artifact", methods=["POST"])
 def create_artifact(session_id: str):
@@ -873,7 +930,7 @@ def create_artifact(session_id: str):
         conn.close()
         return jsonify({"error": "Session not found"}), 404
 
-    result = {"type": artifact_type, "session_id": session_id}
+    result: dict[str, object] = {"type": artifact_type, "session_id": session_id}
 
     if artifact_type == "card":
         front = data.get("front", title)
@@ -904,8 +961,10 @@ def create_artifact(session_id: str):
         result["status"] = "created"
         try:
             cur = conn.cursor()
-            cur.execute("SELECT MAX(position) FROM quick_notes WHERE note_type = 'tutor'")
-            max_pos = (cur.fetchone()[0] or 0)
+            cur.execute(
+                "SELECT MAX(position) FROM quick_notes WHERE note_type = 'tutor'"
+            )
+            max_pos = cur.fetchone()[0] or 0
             now_str = datetime.now().isoformat()
             cur.execute(
                 """INSERT INTO quick_notes (title, content, note_type, position, created_at, updated_at)
@@ -949,8 +1008,53 @@ def create_artifact(session_id: str):
 
 
 # ---------------------------------------------------------------------------
+# DELETE /api/tutor/session/<id>/artifacts — Delete artifact entries by index
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/artifacts", methods=["DELETE"])
+def delete_artifacts(session_id: str):
+    data = request.get_json(silent=True) or {}
+    indexes = data.get("indexes")
+    if not isinstance(indexes, list) or not all(isinstance(i, int) for i in indexes):
+        return jsonify({"error": "indexes must be a list of integers"}), 400
+
+    conn = get_connection()
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    existing = session.get("artifacts_json")
+    artifacts = []
+    if existing:
+        try:
+            artifacts = json.loads(existing)
+        except (json.JSONDecodeError, TypeError):
+            pass
+    if not isinstance(artifacts, list):
+        artifacts = []
+
+    # Remove by index (descending so indices stay valid)
+    for i in sorted(set(indexes), reverse=True):
+        if 0 <= i < len(artifacts):
+            artifacts.pop(i)
+
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE tutor_sessions SET artifacts_json = ? WHERE session_id = ?",
+        (json.dumps(artifacts), session_id),
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({"deleted": len(indexes), "session_id": session_id})
+
+
+# ---------------------------------------------------------------------------
 # GET /api/tutor/sessions — List sessions
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/sessions", methods=["GET"])
 def list_sessions():
@@ -995,6 +1099,7 @@ def list_sessions():
 # GET /api/tutor/content-sources — Available courses + materials summary
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/content-sources", methods=["GET"])
 def content_sources():
     conn = get_connection()
@@ -1033,18 +1138,21 @@ def content_sources():
 
     openrouter_enabled = bool((os.environ.get("OPENROUTER_API_KEY") or "").strip())
 
-    return jsonify({
-        "courses": courses,
-        "total_materials": total_materials,
-        "total_instructions": total_instructions,
-        "total_docs": total_materials + total_instructions,
-        "openrouter_enabled": openrouter_enabled,
-    })
+    return jsonify(
+        {
+            "courses": courses,
+            "total_materials": total_materials,
+            "total_instructions": total_instructions,
+            "total_docs": total_materials + total_instructions,
+            "openrouter_enabled": openrouter_enabled,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # POST /api/tutor/materials/upload — Upload study material
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/materials/upload", methods=["POST"])
 def upload_material():
@@ -1059,7 +1167,11 @@ def upload_material():
 
     ext = Path(file.filename).suffix.lower()
     if ext not in SUPPORTED_EXTENSIONS:
-        return jsonify({"error": f"Unsupported file type: {ext}. Supported: {', '.join(SUPPORTED_EXTENSIONS)}"}), 400
+        return jsonify(
+            {
+                "error": f"Unsupported file type: {ext}. Supported: {', '.join(SUPPORTED_EXTENSIONS)}"
+            }
+        ), 400
 
     file_type = get_file_type(file.filename)
     title = request.form.get("title", Path(file.filename).stem)
@@ -1083,6 +1195,7 @@ def upload_material():
 
     # Insert into rag_docs
     import hashlib
+
     checksum = hashlib.sha256(content.encode("utf-8")).hexdigest() if content else ""
 
     conn = get_connection()
@@ -1129,6 +1242,7 @@ def upload_material():
     if content and not extraction_error:
         try:
             from tutor_rag import embed_rag_docs
+
             result = embed_rag_docs(corpus="materials")
             embedded = result.get("embedded", 0) > 0
         except Exception:
@@ -1136,22 +1250,25 @@ def upload_material():
 
     conn.close()
 
-    return jsonify({
-        "id": material_id,
-        "title": title,
-        "file_type": file_type,
-        "file_size": file_size,
-        "course_id": course_id,
-        "extraction_error": extraction_error,
-        "embedded": embedded,
-        "char_count": len(content) if content else 0,
-        "duplicate_of": duplicate_of,
-    }), 201
+    return jsonify(
+        {
+            "id": material_id,
+            "title": title,
+            "file_type": file_type,
+            "file_size": file_size,
+            "course_id": course_id,
+            "extraction_error": extraction_error,
+            "embedded": embedded,
+            "char_count": len(content) if content else 0,
+            "duplicate_of": duplicate_of,
+        }
+    ), 201
 
 
 # ---------------------------------------------------------------------------
 # GET /api/tutor/materials — List materials library
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/materials", methods=["GET"])
 def list_materials():
@@ -1241,6 +1358,7 @@ def list_materials():
 # PUT /api/tutor/materials/<id> — Update material metadata
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/materials/<int:material_id>", methods=["PUT"])
 def update_material(material_id: int):
     data = request.get_json(silent=True) or {}
@@ -1249,7 +1367,10 @@ def update_material(material_id: int):
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    cur.execute("SELECT id FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'", (material_id,))
+    cur.execute(
+        "SELECT id FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
+        (material_id,),
+    )
     if not cur.fetchone():
         conn.close()
         return jsonify({"error": "Material not found"}), 404
@@ -1288,6 +1409,7 @@ def update_material(material_id: int):
 # DELETE /api/tutor/materials/<id> — Delete material + file + ChromaDB chunks
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/materials/<int:material_id>", methods=["DELETE"])
 def delete_material(material_id: int):
     conn = get_connection()
@@ -1306,15 +1428,20 @@ def delete_material(material_id: int):
     file_path = row["file_path"]
 
     # Get chroma_ids for deletion
-    cur.execute("SELECT chroma_id FROM rag_embeddings WHERE rag_doc_id = ?", (material_id,))
+    cur.execute(
+        "SELECT chroma_id FROM rag_embeddings WHERE rag_doc_id = ?", (material_id,)
+    )
     chroma_ids = [r["chroma_id"] for r in cur.fetchall() if r["chroma_id"]]
 
     # Delete from ChromaDB
     if chroma_ids:
         try:
             from tutor_rag import init_vectorstore, COLLECTION_MATERIALS
+
             vs = init_vectorstore(COLLECTION_MATERIALS)
-            vs._collection.delete(ids=chroma_ids)
+            collection = getattr(vs, "_collection", None)
+            if collection:
+                collection.delete(ids=chroma_ids)
         except Exception:
             pass
 
@@ -1343,6 +1470,7 @@ def delete_material(material_id: int):
 # POST /api/tutor/chain — Create/extend session chain
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/chain", methods=["POST"])
 def create_chain():
     data = request.get_json(silent=True) or {}
@@ -1368,17 +1496,20 @@ def create_chain():
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "id": chain_id,
-        "chain_name": chain_name,
-        "topic": topic,
-        "session_ids": session_ids,
-    }), 201
+    return jsonify(
+        {
+            "id": chain_id,
+            "chain_name": chain_name,
+            "topic": topic,
+            "session_ids": session_ids,
+        }
+    ), 201
 
 
 # ---------------------------------------------------------------------------
 # GET /api/tutor/chain/<id> — Get chain with linked sessions
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/chain/<int:chain_id>", methods=["GET"])
 def get_chain(chain_id: int):
@@ -1416,6 +1547,7 @@ def get_chain(chain_id: int):
 # GET /api/tutor/blocks — All method blocks for chain builder
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/blocks", methods=["GET"])
 def get_method_blocks():
     conn = get_connection()
@@ -1436,6 +1568,7 @@ def get_method_blocks():
 # ---------------------------------------------------------------------------
 # POST /api/tutor/blocks/chain — Create ad-hoc chain from custom block list
 # ---------------------------------------------------------------------------
+
 
 @tutor_bp.route("/blocks/chain", methods=["POST"])
 def create_custom_chain():
@@ -1465,6 +1598,7 @@ def create_custom_chain():
 # POST /api/tutor/embed — Trigger embedding for rag_docs
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/embed", methods=["POST"])
 def trigger_embed():
     data = request.get_json(silent=True) or {}
@@ -1474,7 +1608,10 @@ def trigger_embed():
 
     try:
         from tutor_rag import embed_rag_docs
-        result = embed_rag_docs(course_id=course_id, folder_path=folder_path, corpus=corpus)
+
+        result = embed_rag_docs(
+            course_id=course_id, folder_path=folder_path, corpus=corpus
+        )
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1484,19 +1621,32 @@ def trigger_embed():
 # POST /api/tutor/materials/sync — Sync local materials folder to rag_docs
 # ---------------------------------------------------------------------------
 
+
 @tutor_bp.route("/materials/sync", methods=["POST"])
 def sync_materials_folder():
     data = request.get_json(silent=True) or {}
-    folder_path = data.get("folder_path") or os.environ.get("TUTOR_MATERIALS_DIR") or os.environ.get("PT_SCHOOL_MATERIALS_DIR")
+    folder_path = (
+        data.get("folder_path")
+        or os.environ.get("TUTOR_MATERIALS_DIR")
+        or os.environ.get("PT_SCHOOL_MATERIALS_DIR")
+    )
     if not folder_path:
-        return jsonify({"error": "folder_path is required (or set TUTOR_MATERIALS_DIR/PT_SCHOOL_MATERIALS_DIR)"}), 400
+        return jsonify(
+            {
+                "error": "folder_path is required (or set TUTOR_MATERIALS_DIR/PT_SCHOOL_MATERIALS_DIR)"
+            }
+        ), 400
 
     root = Path(folder_path).expanduser()
     if not root.exists() or not root.is_dir():
         return jsonify({"error": f"Folder not found: {folder_path}"}), 400
 
     allowed_exts_raw = data.get("allowed_exts")
-    allowed_exts = set(allowed_exts_raw) if isinstance(allowed_exts_raw, list) and allowed_exts_raw else None
+    allowed_exts = (
+        set(allowed_exts_raw)
+        if isinstance(allowed_exts_raw, list) and allowed_exts_raw
+        else None
+    )
 
     try:
         from rag_notes import sync_folder_to_rag
@@ -1508,11 +1658,13 @@ def sync_materials_folder():
             allowed_exts=allowed_exts,
         )
         embed_result = embed_rag_docs(corpus="materials")
-        return jsonify({
-            "ok": True,
-            "folder": str(root),
-            "sync": sync_result,
-            "embed": embed_result,
-        })
+        return jsonify(
+            {
+                "ok": True,
+                "folder": str(root),
+                "sync": sync_result,
+                "embed": embed_result,
+            }
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500

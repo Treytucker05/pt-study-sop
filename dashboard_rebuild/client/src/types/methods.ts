@@ -57,6 +57,7 @@ export interface ScoringHook {
 
 export interface MethodBlock {
   id: number;
+  method_id?: string | null;
   name: string;
   category: MethodCategory;
   description: string | null;

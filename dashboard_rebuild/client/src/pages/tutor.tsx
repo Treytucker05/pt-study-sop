@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { TutorMode, TutorSessionSummary, TutorTemplateChain } from "@/lib/api";
+import type { TutorMode, TutorSessionSummary, TutorTemplateChain, TutorSessionWithTurns } from "@/lib/api";
 import { ContentFilter } from "@/components/ContentFilter";
 import { TutorWizard } from "@/components/TutorWizard";
 import { TutorChat } from "@/components/TutorChat";
@@ -35,10 +35,13 @@ import {
 export default function Tutor() {
   const queryClient = useQueryClient();
   const tutorMaterialStorageKey = "tutor.selected_material_ids.v1";
+  const tutorWizardStorageKey = "tutor.wizard.state.v1";
+  const tutorActiveSessionKey = "tutor.active_session.v1";
 
   // Session state
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [hasRestored, setHasRestored] = useState(false);
 
   // Filter state
   const [courseId, setCourseId] = useState<number | undefined>();
@@ -88,11 +91,97 @@ export default function Tutor() {
     } catch { /* ignore */ }
   }, [tutorMaterialStorageKey, selectedMaterials]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        tutorWizardStorageKey,
+        JSON.stringify({
+          courseId,
+          topic,
+          selectedMaterials,
+          chainId,
+          customBlockIds,
+          mode,
+          model,
+          webSearch,
+          selectedPaths,
+        }),
+      );
+    } catch (error) {
+      void error;
+    }
+  }, [
+    tutorWizardStorageKey,
+    courseId,
+    topic,
+    selectedMaterials,
+    chainId,
+    customBlockIds,
+    mode,
+    model,
+    webSearch,
+    selectedPaths,
+  ]);
+
   // Recent sessions
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
     queryKey: ["tutor-sessions"],
     queryFn: () => api.tutor.listSessions({ limit: 10 }),
   });
+
+  const applySessionState = useCallback((session: TutorSessionWithTurns) => {
+    setActiveSessionId(session.session_id);
+    setTurnCount(session.turn_count);
+    setStartedAt(session.started_at);
+    setMode(session.mode);
+    setTopic(session.topic || "");
+    setCourseId(session.course_id ?? undefined);
+    setChainId(session.method_chain_id ?? undefined);
+    setCurrentBlockIndex(session.current_block_index ?? 0);
+    setChainBlocks(
+      (session.chain_blocks || []).map((block) => ({
+        id: block.id,
+        name: block.name,
+        category: block.category,
+        duration: block.default_duration_min,
+      }))
+    );
+    if (session.content_filter?.material_ids) {
+      setSelectedMaterials(session.content_filter.material_ids);
+    }
+    try {
+      localStorage.setItem(
+        tutorMaterialStorageKey,
+        JSON.stringify(session.content_filter?.material_ids || []),
+      );
+    } catch { /* ignore */ }
+    if (session.content_filter?.model) {
+      setModel(session.content_filter.model);
+    }
+    setWebSearch(Boolean(session.content_filter?.web_search));
+    if (session.artifacts_json) {
+      try {
+        const parsed = JSON.parse(session.artifacts_json);
+        if (Array.isArray(parsed)) {
+          setArtifacts(
+            parsed.map((a: { type: string; title: string; content?: string; created_at: string }) => ({
+              type: a.type as "note" | "card" | "map",
+              title: a.title,
+              content: a.content || "",
+              createdAt: a.created_at,
+            }))
+          );
+        }
+      } catch {
+        setArtifacts([]);
+      }
+    }
+    try {
+      localStorage.setItem(tutorActiveSessionKey, session.session_id);
+    } catch (error) {
+      void error;
+    }
+  }, [tutorMaterialStorageKey, tutorActiveSessionKey]);
 
   const startSession = useCallback(async () => {
     setIsStarting(true);
@@ -117,6 +206,11 @@ export default function Tutor() {
         method_chain_id: resolvedChainId,
       });
       setActiveSessionId(session.session_id);
+      try {
+        localStorage.setItem(tutorActiveSessionKey, session.session_id);
+      } catch (error) {
+        void error;
+      }
       setStartedAt(session.started_at);
       setArtifacts([]);
       setTurnCount(0);
@@ -152,6 +246,11 @@ export default function Tutor() {
       await api.tutor.endSession(activeSessionId);
       toast.success("Session ended");
       setActiveSessionId(null);
+      try {
+        localStorage.removeItem(tutorActiveSessionKey);
+      } catch (error) {
+        void error;
+      }
       setArtifacts([]);
       setTurnCount(0);
       setStartedAt(null);
@@ -244,63 +343,93 @@ export default function Tutor() {
     }
   }, [activeSessionId]);
 
+  const handleDeleteArtifacts = useCallback(
+    async (sid: string, indexes: number[]) => {
+      await api.tutor.deleteArtifacts(sid, indexes);
+      setArtifacts((prev) => {
+        const sorted = [...indexes].sort((a, b) => b - a);
+        const next = [...prev];
+        for (const i of sorted) {
+          if (i >= 0 && i < next.length) next.splice(i, 1);
+        }
+        return next;
+      });
+    },
+    []
+  );
+
   const resumeSession = useCallback(
     async (sessionId: string) => {
       try {
         const session = await api.tutor.getSession(sessionId);
-        setActiveSessionId(session.session_id);
-        setTurnCount(session.turn_count);
-        setStartedAt(session.started_at);
-        setMode(session.mode);
-        setTopic(session.topic || "");
-        setCourseId(session.course_id ?? undefined);
-        setChainId(session.method_chain_id ?? undefined);
-        setCurrentBlockIndex(session.current_block_index ?? 0);
-        setChainBlocks(
-          (session.chain_blocks || []).map((block) => ({
-            id: block.id,
-            name: block.name,
-            category: block.category,
-            duration: block.default_duration_min,
-          }))
-        );
-        if (session.content_filter?.material_ids) {
-          setSelectedMaterials(session.content_filter.material_ids);
-        }
-        try {
-          localStorage.setItem(
-            tutorMaterialStorageKey,
-            JSON.stringify(session.content_filter?.material_ids || []),
-          );
-        } catch { /* ignore */ }
-        if (session.content_filter?.model) {
-          setModel(session.content_filter.model);
-        }
-        setWebSearch(Boolean(session.content_filter?.web_search));
-        if (session.artifacts_json) {
-          try {
-            const parsed = JSON.parse(session.artifacts_json);
-            if (Array.isArray(parsed)) {
-              setArtifacts(
-                parsed.map((a: { type: string; title: string; content?: string; created_at: string }) => ({
-                  type: a.type as "note" | "card" | "map",
-                  title: a.title,
-                  content: a.content || "",
-                  createdAt: a.created_at,
-                }))
-              );
-            }
-          } catch {
-            setArtifacts([]);
-          }
-        }
+        applySessionState(session);
         toast.success("Session resumed");
       } catch (err) {
         toast.error(`Failed to resume session: ${err instanceof Error ? err.message : "Unknown"}`);
       }
     },
-    []
+    [applySessionState]
   );
+
+  useEffect(() => {
+    if (hasRestored) return;
+    setHasRestored(true);
+
+    const restore = async () => {
+      let resumed = false;
+      try {
+        const savedSessionId = localStorage.getItem(tutorActiveSessionKey);
+        if (savedSessionId) {
+          const session = await api.tutor.getSession(savedSessionId);
+          if (session.status === "active") {
+            applySessionState(session);
+            resumed = true;
+          } else {
+            localStorage.removeItem(tutorActiveSessionKey);
+          }
+        }
+      } catch (error) {
+        void error;
+        try {
+          localStorage.removeItem(tutorActiveSessionKey);
+        } catch (innerError) {
+          void innerError;
+        }
+      }
+
+      if (resumed) return;
+
+      try {
+        const saved = localStorage.getItem(tutorWizardStorageKey);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        if (typeof parsed?.courseId === "number") setCourseId(parsed.courseId);
+        if (typeof parsed?.topic === "string") setTopic(parsed.topic);
+        if (Array.isArray(parsed?.selectedMaterials)) {
+          setSelectedMaterials(parsed.selectedMaterials.filter((v: unknown) => typeof v === "number"));
+        }
+        if (typeof parsed?.chainId === "number") setChainId(parsed.chainId);
+        if (Array.isArray(parsed?.customBlockIds)) {
+          setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
+        }
+        if (typeof parsed?.mode === "string") setMode(parsed.mode);
+        if (typeof parsed?.model === "string") setModel(parsed.model);
+        if (typeof parsed?.webSearch === "boolean") setWebSearch(parsed.webSearch);
+        if (Array.isArray(parsed?.selectedPaths)) {
+          setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
+        }
+      } catch (error) {
+        void error;
+      }
+    };
+
+    void restore();
+  }, [
+    applySessionState,
+    hasRestored,
+    tutorActiveSessionKey,
+    tutorWizardStorageKey,
+  ]);
 
   // ─── SETUP VIEW ─── (no active session)
   if (!activeSessionId && !showSetup) {
@@ -456,7 +585,7 @@ export default function Tutor() {
 
         {/* Main content: Chat (+ optional artifacts panel) */}
         <div className="flex-1 flex min-h-0">
-          <div className="flex-1 bg-black/60 border-x-2 border-primary/20 flex flex-col min-w-0 relative">
+          <div className="flex-1 bg-zinc-950/80 border-x-2 border-primary/20 flex flex-col min-w-0 relative">
             <TutorChat
               sessionId={activeSessionId}
               engine={undefined}
@@ -521,6 +650,7 @@ export default function Tutor() {
                 onCreateArtifact={handleArtifactCreated}
                 recentSessions={recentSessions}
                 onResumeSession={resumeSession}
+                onDeleteArtifacts={handleDeleteArtifacts}
               />
             </div>
           )}

@@ -1,5 +1,14 @@
 # CONTINUITY
 
+## 2026-02-14 - Tutor Artifacts: bulk select and delete
+
+- Added checkbox selection and bulk delete for Tutor Artifacts drawer:
+  - **Recent Sessions:** per-row checkbox, top "Select all" + count badge, top "Delete" button; bulk delete calls existing `DELETE /api/tutor/session/<id>` in sequence, invalidates `tutor-sessions`, toasts success/error.
+  - **Artifacts:** per-row checkbox, top "Select all" + count badge, top "Delete" button; bulk delete uses new `DELETE /api/tutor/session/<id>/artifacts` with body `{ indexes }`, persists to `tutor_sessions.artifacts_json`, and syncs local state in tutor.tsx.
+- Backend: `api_tutor.delete_artifacts(session_id)` removes artifact entries by index and updates `artifacts_json`.
+- Frontend: `api.tutor.deleteArtifacts(sessionId, indexes)`, `TutorArtifacts` selection state and `onDeleteArtifacts` prop; `tutor.tsx` `handleDeleteArtifacts` calls API and updates `artifacts` state.
+- Single-session delete (trash + confirm) unchanged. Build and pytest passed.
+
 ## 2026-02-09 - Tutor Page Audit & Web Search Feature
 
 - 13:15: Audited Tutor page implementation (frontend + backend).

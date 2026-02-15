@@ -20,6 +20,12 @@ inputs:
   - Anki card template (cloze or basic)
   - Card draft staging area (Brain or text file)
   - Target deck name
+gating_rules:
+  - Output ONLY canonical card blocks. No prose before/after cards.
+  - Produce 3-5 cards total.
+  - Each card must use exact labels and line order:
+    CARD N:, TYPE:, FRONT:, BACK:, TAGS:
+  - Do not use bullets, markdown tables, CSV, or JSON.
 steps:
   - step: 1
     action: Review session notes and identify 3-5 highest-value concepts
@@ -39,6 +45,9 @@ steps:
   - step: 6
     action: Stage cards for sync to Anki via Brain
     notes: Brain's Anki integration handles the actual sync
+  - step: 7
+    action: Final format check before submit
+    notes: Verify output contains only CARD blocks and exact label lines
 outputs:
   - 3-5 drafted Anki cards
   - Cards tagged by topic and source
@@ -47,6 +56,7 @@ outputs:
 stop_criteria:
   - 3-5 cards drafted (minimum 3)
   - All cards follow single-fact rule
+  - Every card has TYPE, FRONT, BACK, TAGS label lines
   - Cards staged for sync
 failure_modes:
   - mode: Double-barreled cards (multiple facts per card)

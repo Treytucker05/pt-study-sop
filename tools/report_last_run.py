@@ -1,98 +1,145 @@
-#!/usr/bin/env python3
-"""CLI: Report and grade the most recent (or specified) chain run.
-
-Usage:
-    python tools/report_last_run.py              # latest run
-    python tools/report_last_run.py --run-id 5   # specific run
-    python tools/report_last_run.py --json        # machine-readable JSON
-"""
+from __future__ import annotations
 
 import json
-import os
-import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "brain"))
+ROOT = Path(__file__).resolve().parents[1]
+LOGS_DIR = ROOT / "logs"
+SUMMARY_FILE = LOGS_DIR / "last_chain_run_summary.json"
+LOGS_FILE = LOGS_DIR / "block_runs.jsonl"
 
-from chain_logger import load_run_logs, grade_chain_run
-from pero_mapping import PERO_LABELS
+
+def load_summary() -> dict:
+    if not SUMMARY_FILE.exists():
+        raise SystemExit("No last_chain_run_summary.json found")
+    return json.loads(SUMMARY_FILE.read_text(encoding="utf-8"))
 
 
-def print_report(records: list[dict], grade: dict) -> None:
-    """Print human-readable run report."""
-    if not records:
-        print("No log records found.")
-        return
+def load_block_logs(run_id: str) -> list[dict]:
+    if not LOGS_FILE.exists():
+        return []
+    records = []
+    for line in LOGS_FILE.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if str(record.get("run_id")) == run_id:
+            records.append(record)
+    return records
 
-    run_id = records[0].get("run_id", "?")
-    chain_name = records[0].get("chain_name", "?")
 
-    print("=" * 60)
-    print(f"Chain Run Report — run #{run_id}: {chain_name}")
-    print("=" * 60)
-
-    # Stage coverage
-    print("\nPERO Stage Coverage:")
-    for stage, covered in grade["stage_coverage"].items():
-        label = PERO_LABELS[stage]
-        mark = "Y" if covered else "-"
-        score = grade["stage_scores"].get(stage, 0)
-        print(f"  [{mark}] {stage} ({label}): {score}/100")
-
-    # Block-by-block summary
-    print(f"\nBlocks ({grade['blocks_passed']}/{grade['blocks_total']} passed):")
-    print("-" * 60)
-    for rec in records:
-        status = "OK" if rec.get("success") else "FAIL"
-        av = ""
-        if rec.get("artifact_validation_pass") is True:
-            av = " [artifact OK]"
-        elif rec.get("artifact_validation_pass") is False:
-            av = " [artifact FAIL]"
-        acc = ""
-        if rec.get("accuracy") is not None:
-            acc = f" acc={rec['accuracy']}%"
-        print(
-            f"  [{status}] {rec.get('block_name', '?')} "
-            f"({rec.get('pero_stage', '?')}) "
-            f"{rec.get('duration_seconds', 0):.1f}s{av}{acc}"
+def render_table(records: list[dict]) -> None:
+    headers = [
+        "method_id",
+        "name",
+        "stage",
+        "duration",
+        "success",
+        "artifact",
+        "error",
+    ]
+    rows = []
+    for record in records:
+        error = record.get("error_message") or ""
+        if len(error) > 60:
+            error = error[:57] + "..."
+        artifact_valid = record.get("artifact_valid")
+        if artifact_valid is True:
+            artifact_status = "pass"
+        elif artifact_valid is False:
+            artifact_status = "fail"
+        else:
+            artifact_status = "na"
+        rows.append(
+            [
+                record.get("method_id") or "",
+                record.get("method_name") or "",
+                record.get("display_stage") or "",
+                str(record.get("duration_seconds", "")),
+                "yes" if record.get("success") else "no",
+                artifact_status,
+                error,
+            ]
         )
 
-    # Grade
-    print("-" * 60)
-    print(f"\nOverall Score: {grade['overall_score']}/100")
-    if grade["flags"]:
-        print(f"Flags: {', '.join(grade['flags'])}")
-    else:
-        print("Flags: none")
-    print()
+    widths = [len(h) for h in headers]
+    for row in rows:
+        widths = [max(widths[i], len(str(row[i]))) for i in range(len(headers))]
+
+    header_line = " | ".join(h.ljust(widths[i]) for i, h in enumerate(headers))
+    divider = "-+-".join("-" * widths[i] for i in range(len(headers)))
+    print(header_line)
+    print(divider)
+    for row in rows:
+        print(" | ".join(str(row[i]).ljust(widths[i]) for i in range(len(headers))))
 
 
 def main() -> int:
-    json_mode = "--json" in sys.argv
-    run_id = None
-    if "--run-id" in sys.argv:
-        idx = sys.argv.index("--run-id")
-        if idx + 1 < len(sys.argv):
-            try:
-                run_id = int(sys.argv[idx + 1])
-            except ValueError:
-                print("Error: --run-id must be an integer", file=sys.stderr)
-                return 1
+    summary = load_summary()
+    run_id = str(summary.get("run_id", ""))
+    chain_id = summary.get("chain_id")
+    chain_name = summary.get("chain_name")
+    success_rate = summary.get("success_rate")
+    stage_coverage = summary.get("stage_coverage") or []
+    grade = summary.get("grade") or {}
+    facilitation_checked = bool(summary.get("facilitation_prompt_checked"))
+    facilitation_present = bool(summary.get("facilitation_prompt_present"))
+    force_invalid_artifact = bool(summary.get("force_invalid_artifact"))
+    artifact_validation_ran = summary.get("artifact_validation_ran")
 
-    records = load_run_logs(run_id)
+    print(f"Chain: {chain_id} - {chain_name}")
+    print(f"Run ID: {run_id}")
+    print(f"Success rate: {success_rate}")
+    print(f"Stage coverage: {', '.join(stage_coverage) if stage_coverage else 'none'}")
+    print(
+        f"Grade: {grade.get('overall_score')} (flags: {', '.join(grade.get('flags', [])) or 'none'})"
+    )
+    print(
+        "Facilitation prompt present: "
+        f"{str(facilitation_present).lower()}"
+        + ("" if facilitation_checked else " (unchecked)")
+    )
+    print("")
+
+    records = load_block_logs(run_id)
     if not records:
-        print("No run logs found." if run_id is None else f"No logs for run #{run_id}.")
-        return 0
+        print("No block logs found for run")
+        return 1
 
-    grade = grade_chain_run(records)
+    if artifact_validation_ran is None:
+        artifact_validation_ran = any(
+            record.get("artifact_valid") in (True, False) for record in records
+        )
 
-    if json_mode:
-        print(json.dumps({"records": records, "grade": grade}, indent=2))
-    else:
-        print_report(records, grade)
+    forced_failure_logged = False
+    if force_invalid_artifact:
+        forced_failure_logged = any(
+            (record.get("success") is False) and (record.get("artifact_valid") is False)
+            for record in records
+        )
 
+    ready_for_testing = (
+        facilitation_checked
+        and facilitation_present
+        and bool(artifact_validation_ran)
+        and (forced_failure_logged if force_invalid_artifact else False)
+    )
+
+    render_table(records)
+    print("")
+    print("[Testing Readiness]")
+    print(f"artifact_validation_ran: {str(bool(artifact_validation_ran)).lower()}")
+    print(
+        "forced_failure_logged: "
+        f"{str(forced_failure_logged).lower()}"
+        + ("" if force_invalid_artifact else " (force-invalid not run)")
+    )
+    print("overall: " + ("READY FOR TESTING" if ready_for_testing else "NOT READY"))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

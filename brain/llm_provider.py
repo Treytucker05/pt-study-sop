@@ -239,60 +239,39 @@ def _call_openai_api(
 def call_llm(
     system_prompt: str,
     user_prompt: str,
-    provider: str = "openrouter",
+    provider: str = "codex",
     model: str = "default",
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
     isolated: bool = False,
 ) -> Dict[str, Any]:
     """
-    Centralized LLM Caller.
-
-    Providers:
-        - "openrouter": OpenRouter API (recommended, uses google/gemini-flash-1.5)
-        - "openai": Direct OpenAI API (requires OPENAI_API_KEY)
-        - "codex": Codex CLI (slower, uses ChatGPT account)
-
-    Args:
-        isolated: If True and using codex, run in empty temp directory.
-                  If True and provider not specified, prefer openrouter for speed.
-
-    Returns a dictionary:
-    {
-        "success": bool,
-        "content": str (if success),
-        "error": str (if failed),
-        "fallback_available": bool,
-        "fallback_models": List[str]
-    }
+    Centralized LLM caller. Runtime path is Codex CLI only.
     """
+    provider_l = (provider or "").strip().lower()
+    model_l = (model or "").strip().lower()
+    base_url_candidates = [
+        os.environ.get("OPENROUTER_BASE_URL", ""),
+        os.environ.get("OPENAI_BASE_URL", ""),
+        os.environ.get("API_BASE_URL", ""),
+    ]
 
-    # For isolated mode, prefer OpenRouter
-    if isolated and provider == "codex":
-        provider = "openrouter"
-        model = "google/gemini-2.0-flash-001" if model == "default" else model
+    # Runtime safety: never send traffic to OpenRouter.
+    # Coerce any OpenRouter-style selection to Codex CLI so existing callers keep working.
+    if "openrouter" in provider_l or "openrouter" in model_l:
+        print("MODEL_PROVIDER_OVERRIDE=CODEX_CLI (from OpenRouter selection)")
+        provider_l = "codex"
 
-    if provider == "openrouter":
-        actual_model = "google/gemini-2.0-flash-001" if model == "default" else model
-        return _call_openrouter_api(
-            system_prompt, user_prompt, model=actual_model, timeout=timeout
-        )
+    for base_url in base_url_candidates:
+        if "openrouter" in (base_url or "").lower():
+            print("MODEL_PROVIDER_OVERRIDE=CODEX_CLI (OpenRouter base_url ignored)")
+            provider_l = "codex"
+            break
 
-    if provider == "openai":
-        actual_model = "gpt-4o-mini" if model == "default" else model
-        return _call_openai_api(
-            system_prompt, user_prompt, model=actual_model, timeout=timeout
-        )
+    # Ignore OPENROUTER_API_KEY presence for Codex runtime, but never use it.
+    if provider_l != "codex":
+        provider_l = "codex"
 
-    if provider == "codex":
-        return _call_codex(system_prompt, user_prompt, timeout, isolated=isolated)
-
-    return {
-        "success": False,
-        "error": f"Provider '{provider}' not implemented.",
-        "content": None,
-        "fallback_available": False,
-        "fallback_models": [],
-    }
+    return _call_codex(system_prompt, user_prompt, timeout, isolated=isolated)
 
 
 def _call_codex(
@@ -305,7 +284,7 @@ def _call_codex(
             "error": "Codex CLI not found. Please install: npm install -g @openai/codex",
             "content": None,
             "fallback_available": True,
-            "fallback_models": ["gpt-4o-mini", "gpt-4.1-mini", "openrouter/auto"],
+            "fallback_models": ["codex"],
         }
 
     # If isolated, run in empty temp directory (no file access)
@@ -348,51 +327,29 @@ Human: {user_prompt}
 
         cmd_args.append("-")  # stdin
 
-        # Write prompt to temp file to avoid Windows cmd.exe encoding issues
-        prompt_file = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", encoding="utf-8", delete=False
-        )
-        prompt_file.write(full_prompt)
-        prompt_file.close()
-        prompt_stdin = open(prompt_file.name, "rb")
+        print("MODEL_PROVIDER=CODEX_CLI")
+        print("MODEL_COMMAND=" + " ".join(cmd_args))
 
-        process = subprocess.Popen(
+        result = subprocess.run(
             cmd_args,
-            stdin=prompt_stdin,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            input=full_prompt,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
         )
 
-        try:
-            stdout_bytes, stderr_bytes = process.communicate(timeout=timeout)
-            stdout = stdout_bytes.decode("utf-8", errors="replace")
-            stderr = stderr_bytes.decode("utf-8", errors="replace")
-        finally:
-            prompt_stdin.close()
-            try:
-                os.remove(prompt_file.name)
-            except OSError:
-                pass
+        stdout = result.stdout or ""
+        stderr = result.stderr or ""
 
-        try:
-            stdout, stderr = stdout, stderr  # already decoded above
-        except subprocess.TimeoutExpired:
-            process.kill()
-            return {
-                "success": False,
-                "error": f"Codex timed out after {timeout} seconds.",
-                "content": None,
-                "fallback_available": True,
-                "fallback_models": ["gpt-4o-mini", "gpt-4.1-mini", "openrouter/auto"],
-            }
-
-        if process.returncode != 0:
+        if result.returncode != 0:
             return {
                 "success": False,
                 "error": f"Codex process failed: {stderr}",
                 "content": None,
                 "fallback_available": True,
-                "fallback_models": ["gpt-4o-mini", "gpt-4.1-mini", "openrouter/auto"],
+                "fallback_models": ["codex"],
             }
 
         # Read output
@@ -409,17 +366,44 @@ Human: {user_prompt}
                 "error": "No output file created by Codex.",
                 "content": None,
                 "fallback_available": True,
-                "fallback_models": ["gpt-4o-mini", "gpt-4.1-mini", "openrouter/auto"],
+                "fallback_models": ["codex"],
             }
 
+    except subprocess.TimeoutExpired:
+        return {
+            "success": False,
+            "error": f"Codex timed out after {timeout} seconds.",
+            "content": None,
+            "fallback_available": True,
+            "fallback_models": ["codex"],
+        }
     except Exception as e:
         return {
             "success": False,
             "error": f"Exception calling Codex: {str(e)}",
             "content": None,
             "fallback_available": True,
-            "fallback_models": ["gpt-4o-mini", "gpt-4.1-mini", "openrouter/auto"],
+            "fallback_models": ["codex"],
         }
+
+
+def model_call(
+    system_prompt: str,
+    user_prompt: str,
+    provider: str = "codex",
+    model: str = "default",
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    isolated: bool = False,
+) -> Dict[str, Any]:
+    """Shared model call alias used by runtime paths."""
+    return call_llm(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        provider=provider,
+        model=model,
+        timeout=timeout,
+        isolated=isolated,
+    )
 
 
 def _codex_exec_json(

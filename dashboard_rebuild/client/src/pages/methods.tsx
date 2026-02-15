@@ -13,17 +13,25 @@ import ChainBuilder from "@/components/ChainBuilder";
 import MethodAnalytics from "@/components/MethodAnalytics";
 import RatingDialog from "@/components/RatingDialog";
 import { api } from "@/lib/api";
+import { DISPLAY_STAGE_LABELS, getDisplayStage, type DisplayStage } from "@/lib/displayStage";
 import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, ChainRunSummary } from "@/api";
 
-const CATEGORIES = ["all", "prepare", "encode", "interrogate", "retrieve", "refine", "overlearn"] as const;
+const DISPLAY_STAGES: Array<DisplayStage | "all"> = [
+  "all",
+  "priming",
+  "encoding",
+  "reference",
+  "retrieval",
+  "overlearning",
+];
 
-const CATEGORY_LABEL: Record<string, string> = {
-  prepare: "PRIME",
-  encode: "ENCODE",
-  interrogate: "INTERROGATE",
-  retrieve: "RETRIEVE",
-  refine: "REFINE",
-  overlearn: "OVERLEARN",
+const LEGACY_CATEGORY_LABELS: Record<string, string> = {
+  prepare: "Prepare",
+  encode: "Encode",
+  interrogate: "Interrogate",
+  retrieve: "Retrieve",
+  refine: "Refine",
+  overlearn: "Overlearn",
 };
 
 const TAB_ITEMS = [
@@ -36,7 +44,7 @@ type TabId = (typeof TAB_ITEMS)[number]["id"];
 
 export default function MethodsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("library");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [stageFilter, setStageFilter] = useState<DisplayStage | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddBlock, setShowAddBlock] = useState(false);
   const [showAddChain, setShowAddChain] = useState(false);
@@ -146,7 +154,8 @@ export default function MethodsPage() {
 
   // Filter blocks
   const filteredBlocks = blocks.filter((b) => {
-    if (categoryFilter !== "all" && b.category !== categoryFilter) return false;
+    const displayStage = getDisplayStage(b);
+    if (stageFilter !== "all" && displayStage !== stageFilter) return false;
     if (searchQuery && !b.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
@@ -207,17 +216,17 @@ export default function MethodsPage() {
                 className="w-64 bg-black/40"
               />
               <div className="flex gap-1">
-                {CATEGORIES.map((cat) => (
+                {DISPLAY_STAGES.map((stage) => (
                     <button
-                      key={cat}
-                      onClick={() => setCategoryFilter(cat)}
+                      key={stage}
+                      onClick={() => setStageFilter(stage)}
                       className={`px-3 py-1.5 font-arcade text-xs border-[3px] border-double rounded-none transition-colors ${
-                        categoryFilter === cat
+                        stageFilter === stage
                           ? "border-primary bg-primary/20 text-primary"
                           : "border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 hover:bg-black/30"
                       }`}
                     >
-                    {CATEGORY_LABEL[cat] || cat.toUpperCase()}
+                    {stage === "all" ? "ALL" : DISPLAY_STAGE_LABELS[stage]}
                   </button>
                 ))}
               </div>
@@ -237,7 +246,7 @@ export default function MethodsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 card-stagger">
                 {filteredBlocks.map((block) => (
                   <div key={block.id} className="relative group">
-                    <MethodBlockCard block={block} />
+                    <MethodBlockCard block={block} showLegacyCategory />
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                       <button
                         className="p-1 bg-black/80 border border-primary/40 hover:border-primary"
@@ -262,7 +271,7 @@ export default function MethodsPage() {
             )}
             {!blocksLoading && filteredBlocks.length === 0 && (
               <p className="font-terminal text-base text-muted-foreground text-center py-8">
-                No methods found. {categoryFilter !== "all" ? "Try a different category." : "Add your first method block."}
+                No methods found. {stageFilter !== "all" ? "Try a different category." : "Add your first method block."}
               </p>
             )}
           </div>
@@ -537,6 +546,14 @@ function AddBlockDialog({
   const [duration, setDuration] = useState(5);
   const [energyCost, setEnergyCost] = useState("medium");
   const [bestStage, setBestStage] = useState("");
+  const categoryOptions = [
+    "prepare",
+    "encode",
+    "interrogate",
+    "retrieve",
+    "refine",
+    "overlearn",
+  ];
 
   const handleSubmit = () => {
     if (!name.trim()) return;
@@ -570,9 +587,9 @@ function AddBlockDialog({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-black border-2 border-primary rounded-none">
-              {["prepare", "encode", "interrogate", "retrieve", "refine", "overlearn"].map((c) => (
+              {categoryOptions.map((c) => (
                 <SelectItem key={c} value={c} className="font-terminal text-sm">
-                  {CATEGORY_LABEL[c] || c.charAt(0).toUpperCase() + c.slice(1)}
+                  {LEGACY_CATEGORY_LABELS[c] || c.charAt(0).toUpperCase() + c.slice(1)}
                 </SelectItem>
               ))}
             </SelectContent>

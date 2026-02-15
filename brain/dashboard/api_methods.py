@@ -13,7 +13,7 @@ Endpoints:
 
 from flask import Blueprint, jsonify, request
 import json
-from db_setup import get_connection
+from db_setup import get_connection, ensure_method_library_seeded
 
 methods_bp = Blueprint("methods", __name__, url_prefix="/api")
 
@@ -22,9 +22,11 @@ methods_bp = Blueprint("methods", __name__, url_prefix="/api")
 # Method Blocks
 # ---------------------------------------------------------------------------
 
+
 @methods_bp.route("/methods", methods=["GET"])
 def list_methods():
     """List all method blocks. Optional ?category= filter."""
+    ensure_method_library_seeded()
     conn = get_connection()
     cursor = conn.cursor()
     category = request.args.get("category")
@@ -39,7 +41,15 @@ def list_methods():
     rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
     conn.close()
     for row in rows:
-        for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks", "research_terms"):
+        for json_field in (
+            "tags",
+            "inputs",
+            "outputs",
+            "failure_modes",
+            "variants",
+            "scoring_hooks",
+            "research_terms",
+        ):
             row[json_field] = _parse_json(row.get(json_field))
     return jsonify(rows)
 
@@ -55,7 +65,15 @@ def get_method(method_id: int):
         return jsonify({"error": "Method not found"}), 404
     columns = [desc[0] for desc in cursor.description]
     result = dict(zip(columns, row))
-    for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks", "research_terms"):
+    for json_field in (
+        "tags",
+        "inputs",
+        "outputs",
+        "failure_modes",
+        "variants",
+        "scoring_hooks",
+        "research_terms",
+    ):
         result[json_field] = _parse_json(result.get(json_field))
     return jsonify(result)
 
@@ -111,11 +129,32 @@ def update_method(method_id: int):
 
     fields = []
     values = []
-    for key in ("name", "category", "description", "default_duration_min", "energy_cost", "best_stage", "evidence", "strategy_label", "icap_level", "clt_target", "assessment_type", "artifact_type"):
+    for key in (
+        "name",
+        "category",
+        "description",
+        "default_duration_min",
+        "energy_cost",
+        "best_stage",
+        "evidence",
+        "strategy_label",
+        "icap_level",
+        "clt_target",
+        "assessment_type",
+        "artifact_type",
+    ):
         if key in data:
             fields.append(f"{key} = ?")
             values.append(data[key])
-    for json_key in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks", "research_terms"):
+    for json_key in (
+        "tags",
+        "inputs",
+        "outputs",
+        "failure_modes",
+        "variants",
+        "scoring_hooks",
+        "research_terms",
+    ):
         if json_key in data:
             fields.append(f"{json_key} = ?")
             values.append(json.dumps(data[json_key]))
@@ -158,9 +197,11 @@ def delete_method(method_id: int):
 # Method Chains
 # ---------------------------------------------------------------------------
 
+
 @methods_bp.route("/chains", methods=["GET"])
 def list_chains():
     """List all chains. Optional ?template=1 filter."""
+    ensure_method_library_seeded()
     conn = get_connection()
     cursor = conn.cursor()
     template = request.args.get("template")
@@ -206,7 +247,15 @@ def get_chain(chain_id: int):
         blocks_map = {}
         for b_row in cursor.fetchall():
             block = dict(zip(block_cols, b_row))
-            for json_field in ("tags", "inputs", "outputs", "failure_modes", "variants", "scoring_hooks", "research_terms"):
+            for json_field in (
+                "tags",
+                "inputs",
+                "outputs",
+                "failure_modes",
+                "variants",
+                "scoring_hooks",
+                "research_terms",
+            ):
                 block[json_field] = _parse_json(block.get(json_field))
             blocks_map[block["id"]] = block
         result["blocks"] = [blocks_map[bid] for bid in block_ids if bid in blocks_map]
@@ -312,16 +361,16 @@ def delete_chain(chain_id: int):
 @methods_bp.route("/chains/<int:chain_id>/run", methods=["POST"])
 def run_chain_endpoint(chain_id: int):
     from chain_runner import run_chain
-    
+
     data = request.get_json() or {}
     topic = data.get("topic")
     if not topic:
         return jsonify({"error": "topic is required"}), 400
-    
+
     course_id = data.get("course_id")
     source_doc_ids = data.get("source_doc_ids")
     options = data.get("options", {})
-    
+
     try:
         result = run_chain(
             chain_id=chain_id,
@@ -330,7 +379,7 @@ def run_chain_endpoint(chain_id: int):
             source_doc_ids=source_doc_ids,
             options=options,
         )
-        
+
         status_code = 200 if result["status"] == "completed" else 500
         return jsonify(result), status_code
     except Exception as e:
@@ -341,29 +390,29 @@ def run_chain_endpoint(chain_id: int):
 def list_chain_runs():
     conn = get_connection()
     cursor = conn.cursor()
-    
+
     limit = request.args.get("limit", 20, type=int)
     status = request.args.get("status")
-    
+
     query = "SELECT cr.*, mc.name as chain_name FROM chain_runs cr LEFT JOIN method_chains mc ON cr.chain_id = mc.id WHERE 1=1"
     params = []
-    
+
     if status:
         query += " AND cr.status = ?"
         params.append(status)
-    
+
     query += " ORDER BY cr.started_at DESC LIMIT ?"
     params.append(limit)
-    
+
     cursor.execute(query, params)
     columns = [desc[0] for desc in cursor.description]
     rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
     conn.close()
-    
+
     for row in rows:
         row["artifacts_json"] = _parse_json(row.get("artifacts_json"))
         row["run_state_json"] = _parse_json(row.get("run_state_json"))
-    
+
     return jsonify(rows)
 
 
@@ -377,21 +426,22 @@ def get_chain_run(run_id: int):
     )
     row = cursor.fetchone()
     conn.close()
-    
+
     if not row:
         return jsonify({"error": "Chain run not found"}), 404
-    
+
     columns = [desc[0] for desc in cursor.description]
     result = dict(zip(columns, row))
     result["artifacts_json"] = _parse_json(result.get("artifacts_json"))
     result["run_state_json"] = _parse_json(result.get("run_state_json"))
-    
+
     return jsonify(result)
 
 
 # ---------------------------------------------------------------------------
 # Ratings
 # ---------------------------------------------------------------------------
+
 
 @methods_bp.route("/methods/<int:method_id>/rate", methods=["POST"])
 def rate_method(method_id: int):
@@ -402,7 +452,9 @@ def rate_method(method_id: int):
     # Validate rating bounds
     for field in ("effectiveness", "engagement"):
         val = data.get(field)
-        if val is not None and (not isinstance(val, (int, float)) or val < 1 or val > 5):
+        if val is not None and (
+            not isinstance(val, (int, float)) or val < 1 or val > 5
+        ):
             return jsonify({"error": f"{field} must be between 1 and 5"}), 400
 
     conn = get_connection()
@@ -444,7 +496,9 @@ def rate_chain(chain_id: int):
     # Validate rating bounds
     for field in ("effectiveness", "engagement"):
         val = data.get(field)
-        if val is not None and (not isinstance(val, (int, float)) or val < 1 or val > 5):
+        if val is not None and (
+            not isinstance(val, (int, float)) or val < 1 or val > 5
+        ):
             return jsonify({"error": f"{field} must be between 1 and 5"}), 400
 
     conn = get_connection()
@@ -479,6 +533,7 @@ def rate_chain(chain_id: int):
 # ---------------------------------------------------------------------------
 # Analytics
 # ---------------------------------------------------------------------------
+
 
 @methods_bp.route("/methods/analytics", methods=["GET"])
 def method_analytics():
@@ -531,16 +586,19 @@ def method_analytics():
         r["context"] = _parse_json(r.get("context"))
 
     conn.close()
-    return jsonify({
-        "block_stats": block_stats,
-        "chain_stats": chain_stats,
-        "recent_ratings": recent_ratings,
-    })
+    return jsonify(
+        {
+            "block_stats": block_stats,
+            "chain_stats": chain_stats,
+            "recent_ratings": recent_ratings,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # RuleSets (V2 architecture - tutor behavior constraints)
 # ---------------------------------------------------------------------------
+
 
 @methods_bp.route("/rulesets", methods=["GET"])
 def list_rulesets():
@@ -548,7 +606,7 @@ def list_rulesets():
     cursor = conn.cursor()
     scope = request.args.get("scope")
     active_only = request.args.get("active", "1") == "1"
-    
+
     query = "SELECT * FROM rulesets WHERE 1=1"
     params = []
     if scope:
@@ -557,7 +615,7 @@ def list_rulesets():
     if active_only:
         query += " AND is_active = 1"
     query += " ORDER BY name"
-    
+
     cursor.execute(query, params)
     columns = [desc[0] for desc in cursor.description]
     rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -626,7 +684,7 @@ def update_ruleset(ruleset_id: int):
     if "rules_json" in data:
         fields.append("rules_json = ?")
         values.append(json.dumps(data["rules_json"]))
-    
+
     fields.append("updated_at = datetime('now')")
 
     if len(fields) == 1:
@@ -667,7 +725,7 @@ def delete_ruleset(ruleset_id: int):
 def attach_ruleset_to_chain(chain_id: int):
     data = request.get_json()
     ruleset_id = data.get("ruleset_id") if data else None
-    
+
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -721,7 +779,7 @@ def update_user_weights(user_id: str):
 
     weight_keys = list(DEFAULT_WEIGHTS.keys())
     weights = {k: data.get(k, DEFAULT_WEIGHTS[k]) for k in weight_keys}
-    
+
     total = sum(weights.values())
     if abs(total - 1.0) > 0.01:
         return jsonify({"error": f"Weights must sum to 1.0, got {total:.2f}"}), 400
@@ -729,9 +787,11 @@ def update_user_weights(user_id: str):
     conn = get_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM user_scoring_weights WHERE user_id = ?", (user_id,))
+        cursor.execute(
+            "SELECT id FROM user_scoring_weights WHERE user_id = ?", (user_id,)
+        )
         exists = cursor.fetchone()
-        
+
         if exists:
             set_clause = ", ".join(f"{k} = ?" for k in weight_keys)
             cursor.execute(
@@ -745,7 +805,7 @@ def update_user_weights(user_id: str):
                 f"INSERT INTO user_scoring_weights ({cols}, created_at) VALUES ({placeholders}, datetime('now'))",
                 (user_id, *weights.values()),
             )
-        
+
         conn.commit()
         return jsonify({"user_id": user_id, **weights, "updated": True})
     finally:
@@ -757,23 +817,23 @@ def compute_composite_score():
     data = request.get_json()
     if not data:
         return jsonify({"error": "No data provided"}), 400
-    
+
     user_id = data.get("user_id", "default")
     hooks = data.get("hooks", {})
-    
+
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM user_scoring_weights WHERE user_id = ?", (user_id,))
     row = cursor.fetchone()
     conn.close()
-    
+
     if row:
         columns = [desc[0] for desc in cursor.description]
         weights_row = dict(zip(columns, row))
         weights = {k: weights_row.get(k, v) for k, v in DEFAULT_WEIGHTS.items()}
     else:
         weights = DEFAULT_WEIGHTS
-    
+
     hook_mapping = {
         "learning_gain": "learning_gain_weight",
         "time_cost": "time_cost_weight",
@@ -783,7 +843,7 @@ def compute_composite_score():
         "cognitive_strain": "cognitive_strain_weight",
         "artifact_quality": "artifact_quality_weight",
     }
-    
+
     composite = 0.0
     breakdown = {}
     for hook_name, weight_key in hook_mapping.items():
@@ -791,18 +851,25 @@ def compute_composite_score():
         weight = weights[weight_key]
         contribution = hook_value * weight
         composite += contribution
-        breakdown[hook_name] = {"value": hook_value, "weight": weight, "contribution": contribution}
-    
-    return jsonify({
-        "composite_score": round(composite, 4),
-        "breakdown": breakdown,
-        "weights_source": "custom" if row else "default",
-    })
+        breakdown[hook_name] = {
+            "value": hook_value,
+            "weight": weight,
+            "contribution": contribution,
+        }
+
+    return jsonify(
+        {
+            "composite_score": round(composite, 4),
+            "breakdown": breakdown,
+            "weights_source": "custom" if row else "default",
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _parse_json(value):
     """Safely parse a JSON string, returning the original value on failure."""

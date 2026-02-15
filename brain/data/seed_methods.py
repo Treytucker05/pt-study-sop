@@ -17,6 +17,7 @@ import json
 import subprocess
 import sys
 import os
+import sqlite3
 from pathlib import Path
 
 # Allow running from repo root or brain/
@@ -74,7 +75,11 @@ METHOD_BLOCKS = [
         "evidence": "Ausubel (1968); meaningful learning requires anchoring to existing schemas",
         "icap_level": "active",
         "clt_target": "manage-intrinsic",
-        "research_terms": ["schema_theory", "advance_organizers", "prior_knowledge_effects"],
+        "research_terms": [
+            "schema_theory",
+            "advance_organizers",
+            "prior_knowledge_effects",
+        ],
     },
     {
         "name": "AI Skeleton Review",
@@ -129,7 +134,11 @@ METHOD_BLOCKS = [
         "icap_level": "active",
         "clt_target": "increase-germane",
         "assessment_type": "calibration",
-        "research_terms": ["pretest_posttest", "desirable_difficulties", "productive_failure"],
+        "research_terms": [
+            "pretest_posttest",
+            "desirable_difficulties",
+            "productive_failure",
+        ],
     },
     # === ENCODE (attach meaning, create hooks) ===
     {
@@ -144,7 +153,11 @@ METHOD_BLOCKS = [
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "artifact_type": "cards",
-        "research_terms": ["dual_coding", "generation_effect", "elaborative_interrogation"],
+        "research_terms": [
+            "dual_coding",
+            "generation_effect",
+            "elaborative_interrogation",
+        ],
     },
     {
         "name": "Seed-Lock Generation",
@@ -158,7 +171,11 @@ METHOD_BLOCKS = [
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "artifact_type": "cards",
-        "research_terms": ["generation_effect", "elaborative_interrogation", "metacognitive_monitoring"],
+        "research_terms": [
+            "generation_effect",
+            "elaborative_interrogation",
+            "metacognitive_monitoring",
+        ],
     },
     {
         "name": "Draw-Label",
@@ -185,7 +202,11 @@ METHOD_BLOCKS = [
         "evidence": "Nestojko et al. (2014); expecting to teach enhances encoding and organization",
         "icap_level": "interactive",
         "clt_target": "increase-germane",
-        "research_terms": ["self_explanation", "elaborative_interrogation", "contingent_tutoring"],
+        "research_terms": [
+            "self_explanation",
+            "elaborative_interrogation",
+            "contingent_tutoring",
+        ],
     },
     {
         "name": "Why-Chain",
@@ -198,7 +219,11 @@ METHOD_BLOCKS = [
         "evidence": "Dunlosky et al. (2013); elaborative interrogation rated moderate utility for learning",
         "icap_level": "constructive",
         "clt_target": "increase-germane",
-        "research_terms": ["elaborative_interrogation", "self_explanation", "schema_theory"],
+        "research_terms": [
+            "elaborative_interrogation",
+            "self_explanation",
+            "schema_theory",
+        ],
     },
     {
         "name": "Think-Aloud Protocol",
@@ -211,7 +236,11 @@ METHOD_BLOCKS = [
         "evidence": "Chi et al. (1994); self-explanation leads to deeper understanding and better problem-solving",
         "icap_level": "constructive",
         "clt_target": "increase-germane",
-        "research_terms": ["self_explanation", "metacognitive_monitoring", "cognitive_apprenticeship"],
+        "research_terms": [
+            "self_explanation",
+            "metacognitive_monitoring",
+            "cognitive_apprenticeship",
+        ],
     },
     {
         "name": "Self-Explanation Protocol",
@@ -224,7 +253,11 @@ METHOD_BLOCKS = [
         "evidence": "Chi et al. (1994); Dunlosky et al. (2013); self-explanation rated moderate-high utility across domains",
         "icap_level": "constructive",
         "clt_target": "increase-germane",
-        "research_terms": ["self_explanation", "elaborative_interrogation", "transfer_appropriate_processing"],
+        "research_terms": [
+            "self_explanation",
+            "elaborative_interrogation",
+            "transfer_appropriate_processing",
+        ],
     },
     {
         "name": "Mechanism Trace",
@@ -238,7 +271,11 @@ METHOD_BLOCKS = [
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "artifact_type": "flowchart",
-        "research_terms": ["schema_theory", "case_based_reasoning", "transfer_appropriate_processing"],
+        "research_terms": [
+            "schema_theory",
+            "case_based_reasoning",
+            "transfer_appropriate_processing",
+        ],
     },
     {
         "name": "Concept Map",
@@ -266,7 +303,11 @@ METHOD_BLOCKS = [
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "artifact_type": "comparison-table",
-        "research_terms": ["comparison_based_learning", "schema_theory", "transfer_appropriate_processing"],
+        "research_terms": [
+            "comparison_based_learning",
+            "schema_theory",
+            "transfer_appropriate_processing",
+        ],
     },
     {
         "name": "Process Flowchart",
@@ -294,7 +335,11 @@ METHOD_BLOCKS = [
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "artifact_type": "decision-tree",
-        "research_terms": ["clinical_reasoning", "illness_scripts", "case_based_reasoning"],
+        "research_terms": [
+            "clinical_reasoning",
+            "illness_scripts",
+            "case_based_reasoning",
+        ],
     },
     # === RETRIEVE (test recall, strengthen pathways) ===
     {
@@ -337,7 +382,11 @@ METHOD_BLOCKS = [
         "icap_level": "active",
         "clt_target": "increase-germane",
         "assessment_type": "recall",
-        "research_terms": ["retrieval_practice", "testing_effect", "encoding_specificity"],
+        "research_terms": [
+            "retrieval_practice",
+            "testing_effect",
+            "encoding_specificity",
+        ],
     },
     {
         "name": "Mixed Practice",
@@ -351,7 +400,11 @@ METHOD_BLOCKS = [
         "icap_level": "active",
         "clt_target": "increase-germane",
         "assessment_type": "application",
-        "research_terms": ["interleaving", "contextual_interference", "transfer_appropriate_processing"],
+        "research_terms": [
+            "interleaving",
+            "contextual_interference",
+            "transfer_appropriate_processing",
+        ],
     },
     {
         "name": "Variable Retrieval",
@@ -365,7 +418,11 @@ METHOD_BLOCKS = [
         "icap_level": "active",
         "clt_target": "increase-germane",
         "assessment_type": "transfer",
-        "research_terms": ["retrieval_practice", "transfer_appropriate_processing", "spacing_effect"],
+        "research_terms": [
+            "retrieval_practice",
+            "transfer_appropriate_processing",
+            "spacing_effect",
+        ],
     },
     # === INTERROGATE (link to prior knowledge, apply, compare) ===
     {
@@ -380,7 +437,11 @@ METHOD_BLOCKS = [
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "assessment_type": "transfer",
-        "research_terms": ["transfer_appropriate_processing", "schema_theory", "cognitive_flexibility"],
+        "research_terms": [
+            "transfer_appropriate_processing",
+            "schema_theory",
+            "cognitive_flexibility",
+        ],
     },
     {
         "name": "Clinical Application",
@@ -394,7 +455,11 @@ METHOD_BLOCKS = [
         "icap_level": "interactive",
         "clt_target": "increase-germane",
         "assessment_type": "application",
-        "research_terms": ["case_based_reasoning", "illness_scripts", "clinical_reasoning"],
+        "research_terms": [
+            "case_based_reasoning",
+            "illness_scripts",
+            "clinical_reasoning",
+        ],
     },
     {
         "name": "Cross-Topic Link",
@@ -407,7 +472,11 @@ METHOD_BLOCKS = [
         "evidence": "Pugh & Bergin (2006); interest deepens when learners see cross-domain connections",
         "icap_level": "constructive",
         "clt_target": "increase-germane",
-        "research_terms": ["transfer_appropriate_processing", "schema_theory", "cognitive_flexibility"],
+        "research_terms": [
+            "transfer_appropriate_processing",
+            "schema_theory",
+            "cognitive_flexibility",
+        ],
     },
     {
         "name": "Side-by-Side Comparison",
@@ -421,7 +490,11 @@ METHOD_BLOCKS = [
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "artifact_type": "comparison-table",
-        "research_terms": ["comparison_based_learning", "schema_theory", "transfer_appropriate_processing"],
+        "research_terms": [
+            "comparison_based_learning",
+            "schema_theory",
+            "transfer_appropriate_processing",
+        ],
     },
     {
         "name": "Case Walkthrough",
@@ -435,7 +508,11 @@ METHOD_BLOCKS = [
         "icap_level": "interactive",
         "clt_target": "increase-germane",
         "assessment_type": "application",
-        "research_terms": ["case_based_reasoning", "clinical_reasoning", "illness_scripts"],
+        "research_terms": [
+            "case_based_reasoning",
+            "clinical_reasoning",
+            "illness_scripts",
+        ],
     },
     {
         "name": "Illness Script Builder",
@@ -464,7 +541,11 @@ METHOD_BLOCKS = [
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "artifact_type": "error-log",
-        "research_terms": ["error_based_learning", "metacognitive_monitoring", "calibration"],
+        "research_terms": [
+            "error_based_learning",
+            "metacognitive_monitoring",
+            "calibration",
+        ],
     },
     {
         "name": "Mastery Loop",
@@ -478,7 +559,11 @@ METHOD_BLOCKS = [
         "icap_level": "active",
         "clt_target": "increase-germane",
         "assessment_type": "recall",
-        "research_terms": ["successive_relearning", "mastery_learning", "spacing_effect"],
+        "research_terms": [
+            "successive_relearning",
+            "mastery_learning",
+            "spacing_effect",
+        ],
     },
     # === OVERLEARN (close loop, capture artifacts) ===
     {
@@ -492,7 +577,11 @@ METHOD_BLOCKS = [
         "evidence": "Tanner (2012); metacognitive reflection improves self-regulated learning",
         "icap_level": "constructive",
         "clt_target": "increase-germane",
-        "research_terms": ["metacognitive_monitoring", "calibration", "self_explanation"],
+        "research_terms": [
+            "metacognitive_monitoring",
+            "calibration",
+            "self_explanation",
+        ],
     },
     {
         "name": "Anki Card Draft",
@@ -506,7 +595,11 @@ METHOD_BLOCKS = [
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "artifact_type": "cards",
-        "research_terms": ["spacing_effect", "retrieval_practice", "successive_relearning"],
+        "research_terms": [
+            "spacing_effect",
+            "retrieval_practice",
+            "successive_relearning",
+        ],
     },
 ]
 
@@ -519,14 +612,30 @@ TEMPLATE_CHAINS = [
     {
         "name": "First Exposure (Core)",
         "description": "Full PEIRRO cycle for new material. Prepare → Encode → Retrieve → Interrogate → Overlearn. Retrieval before generative encoding per Potts & Shanks (2022).",
-        "blocks": ["Brain Dump", "AI Skeleton Review", "Free Recall Blurt", "KWIK Hook", "Analogy Bridge", "Exit Ticket"],
-        "context_tags": {"stage": "first_exposure", "energy": "high", "time_available": 45},
+        "blocks": [
+            "Brain Dump",
+            "AI Skeleton Review",
+            "Free Recall Blurt",
+            "KWIK Hook",
+            "Analogy Bridge",
+            "Exit Ticket",
+        ],
+        "context_tags": {
+            "stage": "first_exposure",
+            "energy": "high",
+            "time_available": 45,
+        },
         "is_template": 1,
     },
     {
         "name": "Review Sprint",
         "description": "Fast review loop. Prepare → Retrieve → Interrogate → Overlearn. Skips encode for known material.",
-        "blocks": ["Prediction Questions", "Sprint Quiz", "Cross-Topic Link", "Exit Ticket"],
+        "blocks": [
+            "Prediction Questions",
+            "Sprint Quiz",
+            "Cross-Topic Link",
+            "Exit Ticket",
+        ],
         "context_tags": {"stage": "review", "energy": "medium", "time_available": 25},
         "is_template": 1,
     },
@@ -540,8 +649,19 @@ TEMPLATE_CHAINS = [
     {
         "name": "Anatomy Deep Dive",
         "description": "Anatomy-focused chain with drawing. Prepare → Encode (Draw-Label) → Retrieve → Overlearn.",
-        "blocks": ["Prior Knowledge Scan", "Three-Layer Chunk", "Draw-Label", "Free Recall Blurt", "Anki Card Draft"],
-        "context_tags": {"class_type": "anatomy", "stage": "first_exposure", "energy": "high", "time_available": 40},
+        "blocks": [
+            "Prior Knowledge Scan",
+            "Three-Layer Chunk",
+            "Draw-Label",
+            "Free Recall Blurt",
+            "Anki Card Draft",
+        ],
+        "context_tags": {
+            "class_type": "anatomy",
+            "stage": "first_exposure",
+            "energy": "high",
+            "time_available": 40,
+        },
         "is_template": 1,
     },
     {
@@ -554,73 +674,176 @@ TEMPLATE_CHAINS = [
     {
         "name": "Exam Prep",
         "description": "Exam-focused chain with interleaving and error analysis. Prepare → Retrieve → Interrogate → Refine → Overlearn.",
-        "blocks": ["Prediction Questions", "Mixed Practice", "Side-by-Side Comparison", "Error Autopsy", "Anki Card Draft"],
+        "blocks": [
+            "Prediction Questions",
+            "Mixed Practice",
+            "Side-by-Side Comparison",
+            "Error Autopsy",
+            "Anki Card Draft",
+        ],
         "context_tags": {"stage": "exam_prep", "energy": "high", "time_available": 35},
         "is_template": 1,
     },
     {
         "name": "Clinical Reasoning",
         "description": "Build clinical reasoning chains. Prepare → Interrogate → Refine → Overlearn.",
-        "blocks": ["Prior Knowledge Scan", "Three-Layer Chunk", "Case Walkthrough", "Side-by-Side Comparison", "Error Autopsy", "Anki Card Draft"],
-        "context_tags": {"class_type": "clinical", "stage": "exam_prep", "energy": "high", "time_available": 45},
+        "blocks": [
+            "Prior Knowledge Scan",
+            "Three-Layer Chunk",
+            "Case Walkthrough",
+            "Side-by-Side Comparison",
+            "Error Autopsy",
+            "Anki Card Draft",
+        ],
+        "context_tags": {
+            "class_type": "clinical",
+            "stage": "exam_prep",
+            "energy": "high",
+            "time_available": 45,
+        },
         "is_template": 1,
     },
     {
         "name": "Mastery Review",
         "description": "Deep consolidation with successive relearning. Retrieve → Refine → Overlearn.",
-        "blocks": ["Free Recall Blurt", "Error Autopsy", "Mastery Loop", "Anki Card Draft"],
-        "context_tags": {"stage": "consolidation", "energy": "medium", "time_available": 30},
+        "blocks": [
+            "Free Recall Blurt",
+            "Error Autopsy",
+            "Mastery Loop",
+            "Anki Card Draft",
+        ],
+        "context_tags": {
+            "stage": "consolidation",
+            "energy": "medium",
+            "time_available": 30,
+        },
         "is_template": 1,
     },
     # --- 4 new intake-focused chains ---
     {
         "name": "Dense Anatomy Intake",
         "description": "High-detail anatomy first exposure. Pre-Test primes encoding, Draw-Label for spatial memory, retrieval before generative steps.",
-        "blocks": ["Pre-Test", "Draw-Label", "Free Recall Blurt", "KWIK Hook", "Anki Card Draft"],
-        "context_tags": {"class_type": "anatomy", "stage": "first_exposure", "energy": "high", "time_available": 40},
+        "blocks": [
+            "Pre-Test",
+            "Draw-Label",
+            "Free Recall Blurt",
+            "KWIK Hook",
+            "Anki Card Draft",
+        ],
+        "context_tags": {
+            "class_type": "anatomy",
+            "stage": "first_exposure",
+            "energy": "high",
+            "time_available": 40,
+        },
         "is_template": 1,
     },
     {
         "name": "Pathophysiology Intake",
         "description": "Pathology first exposure with mechanism tracing. Pre-Test → Self-Explanation → Concept Cluster → Retrieve → Refine.",
-        "blocks": ["Pre-Test", "Self-Explanation Protocol", "Concept Cluster", "Free Recall Blurt", "Error Autopsy"],
-        "context_tags": {"class_type": "pathology", "stage": "first_exposure", "energy": "high", "time_available": 45},
+        "blocks": [
+            "Pre-Test",
+            "Self-Explanation Protocol",
+            "Concept Cluster",
+            "Free Recall Blurt",
+            "Error Autopsy",
+        ],
+        "context_tags": {
+            "class_type": "pathology",
+            "stage": "first_exposure",
+            "energy": "high",
+            "time_available": 45,
+        },
         "is_template": 1,
     },
     {
         "name": "Clinical Reasoning Intake",
         "description": "Clinical first exposure with illness scripts. Pre-Test → Illness Script → Compare → Retrieve → Overlearn.",
-        "blocks": ["Pre-Test", "Illness Script Builder", "Side-by-Side Comparison", "Free Recall Blurt", "Anki Card Draft"],
-        "context_tags": {"class_type": "clinical", "stage": "first_exposure", "energy": "high", "time_available": 45},
+        "blocks": [
+            "Pre-Test",
+            "Illness Script Builder",
+            "Side-by-Side Comparison",
+            "Free Recall Blurt",
+            "Anki Card Draft",
+        ],
+        "context_tags": {
+            "class_type": "clinical",
+            "stage": "first_exposure",
+            "energy": "high",
+            "time_available": 45,
+        },
         "is_template": 1,
     },
     {
         "name": "Quick First Exposure",
         "description": "Minimal intake chain when time is limited. Pre-Test → AI Skeleton → Retrieve → Overlearn.",
-        "blocks": ["Pre-Test", "AI Skeleton Review", "Free Recall Blurt", "Exit Ticket"],
-        "context_tags": {"stage": "first_exposure", "energy": "medium", "time_available": 20},
+        "blocks": [
+            "Pre-Test",
+            "AI Skeleton Review",
+            "Free Recall Blurt",
+            "Exit Ticket",
+        ],
+        "context_tags": {
+            "stage": "first_exposure",
+            "energy": "medium",
+            "time_available": 20,
+        },
         "is_template": 1,
     },
     {
         "name": "Visual Encoding",
         "description": "Visualization-first encoding for topics with confusable concepts. Build visual representations before retrieval.",
-        "blocks": ["Brain Dump", "Concept Map", "Comparison Table", "Free Recall Blurt", "Exit Ticket"],
-        "context_tags": {"stage": "first_exposure", "energy": "high", "time_available": 40},
+        "blocks": [
+            "Brain Dump",
+            "Concept Map",
+            "Comparison Table",
+            "Free Recall Blurt",
+            "Exit Ticket",
+        ],
+        "context_tags": {
+            "stage": "first_exposure",
+            "energy": "high",
+            "time_available": 40,
+        },
         "is_template": 1,
     },
     # --- SWEEP/DEPTH chain runner chains ---
     {
         "name": "SWEEP",
         "description": "Pass 1: Fast structural understanding. Touch everything once. Produce visual maps, objectives, confusables, seed cards.",
-        "blocks": ["Concept Cluster", "Concept Map", "Comparison Table", "Sprint Quiz", "Anki Card Draft"],
-        "context_tags": {"stage": "first_exposure", "pass": "sweep", "energy": "medium", "time_available": 30},
+        "blocks": [
+            "Concept Cluster",
+            "Concept Map",
+            "Comparison Table",
+            "Sprint Quiz",
+            "Anki Card Draft",
+        ],
+        "context_tags": {
+            "stage": "first_exposure",
+            "pass": "sweep",
+            "energy": "medium",
+            "time_available": 30,
+        },
         "is_template": 1,
     },
     {
         "name": "DEPTH",
         "description": "Pass 2: Selective mastery on high-priority objectives. Full PEIRRO cycle. Retrieval-driven. Cards only from errors.",
-        "blocks": ["Pre-Test", "Why-Chain", "Mechanism Trace", "Clinical Application", "Variable Retrieval", "Error Autopsy", "Anki Card Draft"],
-        "context_tags": {"stage": "review", "pass": "depth", "energy": "high", "time_available": 45},
+        "blocks": [
+            "Pre-Test",
+            "Why-Chain",
+            "Mechanism Trace",
+            "Clinical Application",
+            "Variable Retrieval",
+            "Error Autopsy",
+            "Anki Card Draft",
+        ],
+        "context_tags": {
+            "stage": "review",
+            "pass": "depth",
+            "energy": "high",
+            "time_available": 45,
+        },
         "is_template": 1,
     },
 ]
@@ -633,16 +856,26 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
     duration = yaml_data.get("default_duration_min", 5)
     description = yaml_data.get("description", "")
 
+    gating_rules = None
+    if "gating_rules" in yaml_data:
+        gating_rules = yaml_data.get("gating_rules")
+    elif "gates" in yaml_data:
+        gating_rules = yaml_data.get("gates")
+    elif "gating" in yaml_data:
+        gating_rules = yaml_data.get("gating")
+
     parts: list[str] = []
     parts.append(f"## Current Activity Block: {name} ({category}, ~{duration} min)")
     if description:
         parts.append(f"_{description}_")
-    parts.append(f"\n### Your Task\nFacilitate the **{name}** protocol with the student. Follow the steps below in order and gate each one — do not skip ahead until the student completes the current step.")
+    parts.append(
+        f"\n### Your Task\nFacilitate the **{name}** protocol with the student. Follow the steps below in order and gate each one — do not skip ahead until the student completes the current step."
+    )
 
     # Steps
     steps = yaml_data.get("steps", [])
+    step_lines = ["### Steps (follow in order, gate each one)"]
     if steps:
-        step_lines = ["### Steps (follow in order, gate each one)"]
         for s in steps:
             step_num = s.get("step", "?")
             action = s.get("action", "")
@@ -650,32 +883,61 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
             step_lines.append(f"{step_num}. {action}")
             if notes:
                 step_lines.append(f"   - {notes}")
-        parts.append("\n".join(step_lines))
+    else:
+        step_lines.append("1. MISSING")
+    parts.append("\n".join(step_lines))
 
     # Inputs
     inputs = yaml_data.get("inputs", [])
     if inputs:
         parts.append("### Required Inputs\n" + "\n".join(f"- {inp}" for inp in inputs))
+    else:
+        parts.append("### Required Inputs\n- MISSING")
+
+    if gating_rules:
+        if isinstance(gating_rules, list):
+            parts.append(
+                "### Gating Rules\n" + "\n".join(f"- {rule}" for rule in gating_rules)
+            )
+        elif isinstance(gating_rules, dict):
+            parts.append(
+                "### Gating Rules\n"
+                + "\n".join(f"- {k}: {v}" for k, v in gating_rules.items())
+            )
+        else:
+            parts.append(f"### Gating Rules\n- {gating_rules}")
+    else:
+        parts.append("### Gating Rules\n- MISSING")
 
     # Outputs
     outputs = yaml_data.get("outputs", [])
     if outputs:
-        parts.append("### Expected Outputs\n" + "\n".join(f"- {out}" for out in outputs))
+        parts.append(
+            "### Expected Outputs\n" + "\n".join(f"- {out}" for out in outputs)
+        )
+    else:
+        parts.append("### Expected Outputs\n- MISSING")
 
     # Stop criteria
     stop_criteria = yaml_data.get("stop_criteria", [])
     if stop_criteria:
-        parts.append("### Stop When\n" + "\n".join(f"- {sc}" for sc in stop_criteria))
+        parts.append(
+            "### Stop Criteria\n" + "\n".join(f"- {sc}" for sc in stop_criteria)
+        )
+    else:
+        parts.append("### Stop Criteria\n- MISSING")
 
     # Failure modes
     failure_modes = yaml_data.get("failure_modes", [])
+    fm_lines = ["### Failure Modes"]
     if failure_modes:
-        fm_lines = ["### Watch For (Failure Modes)"]
         for fm in failure_modes:
             mode = fm.get("mode", "")
             mitigation = fm.get("mitigation", "")
             fm_lines.append(f"- **{mode}** → {mitigation}")
-        parts.append("\n".join(fm_lines))
+    else:
+        fm_lines.append("- MISSING")
+    parts.append("\n".join(fm_lines))
 
     # Evidence
     ev = yaml_data.get("evidence_raw") or ""
@@ -688,9 +950,15 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
 
     # Artifact format requirements (canonical spec for machine-readable outputs)
     artifact_type = yaml_data.get("artifact_type", "")
+    if artifact_type:
+        parts.append(f"### Artifacts\n- artifact_type: {artifact_type}")
+    else:
+        parts.append("### Artifacts\n- artifact_type: MISSING")
     if artifact_type == "cards":
         parts.append(
             "### Required Output Format (Anki Cards)\n"
+            "Output ONLY card blocks in this exact line format. Do not add prose before or after cards.\n"
+            "Do NOT use bullets, markdown tables, CSV, or JSON.\n"
             "When producing card drafts, use EXACTLY this format:\n"
             "```\n"
             "CARD 1:\n"
@@ -706,7 +974,8 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
             "TAGS: [comma-separated]\n"
             "```\n"
             "TYPE must be `basic` or `cloze`. FRONT and BACK are required. "
-            "Cloze cards must use `{{c1::...}}` syntax in FRONT."
+            "Cloze cards must use `{{c1::...}}` syntax in FRONT. "
+            "Use uppercase labels exactly: `CARD N:`, `TYPE:`, `FRONT:`, `BACK:`, `TAGS:`."
         )
     elif artifact_type in ("concept-map", "flowchart", "decision-tree"):
         graph_dir = "LR" if artifact_type == "concept-map" else "TD"
@@ -721,10 +990,23 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
             f"    A -->|relates to| B\n"
             f"```\n"
             f"````\n"
-            f"Node labels: `A[\"Label\"]`. Edges: `A --> B` or `A -->|text| B`."
+            f'Node labels: `A["Label"]`. Edges: `A --> B` or `A -->|text| B`.'
+        )
+    elif artifact_type:
+        parts.append(
+            "### Required Output Format (Artifacts)\n"
+            "No canonical machine-readable format is defined in the parser. "
+            "Use plain text output that matches the expected outputs above."
         )
 
-    return "\n\n".join(parts)
+    prompt = "\n\n".join(parts)
+    if len(prompt) < 200:
+        prompt += (
+            "\n\n### Notes\n"
+            "This prompt is auto-generated from the method YAML. "
+            "Fill missing sections in the YAML to improve guidance and determinism."
+        )
+    return prompt
 
 
 def regenerate_prompts() -> None:
@@ -742,13 +1024,23 @@ def regenerate_prompts() -> None:
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Build name->id and name->artifact_type lookups from DB
-    cursor.execute("SELECT id, name, artifact_type FROM method_blocks")
+    cursor.execute(
+        "SELECT id, name, category, description, default_duration_min, energy_cost, artifact_type FROM method_blocks"
+    )
+    name_to_block: dict[str, dict] = {}
     name_to_id: dict[str, int] = {}
-    name_to_artifact: dict[str, str] = {}
     for row in cursor.fetchall():
+        block = {
+            "id": row[0],
+            "name": row[1],
+            "category": row[2] or "",
+            "description": row[3] or "",
+            "default_duration_min": row[4] or 5,
+            "energy_cost": row[5] or "medium",
+            "artifact_type": row[6] or "",
+        }
         name_to_id[row[1]] = row[0]
-        name_to_artifact[row[1]] = row[2] or ""
+        name_to_block[row[1]] = block
 
     updated = 0
     yaml_names_seen: set[str] = set()
@@ -767,7 +1059,9 @@ def regenerate_prompts() -> None:
 
         # Inject artifact_type from DB so format examples are embedded
         if "artifact_type" not in data:
-            data["artifact_type"] = name_to_artifact.get(block_name, "")
+            data["artifact_type"] = name_to_block.get(block_name, {}).get(
+                "artifact_type", ""
+            )
         prompt = generate_facilitation_prompt(data)
         cursor.execute(
             "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
@@ -778,18 +1072,15 @@ def regenerate_prompts() -> None:
     # Fallback for blocks without YAML definitions
     for block_name, block_id in name_to_id.items():
         if block_name not in yaml_names_seen:
+            base_block = name_to_block.get(block_name)
+            if not base_block:
+                continue
+            prompt = generate_facilitation_prompt(base_block)
             cursor.execute(
-                "SELECT facilitation_prompt FROM method_blocks WHERE id = ?",
-                (block_id,),
+                "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
+                (prompt, block_id),
             )
-            existing = cursor.fetchone()
-            if not existing or not existing[0]:
-                fallback = f"## Current Activity Block: {block_name}\n\nFacilitate the **{block_name}** method. Guide the student step-by-step through this activity."
-                cursor.execute(
-                    "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
-                    (fallback, block_id),
-                )
-                updated += 1
+            updated += 1
 
     conn.commit()
     conn.close()
@@ -811,7 +1102,9 @@ def load_from_yaml() -> dict | None:
         return None
 
     # Build name->artifact_type lookup from hardcoded dicts (YAML doesn't carry this)
-    _artifact_type_lookup = {b["name"]: b.get("artifact_type", "") for b in METHOD_BLOCKS}
+    _artifact_type_lookup = {
+        b["name"]: b.get("artifact_type", "") for b in METHOD_BLOCKS
+    }
 
     methods = []
     for path in sorted(_METHODS_DIR.glob("*.yaml")):
@@ -827,17 +1120,20 @@ def load_from_yaml() -> dict | None:
             else:
                 evidence_str = None
 
-            methods.append({
-                "name": data["name"],
-                "category": data["category"],
-                "description": data.get("description", ""),
-                "default_duration_min": data.get("default_duration_min", 5),
-                "energy_cost": data.get("energy_cost", "medium"),
-                "best_stage": data.get("best_stage"),
-                "tags": data.get("tags", []),
-                "evidence": evidence_str,
-                "artifact_type": _artifact_type_lookup.get(data["name"], ""),
-            })
+            methods.append(
+                {
+                    "method_id": data.get("id", ""),
+                    "name": data["name"],
+                    "category": data["category"],
+                    "description": data.get("description", ""),
+                    "default_duration_min": data.get("default_duration_min", 5),
+                    "energy_cost": data.get("energy_cost", "medium"),
+                    "best_stage": data.get("best_stage"),
+                    "tags": data.get("tags", []),
+                    "evidence": evidence_str,
+                    "artifact_type": _artifact_type_lookup.get(data["name"], ""),
+                }
+            )
 
     chains = []
     # Build method_id→name lookup for resolving chain block refs
@@ -852,13 +1148,15 @@ def load_from_yaml() -> dict | None:
         if data:
             # Resolve YAML method IDs (M-PRE-001) to names (Brain Dump) for DB
             block_names = [id_to_name.get(bid, bid) for bid in data.get("blocks", [])]
-            chains.append({
-                "name": data["name"],
-                "description": data.get("description", ""),
-                "blocks": block_names,
-                "context_tags": data.get("context_tags", {}),
-                "is_template": 1 if data.get("is_template", False) else 0,
-            })
+            chains.append(
+                {
+                    "name": data["name"],
+                    "description": data.get("description", ""),
+                    "blocks": block_names,
+                    "context_tags": data.get("context_tags", {}),
+                    "is_template": 1 if data.get("is_template", False) else 0,
+                }
+            )
 
     version = "unknown"
     if _VERSION_PATH.exists():
@@ -874,7 +1172,9 @@ def _get_git_sha() -> str | None:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
             cwd=str(_ROOT),
         )
         if result.returncode == 0:
@@ -884,7 +1184,9 @@ def _get_git_sha() -> str | None:
     return None
 
 
-def _insert_library_meta(conn, version: str, method_count: int, chain_count: int) -> None:
+def _insert_library_meta(
+    conn, version: str, method_count: int, chain_count: int
+) -> None:
     """Insert a row into library_meta tracking this seed operation."""
     sha = _get_git_sha()
     try:
@@ -912,7 +1214,9 @@ def seed_methods(force: bool = False):
     # Current DB state (used for logging only; we merge missing items by name).
     cursor.execute("SELECT COUNT(*) FROM method_blocks")
     block_count = int(cursor.fetchone()[0] or 0)
-    cursor.execute("SELECT COUNT(*) FROM method_chains WHERE COALESCE(is_template, 0) = 1")
+    cursor.execute(
+        "SELECT COUNT(*) FROM method_chains WHERE COALESCE(is_template, 0) = 1"
+    )
     template_chain_count = int(cursor.fetchone()[0] or 0)
     if block_count == 0 and template_chain_count == 0:
         print("[INFO] Method library missing; seeding...")
@@ -938,8 +1242,15 @@ def seed_methods(force: bool = False):
     # Build name->id lookup + a light snapshot of existing rows (for safe patch-up updates).
     cursor.execute("PRAGMA table_info(method_blocks)")
     mb_cols = {r[1] for r in cursor.fetchall()}
+    if "method_id" not in mb_cols:
+        try:
+            cursor.execute("ALTER TABLE method_blocks ADD COLUMN method_id TEXT")
+            mb_cols.add("method_id")
+        except sqlite3.OperationalError:
+            pass
     select_cols = [
         "id",
+        "method_id",
         "name",
         "category",
         "description",
@@ -959,17 +1270,39 @@ def seed_methods(force: bool = False):
         existing_by_name[rec["name"]] = rec
         name_to_id[rec["name"]] = rec["id"]
 
+    # Guardrail: remove obvious placeholder rows with missing canonical IDs.
+    cursor.execute(
+        """
+        DELETE FROM method_blocks
+        WHERE (method_id IS NULL OR LENGTH(TRIM(method_id)) = 0)
+          AND LOWER(name) LIKE 'test %'
+        """
+    )
+    deleted_placeholder_rows = int(cursor.rowcount or 0)
+    if deleted_placeholder_rows:
+        print(
+            f"[CLEANUP] Removed {deleted_placeholder_rows} placeholder method_blocks rows without method_id"
+        )
+
     inserted_blocks = 0
     updated_blocks = 0
     for block in methods_src:
+        method_id_value = (block.get("method_id") or "").strip()
+        if not method_id_value and block["name"].strip().lower().startswith("test "):
+            print(
+                f"[SKIP] Placeholder block '{block['name']}' has no method_id; not seeding."
+            )
+            continue
+
         existing = existing_by_name.get(block["name"])
         if not existing:
             cursor.execute(
                 """
-                INSERT INTO method_blocks (name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, artifact_type, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                INSERT INTO method_blocks (method_id, name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, artifact_type, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                 """,
                 (
+                    method_id_value,
                     block["name"],
                     block["category"],
                     block["description"],
@@ -991,7 +1324,9 @@ def seed_methods(force: bool = False):
         tags_ok = False
         if tags_raw and tags_raw != "null":
             try:
-                tags_val = json.loads(tags_raw) if isinstance(tags_raw, str) else tags_raw
+                tags_val = (
+                    json.loads(tags_raw) if isinstance(tags_raw, str) else tags_raw
+                )
                 tags_ok = bool(tags_val)
             except Exception:
                 tags_ok = False
@@ -1002,8 +1337,14 @@ def seed_methods(force: bool = False):
         if not tags_ok:
             needs_update = True
 
-        if needs_update:
+        needs_method_id_update = (
+            "method_id" in mb_cols
+            and method_id_value
+            and not (existing.get("method_id") or "")
+        )
+        if needs_update or needs_method_id_update:
             set_cols = [
+                "method_id = ?",
                 "category = ?",
                 "description = ?",
                 "default_duration_min = ?",
@@ -1012,6 +1353,7 @@ def seed_methods(force: bool = False):
                 "tags = ?",
             ]
             values = [
+                method_id_value,
                 block["category"],
                 block["description"],
                 block["default_duration_min"],
@@ -1053,7 +1395,9 @@ def seed_methods(force: bool = False):
 
         missing = [b for b in chain["blocks"] if b not in name_to_id]
         if missing:
-            print(f"[WARN] Skipping chain '{chain['name']}' (missing blocks: {', '.join(missing)})")
+            print(
+                f"[WARN] Skipping chain '{chain['name']}' (missing blocks: {', '.join(missing)})"
+            )
             continue
 
         block_ids = [name_to_id[name] for name in chain["blocks"]]
@@ -1075,7 +1419,9 @@ def seed_methods(force: bool = False):
     if inserted_chains:
         print(f"[OK] Inserted {inserted_chains} template chains")
     else:
-        print(f"[OK] No template chains to insert (template_chains={template_chain_count})")
+        print(
+            f"[OK] No template chains to insert (template_chains={template_chain_count})"
+        )
 
     # Track seed operation in library_meta (store post-seed totals for clarity).
     if force or inserted_blocks or updated_blocks or inserted_chains:

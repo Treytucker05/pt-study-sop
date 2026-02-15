@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brain Page Wireframes</title>
+  <style>
+    :root {
+      --ink:#000000;
+      --ink-2:#333333;
+      --ink-3:#666666;
+      --ink-4:#999999;
+      --line:#cccccc;
+      --muted:#eeeeee;
+      --bg:#ffffff;
+      --active:#000000;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .shell {
+      min-height: 100vh;
+      padding: 12px;
+      background: #eeeeee;
+      border: 1px solid var(--line);
+    }
+    .titlebar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+    .titlebar h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .recommend {
+      color: var(--ink-2);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .tabbar {
+      display: grid;
+      grid-template-columns: repeat(5, auto);
+      gap: 6px;
+      margin-bottom: 12px;
+      padding: 0 2px;
+      border-bottom: 1px solid var(--line);
+    }
+    .tabbar button {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .tabbar button.active {
+      background: var(--ink);
+      color: var(--bg);
+    }
+    .workspace {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      min-height: calc(100vh - 132px);
+      padding: 8px;
+      box-shadow: 2px 2px 0 var(--ink);
+      position: relative;
+    }
+    .option {
+      display: none;
+      gap: 8px;
+      flex-direction: column;
+    }
+    .option.active {
+      display: flex;
+    }
+
+    .canvas-shell {
+      display: grid;
+      grid-template-columns: 260px 1fr 300px;
+      gap: 8px;
+      min-height: 520px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      padding: 8px;
+      min-height: 260px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-2);
+      padding-bottom: 4px;
+      border-bottom: 1px dashed var(--line);
+    }
+    .tree {
+      flex: 1;
+      overflow: auto;
+      border: 1px solid var(--line);
+      padding: 6px;
+      background: var(--bg);
+    }
+    .tree ul { margin: 0; padding-left: 16px; }
+    .tree li { margin: 3px 0; cursor: pointer; }
+    .tree li:hover { color: var(--ink-2); }
+    .tree .active { color: var(--ink); text-decoration: underline; }
+
+    .tabs-inline {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 4px;
+      margin-bottom: 4px;
+    }
+    .tabs-inline button {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      font-size: 11px;
+      padding: 4px 7px;
+      cursor: pointer;
+    }
+    .tabs-inline button.active {
+      border: 1px solid var(--ink);
+      background: var(--muted);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .btn {
+      border: 1px solid var(--line);
+      border-right-width: 2px;
+      border-bottom-width: 2px;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 11px;
+      padding: 5px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover, .btn:focus {
+      background: var(--muted);
+    }
+    .btn.alt {
+      border-color: var(--ink-3);
+    }
+
+    .content-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 180px;
+      gap: 6px;
+      min-height: 0;
+    }
+    .canvas-area {
+      border: 1px solid var(--line);
+      background: #eeeeee;
+      padding: 8px;
+      min-height: 340px;
+      position: relative;
+      overflow: hidden;
+    }
+    .canvas-dots {
+      position: absolute;
+      inset: 8px;
+      border: 1px dashed var(--line);
+      padding: 6px;
+      color: var(--ink-4);
+      font-size: 11px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+
+    .meta {
+      border: 1px solid var(--line);
+      padding: 6px;
+      background: var(--bg);
+      font-size: 11px;
+      color: var(--ink-3);
+      display: grid;
+      gap: 4px;
+    }
+
+    .chat {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .chat.hidden {
+      opacity: 0.4;
+    }
+    .chat-box {
+      border: 1px solid var(--line);
+      margin: 4px;
+      min-height: 180px;
+      padding: 8px;
+      background: #ffffff;
+      overflow: auto;
+      font-size: 11px;
+      color: var(--ink-2);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .chat-row {
+      border-left: 2px solid var(--line);
+      padding-left: 6px;
+      color: var(--ink-3);
+    }
+
+    .notes {
+      border-top: 1px dashed var(--line);
+      padding-top: 5px;
+      font-size: 11px;
+      color: var(--ink-3);
+      display: grid;
+      gap: 3px;
+    }
+    .marker {
+      font-size: 12px;
+      margin-right: 4px;
+      color: var(--ink-2);
+      font-weight: 700;
+    }
+
+    .state-line {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      padding-top: 6px;
+      color: var(--ink-3);
+      font-size: 10px;
+    }
+
+    .summary {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      padding: 8px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--muted); color: var(--ink); }
+    .recommendation {
+      border: 1px solid var(--line);
+      padding: 8px;
+      background: #eeeeee;
+      font-size: 12px;
+      color: var(--ink-2);
+    }
+    .sr-only { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+
+    .option-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .option-header h2 { margin: 0; font-size: 16px; }
+    .option-header .philo { font-size: 11px; color: var(--ink-3); max-width: 620px; }
+
+    .split-expl {
+      display: grid;
+      gap: 8px;
+    }
+    .split-stack {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 8px;
+      min-height: 340px;
+    }
+    .list-stack {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      min-height: 340px;
+    }
+    .stack {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      padding: 6px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 6px;
+    }
+
+    @media (max-width: 1100px) {
+      .canvas-shell {
+        grid-template-columns: 1fr;
+      }
+      .content-grid { grid-template-columns: 1fr; }
+      .split-stack { grid-template-columns: 1fr; }
+      .list-stack { grid-template-columns: 1fr; }
+      .chat { min-height: 170px; }
+      .shell { padding: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell" id="root">
+    <header class="titlebar">
+      <h1>Brain Page — PT Study SOP</h1>
+      <div class="recommend">★ Recommended: Option 3 — Split Workspace</div>
+    </header>
+
+    <nav class="tabbar" role="tablist" aria-label="Wireframe options">
+      <button data-option="option1" class="active" role="tab" aria-selected="true">1: Safe</button>
+      <button data-option="option2" role="tab" aria-selected="false">2: Progressive</button>
+      <button data-option="option3" role="tab" aria-selected="false">3: Split</button>
+      <button data-option="option4" role="tab" aria-selected="false">4: Command</button>
+      <button data-option="summary" role="tab" aria-selected="false">Summary</button>
+    </nav>
+
+    <section class="workspace">
+      <!-- Option 1: Safe Option -->
+      <article id="option1" class="option active" role="tabpanel" aria-labelledby="option1-tab">
+        <div class="option-header">
+          <h2>Option 1: Safe Option</h2>
+          <div class="philo">Uses existing Brain workspace conventions: sidebar + canvas/editor modes + right chat column + header status chips.</div>
+        </div>
+        <div class="canvas-shell">
+          <section class="panel" aria-label="vault sidebar">
+            <div class="panel-title">VAULT SIDEBAR</div>
+            <label for="q1" style="font-size:11px;color:var(--ink-3)">Search</label>
+            <input id="q1" type="text" placeholder="type to filter" value="" style="border:1px solid #cccccc;padding:4px;font-size:11px" />
+            <div class="tree">
+              <ul>
+                <li data-openfile="Neuroscience/Week1.md">Neuroscience/Week1.md</li>
+                <li data-openfile="Neuroscience/Week2.md">Neuroscience/Week2.md</li>
+                <li data-openfile="Kinesiology/Anatomy.md">Kinesiology/Anatomy.md</li>
+                <li data-openfile="PT Notes/Clinical Cases.md">PT Notes/Clinical Cases.md</li>
+              </ul>
+            </div>
+            <div class="meta">
+              <strong>Obsidian</strong>
+              <span>Connected ✓</span>
+              <span>Notes: 48</span>
+              <span>Pending drafts: 3</span>
+            </div>
+          </section>
+
+          <section class="panel" aria-label="main workspace">
+            <div class="panel-title">WORKSPACE</div>
+            <div class="tabs-inline" data-mode-group>
+              <button data-mode="canvas" class="active">CANVAS</button>
+              <button data-mode="edit">EDIT</button>
+              <button data-mode="chat">CHAT</button>
+              <button data-mode="graph">GRAPH</button>
+              <button data-mode="table">TABLE</button>
+              <button data-mode="anki">ANKI</button>
+            </div>
+            <div class="toolbar">
+              <button class="btn">Template</button>
+              <button class="btn">Save</button>
+              <button class="btn">Load</button>
+              <button class="btn">Export</button>
+              <button class="btn alt" id="toggle-chat-1">Hide Chat</button>
+            </div>
+            <div class="content-grid">
+              <div class="canvas-area">
+                <div class="canvas-dots">Canvas layer / Excalidraw placeholder<br/>Mode: CANVAS<br/>Template: Learning Loop</div>
+              </div>
+              <div class="meta" id="mode-meta-1">
+                <div>Mode chips: Graph=off / Chat=on / Unsaved changes: 2</div>
+                <div>Current file: <span id="current-file-1">Neuroscience/Week1.md</span></div>
+                <div>Action: Click node in graph to open file details</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel chat" id="chat-1" aria-label="chat side panel">
+            <div class="panel-title">CHAT SIDEPANEL</div>
+            <div class="chat-box">
+              <div class="chat-row">Tutor: What concept should I drill first?</div>
+              <div class="chat-row">You: Show action plan for Week 1</div>
+              <div class="chat-row">Tutor: Start with vestibular integration notes.</div>
+            </div>
+            <div style="padding: 6px; border-top: 1px solid var(--line);">
+              <input type="text" placeholder="Ask anything" style="width:100%;border:1px solid var(--line);padding:4px;font-size:11px" />
+            </div>
+          </section>
+        </div>
+        <div class="notes">
+          <div><span class="marker">①</span> Keep left file-tree as primary orientation for low-risk migration.</div>
+          <div><span class="marker">②</span> Preserve top mode tabs and right chat panel for consistency.</div>
+          <div><span class="marker">③</span> Reserve optional future hook to open notes on node click.</div>
+        </div>
+      </article>
+
+      <!-- Option 2: Progressive Disclosure -->
+      <article id="option2" class="option" role="tabpanel" aria-labelledby="option2-tab">
+        <div class="option-header">
+          <h2>Option 2: Progressive</h2>
+          <div class="philo">Progressive disclosure keeps the layout compact until users request advanced tools.</div>
+        </div>
+        <div class="canvas-shell">
+          <section class="panel" style="grid-column: 1 / span 3;">
+            <div class="panel-title">FOCUSED BRAIN WORKSPACE</div>
+            <div class="toolbar">
+              <button class="btn" id="toggle-sidebar-2">Show Vault Sidebar</button>
+              <button class="btn">Advanced: Edit</button>
+              <button class="btn">Advanced: Graph</button>
+              <button class="btn">Advanced: Ingest</button>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 280px;gap:8px;min-height:520px;" id="progressive-grid-2">
+              <div>
+                <div class="content-grid" style="grid-template-columns:1fr;">
+                  <div class="canvas-area">
+                    <div class="canvas-dots">Minimal starting view: one card + 2 quick actions.<br/>Modes stay hidden until advanced panel opens.</div>
+                  </div>
+                </div>
+              </div>
+              <aside class="panel" id="advanced-panel-2" style="display:none;">
+                <div class="panel-title">ADVANCED PANEL</div>
+                <label style="font-size:11px;color:var(--ink-3)"><input type="checkbox" id="edit-2" /> Include edit tools</label>
+                <label style="font-size:11px;color:var(--ink-3)"><input type="checkbox" id="graph-2" /> Include graph mode</label>
+                <label style="font-size:11px;color:var(--ink-3)"><input type="checkbox" id="anki-2" /> Include Anki queue</label>
+                <div class="meta" style="margin-top:auto;">
+                  <strong>State</strong>
+                  <span>Sidebar: hidden</span>
+                  <span>Advanced actions: off</span>
+                </div>
+                <button class="btn" id="open-2">Open Sidebar</button>
+              </aside>
+            </div>
+          </section>
+          <section class="panel" style="grid-column: 1 / span 3;">
+            <div class="panel-title">NOTE VIEW</div>
+            <div style="display:flex;gap:6px;align-items:flex-start;">
+              <textarea style="flex:1;border:1px solid #cccccc;height:130px;font-size:11px;padding:5px;background:#ffffff"># Week 1 Notes
+- Vestibular system overview
+- Cerebellar pathways
+- Practice recall cards</textarea>
+              <div class="meta" style="width:260px;">
+                <strong>Edit controls</strong>
+                <button class="btn" style="margin-top:4px;">Preview</button>
+                <button class="btn" style="margin-top:4px;">Fullscreen</button>
+                <button class="btn" style="margin-top:4px;">Save</button>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="notes">
+          <div><span class="marker">①</span> New users face low friction by default; power users expand modules.</div>
+          <div><span class="marker">②</span> Good fit for mobile width where all panels cannot be visible at once.</div>
+          <div><span class="marker">③</span> Requires microcopy for hidden states to avoid discoverability gaps.</div>
+        </div>
+      </article>
+
+      <!-- Option 3: Split -->
+      <article id="option3" class="option" role="tabpanel" aria-labelledby="option3-tab">
+        <div class="option-header">
+          <h2>Option 3: Split Workspace</h2>
+          <div class="philo">Parallel work flows by pinning Vault, Build, and Outcomes columns in one glance.</div>
+        </div>
+        <div class="canvas-shell split-expl">
+          <section class="panel" style="grid-column: 1 / span 3;">
+            <div class="panel-title">TRI-PANE MASTER DETAIL</div>
+            <div class="split-stack">
+              <section class="panel">
+                <div class="panel-title">VAULT</div>
+                <div class="tree" style="height: 260px;">
+                  <ul>
+                    <li data-openfile="Neuroscience/Week1.md">Neuroscience/Week1.md</li>
+                    <li data-openfile="Neuroscience/Week3.md">Neuroscience/Week3.md</li>
+                    <li data-openfile="Kinesiology/Muscle.md">Kinesiology/Muscle.md</li>
+                  </ul>
+                </div>
+              </section>
+              <section class="canvas-area">
+                <div class="panel-title">EDITOR/CANVAS</div>
+                <div class="toolbar">
+                  <button class="btn">Undo</button>
+                  <button class="btn">Redo</button>
+                  <button class="btn">Save</button>
+                  <button class="btn">Export PNG</button>
+                  <button class="btn">Fullscreen</button>
+                </div>
+                <div style="display:grid;gap:6px;height:290px;align-content:start;">
+                  <div style="border:1px dashed var(--line);padding:6px;min-height:130px;background:#eeeeee;">Canvas stage: nodes, arrows, and annotations.</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <button class="btn">Import Mermaid</button>
+                    <button class="btn">Template Picker</button>
+                    <button class="btn">Export Mermaid</button>
+                    <button class="btn">Study Actions</button>
+                  </div>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-title">OUTCOMES</div>
+                <div class="chat-box" style="min-height:260px;">
+                  <div class="chat-row">Pending Anki: 5</div>
+                  <div class="chat-row">Drafts selected: 2</div>
+                  <div class="chat-row">Last session: 14m ago</div>
+                  <div class="chat-row">CSV ingest: ready</div>
+                  <div class="chat-row">Graph mode: vault</div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="panel" style="grid-column: 1 / span 3;">
+            <div class="panel-title">MODE ACTIONS</div>
+            <div class="tabs-inline">
+              <button class="btn active">Mode: CANVAS</button>
+              <button class="btn">Mode: GRAPH</button>
+              <button class="btn">Mode: EDIT</button>
+              <button class="btn">Mode: TABLE</button>
+              <button class="btn">Mode: ANKI</button>
+            </div>
+            <div class="state-line">
+              <span>Status: 14 nodes / 11 edges / Unsaved</span>
+              <span>Selection: Week1 → Week3</span>
+            </div>
+          </section>
+        </div>
+        <div class="notes">
+          <div><span class="marker">①</span> Best for heavy cognitive workflows: all critical areas visible.</div>
+          <div><span class="marker">②</span> Supports “build then validate” in same screen, useful for graph + note editing cycles.</div>
+          <div><span class="marker">③</span> Uses dense layout; add responsive collapse below 1100px.</div>
+        </div>
+      </article>
+
+      <!-- Option 4: Command -->
+      <article id="option4" class="option" role="tabpanel" aria-labelledby="option4-tab">
+        <div class="option-header">
+          <h2>Option 4: Command</h2>
+          <div class="philo">Command-first structure: users trigger actions by search palette and context cards, reducing tab hunting.</div>
+        </div>
+        <div class="canvas-shell">
+          <section class="panel" style="grid-column:1 / span 3;">
+            <div class="panel-title">COMMAND LAYER</div>
+            <div class="toolbar" style="align-items:center;">
+              <input type="text" id="cmd" placeholder="Type command (save graph / new note / import mermaid)" style="flex:1;border:1px solid var(--line);padding:5px;font-size:11px" />
+              <button class="btn" id="run-cmd">Run</button>
+              <button class="btn" id="cmd-history">History</button>
+            </div>
+            <div class="state-line" style="margin-bottom:8px;">
+              <span>Quick actions shown: 7 of 20</span>
+              <span>Active context: CANVAS</span>
+            </div>
+            <div class="list-stack">
+              <section class="stack">
+                <div class="panel-title">CONTEXT SHORTCUTS</div>
+                <button class="btn">#open week1</button>
+                <button class="btn">#toggle chat</button>
+                <button class="btn">#export png</button>
+                <button class="btn">#save</button>
+              </section>
+              <section class="stack">
+                <div class="panel-title">LAST COMMAND RESULTS</div>
+                <div id="command-preview" style="border:1px solid var(--line);background:#ffffff;height:140px;padding:6px;font-size:11px;color:#666666;overflow:auto;">Loaded: Week1.md · Graph nodes: 7 · Graph mode: mindmap</div>
+                <button class="btn">Pin result as draft</button>
+              </section>
+              <section class="stack">
+                <div class="panel-title">MODE QUICK SWITCH</div>
+                <button class="btn">Canvas</button>
+                <button class="btn">Edit</button>
+                <button class="btn">Graph</button>
+                <button class="btn">Chat</button>
+                <button class="btn">Anki</button>
+              </section>
+            </div>
+          </section>
+
+          <section class="panel" style="grid-column:1 / span 3;">
+            <div class="panel-title">CANVAS + PREVIEW</div>
+            <div class="content-grid" style="grid-template-columns:1fr 1fr;">
+              <div class="canvas-area">
+                <div class="canvas-dots">Command output updates this panel live.<br/>Example: import_mermaid command runs here.</div>
+              </div>
+              <div class="meta">
+                <strong>Command log</strong>
+                <div id="cmd-log">1. /save — completed</div>
+                <div>2. /import mermaid — parsed 4 nodes</div>
+                <div>3. /anki draft create — 2 new items</div>
+                <div>4. /open graph vault — loaded</div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="notes">
+          <div><span class="marker">①</span> Reduces click count for expert users while preserving discoverability via command labels.</div>
+          <div><span class="marker">②</span> Works well when power users reuse workflows like import, save, export, sync.</div>
+          <div><span class="marker">③</span> Needs onboarding hint for users unfamiliar with command patterns.</div>
+        </div>
+      </article>
+
+      <!-- Summary -->
+      <article id="summary" class="option" role="tabpanel" aria-labelledby="summary-tab">
+        <div class="summary">
+          <h2 style="margin: 0; font-size: 16px;">Summary</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Option</th>
+                <th>Approach</th>
+                <th>Overall UX (1–5)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Option 1 — Safe</td>
+                <td>Existing sidebar/canvas/chat pattern, minimal risk.</td>
+                <td>5</td>
+              </tr>
+              <tr>
+                <td>Option 2 — Progressive</td>
+                <td>Reveal advanced controls only when requested, useful for clutter control.</td>
+                <td>4</td>
+              </tr>
+              <tr>
+                <td>Option 3 — Split</td>
+                <td>Master-detail density with three concurrent regions for content, output, and outcome.</td>
+                <td>4</td>
+              </tr>
+              <tr>
+                <td>Option 4 — Command</td>
+                <td>Command-first interactions for expert workflows and speed.</td>
+                <td>3</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="recommendation"><strong>Recommendation:</strong> Option 3 is recommended for day-to-day use because it preserves the most important Brain workflows in one view while still keeping a focused, predictable left rail and right outcomes panel, which improves continuity across canvas edits and study action tracking.</div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const optionButtons = document.querySelectorAll('[data-option]');
+    const optionPanels = {
+      option1: document.getElementById('option1'),
+      option2: document.getElementById('option2'),
+      option3: document.getElementById('option3'),
+      option4: document.getElementById('option4'),
+      summary: document.getElementById('summary'),
+    };
+
+    function setOption(id) {
+      optionButtons.forEach((b) => {
+        const isActive = b.getAttribute('data-option') === id;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-selected', String(isActive));
+      });
+      Object.entries(optionPanels).forEach(([k, panel]) => {
+        panel.classList.toggle('active', k === id);
+      });
+      const activeTitle = {
+        option1: 'Option 1',
+        option2: 'Option 2',
+        option3: 'Option 3',
+        option4: 'Option 4',
+        summary: 'Summary',
+      };
+      document.title = `Brain Page Wireframes — ${activeTitle[id]}`;
+    }
+
+    optionButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setOption(button.dataset.option);
+      });
+    });
+
+    // Option 1 interactions
+    const chatToggle1 = document.getElementById('toggle-chat-1');
+    const chat1 = document.getElementById('chat-1');
+    const currentFile1 = document.getElementById('current-file-1');
+    const modeButtons1 = document.querySelectorAll('#option1 [data-mode]');
+    const modeLabel1 = document.getElementById('mode-meta-1');
+    let chatVisible = true;
+
+    chatToggle1.addEventListener('click', () => {
+      chatVisible = !chatVisible;
+      chat1.classList.toggle('hidden', !chatVisible);
+      chatToggle1.textContent = chatVisible ? 'Hide Chat' : 'Show Chat';
+    });
+
+    modeButtons1.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        modeButtons1.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const mode = btn.dataset.mode;
+        modeLabel1.querySelector('div').textContent = `Mode chips: ${mode.toUpperCase()} | Chat=${chatVisible ? 'on' : 'off'} | Unsaved changes: 2`;
+      });
+    });
+
+    const tree1 = document.querySelector('#option1 .tree');
+    tree1.addEventListener('click', (event) => {
+      const target = event.target.closest('li[data-openfile]');
+      if (!target) return;
+      tree1.querySelectorAll('li.active').forEach((n) => n.classList.remove('active'));
+      target.classList.add('active');
+      currentFile1.textContent = target.dataset.openfile;
+    });
+
+    // Option 2 interactions
+    const adv2 = document.getElementById('advanced-panel-2');
+    const toggleSidebar2 = document.getElementById('toggle-sidebar-2');
+    let advOpen = false;
+
+    function refreshAdvancedState() {
+      const state = document.querySelector('#option2 .meta');
+      if (!state) return;
+      const labels = state.querySelectorAll('span');
+      const sidebar = labels[0];
+      const actions = labels[1];
+      sidebar.textContent = `Sidebar: ${advOpen ? 'visible' : 'hidden'}`;
+      const e = document.getElementById('edit-2').checked;
+      const g = document.getElementById('graph-2').checked;
+      const a = document.getElementById('anki-2').checked;
+      const enabled = [];
+      if (e) enabled.push('edit');
+      if (g) enabled.push('graph');
+      if (a) enabled.push('anki');
+      actions.textContent = `Advanced actions: ${enabled.length ? enabled.join(', ') : 'off'}`;
+    }
+
+    function toggleAdvPanel() {
+      advOpen = !advOpen;
+      adv2.style.display = advOpen ? 'flex' : 'none';
+      toggleSidebar2.textContent = advOpen ? 'Hide Vault Sidebar' : 'Show Vault Sidebar';
+      refreshAdvancedState();
+    }
+
+    document.getElementById('open-2').addEventListener('click', toggleAdvPanel);
+    toggleSidebar2.addEventListener('click', toggleAdvPanel);
+    document.getElementById('edit-2').addEventListener('change', refreshAdvancedState);
+    document.getElementById('graph-2').addEventListener('change', refreshAdvancedState);
+    document.getElementById('anki-2').addEventListener('change', refreshAdvancedState);
+    refreshAdvancedState();
+
+    // Option 3 basic state
+    document.querySelectorAll('#option3 .tree li[data-openfile]').forEach((item) => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('#option3 .tree li[data-openfile].active').forEach((n) => n.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+
+    // Option 4 command run simulation
+    const cmdInput = document.getElementById('cmd');
+    const runCmdBtn = document.getElementById('run-cmd');
+    const cmdLog = document.getElementById('cmd-log');
+    const cmdHistoryBtn = document.getElementById('cmd-history');
+    const commandPreview = document.getElementById('command-preview');
+
+    runCmdBtn.addEventListener('click', () => {
+      const val = cmdInput.value.trim();
+      if (!val) return;
+      const entry = document.createElement('div');
+      entry.textContent = `${new Date().toLocaleTimeString()}: ${val}`;
+      cmdLog.appendChild(entry);
+      cmdInput.value = '';
+      commandPreview.textContent = `Executed: ${val}`;
+    });
+
+    cmdHistoryBtn.addEventListener('click', () => {
+      cmdInput.value = '/open /graph vault';
+      const preview = commandPreview.textContent;
+      commandPreview.textContent = `History: ${preview} | last: /open /graph vault`;
+    });
+
+    // Safety: support key switch for quick testing
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '1' && e.altKey) setOption('option1');
+      if (e.key === '2' && e.altKey) setOption('option2');
+      if (e.key === '3' && e.altKey) setOption('option3');
+      if (e.key === '4' && e.altKey) setOption('option4');
+      if (e.key === '5' && e.altKey) setOption('summary');
+    });
+  </script>
+</body>
+</html>

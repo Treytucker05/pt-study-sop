@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
@@ -109,8 +109,34 @@ export function TutorWizard({
   recentSessions,
   onResumeSession,
 }: TutorWizardProps) {
+  const wizardProgressKey = "tutor.wizard.progress.v1";
   const [step, setStep] = useState(0);
   const [chainMode, setChainMode] = useState<ChainMode>("auto");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(wizardProgressKey);
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (typeof parsed?.step === "number") {
+        const nextStep = Math.max(0, Math.min(2, parsed.step));
+        setStep(nextStep);
+      }
+      if (parsed?.chainMode === "template" || parsed?.chainMode === "custom" || parsed?.chainMode === "auto") {
+        setChainMode(parsed.chainMode);
+      }
+    } catch (error) {
+      void error;
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(wizardProgressKey, JSON.stringify({ step, chainMode }));
+    } catch (error) {
+      void error;
+    }
+  }, [step, chainMode]);
 
   // Fetch content sources (courses, openrouter status)
   const { data: sources } = useQuery<TutorContentSources>({
@@ -121,7 +147,7 @@ export function TutorWizard({
   // Fetch template chains
   const { data: templateChains = [] } = useQuery<TutorTemplateChain[]>({
     queryKey: ["tutor-chains-templates"],
-    queryFn: () => api.tutor.listChains({ template_only: true }),
+    queryFn: () => api.tutor.getTemplateChains(),
   });
 
   const courses = sources?.courses ?? [];

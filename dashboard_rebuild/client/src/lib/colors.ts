@@ -59,6 +59,49 @@ export const PEIRRO_DEFAULT = {
   bar: "bg-primary",
 };
 
+export const PERO_COLORS: Record<
+  string,
+  { border: string; bg: string; badge: string; bar: string }
+> = {
+  priming: {
+    border: "border-yellow-500 bg-yellow-500/10",
+    bg: "bg-yellow-500/10",
+    badge: "bg-yellow-500/20 text-yellow-400",
+    bar: "bg-yellow-500",
+  },
+  encoding: {
+    border: "border-purple-500 bg-purple-500/10",
+    bg: "bg-purple-500/10",
+    badge: "bg-purple-500/20 text-purple-400",
+    bar: "bg-purple-500",
+  },
+  reference: {
+    border: "border-cyan-500 bg-cyan-500/10",
+    bg: "bg-cyan-500/10",
+    badge: "bg-cyan-500/20 text-cyan-400",
+    bar: "bg-cyan-500",
+  },
+  retrieval: {
+    border: "border-red-500 bg-red-500/10",
+    bg: "bg-red-500/10",
+    badge: "bg-red-500/20 text-red-400",
+    bar: "bg-red-500",
+  },
+  overlearning: {
+    border: "border-gray-500 bg-gray-500/10",
+    bg: "bg-gray-500/10",
+    badge: "bg-gray-500/20 text-gray-400",
+    bar: "bg-gray-500",
+  },
+};
+
+export const PERO_DEFAULT = {
+  border: "border-secondary bg-secondary/10",
+  bg: "bg-secondary/10",
+  badge: "bg-secondary/20 text-muted-foreground",
+  bar: "bg-primary",
+};
+
 // ---------------------------------------------------------------------------
 // Energy cost indicator colors
 // ---------------------------------------------------------------------------
