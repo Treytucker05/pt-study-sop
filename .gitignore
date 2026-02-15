@@ -53,6 +53,8 @@ scholar/outputs/
 # Logs
 *.log
 /logs/
+/exports/
+/worktrees/
 
 # Temp
 tmpclaude-*
