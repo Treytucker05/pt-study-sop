@@ -14,7 +14,6 @@ import {
   X,
   FilePlus,
   FileText,
-  ExternalLink,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { TEMPLATES, type LayoutTemplate } from "./excalidraw-templates";
@@ -34,7 +33,6 @@ export interface ExcalidrawCanvasHandle {
 
 interface ExcalidrawCanvasProps {
   workspace?: BrainWorkspace;
-  selectedFolder?: string;
   onChange?: (
     elements: readonly ExcalidrawElement[],
     appState: AppState,
@@ -46,11 +44,9 @@ interface ExcalidrawCanvasProps {
 export const ExcalidrawCanvas = forwardRef<
   ExcalidrawCanvasHandle,
   ExcalidrawCanvasProps
->(function ExcalidrawCanvas({ workspace, selectedFolder, onChange }, ref) {
+>(function ExcalidrawCanvas({ workspace, onChange }, ref) {
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
-  const canvasRoot = selectedFolder ? `${selectedFolder}/Brain Canvas` : "Brain Canvas";
-  const defaultCanvasPath = `${canvasRoot}/Untitled.excalidraw`;
 
   /* ── toolbar state ── */
   const [showTemplates, setShowTemplates] = useState(false);
@@ -62,15 +58,9 @@ export const ExcalidrawCanvas = forwardRef<
 
   /* ── file picker state ── */
   const [showFilePicker, setShowFilePicker] = useState<"save" | "load" | null>(null);
-  const [filePickerPath, setFilePickerPath] = useState(defaultCanvasPath);
+  const [filePickerPath, setFilePickerPath] = useState("Brain Canvas/Untitled.excalidraw");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
-
-  useEffect(() => {
-    if (!currentFilePath && !showFilePicker) {
-      setFilePickerPath(defaultCanvasPath);
-    }
-  }, [defaultCanvasPath, currentFilePath, showFilePicker]);
 
   /* show template picker on first load when canvas is empty */
   useEffect(() => {
@@ -152,7 +142,7 @@ export const ExcalidrawCanvas = forwardRef<
   const fetchVaultFiles = useCallback(async () => {
     setLoadingFiles(true);
     try {
-      const result = await api.obsidian.getFiles(canvasRoot);
+      const result = await api.obsidian.getFiles("Brain Canvas");
       if (result.files) {
         const excalidrawFiles = (result.files as string[]).filter(
           (f) => f.endsWith(".excalidraw") || f.endsWith(".excalidraw.json"),
@@ -164,22 +154,22 @@ export const ExcalidrawCanvas = forwardRef<
     } finally {
       setLoadingFiles(false);
     }
-  }, [canvasRoot]);
+  }, []);
 
   const openSavePicker = useCallback(() => {
-    setFilePickerPath(currentFilePath || defaultCanvasPath);
+    setFilePickerPath(currentFilePath || "Brain Canvas/Untitled.excalidraw");
     setShowFilePicker("save");
-  }, [currentFilePath, defaultCanvasPath]);
+  }, [currentFilePath]);
 
   const openLoadPicker = useCallback(() => {
     fetchVaultFiles();
-    setFilePickerPath(currentFilePath || defaultCanvasPath);
+    setFilePickerPath(currentFilePath || "Brain Canvas/Untitled.excalidraw");
     setShowFilePicker("load");
-  }, [currentFilePath, defaultCanvasPath, fetchVaultFiles]);
+  }, [currentFilePath, fetchVaultFiles]);
 
   const handleSave = useCallback(async (path?: string) => {
     if (!excalidrawAPI) return;
-    const savePath = path || filePickerPath || defaultCanvasPath;
+    const savePath = path || filePickerPath || "Brain Canvas/Untitled.excalidraw";
     setIsSaving(true);
     try {
       const elements = excalidrawAPI.getSceneElements();
@@ -211,11 +201,11 @@ export const ExcalidrawCanvas = forwardRef<
     } finally {
       setIsSaving(false);
     }
-  }, [excalidrawAPI, filePickerPath, defaultCanvasPath]);
+  }, [excalidrawAPI, filePickerPath]);
 
   const handleLoad = useCallback(async (path?: string) => {
     if (!excalidrawAPI) return;
-    const loadPath = path || filePickerPath || defaultCanvasPath;
+    const loadPath = path || filePickerPath || "Brain Canvas/Untitled.excalidraw";
     try {
       const result = await api.obsidian.getFile(loadPath);
       if (result.success && result.content) {
@@ -233,15 +223,7 @@ export const ExcalidrawCanvas = forwardRef<
     } catch (err) {
       console.error("Failed to load canvas:", err);
     }
-  }, [excalidrawAPI, filePickerPath, defaultCanvasPath]);
-
-  const handleOpenInObsidian = useCallback(() => {
-    const targetPath = currentFilePath || filePickerPath;
-    if (!targetPath) return;
-    const vaultName = workspace?.obsidianConfig?.vaultName || "Treys School";
-    const uri = `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(targetPath)}`;
-    window.open(uri, "_blank");
-  }, [currentFilePath, filePickerPath, workspace]);
+  }, [excalidrawAPI, filePickerPath]);
 
   /* ── export PNG ── */
   const handleExport = useCallback(async () => {
@@ -334,16 +316,6 @@ export const ExcalidrawCanvas = forwardRef<
         >
           <FolderOpen className="w-3.5 h-3.5" />
           Load
-        </button>
-
-        <button
-          onClick={handleOpenInObsidian}
-          disabled={!currentFilePath && !filePickerPath}
-          className="px-2 h-6 font-terminal text-[13px] bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none disabled:opacity-50"
-          title="Open current canvas in Obsidian"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          Obsidian
         </button>
 
         <button

@@ -69,12 +69,6 @@ export const PERO_COLORS: Record<
     badge: "bg-yellow-500/20 text-yellow-400",
     bar: "bg-yellow-500",
   },
-  calibrate: {
-    border: "border-amber-500 bg-amber-500/10",
-    bg: "bg-amber-500/10",
-    badge: "bg-amber-500/20 text-amber-300",
-    bar: "bg-amber-500",
-  },
   encoding: {
     border: "border-purple-500 bg-purple-500/10",
     bg: "bg-purple-500/10",

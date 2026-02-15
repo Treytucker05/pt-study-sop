@@ -10,7 +10,6 @@ import type { GoogleTask } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type AcademicDeadline, type InsertAcademicDeadline } from "@/lib/api";
 import { PlannerKanban } from "@/components/PlannerKanban";
-import { SessionEvidence } from "@/components/SessionEvidence";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -996,8 +995,6 @@ export default function Dashboard() {
         )}
 
         {/* ═══ Zone 3 — Planning ═══ */}
-
-        <SessionEvidence />
 
         <PlannerKanban tasks={plannerQueue} />
 

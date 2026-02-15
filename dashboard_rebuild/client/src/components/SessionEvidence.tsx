@@ -119,9 +119,6 @@ export function SessionEvidence() {
   });
 
   const queryClient = useQueryClient();
-  const visibleSessions = sessions.filter((s: any) => courseFilter === "all" || String(s.courseId) === courseFilter);
-  const visibleSessionIds = visibleSessions.map((s: Session) => s.id);
-  const selectedVisibleCount = visibleSessionIds.filter((id: number) => selectedSessions.has(id)).length;
 
   const deleteSessionsMutation = useMutation({
     mutationFn: (ids: number[]) => api.sessions.deleteMany(ids),
@@ -152,30 +149,16 @@ export function SessionEvidence() {
   };
 
   const toggleAllSessions = () => {
-    if (selectedVisibleCount === visibleSessionIds.length && visibleSessionIds.length > 0) {
-      setSelectedSessions(prev => {
-        const next = new Set(prev);
-        visibleSessionIds.forEach((id: number) => next.delete(id));
-        return next;
-      });
+    if (selectedSessions.size === sessions.length) {
+      setSelectedSessions(new Set());
     } else {
-      setSelectedSessions(prev => {
-        const next = new Set(prev);
-        visibleSessionIds.forEach((id: number) => next.add(id));
-        return next;
-      });
+      setSelectedSessions(new Set(sessions.map((s: Session) => s.id)));
     }
   };
 
   const handleDeleteSelected = () => {
     if (selectedSessions.size === 0) return;
     setSessionsToDelete(Array.from(selectedSessions));
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteAllVisible = () => {
-    if (visibleSessionIds.length === 0) return;
-    setSessionsToDelete(visibleSessionIds);
     setDeleteDialogOpen(true);
   };
 
@@ -350,7 +333,7 @@ export function SessionEvidence() {
               <div className="text-center py-8">
                 <p className="font-terminal text-xs text-muted-foreground">Loading sessions...</p>
               </div>
-            ) : visibleSessions.length === 0 ? (
+            ) : sessions.length === 0 ? (
               <div className="text-center py-8">
                 <p className="font-terminal text-xs text-muted-foreground">No sessions found</p>
               </div>
@@ -361,7 +344,7 @@ export function SessionEvidence() {
                     <TableRow className="border-secondary/30">
                       <TableHead className="w-12">
                         <Checkbox
-                          checked={selectedVisibleCount === visibleSessionIds.length && visibleSessionIds.length > 0}
+                          checked={selectedSessions.size === sessions.length && sessions.length > 0}
                           onCheckedChange={toggleAllSessions}
                           className="border-secondary"
                         />
@@ -376,7 +359,7 @@ export function SessionEvidence() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {visibleSessions.map((session: any) => (
+                    {sessions.filter((s: any) => courseFilter === "all" || String(s.courseId) === courseFilter).map((session: any) => (
                       <TableRow key={session.id} className="border-secondary/30 hover:bg-secondary/10">
                         <TableCell>
                           <Checkbox
@@ -428,27 +411,16 @@ export function SessionEvidence() {
               </ScrollArea>
             )}
 
-            {visibleSessions.length > 0 && (
+            {selectedSessions.size > 0 && (
               <div className="flex gap-2 pt-4 border-t border-secondary/30">
                 <Button
                   size="sm"
-                  variant="outline"
-                  className="font-terminal text-xs border-red-500/60 text-red-400 hover:bg-red-500/10"
-                  onClick={handleDeleteAllVisible}
+                  className="flex-1 font-terminal text-xs bg-red-600 hover:bg-red-700"
+                  onClick={handleDeleteSelected}
                 >
                   <Trash2 className="w-3 h-3 mr-1" />
-                  Delete All Visible ({visibleSessions.length})
+                  Delete Selected ({selectedSessions.size})
                 </Button>
-                {selectedSessions.size > 0 && (
-                  <Button
-                    size="sm"
-                    className="flex-1 font-terminal text-xs bg-red-600 hover:bg-red-700"
-                    onClick={handleDeleteSelected}
-                  >
-                    <Trash2 className="w-3 h-3 mr-1" />
-                    Delete Selected ({selectedSessions.size})
-                  </Button>
-                )}
               </div>
             )}
           </CardContent>

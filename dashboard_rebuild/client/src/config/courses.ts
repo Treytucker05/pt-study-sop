@@ -10,11 +10,11 @@ export interface Course {
 }
 
 export const COURSE_FOLDERS: Course[] = [
-  { id: "ebp", name: "EBP", path: "Evidence Based Practice" },
-  { id: "exphys", name: "ExPhys", path: "Exercise Physiology" },
-  { id: "ms1", name: "MS1", path: "Movement Science 1" },
-  { id: "neuro", name: "Neuro", path: "Neuroscience" },
-  { id: "ti", name: "TI", path: "Therapeutic Intervention" },
+  { id: "ebp", name: "EBP", path: "School/Evidence Based Practice" },
+  { id: "exphys", name: "ExPhys", path: "School/Exercise Physiology" },
+  { id: "ms1", name: "MS1", path: "School/Movement Science 1" },
+  { id: "neuro", name: "Neuro", path: "School/Neuroscience" },
+  { id: "ti", name: "TI", path: "School/Therapeutic Intervention" },
 ];
 
 /**

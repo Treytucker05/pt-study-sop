@@ -152,7 +152,7 @@ export function MainContent({ workspace }: MainContentProps) {
               />
             }
           >
-            <ExcalidrawCanvas workspace={workspace} selectedFolder={workspace.currentFolder} />
+            <ExcalidrawCanvas workspace={workspace} />
           </ErrorBoundary>
           </div>
         )}
