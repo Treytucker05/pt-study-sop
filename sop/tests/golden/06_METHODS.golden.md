@@ -135,9 +135,9 @@ Each method block represents a single study activity.
 **Note:** Retrieval (Free Recall) comes before generative encoding (KWIK Hook) per Potts & Shanks (2022) — lower cognitive load, higher gains.
 
 #### 2. Review Sprint
-**Blocks:** Prediction Questions → Sprint Quiz → Cross-Topic Link → Exit Ticket
+**Blocks:** Prediction Questions → Sprint Quiz → Clinical Application → Exit Ticket
 **Context:** review, medium energy, 25 min
-**Use for:** Fast review loop. Prepare → Retrieve → Interrogate → Overlearn. Skips encode for known material.
+**Use for:** Fast review loop. Prepare → Retrieve → Interrogate (application) → Overlearn. Skips encode for known material.
 
 #### 3. Quick Drill
 **Blocks:** Brain Dump → Sprint Quiz → Exit Ticket
@@ -150,9 +150,9 @@ Each method block represents a single study activity.
 **Use for:** Anatomy-focused chain with drawing. Prepare → Encode (Draw-Label) → Retrieve → Overlearn.
 
 #### 5. Low Energy
-**Blocks:** Brain Dump → AI Skeleton Review → Exit Ticket
+**Blocks:** Brain Dump → AI Skeleton Review → Fill-in-Blank → Exit Ticket
 **Context:** low energy, 15 min
-**Use for:** Low-effort chain for tired days. Prepare → Overlearn. Maintain streak without burning out.
+**Use for:** Low-effort chain for tired days. Prepare → Reference → Retrieve → Overlearn. Maintain streak without burning out.
 
 #### 6. Exam Prep
 **Blocks:** Prediction Questions → Mixed Practice → Side-by-Side Comparison → Error Autopsy → Anki Card Draft
