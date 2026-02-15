@@ -1101,7 +1101,7 @@ def load_from_yaml() -> dict | None:
         print("[WARN] PyYAML not installed — falling back to hardcoded data")
         return None
 
-    # Build name->artifact_type lookup from hardcoded dicts (YAML doesn't carry this)
+    # Build name->artifact_type lookup from hardcoded dicts (fallback for older YAML)
     _artifact_type_lookup = {
         b["name"]: b.get("artifact_type", "") for b in METHOD_BLOCKS
     }
@@ -1131,7 +1131,8 @@ def load_from_yaml() -> dict | None:
                     "best_stage": data.get("best_stage"),
                     "tags": data.get("tags", []),
                     "evidence": evidence_str,
-                    "artifact_type": _artifact_type_lookup.get(data["name"], ""),
+                    "artifact_type": data.get("artifact_type")
+                    or _artifact_type_lookup.get(data["name"], ""),
                 }
             )
 
