@@ -481,8 +481,11 @@ export const api = {
     }),
     getFindings: () => request<ScholarFinding[]>("/scholar/findings"),
     getTutorAudit: () => request<TutorAuditItem[]>("/scholar/tutor-audit"),
-    getClusters: () => Promise.resolve({ clusters: [] } as ScholarClustersResponse),
-    runClustering: () => Promise.resolve({ clusters: [] } as ScholarClustersResponse),
+    getClusters: () => request<ScholarClustersResponse>("/scholar/clusters"),
+    runClustering: () => request<ScholarClustersResponse>("/scholar/clusters", { method: "POST" }),
+    run: () => request<ScholarRunResult>("/scholar/run", { method: "POST" }),
+    runStatus: () => request<ScholarRunStatus>("/scholar/run/status"),
+    runHistory: (limit = 10) => request<ScholarRunHistoryItem[]>(`/scholar/run/history?limit=${limit}`),
   },
 
   anki: {
@@ -675,6 +678,10 @@ export const api = {
       }),
     getMethodBlocks: () =>
       request<MethodBlock[]>("/methods"),
+    configCheck: () =>
+      request<TutorConfigCheck>("/tutor/config/check"),
+    embedStatus: () =>
+      request<TutorEmbedStatus>("/tutor/embed/status"),
     createCustomChain: (blockIds: number[], name?: string) =>
       request<{ id: number; name: string }>("/chains", {
         method: "POST",
@@ -760,6 +767,32 @@ export interface ScholarCluster {
 
 export interface ScholarClustersResponse {
   clusters: ScholarCluster[];
+}
+
+export interface ScholarRunResult {
+  ok: boolean;
+  run_id?: string;
+  error?: string;
+}
+
+export interface ScholarRunStatus {
+  running: boolean;
+  run_id?: string;
+  phase?: string;
+  progress?: number;
+  error?: string;
+  started_at?: string;
+  finished_at?: string;
+}
+
+export interface ScholarRunHistoryItem {
+  id: number;
+  run_id: string;
+  status: string;
+  started_at: string;
+  finished_at?: string;
+  duration_seconds?: number;
+  summary?: string;
 }
 
 export interface InsertAcademicDeadline {
@@ -952,6 +985,7 @@ export interface MethodBlock {
   best_stage: string | null;
   tags: string[];
   evidence: string | null;
+  facilitation_prompt?: string | null;
   created_at: string;
 }
 
@@ -1075,7 +1109,7 @@ export interface TutorTemplateChain {
   id: number;
   name: string;
   description: string;
-  blocks: { id: number; name: string; category: string; duration: number }[];
+  blocks: { id: number; name: string; category: string; description?: string; duration: number; facilitation_prompt?: string }[];
   context_tags: string;
 }
 
@@ -1086,12 +1120,16 @@ export interface TutorMethodBlock {
   description: string | null;
   default_duration_min: number;
   energy_cost: string;
+  facilitation_prompt?: string | null;
 }
 
 export interface TutorBlockProgress {
   block_index: number;
   block_name: string;
   block_description: string;
+  block_category?: string;
+  block_duration?: number;
+  facilitation_prompt?: string;
   is_last: boolean;
   complete?: boolean;
 }
@@ -1137,7 +1175,7 @@ export interface TutorSessionWithTurns extends TutorSession {
   summary_text: string | null;
   ended_at: string | null;
   turns: TutorTurn[];
-  chain_blocks?: { id: number; name: string; category: string; description: string; default_duration_min: number }[];
+  chain_blocks?: { id: number; name: string; category: string; description: string; default_duration_min: number; facilitation_prompt?: string; evidence?: string }[];
 }
 
 export interface TutorSessionSummary {
@@ -1303,4 +1341,19 @@ export interface TutorSSEChunk {
   artifacts?: unknown[];
   summary?: string;
   model?: string;
+}
+
+export interface TutorConfigCheck {
+  ok: boolean;
+  codex_available: boolean;
+  openrouter_configured: boolean;
+  chatgpt_streaming: boolean;
+  issues: string[];
+}
+
+export interface TutorEmbedStatus {
+  materials: { id: number; title: string; source_path: string; chunk_count: number; embedded: number }[];
+  total: number;
+  embedded: number;
+  pending: number;
 }

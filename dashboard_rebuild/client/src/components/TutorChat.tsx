@@ -9,11 +9,15 @@ import {
   Map,
   Square,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Check,
+  Clock,
+  ListChecks,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { TutorCitation, TutorSSEChunk } from "@/lib/api";
+import { CATEGORY_COLORS, type TutorCitation, type TutorSSEChunk } from "@/lib/api";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -23,11 +27,13 @@ interface ChatMessage {
   isStreaming?: boolean;
 }
 
-interface ChainBlock {
+export interface ChainBlock {
   id: number;
   name: string;
   category: string;
+  description?: string;
   duration: number;
+  facilitation_prompt?: string;
 }
 
 interface TutorChatProps {
@@ -38,6 +44,19 @@ interface TutorChatProps {
   chainBlocks?: ChainBlock[];
   currentBlockIndex?: number;
   onAdvanceBlock?: () => void;
+}
+
+/** Parse facilitation prompt into structured steps */
+function parseFacilitationSteps(prompt: string | undefined | null): string[] {
+  if (!prompt) return [];
+  // Split by numbered lines (1. 2. 3.) or bullet points (- *)
+  const lines = prompt.split(/\n/).filter((l) => l.trim());
+  const steps: string[] = [];
+  for (const line of lines) {
+    const cleaned = line.replace(/^\s*(?:\d+[.)]\s*|[-*]\s+)/, "").trim();
+    if (cleaned) steps.push(cleaned);
+  }
+  return steps;
 }
 
 export function TutorChat({
@@ -275,53 +294,139 @@ export function TutorChat({
     );
   }
 
+  const [guidanceOpen, setGuidanceOpen] = useState(true);
+  const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
+  const currentBlock = hasChain && !isChainComplete ? chainBlocks[currentBlockIndex] : null;
+  const facilitationSteps = parseFacilitationSteps(currentBlock?.facilitation_prompt);
+
   return (
     <div className="flex flex-col h-full">
-      {/* Block progress bar */}
+      {/* Chain Progress Stepper */}
       {hasChain && (
-        <div className="shrink-0 px-3 py-2 border-b-2 border-primary/30 bg-black/40">
-          <div className="flex items-center gap-1 overflow-x-auto">
+        <div className="shrink-0 border-b-2 border-primary/30 bg-black/40">
+          {/* Horizontal stepper */}
+          <div className="px-3 py-2 flex items-center gap-1 overflow-x-auto">
             {chainBlocks.map((block, i) => {
               const isCompleted = i < currentBlockIndex;
               const isCurrent = i === currentBlockIndex && !isChainComplete;
+              const catColor = CATEGORY_COLORS[block.category as keyof typeof CATEGORY_COLORS] || "#888";
               return (
                 <div key={block.id} className="flex items-center shrink-0">
                   {i > 0 && (
                     <ChevronRight className="w-4 h-4 text-muted-foreground/40 mx-0.5" />
                   )}
                   <div
-                    className={`px-2 py-1 border-2 text-base font-terminal flex items-center gap-1 ${
-                      isCurrent
-                        ? "border-primary bg-primary/20 text-primary"
-                        : isCompleted
-                          ? "border-primary/30 bg-primary/5 text-muted-foreground/70 line-through"
-                          : "border-primary/20 text-muted-foreground/50"
-                    }`}
+                    className="relative"
+                    onMouseEnter={() => setHoveredBlock(i)}
+                    onMouseLeave={() => setHoveredBlock(null)}
                   >
-                    {isCompleted && <Check className="w-4 h-4" />}
-                    {block.name}
+                    <div
+                      className={`px-2 py-1 border-2 text-base font-terminal flex items-center gap-1 cursor-default transition-colors ${
+                        isCurrent
+                          ? "border-primary bg-primary/20 text-primary"
+                          : isCompleted
+                            ? "border-primary/30 bg-primary/5 text-muted-foreground/70 line-through"
+                            : "border-primary/20 text-muted-foreground/50"
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <Check className="w-4 h-4 text-green-400" />
+                      ) : isCurrent ? (
+                        <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      ) : null}
+                      <span className="text-sm">{block.name}</span>
+                      {isCurrent && (
+                        <span className="text-xs text-muted-foreground ml-1">~{block.duration}m</span>
+                      )}
+                    </div>
+                    {/* Tooltip on hover */}
+                    {hoveredBlock === i && block.description && (
+                      <div className="absolute z-50 top-full left-0 mt-1 p-2 bg-zinc-900 border-2 border-primary/40 text-sm font-terminal text-muted-foreground max-w-[280px] whitespace-normal">
+                        <div className="font-arcade text-xs mb-1" style={{ color: catColor }}>
+                          {block.category.toUpperCase()}
+                        </div>
+                        {block.description}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
-            {!isChainComplete && onAdvanceBlock && (
-              <button
-                onClick={onAdvanceBlock}
-                className="shrink-0 ml-2 px-3 py-1 border-[3px] border-double border-primary/60 text-xs font-arcade text-primary hover:bg-primary/20 transition-colors"
-              >
-                NEXT
-              </button>
-            )}
-            {isChainComplete && (
-              <span className="shrink-0 ml-2 px-3 py-1 text-xs font-arcade text-green-400 border-2 border-green-400/50">
-                COMPLETE
+            <div className="flex items-center gap-1 ml-auto shrink-0">
+              <span className="text-xs font-terminal text-muted-foreground">
+                {Math.min(currentBlockIndex + 1, chainBlocks.length)}/{chainBlocks.length}
               </span>
-            )}
+              {!isChainComplete && onAdvanceBlock && (
+                <button
+                  onClick={onAdvanceBlock}
+                  className="px-3 py-1 border-[3px] border-double border-primary/60 text-xs font-arcade text-primary hover:bg-primary/20 transition-colors"
+                >
+                  NEXT
+                </button>
+              )}
+              {isChainComplete && (
+                <span className="px-3 py-1 text-xs font-arcade text-green-400 border-2 border-green-400/50">
+                  COMPLETE
+                </span>
+              )}
+            </div>
           </div>
-          {!isChainComplete && chainBlocks[currentBlockIndex] && (
-            <div className="mt-1 text-base font-terminal text-muted-foreground">
-              <span className="text-primary">{chainBlocks[currentBlockIndex].category.toUpperCase()}</span>
-              {" "}&middot; ~{chainBlocks[currentBlockIndex].duration}min
+
+          {/* Block Guidance Panel (collapsible) */}
+          {currentBlock && (
+            <div className="border-t border-primary/20">
+              <button
+                onClick={() => setGuidanceOpen(!guidanceOpen)}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-primary/5 transition-colors"
+              >
+                <ListChecks className="w-4 h-4 text-primary" />
+                <span className="font-arcade text-xs text-primary">
+                  BLOCK GUIDANCE: {currentBlock.name}
+                </span>
+                <span
+                  className="text-xs font-terminal px-1.5 py-0.5 border"
+                  style={{ color: CATEGORY_COLORS[currentBlock.category as keyof typeof CATEGORY_COLORS] || "#888", borderColor: (CATEGORY_COLORS[currentBlock.category as keyof typeof CATEGORY_COLORS] || "#888") + "60" }}
+                >
+                  {currentBlock.category}
+                </span>
+                <span className="flex items-center gap-0.5 text-xs font-terminal text-muted-foreground ml-auto">
+                  <Clock className="w-3 h-3" /> ~{currentBlock.duration}min
+                </span>
+                {guidanceOpen ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                )}
+              </button>
+              {guidanceOpen && (
+                <div className="px-3 pb-2 space-y-2">
+                  {currentBlock.description && (
+                    <p className="text-sm font-terminal text-muted-foreground leading-relaxed">
+                      {currentBlock.description}
+                    </p>
+                  )}
+                  {facilitationSteps.length > 0 && (
+                    <ol className="space-y-1 pl-1">
+                      {facilitationSteps.map((step, si) => (
+                        <li
+                          key={si}
+                          className="flex items-start gap-2 text-sm font-terminal text-muted-foreground"
+                        >
+                          <span className="shrink-0 w-5 h-5 flex items-center justify-center border border-primary/30 text-xs text-primary mt-0.5">
+                            {si + 1}
+                          </span>
+                          <span className="leading-relaxed">{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                  {!currentBlock.description && facilitationSteps.length === 0 && (
+                    <p className="text-sm font-terminal text-muted-foreground/60 italic">
+                      No specific guidance for this block. Follow the tutor's lead.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

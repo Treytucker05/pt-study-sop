@@ -236,6 +236,64 @@ def api_scholar_proposal_sheet_rebuild():
     return jsonify(run_proposal_sheet_build())
 
 
+@dashboard_bp.route("/api/scholar/proposals/sync", methods=["POST"])
+def api_scholar_proposals_sync():
+    """Scan scholar/outputs/proposals/*.md, upsert to scholar_proposals table."""
+    import hashlib
+    from pathlib import Path
+
+    proposals_dir = Path(__file__).parent.parent.parent / "scholar" / "outputs" / "proposals"
+    if not proposals_dir.exists():
+        return jsonify({"synced": 0, "error": "proposals directory not found"}), 404
+
+    conn = get_connection()
+    cur = conn.cursor()
+    synced = 0
+    errors = []
+
+    for md_file in sorted(proposals_dir.glob("*.md")):
+        try:
+            content = md_file.read_text(encoding="utf-8", errors="replace")
+            content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+            # Extract title from first heading
+            title = md_file.stem.replace("-", " ").replace("_", " ").title()
+            for line in content.split("\n"):
+                line = line.strip()
+                if line.startswith("# "):
+                    title = line[2:].strip()
+                    break
+
+            # Extract type from filename pattern (e.g., "fix-*", "add-*", "improve-*")
+            fname_lower = md_file.stem.lower()
+            if fname_lower.startswith("fix"):
+                ptype = "fix"
+            elif fname_lower.startswith("add"):
+                ptype = "feature"
+            elif fname_lower.startswith("improve"):
+                ptype = "improvement"
+            else:
+                ptype = "general"
+
+            cur.execute(
+                """INSERT INTO scholar_proposals (filename, filepath, title, proposal_type, content_hash, created_at)
+                   VALUES (?, ?, ?, ?, ?, datetime('now'))
+                   ON CONFLICT(filename) DO UPDATE SET
+                     filepath = excluded.filepath,
+                     title = excluded.title,
+                     content_hash = excluded.content_hash
+                   WHERE content_hash != excluded.content_hash""",
+                (md_file.name, str(md_file), title, ptype, content_hash),
+            )
+            synced += 1
+        except Exception as e:
+            errors.append(f"{md_file.name}: {e}")
+
+    conn.commit()
+    conn.close()
+    return jsonify({"synced": synced, "errors": errors})
+
+
 @dashboard_bp.route("/api/brain/status", methods=["GET"])
 def api_brain_status():
     """Get brain database status and statistics."""

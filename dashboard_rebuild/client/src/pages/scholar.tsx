@@ -120,6 +120,15 @@ export default function Scholar() {
     },
   });
 
+  // Scholar orchestrator run
+  const [scholarRunning, setScholarRunning] = useState(false);
+  const runScholarMutation = useMutation({
+    mutationFn: api.scholar.run,
+    onSuccess: () => {
+      setScholarRunning(true);
+    },
+  });
+
   // Proposal status updates (the only write operation - managed via API)
   const updateProposalMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<Proposal> }) =>
@@ -262,8 +271,20 @@ export default function Scholar() {
               {/* Scholar run flow strip */}
               <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY} mb-4`}>
                 <CardContent className="p-3">
-                  <div className="font-arcade text-xs text-secondary mb-2">
-                    SCHOLAR RUN: HIGH-LEVEL → ANALYSIS → DECISIONS
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-arcade text-xs text-secondary">
+                      SCHOLAR RUN: HIGH-LEVEL → ANALYSIS → DECISIONS
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none font-arcade text-xs border-primary text-primary h-7 px-3 gap-1"
+                      onClick={() => runScholarMutation.mutate()}
+                      disabled={runScholarMutation.isPending || scholarRunning}
+                    >
+                      <RefreshCw className={`w-3 h-3 ${(runScholarMutation.isPending || scholarRunning) ? "animate-spin" : ""}`} />
+                      {runScholarMutation.isPending ? "STARTING..." : scholarRunning ? "RUNNING..." : "RUN SCHOLAR"}
+                    </Button>
                   </div>
                   <div className="grid md:grid-cols-3 gap-3 font-terminal text-sm text-muted-foreground">
                     <div>
@@ -738,9 +759,15 @@ export default function Scholar() {
                     <CardTitle className="font-arcade text-xs flex items-center gap-2">
                       <Layers className="w-4 h-4" /> TOPIC CLUSTERS
                     </CardTitle>
-                    <Badge variant="outline" className="rounded-none text-xs border-secondary text-muted-foreground">
-                      COMING SOON
-                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none font-arcade text-xs border-secondary h-7 px-3"
+                      onClick={() => runClusteringMutation.mutate()}
+                      disabled={runClusteringMutation.isPending}
+                    >
+                      {runClusteringMutation.isPending ? "CLUSTERING..." : "RUN CLUSTERING"}
+                    </Button>
                   </CardHeader>
                   <CardContent className="p-4">
                     <p className="font-terminal text-sm text-muted-foreground mb-3">

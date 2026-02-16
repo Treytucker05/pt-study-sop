@@ -8315,48 +8315,81 @@ def get_scholar_findings():
 
 @adapter_bp.route("/scholar/tutor-audit", methods=["GET"])
 def get_tutor_audit():
-    """Get tutor session audit data."""
-    # For now, derive from chat messages in database
+    """Get tutor session audit data from tutor_sessions + tutor_turns."""
     try:
         conn = get_connection()
+        conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
-        # Get recent chat sessions
         cur.execute("""
-            SELECT DISTINCT session_id, created_at 
-            FROM chat_messages 
-            ORDER BY created_at DESC 
-            LIMIT 10
+            SELECT ts.id, ts.session_id, ts.topic, ts.mode, ts.status,
+                   ts.turn_count, ts.method_chain_id, ts.current_block_index,
+                   ts.artifacts_json, ts.started_at, ts.ended_at,
+                   ts.brain_session_id
+            FROM tutor_sessions ts
+            ORDER BY ts.started_at DESC
+            LIMIT 20
         """)
-        sessions = cur.fetchall()
+        sessions = [dict(r) for r in cur.fetchall()]
 
         audit_items = []
-        for sess_id, created_at in sessions:
-            cur.execute(
-                """
-                SELECT COUNT(*), role 
-                FROM chat_messages 
-                WHERE session_id = ? 
-                GROUP BY role
-            """,
-                (sess_id,),
-            )
-            counts = {r[1]: r[0] for r in cur.fetchall()}
+        for sess in sessions:
+            sid = sess["session_id"]
+            issues = []
 
-            audit_items.append(
-                {
-                    "id": len(audit_items) + 1,
-                    "sessionId": sess_id,
-                    "date": created_at,
-                    "userMessages": counts.get("user", 0),
-                    "assistantMessages": counts.get("assistant", 0),
-                    "status": "reviewed" if counts.get("user", 0) > 0 else "pending",
-                }
-            )
+            # Check for low turn count (potential abandoned sessions)
+            if sess["status"] == "completed" and (sess["turn_count"] or 0) < 2:
+                issues.append("Very short session (< 2 turns)")
+
+            # Check if session ended without brain record
+            if sess["status"] == "completed" and not sess.get("brain_session_id"):
+                issues.append("No Brain record linked")
+
+            # Count artifacts
+            artifacts_count = 0
+            if sess.get("artifacts_json"):
+                try:
+                    import json as _json
+                    arts = _json.loads(sess["artifacts_json"])
+                    if isinstance(arts, list):
+                        artifacts_count = len(arts)
+                except Exception:
+                    pass
+
+            # Check if chain was completed
+            wrap_complete = False
+            if sess.get("method_chain_id"):
+                cur.execute(
+                    "SELECT block_ids FROM method_chains WHERE id = ?",
+                    (sess["method_chain_id"],),
+                )
+                chain_row = cur.fetchone()
+                if chain_row and chain_row["block_ids"]:
+                    try:
+                        import json as _json
+                        total_blocks = len(_json.loads(chain_row["block_ids"]))
+                        current_idx = sess.get("current_block_index") or 0
+                        wrap_complete = current_idx >= total_blocks - 1
+                    except Exception:
+                        pass
+
+            audit_items.append({
+                "id": sess["id"],
+                "sessionId": sid,
+                "date": sess.get("started_at") or "",
+                "topic": sess.get("topic") or "",
+                "mode": sess.get("mode") or "",
+                "userMessages": sess.get("turn_count") or 0,
+                "assistantMessages": sess.get("turn_count") or 0,
+                "status": sess.get("status") or "unknown",
+                "artifacts_created": artifacts_count,
+                "wrap_complete": wrap_complete,
+                "issues": issues,
+            })
 
         conn.close()
         return jsonify(audit_items)
-    except Exception as e:
+    except Exception:
         return jsonify([])
 
 

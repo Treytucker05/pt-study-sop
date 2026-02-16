@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { TutorMode, TutorSessionSummary, TutorTemplateChain, TutorSessionWithTurns } from "@/lib/api";
+import type { TutorMode, TutorSessionSummary, TutorTemplateChain, TutorSessionWithTurns, TutorConfigCheck } from "@/lib/api";
 import { ContentFilter } from "@/components/ContentFilter";
 import { TutorWizard } from "@/components/TutorWizard";
 import { TutorChat } from "@/components/TutorChat";
@@ -24,6 +24,10 @@ import {
   Square,
   Send,
   Loader2,
+  AlertTriangle,
+  Timer,
+  SkipForward,
+  Plus,
 } from "lucide-react";
 import {
   TEXT_BODY,
@@ -85,6 +89,10 @@ export default function Tutor() {
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [isShipping, setIsShipping] = useState(false);
 
+  // Block timer
+  const [blockTimerSeconds, setBlockTimerSeconds] = useState<number | null>(null);
+  const [timerWarningShown, setTimerWarningShown] = useState(false);
+
   useEffect(() => {
     try {
       localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(selectedMaterials));
@@ -129,6 +137,13 @@ export default function Tutor() {
     queryFn: () => api.tutor.listSessions({ limit: 10 }),
   });
 
+  // Config check (runs once on mount)
+  const { data: configStatus } = useQuery<TutorConfigCheck>({
+    queryKey: ["tutor-config-check"],
+    queryFn: () => api.tutor.configCheck(),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const applySessionState = useCallback((session: TutorSessionWithTurns) => {
     setActiveSessionId(session.session_id);
     setTurnCount(session.turn_count);
@@ -143,7 +158,9 @@ export default function Tutor() {
         id: block.id,
         name: block.name,
         category: block.category,
+        description: block.description || "",
         duration: block.default_duration_min,
+        facilitation_prompt: block.facilitation_prompt || "",
       }))
     );
     if (session.content_filter?.material_ids) {
@@ -224,7 +241,9 @@ export default function Tutor() {
             id: b.id,
             name: b.name,
             category: b.category,
+            description: b.description || "",
             duration: b.default_duration_min,
+            facilitation_prompt: b.facilitation_prompt || "",
           })));
         }
       } else {
@@ -333,7 +352,15 @@ export default function Tutor() {
     try {
       const result = await api.tutor.advanceBlock(activeSessionId);
       setCurrentBlockIndex(result.block_index);
+      setTimerWarningShown(false);
+      // Reset timer for new block
+      if (result.block_duration) {
+        setBlockTimerSeconds(result.block_duration * 60);
+      } else {
+        setBlockTimerSeconds(null);
+      }
       if (result.complete) {
+        setBlockTimerSeconds(null);
         toast.success("Chain complete!");
       } else {
         toast.success(`Advanced to: ${result.block_name}`);
@@ -342,6 +369,33 @@ export default function Tutor() {
       toast.error(`Failed to advance block: ${err instanceof Error ? err.message : "Unknown"}`);
     }
   }, [activeSessionId]);
+
+  // Block timer countdown
+  useEffect(() => {
+    if (blockTimerSeconds === null || blockTimerSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setBlockTimerSeconds((prev) => {
+        if (prev === null) return null;
+        const next = prev - 1;
+        if (next === 60 && !timerWarningShown) {
+          toast.info("1 minute remaining on this block", { duration: 5000 });
+          setTimerWarningShown(true);
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [blockTimerSeconds, timerWarningShown]);
+
+  // Start timer when session begins with a chain
+  useEffect(() => {
+    if (chainBlocks.length > 0 && activeSessionId && currentBlockIndex < chainBlocks.length) {
+      const block = chainBlocks[currentBlockIndex];
+      if (block.duration && blockTimerSeconds === null) {
+        setBlockTimerSeconds(block.duration * 60);
+      }
+    }
+  }, [chainBlocks, activeSessionId, currentBlockIndex]);
 
   const handleDeleteArtifacts = useCallback(
     async (sid: string, indexes: number[]) => {
@@ -528,9 +582,25 @@ export default function Tutor() {
   }
 
   // ─── SESSION VIEW ─── (active session, full-screen chat)
+  const formatTimer = (seconds: number): string => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   return (
     <Layout>
       <div className="flex flex-col h-[calc(100vh-140px)]">
+        {/* Config warning banner */}
+        {configStatus && !configStatus.ok && (
+          <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-yellow-900/30 border-b border-yellow-400/30">
+            <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" />
+            <span className="font-terminal text-xs text-yellow-400/80">
+              {configStatus.issues.join(" · ")}
+            </span>
+          </div>
+        )}
+
         {/* Session status bar */}
         <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-black/60 border-b-2 border-primary/30">
           <Badge variant="outline" className={`${TEXT_BADGE} h-6 px-2 text-primary border-primary/50`}>
@@ -540,6 +610,37 @@ export default function Tutor() {
             <span className="font-terminal text-base text-foreground truncate max-w-[300px]">
               {topic}
             </span>
+          )}
+
+          {/* Block timer */}
+          {blockTimerSeconds !== null && blockTimerSeconds > 0 && (
+            <div className={`flex items-center gap-1 font-terminal text-sm ${
+              blockTimerSeconds <= 60 ? "text-red-400 animate-pulse" : "text-primary/70"
+            }`}>
+              <Timer className="w-3.5 h-3.5" />
+              {formatTimer(blockTimerSeconds)}
+              <button
+                onClick={() => setBlockTimerSeconds(null)}
+                className="text-muted-foreground/50 hover:text-muted-foreground ml-0.5"
+                title="Dismiss timer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => setBlockTimerSeconds((p) => (p ?? 0) + 300)}
+                className="text-muted-foreground/50 hover:text-primary ml-0.5"
+                title="Add 5 minutes"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+              <button
+                onClick={advanceBlock}
+                className="text-muted-foreground/50 hover:text-primary ml-0.5"
+                title="Skip to next block"
+              >
+                <SkipForward className="w-3 h-3" />
+              </button>
+            </div>
           )}
 
           <div className={`flex items-center gap-3 ${TEXT_MUTED} ml-auto`}>

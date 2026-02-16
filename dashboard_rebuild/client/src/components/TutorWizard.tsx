@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, CATEGORY_COLORS } from "@/lib/api";
 import type {
   TutorMode,
   TutorSessionSummary,
   TutorTemplateChain,
   TutorContentSources,
+  MethodCategory,
 } from "@/lib/api";
 import {
   TEXT_PANEL_TITLE,
@@ -234,6 +235,7 @@ export function TutorWizard({
               setChainId={setChainId}
               customBlockIds={customBlockIds}
               setCustomBlockIds={setCustomBlockIds}
+              mode={mode}
             />
           )}
 
@@ -404,6 +406,7 @@ function StepChain({
   setChainId,
   customBlockIds,
   setCustomBlockIds,
+  mode,
 }: {
   chainMode: ChainMode;
   setChainMode: (mode: ChainMode) => void;
@@ -412,6 +415,7 @@ function StepChain({
   setChainId: (id: number | undefined) => void;
   customBlockIds: number[];
   setCustomBlockIds: (ids: number[]) => void;
+  mode: TutorMode;
 }) {
   return (
     <div className={SECTION_GAP}>
@@ -477,11 +481,19 @@ function StepChain({
           <div className="px-3 py-2 border-b border-primary/30">
             <span className={TEXT_SECTION_LABEL}>TEMPLATE CHAINS</span>
           </div>
-          <ScrollArea className="max-h-[350px]">
+          <ScrollArea className="max-h-[400px]">
             <div className="p-2 space-y-1">
               {templateChains.map((chain) => {
                 const isSelected = chainId === chain.id;
                 const totalMin = chain.blocks.reduce((s, b) => s + (b.duration || 0), 0);
+                // Category breakdown for the chain
+                const catCounts: Record<string, number> = {};
+                for (const b of chain.blocks) {
+                  catCounts[b.category] = (catCounts[b.category] || 0) + 1;
+                }
+                // Parse context_tags for recommendation hints
+                const tags = chain.context_tags?.toLowerCase() || "";
+                const isIntake = tags.includes("intake") || tags.includes("first_exposure") || tags.includes("new");
                 return (
                   <button
                     key={chain.id}
@@ -493,9 +505,16 @@ function StepChain({
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-terminal text-base text-foreground">
-                        {chain.name}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-terminal text-base text-foreground">
+                          {chain.name}
+                        </span>
+                        {isIntake && (
+                          <Badge variant="outline" className="text-xs rounded-none text-green-400 border-green-400/40">
+                            NEW TOPICS
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <Badge
                           variant="outline"
@@ -510,16 +529,41 @@ function StepChain({
                       </div>
                     </div>
                     <div className={`${TEXT_MUTED} mt-0.5 text-sm`}>{chain.description}</div>
+                    {/* Category mini-badges */}
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {Object.entries(catCounts).map(([cat, count]) => (
+                        <span
+                          key={cat}
+                          className="text-xs font-terminal px-1 border"
+                          style={{ color: CATEGORY_COLORS[cat as MethodCategory] || "#888", borderColor: (CATEGORY_COLORS[cat as MethodCategory] || "#888") + "40" }}
+                        >
+                          {count} {cat}
+                        </span>
+                      ))}
+                    </div>
+                    {/* Expanded block detail when selected */}
                     {isSelected && (
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="mt-2 space-y-1 border-t border-primary/20 pt-2">
                         {chain.blocks.map((b, i) => (
-                          <Badge
-                            key={i}
-                            variant="outline"
-                            className="text-xs rounded-none text-primary/80 border-primary/30"
-                          >
-                            {b.name}
-                          </Badge>
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="shrink-0 w-5 h-5 flex items-center justify-center border text-xs mt-0.5"
+                              style={{ borderColor: CATEGORY_COLORS[b.category as MethodCategory] || "#888", color: CATEGORY_COLORS[b.category as MethodCategory] || "#888" }}
+                            >
+                              {i + 1}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-terminal text-sm text-foreground/80">{b.name}</span>
+                                <span className={`${TEXT_MUTED} text-xs`}>~{b.duration}m</span>
+                              </div>
+                              {b.facilitation_prompt && (
+                                <div className="text-xs text-muted-foreground/60 mt-0.5 line-clamp-2">
+                                  {b.facilitation_prompt.split('\n').slice(0, 2).join(' ').slice(0, 120)}
+                                  {b.facilitation_prompt.length > 120 ? '...' : ''}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -546,18 +590,58 @@ function StepChain({
         </Card>
       )}
 
-      {/* Auto mode message */}
+      {/* Auto mode explainer */}
       {chainMode === "auto" && (
         <Card className="bg-black/40 border-2 border-primary/40 rounded-none">
-          <div className="p-4 flex items-start gap-3">
-            <Wand2 className="w-5 h-5 text-primary/70 mt-0.5 shrink-0" />
-            <div>
-              <div className={TEXT_BODY}>No chain selected</div>
-              <div className={`${TEXT_MUTED} mt-1`}>
-                The tutor will use its default PEIRRO flow based on your mode and topic.
-                You can always switch to a specific chain later.
+          <div className="p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <Wand2 className="w-5 h-5 text-primary/70 mt-0.5 shrink-0" />
+              <div>
+                <div className={TEXT_BODY}>No structured chain</div>
+                <div className={`${TEXT_MUTED} mt-1`}>
+                  The tutor follows the general First Pass protocol based on your study mode.
+                  No block-by-block guidance — conversation flows naturally.
+                </div>
               </div>
             </div>
+            <div className="border border-primary/20 p-2 space-y-1">
+              <div className="font-arcade text-xs text-primary/80 mb-1">MODE POLICY</div>
+              {mode === "Core" && (
+                <div className={`${TEXT_MUTED} text-xs`}>
+                  Core: Teach first, then test. Builds understanding before retrieval practice.
+                </div>
+              )}
+              {mode === "Sprint" && (
+                <div className={`${TEXT_MUTED} text-xs`}>
+                  Sprint: Test first, then fill gaps. Prioritizes retrieval practice for review.
+                </div>
+              )}
+              {mode === "Quick Sprint" && (
+                <div className={`${TEXT_MUTED} text-xs`}>
+                  Quick Sprint: Rapid-fire Q&A. Minimal explanation, maximum testing.
+                </div>
+              )}
+              {mode === "Light" && (
+                <div className={`${TEXT_MUTED} text-xs`}>
+                  Light: Low energy mode. Gentle pacing, more scaffolding, shorter exchanges.
+                </div>
+              )}
+              {mode === "Drill" && (
+                <div className={`${TEXT_MUTED} text-xs`}>
+                  Drill: Target weak spots. Focuses on areas flagged as difficult.
+                </div>
+              )}
+              {(mode === "Diagnostic Sprint" || mode === "Teaching Sprint") && (
+                <div className={`${TEXT_MUTED} text-xs`}>
+                  {mode}: Specialized sprint mode with tailored pacing.
+                </div>
+              )}
+            </div>
+            {templateChains.length > 0 && (
+              <div className={`${TEXT_MUTED} text-xs`}>
+                Want more structure? Switch to <button onClick={() => setChainMode("template")} className="text-primary underline">Pre-Built</button> for guided block-by-block sessions.
+              </div>
+            )}
           </div>
         </Card>
       )}

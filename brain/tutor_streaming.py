@@ -36,9 +36,40 @@ def format_sse_done(
 
 
 def format_sse_error(error: str) -> str:
-    """Format an SSE error event."""
-    payload = {"type": "error", "content": error}
+    """Format an SSE error event with actionable guidance."""
+    msg = _map_error_to_actionable(error)
+    payload = {"type": "error", "content": msg}
     return f"data: {json.dumps(payload)}\n\ndata: [DONE]\n\n"
+
+
+def _map_error_to_actionable(error: str) -> str:
+    """Map raw errors to user-facing messages with recovery guidance."""
+    low = error.lower()
+    if "openrouter" in low and ("key" in low or "api" in low or "401" in low):
+        return (
+            "OpenRouter API key is missing or invalid. "
+            "Set OPENROUTER_API_KEY in brain/.env and restart the dashboard."
+        )
+    if "codex" in low and ("not found" in low or "enoent" in low):
+        return (
+            "Codex CLI not found. Install it with `npm i -g @anthropic-ai/codex` "
+            "or switch to an OpenRouter model in session settings."
+        )
+    if "timeout" in low or "timed out" in low:
+        return (
+            "Response timed out. Try a shorter question, "
+            "or switch to a faster model in settings."
+        )
+    if "rate limit" in low or "429" in low:
+        return "Rate limited by the provider. Wait a moment and try again."
+    if "context length" in low or "too long" in low or "token" in low:
+        return (
+            "Message exceeded context limit. Try shortening your question "
+            "or start a new session to reset chat history."
+        )
+    if "connection" in low or "network" in low or "fetch" in low:
+        return "Network error. Check your internet connection and try again."
+    return error
 
 
 def stream_tutor_response(

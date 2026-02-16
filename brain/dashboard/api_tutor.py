@@ -644,16 +644,16 @@ def send_turn(session_id: str):
                     "Answer as a tutor only."
                 )
 
-                # Limit history to last 6 turns, truncate answers for speed
-                recent_turns = turns[-6:] if len(turns) > 6 else turns
+                # Limit history to last 12 turns, truncate answers for speed
+                recent_turns = turns[-12:] if len(turns) > 12 else turns
                 history_lines: list[str] = []
                 for t in recent_turns:
                     if t.get("question"):
                         history_lines.append(f"User: {t['question']}")
                     if t.get("answer"):
                         ans = t["answer"]
-                        if len(ans) > 400:
-                            ans = ans[:400] + "..."
+                        if len(ans) > 800:
+                            ans = ans[:800] + "..."
                         history_lines.append(f"Assistant: {ans}")
                 history_text = "\n".join(history_lines).strip() or "(no prior turns)"
 
@@ -889,6 +889,9 @@ def advance_block(session_id: str):
             "block_index": next_idx,
             "block_name": next_block["name"],
             "block_description": next_block.get("description", ""),
+            "block_category": next_block.get("category", ""),
+            "block_duration": next_block.get("default_duration_min", 5),
+            "facilitation_prompt": next_block.get("facilitation_prompt", ""),
             "is_last": next_idx >= len(blocks) - 1,
         }
     )
@@ -938,7 +941,9 @@ def get_template_chains():
                         "id": b["id"],
                         "name": b["name"],
                         "category": b.get("category", ""),
+                        "description": b.get("description", ""),
                         "duration": b.get("default_duration_min", 5),
+                        "facilitation_prompt": b.get("facilitation_prompt", ""),
                     }
                     for b in blocks
                 ],
@@ -1709,7 +1714,8 @@ def get_method_blocks():
     cur = conn.cursor()
 
     cur.execute(
-        """SELECT id, name, category, description, default_duration_min, energy_cost
+        """SELECT id, name, category, description, default_duration_min,
+                  energy_cost, facilitation_prompt
            FROM method_blocks
            ORDER BY category, name"""
     )
@@ -1746,6 +1752,89 @@ def create_custom_chain():
     conn.close()
 
     return jsonify({"id": chain_id, "name": name, "block_ids": block_ids}), 201
+
+
+# ---------------------------------------------------------------------------
+# GET /api/tutor/config/check — Verify provider configuration
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/config/check", methods=["GET"])
+def config_check():
+    issues: list[str] = []
+
+    # Check Codex CLI availability
+    codex_ok = False
+    try:
+        import shutil
+
+        codex_ok = shutil.which("codex") is not None
+    except Exception:
+        pass
+    if not codex_ok:
+        issues.append("Codex CLI not found in PATH")
+
+    # Check OpenRouter
+    openrouter_key = (os.environ.get("OPENROUTER_API_KEY") or "").strip()
+    openrouter_ok = bool(openrouter_key)
+
+    # Check ChatGPT backend (used by Codex streaming)
+    chatgpt_ok = False
+    try:
+        from llm_provider import stream_chatgpt_responses  # noqa: F401
+
+        chatgpt_ok = True
+    except ImportError:
+        pass
+    if not chatgpt_ok:
+        issues.append("ChatGPT streaming provider not available")
+
+    return jsonify(
+        {
+            "ok": len(issues) == 0,
+            "codex_available": codex_ok,
+            "openrouter_configured": openrouter_ok,
+            "chatgpt_streaming": chatgpt_ok,
+            "issues": issues,
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/tutor/embed/status — Per-material embedding chunk counts
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/embed/status", methods=["GET"])
+def embed_status():
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT r.id, r.title, r.source_path,
+                  COUNT(e.id) AS chunk_count,
+                  CASE WHEN COUNT(e.id) > 0 THEN 1 ELSE 0 END AS embedded
+           FROM rag_docs r
+           LEFT JOIN rag_embeddings e ON e.rag_doc_id = r.id
+           WHERE COALESCE(r.corpus, 'materials') = 'materials'
+             AND COALESCE(r.enabled, 1) = 1
+           GROUP BY r.id
+           ORDER BY r.title"""
+    )
+    materials = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    total = len(materials)
+    embedded_count = sum(1 for m in materials if m["embedded"])
+
+    return jsonify(
+        {
+            "materials": materials,
+            "total": total,
+            "embedded": embedded_count,
+            "pending": total - embedded_count,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1799,7 +1888,7 @@ def start_materials_sync():
 @tutor_bp.route("/materials/sync/status/<job_id>", methods=["GET"])
 def get_materials_sync_status(job_id: str):
     with SYNC_JOBS_LOCK:
-        job = SYNC_JOBS.get(job_id)
+        job = dict(SYNC_JOBS.get(job_id) or {})
 
     if not job:
         return jsonify({"error": "Sync job not found"}), 404

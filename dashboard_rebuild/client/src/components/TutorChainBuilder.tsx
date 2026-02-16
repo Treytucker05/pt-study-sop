@@ -11,7 +11,7 @@ import {
   TEXT_MUTED,
   ICON_SM,
 } from "@/lib/theme";
-import { ChevronDown, ChevronRight, GripVertical, X, Clock } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, X, Clock, AlertTriangle } from "lucide-react";
 
 const CATEGORY_ORDER: MethodCategory[] = [
   "prepare",
@@ -66,6 +66,40 @@ export function TutorChainBuilder({
     () => selectedBlocks.reduce((sum, b) => sum + (b.default_duration_min || 0), 0),
     [selectedBlocks],
   );
+
+  const categoryBreakdown = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const b of selectedBlocks) {
+      counts[b.category] = (counts[b.category] || 0) + 1;
+    }
+    return counts;
+  }, [selectedBlocks]);
+
+  const chainWarnings = useMemo(() => {
+    if (selectedBlocks.length < 2) return [];
+    const warnings: string[] = [];
+    const cats = selectedBlocks.map((b) => b.category);
+    const catSet = new Set(cats);
+
+    // Check if retrieve comes before encode
+    const firstRetrieveIdx = cats.indexOf("retrieve");
+    const firstEncodeIdx = cats.indexOf("encode");
+    if (firstRetrieveIdx !== -1 && firstEncodeIdx !== -1 && firstRetrieveIdx < firstEncodeIdx) {
+      warnings.push("Retrieve before encode — consider encoding first for better retention");
+    }
+
+    // Check for missing key categories
+    if (!catSet.has("retrieve") && !catSet.has("interrogate")) {
+      warnings.push("No retrieval or interrogation — add testing for durable learning");
+    }
+
+    // Check for no prepare block
+    if (!catSet.has("prepare") && selectedBlocks.length >= 3) {
+      warnings.push("No prepare block — consider adding warm-up or context setting");
+    }
+
+    return warnings;
+  }, [selectedBlocks]);
 
   const toggleCategory = (cat: string) => {
     setCollapsedCategories((prev) => {
@@ -210,7 +244,7 @@ export function TutorChainBuilder({
                   >
                     {b.category.slice(0, 3).toUpperCase()}
                   </Badge>
-                  <span className="font-terminal text-xs text-foreground/80 truncate flex-1">
+                  <span className="font-terminal text-xs text-foreground/80 truncate flex-1" title={b.facilitation_prompt ? b.facilitation_prompt.slice(0, 200) : b.description || ""}>
                     {b.name}
                   </span>
                   <span className={`${TEXT_MUTED} text-xs shrink-0`}>~{b.default_duration_min}m</span>
@@ -227,16 +261,44 @@ export function TutorChainBuilder({
         )}
       </div>
 
-      {/* Total duration */}
+      {/* Summary: duration + category breakdown + warnings */}
       {selectedBlocks.length > 0 && (
-        <div className="flex items-center justify-between px-1">
-          <span className={`${TEXT_MUTED} text-xs`}>
-            {selectedBlocks.length} block{selectedBlocks.length !== 1 ? "s" : ""}
-          </span>
-          <span className="flex items-center gap-1 font-terminal text-xs text-primary">
-            <Clock className={ICON_SM} />
-            ~{totalDuration} min
-          </span>
+        <div className="space-y-1.5 px-1">
+          <div className="flex items-center justify-between">
+            <span className={`${TEXT_MUTED} text-xs`}>
+              {selectedBlocks.length} block{selectedBlocks.length !== 1 ? "s" : ""}
+            </span>
+            <span className="flex items-center gap-1 font-terminal text-xs text-primary">
+              <Clock className={ICON_SM} />
+              ~{totalDuration} min
+            </span>
+          </div>
+
+          {/* Category breakdown */}
+          <div className="flex flex-wrap gap-1">
+            {CATEGORY_ORDER.filter((cat) => categoryBreakdown[cat]).map((cat) => (
+              <Badge
+                key={cat}
+                variant="outline"
+                className="text-xs rounded-none px-1.5 h-5"
+                style={{ borderColor: CATEGORY_COLORS[cat], color: CATEGORY_COLORS[cat] }}
+              >
+                {categoryBreakdown[cat]} {cat}
+              </Badge>
+            ))}
+          </div>
+
+          {/* PEIRRO order warnings */}
+          {chainWarnings.length > 0 && (
+            <div className="space-y-1">
+              {chainWarnings.map((w, i) => (
+                <div key={i} className="flex items-start gap-1.5 text-xs font-terminal text-yellow-400/80">
+                  <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                  <span>{w}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
