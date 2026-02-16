@@ -16,13 +16,6 @@ interface StudyTask {
   notes?: string;
 }
 
-interface PlannerSettings {
-  spacing_strategy: string;
-  default_session_minutes: number;
-  calendar_source: string;
-  auto_schedule_reviews: number;
-}
-
 interface NextActionsProps {
   /** "today" shows only due-today tasks inline; "all" shows full planner (default) */
   filter?: "today" | "all";
@@ -37,10 +30,11 @@ export function NextActions({ filter = "all" }: NextActionsProps) {
     queryFn: api.planner.getQueue as () => Promise<StudyTask[]>,
   });
 
-  const { data: settings } = useQuery<PlannerSettings>({
+  const { data: settings } = useQuery<Record<string, unknown>>({
     queryKey: ["planner", "settings"],
-    queryFn: api.planner.getSettings as () => Promise<PlannerSettings>,
+    queryFn: api.planner.getSettings,
   });
+  const calendarSource = settings?.calendar_source === "google" ? "google" : "local";
 
   const generateMutation = useMutation({
     mutationFn: api.planner.generate,
@@ -90,11 +84,11 @@ export function NextActions({ filter = "all" }: NextActionsProps) {
           {filter === "all" && (
             <div className="flex items-center gap-2">
               <span className="font-terminal text-xs text-muted-foreground">
-                Source: {settings?.calendar_source === "google" ? "Google" : "Local"}
+                Source: {calendarSource === "google" ? "Google" : "Local"}
               </span>
               <button
                 onClick={() => settingsMutation.mutate({
-                  calendar_source: settings?.calendar_source === "google" ? "local" : "google"
+                 calendar_source: calendarSource === "google" ? "local" : "google"
                 })}
                 className="px-2 py-1 border border-primary/30 text-xs font-arcade text-muted-foreground hover:text-white rounded-none"
               >

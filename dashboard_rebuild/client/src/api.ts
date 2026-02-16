@@ -631,10 +631,17 @@ export const api = {
         body: JSON.stringify(data || {}),
       }),
     syncMaterialsFolder: (payload: { folder_path: string; allowed_exts?: string[] }) =>
-      request<any>("/tutor/materials/sync", {
+      request<TutorSyncStartResult>("/tutor/materials/sync", {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+    startSyncMaterialsFolder: (payload: { folder_path: string; allowed_exts?: string[] }) =>
+      request<TutorSyncStartResult>("/tutor/materials/sync/start", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    getSyncMaterialsStatus: (jobId: string) =>
+      request<TutorSyncJobStatus>(`/tutor/materials/sync/status/${encodeURIComponent(jobId)}`),
     uploadMaterial: async (file: File, opts?: { course_id?: number; title?: string; tags?: string }) => {
       const form = new FormData();
       form.append("file", file);
@@ -1173,11 +1180,20 @@ export interface TutorArtifactResult {
 }
 
 export interface TutorContentSources {
-  courses: { id: number | null; name: string; code: string | null; doc_count: number }[];
+  courses: {
+    id: number | null;
+    name: string;
+    code: string | null;
+    doc_count: number;
+    wheel_linked?: boolean;
+    wheel_active?: boolean;
+    wheel_position?: number | null;
+  }[];
   total_materials: number;
   total_instructions: number;
   total_docs: number;
   openrouter_enabled: boolean;
+  buster_enabled?: boolean;
 }
 
 export interface TutorChainRequest {
@@ -1207,6 +1223,37 @@ export interface TutorEmbedResult {
   embedded: number;
   skipped: number;
   total_chunks: number;
+}
+
+export interface TutorSyncStartResult {
+  ok?: boolean;
+  job_id: string;
+  folder?: string;
+}
+
+export interface TutorSyncJobStatus {
+  job_id: string;
+  status: "pending" | "running" | "completed" | "failed";
+  phase?: string;
+  folder?: string;
+  processed: number;
+  total: number;
+  index?: number;
+  current_file: string | null;
+  errors: number;
+  last_error?: string | null;
+  sync_result?: {
+    ok?: boolean;
+    total?: number;
+    processed?: number;
+    failed?: number;
+    errors?: string[];
+    doc_ids?: number[];
+    [key: string]: unknown;
+  } | null;
+  embed_result?: TutorEmbedResult | { error: string } | null;
+  started_at: string;
+  finished_at?: string | null;
 }
 
 export interface Material {

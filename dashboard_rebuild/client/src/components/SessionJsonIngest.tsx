@@ -14,6 +14,11 @@ interface ApiSession {
   createdAt?: string;
 }
 
+function toIsoString(value?: string | Date | null): string | undefined {
+  if (!value) return undefined;
+  return typeof value === "string" ? value : value.toISOString();
+}
+
 type JsonType = "tracker" | "enhanced" | "auto";
 
 export function SessionJsonIngest() {
@@ -30,14 +35,19 @@ export function SessionJsonIngest() {
   });
   
   // Map to ApiSession shape
-  const sessions: ApiSession[] = rawSessions.map((s) => ({
-    id: s.id,
-    date: s.date,
-    topic: s.topic,
-    mainTopic: s.mainTopic,
-    mode: s.mode,
-    createdAt: s.createdAt,
-  }));
+  const sessions: ApiSession[] = rawSessions.map((s) => {
+    const mainTopic =
+      (s as { mainTopic?: string }).mainTopic ??
+      (s as { main_topic?: string }).main_topic;
+    return {
+      id: s.id,
+      date: toIsoString(s.date),
+      topic: s.topic,
+      mainTopic,
+      mode: s.mode,
+      createdAt: toIsoString(s.createdAt),
+    };
+  });
 
   const recentSessions = sessions
     .slice()

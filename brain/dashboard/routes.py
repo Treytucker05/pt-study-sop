@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import sys
 import sqlite3
 import subprocess
 import tempfile
@@ -45,6 +46,7 @@ from generate_resume import generate_resume
 from tutor_api_types import TutorQueryV1, TutorSourceSelector, TutorTurnResponse
 from tutor_engine import process_tutor_turn, log_tutor_turn, create_card_draft_from_turn
 from import_syllabus import upsert_course, import_events
+from course_wheel_sync import get_course_wheel_link
 from rag_notes import (
     ingest_document,
     ingest_url_document,
@@ -1231,6 +1233,7 @@ def api_syllabus_import_bulk():
     try:
         # Upsert course (creates or updates)
         course_id = upsert_course(data)
+        wheel_link = get_course_wheel_link(course_id)
 
         # Import events if provided
         events = data.get("events", [])
@@ -1242,7 +1245,10 @@ def api_syllabus_import_bulk():
             "ok": True,
             "message": f"Imported course '{name}' with {inserted} event(s)",
             "course_id": course_id,
-            "events_imported": inserted
+            "events_imported": inserted,
+            "wheel_linked": bool(wheel_link),
+            "wheel_active": bool(wheel_link["active"]) if wheel_link else None,
+            "wheel_position": wheel_link["position"] if wheel_link else None,
         })
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500

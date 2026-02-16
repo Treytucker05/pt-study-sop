@@ -543,7 +543,7 @@ export function MindMapView({
       idBySource.set(node.id, `mm-import-${idx + 1}`);
     });
 
-    const mappedEdges: Edge[] = parsed.edges
+    const mappedEdges = parsed.edges
       .map((edge, idx) => {
         const source = idBySource.get(edge.source);
         const target = idBySource.get(edge.target);
@@ -553,7 +553,7 @@ export function MindMapView({
           source,
           target,
           ...MIND_MAP_DEFAULT_EDGE_OPTIONS,
-        };
+        } as Edge;
       })
       .filter((edge): edge is Edge => edge !== null);
 

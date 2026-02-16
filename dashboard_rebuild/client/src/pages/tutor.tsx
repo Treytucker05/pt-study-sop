@@ -217,7 +217,7 @@ export default function Tutor() {
       setCurrentBlockIndex(session.current_block_index ?? 0);
       setShowSetup(false);
 
-      if (chainId) {
+      if (resolvedChainId) {
         const full = await api.tutor.getSession(session.session_id);
         if (full.chain_blocks) {
           setChainBlocks(full.chain_blocks.map((b) => ({
@@ -377,6 +377,7 @@ export default function Tutor() {
 
     const restore = async () => {
       let resumed = false;
+      let restoredCourseId = false;
       try {
         const savedSessionId = localStorage.getItem(tutorActiveSessionKey);
         if (savedSessionId) {
@@ -401,22 +402,37 @@ export default function Tutor() {
 
       try {
         const saved = localStorage.getItem(tutorWizardStorageKey);
-        if (!saved) return;
-        const parsed = JSON.parse(saved);
-        if (typeof parsed?.courseId === "number") setCourseId(parsed.courseId);
-        if (typeof parsed?.topic === "string") setTopic(parsed.topic);
-        if (Array.isArray(parsed?.selectedMaterials)) {
-          setSelectedMaterials(parsed.selectedMaterials.filter((v: unknown) => typeof v === "number"));
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (typeof parsed?.courseId === "number") {
+            setCourseId(parsed.courseId);
+            restoredCourseId = true;
+          }
+          if (typeof parsed?.topic === "string") setTopic(parsed.topic);
+          if (Array.isArray(parsed?.selectedMaterials)) {
+            setSelectedMaterials(parsed.selectedMaterials.filter((v: unknown) => typeof v === "number"));
+          }
+          if (typeof parsed?.chainId === "number") setChainId(parsed.chainId);
+          if (Array.isArray(parsed?.customBlockIds)) {
+            setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
+          }
+          if (typeof parsed?.mode === "string") setMode(parsed.mode);
+          if (typeof parsed?.model === "string") setModel(parsed.model);
+          if (typeof parsed?.webSearch === "boolean") setWebSearch(parsed.webSearch);
+          if (Array.isArray(parsed?.selectedPaths)) {
+            setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
+          }
         }
-        if (typeof parsed?.chainId === "number") setChainId(parsed.chainId);
-        if (Array.isArray(parsed?.customBlockIds)) {
-          setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
-        }
-        if (typeof parsed?.mode === "string") setMode(parsed.mode);
-        if (typeof parsed?.model === "string") setModel(parsed.model);
-        if (typeof parsed?.webSearch === "boolean") setWebSearch(parsed.webSearch);
-        if (Array.isArray(parsed?.selectedPaths)) {
-          setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
+      } catch (error) {
+        void error;
+      }
+
+      if (restoredCourseId) return;
+
+      try {
+        const { currentCourse } = await api.studyWheel.getCurrentCourse();
+        if (typeof currentCourse?.id === "number") {
+          setCourseId((prev) => (typeof prev === "number" ? prev : currentCourse.id));
         }
       } catch (error) {
         void error;

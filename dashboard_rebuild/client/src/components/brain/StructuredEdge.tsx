@@ -20,7 +20,7 @@ function getStepPath(props: {
   return getSmoothStepPath({ ...props, borderRadius: 0 });
 }
 
-type PathGetter = (props: any) => [string, number, number];
+type PathGetter = (props: any) => [string, number, number, number, number];
 
 const PATH_GETTERS: Record<string, PathGetter> = {
   bezier: getBezierPath,

@@ -14,7 +14,7 @@ import MethodAnalytics from "@/components/MethodAnalytics";
 import RatingDialog from "@/components/RatingDialog";
 import { api } from "@/lib/api";
 import { DISPLAY_STAGE_LABELS, getDisplayStage, type DisplayStage } from "@/lib/displayStage";
-import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, ChainRunSummary } from "@/api";
+import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, ChainRunSummary, MethodCategory } from "@/api";
 
 const DISPLAY_STAGES: Array<DisplayStage | "all"> = [
   "all",
@@ -542,12 +542,12 @@ function AddBlockDialog({
   onSubmit: (data: Omit<MethodBlock, "id" | "created_at">) => void;
 }) {
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("prepare");
+  const [category, setCategory] = useState<MethodCategory>("prepare");
   const [description, setDescription] = useState("");
   const [duration, setDuration] = useState(5);
   const [energyCost, setEnergyCost] = useState("medium");
   const [bestStage, setBestStage] = useState("");
-  const categoryOptions = [
+  const categoryOptions: MethodCategory[] = [
     "prepare",
     "encode",
     "interrogate",
@@ -566,6 +566,7 @@ function AddBlockDialog({
       energy_cost: energyCost,
       best_stage: bestStage || null,
       tags: [],
+      evidence: null,
     });
     setName("");
     setDescription("");
@@ -583,7 +584,7 @@ function AddBlockDialog({
             onChange={(e) => setName(e.target.value)}
             className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
           />
-          <Select value={category} onValueChange={setCategory}>
+          <Select value={category} onValueChange={(value) => setCategory(value as MethodCategory)}>
             <SelectTrigger className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
               <SelectValue />
             </SelectTrigger>

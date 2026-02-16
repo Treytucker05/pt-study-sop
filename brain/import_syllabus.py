@@ -55,6 +55,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from db_setup import get_connection, init_database
+from course_wheel_sync import ensure_course_in_wheel
 
 # Prefer completed events, then earliest created_at when resolving duplicates
 STATUS_PRIORITY = {"completed": 3, "pending": 2, "cancelled": 1}
@@ -339,6 +340,9 @@ def upsert_course(course_data: Dict[str, Any]) -> int:
 
     conn.commit()
     conn.close()
+
+    # Keep Study Wheel linkage in sync with syllabus-driven course upserts.
+    ensure_course_in_wheel(int(course_id), name=name or None, active=True)
     return int(course_id)
 
 
@@ -383,7 +387,7 @@ def import_events(course_id: int, events: Any, replace: bool = False) -> int:
                 course_id, type, title, date, due_date, time, end_time,
                 weight, raw_text, status, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 course_id,
@@ -395,6 +399,7 @@ def import_events(course_id: int, events: Any, replace: bool = False) -> int:
                 ev["end_time"],
                 ev["weight"],
                 ev["raw_text"],
+                ev["status"],
                 now,
                 now,
             ),

@@ -10,6 +10,7 @@ import {
   addEdge,
   reconnectEdge,
   MarkerType,
+  ConnectionMode,
   type Connection,
   type Node,
   type Edge,
@@ -549,7 +550,7 @@ export function ConceptMapStructured({
           snapToGrid={snapToGrid}
           snapGrid={[20, 20]}
           nodesDraggable={!locked}
-          connectionMode="loose"
+          connectionMode={ConnectionMode.Loose}
           fitView
           className="bg-black/80"
           proOptions={{ hideAttribution: true }}

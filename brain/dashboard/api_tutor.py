@@ -29,15 +29,20 @@ import sqlite3
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from threading import Lock, Thread
+from typing import Any, Optional
 
 from flask import Blueprint, Response, jsonify, request
 
 from db_setup import DB_PATH, get_connection, ensure_method_library_seeded
+from course_wheel_sync import ensure_course_in_wheel
 
 tutor_bp = Blueprint("tutor", __name__, url_prefix="/api/tutor")
 
 UPLOADS_DIR = Path(__file__).parent.parent / "data" / "uploads"
+SYNC_JOBS: dict[str, dict[str, Any]] = {}
+SYNC_JOBS_LOCK = Lock()
+SYNC_JOB_RETENTION = 30
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +185,137 @@ def _sanitize_filename(name: str) -> str:
     return safe[:200]
 
 
+def _normalize_allowed_exts(raw_value: object) -> Optional[set[str]]:
+    if not isinstance(raw_value, list) or not raw_value:
+        return None
+    normalized: set[str] = set()
+    for ext in raw_value:
+        ext_str = str(ext).strip().lower()
+        if not ext_str:
+            continue
+        normalized.add(ext_str if ext_str.startswith(".") else f".{ext_str}")
+    return normalized or None
+
+
+def _parse_sync_folder_payload(data: dict[str, Any]) -> tuple[Path, Optional[set[str]]]:
+    folder_path_raw = (
+        data.get("folder_path")
+        or os.environ.get("TUTOR_MATERIALS_DIR")
+        or os.environ.get("PT_SCHOOL_MATERIALS_DIR")
+    )
+    if not folder_path_raw:
+        raise ValueError(
+            "folder_path is required (or set TUTOR_MATERIALS_DIR/PT_SCHOOL_MATERIALS_DIR)"
+        )
+
+    folder_path = str(folder_path_raw).strip().strip('"').strip("'")
+    root = Path(folder_path).expanduser()
+    if not root.exists() or not root.is_dir():
+        raise FileNotFoundError(f"Folder not found: {folder_path}")
+
+    return root, _normalize_allowed_exts(data.get("allowed_exts"))
+
+
+def _update_sync_job(job_id: str, **payload: Any) -> None:
+    with SYNC_JOBS_LOCK:
+        job = SYNC_JOBS.setdefault(job_id, {"job_id": job_id})
+        job.update(payload)
+
+
+def _trim_sync_jobs() -> None:
+    with SYNC_JOBS_LOCK:
+        if len(SYNC_JOBS) <= SYNC_JOB_RETENTION:
+            return
+        ordered_jobs = sorted(
+            SYNC_JOBS.items(),
+            key=lambda item: str(item[1].get("started_at") or ""),
+        )
+        for old_job_id, _ in ordered_jobs[: len(SYNC_JOBS) - SYNC_JOB_RETENTION]:
+            SYNC_JOBS.pop(old_job_id, None)
+
+
+def _launch_materials_sync_job(root: Path, allowed_exts: Optional[set[str]]) -> str:
+    job_id = uuid.uuid4().hex
+    _update_sync_job(
+        job_id,
+        status="pending",
+        phase="pending",
+        folder=str(root),
+        processed=0,
+        total=0,
+        index=0,
+        current_file=None,
+        errors=0,
+        sync_result=None,
+        embed_result=None,
+        last_error=None,
+        started_at=datetime.now().isoformat(),
+        finished_at=None,
+    )
+    _trim_sync_jobs()
+
+    def _runner() -> None:
+        try:
+            from rag_notes import sync_folder_to_rag
+
+            _update_sync_job(job_id, status="running", phase="syncing")
+
+            def _progress(payload: dict[str, Any]) -> None:
+                _update_sync_job(
+                    job_id,
+                    phase=str(payload.get("phase") or "syncing"),
+                    processed=int(payload.get("processed") or 0),
+                    total=int(payload.get("total") or 0),
+                    index=int(payload.get("index") or 0),
+                    current_file=payload.get("current_file"),
+                    errors=int(payload.get("errors") or 0),
+                )
+
+            sync_result = sync_folder_to_rag(
+                str(root),
+                corpus="materials",
+                allowed_exts=allowed_exts,
+                progress_callback=_progress,
+            )
+            sync_errors = sync_result.get("errors") or []
+            _update_sync_job(
+                job_id,
+                phase="embedding",
+                sync_result=sync_result,
+                processed=int(sync_result.get("processed") or 0),
+                total=int(sync_result.get("total") or 0),
+                index=int(sync_result.get("total") or 0),
+                errors=int(sync_result.get("failed") or len(sync_errors)),
+                current_file=None,
+            )
+
+            try:
+                from tutor_rag import embed_rag_docs
+
+                embed_result = embed_rag_docs(corpus="materials")
+                _update_sync_job(job_id, embed_result=embed_result)
+            except Exception as embed_exc:
+                _update_sync_job(
+                    job_id,
+                    embed_result={"error": str(embed_exc)},
+                    last_error=str(embed_exc),
+                )
+
+            _update_sync_job(job_id, status="completed", phase="completed")
+        except Exception as exc:
+            _update_sync_job(
+                job_id,
+                status="failed",
+                phase="failed",
+                last_error=str(exc),
+            )
+        finally:
+            _update_sync_job(job_id, finished_at=datetime.now().isoformat())
+
+    Thread(target=_runner, daemon=True).start()
+    return job_id
+
+
 # ---------------------------------------------------------------------------
 # POST /api/tutor/session — Create a new tutor session
 # ---------------------------------------------------------------------------
@@ -190,6 +326,8 @@ def create_session():
     data = request.get_json(silent=True) or {}
 
     course_id = data.get("course_id")
+    if course_id is not None:
+        ensure_course_in_wheel(int(course_id), active=True)
     phase = data.get("phase", "first_pass")
     mode = data.get("mode", "Core")
     topic = data.get("topic", "")
@@ -1108,15 +1246,31 @@ def content_sources():
 
     # Academic courses only
     cur.execute(
-        """SELECT c.id, c.name, c.code, COUNT(r.id) as doc_count
+        """SELECT
+               c.id,
+               c.name,
+               c.code,
+               COUNT(DISTINCT r.id) AS doc_count,
+               CASE WHEN w.id IS NULL THEN 0 ELSE 1 END AS wheel_linked,
+               COALESCE(w.active, 0) AS wheel_active,
+               w.position AS wheel_position
            FROM courses c
-           LEFT JOIN rag_docs r ON r.course_id = c.id AND COALESCE(r.enabled, 1) = 1 AND COALESCE(r.corpus, 'materials') = 'materials'
+           LEFT JOIN wheel_courses w ON w.course_id = c.id
+           LEFT JOIN rag_docs r ON r.course_id = c.id
+               AND COALESCE(r.enabled, 1) = 1
+               AND COALESCE(r.corpus, 'materials') = 'materials'
            WHERE c.term IS NOT NULL
               OR c.id IN (SELECT DISTINCT course_id FROM rag_docs WHERE course_id IS NOT NULL)
-           GROUP BY c.id
+              OR c.id IN (SELECT DISTINCT course_id FROM wheel_courses WHERE course_id IS NOT NULL)
+           GROUP BY c.id, w.id
            ORDER BY c.name"""
     )
-    courses = [dict(r) for r in cur.fetchall()]
+    courses = []
+    for r in cur.fetchall():
+        item = dict(r)
+        item["wheel_linked"] = bool(item.get("wheel_linked"))
+        item["wheel_active"] = bool(item.get("wheel_active"))
+        courses.append(item)
 
     # Total materials (not instructions)
     cur.execute(
@@ -1625,46 +1779,28 @@ def trigger_embed():
 @tutor_bp.route("/materials/sync", methods=["POST"])
 def sync_materials_folder():
     data = request.get_json(silent=True) or {}
-    folder_path = (
-        data.get("folder_path")
-        or os.environ.get("TUTOR_MATERIALS_DIR")
-        or os.environ.get("PT_SCHOOL_MATERIALS_DIR")
-    )
-    if not folder_path:
-        return jsonify(
-            {
-                "error": "folder_path is required (or set TUTOR_MATERIALS_DIR/PT_SCHOOL_MATERIALS_DIR)"
-            }
-        ), 400
-
-    root = Path(folder_path).expanduser()
-    if not root.exists() or not root.is_dir():
-        return jsonify({"error": f"Folder not found: {folder_path}"}), 400
-
-    allowed_exts_raw = data.get("allowed_exts")
-    allowed_exts = (
-        set(allowed_exts_raw)
-        if isinstance(allowed_exts_raw, list) and allowed_exts_raw
-        else None
-    )
 
     try:
-        from rag_notes import sync_folder_to_rag
-        from tutor_rag import embed_rag_docs
+        root, allowed_exts = _parse_sync_folder_payload(data)
+    except (ValueError, FileNotFoundError) as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
-        sync_result = sync_folder_to_rag(
-            str(root),
-            corpus="materials",
-            allowed_exts=allowed_exts,
-        )
-        embed_result = embed_rag_docs(corpus="materials")
-        return jsonify(
-            {
-                "ok": True,
-                "folder": str(root),
-                "sync": sync_result,
-                "embed": embed_result,
-            }
-        )
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    job_id = _launch_materials_sync_job(root, allowed_exts)
+    return jsonify({"ok": True, "job_id": job_id, "folder": str(root)}), 202
+
+
+@tutor_bp.route("/materials/sync/start", methods=["POST"])
+def start_materials_sync():
+    return sync_materials_folder()
+
+
+@tutor_bp.route("/materials/sync/status/<job_id>", methods=["GET"])
+def get_materials_sync_status(job_id: str):
+    with SYNC_JOBS_LOCK:
+        job = SYNC_JOBS.get(job_id)
+
+    if not job:
+        return jsonify({"error": "Sync job not found"}), 404
+    return jsonify(job), 200

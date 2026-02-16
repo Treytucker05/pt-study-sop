@@ -192,16 +192,20 @@ export function UnifiedBrainCanvas() {
         <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => issueCommand("add_node")} disabled={!canUseGraphCommands} title="Add node">
           <Plus className="w-3 h-3 mr-1" />Add
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-1.5 rounded-none font-terminal text-xs"
-          onClick={() => {
-            const text = window.prompt("Find text");
-            if (text) window.find(text);
-          }}
-          title="Search"
-        >
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-1.5 rounded-none font-terminal text-xs"
+            onClick={() => {
+              const text = window.prompt("Find text");
+              if (!text) return;
+              const windowWithFind = window as Window & {
+                find?: (query: string) => boolean;
+              };
+              windowWithFind.find?.(text);
+            }}
+            title="Search"
+          >
           <Search className="w-3 h-3 mr-1" />Search
         </Button>
         <Button size="sm" variant="ghost" className="h-7 px-1.5 rounded-none font-terminal text-xs" onClick={() => setTemplateOpen((v) => !v)} disabled={!canUseMermaid} title="Templates">

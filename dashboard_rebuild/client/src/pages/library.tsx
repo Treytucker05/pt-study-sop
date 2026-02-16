@@ -1,9 +1,10 @@
 import Layout from "@/components/layout";
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useMemo } from "react";
+import type { JSX } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material } from "@/lib/api";
+import type { Material, TutorSyncJobStatus } from "@/lib/api";
 import { Link } from "wouter";
 import {
   TEXT_PAGE_TITLE,
@@ -342,6 +343,9 @@ export default function Library() {
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [materialsFolder, setMaterialsFolder] = useState("C:\\Users\\treyt\\OneDrive\\Desktop\\PT School");
+  const [syncJobId, setSyncJobId] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<TutorSyncJobStatus | null>(null);
+  const [syncing, setSyncing] = useState(false);
   const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem("tutor.selected_material_ids.v1");
@@ -372,6 +376,60 @@ export default function Library() {
     if (!materials.length) return;
     setSelectedForTutor((ids) => ids.filter((id) => materials.some((m) => m.id === id)));
   }, [materials]);
+
+  useEffect(() => {
+    if (!syncJobId) return;
+
+    let cancelled = false;
+
+    const pollSyncStatus = async () => {
+      try {
+        const status = await api.tutor.getSyncMaterialsStatus(syncJobId);
+        if (cancelled) return;
+        setSyncStatus(status);
+
+        if (status.status === "completed" || status.status === "failed") {
+          setSyncing(false);
+          setSyncJobId(null);
+          queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
+          queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+
+          if (status.status === "completed") {
+            const syncCount = Number(status.sync_result?.processed ?? status.processed ?? 0);
+            const failedCount = Number(status.sync_result?.failed ?? status.errors ?? 0);
+            const embedResult = status.embed_result as { embedded?: number } | null | undefined;
+            const embedCount = Number(embedResult?.embedded ?? 0);
+            if (failedCount > 0) {
+              toast.warning(
+                `Sync complete: ${syncCount} processed, ${failedCount} failed${embedCount > 0 ? `, ${embedCount} embedded` : ""}`,
+              );
+            } else {
+              toast.success(`Synced ${syncCount} materials, embedded ${embedCount}`);
+            }
+          } else {
+            toast.error(`Sync failed: ${status.last_error || "Unknown error"}`);
+          }
+          return;
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setSyncing(false);
+        setSyncJobId(null);
+        toast.error(`Sync status failed: ${err instanceof Error ? err.message : "Unknown"}`);
+        return;
+      }
+
+      if (!cancelled) {
+        window.setTimeout(pollSyncStatus, 1500);
+      }
+    };
+
+    pollSyncStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [syncJobId, queryClient]);
 
   const toggleMaterialForTutor = (id: number) => {
     setSelectedForTutor((prev) => {
@@ -407,20 +465,6 @@ export default function Library() {
     },
     onError: (err) => {
       toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
-    },
-  });
-
-  const syncMaterialsMutation = useMutation({
-    mutationFn: () => api.tutor.syncMaterialsFolder({ folder_path: materialsFolder }),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
-      queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-      const syncCount = result?.sync?.processed ?? 0;
-      const embedCount = result?.embed?.embedded ?? 0;
-      toast.success(`Synced ${syncCount} materials, embedded ${embedCount}`);
-    },
-    onError: (err) => {
-      toast.error(`Sync failed: ${err instanceof Error ? err.message : "Unknown"}`);
     },
   });
 
@@ -466,6 +510,44 @@ export default function Library() {
     updateMutation.mutate({ id: mat.id, data: { enabled: !mat.enabled } });
   };
 
+  const startSync = async () => {
+    const trimmedFolder = materialsFolder.trim();
+    if (!trimmedFolder || syncing) return;
+
+    setSyncing(true);
+    setSyncStatus({
+      job_id: "pending",
+      status: "pending",
+      phase: "pending",
+      processed: 0,
+      total: 0,
+      index: 0,
+      current_file: null,
+      errors: 0,
+      started_at: new Date().toISOString(),
+    });
+
+    try {
+      const started = await api.tutor.startSyncMaterialsFolder({ folder_path: trimmedFolder });
+      setSyncJobId(started.job_id);
+      setSyncStatus((prev) => (prev ? { ...prev, job_id: started.job_id, folder: started.folder } : prev));
+      toast.success("Sync started");
+    } catch (err) {
+      setSyncing(false);
+      setSyncJobId(null);
+      setSyncStatus(null);
+      toast.error(`Sync failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    }
+  };
+
+  const syncProgressPercent = useMemo(() => {
+    if (!syncStatus) return 0;
+    const total = Number(syncStatus.total ?? 0);
+    const indexed = Number(syncStatus.index ?? syncStatus.processed ?? 0);
+    if (!Number.isFinite(total) || total <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round((indexed / total) * 100)));
+  }, [syncStatus]);
+
   const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
 
   return (
@@ -501,17 +583,46 @@ export default function Library() {
                 placeholder="C:\\Users\\...\\PT School"
               />
               <Button
-                onClick={() => syncMaterialsMutation.mutate()}
-                disabled={syncMaterialsMutation.isPending || !materialsFolder.trim()}
-                className={`w-fit ${BTN_PRIMARY}`}
+                onClick={startSync}
+                disabled={syncing || !materialsFolder.trim()}
+                className={`w-fit ${BTN_PRIMARY} !text-white`}
               >
-                {syncMaterialsMutation.isPending ? (
+                {syncing ? (
                   <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
                 ) : (
                   <RefreshCw className={`${ICON_SM} mr-1`} />
                 )}
                 SYNC FOLDER TO TUTOR
               </Button>
+              {(syncing || syncStatus) && (
+                <div className="mt-2 border border-primary/20 bg-black/30 p-2 space-y-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className={TEXT_MUTED}>Status</span>
+                    <span className="font-terminal !text-white uppercase">
+                      {syncStatus?.status || (syncing ? "running" : "idle")}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-primary/15 overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ width: `${syncProgressPercent}%` }}
+                    />
+                  </div>
+                  <div className={TEXT_MUTED}>
+                    Processed {syncStatus?.processed ?? 0} / {syncStatus?.total ?? 0} files
+                    {typeof syncStatus?.errors === "number" ? ` • errors ${syncStatus.errors}` : ""}
+                  </div>
+                  <div className={`${TEXT_MUTED} break-all`}>
+                    Current:{" "}
+                    <span className="!text-white">
+                      {syncStatus?.current_file || (syncing ? "Scanning files..." : "Idle")}
+                    </span>
+                  </div>
+                  {syncStatus?.last_error ? (
+                    <div className="text-red-300 break-all">{syncStatus.last_error}</div>
+                  ) : null}
+                </div>
+              )}
             </div>
           </div>
         </Card>

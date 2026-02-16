@@ -22,7 +22,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Any, Callable, Iterable, List, Optional
 
 from db_setup import DB_PATH, init_database
 
@@ -191,7 +191,7 @@ def _upsert_rag_doc(
             enabled,
             created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             source_path,
@@ -412,19 +412,19 @@ def ingest_document(
     - For text-backed docs, stores full content for retrieval.
     - For media/docs that may need extraction (pdf/powerpoint/mp4), tries to extract text first.
     """
-    binary_types = {"pdf", "powerpoint", "mp4"}
+    binary_types = {"pdf", "powerpoint", "mp4", "docx"}
     if doc_type in binary_types:
         file_path = Path(path)
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
-        # Try text extraction for PDFs/PPTX, but keep a safe metadata-only fallback.
+        # Try text extraction for binary docs, but keep a metadata-only fallback.
         content = ""
         extraction_error = None
-        if doc_type in {"pdf", "powerpoint"}:
-            from text_extractor import extract_text
-
+        if doc_type in {"pdf", "powerpoint", "docx"}:
             try:
+                from text_extractor import extract_text
+
                 extracted = extract_text(str(file_path))
                 content = extracted.get("content", "") or ""
                 extraction_error = extracted.get("error")
@@ -526,6 +526,8 @@ def _infer_doc_type_from_suffix(suffix: str) -> str:
         return "transcript"
     if s == ".txt":
         return "txt"
+    if s in {".doc", ".docx"}:
+        return "docx"
     if s in {".ppt", ".pptx"}:
         return "powerpoint"
     if s == ".pdf":
@@ -541,6 +543,7 @@ def sync_folder_to_rag(
     corpus: str = "study",
     allowed_exts: Optional[set[str]] = None,
     exclude_dir_names: Optional[set[str]] = None,
+    progress_callback: Optional[Callable[[dict[str, Any]], None]] = None,
 ) -> dict:
     """Sync a folder tree into rag_docs.
 
@@ -552,46 +555,119 @@ def sync_folder_to_rag(
         raise FileNotFoundError(f"Folder not found: {root}")
 
     if allowed_exts is None:
-        allowed_exts = {".md", ".markdown", ".txt", ".pdf", ".ppt", ".pptx", ".mp4"}
+        allowed_exts = {
+            ".md",
+            ".markdown",
+            ".txt",
+            ".pdf",
+            ".docx",
+            ".ppt",
+            ".pptx",
+            ".mp4",
+        }
+    else:
+        allowed_exts = {
+            (ext.lower() if ext.startswith(".") else f".{ext.lower()}")
+            for ext in allowed_exts
+        }
     if exclude_dir_names is None:
         exclude_dir_names = {".git", ".venv", "__pycache__"}
 
-    processed = 0
-    errors: list[str] = []
-    ingested_ids: list[int] = []
+    def _emit_progress(payload: dict[str, Any]) -> None:
+        if not progress_callback:
+            return
+        try:
+            progress_callback(payload)
+        except Exception:
+            # Progress reporting is best-effort and should never block sync.
+            pass
 
+    candidate_files: list[Path] = []
     for dirpath, dirnames, filenames in os.walk(str(root)):
-        # Prune excluded dirs
         dirnames[:] = [d for d in dirnames if d not in exclude_dir_names]
         for filename in filenames:
             file_path = Path(dirpath) / filename
             if file_path.suffix.lower() not in allowed_exts:
                 continue
+            candidate_files.append(file_path)
 
-            rel_folder = os.path.relpath(str(file_path.parent), str(root)).replace("\\", "/")
-            if rel_folder == ".":
-                rel_folder = ""
+    total_files = len(candidate_files)
+    processed = 0
+    errors: list[str] = []
+    ingested_ids: list[int] = []
 
-            doc_type = _infer_doc_type_from_suffix(file_path.suffix)
-            try:
-                doc_id = ingest_document(
-                    path=str(file_path),
-                    doc_type=doc_type,
-                    course_id=None,
-                    topic_tags=["study-folder"],
-                    corpus=corpus,
-                    folder_path=rel_folder,
-                    enabled=1,
-                )
-                ingested_ids.append(int(doc_id))
-                processed += 1
-            except Exception as exc:
-                errors.append(f"{file_path}: {exc}")
+    _emit_progress(
+        {
+            "phase": "syncing",
+            "processed": processed,
+            "total": total_files,
+            "index": 0,
+            "current_file": None,
+            "errors": len(errors),
+        }
+    )
+
+    for index, file_path in enumerate(candidate_files, start=1):
+        rel_file = os.path.relpath(str(file_path), str(root)).replace("\\", "/")
+        rel_folder = os.path.relpath(str(file_path.parent), str(root)).replace("\\", "/")
+        if rel_folder == ".":
+            rel_folder = ""
+
+        _emit_progress(
+            {
+                "phase": "syncing",
+                "processed": processed,
+                "total": total_files,
+                "index": index,
+                "current_file": rel_file,
+                "errors": len(errors),
+            }
+        )
+
+        doc_type = _infer_doc_type_from_suffix(file_path.suffix)
+        try:
+            doc_id = ingest_document(
+                path=str(file_path),
+                doc_type=doc_type,
+                course_id=None,
+                topic_tags=["study-folder"],
+                corpus=corpus,
+                folder_path=rel_folder,
+                enabled=1,
+            )
+            ingested_ids.append(int(doc_id))
+            processed += 1
+        except Exception as exc:
+            errors.append(f"{file_path}: {exc}")
+
+        _emit_progress(
+            {
+                "phase": "syncing",
+                "processed": processed,
+                "total": total_files,
+                "index": index,
+                "current_file": rel_file,
+                "errors": len(errors),
+            }
+        )
+
+    _emit_progress(
+        {
+            "phase": "completed",
+            "processed": processed,
+            "total": total_files,
+            "index": total_files,
+            "current_file": None,
+            "errors": len(errors),
+        }
+    )
 
     return {
         "ok": len(errors) == 0,
         "root": str(root),
+        "total": total_files,
         "processed": processed,
+        "failed": len(errors),
         "errors": errors,
         "doc_ids": ingested_ids,
     }

@@ -31,7 +31,7 @@ export type LocalCalendarEvent = Omit<
   attendees?: CalendarAttendee[];
   visibility?: string | null;
   transparency?: string | null;
-  reminders?: CalendarReminders | null;
+  reminders?: CalendarReminders;
   timeZone?: string | null;
   courseId?: number | null;
 };
@@ -90,9 +90,14 @@ export function LocalEventEditModal({
   const [activeTab, setActiveTab] = useState<Tab>("details");
   const [newAttendee, setNewAttendee] = useState("");
   const timeZoneOptions = useMemo(() => {
-    if (typeof Intl !== "undefined" && "supportedValuesOf" in Intl) {
+    if (typeof Intl === "undefined") return FALLBACK_TIME_ZONES;
+    const intl = Intl as typeof Intl & {
+      supportedValuesOf?: (type: string) => string[];
+    };
+    if (typeof intl.supportedValuesOf === "function") {
       try {
-        const zones = (Intl.supportedValuesOf("timeZone") as string[])
+        const zones = intl
+          .supportedValuesOf("timeZone")
           .filter((tz) => tz.startsWith("America/") || tz === "Pacific/Honolulu")
           .slice()
           .sort();

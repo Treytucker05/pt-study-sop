@@ -18,8 +18,8 @@ import { useToast } from "@/use-toast";
 import { SortableTaskItem, TaskListContainer, TaskDialog } from "@/components/GoogleTasksComponents";
 import { CalendarAssistant, CalendarAssistantButton } from "@/components/CalendarAssistant";
 import { EventEditModal } from "@/components/EventEditModal";
-import { LocalEventEditModal, type LocalCalendarEvent } from "@/components/LocalEventEditModal";
-import type { InsertCalendarEvent, CalendarEvent, Course } from "@shared/schema";
+import { LocalEventEditModal, type CalendarAttendee, type CalendarReminders, type LocalCalendarEvent } from "@/components/LocalEventEditModal";
+import type { InsertCalendarEvent, Course } from "@shared/schema";
 import {
   DndContext,
   closestCenter,
@@ -79,18 +79,28 @@ interface GoogleCalendarEvent {
   reminders?: { useDefault?: boolean; overrides?: { method: string; minutes: number }[] };
 }
 
-interface NormalizedEvent {
+interface NormalizedEventBase {
   id: string | number;
   title: string;
   start: Date;
   end: Date;
   allDay: boolean;
-  isGoogle: boolean;
   eventType?: string;
   calendarColor?: string;
-  calendarName?: string;
-  originalEvent: CalendarEvent | GoogleCalendarEvent;
 }
+
+interface NormalizedGoogleEvent extends NormalizedEventBase {
+  isGoogle: true;
+  calendarName?: string;
+  originalEvent: GoogleCalendarEvent;
+}
+
+interface NormalizedLocalEvent extends NormalizedEventBase {
+  isGoogle: false;
+  originalEvent: LocalCalendarEvent;
+}
+
+type NormalizedEvent = NormalizedGoogleEvent | NormalizedLocalEvent;
 
 interface CourseOption {
   id: number;
@@ -103,6 +113,25 @@ const parseDateOnly = (value?: string) => {
   const [year, month, day] = value.split("-").map(Number);
   if (!year || !month || !day) return new Date(value);
   return new Date(year, month - 1, day);
+};
+
+const parseCalendarAttendees = (value?: string | null): CalendarAttendee[] | undefined => {
+  if (!value) return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const parseCalendarReminders = (value?: string | null): CalendarReminders | undefined => {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
 };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -492,6 +521,8 @@ export default function CalendarPage() {
     date: new Date(e.date),
     endDate: e.endDate ? new Date(e.endDate) : null,
     createdAt: new Date(e.createdAt),
+    attendees: parseCalendarAttendees(e.attendees),
+    reminders: parseCalendarReminders(e.reminders),
   }));
 
   const { data: googleEvents = [], isLoading: isLoadingGoogle, refetch: refetchGoogle } = useQuery({
@@ -978,11 +1009,11 @@ export default function CalendarPage() {
     }
   };
 
-  const isGoogleEvent = (event: CalendarEvent | GoogleCalendarEvent): event is GoogleCalendarEvent => {
+  const isGoogleEvent = (event: LocalCalendarEvent | GoogleCalendarEvent): event is GoogleCalendarEvent => {
     return 'summary' in event;
   };
 
-  const normalizeEvent = (event: CalendarEvent | GoogleCalendarEvent): NormalizedEvent => {
+  const normalizeEvent = (event: LocalCalendarEvent | GoogleCalendarEvent): NormalizedEvent => {
     if (isGoogleEvent(event)) {
       const isAllDay = !!event.start?.date && !event.start?.dateTime;
       const startStr = event.start?.dateTime || event.start?.date || new Date().toISOString();
@@ -1019,7 +1050,7 @@ export default function CalendarPage() {
         isGoogle: false,
         eventType: localEvent.eventType,
         calendarColor: localEvent.color || undefined,
-        originalEvent: event,
+        originalEvent: localEvent,
       };
     }
   };
@@ -1150,9 +1181,9 @@ export default function CalendarPage() {
 
   const handleEventClick = (event: NormalizedEvent) => {
     if (event.isGoogle) {
-      openGoogleEditModal(event.originalEvent as GoogleCalendarEvent);
+      openGoogleEditModal(event.originalEvent);
     } else {
-      openEditModal(event.originalEvent as LocalCalendarEvent);
+      openEditModal(event.originalEvent);
     }
   };
 

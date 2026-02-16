@@ -21,6 +21,7 @@ export type User = typeof users.$inferSelect;
 export const courses = sqliteTable("courses", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
+  code: text("code"),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
   position: integer("position").notNull().default(0), // Round-robin order position
   totalSessions: integer("total_sessions").notNull().default(0),
