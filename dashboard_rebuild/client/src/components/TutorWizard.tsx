@@ -213,7 +213,7 @@ export function TutorWizard({
 
       {/* ─── Step Content ─── */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="max-w-2xl mx-auto py-4 px-4">
+        <div className="w-full py-4 px-4">
           {step === 0 && (
             <StepCourseAndMaterials
               courses={courses}

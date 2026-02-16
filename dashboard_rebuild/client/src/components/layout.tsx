@@ -44,6 +44,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const currentPath = location === "/" ? "/" : "/" + location.split("/")[1];
   const isBrainPage = currentPath === "/brain";
+  const isTutorPage = currentPath === "/tutor";
   const [newNote, setNewNote] = useState("");
   const [newNoteType, setNewNoteType] = useState<NoteCategory>("notes");
   const [activeTab, setActiveTab] = useState<"all" | NoteCategory>("all");
@@ -573,12 +574,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <main
         className={cn(
           "relative z-10 w-full bg-grid h-full min-h-0",
-          isBrainPage
+          isBrainPage || isTutorPage
             ? "overflow-hidden"
             : "overflow-y-auto px-3 md:px-6 py-3"
         )}
       >
-        <div className={cn("page-enter", isBrainPage && "h-full")}>{children}</div>
+        <div className={cn("page-enter", (isBrainPage || isTutorPage) && "h-full")}>{children}</div>
       </main>
 
       {/* Tutor Modal Integration */}

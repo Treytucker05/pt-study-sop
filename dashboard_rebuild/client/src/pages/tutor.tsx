@@ -527,7 +527,7 @@ export default function Tutor() {
   if (!activeSessionId && !showSetup) {
     return (
       <Layout>
-        <div className="flex flex-col h-[calc(100vh-140px)]">
+        <div className="flex flex-col h-full min-h-0">
           <TutorWizard
             courseId={courseId}
             setCourseId={setCourseId}
@@ -559,7 +559,7 @@ export default function Tutor() {
   if (showSetup && activeSessionId) {
     return (
       <Layout>
-        <div className="flex flex-col h-[calc(100vh-140px)]">
+        <div className="flex flex-col h-full min-h-0">
           <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-black/60 border-b-2 border-primary/30">
             <Button
               variant="ghost"
@@ -620,7 +620,7 @@ export default function Tutor() {
 
   return (
     <Layout>
-      <div className="flex flex-col h-[calc(100vh-140px)]">
+      <div className="flex flex-col h-full min-h-0">
         {/* Main content: Chat + control sidebar */}
         <div className="flex-1 flex min-h-0">
           <div className="flex-1 bg-zinc-950/80 border-x-2 border-primary/20 flex flex-col min-w-0 relative">

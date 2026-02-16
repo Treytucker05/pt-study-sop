@@ -664,3 +664,15 @@
   - `dashboard_rebuild/client/src/pages/tutor.tsx`
   - `dashboard_rebuild/client/src/components/TutorChat.tsx`
 - Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.
+
+## 2026-02-16 - Tutor Full-Viewport Expansion (Wizard + Session)
+
+- Removed Tutor's redundant height clamp (`h-[calc(100vh-140px)]`) and switched to `h-full min-h-0` so it fills the available main viewport region.
+- Updated app layout rules for `/tutor` to use `overflow-hidden` + full-height page container (same behavior class as Brain for viewport utilization).
+- Expanded Tutor wizard content width by removing the `max-w-2xl` cap.
+- Result: Tutor setup and session views now use available panel width/height instead of stopping early.
+- Files:
+  - `dashboard_rebuild/client/src/components/layout.tsx`
+  - `dashboard_rebuild/client/src/components/TutorWizard.tsx`
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+- Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.
