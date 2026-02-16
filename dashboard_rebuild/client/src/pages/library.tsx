@@ -306,10 +306,15 @@ function renderFolderNode(
     const nestedFilesCount = countFolderFiles(child);
 
     elements.push(
-      <details key={folderPath} className="group">
+      <details key={folderPath} className="group" open={depth === 0}>
         <summary className={`${TEXT_BODY} px-2 py-1 border-b border-primary/15 text-muted-foreground hover:text-foreground cursor-pointer`}>
           <span className="inline-flex items-center gap-1">
-            <span style={{ paddingLeft: `${(depth) * 0.9}rem` }}>▸</span>
+            <span
+              className="inline-block transition-transform duration-150 group-open:rotate-90"
+              style={{ paddingLeft: `${(depth) * 0.9}rem` }}
+            >
+              ▸
+            </span>
             <span className="font-terminal">{folderName}</span>
             <span className={TEXT_MUTED}>({nestedFilesCount})</span>
           </span>
@@ -381,11 +386,13 @@ export default function Library() {
     if (!syncJobId) return;
 
     let cancelled = false;
+    let transientFailures = 0;
 
     const pollSyncStatus = async () => {
       try {
         const status = await api.tutor.getSyncMaterialsStatus(syncJobId);
         if (cancelled) return;
+        transientFailures = 0;
         setSyncStatus(status);
 
         if (status.status === "completed" || status.status === "failed") {
@@ -399,7 +406,13 @@ export default function Library() {
             const failedCount = Number(status.sync_result?.failed ?? status.errors ?? 0);
             const embedResult = status.embed_result as { embedded?: number } | null | undefined;
             const embedCount = Number(embedResult?.embedded ?? 0);
-            if (failedCount > 0) {
+            const embedErrorResult = status.embed_result as { error?: string } | null | undefined;
+            const embedError = (embedErrorResult?.error || "").trim();
+            if (embedError) {
+              toast.warning(
+                `Sync complete: ${syncCount} processed, ${failedCount} failed. Embedding error: ${embedError}`,
+              );
+            } else if (failedCount > 0) {
               toast.warning(
                 `Sync complete: ${syncCount} processed, ${failedCount} failed${embedCount > 0 ? `, ${embedCount} embedded` : ""}`,
               );
@@ -413,9 +426,14 @@ export default function Library() {
         }
       } catch (err) {
         if (cancelled) return;
+        transientFailures += 1;
+        if (transientFailures < 5) {
+          window.setTimeout(pollSyncStatus, 1500);
+          return;
+        }
         setSyncing(false);
         setSyncJobId(null);
-        toast.error(`Sync status failed: ${err instanceof Error ? err.message : "Unknown"}`);
+        toast.error(`Sync status failed after retries: ${err instanceof Error ? err.message : "Unknown"}`);
         return;
       }
 
