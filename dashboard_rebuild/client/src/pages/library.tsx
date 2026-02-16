@@ -2,7 +2,8 @@ import Layout from "@/components/layout";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material, TutorSyncJobStatus, AutoLinkResult } from "@/lib/api";
+import type { Material, TutorSyncJobStatus } from "@/lib/api";
+import type { Course } from "@shared/schema";
 import { Link } from "wouter";
 import {
   TEXT_PAGE_TITLE,
@@ -33,6 +34,7 @@ import {
   Link2,
   Folder,
   FolderOpen,
+  ChevronRight,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -102,9 +104,29 @@ interface MutateDeleteLike {
   mutate: (id: number) => void;
 }
 
+function normalizeRawFolderSegments(parts: string[]): string[] {
+  return parts
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function normalizeSourceFolderSegments(parts: string[]): string[] {
+  const cleaned = normalizeRawFolderSegments(parts);
+  const usersIndex = cleaned.findIndex((part) => part.toLowerCase() === "users");
+  const desktopIndex = cleaned.findIndex((part) => part.toLowerCase() === "desktop");
+  if (usersIndex >= 0 && desktopIndex > usersIndex && desktopIndex < cleaned.length - 1) {
+    // Absolute local paths should not expose machine roots in the vault-style rail.
+    return cleaned.slice(desktopIndex + 1);
+  }
+  return cleaned;
+}
+
 function getMaterialFolder(mat: Material): string {
   const rawFolder = (mat.folder_path || "").replace(/\\/g, "/").trim().replace(/^\/+|\/+$/g, "");
-  if (rawFolder) return rawFolder;
+  if (rawFolder) {
+    const normalizedRaw = normalizeRawFolderSegments(rawFolder.split("/"));
+    return normalizedRaw.join("/") || "Unsorted";
+  }
 
   const sourcePath = (mat.source_path || "").replace(/\\/g, "/").trim();
   if (!sourcePath) return "Unsorted";
@@ -115,7 +137,8 @@ function getMaterialFolder(mat: Material): string {
     const afterProtocol = sourcePath.slice(protocolIndex + 3);
     const lastSlash = afterProtocol.lastIndexOf("/");
     if (lastSlash <= 0) return protocol;
-    return `${protocol}/${afterProtocol.slice(0, lastSlash)}`;
+    const protocolParts = normalizeRawFolderSegments(afterProtocol.slice(0, lastSlash).split("/"));
+    return protocolParts.length ? `${protocol}/${protocolParts.join("/")}` : protocol;
   }
 
   const normalizedSource = sourcePath.toLowerCase();
@@ -124,9 +147,9 @@ function getMaterialFolder(mat: Material): string {
   const lastSlash = sourcePath.lastIndexOf("/");
   if (lastSlash <= 0) return "Unsorted";
 
-  const folders = sourcePath.slice(0, lastSlash).split("/").filter(Boolean);
+  const folders = normalizeSourceFolderSegments(sourcePath.slice(0, lastSlash).split("/"));
   if (folders.length > 2) return folders.slice(-2).join("/");
-  return folders.join("/");
+  return folders.join("/") || "Unsorted";
 }
 
 function buildFolderTree(materials: Material[]): FolderNode {
@@ -155,6 +178,7 @@ interface FolderListItem {
   name: string;
   depth: number;
   filesCount: number;
+  hasChildren: boolean;
 }
 
 function getFolderNode(root: FolderNode, folderPath: string): FolderNode | null {
@@ -191,10 +215,21 @@ function flattenFolders(
       name,
       depth,
       filesCount: countFolderFiles(child),
+      hasChildren: Object.keys(child.children).length > 0,
     });
     items.push(...flattenFolders(child, depth + 1, path));
   }
   return items;
+}
+
+function getFolderAncestorPaths(path: string): string[] {
+  if (!path) return [];
+  const parts = path.split("/").filter(Boolean);
+  const ancestors: string[] = [];
+  for (let i = 0; i < parts.length; i += 1) {
+    ancestors.push(parts.slice(0, i + 1).join("/"));
+  }
+  return ancestors;
 }
 
 function renderMaterialRow(
@@ -344,6 +379,9 @@ export default function Library() {
   const [syncStatus, setSyncStatus] = useState<TutorSyncJobStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string>(ALL_FOLDERS_KEY);
+  const [expandedFolderPaths, setExpandedFolderPaths] = useState<Set<string>>(new Set());
+  const [initializedFolderExpansion, setInitializedFolderExpansion] = useState(false);
+  const [courseLinkTarget, setCourseLinkTarget] = useState<string>("");
   const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem("tutor.selected_material_ids.v1");
@@ -359,9 +397,21 @@ export default function Library() {
     queryKey: ["tutor-materials"],
     queryFn: () => api.tutor.getMaterials(),
   });
+  const { data: courses = [] } = useQuery<Course[]>({
+    queryKey: ["courses-active"],
+    queryFn: () => api.courses.getActive(),
+  });
 
   const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
   const folderItems = useMemo(() => flattenFolders(folderTree), [folderTree]);
+  const visibleFolderItems = useMemo(
+    () => folderItems.filter((item) => {
+      if (item.depth === 0) return true;
+      const ancestorPaths = getFolderAncestorPaths(item.path).slice(0, -1);
+      return ancestorPaths.every((ancestor) => expandedFolderPaths.has(ancestor));
+    }),
+    [folderItems, expandedFolderPaths],
+  );
   const selectedFolderNode = useMemo(
     () => getFolderNode(folderTree, selectedFolderPath),
     [folderTree, selectedFolderPath],
@@ -401,6 +451,30 @@ export default function Library() {
   }, [isLoading, materials, selectedFolderPath, folderTree]);
 
   useEffect(() => {
+    if (initializedFolderExpansion) return;
+    // Start with top-level folders expanded so first interaction is not empty.
+    const topLevelPaths = folderItems.filter((item) => item.depth === 0).map((item) => item.path);
+    if (!topLevelPaths.length) return;
+    setExpandedFolderPaths((prev) => {
+      const next = new Set(prev);
+      for (const path of topLevelPaths) next.add(path);
+      return next;
+    });
+    setInitializedFolderExpansion(true);
+  }, [folderItems, initializedFolderExpansion]);
+
+  useEffect(() => {
+    if (!selectedFolderPath) return;
+    const ancestors = getFolderAncestorPaths(selectedFolderPath);
+    if (!ancestors.length) return;
+    setExpandedFolderPaths((prev) => {
+      const next = new Set(prev);
+      for (const path of ancestors) next.add(path);
+      return next;
+    });
+  }, [selectedFolderPath]);
+
+  useEffect(() => {
     if (!syncJobId) return;
 
     let cancelled = false;
@@ -418,14 +492,6 @@ export default function Library() {
           setSyncJobId(null);
           queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
           queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-
-          // Auto-link newly synced materials to courses
-          if (status.status === "completed") {
-            api.tutor.autoLinkMaterials().then(() => {
-              queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
-              queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-            }).catch(() => { /* silent — link button is available as fallback */ });
-          }
 
           if (status.status === "completed") {
             const syncCount = Number(status.sync_result?.processed ?? status.processed ?? 0);
@@ -495,6 +561,35 @@ export default function Library() {
     });
   };
 
+  const toggleFolderExpanded = (path: string) => {
+    const isCollapsing = expandedFolderPaths.has(path);
+    setExpandedFolderPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        for (const expandedPath of Array.from(next)) {
+          if (expandedPath === path || expandedPath.startsWith(`${path}/`)) {
+            next.delete(expandedPath);
+          }
+        }
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+    if (isCollapsing && (selectedFolderPath === path || selectedFolderPath.startsWith(`${path}/`))) {
+      setSelectedFolderPath(ALL_FOLDERS_KEY);
+    }
+  };
+
+  const handleLinkSelectedToCourse = () => {
+    const targetCourseId = Number(courseLinkTarget);
+    if (!targetCourseId || !selectedVisibleMaterialIds.length || courseLinkMutation.isPending) return;
+    courseLinkMutation.mutate({
+      ids: [...selectedVisibleMaterialIds],
+      courseId: targetCourseId,
+    });
+  };
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<{ title: string; enabled: boolean }> }) =>
       api.tutor.updateMaterial(id, data),
@@ -546,22 +641,37 @@ export default function Library() {
     },
   });
 
-  const autoLinkMutation = useMutation({
-    mutationFn: () => api.tutor.autoLinkMaterials(),
-    onSuccess: (result: AutoLinkResult) => {
+  const courseLinkMutation = useMutation({
+    mutationFn: async ({ ids, courseId }: { ids: number[]; courseId: number }) => {
+      let failed = 0;
+      for (const id of ids) {
+        try {
+          await api.tutor.updateMaterial(id, { course_id: courseId });
+        } catch {
+          failed += 1;
+        }
+      }
+      return {
+        linked: ids.length - failed,
+        failed,
+        total: ids.length,
+        courseId,
+      };
+    },
+    onSuccess: ({ linked, failed, total, courseId }) => {
+      const targetCourse = courses.find((course) => course.id === courseId);
+      const courseLabel = targetCourse?.code || targetCourse?.name || `Course ${courseId}`;
       queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
       queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-      if (result.linked > 0) {
-        const mappingStr = Object.entries(result.mappings)
-          .map(([folder, course]) => `${folder} → ${course}`)
-          .join(", ");
-        toast.success(`Linked ${result.linked} materials to courses (${mappingStr})`);
+      setCourseLinkTarget("");
+      if (failed > 0) {
+        toast.warning(`${linked}/${total} materials linked to ${courseLabel}; ${failed} failed.`);
       } else {
-        toast.info("No unlinked materials to link");
+        toast.success(`Linked ${linked} materials to ${courseLabel}`);
       }
     },
     onError: (err) => {
-      toast.error(`Auto-link failed: ${err instanceof Error ? err.message : "Unknown"}`);
+      toast.error(`Course link failed: ${err instanceof Error ? err.message : "Unknown"}`);
     },
   });
 
@@ -656,25 +766,61 @@ export default function Library() {
                   <span className="truncate flex-1">All Materials</span>
                   <span className="text-[11px]">{materials.length}</span>
                 </button>
-                {folderItems.map((folder) => {
+                {visibleFolderItems.map((folder) => {
                   const isSelected = selectedFolderPath === folder.path;
+                  const isExpanded = expandedFolderPaths.has(folder.path);
+                  const hasChildren = folder.hasChildren;
                   return (
-                    <button
+                    <div
                       key={folder.path}
-                      className={`w-full rounded-none border pr-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
-                        isSelected
-                          ? "border-primary/60 bg-primary/20 text-primary"
-                          : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
-                      }`}
-                      style={{ paddingLeft: `${0.65 + folder.depth * 0.85}rem` }}
-                      onClick={() => setSelectedFolderPath(folder.path)}
-                      type="button"
-                      title={folder.path}
                     >
-                      {isSelected ? <FolderOpen className={ICON_SM} /> : <Folder className={ICON_SM} />}
-                      <span className="truncate flex-1">{folder.name}</span>
-                      <span className="text-[11px]">{folder.filesCount}</span>
-                    </button>
+                      <div
+                        className={`w-full rounded-none border pr-2 py-1.5 text-left text-sm font-terminal flex items-center gap-1 transition-colors ${
+                          isSelected
+                            ? "border-primary/60 bg-primary/20 text-primary"
+                            : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                        }`}
+                        style={{ paddingLeft: `${0.45 + folder.depth * 0.85}rem` }}
+                        title={folder.path}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          setSelectedFolderPath(folder.path);
+                          if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.target !== e.currentTarget) return;
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedFolderPath(folder.path);
+                            if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
+                          }
+                        }}
+                      >
+                        {hasChildren ? (
+                          <button
+                            type="button"
+                            className="p-0.5 hover:text-primary transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFolderExpanded(folder.path);
+                            }}
+                            aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+                          >
+                            <ChevronRight
+                              className={`${ICON_SM} transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
+                            />
+                          </button>
+                        ) : (
+                          <span className="w-4" />
+                        )}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {isSelected ? <FolderOpen className={ICON_SM} /> : <Folder className={ICON_SM} />}
+                          <span className="truncate flex-1">{folder.name}</span>
+                        </div>
+                        <span className="text-[11px]">{folder.filesCount}</span>
+                      </div>
+                    </div>
                   );
                 })}
                 {!folderItems.length && materials.length === 0 ? (
@@ -796,20 +942,39 @@ export default function Library() {
                       )}
                       CLEAR ALL MATERIALS
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-none h-7 px-3 font-terminal text-xs"
-                      disabled={autoLinkMutation.isPending || materials.length === 0}
-                      onClick={() => autoLinkMutation.mutate()}
-                    >
-                      {autoLinkMutation.isPending ? (
-                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                      ) : (
-                        <Link2 className={`${ICON_SM} mr-1`} />
-                      )}
-                      LINK TO COURSES
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <select
+                        value={courseLinkTarget}
+                        onChange={(e) => setCourseLinkTarget(e.target.value)}
+                        className="h-7 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary"
+                        disabled={courses.length === 0 || courseLinkMutation.isPending}
+                      >
+                        <option value="">Select course</option>
+                        {courses.map((course) => (
+                          <option key={course.id} value={String(course.id)}>
+                            {course.code || course.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-none h-7 px-3 font-terminal text-xs"
+                        disabled={
+                          courseLinkMutation.isPending
+                          || !selectedVisibleMaterialIds.length
+                          || !courseLinkTarget
+                        }
+                        onClick={handleLinkSelectedToCourse}
+                      >
+                        {courseLinkMutation.isPending ? (
+                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                        ) : (
+                          <Link2 className={`${ICON_SM} mr-1`} />
+                        )}
+                        LINK IN VIEW
+                      </Button>
+                    </div>
                     <Link href="/tutor">
                       <Button
                         variant="outline"

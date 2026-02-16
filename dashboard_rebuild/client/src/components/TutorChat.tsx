@@ -7,13 +7,8 @@ import {
   FileText,
   CreditCard,
   Map,
-  Square,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
   Check,
-  Clock,
-  ListChecks,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -40,39 +35,27 @@ interface TutorChatProps {
   sessionId: string | null;
   engine?: string;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
-  onSessionEnd: () => void;
   chainBlocks?: ChainBlock[];
   currentBlockIndex?: number;
   onAdvanceBlock?: () => void;
-}
-
-/** Parse facilitation prompt into structured steps */
-function parseFacilitationSteps(prompt: string | undefined | null): string[] {
-  if (!prompt) return [];
-  // Split by numbered lines (1. 2. 3.) or bullet points (- *)
-  const lines = prompt.split(/\n/).filter((l) => l.trim());
-  const steps: string[] = [];
-  for (const line of lines) {
-    const cleaned = line.replace(/^\s*(?:\d+[.)]\s*|[-*]\s+)/, "").trim();
-    if (cleaned) steps.push(cleaned);
-  }
-  return steps;
+  focusMode?: boolean;
 }
 
 export function TutorChat({
   sessionId,
   engine,
   onArtifactCreated,
-  onSessionEnd,
   chainBlocks = [],
   currentBlockIndex = 0,
   onAdvanceBlock,
+  focusMode = false,
 }: TutorChatProps) {
   const hasChain = chainBlocks.length > 0;
   const isChainComplete = hasChain && currentBlockIndex >= chainBlocks.length;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -294,15 +277,10 @@ export function TutorChat({
     );
   }
 
-  const [guidanceOpen, setGuidanceOpen] = useState(true);
-  const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
-  const currentBlock = hasChain && !isChainComplete ? chainBlocks[currentBlockIndex] : null;
-  const facilitationSteps = parseFacilitationSteps(currentBlock?.facilitation_prompt);
-
   return (
     <div className="flex flex-col h-full">
       {/* Chain Progress Stepper */}
-      {hasChain && (
+      {hasChain && !focusMode && (
         <div className="shrink-0 border-b-2 border-primary/30 bg-black/40">
           {/* Horizontal stepper */}
           <div className="px-3 py-2 flex items-center gap-1 overflow-x-auto">
@@ -371,71 +349,15 @@ export function TutorChat({
               )}
             </div>
           </div>
-
-          {/* Block Guidance Panel (collapsible) */}
-          {currentBlock && (
-            <div className="border-t border-primary/20">
-              <button
-                onClick={() => setGuidanceOpen(!guidanceOpen)}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-primary/5 transition-colors"
-              >
-                <ListChecks className="w-4 h-4 text-primary" />
-                <span className="font-arcade text-xs text-primary">
-                  BLOCK GUIDANCE: {currentBlock.name}
-                </span>
-                <span
-                  className="text-xs font-terminal px-1.5 py-0.5 border"
-                  style={{ color: CATEGORY_COLORS[currentBlock.category as keyof typeof CATEGORY_COLORS] || "#888", borderColor: (CATEGORY_COLORS[currentBlock.category as keyof typeof CATEGORY_COLORS] || "#888") + "60" }}
-                >
-                  {currentBlock.category}
-                </span>
-                <span className="flex items-center gap-0.5 text-xs font-terminal text-muted-foreground ml-auto">
-                  <Clock className="w-3 h-3" /> ~{currentBlock.duration}min
-                </span>
-                {guidanceOpen ? (
-                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                )}
-              </button>
-              {guidanceOpen && (
-                <div className="px-3 pb-2 space-y-2">
-                  {currentBlock.description && (
-                    <p className="text-sm font-terminal text-muted-foreground leading-relaxed">
-                      {currentBlock.description}
-                    </p>
-                  )}
-                  {facilitationSteps.length > 0 && (
-                    <ol className="space-y-1 pl-1">
-                      {facilitationSteps.map((step, si) => (
-                        <li
-                          key={si}
-                          className="flex items-start gap-2 text-sm font-terminal text-muted-foreground"
-                        >
-                          <span className="shrink-0 w-5 h-5 flex items-center justify-center border border-primary/30 text-xs text-primary mt-0.5">
-                            {si + 1}
-                          </span>
-                          <span className="leading-relaxed">{step}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                  {!currentBlock.description && facilitationSteps.length === 0 && (
-                    <p className="text-sm font-terminal text-muted-foreground/60 italic">
-                      No specific guidance for this block. Follow the tutor's lead.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-3 space-y-3 bg-zinc-950/30"
+        className={`flex-1 overflow-y-auto space-y-4 bg-zinc-950/30 ${
+          focusMode ? "p-5 md:p-6" : "p-4"
+        }`}
       >
         {messages.length === 0 && (
           <div className="text-center py-8 space-y-2">
@@ -454,7 +376,13 @@ export function TutorChat({
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[85%] px-3 py-2 text-[17px] leading-7 font-sans ${
+              className={`px-3 py-2 text-[17px] leading-7 font-sans ${
+                msg.role === "user"
+                  ? "max-w-[72%]"
+                  : focusMode
+                    ? "max-w-[98%]"
+                    : "max-w-[96%]"
+              } ${
                 msg.role === "user"
                   ? "bg-primary/15 border-2 border-primary/40 text-foreground"
                   : "bg-zinc-900/95 border-2 border-zinc-600 text-zinc-100"
@@ -543,37 +471,6 @@ export function TutorChat({
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Command hints */}
-      <div className="flex items-center gap-2 px-3 py-2 border-t border-primary/20">
-        <span className="text-base font-terminal text-muted-foreground/60">
-          Commands:
-        </span>
-        <Badge variant="outline" className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
-          onClick={() => setInput("/note ")}>
-          <FileText className="w-4 h-4 mr-1" />/note
-        </Badge>
-        <Badge variant="outline" className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
-          onClick={() => setInput("/card ")}>
-          <CreditCard className="w-4 h-4 mr-1" />/card
-        </Badge>
-        <Badge variant="outline" className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
-          onClick={() => setInput("/map ")}>
-          <Map className="w-4 h-4 mr-1" />/map
-        </Badge>
-
-        <div className="flex-1" />
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onSessionEnd}
-          className="text-sm font-terminal text-destructive hover:text-destructive h-8 px-3"
-        >
-          <Square className="w-4 h-4 mr-1" />
-          END
-        </Button>
       </div>
 
       <div className="flex items-center gap-2 p-3 border-t-2 border-primary/20">

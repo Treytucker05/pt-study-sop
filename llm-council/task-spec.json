@@ -1,0 +1,30 @@
+{
+  "task": "Review the Adaptive Tutor feature architecture and produce an actionable improvement roadmap focused on LLM rule-following and module-specific teaching quality.",
+  "constraints": [
+    "The tutor is a Flask backend + React frontend using LangChain for RAG/chain orchestration.",
+    "Primary LLM provider is Codex/ChatGPT (gpt-5.1) with OpenRouter as fallback.",
+    "RAG uses ChromaDB with OpenAI text-embedding-3-small embeddings + SQL keyword fallback.",
+    "The system must continue working with the existing SQLite database schema.",
+    "Changes should be open to rearchitecture if justified, but must be implementable incrementally.",
+    "Focus on: (1) why the LLM doesn't follow the elaborate rules in the system prompt, (2) why it doesn't teach specifically to the selected module/course materials."
+  ],
+  "repo_context": {
+    "root": "C:/pt-study-sop",
+    "paths": [
+      "brain/tutor_prompt_builder.py",
+      "brain/tutor_chains.py",
+      "brain/tutor_rag.py",
+      "brain/tutor_streaming.py",
+      "brain/dashboard/api_tutor.py"
+    ],
+    "notes": "Key architecture details below."
+  },
+  "architecture_summary": "## Current Architecture\n\n### 3-Tier Prompt System (tutor_prompt_builder.py)\n- **Tier 1 (Always-On)**: ~200 lines of rules — session flow M0-M6, KWIK encoding protocol, Source-Lock, Seed-Lock, Three-Layer Teaching Chunk, No Answer Leakage, No Phantom Outputs, Function Before Structure, Pacing Invariants, Evidence Nuance Rules, ErrorLog, Lite Wrap v9.5.\n- **Tier 2 (Mode-Level)**: 7 modes — Core, Sprint, Quick Sprint, Light, Drill, Diagnostic Sprint, Teaching Sprint. Each has pacing/feedback/grading rules.\n- **Tier 3 (Block-Level)**: facilitation_prompt from method_blocks table, chain progress context.\n\nAll three tiers are concatenated into one massive system prompt.\n\n### LLM Chain (tutor_chains.py)\n- Uses LangChain RunnableSequence: RunnablePassthrough.assign(context=retriever) | ChatPromptTemplate | ChatOpenAI | StrOutputParser\n- OpenRouter path: ChatOpenAI with streaming, temp=0.3, max_tokens=1500\n- Codex path: keyword_search_dual for RAG, builds system+user prompt manually, streams via ChatGPT backend API or falls back to codex CLI\n- Chat history: last 20 turns loaded, last 12 included in Codex prompt (truncated to 800 chars each)\n\n### RAG Pipeline (tutor_rag.py)\n- Two ChromaDB collections: tutor_materials (study docs) and tutor_instructions (SOP rules)\n- Chunk: RecursiveCharacterTextSplitter 1000/200 overlap\n- Search: similarity_search with metadata filters (course_id, folder_paths, material_ids)\n- Keyword fallback: SQL LIKE scoring on rag_docs content\n- Dual context: materials + instructions queried separately\n- For Codex provider: keyword-only dual search (no embeddings)\n\n### API Flow (api_tutor.py, send_turn endpoint)\n1. Load session + last 20 turns\n2. Build chain/block context if method chain active\n3. Detect artifact commands (regex)\n4. Parse content_filter for retriever params (material_ids, folder_paths, model)\n5. Route to provider: codex (ChatGPT streaming -> codex CLI fallback) or openrouter (LangChain chain)\n6. Stream SSE response\n7. Log turn to DB\n\n### Known Pain Points (from user)\n1. **LLM doesn't follow the elaborate rules** — Despite ~200 lines of Tier 1 rules, the LLM frequently ignores them (e.g., skips M0 planning, doesn't do Three-Layer Chunks, doesn't enforce Source-Lock).\n2. **LLM doesn't teach to modules well** — When materials are available, the tutor doesn't ground its teaching in the specific module content. It often defaults to general knowledge.",
+  "success_criteria": [
+    "Actionable roadmap with prioritized improvements (not just observations)",
+    "Best practices audit: compare against industry patterns for RAG-based tutor systems",
+    "Specific recommendations for improving LLM rule adherence in the system prompt",
+    "Specific recommendations for improving material grounding / module-specific teaching",
+    "Each recommendation should include: what to change, why, expected impact, effort estimate"
+  ]
+}

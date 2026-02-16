@@ -635,3 +635,19 @@
   - Removed magic `__all__` sentinel collision risk by using empty-string root key.
 - File: `dashboard_rebuild/client/src/pages/library.tsx`
 - Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.
+
+## 2026-02-16 - Library Folder UX + Real Course Linking
+
+- Folder rail is now collapsible/expandable by path with chevron controls and keyboard-safe row handling.
+- Collapsing a folder now collapses descendants reliably and avoids orphaned child rows.
+- Added initial top-level auto-expand only once (preserves user collapse state across refreshes).
+- Updated folder-path normalization:
+  - Removed machine-root Desktop leakage for local absolute paths.
+  - Preserved protocol/URL folder paths without over-normalizing.
+- Replaced heuristic `auto-link` button with explicit linking to real active courses:
+  - Added course dropdown (`api.courses.getActive`) + `LINK IN VIEW` action.
+  - Linking updates selected visible materials via `api.tutor.updateMaterial(..., { course_id })`.
+  - Linking now runs sequential updates for safer API behavior on large selections.
+- Removed automatic post-sync auto-link pass; linking is now user-driven.
+- File: `dashboard_rebuild/client/src/pages/library.tsx`
+- Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.
