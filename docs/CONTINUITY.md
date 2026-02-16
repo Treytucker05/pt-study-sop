@@ -611,3 +611,12 @@
 - Files: `brain/dashboard/api_tutor.py`, `dashboard_rebuild/client/src/pages/tutor.tsx`, `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`, `dashboard_rebuild/client/src/components/brain/UnifiedBrainCanvas.tsx`
 - Build: 0 errors, 77/77 tests pass
 - Commit: `9118c1f3`
+
+## 2026-02-16 - Library Sync Chroma Batch-Size Overflow Fix
+
+- Fixed tutor materials embedding to respect Chroma runtime max batch size during sync-folder embed step.
+- Added adaptive backoff for batch-limit `ValueError`s (halves batch size and retries).
+- Added best-effort rollback of already-inserted vector IDs on fatal mid-stream failure to avoid partial insert drift.
+- Added focused unit tests for batch-size resolution, split behavior, backoff, rollback, and input validation.
+- Files: `brain/tutor_rag.py`, `brain/tests/test_tutor_rag_batching.py`
+- Tests: `pytest brain/tests/test_tutor_rag_batching.py -q` and `pytest brain/tests/ -q` both pass.

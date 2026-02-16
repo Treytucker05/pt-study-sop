@@ -27,6 +27,8 @@ _vectorstores: dict[str, object] = {}
 COLLECTION_MATERIALS = "tutor_materials"
 COLLECTION_INSTRUCTIONS = "tutor_instructions"
 
+DEFAULT_CHROMA_BATCH_SIZE = 1000
+
 
 def _get_openai_api_key() -> str:
     """Resolve OpenAI API key from env (supports OpenRouter-compatible keys)."""
@@ -112,6 +114,83 @@ def chunk_document(
     return docs
 
 
+def _resolve_chroma_max_batch_size(vs: object) -> int:
+    """Best-effort lookup of Chroma's runtime max batch size."""
+    client = getattr(vs, "_client", None)
+    get_max_batch_size = getattr(client, "get_max_batch_size", None)
+    if not callable(get_max_batch_size):
+        return DEFAULT_CHROMA_BATCH_SIZE
+
+    try:
+        max_batch_size = int(get_max_batch_size())
+    except Exception:
+        return DEFAULT_CHROMA_BATCH_SIZE
+
+    return max_batch_size if max_batch_size > 0 else DEFAULT_CHROMA_BATCH_SIZE
+
+
+def _is_chroma_batch_limit_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return (
+        ("batch size" in msg and ("max" in msg or "maximum" in msg))
+        or ("cannot submit more than" in msg and "embeddings at once" in msg)
+    )
+
+
+def _rollback_chroma_ids(vs: object, ids: list[str]) -> None:
+    """Best-effort rollback for partially inserted vector IDs."""
+    if not ids:
+        return
+
+    collection = getattr(vs, "_collection", None)
+    delete_from_collection = getattr(collection, "delete", None)
+    if callable(delete_from_collection):
+        try:
+            delete_from_collection(ids=ids)
+            return
+        except Exception:
+            pass
+
+    delete_from_vs = getattr(vs, "delete", None)
+    if callable(delete_from_vs):
+        try:
+            delete_from_vs(ids=ids)
+        except Exception:
+            pass
+
+
+def _add_documents_batched(vs: object, chunks: list, ids: list[str]) -> None:
+    """
+    Add documents to Chroma using bounded batch sizes.
+
+    Some Chroma backends enforce a max batch size and will raise ValueError when
+    a single add/upsert exceeds that limit.
+    """
+    if not chunks:
+        return
+    if len(chunks) != len(ids):
+        raise ValueError("chunks and ids must have the same length")
+
+    batch_size = min(len(chunks), _resolve_chroma_max_batch_size(vs))
+    index = 0
+    added_ids: list[str] = []
+    while index < len(chunks):
+        next_index = min(index + batch_size, len(chunks))
+        batch_ids = ids[index:next_index]
+        try:
+            vs.add_documents(chunks[index:next_index], ids=batch_ids)
+            added_ids.extend(batch_ids)
+            index = next_index
+        except ValueError as exc:
+            if not _is_chroma_batch_limit_error(exc) or batch_size <= 1:
+                _rollback_chroma_ids(vs, added_ids)
+                raise
+            batch_size = max(1, batch_size // 2)
+        except Exception:
+            _rollback_chroma_ids(vs, added_ids)
+            raise
+
+
 def embed_rag_docs(
     course_id: Optional[int] = None,
     folder_path: Optional[str] = None,
@@ -184,7 +263,7 @@ def embed_rag_docs(
         # Add to correct ChromaDB collection
         vs = init_vectorstore(collection)
         ids = [f"rag-{doc['id']}-{i}" for i in range(len(chunks))]
-        vs.add_documents(chunks, ids=ids)
+        _add_documents_batched(vs, chunks, ids)
 
         # Record in rag_embeddings
         for i, chunk in enumerate(chunks):
