@@ -1,7 +1,5 @@
 import Layout from "@/components/layout";
-import { Card } from "@/components/ui/card";
 import { useState, useEffect, useMemo } from "react";
-import type { JSX } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { Material, TutorSyncJobStatus, AutoLinkResult } from "@/lib/api";
@@ -33,6 +31,8 @@ import {
   BookOpen,
   RefreshCw,
   Link2,
+  Folder,
+  FolderOpen,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -44,6 +44,7 @@ const FILE_TYPE_LABEL: Record<string, string> = {
   md: "MD",
   txt: "TXT",
 };
+const ALL_FOLDERS_KEY = "";
 
 function getFileTypeLabel(fileType: string | null | undefined): string {
   const normalizedRaw = (fileType || "").toLowerCase().trim();
@@ -149,9 +150,55 @@ function buildFolderTree(materials: Material[]): FolderNode {
   return root;
 }
 
+interface FolderListItem {
+  path: string;
+  name: string;
+  depth: number;
+  filesCount: number;
+}
+
+function getFolderNode(root: FolderNode, folderPath: string): FolderNode | null {
+  if (!folderPath) return root;
+  const parts = folderPath.split("/").filter(Boolean);
+  let node: FolderNode | undefined = root;
+  for (const part of parts) {
+    node = node?.children[part];
+    if (!node) return null;
+  }
+  return node;
+}
+
+function collectFolderMaterials(node: FolderNode): Material[] {
+  const collected = [...node.files];
+  for (const child of Object.values(node.children)) {
+    collected.push(...collectFolderMaterials(child));
+  }
+  return collected;
+}
+
+function flattenFolders(
+  node: FolderNode,
+  depth = 0,
+  pathPrefix = "",
+): FolderListItem[] {
+  const names = Object.keys(node.children).sort((a, b) => a.localeCompare(b));
+  const items: FolderListItem[] = [];
+  for (const name of names) {
+    const child = node.children[name];
+    const path = pathPrefix ? `${pathPrefix}/${name}` : name;
+    items.push({
+      path,
+      name,
+      depth,
+      filesCount: countFolderFiles(child),
+    });
+    items.push(...flattenFolders(child, depth + 1, path));
+  }
+  return items;
+}
+
 function renderMaterialRow(
   mat: Material,
-  depth: number,
   selectedForTutor: number[],
   editingId: number | null,
   editTitle: string,
@@ -166,12 +213,13 @@ function renderMaterialRow(
   setDeleteConfirm: (id: number | null) => void,
 ) {
   const displayTitle = getMaterialTitle(mat);
+  const folderLabel = getMaterialFolder(mat);
 
   return (
     <div
       key={mat.id}
-      className={`grid grid-cols-[28px_1fr_60px_70px_80px_90px] gap-2 px-2 py-1.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${!mat.enabled ? "opacity-50" : ""}`}
-      style={{ paddingLeft: `${depth * 1.1}rem` }}
+      className={`grid gap-2 px-2 py-1.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${!mat.enabled ? "opacity-50" : ""}`}
+      style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 92px" }}
     >
       <label className="flex items-center justify-center">
         <Checkbox
@@ -212,6 +260,11 @@ function renderMaterialRow(
             )}
           </div>
         )}
+      </div>
+
+      {/* Folder */}
+      <div className={`${TEXT_MUTED} truncate`} title={folderLabel}>
+        {folderLabel}
       </div>
 
       {/* Type */}
@@ -281,68 +334,6 @@ function renderMaterialRow(
   );
 }
 
-function renderFolderNode(
-  node: FolderNode,
-  depth: number,
-  pathPrefix: string,
-  selectedForTutor: number[],
-  editingId: number | null,
-  editTitle: string,
-  setEditTitle: (value: string) => void,
-  setEditingId: (id: number | null) => void,
-  saveEdit: () => void,
-  toggleMaterialForTutor: (id: number) => void,
-  toggleEnabled: (mat: Material) => void,
-  deleteMutation: MutateDeleteLike,
-  startEdit: (mat: Material) => void,
-  deleteConfirm: number | null,
-  setDeleteConfirm: (id: number | null) => void,
-): JSX.Element[] {
-  const childNames = Object.keys(node.children).sort((a, b) => a.localeCompare(b));
-  const elements: JSX.Element[] = [];
-
-  for (const folderName of childNames) {
-    const child = node.children[folderName];
-    const folderPath = pathPrefix ? `${pathPrefix}/${folderName}` : folderName;
-    const nestedFilesCount = countFolderFiles(child);
-
-    elements.push(
-      <details key={folderPath} className="group" open={depth === 0}>
-        <summary className={`${TEXT_BODY} px-2 py-1 border-b border-primary/15 text-muted-foreground hover:text-foreground cursor-pointer`}>
-          <span className="inline-flex items-center gap-1">
-            <span
-              className="inline-block transition-transform duration-150 group-open:rotate-90"
-              style={{ paddingLeft: `${(depth) * 0.9}rem` }}
-            >
-              ▸
-            </span>
-            <span className="font-terminal">{folderName}</span>
-            <span className={TEXT_MUTED}>({nestedFilesCount})</span>
-          </span>
-        </summary>
-        <div>{renderFolderNode(child, depth + 1, folderPath, selectedForTutor, editingId, editTitle, setEditTitle, setEditingId, saveEdit, toggleMaterialForTutor, toggleEnabled, deleteMutation, startEdit, deleteConfirm, setDeleteConfirm)}</div>
-      </details>,
-    );
-  }
-
-  for (const mat of node.files.sort((a, b) => getMaterialTitle(a).localeCompare(getMaterialTitle(b)))) {
-    elements.push(
-      renderMaterialRow(mat, depth, selectedForTutor, editingId, editTitle, setEditTitle, setEditingId, saveEdit, toggleMaterialForTutor, toggleEnabled, deleteMutation, startEdit, deleteConfirm, setDeleteConfirm)
-    );
-  }
-
-  if (!elements.length && depth === 0) {
-    elements.push(
-      <div key="no-materials" className="text-center py-8">
-        <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-        <div className={TEXT_MUTED}>No materials uploaded yet</div>
-      </div>
-    );
-  }
-
-  return elements;
-}
-
 export default function Library() {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -352,6 +343,7 @@ export default function Library() {
   const [syncJobId, setSyncJobId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<TutorSyncJobStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string>(ALL_FOLDERS_KEY);
   const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem("tutor.selected_material_ids.v1");
@@ -368,9 +360,31 @@ export default function Library() {
     queryFn: () => api.tutor.getMaterials(),
   });
 
-  const selectableMaterialIds = materials.filter((m) => m.enabled).map((m) => m.id);
-  const allTutorMaterialsSelected = selectableMaterialIds.length > 0 &&
-    selectableMaterialIds.every((id) => selectedForTutor.includes(id));
+  const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
+  const folderItems = useMemo(() => flattenFolders(folderTree), [folderTree]);
+  const selectedFolderNode = useMemo(
+    () => getFolderNode(folderTree, selectedFolderPath),
+    [folderTree, selectedFolderPath],
+  );
+  const visibleMaterials = useMemo(() => {
+    if (!selectedFolderNode) return [];
+    return collectFolderMaterials(selectedFolderNode).sort((a, b) =>
+      getMaterialTitle(a).localeCompare(getMaterialTitle(b)),
+    );
+  }, [selectedFolderNode]);
+  const selectedFolderLabel = selectedFolderPath || "All Materials";
+
+  const selectedForTutorSet = useMemo(() => new Set(selectedForTutor), [selectedForTutor]);
+  const selectableVisibleMaterialIds = useMemo(
+    () => visibleMaterials.filter((m) => m.enabled).map((m) => m.id),
+    [visibleMaterials],
+  );
+  const selectedVisibleMaterialIds = useMemo(
+    () => visibleMaterials.filter((m) => selectedForTutorSet.has(m.id)).map((m) => m.id),
+    [visibleMaterials, selectedForTutorSet],
+  );
+  const allTutorMaterialsSelected = selectableVisibleMaterialIds.length > 0 &&
+    selectableVisibleMaterialIds.every((id) => selectedForTutorSet.has(id));
 
   useEffect(() => {
     try {
@@ -379,9 +393,12 @@ export default function Library() {
   }, [selectedForTutor]);
 
   useEffect(() => {
-    if (!materials.length) return;
+    if (isLoading) return;
     setSelectedForTutor((ids) => ids.filter((id) => materials.some((m) => m.id === id)));
-  }, [materials]);
+    if (selectedFolderPath !== ALL_FOLDERS_KEY && !getFolderNode(folderTree, selectedFolderPath)) {
+      setSelectedFolderPath(ALL_FOLDERS_KEY);
+    }
+  }, [isLoading, materials, selectedFolderPath, folderTree]);
 
   useEffect(() => {
     if (!syncJobId) return;
@@ -466,7 +483,16 @@ export default function Library() {
   };
 
   const toggleAllMaterialsForTutor = () => {
-    setSelectedForTutor(allTutorMaterialsSelected ? [] : selectableMaterialIds);
+    setSelectedForTutor((prev) => {
+      if (!selectableVisibleMaterialIds.length) return prev;
+      const next = new Set(prev);
+      if (allTutorMaterialsSelected) {
+        for (const id of selectableVisibleMaterialIds) next.delete(id);
+      } else {
+        for (const id of selectableVisibleMaterialIds) next.add(id);
+      }
+      return [...next];
+    });
   };
 
   const updateMutation = useMutation({
@@ -505,13 +531,10 @@ export default function Library() {
         total: ids.length,
       };
     },
-    onSuccess: ({ deleted, failed, total }) => {
+    onSuccess: ({ deleted, failed, total }, ids) => {
       queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
       queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
-      setSelectedForTutor([]);
-      try {
-        localStorage.setItem("tutor.selected_material_ids.v1", JSON.stringify([]));
-      } catch { /* ignore */ }
+      setSelectedForTutor((prev) => prev.filter((id) => !ids.includes(id)));
       if (failed > 0) {
         toast.warning(`${deleted}/${total} materials deleted; ${failed} failed. Some files may still remain.`);
       } else {
@@ -594,213 +617,281 @@ export default function Library() {
     return Math.max(0, Math.min(100, Math.round((indexed / total) * 100)));
   }, [syncStatus]);
 
-  const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
-
   return (
     <Layout>
-      <div className="space-y-4">
-        {/* Header */}
+      <div className="space-y-3 h-full min-h-[72vh] flex flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className={ICON_MD} />
             <h1 className={TEXT_PAGE_TITLE}>MATERIALS LIBRARY</h1>
           </div>
-          <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>
-            {materials.length} files
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>
+              {materials.length} files
+            </Badge>
+            <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>
+              {folderItems.length} folders
+            </Badge>
+          </div>
         </div>
 
-        {/* Upload section */}
-        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
-          <div className={PANEL_PADDING}>
-            <div className={`${TEXT_PANEL_TITLE} mb-3`}>UPLOAD MATERIALS</div>
-            <MaterialUploader />
-          </div>
-        </Card>
+        <div className="brain-workspace brain-workspace--ready relative flex-1 min-h-[70vh] w-full overflow-hidden">
+          <div className="flex flex-col lg:flex-row h-full min-h-0">
+            <aside className="brain-workspace__sidebar-wrap w-full lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-primary/30 bg-black/40 flex flex-col min-h-0 max-h-[40vh] lg:max-h-none">
+              <div className={`${PANEL_PADDING} border-b border-primary/20`}>
+                <div className={`${TEXT_PANEL_TITLE} mb-2`}>VAULT FOLDERS</div>
+                <div className={TEXT_MUTED}>Mirror your Obsidian-style folder tree.</div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                <button
+                  className={`w-full rounded-none border px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
+                    selectedFolderPath === ALL_FOLDERS_KEY
+                      ? "border-primary/60 bg-primary/20 text-primary"
+                      : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                  }`}
+                  onClick={() => setSelectedFolderPath(ALL_FOLDERS_KEY)}
+                  type="button"
+                >
+                  <FolderOpen className={ICON_SM} />
+                  <span className="truncate flex-1">All Materials</span>
+                  <span className="text-[11px]">{materials.length}</span>
+                </button>
+                {folderItems.map((folder) => {
+                  const isSelected = selectedFolderPath === folder.path;
+                  return (
+                    <button
+                      key={folder.path}
+                      className={`w-full rounded-none border pr-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
+                        isSelected
+                          ? "border-primary/60 bg-primary/20 text-primary"
+                          : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                      }`}
+                      style={{ paddingLeft: `${0.65 + folder.depth * 0.85}rem` }}
+                      onClick={() => setSelectedFolderPath(folder.path)}
+                      type="button"
+                      title={folder.path}
+                    >
+                      {isSelected ? <FolderOpen className={ICON_SM} /> : <Folder className={ICON_SM} />}
+                      <span className="truncate flex-1">{folder.name}</span>
+                      <span className="text-[11px]">{folder.filesCount}</span>
+                    </button>
+                  );
+                })}
+                {!folderItems.length && materials.length === 0 ? (
+                  <div className={`${TEXT_MUTED} px-2 py-3 text-xs`}>Sync a folder or upload files to populate this rail.</div>
+                ) : null}
+              </div>
+            </aside>
 
-        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
-          <div className={PANEL_PADDING}>
-            <div className={`${TEXT_PANEL_TITLE} mb-3`}>SYNC STUDY FOLDER</div>
-            <div className="grid gap-2">
-              <input
-                value={materialsFolder}
-                onChange={(e) => setMaterialsFolder(e.target.value)}
-                className={`${INPUT_BASE} border-[3px] border-double border-primary/30`}
-                placeholder="C:\\Users\\...\\PT School"
-              />
-              <Button
-                onClick={startSync}
-                disabled={syncing || !materialsFolder.trim()}
-                className={`w-fit ${BTN_PRIMARY} !text-white`}
-              >
-                {syncing ? (
-                  <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                ) : (
-                  <RefreshCw className={`${ICON_SM} mr-1`} />
-                )}
-                SYNC FOLDER TO TUTOR
-              </Button>
-              {(syncing || syncStatus) && (
-                <div className="mt-2 border border-primary/20 bg-black/30 p-2 space-y-1 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className={TEXT_MUTED}>Status</span>
-                    <span className="font-terminal !text-white uppercase">
-                      {syncStatus?.status || (syncing ? "running" : "idle")}
-                    </span>
+            <section className="brain-workspace__main-wrap brain-workspace__canvas flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="border-b border-primary/20 bg-black/30">
+                <div className={`${PANEL_PADDING} grid gap-3 lg:grid-cols-[minmax(340px,1fr)_minmax(380px,1.2fr)]`}>
+                  <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
+                    <div className={TEXT_PANEL_TITLE}>UPLOAD MATERIALS</div>
+                    <MaterialUploader />
                   </div>
-                  <div className="h-2 w-full bg-primary/15 overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all duration-300"
-                      style={{ width: `${syncProgressPercent}%` }}
+
+                  <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
+                    <div className={TEXT_PANEL_TITLE}>SYNC STUDY FOLDER</div>
+                    <input
+                      value={materialsFolder}
+                      onChange={(e) => setMaterialsFolder(e.target.value)}
+                      className={INPUT_BASE}
+                      placeholder="C:\\Users\\...\\PT School"
                     />
+                    <Button
+                      onClick={startSync}
+                      disabled={syncing || !materialsFolder.trim()}
+                      className={`w-fit ${BTN_PRIMARY} !text-white`}
+                    >
+                      {syncing ? (
+                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                      ) : (
+                        <RefreshCw className={`${ICON_SM} mr-1`} />
+                      )}
+                      SYNC FOLDER TO TUTOR
+                    </Button>
+                    {(syncing || syncStatus) && (
+                      <div className="mt-1 border border-primary/20 bg-black/30 p-2 space-y-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className={TEXT_MUTED}>Status</span>
+                          <span className="font-terminal !text-white uppercase">
+                            {syncStatus?.status || (syncing ? "running" : "idle")}
+                          </span>
+                        </div>
+                        <div className="h-2 w-full bg-primary/15 overflow-hidden">
+                          <div
+                            className="h-full bg-primary transition-all duration-300"
+                            style={{ width: `${syncProgressPercent}%` }}
+                          />
+                        </div>
+                        <div className={TEXT_MUTED}>
+                          Processed {syncStatus?.processed ?? 0} / {syncStatus?.total ?? 0} files
+                          {typeof syncStatus?.errors === "number" ? ` • errors ${syncStatus.errors}` : ""}
+                        </div>
+                        <div className={`${TEXT_MUTED} break-all`}>
+                          Current:{" "}
+                          <span className="!text-white">
+                            {syncStatus?.current_file || (syncing ? "Scanning files..." : "Idle")}
+                          </span>
+                        </div>
+                        {syncStatus?.last_error ? (
+                          <div className="text-red-300 break-all">{syncStatus.last_error}</div>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
-                  <div className={TEXT_MUTED}>
-                    Processed {syncStatus?.processed ?? 0} / {syncStatus?.total ?? 0} files
-                    {typeof syncStatus?.errors === "number" ? ` • errors ${syncStatus.errors}` : ""}
-                  </div>
-                  <div className={`${TEXT_MUTED} break-all`}>
-                    Current:{" "}
-                    <span className="!text-white">
-                      {syncStatus?.current_file || (syncing ? "Scanning files..." : "Idle")}
-                    </span>
-                  </div>
-                  {syncStatus?.last_error ? (
-                    <div className="text-red-300 break-all">{syncStatus.last_error}</div>
-                  ) : null}
                 </div>
-              )}
-            </div>
-          </div>
-        </Card>
+              </div>
 
-        {/* Materials table */}
-        <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none">
-          <div className={PANEL_PADDING}>
-            <div className={`${TEXT_PANEL_TITLE} mb-3`}>YOUR MATERIALS</div>
-        <div className="flex items-center justify-between mb-3">
-              <div className={TEXT_MUTED}>
-                Tutor selected: {selectedForTutor.length} file{selectedForTutor.length === 1 ? "" : "s"}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="rounded-none h-7 px-3 font-terminal text-xs"
-                  disabled={selectedForTutor.length === 0 || clearMaterialsMutation.isPending}
-                  onClick={() => {
-                    if (!selectedForTutor.length) return;
-                    if (!window.confirm(`Delete ${selectedForTutor.length} selected materials from tutor library? This will not delete your local PT School files.`)) return;
-                    clearMaterialsMutation.mutate([...selectedForTutor]);
-                  }}
-                >
-                  {clearMaterialsMutation.isPending ? (
-                    <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                  ) : (
-                    <Trash2 className={`${ICON_SM} mr-1`} />
-                  )}
-                  CLEAR SELECTED
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="rounded-none h-7 px-3 font-terminal text-xs"
-                  disabled={materials.length === 0 || clearMaterialsMutation.isPending}
-                  onClick={() => {
-                    const safeCount = materials.length;
-                    if (!safeCount) return;
-                    if (!window.confirm(`Delete all ${safeCount} materials from tutor library? This will not delete your local PT School files.`)) return;
-                    clearMaterialsMutation.mutate(materials.map((m) => m.id));
-                  }}
-                >
-                  {clearMaterialsMutation.isPending ? (
-                    <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                  ) : (
-                    <Trash2 className={`${ICON_SM} mr-1`} />
-                  )}
-                  CLEAR ALL MATERIALS
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-none h-7 px-3 font-terminal text-xs"
-                  disabled={autoLinkMutation.isPending || materials.length === 0}
-                  onClick={() => autoLinkMutation.mutate()}
-                >
-                  {autoLinkMutation.isPending ? (
-                    <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                  ) : (
-                    <Link2 className={`${ICON_SM} mr-1`} />
-                  )}
-                  LINK TO COURSES
-                </Button>
-                <Link href="/tutor">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-none h-7 px-3 font-terminal text-xs"
-                  >
-                    OPEN TUTOR
-                  </Button>
-                </Link>
-              </div>
-            </div>
+              <div className={`${PANEL_PADDING} flex-1 min-h-0 flex flex-col gap-3`}>
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="space-y-1">
+                    <div className={TEXT_PANEL_TITLE}>YOUR MATERIALS</div>
+                    <div className={TEXT_MUTED}>
+                      Folder: <span className="!text-white font-terminal">{selectedFolderLabel}</span> • showing {visibleMaterials.length} file{visibleMaterials.length === 1 ? "" : "s"}
+                    </div>
+                    <div className={TEXT_MUTED}>
+                      Tutor selected in view: {selectedVisibleMaterialIds.length} file{selectedVisibleMaterialIds.length === 1 ? "" : "s"}
+                      {selectedForTutor.length > selectedVisibleMaterialIds.length
+                        ? ` • total selected ${selectedForTutor.length}`
+                        : ""}
+                    </div>
+                  </div>
+                  <div className="flex items-center flex-wrap gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="rounded-none h-7 px-3 font-terminal text-xs"
+                      disabled={selectedVisibleMaterialIds.length === 0 || clearMaterialsMutation.isPending}
+                      onClick={() => {
+                        if (!selectedVisibleMaterialIds.length) return;
+                        if (!window.confirm(`Delete ${selectedVisibleMaterialIds.length} selected materials from the current folder view? This will not delete your local PT School files.`)) return;
+                        clearMaterialsMutation.mutate([...selectedVisibleMaterialIds]);
+                      }}
+                    >
+                      {clearMaterialsMutation.isPending ? (
+                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                      ) : (
+                        <Trash2 className={`${ICON_SM} mr-1`} />
+                      )}
+                      CLEAR SELECTED
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="rounded-none h-7 px-3 font-terminal text-xs"
+                      disabled={materials.length === 0 || clearMaterialsMutation.isPending}
+                      onClick={() => {
+                        const safeCount = materials.length;
+                        if (!safeCount) return;
+                        if (!window.confirm(`Delete all ${safeCount} materials from tutor library? This will not delete your local PT School files.`)) return;
+                        clearMaterialsMutation.mutate(materials.map((m) => m.id));
+                      }}
+                    >
+                      {clearMaterialsMutation.isPending ? (
+                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                      ) : (
+                        <Trash2 className={`${ICON_SM} mr-1`} />
+                      )}
+                      CLEAR ALL MATERIALS
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none h-7 px-3 font-terminal text-xs"
+                      disabled={autoLinkMutation.isPending || materials.length === 0}
+                      onClick={() => autoLinkMutation.mutate()}
+                    >
+                      {autoLinkMutation.isPending ? (
+                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                      ) : (
+                        <Link2 className={`${ICON_SM} mr-1`} />
+                      )}
+                      LINK TO COURSES
+                    </Button>
+                    <Link href="/tutor">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-none h-7 px-3 font-terminal text-xs"
+                      >
+                        OPEN TUTOR
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
 
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className={`${ICON_MD} animate-spin text-muted-foreground`} />
-              </div>
-            ) : materials.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                <div className={TEXT_MUTED}>No materials uploaded yet</div>
-                <div className={`${TEXT_MUTED} opacity-60`}>
-                  Upload PDF, DOCX, PPTX, MD, or TXT files above
+                <div className="flex-1 min-h-0 border border-primary/25 bg-black/30 overflow-hidden">
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className={`${ICON_MD} animate-spin text-muted-foreground`} />
+                    </div>
+                  ) : materials.length === 0 ? (
+                    <div className="text-center py-10">
+                      <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                      <div className={TEXT_MUTED}>No materials uploaded yet</div>
+                      <div className={`${TEXT_MUTED} opacity-60`}>
+                        Upload PDF, DOCX, PPTX, MD, or TXT files above
+                      </div>
+                    </div>
+                  ) : visibleMaterials.length === 0 ? (
+                    <div className="text-center py-10">
+                      <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                      <div className={TEXT_MUTED}>No materials found in this folder view.</div>
+                    </div>
+                  ) : (
+                    <div className="h-full min-h-0 overflow-auto">
+                      <div className="min-w-[900px]">
+                        <div
+                          className="grid gap-2 px-2 py-1 border-b border-primary/20 bg-black/60 sticky top-0 z-10"
+                          style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 92px" }}
+                        >
+                          <label
+                            className="flex items-center justify-center cursor-pointer"
+                            onClick={toggleAllMaterialsForTutor}
+                            title={
+                              allTutorMaterialsSelected ? "Unselect all visible tutor materials" : "Select all visible tutor materials"
+                            }
+                          >
+                            <Checkbox
+                              checked={allTutorMaterialsSelected}
+                              onCheckedChange={toggleAllMaterialsForTutor}
+                              disabled={selectableVisibleMaterialIds.length === 0}
+                            />
+                          </label>
+                          <div className={TEXT_MUTED}>Title</div>
+                          <div className={TEXT_MUTED}>Folder</div>
+                          <div className={TEXT_MUTED}>Type</div>
+                          <div className={TEXT_MUTED}>Size</div>
+                          <div className={TEXT_MUTED}>Status</div>
+                          <div className={`${TEXT_MUTED} text-right`}>Actions</div>
+                        </div>
+                        {visibleMaterials.map((mat) => (
+                          renderMaterialRow(
+                            mat,
+                            selectedForTutor,
+                            editingId,
+                            editTitle,
+                            setEditTitle,
+                            setEditingId,
+                            saveEdit,
+                            toggleMaterialForTutor,
+                            toggleEnabled,
+                            deleteMutation,
+                            startEdit,
+                            deleteConfirm,
+                            setDeleteConfirm,
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            ) : (
-              <div className="space-y-1">
-                {/* Table header */}
-                <div className="grid grid-cols-[28px_1fr_60px_70px_80px_90px] gap-2 px-2 py-1 border-b border-primary/20">
-                  <label
-                    className="flex items-center justify-center cursor-pointer"
-                    onClick={toggleAllMaterialsForTutor}
-                    title={
-                      allTutorMaterialsSelected ? "Unselect all tutor materials" : "Select all tutor materials"
-                    }
-                  >
-                    <Checkbox
-                      checked={allTutorMaterialsSelected}
-                      onCheckedChange={toggleAllMaterialsForTutor}
-                      disabled={selectableMaterialIds.length === 0}
-                    />
-                  </label>
-                  <div className={TEXT_MUTED}>Title</div>
-                  <div className={TEXT_MUTED}>Type</div>
-                  <div className={TEXT_MUTED}>Size</div>
-                  <div className={TEXT_MUTED}>Status</div>
-                  <div className={`${TEXT_MUTED} text-right`}>Actions</div>
-                </div>
-                {renderFolderNode(
-                  folderTree,
-                  0,
-                  "",
-                  selectedForTutor,
-                  editingId,
-                  editTitle,
-                  setEditTitle,
-                  setEditingId,
-                  saveEdit,
-                  toggleMaterialForTutor,
-                  toggleEnabled,
-                  deleteMutation,
-                  startEdit,
-                  deleteConfirm,
-                  setDeleteConfirm,
-                )}
-              </div>
-            )}
+            </section>
           </div>
-        </Card>
+        </div>
       </div>
     </Layout>
   );

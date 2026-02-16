@@ -620,3 +620,18 @@
 - Added focused unit tests for batch-size resolution, split behavior, backoff, rollback, and input validation.
 - Files: `brain/tutor_rag.py`, `brain/tests/test_tutor_rag_batching.py`
 - Tests: `pytest brain/tests/test_tutor_rag_batching.py -q` and `pytest brain/tests/ -q` both pass.
+
+## 2026-02-16 - Library Page Vault-Style Layout Refresh
+
+- Reworked `Library` page from stacked cards into a Brain-style workspace shell (`brain-workspace`) with a left folder rail and right materials pane.
+- Added vault-like folder navigation from material folder paths (nested depth + folder counts), plus `All Materials` aggregate view.
+- Improved materials table formatting and readability:
+  - Added explicit folder column.
+  - Switched to consistent panel spacing, border rhythm, and sticky header inside scroll container.
+  - Scoped “select all” to current folder view.
+- Fixed selection-state regressions found in review:
+  - `CLEAR SELECTED` now deletes selected IDs in current view and only removes deleted IDs from selection state.
+  - Prevented initial load from wiping persisted selections before materials query resolves.
+  - Removed magic `__all__` sentinel collision risk by using empty-string root key.
+- File: `dashboard_rebuild/client/src/pages/library.tsx`
+- Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.
