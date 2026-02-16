@@ -1,5 +1,24 @@
 # CONTINUITY
 
+## 2026-02-15 - Vault-First Mind Map + Test DB Leak Fix
+
+### Vault-First Mind Map
+- Replaced DB-driven mind map (empty `courses`/`modules`/`learning_objectives` tables) with Obsidian vault index as data source
+- Courses from static `COURSE_FOLDERS` config, subfolders and notes parsed client-side from vault index paths
+- Sidebar: course checkboxes with live note counts, subfolder filter, "Show Notes" toggle, updated legend (Course/Subfolder/Note)
+- Double-click note nodes to open in Obsidian via `obsidian://open` URI
+- "OBSIDIAN OFFLINE" banner + disabled seed when vault is disconnected
+- Single file change: `dashboard_rebuild/client/src/components/MindMapView.tsx`
+- No backend changes, no DB changes
+- Commit: `7e768fef`
+
+### Test DB Isolation Leak Fix
+- `test_chain_runner.py` was leaking "Test SWEEP" sessions into the production database on every pytest run
+- Root cause: `db_setup.py` and `chain_runner.py` use `from config import DB_PATH` (copies value at import time); the test only overrode `config.DB_PATH`, but `db_setup.DB_PATH` stayed pointed at the real DB when pytest collected other modules first
+- Fix: also override `db_setup.DB_PATH` and `chain_runner.DB_PATH` at module level and in the `fresh_db` fixture
+- Cleaned up 9 ghost sessions, reset `sqlite_sequence` autoincrement counter
+- Commit: `16002e00`
+
 ## 2026-02-15 - Database Table Consolidation
 
 - Merged 2 tables into `course_events`, dropped 2 dead tables (net -4 tables):
