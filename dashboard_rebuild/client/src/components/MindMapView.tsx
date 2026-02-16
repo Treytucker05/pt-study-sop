@@ -15,6 +15,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { COURSE_FOLDERS } from "@/config/courses";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -31,12 +32,12 @@ import { MindMapDrawLayer, type DrawStroke } from "@/components/brain/MindMapDra
 import { buildBrainCanvasMarkdown, sanitizeCanvasTitle } from "@/components/brain/brainDoc";
 import type { GraphCanvasCommand, GraphCanvasStatus } from "@/components/brain/graph-canvas-types";
 
-// Color indices for curriculum seed: Cyan=6, Yellow=4, Green=3 in CONCEPT_NODE_COLORS
-const SEED_COLOR: Record<string, number> = { course: 6, module: 4, lo: 3 };
+// Color indices: Cyan=6 (course), Yellow=4 (subfolder), Green=3 (note)
+const SEED_COLOR: Record<string, number> = { course: 6, subfolder: 4, note: 3 };
 const SEED_SHAPE: Record<string, MindMapShape> = {
   course: "rectangle",
-  module: "rectangle",
-  lo: "rectangle",
+  subfolder: "rectangle",
+  note: "rectangle",
 };
 
 interface MindMapViewProps {
@@ -48,7 +49,8 @@ interface MindMapViewProps {
 interface CurriculumNode {
   id: string;
   name: string;
-  type: "course" | "module" | "lo";
+  type: "course" | "subfolder" | "note";
+  vaultPath?: string;
 }
 
 interface CurriculumLink {
@@ -71,95 +73,142 @@ export function MindMapView({
   const [showMermaidImport, setShowMermaidImport] = useState(false);
   const [mermaidInput, setMermaidInput] = useState("");
   const reactFlowRef = useRef<HTMLDivElement>(null);
-  const didInitRef = useRef(false);
   const lastCommandIdRef = useRef(0);
   const { toast } = useToast();
 
-  // --- Curriculum sidebar state (kept from original) ---
-  const [selectedCourses, setSelectedCourses] = useState<Set<number>>(new Set());
-  const [selectedModules, setSelectedModules] = useState<Set<number>>(new Set());
-  const [includeLOs, setIncludeLOs] = useState(true);
+  // --- Vault-driven sidebar state ---
+  const [selectedCourses, setSelectedCourses] = useState<Set<string>>(
+    () => new Set(COURSE_FOLDERS.map((c) => c.id))
+  );
+  const [selectedSubfolders, setSelectedSubfolders] = useState<Set<string>>(new Set());
+  const [showNotes, setShowNotes] = useState(true);
 
-  const { data: courses = [] } = useQuery({
-    queryKey: ["courses"],
-    queryFn: () => api.courses.getActive(),
+  const { data: obsidianStatus } = useQuery({
+    queryKey: ["obsidian", "status"],
+    queryFn: api.obsidian.getStatus,
+    refetchInterval: 30_000,
   });
 
-  const courseIds = courses.map((c: any) => c.id).sort();
-
-  const { data: allModules = [] } = useQuery({
-    queryKey: ["modules", "all", courseIds],
-    queryFn: async () => {
-      const results = await Promise.all(
-        courses.map((c: any) => api.modules.getByCourse(c.id))
-      );
-      return results.flat();
-    },
-    enabled: courses.length > 0,
+  const { data: obsidianConfig } = useQuery({
+    queryKey: ["obsidian", "config"],
+    queryFn: api.obsidian.getConfig,
   });
 
-  const { data: allLOs = [] } = useQuery({
-    queryKey: ["learningObjectives", "all", courseIds, includeLOs],
-    queryFn: async () => {
-      const results = await Promise.all(
-        courses.map((c: any) => api.learningObjectives.getByCourse(c.id))
-      );
-      return results.flat();
-    },
-    enabled: courses.length > 0 && includeLOs,
+  const vaultOnline = obsidianStatus?.status === "online";
+
+  const { data: vaultIndex } = useQuery({
+    queryKey: ["obsidian", "vaultIndex"],
+    queryFn: () => api.obsidian.getVaultIndex(),
+    enabled: vaultOnline,
+    staleTime: 5 * 60_000,
   });
 
-  useEffect(() => {
-    if (courses.length > 0 && !didInitRef.current) {
-      didInitRef.current = true;
-      setSelectedCourses(new Set(courses.map((c: any) => c.id)));
-    }
-  }, [courses]);
-
+  // --- Build vault tree from index ---
   const graphData = useMemo(() => {
     const gNodes: CurriculumNode[] = [];
     const gLinks: CurriculumLink[] = [];
+    if (!vaultIndex?.paths) return { nodes: gNodes, links: gLinks };
 
-    const modulesByCourse = new Map<number, any[]>();
-    for (const m of allModules) {
-      const list = modulesByCourse.get(m.courseId) ?? [];
-      list.push(m);
-      modulesByCourse.set(m.courseId, list);
-    }
-    const losByModule = new Map<number, any[]>();
-    for (const lo of allLOs) {
-      if (lo.moduleId == null) continue;
-      const list = losByModule.get(lo.moduleId) ?? [];
-      list.push(lo);
-      losByModule.set(lo.moduleId, list);
-    }
-
-    for (const course of courses) {
+    for (const course of COURSE_FOLDERS) {
       if (!selectedCourses.has(course.id)) continue;
-      const courseId = `course-${course.id}`;
-      gNodes.push({ id: courseId, name: course.name, type: "course" });
+      const courseNodeId = `course-${course.id}`;
+      gNodes.push({ id: courseNodeId, name: course.name, type: "course" });
 
-      const courseModules = modulesByCourse.get(course.id) ?? [];
-      for (const mod of courseModules) {
-        if (selectedModules.size > 0 && !selectedModules.has(mod.id)) continue;
-        const modId = `module-${mod.id}`;
-        gNodes.push({ id: modId, name: mod.name, type: "module" });
-        gLinks.push({ source: courseId, target: modId });
+      const subfolderNotes = new Map<string, { name: string; path: string }[]>();
+      const rootNotes: { name: string; path: string }[] = [];
 
-        if (includeLOs) {
-          const modLOs = losByModule.get(mod.id) ?? [];
-          for (const lo of modLOs) {
-            const loId = `lo-${lo.id}`;
-            gNodes.push({ id: loId, name: `${lo.loCode}: ${lo.title}`, type: "lo" });
-            gLinks.push({ source: modId, target: loId });
+      for (const [noteName, fullPath] of Object.entries(vaultIndex.paths)) {
+        if (!fullPath.startsWith(course.path + "/")) continue;
+        const relative = fullPath.slice(course.path.length + 1);
+        const segments = relative.split("/");
+        if (segments.length === 1) {
+          rootNotes.push({ name: noteName, path: fullPath });
+        } else {
+          const sf = segments[0];
+          const list = subfolderNotes.get(sf) ?? [];
+          list.push({ name: noteName, path: fullPath });
+          subfolderNotes.set(sf, list);
+        }
+      }
+
+      for (const [sfName, noteList] of subfolderNotes) {
+        const sfKey = `${course.id}/${sfName}`;
+        if (selectedSubfolders.size > 0 && !selectedSubfolders.has(sfKey)) continue;
+        const sfNodeId = `subfolder-${course.id}-${sfName}`;
+        gNodes.push({
+          id: sfNodeId,
+          name: `${sfName} (${noteList.length})`,
+          type: "subfolder",
+        });
+        gLinks.push({ source: courseNodeId, target: sfNodeId });
+
+        if (showNotes) {
+          for (const n of noteList) {
+            const noteId = `note-${n.path}`;
+            gNodes.push({
+              id: noteId,
+              name: n.name,
+              type: "note",
+              vaultPath: n.path,
+            });
+            gLinks.push({ source: sfNodeId, target: noteId });
           }
+        }
+      }
+
+      if (showNotes) {
+        for (const rn of rootNotes) {
+          const noteId = `note-${rn.path}`;
+          gNodes.push({
+            id: noteId,
+            name: rn.name,
+            type: "note",
+            vaultPath: rn.path,
+          });
+          gLinks.push({ source: courseNodeId, target: noteId });
         }
       }
     }
     return { nodes: gNodes, links: gLinks };
-  }, [courses, allModules, allLOs, selectedCourses, selectedModules, includeLOs]);
+  }, [vaultIndex, selectedCourses, selectedSubfolders, showNotes]);
 
-  const toggleCourse = (id: number) => {
+  // --- Sidebar helper data ---
+  const visibleSubfolders = useMemo(() => {
+    if (!vaultIndex?.paths) return [];
+    const result: { key: string; name: string; courseId: string }[] = [];
+    const seen = new Set<string>();
+    for (const course of COURSE_FOLDERS) {
+      if (!selectedCourses.has(course.id)) continue;
+      for (const fullPath of Object.values(vaultIndex.paths)) {
+        if (!fullPath.startsWith(course.path + "/")) continue;
+        const relative = fullPath.slice(course.path.length + 1);
+        const segments = relative.split("/");
+        if (segments.length > 1) {
+          const key = `${course.id}/${segments[0]}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            result.push({ key, name: segments[0], courseId: course.id });
+          }
+        }
+      }
+    }
+    return result;
+  }, [vaultIndex, selectedCourses]);
+
+  const courseNoteCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    if (!vaultIndex?.paths) return counts;
+    for (const course of COURSE_FOLDERS) {
+      let count = 0;
+      for (const fullPath of Object.values(vaultIndex.paths)) {
+        if (fullPath.startsWith(course.path + "/")) count++;
+      }
+      counts.set(course.id, count);
+    }
+    return counts;
+  }, [vaultIndex]);
+
+  const toggleCourse = (id: string) => {
     setSelectedCourses((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -168,11 +217,11 @@ export function MindMapView({
     });
   };
 
-  const toggleModule = (id: number) => {
-    setSelectedModules((prev) => {
+  const toggleSubfolder = (key: string) => {
+    setSelectedSubfolders((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
@@ -207,7 +256,7 @@ export function MindMapView({
     return () => window.removeEventListener("mindmap:node-label", handler);
   }, [setNodes]);
 
-  // --- Seed map from curriculum ---
+  // --- Seed map from vault curriculum ---
   const seedMap = useCallback(() => {
     const { nodes: curNodes, links: curLinks } = graphData;
     if (curNodes.length === 0) {
@@ -216,8 +265,11 @@ export function MindMapView({
     }
 
     const existingCustomIds = new Set(
-      nodes.filter((n) => !String(n.id).startsWith("course-") && !String(n.id).startsWith("module-") && !String(n.id).startsWith("lo-"))
-        .map((n) => n.id)
+      nodes.filter((n) =>
+        !String(n.id).startsWith("course-") &&
+        !String(n.id).startsWith("subfolder-") &&
+        !String(n.id).startsWith("note-")
+      ).map((n) => n.id)
     );
     const customNodes = nodes.filter((n) => existingCustomIds.has(n.id));
     const customEdges = edges.filter(
@@ -234,6 +286,7 @@ export function MindMapView({
           label: cn.name,
           colorIdx: SEED_COLOR[cn.type] ?? 0,
           shape,
+          ...(cn.vaultPath ? { vaultPath: cn.vaultPath } : {}),
         };
       })(),
       style: getMindMapNodeStyle(SEED_SHAPE[cn.type] ?? "rectangle"),
@@ -253,8 +306,23 @@ export function MindMapView({
     setEdges(allEdges);
     setNodeCounter(allNodes.length);
     setIsDirty(true);
-    toast({ title: "Map seeded", description: `${curNodes.length} curriculum nodes` });
+    toast({ title: "Map seeded", description: `${curNodes.length} vault nodes` });
   }, [graphData, nodes, edges, direction, setNodes, setEdges, toast]);
+
+  // --- Double-click node to open in Obsidian ---
+  const onNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      const vaultPath = (node.data as { vaultPath?: string })?.vaultPath;
+      if (!vaultPath) return;
+      const vaultName = obsidianConfig?.vaultName || "Treys School";
+      const filePath = vaultPath.replace(/\.md$/, "");
+      window.open(
+        `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(filePath)}`,
+        "_blank"
+      );
+    },
+    [obsidianConfig]
+  );
 
   // --- Add node ---
   const addNode = useCallback(
@@ -636,49 +704,56 @@ export function MindMapView({
     toggleDirection,
   ]);
 
-  const activeCourseModules = allModules.filter((m: any) =>
-    selectedCourses.has(m.courseId)
-  );
-
   return (
     <div className="flex h-full" onPaste={handlePaste}>
       {/* Sidebar */}
       <div className="w-[160px] shrink-0 border-r border-secondary/30 bg-black/60">
         <ScrollArea className="h-full">
           <div className="p-3 space-y-4">
+            {!vaultOnline && (
+              <div className="font-arcade text-xs text-red-400 text-center py-1 border border-red-500/30 bg-red-500/10">
+                OBSIDIAN OFFLINE
+              </div>
+            )}
+
             <div>
               <div className="font-arcade text-xs text-primary mb-2">COURSES</div>
-              {courses.map((c: any) => (
+              {COURSE_FOLDERS.map((c) => (
                 <label key={c.id} className="flex items-center gap-2 py-1 cursor-pointer">
                   <Checkbox
                     checked={selectedCourses.has(c.id)}
                     onCheckedChange={() => toggleCourse(c.id)}
                     className="border-cyan-500 data-[state=checked]:bg-cyan-500"
                   />
-                  <span className="font-terminal text-xs text-cyan-300">{c.name}</span>
+                  <span className="font-terminal text-xs text-cyan-300">
+                    {c.name}
+                    <span className="text-muted-foreground ml-1">
+                      ({courseNoteCounts.get(c.id) ?? 0})
+                    </span>
+                  </span>
                 </label>
               ))}
             </div>
 
-            {activeCourseModules.length > 0 && (
+            {visibleSubfolders.length > 0 && (
               <div>
-                <div className="font-arcade text-xs text-yellow-400 mb-2">MODULES</div>
+                <div className="font-arcade text-xs text-yellow-400 mb-2">SUBFOLDERS</div>
                 <label className="flex items-center gap-2 py-1 cursor-pointer mb-1">
                   <Checkbox
-                    checked={selectedModules.size === 0}
-                    onCheckedChange={() => setSelectedModules(new Set())}
+                    checked={selectedSubfolders.size === 0}
+                    onCheckedChange={() => setSelectedSubfolders(new Set())}
                     className="border-yellow-500 data-[state=checked]:bg-yellow-500"
                   />
-                  <span className="font-terminal text-xs text-yellow-200">All Modules</span>
+                  <span className="font-terminal text-xs text-yellow-200">All</span>
                 </label>
-                {activeCourseModules.map((m: any) => (
-                  <label key={m.id} className="flex items-center gap-2 py-0.5 cursor-pointer">
+                {visibleSubfolders.map((sf) => (
+                  <label key={sf.key} className="flex items-center gap-2 py-0.5 cursor-pointer">
                     <Checkbox
-                      checked={selectedModules.size === 0 || selectedModules.has(m.id)}
-                      onCheckedChange={() => toggleModule(m.id)}
+                      checked={selectedSubfolders.size === 0 || selectedSubfolders.has(sf.key)}
+                      onCheckedChange={() => toggleSubfolder(sf.key)}
                       className="border-yellow-500 data-[state=checked]:bg-yellow-500"
                     />
-                    <span className="font-terminal text-xs text-yellow-100 truncate">{m.name}</span>
+                    <span className="font-terminal text-xs text-yellow-100 truncate">{sf.name}</span>
                   </label>
                 ))}
               </div>
@@ -687,11 +762,11 @@ export function MindMapView({
             <div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
-                  checked={includeLOs}
-                  onCheckedChange={(checked) => setIncludeLOs(!!checked)}
+                  checked={showNotes}
+                  onCheckedChange={(checked) => setShowNotes(!!checked)}
                   className="border-green-500 data-[state=checked]:bg-green-500"
                 />
-                <span className="font-terminal text-xs text-green-300">Show LOs</span>
+                <span className="font-terminal text-xs text-green-300">Show Notes</span>
               </label>
             </div>
 
@@ -704,11 +779,11 @@ export function MindMapView({
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-sm border border-yellow-400 bg-yellow-400/12" />
-                <span className="font-terminal text-xs text-yellow-300">Module</span>
+                <span className="font-terminal text-xs text-yellow-300">Subfolder</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-sm border border-green-400 bg-green-400/8" />
-                <span className="font-terminal text-xs text-green-300">LO</span>
+                <span className="font-terminal text-xs text-green-300">Note</span>
               </div>
             </div>
 
@@ -718,6 +793,7 @@ export function MindMapView({
                 variant="outline"
                 className="w-full h-7 text-xs font-terminal border-primary/50 text-primary"
                 onClick={seedMap}
+                disabled={!vaultOnline}
               >
                 Seed Map ({graphData.nodes.length})
               </Button>
@@ -793,6 +869,7 @@ export function MindMapView({
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onNodeDoubleClick={onNodeDoubleClick}
             nodeTypes={MIND_MAP_NODE_TYPES}
             defaultEdgeOptions={MIND_MAP_DEFAULT_EDGE_OPTIONS}
             fitView
