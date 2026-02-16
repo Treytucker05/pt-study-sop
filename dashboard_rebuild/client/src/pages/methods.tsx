@@ -387,6 +387,7 @@ export default function MethodsPage() {
                         <p className="font-terminal text-base text-muted-foreground">{selectedChain.description}</p>
                       )}
                       <ChainBuilder
+                        key={selectedChain.id}
                         chain={selectedChain}
                         allBlocks={blocks}
                         readOnly={!!selectedChain.is_template}
