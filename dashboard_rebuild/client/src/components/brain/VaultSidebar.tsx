@@ -9,7 +9,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ErrorBoundary, SidebarErrorFallback } from "@/components/ErrorBoundary";
-import { COURSE_FOLDERS } from "@/config/courses";
+
 import type { BrainWorkspace } from "./useBrainWorkspace";
 
 // --- Sub-components for recursive tree rendering ---
@@ -137,7 +137,7 @@ interface VaultSidebarProps {
 }
 
 export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
-  const [currentFolder, setCurrentFolder] = useState("School");
+  const [currentFolder, setCurrentFolder] = useState("");
   const [search, setSearch] = useState("");
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set()
@@ -274,30 +274,7 @@ export function VaultSidebar({ workspace, onCollapse }: VaultSidebarProps) {
         </Button>
       </div>
 
-      {/* Courses — section-block + gap */}
-      <div className="section-block section-block-gap">
-        <h3 className="section-header">Courses</h3>
-        <div className="flex flex-wrap gap-2">
-          {COURSE_FOLDERS.map((course) => {
-            const isActive = currentFolder === course.path;
-            return (
-              <button
-                key={course.path}
-                type="button"
-                onClick={() => navigateToFolder(course.path)}
-                className={`min-h-[36px] px-4 py-2 font-arcade text-xs tracking-wider rounded-none border-[3px] border-double transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-black ${
-                  isActive
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-primary/40 bg-black/50 text-primary/80 hover:bg-primary/20 hover:border-primary/60 hover:text-primary"
-                }`}
-                aria-pressed={isActive}
-              >
-                {course.name}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+
 
       {/* Breadcrumb — same horizontal padding as sections */}
       {currentFolder && (

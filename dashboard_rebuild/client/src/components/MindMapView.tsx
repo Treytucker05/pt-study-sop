@@ -216,7 +216,7 @@ export function MindMapView({
     }
 
     const existingCustomIds = new Set(
-      nodes.filter((n) => !n.id.startsWith("course-") && !n.id.startsWith("module-") && !n.id.startsWith("lo-"))
+      nodes.filter((n) => !String(n.id).startsWith("course-") && !String(n.id).startsWith("module-") && !String(n.id).startsWith("lo-"))
         .map((n) => n.id)
     );
     const customNodes = nodes.filter((n) => existingCustomIds.has(n.id));
