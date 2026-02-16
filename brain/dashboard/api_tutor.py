@@ -107,8 +107,14 @@ def _resolve_chain_blocks(conn, chain_id: int) -> list[dict]:
     )
     block_map = {r["id"]: dict(r) for r in cur.fetchall()}
 
-    # Preserve chain order
-    return [block_map[bid] for bid in block_ids if bid in block_map]
+    # Preserve chain order and normalise duration field for frontend
+    ordered = []
+    for bid in block_ids:
+        if bid in block_map:
+            b = block_map[bid]
+            b["duration"] = b.pop("default_duration_min", None)
+            ordered.append(b)
+    return ordered
 
 
 def _build_chain_info(
@@ -423,6 +429,9 @@ def get_session(session_id: str):
     if session.get("method_chain_id"):
         blocks = _resolve_chain_blocks(conn, session["method_chain_id"])
         session["chain_blocks"] = blocks
+        idx = session.get("current_block_index", 0) or 0
+        if blocks and 0 <= idx < len(blocks):
+            session["current_block_name"] = blocks[idx]["name"]
 
     conn.close()
 
@@ -890,7 +899,7 @@ def advance_block(session_id: str):
             "block_name": next_block["name"],
             "block_description": next_block.get("description", ""),
             "block_category": next_block.get("category", ""),
-            "block_duration": next_block.get("default_duration_min", 5),
+            "block_duration": next_block.get("duration") or next_block.get("default_duration_min", 5),
             "facilitation_prompt": next_block.get("facilitation_prompt", ""),
             "is_last": next_idx >= len(blocks) - 1,
         }
@@ -942,7 +951,7 @@ def get_template_chains():
                         "name": b["name"],
                         "category": b.get("category", ""),
                         "description": b.get("description", ""),
-                        "duration": b.get("default_duration_min", 5),
+                        "duration": b.get("duration") or b.get("default_duration_min", 5),
                         "facilitation_prompt": b.get("facilitation_prompt", ""),
                     }
                     for b in blocks
