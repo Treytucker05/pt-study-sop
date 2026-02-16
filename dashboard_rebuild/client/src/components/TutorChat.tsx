@@ -7,12 +7,10 @@ import {
   FileText,
   CreditCard,
   Map,
-  ChevronRight,
-  Check,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { CATEGORY_COLORS, type TutorCitation, type TutorSSEChunk } from "@/lib/api";
+import { type TutorCitation, type TutorSSEChunk } from "@/lib/api";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -35,9 +33,6 @@ interface TutorChatProps {
   sessionId: string | null;
   engine?: string;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
-  chainBlocks?: ChainBlock[];
-  currentBlockIndex?: number;
-  onAdvanceBlock?: () => void;
   focusMode?: boolean;
 }
 
@@ -45,17 +40,11 @@ export function TutorChat({
   sessionId,
   engine,
   onArtifactCreated,
-  chainBlocks = [],
-  currentBlockIndex = 0,
-  onAdvanceBlock,
   focusMode = false,
 }: TutorChatProps) {
-  const hasChain = chainBlocks.length > 0;
-  const isChainComplete = hasChain && currentBlockIndex >= chainBlocks.length;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [hoveredBlock, setHoveredBlock] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -279,79 +268,6 @@ export function TutorChat({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Chain Progress Stepper */}
-      {hasChain && !focusMode && (
-        <div className="shrink-0 border-b-2 border-primary/30 bg-black/40">
-          {/* Horizontal stepper */}
-          <div className="px-3 py-2 flex items-center gap-1 overflow-x-auto">
-            {chainBlocks.map((block, i) => {
-              const isCompleted = i < currentBlockIndex;
-              const isCurrent = i === currentBlockIndex && !isChainComplete;
-              const catColor = CATEGORY_COLORS[block.category as keyof typeof CATEGORY_COLORS] || "#888";
-              return (
-                <div key={block.id} className="flex items-center shrink-0">
-                  {i > 0 && (
-                    <ChevronRight className="w-4 h-4 text-muted-foreground/40 mx-0.5" />
-                  )}
-                  <div
-                    className="relative"
-                    onMouseEnter={() => setHoveredBlock(i)}
-                    onMouseLeave={() => setHoveredBlock(null)}
-                  >
-                    <div
-                      className={`px-2 py-1 border-2 text-base font-terminal flex items-center gap-1 cursor-default transition-colors ${
-                        isCurrent
-                          ? "border-primary bg-primary/20 text-primary"
-                          : isCompleted
-                            ? "border-primary/30 bg-primary/5 text-muted-foreground/70 line-through"
-                            : "border-primary/20 text-muted-foreground/50"
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <Check className="w-4 h-4 text-green-400" />
-                      ) : isCurrent ? (
-                        <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                      ) : null}
-                      <span className="text-sm">{block.name}</span>
-                      {isCurrent && (
-                        <span className="text-xs text-muted-foreground ml-1">~{block.duration}m</span>
-                      )}
-                    </div>
-                    {/* Tooltip on hover */}
-                    {hoveredBlock === i && block.description && (
-                      <div className="absolute z-50 top-full left-0 mt-1 p-2 bg-zinc-900 border-2 border-primary/40 text-sm font-terminal text-muted-foreground max-w-[280px] whitespace-normal">
-                        <div className="font-arcade text-xs mb-1" style={{ color: catColor }}>
-                          {block.category.toUpperCase()}
-                        </div>
-                        {block.description}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            <div className="flex items-center gap-1 ml-auto shrink-0">
-              <span className="text-xs font-terminal text-muted-foreground">
-                {Math.min(currentBlockIndex + 1, chainBlocks.length)}/{chainBlocks.length}
-              </span>
-              {!isChainComplete && onAdvanceBlock && (
-                <button
-                  onClick={onAdvanceBlock}
-                  className="px-3 py-1 border-[3px] border-double border-primary/60 text-xs font-arcade text-primary hover:bg-primary/20 transition-colors"
-                >
-                  NEXT
-                </button>
-              )}
-              {isChainComplete && (
-                <span className="px-3 py-1 text-xs font-arcade text-green-400 border-2 border-green-400/50">
-                  COMPLETE
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Messages */}
       <div
         ref={scrollRef}

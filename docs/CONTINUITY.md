@@ -651,3 +651,16 @@
 - Removed automatic post-sync auto-link pass; linking is now user-driven.
 - File: `dashboard_rebuild/client/src/pages/library.tsx`
 - Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.
+
+## 2026-02-16 - Tutor Layout Compression (Chat-First)
+
+- Removed non-essential top chrome from active Tutor session view so vertical space is dedicated to the chat body.
+- Moved module progression (including `NEXT MODULE`) into the right control sidebar.
+- Moved session metadata and config warnings into the right sidebar (mode/topic, turn count, start time, config issues).
+- Kept only chat stream + composer in the center panel.
+- Added compact floating `FOCUS` + mobile `TOOLS` controls in the chat pane (side-positioned overlay controls).
+- Refined sidebar width to reclaim additional horizontal room for studying.
+- Files:
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+  - `dashboard_rebuild/client/src/components/TutorChat.tsx`
+- Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.

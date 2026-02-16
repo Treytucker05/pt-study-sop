@@ -100,6 +100,7 @@ export default function Tutor() {
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [isShipping, setIsShipping] = useState(false);
 
@@ -110,6 +111,7 @@ export default function Tutor() {
   useEffect(() => {
     if (focusMode) {
       setShowArtifacts(false);
+      setShowMobileSidebar(false);
     }
   }, [focusMode]);
 
@@ -611,114 +613,14 @@ export default function Tutor() {
     chainBlocks.length > 0 && currentBlockIndex < chainBlocks.length
       ? chainBlocks[currentBlockIndex]
       : null;
+  const hasChain = chainBlocks.length > 0;
+  const isChainComplete = hasChain && currentBlockIndex >= chainBlocks.length;
+  const progressCount = hasChain ? Math.min(currentBlockIndex + 1, chainBlocks.length) : 0;
   const facilitationSteps = parseFacilitationSteps(currentBlock?.facilitation_prompt);
 
   return (
     <Layout>
       <div className="flex flex-col h-[calc(100vh-140px)]">
-        {/* Config warning banner */}
-        {configStatus && !configStatus.ok && (
-          <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-yellow-900/30 border-b border-yellow-400/30">
-            <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" />
-            <span className="font-terminal text-xs text-yellow-400/80">
-              {configStatus.issues.join(" · ")}
-            </span>
-          </div>
-        )}
-
-        {/* Session status bar */}
-        <div className="shrink-0 flex items-center gap-3 px-4 py-1.5 bg-black/60 border-b-2 border-primary/30">
-          <Badge variant="outline" className={`${TEXT_BADGE} h-6 px-2 text-primary border-primary/50`}>
-            {mode}
-          </Badge>
-          {topic && (
-            <span className="font-terminal text-base text-foreground truncate max-w-[380px]">
-              {topic}
-            </span>
-          )}
-          <div className={`flex items-center gap-3 ${TEXT_MUTED} ml-auto`}>
-            <span className="flex items-center gap-1">
-              <MessageSquare className={ICON_SM} />
-              {turnCount}
-            </span>
-            {startedAt && !focusMode && (
-              <span className="flex items-center gap-1">
-                <Clock className={ICON_SM} />
-                {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            )}
-            {blockTimerSeconds !== null && blockTimerSeconds > 0 && (
-              <span className={`font-terminal text-sm ${
-                blockTimerSeconds <= 60 ? "text-red-400 animate-pulse" : "text-primary/70"
-              }`}>
-                {formatTimer(blockTimerSeconds)}
-              </span>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setFocusMode((prev) => !prev)}
-              className="h-7 px-2 rounded-none font-terminal text-sm text-muted-foreground hover:text-primary"
-              title={focusMode ? "Exit focus mode" : "Enter focus mode"}
-            >
-              {focusMode ? <EyeOff className="w-3.5 h-3.5 mr-1" /> : <Eye className="w-3.5 h-3.5 mr-1" />}
-              {focusMode ? "EXIT FOCUS" : "FOCUS"}
-            </Button>
-            {!focusMode && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSetup(true)}
-                  className="h-7 w-7 p-0 rounded-none text-muted-foreground hover:text-primary lg:hidden"
-                  title="Session settings"
-                >
-                  <Settings2 className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowArtifacts((prev) => !prev)}
-                  className={`h-7 px-2 rounded-none font-terminal text-sm gap-1 lg:hidden ${
-                    showArtifacts ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary"
-                  }`}
-                  title="Toggle artifacts"
-                >
-                  {showArtifacts ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
-                  {artifacts.length > 0 && (
-                    <Badge variant="outline" className="text-xs h-5 px-1 rounded-none">
-                      {artifacts.length}
-                    </Badge>
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowEndConfirm(true)}
-                  className="h-7 px-2 rounded-none font-terminal text-sm text-red-400/70 hover:text-red-400 hover:bg-red-400/10 gap-1 lg:hidden"
-                  title="End session"
-                >
-                  <Square className="w-3.5 h-3.5" />
-                  END
-                </Button>
-              </>
-            )}
-            {focusMode && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowEndConfirm(true)}
-                className="h-7 px-2 rounded-none font-terminal text-sm text-red-400/70 hover:text-red-400 hover:bg-red-400/10 gap-1"
-                title="End session"
-              >
-                <Square className="w-3.5 h-3.5" />
-                END
-              </Button>
-            )}
-
-          </div>
-        </div>
-
         {/* Main content: Chat + control sidebar */}
         <div className="flex-1 flex min-h-0">
           <div className="flex-1 bg-zinc-950/80 border-x-2 border-primary/20 flex flex-col min-w-0 relative">
@@ -726,28 +628,31 @@ export default function Tutor() {
               sessionId={activeSessionId}
               engine={undefined}
               onArtifactCreated={handleArtifactCreated}
-              chainBlocks={chainBlocks}
-              currentBlockIndex={currentBlockIndex}
-              onAdvanceBlock={advanceBlock}
               focusMode={focusMode}
             />
 
-            {showArtifacts && !focusMode && (
-              <div className="lg:hidden absolute inset-y-0 right-0 z-40 w-[86vw] max-w-sm bg-black/95 border-l-2 border-primary/40">
-                <TutorArtifacts
-                  sessionId={activeSessionId}
-                  artifacts={artifacts}
-                  turnCount={turnCount}
-                  mode={mode}
-                  topic={topic}
-                  startedAt={startedAt}
-                  onCreateArtifact={handleArtifactCreated}
-                  recentSessions={recentSessions}
-                  onResumeSession={resumeSession}
-                  onDeleteArtifacts={handleDeleteArtifacts}
-                />
-              </div>
-            )}
+            <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFocusMode((prev) => !prev)}
+                className="h-8 px-2 rounded-none font-terminal text-xs text-muted-foreground bg-black/60 border border-primary/30 hover:text-primary"
+                title={focusMode ? "Exit focus mode" : "Enter focus mode"}
+              >
+                {focusMode ? <EyeOff className="w-3.5 h-3.5 mr-1" /> : <Eye className="w-3.5 h-3.5 mr-1" />}
+                {focusMode ? "EXIT FOCUS" : "FOCUS"}
+              </Button>
+              {!focusMode && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMobileSidebar(true)}
+                  className="h-8 px-2 rounded-none font-terminal text-xs text-muted-foreground bg-black/60 border border-primary/30 hover:text-primary lg:hidden"
+                >
+                  TOOLS
+                </Button>
+              )}
+            </div>
 
             {showEndConfirm && (
               <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4">
@@ -791,8 +696,88 @@ export default function Tutor() {
           </div>
 
           {!focusMode && (
-            <aside className="hidden lg:flex lg:w-[330px] xl:w-[350px] shrink-0 bg-black/40 border-l-2 border-primary/30 flex-col min-h-0">
+            <aside className="hidden lg:flex w-[280px] shrink-0 bg-black/40 border-l-2 border-primary/30 flex-col min-h-0">
               <div className="shrink-0 border-b border-primary/20 p-3 space-y-3">
+                {configStatus && !configStatus.ok && (
+                  <div className="flex items-start gap-2 p-2 border border-yellow-400/40 bg-yellow-900/20">
+                    <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                    <span className="font-terminal text-[11px] text-yellow-300/90 leading-relaxed">
+                      {configStatus.issues.join(" · ")}
+                    </span>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-1.5 text-primary border-primary/50`}>
+                      {mode}
+                    </Badge>
+                    <span className="font-terminal text-xs text-foreground truncate">{topic || "No topic"}</span>
+                  </div>
+                  <div className={`flex items-center gap-3 ${TEXT_MUTED}`}>
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className={ICON_SM} />
+                      {turnCount}
+                    </span>
+                    {startedAt && (
+                      <span className="flex items-center gap-1">
+                        <Clock className={ICON_SM} />
+                        {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {hasChain && (
+                  <div className="border-2 border-primary/20 bg-black/55 p-2 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-arcade text-xs text-primary">MODULES</span>
+                      <Badge variant="outline" className="ml-auto rounded-none text-[10px]">
+                        {progressCount}/{chainBlocks.length}
+                      </Badge>
+                    </div>
+                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                      {chainBlocks.map((block, idx) => {
+                        const isDone = idx < currentBlockIndex;
+                        const isCurrent = idx === currentBlockIndex && !isChainComplete;
+                        return (
+                          <div
+                            key={block.id}
+                            className={`flex items-center gap-2 px-1.5 py-1 border ${
+                              isCurrent
+                                ? "border-primary/40 bg-primary/10 text-primary"
+                                : isDone
+                                  ? "border-primary/20 bg-black/30 text-muted-foreground/70"
+                                  : "border-primary/10 text-muted-foreground/60"
+                            }`}
+                          >
+                            <span className="font-terminal text-[10px] shrink-0">{idx + 1}.</span>
+                            <span className={`font-terminal text-xs truncate ${isDone ? "line-through" : ""}`}>
+                              {block.name}
+                            </span>
+                            {isDone && <Check className="w-3 h-3 ml-auto text-green-400" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {!isChainComplete ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={advanceBlock}
+                        className="h-7 w-full rounded-none text-xs font-arcade text-primary border border-primary/40 hover:bg-primary/10"
+                      >
+                        <SkipForward className="w-3 h-3 mr-1" />
+                        NEXT MODULE
+                      </Button>
+                    ) : (
+                      <div className="font-arcade text-[11px] text-green-400 border border-green-400/40 px-2 py-1 text-center">
+                        CHAIN COMPLETE
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="ghost"
@@ -849,16 +834,6 @@ export default function Tutor() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={advanceBlock}
-                        className="h-7 px-2 rounded-none text-xs font-terminal text-muted-foreground hover:text-primary"
-                        title="Skip to next block"
-                      >
-                        <SkipForward className="w-3 h-3 mr-1" />
-                        NEXT
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
                         onClick={() => setBlockTimerSeconds(null)}
                         className="h-7 px-2 rounded-none text-xs font-terminal text-muted-foreground hover:text-foreground ml-auto"
                         title="Dismiss timer"
@@ -890,9 +865,6 @@ export default function Tutor() {
                       <span className="font-arcade text-xs text-primary truncate">
                         BLOCK GUIDANCE
                       </span>
-                      <Badge variant="outline" className="ml-auto rounded-none text-[10px]">
-                        {Math.min(currentBlockIndex + 1, chainBlocks.length)}/{chainBlocks.length}
-                      </Badge>
                     </div>
                     <div className="font-terminal text-xs text-foreground">{currentBlock.name}</div>
                     {currentBlock.description && (
@@ -951,6 +923,90 @@ export default function Tutor() {
                 )}
               </div>
             </aside>
+          )}
+
+          {showMobileSidebar && !focusMode && (
+            <div className="lg:hidden absolute inset-y-0 right-0 z-50 w-[86vw] max-w-sm bg-black/95 border-l-2 border-primary/40 flex flex-col">
+              <div className="shrink-0 p-2 border-b border-primary/20 flex items-center">
+                <span className="font-arcade text-xs text-primary">TOOLS</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMobileSidebar(false)}
+                  className="ml-auto h-7 px-2 rounded-none text-xs font-terminal text-muted-foreground hover:text-foreground"
+                >
+                  CLOSE
+                </Button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSetup(true)}
+                  className="h-8 w-full rounded-none font-terminal text-xs text-muted-foreground hover:text-primary justify-start"
+                >
+                  <Settings2 className="w-3.5 h-3.5 mr-1" />
+                  SETTINGS
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowArtifacts((prev) => !prev)}
+                  className={`h-8 w-full rounded-none font-terminal text-xs justify-start ${
+                    showArtifacts
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-primary"
+                  }`}
+                >
+                  {showArtifacts ? <PanelRightClose className="w-3.5 h-3.5 mr-1" /> : <PanelRightOpen className="w-3.5 h-3.5 mr-1" />}
+                  ARTIFACTS
+                </Button>
+                {hasChain && (
+                  <div className="border-2 border-primary/20 bg-black/55 p-2 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-arcade text-xs text-primary">MODULES</span>
+                      <Badge variant="outline" className="ml-auto rounded-none text-[10px]">
+                        {progressCount}/{chainBlocks.length}
+                      </Badge>
+                    </div>
+                    {!isChainComplete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={advanceBlock}
+                        className="h-7 w-full rounded-none text-xs font-arcade text-primary border border-primary/40 hover:bg-primary/10"
+                      >
+                        <SkipForward className="w-3 h-3 mr-1" />
+                        NEXT MODULE
+                      </Button>
+                    )}
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowEndConfirm(true)}
+                  className="h-8 w-full rounded-none font-terminal text-xs justify-start text-red-400/70 hover:text-red-400 hover:bg-red-400/10"
+                >
+                  <Square className="w-3.5 h-3.5 mr-1" />
+                  END SESSION
+                </Button>
+                {showArtifacts && (
+                  <TutorArtifacts
+                    sessionId={activeSessionId}
+                    artifacts={artifacts}
+                    turnCount={turnCount}
+                    mode={mode}
+                    topic={topic}
+                    startedAt={startedAt}
+                    onCreateArtifact={handleArtifactCreated}
+                    recentSessions={recentSessions}
+                    onResumeSession={resumeSession}
+                    onDeleteArtifacts={handleDeleteArtifacts}
+                  />
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
