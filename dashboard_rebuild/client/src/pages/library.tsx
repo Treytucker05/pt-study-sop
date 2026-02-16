@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import type { JSX } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material, TutorSyncJobStatus } from "@/lib/api";
+import type { Material, TutorSyncJobStatus, AutoLinkResult } from "@/lib/api";
 import { Link } from "wouter";
 import {
   TEXT_PAGE_TITLE,
@@ -32,6 +32,7 @@ import {
   X,
   BookOpen,
   RefreshCw,
+  Link2,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -401,6 +402,14 @@ export default function Library() {
           queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
           queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
 
+          // Auto-link newly synced materials to courses
+          if (status.status === "completed") {
+            api.tutor.autoLinkMaterials().then(() => {
+              queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
+              queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+            }).catch(() => { /* silent — link button is available as fallback */ });
+          }
+
           if (status.status === "completed") {
             const syncCount = Number(status.sync_result?.processed ?? status.processed ?? 0);
             const failedCount = Number(status.sync_result?.failed ?? status.errors ?? 0);
@@ -511,6 +520,25 @@ export default function Library() {
     },
     onError: (err) => {
       toast.error(`Clear failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    },
+  });
+
+  const autoLinkMutation = useMutation({
+    mutationFn: () => api.tutor.autoLinkMaterials(),
+    onSuccess: (result: AutoLinkResult) => {
+      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-content-sources"] });
+      if (result.linked > 0) {
+        const mappingStr = Object.entries(result.mappings)
+          .map(([folder, course]) => `${folder} → ${course}`)
+          .join(", ");
+        toast.success(`Linked ${result.linked} materials to courses (${mappingStr})`);
+      } else {
+        toast.info("No unlinked materials to link");
+      }
+    },
+    onError: (err) => {
+      toast.error(`Auto-link failed: ${err instanceof Error ? err.message : "Unknown"}`);
     },
   });
 
@@ -690,6 +718,20 @@ export default function Library() {
                     <Trash2 className={`${ICON_SM} mr-1`} />
                   )}
                   CLEAR ALL MATERIALS
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none h-7 px-3 font-terminal text-xs"
+                  disabled={autoLinkMutation.isPending || materials.length === 0}
+                  onClick={() => autoLinkMutation.mutate()}
+                >
+                  {autoLinkMutation.isPending ? (
+                    <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                  ) : (
+                    <Link2 className={`${ICON_SM} mr-1`} />
+                  )}
+                  LINK TO COURSES
                 </Button>
                 <Link href="/tutor">
                   <Button

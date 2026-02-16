@@ -670,6 +670,8 @@ export const api = {
       }),
     deleteMaterial: (id: number) =>
       request<{ deleted: boolean }>(`/tutor/materials/${id}`, { method: "DELETE" }),
+    autoLinkMaterials: () =>
+      request<AutoLinkResult>("/tutor/materials/auto-link", { method: "POST" }),
     getTemplateChains: () =>
       request<TutorTemplateChain[]>("/tutor/chains/templates"),
     advanceBlock: (sessionId: string) =>
@@ -1307,6 +1309,12 @@ export interface Material {
   checksum: string | null;
   created_at: string;
   updated_at: string | null;
+}
+
+export interface AutoLinkResult {
+  linked: number;
+  unlinked: number;
+  mappings: Record<string, string>;
 }
 
 export interface MaterialUploadResponse {

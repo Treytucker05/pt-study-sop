@@ -240,6 +240,66 @@ def _trim_sync_jobs() -> None:
             SYNC_JOBS.pop(old_job_id, None)
 
 
+def _auto_link_materials_to_courses(conn: sqlite3.Connection) -> dict:
+    """Match unlinked rag_docs materials to courses by folder_path → course name."""
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute(
+        """SELECT id, folder_path FROM rag_docs
+           WHERE course_id IS NULL
+             AND COALESCE(corpus, 'materials') = 'materials'
+             AND folder_path IS NOT NULL AND TRIM(folder_path) != ''"""
+    )
+    unlinked = cur.fetchall()
+
+    cur.execute("SELECT id, name FROM courses")
+    courses = cur.fetchall()
+    if not courses or not unlinked:
+        return {"linked": 0, "unlinked": len(unlinked), "mappings": {}}
+
+    # Build lookup: lowered course name → course id
+    course_map: list[tuple[int, str]] = [(c["id"], c["name"]) for c in courses]
+
+    def _match_course(folder_path: str) -> Optional[int]:
+        top_folder = folder_path.replace("\\", "/").strip("/").split("/")[0].strip()
+        if not top_folder:
+            return None
+        top_lower = top_folder.lower()
+        # Exact match
+        for cid, cname in course_map:
+            if cname.lower() == top_lower:
+                return cid
+        # Substring match (folder is substring of course name or vice versa)
+        for cid, cname in course_map:
+            cname_lower = cname.lower()
+            if top_lower in cname_lower or cname_lower in top_lower:
+                return cid
+        return None
+
+    linked = 0
+    still_unlinked = 0
+    mappings: dict[str, str] = {}
+
+    for row in unlinked:
+        course_id = _match_course(row["folder_path"])
+        if course_id is not None:
+            cur.execute(
+                "UPDATE rag_docs SET course_id = ? WHERE id = ?",
+                (course_id, row["id"]),
+            )
+            linked += 1
+            top = row["folder_path"].replace("\\", "/").strip("/").split("/")[0].strip()
+            if top not in mappings:
+                cname = next((n for cid, n in course_map if cid == course_id), "?")
+                mappings[top] = cname
+        else:
+            still_unlinked += 1
+
+    conn.commit()
+    return {"linked": linked, "unlinked": still_unlinked, "mappings": mappings}
+
+
 def _launch_materials_sync_job(root: Path, allowed_exts: Optional[set[str]]) -> str:
     job_id = uuid.uuid4().hex
     _update_sync_job(
@@ -306,6 +366,14 @@ def _launch_materials_sync_job(root: Path, allowed_exts: Optional[set[str]]) -> 
                     embed_result={"error": str(embed_exc)},
                     last_error=str(embed_exc),
                 )
+
+            # Auto-link materials to courses by folder_path
+            try:
+                link_conn = get_connection()
+                _auto_link_materials_to_courses(link_conn)
+                link_conn.close()
+            except Exception:
+                pass
 
             _update_sync_job(job_id, status="completed", phase="completed")
         except Exception as exc:
@@ -1867,6 +1935,21 @@ def trigger_embed():
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/materials/auto-link — Link unlinked materials to courses
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/materials/auto-link", methods=["POST"])
+def auto_link_materials():
+    conn = get_connection()
+    try:
+        result = _auto_link_materials_to_courses(conn)
+    finally:
+        conn.close()
+    return jsonify(result)
 
 
 # ---------------------------------------------------------------------------

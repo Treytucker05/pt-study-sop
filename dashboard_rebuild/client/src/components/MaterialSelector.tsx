@@ -55,9 +55,20 @@ export function MaterialSelector({
   });
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
-    queryKey: ["tutor-materials", courseId],
-    queryFn: () => api.tutor.getMaterials(courseId ? { course_id: courseId } : undefined),
+    queryKey: ["tutor-materials-all"],
+    queryFn: () => api.tutor.getMaterials(),
   });
+
+  // Split materials into course-matched and other
+  const courseMaterials = useMemo(
+    () => (courseId ? materials.filter((m) => m.course_id === courseId) : materials),
+    [materials, courseId],
+  );
+  const otherMaterials = useMemo(
+    () => (courseId ? materials.filter((m) => m.course_id !== courseId) : []),
+    [materials, courseId],
+  );
+  const [showOther, setShowOther] = useState(false);
 
   // Checksums that appear on more than one material
   const dupeChecksums = useMemo(() => {
@@ -169,10 +180,11 @@ export function MaterialSelector({
   };
 
   const toggleAll = () => {
-    if (selectedMaterials.length === materials.length) {
+    const target = courseId ? courseMaterials : materials;
+    if (selectedMaterials.length === target.length) {
       setSelectedMaterials([]);
     } else {
-      setSelectedMaterials(materials.map((m) => m.id));
+      setSelectedMaterials(target.map((m) => m.id));
     }
   };
 
@@ -220,7 +232,7 @@ export function MaterialSelector({
     );
   }
 
-  if (materials.length === 0) {
+  if (courseMaterials.length === 0 && otherMaterials.length === 0) {
     return (
       <div className="space-y-2">
         {uploadZone}
@@ -231,6 +243,29 @@ export function MaterialSelector({
     );
   }
 
+  const renderRow = (mat: Material) => (
+    <label
+      key={mat.id}
+      className={`flex items-center gap-1.5 px-1 py-0.5 ${TEXT_BODY} text-muted-foreground hover:text-foreground cursor-pointer`}
+    >
+      <Checkbox
+        checked={selectedMaterials.includes(mat.id)}
+        onCheckedChange={() => toggle(mat.id)}
+        className="w-3 h-3"
+      />
+      <FileText className={`${ICON_SM} text-primary/60 shrink-0`} />
+      <span className="truncate flex-1">{(mat.title || `Material ${mat.id}`).trim() || `Material ${mat.id}`}</span>
+      {mat.checksum && dupeChecksums.has(mat.checksum) && (
+        <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 shrink-0 border-yellow-500/50 text-yellow-400`}>
+          DUPE
+        </Badge>
+      )}
+      <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 shrink-0`}>
+        {getMaterialTypeLabel(mat.file_type)}
+      </Badge>
+    </label>
+  );
+
   return (
     <div className="space-y-1">
       {/* Upload zone */}
@@ -240,13 +275,13 @@ export function MaterialSelector({
       <div className="flex items-center gap-1.5 px-1 py-0.5 mt-1 border-b border-muted-foreground/10 pb-1">
         <label className={`flex items-center gap-1.5 flex-1 ${TEXT_BODY} text-muted-foreground hover:text-foreground cursor-pointer`}>
           <Checkbox
-            checked={materials.length > 0 && selectedMaterials.length === materials.length}
+            checked={courseMaterials.length > 0 && selectedMaterials.length === courseMaterials.length}
             onCheckedChange={toggleAll}
             className="w-3 h-3"
           />
           <span>Select all</span>
           <Badge variant="outline" className={`ml-auto ${TEXT_BADGE} h-4 px-1`}>
-            {selectedMaterials.length}/{materials.length}
+            {selectedMaterials.length}/{courseMaterials.length}
           </Badge>
         </label>
         {selectedMaterials.length > 0 && (
@@ -292,29 +327,28 @@ export function MaterialSelector({
         )}
       </div>
 
-      {/* Material list */}
-      {materials.map((mat) => (
-        <label
-          key={mat.id}
-          className={`flex items-center gap-1.5 px-1 py-0.5 ${TEXT_BODY} text-muted-foreground hover:text-foreground cursor-pointer`}
-        >
-          <Checkbox
-            checked={selectedMaterials.includes(mat.id)}
-            onCheckedChange={() => toggle(mat.id)}
-            className="w-3 h-3"
-          />
-          <FileText className={`${ICON_SM} text-primary/60 shrink-0`} />
-          <span className="truncate flex-1">{(mat.title || `Material ${mat.id}`).trim() || `Material ${mat.id}`}</span>
-          {mat.checksum && dupeChecksums.has(mat.checksum) && (
-            <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 shrink-0 border-yellow-500/50 text-yellow-400`}>
-              DUPE
-            </Badge>
-          )}
-          <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 shrink-0`}>
-            {getMaterialTypeLabel(mat.file_type)}
-          </Badge>
-        </label>
-      ))}
+      {/* Course-matched materials */}
+      {courseMaterials.length > 0 ? (
+        courseMaterials.map(renderRow)
+      ) : courseId ? (
+        <div className={`${TEXT_MUTED} text-center py-2 text-xs`}>
+          No materials linked to this course yet
+        </div>
+      ) : null}
+
+      {/* Other materials (collapsed by default) */}
+      {otherMaterials.length > 0 && (
+        <details open={showOther} onToggle={(e) => setShowOther((e.target as HTMLDetailsElement).open)}>
+          <summary className={`${TEXT_BODY} px-1 py-0.5 text-muted-foreground hover:text-foreground cursor-pointer border-t border-muted-foreground/10 mt-1 pt-1`}>
+            <span className="font-terminal text-xs">
+              Other materials ({otherMaterials.length})
+            </span>
+          </summary>
+          <div className="mt-0.5">
+            {otherMaterials.map(renderRow)}
+          </div>
+        </details>
+      )}
     </div>
   );
 }
