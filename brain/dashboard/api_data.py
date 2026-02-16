@@ -60,10 +60,23 @@ def table_rows(name: str):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
+        # Find the PK column name — SQLite aliases rowid to INTEGER PRIMARY KEY
+        # columns, so SELECT rowid,* may not produce a 'rowid' key in the dict.
+        pk_col = None
+        for c in conn.execute(f"PRAGMA table_info([{name}])").fetchall():
+            if c[5]:  # pk flag
+                pk_col = c[1]
+                break
+
         rows = conn.execute(
             f"SELECT rowid, * FROM [{name}] LIMIT ? OFFSET ?", (limit, offset)
         ).fetchall()
-        data = [dict(r) for r in rows]
+        data = []
+        for r in rows:
+            d = dict(r)
+            if "rowid" not in d and pk_col and pk_col in d:
+                d["rowid"] = d[pk_col]
+            data.append(d)
         count = conn.execute(f"SELECT COUNT(*) FROM [{name}]").fetchone()[0]
         return jsonify({"rows": data, "total": count, "limit": limit, "offset": offset})
     finally:

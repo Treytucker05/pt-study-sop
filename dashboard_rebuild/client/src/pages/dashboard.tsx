@@ -29,7 +29,6 @@ export default function Dashboard() {
   const [editCourseName, setEditCourseName] = useState("");
   const [editCourseCode, setEditCourseCode] = useState("");
   const [courseToDelete, setCourseToDelete] = useState<{ id: number; name: string } | null>(null);
-  const dialogAnchorStyle = { zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" } as const;
 
   // Google Tasks state
   const [currentTaskListIndex, setCurrentTaskListIndex] = useState(0);
@@ -440,7 +439,7 @@ export default function Dashboard() {
                         ADD_COURSE
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
+                    <DialogContent className="bg-black border-2 border-primary rounded-none">
                       <DialogHeader>
                         <DialogTitle className="font-arcade">ADD_NEW_COURSE</DialogTitle>
                         <DialogDescription className="sr-only">Enter course details to add a new course.</DialogDescription>
@@ -534,7 +533,7 @@ export default function Dashboard() {
                           ADD COURSE
                         </button>
                       </DialogTrigger>
-                      <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
+                      <DialogContent className="bg-black border-2 border-primary rounded-none">
                         <DialogHeader>
                           <DialogTitle className="font-arcade">ADD_NEW_COURSE</DialogTitle>
                           <DialogDescription className="sr-only">Enter course details to add a new course.</DialogDescription>
@@ -578,7 +577,7 @@ export default function Dashboard() {
                       }
                     }}
                   >
-                    <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
+                    <DialogContent className="bg-black border-2 border-primary rounded-none">
                       <DialogHeader>
                         <DialogTitle className="font-arcade">EDIT_COURSE</DialogTitle>
                         <DialogDescription className="sr-only">Modify the course details.</DialogDescription>
@@ -612,7 +611,7 @@ export default function Dashboard() {
 
                   {/* Delete Confirmation Dialog */}
                   <AlertDialog open={!!courseToDelete} onOpenChange={(open) => !open && setCourseToDelete(null)}>
-                    <AlertDialogContent className="bg-black border-2 border-destructive rounded-none translate-y-0" style={dialogAnchorStyle}>
+                    <AlertDialogContent className="bg-black border-2 border-destructive rounded-none">
                       <AlertDialogHeader>
                         <AlertDialogTitle className="font-arcade text-destructive">DELETE_COURSE</AlertDialogTitle>
                         <AlertDialogDescription className="font-terminal text-muted-foreground">
@@ -773,7 +772,7 @@ export default function Dashboard() {
                     ADD
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
+                <DialogContent className="bg-black border-2 border-primary rounded-none">
                   <DialogHeader>
                     <DialogTitle className="font-arcade">ADD_DEADLINE</DialogTitle>
                     <DialogDescription className="sr-only">Add a new academic deadline.</DialogDescription>
@@ -1145,7 +1144,7 @@ export default function Dashboard() {
 
         {/* Edit Task Dialog */}
         <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
-          <DialogContent className="bg-black border-2 border-primary rounded-none translate-y-0" style={dialogAnchorStyle}>
+          <DialogContent className="bg-black border-2 border-primary rounded-none">
             <DialogHeader>
               <DialogTitle className="font-arcade">EDIT_TASK</DialogTitle>
               <DialogDescription className="sr-only">Edit the selected task.</DialogDescription>
