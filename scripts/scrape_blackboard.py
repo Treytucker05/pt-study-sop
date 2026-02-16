@@ -583,38 +583,44 @@ def save_rich_data(course, modules, announcements, events):
                 print(f"    [SKIP] Match found but not updated: '{title}' (Existing URL: {bool(existing_url)})")
                 return True # Handled (skipped)
 
-        # 2. Check staging (scraped_events)
-        c.execute("SELECT id FROM scraped_events WHERE course_id=? AND title=?", (c_id, title))
-        if c.fetchone(): 
+        # 2. Check staging (course_events with pending approval)
+        c.execute(
+            "SELECT id FROM course_events WHERE course_id=? AND title=? AND COALESCE(approval_status,'approved') = 'pending'",
+            (c_id, title),
+        )
+        if c.fetchone():
             print(f"    [SKIP] Already in staging: '{title}'")
-            return True # Already in inbox, skip
-            
+            return True
+
         return False # New item!
 
     # 2. Save Announcements
     for ann in announcements:
         if not process_item(ann['title'], None, course_id, 'announcement'):
             c.execute("""
-                INSERT INTO scraped_events (course_id, type, title, raw_text, date, scraped_at, status)
-                VALUES (?, 'announcement', ?, ?, ?, ?, 'new')
-            """, (course_id, ann['title'], ann['body'], ann['date'], now_iso))
-            
-    # 3. Save Modules/Materials (as Topics in staging)
+                INSERT INTO course_events (course_id, type, title, raw_text, date,
+                    source, approval_status, status, created_at, updated_at)
+                VALUES (?, 'announcement', ?, ?, ?, 'blackboard_scrape', 'pending', 'pending', ?, ?)
+            """, (course_id, ann['title'], ann['body'], ann['date'], now_iso, now_iso))
+
+    # 3. Save Modules/Materials
     for item in modules:
         if not process_item(item['title'], item['url'], course_id, 'material'):
             c.execute("""
-                INSERT INTO scraped_events (course_id, type, title, source_url, scraped_at, status)
-                VALUES (?, 'material', ?, ?, ?, 'new')
-            """, (course_id, item['title'], item['url'], now_iso))
+                INSERT INTO course_events (course_id, type, title, source_url,
+                    source, approval_status, status, created_at, updated_at)
+                VALUES (?, 'material', ?, ?, 'blackboard_scrape', 'pending', 'pending', ?, ?)
+            """, (course_id, item['title'], item['url'], now_iso, now_iso))
 
     # 4. Save Assignments
     for evt in events:
-        evt_url = evt.get('url') # Calendar events might not have URLs yet, but future proofing
+        evt_url = evt.get('url')
         if not process_item(evt['title'], evt_url, course_id, evt['type']):
             c.execute("""
-                INSERT INTO scraped_events (course_id, type, title, raw_text, date, due_date, scraped_at, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'new')
-            """, (course_id, evt['type'], evt['title'], "Scraped from Calendar", evt['date'], evt['due_date'], now_iso))
+                INSERT INTO course_events (course_id, type, title, raw_text, date, due_date,
+                    source, approval_status, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, 'blackboard_scrape', 'pending', 'pending', ?, ?)
+            """, (course_id, evt['type'], evt['title'], "Scraped from Calendar", evt.get('date'), evt.get('due_date'), now_iso, now_iso))
 
     conn.commit()
     conn.close()

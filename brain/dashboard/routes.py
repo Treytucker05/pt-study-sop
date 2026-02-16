@@ -292,16 +292,18 @@ def api_brain_status():
 
 @dashboard_bp.route("/api/sync/pending", methods=["GET"])
 def api_sync_pending():
-    """List all staged events from Blackboard scraper and syllabus imports."""
+    """List all staged events awaiting approval (from course_events with approval_status)."""
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT s.id, s.course_id, c.name as course_name, s.type, s.title, s.date, s.due_date, s.raw_text, s.source_url, s.scraped_at, s.status
-        FROM scraped_events s
-        JOIN courses c ON s.course_id = c.id
-        WHERE s.status NOT IN ('approved', 'ignored')
-        ORDER BY s.scraped_at DESC
+        SELECT ce.id, ce.course_id, c.name as course_name, ce.type, ce.title,
+               ce.date, ce.due_date, ce.raw_text, ce.source_url,
+               ce.created_at, ce.approval_status
+        FROM course_events ce
+        LEFT JOIN courses c ON ce.course_id = c.id
+        WHERE COALESCE(ce.approval_status, 'approved') NOT IN ('approved', 'ignored')
+        ORDER BY ce.created_at DESC
     """)
     rows = cur.fetchall()
     conn.close()
@@ -327,7 +329,7 @@ def api_sync_pending():
 
 @dashboard_bp.route("/api/sync/resolve", methods=["POST"])
 def api_sync_resolve():
-    """Approve, Ignore, or Update a staged item."""
+    """Approve or Ignore a staged item (updates course_events.approval_status)."""
     data = request.get_json() or {}
     staged_id = data.get("id")
     action = data.get("action")  # 'approve', 'ignore'
@@ -341,67 +343,33 @@ def api_sync_resolve():
     try:
         if action == "ignore":
             cur.execute(
-                "UPDATE scraped_events SET status='ignored' WHERE id=?", (staged_id,)
+                "UPDATE course_events SET approval_status='ignored' WHERE id=?",
+                (staged_id,),
             )
         elif action == "approve":
-            # Get the staged item
-            cur.execute("SELECT * FROM scraped_events WHERE id=?", (staged_id,))
+            cur.execute(
+                "SELECT id, type, source_url, course_id, title FROM course_events WHERE id=?",
+                (staged_id,),
+            )
             item = cur.fetchone()
             if not item:
                 return jsonify({"ok": False, "message": "Staged item not found"}), 404
 
-            # Map columns by index (see CREATE TABLE in db_setup)
-            # 0=id, 1=course_id, 2=type, 3=title, 4=date, 5=due_date, 6=raw_text, 7=source_url, 8=scraped_at, 9=status
-            c_id, e_type, title, e_date, d_date, r_text, s_url = (
-                item[1],
-                item[2],
-                item[3],
-                item[4],
-                item[5],
-                item[6],
-                item[7],
-            )
+            e_type, s_url, c_id, title = item[1], item[2], item[3], item[4]
 
-            if e_type == "material":
-                # Create as Topic
-                cur.execute(
-                    "INSERT INTO topics (course_id, name, created_at) VALUES (?, ?, ?)",
-                    (c_id, title, datetime.now().isoformat()),
-                )
-                topic_id = cur.lastrowid
-                # Add to RAG Docs if URL exists
-                if s_url:
-                    cur.execute(
-                        """
-                        INSERT INTO rag_docs (source_path, course_id, doc_type, content, created_at, enabled)
-                        VALUES (?, ?, 'web_link', ?, ?, 1)
-                    """,
-                        (s_url, c_id, f"Title: {title}", datetime.now().isoformat()),
-                    )
-            else:
-                # Create as Course Event
+            # For material-type approvals, add to RAG docs if URL exists
+            if e_type == "material" and s_url:
                 cur.execute(
                     """
-                    INSERT INTO course_events (
-                        course_id, type, title, date, due_date, raw_text, created_at, updated_at, status
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+                    INSERT INTO rag_docs (source_path, course_id, doc_type, content, created_at, enabled)
+                    VALUES (?, ?, 'web_link', ?, ?, 1)
                 """,
-                    (
-                        c_id,
-                        e_type,
-                        title,
-                        e_date,
-                        d_date,
-                        r_text,
-                        datetime.now().isoformat(),
-                        datetime.now().isoformat(),
-                    ),
+                    (s_url, c_id, f"Title: {title}", datetime.now().isoformat()),
                 )
 
-            # Mark staged item as approved
             cur.execute(
-                "UPDATE scraped_events SET status='approved' WHERE id=?", (staged_id,)
+                "UPDATE course_events SET approval_status='approved' WHERE id=?",
+                (staged_id,),
             )
 
         conn.commit()

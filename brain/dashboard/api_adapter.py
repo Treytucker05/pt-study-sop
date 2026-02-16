@@ -121,8 +121,8 @@ def obsidian_health_check() -> dict:
     """Check if Obsidian Local REST API is running."""
     try:
         resp, error = _request_obsidian("GET", "/", timeout=3)
-        if error:
-            return {"connected": False, "status": "offline", "error": error}
+        if error or resp is None:
+            return {"connected": False, "status": "offline", "error": error or "No response"}
         if resp.status_code == 200:
             return {"connected": True, "status": "online"}
         return {
@@ -148,8 +148,8 @@ def obsidian_append(path: str, content: str) -> dict:
             },
             timeout=10,
         )
-        if error:
-            return {"success": False, "error": error}
+        if error or resp is None:
+            return {"success": False, "error": error or "No response from Obsidian"}
         if resp.status_code in [200, 204]:
             return {"success": True, "path": path, "bytes": len(content)}
         return {"success": False, "error": f"Status {resp.status_code}: {resp.text}"}
@@ -172,8 +172,8 @@ def obsidian_list_files(folder: str = "") -> dict:
             },
             timeout=10,
         )
-        if error:
-            return {"success": False, "error": error}
+        if error or resp is None:
+            return {"success": False, "error": error or "No response from Obsidian"}
         if resp.status_code == 200:
             try:
                 data = resp.json()
@@ -235,8 +235,8 @@ def obsidian_get_file(path: str) -> dict:
             },
             timeout=10,
         )
-        if error:
-            return {"success": False, "error": error}
+        if error or resp is None:
+            return {"success": False, "error": error or "No response from Obsidian"}
         if resp.status_code == 200:
             return {"success": True, "content": resp.text, "path": path}
         return {"success": False, "error": f"Status {resp.status_code}"}
@@ -257,8 +257,8 @@ def obsidian_save_file(path: str, content: str) -> dict:
             },
             timeout=10,
         )
-        if error:
-            return {"success": False, "error": error}
+        if error or resp is None:
+            return {"success": False, "error": error or "No response from Obsidian"}
         if resp.status_code in [200, 204]:
             return {"success": True, "path": path}
         return {"success": False, "error": f"Status {resp.status_code}: {resp.text}"}
@@ -1698,57 +1698,8 @@ def _expand_class_meetings(
     return expanded
 
 
-def _ensure_academic_deadlines_table(cur) -> None:
-    cur.execute(
-        """
-        CREATE TABLE IF NOT EXISTS academic_deadlines (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            course TEXT NOT NULL,
-            type TEXT NOT NULL CHECK(type IN ('assignment', 'quiz', 'exam', 'project')),
-            due_date TEXT NOT NULL,
-            completed INTEGER DEFAULT 0,
-            notes TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-    )
-
-
-def _insert_academic_deadline(
-    cur,
-    title: str,
-    course: str,
-    deadline_type: str,
-    due_date: str,
-    notes: Optional[str],
-) -> bool:
-    if not title or not course or not deadline_type or not due_date:
-        return False
-    cur.execute(
-        """
-        SELECT id FROM academic_deadlines
-        WHERE title = ? AND course = ? AND type = ? AND due_date = ?
-        """,
-        (title, course, deadline_type, due_date),
-    )
-    if cur.fetchone():
-        return False
-    cur.execute(
-        """
-        INSERT INTO academic_deadlines (title, course, type, due_date, notes, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (
-            title,
-            course,
-            deadline_type,
-            due_date,
-            notes or "",
-            datetime.now().isoformat(),
-        ),
-    )
-    return True
+    # _ensure_academic_deadlines_table and _insert_academic_deadline:
+    # REMOVED — academic_deadlines merged into course_events
 
 
 @adapter_bp.route("/syllabus/import-bulk", methods=["POST"])
@@ -1773,13 +1724,6 @@ def import_syllabus_bulk():
     conn = get_connection()
     cur = conn.cursor()
 
-    _ensure_academic_deadlines_table(cur)
-    cur.execute("SELECT name FROM courses WHERE id = ?", (course_id,))
-    course_row = cur.fetchone()
-    if not course_row or not course_row[0]:
-        cur.execute("SELECT name FROM wheel_courses WHERE course_id = ?", (course_id,))
-        course_row = cur.fetchone()
-    course_name = course_row[0] if course_row and course_row[0] else str(course_id)
 
     cur.execute("SELECT name FROM modules WHERE course_id = ?", (course_id,))
     existing_names = {
@@ -1889,16 +1833,6 @@ def import_syllabus_bulk():
         )
         events_created += 1
 
-        if event_type in {"assignment", "quiz", "exam"}:
-            deadline_date = due_date or date_val
-            _insert_academic_deadline(
-                cur,
-                title=title,
-                course=course_name,
-                deadline_type=event_type,
-                due_date=deadline_date,
-                notes=ev.get("notes"),
-            )
 
     conn.commit()
     conn.close()
@@ -1992,10 +1926,6 @@ def create_schedule_event():
     try:
         conn = get_connection()
         cur = conn.cursor()
-        _ensure_academic_deadlines_table(cur)
-        cur.execute("SELECT name FROM courses WHERE id = ?", (course_id,))
-        course_row = cur.fetchone()
-        course_name = course_row[0] if course_row and course_row[0] else str(course_id)
         now = datetime.now().isoformat()
         raw_text = _build_raw_text(
             notes,
@@ -2022,16 +1952,6 @@ def create_schedule_event():
                 now,
             ),
         )
-        if event_type in {"assignment", "quiz", "exam"}:
-            deadline_date = due_date or date_val
-            _insert_academic_deadline(
-                cur,
-                title,
-                course_name,
-                event_type,
-                deadline_date,
-                notes,
-            )
 
         conn.commit()
         new_id = cur.lastrowid
@@ -2068,10 +1988,6 @@ def bulk_create_schedule_events():
     try:
         conn = get_connection()
         cur = conn.cursor()
-        _ensure_academic_deadlines_table(cur)
-        cur.execute("SELECT name FROM courses WHERE id = ?", (course_id,))
-        course_row = cur.fetchone()
-        course_name = course_row[0] if course_row and course_row[0] else str(course_id)
         now = datetime.now().isoformat()
         created = []
         for ev in events:
@@ -2126,16 +2042,6 @@ def bulk_create_schedule_events():
                     "updatedAt": now,
                 }
             )
-            if event_type in {"assignment", "quiz", "exam"}:
-                deadline_date = due_date or date_val
-                _insert_academic_deadline(
-                    cur,
-                    title,
-                    course_name,
-                    event_type,
-                    deadline_date,
-                    notes,
-                )
         conn.commit()
         conn.close()
         return jsonify(created), 201
@@ -2246,25 +2152,6 @@ def delete_schedule_event(event_id):
         conn = get_connection()
         cur = conn.cursor()
 
-        # Cascade: delete matching academic_deadlines
-        cur.execute(
-            "SELECT title, due_date, course FROM course_events WHERE id = ?",
-            (event_id,),
-        )
-        row = cur.fetchone()
-        if row:
-            title, due_date, course = row
-            if title and due_date:
-                cur.execute(
-                    "DELETE FROM academic_deadlines WHERE title = ? AND due_date = ?",
-                    (title, due_date),
-                )
-            elif title and course:
-                cur.execute(
-                    "DELETE FROM academic_deadlines WHERE title = ? AND course = ?",
-                    (title, course),
-                )
-
         cur.execute("DELETE FROM course_events WHERE id = ?", (event_id,))
         conn.commit()
         conn.close()
@@ -2287,25 +2174,6 @@ def bulk_delete_schedule_events():
 
         conn = get_connection()
         cur = conn.cursor()
-
-        # Cascade: delete matching academic_deadlines for removed events
-        placeholders = ",".join("?" * len(cleaned))
-        cur.execute(
-            f"SELECT title, due_date, course FROM course_events WHERE id IN ({placeholders})",
-            cleaned,
-        )
-        events_to_delete = cur.fetchall()
-        for title, due_date, course in events_to_delete:
-            if title and due_date:
-                cur.execute(
-                    "DELETE FROM academic_deadlines WHERE title = ? AND due_date = ?",
-                    (title, due_date),
-                )
-            elif title and course:
-                cur.execute(
-                    "DELETE FROM academic_deadlines WHERE title = ? AND course = ?",
-                    (title, course),
-                )
 
         cur.executemany(
             "DELETE FROM course_events WHERE id = ?", [(i,) for i in cleaned]
@@ -4536,14 +4404,7 @@ def get_courses():
         cur = conn.cursor()
         _ensure_wheel_course_links(cur)
 
-        # Track if wheel has been initialized (prevents re-seeding after user clears it)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS wheel_config (
-                key TEXT PRIMARY KEY,
-                value TEXT
-            )
-        """)
-        conn.commit()
+        # wheel_config: REMOVED — dead table, dropped in migration
 
         # Query wheel_courses table ordered by position
         cur.execute("""
@@ -4788,15 +4649,6 @@ def delete_course(course_id):
         cur.execute("DELETE FROM modules WHERE course_id = ?", (course_id,))
         modules_deleted = cur.rowcount
         print(f"[DELETE] Cascade deleted {modules_deleted} modules")
-
-        # Delete associated academic deadlines (cascade cleanup)
-        course_name = row[1]
-        cur.execute(
-            "DELETE FROM academic_deadlines WHERE course = ? OR course = ?",
-            (course_name, str(course_id)),
-        )
-        deadlines_deleted = cur.rowcount
-        print(f"[DELETE] Cascade deleted {deadlines_deleted} academic_deadlines")
 
         # Delete the course
         cur.execute("DELETE FROM wheel_courses WHERE course_id = ?", (course_id,))
@@ -8090,40 +7942,25 @@ def move_task_in_list(list_id, task_id):
 
 @adapter_bp.route("/academic-deadlines", methods=["GET"])
 def get_academic_deadlines():
-    """Get all academic deadlines."""
+    """Get all academic deadlines (reads from course_events)."""
     try:
         conn = get_connection()
         cur = conn.cursor()
 
-        # Ensure table exists
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS academic_deadlines (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                course TEXT NOT NULL,
-                type TEXT NOT NULL CHECK(type IN ('assignment', 'quiz', 'exam', 'project')),
-                due_date TEXT NOT NULL,
-                completed INTEGER DEFAULT 0,
-                notes TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-
-        cur.execute("""
-            SELECT id, title, course, type, due_date, completed, notes, created_at
-            FROM academic_deadlines
-            ORDER BY due_date ASC
+            SELECT ce.id, ce.title, ce.course_id, ce.course, ce.type, ce.due_date,
+                   ce.status, ce.notes, ce.created_at
+            FROM course_events ce
+            WHERE ce.type IN ('assignment', 'quiz', 'exam', 'project')
+              AND COALESCE(ce.approval_status, 'approved') = 'approved'
+            ORDER BY ce.due_date ASC
         """)
         rows = cur.fetchall()
 
-        # Build a lookup for numeric course IDs -> course names
+        # Build course_id -> name lookup
         _course_name_cache: dict = {}
-        numeric_ids = set()
-        for r in rows:
-            if r[2] and r[2].isdigit():
-                numeric_ids.add(int(r[2]))
-        for cid in numeric_ids:
+        course_ids = {r[2] for r in rows if r[2]}
+        for cid in course_ids:
             cur.execute("SELECT name FROM courses WHERE id = ?", (cid,))
             row = cur.fetchone()
             if not row:
@@ -8137,19 +7974,19 @@ def get_academic_deadlines():
 
         deadlines = []
         for r in rows:
-            course_val = r[2] or ""
-            if course_val.isdigit():
-                course_val = _course_name_cache.get(int(course_val), course_val)
+            course_val = r[3] or ""
+            if not course_val and r[2]:
+                course_val = _course_name_cache.get(r[2], str(r[2]))
             deadlines.append(
                 {
                     "id": r[0],
                     "title": r[1],
                     "course": course_val,
-                    "type": r[3],
-                    "dueDate": r[4],
-                    "completed": bool(r[5]),
-                    "notes": r[6],
-                    "createdAt": r[7],
+                    "type": r[4],
+                    "dueDate": r[5],
+                    "completed": r[6] == "completed",
+                    "notes": r[7],
+                    "createdAt": r[8],
                 }
             )
 
@@ -8160,7 +7997,7 @@ def get_academic_deadlines():
 
 @adapter_bp.route("/academic-deadlines", methods=["POST"])
 def create_academic_deadline():
-    """Create a new academic deadline."""
+    """Create a new academic deadline (writes to course_events)."""
     try:
         data = request.get_json()
         title = data.get("title")
@@ -8175,12 +8012,28 @@ def create_academic_deadline():
         conn = get_connection()
         cur = conn.cursor()
 
+        # Resolve course name to course_id
+        course_id = 0
+        if course and course.isdigit():
+            course_id = int(course)
+        elif course:
+            cur.execute("SELECT id FROM courses WHERE name = ?", (course,))
+            row = cur.fetchone()
+            if not row:
+                cur.execute("SELECT course_id FROM wheel_courses WHERE name = ?", (course,))
+                row = cur.fetchone()
+            if row:
+                course_id = row[0]
+
+        now = datetime.now().isoformat()
         cur.execute(
             """
-            INSERT INTO academic_deadlines (title, course, type, due_date, notes, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO course_events (
+                course_id, course, type, title, due_date, notes, status,
+                source, approval_status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'pending', 'manual', 'approved', ?, ?)
         """,
-            (title, course, deadline_type, due_date, notes, datetime.now().isoformat()),
+            (course_id, course, deadline_type, title, due_date, notes, now, now),
         )
 
         deadline_id = cur.lastrowid
@@ -8196,7 +8049,7 @@ def create_academic_deadline():
                 "dueDate": due_date,
                 "completed": False,
                 "notes": notes,
-                "createdAt": datetime.now().isoformat(),
+                "createdAt": now,
             }
         ), 201
     except Exception as e:
@@ -8205,7 +8058,7 @@ def create_academic_deadline():
 
 @adapter_bp.route("/academic-deadlines/<int:deadline_id>", methods=["PATCH"])
 def update_academic_deadline(deadline_id):
-    """Update an academic deadline."""
+    """Update an academic deadline (updates course_events)."""
     try:
         data = request.get_json()
         conn = get_connection()
@@ -8227,24 +8080,26 @@ def update_academic_deadline(deadline_id):
             updates.append("due_date = ?")
             params.append(data["dueDate"])
         if "completed" in data:
-            updates.append("completed = ?")
-            params.append(1 if data["completed"] else 0)
+            updates.append("status = ?")
+            params.append("completed" if data["completed"] else "pending")
         if "notes" in data:
             updates.append("notes = ?")
             params.append(data["notes"])
 
         if updates:
+            updates.append("updated_at = ?")
+            params.append(datetime.now().isoformat())
             params.append(deadline_id)
             cur.execute(
-                f"UPDATE academic_deadlines SET {', '.join(updates)} WHERE id = ?",
+                f"UPDATE course_events SET {', '.join(updates)} WHERE id = ?",
                 params,
             )
             conn.commit()
 
         cur.execute(
             """
-            SELECT id, title, course, type, due_date, completed, notes, created_at
-            FROM academic_deadlines WHERE id = ?
+            SELECT id, title, course, type, due_date, status, notes, created_at
+            FROM course_events WHERE id = ?
         """,
             (deadline_id,),
         )
@@ -8256,10 +8111,10 @@ def update_academic_deadline(deadline_id):
                 {
                     "id": r[0],
                     "title": r[1],
-                    "course": r[2],
+                    "course": r[2] or "",
                     "type": r[3],
                     "dueDate": r[4],
-                    "completed": bool(r[5]),
+                    "completed": r[5] == "completed",
                     "notes": r[6],
                     "createdAt": r[7],
                 }
@@ -8271,11 +8126,11 @@ def update_academic_deadline(deadline_id):
 
 @adapter_bp.route("/academic-deadlines/<int:deadline_id>", methods=["DELETE"])
 def delete_academic_deadline(deadline_id):
-    """Delete an academic deadline."""
+    """Delete an academic deadline (deletes from course_events)."""
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("DELETE FROM academic_deadlines WHERE id = ?", (deadline_id,))
+        cur.execute("DELETE FROM course_events WHERE id = ?", (deadline_id,))
         conn.commit()
         conn.close()
         return "", 204
@@ -8285,30 +8140,30 @@ def delete_academic_deadline(deadline_id):
 
 @adapter_bp.route("/academic-deadlines/<int:deadline_id>/toggle", methods=["POST"])
 def toggle_academic_deadline(deadline_id):
-    """Toggle completion status of an academic deadline."""
+    """Toggle completion status of an academic deadline (toggles course_events.status)."""
     try:
         conn = get_connection()
         cur = conn.cursor()
 
         cur.execute(
-            "SELECT completed FROM academic_deadlines WHERE id = ?", (deadline_id,)
+            "SELECT status FROM course_events WHERE id = ?", (deadline_id,)
         )
         row = cur.fetchone()
         if not row:
             conn.close()
             return jsonify({"error": "Deadline not found"}), 404
 
-        new_status = 0 if row[0] else 1
+        new_status = "pending" if row[0] == "completed" else "completed"
         cur.execute(
-            "UPDATE academic_deadlines SET completed = ? WHERE id = ?",
-            (new_status, deadline_id),
+            "UPDATE course_events SET status = ?, updated_at = ? WHERE id = ?",
+            (new_status, datetime.now().isoformat(), deadline_id),
         )
         conn.commit()
 
         cur.execute(
             """
-            SELECT id, title, course, type, due_date, completed, notes, created_at
-            FROM academic_deadlines WHERE id = ?
+            SELECT id, title, course, type, due_date, status, notes, created_at
+            FROM course_events WHERE id = ?
         """,
             (deadline_id,),
         )
@@ -8319,10 +8174,10 @@ def toggle_academic_deadline(deadline_id):
             {
                 "id": r[0],
                 "title": r[1],
-                "course": r[2],
+                "course": r[2] or "",
                 "type": r[3],
                 "dueDate": r[4],
-                "completed": bool(r[5]),
+                "completed": r[5] == "completed",
                 "notes": r[6],
                 "createdAt": r[7],
             }

@@ -38,11 +38,11 @@ for table in tables_to_clear:
 conn.commit()
 
 # Reset auto-increment for sessions
-cur.execute("DELETE FROM sqlite_sequence WHERE name IN ('sessions', 'card_drafts', 'topics', 'tutor_turns')")
+cur.execute("DELETE FROM sqlite_sequence WHERE name IN ('sessions', 'card_drafts', 'tutor_turns')")
 conn.commit()
 
 print("\n=== PRESERVED (NOT CLEARED) ===")
-preserved = ["wheel_courses", "courses", "course_events", "calendar_action_ledger", "study_tasks", "scraped_events"]
+preserved = ["wheel_courses", "courses", "course_events", "calendar_action_ledger", "study_tasks"]
 for table in preserved:
     try:
         cur.execute(f"SELECT COUNT(*) FROM {table}")

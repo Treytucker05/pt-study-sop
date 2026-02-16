@@ -177,8 +177,6 @@ def merge_duplicate_courses(
     merge_details = []
     update_tables = [
         "course_events",
-        "scraped_events",
-        "topics",
         "study_tasks",
         "rag_docs",
         "tutor_turns",

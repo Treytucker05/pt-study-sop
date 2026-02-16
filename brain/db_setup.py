@@ -7,10 +7,141 @@ import sqlite3
 import os
 import sys
 import importlib.util
+from datetime import datetime
 from typing import Optional
 from pathlib import Path
 
 from config import DB_PATH
+
+
+def _migrate_academic_deadlines(cursor) -> None:
+    """Merge academic_deadlines into course_events, then drop the table.
+
+    Idempotent: skips if academic_deadlines does not exist.
+    """
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='academic_deadlines'"
+    )
+    if not cursor.fetchone():
+        return
+
+    # Copy rows, dedup by title+due_date within same course
+    cursor.execute("SELECT title, course, type, due_date, completed, notes, created_at FROM academic_deadlines")
+    rows = cursor.fetchall()
+    migrated = 0
+    for title, course_text, d_type, due_date, completed, notes, created_at in rows:
+        # Resolve course text to course_id
+        course_id = None
+        if course_text:
+            if course_text.isdigit():
+                course_id = int(course_text)
+            else:
+                cursor.execute("SELECT id FROM courses WHERE name = ?", (course_text,))
+                row = cursor.fetchone()
+                if not row:
+                    cursor.execute(
+                        "SELECT course_id FROM wheel_courses WHERE name = ?", (course_text,)
+                    )
+                    row = cursor.fetchone()
+                if row:
+                    course_id = row[0]
+        if not course_id:
+            course_id = 0  # fallback for orphaned rows
+
+        status = "completed" if completed else "pending"
+
+        # Check if course_events already has this title+due_date+course_id
+        cursor.execute(
+            "SELECT id FROM course_events WHERE title = ? AND due_date = ? AND course_id = ?",
+            (title, due_date, course_id),
+        )
+        if cursor.fetchone():
+            continue  # already exists
+
+        now = created_at or datetime.now().isoformat()
+        cursor.execute(
+            """
+            INSERT INTO course_events (
+                course_id, type, title, due_date, notes, status, source, approval_status,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'manual', 'approved', ?, ?)
+            """,
+            (course_id, d_type or "assignment", title, due_date, notes, status, now, now),
+        )
+        migrated += 1
+
+    cursor.execute("DROP TABLE academic_deadlines")
+    if migrated:
+        print(f"[OK] Migrated {migrated} academic_deadlines into course_events")
+    else:
+        print("[OK] academic_deadlines table dropped (all rows already in course_events)")
+
+
+def _migrate_scraped_events(cursor) -> None:
+    """Add source/approval_status columns to course_events, migrate scraped_events, drop it.
+
+    Idempotent: skips column adds if they exist, skips migration if table gone.
+    """
+    # Add new columns to course_events
+    cursor.execute("PRAGMA table_info(course_events)")
+    ce_cols = {col[1] for col in cursor.fetchall()}
+
+    if "source" not in ce_cols:
+        cursor.execute("ALTER TABLE course_events ADD COLUMN source TEXT DEFAULT 'manual'")
+        print("[INFO] Added 'source' column to course_events table")
+    if "approval_status" not in ce_cols:
+        cursor.execute("ALTER TABLE course_events ADD COLUMN approval_status TEXT DEFAULT 'approved'")
+        print("[INFO] Added 'approval_status' column to course_events table")
+
+    # Backfill existing rows
+    cursor.execute("UPDATE course_events SET source = COALESCE(source, 'manual')")
+    cursor.execute("UPDATE course_events SET approval_status = COALESCE(approval_status, 'approved')")
+
+    # Migrate scraped_events if present
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='scraped_events'"
+    )
+    if not cursor.fetchone():
+        return
+
+    cursor.execute(
+        "SELECT id, course_id, type, title, date, due_date, raw_text, source_url, scraped_at, status "
+        "FROM scraped_events"
+    )
+    rows = cursor.fetchall()
+    migrated = 0
+    for _, course_id, e_type, title, e_date, due_date, raw_text, source_url, scraped_at, status in rows:
+        # Map scraped_events status to approval_status
+        if status in ("approved", "ignored"):
+            approval = status
+        else:
+            approval = "pending"
+
+        # Dedup check
+        cursor.execute(
+            "SELECT id FROM course_events WHERE title = ? AND course_id = ? AND COALESCE(due_date, date) = ?",
+            (title, course_id, due_date or e_date),
+        )
+        if cursor.fetchone():
+            continue
+
+        now = scraped_at or datetime.now().isoformat()
+        cursor.execute(
+            """
+            INSERT INTO course_events (
+                course_id, type, title, date, due_date, raw_text, source_url,
+                source, approval_status, status, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'blackboard_scrape', ?, 'pending', ?, ?)
+            """,
+            (course_id, e_type, title, e_date, due_date, raw_text, source_url, approval, now, now),
+        )
+        migrated += 1
+
+    cursor.execute("DROP TABLE scraped_events")
+    if migrated:
+        print(f"[OK] Migrated {migrated} scraped_events into course_events")
+    else:
+        print("[OK] scraped_events table dropped (all rows already in course_events or empty)")
 
 
 def init_database():
@@ -348,40 +479,9 @@ def init_database():
     """
     )
 
-    # Staging area for scraped data before verification
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS scraped_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            course_id INTEGER NOT NULL,
-            type TEXT NOT NULL, 
-            title TEXT NOT NULL,
-            date TEXT,
-            due_date TEXT,
-            raw_text TEXT,
-            source_url TEXT,
-            scraped_at TEXT NOT NULL,
-            status TEXT DEFAULT 'new', -- new/conflict/matched/ignored/approved
-            FOREIGN KEY(course_id) REFERENCES courses(id)
-        )
-    """
-    )
+    # scraped_events: REMOVED — merged into course_events via source/approval_status columns
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS topics (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            course_id INTEGER,
-            name TEXT NOT NULL,
-            description TEXT,
-            source_lock TEXT,          -- canonical sources for this topic
-            default_frameworks TEXT,   -- e.g. \"H1, M2\"
-            rag_doc_ids TEXT,          -- comma-separated IDs in rag_docs
-            created_at TEXT NOT NULL,
-            FOREIGN KEY(course_id) REFERENCES courses(id)
-        )
-    """
-    )
+    # topics: REMOVED — zero active reads, 0 rows, dead table
 
     cursor.execute(
         """
@@ -691,12 +791,7 @@ def init_database():
         ON course_events(date, due_date)
     """
     )
-    cursor.execute(
-        """
-        CREATE INDEX IF NOT EXISTS idx_topics_course
-        ON topics(course_id)
-    """
-    )
+    # idx_topics_course: REMOVED — topics table dropped
     cursor.execute(
         """
         CREATE INDEX IF NOT EXISTS idx_study_tasks_schedule
@@ -1669,6 +1764,17 @@ def init_database():
     cursor.execute(
         "CREATE INDEX IF NOT EXISTS idx_scholar_experiments_status ON scholar_experiments(status)"
     )
+
+    # ------------------------------------------------------------------
+    # Table consolidation migrations (idempotent)
+    # ------------------------------------------------------------------
+    _migrate_academic_deadlines(cursor)
+    _migrate_scraped_events(cursor)
+
+    # Drop dead tables
+    cursor.execute("DROP TABLE IF EXISTS wheel_config")
+    cursor.execute("DROP TABLE IF EXISTS topics")
+    cursor.execute("DROP INDEX IF EXISTS idx_topics_course")
 
     conn.commit()
     conn.close()
