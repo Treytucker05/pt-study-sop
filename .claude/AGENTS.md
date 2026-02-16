@@ -1,3 +1,3 @@
 # Agent Rules
 
-See root AGENTS.md for all agent instructions. This copy exists for Claude Code tool compatibility.
+All project instructions live in root `AGENTS.md` — the single source of truth.
