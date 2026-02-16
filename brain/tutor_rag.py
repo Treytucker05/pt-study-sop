@@ -75,8 +75,8 @@ def chunk_document(
     content: str,
     source_path: str,
     *,
-    chunk_size: int = 1000,
-    chunk_overlap: int = 200,
+    chunk_size: int = 500,
+    chunk_overlap: int = 100,
     course_id: Optional[int] = None,
     folder_path: Optional[str] = None,
     rag_doc_id: Optional[int] = None,
@@ -289,6 +289,32 @@ def embed_rag_docs(
     return {"embedded": embedded, "skipped": skipped, "total_chunks": total_chunks}
 
 
+def rerank_results(query: str, docs: list, k_final: int) -> list:
+    """Re-rank retrieved documents by keyword overlap with the query.
+
+    Scores each doc by counting how many query keywords appear in its text,
+    then returns the top ``k_final`` docs sorted by descending score.
+    """
+    if len(docs) <= k_final:
+        return docs
+
+    stop_words = {"the", "a", "an", "is", "are", "was", "were", "in", "on", "at",
+                  "to", "for", "of", "and", "or", "it", "this", "that", "with"}
+    keywords = [w.lower() for w in query.split() if w.lower() not in stop_words and len(w) > 2]
+
+    if not keywords:
+        return docs[:k_final]
+
+    scored = []
+    for doc in docs:
+        text_lower = doc.page_content.lower()
+        score = sum(1 for kw in keywords if kw in text_lower)
+        scored.append((score, doc))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [doc for _, doc in scored[:k_final]]
+
+
 def search_with_embeddings(
     query: str,
     course_id: Optional[int] = None,
@@ -298,19 +324,22 @@ def search_with_embeddings(
     k: int = 6,
 ):
     """
-    Vector search via ChromaDB. Returns list of LangChain Documents.
+    Vector search via ChromaDB with keyword re-ranking.
+    Fetches 2*k candidates, re-ranks by keyword overlap, returns top k.
     Falls back to keyword search if vectorstore is empty.
     """
     vs = init_vectorstore(collection_name)
+
+    corpus_fallback = "instructions" if collection_name == COLLECTION_INSTRUCTIONS else None
 
     try:
         collection = vs._collection
         if collection.count() == 0:
             return _keyword_fallback(query, course_id, folder_paths, material_ids, k,
-                                     corpus="instructions" if collection_name == COLLECTION_INSTRUCTIONS else None)
+                                     corpus=corpus_fallback)
     except Exception:
         return _keyword_fallback(query, course_id, folder_paths, material_ids, k,
-                                 corpus="instructions" if collection_name == COLLECTION_INSTRUCTIONS else None)
+                                 corpus=corpus_fallback)
 
     # Build metadata filter
     where_filter = None
@@ -328,18 +357,19 @@ def search_with_embeddings(
         where_filter = {"$and": conditions}
 
     try:
+        # Fetch 2x candidates for re-ranking
         results = vs.similarity_search(
             query,
-            k=k,
+            k=k * 2,
             filter=where_filter,
         )
         if results:
-            return results
+            return rerank_results(query, results, k)
     except Exception:
         pass
 
     return _keyword_fallback(query, course_id, folder_paths, material_ids, k,
-                             corpus="instructions" if collection_name == COLLECTION_INSTRUCTIONS else None)
+                             corpus=corpus_fallback)
 
 
 def _keyword_fallback(

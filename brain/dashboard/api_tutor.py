@@ -513,16 +513,10 @@ def get_session(session_id: str):
 
 @tutor_bp.route("/session/<session_id>/turn", methods=["POST"])
 def send_turn(session_id: str):
-    VALID_ENGINES = {"codex", "openrouter", "default"}
     data = request.get_json(silent=True) or {}
     question = data.get("message", "").strip()
-    engine = data.get("engine", "default").strip().lower()
     if not question:
         return jsonify({"error": "message is required"}), 400
-    if engine not in VALID_ENGINES:
-        return jsonify(
-            {"error": f"Unknown engine '{engine}'. Valid: codex, openrouter, default"}
-        ), 400
 
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)
@@ -572,95 +566,14 @@ def send_turn(session_id: str):
         folder_paths = content_filter["folders"]
 
     # Read model override from content_filter
-    model_override = None
+    codex_model: Optional[str] = None
     if content_filter and content_filter.get("model"):
-        model_override = content_filter["model"]
+        raw_model = str(content_filter["model"]).strip()
+        if raw_model and "/" not in raw_model and raw_model.lower() not in ("codex", "codex-cli", "chatgpt"):
+            codex_model = raw_model
 
     # Read web search preference
     enable_web_search = bool(content_filter and content_filter.get("web_search"))
-
-    # Resolve provider selection
-    model_str = str(model_override).strip() if model_override else ""
-    model_lower = model_str.lower()
-    provider = os.environ.get("TUTOR_PROVIDER", "").strip().lower() or None
-    codex_model: Optional[str] = None
-
-    if provider is None:
-        if model_lower in ("codex", "codex-cli", "chatgpt"):
-            provider = "codex"
-        elif "/" in model_str:
-            provider = "openrouter"
-        elif model_str:
-            provider = "codex"
-            codex_model = model_str
-        else:
-            provider = "codex"
-
-    # Guard: if UI selects an OpenRouter-style model (contains "/") but OpenRouter
-    # isn't configured, fail fast with a readable SSE error instead of attempting
-    # OpenAI with an incompatible model id (e.g. "google/gemini-*").
-    if (
-        provider == "openrouter"
-        and not (os.environ.get("OPENROUTER_API_KEY") or "").strip()
-    ):
-
-        def _unconfigured():
-            from tutor_streaming import format_sse_error
-
-            yield format_sse_error(
-                "OpenRouter is not configured (OPENROUTER_API_KEY missing). "
-                "Select Codex or set OPENROUTER_API_KEY in brain/.env, then restart the dashboard."
-            )
-
-        return Response(
-            _unconfigured(),
-            mimetype="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache, no-store",
-                "X-Accel-Buffering": "no",
-                "Connection": "keep-alive",
-            },
-        )
-
-    # Build LangChain chain only for API-backed providers
-    chain = None
-    input_dict = None
-    if provider != "codex":
-        from tutor_rag import get_retriever
-        from tutor_chains import build_tutor_chain
-
-        retriever = get_retriever(
-            course_id=session.get("course_id"),
-            folder_paths=folder_paths,
-            material_ids=material_ids,
-        )
-
-        chain = build_tutor_chain(
-            retriever=retriever,
-            mode=session.get("mode", "Core"),
-            course_id=session.get("course_id"),
-            topic=session.get("topic"),
-            model=model_override,
-            chain_id=session.get("method_chain_id"),
-            current_block_index=session.get("current_block_index", 0) or 0,
-            block_info=block_info,
-            chain_info=chain_info,
-        )
-
-        # Build chat history for LangChain
-        from langchain_core.messages import HumanMessage, AIMessage
-
-        chat_history = []
-        for turn in turns:
-            if turn.get("question"):
-                chat_history.append(HumanMessage(content=turn["question"]))
-            if turn.get("answer"):
-                chat_history.append(AIMessage(content=turn["answer"]))
-
-        input_dict = {
-            "question": question,
-            "chat_history": chat_history,
-        }
 
     turn_number = session["turn_count"] + 1
 
@@ -673,175 +586,147 @@ def send_turn(session_id: str):
             format_sse_done,
             format_sse_error,
             extract_citations,
-            stream_tutor_response,
         )
 
-        if provider == "codex":
-            try:
-                from llm_provider import stream_chatgpt_responses, call_codex_json
-                from tutor_rag import keyword_search_dual
-                from tutor_prompt_builder import build_prompt_with_contexts
-                from tutor_chains import FIRST_PASS_ADDENDUM
+        try:
+            from llm_provider import stream_chatgpt_responses, call_codex_json
+            from tutor_rag import get_dual_context, keyword_search_dual
+            from tutor_prompt_builder import build_prompt_with_contexts
 
-                # Dual search: materials + SOP instructions
+            # Dual search: prefer embedding search, fall back to keyword
+            try:
+                dual = get_dual_context(
+                    question,
+                    course_id=session.get("course_id"),
+                    material_ids=material_ids,
+                    k_materials=6,
+                    k_instructions=2,
+                )
+            except Exception:
                 dual = keyword_search_dual(
                     question,
                     course_id=session.get("course_id"),
                     material_ids=material_ids,
-                    k_materials=4,
+                    k_materials=6,
                     k_instructions=2,
                 )
-                material_text, instruction_text = _format_dual_context(dual)
+            material_text, instruction_text = _format_dual_context(dual)
 
-                # Graceful mode when no materials
-                if not material_text:
-                    material_text = (
-                        "No course-specific materials were retrieved for this topic. "
-                        "Teach from your medical/PT training knowledge. "
-                        "Mark such content as [From training knowledge — verify with your textbooks] "
-                        "so the student knows to cross-reference."
-                    )
-
-                system_prompt = build_prompt_with_contexts(
-                    mode=session.get("mode", "Core"),
-                    current_block=block_info,
-                    chain_info=chain_info,
-                    course_id=session.get("course_id"),
-                    topic=session.get("topic"),
-                    instruction_context=instruction_text,
-                    material_context=None,  # material context goes in user prompt
+            # Graceful mode when no materials
+            if not material_text:
+                material_text = (
+                    "No course-specific materials were retrieved for this topic. "
+                    "Teach from your medical/PT training knowledge. "
+                    "Mark such content as [From training knowledge — verify with your textbooks] "
+                    "so the student knows to cross-reference."
                 )
 
-                if not block_info:
-                    system_prompt += "\n\n" + FIRST_PASS_ADDENDUM
+            # Materials go in system prompt (not user prompt)
+            system_prompt = build_prompt_with_contexts(
+                current_block=block_info,
+                chain_info=chain_info,
+                course_id=session.get("course_id"),
+                topic=session.get("topic"),
+                instruction_context=instruction_text,
+                material_context=material_text,
+            )
 
-                system_prompt += (
-                    "\n\n## Tooling\n"
-                    "Do not run shell commands or attempt to read local files. "
-                    "Answer as a tutor only."
-                )
+            system_prompt += (
+                "\n\n## Tooling\n"
+                "Do not run shell commands or attempt to read local files. "
+                "Answer as a tutor only."
+            )
 
-                # Limit history to last 12 turns, truncate answers for speed
-                recent_turns = turns[-12:] if len(turns) > 12 else turns
-                history_lines: list[str] = []
-                for t in recent_turns:
-                    if t.get("question"):
-                        history_lines.append(f"User: {t['question']}")
-                    if t.get("answer"):
-                        ans = t["answer"]
-                        if len(ans) > 800:
-                            ans = ans[:800] + "..."
-                        history_lines.append(f"Assistant: {ans}")
-                history_text = "\n".join(history_lines).strip() or "(no prior turns)"
+            # Build user prompt: chat history + question
+            recent_turns = turns[-12:] if len(turns) > 12 else turns
+            history_lines: list[str] = []
+            for t in recent_turns:
+                if t.get("question"):
+                    history_lines.append(f"User: {t['question']}")
+                if t.get("answer"):
+                    ans = t["answer"]
+                    if len(ans) > 800:
+                        ans = ans[:800] + "..."
+                    history_lines.append(f"Assistant: {ans}")
+            history_text = "\n".join(history_lines).strip() or "(no prior turns)"
 
-                user_prompt = f"""## Retrieved Context
-{material_text}
-
-## Chat History
+            user_prompt = f"""## Chat History
 {history_text}
 
 ## Current Question
-{question}
+{question}"""
 
-Remember: cite source documents using [Source: filename] when you use them."""
-
-                # Primary: stream via ChatGPT backend API (fast)
-                use_streaming = True
-                api_model = codex_model or "gpt-5.1"
-                url_citations: list[object] = []
-                try:
-                    for chunk in stream_chatgpt_responses(
+            # Primary: stream via ChatGPT backend API (fast)
+            api_model = codex_model or "gpt-5.1"
+            url_citations: list[object] = []
+            try:
+                for chunk in stream_chatgpt_responses(
+                    system_prompt,
+                    user_prompt,
+                    model=codex_model or "gpt-5.1",
+                    timeout=120,
+                    web_search=enable_web_search,
+                ):
+                    if chunk.get("type") == "delta":
+                        full_response += chunk.get("text", "")
+                        yield format_sse_chunk(chunk.get("text", ""))
+                    elif chunk.get("type") == "web_search":
+                        yield format_sse_chunk(
+                            "", chunk_type=f"web_search_{chunk['status']}"
+                        )
+                    elif chunk.get("type") == "error":
+                        raise RuntimeError(chunk.get("error", "ChatGPT API failed"))
+                    elif chunk.get("type") == "done":
+                        api_model = chunk.get("model") or api_model
+                        url_citations_raw = chunk.get("url_citations", [])
+                        if isinstance(url_citations_raw, list):
+                            url_citations = url_citations_raw
+            except Exception as stream_err:
+                # Fallback: Codex CLI (slower but reliable)
+                if not full_response:
+                    result = call_codex_json(
                         system_prompt,
                         user_prompt,
-                        model=codex_model or "gpt-5.1",
+                        model=codex_model,
                         timeout=120,
-                        web_search=enable_web_search,
-                    ):
-                        if chunk.get("type") == "delta":
-                            full_response += chunk.get("text", "")
-                            yield format_sse_chunk(chunk.get("text", ""))
-                        elif chunk.get("type") == "web_search":
-                            yield format_sse_chunk(
-                                "", chunk_type=f"web_search_{chunk['status']}"
-                            )
-                        elif chunk.get("type") == "error":
-                            raise RuntimeError(chunk.get("error", "ChatGPT API failed"))
-                        elif chunk.get("type") == "done":
-                            api_model = chunk.get("model") or api_model
-                            url_citations_raw = chunk.get("url_citations", [])
-                            if isinstance(url_citations_raw, list):
-                                url_citations = url_citations_raw
-                except Exception as stream_err:
-                    # Fallback: Codex CLI (slower but reliable)
-                    if not full_response:
-                        use_streaming = False
-                        result = call_codex_json(
-                            system_prompt,
-                            user_prompt,
-                            model=codex_model,
-                            timeout=120,
-                            isolated=True,
-                        )
-                        if not result.get("success"):
-                            raise RuntimeError(result.get("error") or "Codex failed")
-                        full_response = (result.get("content") or "").strip()
-                        max_chars = 220
-                        for i in range(0, len(full_response), max_chars):
-                            yield format_sse_chunk(full_response[i : i + max_chars])
+                        isolated=True,
+                    )
+                    if not result.get("success"):
+                        raise RuntimeError(result.get("error") or "Codex failed")
+                    full_response = (result.get("content") or "").strip()
+                    max_chars = 220
+                    for i in range(0, len(full_response), max_chars):
+                        yield format_sse_chunk(full_response[i : i + max_chars])
+                else:
+                    raise stream_err
+
+            citations = extract_citations(full_response)
+            # Merge document citations with web URL citations
+            all_citations = citations
+            if url_citations:
+                for uc in url_citations:
+                    if isinstance(uc, dict):
+                        source = uc.get("title") or uc.get("url", "")
+                        url = uc.get("url", "")
                     else:
-                        raise stream_err
+                        source = str(uc)
+                        url = ""
+                    all_citations.append(
+                        {
+                            "source": source,
+                            "url": url,
+                            "index": len(all_citations) + 1,
+                        }
+                    )
+            artifact_payload = [artifact_cmd] if artifact_cmd else None
+            yield format_sse_done(
+                citations=all_citations, model=api_model, artifacts=artifact_payload
+            )
 
-                citations = extract_citations(full_response)
-                # Merge document citations with web URL citations
-                all_citations = citations
-                if url_citations:
-                    for uc in url_citations:
-                        if isinstance(uc, dict):
-                            source = uc.get("title") or uc.get("url", "")
-                            url = uc.get("url", "")
-                        else:
-                            source = str(uc)
-                            url = ""
-                        all_citations.append(
-                            {
-                                "source": source,
-                                "url": url,
-                                "index": len(all_citations) + 1,
-                            }
-                        )
-                artifact_payload = [artifact_cmd] if artifact_cmd else None
-                yield format_sse_done(
-                    citations=all_citations, model=api_model, artifacts=artifact_payload
-                )
-
-            except Exception as e:
-                yield format_sse_error(str(e))
-                full_response = f"[Error: {e}]"
-                citations = []
-        else:
-            try:
-                if input_dict is None:
-                    raise RuntimeError("Missing input payload for tutor chain")
-                for chunk_str in stream_tutor_response(
-                    chain, input_dict, session_id, artifact_cmd=artifact_cmd
-                ):
-                    yield chunk_str
-
-                    if chunk_str.startswith("data: "):
-                        data_part = chunk_str.split("data: ", 1)[1].split("\n")[0]
-                        if data_part != "[DONE]":
-                            try:
-                                parsed = json.loads(data_part)
-                                if parsed.get("type") == "token":
-                                    full_response += parsed.get("content", "")
-                                elif parsed.get("type") == "done":
-                                    citations = parsed.get("citations", [])
-                            except (json.JSONDecodeError, KeyError):
-                                pass
-            except Exception as e:
-                yield format_sse_error(str(e))
-                full_response = f"[Error: {e}]"
-                citations = []
+        except Exception as e:
+            yield format_sse_error(str(e))
+            full_response = f"[Error: {e}]"
+            citations = []
 
         # After streaming completes, log the turn
         try:
@@ -1372,15 +1257,12 @@ def content_sources():
 
     conn.close()
 
-    openrouter_enabled = bool((os.environ.get("OPENROUTER_API_KEY") or "").strip())
-
     return jsonify(
         {
             "courses": courses,
             "total_materials": total_materials,
             "total_instructions": total_instructions,
             "total_docs": total_materials + total_instructions,
-            "openrouter_enabled": openrouter_enabled,
         }
     )
 
@@ -1851,10 +1733,6 @@ def config_check():
     if not codex_ok:
         issues.append("Codex CLI not found in PATH")
 
-    # Check OpenRouter
-    openrouter_key = (os.environ.get("OPENROUTER_API_KEY") or "").strip()
-    openrouter_ok = bool(openrouter_key)
-
     # Check ChatGPT backend (used by Codex streaming)
     chatgpt_ok = False
     try:
@@ -1870,7 +1748,6 @@ def config_check():
         {
             "ok": len(issues) == 0,
             "codex_available": codex_ok,
-            "openrouter_configured": openrouter_ok,
             "chatgpt_streaming": chatgpt_ok,
             "issues": issues,
         }
