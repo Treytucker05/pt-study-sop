@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getCoursePaths } from "@/config/courses";
 
-export type MainMode = "canvas" | "edit" | "chat" | "graph" | "table" | "anki";
+export type MainMode = "canvas" | "edit" | "chat" | "graph" | "table" | "anki" | "data";
 
 function loadState<T>(key: string, fallback: T): T {
   try {

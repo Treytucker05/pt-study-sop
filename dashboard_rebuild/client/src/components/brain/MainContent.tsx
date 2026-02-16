@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
-import { PenTool, Pencil, MessageSquare, Network, Table2, Layers } from "lucide-react";
+import { PenTool, Pencil, MessageSquare, Network, Table2, Layers, Database } from "lucide-react";
 import { BrainChat } from "@/components/BrainChat";
 import { VaultEditor } from "./VaultEditor";
 import { GraphPanel } from "./GraphPanel";
 import { ExcalidrawCanvas } from "./ExcalidrawCanvas";
 import { ComparisonTableEditor } from "@/components/ComparisonTableEditor";
 import { AnkiIntegration } from "@/components/AnkiIntegration";
+import { DataEditor } from "./DataEditor";
 import { ErrorBoundary, TabErrorFallback } from "@/components/ErrorBoundary";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const TABS = [
   { id: "graph" as const, label: "GRAPH", icon: Network, hint: "Alt+4" },
   { id: "table" as const, label: "TABLE", icon: Table2, hint: "Alt+5" },
   { id: "anki" as const, label: "ANKI", icon: Layers, hint: "Alt+6" },
+  { id: "data" as const, label: "DATA", icon: Database, hint: "Alt+7" },
 ] as const;
 
 interface MainContentProps {
@@ -271,6 +273,29 @@ export function MainContent({ workspace }: MainContentProps) {
               totalCards={workspace.metrics?.totalCards || 0}
               compact
             />
+          </ErrorBoundary>
+          </div>
+        )}
+
+        {currentTab === "data" && (
+          <div
+            id="brain-tabpanel-data"
+            role="tabpanel"
+            aria-labelledby="brain-tab-data"
+            data-tab="data"
+            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
+            tabIndex={0}
+          >
+          <ErrorBoundary
+            key={`data-${errorKeys["data"] || 0}`}
+            fallback={
+              <TabErrorFallback
+                tabName="DATA"
+                onReset={() => resetErrorBoundary("data")}
+              />
+            }
+          >
+            <DataEditor />
           </ErrorBoundary>
           </div>
         )}

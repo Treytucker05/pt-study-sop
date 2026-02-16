@@ -679,6 +679,27 @@ export const api = {
         }),
       }),
   },
+
+  data: {
+    getTables: () => request<string[]>("/data/tables"),
+    getSchema: (table: string) => request<DataTableSchema>(`/data/tables/${encodeURIComponent(table)}`),
+    getRows: (table: string, limit = 100, offset = 0) =>
+      request<DataRowsResponse>(`/data/tables/${encodeURIComponent(table)}/rows?limit=${limit}&offset=${offset}`),
+    updateRow: (table: string, rowid: number, data: Record<string, unknown>) =>
+      request<{ updated: boolean; rowid: number }>(`/data/tables/${encodeURIComponent(table)}/rows/${rowid}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    deleteRow: (table: string, rowid: number) =>
+      request<{ deleted: boolean; rowid: number }>(`/data/tables/${encodeURIComponent(table)}/rows/${rowid}`, {
+        method: "DELETE",
+      }),
+    deleteRows: (table: string, ids: number[]) =>
+      request<{ deleted: number }>(`/data/tables/${encodeURIComponent(table)}/rows/bulk-delete`, {
+        method: "POST",
+        body: JSON.stringify({ ids }),
+      }),
+  },
 };
 
 // Scholar types
@@ -1211,6 +1232,20 @@ export interface MaterialUploadResponse {
   char_count: number;
   embedded: boolean;
   duplicate_of: { id: number; title: string } | null;
+}
+
+// Data Editor types
+export interface DataTableSchema {
+  table: string;
+  columns: { cid: number; name: string; type: string; notnull: number; default: unknown; pk: number }[];
+  row_count: number;
+}
+
+export interface DataRowsResponse {
+  rows: Record<string, unknown>[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 // SSE streaming helper for Tutor chat
