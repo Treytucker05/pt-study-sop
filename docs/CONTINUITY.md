@@ -676,3 +676,12 @@
   - `dashboard_rebuild/client/src/components/TutorWizard.tsx`
   - `dashboard_rebuild/client/src/pages/tutor.tsx`
 - Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.
+
+## 2026-02-16 - Tutor True Fullscreen Shell
+
+- Hid global dashboard header and footer on `/tutor` so Tutor can occupy the full viewport.
+- Updated root layout row strategy to single-row grid for Tutor (`grid-rows-[1fr]`), while preserving existing rows for other pages.
+- Keeps Tutor in full-height mode with no extra shell chrome above/below the study surface.
+- File:
+  - `dashboard_rebuild/client/src/components/layout.tsx`
+- Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.
