@@ -20,7 +20,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import config
 config.DB_PATH = _tmp.name
 
+# Override the local DB_PATH binding in db_setup and chain_runner too —
+# they use `from config import DB_PATH` which copies the value at import time.
+import db_setup
+db_setup.DB_PATH = _tmp.name
+
 from db_setup import init_database, get_connection
+import chain_runner as _chain_runner_mod
+_chain_runner_mod.DB_PATH = _tmp.name
 from chain_runner import (
     run_chain,
     _load_chain,
@@ -39,6 +46,8 @@ def _unique_topic(base: str = "Test") -> str:
 def fresh_db():
     """Ensure clean DB for each test."""
     config.DB_PATH = _tmp.name
+    db_setup.DB_PATH = _tmp.name
+    _chain_runner_mod.DB_PATH = _tmp.name
     init_database()
 
     conn = get_connection()
