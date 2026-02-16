@@ -1,5 +1,20 @@
 # CONTINUITY
 
+## 2026-02-15 - Database Table Consolidation
+
+- Merged 2 tables into `course_events`, dropped 2 dead tables (net -4 tables):
+  - `academic_deadlines` → `course_events` (same data shape, mapped `completed` → `status`)
+  - `scraped_events` → `course_events` (staging unified via new `source` + `approval_status` columns)
+  - `wheel_config` dropped (zero active reads/writes)
+  - `topics` dropped (zero active reads, 0 rows)
+- Added 2 columns to `course_events`: `source TEXT DEFAULT 'manual'`, `approval_status TEXT DEFAULT 'approved'`
+- Rewrote 7 API endpoints to use `course_events` (5 academic-deadline CRUD + 2 sync/staging)
+- Removed cascade delete logic (no longer needed — same table)
+- Updated `scrape_blackboard.py` to INSERT directly into `course_events` with `source='blackboard_scrape'`
+- All migrations idempotent (safe to re-run `init_database()`)
+- 6 files changed, 149 tests pass, build clean
+- Commit: `3eb9b4a8`
+
 ## 2026-02-14 - Tutor Artifacts: bulk select and delete
 
 - Added checkbox selection and bulk delete for Tutor Artifacts drawer:
