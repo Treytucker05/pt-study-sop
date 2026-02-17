@@ -80,8 +80,6 @@ function renderWizard(overrides?: Partial<ComponentProps<typeof TutorWizard>>) {
     setCustomBlockIds: vi.fn(),
     mode: "Core" as TutorMode,
     setMode: vi.fn(),
-    model: "codex",
-    setModel: vi.fn(),
     webSearch: false,
     setWebSearch: vi.fn(),
     onStartSession: vi.fn(),

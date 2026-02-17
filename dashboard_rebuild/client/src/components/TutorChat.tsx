@@ -42,7 +42,6 @@ export interface ChainBlock {
 
 interface TutorChatProps {
   sessionId: string | null;
-  engine?: string;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
   focusMode?: boolean;
   onTurnComplete?: () => void;
@@ -87,7 +86,6 @@ const TOOL_ICONS: Record<string, typeof FileText> = {
 
 export function TutorChat({
   sessionId,
-  engine,
   onArtifactCreated,
   focusMode = false,
   onTurnComplete,
@@ -141,7 +139,7 @@ export function TutorChat({
       const response = await fetch(`/api/tutor/session/${sessionId}/turn`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage, ...(engine ? { engine } : {}) }),
+        body: JSON.stringify({ message: userMessage }),
         signal: abortController.signal,
       });
 
@@ -371,7 +369,7 @@ export function TutorChat({
       }
       setIsStreaming(false);
     }
-  }, [input, sessionId, isStreaming, engine, onArtifactCreated, onTurnComplete]);
+  }, [input, sessionId, isStreaming, onArtifactCreated, onTurnComplete]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

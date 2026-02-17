@@ -78,7 +78,6 @@ export default function Tutor() {
   const [chainBlocks, setChainBlocks] = useState<TutorTemplateChain["blocks"]>([]);
   const [customBlockIds, setCustomBlockIds] = useState<number[]>([]);
   const [topic, setTopic] = useState("");
-  const [model, setModel] = useState("codex");
   const [webSearch, setWebSearch] = useState(false);
 
   // Vault file picker
@@ -132,7 +131,6 @@ export default function Tutor() {
           chainId,
           customBlockIds,
           mode,
-          model,
           webSearch,
           selectedPaths,
         }),
@@ -141,17 +139,16 @@ export default function Tutor() {
       void error;
     }
   }, [
-    tutorWizardStorageKey,
-    courseId,
-    topic,
-    selectedMaterials,
-    chainId,
-    customBlockIds,
-    mode,
-    model,
-    webSearch,
-    selectedPaths,
-  ]);
+        tutorWizardStorageKey,
+        courseId,
+        topic,
+        selectedMaterials,
+        chainId,
+        customBlockIds,
+        mode,
+        webSearch,
+        selectedPaths,
+      ]);
 
   // Recent sessions
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
@@ -194,9 +191,6 @@ export default function Tutor() {
         JSON.stringify(session.content_filter?.material_ids || []),
       );
     } catch { /* ignore */ }
-    if (session.content_filter?.model) {
-      setModel(session.content_filter.model);
-    }
     setWebSearch(Boolean(session.content_filter?.web_search));
     if (session.artifacts_json) {
       try {
@@ -239,7 +233,6 @@ export default function Tutor() {
         content_filter: {
           ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
           ...(selectedMaterials.length > 0 ? { material_ids: selectedMaterials } : {}),
-          model,
           ...(webSearch ? { web_search: true } : {}),
         },
         method_chain_id: resolvedChainId,
@@ -279,7 +272,7 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, mode, topic, selectedPaths, selectedMaterials, model, webSearch, chainId, customBlockIds, queryClient]);
+  }, [courseId, mode, topic, selectedPaths, selectedMaterials, webSearch, chainId, customBlockIds, queryClient]);
 
   const endSession = useCallback(async () => {
     if (!activeSessionId) return;
@@ -496,7 +489,6 @@ export default function Tutor() {
             setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
           }
           if (typeof parsed?.mode === "string") setMode(parsed.mode);
-          if (typeof parsed?.model === "string") setModel(parsed.model);
           if (typeof parsed?.webSearch === "boolean") setWebSearch(parsed.webSearch);
           if (Array.isArray(parsed?.selectedPaths)) {
             setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
@@ -544,8 +536,6 @@ export default function Tutor() {
             setCustomBlockIds={setCustomBlockIds}
             mode={mode}
             setMode={setMode}
-            model={model}
-            setModel={setModel}
             webSearch={webSearch}
             setWebSearch={setWebSearch}
             onStartSession={startSession}
@@ -590,8 +580,6 @@ export default function Tutor() {
                   setCustomBlockIds={setCustomBlockIds}
                   topic={topic}
                   setTopic={setTopic}
-                  model={model}
-                  setModel={setModel}
                   webSearch={webSearch}
                   setWebSearch={setWebSearch}
                   onStartSession={startSession}
@@ -629,7 +617,6 @@ export default function Tutor() {
           <div className="flex-1 bg-zinc-950/80 border-x-2 border-primary/20 flex flex-col min-w-0 relative">
             <TutorChat
               sessionId={activeSessionId}
-              engine={undefined}
               onArtifactCreated={handleArtifactCreated}
               focusMode={focusMode}
               onTurnComplete={() => setTurnCount((prev) => prev + 1)}

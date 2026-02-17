@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { PenTool, Pencil, MessageSquare, Network, Table2, Layers, Database } from "lucide-react";
-import { BrainChat } from "@/components/BrainChat";
+import { PenTool, Pencil, Network, Table2, Layers, Database } from "lucide-react";
 import { VaultEditor } from "./VaultEditor";
 import { GraphPanel } from "./GraphPanel";
 import { ExcalidrawCanvas } from "./ExcalidrawCanvas";
@@ -15,11 +14,10 @@ import type { BrainWorkspace } from "./useBrainWorkspace";
 const TABS = [
   { id: "canvas" as const, label: "CANVAS", icon: PenTool, hint: "Alt+1" },
   { id: "edit" as const, label: "EDIT", icon: Pencil, hint: "Alt+2" },
-  { id: "chat" as const, label: "CHAT", icon: MessageSquare, hint: "Alt+3" },
-  { id: "graph" as const, label: "GRAPH", icon: Network, hint: "Alt+4" },
-  { id: "table" as const, label: "TABLE", icon: Table2, hint: "Alt+5" },
-  { id: "anki" as const, label: "ANKI", icon: Layers, hint: "Alt+6" },
-  { id: "data" as const, label: "DATA", icon: Database, hint: "Alt+7" },
+  { id: "graph" as const, label: "GRAPH", icon: Network, hint: "Alt+3" },
+  { id: "table" as const, label: "TABLE", icon: Table2, hint: "Alt+4" },
+  { id: "anki" as const, label: "ANKI", icon: Layers, hint: "Alt+5" },
+  { id: "data" as const, label: "DATA", icon: Database, hint: "Alt+6" },
 ] as const;
 
 interface MainContentProps {
@@ -36,7 +34,7 @@ export function MainContent({ workspace }: MainContentProps) {
     }));
   }, []);
 
-  // Alt+1..5 keyboard shortcuts for tab switching
+  // Alt+1..6 keyboard shortcuts for tab switching
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (!e.altKey || e.ctrlKey || e.metaKey) return;
@@ -178,29 +176,6 @@ export function MainContent({ workspace }: MainContentProps) {
             }
           >
             <VaultEditor workspace={workspace} />
-          </ErrorBoundary>
-          </div>
-        )}
-
-        {currentTab === "chat" && (
-          <div
-            id="brain-tabpanel-chat"
-            role="tabpanel"
-            aria-labelledby="brain-tab-chat"
-            data-tab="chat"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
-            tabIndex={0}
-          >
-          <ErrorBoundary
-            key={`chat-${errorKeys["chat"] || 0}`}
-            fallback={
-              <TabErrorFallback
-                tabName="CHAT"
-                onReset={() => resetErrorBoundary("chat")}
-              />
-            }
-          >
-            <BrainChat />
           </ErrorBoundary>
           </div>
         )}

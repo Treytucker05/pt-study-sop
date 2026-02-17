@@ -38,9 +38,9 @@ import {
   Clock,
   MessageSquare,
   Play,
-  Cpu,
   Globe,
   Wand2,
+  Cpu,
 } from "lucide-react";
 
 // ─── Constants ───
@@ -51,12 +51,6 @@ const PRIMARY_MODES: { value: TutorMode; label: string; desc: string }[] = [
   { value: "Quick Sprint", label: "QUICK", desc: "Quick retrieval" },
   { value: "Light", label: "LIGHT", desc: "Low energy" },
   { value: "Drill", label: "FIX", desc: "Target weak spots" },
-];
-
-const OPENROUTER_MODELS: { value: string; label: string }[] = [
-  { value: "arcee-ai/trinity-large-preview:free", label: "Trinity Large (free)" },
-  { value: "qwen/qwen3-coder-next", label: "Qwen3 Coder Next" },
-  { value: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
 ];
 
 type ChainMode = "template" | "custom" | "auto";
@@ -76,8 +70,6 @@ interface TutorWizardProps {
   setCustomBlockIds: (ids: number[]) => void;
   mode: TutorMode;
   setMode: (mode: TutorMode) => void;
-  model: string;
-  setModel: (model: string) => void;
   webSearch: boolean;
   setWebSearch: (enabled: boolean) => void;
   onStartSession: () => void;
@@ -101,8 +93,6 @@ export function TutorWizard({
   setCustomBlockIds,
   mode,
   setMode,
-  model,
-  setModel,
   webSearch,
   setWebSearch,
   onStartSession,
@@ -139,7 +129,7 @@ export function TutorWizard({
     }
   }, [step, chainMode]);
 
-  // Fetch content sources (courses, openrouter status)
+  // Fetch content sources (courses)
   const { data: sources } = useQuery<TutorContentSources>({
     queryKey: ["tutor-content-sources"],
     queryFn: () => api.tutor.getContentSources(),
@@ -152,7 +142,6 @@ export function TutorWizard({
   });
 
   const courses = sources?.courses ?? [];
-  const openrouterEnabled = sources?.openrouter_enabled ?? false;
 
   // Currently selected chain name
   const selectedChainName = useMemo(() => {
@@ -248,11 +237,8 @@ export function TutorWizard({
               selectedChainName={selectedChainName}
               mode={mode}
               setMode={setMode}
-              model={model}
-              setModel={setModel}
               webSearch={webSearch}
               setWebSearch={setWebSearch}
-              openrouterEnabled={openrouterEnabled}
               onStartSession={onStartSession}
               isStarting={isStarting}
             />
@@ -659,11 +645,8 @@ function StepConfirm({
   selectedChainName,
   mode,
   setMode,
-  model,
-  setModel,
   webSearch,
   setWebSearch,
-  openrouterEnabled,
   onStartSession,
   isStarting,
 }: {
@@ -674,11 +657,8 @@ function StepConfirm({
   selectedChainName: string;
   mode: TutorMode;
   setMode: (mode: TutorMode) => void;
-  model: string;
-  setModel: (model: string) => void;
   webSearch: boolean;
   setWebSearch: (enabled: boolean) => void;
-  openrouterEnabled: boolean;
   onStartSession: () => void;
   isStarting: boolean;
 }) {
@@ -737,25 +717,15 @@ function StepConfirm({
         </div>
       </Card>
 
-      {/* Model + Web Search */}
+      {/* Session options */}
       <Card className="bg-black/40 border-2 border-primary/40 rounded-none">
         <div className="px-3 py-2 border-b border-primary/30">
-          <span className={TEXT_SECTION_LABEL}>ENGINE</span>
+          <span className={TEXT_SECTION_LABEL}>SESSION OPTIONS</span>
         </div>
         <div className="p-3 space-y-3">
-          <select
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            className={SELECT_BASE}
-          >
-            <option value="codex">Codex (default)</option>
-            {openrouterEnabled &&
-              OPENROUTER_MODELS.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-          </select>
+          <div className="font-terminal text-xs text-muted-foreground/80">
+            Tutor session model is fixed to Codex.
+          </div>
 
           <label className="flex items-center gap-2 cursor-pointer">
             <input

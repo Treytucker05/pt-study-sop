@@ -53,12 +53,10 @@ export default function Brain() {
                 <div className="flex-1 min-w-0 min-h-0 overflow-hidden">
                   <MainContent workspace={workspace} />
                 </div>
-                {workspace.mainMode === "canvas" && (
-                  <ChatSidePanel
-                    expanded={workspace.chatExpanded}
-                    onToggle={workspace.toggleChat}
-                  />
-                )}
+                <ChatSidePanel
+                  expanded={workspace.chatExpanded}
+                  onToggle={workspace.toggleChat}
+                />
               </div>
             </div>
           ) : workspace.sidebarExpanded ? (
@@ -80,12 +78,10 @@ export default function Brain() {
                   <div className="flex-1 min-w-0 min-h-0 overflow-hidden">
                     <MainContent workspace={workspace} />
                   </div>
-                  {workspace.mainMode === "canvas" && (
-                    <ChatSidePanel
-                      expanded={workspace.chatExpanded}
-                      onToggle={workspace.toggleChat}
-                    />
-                  )}
+                  <ChatSidePanel
+                    expanded={workspace.chatExpanded}
+                    onToggle={workspace.toggleChat}
+                  />
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>
@@ -96,12 +92,10 @@ export default function Brain() {
                 <div className="flex-1 min-w-0 min-h-0 overflow-hidden">
                   <MainContent workspace={workspace} />
                 </div>
-                {workspace.mainMode === "canvas" && (
-                  <ChatSidePanel
-                    expanded={workspace.chatExpanded}
-                    onToggle={workspace.toggleChat}
-                  />
-                )}
+                <ChatSidePanel
+                  expanded={workspace.chatExpanded}
+                  onToggle={workspace.toggleChat}
+                />
               </div>
             </div>
           )}

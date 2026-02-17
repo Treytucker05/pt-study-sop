@@ -1,11 +1,10 @@
-import { Pencil, MessageSquare, Network, Table2, Layers } from "lucide-react";
+import { Pencil, Network, Table2, Layers } from "lucide-react";
 import { COURSE_FOLDERS } from "@/config/courses";
 import { cn } from "@/lib/utils";
 import type { BrainWorkspace, MainMode } from "./useBrainWorkspace";
 
 const MODES: { id: MainMode; label: string; icon: typeof Pencil }[] = [
  { id: "edit", label: "EDIT", icon: Pencil },
- { id: "chat", label: "CHAT", icon: MessageSquare },
  { id: "graph", label: "GRAPH", icon: Network },
  { id: "table", label: "TABLE", icon: Table2 },
  { id: "anki", label: "ANKI", icon: Layers },

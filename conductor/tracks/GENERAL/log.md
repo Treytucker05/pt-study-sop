@@ -52,3 +52,17 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Verification:
   - `python scripts/export_skills_library.py`
   - `python -m py_compile scripts/export_skills_library.py`
+## 2026-02-17 - Tutor/Brain UI cleanup (Codex-only + Brain chat visibility)
+
+- On Tutor flow, removed non-Codex engine/model controls from wizard/start path and chat request payload.
+- Defaulted tutor session options to Codex-only for model selection, removed OpenRouter/Buster UI/state and related props.
+- Reworked Brain workspace mode handling to remove stale chat mode:
+  - Removed chat tab/button from Brain toolbar/tab navigation.
+  - Brain page now always renders chat side panel on desktop/mobile right rail.
+  - Added validation for persisted rain-main-mode and fallback to canvas when stale/invalid.
+  - Updated ContentFilter and TutorChat API payloads/tests to match new prop surface.
+- Validation run:
+  - 
+px vitest run --reporter=verbose (341 passed)
+  - python -m pytest brain/tests/ -q (301 passed)
+  - cd dashboard_rebuild && npm run build (writes to rain/static/dist)

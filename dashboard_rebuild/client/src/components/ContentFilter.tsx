@@ -29,9 +29,6 @@ import {
   Loader2,
   Zap,
   Link,
-  Bot,
-  Cloud,
-  Cpu,
 } from "lucide-react";
 import { MaterialUploader } from "@/components/MaterialUploader";
 import { MaterialSelector } from "@/components/MaterialSelector";
@@ -50,8 +47,6 @@ interface ContentFilterProps {
   setCustomBlockIds: (ids: number[]) => void;
   topic: string;
   setTopic: (topic: string) => void;
-  model: string;
-  setModel: (model: string) => void;
   webSearch: boolean;
   setWebSearch: (enabled: boolean) => void;
   onStartSession: () => void;
@@ -59,14 +54,6 @@ interface ContentFilterProps {
   hasActiveSession: boolean;
   compact?: boolean;
 }
-
-
-
-const OPENROUTER_MODELS: { value: string; label: string }[] = [
-  { value: "arcee-ai/trinity-large-preview:free", label: "Trinity Large (free)" },
-  { value: "qwen/qwen3-coder-next", label: "Qwen3 Coder Next" },
-  { value: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
-];
 
 const PRIMARY_MODES: { value: TutorMode; label: string; desc: string }[] = [
   { value: "Core", label: "LEARN", desc: "Prime + encode" },
@@ -140,8 +127,6 @@ export function ContentFilter({
   setCustomBlockIds,
   topic,
   setTopic,
-  model,
-  setModel,
   webSearch,
   setWebSearch,
   onStartSession,
@@ -171,31 +156,6 @@ export function ContentFilter({
     queryKey: ["courses-active"],
     queryFn: () => api.courses.getActive(),
   });
-
-  const openrouterEnabled = sources?.openrouter_enabled ?? false;
-  const busterEnabled = sources?.buster_enabled ?? false;
-  const provider: "codex" | "openrouter" | "buster" =
-    model === "buster" ? "buster" : model.includes("/") ? "openrouter" : "codex";
-
-  useEffect(() => {
-    if (!openrouterEnabled && provider === "openrouter") setModel("codex");
-    if (!busterEnabled && provider === "buster") setModel("codex");
-  }, [openrouterEnabled, busterEnabled, provider, setModel]);
-
-  const setProvider = (next: "codex" | "openrouter" | "buster") => {
-    if (next === "codex") {
-      setModel("codex");
-      return;
-    }
-    if (next === "openrouter") {
-      if (!openrouterEnabled) return;
-      const fallback = OPENROUTER_MODELS[0]?.value ?? "arcee-ai/trinity-large-preview:free";
-      setModel(model.includes("/") ? model : fallback);
-      return;
-    }
-    if (!busterEnabled) return;
-    setModel("buster");
-  };
 
   const [autoPickChain, setAutoPickChain] = useState<boolean>(() =>
     _lsGetBool(LS_AUTOPICK_CHAIN_KEY, true)
@@ -298,37 +258,11 @@ export function ContentFilter({
           />
         </div>
 
-        {/* Model/provider */}
-        <div>
-          <div className={`${TEXT_SECTION_LABEL} mb-1`}>Engine</div>
-          <select
-            value={provider}
-            onChange={(e) => setProvider(e.target.value as "codex" | "openrouter" | "buster")}
-            className={`${SELECT_BASE} border-[3px] border-double border-primary/30 h-9 w-[150px]`}
-          >
-            <option value="codex">Codex</option>
-            <option value="openrouter" disabled={!openrouterEnabled}>OpenRouter</option>
-            <option value="buster" disabled={!busterEnabled}>OpenClaw (Buster)</option>
-          </select>
-          {provider === "openrouter" && (
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className={`${SELECT_BASE} border-[3px] border-double border-primary/30 h-9 w-[180px] mt-1`}
-            >
-              {OPENROUTER_MODELS.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
         {/* Web search */}
-        <label className={`flex items-center gap-1.5 h-9 cursor-pointer ${provider !== "codex" ? "opacity-50" : ""}`}>
+        <label className="flex items-center gap-1.5 h-9 cursor-pointer">
           <Checkbox
             checked={webSearch}
-            onCheckedChange={(v) => provider === "codex" && setWebSearch(!!v)}
-            disabled={provider !== "codex"}
+            onCheckedChange={(v) => setWebSearch(!!v)}
             className="w-3.5 h-3.5"
           />
           <Globe className={ICON_SM} />
@@ -617,73 +551,11 @@ export function ContentFilter({
             />
           </div>
 
-          {/* Engine selector */}
-          <div>
-            <SectionLabel>Engine</SectionLabel>
-            <div className="grid grid-cols-3 gap-1 mb-2">
-              <button
-                onClick={() => setProvider("codex")}
-                className={`text-left px-2 py-2 border-2 transition-colors ${
-                  provider === "codex"
-                    ? "border-primary bg-primary/20 text-primary"
-                    : "border-primary/30 text-foreground/80 hover:border-primary/50 hover:text-foreground hover:bg-black/30"
-                }`}
-              >
-                <div className="flex items-center gap-1">
-                  <Cpu className={ICON_SM} />
-                  <span className="font-arcade text-xs">CODEX</span>
-                </div>
-              </button>
-              <button
-                onClick={() => setProvider("openrouter")}
-                disabled={!openrouterEnabled}
-                className={`text-left px-2 py-2 border-2 transition-colors ${
-                  provider === "openrouter"
-                    ? "border-primary bg-primary/20 text-primary"
-                    : "border-primary/30 text-foreground/80 hover:border-primary/50 hover:text-foreground hover:bg-black/30"
-                } ${!openrouterEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <div className="flex items-center gap-1">
-                  <Cloud className={ICON_SM} />
-                  <span className="font-arcade text-xs">OPENROUTER</span>
-                </div>
-              </button>
-              <button
-                onClick={() => setProvider("buster")}
-                disabled={!busterEnabled}
-                className={`text-left px-2 py-2 border-2 transition-colors ${
-                  provider === "buster"
-                    ? "border-amber-400 bg-amber-400/20 text-amber-400"
-                    : "border-primary/30 text-foreground/80 hover:border-amber-400/50 hover:text-foreground hover:bg-black/30"
-                } ${!busterEnabled ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <div className="flex items-center gap-1">
-                  <Bot className={ICON_SM} />
-                  <span className="font-arcade text-xs">OPENCLAW</span>
-                </div>
-              </button>
-            </div>
-            {provider === "openrouter" && (
-              <select
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className={`${SELECT_BASE} border-[3px] border-double border-primary/30`}
-              >
-                {OPENROUTER_MODELS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
           {/* Web search */}
-          <label className={`flex items-center gap-2 cursor-pointer ${provider !== "codex" ? "opacity-50" : ""}`}>
+          <label className="flex items-center gap-2 cursor-pointer">
             <Checkbox
               checked={webSearch}
-              onCheckedChange={(v) => provider === "codex" && setWebSearch(!!v)}
-              disabled={provider !== "codex"}
+              onCheckedChange={(v) => setWebSearch(!!v)}
             />
             <Globe className={ICON_SM} />
             <span className={`${TEXT_BODY} text-xs`}>Web search</span>

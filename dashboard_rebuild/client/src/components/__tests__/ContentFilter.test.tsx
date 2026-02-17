@@ -71,8 +71,6 @@ function renderFilter(overrides?: Partial<ComponentProps<typeof ContentFilter>>)
     setCustomBlockIds: vi.fn(),
     topic: "",
     setTopic: vi.fn(),
-    model: "codex",
-    setModel: vi.fn(),
     webSearch: false,
     setWebSearch: vi.fn(),
     onStartSession: vi.fn(),

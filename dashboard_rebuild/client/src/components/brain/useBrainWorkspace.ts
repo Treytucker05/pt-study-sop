@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getCoursePaths } from "@/config/courses";
 
-export type MainMode = "canvas" | "edit" | "chat" | "graph" | "table" | "anki" | "data";
+export type MainMode = "canvas" | "edit" | "graph" | "table" | "anki" | "data";
+
+const VALID_MAIN_MODES: MainMode[] = ["canvas", "edit", "graph", "table", "anki", "data"];
 
 function loadState<T>(key: string, fallback: T): T {
   try {
@@ -11,6 +13,11 @@ function loadState<T>(key: string, fallback: T): T {
     if (saved !== null) return JSON.parse(saved) as T;
   } catch { /* corrupted — fall through */ }
   return fallback;
+}
+
+function loadBrainMainMode(fallback: MainMode = "canvas"): MainMode {
+  const raw = loadState<MainMode>("brain-main-mode", fallback);
+  return VALID_MAIN_MODES.includes(raw) ? raw : fallback;
 }
 
 function saveState(key: string, value: unknown) {
@@ -21,7 +28,7 @@ function saveState(key: string, value: unknown) {
 
 export function useBrainWorkspace() {
   const [mainMode, setMainModeRaw] = useState<MainMode>(
-    () => loadState<MainMode>("brain-main-mode", "canvas")
+    () => loadBrainMainMode("canvas")
   );
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState("");
