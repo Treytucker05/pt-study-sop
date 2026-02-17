@@ -160,6 +160,9 @@ audit-*.html
 /scholar-*.png
 /tutor-*.png
 
+# Debug/scratch scripts (relocated, not tracked)
+brain/scratch/
+
 # Archive folder
 /archive/
 
