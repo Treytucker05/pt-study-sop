@@ -16,8 +16,10 @@ Checks:
       no RETRIEVE method before a method that produces OnePageAnchor/QuestionBankSeed
   11. Knob registry enforcement — knob keys and values must match
       sop/library/meta/knob_registry.yaml
-  12. Chain contract enforcement — required allowed_modes, gates,
+ 12. Chain contract enforcement — required allowed_modes, gates,
       failure_actions, and requires_reference_targets
+  13. ErrorLog schema enforcement — canonical telemetry columns in
+      templates/ErrorLog.csv (with legacy 7-column compatibility warning)
 
 Usage:
   python sop/tools/validate_library.py              # default, exit 0=pass, 1=errors
@@ -82,6 +84,26 @@ METHOD_STAGE_PREFIX_MAP = {
 }
 
 REFERENCE_ARTIFACT_TOKENS = {"onepageanchor", "questionbankseed"}
+
+LEGACY_ERROR_LOG_COLUMNS = [
+    "topic_id",
+    "item_id",
+    "error_type",
+    "stage_detected",
+    "confidence",
+    "time_to_answer",
+    "fix_applied",
+]
+
+CANONICAL_ERROR_LOG_COLUMNS = [
+    *LEGACY_ERROR_LOG_COLUMNS,
+    "assessment_mode",
+    "chain_id",
+    "support_level",
+    "prior_exposure_band",
+    "selector_policy_version",
+    "dependency_fix_applied",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -157,6 +179,19 @@ def load_session_log_fields() -> set[str]:
     if not data or "session_fields" not in data:
         return set()
     return {f["name"] for f in data["session_fields"] if isinstance(f, dict) and "name" in f}
+
+
+def load_csv_header(path: Path) -> list[str]:
+    """Return first non-empty CSV header row as trimmed column names."""
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+            return [col.strip() for col in stripped.split(",") if col.strip()]
+    except OSError:
+        return []
+    return []
 
 
 def infer_operational_stage(method_id: str) -> str | None:
@@ -619,6 +654,41 @@ def validate_meta(result: ValidationResult) -> None:
             result.error("meta/version.yaml: missing 'version' key")
 
     _validate_knob_registry_shape(result, knob_registry)
+    validate_error_log_schema(result)
+
+
+def validate_error_log_schema(result: ValidationResult) -> None:
+    """Validate canonical Control-Plane ErrorLog.csv template header."""
+    path = TEMPLATES_DIR / "ErrorLog.csv"
+    if not path.exists():
+        result.error("templates/ErrorLog.csv does not exist")
+        return
+
+    header = load_csv_header(path)
+    if not header:
+        result.error("templates/ErrorLog.csv: missing CSV header row")
+        return
+
+    duplicates = sorted({col for col in header if header.count(col) > 1})
+    if duplicates:
+        result.error(
+            "templates/ErrorLog.csv: duplicate header columns: " + ", ".join(duplicates)
+        )
+
+    if header == LEGACY_ERROR_LOG_COLUMNS:
+        result.warn(
+            "templates/ErrorLog.csv: legacy 7-column schema detected; "
+            "canonical schema adds assessment_mode, chain_id, support_level, "
+            "prior_exposure_band, selector_policy_version, dependency_fix_applied"
+        )
+        return
+
+    missing_required = [col for col in CANONICAL_ERROR_LOG_COLUMNS if col not in header]
+    if missing_required:
+        result.error(
+            "templates/ErrorLog.csv: missing required canonical columns: "
+            + ", ".join(missing_required)
+        )
 
 
 # ---------------------------------------------------------------------------

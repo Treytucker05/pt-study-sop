@@ -760,6 +760,12 @@ field_semantics = {
     "confidence": "Learner confidence tag at attempt time (H/M/L).",
     "time_to_answer": "Observed response latency in seconds.",
     "fix_applied": "Mandatory override or remediation action logged after miss.",
+    "assessment_mode": "Active assessment mode at miss time.",
+    "chain_id": "Selected chain identifier used for deterministic routing.",
+    "support_level": "Prompting/scaffold level in effect (high/medium/low).",
+    "prior_exposure_band": "Learner prior exposure band (new/intermediate/advanced).",
+    "selector_policy_version": "Deterministic selector policy version for A/B partitioning and replay.",
+    "dependency_fix_applied": "0/1 marker for runtime dependency auto-heal insertion before retrieval.",
 }
 
 research_packet_lines.extend(
@@ -783,6 +789,15 @@ for field_name in error_log_schema:
     elif field_name == "error_type":
         field_type = "enum"
         allowed = "; ".join(error_type_enum)
+    elif field_name == "support_level":
+        field_type = "enum"
+        allowed = "high; medium; low"
+    elif field_name == "prior_exposure_band":
+        field_type = "enum"
+        allowed = "new; intermediate; advanced"
+    elif field_name == "dependency_fix_applied":
+        field_type = "integer"
+        allowed = "0; 1"
     else:
         field_type = "string"
         allowed = "non-empty"
@@ -806,6 +821,8 @@ research_packet_lines.extend(
         "| adversarial accuracy | `1 - (adversarial_error_count / adversarial_attempt_count)` | Adversarial items are mode-tagged in retrieval artifacts (QuestionBankSeed/CoverageCheck). |",
         "| median latency | `median(time_to_answer)` | Computed over retrieve-stage rows in ErrorLog. |",
         "| high-confidence wrong rate | `count(confidence='H') / count(confidence in {'H','M','L'})` | Uses ErrorLog misses; reflects confident errors among logged misses. |",
+        "| dependency-fix rate | `sum(dependency_fix_applied) / count(*)` | Share of miss rows that required runtime dependency auto-heal; should trend toward 0 after authoring fixes. |",
+        "| expertise-reversal delta | `miss_rate(advanced,high_support) - miss_rate(advanced,low_support)` | Requires attempt-level denominator by support band; positive values indicate over-scaffolding risk for advanced learners. |",
     ]
 )
 

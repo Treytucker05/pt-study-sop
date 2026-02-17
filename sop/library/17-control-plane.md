@@ -76,8 +76,10 @@ Error type enum is fixed:
 Required CSV schema:
 
 ```csv
-topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied
+topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied,assessment_mode,chain_id,support_level,prior_exposure_band,selector_policy_version,dependency_fix_applied
 ```
+
+Routing/diagnostic fields are required so audits can reproduce deterministic selection and detect expertise-reversal effects.
 
 ## Adaptation Mapping (Error -> Mandatory Override)
 

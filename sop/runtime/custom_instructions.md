@@ -89,9 +89,11 @@ Core mode = FIRST EXPOSURE. The learner has NOT seen this material before.
 
 ## ErrorLog + Adaptation (required)
 - Maintain row-level ErrorLog entries for retrieval-like misses using:
-  `topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied`
+  `topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied,assessment_mode,chain_id,support_level,prior_exposure_band,selector_policy_version,dependency_fix_applied`
 - `error_type` must be one of:
   `Recall, Confusion, Rule, Representation, Procedure, Computation, Speed`
+- `support_level` must be one of `high|medium|low`; `prior_exposure_band` must be `new|intermediate|advanced`.
+- `dependency_fix_applied` must be `0` or `1`.
 - Apply mandatory adaptation overrides:
   - Confusion -> require `M-ENC-010` + `M-INT-004`
   - Speed -> require `M-RET-007`

@@ -2,7 +2,12 @@
 
 This file tracks all major tracks for the project. Each track has its own detailed plan in its respective folder.
 
+Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
+
 ---
+
+- [ ] **Track: CP-MSS Control-Plane Hardening + Tutor Integration** (active — started 2026-02-17; status: Phase B5/B6/B7 complete, runtime/backend wiring pending)
+  *Link: [./tracks/CP_MSS_CONTROL_PLANE_HARDENING_20260217/](./tracks/CP_MSS_CONTROL_PLANE_HARDENING_20260217/)*
 
 - [x] **Track: Agent setup + instruction hygiene.** (archived 2026-02-10)
   *Link: [./tracks/agents_setup_cleanup_20260209/](./tracks/agents_setup_cleanup_20260209/)*
@@ -12,4 +17,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Finish PT Study OS - Complete remaining gaps for daily use** (archived 2026-02-16 — outdated, most items shipped or no longer relevant)
   *Link: [./tracks/FINISH_PLANNING_20260210/](./tracks/FINISH_PLANNING_20260210/)*
-

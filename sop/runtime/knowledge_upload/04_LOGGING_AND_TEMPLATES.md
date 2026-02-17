@@ -162,7 +162,7 @@ Did you connect this session's content to another class? `yes` | `no`.
 For operational stage adaptation, use a separate row-level error log:
 
 ```csv
-topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied
+topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied,assessment_mode,chain_id,support_level,prior_exposure_band,selector_policy_version,dependency_fix_applied
 ```
 
 `error_type` enum is fixed:
@@ -180,6 +180,20 @@ Notes:
 - `confidence` uses `H`, `M`, `L`.
 - `time_to_answer` is seconds.
 - `fix_applied` records the method override or corrective action.
+- `assessment_mode` should match the active mode selector (`classification|mechanism|computation|definition|procedure|spatial|recognition|synthesis`).
+- `chain_id` is the selected chain identifier (for deterministic replay and audits).
+- `support_level` uses `high`, `medium`, `low`.
+- `prior_exposure_band` uses `new`, `intermediate`, `advanced`.
+- `selector_policy_version` records the deterministic policy version used for routing.
+- `dependency_fix_applied` is `0` or `1` (runtime insertion of reference targets before retrieval).
+
+Legacy compatibility defaults for historical 7-column logs:
+- `assessment_mode=unknown`
+- `chain_id=unknown`
+- `support_level=high`
+- `prior_exposure_band=new`
+- `selector_policy_version=v0-legacy`
+- `dependency_fix_applied=0`
 
 Example rows are provided in `sop/library/templates/ErrorLog.csv`.
 

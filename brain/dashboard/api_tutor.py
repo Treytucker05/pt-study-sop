@@ -638,8 +638,18 @@ def send_turn(session_id: str):
             effective_model = codex_model or "gpt-5.3-codex"
             system_prompt += (
                 "\n\n## Tooling\n"
-                "Do not run shell commands or attempt to read local files. "
-                "Answer as a tutor only.\n\n"
+                "Do not run shell commands or attempt to read local files.\n"
+                "You have access to the following tools. Use them ONLY when the student "
+                "explicitly asks or when it clearly benefits the learning session:\n"
+                "- **save_to_obsidian**: Save study notes to the student's Obsidian vault. "
+                "Use when they say 'save this', 'add to Obsidian', 'export notes', etc.\n"
+                "- **create_note**: Create a quick note on the dashboard Notes page. "
+                "Use for action items, reminders, or brief observations.\n"
+                "- **create_anki_card**: Draft an Anki flashcard. "
+                "Use when a key fact or definition should be memorized, "
+                "or when the student says 'make a card for this'.\n"
+                "Do NOT use tools for casual questions or general conversation. "
+                "When you use a tool, briefly confirm what you did.\n\n"
                 f"## Identity\n"
                 f"You are powered by OpenAI model **{effective_model}**. "
                 f"If asked what model you are, state this exactly."
@@ -664,33 +674,103 @@ def send_turn(session_id: str):
 ## Current Question
 {question}"""
 
-            # Primary: stream via ChatGPT backend API (fast)
+            from tutor_tools import get_tool_schemas, execute_tool
+            import json as _json
+
             api_model = codex_model or "gpt-5.3-codex"
             url_citations: list[object] = []
+            tool_schemas = get_tool_schemas()
+            max_tool_rounds = 5
+            tool_round = 0
+            prev_response_id: str | None = None
+            pending_tool_results: list[dict] = []
+
             try:
-                for chunk in stream_chatgpt_responses(
-                    system_prompt,
-                    user_prompt,
-                    model=codex_model or "gpt-5.3-codex",
-                    timeout=120,
-                    web_search=enable_web_search,
-                ):
-                    if chunk.get("type") == "delta":
-                        full_response += chunk.get("text", "")
-                        yield format_sse_chunk(chunk.get("text", ""))
-                    elif chunk.get("type") == "web_search":
+                stream_kwargs: dict = {
+                    "model": codex_model or "gpt-5.3-codex",
+                    "timeout": 120,
+                    "web_search": enable_web_search,
+                    "tools": tool_schemas,
+                }
+
+                while True:
+                    tool_calls_this_round: list[dict] = []
+
+                    if pending_tool_results and prev_response_id:
+                        stream_kwargs["previous_response_id"] = prev_response_id
+                        stream_kwargs["input_override"] = pending_tool_results
+                        pending_tool_results = []
+
+                    for chunk in stream_chatgpt_responses(
+                        system_prompt,
+                        user_prompt,
+                        **stream_kwargs,
+                    ):
+                        if chunk.get("type") == "delta":
+                            full_response += chunk.get("text", "")
+                            yield format_sse_chunk(chunk.get("text", ""))
+                        elif chunk.get("type") == "web_search":
+                            yield format_sse_chunk(
+                                "", chunk_type=f"web_search_{chunk['status']}"
+                            )
+                        elif chunk.get("type") == "tool_call":
+                            tool_calls_this_round.append(chunk)
+                        elif chunk.get("type") == "error":
+                            raise RuntimeError(chunk.get("error", "ChatGPT API failed"))
+                        elif chunk.get("type") == "done":
+                            api_model = chunk.get("model") or api_model
+                            prev_response_id = (
+                                chunk.get("response_id") or prev_response_id
+                            )
+                            url_citations_raw = chunk.get("url_citations", [])
+                            if isinstance(url_citations_raw, list):
+                                url_citations = url_citations_raw
+
+                    if not tool_calls_this_round:
+                        break
+
+                    tool_round += 1
+                    if tool_round > max_tool_rounds:
+                        yield format_sse_chunk("", chunk_type="tool_limit_reached")
+                        break
+
+                    for tc in tool_calls_this_round:
+                        tool_name = tc.get("name", "")
+                        call_id = tc.get("call_id", "")
+                        try:
+                            args = _json.loads(tc.get("arguments", "{}"))
+                        except _json.JSONDecodeError:
+                            args = {}
+
                         yield format_sse_chunk(
-                            "", chunk_type=f"web_search_{chunk['status']}"
+                            _json.dumps({"tool": tool_name, "arguments": args}),
+                            chunk_type="tool_call",
                         )
-                    elif chunk.get("type") == "error":
-                        raise RuntimeError(chunk.get("error", "ChatGPT API failed"))
-                    elif chunk.get("type") == "done":
-                        api_model = chunk.get("model") or api_model
-                        url_citations_raw = chunk.get("url_citations", [])
-                        if isinstance(url_citations_raw, list):
-                            url_citations = url_citations_raw
+
+                        tool_result = execute_tool(
+                            tool_name, args, session_id=session_id
+                        )
+
+                        yield format_sse_chunk(
+                            _json.dumps(
+                                {
+                                    "tool": tool_name,
+                                    "success": tool_result.get("success", False),
+                                    "message": tool_result.get("message", ""),
+                                }
+                            ),
+                            chunk_type="tool_result",
+                        )
+
+                        pending_tool_results.append(
+                            {
+                                "type": "function_call_output",
+                                "call_id": call_id,
+                                "output": _json.dumps(tool_result),
+                            }
+                        )
+
             except Exception as stream_err:
-                # Fallback: Codex CLI (slower but reliable)
                 if not full_response:
                     result = call_codex_json(
                         system_prompt,
@@ -709,7 +789,6 @@ def send_turn(session_id: str):
                     raise stream_err
 
             citations = extract_citations(full_response)
-            # Merge document citations with web URL citations
             all_citations = citations
             if url_citations:
                 for uc in url_citations:

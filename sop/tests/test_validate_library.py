@@ -33,6 +33,12 @@ def write_yaml(path: Path, data: dict) -> None:
     path.write_text(yaml.dump(data, sort_keys=False), encoding="utf-8")
 
 
+def write_error_log_csv(path: Path, header: list[str] | None = None) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    columns = header or CANONICAL_ERROR_LOG_HEADER
+    path.write_text(",".join(columns) + "\n", encoding="utf-8")
+
+
 VALID_METHOD = {
     "id": "M-PRE-901",
     "name": "Test Method",
@@ -103,6 +109,24 @@ VALID_SESSION_LOG_TEMPLATE = {
         {"name": "date", "type": "string", "required": True},
     ]
 }
+LEGACY_ERROR_LOG_HEADER = [
+    "topic_id",
+    "item_id",
+    "error_type",
+    "stage_detected",
+    "confidence",
+    "time_to_answer",
+    "fix_applied",
+]
+CANONICAL_ERROR_LOG_HEADER = [
+    *LEGACY_ERROR_LOG_HEADER,
+    "assessment_mode",
+    "chain_id",
+    "support_level",
+    "prior_exposure_band",
+    "selector_policy_version",
+    "dependency_fix_applied",
+]
 
 
 def build_minimal_library(tmp_path: Path) -> Path:
@@ -114,6 +138,7 @@ def build_minimal_library(tmp_path: Path) -> Path:
     write_yaml(lib / "meta" / "version.yaml", VALID_VERSION)
     write_yaml(lib / "meta" / "knob_registry.yaml", VALID_KNOB_REGISTRY)
     write_yaml(lib / "templates" / "session_log_template.yaml", VALID_SESSION_LOG_TEMPLATE)
+    write_error_log_csv(lib / "templates" / "ErrorLog.csv")
     return lib
 
 
@@ -332,6 +357,7 @@ class TestChainDependencyRule:
         write_yaml(lib / "meta" / "version.yaml", VALID_VERSION)
         write_yaml(lib / "meta" / "knob_registry.yaml", VALID_KNOB_REGISTRY)
         write_yaml(lib / "templates" / "session_log_template.yaml", VALID_SESSION_LOG_TEMPLATE)
+        write_error_log_csv(lib / "templates" / "ErrorLog.csv")
 
     def _with_temp_library(self, monkeypatch: pytest.MonkeyPatch, lib: Path) -> None:
         monkeypatch.setattr(validate_library, "METHODS_DIR", lib / "methods")
@@ -411,6 +437,7 @@ class TestControlStageValidation:
         write_yaml(lib / "meta" / "version.yaml", VALID_VERSION)
         write_yaml(lib / "meta" / "knob_registry.yaml", VALID_KNOB_REGISTRY)
         write_yaml(lib / "templates" / "session_log_template.yaml", VALID_SESSION_LOG_TEMPLATE)
+        write_error_log_csv(lib / "templates" / "ErrorLog.csv")
 
     def _with_temp_library(self, monkeypatch: pytest.MonkeyPatch, lib: Path) -> None:
         monkeypatch.setattr(validate_library, "METHODS_DIR", lib / "methods")
@@ -455,6 +482,7 @@ class TestChainContractValidation:
         write_yaml(lib / "meta" / "version.yaml", VALID_VERSION)
         write_yaml(lib / "meta" / "knob_registry.yaml", VALID_KNOB_REGISTRY)
         write_yaml(lib / "templates" / "session_log_template.yaml", VALID_SESSION_LOG_TEMPLATE)
+        write_error_log_csv(lib / "templates" / "ErrorLog.csv")
 
     def _with_temp_library(self, monkeypatch: pytest.MonkeyPatch, lib: Path) -> None:
         monkeypatch.setattr(validate_library, "METHODS_DIR", lib / "methods")
@@ -488,3 +516,46 @@ class TestChainContractValidation:
         result = run_validation(strict=False)
         assert not result.ok
         assert any("requires_reference_targets must be true" in e for e in result.errors)
+
+
+class TestErrorLogTelemetryValidation:
+    def _with_temp_library(self, monkeypatch: pytest.MonkeyPatch, lib: Path) -> None:
+        monkeypatch.setattr(validate_library, "METHODS_DIR", lib / "methods")
+        monkeypatch.setattr(validate_library, "CHAINS_DIR", lib / "chains")
+        monkeypatch.setattr(validate_library, "META_DIR", lib / "meta")
+        monkeypatch.setattr(validate_library, "TEMPLATES_DIR", lib / "templates")
+        monkeypatch.setattr(validate_library, "KNOB_REGISTRY_PATH", lib / "meta" / "knob_registry.yaml")
+
+    def test_legacy_error_log_header_is_compat_warning(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        lib = build_minimal_library(tmp_path)
+        write_error_log_csv(lib / "templates" / "ErrorLog.csv", LEGACY_ERROR_LOG_HEADER)
+
+        self._with_temp_library(monkeypatch, lib)
+        result = run_validation(strict=False)
+        assert result.ok
+        assert any("legacy 7-column schema detected" in w for w in result.warnings)
+
+    def test_non_legacy_header_missing_required_columns_fails(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        lib = build_minimal_library(tmp_path)
+        write_error_log_csv(
+            lib / "templates" / "ErrorLog.csv",
+            [
+                "topic_id",
+                "item_id",
+                "error_type",
+                "stage_detected",
+                "confidence",
+                "time_to_answer",
+                "fix_applied",
+                "chain_id",
+            ],
+        )
+
+        self._with_temp_library(monkeypatch, lib)
+        result = run_validation(strict=False)
+        assert not result.ok
+        assert any("missing required canonical columns" in e for e in result.errors)

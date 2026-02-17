@@ -149,6 +149,7 @@ Quick summary:
 2. Never use dev server. Dashboard served via Start_Dashboard.bat on port 5000.
 3. Tests: `pytest brain/tests/`
 4. Update relevant docs (see Feature->Doc table in docs/README.md).
+5. Update conductor track status in `conductor/tracks.md` (and active track plan file) for the work completed.
 
 Skip step 1 for backend-only changes.
 
@@ -170,6 +171,7 @@ Skip step 1 for backend-only changes.
 12. Auto-commit after changes; use a conventional commit message if none is provided.
 13. Safe-by-default git: check status/diff before edits.
 14. Check conductor/tracks.md before starting major work — active tracks take priority.
+15. After every significant change, update `conductor/tracks.md` with current status/progress before finishing.
 
 ---
 

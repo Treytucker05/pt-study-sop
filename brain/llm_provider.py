@@ -842,12 +842,16 @@ def stream_chatgpt_responses(
     model: str = "gpt-5.3-codex",
     timeout: int = 120,
     web_search: bool = False,
+    tools: list[dict] | None = None,
+    previous_response_id: str | None = None,
+    input_override: list[dict] | None = None,
 ):
     """
     Streaming generator for ChatGPT backend API.
     Yields dicts: {"type": "delta", "text": "..."} or {"type": "done", "usage": {...}}
     or {"type": "error", "error": "..."}.
     When web_search=True, also yields {"type": "web_search", "status": "searching"|"completed"}.
+    When tools are provided, also yields {"type": "tool_call", "name": ..., "arguments": ..., "call_id": ...}.
     URL citations are included in the "done" dict as "url_citations".
     """
     auth = _load_codex_auth()
@@ -858,18 +862,25 @@ def stream_chatgpt_responses(
         }
         return
 
-    # Codex models require verbosity "medium"; others use "low"
     verbosity = "medium" if "codex" in model.lower() else "low"
     payload: dict = {
         "model": model,
         "instructions": system_prompt,
-        "input": [{"role": "user", "content": user_prompt}],
-        "store": False,
+        "input": input_override or [{"role": "user", "content": user_prompt}],
+        "store": True,
         "stream": True,
         "text": {"verbosity": verbosity},
     }
+    if previous_response_id:
+        payload["previous_response_id"] = previous_response_id
+
+    all_tools: list[dict] = []
     if web_search:
-        payload["tools"] = [{"type": "web_search", "search_context_size": "low"}]
+        all_tools.append({"type": "web_search", "search_context_size": "low"})
+    if tools:
+        all_tools.extend(tools)
+    if all_tools:
+        payload["tools"] = all_tools
 
     body = json.dumps(payload)
 
@@ -896,6 +907,9 @@ def stream_chatgpt_responses(
             return
 
         usage = None
+        model_id = None
+        url_citations: list = []
+        response_id = ""
 
         while True:
             line = resp.readline()
@@ -924,17 +938,37 @@ def stream_chatgpt_responses(
                 yield {"type": "web_search", "status": "searching"}
             elif evt_type == "response.web_search_call.completed":
                 yield {"type": "web_search", "status": "completed"}
+            elif evt_type == "response.function_call_arguments.done":
+                yield {
+                    "type": "tool_call",
+                    "name": evt.get("name", ""),
+                    "arguments": evt.get("arguments", "{}"),
+                    "call_id": evt.get("call_id", evt.get("item_id", "")),
+                }
             elif evt_type == "response.completed":
                 r = evt.get("response", {})
                 usage = r.get("usage")
                 model_id = r.get("model")
-                # Extract URL citations from output annotations
+                response_id = r.get("id", "")
                 url_citations = _extract_url_citations(r)
+
+                for output_item in r.get("output", []):
+                    if output_item.get("type") == "function_call":
+                        yield {
+                            "type": "tool_call",
+                            "name": output_item.get("name", ""),
+                            "arguments": output_item.get("arguments", "{}"),
+                            "call_id": output_item.get(
+                                "call_id", output_item.get("id", "")
+                            ),
+                        }
 
         conn.close()
         done_payload: dict = {"type": "done", "usage": usage, "model": model_id}
         if url_citations:
             done_payload["url_citations"] = url_citations
+        if response_id:
+            done_payload["response_id"] = response_id
         yield done_payload
 
     except Exception as e:

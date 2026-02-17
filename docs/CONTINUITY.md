@@ -712,3 +712,48 @@
   - `python scripts/check_exports_drift.py`
   - `python sop/tools/build_runtime_bundle.py --update-golden`
   - `pytest sop/tests -q`
+
+## 2026-02-17 - CP-MSS Phase B5/B6 Selector + Telemetry Hardening
+
+- Added deterministic selector implementation and tests:
+  - `sop/tools/selector_policy.py`
+  - `sop/tests/test_selector_policy.py`
+- Expanded chain/method validation coverage with telemetry schema checks:
+  - `sop/tools/validate_library.py`
+  - `sop/tests/test_validate_library.py`
+- Upgraded canonical ErrorLog schema for deterministic routing/A-B diagnostics/expertise-reversal telemetry:
+  - `sop/library/templates/ErrorLog.csv`
+  - `sop/library/08-logging.md`
+  - `sop/library/17-control-plane.md`
+  - `sop/library/13-custom-gpt-system-instructions.md`
+- Synced runtime-facing docs/prompts for the ErrorLog schema change:
+  - `sop/runtime/runtime_prompt.md`
+  - `sop/runtime/custom_instructions.md`
+  - `sop/runtime/knowledge_upload/04_LOGGING_AND_TEMPLATES.md`
+  - `sop/tools/build_runtime_bundle.py`
+- Refreshed exports after schema changes:
+  - `exports/research_packet.md`
+  - `exports/chains_inventory.md`
+- Verification:
+  - `python sop/tools/validate_library.py`
+  - `pytest sop/tests/test_selector_policy.py sop/tests/test_validate_library.py`
+  - `python scripts/export_library_inventories.py`
+  - `python scripts/check_exports_drift.py`
+
+## 2026-02-17 - Workflow Guardrail: Track Updates Are Mandatory
+
+- Updated project guidance to require track updates on every significant change:
+  - `AGENTS.md`
+  - `conductor/tracks.md`
+- New rule enforces updating `conductor/tracks.md` and active track plan status before closing work.
+
+## 2026-02-17 - Added Active CP-MSS Track Entry
+
+- Added an active Conductor track for CP-MSS control-plane work:
+  - `conductor/tracks/CP_MSS_CONTROL_PLANE_HARDENING_20260217/index.md`
+  - `conductor/tracks/CP_MSS_CONTROL_PLANE_HARDENING_20260217/metadata.json`
+  - `conductor/tracks/CP_MSS_CONTROL_PLANE_HARDENING_20260217/spec.md`
+  - `conductor/tracks/CP_MSS_CONTROL_PLANE_HARDENING_20260217/plan.md`
+- Updated `conductor/tracks.md` with active status:
+  - Phase B5/B6/B7 complete
+  - runtime/backend wiring and pilot packaging pending
