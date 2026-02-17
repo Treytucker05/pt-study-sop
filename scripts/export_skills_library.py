@@ -125,6 +125,27 @@ def markdown_escape(value: str) -> str:
     return value.replace("|", "\\|").replace("\n", " ")
 
 
+def load_existing_registry_fields(registry_path: Path) -> dict[str, dict]:
+    if not registry_path.exists():
+        return {}
+    try:
+        data = yaml.safe_load(registry_path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return {}
+    skills = data.get("skills")
+    if not isinstance(skills, list):
+        return {}
+    existing: dict[str, dict] = {}
+    for item in skills:
+        if not isinstance(item, dict):
+            continue
+        skill_id = item.get("skill_id")
+        if not isinstance(skill_id, str) or not skill_id:
+            continue
+        existing[skill_id] = item
+    return existing
+
+
 TOKEN_STOPWORDS = {
     "and",
     "the",
@@ -408,31 +429,55 @@ def main() -> int:
     )
 
     # 04 registry yaml
+    existing_registry_fields = load_existing_registry_fields(out_dir / "04_skill_registry.yaml")
+    valid_statuses = {"inbox", "active", "trial", "defer", "retire"}
     registry = {
         "generated_at": generated_at,
         "canonical_root": str(roots["canonical"]),
         "skills": [],
     }
     for s in docs:
-        registry["skills"].append(
-            {
-                "skill_id": s.skill_id,
-                "category": s.category,
-                "description": s.description,
-                "hints": s.hints,
-                "dependencies": s.dependencies,
-                "missing_dependencies": s.missing_dependencies,
-                "availability": {
-                    "codex": s.skill_id in root_skill_sets["codex"],
-                    "claude": s.skill_id in root_skill_sets["claude"],
-                    "cursor": s.skill_id in root_skill_sets["cursor"],
-                    "antigravity": s.skill_id in root_skill_sets["antigravity"],
-                },
-                "adoption_status": "inbox",
-                "priority": 3,
-                "notes": "",
-            }
-        )
+        existing = existing_registry_fields.get(s.skill_id, {})
+        status = existing.get("adoption_status", "inbox")
+        if status not in valid_statuses:
+            status = "inbox"
+        priority = existing.get("priority", 3)
+        if not isinstance(priority, int):
+            try:
+                priority = int(priority)
+            except Exception:
+                priority = 3
+        if priority < 1 or priority > 5:
+            priority = 3
+        notes = existing.get("notes", "")
+        if not isinstance(notes, str):
+            notes = str(notes)
+
+        row = {
+            "skill_id": s.skill_id,
+            "category": s.category,
+            "description": s.description,
+            "hints": s.hints,
+            "dependencies": s.dependencies,
+            "missing_dependencies": s.missing_dependencies,
+            "availability": {
+                "codex": s.skill_id in root_skill_sets["codex"],
+                "claude": s.skill_id in root_skill_sets["claude"],
+                "cursor": s.skill_id in root_skill_sets["cursor"],
+                "antigravity": s.skill_id in root_skill_sets["antigravity"],
+            },
+            "adoption_status": status,
+            "priority": priority,
+            "notes": notes,
+        }
+
+        # Preserve custom per-skill metadata fields from existing registry rows.
+        for key, value in existing.items():
+            if key in row or key == "skill_id":
+                continue
+            row[key] = value
+
+        registry["skills"].append(row)
     (out_dir / "04_skill_registry.yaml").write_text(
         yaml.safe_dump(registry, sort_keys=False, allow_unicode=False),
         encoding="utf-8",
