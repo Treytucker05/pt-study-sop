@@ -72,6 +72,12 @@ _tmp_*.png
 gcal_token.json
 **/gcal_token.json
 
+# Coverage reports
+coverage/
+
+# Allow dashboard src/lib (negates Python lib/ ignore above)
+!dashboard_rebuild/client/src/lib/
+
 # Local/unrelated directories (keep on disk; ignore in git)
 Arcade-RetroDesignNEW/
 PT School Semester 2/
