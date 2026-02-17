@@ -5,7 +5,8 @@
 **Owner**: Trey  
 **Status**: Complete  
 **Created**: 2026-02-17  
-**Closed**: 2026-02-17
+**Closed**: 2026-02-17  
+**Commits**: `138e8b13` (B7 selector), `56c7079a` (B8 readout), `94baf094` (Phase 4-5 Figma + verification)
 
 ---
 

@@ -22,6 +22,14 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Added Rule 16 to AGENTS.md: agent self-cleanup (no scratch files at root)
 - Added "Repo hygiene (agent self-cleanup)" section to conductor/product-guidelines.md
 
+## 2026-02-17 - Tutor Tool-Calling track (Phases 1-5 complete)
+
+- Phase 1-3: Tool-calling infra, local tools (Obsidian/Notes/Anki), frontend SSE feedback
+- Phase 4: Figma MCP integration (`brain/figma_mcp_client.py`) with 3 layout algorithms, graceful degradation
+- Phase 5: Verification — 192 pytest passing, frontend build clean
+- Commits: `94baf094` (Phase 4-5), earlier commits for Phases 1-3
+- Track closed in `conductor/tracks.md`
+
 ## 2026-02-17 - Skills Curation Buckets + Export Preservation
 
 - Applied first-pass curation buckets to:
