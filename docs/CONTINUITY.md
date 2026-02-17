@@ -781,3 +781,12 @@
   - `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_skills.ps1 -Mode Check`
   - `python scripts/export_skills_library.py --vault-root "C:\Users\treyt\Desktop\Treys School" --output-rel "Study Sessions\Agent Skills Library"`
   - `python -m py_compile scripts/export_skills_library.py`
+
+## 2026-02-17 - Skills Export Default Vault Switched
+
+- Updated default skills export vault in:
+  - `scripts/export_skills_library.py`
+- New default vault root:
+  - `C:\Users\treyt\Desktop\Trey's Vault`
+- Regenerated skills library to:
+  - `C:\Users\treyt\Desktop\Trey's Vault\Study Sessions\Agent Skills Library`

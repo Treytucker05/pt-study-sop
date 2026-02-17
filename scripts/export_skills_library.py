@@ -17,7 +17,7 @@ from typing import Iterable
 import yaml
 
 
-DEFAULT_VAULT = Path(r"C:\Users\treyt\Desktop\Treys School")
+DEFAULT_VAULT = Path(r"C:\Users\treyt\Desktop\Trey's Vault")
 DEFAULT_OUTPUT_REL = Path(r"Study Sessions\Agent Skills Library")
 
 
