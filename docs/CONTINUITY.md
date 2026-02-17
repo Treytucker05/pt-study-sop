@@ -757,3 +757,27 @@
 - Updated `conductor/tracks.md` with active status:
   - Phase B5/B6/B7 complete
   - runtime/backend wiring and pilot packaging pending
+
+## 2026-02-17 - Cross-Agent Skills Sync + Obsidian Library Export
+
+- Added cross-agent sync utility:
+  - `scripts/sync_agent_skills.ps1`
+  - Modes: `DryRun`, `Apply`, `Check`
+  - Canonical root: `C:\Users\treyt\.agents\skills`
+  - Target roots: Codex, Claude, Cursor, Antigravity skill directories
+- Added skills library exporter:
+  - `scripts/export_skills_library.py`
+  - Outputs into vault folder:
+    - `01_skill_catalog.md`
+    - `02_agent_coverage.md`
+    - `03_dedupe_and_cleanup_queue.md`
+    - `04_skill_registry.yaml`
+    - `05_overlap_audit.md`
+    - `06_adoption_checklist.md`
+- Confirmed cross-agent coverage parity and zero drift:
+  - canonical/codex/claude/cursor/antigravity all at 120 skills
+  - missing vs canonical: 0 for all agents
+- Verification commands:
+  - `powershell -ExecutionPolicy Bypass -File scripts/sync_agent_skills.ps1 -Mode Check`
+  - `python scripts/export_skills_library.py --vault-root "C:\Users\treyt\Desktop\Treys School" --output-rel "Study Sessions\Agent Skills Library"`
+  - `python -m py_compile scripts/export_skills_library.py`
