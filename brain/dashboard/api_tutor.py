@@ -569,7 +569,11 @@ def send_turn(session_id: str):
     codex_model: Optional[str] = None
     if content_filter and content_filter.get("model"):
         raw_model = str(content_filter["model"]).strip()
-        if raw_model and "/" not in raw_model and raw_model.lower() not in ("codex", "codex-cli", "chatgpt"):
+        if (
+            raw_model
+            and "/" not in raw_model
+            and raw_model.lower() not in ("codex", "codex-cli", "chatgpt")
+        ):
             codex_model = raw_model
 
     # Read web search preference
@@ -657,13 +661,13 @@ def send_turn(session_id: str):
 {question}"""
 
             # Primary: stream via ChatGPT backend API (fast)
-            api_model = codex_model or "gpt-5.1"
+            api_model = codex_model or "gpt-5.3-codex"
             url_citations: list[object] = []
             try:
                 for chunk in stream_chatgpt_responses(
                     system_prompt,
                     user_prompt,
-                    model=codex_model or "gpt-5.1",
+                    model=codex_model or "gpt-5.3-codex",
                     timeout=120,
                     web_search=enable_web_search,
                 ):
@@ -852,7 +856,8 @@ def advance_block(session_id: str):
             "block_name": next_block["name"],
             "block_description": next_block.get("description", ""),
             "block_category": next_block.get("category", ""),
-            "block_duration": next_block.get("duration") or next_block.get("default_duration_min", 5),
+            "block_duration": next_block.get("duration")
+            or next_block.get("default_duration_min", 5),
             "facilitation_prompt": next_block.get("facilitation_prompt", ""),
             "is_last": next_idx >= len(blocks) - 1,
         }
@@ -904,7 +909,8 @@ def get_template_chains():
                         "name": b["name"],
                         "category": b.get("category", ""),
                         "description": b.get("description", ""),
-                        "duration": b.get("duration") or b.get("default_duration_min", 5),
+                        "duration": b.get("duration")
+                        or b.get("default_duration_min", 5),
                         "facilitation_prompt": b.get("facilitation_prompt", ""),
                     }
                     for b in blocks

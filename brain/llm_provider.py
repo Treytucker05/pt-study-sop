@@ -13,6 +13,7 @@ from typing import Dict, Any, Optional, List, Union
 
 # Load .env into environment (no-op if not present)
 from config import load_env
+
 load_env()
 
 # Configuration
@@ -131,7 +132,11 @@ def _call_openrouter_chat(
 
     api_key = OPENROUTER_API_KEY or os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        return {"success": False, "error": "OPENROUTER_API_KEY not set.", "content": None}
+        return {
+            "success": False,
+            "error": "OPENROUTER_API_KEY not set.",
+            "content": None,
+        }
 
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -156,9 +161,17 @@ def _call_openrouter_chat(
             return {"success": True, "content": content, "error": None}
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8") if e.fp else str(e)
-        return {"success": False, "error": f"OpenRouter API error ({e.code}): {error_body}", "content": None}
+        return {
+            "success": False,
+            "error": f"OpenRouter API error ({e.code}): {error_body}",
+            "content": None,
+        }
     except Exception as e:
-        return {"success": False, "error": f"Exception calling OpenRouter chat: {str(e)}", "content": None}
+        return {
+            "success": False,
+            "error": f"Exception calling OpenRouter chat: {str(e)}",
+            "content": None,
+        }
 
 
 def _call_openai_api(
@@ -435,8 +448,10 @@ def _codex_exec_json(
 
     # If isolated, run in an empty temp directory (avoid repo file reads by default).
     # Otherwise, run in repo root for full context.
-    work_dir = tempfile.mkdtemp(prefix="codex_isolated_") if isolated else str(
-        Path(__file__).parent.parent.resolve()
+    work_dir = (
+        tempfile.mkdtemp(prefix="codex_isolated_")
+        if isolated
+        else str(Path(__file__).parent.parent.resolve())
     )
 
     # Windows: if `codex_cmd` is a .cmd/.bat shim, execute via cmd.exe explicitly.
@@ -483,8 +498,12 @@ def _codex_exec_json(
                 capture_output=True,
                 timeout=timeout,
             )
-        stdout_text = result.stdout.decode("utf-8", errors="replace") if result.stdout else ""
-        stderr_text = result.stderr.decode("utf-8", errors="replace") if result.stderr else ""
+        stdout_text = (
+            result.stdout.decode("utf-8", errors="replace") if result.stdout else ""
+        )
+        stderr_text = (
+            result.stderr.decode("utf-8", errors="replace") if result.stderr else ""
+        )
     except subprocess.TimeoutExpired:
         return {
             "success": False,
@@ -565,6 +584,7 @@ User: {user_prompt}
         isolated=isolated,
     )
 
+
 # ---------------------------------------------------------------------------
 # ChatGPT Backend API (direct -- bypasses Codex CLI for speed)
 # ---------------------------------------------------------------------------
@@ -595,7 +615,9 @@ def _load_codex_auth() -> Optional[Dict[str, str]]:
 
     # Tokens may be nested under a "tokens" key (Codex CLI OAuth format)
     tokens = data.get("tokens", {})
-    access_token = data.get("access_token") or tokens.get("access_token") or data.get("token")
+    access_token = (
+        data.get("access_token") or tokens.get("access_token") or data.get("token")
+    )
     refresh_token = data.get("refresh_token") or tokens.get("refresh_token")
     account_id = data.get("account_id") or tokens.get("account_id")
 
@@ -606,27 +628,30 @@ def _load_codex_auth() -> Optional[Dict[str, str]]:
     if not account_id:
         try:
             import base64
+
             parts = access_token.split(".")
             if len(parts) >= 2:
                 payload = parts[1] + "=" * (4 - len(parts[1]) % 4)
                 claims = json.loads(base64.urlsafe_b64decode(payload))
-                account_id = (
-                    claims.get("https://api.openai.com/auth", {}).get("account_id")
-                    or claims.get("account_id")
-                )
+                account_id = claims.get("https://api.openai.com/auth", {}).get(
+                    "account_id"
+                ) or claims.get("account_id")
         except Exception:
             pass
 
     # Check expiry and refresh if needed
     try:
         import base64
+
         parts = access_token.split(".")
         if len(parts) >= 2:
             payload = parts[1] + "=" * (4 - len(parts[1]) % 4)
             claims = json.loads(base64.urlsafe_b64decode(payload))
             exp = claims.get("exp", 0)
             if exp and time.time() > exp - 60:
-                refreshed = _refresh_codex_token(refresh_token) if refresh_token else None
+                refreshed = (
+                    _refresh_codex_token(refresh_token) if refresh_token else None
+                )
                 if refreshed:
                     access_token = refreshed["access_token"]
                     if refreshed.get("account_id"):
@@ -643,16 +668,23 @@ def _load_codex_auth() -> Optional[Dict[str, str]]:
 def _refresh_codex_token(refresh_token: str) -> Optional[Dict[str, str]]:
     """Refresh OAuth token via auth.openai.com."""
     try:
-        body = json.dumps({
-            "grant_type": "refresh_token",
-            "refresh_token": refresh_token,
-            "client_id": _CODEX_CLIENT_ID,
-        })
+        body = json.dumps(
+            {
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": _CODEX_CLIENT_ID,
+            }
+        )
         ctx = ssl.create_default_context()
         conn = http.client.HTTPSConnection(_TOKEN_URL_HOST, context=ctx, timeout=10)
-        conn.request("POST", _TOKEN_URL_PATH, body=body, headers={
-            "Content-Type": "application/json",
-        })
+        conn.request(
+            "POST",
+            _TOKEN_URL_PATH,
+            body=body,
+            headers={
+                "Content-Type": "application/json",
+            },
+        )
         resp = conn.getresponse()
         if resp.status == 200:
             data = json.loads(resp.read().decode("utf-8"))
@@ -668,7 +700,10 @@ def _refresh_codex_token(refresh_token: str) -> Optional[Dict[str, str]]:
                     auth_path.write_text(json.dumps(stored, indent=2), encoding="utf-8")
                 except Exception:
                     pass
-                return {"access_token": new_token, "account_id": _AUTH_CACHE.get("account_id", "")}
+                return {
+                    "access_token": new_token,
+                    "account_id": _AUTH_CACHE.get("account_id", ""),
+                }
         conn.close()
     except Exception:
         pass
@@ -686,11 +721,13 @@ def _extract_url_citations(response_obj: dict) -> list[dict]:
                     url = ann.get("url", "")
                     if url and url not in seen_urls:
                         seen_urls.add(url)
-                        citations.append({
-                            "url": url,
-                            "title": ann.get("title", ""),
-                            "index": len(citations) + 1,
-                        })
+                        citations.append(
+                            {
+                                "url": url,
+                                "title": ann.get("title", ""),
+                                "index": len(citations) + 1,
+                            }
+                        )
     return citations
 
 
@@ -708,7 +745,11 @@ def call_chatgpt_responses(
     """
     auth = _load_codex_auth()
     if not auth:
-        return {"success": False, "error": "No Codex auth tokens found (~/.codex/auth.json)", "content": None}
+        return {
+            "success": False,
+            "error": "No Codex auth tokens found (~/.codex/auth.json)",
+            "content": None,
+        }
 
     payload: dict = {
         "model": model,
@@ -742,7 +783,11 @@ def call_chatgpt_responses(
 
         if resp.status != 200:
             err_body = resp.read().decode("utf-8", errors="replace")[:500]
-            return {"success": False, "error": f"ChatGPT API {resp.status}: {err_body}", "content": None}
+            return {
+                "success": False,
+                "error": f"ChatGPT API {resp.status}: {err_body}",
+                "content": None,
+            }
 
         full_text = ""
         usage = None
@@ -772,9 +817,19 @@ def call_chatgpt_responses(
         conn.close()
 
         if not full_text.strip():
-            return {"success": False, "error": "ChatGPT API returned empty response", "content": None, "usage": usage}
+            return {
+                "success": False,
+                "error": "ChatGPT API returned empty response",
+                "content": None,
+                "usage": usage,
+            }
 
-        return {"success": True, "content": full_text.strip(), "error": None, "usage": usage}
+        return {
+            "success": True,
+            "content": full_text.strip(),
+            "error": None,
+            "usage": usage,
+        }
 
     except Exception as e:
         return {"success": False, "error": f"ChatGPT API error: {e}", "content": None}
@@ -784,7 +839,7 @@ def stream_chatgpt_responses(
     system_prompt: str,
     user_prompt: str,
     *,
-    model: str = "gpt-5.1",
+    model: str = "gpt-5.3-codex",
     timeout: int = 120,
     web_search: bool = False,
 ):
@@ -797,16 +852,21 @@ def stream_chatgpt_responses(
     """
     auth = _load_codex_auth()
     if not auth:
-        yield {"type": "error", "error": "No Codex auth tokens found (~/.codex/auth.json)"}
+        yield {
+            "type": "error",
+            "error": "No Codex auth tokens found (~/.codex/auth.json)",
+        }
         return
 
+    # Codex models require verbosity "medium"; others use "low"
+    verbosity = "medium" if "codex" in model.lower() else "low"
     payload: dict = {
         "model": model,
         "instructions": system_prompt,
         "input": [{"role": "user", "content": user_prompt}],
         "store": False,
         "stream": True,
-        "text": {"verbosity": "low"},
+        "text": {"verbosity": verbosity},
     }
     if web_search:
         payload["tools"] = [{"type": "web_search", "search_context_size": "low"}]
@@ -879,4 +939,3 @@ def stream_chatgpt_responses(
 
     except Exception as e:
         yield {"type": "error", "error": f"ChatGPT API error: {e}"}
-
