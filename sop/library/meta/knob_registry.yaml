@@ -1,0 +1,56 @@
+version: 1
+status: validated
+source: sop/library/meta/knob_registry.yaml
+
+knobs:
+  stage:
+    description: Learning-stage context tag used for chain matching.
+    type: enum
+    allowed_values:
+      - first_exposure
+      - review
+      - exam_prep
+      - consolidation
+
+  operational_stage:
+    description: Control-plane operational stage.
+    type: enum
+    allowed_values:
+      - PRIME
+      - CALIBRATE
+      - ENCODE
+      - REFERENCE
+      - RETRIEVE
+      - OVERLEARN
+
+  energy:
+    description: Expected learner energy for chain matching.
+    type: enum
+    allowed_values:
+      - low
+      - medium
+      - high
+
+  class_type:
+    description: Domain type for chain routing.
+    type: enum
+    allowed_values:
+      - anatomy
+      - physiology
+      - pathology
+      - pharmacology
+      - clinical
+      - general
+
+  pass:
+    description: Sweep/depth pass selection.
+    type: enum
+    allowed_values:
+      - sweep
+      - depth
+
+  time_available:
+    description: Estimated minutes available for chain completion.
+    type: integer
+    min: 5
+    max: 180

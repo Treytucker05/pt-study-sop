@@ -10,6 +10,12 @@ Checks:
   6. Referential integrity — every chain block ID exists in methods/
   7. Evidence presence — warning if null (error in --strict)
   8. Logging field alignment — if method.logging_fields set, check against session_log_template.yaml
+  9. Operational stage enforcement — inferred/declared stage in
+     {PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN}
+  10. Chain artifact dependency (validated/core chains) —
+      no RETRIEVE method before a method that produces OnePageAnchor/QuestionBankSeed
+  11. Knob registry enforcement — knob keys and values must match
+      sop/library/meta/knob_registry.yaml
 
 Usage:
   python sop/tools/validate_library.py              # default, exit 0=pass, 1=errors
@@ -25,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -40,6 +47,28 @@ METHODS_DIR = LIB_DIR / "methods"
 CHAINS_DIR = LIB_DIR / "chains"
 META_DIR = LIB_DIR / "meta"
 TEMPLATES_DIR = LIB_DIR / "templates"
+KNOB_REGISTRY_PATH = META_DIR / "knob_registry.yaml"
+
+ALLOWED_OPERATIONAL_STAGES = {
+    "PRIME",
+    "CALIBRATE",
+    "ENCODE",
+    "REFERENCE",
+    "RETRIEVE",
+    "OVERLEARN",
+}
+
+METHOD_STAGE_PREFIX_MAP = {
+    "M-PRE": "PRIME",
+    "M-CAL": "CALIBRATE",
+    "M-ENC": "ENCODE",
+    "M-INT": "ENCODE",
+    "M-REF": "REFERENCE",
+    "M-RET": "RETRIEVE",
+    "M-OVR": "OVERLEARN",
+}
+
+REFERENCE_ARTIFACT_TOKENS = {"onepageanchor", "questionbankseed"}
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +127,14 @@ def load_taxonomy() -> dict | None:
     return data
 
 
+def load_knob_registry() -> dict | None:
+    """Load canonical knob registry. Returns None if missing/invalid."""
+    if not KNOB_REGISTRY_PATH.exists():
+        return None
+    data, _ = load_yaml_file(KNOB_REGISTRY_PATH)
+    return data
+
+
 def load_session_log_fields() -> set[str]:
     """Load valid logging field names from session_log_template.yaml."""
     path = TEMPLATES_DIR / "session_log_template.yaml"
@@ -109,12 +146,154 @@ def load_session_log_fields() -> set[str]:
     return {f["name"] for f in data["session_fields"] if isinstance(f, dict) and "name" in f}
 
 
+def infer_operational_stage(method_id: str) -> str | None:
+    """Infer control-plane operational stage from method ID prefix."""
+    for prefix, stage in METHOD_STAGE_PREFIX_MAP.items():
+        if method_id.startswith(prefix):
+            return stage
+    return None
+
+
+def normalize_artifact_name(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", value.lower())
+
+
+def method_produces_reference_artifact(method_data: dict[str, Any]) -> bool:
+    """Return True if method outputs include OnePageAnchor or QuestionBankSeed."""
+    outputs = method_data.get("outputs")
+    if not isinstance(outputs, list):
+        return False
+    for item in outputs:
+        token = normalize_artifact_name(str(item))
+        for artifact in REFERENCE_ARTIFACT_TOKENS:
+            if artifact in token:
+                return True
+    return False
+
+
+def _validate_knob_registry_shape(result: ValidationResult, knob_registry: dict[str, Any] | None) -> None:
+    if knob_registry is None:
+        result.error("meta/knob_registry.yaml does not exist")
+        return
+
+    knobs = knob_registry.get("knobs")
+    if not isinstance(knobs, dict) or not knobs:
+        result.error("meta/knob_registry.yaml: missing or invalid 'knobs' map")
+        return
+
+    for knob_name, spec in knobs.items():
+        if not isinstance(spec, dict):
+            result.error(f"meta/knob_registry.yaml: knob '{knob_name}' spec must be a mapping")
+            continue
+        knob_type = spec.get("type")
+        if knob_type not in {"enum", "integer", "number", "boolean", "string"}:
+            result.error(
+                f"meta/knob_registry.yaml: knob '{knob_name}' has unsupported type '{knob_type}'"
+            )
+            continue
+        if knob_type == "enum":
+            allowed_values = spec.get("allowed_values")
+            if not isinstance(allowed_values, list) or not allowed_values:
+                result.error(
+                    f"meta/knob_registry.yaml: enum knob '{knob_name}' must define non-empty allowed_values"
+                )
+
+
+def _validate_knob_value(
+    source_name: str,
+    knob_name: str,
+    value: Any,
+    spec: dict[str, Any],
+    result: ValidationResult,
+) -> None:
+    knob_type = spec.get("type")
+
+    if knob_type == "enum":
+        allowed = {str(v) for v in spec.get("allowed_values", [])}
+        values = value if isinstance(value, list) else [value]
+        for item in values:
+            if str(item) not in allowed:
+                result.error(
+                    f"{source_name}: knob '{knob_name}' has invalid value '{item}' "
+                    f"(allowed: {sorted(allowed)})"
+                )
+        return
+
+    if knob_type == "integer":
+        if isinstance(value, bool) or not isinstance(value, int):
+            result.error(f"{source_name}: knob '{knob_name}' must be integer, got {type(value).__name__}")
+            return
+        min_v = spec.get("min")
+        max_v = spec.get("max")
+        if isinstance(min_v, int) and value < min_v:
+            result.error(f"{source_name}: knob '{knob_name}'={value} is below min {min_v}")
+        if isinstance(max_v, int) and value > max_v:
+            result.error(f"{source_name}: knob '{knob_name}'={value} is above max {max_v}")
+        return
+
+    if knob_type == "number":
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            result.error(f"{source_name}: knob '{knob_name}' must be number, got {type(value).__name__}")
+        return
+
+    if knob_type == "boolean":
+        if not isinstance(value, bool):
+            result.error(f"{source_name}: knob '{knob_name}' must be boolean, got {type(value).__name__}")
+        return
+
+    if knob_type == "string":
+        if not isinstance(value, str):
+            result.error(f"{source_name}: knob '{knob_name}' must be string, got {type(value).__name__}")
+
+
+def validate_knobs(
+    source_name: str,
+    knobs: dict[str, Any] | None,
+    knob_registry: dict[str, Any] | None,
+    result: ValidationResult,
+) -> None:
+    """Validate knob key/value pairs against canonical knob registry."""
+    if not knobs:
+        return
+    if not isinstance(knobs, dict):
+        result.error(f"{source_name}: knobs/context_tags must be a mapping")
+        return
+
+    registry_knobs = (
+        knob_registry.get("knobs", {}) if isinstance(knob_registry, dict) else {}
+    )
+    for knob_name, value in knobs.items():
+        spec = registry_knobs.get(knob_name)
+        if spec is None:
+            result.error(
+                f"{source_name}: unknown knob '{knob_name}' (not present in meta/knob_registry.yaml)"
+            )
+            continue
+        if not isinstance(spec, dict):
+            result.error(f"{source_name}: knob '{knob_name}' registry spec is invalid")
+            continue
+        _validate_knob_value(source_name, knob_name, value, spec, result)
+
+
 # ---------------------------------------------------------------------------
 # Validation checks
 # ---------------------------------------------------------------------------
 
-def validate_methods(result: ValidationResult, strict: bool) -> dict[str, dict]:
-    """Validate all method YAML files. Returns {method_id: data} map."""
+def validate_methods(
+    result: ValidationResult,
+    strict: bool,
+    knob_registry: dict[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    """Validate all method YAML files.
+
+    Returns:
+        Map keyed by method_id with metadata used by downstream chain checks:
+        {
+          "raw": original yaml dict,
+          "operational_stage": inferred/declared operational stage,
+          "produces_reference_artifact": bool
+        }
+    """
     # Lazy import — Pydantic only in sop/tools/
     from models import MethodBlock
 
@@ -129,9 +308,10 @@ def validate_methods(result: ValidationResult, strict: bool) -> dict[str, dict]:
             for alias in cat_val.get("aliases", []):
                 category_aliases[alias] = cat_key
 
-    methods: dict[str, dict] = {}
+    methods: dict[str, dict[str, Any]] = {}
     seen_ids: set[str] = set()
     seen_names: set[str] = set()
+    aliases: list[tuple[str, str, str]] = []  # (file, method_id, alias_of)
 
     if not METHODS_DIR.exists():
         result.error("methods/ directory does not exist")
@@ -185,24 +365,74 @@ def validate_methods(result: ValidationResult, strict: bool) -> dict[str, dict]:
             else:
                 result.warn(f"{path.name}: missing evidence")
 
+        # Alias metadata (for non-destructive de-duplication).
+        alias_of = data.get("alias_of")
+        if alias_of:
+            aliases.append((path.name, mid, str(alias_of)))
+
+        # Operational stage enforcement.
+        inferred_stage = infer_operational_stage(mid)
+        if inferred_stage is None:
+            result.error(f"{path.name}: cannot infer operational stage from method ID '{mid}'")
+            inferred_stage = ""
+
+        declared_stage = data.get("stage")
+        if declared_stage is not None and str(declared_stage) not in ALLOWED_OPERATIONAL_STAGES:
+            result.error(
+                f"{path.name}: stage '{declared_stage}' must be one of {sorted(ALLOWED_OPERATIONAL_STAGES)}"
+            )
+
+        if inferred_stage and inferred_stage not in ALLOWED_OPERATIONAL_STAGES:
+            result.error(
+                f"{path.name}: inferred stage '{inferred_stage}' is not allowed "
+                f"(allowed: {sorted(ALLOWED_OPERATIONAL_STAGES)})"
+            )
+
+        if declared_stage is not None and inferred_stage and str(declared_stage) != inferred_stage:
+            result.error(
+                f"{path.name}: declared stage '{declared_stage}' does not match inferred stage '{inferred_stage}'"
+            )
+
         # Logging field alignment
         if model.logging_fields and log_fields:
             for field in model.logging_fields:
                 if field not in log_fields:
                     result.warn(f"{path.name}: logging_field '{field}' not in session_log_template.yaml")
 
-        methods[mid] = data
+        # Knob validation (optional fields on method schema).
+        validate_knobs(path.name, data.get("knobs"), knob_registry, result)
+
+        methods[mid] = {
+            "raw": data,
+            "operational_stage": str(declared_stage or inferred_stage),
+            "produces_reference_artifact": method_produces_reference_artifact(data),
+            "status": str(data.get("status", "draft")),
+        }
+
+    # Alias targets must resolve within methods set.
+    method_ids = set(methods.keys())
+    for file_name, method_id, alias_of in aliases:
+        if alias_of == method_id:
+            result.error(f"{file_name}: alias_of cannot reference itself ('{method_id}')")
+        elif alias_of not in method_ids:
+            result.error(f"{file_name}: alias_of references unknown method '{alias_of}'")
 
     return methods
 
 
-def validate_chains(result: ValidationResult, method_ids: set[str]) -> dict[str, dict]:
+def validate_chains(
+    result: ValidationResult,
+    methods: dict[str, dict[str, Any]],
+    knob_registry: dict[str, Any] | None,
+) -> dict[str, dict]:
     """Validate all chain YAML files. Returns {chain_id: data} map."""
     from models import Chain
 
     chains: dict[str, dict] = {}
     seen_ids: set[str] = set()
     seen_names: set[str] = set()
+    aliases: list[tuple[str, str, str]] = []  # (file, chain_id, alias_of)
+    method_ids = set(methods.keys())
 
     if not CHAINS_DIR.exists():
         result.error("chains/ directory does not exist")
@@ -241,12 +471,57 @@ def validate_chains(result: ValidationResult, method_ids: set[str]) -> dict[str,
             result.error(f"{path.name}: duplicate chain name '{model.name}'")
         seen_names.add(model.name)
 
+        # Alias metadata.
+        alias_of = data.get("alias_of")
+        if alias_of:
+            aliases.append((path.name, cid, str(alias_of)))
+
+        # Knob validation (context_tags/default_knobs/knobs).
+        validate_knobs(path.name, data.get("context_tags"), knob_registry, result)
+        validate_knobs(path.name, data.get("default_knobs"), knob_registry, result)
+        validate_knobs(path.name, data.get("knobs"), knob_registry, result)
+
         # Referential integrity — every block ID must exist in methods
         for block_id in model.blocks:
             if block_id not in method_ids:
                 result.error(f"{path.name}: references unknown method '{block_id}'")
 
+        # Chain artifact dependency (applies to production-ready chains only).
+        # Rule: no RETRIEVE method may occur before a method that produces
+        # OnePageAnchor/QuestionBankSeed artifacts.
+        status = str(data.get("status", "draft"))
+        if status in {"validated", "core"}:
+            first_retrieve_idx: int | None = None
+            first_reference_artifact_idx: int | None = None
+            for idx, block_id in enumerate(model.blocks):
+                m = methods.get(block_id)
+                if not m:
+                    continue
+                if m.get("produces_reference_artifact") and first_reference_artifact_idx is None:
+                    first_reference_artifact_idx = idx
+                if m.get("operational_stage") == "RETRIEVE" and first_retrieve_idx is None:
+                    first_retrieve_idx = idx
+
+            if first_retrieve_idx is not None:
+                if first_reference_artifact_idx is None:
+                    result.error(
+                        f"{path.name}: validated/core chain contains RETRIEVE methods but no "
+                        "QuestionBankSeed/OnePageAnchor producer"
+                    )
+                elif first_reference_artifact_idx > first_retrieve_idx:
+                    result.error(
+                        f"{path.name}: RETRIEVE appears before reference artifact producer "
+                        "(QuestionBankSeed/OnePageAnchor)"
+                    )
+
         chains[cid] = data
+
+    chain_ids = set(chains.keys())
+    for file_name, chain_id, alias_of in aliases:
+        if alias_of == chain_id:
+            result.error(f"{file_name}: alias_of cannot reference itself ('{chain_id}')")
+        elif alias_of not in chain_ids:
+            result.error(f"{file_name}: alias_of references unknown chain '{alias_of}'")
 
     return chains
 
@@ -255,6 +530,7 @@ def validate_meta(result: ValidationResult) -> None:
     """Validate meta files exist and are well-formed."""
     taxonomy_path = META_DIR / "taxonomy.yaml"
     version_path = META_DIR / "version.yaml"
+    knob_registry = load_knob_registry()
 
     if not taxonomy_path.exists():
         result.error("meta/taxonomy.yaml does not exist")
@@ -274,6 +550,8 @@ def validate_meta(result: ValidationResult) -> None:
         elif data and "version" not in data:
             result.error("meta/version.yaml: missing 'version' key")
 
+    _validate_knob_registry_shape(result, knob_registry)
+
 
 # ---------------------------------------------------------------------------
 # Main
@@ -285,13 +563,13 @@ def run_validation(strict: bool = False) -> ValidationResult:
 
     # Meta files
     validate_meta(result)
+    knob_registry = load_knob_registry()
 
     # Methods
-    methods = validate_methods(result, strict=strict)
+    methods = validate_methods(result, strict=strict, knob_registry=knob_registry)
 
     # Chains (needs method IDs for referential integrity)
-    method_ids = set(methods.keys())
-    validate_chains(result, method_ids)
+    validate_chains(result, methods, knob_registry=knob_registry)
 
     # In strict mode, promote warnings to errors
     if strict:

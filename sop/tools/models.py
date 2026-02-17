@@ -38,8 +38,19 @@ class Stage(str, Enum):
     consolidation = "consolidation"
 
 
+class OperationalStage(str, Enum):
+    PRIME = "PRIME"
+    CALIBRATE = "CALIBRATE"
+    ENCODE = "ENCODE"
+    REFERENCE = "REFERENCE"
+    RETRIEVE = "RETRIEVE"
+    OVERLEARN = "OVERLEARN"
+
+
 class Status(str, Enum):
     draft = "draft"
+    core = "core"
+    optional = "optional"
     validated = "validated"
     deprecated = "deprecated"
 
@@ -67,7 +78,9 @@ class MethodBlock(BaseModel):
     default_duration_min: int = 5
     energy_cost: EnergyLevel = EnergyLevel.medium
     best_stage: Optional[Stage] = None
+    stage: Optional[OperationalStage] = None
     status: Status = Status.draft
+    alias_of: Optional[str] = None
     tags: list[str] = Field(default_factory=list)
     evidence: Optional[Evidence] = None
     evidence_raw: Optional[str] = None
@@ -79,6 +92,7 @@ class MethodBlock(BaseModel):
     stop_criteria: Optional[list[str]] = None
     failure_modes: Optional[list[dict]] = None
     logging_fields: Optional[list[str]] = None
+    knobs: Optional[dict] = None
 
     @field_validator("id")
     @classmethod
@@ -94,8 +108,11 @@ class Chain(BaseModel):
     description: str
     blocks: list[str] = Field(default_factory=list)  # list of MethodBlock.id refs
     context_tags: dict = Field(default_factory=dict)
+    default_knobs: Optional[dict] = None
+    knobs: Optional[dict] = None
     is_template: bool = False
     status: Status = Status.draft
+    alias_of: Optional[str] = None
     branch_rules: Optional[list[dict]] = None
     entry_conditions: Optional[list[str]] = None
     exit_conditions: Optional[list[str]] = None

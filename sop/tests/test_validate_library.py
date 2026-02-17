@@ -13,7 +13,15 @@ import yaml
 TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
 sys.path.insert(0, str(TOOLS_DIR))
 
-from validate_library import ValidationResult, load_yaml_file, run_validation
+import validate_library
+from validate_library import (
+    ValidationResult,
+    infer_operational_stage,
+    load_yaml_file,
+    method_produces_reference_artifact,
+    run_validation,
+    validate_knobs,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -60,12 +68,36 @@ VALID_TAXONOMY = {
             "prefix": "PRE",
             "aliases": ["prep"],
         },
+        "retrieve": {
+            "label": "Retrieve",
+            "prefix": "RET",
+            "aliases": ["recall"],
+        },
     },
     "energy_levels": ["low", "medium", "high"],
     "stages": ["first_exposure", "review", "exam_prep", "consolidation"],
 }
 
 VALID_VERSION = {"version": "1.0.0", "last_updated": "2026-02-08"}
+VALID_KNOB_REGISTRY = {
+    "version": 1,
+    "knobs": {
+        "stage": {
+            "type": "enum",
+            "allowed_values": ["first_exposure", "review", "exam_prep", "consolidation"],
+        },
+        "energy": {
+            "type": "enum",
+            "allowed_values": ["low", "medium", "high"],
+        },
+        "time_available": {"type": "integer", "min": 5, "max": 180},
+    },
+}
+VALID_SESSION_LOG_TEMPLATE = {
+    "session_fields": [
+        {"name": "date", "type": "string", "required": True},
+    ]
+}
 
 
 def build_minimal_library(tmp_path: Path) -> Path:
@@ -75,6 +107,8 @@ def build_minimal_library(tmp_path: Path) -> Path:
     write_yaml(lib / "chains" / "C-TS-001.yaml", VALID_CHAIN)
     write_yaml(lib / "meta" / "taxonomy.yaml", VALID_TAXONOMY)
     write_yaml(lib / "meta" / "version.yaml", VALID_VERSION)
+    write_yaml(lib / "meta" / "knob_registry.yaml", VALID_KNOB_REGISTRY)
+    write_yaml(lib / "templates" / "session_log_template.yaml", VALID_SESSION_LOG_TEMPLATE)
     return lib
 
 
@@ -197,3 +231,113 @@ class TestChainValidation:
         c = Chain(**VALID_CHAIN)
         assert c.id == "C-TS-001"
         assert c.blocks == ["M-TST-001"]
+
+
+class TestOperationalStageInference:
+    def test_infer_operational_stage(self) -> None:
+        assert infer_operational_stage("M-PRE-001") == "PRIME"
+        assert infer_operational_stage("M-CAL-001") == "CALIBRATE"
+        assert infer_operational_stage("M-ENC-001") == "ENCODE"
+        assert infer_operational_stage("M-REF-001") == "REFERENCE"
+        assert infer_operational_stage("M-RET-001") == "RETRIEVE"
+        assert infer_operational_stage("M-OVR-001") == "OVERLEARN"
+
+    def test_unknown_prefix_returns_none(self) -> None:
+        assert infer_operational_stage("M-XYZ-001") is None
+
+
+class TestReferenceArtifactDetection:
+    def test_detects_reference_outputs(self) -> None:
+        method = {"outputs": ["One-Page Anchor", "Question Bank Seed (10-20 items)"]}
+        assert method_produces_reference_artifact(method)
+
+    def test_non_reference_outputs(self) -> None:
+        method = {"outputs": ["Brain dump notes", "Prior knowledge baseline"]}
+        assert not method_produces_reference_artifact(method)
+
+
+class TestKnobValidationHelpers:
+    def test_knob_value_validation_passes(self) -> None:
+        result = ValidationResult()
+        validate_knobs(
+            "test.yaml",
+            {"stage": "review", "energy": "low", "time_available": 30},
+            VALID_KNOB_REGISTRY,
+            result,
+        )
+        assert result.ok, result.errors
+
+    def test_knob_value_validation_fails(self) -> None:
+        result = ValidationResult()
+        validate_knobs(
+            "test.yaml",
+            {"stage": "invalid_stage", "energy": "extreme", "time_available": 1},
+            VALID_KNOB_REGISTRY,
+            result,
+        )
+        assert not result.ok
+        assert any("invalid_stage" in e for e in result.errors)
+
+
+class TestChainDependencyRule:
+    def _write_common_meta(self, lib: Path) -> None:
+        write_yaml(lib / "meta" / "taxonomy.yaml", VALID_TAXONOMY)
+        write_yaml(lib / "meta" / "version.yaml", VALID_VERSION)
+        write_yaml(lib / "meta" / "knob_registry.yaml", VALID_KNOB_REGISTRY)
+        write_yaml(lib / "templates" / "session_log_template.yaml", VALID_SESSION_LOG_TEMPLATE)
+
+    def _with_temp_library(self, monkeypatch: pytest.MonkeyPatch, lib: Path) -> None:
+        monkeypatch.setattr(validate_library, "METHODS_DIR", lib / "methods")
+        monkeypatch.setattr(validate_library, "CHAINS_DIR", lib / "chains")
+        monkeypatch.setattr(validate_library, "META_DIR", lib / "meta")
+        monkeypatch.setattr(validate_library, "TEMPLATES_DIR", lib / "templates")
+        monkeypatch.setattr(validate_library, "KNOB_REGISTRY_PATH", lib / "meta" / "knob_registry.yaml")
+
+    def test_validated_chain_requires_reference_artifacts_before_retrieve(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        lib = tmp_path / "sop" / "library"
+        self._write_common_meta(lib)
+
+        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prepare"}
+        ret = {**VALID_METHOD, "id": "M-RET-001", "name": "Ret", "category": "retrieve"}
+        write_yaml(lib / "methods" / "M-PRE-001.yaml", pre)
+        write_yaml(lib / "methods" / "M-RET-001.yaml", ret)
+        write_yaml(
+            lib / "chains" / "C-TS-001.yaml",
+            {
+                **VALID_CHAIN,
+                "status": "validated",
+                "blocks": ["M-PRE-001", "M-RET-001"],
+                "context_tags": {"stage": "review", "energy": "low", "time_available": 20},
+            },
+        )
+
+        self._with_temp_library(monkeypatch, lib)
+        result = run_validation(strict=False)
+        assert not result.ok
+        assert any("no QuestionBankSeed/OnePageAnchor producer" in e for e in result.errors)
+
+    def test_draft_chain_does_not_enforce_reference_dependency(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        lib = tmp_path / "sop" / "library"
+        self._write_common_meta(lib)
+
+        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prepare"}
+        ret = {**VALID_METHOD, "id": "M-RET-001", "name": "Ret", "category": "retrieve"}
+        write_yaml(lib / "methods" / "M-PRE-001.yaml", pre)
+        write_yaml(lib / "methods" / "M-RET-001.yaml", ret)
+        write_yaml(
+            lib / "chains" / "C-TS-001.yaml",
+            {
+                **VALID_CHAIN,
+                "status": "draft",
+                "blocks": ["M-PRE-001", "M-RET-001"],
+                "context_tags": {"stage": "review", "energy": "low", "time_available": 20},
+            },
+        )
+
+        self._with_temp_library(monkeypatch, lib)
+        result = run_validation(strict=False)
+        assert result.ok, result.errors

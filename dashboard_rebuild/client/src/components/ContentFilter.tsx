@@ -204,6 +204,13 @@ export function ContentFilter({
   const [chainTab, setChainTab] = useState<"templates" | "custom">("templates");
 
   useEffect(() => {
+    // A concrete template selection should always surface the template tab.
+    if (chainId !== undefined && chainTab !== "templates") {
+      setChainTab("templates");
+    }
+  }, [chainId, chainTab]);
+
+  useEffect(() => {
     _lsSet(LS_AUTOPICK_CHAIN_KEY, String(autoPickChain));
   }, [autoPickChain]);
 
@@ -216,16 +223,18 @@ export function ContentFilter({
   // Auto-pick recommended chain once we know the template list (only when Freeform).
   useEffect(() => {
     if (!autoPickChain) return;
+    if (chainTab !== "templates") return;
     if (chainId !== undefined) return;
     if (!recommendedChain) return;
     if (lastAutoPickMode === mode) return;
     setChainId(recommendedChain.id);
     setLastAutoPickMode(mode);
-  }, [autoPickChain, chainId, recommendedChain?.id, lastAutoPickMode, mode, setChainId]);
+  }, [autoPickChain, chainTab, chainId, recommendedChain?.id, lastAutoPickMode, mode, setChainId]);
 
   const applyMode = (next: TutorMode) => {
     setMode(next);
     if (!autoPickChain) return;
+    if (chainTab !== "templates") return;
     if (chainId !== undefined) return;
     const nextName = MODE_TO_RECOMMENDED_CHAIN[next];
     if (!nextName) return;
@@ -260,7 +269,15 @@ export function ContentFilter({
           <div className={`${TEXT_SECTION_LABEL} mb-1`}>Chain</div>
           <select
             value={chainId ?? ""}
-            onChange={(e) => setChainId(e.target.value ? Number(e.target.value) : undefined)}
+            onChange={(e) => {
+              if (e.target.value) {
+                setChainId(Number(e.target.value));
+                return;
+              }
+              // Treat compact "Freeform" as an explicit override.
+              setChainId(undefined);
+              setLastAutoPickMode(mode);
+            }}
             className={`${SELECT_BASE} border-[3px] border-double border-primary/30 h-9 w-[180px]`}
           >
             <option value="">Freeform</option>
@@ -474,6 +491,8 @@ export function ContentFilter({
                 onClick={() => {
                   setChainTab("custom");
                   setChainId(undefined);
+                  // Respect explicit custom selection and suppress immediate auto-pick.
+                  setLastAutoPickMode(mode);
                 }}
                 className={`px-1.5 py-1 border-2 font-arcade text-xs truncate transition-colors ${
                   chainTab === "custom"

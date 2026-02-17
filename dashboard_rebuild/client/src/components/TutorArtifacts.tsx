@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
@@ -102,6 +102,46 @@ export function TutorArtifacts({
   >(null);
 
   const visibleSessions = recentSessions.slice(0, VISIBLE_SESSIONS_LIMIT);
+  const selectedVisibleSessionsCount = visibleSessions.reduce(
+    (count, session) => (selectedSessionIds.has(session.session_id) ? count + 1 : count),
+    0
+  );
+
+  useEffect(() => {
+    const visibleIds = new Set(visibleSessions.map((s) => s.session_id));
+    setSelectedSessionIds((prev) => {
+      const next = new Set<string>();
+      let changed = false;
+      prev.forEach((sid) => {
+        if (visibleIds.has(sid)) {
+          next.add(sid);
+        } else {
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [visibleSessions]);
+
+  useEffect(() => {
+    setSelectedArtifactIndices((prev) => {
+      const next = new Set<number>();
+      let changed = false;
+      prev.forEach((index) => {
+        if (index >= 0 && index < artifacts.length) {
+          next.add(index);
+        } else {
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [artifacts.length]);
+
+  useEffect(() => {
+    // Session boundary: never carry artifact selection across sessions.
+    setSelectedArtifactIndices(new Set());
+  }, [sessionId]);
 
   const toggleSession = useCallback((sid: string) => {
     setSelectedSessionIds((prev) => {
@@ -113,12 +153,12 @@ export function TutorArtifacts({
   }, []);
 
   const toggleAllSessions = useCallback(() => {
-    if (selectedSessionIds.size === visibleSessions.length) {
+    if (selectedVisibleSessionsCount === visibleSessions.length) {
       setSelectedSessionIds(new Set());
     } else {
       setSelectedSessionIds(new Set(visibleSessions.map((s) => s.session_id)));
     }
-  }, [selectedSessionIds.size, visibleSessions]);
+  }, [selectedVisibleSessionsCount, visibleSessions]);
 
   const toggleArtifact = useCallback((index: number) => {
     setSelectedArtifactIndices((prev) => {
@@ -455,16 +495,16 @@ export function TutorArtifacts({
                 <div className={TEXT_SECTION_LABEL}>Recent Sessions</div>
                 <label className={`flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer ${TEXT_BODY} text-muted-foreground hover:text-foreground text-xs`}>
                   <Checkbox
-                    checked={visibleSessions.length > 0 && selectedSessionIds.size === visibleSessions.length}
+                    checked={visibleSessions.length > 0 && selectedVisibleSessionsCount === visibleSessions.length}
                     onCheckedChange={toggleAllSessions}
                     className="w-3 h-3 shrink-0"
                   />
                   <span>Select all</span>
                   <Badge variant="outline" className={`ml-auto ${TEXT_BADGE} h-4 px-1 shrink-0`}>
-                    {selectedSessionIds.size}/{visibleSessions.length}
+                    {selectedVisibleSessionsCount}/{visibleSessions.length}
                   </Badge>
                 </label>
-                {selectedSessionIds.size > 0 && (
+                {selectedVisibleSessionsCount > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -482,15 +522,28 @@ export function TutorArtifacts({
                   key={s.session_id}
                   className="border-[3px] border-double border-muted-foreground/10 hover:border-muted-foreground/30 transition-colors"
                 >
-                  {/* Clickable session info */}
-                  <button
+                  {/* Clickable session info (div role avoids nested interactive controls) */}
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onResumeSession(s.session_id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onResumeSession(s.session_id);
+                      }
+                    }}
                     className="w-full text-left px-3 py-2.5 flex items-start gap-2"
                   >
                     <Checkbox
                       checked={selectedSessionIds.has(s.session_id)}
                       onCheckedChange={() => toggleSession(s.session_id)}
                       onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        if (e.key === " " || e.key === "Enter") {
+                          e.stopPropagation();
+                        }
+                      }}
                       className="w-3 h-3 shrink-0 mt-0.5"
                     />
                     <div className="flex-1 min-w-0">
@@ -523,7 +576,7 @@ export function TutorArtifacts({
                         </Badge>
                       </div>
                     </div>
-                  </button>
+                  </div>
 
                   {/* Action buttons */}
                   <div className="flex items-center border-t border-primary/20 px-2 py-1">

@@ -1,0 +1,354 @@
+{
+  "methods": [
+    {
+      "method_id": "M-RET-001",
+      "current_name": "Free Recall Blurt",
+      "best_stage": "`review`",
+      "assigned_control_stage": "`RETRIEVE`",
+      "purpose": "Close materials. Write everything you remember about the topic. No peeking. Compare after.",
+      "artifact_inputs": [
+        "Topic or concept to recall",
+        "Blank paper or text area",
+        "Timer (5 min recommended)",
+        "Reference materials (closed during recall, opened for comparison)"
+      ],
+      "artifact_outputs": [
+        "Free recall dump (raw text with gaps marked)",
+        "Accuracy assessment (what was correct vs. incorrect)",
+        "Gap list (what was missing)",
+        "RSR percentage estimate"
+      ],
+      "gates": [
+        "Timer ends (hard stop)",
+        "You've exhausted everything you can recall",
+        "Comparison with source is complete"
+      ],
+      "supported_knobs": [
+        "stage",
+        "energy",
+        "operational_stage"
+      ]
+    },
+    {
+      "method_id": "M-RET-002",
+      "current_name": "Sprint Quiz",
+      "best_stage": "`review`",
+      "assigned_control_stage": "`RETRIEVE`",
+      "purpose": "Rapid-fire Q&A with Tutor. 10-15 questions in 5 min. Track accuracy for RSR.",
+      "artifact_inputs": [
+        "Topic or concept set for quiz",
+        "Tutor AI (or pre-made question set)",
+        "Timer (5 min recommended)",
+        "Scoring tracker (correct/incorrect tally)"
+      ],
+      "artifact_outputs": [
+        "RSR percentage (correct/total)",
+        "List of missed questions",
+        "Weak anchor flags (uncertain but correct)",
+        "Topics needing re-encoding"
+      ],
+      "gates": [
+        "Timer ends",
+        "All planned questions answered",
+        "RSR threshold achieved (if targeting specific level)"
+      ],
+      "supported_knobs": [
+        "stage",
+        "energy",
+        "operational_stage"
+      ]
+    },
+    {
+      "method_id": "M-RET-003",
+      "current_name": "Fill-in-Blank",
+      "best_stage": "`review`",
+      "assigned_control_stage": "`RETRIEVE`",
+      "purpose": "Review notes with key terms blanked out. Fill from memory. Targets specific vocabulary recall.",
+      "artifact_inputs": [
+        "Notes or text with key terms identified",
+        "Cloze deletion tool (or manually blanked printout)",
+        "Answer key for verification"
+      ],
+      "artifact_outputs": [
+        "Completed cloze exercise",
+        "Accuracy count (correct/total blanks)",
+        "Miss list for targeted review",
+        "Second-pass improvement rate"
+      ],
+      "gates": [
+        "All blanks attempted",
+        "Second pass on missed items complete",
+        "Accuracy threshold reached (e.g., 90%)"
+      ],
+      "supported_knobs": [
+        "stage",
+        "energy",
+        "operational_stage"
+      ]
+    },
+    {
+      "method_id": "M-RET-004",
+      "current_name": "Mixed Practice",
+      "best_stage": "`exam_prep`",
+      "assigned_control_stage": "`RETRIEVE`",
+      "purpose": "Interleave questions from 2-3 different topics in a single retrieval block. Builds discrimination and prevents blocked-practice illusion. Based on interleaving research (Rohrer et al.).",
+      "artifact_inputs": [
+        "2-3 different topics for interleaving",
+        "Question bank or Tutor AI covering all topics",
+        "Timer (10 min recommended)",
+        "Randomization method (shuffle cards, AI random selection)"
+      ],
+      "artifact_outputs": [
+        "Overall accuracy across all topics",
+        "Per-topic accuracy breakdown",
+        "Confusion matrix (which topics got mixed up)",
+        "Discrimination insights (what cues distinguish topics)"
+      ],
+      "gates": [
+        "Timer ends (10 min)",
+        "All questions in the mixed set answered",
+        "Discrimination accuracy meets threshold (can correctly identify topic)"
+      ],
+      "supported_knobs": [
+        "stage",
+        "energy",
+        "operational_stage"
+      ]
+    },
+    {
+      "method_id": "M-RET-005",
+      "current_name": "Variable Retrieval",
+      "best_stage": "`review`",
+      "assigned_control_stage": "`RETRIEVE`",
+      "purpose": "Retrieve the same concept in 3 different formats: (1) free recall, (2) application question, (3) compare/contrast. Varied retrieval contexts build more flexible memory traces.",
+      "artifact_inputs": [
+        "Single concept or topic to retrieve",
+        "Three retrieval format prompts (free recall, application, compare/contrast)",
+        "Reference materials for verification (closed during retrieval)"
+      ],
+      "artifact_outputs": [
+        "Three retrieval outputs (free recall, application, compare/contrast)",
+        "Accuracy assessment for each format",
+        "Difficulty ranking of formats",
+        "Flexibility gap identification"
+      ],
+      "gates": [
+        "All three formats completed",
+        "Verification against source complete",
+        "Format difficulty pattern noted"
+      ],
+      "supported_knobs": [
+        "stage",
+        "energy",
+        "operational_stage"
+      ]
+    },
+    {
+      "method_id": "M-RET-006",
+      "current_name": "Adversarial Drill",
+      "best_stage": "`exam_prep`",
+      "assigned_control_stage": "`RETRIEVE`",
+      "purpose": "Run near-miss adversarial prompts that force distinction between confusable concepts under low support.",
+      "artifact_inputs": [
+        "Confusable pairs from Spine or ErrorLog",
+        "Question Bank Seed"
+      ],
+      "artifact_outputs": [
+        "Adversarial near-miss results",
+        "ErrorLog updates"
+      ],
+      "gates": [
+        "Near-miss set completed",
+        "All misses logged"
+      ],
+      "supported_knobs": [
+        "stage",
+        "energy",
+        "operational_stage"
+      ]
+    },
+    {
+      "method_id": "M-RET-007",
+      "current_name": "Timed Sprint Sets",
+      "best_stage": "`review`",
+      "assigned_control_stage": "`RETRIEVE`",
+      "purpose": "Execute timed retrieval sprints and record latency per item to expose speed bottlenecks.",
+      "artifact_inputs": [
+        "Question Bank Seed",
+        "Timer"
+      ],
+      "artifact_outputs": [
+        "Timed sprint result set",
+        "Latency log",
+        "ErrorLog updates"
+      ],
+      "gates": [
+        "Item-level latency captured",
+        "Misses and speed failures logged"
+      ],
+      "supported_knobs": [
+        "stage",
+        "energy",
+        "operational_stage"
+      ]
+    }
+  ],
+  "chains": [
+    {
+      "chain_id": "C-AD-001",
+      "method_sequence": [
+        "`M-PRE-003",
+        "M-PRE-006",
+        "M-ENC-003",
+        "M-RET-001",
+        "M-OVR-002`"
+      ]
+    },
+    {
+      "chain_id": "C-CI-001",
+      "method_sequence": [
+        "`M-PRE-007",
+        "M-INT-006",
+        "M-INT-004",
+        "M-RET-001",
+        "M-OVR-002`"
+      ]
+    },
+    {
+      "chain_id": "C-CR-001",
+      "method_sequence": [
+        "`M-PRE-003",
+        "M-PRE-006",
+        "M-INT-005",
+        "M-INT-004",
+        "M-REF-001",
+        "M-OVR-002`"
+      ]
+    },
+    {
+      "chain_id": "C-DA-001",
+      "method_sequence": [
+        "`M-PRE-007",
+        "M-ENC-003",
+        "M-RET-001",
+        "M-ENC-001",
+        "M-OVR-002`"
+      ]
+    },
+    {
+      "chain_id": "C-DP-001",
+      "method_sequence": [
+        "`M-PRE-007",
+        "M-ENC-005",
+        "M-ENC-008",
+        "M-INT-002",
+        "M-RET-005",
+        "M-REF-001",
+        "M-OVR-002`"
+      ]
+    },
+    {
+      "chain_id": "C-EP-001",
+      "method_sequence": [
+        "`M-PRE-002",
+        "M-RET-004",
+        "M-INT-004",
+        "M-REF-001",
+        "M-OVR-002`"
+      ]
+    },
+    {
+      "chain_id": "C-FE-001",
+      "method_sequence": [
+        "`M-PRE-001",
+        "M-PRE-008",
+        "M-PRE-009",
+        "M-CAL-001",
+        "M-CAL-002",
+        "M-CAL-003",
+        "M-ENC-001",
+        "M-REF-003",
+        "M-REF-004",
+        "M-RET-001",
+        "M-RET-006",
+        "M-RET-007",
+        "M-OVR-002",
+        "M-OVR-003`"
+      ]
+    },
+    {
+      "chain_id": "C-LE-001",
+      "method_sequence": [
+        "`M-PRE-001",
+        "M-PRE-004",
+        "M-RET-003",
+        "M-OVR-001`"
+      ]
+    },
+    {
+      "chain_id": "C-MR-001",
+      "method_sequence": [
+        "`M-RET-001",
+        "M-REF-001",
+        "M-REF-002",
+        "M-OVR-002`"
+      ]
+    },
+    {
+      "chain_id": "C-PI-001",
+      "method_sequence": [
+        "`M-PRE-007",
+        "M-ENC-007",
+        "M-PRE-005",
+        "M-RET-001",
+        "M-REF-001`"
+      ]
+    },
+    {
+      "chain_id": "C-QD-001",
+      "method_sequence": [
+        "`M-PRE-001",
+        "M-RET-002",
+        "M-OVR-001`"
+      ]
+    },
+    {
+      "chain_id": "C-QF-001",
+      "method_sequence": [
+        "`M-PRE-007",
+        "M-PRE-004",
+        "M-RET-001",
+        "M-OVR-001`"
+      ]
+    },
+    {
+      "chain_id": "C-RS-001",
+      "method_sequence": [
+        "`M-PRE-002",
+        "M-RET-002",
+        "M-INT-002",
+        "M-OVR-001`"
+      ]
+    },
+    {
+      "chain_id": "C-SW-001",
+      "method_sequence": [
+        "`M-PRE-005",
+        "M-ENC-009",
+        "M-ENC-010",
+        "M-RET-002",
+        "M-OVR-002`"
+      ]
+    },
+    {
+      "chain_id": "C-VE-001",
+      "method_sequence": [
+        "`M-PRE-001",
+        "M-ENC-009",
+        "M-ENC-010",
+        "M-RET-001",
+        "M-OVR-001`"
+      ]
+    }
+  ]
+}

@@ -9,6 +9,7 @@
     "build": "tsx build.ts",
     "start": "vite preview --port 3000",
     "check": "tsc",
+    "test": "vitest run",
     "db:push": "drizzle-kit push",
     "deploy": "powershell -ExecutionPolicy Bypass -File build-and-sync.ps1",
     "deploy:open": "powershell -ExecutionPolicy Bypass -File build-and-sync.ps1 -Reload"
@@ -98,6 +99,9 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.14",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express": "4.17.21",
     "@types/express-session": "^1.18.0",
@@ -107,15 +111,17 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/ws": "^8.5.13",
-    "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
+    "jsdom": "^28.1.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
-    "vite": "^7.1.9"
+    "vite": "^7.1.9",
+    "vitest": "^4.0.18"
   },
   "optionalDependencies": {
     "@esbuild/linux-x64": "^0.27.3",

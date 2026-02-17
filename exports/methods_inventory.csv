@@ -1,4 +1,7 @@
 id,name,category,default_duration_min,energy_cost,has_steps,has_gating_rules,has_failure_modes,has_stop_criteria,has_outputs_or_artifacts,has_facilitation_prompt,outputs_summary,file_path
+M-CAL-001,Micro Precheck,prepare,4,medium,Y,MISSING,MISSING,Y,Y,MISSING,CalibrateResults.csv; Item hit/miss baseline,sop\library\methods\M-CAL-001.yaml
+M-CAL-002,Confidence Tagging,prepare,3,low,Y,MISSING,MISSING,Y,Y,MISSING,Confidence-tagged calibrate set; High-confidence miss list,sop\library\methods\M-CAL-002.yaml
+M-CAL-003,Priority Set,prepare,3,low,Y,MISSING,MISSING,Y,Y,MISSING,PrioritySet (top 3 weaknesses); Weakness to method mapping seed,sop\library\methods\M-CAL-003.yaml
 M-ENC-001,KWIK Hook,encode,3,medium,Y,MISSING,Y,Y,Y,MISSING,KWIK hook (sound-function-image triplet); Anki card draft (optional); Session log entry,sop\library\methods\M-ENC-001.yaml
 M-ENC-002,Seed-Lock Generation,encode,3,medium,Y,MISSING,Y,Y,Y,MISSING,Learner-generated Seed (primary hook attempt); Final locked hook; Generation success flag (self vs AI-assisted),sop\library\methods\M-ENC-002.yaml
 M-ENC-003,Draw-Label,encode,10,high,Y,MISSING,Y,Y,Y,MISSING,Completed labeled diagram; Gap list (what was missing); Accuracy percentage,sop\library\methods\M-ENC-003.yaml
@@ -20,7 +23,8 @@ M-INT-004,Side-by-Side Comparison,interrogate,7,medium,Y,MISSING,Y,Y,Y,MISSING,S
 M-INT-005,Case Walkthrough,interrogate,10,high,Y,MISSING,Y,Y,Y,MISSING,Case walkthrough narrative; Differential diagnosis list; Assessment plan; Intervention plan; Reasoning verification,sop\library\methods\M-INT-005.yaml
 M-INT-006,Illness Script Builder,interrogate,10,high,Y,MISSING,Y,Y,Y,MISSING,Complete illness script (3 parts); Causal chain diagram; Comparison to textbook; Discriminating features,sop\library\methods\M-INT-006.yaml
 M-OVR-001,Exit Ticket,overlearn,3,low,Y,MISSING,Y,Y,Y,MISSING,Exit ticket (3-part response); Key takeaways list; Muddy points / weak anchors; Next action commitment; Questions for...,sop\library\methods\M-OVR-001.yaml
-M-OVR-002,Anki Card Draft,overlearn,5,low,Y,MISSING,Y,Y,Y,MISSING,3-5 drafted Anki cards; Cards tagged by topic and source; Cards staged in Brain for Anki sync; Card count logged to s...,sop\library\methods\M-OVR-002.yaml
+M-OVR-002,Anki Card Draft,overlearn,5,low,Y,Y,Y,Y,Y,MISSING,3-5 drafted Anki cards; Cards tagged by topic and source; Cards staged in Brain for Anki sync; Card count logged to s...,sop\library\methods\M-OVR-002.yaml
+M-OVR-003,Drill Sheet Builder,overlearn,10,medium,Y,MISSING,MISSING,Y,Y,MISSING,DrillSheet; CrossSessionValidation checklist,sop\library\methods\M-OVR-003.yaml
 M-PRE-001,Brain Dump,prepare,3,low,Y,MISSING,Y,Y,Y,MISSING,Brain dump notes (raw text); Prior knowledge baseline; Identified knowledge gaps,sop\library\methods\M-PRE-001.yaml
 M-PRE-002,Prediction Questions,prepare,3,low,Y,MISSING,Y,Y,Y,MISSING,List of prediction questions (3-5); Curiosity ranking; Forward hooks for active reading,sop\library\methods\M-PRE-002.yaml
 M-PRE-003,Prior Knowledge Scan,prepare,3,low,Y,MISSING,Y,Y,Y,MISSING,Connection map (topic + related concepts); Primary anchoring schema identified; Prerequisite gap list,sop\library\methods\M-PRE-003.yaml
@@ -28,10 +32,16 @@ M-PRE-004,AI Skeleton Review,prepare,5,low,Y,MISSING,Y,Y,Y,MISSING,Topic skeleto
 M-PRE-005,Concept Cluster,prepare,5,medium,Y,MISSING,Y,Y,Y,MISSING,Cluster diagram (3-5 labeled groups); Inter-cluster relationships mapped; Visual organization of topic,sop\library\methods\M-PRE-005.yaml
 M-PRE-006,Three-Layer Chunk,prepare,5,medium,Y,MISSING,Y,Y,Y,MISSING,Three-layer breakdown document; Study priority assignment; Layered mental model,sop\library\methods\M-PRE-006.yaml
 M-PRE-007,Pre-Test,prepare,5,low,Y,MISSING,Y,Y,Y,MISSING,Pre-test answers (with confidence ratings); Encoding priming for correct answers; Calibration baseline,sop\library\methods\M-PRE-007.yaml
+M-PRE-008,Structural Extraction,prepare,5,medium,Y,MISSING,MISSING,Y,Y,MISSING,Spine (<=12 nodes); Objective linkage map,sop\library\methods\M-PRE-008.yaml
+M-PRE-009,Emphasis Audit,prepare,4,low,Y,MISSING,MISSING,Y,Y,MISSING,GoalTargets; Unknowns; Predictions,sop\library\methods\M-PRE-009.yaml
 M-REF-001,Error Autopsy,refine,5,medium,Y,MISSING,Y,Y,Y,MISSING,Completed error autopsy table; Root cause analysis for each error; Discrimination cues created; Anki card candidates ...,sop\library\methods\M-REF-001.yaml
 M-REF-002,Mastery Loop,refine,10,medium,Y,MISSING,Y,Y,Y,MISSING,Mastery achieved on all targeted items; Loop count per item (difficulty metric); Weak anchor list (items needing 3+ l...,sop\library\methods\M-REF-002.yaml
+M-REF-003,One-Page Anchor,interrogate,8,medium,Y,MISSING,MISSING,Y,Y,MISSING,One-Page Anchor; Trap list and near-miss set,sop\library\methods\M-REF-003.yaml
+M-REF-004,Question Bank Seed,interrogate,8,medium,Y,MISSING,MISSING,Y,Y,MISSING,"Question Bank Seed (10-20 items, mode-tagged); Coverage check draft",sop\library\methods\M-REF-004.yaml
 M-RET-001,Free Recall Blurt,retrieve,5,medium,Y,MISSING,Y,Y,Y,MISSING,Free recall dump (raw text with gaps marked); Accuracy assessment (what was correct vs. incorrect); Gap list (what wa...,sop\library\methods\M-RET-001.yaml
 M-RET-002,Sprint Quiz,retrieve,5,medium,Y,MISSING,Y,Y,Y,MISSING,RSR percentage (correct/total); List of missed questions; Weak anchor flags (uncertain but correct); Topics needing r...,sop\library\methods\M-RET-002.yaml
 M-RET-003,Fill-in-Blank,retrieve,5,low,Y,MISSING,Y,Y,Y,MISSING,Completed cloze exercise; Accuracy count (correct/total blanks); Miss list for targeted review; Second-pass improveme...,sop\library\methods\M-RET-003.yaml
 M-RET-004,Mixed Practice,retrieve,10,high,Y,MISSING,Y,Y,Y,MISSING,Overall accuracy across all topics; Per-topic accuracy breakdown; Confusion matrix (which topics got mixed up); Discr...,sop\library\methods\M-RET-004.yaml
 M-RET-005,Variable Retrieval,retrieve,10,medium,Y,MISSING,Y,Y,Y,MISSING,"Three retrieval outputs (free recall, application, compare/contrast); Accuracy assessment for each format; Difficulty...",sop\library\methods\M-RET-005.yaml
+M-RET-006,Adversarial Drill,retrieve,8,high,Y,MISSING,MISSING,Y,Y,MISSING,Adversarial near-miss results; ErrorLog updates,sop\library\methods\M-RET-006.yaml
+M-RET-007,Timed Sprint Sets,retrieve,8,high,Y,MISSING,MISSING,Y,Y,MISSING,Timed sprint result set; Latency log; ErrorLog updates,sop\library\methods\M-RET-007.yaml

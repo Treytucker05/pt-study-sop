@@ -122,3 +122,7 @@ For the theoretical foundation and PPFW paradigm stack underlying this system, s
 ## Source of Truth
 
 Canonical content lives in `sop/library/`. Runtime bundles in `sop/runtime/` are generated artifacts. If any file conflicts with canonical source, canonical wins. Do not edit runtime files directly.
+
+Method and chain YAML in `sop/library/methods/` and `sop/library/chains/` are the source of truth for inventory exports. Files in `exports/` are generated artifacts. Before any research handoff, run:
+
+`python scripts/export_library_inventories.py`

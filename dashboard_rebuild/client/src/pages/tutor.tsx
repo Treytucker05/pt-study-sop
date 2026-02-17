@@ -629,6 +629,7 @@ export default function Tutor() {
               engine={undefined}
               onArtifactCreated={handleArtifactCreated}
               focusMode={focusMode}
+              onTurnComplete={() => setTurnCount((prev) => prev + 1)}
             />
 
             <div className="absolute top-3 right-3 z-40 flex items-center gap-2">

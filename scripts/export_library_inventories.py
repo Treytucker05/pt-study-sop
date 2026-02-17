@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -80,6 +81,7 @@ def outputs_summary(outputs, has_key: bool) -> str:
 
 method_files = sorted(METHODS_DIR.glob("*.yaml"))
 methods = []
+method_catalog = []
 method_ids = set()
 missing_facilitation_prompt = 0
 
@@ -118,6 +120,37 @@ for path in method_files:
         "file_path": rel_path(path),
     }
     methods.append(row)
+    method_catalog.append(
+        {
+            "id": method_id,
+            "name": data.get("name", ""),
+            "category": data.get("category", ""),
+            "stage": data.get("stage"),
+            "best_stage": data.get("best_stage", "MISSING"),
+            "status": data.get("status", "MISSING"),
+            "default_duration_min": data.get("default_duration_min", "MISSING"),
+            "energy_cost": data.get("energy_cost", "MISSING"),
+            "description": data.get("description", ""),
+            "inputs": data.get("inputs", []),
+            "outputs": data.get("outputs", []),
+            "gating_rules": data.get("gating_rules")
+            if "gating_rules" in data
+            else data.get("gates")
+            if "gates" in data
+            else data.get("gating")
+            if "gating" in data
+            else None,
+            "stop_criteria": data.get("stop_criteria", []),
+            "failure_modes": data.get("failure_modes", []),
+            "knobs": data.get("knobs"),
+            "facilitation_prompt": data.get("facilitation_prompt"),
+            "mechanisms": data.get("mechanisms", []),
+            "logging_fields": data.get("logging_fields", []),
+            "evidence_citation": (data.get("evidence") or {}).get("citation", "") if isinstance(data.get("evidence"), dict) else "",
+            "evidence_finding": (data.get("evidence") or {}).get("finding", "") if isinstance(data.get("evidence"), dict) else "",
+            "evidence_raw": data.get("evidence_raw", ""),
+        }
+    )
 
 methods_csv_path = EXPORTS_DIR / "methods_inventory.csv"
 methods_md_path = EXPORTS_DIR / "methods_inventory.md"
@@ -159,6 +192,7 @@ methods_md_path.write_text("\n".join(md_lines) + "\n", encoding="utf-8")
 
 chain_files = sorted(CHAINS_DIR.glob("*.yaml"))
 chains = []
+chain_catalog = []
 chain_id_map = {}
 unknown_ids = []
 
@@ -174,6 +208,31 @@ for path in chain_files:
         "file_path": rel_path(path),
     }
     chains.append(chain_entry)
+    chain_catalog.append(
+        {
+            "id": chain_id,
+            "name": chain_name,
+            "description": data.get("description", ""),
+            "blocks": blocks,
+            "context_tags": data.get("context_tags", {}),
+            "default_knobs": data.get("default_knobs"),
+            "gates": data.get("gates")
+            if "gates" in data
+            else data.get("gate")
+            if "gate" in data
+            else data.get("stage_gates")
+            if "stage_gates" in data
+            else None,
+            "failure_actions": data.get("failure_actions")
+            if "failure_actions" in data
+            else data.get("on_failure")
+            if "on_failure" in data
+            else data.get("fallback_actions")
+            if "fallback_actions" in data
+            else None,
+            "status": data.get("status", "MISSING"),
+        }
+    )
 
     if chain_id:
         chain_id_map.setdefault(chain_id, []).append(path)
@@ -311,6 +370,534 @@ summary = {
 
 summary_path = EXPORTS_DIR / "inventory_summary.json"
 summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+
+
+def _flatten(values) -> str:
+    if values is None:
+        return "MISSING"
+    if isinstance(values, list):
+        if not values:
+            return "MISSING"
+        return "; ".join(str(v) for v in values)
+    if isinstance(values, dict):
+        if not values:
+            return "MISSING"
+        return "; ".join(f"{k}={v}" for k, v in values.items())
+    text = str(values).strip()
+    return text if text else "MISSING"
+
+
+# ---------------------------------------------------------------------------
+# research_packet.md (self-contained handoff document)
+# ---------------------------------------------------------------------------
+knob_registry_path = ROOT / "sop" / "library" / "meta" / "knob_registry.yaml"
+session_log_template_path = ROOT / "sop" / "library" / "templates" / "session_log_template.yaml"
+error_log_template_path = ROOT / "sop" / "library" / "templates" / "ErrorLog.csv"
+control_plane_path = ROOT / "sop" / "library" / "17-control-plane.md"
+templates_dir = ROOT / "sop" / "library" / "templates"
+
+knob_registry = {}
+if knob_registry_path.exists():
+    data, _ = read_yaml(knob_registry_path)
+    if isinstance(data, dict):
+        knob_registry = data.get("knobs") or {}
+
+session_fields = []
+if session_log_template_path.exists():
+    data, _ = read_yaml(session_log_template_path)
+    if isinstance(data, dict):
+        raw_fields = data.get("session_fields") or []
+        if isinstance(raw_fields, list):
+            session_fields = [f for f in raw_fields if isinstance(f, dict)]
+
+error_overrides_map = {}
+if control_plane_path.exists():
+    control_text = control_plane_path.read_text(encoding="utf-8")
+    for line in control_text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cols = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cols) < 2:
+            continue
+        error_type = cols[0]
+        if error_type in {"Error Type", "---"}:
+            continue
+        method_ids = re.findall(r"`(M-[A-Z]{3}-\d{3})`", stripped)
+        if not method_ids:
+            continue
+        for mid in method_ids:
+            error_overrides_map.setdefault(mid, []).append(error_type)
+
+error_log_schema = []
+if error_log_template_path.exists():
+    first_line = error_log_template_path.read_text(encoding="utf-8").splitlines()[0]
+    error_log_schema = [h.strip() for h in first_line.split(",") if h.strip()]
+
+
+def _method_stage_from_id(method_id: str) -> str:
+    if method_id.startswith("M-PRE"):
+        return "PRIME"
+    if method_id.startswith("M-CAL"):
+        return "CALIBRATE"
+    if method_id.startswith("M-ENC") or method_id.startswith("M-INT"):
+        return "ENCODE"
+    if method_id.startswith("M-REF"):
+        return "REFERENCE"
+    if method_id.startswith("M-RET"):
+        return "RETRIEVE"
+    if method_id.startswith("M-OVR"):
+        return "OVERLEARN"
+    return "MISSING"
+
+
+def _chain_category(chain_item: dict) -> str:
+    stage = ""
+    context_tags = chain_item.get("context_tags")
+    if isinstance(context_tags, dict):
+        stage = str(context_tags.get("stage") or "").strip().lower()
+    if stage == "first_exposure":
+        return "First Exposure"
+    if stage == "consolidation":
+        return "Consolidation"
+    if stage == "exam_prep":
+        return "Exam Ramp"
+    if stage == "review":
+        return "Maintenance"
+
+    name = str(chain_item.get("name") or "").lower()
+    if "exam" in name or "prep" in name:
+        return "Exam Ramp"
+    if "mastery" in name or "consolidation" in name:
+        return "Consolidation"
+    if "first exposure" in name or "intake" in name:
+        return "First Exposure"
+    return "Maintenance"
+
+
+def _extract_doi(text: str) -> str:
+    if not text:
+        return "MISSING"
+    match = re.search(r"(10\.\d{4,9}/[-._;()/:A-Za-z0-9]+)", text)
+    if match:
+        return match.group(1)
+    return "MISSING"
+
+
+def _evidence_strength(citation: str, evidence_raw: str) -> str:
+    merged = f"{citation} {evidence_raw}".strip().lower()
+    if not merged:
+        return "low"
+    high_keywords = ["meta", "systematic", "d=", "effect size", "network meta"]
+    if any(k in merged for k in high_keywords):
+        return "high"
+    return "medium"
+
+
+def _first_nonempty_line(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped.lstrip("#").strip()
+    return "MISSING"
+
+
+def _most_common(values: list[str]) -> str:
+    if not values:
+        return "MISSING"
+    counts = {}
+    for v in values:
+        counts[v] = counts.get(v, 0) + 1
+    return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+
+
+method_by_id = {m.get("id"): m for m in method_catalog}
+reference_producer_ids = set()
+for mid, m in method_by_id.items():
+    outputs = m.get("outputs")
+    if isinstance(outputs, list):
+        out_join = " ".join(str(o) for o in outputs).lower()
+        if "one-page anchor" in out_join or "question bank seed" in out_join:
+            reference_producer_ids.add(mid)
+
+chain_dependency_risks = []
+for chain_item in sorted(chain_catalog, key=lambda x: x.get("id", "")):
+    blocks = chain_item.get("blocks") or []
+    if not isinstance(blocks, list):
+        continue
+    first_retrieve = None
+    first_reference = None
+    for idx, block_id in enumerate(blocks):
+        stage = _method_stage_from_id(str(block_id))
+        if stage == "RETRIEVE" and first_retrieve is None:
+            first_retrieve = idx
+        if block_id in reference_producer_ids and first_reference is None:
+            first_reference = idx
+    if first_retrieve is None:
+        continue
+    if first_reference is None or first_retrieve < first_reference:
+        chain_dependency_risks.append(
+            {
+                "chain_id": chain_item.get("id", "UNKNOWN"),
+                "reason": "RETRIEVE appears before REFERENCE artifact producer",
+            }
+        )
+
+template_stage_hints = {
+    "Spine.md": "PRIME",
+    "Unknowns.md": "PRIME",
+    "Predictions.md": "PRIME",
+    "GoalTargets.md": "PRIME",
+    "CalibrateItems.md": "CALIBRATE",
+    "CalibrateResults.csv": "CALIBRATE",
+    "PrioritySet.md": "CALIBRATE",
+    "OnePageAnchor.md": "REFERENCE",
+    "QuestionBankSeed.md": "REFERENCE",
+    "CoverageCheck.md": "REFERENCE",
+    "ErrorLog.csv": "RETRIEVE",
+    "DrillSheet.md": "OVERLEARN",
+    "CrossSessionValidation.md": "OVERLEARN",
+    "session_log_template.yaml": "OBSERVABILITY",
+    "topic.yaml": "CONTROL PLANE",
+}
+
+template_rows = []
+for path in sorted(templates_dir.glob("*")):
+    if not path.is_file():
+        continue
+    summary_line = _first_nonempty_line(path)
+    template_rows.append(
+        {
+            "artifact": path.name,
+            "type": path.suffix.lstrip("."),
+            "stage_hint": template_stage_hints.get(path.name, "MISSING"),
+            "summary": summary_line,
+        }
+    )
+
+research_packet_lines = [
+    "# Research Packet",
+    "",
+    "This packet is generated from canonical YAML and markdown artifacts in `sop/library/`.",
+    "It is intended for external learning-science review without repository access.",
+    "",
+    "## A) Executive Summary",
+    "",
+    "The system implements a domain-agnostic Intelligent Tutoring System (ITS) control-plane.",
+    "The control-plane separates policy from content and enforces a fixed operational sequence:",
+    "",
+    "`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`",
+    "",
+    "Key properties:",
+    "- deterministic stage gates",
+    "- explicit artifact contracts (e.g., OnePageAnchor, QuestionBankSeed, ErrorLog)",
+    "- error-driven adaptation mapping (ErrorType -> mandatory method overrides)",
+    "- chain-level knob routing (stage, energy, class_type, time_available, pass)",
+    "",
+    "## B) Canonical Artifacts and Templates Overview",
+    "",
+    "| canonical component | purpose | interpretation without repo |",
+    "| --- | --- | --- |",
+    "| Method YAML catalog | Defines atomic tutoring methods and metadata | Each method row below is executable policy + constraints |",
+    "| Chain YAML catalog | Defines ordered method compositions | Chain table below encodes default sequencing behavior |",
+    "| Control-plane spec | Defines stage gates + adaptation logic | Gates and ErrorLog semantics are summarized in this packet |",
+    "| Template bundle | Defines mandatory artifacts and CSV schemas | Templates table below is sufficient for offline review |",
+    "",
+    "### Template Inventory",
+    "",
+    "| artifact template | type | stage hint | summary |",
+    "| --- | --- | --- | --- |",
+]
+for row in template_rows:
+    research_packet_lines.append(
+        "| {artifact} | {type} | {stage_hint} | {summary} |".format(
+            artifact=str(row["artifact"]).replace("|", "\\|"),
+            type=str(row["type"]).replace("|", "\\|"),
+            stage_hint=str(row["stage_hint"]).replace("|", "\\|"),
+            summary=str(row["summary"]).replace("|", "\\|"),
+        )
+    )
+
+research_packet_lines.extend(
+    [
+        "",
+        "## C) Full Method Catalog",
+        "",
+        "| method_id | current name | stage | purpose | inputs -> outputs | gates | error types remediated | knobs supported (acute variables) | facilitation prompt |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+)
+for item in sorted(method_catalog, key=lambda x: x.get("id", "")):
+    method_id = str(item.get("id", ""))
+    stage = str(item.get("stage") or _method_stage_from_id(method_id))
+    purpose = str(item.get("description") or "MISSING")
+    inputs_outputs = f"{_flatten(item.get('inputs'))} -> {_flatten(item.get('outputs'))}"
+
+    gates_value = item.get("gating_rules")
+    if gates_value in (None, [], {}, ""):
+        gates_value = item.get("stop_criteria")
+    gates = _flatten(gates_value)
+
+    remediated = []
+    for et in error_overrides_map.get(method_id, []):
+        if et not in remediated:
+            remediated.append(et)
+    failure_modes = item.get("failure_modes")
+    if isinstance(failure_modes, list):
+        for fm in failure_modes:
+            if isinstance(fm, dict) and fm.get("mode"):
+                remediated.append(f"failure_mode:{fm.get('mode')}")
+    remediated = sorted(set(remediated))
+    remediated_str = _flatten(remediated)
+
+    method_knobs = item.get("knobs")
+    if isinstance(method_knobs, dict) and method_knobs:
+        knobs_supported = f"operational_stage={stage}; {_flatten(method_knobs)}"
+    else:
+        knobs_supported = f"operational_stage={stage}; method-specific knobs=MISSING"
+
+    facilitation_prompt = item.get("facilitation_prompt")
+    if facilitation_prompt is None or str(facilitation_prompt).strip() == "":
+        facilitation_prompt = "PLACEHOLDER: generated by seed pipeline from YAML method steps."
+
+    research_packet_lines.append(
+        "| {method_id} | {name} | {stage} | {purpose} | {io} | {gates} | {remediated} | {knobs} | {facilitation} |".format(
+            method_id=method_id.replace("|", "\\|"),
+            name=str(item.get("name", "")).replace("|", "\\|"),
+            stage=stage.replace("|", "\\|"),
+            purpose=purpose.replace("|", "\\|"),
+            io=inputs_outputs.replace("|", "\\|"),
+            gates=gates.replace("|", "\\|"),
+            remediated=remediated_str.replace("|", "\\|"),
+            knobs=knobs_supported.replace("|", "\\|"),
+            facilitation=str(facilitation_prompt).replace("|", "\\|"),
+        )
+    )
+
+research_packet_lines.extend(
+    [
+        "",
+        "## D) Full Chain Catalog",
+        "",
+        "| chain_id | category | method sequence | default knobs | gates and failure actions |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+)
+for item in sorted(chain_catalog, key=lambda x: x.get("id", "")):
+    chain_id = str(item.get("id", ""))
+    category = _chain_category(item)
+    method_sequence = " -> ".join(str(b) for b in (item.get("blocks") or []))
+
+    if item.get("default_knobs"):
+        default_knobs = _flatten(item.get("default_knobs"))
+    else:
+        default_knobs = _flatten(item.get("context_tags"))
+
+    gates_value = _flatten(item.get("gates"))
+    failure_value = _flatten(item.get("failure_actions"))
+    if gates_value == "MISSING":
+        gates_value = "Global stage gates apply: PRIME/CALIBRATE/ENCODE/REFERENCE/RETRIEVE/OVERLEARN."
+    if failure_value == "MISSING":
+        failure_value = "Global Error Taxonomy adaptation mapping applies."
+    gates_and_failure = f"Gates={gates_value}; FailureActions={failure_value}"
+
+    research_packet_lines.append(
+        "| {chain_id} | {category} | {sequence} | {knobs} | {gf} |".format(
+            chain_id=chain_id.replace("|", "\\|"),
+            category=category.replace("|", "\\|"),
+            sequence=method_sequence.replace("|", "\\|"),
+            knobs=default_knobs.replace("|", "\\|"),
+            gf=gates_and_failure.replace("|", "\\|"),
+        )
+    )
+
+research_packet_lines.extend(
+    [
+        "",
+        "## E) Knob Dictionary",
+        "",
+        "| knob | allowed values | default | semantics |",
+        "| --- | --- | --- | --- |",
+    ]
+)
+for knob_name in sorted(knob_registry.keys()):
+    spec = knob_registry.get(knob_name) or {}
+    knob_values_from_chains = []
+    for chain in chain_catalog:
+        ctx = chain.get("context_tags")
+        if isinstance(ctx, dict) and knob_name in ctx:
+            knob_values_from_chains.append(str(ctx.get(knob_name)))
+        defaults = chain.get("default_knobs")
+        if isinstance(defaults, dict) and knob_name in defaults:
+            knob_values_from_chains.append(str(defaults.get(knob_name)))
+    derived_default = spec.get("default")
+    if derived_default is None:
+        derived_default = _most_common(knob_values_from_chains)
+
+    allowed = spec.get("allowed_values")
+    if allowed is None:
+        if "min" in spec or "max" in spec:
+            allowed = f"range: {spec.get('min', 'MISSING')}..{spec.get('max', 'MISSING')}"
+        else:
+            allowed = spec.get("type", "MISSING")
+
+    research_packet_lines.append(
+        "| {knob} | {allowed} | {default} | {semantics} |".format(
+            knob=str(knob_name).replace("|", "\\|"),
+            allowed=_flatten(allowed).replace("|", "\\|"),
+            default=str(derived_default).replace("|", "\\|"),
+            semantics=str(spec.get("description", "MISSING")).replace("|", "\\|"),
+        )
+    )
+
+error_type_enum = ["Recall", "Confusion", "Rule", "Representation", "Procedure", "Computation", "Speed"]
+field_semantics = {
+    "topic_id": "Topic identifier for the assessed scope.",
+    "item_id": "Question or item identifier from assessment artifacts.",
+    "error_type": "Error taxonomy enum (Recall/Confusion/Rule/Representation/Procedure/Computation/Speed).",
+    "stage_detected": "Control-plane stage where the miss was detected.",
+    "confidence": "Learner confidence tag at attempt time (H/M/L).",
+    "time_to_answer": "Observed response latency in seconds.",
+    "fix_applied": "Mandatory override or remediation action logged after miss.",
+}
+
+research_packet_lines.extend(
+    [
+        "",
+        "## F) Telemetry Specification",
+        "",
+        "### ErrorLog.csv Schema",
+        "",
+        "| field | type | allowed values | semantics |",
+        "| --- | --- | --- | --- |",
+    ]
+)
+for field_name in error_log_schema:
+    if field_name == "time_to_answer":
+        field_type = "number"
+        allowed = ">= 0"
+    elif field_name == "confidence":
+        field_type = "enum"
+        allowed = "H; M; L"
+    elif field_name == "error_type":
+        field_type = "enum"
+        allowed = "; ".join(error_type_enum)
+    else:
+        field_type = "string"
+        allowed = "non-empty"
+    research_packet_lines.append(
+        "| {field} | {type} | {allowed} | {semantics} |".format(
+            field=field_name.replace("|", "\\|"),
+            type=field_type.replace("|", "\\|"),
+            allowed=allowed.replace("|", "\\|"),
+            semantics=str(field_semantics.get(field_name, "MISSING")).replace("|", "\\|"),
+        )
+    )
+
+research_packet_lines.extend(
+    [
+        "",
+        "### Metric Formulas",
+        "",
+        "| metric | formula | notes |",
+        "| --- | --- | --- |",
+        "| low-support accuracy | `1 - (low_support_error_count / low_support_attempt_count)` | Attempt count comes from mixed low-support retrieval items; ErrorLog supplies error_count. |",
+        "| adversarial accuracy | `1 - (adversarial_error_count / adversarial_attempt_count)` | Adversarial items are mode-tagged in retrieval artifacts (QuestionBankSeed/CoverageCheck). |",
+        "| median latency | `median(time_to_answer)` | Computed over retrieve-stage rows in ErrorLog. |",
+        "| high-confidence wrong rate | `count(confidence='H') / count(confidence in {'H','M','L'})` | Uses ErrorLog misses; reflects confident errors among logged misses. |",
+    ]
+)
+
+research_packet_lines.extend(
+    [
+        "",
+        "## G) Evidence Ledger",
+        "",
+        "| method_id | mechanism | citation(s) | DOI | evidence strength |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+)
+methods_without_doi = []
+methods_without_evidence = []
+for item in sorted(method_catalog, key=lambda x: x.get("id", "")):
+    method_id = str(item.get("id", ""))
+    mechanisms = _flatten(item.get("mechanisms"))
+    citation = str(item.get("evidence_citation", "") or "")
+    evidence_raw = str(item.get("evidence_raw", "") or "")
+    citation_joined = citation if citation else evidence_raw
+    doi = _extract_doi(f"{citation_joined} {evidence_raw}")
+    strength = _evidence_strength(citation_joined, evidence_raw)
+    if doi == "MISSING":
+        methods_without_doi.append(method_id)
+    if not citation_joined.strip():
+        methods_without_evidence.append(method_id)
+
+    research_packet_lines.append(
+        "| {method_id} | {mechanism} | {citation} | {doi} | {strength} |".format(
+            method_id=method_id.replace("|", "\\|"),
+            mechanism=mechanisms.replace("|", "\\|"),
+            citation=(citation_joined or "MISSING").replace("|", "\\|"),
+            doi=doi.replace("|", "\\|"),
+            strength=strength.replace("|", "\\|"),
+        )
+    )
+
+missing_stage_field = [
+    m.get("id") for m in method_catalog if m.get("stage") in (None, "", "MISSING")
+]
+missing_method_knobs = [
+    m.get("id") for m in method_catalog if not isinstance(m.get("knobs"), dict) or not m.get("knobs")
+]
+missing_method_gates = []
+for m in method_catalog:
+    gates_val = m.get("gating_rules")
+    if gates_val in (None, [], {}, "") and (m.get("stop_criteria") in (None, [], {}, "")):
+        missing_method_gates.append(m.get("id"))
+missing_chain_gates = [c.get("id") for c in chain_catalog if c.get("gates") in (None, [], {}, "")]
+missing_chain_failure = [c.get("id") for c in chain_catalog if c.get("failure_actions") in (None, [], {}, "")]
+unmapped_error_methods = [
+    m.get("id")
+    for m in method_catalog
+    if m.get("id") not in error_overrides_map
+]
+
+research_packet_lines.extend(
+    [
+        "",
+        "## H) Open Gaps List",
+        "",
+        "### Missing metadata fields",
+        f"- methods missing explicit `stage`: {len(missing_stage_field)} (examples: {', '.join(str(x) for x in missing_stage_field[:8]) or 'none'})",
+        f"- methods missing method-specific `knobs`: {len(missing_method_knobs)}",
+        f"- methods with no explicit gates (`gating_rules` or `stop_criteria`): {len(missing_method_gates)}",
+        f"- chains missing chain-specific `gates`: {len(missing_chain_gates)}",
+        f"- chains missing chain-specific `failure_actions`: {len(missing_chain_failure)}",
+        "",
+        "### Unclear gates",
+        "- Most chains rely on global stage gates from the control-plane rather than chain-local gate definitions.",
+        "- Most methods use stop criteria as implicit gates; explicit gating_rules are sparse.",
+        "",
+        "### Chain dependency risks",
+        f"- chains where RETRIEVE appears before REFERENCE artifact producer: {len(chain_dependency_risks)}",
+    ]
+)
+for risk in chain_dependency_risks[:20]:
+    research_packet_lines.append(f"- {risk['chain_id']}: {risk['reason']}")
+
+research_packet_lines.extend(
+    [
+        "",
+        "### Research uncertainties",
+        f"- methods with missing DOI in evidence fields: {len(methods_without_doi)}",
+        f"- methods with no parseable evidence citation text: {len(methods_without_evidence)}",
+        f"- methods not directly mapped in ErrorType -> mandatory override table: {len(unmapped_error_methods)}",
+        "- Evidence strength labels are heuristic from canonical citation text until a DOI-linked evidence registry is completed.",
+    ]
+)
+
+research_packet_path = EXPORTS_DIR / "research_packet.md"
+research_packet_path.write_text("\n".join(research_packet_lines) + "\n", encoding="utf-8")
 
 print("Export complete")
 print(json.dumps(summary, indent=2))

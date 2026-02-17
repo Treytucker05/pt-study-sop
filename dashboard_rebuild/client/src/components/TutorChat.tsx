@@ -34,6 +34,32 @@ interface TutorChatProps {
   engine?: string;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
   focusMode?: boolean;
+  onTurnComplete?: () => void;
+}
+
+type ArtifactType = "note" | "card" | "map";
+
+function parseArtifactCommand(message: string): { type: ArtifactType | null; title: string } {
+  const trimmed = message.trim();
+  if (/^\/(note|save)\b/i.test(trimmed)) {
+    return {
+      type: "note",
+      title: trimmed.replace(/^\/(note|save)\s*/i, "").trim(),
+    };
+  }
+  if (/^\/(card|flashcard)\b/i.test(trimmed)) {
+    return {
+      type: "card",
+      title: trimmed.replace(/^\/(card|flashcard)\s*/i, "").trim(),
+    };
+  }
+  if (/^\/(map|diagram)\b/i.test(trimmed)) {
+    return {
+      type: "map",
+      title: trimmed.replace(/^\/(map|diagram)\s*/i, "").trim(),
+    };
+  }
+  return { type: null, title: "" };
 }
 
 export function TutorChat({
@@ -41,12 +67,14 @@ export function TutorChat({
   engine,
   onArtifactCreated,
   focusMode = false,
+  onTurnComplete,
 }: TutorChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -60,23 +88,28 @@ export function TutorChat({
     inputRef.current?.focus();
   }, [sessionId]);
 
+  // Reset transient chat state when session context changes.
+  useEffect(() => {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
+    setMessages([]);
+    setInput("");
+    setIsStreaming(false);
+  }, [sessionId]);
+
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionId || isStreaming) return;
 
     const userMessage = input.trim();
+    const command = parseArtifactCommand(userMessage);
     setInput("");
+    const abortController = new AbortController();
+    streamAbortRef.current = abortController;
 
-    // Check for slash commands
-    const isNoteCmd = /^\/(note|save)\b/i.test(userMessage);
-    const isCardCmd = /^\/(card|flashcard)\b/i.test(userMessage);
-    const isMapCmd = /^\/(map|diagram)\b/i.test(userMessage);
-
-    // Add user message
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-
-    // Add empty assistant message for streaming
+    // Add user message and placeholder assistant message in one atomic update.
     setMessages((prev) => [
       ...prev,
+      { role: "user", content: userMessage },
       { role: "assistant", content: "", isStreaming: true },
     ]);
     setIsStreaming(true);
@@ -86,6 +119,7 @@ export function TutorChat({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMessage, ...(engine ? { engine } : {}) }),
+        signal: abortController.signal,
       });
 
       if (!response.ok) {
@@ -108,26 +142,39 @@ export function TutorChat({
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      if (!reader) throw new Error("No response body");
+      if (!reader) throw new Error("No response body from tutor stream");
 
       let buffer = "";
       let fullText = "";
       let citations: TutorCitation[] = [];
       let modelId: string | undefined;
       let serverArtifactCmd: { type?: string; raw?: string } | null = null;
+      let streamErrored = false;
+      let doneSignal = false;
 
-      while (true) {
+      while (!doneSignal) {
         const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+        if (done) {
+          buffer += decoder.decode();
+          doneSignal = true;
+        } else {
+          buffer += decoder.decode(value, { stream: true });
+        }
 
         const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
+        if (!doneSignal) {
+          buffer = lines.pop() ?? "";
+        } else {
+          buffer = "";
+        }
 
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6);
-          if (data === "[DONE]") break;
+          if (data === "[DONE]") {
+            doneSignal = true;
+            break;
+          }
 
           try {
             const parsed: TutorSSEChunk = JSON.parse(data);
@@ -135,21 +182,27 @@ export function TutorChat({
             if (parsed.type === "error") {
               setMessages((prev) => {
                 const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (!last || last.role !== "assistant") return prev;
                 updated[updated.length - 1] = {
                   role: "assistant",
                   content: `Error: ${parsed.content}`,
                 };
                 return updated;
               });
+              streamErrored = true;
               setIsStreaming(false);
-              return;
+              doneSignal = true;
+              break;
             }
 
             if (parsed.type === "web_search_searching") {
               setMessages((prev) => {
                 const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (!last || last.role !== "assistant") return prev;
                 updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
+                  ...last,
                   content: "Searching the web...\n\n",
                   isStreaming: true,
                 };
@@ -161,8 +214,10 @@ export function TutorChat({
               fullText = "";
               setMessages((prev) => {
                 const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (!last || last.role !== "assistant") return prev;
                 updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
+                  ...last,
                   content: "",
                   isStreaming: true,
                 };
@@ -175,6 +230,7 @@ export function TutorChat({
               setMessages((prev) => {
                 const updated = [...prev];
                 const last = updated[updated.length - 1];
+                if (!last || last.role !== "assistant") return prev;
                 updated[updated.length - 1] = {
                   ...last,
                   content: last.content + parsed.content!,
@@ -190,7 +246,7 @@ export function TutorChat({
               // Backend detected natural language artifact command
               if (parsed.artifacts?.length) {
                 const cmd = parsed.artifacts[0] as { type?: string; raw?: string };
-                if (cmd.type && !isNoteCmd && !isCardCmd && !isMapCmd) {
+                if (cmd.type && !command.type) {
                   serverArtifactCmd = cmd;
                 }
               }
@@ -201,9 +257,15 @@ export function TutorChat({
         }
       }
 
+      if (streamErrored) {
+        return;
+      }
+
       // Finalize message
       setMessages((prev) => {
         const updated = [...prev];
+        const last = updated[updated.length - 1];
+        if (!last || last.role !== "assistant") return prev;
         updated[updated.length - 1] = {
           role: "assistant",
           content: fullText,
@@ -214,25 +276,36 @@ export function TutorChat({
         return updated;
       });
 
+      // Notify turn completion
+      onTurnComplete?.();
+
       // Handle artifact slash commands after response
-      if (isNoteCmd || isCardCmd || isMapCmd) {
-        const artifactType = isNoteCmd ? "note" : isCardCmd ? "card" : "map";
+      if (command.type) {
+        const fallbackTitle = `Tutor ${command.type}`;
         onArtifactCreated({
-          type: artifactType,
+          type: command.type,
           content: fullText,
-          title: userMessage.replace(/^\/(note|card|flashcard|map|diagram|save)\s*/i, "").trim(),
+          title: command.title || fallbackTitle,
         });
-      } else if (serverArtifactCmd?.type) {
+      } else if (
+        serverArtifactCmd?.type &&
+        (serverArtifactCmd.type === "note" || serverArtifactCmd.type === "card" || serverArtifactCmd.type === "map")
+      ) {
         // Backend detected natural language artifact command (e.g. "put that in my notes")
         onArtifactCreated({
-          type: serverArtifactCmd.type as "note" | "card" | "map",
+          type: serverArtifactCmd.type,
           content: fullText,
           title: userMessage.slice(0, 80).trim(),
         });
       }
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
       setMessages((prev) => {
         const updated = [...prev];
+        const last = updated[updated.length - 1];
+        if (!last || last.role !== "assistant") return prev;
         updated[updated.length - 1] = {
           role: "assistant",
           content: `Connection error: ${err instanceof Error ? err.message : "Unknown"}`,
@@ -240,9 +313,12 @@ export function TutorChat({
         return updated;
       });
     } finally {
+      if (streamAbortRef.current === abortController) {
+        streamAbortRef.current = null;
+      }
       setIsStreaming(false);
     }
-  }, [input, sessionId, isStreaming, engine, onArtifactCreated]);
+  }, [input, sessionId, isStreaming, engine, onArtifactCreated, onTurnComplete]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -321,30 +397,40 @@ export function TutorChat({
               {msg.role === "assistant" && msg.content && !msg.isStreaming && (
                 <div className="flex items-center gap-1 mt-2 pt-2 border-t border-primary/20">
                   <button
-                    onClick={() => onArtifactCreated({ type: "note", content: msg.content, title: `Tutor note ${i}` })}
+                    onClick={() =>
+                      onArtifactCreated({
+                        type: "note",
+                        content: msg.content,
+                        title: `Tutor note ${i}`,
+                      })
+                    }
                     className="flex items-center gap-1 px-2 py-1 text-xs font-terminal text-muted-foreground hover:text-primary hover:bg-primary/10 border border-primary/20 hover:border-primary/50 transition-colors"
                   >
                     <FileText className="w-3 h-3" /> Save Note
                   </button>
                   <button
-                    onClick={() => onArtifactCreated({ type: "card", content: msg.content, title: `Tutor card ${i}` })}
+                    onClick={() =>
+                      onArtifactCreated({
+                        type: "card",
+                        content: msg.content,
+                        title: `Tutor card ${i}`,
+                      })
+                    }
                     className="flex items-center gap-1 px-2 py-1 text-xs font-terminal text-muted-foreground hover:text-primary hover:bg-primary/10 border border-primary/20 hover:border-primary/50 transition-colors"
                   >
                     <CreditCard className="w-3 h-3" /> Create Card
                   </button>
                   <button
                     onClick={() => {
-                      // Save as note for persistence
-                      onArtifactCreated({ type: "note", content: msg.content, title: `Tutor brain ${i}` });
-                      // Extract mermaid content if present, otherwise use full text
-                      const mermaidMatch = msg.content.match(/```mermaid\n([\s\S]*?)```/);
-                      const importContent = mermaidMatch ? mermaidMatch[1].trim() : msg.content;
-                      localStorage.setItem("tutor-mermaid-import", importContent);
-                      window.location.href = "/brain";
+                      onArtifactCreated({
+                        type: "map",
+                        content: msg.content,
+                        title: `Tutor map ${i}`,
+                      });
                     }}
                     className="flex items-center gap-1 px-2 py-1 text-xs font-terminal text-muted-foreground hover:text-primary hover:bg-primary/10 border border-primary/20 hover:border-primary/50 transition-colors"
                   >
-                    <Map className="w-3 h-3" /> Send to Brain
+                    <Map className="w-3 h-3" /> Create Map
                   </button>
                 </div>
               )}
