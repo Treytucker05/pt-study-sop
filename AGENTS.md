@@ -175,6 +175,11 @@ Skip step 1 for backend-only changes.
 13. Safe-by-default git: check status/diff before edits.
 14. Check conductor/tracks.md before starting major work — active tracks take priority.
 15. After every significant change, update `conductor/tracks.md` with current status/progress before finishing.
+16. **Clean up after yourself.** Do not leave scratch files, temp scripts, or
+    subagent output at the repo root. If you create a temporary file (tmp_*,
+    extract_*, parse_*, method_*.json, *_prompt.txt, etc.), delete it before
+    committing or ensure it matches a .gitignore rule. Never commit generated
+    JSON blobs, one-off extraction scripts, or subagent prompt/output files.
 
 ---
 

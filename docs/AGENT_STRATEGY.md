@@ -1,4 +1,4 @@
-# Agent Strategy (Claude + Codex + OpenCode)
+# Agent Strategy (Claude + Codex)
 
 Concrete, cross-tool defaults for terminal setup, subagents, analytics, and learning workflows.
 
@@ -43,7 +43,7 @@ Safety: never paste secrets or credentials into prompts or logs.
 
 ## Learning Mode (Fast Comprehension)
 - Claude Code: set output style to Explanatory/Learning in `/config`.
-- Codex/OpenCode: add "explain why, then change" to the prompt.
+- Codex: add "explain why, then change" to the prompt.
 - When learning new systems:
   - Ask for ASCII diagrams of flows or modules.
   - Request HTML slide decks for unfamiliar concepts.
@@ -62,10 +62,7 @@ Safety: never paste secrets or credentials into prompts or logs.
 - Config: `C:\Users\treyt\.codex\config.toml` includes strategy reminders.
 - Skill: `C:\Users\treyt\.codex\skills\agent-strategy\SKILL.md`.
 
-### OpenCode (global)
-- Skill: `C:\Users\treyt\.opencode\skills\agent-strategy\SKILL.md`.
-
 ## Repo Integration
 - Prompt patterns: `ai-config/agent-prompts.md`
 - Repo Claude Code commands: `.claude/commands/`
-- Portable global config (vault canonical): `C:\Users\treyt\Desktop\PT School Semester 2\agents\config\`
+- Portable global config (vault canonical): `C:\Users\treyt\Desktop\Trey's Vault\agents\config\`

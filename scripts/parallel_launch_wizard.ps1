@@ -111,9 +111,7 @@ $worktreeScript = Join-Path $scriptsDir "agent_worktrees.ps1"
 $bootstrapScript = Join-Path $scriptsDir "bootstrap_parallel_agents.ps1"
 $taskBoardScript = Join-Path $scriptsDir "agent_task_board.py"
 $hookScript = Join-Path $scriptsDir "install_agent_guard_hooks.ps1"
-$openCodeWslScript = Join-Path $scriptsDir "opencode_wsl_tmux.sh"
-
-foreach ($requiredPath in @($worktreeScript, $bootstrapScript, $taskBoardScript, $hookScript, $openCodeWslScript)) {
+foreach ($requiredPath in @($worktreeScript, $bootstrapScript, $taskBoardScript, $hookScript)) {
   if (-not (Test-Path -LiteralPath $requiredPath)) {
     throw "Missing required file: $requiredPath"
   }
@@ -238,16 +236,7 @@ if ($claudeCount -gt 0) {
 }
 
 if ($openCodeCount -gt 0) {
-  if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
-    throw "wsl.exe not found on PATH."
-  }
-
-  for ($i = 1; $i -le $openCodeCount; $i++) {
-    $tmuxSession = "$sessionPrefix-opencode-$i"
-    $wslCommand = "cd `"$WslRepoRoot`" && chmod +x ./scripts/opencode_wsl_tmux.sh && ./scripts/opencode_wsl_tmux.sh `"$tmuxSession`" `"$rolesCsv`""
-    Write-Host "Starting OpenCode WSL tmux session '$tmuxSession'..."
-    Start-Process -FilePath "wsl.exe" -ArgumentList "-e", "bash", "-lc", $wslCommand | Out-Null
-  }
+  Write-Warning "OpenCode WSL sessions requested but OpenCode support has been removed. Skipping."
 }
 
 if ($showStatusAtEnd) {

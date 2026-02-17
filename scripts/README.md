@@ -6,15 +6,14 @@ Automation utilities for the PT Study SOP repo.
 - `generate_architecture_dump.ps1` - Regenerates `docs/root/ARCHITECTURE_CONTEXT.md`.
 - `release_check.py` - Runs release checks.
 - `sync_agent_config.ps1` - Repo drift check for agent instruction entrypoints and tool stubs.
-- `sync_ai_config.ps1` - Deprecated wrapper (kept for backwards compatibility).
+- `sync_ai_config.ps1` - Deprecated (use `sync_agent_config.ps1`).
 - `sync_portable_agent_config.ps1` - Convenience wrapper to sync portable vault agent config to home tool locations.
 - `launch_codex_session.ps1` - Start one-off named agent sessions (`-Tool codex` default; `-Tool opencode` supported).
 - `agent_worktrees.ps1` - Create/manage named persistent worktrees (integrate/ui/brain[/docs]) for parallel agents. Supports multi-agent launch (`open-many` / `dispatch-many`), role routing, and quick status.
 - `bootstrap_parallel_agents.ps1` - One-command bootstrap: ensure worktrees + launch selected agent profile across multiple roles.
 - `agent_task_board.py` - Shared cross-worktree task registry (claim/start/heartbeat/done/block/release with timestamps and ownership).
 - `install_agent_guard_hooks.ps1` - Install optional local git hooks (`pre-commit`, `pre-push`) to enforce drift checks and baseline tests during parallel agent workflows.
-- `opencode_wsl_tmux.sh` - Create/attach a persistent WSL tmux session with OpenCode mapped to role worktrees (`ui`, `brain`, `integrate`, `docs`).
-- `parallel_launch_wizard.ps1` - Interactive launcher that prompts for role selection and agent counts (Codex/Claude/OpenCode) and starts all requested sessions.
+- `parallel_launch_wizard.ps1` - Interactive launcher that prompts for role selection and agent counts (Codex/Claude) and starts all requested sessions.
 - `run_scholar.bat` - Run Scholar workflows.
 - `parallel launch shortcut` - Use `C:/Users/treyt/OneDrive/Desktop/Travel Laptop/Parallel Work/01_Launch_Parallel_Wizard.bat` for the one-file prompting flow.
 - `check_parallel_setup.ps1` - Run health validation across scripts, worktrees, launchers, and task board.
@@ -34,7 +33,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_parallel_agent
 # 1) Ensure worktrees exist (adds docs role too)
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_worktrees.ps1 -Action ensure -IncludeDocs
 
-# 2) Open a full swarm in the UI role (codex + claude + opencode)
+# 2) Open agents in the UI role (codex + claude)
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_worktrees.ps1 -Action open-many -Role ui -Profile swarm -SessionTag ui-pass
 
 # 3) Route by path and launch review pair (codex + claude)

@@ -158,12 +158,7 @@ foreach ($legacy in $legacyLaunchers) {
   $info++
 }
 
-$wslHelper = Join-Path $RepoRoot "scripts\opencode_wsl_tmux.sh"
-if (Test-Path -LiteralPath $wslHelper) {
-  Add-Result -Name "Optional WSL/tmux helper" -Status "INFO" -Details "Present: $wslHelper"
-} else {
-  Add-Result -Name "Optional WSL/tmux helper" -Status "INFO" -Details "Not present. Not required for swarm-only setup."
-}
+Add-Result -Name "WSL/tmux helper (removed)" -Status "INFO" -Details "OpenCode WSL support removed. Not required."
 $info++
 
 $taskBoardScript = Join-Path $RepoRoot "scripts\agent_task_board.py"

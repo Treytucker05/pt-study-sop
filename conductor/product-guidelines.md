@@ -17,6 +17,21 @@ These guidelines constrain decisions, implementation, and manual verification pl
 - After significant changes: update the active track's plan.md (task status + commit SHA).
   For changes outside a named track, append to `conductor/tracks/GENERAL/log.md`.
 
+## Repo hygiene (agent self-cleanup)
+
+- Never commit scratch files to the repo root (tmp_*, extract_*, parse_*,
+  method_*.json, *_prompt.txt, subagent output). Delete them or ensure they
+  match a .gitignore rule before committing.
+- When creating temporary scripts for one-off tasks, prefix with `tmp_` and
+  delete after use. Do not commit them.
+- When archiving or deleting files, update all referencing docs, scripts,
+  and validation checks (e.g. validate_project_hub.py REQUIRED_FILES) in the
+  same commit.
+- When deprecating a tool or workflow, grep for all references across docs/,
+  scripts/, and .agent/ and update or remove them.
+- Generated context dumps (ARCHITECTURE_CONTEXT.md) are gitignored.
+  Regenerate on demand with `generate_architecture_dump.ps1`.
+
 ## Dashboard build/serve constraints
 
 See `docs/root/GUIDE_DEV.md` for canonical build + sync workflow.

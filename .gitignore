@@ -99,7 +99,7 @@ scripts/_ai_config_backups/
 # Generated Claude surface (synced from ai-config)
 .claude/
 
-# Agent planning artifacts (local only)
+# Agent planning artifacts and scratch files (local only)
 /task_plan.md
 /findings.md
 /progress.md
@@ -109,20 +109,39 @@ scripts/_ai_config_backups/
 /task_list_docs_scan.md
 /prompt.txt
 /subagent*.txt
+/subagent*.ps1
 /tutor_subagent_prompt.txt
 /*_prompt*.txt
 /run_*.py
 /run_*.ps1
-/write_prompt.ps1
+/write_prompt.*
 /print_lines.py
 /snippet_routes.py
 /codex_test_out.txt
+/parent_settings.txt
+
+# Root-level scratch scripts (one-off extractions, tmp work)
+/tmp_*.py
+/tmp_*.json
+/temp_*.ps1
+/extract_*.py
+/parse_*.py
+/build_chains_output.py
+
+# Root-level scratch JSON (subagent outputs)
+/method_*.json
+/exports_research_data.json
+
+# Scratch directories
+/tmp/
+/.codex_tmp/
 
 # Playwright MCP screenshots (local only)
 .playwright-mcp/*.png
 
 # Large generated files
 /filetree.txt
+docs/root/ARCHITECTURE_CONTEXT.md
 
 # Audit screenshots and HTML (local only)
 audit-*.png

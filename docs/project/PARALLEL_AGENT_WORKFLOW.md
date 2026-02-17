@@ -142,10 +142,3 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_agent_guard_hook
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_agent_guard_hooks.ps1 -Action status
 ```
 
-## Optional WSL tmux mode (OpenCode)
-Use this if OpenCode is installed in WSL and you want one persistent session per role worktree.
-
-```bash
-cd /mnt/c/pt-study-sop
-./scripts/opencode_wsl_tmux.sh my-opencode
-```
