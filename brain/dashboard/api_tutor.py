@@ -635,10 +635,14 @@ def send_turn(session_id: str):
                 material_context=material_text,
             )
 
+            effective_model = codex_model or "gpt-5.3-codex"
             system_prompt += (
                 "\n\n## Tooling\n"
                 "Do not run shell commands or attempt to read local files. "
-                "Answer as a tutor only."
+                "Answer as a tutor only.\n\n"
+                f"## Identity\n"
+                f"You are powered by OpenAI model **{effective_model}**. "
+                f"If asked what model you are, state this exactly."
             )
 
             # Build user prompt: chat history + question
