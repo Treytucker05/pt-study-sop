@@ -1,7 +1,7 @@
 # Implementation Plan: CP-MSS Control-Plane Hardening
 
 **Created:** 2026-02-17  
-**Status:** In Progress
+**Status:** Complete
 
 ---
 
@@ -15,7 +15,7 @@
 - [x] B5: Deterministic selector policy module + tests
 - [x] B6: Telemetry schema expansion for ErrorLog + compatibility handling
 - [x] B7: Backend runtime wiring to emit selector metadata on live session rows
-- [ ] B8: Pilot/readout packaging (`Final CP-MSS Spec v1.0`, evidence table, implementation deltas)
+- [x] B8: Pilot/readout packaging (`Final CP-MSS Spec v1.0`, evidence table, implementation deltas)
 
 ---
 
