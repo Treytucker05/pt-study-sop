@@ -5,6 +5,7 @@ description: 'Answer three questions: (1) What did I learn? (2) What''s still mu
 default_duration_min: 3
 energy_cost: low
 best_stage: consolidation
+control_stage: OVERLEARN
 status: validated
 tags:
   - reflection

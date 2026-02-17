@@ -38,6 +38,17 @@ class Stage(str, Enum):
     consolidation = "consolidation"
 
 
+class AssessmentMode(str, Enum):
+    classification = "classification"
+    mechanism = "mechanism"
+    computation = "computation"
+    definition = "definition"
+    procedure = "procedure"
+    spatial = "spatial"
+    recognition = "recognition"
+    synthesis = "synthesis"
+
+
 class OperationalStage(str, Enum):
     PRIME = "PRIME"
     CALIBRATE = "CALIBRATE"
@@ -78,6 +89,8 @@ class MethodBlock(BaseModel):
     default_duration_min: int = 5
     energy_cost: EnergyLevel = EnergyLevel.medium
     best_stage: Optional[Stage] = None
+    control_stage: OperationalStage
+    # Legacy alias retained for backward compatibility in tooling.
     stage: Optional[OperationalStage] = None
     status: Status = Status.draft
     alias_of: Optional[str] = None
@@ -107,6 +120,10 @@ class Chain(BaseModel):
     name: str
     description: str
     blocks: list[str] = Field(default_factory=list)  # list of MethodBlock.id refs
+    allowed_modes: list[AssessmentMode]
+    gates: list[str]
+    failure_actions: list[str]
+    requires_reference_targets: bool
     context_tags: dict = Field(default_factory=dict)
     default_knobs: Optional[dict] = None
     knobs: Optional[dict] = None

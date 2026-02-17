@@ -34,13 +34,14 @@ def write_yaml(path: Path, data: dict) -> None:
 
 
 VALID_METHOD = {
-    "id": "M-TST-001",
+    "id": "M-PRE-901",
     "name": "Test Method",
     "category": "prepare",
     "description": "A test method.",
     "default_duration_min": 5,
     "energy_cost": "low",
     "best_stage": "first_exposure",
+    "control_stage": "PRIME",
     "status": "draft",
     "tags": ["test"],
     "evidence": {
@@ -55,7 +56,11 @@ VALID_CHAIN = {
     "id": "C-TS-001",
     "name": "Test Chain",
     "description": "A test chain.",
-    "blocks": ["M-TST-001"],
+    "blocks": ["M-PRE-901"],
+    "allowed_modes": ["definition"],
+    "gates": ["prime_artifacts_present"],
+    "failure_actions": ["substitute_by_error_type_mapping"],
+    "requires_reference_targets": False,
     "context_tags": {"stage": "first_exposure"},
     "is_template": True,
     "status": "draft",
@@ -103,7 +108,7 @@ VALID_SESSION_LOG_TEMPLATE = {
 def build_minimal_library(tmp_path: Path) -> Path:
     """Create a minimal valid library structure in tmp_path and return its root."""
     lib = tmp_path / "sop" / "library"
-    write_yaml(lib / "methods" / "M-TST-001.yaml", VALID_METHOD)
+    write_yaml(lib / "methods" / "M-PRE-901.yaml", VALID_METHOD)
     write_yaml(lib / "chains" / "C-TS-001.yaml", VALID_CHAIN)
     write_yaml(lib / "meta" / "taxonomy.yaml", VALID_TAXONOMY)
     write_yaml(lib / "meta" / "version.yaml", VALID_VERSION)
@@ -130,6 +135,33 @@ class TestRealLibrary:
     def test_real_library_chain_count(self) -> None:
         chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"
         assert len(list(chains_dir.glob("*.yaml"))) == 15
+
+    def test_first_exposure_core_mode_coverage(self) -> None:
+        chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"
+        targets = {
+            "C-FE-001": {"classification", "definition", "recognition"},
+            "C-DP-001": {"mechanism", "computation", "procedure"},
+            "C-DA-001": {"spatial"},
+            "C-SW-001": {"synthesis"},
+        }
+
+        covered: set[str] = set()
+        for chain_id, expected_modes in targets.items():
+            data = yaml.safe_load((chains_dir / f"{chain_id}.yaml").read_text(encoding="utf-8"))
+            actual = set(data.get("allowed_modes", []))
+            assert actual == expected_modes, f"{chain_id} modes mismatch: {actual} != {expected_modes}"
+            covered.update(actual)
+
+        assert covered == {
+            "classification",
+            "definition",
+            "recognition",
+            "mechanism",
+            "computation",
+            "procedure",
+            "spatial",
+            "synthesis",
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -214,8 +246,16 @@ class TestMethodValidation:
     def test_valid_method_passes(self) -> None:
         from models import MethodBlock
         m = MethodBlock(**VALID_METHOD)
-        assert m.id == "M-TST-001"
+        assert m.id == "M-PRE-901"
         assert m.name == "Test Method"
+        assert m.control_stage.value == "PRIME"
+
+    def test_missing_control_stage_fails(self) -> None:
+        from models import MethodBlock
+        payload = dict(VALID_METHOD)
+        payload.pop("control_stage", None)
+        with pytest.raises(Exception):
+            MethodBlock(**payload)
 
 
 class TestChainValidation:
@@ -230,7 +270,14 @@ class TestChainValidation:
         from models import Chain
         c = Chain(**VALID_CHAIN)
         assert c.id == "C-TS-001"
-        assert c.blocks == ["M-TST-001"]
+        assert c.blocks == ["M-PRE-901"]
+
+    def test_missing_allowed_modes_fails(self) -> None:
+        from models import Chain
+        payload = dict(VALID_CHAIN)
+        payload.pop("allowed_modes", None)
+        with pytest.raises(Exception):
+            Chain(**payload)
 
 
 class TestOperationalStageInference:
@@ -299,8 +346,14 @@ class TestChainDependencyRule:
         lib = tmp_path / "sop" / "library"
         self._write_common_meta(lib)
 
-        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prepare"}
-        ret = {**VALID_METHOD, "id": "M-RET-001", "name": "Ret", "category": "retrieve"}
+        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prepare", "control_stage": "PRIME"}
+        ret = {
+            **VALID_METHOD,
+            "id": "M-RET-001",
+            "name": "Ret",
+            "category": "retrieve",
+            "control_stage": "RETRIEVE",
+        }
         write_yaml(lib / "methods" / "M-PRE-001.yaml", pre)
         write_yaml(lib / "methods" / "M-RET-001.yaml", ret)
         write_yaml(
@@ -309,6 +362,7 @@ class TestChainDependencyRule:
                 **VALID_CHAIN,
                 "status": "validated",
                 "blocks": ["M-PRE-001", "M-RET-001"],
+                "requires_reference_targets": True,
                 "context_tags": {"stage": "review", "energy": "low", "time_available": 20},
             },
         )
@@ -318,14 +372,20 @@ class TestChainDependencyRule:
         assert not result.ok
         assert any("no QuestionBankSeed/OnePageAnchor producer" in e for e in result.errors)
 
-    def test_draft_chain_does_not_enforce_reference_dependency(
+    def test_requires_reference_targets_enforces_dependency_for_draft_chain(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         lib = tmp_path / "sop" / "library"
         self._write_common_meta(lib)
 
-        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prepare"}
-        ret = {**VALID_METHOD, "id": "M-RET-001", "name": "Ret", "category": "retrieve"}
+        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prepare", "control_stage": "PRIME"}
+        ret = {
+            **VALID_METHOD,
+            "id": "M-RET-001",
+            "name": "Ret",
+            "category": "retrieve",
+            "control_stage": "RETRIEVE",
+        }
         write_yaml(lib / "methods" / "M-PRE-001.yaml", pre)
         write_yaml(lib / "methods" / "M-RET-001.yaml", ret)
         write_yaml(
@@ -334,10 +394,97 @@ class TestChainDependencyRule:
                 **VALID_CHAIN,
                 "status": "draft",
                 "blocks": ["M-PRE-001", "M-RET-001"],
+                "requires_reference_targets": True,
                 "context_tags": {"stage": "review", "energy": "low", "time_available": 20},
             },
         )
 
         self._with_temp_library(monkeypatch, lib)
         result = run_validation(strict=False)
-        assert result.ok, result.errors
+        assert not result.ok
+        assert any("requires_reference_targets=true" in e for e in result.errors)
+
+
+class TestControlStageValidation:
+    def _write_common_meta(self, lib: Path) -> None:
+        write_yaml(lib / "meta" / "taxonomy.yaml", VALID_TAXONOMY)
+        write_yaml(lib / "meta" / "version.yaml", VALID_VERSION)
+        write_yaml(lib / "meta" / "knob_registry.yaml", VALID_KNOB_REGISTRY)
+        write_yaml(lib / "templates" / "session_log_template.yaml", VALID_SESSION_LOG_TEMPLATE)
+
+    def _with_temp_library(self, monkeypatch: pytest.MonkeyPatch, lib: Path) -> None:
+        monkeypatch.setattr(validate_library, "METHODS_DIR", lib / "methods")
+        monkeypatch.setattr(validate_library, "CHAINS_DIR", lib / "chains")
+        monkeypatch.setattr(validate_library, "META_DIR", lib / "meta")
+        monkeypatch.setattr(validate_library, "TEMPLATES_DIR", lib / "templates")
+        monkeypatch.setattr(validate_library, "KNOB_REGISTRY_PATH", lib / "meta" / "knob_registry.yaml")
+
+    def test_method_requires_control_stage(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        lib = tmp_path / "sop" / "library"
+        self._write_common_meta(lib)
+
+        missing_control = dict(VALID_METHOD)
+        missing_control.pop("control_stage", None)
+        write_yaml(lib / "methods" / "M-PRE-901.yaml", missing_control)
+        write_yaml(lib / "chains" / "C-TS-001.yaml", VALID_CHAIN)
+
+        self._with_temp_library(monkeypatch, lib)
+        result = run_validation(strict=False)
+        assert not result.ok
+        assert any("control_stage" in e for e in result.errors)
+
+    def test_control_stage_must_match_prefix_inference(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        lib = tmp_path / "sop" / "library"
+        self._write_common_meta(lib)
+
+        bad_stage = {**VALID_METHOD, "control_stage": "ENCODE"}
+        write_yaml(lib / "methods" / "M-PRE-901.yaml", bad_stage)
+        write_yaml(lib / "chains" / "C-TS-001.yaml", VALID_CHAIN)
+
+        self._with_temp_library(monkeypatch, lib)
+        result = run_validation(strict=False)
+        assert not result.ok
+        assert any("does not match inferred stage 'PRIME'" in e for e in result.errors)
+
+
+class TestChainContractValidation:
+    def _write_common_meta(self, lib: Path) -> None:
+        write_yaml(lib / "meta" / "taxonomy.yaml", VALID_TAXONOMY)
+        write_yaml(lib / "meta" / "version.yaml", VALID_VERSION)
+        write_yaml(lib / "meta" / "knob_registry.yaml", VALID_KNOB_REGISTRY)
+        write_yaml(lib / "templates" / "session_log_template.yaml", VALID_SESSION_LOG_TEMPLATE)
+
+    def _with_temp_library(self, monkeypatch: pytest.MonkeyPatch, lib: Path) -> None:
+        monkeypatch.setattr(validate_library, "METHODS_DIR", lib / "methods")
+        monkeypatch.setattr(validate_library, "CHAINS_DIR", lib / "chains")
+        monkeypatch.setattr(validate_library, "META_DIR", lib / "meta")
+        monkeypatch.setattr(validate_library, "TEMPLATES_DIR", lib / "templates")
+        monkeypatch.setattr(validate_library, "KNOB_REGISTRY_PATH", lib / "meta" / "knob_registry.yaml")
+
+    def test_retrieve_chain_must_require_reference_targets(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        lib = tmp_path / "sop" / "library"
+        self._write_common_meta(lib)
+
+        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "control_stage": "PRIME"}
+        ret = {**VALID_METHOD, "id": "M-RET-001", "name": "Ret", "category": "retrieve", "control_stage": "RETRIEVE"}
+        write_yaml(lib / "methods" / "M-PRE-001.yaml", pre)
+        write_yaml(lib / "methods" / "M-RET-001.yaml", ret)
+        write_yaml(
+            lib / "chains" / "C-TS-001.yaml",
+            {
+                **VALID_CHAIN,
+                "status": "draft",
+                "blocks": ["M-PRE-001", "M-RET-001"],
+                "requires_reference_targets": False,
+                "context_tags": {"stage": "review", "energy": "low", "time_available": 20},
+            },
+        )
+
+        self._with_temp_library(monkeypatch, lib)
+        result = run_validation(strict=False)
+        assert not result.ok
+        assert any("requires_reference_targets must be true" in e for e in result.errors)

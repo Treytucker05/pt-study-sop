@@ -5,6 +5,7 @@ description: Free-write everything you already know about the topic for 2-3 min.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
+control_stage: PRIME
 status: validated
 tags:
   - warm-up

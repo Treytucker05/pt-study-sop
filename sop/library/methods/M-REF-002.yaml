@@ -5,6 +5,7 @@ description: Re-study items missed during retrieval, then immediately re-test. R
 default_duration_min: 10
 energy_cost: medium
 best_stage: consolidation
+control_stage: REFERENCE
 status: validated
 tags:
   - successive-relearning

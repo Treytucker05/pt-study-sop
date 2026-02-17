@@ -5,6 +5,7 @@ description: Interleave questions from 2-3 different topics in a single retrieva
 default_duration_min: 10
 energy_cost: high
 best_stage: exam_prep
+control_stage: RETRIEVE
 status: validated
 tags:
   - interleaving

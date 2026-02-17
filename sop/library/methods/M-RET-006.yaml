@@ -5,6 +5,7 @@ description: Run near-miss adversarial prompts that force distinction between co
 default_duration_min: 8
 energy_cost: high
 best_stage: exam_prep
+control_stage: RETRIEVE
 status: draft
 tags:
   - retrieval

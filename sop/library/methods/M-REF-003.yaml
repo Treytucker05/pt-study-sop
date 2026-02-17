@@ -5,6 +5,7 @@ description: Build a single-page reference anchor containing minimal definitions
 default_duration_min: 8
 energy_cost: medium
 best_stage: exam_prep
+control_stage: REFERENCE
 status: draft
 artifact_type: outline
 tags:

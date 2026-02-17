@@ -5,6 +5,7 @@ description: "Structured 6-step encoding protocol for new terms. Sound (phonetic
 default_duration_min: 3
 energy_cost: medium
 best_stage: first_exposure
+control_stage: ENCODE
 status: validated
 tags:
   - mnemonic

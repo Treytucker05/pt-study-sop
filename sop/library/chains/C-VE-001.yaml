@@ -5,8 +5,30 @@ blocks:
 - M-PRE-001
 - M-ENC-009
 - M-ENC-010
+- M-REF-003
+- M-REF-004
 - M-RET-001
 - M-OVR-001
+allowed_modes:
+- classification
+- mechanism
+- computation
+- definition
+- procedure
+- spatial
+- recognition
+- synthesis
+gates:
+- prime_artifacts_present
+- calibrate_attempt_completed
+- reference_targets_ready
+- retrieve_after_reference_only
+- exit_requires_rsr_or_remediation
+failure_actions:
+- inject_reference_targets_before_retrieve
+- substitute_by_error_type_mapping
+- re_run_retrieval_gate_after_insertion
+requires_reference_targets: true
 context_tags:
   stage: first_exposure
   energy: high

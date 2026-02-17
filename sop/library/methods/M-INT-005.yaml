@@ -5,6 +5,7 @@ description: Walk through a clinical case from presentation to assessment to int
 default_duration_min: 10
 energy_cost: high
 best_stage: exam_prep
+control_stage: ENCODE
 status: validated
 tags:
   - clinical

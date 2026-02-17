@@ -5,6 +5,7 @@ description: Generate a mode-tagged seed bank of 10-20 retrieval questions from 
 default_duration_min: 8
 energy_cost: medium
 best_stage: exam_prep
+control_stage: REFERENCE
 status: draft
 artifact_type: outline
 tags:

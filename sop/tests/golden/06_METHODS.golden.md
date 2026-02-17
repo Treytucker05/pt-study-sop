@@ -135,27 +135,27 @@ Each method block represents a single study activity.
 **Note:** Retrieval (Free Recall) comes before generative encoding (KWIK Hook) per Potts & Shanks (2022) — lower cognitive load, higher gains.
 
 #### 2. Review Sprint
-**Blocks:** Prediction Questions → Sprint Quiz → Clinical Application → Exit Ticket
+**Blocks:** Prediction Questions → One-Page Anchor → Question Bank Seed → Sprint Quiz → Clinical Application → Exit Ticket
 **Context:** review, medium energy, 25 min
 **Use for:** Fast review loop. Prepare → Retrieve → Interrogate (application) → Overlearn. Skips encode for known material.
 
 #### 3. Quick Drill
-**Blocks:** Brain Dump → Sprint Quiz → Exit Ticket
+**Blocks:** Brain Dump → One-Page Anchor → Question Bank Seed → Sprint Quiz → Exit Ticket
 **Context:** review, medium energy, 15 min
 **Use for:** Minimal time investment. Prepare → Retrieve → Overlearn. Good for spacing reviews.
 
 #### 4. Anatomy Deep Dive
-**Blocks:** Prior Knowledge Scan → Three-Layer Chunk → Draw-Label → Free Recall Blurt → Anki Card Draft
+**Blocks:** Prior Knowledge Scan → Three-Layer Chunk → Draw-Label → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Anki Card Draft
 **Context:** Anatomy, first exposure, high energy, 40 min
 **Use for:** Anatomy-focused chain with drawing. Prepare → Encode (Draw-Label) → Retrieve → Overlearn.
 
 #### 5. Low Energy
-**Blocks:** Brain Dump → AI Skeleton Review → Fill-in-Blank → Exit Ticket
+**Blocks:** Brain Dump → AI Skeleton Review → One-Page Anchor → Question Bank Seed → Fill-in-Blank → Exit Ticket
 **Context:** low energy, 15 min
 **Use for:** Low-effort chain for tired days. Prepare → Reference → Retrieve → Overlearn. Maintain streak without burning out.
 
 #### 6. Exam Prep
-**Blocks:** Prediction Questions → Mixed Practice → Side-by-Side Comparison → Error Autopsy → Anki Card Draft
+**Blocks:** Prediction Questions → One-Page Anchor → Question Bank Seed → Mixed Practice → Side-by-Side Comparison → Error Autopsy → Anki Card Draft
 **Context:** exam prep, high energy, 35 min
 **Use for:** Exam-focused chain with interleaving and error analysis. Prepare → Retrieve → Interrogate → Refine → Overlearn.
 
@@ -165,36 +165,36 @@ Each method block represents a single study activity.
 **Use for:** Build clinical reasoning chains. Prepare → Interrogate → Refine → Overlearn.
 
 #### 8. Mastery Review
-**Blocks:** Free Recall Blurt → Error Autopsy → Mastery Loop → Anki Card Draft
+**Blocks:** One-Page Anchor → Question Bank Seed → Free Recall Blurt → Error Autopsy → Mastery Loop → Anki Card Draft
 **Context:** consolidation, medium energy, 30 min
 **Use for:** Deep consolidation with successive relearning. Retrieve → Refine → Overlearn.
 
 ### Intake-Focused Chains
 
 #### 9. Dense Anatomy Intake
-**Blocks:** Pre-Test → Draw-Label → Free Recall Blurt → KWIK Hook → Anki Card Draft
+**Blocks:** Pre-Test → Draw-Label → One-Page Anchor → Question Bank Seed → Free Recall Blurt → KWIK Hook → Anki Card Draft
 **Context:** Anatomy, first exposure, high energy, 40 min
 **Use for:** High-detail anatomy first exposure. Pre-Test primes encoding, Draw-Label for spatial memory, retrieval before generative steps.
 
 #### 10. Pathophysiology Intake
-**Blocks:** Pre-Test → Self-Explanation Protocol → Concept Cluster → Free Recall Blurt → Error Autopsy
+**Blocks:** Pre-Test → Self-Explanation Protocol → Concept Cluster → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Error Autopsy
 **Context:** Pathology, first exposure, high energy, 45 min
 **Use for:** Pathology first exposure with mechanism tracing. Pre-Test → Self-Explanation → Concept Cluster → Retrieve → Refine.
 
 #### 11. Clinical Reasoning Intake
-**Blocks:** Pre-Test → Illness Script Builder → Side-by-Side Comparison → Free Recall Blurt → Anki Card Draft
+**Blocks:** Pre-Test → Illness Script Builder → Side-by-Side Comparison → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Anki Card Draft
 **Context:** Clinical, first exposure, high energy, 45 min
 **Use for:** Clinical first exposure with illness scripts. Pre-Test → Illness Script → Compare → Retrieve → Overlearn.
 
 #### 12. Quick First Exposure
-**Blocks:** Pre-Test → AI Skeleton Review → Free Recall Blurt → Exit Ticket
+**Blocks:** Pre-Test → AI Skeleton Review → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Exit Ticket
 **Context:** first exposure, medium energy, 20 min
 **Use for:** Minimal intake chain when time is limited. Pre-Test → AI Skeleton → Retrieve → Overlearn.
 
 ### Visualization Chains
 
 #### 13. Visual Encoding
-**Blocks:** Brain Dump → Concept Map → Comparison Table → Free Recall Blurt → Exit Ticket
+**Blocks:** Brain Dump → Concept Map → Comparison Table → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Exit Ticket
 **Context:** first exposure, high energy, 40 min
 **Use for:** Visualization-first encoding for topics with confusable concepts. Build visual representations before retrieval.
 

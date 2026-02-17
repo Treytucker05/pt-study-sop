@@ -5,6 +5,7 @@ description: Identify 2-3 connections between this topic and topics from other c
 default_duration_min: 3
 energy_cost: medium
 best_stage: consolidation
+control_stage: ENCODE
 status: validated
 tags:
   - integration

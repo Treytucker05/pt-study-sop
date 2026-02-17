@@ -2,10 +2,32 @@ id: C-MR-001
 name: Mastery Review
 description: Deep consolidation with successive relearning. Retrieve → Refine → Overlearn.
 blocks:
+- M-REF-003
+- M-REF-004
 - M-RET-001
 - M-REF-001
 - M-REF-002
 - M-OVR-002
+allowed_modes:
+- classification
+- mechanism
+- computation
+- definition
+- procedure
+- spatial
+- recognition
+- synthesis
+gates:
+- prime_artifacts_present
+- calibrate_attempt_completed
+- reference_targets_ready
+- retrieve_after_reference_only
+- exit_requires_rsr_or_remediation
+failure_actions:
+- inject_reference_targets_before_retrieve
+- substitute_by_error_type_mapping
+- re_run_retrieval_gate_after_insertion
+requires_reference_targets: true
 context_tags:
   stage: consolidation
   energy: medium

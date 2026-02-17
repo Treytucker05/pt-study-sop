@@ -4,8 +4,30 @@ description: Low-effort chain for tired days. Prepare → Reference → Retrieve
 blocks:
 - M-PRE-001
 - M-PRE-004
+- M-REF-003
+- M-REF-004
 - M-RET-003
 - M-OVR-001
+allowed_modes:
+- classification
+- mechanism
+- computation
+- definition
+- procedure
+- spatial
+- recognition
+- synthesis
+gates:
+- prime_artifacts_present
+- calibrate_attempt_completed
+- reference_targets_ready
+- retrieve_after_reference_only
+- exit_requires_rsr_or_remediation
+failure_actions:
+- inject_reference_targets_before_retrieve
+- substitute_by_error_type_mapping
+- re_run_retrieval_gate_after_insertion
+requires_reference_targets: true
 context_tags:
   energy: low
   time_available: 15

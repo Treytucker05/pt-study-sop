@@ -5,6 +5,7 @@ description: After reading each paragraph or concept, pause and explain to yours
 default_duration_min: 7
 energy_cost: medium
 best_stage: first_exposure
+control_stage: ENCODE
 status: validated
 tags:
   - self-explanation

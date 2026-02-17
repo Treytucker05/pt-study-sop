@@ -5,6 +5,7 @@ description: "Build a branching decision diagram: presentation → key findings 
 default_duration_min: 10
 energy_cost: high
 best_stage: exam_prep
+control_stage: ENCODE
 status: validated
 tags:
   - visual

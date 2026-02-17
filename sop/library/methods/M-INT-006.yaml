@@ -5,6 +5,7 @@ description: "For a condition, build the illness script: (1) enabling conditions
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
+control_stage: ENCODE
 status: validated
 tags:
   - illness-script

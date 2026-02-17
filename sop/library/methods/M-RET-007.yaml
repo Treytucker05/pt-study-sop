@@ -5,6 +5,7 @@ description: Execute timed retrieval sprints and record latency per item to expo
 default_duration_min: 8
 energy_cost: high
 best_stage: review
+control_stage: RETRIEVE
 status: draft
 tags:
   - retrieval

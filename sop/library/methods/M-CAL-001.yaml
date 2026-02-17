@@ -5,6 +5,7 @@ description: Run a short diagnostic calibration set (5-10 items in 2-5 minutes) 
 default_duration_min: 4
 energy_cost: medium
 best_stage: first_exposure
+control_stage: CALIBRATE
 status: draft
 tags:
   - calibrate

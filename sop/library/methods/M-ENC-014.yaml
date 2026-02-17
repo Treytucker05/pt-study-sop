@@ -5,6 +5,7 @@ description: Create a bizarre narrative story connecting unrelated items. The ab
 default_duration_min: 8
 energy_cost: medium
 best_stage: first_exposure
+control_stage: ENCODE
 status: validated
 tags:
   - memory

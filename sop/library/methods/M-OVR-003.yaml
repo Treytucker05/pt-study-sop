@@ -5,6 +5,7 @@ description: Build an interleaved drill sheet (30-60 timed items) and define cro
 default_duration_min: 10
 energy_cost: medium
 best_stage: consolidation
+control_stage: OVERLEARN
 status: draft
 tags:
   - overlearning

@@ -5,6 +5,7 @@ description: Sketch the structure (anatomy, pathway, concept map) and label from
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
+control_stage: ENCODE
 status: validated
 tags:
   - visual

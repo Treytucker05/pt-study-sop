@@ -5,6 +5,7 @@ description: 'Retrieve the same concept in 3 different formats: (1) free recall,
 default_duration_min: 10
 energy_cost: medium
 best_stage: review
+control_stage: RETRIEVE
 status: validated
 tags:
   - varied-practice

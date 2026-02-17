@@ -5,6 +5,7 @@ description: Add confidence tags (H/M/L) for each calibrate item to separate kno
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
+control_stage: CALIBRATE
 status: draft
 tags:
   - calibrate

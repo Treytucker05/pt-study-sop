@@ -5,6 +5,7 @@ description: Audit what matters most before studying. Separate must-know targets
 default_duration_min: 4
 energy_cost: low
 best_stage: first_exposure
+control_stage: PRIME
 status: draft
 tags:
   - prime

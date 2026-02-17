@@ -5,6 +5,7 @@ description: Group related terms/concepts into 3-5 clusters. Identify hierarchy 
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
+control_stage: PRIME
 status: validated
 tags:
   - organization

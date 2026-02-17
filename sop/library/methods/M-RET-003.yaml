@@ -5,6 +5,7 @@ description: Review notes with key terms blanked out. Fill from memory. Targets 
 default_duration_min: 5
 energy_cost: low
 best_stage: review
+control_stage: RETRIEVE
 status: validated
 tags:
   - cloze

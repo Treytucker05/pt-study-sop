@@ -5,6 +5,7 @@ description: Convert calibrate misses into a deterministic top-3 weakness set th
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
+control_stage: CALIBRATE
 status: draft
 tags:
   - calibrate

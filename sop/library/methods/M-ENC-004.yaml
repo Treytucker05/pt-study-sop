@@ -5,6 +5,7 @@ description: Explain the concept aloud as if teaching a classmate. Identify poin
 default_duration_min: 5
 energy_cost: high
 best_stage: review
+control_stage: ENCODE
 status: validated
 tags:
   - verbal

@@ -5,6 +5,7 @@ description: List related concepts you already know. Identify connections to pre
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
+control_stage: PRIME
 status: validated
 tags:
   - schema-activation

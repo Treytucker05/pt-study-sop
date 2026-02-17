@@ -5,6 +5,7 @@ description: Use spatial memory to encode ordered sequences by associating items
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
+control_stage: ENCODE
 status: validated
 tags:
   - memory

@@ -10,12 +10,14 @@ Checks:
   6. Referential integrity — every chain block ID exists in methods/
   7. Evidence presence — warning if null (error in --strict)
   8. Logging field alignment — if method.logging_fields set, check against session_log_template.yaml
-  9. Operational stage enforcement — inferred/declared stage in
+  9. Operational stage enforcement — required control_stage and inferred stage in
      {PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN}
   10. Chain artifact dependency (validated/core chains) —
       no RETRIEVE method before a method that produces OnePageAnchor/QuestionBankSeed
   11. Knob registry enforcement — knob keys and values must match
       sop/library/meta/knob_registry.yaml
+  12. Chain contract enforcement — required allowed_modes, gates,
+      failure_actions, and requires_reference_targets
 
 Usage:
   python sop/tools/validate_library.py              # default, exit 0=pass, 1=errors
@@ -56,6 +58,17 @@ ALLOWED_OPERATIONAL_STAGES = {
     "REFERENCE",
     "RETRIEVE",
     "OVERLEARN",
+}
+
+ALLOWED_ASSESSMENT_MODES = {
+    "classification",
+    "mechanism",
+    "computation",
+    "definition",
+    "procedure",
+    "spatial",
+    "recognition",
+    "synthesis",
 }
 
 METHOD_STAGE_PREFIX_MAP = {
@@ -376,10 +389,15 @@ def validate_methods(
             result.error(f"{path.name}: cannot infer operational stage from method ID '{mid}'")
             inferred_stage = ""
 
+        declared_control_stage = data.get("control_stage")
         declared_stage = data.get("stage")
-        if declared_stage is not None and str(declared_stage) not in ALLOWED_OPERATIONAL_STAGES:
+
+        if declared_control_stage is None:
+            result.error(f"{path.name}: missing required field 'control_stage'")
+        elif str(declared_control_stage) not in ALLOWED_OPERATIONAL_STAGES:
             result.error(
-                f"{path.name}: stage '{declared_stage}' must be one of {sorted(ALLOWED_OPERATIONAL_STAGES)}"
+                f"{path.name}: control_stage '{declared_control_stage}' must be one of "
+                f"{sorted(ALLOWED_OPERATIONAL_STAGES)}"
             )
 
         if inferred_stage and inferred_stage not in ALLOWED_OPERATIONAL_STAGES:
@@ -388,10 +406,22 @@ def validate_methods(
                 f"(allowed: {sorted(ALLOWED_OPERATIONAL_STAGES)})"
             )
 
-        if declared_stage is not None and inferred_stage and str(declared_stage) != inferred_stage:
+        if (
+            declared_control_stage is not None
+            and inferred_stage
+            and str(declared_control_stage) != inferred_stage
+        ):
             result.error(
-                f"{path.name}: declared stage '{declared_stage}' does not match inferred stage '{inferred_stage}'"
+                f"{path.name}: control_stage '{declared_control_stage}' does not match "
+                f"inferred stage '{inferred_stage}'"
             )
+
+        if declared_stage is not None and declared_control_stage is not None:
+            if str(declared_stage) != str(declared_control_stage):
+                result.error(
+                    f"{path.name}: legacy stage '{declared_stage}' does not match "
+                    f"control_stage '{declared_control_stage}'"
+                )
 
         # Logging field alignment
         if model.logging_fields and log_fields:
@@ -404,7 +434,7 @@ def validate_methods(
 
         methods[mid] = {
             "raw": data,
-            "operational_stage": str(declared_stage or inferred_stage),
+            "operational_stage": str(declared_control_stage or declared_stage or inferred_stage),
             "produces_reference_artifact": method_produces_reference_artifact(data),
             "status": str(data.get("status", "draft")),
         }
@@ -476,6 +506,30 @@ def validate_chains(
         if alias_of:
             aliases.append((path.name, cid, str(alias_of)))
 
+        # Required chain contract fields.
+        allowed_modes = data.get("allowed_modes")
+        if not isinstance(allowed_modes, list) or len(allowed_modes) == 0:
+            result.error(f"{path.name}: allowed_modes must be a non-empty list")
+        else:
+            for mode in allowed_modes:
+                if str(mode) not in ALLOWED_ASSESSMENT_MODES:
+                    result.error(
+                        f"{path.name}: allowed_modes contains invalid mode '{mode}' "
+                        f"(allowed: {sorted(ALLOWED_ASSESSMENT_MODES)})"
+                    )
+
+        gates = data.get("gates")
+        if not isinstance(gates, list) or len(gates) == 0:
+            result.error(f"{path.name}: gates must be a non-empty list")
+
+        failure_actions = data.get("failure_actions")
+        if not isinstance(failure_actions, list) or len(failure_actions) == 0:
+            result.error(f"{path.name}: failure_actions must be a non-empty list")
+
+        requires_reference_targets = data.get("requires_reference_targets")
+        if not isinstance(requires_reference_targets, bool):
+            result.error(f"{path.name}: requires_reference_targets must be boolean")
+
         # Knob validation (context_tags/default_knobs/knobs).
         validate_knobs(path.name, data.get("context_tags"), knob_registry, result)
         validate_knobs(path.name, data.get("default_knobs"), knob_registry, result)
@@ -486,11 +540,24 @@ def validate_chains(
             if block_id not in method_ids:
                 result.error(f"{path.name}: references unknown method '{block_id}'")
 
-        # Chain artifact dependency (applies to production-ready chains only).
-        # Rule: no RETRIEVE method may occur before a method that produces
-        # OnePageAnchor/QuestionBankSeed artifacts.
-        status = str(data.get("status", "draft"))
-        if status in {"validated", "core"}:
+        has_retrieve = False
+        for block_id in model.blocks:
+            m = methods.get(block_id)
+            if not m:
+                continue
+            if m.get("operational_stage") == "RETRIEVE":
+                has_retrieve = True
+                break
+
+        if has_retrieve and requires_reference_targets is False:
+            result.error(
+                f"{path.name}: contains RETRIEVE methods so requires_reference_targets must be true"
+            )
+
+        # Chain artifact dependency.
+        # Rule: when requires_reference_targets=true, no RETRIEVE method may occur
+        # before a method that produces OnePageAnchor/QuestionBankSeed artifacts.
+        if requires_reference_targets is True:
             first_retrieve_idx: int | None = None
             first_reference_artifact_idx: int | None = None
             for idx, block_id in enumerate(model.blocks):
@@ -505,12 +572,13 @@ def validate_chains(
             if first_retrieve_idx is not None:
                 if first_reference_artifact_idx is None:
                     result.error(
-                        f"{path.name}: validated/core chain contains RETRIEVE methods but no "
+                        f"{path.name}: requires_reference_targets=true but chain contains RETRIEVE methods and no "
                         "QuestionBankSeed/OnePageAnchor producer"
                     )
                 elif first_reference_artifact_idx > first_retrieve_idx:
                     result.error(
-                        f"{path.name}: RETRIEVE appears before reference artifact producer "
+                        f"{path.name}: requires_reference_targets=true but RETRIEVE appears before "
+                        "reference artifact producer "
                         "(QuestionBankSeed/OnePageAnchor)"
                     )
 

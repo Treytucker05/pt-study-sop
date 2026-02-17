@@ -8,11 +8,28 @@ blocks:
 - M-ENC-005
 - M-ENC-008
 - M-INT-002
+- M-REF-003
+- M-REF-004
 - M-RET-005
 - M-REF-001
 - M-OVR-002
+allowed_modes:
+- mechanism
+- computation
+- procedure
+gates:
+- prime_artifacts_present
+- calibrate_attempt_completed
+- reference_targets_ready
+- retrieve_after_reference_only
+- exit_requires_rsr_or_remediation
+failure_actions:
+- inject_reference_targets_before_retrieve
+- substitute_by_error_type_mapping
+- re_run_retrieval_gate_after_insertion
+requires_reference_targets: true
 context_tags:
-  stage: review
+  stage: first_exposure
   pass: depth
   energy: high
   time_available: 45

@@ -5,6 +5,7 @@ description: Draft 3-5 Anki cards for the session's key concepts. Use cloze or b
 default_duration_min: 5
 energy_cost: low
 best_stage: consolidation
+control_stage: OVERLEARN
 status: validated
 tags:
   - anki

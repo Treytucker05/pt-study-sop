@@ -685,3 +685,30 @@
 - File:
   - `dashboard_rebuild/client/src/components/layout.tsx`
 - Verification: `dashboard_rebuild && npm run build` and `pytest brain/tests/ -q` both pass.
+
+## 2026-02-17 - SOP Export Drift Hardening + Runtime Golden Refresh
+
+- Revalidated canonical SOP library with strict control-plane checks:
+  - stage enforcement (`PRIME/CALIBRATE/ENCODE/REFERENCE/RETRIEVE/OVERLEARN`)
+  - chain retrieval dependency against reference artifacts
+  - knob registry validation
+- Regenerated export artifacts from canonical YAML:
+  - `exports/methods_inventory.csv`
+  - `exports/methods_inventory.md`
+  - `exports/chains_inventory.md`
+  - `exports/inventory_summary.json`
+  - `exports/research_packet.md`
+- Confirmed drift checker reports no mismatches.
+- Refreshed runtime bundle/golden baselines after canonical chain sequencing changes:
+  - `sop/library/15-method-library.md`
+  - `sop/runtime/knowledge_upload/06_METHODS.md`
+  - `sop/tests/golden/15-method-library.golden.md`
+  - `sop/tests/golden/06_METHODS.golden.md`
+- Updated implementation summary:
+  - `exports/fix_summary.md`
+- Verification:
+  - `python sop/tools/validate_library.py --strict`
+  - `python scripts/export_library_inventories.py`
+  - `python scripts/check_exports_drift.py`
+  - `python sop/tools/build_runtime_bundle.py --update-golden`
+  - `pytest sop/tests -q`
