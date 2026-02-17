@@ -6,9 +6,9 @@ Update policy: after every significant change, update this file (and the active 
 
 ---
 
-- [ ] **Track: Tutor Tool-Calling** (active — started 2026-02-17; status: Phases 1-3 complete, frontend committed, Phase 4 Figma + Phase 5 polish pending)
-  Backend: `brain/tutor_tools.py`, `brain/llm_provider.py`, `brain/dashboard/api_tutor.py`. Frontend: `TutorChat.tsx`, `api.ts`.
-  Tools live: save_to_obsidian, create_note, create_anki_card. Figma MCP integration (Phase 4) not started.
+- [x] **Track: Tutor Tool-Calling** (complete — started 2026-02-17; closed 2026-02-17; Phases 1-5 done)
+  Backend: `brain/tutor_tools.py`, `brain/figma_mcp_client.py`, `brain/llm_provider.py`, `brain/dashboard/api_tutor.py`. Frontend: `TutorChat.tsx`, `api.ts`.
+  Tools live: save_to_obsidian, create_note, create_anki_card, create_figma_diagram. 192 tests passing.
 
 - [x] **Track: CP-MSS Control-Plane Hardening + Tutor Integration** (complete — started 2026-02-17; closed 2026-02-17; all B0-B8 done)
   *Link: [./tracks/CP_MSS_CONTROL_PLANE_HARDENING_20260217/](./tracks/CP_MSS_CONTROL_PLANE_HARDENING_20260217/)*

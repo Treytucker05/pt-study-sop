@@ -5,9 +5,10 @@ Provides function-tool definitions for the OpenAI Responses API and
 server-side execution handlers that call existing Brain endpoints.
 
 Tools:
-  1. save_to_obsidian  — append a study note to Obsidian vault
-  2. create_note       — create a quick note on the dashboard Notes page
-  3. create_anki_card  — draft an Anki flashcard for spaced repetition
+  1. save_to_obsidian      — append a study note to Obsidian vault
+  2. create_note           — create a quick note on the dashboard Notes page
+  3. create_anki_card      — draft an Anki flashcard for spaced repetition
+  4. create_figma_diagram  — create a visual diagram in Figma (requires Figma MCP)
 """
 
 from __future__ import annotations
@@ -100,11 +101,88 @@ CREATE_ANKI_CARD_SCHEMA: dict[str, Any] = {
     },
 }
 
+CREATE_FIGMA_DIAGRAM_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "name": "create_figma_diagram",
+    "description": (
+        "Create a visual diagram (flowchart, concept map, or hierarchy) in Figma. "
+        "Use when the student asks to visualize relationships, processes, or "
+        "hierarchies. Requires Figma Desktop with plugin running."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "title": {
+                "type": "string",
+                "description": "Diagram title, e.g. 'PEIRRO Learning Cycle'",
+            },
+            "diagram_type": {
+                "type": "string",
+                "enum": ["flowchart", "concept_map", "hierarchy", "process"],
+                "description": "Type of diagram layout to use",
+            },
+            "nodes": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Unique node identifier",
+                        },
+                        "label": {
+                            "type": "string",
+                            "description": "Display text for the node",
+                        },
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "start",
+                                "end",
+                                "process",
+                                "decision",
+                                "concept",
+                            ],
+                            "description": "Node type (affects shape/color)",
+                        },
+                    },
+                    "required": ["id", "label"],
+                },
+                "description": "Nodes/boxes in the diagram",
+            },
+            "edges": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "from": {
+                            "type": "string",
+                            "description": "Source node id",
+                        },
+                        "to": {
+                            "type": "string",
+                            "description": "Target node id",
+                        },
+                        "label": {
+                            "type": "string",
+                            "description": "Optional edge label",
+                        },
+                    },
+                    "required": ["from", "to"],
+                },
+                "description": "Connections between nodes",
+            },
+        },
+        "required": ["title", "diagram_type", "nodes"],
+    },
+}
+
 # All tool schemas in a single list for passing to the API
 TUTOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
     SAVE_TO_OBSIDIAN_SCHEMA,
     CREATE_NOTE_SCHEMA,
     CREATE_ANKI_CARD_SCHEMA,
+    CREATE_FIGMA_DIAGRAM_SCHEMA,
 ]
 
 
@@ -241,6 +319,62 @@ def execute_create_anki_card(
         return {"success": False, "error": str(e)}
 
 
+def execute_create_figma_diagram(
+    arguments: dict[str, Any],
+    *,
+    session_id: str | int | None = None,
+) -> dict[str, Any]:
+    """Create a visual diagram in Figma via MCP.
+
+    Gracefully degrades when Figma MCP is not available.
+    """
+    title = arguments.get("title", "")
+    diagram_type = arguments.get("diagram_type", "flowchart")
+    nodes = arguments.get("nodes", [])
+    edges = arguments.get("edges")
+
+    if not title or not nodes:
+        return {
+            "success": False,
+            "error": "Missing required fields: title and nodes",
+        }
+
+    try:
+        from brain.figma_mcp_client import is_figma_available, create_diagram_sync
+
+        status = is_figma_available()
+        if not status["available"]:
+            log.warning(
+                "Tutor tool: Figma not available — %s",
+                "; ".join(status["issues"]),
+            )
+            return {
+                "success": False,
+                "error": (
+                    "Figma integration is not set up. " + "; ".join(status["issues"])
+                ),
+            }
+
+        result = create_diagram_sync(title, diagram_type, nodes, edges)
+        if result.get("success"):
+            log.info(
+                "Tutor tool: created Figma diagram — %s (%d nodes)",
+                title,
+                result.get("node_count", 0),
+            )
+        return result
+
+    except ImportError:
+        log.warning("Tutor tool: mcp package not installed")
+        return {
+            "success": False,
+            "error": "Figma MCP not available: pip install mcp",
+        }
+    except Exception as e:
+        log.exception("Tutor tool create_figma_diagram failed")
+        return {"success": False, "error": str(e)}
+
+
 # ---------------------------------------------------------------------------
 # Tool registry — maps tool names to execution functions
 # ---------------------------------------------------------------------------
@@ -249,6 +383,7 @@ TOOL_REGISTRY: dict[str, Any] = {
     "save_to_obsidian": execute_save_to_obsidian,
     "create_note": execute_create_note,
     "create_anki_card": execute_create_anki_card,
+    "create_figma_diagram": execute_create_figma_diagram,
 }
 
 
@@ -264,7 +399,7 @@ def execute_tool(
         return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
     # Pass session_id for tools that need it
-    if tool_name == "create_anki_card":
+    if tool_name in ("create_anki_card", "create_figma_diagram"):
         return handler(arguments, session_id=session_id)
     return handler(arguments)
 
