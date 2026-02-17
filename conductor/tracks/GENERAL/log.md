@@ -30,6 +30,16 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Commits: `94baf094` (Phase 4-5), earlier commits for Phases 1-3
 - Track closed in `conductor/tracks.md`
 
+## 2026-02-17 - Phase 7: Security Testing
+
+- Backend: 62 security tests in `brain/tests/test_security.py`
+  - SQL injection (11), XSS payloads (4), oversized inputs (5), type confusion (10)
+  - Boundary values (10), auth gap documentation (12), CORS (3), headers (5), error disclosure (2)
+- Frontend: 14 security tests in `dashboard_rebuild/client/src/test/security.test.ts`
+  - innerHTML XSS surface (5), payload handling (2), API error sanitization (3), audit (4)
+- Documented security issues: no auth, no CORS, missing headers, innerHTML XSS in SOPRefRenderer
+- Commit: Phase 7 security tests (test-only, no source changes)
+
 ## 2026-02-17 - Skills Curation Buckets + Export Preservation
 
 - Applied first-pass curation buckets to:
