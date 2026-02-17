@@ -304,44 +304,47 @@ export default function Tutor() {
     }
   }, [activeSessionId, queryClient]);
 
-  const shipToBrainAndEnd = useCallback(async () => {
-    if (!activeSessionId) return;
-    setIsShipping(true);
-    try {
-      const full = await api.tutor.getSession(activeSessionId);
-      if (full.turns && full.turns.length > 0) {
-        const lines: string[] = [
-          `# Tutor: ${topic || mode}`,
-          `**Date:** ${new Date(startedAt || Date.now()).toLocaleDateString()}`,
-          `**Mode:** ${mode} | **Turns:** ${turnCount}`,
-          `**Artifacts:** ${artifacts.length}`,
-          "",
-          "---",
-          "",
-        ];
-        for (const turn of full.turns) {
-          lines.push(`## Q${turn.turn_number}`);
-          lines.push(turn.question);
-          lines.push("");
-          if (turn.answer) {
-            lines.push(`**Answer:**`);
-            lines.push(turn.answer);
-            lines.push("");
-          }
-        }
-        const filename = `Tutor - ${(topic || mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
-        const path = `Study Sessions/${filename}.md`;
-        await api.obsidian.append(path, lines.join("\n"));
-      }
-      toast.success("Session shipped to Brain");
-    } catch (err) {
-      toast.error(`Ship failed: ${err instanceof Error ? err.message : "Unknown"}`);
-    } finally {
-      setIsShipping(false);
-    }
-    await endSession();
-    setShowEndConfirm(false);
-  }, [activeSessionId, topic, mode, startedAt, turnCount, artifacts.length, endSession]);
+   const shipToBrainAndEnd = useCallback(async () => {
+     if (!activeSessionId) return;
+     setIsShipping(true);
+     try {
+       const full = await api.tutor.getSession(activeSessionId);
+       if (full.turns && full.turns.length > 0) {
+         const lines: string[] = [
+           `# Tutor: ${topic || mode}`,
+           `**Date:** ${new Date(startedAt || Date.now()).toLocaleDateString()}`,
+           `**Mode:** ${mode} | **Turns:** ${turnCount}`,
+           `**Artifacts:** ${artifacts.length}`,
+           "",
+           "---",
+           "",
+         ];
+         for (const turn of full.turns) {
+           lines.push(`## Q${turn.turn_number}`);
+           lines.push(turn.question);
+           lines.push("");
+           if (turn.answer) {
+             lines.push(`**Answer:**`);
+             lines.push(turn.answer);
+             lines.push("");
+           }
+         }
+         const filename = `Tutor - ${(topic || mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
+         const path = `Study Sessions/${filename}.md`;
+         await api.obsidian.append(path, lines.join("\n"));
+       }
+       // Show toast AFTER ship succeeds but BEFORE endSession unmounts component
+       setTimeout(() => {
+         toast.success("Session shipped to Brain");
+       }, 100);
+     } catch (err) {
+       toast.error(`Ship failed: ${err instanceof Error ? err.message : "Unknown"}`);
+     } finally {
+       setIsShipping(false);
+     }
+     await endSession();
+     setShowEndConfirm(false);
+   }, [activeSessionId, topic, mode, startedAt, turnCount, artifacts.length, endSession]);
 
   const handleArtifactCreated = useCallback(
     async (artifact: { type: string; content: string; title?: string }) => {
@@ -873,18 +876,18 @@ export default function Tutor() {
                         {currentBlock.description}
                       </p>
                     )}
-                    {facilitationSteps.length > 0 && (
-                      <ol className="space-y-1">
-                        {facilitationSteps.map((step, idx) => (
-                          <li key={idx} className="flex items-start gap-2 font-terminal text-xs text-muted-foreground">
-                            <span className="shrink-0 w-4 h-4 border border-primary/30 text-primary text-[10px] flex items-center justify-center mt-0.5">
-                              {idx + 1}
-                            </span>
-                            <span className="leading-relaxed">{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    )}
+                     {facilitationSteps.length > 0 && facilitationSteps.length <= 15 && !facilitationSteps.some(s => s.includes('MISSING')) && (
+                       <ol className="space-y-1">
+                         {facilitationSteps.map((step, idx) => (
+                           <li key={idx} className="flex items-start gap-2 font-terminal text-xs text-muted-foreground">
+                             <span className="shrink-0 w-4 h-4 border border-primary/30 text-primary text-[10px] flex items-center justify-center mt-0.5">
+                               {idx + 1}
+                             </span>
+                             <span className="leading-relaxed">{step}</span>
+                           </li>
+                         ))}
+                       </ol>
+                     )}
                   </div>
                 )}
 
