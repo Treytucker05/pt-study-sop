@@ -7,7 +7,7 @@ $files = @(
     "docs/root/PROJECT_ARCHITECTURE.md",
     "sop/sop_index.v1.json",
     "sop/library/00-overview.md",
-    "CONTINUITY.md",
+    "conductor/tracks/GENERAL/log.md",
     "brain/db_setup.py",
     "brain/dashboard/routes.py",
     "brain/static/dist/index.html"

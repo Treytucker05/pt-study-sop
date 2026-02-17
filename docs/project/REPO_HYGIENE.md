@@ -14,7 +14,7 @@
 
 ## Hygiene audit exemptions
 - Planning-keyword warnings ignore generated/bundled dirs: `scholar/outputs/`, `scholar/knowledge/`, `sop/runtime/`, `docs/logs/`, `archive/`.
-- Governance docs remain in scope: `AGENTS.md`, `CLAUDE.md`, `docs/CONTINUITY.md`, `docs/project/`, `docs/prd/`, `conductor/tracks/`.
+- Governance docs remain in scope: `AGENTS.md`, `CLAUDE.md`, `conductor/tracks.md`, `conductor/tracks/GENERAL/log.md`, `docs/prd/`, `conductor/tracks/`.
 
 ## Workstream closeout rules
 - Each workstream ends with `FINAL.md`.

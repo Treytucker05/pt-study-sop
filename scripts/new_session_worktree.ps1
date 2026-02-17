@@ -73,7 +73,7 @@ $sessionNote += ""
 $sessionNote | Set-Content -Path (Join-Path $worktreePath "SESSION.md") -Encoding UTF8
 
 $localStatePaths = @(
-  "CONTINUITY.md",
+  "conductor/tracks/GENERAL/log.md",
   "scholar/outputs/STATUS.md",
   "scholar/outputs/STATUS_BACKLOG.md"
 )

@@ -148,8 +148,9 @@ Quick summary:
 1. Build: `cd dashboard_rebuild && npm run build` (outputs directly to brain/static/dist/)
 2. Never use dev server. Dashboard served via Start_Dashboard.bat on port 5000.
 3. Tests: `pytest brain/tests/`
-4. Update relevant docs (see Feature->Doc table in docs/README.md).
-5. Update conductor track status in `conductor/tracks.md` (and active track plan file) for the work completed.
+4. Update active track's plan.md (task status + commit SHA).
+   For non-track changes, append to `conductor/tracks/GENERAL/log.md`.
+5. Update `conductor/tracks.md` if track-level status changed.
 
 Skip step 1 for backend-only changes.
 
@@ -162,7 +163,9 @@ Skip step 1 for backend-only changes.
 3. Only serve the dashboard via Start_Dashboard.bat on port 5000. Do not run a separate dev server or python brain/dashboard_web.py directly.
 4. After frontend changes: run `npm run build` in `dashboard_rebuild` (Vite writes directly to `brain/static/dist`). (See Post-Implementation Checklist above.)
 5. Check `.claude/permissions.json` before executing new shell commands.
-6. Update `docs/CONTINUITY.md` after every significant change (append only).
+6. After every significant change: update the active conductor track's plan.md
+   (mark tasks complete, add commit SHA). For changes outside a named track,
+   append a dated entry to `conductor/tracks/GENERAL/log.md`.
 7. Push to remote after every change (auto).
 8. After code changes, run relevant checks by default (pytest brain/tests/; frontend build already required).
 9. Do not edit archive/ unless explicitly requested.

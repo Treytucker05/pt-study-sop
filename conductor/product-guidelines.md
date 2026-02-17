@@ -14,7 +14,8 @@ These guidelines constrain decisions, implementation, and manual verification pl
 - Prefer ASCII in new/edited files unless the file already uses Unicode.
 - Do not edit `archive/` unless explicitly requested.
 - Avoid destructive commands (delete/reset/clean). If a destructive action is required, stop and ask for explicit confirmation.
-- After significant changes, append a dated entry to `CONTINUITY.md` (append-only).
+- After significant changes: update the active track's plan.md (task status + commit SHA).
+  For changes outside a named track, append to `conductor/tracks/GENERAL/log.md`.
 
 ## Dashboard build/serve constraints
 

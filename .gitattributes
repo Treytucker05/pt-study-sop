@@ -1,7 +1,8 @@
 # Normalize line endings for AI config surfaces (avoid LF<->CRLF churn)
 AGENTS.md      text eol=lf
 CLAUDE.md      text eol=lf
-CONTINUITY.md  text eol=lf
+docs/CONTINUITY.md                   text eol=lf
+conductor/tracks/GENERAL/log.md      text eol=lf
 ai-config/**   text eol=lf
 .claude/**     text eol=lf
 .codex/**      text eol=lf

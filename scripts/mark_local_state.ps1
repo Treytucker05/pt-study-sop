@@ -1,7 +1,7 @@
 param(
   [string]$WorktreesRoot = "C:\\Users\\treyt\\OneDrive\\Desktop\\pt-study-sop-worktrees",
   [string[]]$Paths = @(
-    "CONTINUITY.md",
+    "conductor/tracks/GENERAL/log.md",
     "scholar/outputs/STATUS.md",
     "scholar/outputs/STATUS_BACKLOG.md"
   ),

@@ -1,26 +1,19 @@
 # Start Project
 
-This is the single entrypoint for any agent or human.
+Single entrypoint for any agent or human starting a new session.
 
-1) Read the ExecPlan:
-   - C:\pt-study-sop\JANUARY_26_PLAN\EXECPLAN_DASHBOARD.md
+1. Read conductor state:
+   - `conductor/tracks.md` — active tracks and status
+   - `conductor/tracks/<active-trackId>/plan.md` — current task queue
 
-2) Check current status:
-   - C:\pt-study-sop\.agent\context\STATUS.md
+2. Check recent changes:
+   - `conductor/tracks/GENERAL/log.md` (last 5-10 lines)
 
-3) Review recent history:
-   - C:\pt-study-sop\CONTINUITY.md (last 5-10 lines)
+3. Pick the next unchecked item in the active track plan.
 
-4) Pick the next unchecked item in the ExecPlan Progress section.
+4. Before editing, plan in the active track's plan.md or index.md.
 
-5) Before editing, write a short plan in:
-   - C:\pt-study-sop\.agent\context\logs\daily_log.md
-
-6) After work, update:
-   - ExecPlan Progress + Decision Log + Outcomes
-   - STATUS.md (current milestone, next step, blockers)
-   - CONTINUITY.md (what changed, timestamp)
-
-Notes:
-- If you introduce a new decision, record it in the ExecPlan Decision Log.
-- Keep changes minimal and scoped.
+5. After work, update:
+   - Active track plan.md (task status + commit SHA)
+   - conductor/tracks.md (if track status changed)
+   - conductor/tracks/GENERAL/log.md (if change is outside a track)

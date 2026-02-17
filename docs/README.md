@@ -28,7 +28,7 @@ Basic alignment is enforced by `python scripts/check_docs_sync.py` (CI).
 
 ## Project Hub
 
-- [Project Hub](project/INDEX.md) — planning, milestones, decisions, status
+- [Project Hub](project/INDEX.md) — redirects to conductor for planning and execution
 
 ## Product
 
