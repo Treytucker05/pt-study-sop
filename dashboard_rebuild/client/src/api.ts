@@ -1343,7 +1343,7 @@ export interface DataRowsResponse {
 
 // SSE streaming helper for Tutor chat
 export interface TutorSSEChunk {
-  type: "token" | "done" | "error" | "web_search_searching" | "web_search_completed";
+  type: "token" | "done" | "error" | "web_search_searching" | "web_search_completed" | "tool_call" | "tool_result" | "tool_limit_reached";
   content?: string;
   citations?: TutorCitation[];
   artifacts?: unknown[];

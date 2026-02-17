@@ -7,10 +7,20 @@ import {
   FileText,
   CreditCard,
   Map,
+  CheckCircle2,
+  XCircle,
+  BookOpen,
+  StickyNote,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { type TutorCitation, type TutorSSEChunk } from "@/lib/api";
+
+interface ToolAction {
+  tool: string;
+  success: boolean;
+  message: string;
+}
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -18,6 +28,7 @@ interface ChatMessage {
   citations?: TutorCitation[];
   model?: string;
   isStreaming?: boolean;
+  toolActions?: ToolAction[];
 }
 
 export interface ChainBlock {
@@ -61,6 +72,18 @@ function parseArtifactCommand(message: string): { type: ArtifactType | null; tit
   }
   return { type: null, title: "" };
 }
+
+const TOOL_LABELS: Record<string, string> = {
+  save_to_obsidian: "Obsidian",
+  create_note: "Notes",
+  create_anki_card: "Anki",
+};
+
+const TOOL_ICONS: Record<string, typeof FileText> = {
+  save_to_obsidian: BookOpen,
+  create_note: StickyNote,
+  create_anki_card: CreditCard,
+};
 
 export function TutorChat({
   sessionId,
@@ -151,6 +174,7 @@ export function TutorChat({
       let serverArtifactCmd: { type?: string; raw?: string } | null = null;
       let streamErrored = false;
       let doneSignal = false;
+      const toolActions: ToolAction[] = [];
 
       while (!doneSignal) {
         const { done, value } = await reader.read();
@@ -225,6 +249,35 @@ export function TutorChat({
               });
             }
 
+            if (parsed.type === "tool_call" && parsed.content) {
+              try {
+                const tc = JSON.parse(parsed.content) as { tool?: string };
+                const toolLabel = TOOL_LABELS[tc.tool ?? ""] ?? tc.tool ?? "tool";
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const last = updated[updated.length - 1];
+                  if (!last || last.role !== "assistant") return prev;
+                  updated[updated.length - 1] = {
+                    ...last,
+                    content: last.content + `\n\n> *Using ${toolLabel}...*\n\n`,
+                    isStreaming: true,
+                  };
+                  return updated;
+                });
+              } catch { /* ignore malformed */ }
+            }
+
+            if (parsed.type === "tool_result" && parsed.content) {
+              try {
+                const tr = JSON.parse(parsed.content) as { tool?: string; success?: boolean; message?: string };
+                toolActions.push({
+                  tool: tr.tool ?? "unknown",
+                  success: tr.success ?? false,
+                  message: tr.message ?? "",
+                });
+              } catch { /* ignore malformed */ }
+            }
+
             if (parsed.type === "token" && parsed.content) {
               fullText += parsed.content;
               setMessages((prev) => {
@@ -261,7 +314,6 @@ export function TutorChat({
         return;
       }
 
-      // Finalize message
       setMessages((prev) => {
         const updated = [...prev];
         const last = updated[updated.length - 1];
@@ -272,6 +324,7 @@ export function TutorChat({
           citations,
           model: modelId,
           isStreaming: false,
+          toolActions: toolActions.length > 0 ? toolActions : undefined,
         };
         return updated;
       });
@@ -393,7 +446,32 @@ export function TutorChat({
                 <div>{msg.content}</div>
               )}
 
-              {/* Action buttons for completed assistant messages */}
+              {msg.role === "assistant" && msg.toolActions?.length ? (
+                <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-primary/20">
+                  {msg.toolActions.map((ta, j) => {
+                    const Icon = TOOL_ICONS[ta.tool] ?? FileText;
+                    return (
+                      <div
+                        key={j}
+                        className={`flex items-center gap-1.5 px-2 py-1 text-xs font-terminal border ${
+                          ta.success
+                            ? "border-green-600/50 text-green-400 bg-green-950/30"
+                            : "border-red-600/50 text-red-400 bg-red-950/30"
+                        }`}
+                      >
+                        {ta.success ? (
+                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                        ) : (
+                          <XCircle className="w-3 h-3 shrink-0" />
+                        )}
+                        <Icon className="w-3 h-3 shrink-0" />
+                        <span className="truncate max-w-[200px]">{ta.message}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+
               {msg.role === "assistant" && msg.content && !msg.isStreaming && (
                 <div className="flex items-center gap-1 mt-2 pt-2 border-t border-primary/20">
                   <button
