@@ -44,6 +44,43 @@ SYNC_JOBS: dict[str, dict[str, Any]] = {}
 SYNC_JOBS_LOCK = Lock()
 SYNC_JOB_RETENTION = 30
 
+_SELECTOR_COLS_ENSURED = False
+
+
+def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
+    """Idempotently add selector metadata columns to tutor_sessions and sessions."""
+    global _SELECTOR_COLS_ENSURED
+    if _SELECTOR_COLS_ENSURED:
+        return
+    try:
+        cur = conn.cursor()
+        # tutor_sessions columns
+        cur.execute("PRAGMA table_info(tutor_sessions)")
+        ts_cols = {row[1] for row in cur.fetchall()}
+        for col, typedef in (
+            ("selector_chain_id", "TEXT"),
+            ("selector_score_json", "TEXT"),
+            ("selector_policy_version", "TEXT"),
+            ("selector_dependency_fix", "INTEGER DEFAULT 0"),
+        ):
+            if col not in ts_cols:
+                cur.execute(f"ALTER TABLE tutor_sessions ADD COLUMN {col} {typedef}")
+
+        # sessions columns
+        cur.execute("PRAGMA table_info(sessions)")
+        s_cols = {row[1] for row in cur.fetchall()}
+        for col, typedef in (
+            ("selector_chain_id", "TEXT"),
+            ("selector_policy_version", "TEXT"),
+        ):
+            if col not in s_cols:
+                cur.execute(f"ALTER TABLE sessions ADD COLUMN {col} {typedef}")
+
+        conn.commit()
+        _SELECTOR_COLS_ENSURED = True
+    except Exception:
+        pass
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -408,16 +445,52 @@ def create_session():
     content_filter = data.get("content_filter")
     method_chain_id = data.get("method_chain_id")
 
+    selector_meta: dict[str, Any] = {}
+
+    if not method_chain_id and data.get("assessment_mode"):
+        try:
+            from brain.selector_bridge import run_selector
+
+            sel = run_selector(
+                assessment_mode=data["assessment_mode"],
+                stage=data.get(
+                    "stage",
+                    phase
+                    if phase
+                    in ("first_exposure", "review", "exam_prep", "consolidation")
+                    else "first_exposure",
+                ),
+                energy=data.get("energy", "medium"),
+                time_available=int(data.get("time_available", 40)),
+                class_type=data.get("class_type"),
+                prior_exposure_band=data.get("prior_exposure_band", "new"),
+            )
+            selector_meta = {
+                "selector_chain_id": sel["chain_id"],
+                "selector_score_json": json.dumps(sel["score_tuple"]),
+                "selector_policy_version": sel["selector_policy_version"],
+                "selector_dependency_fix": 1 if sel["dependency_fix_applied"] else 0,
+            }
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Selector policy failed, continuing without", exc_info=True
+            )
+
     session_id = _gen_session_id()
     now = datetime.now().isoformat()
 
     conn = get_connection()
+    _ensure_selector_columns(conn)
     cur = conn.cursor()
     cur.execute(
         """INSERT INTO tutor_sessions
            (session_id, course_id, phase, mode, topic, content_filter_json,
-            status, turn_count, method_chain_id, current_block_index, started_at)
-           VALUES (?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?)""",
+            status, turn_count, method_chain_id, current_block_index, started_at,
+            selector_chain_id, selector_score_json, selector_policy_version,
+            selector_dependency_fix)
+           VALUES (?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?)""",
         (
             session_id,
             course_id,
@@ -427,10 +500,13 @@ def create_session():
             json.dumps(content_filter) if content_filter else None,
             method_chain_id,
             now,
+            selector_meta.get("selector_chain_id"),
+            selector_meta.get("selector_score_json"),
+            selector_meta.get("selector_policy_version"),
+            selector_meta.get("selector_dependency_fix"),
         ),
     )
 
-    # If a method chain is selected, create first block transition
     first_block_name = None
     if method_chain_id:
         blocks = _resolve_chain_blocks(conn, method_chain_id)
@@ -447,19 +523,21 @@ def create_session():
     conn.commit()
     conn.close()
 
-    return jsonify(
-        {
-            "session_id": session_id,
-            "phase": phase,
-            "mode": mode,
-            "topic": topic,
-            "status": "active",
-            "method_chain_id": method_chain_id,
-            "current_block_index": 0,
-            "current_block_name": first_block_name,
-            "started_at": now,
-        }
-    ), 201
+    response: dict[str, Any] = {
+        "session_id": session_id,
+        "phase": phase,
+        "mode": mode,
+        "topic": topic,
+        "status": "active",
+        "method_chain_id": method_chain_id,
+        "current_block_index": 0,
+        "current_block_name": first_block_name,
+        "started_at": now,
+    }
+    if selector_meta:
+        response["selector"] = selector_meta
+
+    return jsonify(response), 201
 
 
 # ---------------------------------------------------------------------------
@@ -1031,11 +1109,13 @@ def end_session(session_id: str):
 
     brain_session_id = None
     try:
+        _ensure_selector_columns(conn)
         cur.execute(
             """INSERT INTO sessions
                (session_date, session_time, main_topic, study_mode,
-                created_at, time_spent_minutes, duration_minutes)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                created_at, time_spent_minutes, duration_minutes,
+                selector_chain_id, selector_policy_version)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 now.strftime("%Y-%m-%d"),
                 now.strftime("%H:%M:%S"),
@@ -1044,6 +1124,8 @@ def end_session(session_id: str):
                 now.isoformat(),
                 session.get("turn_count", 0) * 2,
                 session.get("turn_count", 0) * 2,
+                session.get("selector_chain_id"),
+                session.get("selector_policy_version"),
             ),
         )
         brain_session_id = cur.lastrowid

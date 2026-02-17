@@ -122,7 +122,11 @@ def obsidian_health_check() -> dict:
     try:
         resp, error = _request_obsidian("GET", "/", timeout=3)
         if error or resp is None:
-            return {"connected": False, "status": "offline", "error": error or "No response"}
+            return {
+                "connected": False,
+                "status": "offline",
+                "error": error or "No response",
+            }
         if resp.status_code == 200:
             return {"connected": True, "status": "online"}
         return {
@@ -340,7 +344,9 @@ def _strip_module_prefix(title: str) -> str:
     return re.sub(r"(?i)^\s*module\s*\d+\s*[:\-\u2013\u2014]*\s*", "", title).strip()
 
 
-def _find_existing_match(files: list[str], target_title: str, module_number: str | None) -> str | None:
+def _find_existing_match(
+    files: list[str], target_title: str, module_number: str | None
+) -> str | None:
     target_norm = _normalize_filename(target_title)
     module_token = f"module{module_number}" if module_number else None
     for path in files:
@@ -363,7 +369,9 @@ def _find_existing_match(files: list[str], target_title: str, module_number: str
 def _build_destination_options(course_folder: str | None, title: str) -> dict:
     today = datetime.now().strftime("%Y-%m-%d")
     session_path = (
-        f"{course_folder}/Session-{today}.md" if course_folder else f"Inbox/Study-Log-{today}.md"
+        f"{course_folder}/Session-{today}.md"
+        if course_folder
+        else f"Inbox/Study-Log-{today}.md"
     )
 
     module_number = _parse_module_number(title)
@@ -383,7 +391,11 @@ def _build_destination_options(course_folder: str | None, title: str) -> dict:
             files = list_result.get("files") or []
 
     existing_module = (
-        _find_existing_match(files, f"Module {module_number} - {base_title}" if module_number else base_title, module_number)
+        _find_existing_match(
+            files,
+            f"Module {module_number} - {base_title}" if module_number else base_title,
+            module_number,
+        )
         if files
         else None
     )
@@ -537,11 +549,21 @@ def db_health():
         cur.execute("PRAGMA table_info(sessions)")
         cols = {c[1] for c in cur.fetchall()}
         v94_cols = [
-            "covered", "not_covered", "artifacts_created", "timebox_min",
-            "error_classification", "error_severity", "error_recurrence",
-            "errors_by_type", "errors_by_severity", "error_patterns",
-            "spacing_algorithm", "rsr_adaptive_adjustment", "adaptive_multipliers",
-            "tracker_json", "enhanced_json",
+            "covered",
+            "not_covered",
+            "artifacts_created",
+            "timebox_min",
+            "error_classification",
+            "error_severity",
+            "error_recurrence",
+            "errors_by_type",
+            "errors_by_severity",
+            "error_patterns",
+            "spacing_algorithm",
+            "rsr_adaptive_adjustment",
+            "adaptive_multipliers",
+            "tracker_json",
+            "enhanced_json",
         ]
         result["v94_ready"] = all(c in cols for c in v94_cols)
         missing = [c for c in v94_cols if c not in cols]
@@ -621,8 +643,39 @@ def serialize_session_row(row):
         "issues": issues_val,
         "sourceLock": row["source_lock"] if "source_lock" in row.keys() else None,
         "createdAt": row["created_at"] if "created_at" in row.keys() else final_date,
-        "methodChainId": row["method_chain_id"] if "method_chain_id" in row.keys() else None,
+        "methodChainId": row["method_chain_id"]
+        if "method_chain_id" in row.keys()
+        else None,
+        "selectorChainId": row["selector_chain_id"]
+        if "selector_chain_id" in row.keys()
+        else None,
+        "selectorPolicyVersion": row["selector_policy_version"]
+        if "selector_policy_version" in row.keys()
+        else None,
     }
+
+
+_SELECTOR_COLS_ENSURED_SESSIONS = False
+
+
+def _ensure_sessions_selector_cols(conn: sqlite3.Connection) -> None:
+    global _SELECTOR_COLS_ENSURED_SESSIONS
+    if _SELECTOR_COLS_ENSURED_SESSIONS:
+        return
+    try:
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(sessions)")
+        cols = {row[1] for row in cur.fetchall()}
+        for col, typedef in (
+            ("selector_chain_id", "TEXT"),
+            ("selector_policy_version", "TEXT"),
+        ):
+            if col not in cols:
+                cur.execute(f"ALTER TABLE sessions ADD COLUMN {col} {typedef}")
+        conn.commit()
+        _SELECTOR_COLS_ENSURED_SESSIONS = True
+    except Exception:
+        pass
 
 
 @adapter_bp.route("/sessions", methods=["GET"])
@@ -642,6 +695,7 @@ def get_sessions():
 
         conn = get_connection()
         conn.row_factory = sqlite3.Row
+        _ensure_sessions_selector_cols(conn)
         cur = conn.cursor()
 
         query = """
@@ -666,7 +720,9 @@ def get_sessions():
                 subtopics,
                 what_needs_fixing,
                 created_at,
-                method_chain_id
+                method_chain_id,
+                selector_chain_id,
+                selector_policy_version
             FROM sessions
             WHERE 1=1
         """
@@ -726,6 +782,7 @@ def get_single_session(session_id):
     try:
         conn = get_connection()
         conn.row_factory = sqlite3.Row
+        _ensure_sessions_selector_cols(conn)
         cur = conn.cursor()
         cur.execute(
             """
@@ -750,7 +807,9 @@ def get_single_session(session_id):
                 subtopics,
                 what_needs_fixing,
                 created_at,
-                method_chain_id
+                method_chain_id,
+                selector_chain_id,
+                selector_policy_version
             FROM sessions
             WHERE id = ?
         """,
@@ -851,23 +910,53 @@ def create_session():
 
 # Valid v9.4 Tracker JSON keys (includes Session Ledger fields)
 _TRACKER_KEYS = {
-    "schema_version", "date", "topic", "mode", "duration_min",
-    "understanding", "retention", "calibration_gap", "rsr_percent",
-    "cognitive_load", "transfer_check", "anchors", "what_worked",
-    "what_needs_fixing", "error_classification", "error_severity",
-    "error_recurrence", "notes",
+    "schema_version",
+    "date",
+    "topic",
+    "mode",
+    "duration_min",
+    "understanding",
+    "retention",
+    "calibration_gap",
+    "rsr_percent",
+    "cognitive_load",
+    "transfer_check",
+    "anchors",
+    "what_worked",
+    "what_needs_fixing",
+    "error_classification",
+    "error_severity",
+    "error_recurrence",
+    "notes",
     # Session Ledger v9.4
-    "covered", "not_covered", "weak_anchors", "artifacts_created", "timebox_min",
+    "covered",
+    "not_covered",
+    "weak_anchors",
+    "artifacts_created",
+    "timebox_min",
 }
 
 # Enhanced JSON adds these on top of Tracker
 _ENHANCED_EXTRA_KEYS = {
-    "source_lock", "plan_of_attack", "frameworks_used", "buckets",
-    "confusables_interleaved", "anki_cards", "glossary",
-    "exit_ticket_blurt", "exit_ticket_muddiest", "exit_ticket_next_action",
-    "retrospective_status", "spaced_reviews", "next_session",
-    "errors_by_type", "errors_by_severity", "error_patterns",
-    "spacing_algorithm", "rsr_adaptive_adjustment", "adaptive_multipliers",
+    "source_lock",
+    "plan_of_attack",
+    "frameworks_used",
+    "buckets",
+    "confusables_interleaved",
+    "anki_cards",
+    "glossary",
+    "exit_ticket_blurt",
+    "exit_ticket_muddiest",
+    "exit_ticket_next_action",
+    "retrospective_status",
+    "spaced_reviews",
+    "next_session",
+    "errors_by_type",
+    "errors_by_severity",
+    "error_patterns",
+    "spacing_algorithm",
+    "rsr_adaptive_adjustment",
+    "adaptive_multipliers",
 }
 
 # Map from JSON key → sessions table column (only where they differ or need mapping)
@@ -901,7 +990,9 @@ def ingest_session_json():
     if not session_id:
         return jsonify({"error": "session_id is required"}), 400
     if not tracker and not enhanced:
-        return jsonify({"error": "At least one of tracker_json or enhanced_json is required"}), 400
+        return jsonify(
+            {"error": "At least one of tracker_json or enhanced_json is required"}
+        ), 400
 
     # Validate JSON structure and keys
     errors = []
@@ -912,7 +1003,9 @@ def ingest_session_json():
         if unknown:
             errors.append(f"Unknown tracker keys: {sorted(unknown)}")
         if tracker.get("schema_version") and tracker["schema_version"] != "9.4":
-            errors.append(f"Expected schema_version 9.4, got {tracker['schema_version']}")
+            errors.append(
+                f"Expected schema_version 9.4, got {tracker['schema_version']}"
+            )
     if enhanced:
         if not isinstance(enhanced, dict):
             return jsonify({"error": "enhanced_json must be a JSON object"}), 422
@@ -989,7 +1082,12 @@ def ingest_session_json():
                     values.append(str(val))
 
         # Also populate v9.4 Session Ledger fields if present
-        for ledger_key in ("covered", "not_covered", "artifacts_created", "timebox_min"):
+        for ledger_key in (
+            "covered",
+            "not_covered",
+            "artifacts_created",
+            "timebox_min",
+        ):
             if ledger_key in merged and merged[ledger_key] is not None:
                 fields.append(f"{ledger_key} = ?")
                 values.append(merged[ledger_key])
@@ -1002,11 +1100,13 @@ def ingest_session_json():
         cur.execute(sql, values)
         conn.commit()
 
-        return jsonify({
-            "ok": True,
-            "session_id": session_id,
-            "fields_updated": len(fields),
-        })
+        return jsonify(
+            {
+                "ok": True,
+                "session_id": session_id,
+                "fields_updated": len(fields),
+            }
+        )
     except Exception as e:
         if conn:
             conn.rollback()
@@ -1022,6 +1122,7 @@ def update_session(session_id):
     data = request.json or {}
     try:
         conn = get_connection()
+        _ensure_sessions_selector_cols(conn)
         cur = conn.cursor()
 
         fields = []
@@ -1099,7 +1200,9 @@ def update_session(session_id):
                 subtopics,
                 what_needs_fixing,
                 created_at,
-                method_chain_id
+                method_chain_id,
+                selector_chain_id,
+                selector_policy_version
             FROM sessions
             WHERE id = ?
         """,
@@ -1697,7 +1800,6 @@ def _expand_class_meetings(
         current += timedelta(days=1)
     return expanded
 
-
     # _ensure_academic_deadlines_table and _insert_academic_deadline:
     # REMOVED — academic_deadlines merged into course_events
 
@@ -1723,7 +1825,6 @@ def import_syllabus_bulk():
 
     conn = get_connection()
     cur = conn.cursor()
-
 
     cur.execute("SELECT name FROM modules WHERE course_id = ?", (course_id,))
     existing_names = {
@@ -1832,7 +1933,6 @@ def import_syllabus_bulk():
             ),
         )
         events_created += 1
-
 
     conn.commit()
     conn.close()
@@ -2413,7 +2513,7 @@ def create_hypothesis():
     data = request.json
     if not data or not data.get("pattern_detected") or not data.get("explanation"):
         return jsonify({"error": "pattern_detected and explanation are required"}), 400
-    
+
     conn = get_connection()
     try:
         cur = conn.cursor()
@@ -2435,7 +2535,9 @@ def create_hypothesis():
         )
         new_id = cur.lastrowid
         conn.commit()
-        return jsonify({"id": new_id, "pattern_detected": data["pattern_detected"]}), 201
+        return jsonify(
+            {"id": new_id, "pattern_detected": data["pattern_detected"]}
+        ), 201
     finally:
         conn.close()
 
@@ -2445,29 +2547,40 @@ def update_hypothesis(hyp_id):
     data = request.json
     if not data:
         return jsonify({"error": "No data provided"}), 400
-    
+
     fields = []
     values = []
-    for key in ("pattern_detected", "explanation", "metrics_involved", "target_module_id", "target_chain_id", "status", "evidence_strength"):
+    for key in (
+        "pattern_detected",
+        "explanation",
+        "metrics_involved",
+        "target_module_id",
+        "target_chain_id",
+        "status",
+        "evidence_strength",
+    ):
         if key in data:
             fields.append(f"{key} = ?")
             values.append(data[key])
-    
+
     if data.get("status") == "tested":
         fields.append("tested_at = datetime('now')")
     elif data.get("status") == "validated":
         fields.append("validated_at = datetime('now')")
     elif data.get("status") == "rejected":
         fields.append("rejected_at = datetime('now')")
-    
+
     if not fields:
         return jsonify({"error": "No valid fields to update"}), 400
-    
+
     conn = get_connection()
     try:
         cur = conn.cursor()
         values.append(hyp_id)
-        cur.execute(f"UPDATE scholar_hypotheses SET {', '.join(fields)} WHERE id = ?", tuple(values))
+        cur.execute(
+            f"UPDATE scholar_hypotheses SET {', '.join(fields)} WHERE id = ?",
+            tuple(values),
+        )
         conn.commit()
         if cur.rowcount == 0:
             return jsonify({"error": "Hypothesis not found"}), 404
@@ -2496,12 +2609,12 @@ def cull_proposals_endpoint():
         from scholar.proposal_cull import cull_proposals, get_proposal_scores
     except ImportError as e:
         return jsonify({"error": f"Import failed: {e}"}), 500
-    
+
     data = request.json or {}
     dry_run = data.get("dry_run", True)
     threshold = data.get("similarity_threshold", 0.7)
     keep_top_n = data.get("keep_top_n", 20)
-    
+
     result = cull_proposals(
         dry_run=dry_run,
         similarity_threshold=threshold,
@@ -2516,7 +2629,7 @@ def get_proposal_scores_endpoint():
         from scholar.proposal_cull import get_proposal_scores
     except ImportError as e:
         return jsonify({"error": f"Import failed: {e}"}), 500
-    
+
     return jsonify(get_proposal_scores())
 
 
@@ -2558,7 +2671,12 @@ def get_planner_settings():
 def update_planner_settings():
     """Update planner settings."""
     data = request.json or {}
-    allowed = {"spacing_strategy", "default_session_minutes", "calendar_source", "auto_schedule_reviews"}
+    allowed = {
+        "spacing_strategy",
+        "default_session_minutes",
+        "calendar_source",
+        "auto_schedule_reviews",
+    }
     fields = []
     values = []
     for key in allowed:
@@ -2571,7 +2689,9 @@ def update_planner_settings():
     conn = None
     try:
         conn = get_connection()
-        conn.execute(f"UPDATE planner_settings SET {', '.join(fields)} WHERE id = 1", values)
+        conn.execute(
+            f"UPDATE planner_settings SET {', '.join(fields)} WHERE id = 1", values
+        )
         conn.commit()
         return jsonify({"ok": True})
     except Exception as e:
@@ -2670,10 +2790,19 @@ def create_planner_task():
         }
 
         columns = [
-            "course_id", "topic_id", "course_event_id",
-            "scheduled_date", "planned_minutes", "status",
-            "actual_session_id", "notes", "source", "priority",
-            "review_number", "anchor_text", "created_at",
+            "course_id",
+            "topic_id",
+            "course_event_id",
+            "scheduled_date",
+            "planned_minutes",
+            "status",
+            "actual_session_id",
+            "notes",
+            "source",
+            "priority",
+            "review_number",
+            "anchor_text",
+            "created_at",
         ]
         values = [payload[col] for col in columns]
         columns_str = ", ".join(columns)
@@ -2757,21 +2886,30 @@ def generate_planner_tasks():
         created = 0
         for sess in sessions:
             import re as _re
-            anchors = [a.strip() for a in _re.split(r"[;\n]", sess["weak_anchors"] or "") if a.strip()]
+
+            anchors = [
+                a.strip()
+                for a in _re.split(r"[;\n]", sess["weak_anchors"] or "")
+                if a.strip()
+            ]
             for anchor in anchors:
                 for i, days in enumerate(intervals):
                     review_num = i + 1
 
                     # Check if task already exists for this anchor + review number
-                    cur.execute("""
+                    cur.execute(
+                        """
                         SELECT id FROM study_tasks
                         WHERE anchor_text = ? AND review_number = ?
                           AND source = 'spacing'
-                    """, (anchor, review_num))
+                    """,
+                        (anchor, review_num),
+                    )
                     if cur.fetchone():
                         continue
 
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO study_tasks (
                             scheduled_date, planned_minutes,
                             status, notes, source, priority, review_number,
@@ -2781,15 +2919,17 @@ def generate_planner_tasks():
                             'pending', ?, 'spacing', ?, ?,
                             ?, datetime('now')
                         )
-                    """, (
-                        sess["session_date"],
-                        str(days),
-                        default_minutes,
-                        f"Review R{review_num}: {anchor} (from {sess['session_date']})",
-                        4 - i,  # R1 = priority 3, R2 = 2, R3 = 1, R4 = 0
-                        review_num,
-                        anchor,
-                    ))
+                    """,
+                        (
+                            sess["session_date"],
+                            str(days),
+                            default_minutes,
+                            f"Review R{review_num}: {anchor} (from {sess['session_date']})",
+                            4 - i,  # R1 = priority 3, R2 = 2, R3 = 1, R4 = 0
+                            review_num,
+                            anchor,
+                        ),
+                    )
                     created += 1
 
         conn.commit()
@@ -2807,7 +2947,13 @@ def generate_planner_tasks():
 def update_planner_task(task_id):
     """Update a study task status."""
     data = request.json or {}
-    allowed = {"status", "notes", "actual_session_id", "scheduled_date", "planned_minutes"}
+    allowed = {
+        "status",
+        "notes",
+        "actual_session_id",
+        "scheduled_date",
+        "planned_minutes",
+    }
     fields = []
     values = []
     for key in allowed:
@@ -2881,14 +3027,23 @@ def _scholar_status_payload() -> dict:
             for ln in tail[-120:]:
                 lower = ln.lower()
                 # Skip lines that merely mention error in passing
-                if any(skip in lower for skip in [
-                    "error rate", "error count", "no error", "0 error",
-                    "without error", "error-free", "replication error",
-                ]):
+                if any(
+                    skip in lower
+                    for skip in [
+                        "error rate",
+                        "error count",
+                        "no error",
+                        "0 error",
+                        "without error",
+                        "error-free",
+                        "replication error",
+                    ]
+                ):
                     continue
                 if re.search(
                     r"(^(ERROR|CRITICAL|FATAL)\b|traceback|raise \w+error|exception\s*:|unhandled|failed to)",
-                    ln, re.IGNORECASE,
+                    ln,
+                    re.IGNORECASE,
                 ):
                     errors.append(ln[:300])
             errors = errors[-10:]
@@ -2911,7 +3066,9 @@ def _scholar_status_payload() -> dict:
         if final_files:
             latest_final = max(final_files, key=lambda f: f.stat().st_mtime)
             try:
-                last_run = datetime.fromtimestamp(latest_final.stat().st_mtime).isoformat()
+                last_run = datetime.fromtimestamp(
+                    latest_final.stat().st_mtime
+                ).isoformat()
             except Exception:
                 last_run = None
 
@@ -2950,6 +3107,7 @@ def scholar_overview():
         # Opportunistic cleanup so stale pid markers don't wedge the UI.
         try:
             from dashboard.scholar import cleanup_stale_pids
+
             cleanup_stale_pids()
         except Exception:
             pass
@@ -2969,6 +3127,7 @@ def run_scholar():
 
     try:
         from dashboard.scholar import cleanup_stale_pids, run_scholar_orchestrator
+
         repo_root = Path(__file__).parent.parent.parent.resolve()
         run_dir = repo_root / "scholar" / "outputs" / "orchestrator_runs"
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -2976,7 +3135,9 @@ def run_scholar():
         cleanup_stale_pids()
         is_running = any(run_dir.glob("*.pid")) or any(run_dir.glob("*.running"))
         if is_running:
-            return jsonify({"success": False, "message": "Scholar run already in progress"}), 409
+            return jsonify(
+                {"success": False, "message": "Scholar run already in progress"}
+            ), 409
 
         data = request.get_json() or {}
         mode = data.get("mode", "brain")
@@ -3902,7 +4063,10 @@ def move_google_task_endpoint(task_id):
             return jsonify(new_task)
         except Exception as e:
             msg = str(e)
-            if "invalid credentials" in msg.lower() or "not authenticated" in msg.lower():
+            if (
+                "invalid credentials" in msg.lower()
+                or "not authenticated" in msg.lower()
+            ):
                 return jsonify({"error": msg}), 401
             return jsonify({"error": msg}), 500
 
@@ -5635,6 +5799,7 @@ def get_sessions_today():
     try:
         conn = get_connection()
         conn.row_factory = sqlite3.Row
+        _ensure_sessions_selector_cols(conn)
         cur = conn.cursor()
 
         today = datetime.now().strftime("%Y-%m-%d")
@@ -5661,7 +5826,9 @@ def get_sessions_today():
                 subtopics,
                 what_needs_fixing,
                 created_at,
-                method_chain_id
+                method_chain_id,
+                selector_chain_id,
+                selector_policy_version
             FROM sessions WHERE session_date = ?
             ORDER BY session_time DESC
         """,
@@ -6026,7 +6193,12 @@ def get_brain_metrics():
             LIMIT 10
         """)
         stale_topics = [
-            {"topic": r["t"], "count": r["cnt"], "lastStudied": r["last_studied"], "daysSince": r["days_since"]}
+            {
+                "topic": r["t"],
+                "count": r["cnt"],
+                "lastStudied": r["last_studied"],
+                "daysSince": r["days_since"],
+            }
             for r in cur2.fetchall()
         ]
         conn2.close()
@@ -6155,9 +6327,15 @@ Return STRICT JSON only (no code fences, no extra text) with:
                 organized_title = parsed.get("title") or organized_title
                 organized_markdown = parsed.get("markdown") or organized_markdown
                 if isinstance(parsed.get("checklist"), list) and parsed["checklist"]:
-                    checklist = [str(item) for item in parsed["checklist"] if str(item).strip()]
+                    checklist = [
+                        str(item) for item in parsed["checklist"] if str(item).strip()
+                    ]
                 if isinstance(parsed.get("suggested_links"), list):
-                    suggested_links = [str(item) for item in parsed["suggested_links"] if str(item).strip()]
+                    suggested_links = [
+                        str(item)
+                        for item in parsed["suggested_links"]
+                        if str(item).strip()
+                    ]
 
         if not suggested_links:
             suggested_links = re.findall(r"\[\[([^\]]+)\]\]", organized_markdown)
@@ -7111,7 +7289,11 @@ IMPORTANT:
             obsidian_content += f"**Course:** {course}\n\n"
 
             if organized_markdown.strip():
-                title_line = f"### Organized Notes: {organized_title}\n" if organized_title else "### Organized Notes\n"
+                title_line = (
+                    f"### Organized Notes: {organized_title}\n"
+                    if organized_title
+                    else "### Organized Notes\n"
+                )
                 obsidian_content += title_line
                 obsidian_content += f"{organized_markdown.strip()}\n\n"
 
@@ -8020,7 +8202,9 @@ def create_academic_deadline():
             cur.execute("SELECT id FROM courses WHERE name = ?", (course,))
             row = cur.fetchone()
             if not row:
-                cur.execute("SELECT course_id FROM wheel_courses WHERE name = ?", (course,))
+                cur.execute(
+                    "SELECT course_id FROM wheel_courses WHERE name = ?", (course,)
+                )
                 row = cur.fetchone()
             if row:
                 course_id = row[0]
@@ -8145,9 +8329,7 @@ def toggle_academic_deadline(deadline_id):
         conn = get_connection()
         cur = conn.cursor()
 
-        cur.execute(
-            "SELECT status FROM course_events WHERE id = ?", (deadline_id,)
-        )
+        cur.execute("SELECT status FROM course_events WHERE id = ?", (deadline_id,))
         row = cur.fetchone()
         if not row:
             conn.close()
@@ -8325,7 +8507,9 @@ def get_tutor_audit():
             SELECT ts.id, ts.session_id, ts.topic, ts.mode, ts.status,
                    ts.turn_count, ts.method_chain_id, ts.current_block_index,
                    ts.artifacts_json, ts.started_at, ts.ended_at,
-                   ts.brain_session_id
+                   ts.brain_session_id,
+                   ts.selector_chain_id, ts.selector_policy_version,
+                   ts.selector_score_json, ts.selector_dependency_fix
             FROM tutor_sessions ts
             ORDER BY ts.started_at DESC
             LIMIT 20
@@ -8350,6 +8534,7 @@ def get_tutor_audit():
             if sess.get("artifacts_json"):
                 try:
                     import json as _json
+
                     arts = _json.loads(sess["artifacts_json"])
                     if isinstance(arts, list):
                         artifacts_count = len(arts)
@@ -8367,13 +8552,14 @@ def get_tutor_audit():
                 if chain_row and chain_row["block_ids"]:
                     try:
                         import json as _json
+
                         total_blocks = len(_json.loads(chain_row["block_ids"]))
                         current_idx = sess.get("current_block_index") or 0
                         wrap_complete = current_idx >= total_blocks - 1
                     except Exception:
                         pass
 
-            audit_items.append({
+            item: dict[str, Any] = {
                 "id": sess["id"],
                 "sessionId": sid,
                 "date": sess.get("started_at") or "",
@@ -8385,7 +8571,15 @@ def get_tutor_audit():
                 "artifacts_created": artifacts_count,
                 "wrap_complete": wrap_complete,
                 "issues": issues,
-            })
+            }
+            if sess.get("selector_chain_id"):
+                item["selector"] = {
+                    "chain_id": sess["selector_chain_id"],
+                    "policy_version": sess.get("selector_policy_version"),
+                    "score_json": sess.get("selector_score_json"),
+                    "dependency_fix": bool(sess.get("selector_dependency_fix")),
+                }
+            audit_items.append(item)
 
         conn.close()
         return jsonify(audit_items)
