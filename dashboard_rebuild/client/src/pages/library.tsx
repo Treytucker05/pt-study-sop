@@ -884,6 +884,18 @@ export default function Library() {
                         {syncStatus?.last_error ? (
                           <div className="text-red-300 break-all">{syncStatus.last_error}</div>
                         ) : null}
+                        {(syncStatus?.sync_result?.errors as string[] | undefined)?.length ? (
+                          <details className="mt-1">
+                            <summary className="text-red-400 cursor-pointer text-xs font-terminal">
+                              {(syncStatus!.sync_result!.errors as string[]).length} file error{(syncStatus!.sync_result!.errors as string[]).length > 1 ? "s" : ""} — click to expand
+                            </summary>
+                            <ul className="mt-1 text-red-300 text-xs font-terminal list-disc pl-4 max-h-32 overflow-y-auto">
+                              {(syncStatus!.sync_result!.errors as string[]).map((err: string, i: number) => (
+                                <li key={i} className="break-all">{err}</li>
+                              ))}
+                            </ul>
+                          </details>
+                        ) : null}
                       </div>
                     )}
                   </div>

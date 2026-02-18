@@ -155,7 +155,7 @@ def _resolve_chain_blocks(conn, chain_id: int) -> list[dict]:
 
     placeholders = ",".join("?" * len(block_ids))
     cur.execute(
-        f"""SELECT id, name, category, description, default_duration_min, evidence, facilitation_prompt
+        f"""SELECT id, name, control_stage, description, default_duration_min, evidence, facilitation_prompt
             FROM method_blocks WHERE id IN ({placeholders})""",
         block_ids,
     )
@@ -199,7 +199,7 @@ def _build_chain_info(
         block_info = {
             "name": b["name"],
             "description": b.get("description", ""),
-            "category": b.get("category", ""),
+            "category": b.get("control_stage", ""),
             "evidence": b.get("evidence", ""),
             "duration": b.get("default_duration_min", 5),
             "facilitation_prompt": b.get("facilitation_prompt", ""),
@@ -1079,7 +1079,7 @@ def advance_block(session_id: str):
             "block_index": next_idx,
             "block_name": next_block["name"],
             "block_description": next_block.get("description", ""),
-            "block_category": next_block.get("category", ""),
+            "block_category": next_block.get("control_stage", ""),
             "block_duration": next_block.get("duration")
             or next_block.get("default_duration_min", 5),
             "facilitation_prompt": next_block.get("facilitation_prompt", ""),
@@ -1131,7 +1131,7 @@ def get_template_chains():
                     {
                         "id": b["id"],
                         "name": b["name"],
-                        "category": b.get("category", ""),
+                        "category": b.get("control_stage", ""),
                         "description": b.get("description", ""),
                         "duration": b.get("duration")
                         or b.get("default_duration_min", 5),
@@ -2028,10 +2028,10 @@ def get_method_blocks():
     cur = conn.cursor()
 
     cur.execute(
-        """SELECT id, name, category, description, default_duration_min,
+        """SELECT id, name, control_stage, description, default_duration_min,
                   energy_cost, facilitation_prompt
            FROM method_blocks
-           ORDER BY category, name"""
+           ORDER BY control_stage, name"""
     )
     blocks = [dict(r) for r in cur.fetchall()]
     conn.close()

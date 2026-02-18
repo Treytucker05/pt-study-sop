@@ -15,6 +15,7 @@ full-text search over the `content` column and keep the schema stable.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import hashlib
 import os
 import re
@@ -627,18 +628,24 @@ def sync_folder_to_rag(
         )
 
         doc_type = _infer_doc_type_from_suffix(file_path.suffix)
+        per_file_timeout = 120  # seconds — skip files that hang longer
         try:
-            doc_id = ingest_document(
-                path=str(file_path),
-                doc_type=doc_type,
-                course_id=None,
-                topic_tags=["study-folder"],
-                corpus=corpus,
-                folder_path=rel_folder,
-                enabled=1,
-            )
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(
+                    ingest_document,
+                    path=str(file_path),
+                    doc_type=doc_type,
+                    course_id=None,
+                    topic_tags=["study-folder"],
+                    corpus=corpus,
+                    folder_path=rel_folder,
+                    enabled=1,
+                )
+                doc_id = future.result(timeout=per_file_timeout)
             ingested_ids.append(int(doc_id))
             processed += 1
+        except concurrent.futures.TimeoutError:
+            errors.append(f"{file_path}: timed out after {per_file_timeout}s")
         except Exception as exc:
             errors.append(f"{file_path}: {exc}")
 
