@@ -6295,7 +6295,7 @@ Return STRICT JSON only (no code fences, no extra text) with:
             system_prompt=system_prompt,
             user_prompt=f"Organize these notes:\n\n{raw_notes}",
             provider="openrouter",
-            model="google/gemini-2.0-flash-001",
+            model="google/gemini-2.5-flash-lite",
             timeout=60,
         )
 
@@ -6899,7 +6899,7 @@ IMPORTANT:
                 system_prompt=system_prompt,
                 user_prompt=f"Process this study session data:\n\n{message}",
                 provider="openrouter",
-                model="google/gemini-2.0-flash-001",
+                model="google/gemini-2.5-flash-lite",
                 timeout=45,
             )
 

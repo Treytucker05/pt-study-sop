@@ -131,7 +131,7 @@ def run_deep_agent(
 
     manifest = manifest or {}
     deep_cfg = manifest.get("deep_agent", {})
-    model = deep_cfg.get("model", "google/gemini-2.0-flash-001")
+    model = deep_cfg.get("model", "google/gemini-2.5-flash-lite")
     max_iterations = deep_cfg.get("max_iterations", 15)
 
     system_prompt = build_system_prompt(

@@ -49,7 +49,7 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 def _call_openrouter_api(
     system_prompt: str,
     user_prompt: str,
-    model: str = "google/gemini-2.0-flash-001",
+    model: str = "google/gemini-2.5-flash-lite",
     timeout: int = OPENAI_API_TIMEOUT,
 ) -> Dict[str, Any]:
     """

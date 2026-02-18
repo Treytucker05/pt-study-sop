@@ -121,7 +121,7 @@ def build_tutor_chain(
 
     # Model priority: explicit param > env var > default
     if os.environ.get("OPENROUTER_API_KEY"):
-        selected_model = model or os.environ.get("TUTOR_MODEL", "google/gemini-2.0-flash-001")
+        selected_model = model or os.environ.get("TUTOR_MODEL", "google/gemini-2.5-flash-lite")
         llm = ChatOpenAI(
             model=selected_model,
             api_key=api_key,

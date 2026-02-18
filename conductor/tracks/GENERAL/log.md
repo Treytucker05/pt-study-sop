@@ -81,3 +81,19 @@ px vitest run --reporter=verbose (341 passed)
 - Added `kimi` command allowlist entry in `permissions.json`.
 - Restored backward compatibility for legacy pre-push hooks by adding non-failing `auto-claim` command to `scripts/agent_task_board.py`.
 - Local environment action: reinstalled managed git hooks via `scripts/install_agent_guard_hooks.ps1 -Action install` to remove stale hook drift.
+
+## 2026-02-18 - Gemini 2.0 deprecation migration + Deep Agents CLI audit
+
+- Replaced all `google/gemini-2.0-flash-001` defaults/usages with `google/gemini-2.5-flash-lite` in runtime and config paths:
+  - `brain/llm_provider.py`
+  - `brain/tutor_chains.py`
+  - `brain/dashboard/scholar.py`
+  - `scholar/deep_agent/agent.py`
+  - `brain/dashboard/calendar_assistant.py`
+  - `brain/dashboard/api_adapter.py`
+  - `scholar/inputs/audit_manifest.json`
+  - `brain/scratch/test_llm_debug.py`
+- Confirmed zero remaining `gemini-2.0` references in repo (excluding none).
+- Audited LangChain/LangGraph deep-agent integration and confirmed in-process usage (`langgraph.prebuilt.create_react_agent`), with no `deepagents`/LangChain Deep Agents CLI command usage found.
+- Validation:
+  - `python -m pytest brain/tests/ -q` fails at collection with pre-existing import issue: `ImportError: cannot import name 'get_policy_version' from 'selector_bridge'` in `brain/tests/test_selector_bridge.py`.
