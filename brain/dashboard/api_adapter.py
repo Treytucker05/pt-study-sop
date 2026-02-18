@@ -1214,6 +1214,10 @@ def update_session(session_id):
             return jsonify({"error": "Session not found"}), 404
         return jsonify(serialize_session_row(row))
     except Exception as e:
+        try:
+            conn.close()
+        except Exception:
+            pass
         return jsonify({"error": str(e)}), 500
 
 
