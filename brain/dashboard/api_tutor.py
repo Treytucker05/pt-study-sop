@@ -48,7 +48,12 @@ _SELECTOR_COLS_ENSURED = False
 
 
 def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
-    """Idempotently add selector metadata columns to tutor_sessions and sessions."""
+    """
+    Idempotently add selector + continuity columns to tutor tables.
+
+    This keeps API behavior stable across older local DBs without requiring a
+    manual migration step before first request.
+    """
     global _SELECTOR_COLS_ENSURED
     if _SELECTOR_COLS_ENSURED:
         return
@@ -62,9 +67,21 @@ def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
             ("selector_score_json", "TEXT"),
             ("selector_policy_version", "TEXT"),
             ("selector_dependency_fix", "INTEGER DEFAULT 0"),
+            ("codex_thread_id", "TEXT"),
+            ("last_response_id", "TEXT"),
         ):
             if col not in ts_cols:
                 cur.execute(f"ALTER TABLE tutor_sessions ADD COLUMN {col} {typedef}")
+
+        # tutor_turns continuity columns
+        cur.execute("PRAGMA table_info(tutor_turns)")
+        tt_cols = {row[1] for row in cur.fetchall()}
+        for col, typedef in (
+            ("response_id", "TEXT"),
+            ("model_id", "TEXT"),
+        ):
+            if col not in tt_cols:
+                cur.execute(f"ALTER TABLE tutor_turns ADD COLUMN {col} {typedef}")
 
         # sessions columns
         cur.execute("PRAGMA table_info(sessions)")
@@ -109,7 +126,7 @@ def _get_session_turns(conn, session_id: str, limit: int = 50) -> list[dict]:
     cur = conn.cursor()
     cur.execute(
         """SELECT id, turn_number, question, answer, citations_json,
-                  phase, artifacts_json, created_at
+                  phase, artifacts_json, response_id, model_id, created_at
            FROM tutor_turns
            WHERE tutor_session_id = ?
            ORDER BY turn_number ASC
@@ -444,6 +461,7 @@ def create_session():
     topic = data.get("topic", "")
     content_filter = data.get("content_filter")
     method_chain_id = data.get("method_chain_id")
+    brain_session_id = data.get("brain_session_id")
 
     selector_meta: dict[str, Any] = {}
 
@@ -484,15 +502,29 @@ def create_session():
     conn = get_connection()
     _ensure_selector_columns(conn)
     cur = conn.cursor()
+    linked_brain_session_id: Optional[int] = None
+    if brain_session_id is not None:
+        try:
+            linked_brain_session_id = int(brain_session_id)
+        except (TypeError, ValueError):
+            conn.close()
+            return jsonify({"error": "brain_session_id must be an integer"}), 400
+
+        cur.execute("SELECT id FROM sessions WHERE id = ?", (linked_brain_session_id,))
+        if not cur.fetchone():
+            conn.close()
+            return jsonify({"error": "brain_session_id not found"}), 404
+
     cur.execute(
         """INSERT INTO tutor_sessions
-           (session_id, course_id, phase, mode, topic, content_filter_json,
+           (session_id, brain_session_id, course_id, phase, mode, topic, content_filter_json,
             status, turn_count, method_chain_id, current_block_index, started_at,
             selector_chain_id, selector_score_json, selector_policy_version,
             selector_dependency_fix)
-           VALUES (?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?)""",
         (
             session_id,
+            linked_brain_session_id,
             course_id,
             phase,
             mode,
@@ -529,6 +561,9 @@ def create_session():
         "mode": mode,
         "topic": topic,
         "status": "active",
+        "brain_session_id": linked_brain_session_id,
+        "codex_thread_id": None,
+        "last_response_id": None,
         "method_chain_id": method_chain_id,
         "current_block_index": 0,
         "current_block_name": first_block_name,
@@ -548,6 +583,7 @@ def create_session():
 @tutor_bp.route("/session/<session_id>", methods=["GET"])
 def get_session(session_id: str):
     conn = get_connection()
+    _ensure_selector_columns(conn)
     session = _get_tutor_session(conn, session_id)
     if not session:
         conn.close()
@@ -597,6 +633,7 @@ def send_turn(session_id: str):
         return jsonify({"error": "message is required"}), 400
 
     conn = get_connection()
+    _ensure_selector_columns(conn)
     session = _get_tutor_session(conn, session_id)
     if not session:
         conn.close()
@@ -765,7 +802,9 @@ def send_turn(session_id: str):
             tool_schemas = get_tool_schemas()
             max_tool_rounds = 5
             tool_round = 0
-            prev_response_id: str | None = None
+            prev_response_id: str | None = session.get("last_response_id")
+            latest_response_id: str | None = prev_response_id
+            latest_thread_id: str | None = session.get("codex_thread_id")
             pending_tool_results: list[dict] = []
 
             try:
@@ -775,6 +814,8 @@ def send_turn(session_id: str):
                     "web_search": enable_web_search,
                     "tools": tool_schemas,
                 }
+                if prev_response_id:
+                    stream_kwargs["previous_response_id"] = prev_response_id
 
                 while True:
                     tool_calls_this_round: list[dict] = []
@@ -783,6 +824,12 @@ def send_turn(session_id: str):
                         stream_kwargs["previous_response_id"] = prev_response_id
                         stream_kwargs["input_override"] = pending_tool_results
                         pending_tool_results = []
+                    else:
+                        stream_kwargs.pop("input_override", None)
+                        if prev_response_id:
+                            stream_kwargs["previous_response_id"] = prev_response_id
+                        else:
+                            stream_kwargs.pop("previous_response_id", None)
 
                     for chunk in stream_chatgpt_responses(
                         system_prompt,
@@ -804,6 +851,12 @@ def send_turn(session_id: str):
                             api_model = chunk.get("model") or api_model
                             prev_response_id = (
                                 chunk.get("response_id") or prev_response_id
+                            )
+                            latest_response_id = prev_response_id
+                            latest_thread_id = (
+                                chunk.get("thread_id")
+                                or chunk.get("conversation_id")
+                                or latest_thread_id
                             )
                             url_citations_raw = chunk.get("url_citations", [])
                             if isinstance(url_citations_raw, list):
@@ -907,8 +960,9 @@ def send_turn(session_id: str):
             cur.execute(
                 """INSERT INTO tutor_turns
                    (session_id, tutor_session_id, course_id, mode, turn_number,
-                    question, answer, citations_json, phase, artifacts_json, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    question, answer, citations_json, response_id, model_id,
+                    phase, artifacts_json, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     session_id,
                     session_id,
@@ -918,6 +972,8 @@ def send_turn(session_id: str):
                     question,
                     full_response,
                     json.dumps(citations) if citations else None,
+                    latest_response_id,
+                    api_model,
                     session.get("phase"),
                     json.dumps({"command": artifact_cmd}) if artifact_cmd else None,
                     now,
@@ -925,8 +981,10 @@ def send_turn(session_id: str):
             )
 
             cur.execute(
-                "UPDATE tutor_sessions SET turn_count = ? WHERE session_id = ?",
-                (turn_number, session_id),
+                """UPDATE tutor_sessions
+                   SET turn_count = ?, last_response_id = ?, codex_thread_id = COALESCE(?, codex_thread_id)
+                   WHERE session_id = ?""",
+                (turn_number, latest_response_id, latest_thread_id, session_id),
             )
 
             if session.get("method_chain_id"):
@@ -1112,30 +1170,31 @@ def end_session(session_id: str):
         (now.isoformat(), session_id),
     )
 
-    brain_session_id = None
-    try:
-        _ensure_selector_columns(conn)
-        cur.execute(
-            """INSERT INTO sessions
-               (session_date, session_time, main_topic, study_mode,
-                created_at, time_spent_minutes, duration_minutes,
-                selector_chain_id, selector_policy_version)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                now.strftime("%Y-%m-%d"),
-                now.strftime("%H:%M:%S"),
-                session.get("topic") or "Tutor Session",
-                f"Tutor-{session.get('mode', 'Core')}",
-                now.isoformat(),
-                session.get("turn_count", 0) * 2,
-                session.get("turn_count", 0) * 2,
-                session.get("selector_chain_id"),
-                session.get("selector_policy_version"),
-            ),
-        )
-        brain_session_id = cur.lastrowid
-    except Exception:
-        pass
+    _ensure_selector_columns(conn)
+    brain_session_id = session.get("brain_session_id")
+    if not brain_session_id:
+        try:
+            cur.execute(
+                """INSERT INTO sessions
+                   (session_date, session_time, main_topic, study_mode,
+                    created_at, time_spent_minutes, duration_minutes,
+                    selector_chain_id, selector_policy_version)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    now.strftime("%Y-%m-%d"),
+                    now.strftime("%H:%M:%S"),
+                    session.get("topic") or "Tutor Session",
+                    f"Tutor-{session.get('mode', 'Core')}",
+                    now.isoformat(),
+                    session.get("turn_count", 0) * 2,
+                    session.get("turn_count", 0) * 2,
+                    session.get("selector_chain_id"),
+                    session.get("selector_policy_version"),
+                ),
+            )
+            brain_session_id = cur.lastrowid
+        except Exception:
+            pass
 
     cur.execute(
         """UPDATE tutor_sessions
@@ -1159,6 +1218,124 @@ def end_session(session_id: str):
             "status": "completed",
             "brain_session_id": brain_session_id,
             "ended_at": now.isoformat(),
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/session/<id>/link-archive — Link tutor session to Brain archive row
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/link-archive", methods=["POST"])
+def link_archive(session_id: str):
+    data = request.get_json(silent=True) or {}
+    raw_brain_session_id = data.get("brain_session_id")
+    if raw_brain_session_id is None:
+        return jsonify({"error": "brain_session_id is required"}), 400
+
+    try:
+        brain_session_id = int(raw_brain_session_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "brain_session_id must be an integer"}), 400
+
+    conn = get_connection()
+    _ensure_selector_columns(conn)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    cur.execute(
+        """SELECT id, session_date, session_time, study_mode, main_topic, topic, created_at
+           FROM sessions WHERE id = ?""",
+        (brain_session_id,),
+    )
+    archive_row = cur.fetchone()
+    if not archive_row:
+        conn.close()
+        return jsonify({"error": "brain_session_id not found"}), 404
+
+    cur.execute(
+        "UPDATE tutor_sessions SET brain_session_id = ? WHERE session_id = ?",
+        (brain_session_id, session_id),
+    )
+    cur.execute(
+        """UPDATE card_drafts
+           SET session_id = ?
+           WHERE tutor_session_id = ? AND (session_id IS NULL OR session_id = '')""",
+        (str(brain_session_id), session_id),
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify(
+        {
+            "session_id": session_id,
+            "brain_session_id": brain_session_id,
+            "archive": dict(archive_row),
+            "linked": True,
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/tutor/archive/<brain_session_id>/linked-chat — reverse lookup from archive
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/archive/<int:brain_session_id>/linked-chat", methods=["GET"])
+def get_linked_chat(brain_session_id: int):
+    include_turns = request.args.get("include_turns", "1").strip() not in ("0", "false")
+
+    conn = get_connection()
+    _ensure_selector_columns(conn)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute(
+        """SELECT id, session_date, session_time, study_mode, main_topic, topic, created_at
+           FROM sessions WHERE id = ?""",
+        (brain_session_id,),
+    )
+    archive_row = cur.fetchone()
+    if not archive_row:
+        conn.close()
+        return jsonify({"error": "Archive session not found"}), 404
+
+    cur.execute(
+        """SELECT id, session_id, course_id, phase, mode, topic, status, turn_count,
+                  started_at, ended_at, brain_session_id, codex_thread_id, last_response_id
+           FROM tutor_sessions
+           WHERE brain_session_id = ?
+           ORDER BY started_at DESC""",
+        (brain_session_id,),
+    )
+    linked_sessions = [dict(r) for r in cur.fetchall()]
+
+    if include_turns:
+        for sess in linked_sessions:
+            turns = _get_session_turns(conn, sess["session_id"], limit=200)
+            for turn in turns:
+                for field in ("citations_json", "artifacts_json"):
+                    if turn.get(field):
+                        try:
+                            turn[field] = json.loads(turn[field])
+                        except (json.JSONDecodeError, TypeError):
+                            pass
+            sess["turns"] = turns
+
+    conn.close()
+
+    return jsonify(
+        {
+            "brain_session_id": brain_session_id,
+            "archive": dict(archive_row),
+            "linked_sessions": linked_sessions,
+            "count": len(linked_sessions),
         }
     )
 
@@ -1344,6 +1521,7 @@ def list_sessions():
     limit = request.args.get("limit", 20, type=int)
 
     conn = get_connection()
+    _ensure_selector_columns(conn)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -1362,7 +1540,8 @@ def list_sessions():
     cur.execute(
         f"""SELECT id, session_id, course_id, phase, mode, topic, status,
                    turn_count, method_chain_id, current_block_index,
-                   started_at, ended_at
+                   started_at, ended_at, brain_session_id,
+                   codex_thread_id, last_response_id
             FROM tutor_sessions
             {where}
             ORDER BY started_at DESC

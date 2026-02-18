@@ -97,3 +97,34 @@ px vitest run --reporter=verbose (341 passed)
 - Audited LangChain/LangGraph deep-agent integration and confirmed in-process usage (`langgraph.prebuilt.create_react_agent`), with no `deepagents`/LangChain Deep Agents CLI command usage found.
 - Validation:
   - `python -m pytest brain/tests/ -q` fails at collection with pre-existing import issue: `ImportError: cannot import name 'get_policy_version' from 'selector_bridge'` in `brain/tests/test_selector_bridge.py`.
+
+## 2026-02-18 - Tutor archive-linking + chat continuity persistence
+
+- Fixed selector-bridge test/contract drift and import robustness:
+  - Added `get_policy_version()` and `reload_chain_catalog()`
+  - Added deterministic metadata return (`chain_name`, `selected_blocks`, numeric `score_tuple`)
+  - Added fallback import path for test contexts (`brain.selector` vs top-level `selector`)
+  - File: `brain/selector_bridge.py`
+- Added tutor chat continuity persistence fields and migrations:
+  - `tutor_sessions`: `codex_thread_id`, `last_response_id`
+  - `tutor_turns`: `response_id`, `model_id`
+  - File: `brain/db_setup.py`
+- Enhanced tutor runtime/session APIs:
+  - Persist + reuse `previous_response_id` across turns
+  - Store per-turn `response_id` + `model_id`
+  - Store `codex_thread_id` when available
+  - `POST /api/tutor/session/<session_id>/link-archive`
+  - `GET /api/tutor/archive/<brain_session_id>/linked-chat`
+  - Optional `brain_session_id` on session creation
+  - Preserve existing `brain_session_id` on `/end` instead of always creating a new archive row
+  - File: `brain/dashboard/api_tutor.py`
+- Added `thread_id` passthrough from streaming response completion payload:
+  - File: `brain/llm_provider.py`
+- Added method library compatibility hardening for mixed old/new schemas:
+  - runtime ensure/backfill for `method_blocks.category` + `control_stage`
+  - update/create now keep both fields aligned
+  - File: `brain/dashboard/api_methods.py`
+- Added tests:
+  - `brain/tests/test_tutor_session_linking.py` (archive-link + response-id continuity)
+- Validation:
+  - `python -m pytest brain/tests/ -q` -> `303 passed, 2 warnings`

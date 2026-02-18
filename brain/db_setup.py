@@ -853,6 +853,8 @@ def init_database():
             question TEXT NOT NULL,
             answer TEXT,
             citations_json TEXT,              -- JSON array of citation objects
+            response_id TEXT,                 -- provider response id for continuity
+            model_id TEXT,                    -- model used for this turn
             unverified INTEGER DEFAULT 0,     -- 1 if answer was unverified
             source_lock_active INTEGER DEFAULT 0,
             created_at TEXT NOT NULL,
@@ -1288,7 +1290,8 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             method_id TEXT,
             name TEXT NOT NULL,
-            control_stage TEXT NOT NULL CHECK(control_stage IN ('PRIME', 'CALIBRATE', 'ENCODE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN')),
+            category TEXT,
+            control_stage TEXT DEFAULT 'ENCODE' CHECK(control_stage IN ('PRIME', 'CALIBRATE', 'ENCODE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN')),
             description TEXT,
             default_duration_min INTEGER DEFAULT 5,
             energy_cost TEXT DEFAULT 'medium',
@@ -1376,6 +1379,12 @@ def init_database():
     # Add evidence column to method_blocks if missing (PEIRRO v2 migration)
     cursor.execute("PRAGMA table_info(method_blocks)")
     mb_cols = {col[1] for col in cursor.fetchall()}
+    if "category" not in mb_cols:
+        try:
+            cursor.execute("ALTER TABLE method_blocks ADD COLUMN category TEXT")
+            print("[INFO] Added 'category' column to method_blocks table")
+        except sqlite3.OperationalError:
+            pass
     if "evidence" not in mb_cols:
         try:
             cursor.execute("ALTER TABLE method_blocks ADD COLUMN evidence TEXT")
@@ -1421,6 +1430,38 @@ def init_database():
                 print(f"[INFO] Added '{col_name}' column to method_blocks table")
             except sqlite3.OperationalError:
                 pass
+
+    # Keep legacy category field available for older test/data paths.
+    cursor.execute(
+        """
+        UPDATE method_blocks
+        SET category = CASE control_stage
+            WHEN 'PRIME' THEN 'prepare'
+            WHEN 'CALIBRATE' THEN 'prepare'
+            WHEN 'ENCODE' THEN 'encode'
+            WHEN 'REFERENCE' THEN 'interrogate'
+            WHEN 'RETRIEVE' THEN 'retrieve'
+            WHEN 'OVERLEARN' THEN 'overlearn'
+            ELSE category
+        END
+        WHERE category IS NULL OR TRIM(category) = ''
+        """
+    )
+    cursor.execute(
+        """
+        UPDATE method_blocks
+        SET control_stage = CASE LOWER(category)
+            WHEN 'prepare' THEN 'PRIME'
+            WHEN 'encode' THEN 'ENCODE'
+            WHEN 'interrogate' THEN 'REFERENCE'
+            WHEN 'retrieve' THEN 'RETRIEVE'
+            WHEN 'refine' THEN 'OVERLEARN'
+            WHEN 'overlearn' THEN 'OVERLEARN'
+            ELSE control_stage
+        END
+        WHERE control_stage IS NULL OR TRIM(control_stage) = ''
+        """
+    )
 
     # Add ruleset_id to method_chains if missing (V2 architecture migration)
     cursor.execute("PRAGMA table_info(method_chains)")
@@ -1535,6 +1576,8 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id TEXT NOT NULL UNIQUE,
             brain_session_id INTEGER,
+            codex_thread_id TEXT,
+            last_response_id TEXT,
             course_id INTEGER,
             phase TEXT NOT NULL DEFAULT 'first_pass',
             mode TEXT DEFAULT 'Core',
@@ -1644,10 +1687,16 @@ def init_database():
     # ------------------------------------------------------------------
     # Adaptive Tutor: column migrations
     # ------------------------------------------------------------------
-    # tutor_turns: add tutor_session_id, phase, artifacts_json
+    # tutor_turns: add tutor_session_id, phase, artifacts_json, continuity columns
     cursor.execute("PRAGMA table_info(tutor_turns)")
     tt_cols = {col[1] for col in cursor.fetchall()}
-    for col_name in ["tutor_session_id", "phase", "artifacts_json"]:
+    for col_name in [
+        "tutor_session_id",
+        "phase",
+        "artifacts_json",
+        "response_id",
+        "model_id",
+    ]:
         if col_name not in tt_cols:
             try:
                 cursor.execute(f"ALTER TABLE tutor_turns ADD COLUMN {col_name} TEXT")
@@ -1673,6 +1722,8 @@ def init_database():
     for col_name, col_type in [
         ("method_chain_id", "INTEGER"),
         ("current_block_index", "INTEGER DEFAULT 0"),
+        ("codex_thread_id", "TEXT"),
+        ("last_response_id", "TEXT"),
     ]:
         if col_name not in ts_cols:
             try:
