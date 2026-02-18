@@ -3,7 +3,7 @@ param(
   [string]$SessionName = "",
   [string]$WorktreesRoot = "C:\\Users\\treyt\\OneDrive\\Desktop\\pt-study-sop-worktrees",
   [string]$BaseRef = "HEAD",
-  [ValidateSet("codex", "opencode", "powershell", "custom")]
+  [ValidateSet("codex", "opencode", "kimi", "powershell", "custom")]
   [string]$Tool = "codex",
   [string]$ToolArgs = "",
   [string]$OpenCodeCmd = "opencode",
@@ -93,6 +93,13 @@ switch ($Tool.ToLowerInvariant()) {
       $launchCommand = $openCodeBase
     } else {
       $launchCommand = "$openCodeBase $ToolArgs"
+    }
+  }
+  "kimi" {
+    if ([string]::IsNullOrWhiteSpace($ToolArgs)) {
+      $launchCommand = "kimi"
+    } else {
+      $launchCommand = "kimi $ToolArgs"
     }
   }
   "custom" {

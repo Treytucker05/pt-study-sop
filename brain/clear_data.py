@@ -16,7 +16,7 @@ def clear_all_data():
         print(f"[INFO] Database not found at {DB_PATH}. Nothing to clear.")
         return True
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cursor = conn.cursor()
     
     # Get row counts before deletion

@@ -64,6 +64,7 @@ def detect_hints(text: str) -> list[str]:
     rules = [
         ("Codex", r"\bCodex CLI\b|\bcodex\b"),
         ("Claude", r"\bClaude Code\b|\bclaude\b"),
+        ("Kimi", r"\bkimi\b"),
         ("Cursor", r"\bcursor\b"),
         ("Antigravity", r"\bantigravity\b"),
         ("OpenCode", r"\bOpenCode\b|\bopencode\b"),
@@ -83,6 +84,7 @@ def detect_dependencies(text: str) -> list[str]:
     rules = [
         ("codex", r"\bcodex(\.exe|\.ps1)?\b"),
         ("claude", r"\bclaude(\.exe)?\b"),
+        ("kimi", r"\bkimi(\.exe)?\b"),
         ("cursor", r"\bcursor(\.exe|\.cmd)?\b"),
         ("opencode", r"\bopencode(\.exe)?\b"),
         ("gemini", r"\bgemini(\.exe|\.ps1)?\b"),
@@ -225,6 +227,7 @@ def main() -> int:
     parser.add_argument("--canonical-root", default=str(Path.home() / ".agents" / "skills"))
     parser.add_argument("--codex-root", default=str(Path.home() / ".codex" / "skills"))
     parser.add_argument("--claude-root", default=str(Path.home() / ".claude" / "skills"))
+    parser.add_argument("--kimi-root", default=str(Path.home() / ".kimi" / "skills"))
     parser.add_argument("--cursor-root", default=str(Path.home() / ".cursor" / "skills"))
     parser.add_argument("--antigravity-root", default=str(Path.home() / ".antigravity" / "skills"))
     parser.add_argument("--vault-root", default=str(DEFAULT_VAULT))
@@ -235,6 +238,7 @@ def main() -> int:
         "canonical": Path(args.canonical_root),
         "codex": Path(args.codex_root),
         "claude": Path(args.claude_root),
+        "kimi": Path(args.kimi_root),
         "cursor": Path(args.cursor_root),
         "antigravity": Path(args.antigravity_root),
     }
@@ -247,6 +251,7 @@ def main() -> int:
     installed = {
         "codex": shutil.which("codex") is not None,
         "claude": shutil.which("claude") is not None,
+        "kimi": shutil.which("kimi") is not None,
         "cursor": shutil.which("cursor") is not None,
         "opencode": shutil.which("opencode") is not None,
         "gemini": shutil.which("gemini") is not None,
@@ -281,7 +286,7 @@ def main() -> int:
         )
 
     extras: dict[str, list[str]] = {}
-    for agent in ("codex", "claude", "cursor", "antigravity"):
+    for agent in ("codex", "claude", "kimi", "cursor", "antigravity"):
         extras[agent] = sorted(
             skill for skill in root_skill_sets[agent].keys() if skill not in canonical_skills
         )
@@ -332,15 +337,15 @@ def main() -> int:
     coverage_lines = [
         "# Agent Coverage",
         "",
-        "| skill_id | codex | claude | cursor | antigravity |",
-        "| --- | --- | --- | --- | --- |",
+        "| skill_id | codex | claude | kimi | cursor | antigravity |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for s in docs:
         row = []
-        for agent in ("codex", "claude", "cursor", "antigravity"):
+        for agent in ("codex", "claude", "kimi", "cursor", "antigravity"):
             row.append("Y" if s.skill_id in root_skill_sets[agent] else "N")
         coverage_lines.append(
-            f"| {markdown_escape(s.skill_id)} | {row[0]} | {row[1]} | {row[2]} | {row[3]} |"
+            f"| {markdown_escape(s.skill_id)} | {row[0]} | {row[1]} | {row[2]} | {row[3]} | {row[4]} |"
         )
 
     coverage_lines.extend(
@@ -364,7 +369,7 @@ def main() -> int:
         "## Root Extras (not in canonical)",
         "",
     ]
-    for agent in ("codex", "claude", "cursor", "antigravity"):
+    for agent in ("codex", "claude", "kimi", "cursor", "antigravity"):
         cleanup_lines.append(f"### {agent}")
         if extras[agent]:
             for skill in extras[agent]:
@@ -463,6 +468,7 @@ def main() -> int:
             "availability": {
                 "codex": s.skill_id in root_skill_sets["codex"],
                 "claude": s.skill_id in root_skill_sets["claude"],
+                "kimi": s.skill_id in root_skill_sets["kimi"],
                 "cursor": s.skill_id in root_skill_sets["cursor"],
                 "antigravity": s.skill_id in root_skill_sets["antigravity"],
             },

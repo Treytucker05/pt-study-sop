@@ -316,7 +316,7 @@ function StepCourseAndMaterials({
   setSelectedMaterials: (ids: number[]) => void;
 }) {
   return (
-    <div className={SECTION_GAP}>
+    <div className={`${SECTION_GAP} w-full max-w-full min-w-0`}>
       {/* Course selector */}
       <Card className="bg-black/40 border-2 border-primary rounded-none">
         <div className="px-3 py-2 border-b border-primary/30">
@@ -359,7 +359,7 @@ function StepCourseAndMaterials({
       </Card>
 
       {/* Materials */}
-      <Card className="bg-black/40 border-2 border-primary rounded-none">
+      <Card className="bg-black/40 border-2 border-primary rounded-none overflow-hidden">
         <div className="px-3 py-2 border-b border-primary/30 flex items-center justify-between">
           <span className={TEXT_SECTION_LABEL}>STUDY MATERIALS</span>
           {selectedMaterials.length > 0 && (
@@ -368,8 +368,8 @@ function StepCourseAndMaterials({
             </Badge>
           )}
         </div>
-        <ScrollArea className="max-h-[300px]">
-          <div className="p-3">
+        <ScrollArea className="h-[400px] w-full">
+          <div className="p-3 w-full">
             <MaterialSelector
               courseId={courseId}
               selectedMaterials={selectedMaterials}
@@ -475,7 +475,8 @@ function StepChain({
                 // Category breakdown for the chain
                 const catCounts: Record<string, number> = {};
                 for (const b of chain.blocks) {
-                  catCounts[b.category] = (catCounts[b.category] || 0) + 1;
+                  const stage = b.control_stage || b.category || 'ENCODE';
+                  catCounts[stage] = (catCounts[stage] || 0) + 1;
                 }
                 // Parse context_tags for recommendation hints
                 const tags = chain.context_tags?.toLowerCase() || "";
@@ -533,7 +534,7 @@ function StepChain({
                         {chain.blocks.map((b, i) => (
                           <div key={i} className="flex items-start gap-2">
                             <span className="shrink-0 w-5 h-5 flex items-center justify-center border text-xs mt-0.5"
-                              style={{ borderColor: CATEGORY_COLORS[b.category as MethodCategory] || "#888", color: CATEGORY_COLORS[b.category as MethodCategory] || "#888" }}
+                              style={{ borderColor: CATEGORY_COLORS[(b.control_stage || b.category) as MethodCategory] || "#888", color: CATEGORY_COLORS[(b.control_stage || b.category) as MethodCategory] || "#888" }}
                             >
                               {i + 1}
                             </span>

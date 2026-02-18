@@ -957,9 +957,22 @@ export interface BrainOrganizePreviewResponse {
 }
 
 // Method Library types
-export type MethodCategory = "prepare" | "encode" | "interrogate" | "retrieve" | "refine" | "overlearn";
+// Control Plane (CP-MSS v1.0) categories + Legacy PEIRRO for backward compatibility
+export type MethodCategory = 
+  // Control Plane Stages (New)
+  | "PRIME" | "CALIBRATE" | "ENCODE" | "REFERENCE" | "RETRIEVE" | "OVERLEARN"
+  // Legacy PEIRRO (Backward compatibility)
+  | "prepare" | "encode" | "interrogate" | "retrieve" | "refine" | "overlearn";
 
 export const CATEGORY_LABELS: Record<MethodCategory, string> = {
+  // Control Plane
+  PRIME: "PRIME",
+  CALIBRATE: "CALIBRATE",
+  ENCODE: "ENCODE",
+  REFERENCE: "REFERENCE",
+  RETRIEVE: "RETRIEVE",
+  OVERLEARN: "OVERLEARN",
+  // Legacy
   prepare: "Prepare",
   encode: "Encode",
   interrogate: "Interrogate",
@@ -969,18 +982,27 @@ export const CATEGORY_LABELS: Record<MethodCategory, string> = {
 };
 
 export const CATEGORY_COLORS: Record<MethodCategory, string> = {
-  prepare: "#f59e0b",
-  encode: "#8b5cf6",
-  interrogate: "#10b981",
+  // Control Plane Colors
+  PRIME: "#3b82f6",        // Blue - Structure
+  CALIBRATE: "#f59e0b",    // Yellow - Diagnostic
+  ENCODE: "#10b981",       // Green - Growth
+  REFERENCE: "#8b5cf6",    // Purple - Indexing
+  RETRIEVE: "#ef4444",     // Red - Active
+  OVERLEARN: "#ec4899",    // Pink - Mastery
+  // Legacy Colors (mapped to similar CP colors)
+  prepare: "#3b82f6",
+  encode: "#10b981",
+  interrogate: "#8b5cf6",
   retrieve: "#ef4444",
-  refine: "#3b82f6",
-  overlearn: "#6b7280",
+  refine: "#ec4899",
+  overlearn: "#ec4899",
 };
 
 export interface MethodBlock {
   id: number;
   name: string;
-  category: MethodCategory;
+  control_stage: string;      // Control Plane stage (PRIME, CALIBRATE, etc.)
+  category: MethodCategory;   // Legacy category (for backward compatibility)
   description: string | null;
   default_duration_min: number;
   energy_cost: string;

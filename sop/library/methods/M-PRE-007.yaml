@@ -5,7 +5,7 @@ description: Attempt to answer questions on the topic BEFORE studying it. Gettin
 default_duration_min: 5
 energy_cost: low
 best_stage: first_exposure
-control_stage: PRIME
+control_stage: CALIBRATE
 status: validated
 tags:
   - pre-testing

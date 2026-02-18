@@ -415,12 +415,16 @@ def build_custom_instructions() -> str:
 # ---------------------------------------------------------------------------
 
 # Category display order (PEIRRO sequence)
-CATEGORY_ORDER = ["prepare", "encode", "retrieve", "interrogate", "refine", "overlearn"]
+CATEGORY_ORDER = ["prime", "calibrate", "encode", "reference", "retrieve", "overlearn"]
 
-# Category labels for markdown headings
+# Category labels for markdown headings (Control Plane taxonomy)
 CATEGORY_LABELS = {
-    "prepare": "Prepare",
-    "encode": "Encode",
+    "prime": "PRIME",
+    "calibrate": "CALIBRATE",
+    "encode": "ENCODE",
+    "reference": "REFERENCE",
+    "retrieve": "RETRIEVE",
+    "overlearn": "OVERLEARN",
     "retrieve": "Retrieve",
     "interrogate": "Interrogate",
     "refine": "Refine",
@@ -429,6 +433,11 @@ CATEGORY_LABELS = {
 
 # Chain name→number mapping (preserves original numbering)
 CHAIN_NUMBERS = {
+    # Control Plane Chains (v1.0)
+    "First Exposure: Standard": "C-FE-STD",
+    "First Exposure: Minimal": "C-FE-MIN",
+    "First Exposure: Procedure": "C-FE-PRO",
+    # Legacy Chains
     "First Exposure (Core)": 1,
     "Review Sprint": 2,
     "Quick Drill": 3,
@@ -446,6 +455,9 @@ CHAIN_NUMBERS = {
 
 # Chain groupings for section headers
 CHAIN_GROUPS = {
+    "Control Plane Chains (CP-MSS v1.0)": [
+        "First Exposure: Standard", "First Exposure: Minimal", "First Exposure: Procedure",
+    ],
     "Core Chains": [
         "First Exposure (Core)", "Review Sprint", "Quick Drill",
         "Anatomy Deep Dive", "Low Energy", "Exam Prep",
@@ -508,7 +520,8 @@ def _render_block_catalog(methods: list[dict]) -> str:
     # Group by category
     by_cat: dict[str, list[dict]] = {}
     for m in methods:
-        cat = m["category"]
+        # Use control_stage (Control Plane) or fall back to category (legacy)
+        cat = m.get("control_stage", m.get("category", "unknown")).lower()
         by_cat.setdefault(cat, []).append(m)
 
     total = len(methods)
@@ -563,9 +576,10 @@ def _render_template_chains(chains: list[dict], id_to_name: dict[str, str]) -> s
             if not chain:
                 continue
             num = CHAIN_NUMBERS.get(cname, "?")
-            # Resolve block IDs to names
+            # Resolve block IDs to names (support both 'blocks' and 'method_ids')
             block_names = []
-            for bid in chain.get("blocks", []):
+            block_ids = chain.get("method_ids", chain.get("blocks", []))
+            for bid in block_ids:
                 block_names.append(id_to_name.get(bid, bid))
             blocks_str = " → ".join(block_names)
             context_str = _format_context_tags(chain.get("context_tags", {}))
@@ -611,7 +625,8 @@ def build_methods_from_yaml() -> str:
         label = info.get("label", cat.title())
         desc = info.get("description", "")
         # List method names for this category
-        cat_methods = [m["name"].lower() for m in methods if m["category"] == cat]
+        cat_methods = [m["name"].lower() for m in methods 
+                       if m.get("control_stage", m.get("category", "")).lower() == cat]
         methods_str = ", ".join(cat_methods)
         cat_descriptions.append(
             f"{i}. **{label}** — {desc} (e.g., {methods_str})"
@@ -645,7 +660,7 @@ Each method block represents a single study activity.
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | string | Block name (e.g., "Brain Dump", "Teach-Back") |
-| `category` | enum | One of 6 PEIRRO phases (see below) |
+| `control_stage` | enum | One of 6 Control Plane stages (see below) |
 | `description` | string | What the block does |
 | `duration` | number | Typical minutes required |
 | `energy_cost` | enum | `low` / `medium` / `high` |
@@ -653,7 +668,7 @@ Each method block represents a single study activity.
 | `tags` | array | Descriptors (e.g., `["retrieval", "active"]`) |
 | `evidence` | string | Research citation (Author, Year; brief finding) |
 
-**Categories (PEIRRO phases):**
+**Categories (Control Plane stages):**
 
 {cat_block}
 

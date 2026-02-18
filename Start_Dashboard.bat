@@ -74,17 +74,17 @@ rem Allow skipping UI build (useful when you just want the server up fast)
 if /I "%SKIP_UI_BUILD%"=="1" (
     echo [INFO] SKIP_UI_BUILD=1 - skipping UI build.
 ) else if exist "%REBUILD_DIR%\package.json" (
-    where npm >nul 2>nul
+    rem Always run the PowerShell build path; npm can be exposed as npm.ps1 even when cmd cannot resolve it.
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%REBUILD_DIR%\build-and-sync.ps1"
     if errorlevel 1 (
-        echo [WARN] npm not found on PATH. Skipping UI build.
-    ) else (
-        powershell -NoProfile -ExecutionPolicy Bypass -File "%REBUILD_DIR%\build-and-sync.ps1"
-        if errorlevel 1 (
-            echo [ERROR] UI build failed.
-            goto END
-        )
-        echo [INFO] UI build completed.
+        echo [ERROR] UI build failed.
+        goto END
     )
+    if not exist "%DIST_DIR%\index.html" (
+        echo [ERROR] UI build finished but %DIST_DIR%\index.html is missing.
+        goto END
+    )
+    echo [INFO] UI build completed.
 ) else (
     echo [WARN] dashboard_rebuild not found at %REBUILD_DIR% - skipping UI build.
 )
@@ -96,14 +96,21 @@ if not exist "%SERVER_DIR%\dashboard_web.py" (
 )
 
 rem Check if Frontend Build exists (expects /static/dist/assets/index-*.js)
-if not exist "%DIST_DIR%\assets\index-*.js" (
-    echo [ERROR] Frontend build missing in %DIST_DIR%.
-    echo         The React dashboard build should be included in the repo.
-    echo         If missing, run: npm run build in dashboard_rebuild, then copy dist/public to brain/static/dist
-    goto END
+set "HAS_DASH_UI=0"
+for /f %%F in ('dir /b "%DIST_DIR%\assets\index-*.js" 2^>nul') do (
+    set "HAS_DASH_UI=1"
+)
+if "%HAS_DASH_UI%"=="0" (
+    echo [WARN] Frontend build missing in %DIST_DIR%.
+    echo         Dashboard will still start; build the UI when convenient:
+    echo         npm run build in dashboard_rebuild\ (outputs directly to brain\static\dist)
 )
 
 start "PT Study Brain Dashboard" cmd /k "cd /d "%SERVER_DIR%" && "%PYEXE%" %PYEXE_ARGS% dashboard_web.py"
+if errorlevel 1 (
+    echo [ERROR] Failed to launch dashboard server.
+    goto END
+)
 
 echo [5/6] Giving the server a few seconds to start...
 timeout /t 5 /nobreak >nul

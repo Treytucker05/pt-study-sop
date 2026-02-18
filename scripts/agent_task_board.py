@@ -328,6 +328,62 @@ def command_claim(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_auto_claim(args: argparse.Namespace) -> int:
+    """Best-effort compatibility command used by older pre-push hooks."""
+    path = resolve_board_path(args.board)
+    ctx = context_from_args(args)
+    note = args.note or "legacy auto-claim"
+
+    if not args.task_id:
+        print(f"Auto-claim skipped (no --task-id): {path}")
+        return 0
+
+    try:
+        def _auto_claim(board: Dict[str, Any]) -> str:
+            task = find_task(board, args.task_id)
+            if not task:
+                return "missing"
+            if str(task.get("status", "")) == "done":
+                return "done"
+
+            owner = task.get("owner_agent", "")
+            if owner and owner != ctx["agent"] and not args.force:
+                return "owned"
+
+            ts = now_iso()
+            task["status"] = "in_progress"
+            task["owner_agent"] = ctx["agent"]
+            task["owner_role"] = ctx["role"]
+            task["owner_tool"] = ctx["tool"]
+            task["owner_session"] = ctx["session"]
+            task["owner_worktree"] = ctx["worktree"]
+            task["claimed_at"] = ts
+            if not task.get("started_at"):
+                task["started_at"] = ts
+            task["heartbeat_at"] = ts
+            task["updated_at"] = ts
+            task["last_note"] = note
+            append_history(task, "auto_claim", ctx, note)
+            return "claimed"
+
+        result = with_board_write(path, _auto_claim)
+    except Exception as exc:  # noqa: BLE001
+        print(f"Auto-claim skipped ({exc})")
+        return 0
+
+    if result == "claimed":
+        print(f"Auto-claimed task: {args.task_id}")
+    elif result == "missing":
+        print(f"Auto-claim skipped (task not found): {args.task_id}")
+    elif result == "done":
+        print(f"Auto-claim skipped (task already done): {args.task_id}")
+    elif result == "owned":
+        print(f"Auto-claim skipped (task owned by another agent): {args.task_id}")
+    else:
+        print(f"Auto-claim skipped: {args.task_id}")
+    return 0
+
+
 def command_heartbeat(args: argparse.Namespace) -> int:
     path = resolve_board_path(args.board)
     ctx = context_from_args(args)
@@ -531,6 +587,19 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("done", parents=[common_owner], help="Mark task done.")
     sub.add_parser("release", parents=[common_owner], help="Release task back to todo.")
 
+    p_auto_claim = sub.add_parser(
+        "auto-claim",
+        help="Best-effort compatibility alias for legacy hooks. Never fails.",
+    )
+    p_auto_claim.add_argument("--task-id", default="")
+    p_auto_claim.add_argument("--note", default="")
+    p_auto_claim.add_argument("--agent", default="")
+    p_auto_claim.add_argument("--role", default="")
+    p_auto_claim.add_argument("--tool", default="")
+    p_auto_claim.add_argument("--session", default="")
+    p_auto_claim.add_argument("--worktree", default="")
+    p_auto_claim.add_argument("--force", action="store_true")
+
     p_block = sub.add_parser("block", parents=[common_owner], help="Mark task blocked.")
     p_block.add_argument("--reason", required=True)
 
@@ -557,6 +626,8 @@ def main() -> int:
             return command_add(args)
         if cmd in {"claim", "start"}:
             return command_claim(args)
+        if cmd == "auto-claim":
+            return command_auto_claim(args)
         if cmd == "heartbeat":
             return command_heartbeat(args)
         if cmd == "done":

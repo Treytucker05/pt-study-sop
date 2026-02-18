@@ -25,22 +25,50 @@ methods_bp = Blueprint("methods", __name__, url_prefix="/api")
 
 @methods_bp.route("/methods", methods=["GET"])
 def list_methods():
-    """List all method blocks. Optional ?category= filter."""
+    """List all method blocks. Optional ?category= or ?control_stage= filter."""
     ensure_method_library_seeded()
     conn = get_connection()
     cursor = conn.cursor()
-    category = request.args.get("category")
-    if category:
+    
+    # Support both old 'category' and new 'control_stage' filters
+    control_stage = request.args.get("control_stage") or request.args.get("category")
+    
+    # Map old PEIRRO categories to new Control Plane stages for backward compatibility
+    category_to_stage = {
+        'prepare': 'PRIME',
+        'encode': 'ENCODE',
+        'interrogate': 'REFERENCE',
+        'retrieve': 'RETRIEVE',
+        'refine': 'OVERLEARN',
+        'overlearn': 'OVERLEARN',
+    }
+    
+    if control_stage:
+        # Convert old category names to new stage names if needed
+        stage = category_to_stage.get(control_stage.lower(), control_stage.upper())
         cursor.execute(
-            "SELECT * FROM method_blocks WHERE category = ? ORDER BY category, name",
-            (category,),
+            "SELECT * FROM method_blocks WHERE control_stage = ? ORDER BY control_stage, name",
+            (stage,),
         )
     else:
-        cursor.execute("SELECT * FROM method_blocks ORDER BY category, name")
+        cursor.execute("SELECT * FROM method_blocks ORDER BY control_stage, name")
+    
     columns = [desc[0] for desc in cursor.description]
     rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
     conn.close()
+    
+    # Map new Control Plane stages back to old categories for frontend compatibility
+    stage_to_category = {
+        'PRIME': 'prepare',
+        'CALIBRATE': 'prepare',
+        'ENCODE': 'encode',
+        'REFERENCE': 'interrogate',
+        'RETRIEVE': 'retrieve',
+        'OVERLEARN': 'overlearn',
+    }
+    
     for row in rows:
+        # Parse JSON fields
         for json_field in (
             "tags",
             "inputs",
@@ -51,6 +79,11 @@ def list_methods():
             "research_terms",
         ):
             row[json_field] = _parse_json(row.get(json_field))
+        
+        # Add backward-compatible 'category' field based on control_stage
+        stage = row.get('control_stage', '')
+        row['category'] = stage_to_category.get(stage, stage.lower())
+    
     return jsonify(rows)
 
 
@@ -75,26 +108,54 @@ def get_method(method_id: int):
         "research_terms",
     ):
         result[json_field] = _parse_json(result.get(json_field))
+    
+    # Add backward-compatible 'category' field based on control_stage
+    stage_to_category = {
+        'PRIME': 'prepare',
+        'CALIBRATE': 'prepare',
+        'ENCODE': 'encode',
+        'REFERENCE': 'interrogate',
+        'RETRIEVE': 'retrieve',
+        'OVERLEARN': 'overlearn',
+    }
+    stage = result.get('control_stage', '')
+    result['category'] = stage_to_category.get(stage, stage.lower())
+    
     return jsonify(result)
 
 
 @methods_bp.route("/methods", methods=["POST"])
 def create_method():
     data = request.get_json()
-    if not data or not data.get("name") or not data.get("category"):
-        return jsonify({"error": "name and category are required"}), 400
+    # Support both 'control_stage' (new) and 'category' (legacy)
+    name = data.get("name")
+    control_stage = data.get("control_stage") or data.get("category")
+    
+    if not name or not control_stage:
+        return jsonify({"error": "name and control_stage (or category) are required"}), 400
+    
+    # Map old PEIRRO categories to new Control Plane stages
+    category_to_stage = {
+        'prepare': 'PRIME',
+        'encode': 'ENCODE',
+        'interrogate': 'REFERENCE',
+        'retrieve': 'RETRIEVE',
+        'refine': 'OVERLEARN',
+        'overlearn': 'OVERLEARN',
+    }
+    stage = category_to_stage.get(control_stage.lower(), control_stage.upper())
 
     conn = get_connection()
     try:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO method_blocks (name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, inputs, outputs, strategy_label, failure_modes, variants, scoring_hooks, icap_level, clt_target, assessment_type, artifact_type, research_terms, created_at)
+            INSERT INTO method_blocks (name, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, inputs, outputs, strategy_label, failure_modes, variants, scoring_hooks, icap_level, clt_target, assessment_type, artifact_type, research_terms, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """,
             (
-                data["name"],
-                data["category"],
+                name,
+                stage,
                 data.get("description"),
                 data.get("default_duration_min", 5),
                 data.get("energy_cost", "medium"),
@@ -544,7 +605,7 @@ def method_analytics():
     # Method block stats
     cursor.execute("""
         SELECT
-            mb.id, mb.name, mb.category,
+            mb.id, mb.name, mb.control_stage,
             COUNT(mr.id) as usage_count,
             ROUND(AVG(mr.effectiveness), 1) as avg_effectiveness,
             ROUND(AVG(mr.engagement), 1) as avg_engagement
@@ -555,6 +616,19 @@ def method_analytics():
     """)
     block_cols = [desc[0] for desc in cursor.description]
     block_stats = [dict(zip(block_cols, row)) for row in cursor.fetchall()]
+    
+    # Add backward-compatible 'category' field
+    stage_to_category = {
+        'PRIME': 'prepare',
+        'CALIBRATE': 'prepare',
+        'ENCODE': 'encode',
+        'REFERENCE': 'interrogate',
+        'RETRIEVE': 'retrieve',
+        'OVERLEARN': 'overlearn',
+    }
+    for stat in block_stats:
+        stage = stat.get('control_stage', '')
+        stat['category'] = stage_to_category.get(stage, stage.lower())
 
     # Chain stats
     cursor.execute("""

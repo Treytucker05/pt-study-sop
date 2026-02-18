@@ -295,7 +295,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div
       className={cn(
         "h-[100dvh] bg-background text-foreground relative font-terminal overflow-hidden",
-        isTutorPage ? "grid grid-rows-[1fr]" : "grid grid-rows-[auto_1fr_auto]",
+        "grid grid-rows-[auto_1fr_auto]",
       )}
     >
       {/* Background with overlay */}
@@ -315,8 +315,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="crt-scanlines" />
 
       {/* Top Nav */}
-      {!isTutorPage && (
-        <header className="relative z-20 bg-black/80 backdrop-blur-sm sticky top-0" style={{ borderBottom: '4px double hsl(350 63% 49%)' }}>
+      <header className="relative z-20 bg-black/80 backdrop-blur-sm sticky top-0" style={{ borderBottom: '4px double hsl(350 63% 49%)' }}>
         <div className="w-full px-3 h-12 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -576,7 +575,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </nav>
         )}
       </header>
-      )}
 
       <main
         className={cn(
@@ -606,8 +604,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </Dialog>
 
       {/* Footer */}
-      {!isTutorPage && (
-        <footer className="z-20 border-t border-secondary bg-black/95 py-2">
+      <footer className="z-20 border-t border-secondary bg-black/95 py-2">
         <div className="container mx-auto px-4 flex justify-between items-center text-xs text-muted-foreground font-terminal">
           <div className="flex gap-4">
             <span>STATUS: <span className="text-primary">ONLINE</span></span>
@@ -616,7 +613,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div>v2.0.25 [BETA]</div>
         </div>
       </footer>
-      )}
     </div>
   );
 }

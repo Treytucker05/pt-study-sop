@@ -13,13 +13,14 @@ import {
 } from "@/lib/theme";
 import { ChevronDown, ChevronRight, GripVertical, X, Clock, AlertTriangle } from "lucide-react";
 
+// Control Plane (CP-MSS v1.0) stage order
 const CATEGORY_ORDER: MethodCategory[] = [
-  "prepare",
-  "encode",
-  "interrogate",
-  "retrieve",
-  "refine",
-  "overlearn",
+  "PRIME",
+  "CALIBRATE",
+  "ENCODE",
+  "REFERENCE",
+  "RETRIEVE",
+  "OVERLEARN",
 ];
 
 
@@ -51,8 +52,9 @@ export function TutorChainBuilder({
     const groups: Record<string, MethodBlock[]> = {};
     for (const cat of CATEGORY_ORDER) groups[cat] = [];
     for (const b of allBlocks) {
-      if (!groups[b.category]) groups[b.category] = [];
-      groups[b.category].push(b);
+      const stage = b.control_stage || b.category || 'ENCODE';
+      if (!groups[stage]) groups[stage] = [];
+      groups[stage].push(b);
     }
     return groups;
   }, [allBlocks]);
@@ -70,7 +72,8 @@ export function TutorChainBuilder({
   const categoryBreakdown = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const b of selectedBlocks) {
-      counts[b.category] = (counts[b.category] || 0) + 1;
+      const stage = b.control_stage || b.category || 'ENCODE';
+      counts[stage] = (counts[stage] || 0) + 1;
     }
     return counts;
   }, [selectedBlocks]);
@@ -78,7 +81,7 @@ export function TutorChainBuilder({
   const chainWarnings = useMemo(() => {
     if (selectedBlocks.length < 2) return [];
     const warnings: string[] = [];
-    const cats = selectedBlocks.map((b) => b.category);
+    const cats = selectedBlocks.map((b) => b.control_stage || b.category);
     const catSet = new Set(cats);
 
     // Check if retrieve comes before encode
@@ -221,7 +224,7 @@ export function TutorChainBuilder({
         ) : (
           <div className="p-1 space-y-0.5">
             {selectedBlocks.map((b, idx) => {
-              const color = CATEGORY_COLORS[b.category as MethodCategory] || "#888";
+              const color = CATEGORY_COLORS[(b.control_stage || b.category) as MethodCategory] || "#888";
               return (
                 <div
                   key={`${b.id}-${idx}`}
@@ -242,7 +245,7 @@ export function TutorChainBuilder({
                     className="text-xs rounded-none px-1 h-4 shrink-0"
                     style={{ borderColor: color, color }}
                   >
-                    {b.category.slice(0, 3).toUpperCase()}
+                    {(b.control_stage || b.category).slice(0, 3).toUpperCase()}
                   </Badge>
                   <span className="font-terminal text-xs text-foreground/80 truncate flex-1" title={b.facilitation_prompt ? b.facilitation_prompt.slice(0, 200) : b.description || ""}>
                     {b.name}

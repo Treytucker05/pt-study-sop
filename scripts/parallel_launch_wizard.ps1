@@ -133,8 +133,7 @@ Write-Host ""
 Write-Host "Instructions:" -ForegroundColor Cyan
 Write-Host "1) Session prefix: label for all new sessions (used in terminal window names)."
 Write-Host "2) Roles csv: which work areas to open (ui, brain, integrate, docs)."
-Write-Host "3) Codex/Claude/OpenCode counts: how many parallel sessions to start for each."
-Write-Host "4) OpenCode uses WSL+tmux and opens one tmux session with a window per selected role."
+Write-Host "3) Codex/Claude/Kimi counts: how many parallel sessions to start for each."
 Write-Host ""
 
 $sessionPrefix = Read-WithDefault -Prompt "Session prefix" -Default "run"
@@ -146,9 +145,9 @@ $rolesCsv = ($roles -join ",")
 
 $codexCount = Read-NonNegativeInt -Prompt "Codex launch count" -Default 1
 $claudeCount = Read-NonNegativeInt -Prompt "Claude launch count" -Default 0
-$openCodeCount = Read-NonNegativeInt -Prompt "OpenCode WSL tmux session count" -Default 0
+$kimiCount = Read-NonNegativeInt -Prompt "Kimi launch count" -Default 0
 
-if (($codexCount + $claudeCount + $openCodeCount) -eq 0) {
+if (($codexCount + $claudeCount + $kimiCount) -eq 0) {
   throw "At least one launch count must be greater than 0."
 }
 
@@ -160,9 +159,9 @@ Write-Host "Plan" -ForegroundColor Cyan
 Write-Host "- Roles: $rolesCsv"
 Write-Host "- Codex: $codexCount"
 Write-Host "- Claude: $claudeCount"
-Write-Host "- OpenCode WSL tmux: $openCodeCount"
+Write-Host "- Kimi: $kimiCount"
 Write-Host "- Session prefix: $sessionPrefix"
-Write-Host "- Naming pattern: [prefix]-[tool]-[count] and OpenCode WSL [prefix]-opencode-[count]"
+Write-Host "- Naming pattern: [prefix]-[tool]-[count]"
 Write-Host ""
 
 $proceed = Read-YesNo -Prompt "Proceed?" -DefaultYes:$true
@@ -235,8 +234,8 @@ if ($claudeCount -gt 0) {
   Launch-WindowsTool -Tool "claude" -Count $claudeCount
 }
 
-if ($openCodeCount -gt 0) {
-  Write-Warning "OpenCode WSL sessions requested but OpenCode support has been removed. Skipping."
+if ($kimiCount -gt 0) {
+  Launch-WindowsTool -Tool "kimi" -Count $kimiCount
 }
 
 if ($showStatusAtEnd) {

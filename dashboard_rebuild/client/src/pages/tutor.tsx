@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Bot,
   PanelRightClose,
   PanelRightOpen,
   Clock,
@@ -518,81 +519,7 @@ export default function Tutor() {
     tutorWizardStorageKey,
   ]);
 
-  // ─── SETUP VIEW ─── (no active session)
-  if (!activeSessionId && !showSetup) {
-    return (
-      <Layout>
-        <div className="flex flex-col h-full min-h-0">
-          <TutorWizard
-            courseId={courseId}
-            setCourseId={setCourseId}
-            selectedMaterials={selectedMaterials}
-            setSelectedMaterials={setSelectedMaterials}
-            topic={topic}
-            setTopic={setTopic}
-            chainId={chainId}
-            setChainId={setChainId}
-            customBlockIds={customBlockIds}
-            setCustomBlockIds={setCustomBlockIds}
-            mode={mode}
-            setMode={setMode}
-            webSearch={webSearch}
-            setWebSearch={setWebSearch}
-            onStartSession={startSession}
-            isStarting={isStarting}
-            recentSessions={recentSessions}
-            onResumeSession={resumeSession}
-          />
-        </div>
-      </Layout>
-    );
-  }
-
-  // Setup overlay during active session (toggle setup panel)
-  if (showSetup && activeSessionId) {
-    return (
-      <Layout>
-        <div className="flex flex-col h-full min-h-0">
-          <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-black/60 border-b-2 border-primary/30">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowSetup(false)}
-              className="rounded-none font-arcade text-xs text-primary h-8 px-3"
-            >
-              BACK TO CHAT
-            </Button>
-            <span className="font-terminal text-base text-muted-foreground">Editing session settings</span>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-2xl mx-auto py-6 px-4">
-              <Card className="bg-black/40 border-[3px] border-double border-primary rounded-none overflow-hidden">
-                <ContentFilter
-                  courseId={courseId}
-                  setCourseId={setCourseId}
-                  selectedMaterials={selectedMaterials}
-                  setSelectedMaterials={setSelectedMaterials}
-                  mode={mode}
-                  setMode={setMode}
-                  chainId={chainId}
-                  setChainId={setChainId}
-                  customBlockIds={customBlockIds}
-                  setCustomBlockIds={setCustomBlockIds}
-                  topic={topic}
-                  setTopic={setTopic}
-                  webSearch={webSearch}
-                  setWebSearch={setWebSearch}
-                  onStartSession={startSession}
-                  isStarting={isStarting}
-                  hasActiveSession={true}
-                />
-              </Card>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  // ─── Derived state ───
 
   // ─── SESSION VIEW ─── (active session, full-screen chat)
   const formatTimer = (seconds: number): string => {
@@ -612,83 +539,134 @@ export default function Tutor() {
   return (
     <Layout>
       <div className="flex flex-col h-full min-h-0">
-        {/* Main content: Chat + control sidebar */}
+        {/* ─── Main Content Area ─── */}
         <div className="flex-1 flex min-h-0">
           <div className="flex-1 bg-zinc-950/80 border-x-2 border-primary/20 flex flex-col min-w-0 relative">
-            <TutorChat
-              sessionId={activeSessionId}
-              onArtifactCreated={handleArtifactCreated}
-              focusMode={focusMode}
-              onTurnComplete={() => setTurnCount((prev) => prev + 1)}
-            />
-
-            <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFocusMode((prev) => !prev)}
-                className="h-8 px-2 rounded-none font-terminal text-xs text-muted-foreground bg-black/60 border border-primary/30 hover:text-primary"
-                title={focusMode ? "Exit focus mode" : "Enter focus mode"}
-              >
-                {focusMode ? <EyeOff className="w-3.5 h-3.5 mr-1" /> : <Eye className="w-3.5 h-3.5 mr-1" />}
-                {focusMode ? "EXIT FOCUS" : "FOCUS"}
-              </Button>
-              {!focusMode && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowMobileSidebar(true)}
-                  className="h-8 px-2 rounded-none font-terminal text-xs text-muted-foreground bg-black/60 border border-primary/30 hover:text-primary lg:hidden"
-                >
-                  TOOLS
-                </Button>
-              )}
-            </div>
-
-            {showEndConfirm && (
-              <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4">
-                <div className="max-w-md mx-auto space-y-3">
-                  <div className="font-arcade text-sm text-primary tracking-wider">SESSION COMPLETE</div>
-                  <div className="flex items-center gap-4 font-terminal text-xs text-muted-foreground">
-                    <span>{mode}</span>
-                    <span className="text-foreground">{topic || "No topic"}</span>
-                    <span>{turnCount} turns</span>
-                    {artifacts.length > 0 && <span>{artifacts.length} artifacts</span>}
-                  </div>
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button
-                      onClick={shipToBrainAndEnd}
-                      disabled={isShipping}
-                      className="rounded-none font-arcade text-xs bg-primary/10 hover:bg-primary/20 border-2 border-primary text-primary gap-1.5 h-9 px-4"
-                    >
-                      {isShipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                      {isShipping ? "SHIPPING..." : "SHIP TO BRAIN"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => { endSession(); setShowEndConfirm(false); }}
-                      disabled={isShipping}
-                      className="rounded-none font-terminal text-xs text-muted-foreground hover:text-foreground h-9 px-3"
-                    >
-                      END WITHOUT SAVING
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setShowEndConfirm(false)}
-                      disabled={isShipping}
-                      className="rounded-none font-terminal text-xs text-muted-foreground hover:text-foreground h-9 px-3 ml-auto"
-                    >
-                      CANCEL
-                    </Button>
-                  </div>
+            {showSetup ? (
+              <div className="flex-1 min-h-0 overflow-y-auto w-full">
+                <div className="w-full max-w-full">
+                <TutorWizard
+                  courseId={courseId}
+                  setCourseId={setCourseId}
+                  selectedMaterials={selectedMaterials}
+                  setSelectedMaterials={setSelectedMaterials}
+                  topic={topic}
+                  setTopic={setTopic}
+                  chainId={chainId}
+                  setChainId={setChainId}
+                  customBlockIds={customBlockIds}
+                  setCustomBlockIds={setCustomBlockIds}
+                  mode={mode}
+                  setMode={setMode}
+                  webSearch={webSearch}
+                  setWebSearch={setWebSearch}
+                  onStartSession={startSession}
+                  isStarting={isStarting}
+                  recentSessions={recentSessions}
+                  onResumeSession={(id) => { resumeSession(id); setShowSetup(false); }}
+                />
                 </div>
               </div>
+            ) : (
+              <>
+                {activeSessionId ? (
+                  <TutorChat
+                    sessionId={activeSessionId}
+                    onArtifactCreated={handleArtifactCreated}
+                    focusMode={focusMode}
+                    onTurnComplete={() => setTurnCount((prev) => prev + 1)}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center space-y-3">
+                      <div className="font-arcade text-sm text-primary">
+                        READY TO LEARN
+                      </div>
+                      <div className="font-terminal text-sm text-muted-foreground max-w-sm">
+                        Click SETUP to configure your session, or select a recent session below to resume.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFocusMode((prev) => !prev)}
+                    className="h-8 px-2 rounded-none font-terminal text-xs text-muted-foreground bg-black/60 border border-primary/30 hover:text-primary"
+                    title={focusMode ? "Exit focus mode" : "Enter focus mode"}
+                  >
+                    {focusMode ? <EyeOff className="w-3.5 h-3.5 mr-1" /> : <Eye className="w-3.5 h-3.5 mr-1" />}
+                    {focusMode ? "EXIT FOCUS" : "FOCUS"}
+                  </Button>
+                  {!focusMode && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowMobileSidebar(true)}
+                      className="h-8 px-2 rounded-none font-terminal text-xs text-muted-foreground bg-black/60 border border-primary/30 hover:text-primary lg:hidden"
+                    >
+                      TOOLS
+                    </Button>
+                  )}
+                </div>
+
+                {showEndConfirm && (
+                  <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="font-arcade text-sm text-primary tracking-wider">SESSION COMPLETE</div>
+                      <div className="flex items-center gap-4 font-terminal text-xs text-muted-foreground">
+                        <span>{mode}</span>
+                        <span className="text-foreground">{topic || "No topic"}</span>
+                        <span>{turnCount} turns</span>
+                        {artifacts.length > 0 && <span>{artifacts.length} artifacts</span>}
+                      </div>
+                      <div className="flex items-center gap-2 pt-1">
+                        <Button
+                          onClick={shipToBrainAndEnd}
+                          disabled={isShipping}
+                          className="rounded-none font-arcade text-xs bg-primary/10 hover:bg-primary/20 border-2 border-primary text-primary gap-1.5 h-9 px-4"
+                        >
+                          {isShipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                          {isShipping ? "SHIPPING..." : "SHIP TO BRAIN"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => { endSession(); setShowEndConfirm(false); }}
+                          disabled={isShipping}
+                          className="rounded-none font-terminal text-xs text-muted-foreground hover:text-foreground h-9 px-3"
+                        >
+                          END WITHOUT SAVING
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => setShowEndConfirm(false)}
+                          disabled={isShipping}
+                          className="rounded-none font-terminal text-xs text-muted-foreground hover:text-foreground h-9 px-3 ml-auto"
+                        >
+                          CANCEL
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {!focusMode && (
             <aside className="hidden lg:flex w-[280px] shrink-0 bg-black/40 border-l-2 border-primary/30 flex-col min-h-0">
               <div className="shrink-0 border-b border-primary/20 p-3 space-y-3">
+                {/* Session status indicator */}
+                {!activeSessionId && (
+                  <div className="flex items-center gap-2 p-2 border border-primary/20 bg-primary/5">
+                    <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                    <span className="font-terminal text-xs text-muted-foreground">
+                      No active session
+                    </span>
+                  </div>
+                )}
                 {configStatus && !configStatus.ok && (
                   <div className="flex items-start gap-2 p-2 border border-yellow-400/40 bg-yellow-900/20">
                     <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
@@ -705,21 +683,23 @@ export default function Tutor() {
                     </Badge>
                     <span className="font-terminal text-xs text-foreground truncate">{topic || "No topic"}</span>
                   </div>
-                  <div className={`flex items-center gap-3 ${TEXT_MUTED}`}>
-                    <span className="flex items-center gap-1">
-                      <MessageSquare className={ICON_SM} />
-                      {turnCount}
-                    </span>
-                    {startedAt && (
+                  {activeSessionId && (
+                    <div className={`flex items-center gap-3 ${TEXT_MUTED}`}>
                       <span className="flex items-center gap-1">
-                        <Clock className={ICON_SM} />
-                        {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        <MessageSquare className={ICON_SM} />
+                        {turnCount}
                       </span>
-                    )}
-                  </div>
+                      {startedAt && (
+                        <span className="flex items-center gap-1">
+                          <Clock className={ICON_SM} />
+                          {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {hasChain && (
+                {hasChain && activeSessionId && (
                   <div className="border-2 border-primary/20 bg-black/55 p-2 space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="font-arcade text-xs text-primary">MODULES</span>
@@ -769,41 +749,64 @@ export default function Tutor() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-1 border-2 border-primary/20 p-1">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowSetup(true)}
-                    className="h-8 rounded-none font-terminal text-xs text-muted-foreground hover:text-primary justify-start"
+                    className={`h-8 rounded-none font-arcade text-xs justify-center ${
+                      showSetup
+                        ? "text-primary bg-primary/15 border border-primary/40"
+                        : "text-muted-foreground hover:text-primary"
+                    }`}
                   >
                     <Settings2 className="w-3.5 h-3.5 mr-1" />
-                    SETTINGS
+                    SETUP
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowArtifacts((prev) => !prev)}
-                    className={`h-8 rounded-none font-terminal text-xs justify-start ${
-                      showArtifacts
-                        ? "text-primary bg-primary/10"
+                    onClick={() => setShowSetup(false)}
+                    className={`h-8 rounded-none font-arcade text-xs justify-center ${
+                      !showSetup
+                        ? "text-primary bg-primary/15 border border-primary/40"
                         : "text-muted-foreground hover:text-primary"
                     }`}
                   >
-                    {showArtifacts ? (
-                      <PanelRightClose className="w-3.5 h-3.5 mr-1" />
-                    ) : (
-                      <PanelRightOpen className="w-3.5 h-3.5 mr-1" />
-                    )}
-                    ARTIFACTS
-                    {artifacts.length > 0 && (
-                      <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none">
-                        {artifacts.length}
+                    <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                    CHAT
+                    {turnCount > 0 && (
+                      <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
+                        {turnCount}
                       </Badge>
                     )}
                   </Button>
                 </div>
 
-                {blockTimerSeconds !== null && blockTimerSeconds > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowArtifacts((prev) => !prev)}
+                  className={`h-8 rounded-none font-terminal text-xs justify-start ${
+                    showArtifacts
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-primary"
+                  }`}
+                >
+                  {showArtifacts ? (
+                    <PanelRightClose className="w-3.5 h-3.5 mr-1" />
+                  ) : (
+                    <PanelRightOpen className="w-3.5 h-3.5 mr-1" />
+                  )}
+                  ARTIFACTS
+                  {artifacts.length > 0 && (
+                    <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none">
+                      {artifacts.length}
+                    </Badge>
+                  )}
+                </Button>
+
+                {blockTimerSeconds !== null && blockTimerSeconds > 0 && activeSessionId && (
                   <div className="border-2 border-primary/25 bg-black/50 p-2 space-y-2">
                     <div className={`font-terminal text-sm flex items-center gap-1 ${
                       blockTimerSeconds <= 60 ? "text-red-400 animate-pulse" : "text-primary"
@@ -836,16 +839,18 @@ export default function Tutor() {
                   </div>
                 )}
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowEndConfirm(true)}
-                  className="h-8 w-full rounded-none font-terminal text-xs justify-start text-red-400/70 hover:text-red-400 hover:bg-red-400/10"
-                  title="End session"
-                >
-                  <Square className="w-3.5 h-3.5 mr-1" />
-                  END SESSION
-                </Button>
+                {activeSessionId && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEndConfirm(true)}
+                    className="h-8 w-full rounded-none font-terminal text-xs justify-start text-red-400/70 hover:text-red-400 hover:bg-red-400/10"
+                    title="End session"
+                  >
+                    <Square className="w-3.5 h-3.5 mr-1" />
+                    END SESSION
+                  </Button>
+                )}
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
@@ -930,15 +935,34 @@ export default function Tutor() {
                 </Button>
               </div>
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSetup(true)}
-                  className="h-8 w-full rounded-none font-terminal text-xs text-muted-foreground hover:text-primary justify-start"
-                >
-                  <Settings2 className="w-3.5 h-3.5 mr-1" />
-                  SETTINGS
-                </Button>
+                <div className="grid grid-cols-2 gap-1 border-2 border-primary/20 p-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setShowSetup(true); setShowMobileSidebar(false); }}
+                    className={`h-8 rounded-none font-arcade text-xs justify-center ${
+                      showSetup
+                        ? "text-primary bg-primary/15 border border-primary/40"
+                        : "text-muted-foreground hover:text-primary"
+                    }`}
+                  >
+                    <Settings2 className="w-3.5 h-3.5 mr-1" />
+                    SETUP
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setShowSetup(false); setShowMobileSidebar(false); }}
+                    className={`h-8 rounded-none font-arcade text-xs justify-center ${
+                      !showSetup
+                        ? "text-primary bg-primary/15 border border-primary/40"
+                        : "text-muted-foreground hover:text-primary"
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                    CHAT
+                  </Button>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"

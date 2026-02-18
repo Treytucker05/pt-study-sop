@@ -479,7 +479,7 @@ def update_topic_mastery(topic, understanding, retention, session_date):
     if not normalized_topic:
         return
     
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cursor = conn.cursor()
     
     try:
@@ -647,7 +647,7 @@ def insert_session(data):
     Insert a session record into the database.
     Returns (success, message).
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cursor = conn.cursor()
     
     try:
@@ -800,7 +800,7 @@ def ingest_file(filepath, force=False):
     
     # Check if already ingested (unless force flag is set)
     if not force:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         already_ingested, existing_session_id = is_file_ingested(conn, filepath, checksum)
         
         if already_ingested:
@@ -834,7 +834,7 @@ def ingest_file(filepath, force=False):
     if not is_valid:
         print(f"[ERROR] Validation failed: {error}")
         # Track the file anyway to skip on future runs (with session_id=None to indicate failure)
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         mark_file_ingested(conn, filepath, checksum, None)
         conn.close()
         return False
@@ -857,7 +857,7 @@ def ingest_file(filepath, force=False):
     if success:
         print(f"[OK] {message}")
         # Mark file as ingested for future runs
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
         cursor.execute(
             "SELECT id FROM sessions WHERE session_date = ? AND main_topic = ? ORDER BY id DESC LIMIT 1",

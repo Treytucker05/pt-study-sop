@@ -330,13 +330,20 @@ def flag_anomalies() -> Dict[str, List[Dict]]:
         if len(ratings) >= 3:
             std = stdev(ratings)
             if std > 1.5:
-                cursor.execute("SELECT name, category FROM method_blocks WHERE id = ?",
+                cursor.execute("SELECT name, control_stage FROM method_blocks WHERE id = ?",
                               (row['method_block_id'],))
                 method = cursor.fetchone()
+                # Map control_stage to legacy category
+                stage_to_category = {
+                    'PRIME': 'prepare', 'CALIBRATE': 'prepare',
+                    'ENCODE': 'encode', 'REFERENCE': 'interrogate',
+                    'RETRIEVE': 'retrieve', 'OVERLEARN': 'overlearn',
+                }
+                category = stage_to_category.get(method['control_stage'], method['control_stage'].lower()) if method else 'Unknown'
                 anomalies['high_variance'].append({
                     'method_id': row['method_block_id'],
                     'name': method['name'] if method else 'Unknown',
-                    'category': method['category'] if method else 'Unknown',
+                    'category': category,
                     'std_dev': round(std, 2),
                     'ratings': ratings
                 })

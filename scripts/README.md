@@ -8,7 +8,7 @@ Automation utilities for the PT Study SOP repo.
 - `sync_agent_config.ps1` - Repo drift check for agent instruction entrypoints and tool stubs.
 - `sync_ai_config.ps1` - Deprecated (use `sync_agent_config.ps1`).
 - `sync_portable_agent_config.ps1` - Convenience wrapper to sync portable vault agent config to home tool locations.
-- `launch_codex_session.ps1` - Start one-off named agent sessions (`-Tool codex` default; `-Tool opencode` supported).
+- `launch_codex_session.ps1` - Start one-off named agent sessions (`-Tool codex` default; `-Tool opencode` and `-Tool kimi` supported).
 - `agent_worktrees.ps1` - Create/manage named persistent worktrees (integrate/ui/brain[/docs]) for parallel agents. Supports multi-agent launch (`open-many` / `dispatch-many`), role routing, and quick status.
 - `bootstrap_parallel_agents.ps1` - One-command bootstrap: ensure worktrees + launch selected agent profile across multiple roles.
 - `agent_task_board.py` - Shared cross-worktree task registry (claim/start/heartbeat/done/block/release with timestamps and ownership).
@@ -38,6 +38,9 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_worktrees.ps1 -Act
 
 # 3) Route by path and launch review pair (codex + claude)
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_worktrees.ps1 -Action dispatch-many -Paths brain\dashboard\api_adapter.py -Profile review -SessionTag api-review
+
+# 3b) Route by path and launch explicit trio (codex + kimi + claude)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_worktrees.ps1 -Action dispatch-many -Paths brain\dashboard\api_adapter.py -Agents codex,kimi,claude -SessionTag api-review
 
 # 4) See branch/dirty state per role worktree
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\agent_worktrees.ps1 -Action status -IncludeDocs

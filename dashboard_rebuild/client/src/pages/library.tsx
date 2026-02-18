@@ -952,7 +952,7 @@ export default function Library() {
                         <option value="">Select course</option>
                         {courses.map((course) => (
                           <option key={course.id} value={String(course.id)}>
-                            {course.code || course.name}
+                            {course.name}{course.code ? ` (${course.code})` : ""}
                           </option>
                         ))}
                       </select>

@@ -202,7 +202,7 @@ def search_rag_documents(
     - If neither is specified, search ALL enabled documents (no corpus filter)
     """
     init_database()
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     
@@ -306,7 +306,7 @@ def search_rag_documents(
 def load_runtime_catalog_context(max_chars: int = 6000) -> str:
     """Load enabled runtime catalog items into a compact context block."""
     init_database()
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -330,7 +330,7 @@ def load_runtime_catalog_context(max_chars: int = 6000) -> str:
 
             repo_root = Path(__file__).resolve().parent.parent
             sync_runtime_catalog(str(repo_root))
-            conn = sqlite3.connect(DB_PATH)
+            conn = sqlite3.connect(DB_PATH, timeout=30)
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
             cur.execute(
@@ -703,7 +703,7 @@ def log_tutor_turn(query: TutorQueryV1, response: TutorTurnResponse) -> int:
     Returns the turn ID.
     """
     init_database()
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cur = conn.cursor()
     
     now = datetime.now().isoformat(timespec="seconds")
@@ -744,7 +744,7 @@ def create_card_draft_from_turn(
     Returns the card_draft ID.
     """
     init_database()
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cur = conn.cursor()
     
     now = datetime.now().isoformat(timespec="seconds")

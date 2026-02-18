@@ -1,6 +1,6 @@
 # PT Study OS v9.5 (runtime prompt v9.5.2)
 
-A local-first, AI-powered study operating system for DPT coursework. Every session follows the PEIRRO learning cycle with deterministic logging, citation-first teaching, and continuous improvement via Scholar meta-audits.
+A local-first, AI-powered study operating system for DPT coursework. Every session follows the **Control Plane** learning pipeline (CP-MSS v1.0) with deterministic logging, citation-first teaching, and continuous improvement via Scholar meta-audits.
 
 ## Table of Contents
 
@@ -249,16 +249,41 @@ The **SOP** (Standard Operating Procedure) defines the learning methodology. Sou
 | 13 | `13-custom-gpt-system-instructions.md` | Custom GPT system instructions (v9.5) |
 | 14 | `14-lo-engine.md` | Learning Objective Engine protocol pack |
 | 15 | `15-method-library.md` | Composable Method Library (blocks + chains) |
+| 17 | `17-control-plane.md` | Control Plane Constitution (CP-MSS v1.0) |
 
 ### Core Methodology
 
-**PEIRRO Learning Cycle** (every session):
+**Control Plane Learning Pipeline** (CP-MSS v1.0):
 ```
-Prepare --> Encode --> Interrogate --> Retrieve --> Refine --> Overlearn
-   |                                                             |
-   +-------------------------------------------------------------+
-                        (spaced repetition loop)
+PRIME --> CALIBRATE --> ENCODE --> REFERENCE --> RETRIEVE --> OVERLEARN
+   |                                                           |
+   +-----------------------------------------------------------+
+                    (spaced repetition loop)
 ```
+
+**The Dependency Law:** No retrieval without targets. Every RETRIEVE stage must be preceded by REFERENCE (target generation).
+
+**Chain Selector (7 Knobs):**
+
+The `brain/selector.py` router automatically selects the optimal chain based on 7 input variables:
+
+| Knob | Values | Purpose |
+|------|--------|---------|
+| `assessment_mode` | procedure, classification, mechanism, definition, recognition | Learning goal type |
+| `time_available_min` | 10-120 | Session duration budget |
+| `energy` | low, medium, high | User energy level |
+| `retrieval_support` | maximal, guided, minimal | Scaffolding level |
+| `interleaving_level` | blocked, mixed, full | Topic mixing strategy |
+| `near_miss_intensity` | low, medium, high | Adversarial lure density |
+| `timed` | off, soft, hard | Time pressure setting |
+
+**First Exposure Chains:**
+
+| Chain | Duration | Use Case | Stages |
+|-------|----------|----------|--------|
+| `C-FE-STD` | 35 min | Standard first exposure | PRIME→CALIBRATE→ENCODE→REFERENCE→RETRIEVE |
+| `C-FE-MIN` | 20 min | Low energy / short time | PRIME→REFERENCE→RETRIEVE→OVERLEARN |
+| `C-FE-PRO` | 45 min | Lab/procedure learning | PRIME→ENCODE→REFERENCE→RETRIEVE (with fault injection) |
 
 **Operating Modes:**
 
@@ -323,6 +348,9 @@ brain/
   +-- db_setup.py               # Schema + migrations
   +-- config.py                 # App config
   +-- dashboard_web.py          # Flask entrypoint
+  +-- selector.py               # Control Plane chain selector (7 Knobs)
+  +-- selector_bridge.py        # API bridge for selector
+  +-- db_setup.py               # Schema + migrations + error_logs helpers
   +-- tests/                    # pytest suite (56 tests)
 ```
 
@@ -462,7 +490,7 @@ Session Logs + DB
 
 SQLite at `brain/data/pt_study.db`. Schema managed in `brain/db_setup.py`.
 
-### Tables (24 total)
+### Tables (25+ total)
 
 ```
 +------------------+     +------------------+     +------------------+
@@ -486,12 +514,12 @@ SQLite at `brain/data/pt_study.db`. Schema managed in `brain/db_setup.py`.
 
 +------------------+     +------------------+     +------------------+
 |  method_blocks   |     |  method_chains   |     |  method_ratings  |
-|  (18 seed blocks)|     |  (6 templates)   |     |  (user ratings)  |
+|  (46 CP stages)  |     |  (6 CP chains)   |     |  (user ratings)  |
 +------------------+     +------------------+     +------------------+
 
 +------------------+     +------------------+     +------------------+
-|  quick_notes     |     |  calendar_action |     |  scraped_events  |
-|                  |     |  _ledger         |     |  (staging)       |
+|  error_logs      |     |  calendar_action |     |  scraped_events  |
+|  (CP telemetry)  |     |  _ledger         |     |  (staging)       |
 +------------------+     +------------------+     +------------------+
 ```
 
@@ -506,6 +534,24 @@ SQLite at `brain/data/pt_study.db`. Schema managed in `brain/db_setup.py`.
 | WRAP | `anki_cards_text`, `glossary_entries`, `wrap_watchlist` |
 | Logging | `tracker_json`, `enhanced_json`, `exit_ticket_blurt` |
 | Session Ledger | `covered`, `not_covered`, `artifacts_created`, `timebox_min` |
+
+### Control Plane Telemetry (error_logs)
+
+The `error_logs` table enables deterministic routing by tracking granular item-level failures:
+
+| Column | Purpose |
+|--------|---------|
+| `error_type` | Classification: Recall, Confusion, Rule, Representation, Procedure, Computation, Speed |
+| `stage_detected` | Control Plane stage where error occurred (RETRIEVE, CALIBRATE, etc.) |
+| `confidence` | H/M/L - Used to calculate HCWR (High-Confidence Wrong Rate) |
+| `time_to_answer` | Latency in seconds - Used for speed error detection |
+| `active_knobs` | JSON of active parameters - Enables A/B testing of knob effectiveness |
+| `fix_applied` | Which method override was triggered (e.g., M-ENC-010) |
+
+**Helper Functions** (in `db_setup.py`):
+- `log_error()` - Insert error log entry
+- `get_dominant_error()` - Get most frequent error for selector input
+- `get_error_stats()` - Calculate HCWR, median latency, error distribution
 
 ---
 

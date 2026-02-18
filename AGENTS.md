@@ -113,6 +113,39 @@ C:\pt-study-sop\
 - Adaptive Tutor: brain/tutor_rag.py, brain/tutor_chains.py, brain/tutor_streaming.py, brain/dashboard/api_tutor.py
 - Tutor logs: brain/session_logs/ (Tutor itself is external)
 
+## Control Plane Architecture (CP-MSS v1.0) - CURRENT
+
+The system now uses the **Control Plane Modular Study System** (CP-MSS v1.0):
+
+### 6-Stage Pipeline
+```
+PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN
+```
+
+### Key Components
+| Component | File | Purpose |
+|-----------|------|---------|
+| Constitution | `sop/library/17-control-plane.md` | Source of truth for CP-MSS v1.0 |
+| Selector | `brain/selector.py` | 7 Knobs router (assessment_mode, time, energy, etc.) |
+| Bridge | `brain/selector_bridge.py` | API adapter for tutor integration |
+| Error Telemetry | `brain/db_setup.py` | `error_logs` table for HCWR, dominant_error |
+| Chains | `sop/library/chains/C-FE-*.yaml` | Dependency-safe chains (REF before RET) |
+
+### The Dependency Law
+**No retrieval without targets.** Every RETRIEVE stage must be preceded by REFERENCE (target generation). This is enforced in all chains:
+- `C-FE-STD`: Standard First Exposure (35 min)
+- `C-FE-MIN`: Minimal/Low Energy (20 min)  
+- `C-FE-PRO`: Procedure/Lab (45 min)
+
+### Database Schema
+- `method_blocks.control_stage`: PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN
+- `error_logs`: Tracks error_type, stage_detected, confidence, active_knobs, fix_applied
+
+### Frontend Support
+- Control Plane colors in `dashboard_rebuild/client/src/lib/colors.ts`
+- Category mapping in `dashboard_rebuild/client/src/lib/displayStage.ts`
+- Type definitions in `dashboard_rebuild/client/src/api.ts`
+
 ## External Systems (from docs)
 - Tutor (CustomGPT): "Trey's Study System" (external only; no local launcher).
 - Anki (AnkiConnect): in active use; syncs card_drafts to Anki Desktop.

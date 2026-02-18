@@ -14,10 +14,10 @@ param(
   # Used by route/dispatch. Provide one or more files you expect to touch.
   [string[]]$Paths = @(),
 
-  [ValidateSet("powershell", "codex", "claude", "opencode", "custom")]
+  [ValidateSet("powershell", "codex", "claude", "opencode", "kimi", "custom")]
   [string]$Tool = "powershell",
 
-  # For open-many/dispatch-many, pass explicit agent list (e.g. -Agents codex,claude,opencode).
+  # For open-many/dispatch-many, pass explicit agent list (e.g. -Agents codex,claude,opencode,kimi).
   [string[]]$Agents = @(),
 
   # Quick preset when -Agents is omitted.
@@ -247,6 +247,7 @@ function Get-DefaultArgsForTool {
     "codex"    { return $env:AGENT_WORKTREE_CODEX_ARGS }
     "claude"   { return $env:AGENT_WORKTREE_CLAUDE_ARGS }
     "opencode" { return $env:AGENT_WORKTREE_OPENCODE_ARGS }
+    "kimi"     { return $env:AGENT_WORKTREE_KIMI_ARGS }
     default    { return "" }
   }
 }
@@ -278,6 +279,7 @@ function Build-ToolCommand {
       if ([string]::IsNullOrWhiteSpace($effectiveArgs)) { return $cmd }
       return "$cmd $effectiveArgs".Trim()
     }
+    "kimi"       { return "kimi $effectiveArgs".Trim() }
     "custom" {
       if ([string]::IsNullOrWhiteSpace($CustomCmd)) {
         throw "Tool 'custom' requires -CustomCommand."
@@ -308,7 +310,7 @@ function Resolve-AgentList {
   }
 
   $allowed = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-  @("powershell", "codex", "claude", "opencode", "custom") | ForEach-Object { [void]$allowed.Add($_) }
+  @("powershell", "codex", "claude", "opencode", "kimi", "custom") | ForEach-Object { [void]$allowed.Add($_) }
   $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
   $result = New-Object System.Collections.Generic.List[string]
 
@@ -319,7 +321,7 @@ function Resolve-AgentList {
       $name = $part.Trim().ToLowerInvariant()
       if ([string]::IsNullOrWhiteSpace($name)) { continue }
       if (-not $allowed.Contains($name)) {
-        throw "Unknown agent/tool '$name'. Allowed: powershell, codex, claude, opencode, custom"
+        throw "Unknown agent/tool '$name'. Allowed: powershell, codex, claude, opencode, kimi, custom"
       }
       if ($seen.Add($name)) {
         $result.Add($name) | Out-Null
@@ -402,6 +404,7 @@ function Print-Help {
   Write-Host "  AGENT_WORKTREE_CODEX_ARGS"
   Write-Host "  AGENT_WORKTREE_CLAUDE_ARGS"
   Write-Host "  AGENT_WORKTREE_OPENCODE_ARGS"
+  Write-Host "  AGENT_WORKTREE_KIMI_ARGS"
 }
 
 $repoRoot = Get-RepoRoot

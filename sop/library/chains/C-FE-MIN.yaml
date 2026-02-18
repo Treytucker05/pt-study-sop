@@ -1,0 +1,23 @@
+chain_id: C-FE-MIN
+name: "First Exposure: Minimal"
+category: "First Exposure"
+is_template: 1
+target_assessment_mode: ["definition", "recognition"]
+est_duration_min: 20
+
+method_ids:
+  - M-PRE-008  # Structural Extraction
+  - M-REF-003  # One-Page Anchor (Make the Cheat Sheet)
+  - M-RET-001  # Free Recall Blurt (Test the Cheat Sheet)
+  - M-OVR-001  # Exit Ticket
+
+default_knobs:
+  energy: "low"
+  retrieval_support: "minimal"
+  time_available_min: 20
+  timed: "off"
+
+gates:
+  - method: M-RET-001
+    criterion: "accuracy"
+    value: 0.80

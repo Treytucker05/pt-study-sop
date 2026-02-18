@@ -1,10 +1,8 @@
 export type MethodCategory =
-  | "prepare"
-  | "encode"
-  | "interrogate"
-  | "retrieve"
-  | "refine"
-  | "overlearn";
+  // Control Plane (CP-MSS v1.0)
+  | "PRIME" | "CALIBRATE" | "ENCODE" | "REFERENCE" | "RETRIEVE" | "OVERLEARN"
+  // Legacy PEIRRO
+  | "prepare" | "encode" | "interrogate" | "retrieve" | "refine" | "overlearn";
 
 export type EnergyLevel = "low" | "medium" | "high";
 
@@ -170,15 +168,31 @@ export interface CompositeScoreResult {
 }
 
 export const CATEGORY_COLORS: Record<MethodCategory, string> = {
-  prepare: "#f59e0b",
-  encode: "#8b5cf6",
-  interrogate: "#10b981",
+  // Control Plane
+  PRIME: "#3b82f6",
+  CALIBRATE: "#f59e0b",
+  ENCODE: "#10b981",
+  REFERENCE: "#8b5cf6",
+  RETRIEVE: "#ef4444",
+  OVERLEARN: "#ec4899",
+  // Legacy
+  prepare: "#3b82f6",
+  encode: "#10b981",
+  interrogate: "#8b5cf6",
   retrieve: "#ef4444",
-  refine: "#3b82f6",
-  overlearn: "#6b7280",
+  refine: "#ec4899",
+  overlearn: "#ec4899",
 };
 
 export const CATEGORY_LABELS: Record<MethodCategory, string> = {
+  // Control Plane
+  PRIME: "PRIME",
+  CALIBRATE: "CALIBRATE",
+  ENCODE: "ENCODE",
+  REFERENCE: "REFERENCE",
+  RETRIEVE: "RETRIEVE",
+  OVERLEARN: "OVERLEARN",
+  // Legacy
   prepare: "Prepare",
   encode: "Encode",
   interrogate: "Interrogate",

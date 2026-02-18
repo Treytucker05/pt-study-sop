@@ -6,6 +6,7 @@ Database setup and schema initialization for PT Study Brain v9.4.
 import sqlite3
 import os
 import sys
+import json
 import importlib.util
 from datetime import datetime
 from typing import Optional
@@ -154,7 +155,9 @@ def init_database():
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA busy_timeout = 10000")
     cursor = conn.cursor()
 
     # ------------------------------------------------------------------
@@ -1285,7 +1288,7 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             method_id TEXT,
             name TEXT NOT NULL,
-            category TEXT NOT NULL,
+            control_stage TEXT NOT NULL CHECK(control_stage IN ('PRIME', 'CALIBRATE', 'ENCODE', 'REFERENCE', 'RETRIEVE', 'OVERLEARN')),
             description TEXT,
             default_duration_min INTEGER DEFAULT 5,
             energy_cost TEXT DEFAULT 'medium',
@@ -1325,8 +1328,8 @@ def init_database():
     """)
 
     cursor.execute("""
-        CREATE INDEX IF NOT EXISTS idx_method_blocks_category
-        ON method_blocks(category)
+        CREATE INDEX IF NOT EXISTS idx_method_blocks_control_stage
+        ON method_blocks(control_stage)
     """)
 
     cursor.execute("""
@@ -1582,6 +1585,40 @@ def init_database():
     """)
 
     # ------------------------------------------------------------------
+    # Control Plane: error_logs (granular telemetry for selector routing)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS error_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            item_id TEXT,
+            error_type TEXT CHECK(error_type IN ('Recall', 'Confusion', 'Rule', 'Representation', 'Procedure', 'Computation', 'Speed', 'None')),
+            stage_detected TEXT,
+            confidence TEXT CHECK(confidence IN ('H', 'M', 'L')),
+            time_to_answer REAL,
+            active_knobs TEXT,
+            fix_applied TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(session_id) REFERENCES tutor_sessions(session_id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_error_logs_session
+        ON error_logs(session_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_error_logs_type
+        ON error_logs(error_type)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_error_logs_timestamp
+        ON error_logs(timestamp)
+    """)
+
+    # ------------------------------------------------------------------
     # Adaptive Tutor: rag_embeddings (vector chunks for ChromaDB)
     # ------------------------------------------------------------------
     cursor.execute("""
@@ -1785,49 +1822,38 @@ def init_database():
 
 def migrate_method_categories():
     """
-    Migrate method_blocks categories from ad-hoc names to PEIRRO phases.
+    Migrate method_blocks from PEIRRO phases to Control Plane stages.
     Idempotent — only updates rows that still use old category names.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cursor = conn.cursor()
 
+    # PEIRRO to Control Plane mapping
     category_map = {
-        "activate": "prepare",
-        "map": "prepare",
-        "connect": "interrogate",
+        "prepare": "PRIME",
+        "encode": "ENCODE",
+        "interrogate": "ENCODE",
+        "retrieve": "RETRIEVE",
+        "refine": "OVERLEARN",
+        "overlearn": "OVERLEARN",
     }
 
-    # Consolidate split: Error Autopsy + Mastery Loop → refine, rest → overlearn
-    refine_blocks = ("Error Autopsy", "Mastery Loop")
-
     total = 0
-    for old_cat, new_cat in category_map.items():
+    for old_cat, new_stage in category_map.items():
         cursor.execute(
-            "UPDATE method_blocks SET category = ? WHERE category = ?",
-            (new_cat, old_cat),
+            "UPDATE method_blocks SET control_stage = ? WHERE control_stage = ?",
+            (new_stage, old_cat),
         )
         total += cursor.rowcount
-
-    # Split consolidate
-    cursor.execute(
-        "UPDATE method_blocks SET category = 'refine' WHERE category = 'consolidate' AND name IN (?, ?)",
-        refine_blocks,
-    )
-    total += cursor.rowcount
-
-    cursor.execute(
-        "UPDATE method_blocks SET category = 'overlearn' WHERE category = 'consolidate'",
-    )
-    total += cursor.rowcount
 
     conn.commit()
     conn.close()
 
     if total > 0:
-        print(f"[OK] Migrated {total} method block(s) to PEIRRO categories")
+        print(f"[OK] Migrated {total} method block(s) to Control Plane stages")
     else:
         print(
-            "[INFO] Method categories already use PEIRRO phases (no migration needed)"
+            "[INFO] Method blocks already use Control Plane stages (no migration needed)"
         )
 
 
@@ -1836,7 +1862,7 @@ def migrate_from_v8():
     Migrate data from v8 schema to v9.1 schema if needed.
     Maps old column names to new ones.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cursor = conn.cursor()
 
     # Check if migration is needed by looking for old columns
@@ -1882,6 +1908,137 @@ def migrate_from_v8():
     conn.close()
 
 
+def log_error(session_id: str, item_id: str = None, error_type: str = None,
+              stage_detected: str = None, confidence: str = None,
+              time_to_answer: float = None, active_knobs: dict = None,
+              fix_applied: str = None) -> int:
+    """
+    Log an error to the error_logs table.
+    
+    Args:
+        session_id: The tutor session ID
+        item_id: Specific question/flashcard ID
+        error_type: One of Recall, Confusion, Rule, Representation, Procedure, Computation, Speed, None
+        stage_detected: Control Plane stage where error was detected (e.g., RETRIEVE, CALIBRATE)
+        confidence: H (High), M (Medium), L (Low)
+        time_to_answer: Seconds to answer
+        active_knobs: Dict of active knobs for A/B testing context
+        fix_applied: Which method override was triggered (e.g., M-ENC-010)
+    
+    Returns:
+        The ID of the inserted error log row
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        INSERT INTO error_logs 
+        (session_id, item_id, error_type, stage_detected, confidence, 
+         time_to_answer, active_knobs, fix_applied)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        session_id, item_id, error_type, stage_detected, confidence,
+        time_to_answer, 
+        json.dumps(active_knobs) if active_knobs else None,
+        fix_applied
+    ))
+    
+    conn.commit()
+    row_id = cursor.lastrowid
+    conn.close()
+    return row_id
+
+
+def get_dominant_error(session_id: str, limit: int = 10) -> str:
+    """
+    Get the dominant error type for a session.
+    Returns the most frequent error type from recent logs.
+    Used as input to selector.py for deterministic routing.
+    
+    Args:
+        session_id: The tutor session ID
+        limit: Number of recent errors to consider
+    
+    Returns:
+        The dominant error type (e.g., 'Confusion', 'Speed') or None
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT error_type, COUNT(*) as count
+        FROM error_logs
+        WHERE session_id = ? AND error_type IS NOT NULL
+        GROUP BY error_type
+        ORDER BY count DESC
+        LIMIT 1
+    """, (session_id,))
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    return row[0] if row else None
+
+
+def get_error_stats(session_id: str) -> dict:
+    """
+    Get comprehensive error statistics for a session.
+    Calculates HCWR (High-Confidence Wrong Rate) and other metrics.
+    
+    Args:
+        session_id: The tutor session ID
+    
+    Returns:
+        Dict with error counts, HCWR, median latency, etc.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Get error counts by type
+    cursor.execute("""
+        SELECT error_type, confidence, COUNT(*), AVG(time_to_answer)
+        FROM error_logs
+        WHERE session_id = ?
+        GROUP BY error_type, confidence
+    """, (session_id,))
+    
+    rows = cursor.fetchall()
+    
+    stats = {
+        'total_errors': 0,
+        'by_type': {},
+        'by_confidence': {'H': 0, 'M': 0, 'L': 0},
+        'high_confidence_wrong': 0,  # HCWR numerator
+        'median_latency': 0
+    }
+    
+    latencies = []
+    for error_type, confidence, count, avg_time in rows:
+        stats['total_errors'] += count
+        stats['by_type'][error_type] = stats['by_type'].get(error_type, 0) + count
+        stats['by_confidence'][confidence] = stats['by_confidence'].get(confidence, 0) + count
+        
+        if confidence == 'H' and error_type != 'None':
+            stats['high_confidence_wrong'] += count
+        
+        if avg_time:
+            latencies.extend([avg_time] * count)
+    
+    if latencies:
+        latencies.sort()
+        stats['median_latency'] = latencies[len(latencies) // 2]
+    
+    # Calculate HCWR
+    total_high_conf = stats['by_confidence']['H']
+    if total_high_conf > 0:
+        stats['hcwr'] = stats['high_confidence_wrong'] / total_high_conf
+    else:
+        stats['hcwr'] = 0
+    
+    conn.close()
+    return stats
+
+
 def get_connection():
     """
     Get a database connection.
@@ -1891,8 +2048,9 @@ def get_connection():
     if not os.path.exists(DB_PATH):
         init_database()
 
-    conn = sqlite3.connect(DB_PATH, timeout=15)
-    conn.execute("PRAGMA busy_timeout = 5000")
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.execute("PRAGMA busy_timeout = 10000")
+    conn.execute("PRAGMA journal_mode = WAL")
 
     try:
         conn.execute("SELECT 1 FROM sessions LIMIT 1")
@@ -1900,8 +2058,9 @@ def get_connection():
         # Likely a brand-new DB file with no schema yet.
         conn.close()
         init_database()
-        conn = sqlite3.connect(DB_PATH, timeout=15)
-        conn.execute("PRAGMA busy_timeout = 5000")
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        conn.execute("PRAGMA busy_timeout = 10000")
+        conn.execute("PRAGMA journal_mode = WAL")
 
     return conn
 
@@ -2021,7 +2180,7 @@ def get_schema_version():
     """
     Get the current schema version from the database.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cursor = conn.cursor()
 
     try:
@@ -2039,7 +2198,7 @@ def backfill_session_minutes():
     """
     Backfill time_spent_minutes and duration_minutes where one is missing.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cursor = conn.cursor()
 
     cursor.execute(
@@ -2130,7 +2289,7 @@ if __name__ == "__main__":
     sentinel_method_ok = None
     sentinel_chain_ok = None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH, timeout=30)
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM method_blocks")
         method_count = int(cursor.fetchone()[0] or 0)

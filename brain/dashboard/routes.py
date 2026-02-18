@@ -127,7 +127,7 @@ def serve_react_app():
     if os.path.exists(dist_index):
         return send_from_directory(os.path.join(static_folder, "dist"), "index.html")
 
-    return "Dashboard build not found. Run 'npm run build' in dashboard_rebuild and copy dist/public to brain/static/dist.", 404
+    return "Dashboard build not found. Run Start_Dashboard.bat or run 'npm run build' in dashboard_rebuild (outputs directly to brain/static/dist).", 404
 
 
 @dashboard_bp.route("/old-dashboard")

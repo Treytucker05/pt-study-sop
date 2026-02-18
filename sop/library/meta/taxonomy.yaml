@@ -1,34 +1,34 @@
 categories:
-  prepare:
-    label: "Prepare"
-    description: "Prime attention, surface prior knowledge, build structure"
+  prime:
+    label: "PRIME"
+    description: "Prepare attention, surface prior knowledge, build structure"
     prefix: PRE
-    aliases: ["prep", "warmup", "prime"]
+    aliases: ["prep", "warmup", "prime", "prepare"]
+  calibrate:
+    label: "CALIBRATE"
+    description: "Diagnostic micro-assessments to identify weaknesses before encoding"
+    prefix: CAL
+    aliases: ["diagnostic", "baseline", "pretest"]
   encode:
-    label: "Encode"
-    description: "Attach meaning to material"
+    label: "ENCODE"
+    description: "Attach meaning to material through active processing"
     prefix: ENC
-    aliases: ["encoding", "attach_meaning"]
-  interrogate:
-    label: "Interrogate"
-    description: "Link to other content, apply, compare"
-    prefix: INT
-    aliases: ["apply", "link"]
-  retrieve:
-    label: "Retrieve"
-    description: "Test recall without cues"
-    prefix: RET
-    aliases: ["recall", "test"]
-  refine:
-    label: "Refine"
-    description: "Analyze errors and relearn"
+    aliases: ["encoding", "attach_meaning", "elaboration"]
+  reference:
+    label: "REFERENCE"
+    description: "Generate target cues and cheat sheets for retrieval"
     prefix: REF
-    aliases: ["error_analysis", "relearn"]
+    aliases: ["cue_gen", "anchor", "target"]
+  retrieve:
+    label: "RETRIEVE"
+    description: "Test recall with adversarial near-miss and timed sprints"
+    prefix: RET
+    aliases: ["recall", "test", "practice"]
   overlearn:
-    label: "Overlearn"
-    description: "Close loop, capture artifacts"
+    label: "OVERLEARN"
+    description: "Close loop, capture artifacts, Anki, drill sheets"
     prefix: OVR
-    aliases: ["wrap", "consolidate"]
+    aliases: ["wrap", "consolidate", "refine"]
 
 energy_levels: [low, medium, high]
 stages: [first_exposure, review, exam_prep, consolidation]

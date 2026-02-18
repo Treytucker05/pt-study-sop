@@ -34,6 +34,18 @@ if (-not (Test-Path "$PSScriptRoot\package.json")) {
 Write-Header "Building Dashboard"
 Set-Location $PSScriptRoot
 
+# Bootstrap frontend deps when node_modules is missing/incomplete.
+$tsxPackage = Join-Path $PSScriptRoot "node_modules\tsx\package.json"
+$tsxCmd = Join-Path $PSScriptRoot "node_modules\.bin\tsx.cmd"
+if (-not (Test-Path $tsxPackage) -and -not (Test-Path $tsxCmd)) {
+    Write-Header "Installing Frontend Dependencies"
+    npm install
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "npm install failed (exit code $LASTEXITCODE)"
+        exit $LASTEXITCODE
+    }
+}
+
 # `npm run build` can emit warnings to stderr even when it succeeds (exit code 0).
 # In Windows PowerShell, stderr output becomes non-terminating errors; with `$ErrorActionPreference = "Stop"`
 # that would incorrectly trip the catch. Temporarily relax error handling and rely on `$LASTEXITCODE`.
@@ -52,6 +64,12 @@ try {
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Build failed (exit code $LASTEXITCODE)"
     exit $LASTEXITCODE
+}
+
+$distIndex = Join-Path $rootDir "brain\static\dist\index.html"
+if (-not (Test-Path $distIndex)) {
+    Write-Error "Build finished but output file is missing: $distIndex"
+    exit 1
 }
 
 Write-Success "Build completed - files now in brain/static/dist"

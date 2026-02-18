@@ -30,6 +30,14 @@ function getMaterialTypeLabel(fileType: string | null | undefined): string {
   return FILE_TYPE_ICONS[normalized] || (normalized ? normalized.toUpperCase() : "FILE");
 }
 
+function getFileNameFromPath(path: string | null | undefined): string {
+  if (!path) return "";
+  // Handle both Windows and Unix paths
+  const normalized = path.replace(/\\/g, "/");
+  const lastSlash = normalized.lastIndexOf("/");
+  return lastSlash >= 0 ? normalized.slice(lastSlash + 1) : normalized;
+}
+
 interface MaterialSelectorProps {
   courseId?: number;
   selectedMaterials: number[];
@@ -55,19 +63,13 @@ export function MaterialSelector({
   });
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
-    queryKey: ["tutor-materials-all"],
-    queryFn: () => api.tutor.getMaterials(),
+    queryKey: ["tutor-materials", courseId],
+    queryFn: () => api.tutor.getMaterials(courseId ? { course_id: courseId } : undefined),
   });
 
-  // Split materials into course-matched and other
-  const courseMaterials = useMemo(
-    () => (courseId ? materials.filter((m) => m.course_id === courseId) : materials),
-    [materials, courseId],
-  );
-  const otherMaterials = useMemo(
-    () => (courseId ? materials.filter((m) => m.course_id !== courseId) : []),
-    [materials, courseId],
-  );
+  // Server returns filtered materials when courseId is provided
+  const courseMaterials = useMemo(() => materials, [materials]);
+  const otherMaterials = useMemo(() => [], [materials]);
   const [showOther, setShowOther] = useState(false);
 
   // Checksums that appear on more than one material
@@ -106,7 +108,7 @@ export function MaterialSelector({
     setUploading(false);
     if (successes > 0) {
       toast.success(`${successes} file${successes > 1 ? "s" : ""} uploaded`);
-      queryClient.invalidateQueries({ queryKey: ["tutor-materials", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
     }
   }, [courseId, queryClient]);
 
@@ -130,7 +132,7 @@ export function MaterialSelector({
     if (deleted > 0) {
       toast.success(`${deleted} material${deleted > 1 ? "s" : ""} deleted`);
       setSelectedMaterials([]);
-      queryClient.invalidateQueries({ queryKey: ["tutor-materials", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
     }
   }, [selectedMaterials, setSelectedMaterials, courseId, queryClient]);
 
@@ -246,15 +248,20 @@ export function MaterialSelector({
   const renderRow = (mat: Material) => (
     <label
       key={mat.id}
-      className={`flex items-center gap-1.5 px-1 py-0.5 ${TEXT_BODY} text-muted-foreground hover:text-foreground cursor-pointer`}
+      className={`flex items-center gap-2 px-2 py-1.5 ${TEXT_BODY} text-muted-foreground hover:text-foreground cursor-pointer w-full`}
     >
       <Checkbox
         checked={selectedMaterials.includes(mat.id)}
         onCheckedChange={() => toggle(mat.id)}
-        className="w-3 h-3"
+        className="w-3 h-3 shrink-0"
       />
       <FileText className={`${ICON_SM} text-primary/60 shrink-0`} />
-      <span className="truncate flex-1">{(mat.title || `Material ${mat.id}`).trim() || `Material ${mat.id}`}</span>
+      <span 
+        className="truncate min-w-0 flex-1 max-w-[200px]" 
+        title={getFileNameFromPath(mat.title) || `Material ${mat.id}`}
+      >
+        {getFileNameFromPath(mat.title) || `Material ${mat.id}`}
+      </span>
       {mat.checksum && dupeChecksums.has(mat.checksum) && (
         <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 shrink-0 border-yellow-500/50 text-yellow-400`}>
           DUPE
@@ -267,7 +274,7 @@ export function MaterialSelector({
   );
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 w-full overflow-hidden">
       {/* Upload zone */}
       {uploadZone}
 

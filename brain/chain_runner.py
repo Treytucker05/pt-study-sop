@@ -327,7 +327,7 @@ def _load_chain(chain_id: int) -> dict | None:
 
 def _load_rag_context(doc_ids: list[int], topic: str, course_id: int | None) -> str:
     """Load RAG document content by ID, capped at MAX_RAG_CHARS."""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     cursor = conn.cursor()
     placeholders = ",".join("?" * len(doc_ids))
     cursor.execute(

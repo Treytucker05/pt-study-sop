@@ -50,7 +50,9 @@ class RagNote:
 def _connect() -> sqlite3.Connection:
     """Ensure DB and rag_docs table exist, then return a connection."""
     init_database()
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.execute("PRAGMA busy_timeout = 10000")
+    conn.execute("PRAGMA journal_mode = WAL")
     conn.row_factory = sqlite3.Row
     return conn
 

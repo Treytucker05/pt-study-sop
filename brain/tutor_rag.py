@@ -201,7 +201,7 @@ def embed_rag_docs(
     Routes to correct collection based on corpus.
     Returns {embedded: int, skipped: int, total_chunks: int}.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -383,7 +383,7 @@ def _keyword_fallback(
     """Fallback to SQL keyword search when ChromaDB is empty/unavailable."""
     from langchain_core.documents import Document
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 

@@ -6,7 +6,99 @@
  */
 
 // ---------------------------------------------------------------------------
-// PEIRRO method categories
+// Control Plane method categories (CP-MSS v1.0)
+// ---------------------------------------------------------------------------
+
+export const CONTROL_PLANE_COLORS: Record<
+  string,
+  { border: string; bg: string; badge: string; bar: string }
+> = {
+  // New Control Plane Stages
+  PRIME: {
+    border: "border-blue-500 bg-blue-500/10",
+    bg: "bg-blue-500/10",
+    badge: "bg-blue-500/20 text-blue-400",
+    bar: "bg-blue-500",
+  },
+  CALIBRATE: {
+    border: "border-yellow-500 bg-yellow-500/10",
+    bg: "bg-yellow-500/10",
+    badge: "bg-yellow-500/20 text-yellow-400",
+    bar: "bg-yellow-500",
+  },
+  ENCODE: {
+    border: "border-green-500 bg-green-500/10",
+    bg: "bg-green-500/10",
+    badge: "bg-green-500/20 text-green-400",
+    bar: "bg-green-500",
+  },
+  REFERENCE: {
+    border: "border-purple-500 bg-purple-500/10",
+    bg: "bg-purple-500/10",
+    badge: "bg-purple-500/20 text-purple-400",
+    bar: "bg-purple-500",
+  },
+  RETRIEVE: {
+    border: "border-red-500 bg-red-500/10",
+    bg: "bg-red-500/10",
+    badge: "bg-red-500/20 text-red-400",
+    bar: "bg-red-500",
+  },
+  OVERLEARN: {
+    border: "border-pink-500 bg-pink-500/10",
+    bg: "bg-pink-500/10",
+    badge: "bg-pink-500/20 text-pink-400",
+    bar: "bg-pink-500",
+  },
+  // Legacy PEIRRO mappings (backward compatibility)
+  prepare: {
+    border: "border-blue-500 bg-blue-500/10",
+    bg: "bg-blue-500/10",
+    badge: "bg-blue-500/20 text-blue-400",
+    bar: "bg-blue-500",
+  },
+  encode: {
+    border: "border-green-500 bg-green-500/10",
+    bg: "bg-green-500/10",
+    badge: "bg-green-500/20 text-green-400",
+    bar: "bg-green-500",
+  },
+  interrogate: {
+    border: "border-purple-500 bg-purple-500/10",
+    bg: "bg-purple-500/10",
+    badge: "bg-purple-500/20 text-purple-400",
+    bar: "bg-purple-500",
+  },
+  retrieve: {
+    border: "border-red-500 bg-red-500/10",
+    bg: "bg-red-500/10",
+    badge: "bg-red-500/20 text-red-400",
+    bar: "bg-red-500",
+  },
+  refine: {
+    border: "border-pink-500 bg-pink-500/10",
+    bg: "bg-pink-500/10",
+    badge: "bg-pink-500/20 text-pink-400",
+    bar: "bg-pink-500",
+  },
+  overlearn: {
+    border: "border-pink-500 bg-pink-500/10",
+    bg: "bg-pink-500/10",
+    badge: "bg-pink-500/20 text-pink-400",
+    bar: "bg-pink-500",
+  },
+};
+
+/** Fallback for unknown categories */
+export const CONTROL_PLANE_DEFAULT = {
+  border: "border-secondary bg-secondary/10",
+  bg: "bg-secondary/10",
+  badge: "bg-secondary/20 text-muted-foreground",
+  bar: "bg-primary",
+};
+
+// ---------------------------------------------------------------------------
+// PEIRRO method categories (Legacy - deprecated, use CONTROL_PLANE_COLORS)
 // ---------------------------------------------------------------------------
 
 export const PEIRRO_COLORS: Record<

@@ -5,7 +5,7 @@ param(
   [ValidateSet("single", "review", "swarm")]
   [string]$Profile = "swarm",
 
-  [ValidateSet("powershell", "codex", "claude", "opencode", "custom")]
+  [ValidateSet("powershell", "codex", "claude", "opencode", "kimi", "custom")]
   [string]$Tool = "codex",
 
   [string[]]$Roles = @("ui", "brain", "integrate"),

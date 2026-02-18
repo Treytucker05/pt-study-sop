@@ -9,7 +9,7 @@ data_bp = Blueprint("data", __name__)
 
 def _get_tables() -> list[str]:
     """Return all user table names from the database."""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     try:
         rows = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
@@ -36,7 +36,7 @@ def list_tables():
 def table_schema(name: str):
     if not _validate_table(name):
         return jsonify({"error": f"Table '{name}' not found"}), 404
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     try:
         cols = conn.execute(f"PRAGMA table_info([{name}])").fetchall()
         schema = [
@@ -57,7 +57,7 @@ def table_rows(name: str):
     limit = min(int(request.args.get("limit", 100)), 500)
     offset = int(request.args.get("offset", 0))
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     try:
         # Find the PK column name — SQLite aliases rowid to INTEGER PRIMARY KEY
@@ -93,7 +93,7 @@ def update_row(name: str, row_id: int):
         return jsonify({"error": "No update data provided"}), 400
 
     # Get valid column names to prevent injection via field names
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     try:
         cols = conn.execute(f"PRAGMA table_info([{name}])").fetchall()
         valid_cols = {c[1] for c in cols}
@@ -126,7 +126,7 @@ def delete_row(name: str, row_id: int):
     if not _validate_table(name):
         return jsonify({"error": f"Table '{name}' not found"}), 404
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     try:
         cursor = conn.execute(f"DELETE FROM [{name}] WHERE rowid = ?", (row_id,))
         conn.commit()
@@ -147,7 +147,7 @@ def bulk_delete_rows(name: str):
     if not ids:
         return jsonify({"error": "No IDs provided"}), 400
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     try:
         placeholders = ",".join("?" for _ in ids)
         cursor = conn.execute(

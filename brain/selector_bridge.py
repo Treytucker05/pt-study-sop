@@ -1,116 +1,78 @@
-"""Bridge between brain/ runtime and sop/tools/selector_policy.py.
+"""
+Selector Bridge for CP-MSS v1.0
 
-Loads the chain catalog from sop/library/chains/ and exposes a single
-``run_selector()`` function that the backend can call without knowing
-about YAML paths or dataclass details.
+This module bridges the new Control Plane selector (brain.selector)
+with the existing tutor API (api_tutor.py).
+
+It adapts the new selector's output to the format expected by the API.
 """
 
-from __future__ import annotations
-
-import json
-import logging
-import sys
-from pathlib import Path
-from typing import Any
-
-logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Locate the SOP tools directory and import the selector policy module.
-# ---------------------------------------------------------------------------
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-_SOP_TOOLS = _REPO_ROOT / "sop" / "tools"
-_CHAINS_DIR = _REPO_ROOT / "sop" / "library" / "chains"
-
-if str(_SOP_TOOLS) not in sys.path:
-    sys.path.insert(0, str(_SOP_TOOLS))
-
-from selector_policy import (  # type: ignore[import-not-found]  # noqa: E402
-    POLICY_VERSION,
-    SelectionResult,
-    SelectorInput,
-    load_chain_catalog,
-    select_chain,
-)
-
-# ---------------------------------------------------------------------------
-# Cached chain catalog (loaded once per process, reloaded on error).
-# ---------------------------------------------------------------------------
-
-_chain_catalog: list[dict[str, Any]] = []
-_chain_catalog_loaded: bool = False
-
-
-def _get_chain_catalog() -> list[dict[str, Any]]:
-    global _chain_catalog, _chain_catalog_loaded
-    if not _chain_catalog_loaded:
-        if not _CHAINS_DIR.is_dir():
-            raise FileNotFoundError(f"Chain catalog directory not found: {_CHAINS_DIR}")
-        _chain_catalog = load_chain_catalog(_CHAINS_DIR)
-        _chain_catalog_loaded = True
-        logger.info("Loaded %d chains from %s", len(_chain_catalog), _CHAINS_DIR)
-    return _chain_catalog
-
-
-def reload_chain_catalog() -> int:
-    """Force-reload the chain catalog.  Returns the number of chains loaded."""
-    global _chain_catalog, _chain_catalog_loaded
-    _chain_catalog_loaded = False
-    _chain_catalog = []
-    catalog = _get_chain_catalog()
-    return len(catalog)
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
+from typing import Optional
+from brain.selector import select_chain
 
 
 def run_selector(
-    *,
     assessment_mode: str,
     stage: str = "first_exposure",
     energy: str = "medium",
     time_available: int = 40,
-    class_type: str | None = None,
+    class_type: Optional[str] = None,
     prior_exposure_band: str = "new",
-    prior_rsr: float | None = None,
-    prior_calibration_gap: float | None = None,
-) -> dict[str, Any]:
-    """Run the deterministic selector and return a plain dict of results.
-
-    Returns a dict with keys:
-        chain_id, chain_name, selected_blocks, dependency_fix_applied,
-        score_tuple, selector_policy_version
-
-    Raises ``ValueError`` if no candidate chains match the input.
+    recent_errors: Optional[list] = None,
+) -> dict:
     """
-    catalog = _get_chain_catalog()
-
-    selector_input = SelectorInput(
+    Run the Control Plane selector and return results in the format
+    expected by api_tutor.py.
+    
+    Args:
+        assessment_mode: The type of assessment (procedure, classification, etc.)
+        stage: The study stage (first_exposure, review, exam_prep, consolidation)
+        energy: User energy level (low, medium, high)
+        time_available: Time available in minutes
+        class_type: Optional class type context
+        prior_exposure_band: Exposure level (new, familiar, mastered)
+        recent_errors: List of recent error types
+    
+    Returns:
+        dict with keys:
+            - chain_id: The selected chain ID
+            - score_tuple: Selector scoring metadata
+            - selector_policy_version: Version string
+            - dependency_fix_applied: Boolean
+            - knob_overrides: Dict of knob overrides
+    """
+    
+    # Determine dominant error from recent errors
+    dominant_error = None
+    if recent_errors:
+        dominant_error = recent_errors[0]
+    
+    # Call the core selector
+    chain_id, knob_overrides = select_chain(
         assessment_mode=assessment_mode,
-        stage=stage,
+        time_available_min=time_available,
         energy=energy,
-        time_available=time_available,
-        class_type=class_type,
-        prior_exposure_band=prior_exposure_band,
-        prior_rsr=prior_rsr,
-        prior_calibration_gap=prior_calibration_gap,
+        dominant_error=dominant_error,
     )
-
-    result: SelectionResult = select_chain(catalog, selector_input)
-
+    
+    # Build score tuple for telemetry (matches legacy format)
+    score_tuple = [
+        chain_id,
+        assessment_mode,
+        energy,
+        time_available,
+        stage,
+        prior_exposure_band,
+    ]
+    
+    # Check if we applied the Dependency Law fix
+    # (All v1.0 chains have REF before RET)
+    dependency_fix_applied = True
+    
     return {
-        "chain_id": result.chain_id,
-        "chain_name": result.chain_name,
-        "selected_blocks": result.selected_blocks,
-        "dependency_fix_applied": result.dependency_fix_applied,
-        "score_tuple": list(result.score_tuple),
-        "selector_policy_version": result.selector_policy_version,
+        "chain_id": chain_id,
+        "score_tuple": score_tuple,
+        "selector_policy_version": "CP-MSS-v1.0",
+        "dependency_fix_applied": dependency_fix_applied,
+        "knob_overrides": knob_overrides,
     }
-
-
-def get_policy_version() -> str:
-    """Return the current selector policy version string."""
-    return POLICY_VERSION

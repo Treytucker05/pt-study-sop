@@ -1,6 +1,6 @@
 import { BarChart3, TrendingUp, Star } from "lucide-react";
 import type { MethodAnalyticsResponse } from "@/api";
-import { PEIRRO_COLORS } from "@/lib/colors";
+import { CONTROL_PLANE_COLORS } from "@/lib/colors";
 
 interface MethodAnalyticsProps {
   data: MethodAnalyticsResponse;
@@ -28,7 +28,7 @@ export default function MethodAnalytics({ data }: MethodAnalyticsProps) {
                 <span className="font-terminal text-xs w-32 truncate">{b.name}</span>
                 <div className="flex-1 h-4 bg-secondary/20 rounded-none overflow-hidden">
                   <div
-                    className={`h-full ${PEIRRO_COLORS[b.category]?.bar || "bg-primary"}`}
+                    className={`h-full ${CONTROL_PLANE_COLORS[b.control_stage || b.category]?.bar || "bg-primary"}`}
                     style={{ width: `${((b.avg_effectiveness ?? 0) / 5) * 100}%` }}
                   />
                 </div>

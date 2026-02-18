@@ -13,7 +13,7 @@ from config import DB_PATH
 OUTPUT_PATH = os.path.join(os.path.dirname(__file__), 'output', 'session_resume.md')
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    return sqlite3.connect(DB_PATH, timeout=30)
 
 def get_recent_sessions(limit=10):
     """Get the most recent sessions."""

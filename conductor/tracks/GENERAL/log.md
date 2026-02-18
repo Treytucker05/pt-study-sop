@@ -66,3 +66,18 @@ Changes not tied to a specific conductor track. Append dated entries below.
 px vitest run --reporter=verbose (341 passed)
   - python -m pytest brain/tests/ -q (301 passed)
   - cd dashboard_rebuild && npm run build (writes to rain/static/dist)
+
+## 2026-02-18 - KIMI agent + skills dashboard integration and push-unblock fixes
+
+- Added `kimi` to agent launch/worktree allowlists:
+  - `scripts/agent_worktrees.ps1`
+  - `scripts/bootstrap_parallel_agents.ps1`
+  - `scripts/launch_codex_session.ps1`
+  - `scripts/parallel_launch_wizard.ps1`
+- Added `AGENT_WORKTREE_KIMI_ARGS` support in `scripts/agent_worktrees.ps1`.
+- Added KIMI support to skill sync/export tooling:
+  - `scripts/sync_agent_skills.ps1` (`.kimi/skills` source + target roots)
+  - `scripts/export_skills_library.py` (CLI root arg, coverage, dependency detection, registry availability)
+- Added `kimi` command allowlist entry in `permissions.json`.
+- Restored backward compatibility for legacy pre-push hooks by adding non-failing `auto-claim` command to `scripts/agent_task_board.py`.
+- Local environment action: reinstalled managed git hooks via `scripts/install_agent_guard_hooks.ps1 -Action install` to remove stale hook drift.

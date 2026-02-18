@@ -34,6 +34,7 @@ CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLE
   topic_id,item_id,error_type,stage_detected,confidence,time_to_answer,fix_applied,assessment_mode,chain_id,support_level,prior_exposure_band,selector_policy_version,dependency_fix_applied
 - Allowed error_type values:
   Recall, Confusion, Rule, Representation, Procedure, Computation, Speed
+- support_level: high|medium|low ; prior_exposure_band: new|intermediate|advanced ; dependency_fix_applied: 0|1
 - Mandatory overrides:
   - Confusion -> M-ENC-010 + M-INT-004
   - Speed -> M-RET-007

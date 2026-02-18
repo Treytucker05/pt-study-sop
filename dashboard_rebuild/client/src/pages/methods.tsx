@@ -543,18 +543,19 @@ function AddBlockDialog({
   onSubmit: (data: Omit<MethodBlock, "id" | "created_at">) => void;
 }) {
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<MethodCategory>("prepare");
+  const [category, setCategory] = useState<MethodCategory>("PRIME");
   const [description, setDescription] = useState("");
   const [duration, setDuration] = useState(5);
   const [energyCost, setEnergyCost] = useState("medium");
   const [bestStage, setBestStage] = useState("");
+  // Control Plane categories (CP-MSS v1.0)
   const categoryOptions: MethodCategory[] = [
-    "prepare",
-    "encode",
-    "interrogate",
-    "retrieve",
-    "refine",
-    "overlearn",
+    "PRIME",
+    "CALIBRATE",
+    "ENCODE",
+    "REFERENCE",
+    "RETRIEVE",
+    "OVERLEARN",
   ];
 
   const handleSubmit = () => {

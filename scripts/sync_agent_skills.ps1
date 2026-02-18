@@ -5,6 +5,7 @@ param(
     [string[]]$AdditionalSourceRoots = @(
         "$env:USERPROFILE\.codex\skills",
         "$env:USERPROFILE\.claude\skills",
+        "$env:USERPROFILE\.kimi\skills",
         "$env:USERPROFILE\.cursor\skills",
         "$env:USERPROFILE\.cursor\skills-cursor",
         "$env:USERPROFILE\.antigravity\skills"
@@ -16,6 +17,7 @@ $ErrorActionPreference = "Stop"
 $TargetRoots = [ordered]@{
     codex       = "$env:USERPROFILE\.codex\skills"
     claude      = "$env:USERPROFILE\.claude\skills"
+    kimi        = "$env:USERPROFILE\.kimi\skills"
     cursor      = "$env:USERPROFILE\.cursor\skills"
     antigravity = "$env:USERPROFILE\.antigravity\skills"
 }

@@ -33,12 +33,12 @@ _VERSION_PATH = _ROOT / "sop" / "library" / "meta" / "version.yaml"
 
 
 # ---------------------------------------------------------------------------
-# Atomic Method Blocks (36 blocks across 6 PEIRRO phases)
+# Atomic Method Blocks (46 blocks across 6 Control Plane stages)
 # ---------------------------------------------------------------------------
 METHOD_BLOCKS = [
     {
         "name": "Brain Dump",
-        "category": "prepare",
+        "control_stage": "PRIME",
         "description": "Free-write everything you already know about the topic for 2-3 min. Surfaces prior knowledge and sets a baseline.",
         "default_duration_min": 3,
         "energy_cost": "low",
@@ -52,7 +52,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Prediction Questions",
-        "category": "prepare",
+        "control_stage": "PRIME",
         "description": "Write 3-5 questions you expect the material to answer. Creates forward hooks for active reading.",
         "default_duration_min": 3,
         "energy_cost": "low",
@@ -66,7 +66,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Prior Knowledge Scan",
-        "category": "prepare",
+        "control_stage": "PRIME",
         "description": "List related concepts you already know. Identify connections to previous modules.",
         "default_duration_min": 3,
         "energy_cost": "low",
@@ -83,7 +83,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "AI Skeleton Review",
-        "category": "prepare",
+        "control_stage": "PRIME",
         "description": "Have Tutor generate a topic skeleton with main headings and subheadings. Review for 2-3 min to build mental map.",
         "default_duration_min": 5,
         "energy_cost": "low",
@@ -97,7 +97,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Concept Cluster",
-        "category": "prepare",
+        "control_stage": "PRIME",
         "description": "Group related terms/concepts into 3-5 clusters. Identify hierarchy and relationships.",
         "default_duration_min": 5,
         "energy_cost": "medium",
@@ -111,7 +111,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Three-Layer Chunk",
-        "category": "prepare",
+        "control_stage": "PRIME",
         "description": "Break topic into 3 layers: big picture, key details, edge cases. Process one layer at a time.",
         "default_duration_min": 5,
         "energy_cost": "medium",
@@ -124,7 +124,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Pre-Test",
-        "category": "prepare",
+        "control_stage": "CALIBRATE",
         "description": "Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply.",
         "default_duration_min": 5,
         "energy_cost": "low",
@@ -143,7 +143,7 @@ METHOD_BLOCKS = [
     # === ENCODE (attach meaning, create hooks) ===
     {
         "name": "KWIK Hook",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Structured 5-step encoding protocol for new terms. Sound (phonetic cue) → Function (true meaning) → Image (vivid visual tied to function) → Resonance (learner confirms it clicks) → Lock (record as card/log). Each step is gated — don't skip ahead.",
         "default_duration_min": 3,
         "energy_cost": "medium",
@@ -161,7 +161,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Seed-Lock Generation",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Learner generates their own encoding hook BEFORE the AI offers help. Start with your own association, metaphor, or mnemonic. AI only assists if you're stuck. Enforces active generation over passive reception.",
         "default_duration_min": 3,
         "energy_cost": "medium",
@@ -179,7 +179,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Draw-Label",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Sketch the structure (anatomy, pathway, concept map) and label from memory. Fill gaps with source material.",
         "default_duration_min": 10,
         "energy_cost": "high",
@@ -193,7 +193,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Teach-Back",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Explain the concept aloud as if teaching a classmate. Identify points where explanation breaks down.",
         "default_duration_min": 5,
         "energy_cost": "high",
@@ -210,7 +210,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Why-Chain",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Ask 'why?' 3-5 times in succession about a concept to build causal depth. Each answer becomes the premise for the next question. Based on elaborative interrogation (Dunlosky et al.).",
         "default_duration_min": 5,
         "energy_cost": "medium",
@@ -227,7 +227,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Think-Aloud Protocol",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Verbalize your reasoning step-by-step while working through a problem or reading. Exposes gaps in logic and strengthens self-explanation. Based on Chi et al. self-explanation research.",
         "default_duration_min": 5,
         "energy_cost": "medium",
@@ -244,7 +244,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Self-Explanation Protocol",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "After reading each paragraph or concept, pause and explain to yourself WHY each step follows from the previous one. Focus on explaining the reasoning, not just restating facts.",
         "default_duration_min": 7,
         "energy_cost": "medium",
@@ -261,7 +261,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Mechanism Trace",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Trace the causal mechanism step-by-step: what triggers what, and why. Build a cause→effect chain from input to output. Especially useful for pathophysiology and physiological pathways.",
         "default_duration_min": 10,
         "energy_cost": "high",
@@ -279,7 +279,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Concept Map",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Build a node-and-link diagram showing relationships between concepts. Self-constructed maps force elaboration and reveal structural gaps. Use Mermaid syntax for dashboard editor.",
         "default_duration_min": 10,
         "energy_cost": "high",
@@ -293,7 +293,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Comparison Table",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Create a side-by-side table comparing 2-4 confusable concepts across shared features. Highlight discriminating features. Builds differential diagnosis skill.",
         "default_duration_min": 7,
         "energy_cost": "medium",
@@ -311,7 +311,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Process Flowchart",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Draw a sequential diagram showing a process, pathway, or algorithm. Include decision points where applicable. Use Mermaid graph TD syntax for dashboard editor.",
         "default_duration_min": 10,
         "energy_cost": "high",
@@ -325,7 +325,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Clinical Decision Tree",
-        "category": "encode",
+        "control_stage": "ENCODE",
         "description": "Build a branching decision diagram: presentation → key findings → differential → tests → diagnosis. Scaffolds clinical reasoning into explicit decision points.",
         "default_duration_min": 10,
         "energy_cost": "high",
@@ -344,7 +344,7 @@ METHOD_BLOCKS = [
     # === RETRIEVE (test recall, strengthen pathways) ===
     {
         "name": "Free Recall Blurt",
-        "category": "retrieve",
+        "control_stage": "RETRIEVE",
         "description": "Close materials. Write everything you remember about the topic. No peeking. Compare after.",
         "default_duration_min": 5,
         "energy_cost": "medium",
@@ -358,7 +358,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Sprint Quiz",
-        "category": "retrieve",
+        "control_stage": "RETRIEVE",
         "description": "Rapid-fire Q&A with Tutor. 10-15 questions in 5 min. Track accuracy for RSR.",
         "default_duration_min": 5,
         "energy_cost": "medium",
@@ -372,7 +372,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Fill-in-Blank",
-        "category": "retrieve",
+        "control_stage": "RETRIEVE",
         "description": "Review notes with key terms blanked out. Fill from memory. Targets specific vocabulary recall.",
         "default_duration_min": 5,
         "energy_cost": "low",
@@ -390,7 +390,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Mixed Practice",
-        "category": "retrieve",
+        "control_stage": "RETRIEVE",
         "description": "Interleave questions from 2-3 different topics in a single retrieval block. Builds discrimination and prevents blocked-practice illusion. Based on interleaving research (Rohrer et al.).",
         "default_duration_min": 10,
         "energy_cost": "high",
@@ -408,7 +408,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Variable Retrieval",
-        "category": "retrieve",
+        "control_stage": "RETRIEVE",
         "description": "Retrieve the same concept in 3 different formats: (1) free recall, (2) application question, (3) compare/contrast. Varied retrieval contexts build more flexible memory traces.",
         "default_duration_min": 10,
         "energy_cost": "medium",
@@ -427,7 +427,7 @@ METHOD_BLOCKS = [
     # === INTERROGATE (link to prior knowledge, apply, compare) ===
     {
         "name": "Analogy Bridge",
-        "category": "interrogate",
+        "control_stage": "ENCODE",
         "description": "Create an analogy linking this concept to something familiar. Test if the analogy holds at the edges.",
         "default_duration_min": 3,
         "energy_cost": "medium",
@@ -445,7 +445,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Clinical Application",
-        "category": "interrogate",
+        "control_stage": "RETRIEVE",
         "description": "Apply the concept to a clinical scenario. Ask: how would this present? What would you test? How would you treat?",
         "default_duration_min": 5,
         "energy_cost": "high",
@@ -463,7 +463,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Cross-Topic Link",
-        "category": "interrogate",
+        "control_stage": "ENCODE",
         "description": "Identify 2-3 connections between this topic and topics from other courses. Look for shared principles.",
         "default_duration_min": 3,
         "energy_cost": "medium",
@@ -480,7 +480,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Side-by-Side Comparison",
-        "category": "interrogate",
+        "control_stage": "ENCODE",
         "description": "Place two confusable concepts in a comparison table (features, functions, clinical signs). Identify discriminating features. Builds differential diagnosis skill.",
         "default_duration_min": 7,
         "energy_cost": "medium",
@@ -498,7 +498,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Case Walkthrough",
-        "category": "interrogate",
+        "control_stage": "RETRIEVE",
         "description": "Walk through a clinical case from presentation to assessment to intervention. Apply learned concepts to patient scenarios. Builds clinical reasoning chains.",
         "default_duration_min": 10,
         "energy_cost": "high",
@@ -516,7 +516,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Illness Script Builder",
-        "category": "interrogate",
+        "control_stage": "ENCODE",
         "description": "For a condition, build the illness script: (1) enabling conditions, (2) pathophysiological fault, (3) clinical consequences. Compare your script to the textbook version.",
         "default_duration_min": 10,
         "energy_cost": "high",
@@ -531,7 +531,7 @@ METHOD_BLOCKS = [
     # === REFINE (error analysis, relearning loops) ===
     {
         "name": "Error Autopsy",
-        "category": "refine",
+        "control_stage": "OVERLEARN",
         "description": "Review errors from retrieval practice. For each error: (1) What did I say? (2) What's correct? (3) Why did I confuse them? (4) What cue will prevent this next time? Metacognitive error analysis.",
         "default_duration_min": 5,
         "energy_cost": "medium",
@@ -549,7 +549,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Mastery Loop",
-        "category": "refine",
+        "control_stage": "OVERLEARN",
         "description": "Re-study items missed during retrieval, then immediately re-test. Repeat until all items are recalled correctly. Based on successive relearning (Rawson & Dunlosky).",
         "default_duration_min": 10,
         "energy_cost": "medium",
@@ -568,7 +568,7 @@ METHOD_BLOCKS = [
     # === OVERLEARN (close loop, capture artifacts) ===
     {
         "name": "Exit Ticket",
-        "category": "overlearn",
+        "control_stage": "OVERLEARN",
         "description": "Answer three questions: (1) What did I learn? (2) What's still muddy? (3) What's my next action?",
         "default_duration_min": 3,
         "energy_cost": "low",
@@ -585,7 +585,7 @@ METHOD_BLOCKS = [
     },
     {
         "name": "Anki Card Draft",
-        "category": "overlearn",
+        "control_stage": "OVERLEARN",
         "description": "Draft 3-5 Anki cards for the session's key concepts. Use cloze or basic format. Brain syncs to Anki.",
         "default_duration_min": 5,
         "energy_cost": "low",
@@ -852,7 +852,7 @@ TEMPLATE_CHAINS = [
 def generate_facilitation_prompt(yaml_data: dict) -> str:
     """Convert YAML block definition into a structured facilitation prompt for the LLM."""
     name = yaml_data.get("name", "Unknown")
-    category = yaml_data.get("category", "")
+    control_stage = yaml_data.get("control_stage", yaml_data.get("control_stage", ""))
     duration = yaml_data.get("default_duration_min", 5)
     description = yaml_data.get("description", "")
 
@@ -865,7 +865,7 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
         gating_rules = yaml_data.get("gating")
 
     parts: list[str] = []
-    parts.append(f"## Current Activity Block: {name} ({category}, ~{duration} min)")
+    parts.append(f"## Current Activity Block: {name} ({control_stage}, ~{duration} min)")
     if description:
         parts.append(f"_{description}_")
     parts.append(
@@ -1025,7 +1025,7 @@ def regenerate_prompts() -> None:
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, category, description, default_duration_min, energy_cost, artifact_type FROM method_blocks"
+        "SELECT id, name, control_stage, description, default_duration_min, energy_cost, artifact_type FROM method_blocks"
     )
     name_to_block: dict[str, dict] = {}
     name_to_id: dict[str, int] = {}
@@ -1033,7 +1033,7 @@ def regenerate_prompts() -> None:
         block = {
             "id": row[0],
             "name": row[1],
-            "category": row[2] or "",
+            "control_stage": row[2] or "",
             "description": row[3] or "",
             "default_duration_min": row[4] or 5,
             "energy_cost": row[5] or "medium",
@@ -1124,7 +1124,7 @@ def load_from_yaml() -> dict | None:
                 {
                     "method_id": data.get("id", ""),
                     "name": data["name"],
-                    "category": data["category"],
+                    "control_stage": data["control_stage"],
                     "description": data.get("description", ""),
                     "default_duration_min": data.get("default_duration_min", 5),
                     "energy_cost": data.get("energy_cost", "medium"),
@@ -1253,7 +1253,7 @@ def seed_methods(force: bool = False):
         "id",
         "method_id",
         "name",
-        "category",
+        "control_stage",
         "description",
         "default_duration_min",
         "energy_cost",
@@ -1299,13 +1299,13 @@ def seed_methods(force: bool = False):
         if not existing:
             cursor.execute(
                 """
-                INSERT INTO method_blocks (method_id, name, category, description, default_duration_min, energy_cost, best_stage, tags, evidence, artifact_type, created_at)
+                INSERT INTO method_blocks (method_id, name, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, artifact_type, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                 """,
                 (
                     method_id_value,
                     block["name"],
-                    block["category"],
+                    block["control_stage"],
                     block["description"],
                     block["default_duration_min"],
                     block["energy_cost"],
@@ -1346,7 +1346,7 @@ def seed_methods(force: bool = False):
         if needs_update or needs_method_id_update:
             set_cols = [
                 "method_id = ?",
-                "category = ?",
+                "control_stage = ?",
                 "description = ?",
                 "default_duration_min = ?",
                 "energy_cost = ?",
@@ -1355,7 +1355,7 @@ def seed_methods(force: bool = False):
             ]
             values = [
                 method_id_value,
-                block["category"],
+                block["control_stage"],
                 block["description"],
                 block["default_duration_min"],
                 block["energy_cost"],
