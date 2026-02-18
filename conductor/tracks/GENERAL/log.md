@@ -128,3 +128,20 @@ px vitest run --reporter=verbose (341 passed)
   - `brain/tests/test_tutor_session_linking.py` (archive-link + response-id continuity)
 - Validation:
   - `python -m pytest brain/tests/ -q` -> `303 passed, 2 warnings`
+
+## 2026-02-18 - Docling extraction path for RAG ingestion
+
+- Added optional Docling-first extraction in `brain/text_extractor.py` for `.pdf`, `.docx`, and `.pptx`, with automatic fallback to existing extractors when Docling is unavailable or fails.
+- Preserved existing `extract_text` response contract (`content`, `error`, `metadata`) and added extractor metadata fields:
+  - `extraction_method`
+  - `extractor_name`
+  - `extractor_source`
+  - `extraction_errors` (non-fatal Docling failures)
+- Added focused tests in `brain/tests/test_text_extractor.py` covering:
+  - Docling success path
+  - Fallback path when Docling is unavailable
+  - Fallback path when Docling raises an exception
+  - Contract stability for plain-text extraction
+- Validation:
+  - `pytest brain/tests/test_text_extractor.py` (pass)
+  - `pytest brain/tests/` has pre-existing unrelated failures (e.g., `method_blocks.category` schema mismatch and DB lock cascades).

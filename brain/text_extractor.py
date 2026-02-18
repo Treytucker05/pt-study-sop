@@ -35,6 +35,17 @@ def _check_pymupdf4llm() -> bool:
 
 
 @lru_cache(maxsize=1)
+def _check_docling() -> bool:
+    """Return True if Docling is importable."""
+    try:
+        from docling.document_converter import DocumentConverter  # noqa: F401
+
+        return True
+    except Exception:
+        return False
+
+
+@lru_cache(maxsize=1)
 def _check_mineru() -> bool:
     """Return True if the MinerU venv exists with a working mineru executable."""
     repo_root = Path(__file__).resolve().parent.parent
@@ -129,6 +140,38 @@ def _extract_pdf_pdfplumber(path: Path) -> str:
 # Dispatcher — tries tiers in order, falls through gracefully
 # ---------------------------------------------------------------------------
 
+def _extract_with_docling(path: Path) -> str:
+    """Extract text/markdown using Docling."""
+    from docling.document_converter import DocumentConverter
+
+    result = DocumentConverter().convert(str(path))
+    doc = getattr(result, "document", result)
+    for attr in ("export_to_markdown", "export_to_text"):
+        exporter = getattr(doc, attr, None)
+        if callable(exporter):
+            text = exporter()
+            if text:
+                return str(text)
+    for attr in ("text", "raw_text"):
+        text = getattr(doc, attr, None)
+        if text:
+            return str(text)
+    raise RuntimeError("Docling conversion produced no content")
+
+
+def _try_docling(path: Path) -> tuple[Optional[str], list[str]]:
+    """Try Docling once, returning optional content and non-fatal errors."""
+    if not _check_docling():
+        return None, []
+    try:
+        content = _extract_with_docling(path)
+        if content.strip():
+            return content, []
+        return None, ["docling: empty content"]
+    except Exception as exc:
+        return None, [f"docling: {exc}"]
+
+
 def _extract_pdf(path: Path) -> tuple[str, str]:
     """
     Try MinerU → PyMuPDF4LLM → pdfplumber.
@@ -187,13 +230,39 @@ def extract_text(file_path: str) -> dict:
     }
 
     try:
+        extraction_errors: list[str] = []
+        extractor_name = ""
+        extractor_source = ""
+
         if ext == ".pdf":
-            content, method = _extract_pdf(path)
-            metadata["extraction_method"] = method
+            docling_content, extraction_errors = _try_docling(path)
+            if docling_content is not None:
+                content = docling_content
+                extractor_name = "docling"
+                extractor_source = "docling"
+            else:
+                content, extractor_name = _extract_pdf(path)
+                extractor_source = "fallback"
         elif ext == ".docx":
-            content = _extract_docx(path)
+            docling_content, extraction_errors = _try_docling(path)
+            if docling_content is not None:
+                content = docling_content
+                extractor_name = "docling"
+                extractor_source = "docling"
+            else:
+                content = _extract_docx(path)
+                extractor_name = "python-docx"
+                extractor_source = "fallback"
         elif ext == ".pptx":
-            content = _extract_pptx(path)
+            docling_content, extraction_errors = _try_docling(path)
+            if docling_content is not None:
+                content = docling_content
+                extractor_name = "docling"
+                extractor_source = "docling"
+            else:
+                content = _extract_pptx(path)
+                extractor_name = "python-pptx"
+                extractor_source = "fallback"
         elif ext in (".md", ".txt", ".text", ".markdown"):
             content = path.read_text(encoding="utf-8", errors="replace")
         else:
@@ -203,6 +272,12 @@ def extract_text(file_path: str) -> dict:
                 "metadata": metadata,
             }
 
+        if extractor_name:
+            metadata["extraction_method"] = extractor_name
+            metadata["extractor_name"] = extractor_name
+            metadata["extractor_source"] = extractor_source
+        if extraction_errors:
+            metadata["extraction_errors"] = extraction_errors
         metadata["char_count"] = len(content)
         return {"content": content, "error": None, "metadata": metadata}
 
@@ -213,6 +288,7 @@ def extract_text(file_path: str) -> dict:
 def get_pdf_capabilities() -> dict:
     """Return which PDF extraction tiers are available."""
     return {
+        "docling": _check_docling(),
         "mineru": _check_mineru(),
         "pymupdf4llm": _check_pymupdf4llm(),
         "pdfplumber": True,  # always available
