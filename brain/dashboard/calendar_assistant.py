@@ -9,7 +9,7 @@ This module provides a calendar assistant that can:
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, cast
 
 
@@ -358,9 +358,9 @@ def delete_event_by_title(
     if not service:
         return "Error: Not authenticated with Google Calendar"
 
-    now = datetime.utcnow()
-    time_min = (now - timedelta(days=30)).isoformat() + "Z"
-    time_max = (now + timedelta(days=90)).isoformat() + "Z"
+    now = datetime.now(timezone.utc)
+    time_min = (now - timedelta(days=30)).isoformat().replace("+00:00", "Z")
+    time_max = (now + timedelta(days=90)).isoformat().replace("+00:00", "Z")
 
     if date:
         time_min = f"{date}T00:00:00Z"

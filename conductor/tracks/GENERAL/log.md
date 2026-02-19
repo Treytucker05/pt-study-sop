@@ -209,3 +209,41 @@ px vitest run --reporter=verbose (341 passed)
 - Added `timezone` import in the same module.
 - Validation:
   - `python -m pytest brain/tests/test_security.py::TestAuthenticationGaps::test_db_health_no_auth brain/tests/test_security.py::TestErrorDisclosure::test_db_health_leaks_path -q` -> `2 passed`
+
+## 2026-02-19 - Tutor Wizard template-chain loading repair
+
+- Fixed method-library seed merge behavior that could leave prebuilt chains invisible in Tutor Wizard:
+  - `brain/data/seed_methods.py`
+  - Existing `method_chains` rows matching template names are now updated (not skipped) to:
+    - `is_template = 1`
+    - latest `description`
+    - latest `block_ids`
+    - latest `context_tags`
+- Hardened template-chain fetch endpoint:
+  - `brain/dashboard/api_tutor.py`
+  - `/api/tutor/chains/templates` now queries with `COALESCE(is_template, 0) = 1`
+  - If first read is empty, it triggers a second seed/read pass in the same request.
+- Added regression coverage:
+  - `brain/tests/test_seed_methods.py`
+  - verifies an existing non-template chain with a template name is upgraded to template and refreshed.
+- Validation:
+  - `pytest brain/tests/test_seed_methods.py` -> `1 passed`
+  - `pytest brain/tests/test_text_extractor.py` -> `5 passed`
+  - `pytest brain/tests/test_api_contracts.py -k chains` -> `4 passed`
+  - `GET /api/tutor/chains/templates` via Flask test client -> `status 200`, non-empty result
+
+## 2026-02-19 - UTC normalization for calendar + API timestamps
+
+- Updated API timestamps in `brain/dashboard/api_adapter.py`:
+  - Added `_utc_iso_now()` helper for RFC3339 UTC (`Z`) serialization.
+  - `db_health` timestamp now uses helper.
+  - Scholar status `last_run` now uses `datetime.fromtimestamp(..., timezone.utc)` and emits `Z`.
+  - Tutor chat payload now emits UTC for both `id` epoch source and `timestamp`.
+- Replaced remaining `utcnow()` usage across `brain/`:
+  - `brain/dashboard/gcal.py` (`fetch_calendar_events`)
+  - `brain/dashboard/calendar_assistant.py` (`delete_event_by_title`)
+  - Both now use `datetime.now(timezone.utc)` and serialize with `Z` suffix.
+- Validation:
+  - `rg -n "utcnow\\(" brain --glob "*.py"` -> no matches
+  - `python -m pytest brain/tests/test_security.py::TestAuthenticationGaps::test_db_health_no_auth brain/tests/test_security.py::TestErrorDisclosure::test_db_health_leaks_path -q` -> `2 passed`
+  - `python -m pytest brain/tests/test_calendar_nl.py -q` -> `7 passed`

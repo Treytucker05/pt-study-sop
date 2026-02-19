@@ -11,6 +11,13 @@ from typing import List, Dict, Any, Optional
 logger = logging.getLogger(__name__)
 
 
+def _utc_iso_now(*, timespec: str = "auto") -> str:
+    """Return an RFC3339 UTC timestamp with Z suffix."""
+    return (
+        datetime.now(timezone.utc).isoformat(timespec=timespec).replace("+00:00", "Z")
+    )
+
+
 # Import internal modules from the "Brain"
 from db_setup import get_connection
 from config import load_env, COURSE_FOLDERS, SEMESTER_DATES
@@ -519,7 +526,7 @@ def db_health():
 
     result = {
         "ok": False,
-        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "timestamp": _utc_iso_now(),
         "config_version": VERSION,
         "db_path": DB_PATH,
         "db_exists": _os.path.exists(DB_PATH),
@@ -3016,7 +3023,11 @@ def _scholar_status_payload() -> dict:
     if log_files:
         latest_log = max(log_files, key=lambda f: f.stat().st_mtime)
         try:
-            last_run = datetime.fromtimestamp(latest_log.stat().st_mtime).isoformat()
+            last_run = (
+                datetime.fromtimestamp(latest_log.stat().st_mtime, timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z")
+            )
         except Exception:
             last_run = None
 
@@ -3070,9 +3081,13 @@ def _scholar_status_payload() -> dict:
         if final_files:
             latest_final = max(final_files, key=lambda f: f.stat().st_mtime)
             try:
-                last_run = datetime.fromtimestamp(
-                    latest_final.stat().st_mtime
-                ).isoformat()
+                last_run = (
+                    datetime.fromtimestamp(
+                        latest_final.stat().st_mtime, timezone.utc
+                    )
+                    .isoformat()
+                    .replace("+00:00", "Z")
+                )
             except Exception:
                 last_run = None
 
@@ -3242,10 +3257,10 @@ def chat_message(session_id):
         # Return in format expected by React frontend
         return jsonify(
             {
-                "id": int(datetime.now().timestamp()),
+                "id": int(datetime.now(timezone.utc).timestamp()),
                 "sender": "ai",
                 "content": response.answer,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": _utc_iso_now(),
                 "unverified": response.unverified,
                 "citations": [asdict(c) for c in response.citations]
                 if response.citations

@@ -469,8 +469,8 @@ def fetch_calendar_events(
         return [], "Not authenticated"
 
     if not time_min:
-        now = datetime.utcnow()
-        time_min = now.isoformat() + "Z"
+        now = datetime.now(timezone.utc)
+        time_min = now.isoformat().replace("+00:00", "Z")
     if not time_max:
         # Default to days_ahead if not provided
         if not time_min.endswith("Z"):
@@ -480,8 +480,10 @@ def fetch_calendar_events(
         # For simplicity, if time_max missing, calculate from now or time_min
         # Parsing time_min to add days is complex without strict format.
         # Fallback to now + days_ahead if time_max not explicit.
-        now = datetime.utcnow()
-        time_max = (now + timedelta(days=days_ahead)).isoformat() + "Z"
+        now = datetime.now(timezone.utc)
+        time_max = (now + timedelta(days=days_ahead)).isoformat().replace(
+            "+00:00", "Z"
+        )
 
     events: List[Dict] = []
     for calendar_id in calendar_ids:
