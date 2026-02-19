@@ -14,11 +14,16 @@ from tutor_rag import (
     COLLECTION_INSTRUCTIONS,
     COLLECTION_MATERIALS,
     DEFAULT_CHROMA_BATCH_SIZE,
+    DEFAULT_MMR_LAMBDA_MULT,
     _add_documents_batched,
+    _cap_candidates_per_doc,
+    _merge_candidate_pools,
+    _resolve_candidate_pool_size,
     _resolve_chroma_max_batch_size,
     get_dual_context,
     keyword_search_dual,
     rerank_results,
+    search_with_embeddings,
 )
 
 
@@ -61,6 +66,39 @@ class _FakeVectorStore:
 
     def delete(self, ids):  # noqa: ANN001 - test double
         self.deleted_ids.extend(ids)
+
+
+class _FakeSearchCollection:
+    def __init__(self, count: int = 1):
+        self._count = count
+
+    def count(self) -> int:
+        return self._count
+
+
+class _FakeSearchVectorStore:
+    def __init__(self, similarity_docs: list, mmr_docs: list):
+        self._collection = _FakeSearchCollection(count=1)
+        self._similarity_docs = similarity_docs
+        self._mmr_docs = mmr_docs
+        self.similarity_calls: list[dict] = []
+        self.mmr_calls: list[dict] = []
+
+    def similarity_search(self, query, k, filter=None):  # noqa: ANN001
+        self.similarity_calls.append({"query": query, "k": k, "filter": filter})
+        return list(self._similarity_docs)
+
+    def max_marginal_relevance_search(self, query, k, fetch_k, lambda_mult, filter=None):  # noqa: ANN001,E501
+        self.mmr_calls.append(
+            {
+                "query": query,
+                "k": k,
+                "fetch_k": fetch_k,
+                "lambda_mult": lambda_mult,
+                "filter": filter,
+            }
+        )
+        return list(self._mmr_docs)
 
 
 def test_resolve_chroma_max_batch_size_prefers_client_value():
@@ -148,6 +186,141 @@ def test_rerank_results_limits_chunks_per_document():
     assert len(reranked) == 4
     assert len(set(ids)) == 4
     assert ids.count(1) == 1
+
+
+def test_merge_candidate_pools_preserves_priority_and_dedupes():
+    sim_0 = _fake_doc(1, text="doc1 chunk0")
+    sim_0.metadata["chunk_index"] = 0
+    sim_1 = _fake_doc(1, text="doc1 chunk1")
+    sim_1.metadata["chunk_index"] = 1
+    mmr_dup = _fake_doc(1, text="doc1 chunk1 duplicate")
+    mmr_dup.metadata["chunk_index"] = 1
+    mmr_new = _fake_doc(2, text="doc2 chunk0")
+    mmr_new.metadata["chunk_index"] = 0
+
+    merged = _merge_candidate_pools([sim_0, sim_1], [mmr_dup, mmr_new], max_total=3)
+
+    assert merged == [sim_0, sim_1, mmr_new]
+
+
+def test_cap_candidates_per_doc_limits_per_doc_and_total():
+    docs = [_fake_doc(1, text=f"doc1 chunk{i}") for i in range(3)]
+    for index, doc in enumerate(docs):
+        doc.metadata["chunk_index"] = index
+    doc2 = _fake_doc(2, text="doc2 chunk0")
+    doc2.metadata["chunk_index"] = 0
+    doc3 = _fake_doc(3, text="doc3 chunk0")
+    doc3.metadata["chunk_index"] = 0
+
+    capped = _cap_candidates_per_doc(
+        docs + [doc2, doc3],
+        max_per_doc=2,
+        max_total=3,
+    )
+
+    capped_ids = [doc.metadata["rag_doc_id"] for doc in capped]
+    assert capped_ids == [1, 1, 2]
+    assert capped_ids.count(1) == 2
+    assert len(capped) == 3
+
+
+def test_search_with_embeddings_merges_and_caps_before_rerank(monkeypatch):
+    sim_docs = [_fake_doc(1, text=f"doc1 chunk{i}") for i in range(8)]
+    for index, doc in enumerate(sim_docs):
+        doc.metadata["chunk_index"] = index
+
+    mmr_docs = [_fake_doc(1, text=f"doc1 mmr chunk{i}") for i in range(4, 8)]
+    for index, doc in enumerate(mmr_docs, start=4):
+        doc.metadata["chunk_index"] = index
+    for index in range(3):
+        doc = _fake_doc(2, text=f"doc2 chunk{index}")
+        doc.metadata["chunk_index"] = index
+        mmr_docs.append(doc)
+
+    vs = _FakeSearchVectorStore(sim_docs, mmr_docs)
+    monkeypatch.setattr("tutor_rag.init_vectorstore", lambda _collection: vs)
+
+    captured = {}
+
+    def _capture_rerank(query, docs, k_final, **kwargs):  # noqa: ANN001
+        captured["query"] = query
+        captured["docs"] = docs
+        captured["k_final"] = k_final
+        captured["kwargs"] = kwargs
+        return docs[:k_final]
+
+    monkeypatch.setattr("tutor_rag.rerank_results", _capture_rerank)
+
+    material_ids = [101, 102, 103]
+    k = 6
+    result = search_with_embeddings(
+        "alpha objective",
+        course_id=7,
+        material_ids=material_ids,
+        collection_name=COLLECTION_MATERIALS,
+        k=k,
+    )
+
+    candidate_k = _resolve_candidate_pool_size(k, material_ids)
+    expected_filter = {"rag_doc_id": {"$in": material_ids}}
+
+    assert len(vs.similarity_calls) == 1
+    assert vs.similarity_calls[0]["k"] == candidate_k
+    assert vs.similarity_calls[0]["filter"] == expected_filter
+
+    assert len(vs.mmr_calls) == 1
+    assert vs.mmr_calls[0]["k"] == candidate_k
+    assert vs.mmr_calls[0]["fetch_k"] == min(max(candidate_k * 4, candidate_k + 40), 2000)
+    assert vs.mmr_calls[0]["lambda_mult"] == DEFAULT_MMR_LAMBDA_MULT
+    assert vs.mmr_calls[0]["filter"] == expected_filter
+
+    # Pre-rerank cap should limit dominant source chunks in materials retrieval.
+    capped_docs = captured["docs"]
+    capped_doc_ids = [doc.metadata["rag_doc_id"] for doc in capped_docs]
+    assert capped_doc_ids.count(1) == 6
+    assert capped_doc_ids.count(2) == 3
+    assert len(capped_docs) == 9
+    assert len(result) == k
+
+
+def test_search_with_embeddings_skips_cap_for_instruction_collection(monkeypatch):
+    sim_docs = [_fake_doc(1, text=f"doc1 chunk{i}") for i in range(8)]
+    for index, doc in enumerate(sim_docs):
+        doc.metadata["chunk_index"] = index
+    vs = _FakeSearchVectorStore(sim_docs, [])
+    monkeypatch.setattr("tutor_rag.init_vectorstore", lambda _collection: vs)
+
+    def _fail_if_called(*args, **kwargs):  # noqa: ANN001
+        raise AssertionError("_cap_candidates_per_doc should not be called for instructions")
+
+    monkeypatch.setattr("tutor_rag._cap_candidates_per_doc", _fail_if_called)
+    monkeypatch.setattr("tutor_rag.rerank_results", lambda _q, docs, _k, **_kw: docs)
+
+    docs = search_with_embeddings(
+        "teaching principles",
+        collection_name=COLLECTION_INSTRUCTIONS,
+        k=4,
+    )
+
+    assert len(docs) == len(sim_docs)
+
+
+def test_search_with_embeddings_high_k_is_not_truncated_by_pre_cap(monkeypatch):
+    sim_docs = [_fake_doc(1, text=f"doc1 chunk{i}") for i in range(60)]
+    for index, doc in enumerate(sim_docs):
+        doc.metadata["chunk_index"] = index
+
+    vs = _FakeSearchVectorStore(sim_docs, [])
+    monkeypatch.setattr("tutor_rag.init_vectorstore", lambda _collection: vs)
+
+    docs = search_with_embeddings(
+        "alpha objective",
+        material_ids=[1],
+        collection_name=COLLECTION_MATERIALS,
+        k=30,
+    )
+
+    assert len(docs) == 30
 
 
 def test_get_dual_context_queries_materials_without_explicit_material_ids(monkeypatch):

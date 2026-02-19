@@ -29,6 +29,7 @@ COLLECTION_INSTRUCTIONS = "tutor_instructions"
 
 DEFAULT_CHROMA_BATCH_SIZE = 1000
 DEFAULT_MAX_CHUNKS_PER_DOC = 2
+DEFAULT_MMR_LAMBDA_MULT = 0.2
 
 
 def _get_openai_api_key() -> str:
@@ -302,6 +303,59 @@ def _doc_identity(doc: object, fallback_index: int) -> str:
     return f"idx:{fallback_index}"
 
 
+def _chunk_identity(doc: object, fallback_index: int) -> str:
+    """Return a stable per-chunk identity to dedupe merged candidate pools."""
+    metadata = getattr(doc, "metadata", None) or {}
+    identity = _doc_identity(doc, fallback_index)
+    chunk_index = metadata.get("chunk_index")
+    if chunk_index is not None:
+        return f"{identity}/chunk:{chunk_index}"
+    text = str(getattr(doc, "page_content", "") or "")
+    return f"{identity}/text:{hash(text[:240])}"
+
+
+def _merge_candidate_pools(*pools: list, max_total: int) -> list:
+    """
+    Merge multiple candidate pools while preserving order and deduping chunks.
+
+    The first pool has highest priority. Additional pools can introduce
+    diversity that might be missing from a pure similarity-search ranking.
+    """
+    if max_total <= 0:
+        return []
+
+    merged: list[object] = []
+    seen_chunk_ids: set[str] = set()
+    for pool in pools:
+        for idx, doc in enumerate(pool):
+            cid = _chunk_identity(doc, idx)
+            if cid in seen_chunk_ids:
+                continue
+            seen_chunk_ids.add(cid)
+            merged.append(doc)
+            if len(merged) >= max_total:
+                return merged
+    return merged
+
+
+def _cap_candidates_per_doc(docs: list, *, max_per_doc: int, max_total: int) -> list:
+    """Limit candidates per document before reranking to avoid source domination."""
+    if max_total <= 0 or max_per_doc <= 0 or not docs:
+        return []
+
+    capped: list[object] = []
+    per_doc_counts: dict[str, int] = {}
+    for idx, doc in enumerate(docs):
+        identity = _doc_identity(doc, idx)
+        if per_doc_counts.get(identity, 0) >= max_per_doc:
+            continue
+        per_doc_counts[identity] = per_doc_counts.get(identity, 0) + 1
+        capped.append(doc)
+        if len(capped) >= max_total:
+            break
+    return capped
+
+
 def _resolve_candidate_pool_size(k: int, material_ids: Optional[list[int]]) -> int:
     """
     Decide how many vector candidates to fetch before reranking.
@@ -435,13 +489,44 @@ def search_with_embeddings(
 
     try:
         candidate_k = _resolve_candidate_pool_size(k, material_ids)
-        results = vs.similarity_search(
+        similarity_candidates = vs.similarity_search(
             query,
             k=candidate_k,
             filter=where_filter,
         )
-        if results:
-            return rerank_results(query, results, k)
+        mmr_candidates: list = []
+        mmr_search = getattr(vs, "max_marginal_relevance_search", None)
+        if callable(mmr_search):
+            try:
+                mmr_fetch_k = min(max(candidate_k * 4, candidate_k + 40), 2000)
+                mmr_candidates = mmr_search(
+                    query,
+                    k=candidate_k,
+                    fetch_k=mmr_fetch_k,
+                    lambda_mult=DEFAULT_MMR_LAMBDA_MULT,
+                    filter=where_filter,
+                )
+            except Exception:
+                mmr_candidates = []
+
+        merged_candidates = _merge_candidate_pools(
+            similarity_candidates,
+            mmr_candidates,
+            max_total=max(candidate_k * 2, k * 8),
+        )
+
+        if collection_name == COLLECTION_MATERIALS and merged_candidates:
+            # Keep enough per-doc candidates to satisfy high-k requests while
+            # still preventing any single source from flooding the rerank pool.
+            pre_cap = max(k, 6)
+            merged_candidates = _cap_candidates_per_doc(
+                merged_candidates,
+                max_per_doc=pre_cap,
+                max_total=max(candidate_k, k),
+            )
+
+        if merged_candidates:
+            return rerank_results(query, merged_candidates, k)
     except Exception:
         pass
 

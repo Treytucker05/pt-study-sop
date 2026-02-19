@@ -440,3 +440,21 @@ px vitest run --reporter=verbose (341 passed)
   - Ran `Start_Dashboard.bat` (with `SKIP_UI_BUILD=1` env set in invoking shell).
   - Confirmed log line: `Hard-stopping PID ... bound to port 5000`.
   - Confirmed dashboard still starts and serves `http://127.0.0.1:5000/tutor`.
+
+## 2026-02-19 - Tutor ANN diversification hardening (MMR merge + per-doc pre-cap)
+
+- Retrieval pipeline updates in `brain/tutor_rag.py`:
+  - Added secondary MMR candidate retrieval (`max_marginal_relevance_search`) with widened `fetch_k`.
+  - Added `_merge_candidate_pools` to merge similarity + MMR pools with chunk-level dedupe.
+  - Added `_cap_candidates_per_doc` pre-rerank limiter to reduce single-document domination.
+  - Added high-`k` safety fix: pre-cap now scales with `k` (`max(k, 6)`) so requests above 20 are not truncated by pre-cap.
+- Test coverage added in `brain/tests/test_tutor_rag_batching.py`:
+  - `_merge_candidate_pools` order/dedupe behavior.
+  - `_cap_candidates_per_doc` per-doc + total-cap behavior.
+  - `search_with_embeddings` merge + MMR + cap behavior.
+  - Instruction-collection path skips materials pre-cap.
+  - High-`k` regression test to prevent truncation.
+- Validation:
+  - `pytest brain/tests/test_tutor_rag_batching.py -q` -> `15 passed`
+  - `pytest brain/tests/test_tutor_rag_batching.py brain/tests/test_tutor_session_linking.py -q` -> `26 passed`
+  - `pytest brain/tests/ -q` hit unrelated intermittent timeout in `brain/tests/test_obsidian_patch.py::test_patch_generation_creates_file` (Codex subprocess path); not in tutor retrieval code path.
