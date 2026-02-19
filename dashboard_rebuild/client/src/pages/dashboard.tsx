@@ -421,7 +421,7 @@ export default function Dashboard() {
                   <Play className="w-4 h-4" />
                   STUDY_WHEEL
                 </div>
-                <div className="flex items-center gap-2 bg-black/40 border border-secondary px-3 py-1 accent-glow" data-testid="streak-display">
+                <div className="flex items-center gap-2 bg-black/40 border border-secondary px-3 py-1" data-testid="streak-display">
                   <Flame className="w-4 h-4 text-orange-500" />
                   <span className="font-arcade text-sm text-white" data-testid="text-streak">{streakData?.currentStreak || 0}</span>
                   <span className="font-terminal text-xs text-muted-foreground">DAY STREAK</span>
@@ -638,7 +638,7 @@ export default function Dashboard() {
                     <div className="max-w-md mx-auto">
                       <Button
                         onClick={() => setIsCompleting(true)}
-                        className="w-full rounded-none font-arcade px-8 py-6 text-lg bg-primary hover:bg-primary/80 shadow-[0_0_20px_rgba(255,0,0,0.3)] hover:shadow-[0_0_30px_rgba(255,0,0,0.5)] transition-shadow"
+                        className="w-full rounded-none font-arcade px-8 py-6 text-lg bg-primary hover:bg-primary/80 transition-colors"
                         disabled={!currentCourse}
                         data-testid="button-start-session"
                       >
@@ -1070,7 +1070,7 @@ export default function Dashboard() {
                           >
                             <button
                               onClick={() => toggleGoogleTaskMutation.mutate(task)}
-                              className="flex-shrink-0 p-0.5 hover:bg-primary/20 rounded"
+                              className="flex-shrink-0 p-0.5 hover:bg-primary/20 rounded-none"
                             >
                               <Circle className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                             </button>

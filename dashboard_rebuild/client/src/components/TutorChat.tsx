@@ -449,7 +449,7 @@ export function TutorChat({
       {/* Messages */}
       <div
         ref={scrollRef}
-        className={`flex-1 overflow-y-auto space-y-4 bg-zinc-950/30 ${
+        className={`flex-1 overflow-y-auto space-y-4 bg-black/40 ${
           focusMode ? "p-5 md:p-6" : "p-4"
         }`}
       >
@@ -458,7 +458,7 @@ export function TutorChat({
             <div className="font-arcade text-sm text-primary">
               SESSION STARTED
             </div>
-            <div className="font-sans text-lg text-muted-foreground leading-7">
+            <div className="font-terminal text-lg text-muted-foreground leading-7">
               Ask a question to begin learning. Use /note, /card, or /map for artifacts.
             </div>
           </div>
@@ -470,7 +470,7 @@ export function TutorChat({
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`px-3 py-2 text-[17px] leading-7 font-sans ${
+              className={`px-3 py-2 text-[17px] leading-7 font-terminal ${
                 msg.role === "user"
                   ? "max-w-[72%]"
                   : focusMode
@@ -479,11 +479,11 @@ export function TutorChat({
               } ${
                 msg.role === "user"
                   ? "bg-primary/15 border-2 border-primary/40 text-foreground"
-                  : "bg-zinc-900/95 border-2 border-zinc-600 text-zinc-100"
+                  : "bg-black/40 border-2 border-secondary text-foreground"
               }`}
             >
               {msg.role === "assistant" ? (
-                <div className="prose prose-invert prose-lg max-w-none font-sans [&_p]:my-2 [&_li]:my-1 [&_p]:leading-7 [&_li]:leading-7 [&_code]:text-base [&_pre]:text-base">
+                <div className="prose prose-invert prose-lg max-w-none font-terminal [&_p]:my-2 [&_li]:my-1 [&_p]:leading-7 [&_li]:leading-7 [&_code]:text-base [&_pre]:text-base">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {msg.content || (msg.isStreaming ? "..." : "")}
                   </ReactMarkdown>
@@ -620,7 +620,7 @@ export function TutorChat({
             value={accuracyProfile}
             onChange={(e) => onAccuracyProfileChange(e.target.value as TutorAccuracyProfile)}
             disabled={isStreaming}
-            className="h-9 bg-zinc-950 border-2 border-zinc-600 px-2 text-xs font-terminal text-zinc-100 focus:border-primary focus:outline-none disabled:opacity-50"
+            className="h-9 bg-black border-2 border-secondary px-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
           >
             <option value="balanced">Balanced</option>
             <option value="strict">Strict</option>
@@ -634,7 +634,7 @@ export function TutorChat({
           onKeyDown={handleKeyDown}
           placeholder="Ask a question..."
           disabled={isStreaming}
-          className="flex-1 min-w-[180px] bg-zinc-950 border-2 border-zinc-600 rounded-none px-3 py-2 text-[17px] leading-7 font-sans text-zinc-100 placeholder:text-zinc-400 focus:border-primary focus:outline-none disabled:opacity-50"
+          className="flex-1 min-w-[180px] bg-black border-2 border-secondary rounded-none px-3 py-2 text-[17px] leading-7 font-terminal text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none disabled:opacity-50"
         />
         <Button
           onClick={sendMessage}
@@ -652,7 +652,7 @@ export function TutorChat({
       </div>
 
       {!focusMode && (
-        <aside className="hidden lg:flex w-80 border-l-2 border-primary/20 bg-zinc-950/70 flex-col min-h-0">
+        <aside className="hidden lg:flex w-80 border-l-2 border-primary/20 bg-black/40 flex-col min-h-0">
           <div className="p-3 border-b border-primary/20">
             <div className="font-arcade text-xs text-primary tracking-wider">MATERIALS IN CHAT</div>
             <div className="flex items-center justify-between gap-2 mt-1">

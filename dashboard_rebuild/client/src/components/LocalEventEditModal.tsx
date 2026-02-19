@@ -419,7 +419,7 @@ export function LocalEventEditModal({
                       <Textarea
                         value={event.recurrence}
                         onChange={(e) => setField("recurrence", e.target.value)}
-                        className="bg-black border-primary/30 text-primary text-xs font-mono h-12 rounded-none"
+                        className="bg-black border-primary/30 text-primary text-xs font-terminal h-12 rounded-none"
                         placeholder="RRULE:FREQ=WEEKLY;BYDAY=MO,WE"
                       />
                     </div>
@@ -446,7 +446,7 @@ export function LocalEventEditModal({
                 </div>
                 <div className="space-y-1">
                   {(event.attendees || []).map((att) => (
-                    <div key={att.email} className="flex items-center justify-between p-2 border border-zinc-800 text-xs font-terminal">
+                    <div key={att.email} className="flex items-center justify-between p-2 border border-secondary text-xs font-terminal">
                       <span className="text-primary">{att.email}</span>
                       <div className="flex items-center gap-2">
                         {att.responseStatus && (

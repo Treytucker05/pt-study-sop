@@ -1,11 +1,8 @@
 from flask import Flask, jsonify, request, send_from_directory
 
-from dashboard.routes import dashboard_bp
-from dashboard.v3_routes import dashboard_v3_bp, dashboard_v3_api_bp
 from config import DATA_DIR, SESSION_LOGS_DIR
 import os
 import time
-from pathlib import Path
 
 
 def create_app():
@@ -24,7 +21,6 @@ def create_app():
 
     # Register blueprints BEFORE catch-all route
     from dashboard.routes import dashboard_bp
-    from dashboard.v3_routes import dashboard_v3_bp, dashboard_v3_api_bp
     from dashboard.api_adapter import adapter_bp
     from dashboard.api_methods import methods_bp
     from dashboard.api_chain_runner import chain_runner_bp
@@ -37,16 +33,13 @@ def create_app():
     app.register_blueprint(tutor_bp)  # /api/tutor/*
     app.register_blueprint(data_bp)  # /api/data/*
     app.register_blueprint(dashboard_bp)
-    # Register v3 routes only if the v3 bundle exists (archived bundles are not active)
-    v3_root = Path(__file__).resolve().parents[2] / "dashboard_rebuild" / "code"
-    if v3_root.exists():
-        app.register_blueprint(dashboard_v3_bp)
-        app.register_blueprint(dashboard_v3_api_bp)
 
     # DEBUG: Print all registered routes
     print("\n=== REGISTERED ROUTES ===")
     for rule in app.url_map.iter_rules():
-        print(f"  {rule.rule} -> {rule.endpoint} [{', '.join(rule.methods - {'OPTIONS', 'HEAD'})}]")
+        print(
+            f"  {rule.rule} -> {rule.endpoint} [{', '.join(rule.methods - {'OPTIONS', 'HEAD'})}]"
+        )
     print("=========================\n")
 
     # Serve React App — use 404 handler so blueprint routes always take priority

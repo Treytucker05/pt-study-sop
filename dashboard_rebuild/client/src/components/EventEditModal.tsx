@@ -555,7 +555,7 @@ export function EventEditModal({
                 </div>
                 <div className="space-y-1">
                   {(event.attendees || []).map((att) => (
-                    <div key={att.email} className="flex items-center justify-between p-2 border border-zinc-800 text-xs font-terminal">
+                    <div key={att.email} className="flex items-center justify-between p-2 border border-secondary text-xs font-terminal">
                       <span className="text-green-500">{att.email}</span>
                       <div className="flex items-center gap-2">
                         {att.responseStatus && (

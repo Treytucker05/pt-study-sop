@@ -613,7 +613,7 @@ export function PlannerKanban({ tasks }: { tasks: PlannerTask[] }) {
           <DragOverlay>
             {activeTask ? (
               <div className="opacity-90 rotate-1">
-                <div className="border border-primary/60 bg-black/80 px-3 py-2 rounded-none shadow-2xl">
+                <div className="border border-primary/60 bg-black/40 px-3 py-2 rounded-none">
                   <div className="font-terminal text-xs text-white truncate">
                     {taskTitle(activeTask)}
                   </div>

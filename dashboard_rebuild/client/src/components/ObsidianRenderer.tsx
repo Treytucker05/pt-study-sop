@@ -73,7 +73,7 @@ function preprocessCallouts(content: string): string {
     if (!inCallout) return;
     const colorClass = CALLOUT_COLORS[calloutType.toLowerCase()] || CALLOUT_COLORS.note;
     const title = calloutTitle || calloutType.charAt(0).toUpperCase() + calloutType.slice(1);
-    result.push(`<div class="callout ${colorClass} border-l-4 rounded px-3 py-2 my-2">`);
+    result.push(`<div class="callout ${colorClass} border-l-4 rounded-none px-3 py-2 my-2">`);
     result.push(`<div class="font-bold text-xs uppercase tracking-wider mb-1">${title}</div>`);
     result.push("");
     result.push(calloutBody.join("\n"));
@@ -155,13 +155,13 @@ export function ObsidianRenderer({ content, onWikilinkClick }: ObsidianRendererP
       const isBlock = className?.startsWith("language-");
       if (isBlock) {
         return (
-          <code className="block bg-black/80 border border-secondary/40 rounded p-3 my-2 text-xs font-mono overflow-x-auto whitespace-pre">
+          <code className="block bg-black/40 border border-secondary/40 rounded-none p-3 my-2 text-xs font-terminal overflow-x-auto whitespace-pre">
             {children}
           </code>
         );
       }
       return (
-        <code className="bg-secondary/40 px-1.5 py-0.5 rounded text-xs font-mono text-primary">
+        <code className="bg-secondary/40 px-1.5 py-0.5 rounded-none text-xs font-terminal text-primary">
           {children}
         </code>
       );
@@ -191,7 +191,7 @@ export function ObsidianRenderer({ content, onWikilinkClick }: ObsidianRendererP
       <img
         src={src}
         alt={alt || ""}
-        className="max-w-full rounded border border-secondary/40 my-2"
+        className="max-w-full rounded-none border border-secondary/40 my-2"
         loading="lazy"
       />
     ),

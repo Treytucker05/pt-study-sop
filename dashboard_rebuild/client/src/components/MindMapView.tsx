@@ -831,7 +831,7 @@ export function MindMapView({
               value={mermaidInput}
               onChange={(e) => setMermaidInput(e.target.value)}
               placeholder="graph LR&#10;  A[Course] --> B[Module]"
-              className="min-h-[64px] w-full px-2 py-1.5 font-mono text-xs bg-black/60 border border-primary/30 rounded-none text-foreground placeholder:text-muted-foreground resize-y"
+              className="min-h-[64px] w-full px-2 py-1.5 font-terminal text-xs bg-black/60 border border-primary/30 rounded-none text-foreground placeholder:text-muted-foreground resize-y"
               rows={4}
             />
             <div className="flex gap-2">
@@ -873,13 +873,13 @@ export function MindMapView({
             nodeTypes={MIND_MAP_NODE_TYPES}
             defaultEdgeOptions={MIND_MAP_DEFAULT_EDGE_OPTIONS}
             fitView
-            className="bg-black/80"
+            className="bg-black/40"
             proOptions={{ hideAttribution: true }}
           >
             <Background color="hsl(var(--primary) / 0.1)" gap={20} />
-            <Controls className="!bg-black !border-primary [&_button]:!bg-black/80 [&_button]:!border-primary/50 [&_button]:!text-primary" />
+            <Controls className="!bg-black !border-primary [&_button]:!bg-black/40 [&_button]:!border-primary/50 [&_button]:!text-primary" />
             <MiniMap
-              className="!bg-black/80 !border-primary"
+              className="!bg-black/40 !border-primary"
               nodeColor="hsl(var(--primary))"
               maskColor="rgba(0,0,0,0.5)"
             />

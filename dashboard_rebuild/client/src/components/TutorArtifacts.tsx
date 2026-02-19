@@ -310,7 +310,7 @@ export function TutorArtifacts({
     <div className="flex flex-col h-full overflow-hidden">
       {/* Themed bulk delete confirmation */}
       <AlertDialog open={bulkConfirm !== null} onOpenChange={(open) => !open && setBulkConfirm(null)}>
-        <AlertDialogContent className="bg-black/95 border-[3px] border-double border-primary rounded-none shadow-lg gap-4 p-4">
+        <AlertDialogContent className="bg-black border-[3px] border-double border-primary rounded-none gap-4 p-4">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-arcade text-primary tracking-wider text-sm">
               DELETE?

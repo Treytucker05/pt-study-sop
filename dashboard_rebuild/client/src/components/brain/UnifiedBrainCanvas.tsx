@@ -237,7 +237,7 @@ export function UnifiedBrainCanvas() {
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 placeholder="graph TD&#10;  A[Topic] --> B[Branch]"
-                className="min-h-[72px] w-full px-2 py-1.5 font-mono text-xs bg-black/60 border border-primary/30 rounded-none text-foreground placeholder:text-muted-foreground resize-y"
+                className="min-h-[72px] w-full px-2 py-1.5 font-terminal text-xs bg-black/60 border border-primary/30 rounded-none text-foreground placeholder:text-muted-foreground resize-y"
                 rows={4}
               />
               <div className="flex gap-2">
