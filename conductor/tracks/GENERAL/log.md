@@ -303,3 +303,11 @@ px vitest run --reporter=verbose (341 passed)
   - python -m pytest brain/tests/test_tutor_session_linking.py -q (5 passed)
   - cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorChat.test.tsx (2 passed)
   - cd dashboard_rebuild && npm run build (success)
+
+## 2026-02-19 - Tutor chat sidebar loads all enabled materials
+
+- Updated Tutor page chat-sidebar material query to load all enabled materials instead of course-scoped subset.
+- This prevents chat sidebar from appearing capped (e.g., only 6 files) when user expects broader selected file scope.
+- File: dashboard_rebuild/client/src/pages/tutor.tsx
+- Validation:
+  - cd dashboard_rebuild && npm run build (success)

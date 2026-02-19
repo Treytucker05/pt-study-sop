@@ -172,11 +172,8 @@ export default function Tutor() {
   });
 
   const { data: chatMaterials = [] } = useQuery<Material[]>({
-    queryKey: ["tutor-chat-materials", courseId ?? null],
-    queryFn: () =>
-      api.tutor.getMaterials(
-        courseId ? { course_id: courseId, enabled: true } : { enabled: true }
-      ),
+    queryKey: ["tutor-chat-materials-all-enabled"],
+    queryFn: () => api.tutor.getMaterials({ enabled: true }),
     staleTime: 60 * 1000,
   });
 
