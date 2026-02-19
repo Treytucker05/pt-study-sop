@@ -270,7 +270,7 @@ def test_search_with_embeddings_merges_and_caps_before_rerank(monkeypatch):
 
     assert len(vs.mmr_calls) == 1
     assert vs.mmr_calls[0]["k"] == candidate_k
-    assert vs.mmr_calls[0]["fetch_k"] == min(max(candidate_k * 4, candidate_k + 40), 2000)
+    assert vs.mmr_calls[0]["fetch_k"] == min(max(candidate_k * 3, candidate_k + 40), 1600)
     assert vs.mmr_calls[0]["lambda_mult"] == DEFAULT_MMR_LAMBDA_MULT
     assert vs.mmr_calls[0]["filter"] == expected_filter
 

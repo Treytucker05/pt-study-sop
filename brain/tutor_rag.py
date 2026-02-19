@@ -30,6 +30,10 @@ COLLECTION_INSTRUCTIONS = "tutor_instructions"
 DEFAULT_CHROMA_BATCH_SIZE = 1000
 DEFAULT_MAX_CHUNKS_PER_DOC = 2
 DEFAULT_MMR_LAMBDA_MULT = 0.2
+SCOPED_CANDIDATE_MULTIPLIER = 12
+SCOPED_CANDIDATE_MIN = 120
+SCOPED_CANDIDATE_MAX = 800
+SCOPED_MMR_FETCH_MAX = 1600
 
 
 def _get_openai_api_key() -> str:
@@ -396,7 +400,9 @@ def _resolve_candidate_pool_size(k: int, material_ids: Optional[list[int]]) -> i
     """
     if not material_ids:
         return max(k * 2, 12)
-    return min(max(k * 12, 120), 800)
+    scoped_k = max(int(k), 1)
+    candidate_k = max(scoped_k * SCOPED_CANDIDATE_MULTIPLIER, SCOPED_CANDIDATE_MIN)
+    return min(candidate_k, SCOPED_CANDIDATE_MAX)
 
 
 def rerank_results(
@@ -570,15 +576,18 @@ def search_with_embeddings(
         if debug is not None:
             debug["candidate_pool_similarity"] = len(similarity_candidates)
         mmr_candidates: list = []
+        mmr_k = 0
         mmr_search = getattr(vs, "max_marginal_relevance_search", None)
         if callable(mmr_search):
             try:
-                mmr_fetch_k = min(max(candidate_k * 4, candidate_k + 40), 2000)
+                mmr_k = candidate_k
+                mmr_fetch_k = min(max(mmr_k * 3, mmr_k + 40), SCOPED_MMR_FETCH_MAX)
                 if debug is not None:
+                    debug["mmr_k"] = mmr_k
                     debug["mmr_fetch_k"] = mmr_fetch_k
                 mmr_candidates = mmr_search(
                     query,
-                    k=candidate_k,
+                    k=mmr_k,
                     fetch_k=mmr_fetch_k,
                     lambda_mult=DEFAULT_MMR_LAMBDA_MULT,
                     filter=where_filter,

@@ -527,3 +527,23 @@ px vitest run --reporter=verbose (341 passed)
   - `pytest brain/tests/ -q` -> `321 passed, 17 skipped`
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorChat.test.tsx` -> `3 passed`
   - `cd dashboard_rebuild && npm run build` -> success
+
+## 2026-02-19 - Scoped retrieval tuning: reduce MMR fetch overhead without collapsing source breadth
+
+- Problem observed during scoped eval on 30 selected files:
+  - Retrieval quality was acceptable but per-question latency was high in strict/coverage runs.
+  - Candidate diagnostics showed very high dropped-by-cap volumes, indicating expensive over-fetch.
+- Implemented tuning in `brain/tutor_rag.py`:
+  - Kept material-scoped candidate breadth policy intact (`k * 12`, min 120, max 800).
+  - Reduced MMR fetch expansion from `candidate_k * 4` to `candidate_k * 3`.
+  - Reduced upper cap for `mmr_fetch_k` from `2000` to `1600`.
+  - Left pre-cap behavior unchanged for materials (`pre_cap = max(k, 6)`) to avoid regressions in source coverage.
+- Updated tests:
+  - `brain/tests/test_tutor_rag_batching.py` expectation for `mmr_fetch_k` now matches tuned fetch policy.
+- Validation:
+  - `pytest brain/tests/test_tutor_rag_batching.py::test_search_with_embeddings_merges_and_caps_before_rerank -q` -> `1 passed`
+  - `pytest brain/tests/` -> `321 passed, 17 skipped`
+  - Timed scoped eval sample (6 questions, material_ids 201-230):
+    - `strict`: `hit_rate=0.667`, `avg_conf=0.531`, `avg_unique=16.33`, `avg_drop=597.50`, `elapsed=78.5s`
+    - `balanced`: `hit_rate=0.667`, `avg_conf=0.513`, `avg_unique=15.67`, `avg_drop=523.83`, `elapsed=55.9s`
+    - `coverage`: `hit_rate=0.667`, `avg_conf=0.557`, `avg_unique=17.83`, `avg_drop=730.50`, `elapsed=120.7s`
