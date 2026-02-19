@@ -287,3 +287,19 @@ px vitest run --reporter=verbose (341 passed)
   - `npx vitest run client/src/components/__tests__/TutorChat.test.tsx` -> `2 passed`
   - `python -m pytest brain/tests -q` -> `298 passed, 17 skipped`
   - `npm run build` (in `dashboard_rebuild`) -> success; assets emitted to `brain/static/dist`
+
+## 2026-02-19 - Tutor chat file-scope accuracy + sidebar bulk selection
+
+- Fixed tutor prompt scope metadata so model no longer implies a hard "6 files" cap when more files are selected.
+- Added selected-material scope section in system prompt with:
+  - selected file count
+  - retrieval target depth
+  - explicit instruction to report selected scope count (not citation count)
+  - selected file labels
+- Added All and Clear controls to Tutor chat sidebar material selector for fast full-scope toggling.
+- Added accessibility label to send button (ria-label="Send message") and updated TutorChat tests.
+- Added backend regression test to ensure selected material scope is injected into prompt.
+- Validation:
+  - python -m pytest brain/tests/test_tutor_session_linking.py -q (5 passed)
+  - cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorChat.test.tsx (2 passed)
+  - cd dashboard_rebuild && npm run build (success)

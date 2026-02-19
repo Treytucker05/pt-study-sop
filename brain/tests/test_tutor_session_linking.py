@@ -295,3 +295,62 @@ def test_send_turn_applies_per_turn_material_override(client, monkeypatch):
     conn.close()
     saved_filter = json.loads(row["content_filter_json"])
     assert saved_filter.get("material_ids") == override_ids
+
+
+def test_send_turn_includes_selected_material_scope_in_prompt(client, monkeypatch):
+    conn = sqlite3.connect(config.DB_PATH)
+    cur = conn.cursor()
+    cur.executemany(
+        """INSERT INTO rag_docs
+           (id, title, source_path, content, corpus, enabled, created_at, updated_at)
+           VALUES (?, ?, ?, ?, 'materials', 1, datetime('now'), datetime('now'))""",
+        [
+            (901, "Alpha Notes", "C:/materials/alpha.md", "alpha content"),
+            (902, "Beta Notes", "C:/materials/beta.md", "beta content"),
+        ],
+    )
+    conn.commit()
+    conn.close()
+
+    selected_ids = [901, 902]
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Prompt Scope Test",
+            "content_filter": {"material_ids": selected_ids},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    monkeypatch.setattr(
+        tutor_rag, "get_dual_context", lambda *_a, **_k: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    captured: dict[str, str] = {"system_prompt": ""}
+
+    def fake_stream(system_prompt, _user_prompt, **_kwargs):
+        captured["system_prompt"] = system_prompt
+        yield {"type": "delta", "text": "ok"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-scope", "thread_id": "thread-scope"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "What files do you see?"},
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    prompt = captured["system_prompt"]
+    assert "Selected Material Scope" in prompt
+    assert "Student selected materials for this turn: 2" in prompt
+    assert "Alpha Notes" in prompt
+    assert "Beta Notes" in prompt

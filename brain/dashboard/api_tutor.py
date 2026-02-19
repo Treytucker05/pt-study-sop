@@ -268,6 +268,48 @@ def _normalize_material_ids(value: Any) -> Optional[list[int]]:
     return normalized
 
 
+def _material_scope_labels(
+    material_ids: Optional[list[int]], *, max_items: int = 20
+) -> tuple[int, list[str]]:
+    """
+    Resolve selected material IDs into user-readable labels for prompt context.
+
+    Returns (total_selected_count, label_list). Labels preserve the original order
+    of material_ids and are truncated to max_items to keep prompts compact.
+    """
+    if not material_ids:
+        return 0, []
+
+    placeholders = ",".join("?" * len(material_ids))
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        f"""SELECT id,
+                   COALESCE(NULLIF(TRIM(title), ''), NULLIF(TRIM(source_path), ''), 'Material #' || id) AS label
+            FROM rag_docs
+            WHERE id IN ({placeholders})
+              AND COALESCE(corpus, 'materials') = 'materials'""",
+        material_ids,
+    )
+    rows = cur.fetchall()
+    conn.close()
+    label_by_id = {int(r["id"]): str(r["label"]) for r in rows}
+
+    ordered_labels: list[str] = []
+    for mid in material_ids:
+        label = label_by_id.get(mid, f"Material #{mid}")
+        ordered_labels.append(label)
+
+    total = len(ordered_labels)
+    if total <= max_items:
+        return total, ordered_labels
+
+    visible = ordered_labels[:max_items]
+    visible.append(f"... and {total - max_items} more selected files")
+    return total, visible
+
+
 def _sanitize_filename(name: str) -> str:
     import re
 
@@ -714,6 +756,7 @@ def send_turn(session_id: str):
         material_ids = _normalize_material_ids(content_filter.get("material_ids"))
         content_filter["material_ids"] = material_ids or []
     material_k = _resolve_material_retrieval_k(material_ids)
+    selected_material_count, selected_material_labels = _material_scope_labels(material_ids)
 
     # Legacy support: folder_paths
     folder_paths = None
@@ -789,6 +832,19 @@ def send_turn(session_id: str):
                 instruction_context=instruction_text,
                 material_context=material_text,
             )
+            if selected_material_count > 0:
+                selected_list = "\n".join(
+                    f"- {name}" for name in selected_material_labels
+                )
+                system_prompt += (
+                    "\n\n## Selected Material Scope\n"
+                    f"- Student selected materials for this turn: {selected_material_count}\n"
+                    f"- Retrieval target depth this turn: {material_k}\n"
+                    "- Retrieved excerpts can be fewer than selected files because retrieval is relevance-based.\n"
+                    "- If asked how many files are in scope, use the selected count above (not citation count).\n"
+                    "Selected files:\n"
+                    f"{selected_list}"
+                )
 
             effective_model = codex_model or "gpt-5.3-codex"
             system_prompt += (

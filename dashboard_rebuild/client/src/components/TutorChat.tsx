@@ -397,6 +397,14 @@ export function TutorChat({
     );
   };
 
+  const selectAllMaterials = () => {
+    onSelectedMaterialIdsChange(availableMaterials.map((m) => m.id));
+  };
+
+  const clearMaterialSelection = () => {
+    onSelectedMaterialIdsChange([]);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -591,6 +599,7 @@ export function TutorChat({
         <Button
           onClick={sendMessage}
           disabled={!input.trim() || isStreaming}
+          aria-label="Send message"
           className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0"
         >
           {isStreaming ? (
@@ -606,8 +615,26 @@ export function TutorChat({
         <aside className="hidden lg:flex w-80 border-l-2 border-primary/20 bg-zinc-950/70 flex-col min-h-0">
           <div className="p-3 border-b border-primary/20">
             <div className="font-arcade text-xs text-primary tracking-wider">MATERIALS IN CHAT</div>
-            <div className="font-terminal text-xs text-muted-foreground mt-1">
-              {selectedMaterialIds.length} selected
+            <div className="flex items-center justify-between gap-2 mt-1">
+              <div className="font-terminal text-xs text-muted-foreground">
+                {selectedMaterialIds.length} / {availableMaterials.length} selected
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={selectAllMaterials}
+                  className="font-terminal text-[10px] px-1.5 py-0.5 border border-primary/30 text-primary hover:bg-primary/10"
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={clearMaterialSelection}
+                  className="font-terminal text-[10px] px-1.5 py-0.5 border border-primary/20 text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">

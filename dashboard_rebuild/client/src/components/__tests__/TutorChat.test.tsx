@@ -50,7 +50,7 @@ describe("TutorChat", () => {
     fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
       target: { value: "/card ATP synthesis" },
     });
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
 
     await waitFor(() => {
       expect(onArtifactCreated).toHaveBeenCalledWith(
@@ -87,7 +87,7 @@ describe("TutorChat", () => {
     fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
       target: { value: "Explain this pathway" },
     });
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
 
     const createMapButton = await screen.findByRole("button", { name: /create map/i });
     fireEvent.click(createMapButton);
