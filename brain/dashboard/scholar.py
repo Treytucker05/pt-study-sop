@@ -1494,7 +1494,7 @@ def run_scholar_orchestrator_deep(manifest: Dict[str, Any], mode: str = "brain")
                 log_file.write(f"Run ID: {timestamp}\n")
                 log_file.write(f"Mode: {mode}\n")
                 deep_cfg = (manifest or {}).get("deep_agent", {})
-                log_file.write(f"Model: {deep_cfg.get('model', 'google/gemini-2.0-flash-001')}\n")
+                log_file.write(f"Model: {deep_cfg.get('model', 'google/gemini-2.5-flash-lite')}\n")
                 log_file.write(f"Max iterations: {deep_cfg.get('max_iterations', 15)}\n\n")
 
                 # Lazy import to avoid loading LangGraph at module level

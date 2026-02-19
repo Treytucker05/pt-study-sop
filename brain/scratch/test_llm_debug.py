@@ -63,7 +63,7 @@ result = call_llm(
     system_prompt=system_prompt,
     user_prompt=f"Process this:\n\n{wrap}",
     provider="openrouter",
-    model="google/gemini-2.0-flash-001",
+    model="google/gemini-2.5-flash-lite",
     timeout=45
 )
 

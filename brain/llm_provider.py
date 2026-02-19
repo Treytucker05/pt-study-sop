@@ -49,7 +49,7 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 def _call_openrouter_api(
     system_prompt: str,
     user_prompt: str,
-    model: str = "google/gemini-2.0-flash-001",
+    model: str = "google/gemini-2.5-flash-lite",
     timeout: int = OPENAI_API_TIMEOUT,
 ) -> Dict[str, Any]:
     """
@@ -910,6 +910,7 @@ def stream_chatgpt_responses(
         model_id = None
         url_citations: list = []
         response_id = ""
+        thread_id = ""
 
         while True:
             line = resp.readline()
@@ -950,6 +951,11 @@ def stream_chatgpt_responses(
                 usage = r.get("usage")
                 model_id = r.get("model")
                 response_id = r.get("id", "")
+                thread_id = (
+                    r.get("thread_id")
+                    or r.get("conversation_id")
+                    or thread_id
+                )
                 url_citations = _extract_url_citations(r)
 
                 for output_item in r.get("output", []):
@@ -969,6 +975,8 @@ def stream_chatgpt_responses(
             done_payload["url_citations"] = url_citations
         if response_id:
             done_payload["response_id"] = response_id
+        if thread_id:
+            done_payload["thread_id"] = thread_id
         yield done_payload
 
     except Exception as e:

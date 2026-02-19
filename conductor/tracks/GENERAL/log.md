@@ -81,3 +81,50 @@ px vitest run --reporter=verbose (341 passed)
 - Added `kimi` command allowlist entry in `permissions.json`.
 - Restored backward compatibility for legacy pre-push hooks by adding non-failing `auto-claim` command to `scripts/agent_task_board.py`.
 - Local environment action: reinstalled managed git hooks via `scripts/install_agent_guard_hooks.ps1 -Action install` to remove stale hook drift.
+
+## 2026-02-18 - Gemini 2.0 deprecation migration + Deep Agents CLI audit
+
+- Replaced all `google/gemini-2.0-flash-001` defaults/usages with `google/gemini-2.5-flash-lite` in runtime and config paths:
+  - `brain/llm_provider.py`
+  - `brain/tutor_chains.py`
+  - `brain/dashboard/scholar.py`
+  - `scholar/deep_agent/agent.py`
+  - `brain/dashboard/calendar_assistant.py`
+  - `brain/dashboard/api_adapter.py`
+  - `scholar/inputs/audit_manifest.json`
+  - `brain/scratch/test_llm_debug.py`
+- Confirmed zero remaining `gemini-2.0` references in repo (excluding none).
+- Audited LangChain/LangGraph deep-agent integration and confirmed in-process usage (`langgraph.prebuilt.create_react_agent`), with no `deepagents`/LangChain Deep Agents CLI command usage found.
+- Validation:
+  - `python -m pytest brain/tests/ -q` fails at collection with pre-existing import issue: `ImportError: cannot import name 'get_policy_version' from 'selector_bridge'` in `brain/tests/test_selector_bridge.py`.
+
+## 2026-02-18 - Tutor archive-linking + chat continuity persistence
+
+- Fixed selector-bridge test/contract drift and import robustness:
+  - Added `get_policy_version()` and `reload_chain_catalog()`
+  - Added deterministic metadata return (`chain_name`, `selected_blocks`, numeric `score_tuple`)
+  - Added fallback import path for test contexts (`brain.selector` vs top-level `selector`)
+  - File: `brain/selector_bridge.py`
+- Added tutor chat continuity persistence fields and migrations:
+  - `tutor_sessions`: `codex_thread_id`, `last_response_id`
+  - `tutor_turns`: `response_id`, `model_id`
+  - File: `brain/db_setup.py`
+- Enhanced tutor runtime/session APIs:
+  - Persist + reuse `previous_response_id` across turns
+  - Store per-turn `response_id` + `model_id`
+  - Store `codex_thread_id` when available
+  - `POST /api/tutor/session/<session_id>/link-archive`
+  - `GET /api/tutor/archive/<brain_session_id>/linked-chat`
+  - Optional `brain_session_id` on session creation
+  - Preserve existing `brain_session_id` on `/end` instead of always creating a new archive row
+  - File: `brain/dashboard/api_tutor.py`
+- Added `thread_id` passthrough from streaming response completion payload:
+  - File: `brain/llm_provider.py`
+- Added method library compatibility hardening for mixed old/new schemas:
+  - runtime ensure/backfill for `method_blocks.category` + `control_stage`
+  - update/create now keep both fields aligned
+  - File: `brain/dashboard/api_methods.py`
+- Added tests:
+  - `brain/tests/test_tutor_session_linking.py` (archive-link + response-id continuity)
+- Validation:
+  - `python -m pytest brain/tests/ -q` -> `303 passed, 2 warnings`

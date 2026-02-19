@@ -1331,7 +1331,7 @@ Return ONLY valid JSON, no explanation."""
         system_prompt=system_prompt,
         user_prompt=nl_input,
         provider="openrouter",
-        model="google/gemini-2.0-flash-001",
+        model="google/gemini-2.5-flash-lite",
         timeout=15
     )
     

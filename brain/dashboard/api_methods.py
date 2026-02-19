@@ -16,6 +16,62 @@ import json
 from db_setup import get_connection, ensure_method_library_seeded
 
 methods_bp = Blueprint("methods", __name__, url_prefix="/api")
+_METHOD_BLOCK_COLS_ENSURED = False
+
+
+def _ensure_method_blocks_columns(conn) -> None:
+    """Runtime-safe compatibility migration for method_blocks columns."""
+    global _METHOD_BLOCK_COLS_ENSURED
+    if _METHOD_BLOCK_COLS_ENSURED:
+        return
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(method_blocks)")
+        cols = {row[1] for row in cursor.fetchall()}
+
+        if "control_stage" not in cols:
+            cursor.execute(
+                "ALTER TABLE method_blocks ADD COLUMN control_stage TEXT DEFAULT 'ENCODE'"
+            )
+        if "category" not in cols:
+            cursor.execute("ALTER TABLE method_blocks ADD COLUMN category TEXT")
+
+        cursor.execute(
+            """
+            UPDATE method_blocks
+            SET category = CASE control_stage
+                WHEN 'PRIME' THEN 'prepare'
+                WHEN 'CALIBRATE' THEN 'prepare'
+                WHEN 'ENCODE' THEN 'encode'
+                WHEN 'REFERENCE' THEN 'interrogate'
+                WHEN 'RETRIEVE' THEN 'retrieve'
+                WHEN 'OVERLEARN' THEN 'overlearn'
+                ELSE category
+            END
+            WHERE category IS NULL OR TRIM(category) = ''
+            """
+        )
+        cursor.execute(
+            """
+            UPDATE method_blocks
+            SET control_stage = CASE LOWER(category)
+                WHEN 'prepare' THEN 'PRIME'
+                WHEN 'encode' THEN 'ENCODE'
+                WHEN 'interrogate' THEN 'REFERENCE'
+                WHEN 'retrieve' THEN 'RETRIEVE'
+                WHEN 'refine' THEN 'OVERLEARN'
+                WHEN 'overlearn' THEN 'OVERLEARN'
+                ELSE control_stage
+            END
+            WHERE control_stage IS NULL OR TRIM(control_stage) = ''
+            """
+        )
+        conn.commit()
+        _METHOD_BLOCK_COLS_ENSURED = True
+    except Exception:
+        # Keep API usable even if migration cannot run.
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -28,6 +84,7 @@ def list_methods():
     """List all method blocks. Optional ?category= or ?control_stage= filter."""
     ensure_method_library_seeded()
     conn = get_connection()
+    _ensure_method_blocks_columns(conn)
     cursor = conn.cursor()
     
     # Support both old 'category' and new 'control_stage' filters
@@ -90,6 +147,7 @@ def list_methods():
 @methods_bp.route("/methods/<int:method_id>", methods=["GET"])
 def get_method(method_id: int):
     conn = get_connection()
+    _ensure_method_blocks_columns(conn)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM method_blocks WHERE id = ?", (method_id,))
     row = cursor.fetchone()
@@ -144,17 +202,28 @@ def create_method():
         'overlearn': 'OVERLEARN',
     }
     stage = category_to_stage.get(control_stage.lower(), control_stage.upper())
+    stage_to_category = {
+        "PRIME": "prepare",
+        "CALIBRATE": "prepare",
+        "ENCODE": "encode",
+        "REFERENCE": "interrogate",
+        "RETRIEVE": "retrieve",
+        "OVERLEARN": "overlearn",
+    }
+    legacy_category = stage_to_category.get(stage, str(control_stage).lower())
 
     conn = get_connection()
+    _ensure_method_blocks_columns(conn)
     try:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO method_blocks (name, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, inputs, outputs, strategy_label, failure_modes, variants, scoring_hooks, icap_level, clt_target, assessment_type, artifact_type, research_terms, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            INSERT INTO method_blocks (name, category, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, inputs, outputs, strategy_label, failure_modes, variants, scoring_hooks, icap_level, clt_target, assessment_type, artifact_type, research_terms, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """,
             (
                 name,
+                legacy_category,
                 stage,
                 data.get("description"),
                 data.get("default_duration_min", 5),
@@ -188,11 +257,36 @@ def update_method(method_id: int):
     if not data:
         return jsonify({"error": "No data provided"}), 400
 
+    # Backward-compat: frontend may still send legacy "category"
+    if "category" in data and "control_stage" not in data:
+        category_to_stage = {
+            "prepare": "PRIME",
+            "encode": "ENCODE",
+            "interrogate": "REFERENCE",
+            "retrieve": "RETRIEVE",
+            "refine": "OVERLEARN",
+            "overlearn": "OVERLEARN",
+        }
+        raw_category = str(data.get("category") or "").strip().lower()
+        data["control_stage"] = category_to_stage.get(raw_category, raw_category.upper())
+    if "control_stage" in data and "category" not in data:
+        stage_to_category = {
+            "PRIME": "prepare",
+            "CALIBRATE": "prepare",
+            "ENCODE": "encode",
+            "REFERENCE": "interrogate",
+            "RETRIEVE": "retrieve",
+            "OVERLEARN": "overlearn",
+        }
+        raw_stage = str(data.get("control_stage") or "").strip().upper()
+        data["category"] = stage_to_category.get(raw_stage, raw_stage.lower())
+
     fields = []
     values = []
     for key in (
         "name",
         "category",
+        "control_stage",
         "description",
         "default_duration_min",
         "energy_cost",
@@ -224,6 +318,7 @@ def update_method(method_id: int):
         return jsonify({"error": "No valid fields to update"}), 400
 
     conn = get_connection()
+    _ensure_method_blocks_columns(conn)
     try:
         cursor = conn.cursor()
         values.append(method_id)
