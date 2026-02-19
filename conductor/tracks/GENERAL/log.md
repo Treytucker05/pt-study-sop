@@ -324,3 +324,14 @@ px vitest run --reporter=verbose (341 passed)
 - Validation:
   - python -m pytest brain/tests/test_tutor_session_linking.py -q (6 passed)
   - python -m pytest brain/tests/test_tutor_rag_batching.py -q (7 passed)
+
+## 2026-02-19 - Prompt rule hardening for selected vs retrieved file count
+
+- Hardened tutor system prompt scope instructions so count questions ("how many files are you using/seeing/have") must answer selected-scope count first.
+- Added explicit rule to mention retrieved/cited counts only when asked for retrieved/cited counts.
+- Prevented ambiguous phrasing like "I am using N retrieved files" for scope-count questions.
+- Files:
+  - rain/dashboard/api_tutor.py
+  - rain/tests/test_tutor_session_linking.py
+- Validation:
+  - python -m pytest brain/tests/test_tutor_session_linking.py -q (6 passed)

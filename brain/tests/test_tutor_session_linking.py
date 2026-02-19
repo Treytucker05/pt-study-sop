@@ -352,6 +352,7 @@ def test_send_turn_includes_selected_material_scope_in_prompt(client, monkeypatc
     prompt = captured["system_prompt"]
     assert "Selected Material Scope" in prompt
     assert "Student selected materials for this turn: 2" in prompt
+    assert "answer with the selected count above first" in prompt
     assert "Alpha Notes" in prompt
     assert "Beta Notes" in prompt
 

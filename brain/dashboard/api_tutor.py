@@ -843,7 +843,9 @@ def send_turn(session_id: str):
                     f"- Student selected materials for this turn: {selected_material_count}\n"
                     f"- Retrieval target depth this turn: {material_k}\n"
                     "- Retrieved excerpts can be fewer than selected files because retrieval is relevance-based.\n"
-                    "- If asked how many files are in scope, use the selected count above (not citation count).\n"
+                    "- If the student asks 'how many files are you using/seeing/have', answer with the selected count above first.\n"
+                    "- Only mention retrieved/cited file count if they explicitly ask for retrieved/cited count.\n"
+                    "- Do not frame selected-scope questions as 'I am using N retrieved files'.\n"
                     "Selected files:\n"
                     f"{selected_list}"
                 )
