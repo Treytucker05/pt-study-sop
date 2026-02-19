@@ -237,6 +237,37 @@ def _format_dual_context(dual: dict) -> tuple[str, str]:
     return material_text, instruction_text
 
 
+def _resolve_material_retrieval_k(material_ids: Optional[list[int]]) -> int:
+    """
+    Determine material retrieval depth for dual-context search.
+
+    Default behavior stays conservative (6) when no explicit material selection
+    is provided. When the wizard provides selected material IDs, scale retrieval
+    depth to cover that selection up to a safe ceiling.
+    """
+    if not material_ids:
+        return 6
+    return min(max(6, len(material_ids)), 30)
+
+
+def _normalize_material_ids(value: Any) -> Optional[list[int]]:
+    """Best-effort parse of material IDs from payload/session filter."""
+    if not isinstance(value, list):
+        return None
+    normalized: list[int] = []
+    seen: set[int] = set()
+    for raw in value:
+        try:
+            mid = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if mid <= 0 or mid in seen:
+            continue
+        normalized.append(mid)
+        seen.add(mid)
+    return normalized
+
+
 def _sanitize_filename(name: str) -> str:
     import re
 
@@ -670,10 +701,19 @@ def send_turn(session_id: str):
         except (json.JSONDecodeError, TypeError):
             pass
 
+    # Allow per-turn content_filter overrides from chat UI (e.g., material checkboxes).
+    incoming_filter = data.get("content_filter")
+    if isinstance(incoming_filter, dict):
+        merged = dict(content_filter or {})
+        merged.update(incoming_filter)
+        content_filter = merged
+
     # Extract material_ids from content filter (new dual-library approach)
     material_ids = None
-    if content_filter and content_filter.get("material_ids"):
-        material_ids = content_filter["material_ids"]
+    if content_filter and "material_ids" in content_filter:
+        material_ids = _normalize_material_ids(content_filter.get("material_ids"))
+        content_filter["material_ids"] = material_ids or []
+    material_k = _resolve_material_retrieval_k(material_ids)
 
     # Legacy support: folder_paths
     folder_paths = None
@@ -718,7 +758,7 @@ def send_turn(session_id: str):
                     question,
                     course_id=session.get("course_id"),
                     material_ids=material_ids,
-                    k_materials=6,
+                    k_materials=material_k,
                     k_instructions=2,
                 )
             except Exception:
@@ -726,7 +766,7 @@ def send_turn(session_id: str):
                     question,
                     course_id=session.get("course_id"),
                     material_ids=material_ids,
-                    k_materials=6,
+                    k_materials=material_k,
                     k_instructions=2,
                 )
             material_text, instruction_text = _format_dual_context(dual)
@@ -982,9 +1022,15 @@ def send_turn(session_id: str):
 
             cur.execute(
                 """UPDATE tutor_sessions
-                   SET turn_count = ?, last_response_id = ?, codex_thread_id = COALESCE(?, codex_thread_id)
+                   SET turn_count = ?, last_response_id = ?, codex_thread_id = COALESCE(?, codex_thread_id), content_filter_json = ?
                    WHERE session_id = ?""",
-                (turn_number, latest_response_id, latest_thread_id, session_id),
+                (
+                    turn_number,
+                    latest_response_id,
+                    latest_thread_id,
+                    json.dumps(content_filter) if content_filter is not None else None,
+                    session_id,
+                ),
             )
 
             if session.get("method_chain_id"):

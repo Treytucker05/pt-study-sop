@@ -3,7 +3,14 @@ import { Card } from "@/components/ui/card";
 import { useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { TutorMode, TutorSessionSummary, TutorTemplateChain, TutorSessionWithTurns, TutorConfigCheck } from "@/lib/api";
+import type {
+  Material,
+  TutorMode,
+  TutorSessionSummary,
+  TutorTemplateChain,
+  TutorSessionWithTurns,
+  TutorConfigCheck,
+} from "@/lib/api";
 import { ContentFilter } from "@/components/ContentFilter";
 import { TutorWizard } from "@/components/TutorWizard";
 import { TutorChat } from "@/components/TutorChat";
@@ -162,6 +169,15 @@ export default function Tutor() {
     queryKey: ["tutor-config-check"],
     queryFn: () => api.tutor.configCheck(),
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: chatMaterials = [] } = useQuery<Material[]>({
+    queryKey: ["tutor-chat-materials", courseId ?? null],
+    queryFn: () =>
+      api.tutor.getMaterials(
+        courseId ? { course_id: courseId, enabled: true } : { enabled: true }
+      ),
+    staleTime: 60 * 1000,
   });
 
   const applySessionState = useCallback((session: TutorSessionWithTurns) => {
@@ -572,6 +588,9 @@ export default function Tutor() {
                 {activeSessionId ? (
                   <TutorChat
                     sessionId={activeSessionId}
+                    availableMaterials={chatMaterials}
+                    selectedMaterialIds={selectedMaterials}
+                    onSelectedMaterialIdsChange={setSelectedMaterials}
                     onArtifactCreated={handleArtifactCreated}
                     focusMode={focusMode}
                     onTurnComplete={() => setTurnCount((prev) => prev + 1)}

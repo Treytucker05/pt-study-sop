@@ -259,3 +259,31 @@ px vitest run --reporter=verbose (341 passed)
   - `rg -n "utcnow\\(" brain --glob "*.py"` -> no matches
   - `python -m pytest brain/tests/test_security.py::TestAuthenticationGaps::test_db_health_no_auth brain/tests/test_security.py::TestErrorDisclosure::test_db_health_leaks_path -q` -> `2 passed`
   - `python -m pytest brain/tests/test_calendar_nl.py -q` -> `7 passed`
+
+## 2026-02-19 - Tutor chat material selection controls (sidebar checkboxes)
+
+- Backend (`brain/dashboard/api_tutor.py`):
+  - Added dynamic material retrieval depth helper:
+    - `_resolve_material_retrieval_k(material_ids)` => scales from default `6` up to `30` when wizard-selected files are provided.
+  - Added per-turn filter override support in `/api/tutor/session/<id>/turn`:
+    - accepts request `content_filter` payload
+    - merges override with session filter
+    - normalizes `material_ids`
+    - persists merged `content_filter_json` back to `tutor_sessions` each turn
+- Frontend:
+  - `dashboard_rebuild/client/src/components/TutorChat.tsx`
+    - added right-side materials panel with checkboxes
+    - sends selected IDs on each turn via `content_filter.material_ids`
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+    - fetches chat materials by course and passes list/selection handlers into `TutorChat`
+- Tests:
+  - `brain/tests/test_tutor_session_linking.py`
+    - added `test_send_turn_scales_material_retrieval_to_selected_materials`
+    - added `test_send_turn_applies_per_turn_material_override`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorChat.test.tsx`
+    - updated props for new selection/material inputs
+- Validation:
+  - `python -m pytest brain/tests/test_tutor_session_linking.py -q` -> `4 passed`
+  - `npx vitest run client/src/components/__tests__/TutorChat.test.tsx` -> `2 passed`
+  - `python -m pytest brain/tests -q` -> `298 passed, 17 skipped`
+  - `npm run build` (in `dashboard_rebuild`) -> success; assets emitted to `brain/static/dist`

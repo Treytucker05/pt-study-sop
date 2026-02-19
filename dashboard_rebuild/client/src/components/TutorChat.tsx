@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { type TutorCitation, type TutorSSEChunk } from "@/lib/api";
+import { type Material, type TutorCitation, type TutorSSEChunk } from "@/lib/api";
 
 interface ToolAction {
   tool: string;
@@ -42,6 +42,9 @@ export interface ChainBlock {
 
 interface TutorChatProps {
   sessionId: string | null;
+  availableMaterials: Material[];
+  selectedMaterialIds: number[];
+  onSelectedMaterialIdsChange: (ids: number[]) => void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
   focusMode?: boolean;
   onTurnComplete?: () => void;
@@ -86,6 +89,9 @@ const TOOL_ICONS: Record<string, typeof FileText> = {
 
 export function TutorChat({
   sessionId,
+  availableMaterials,
+  selectedMaterialIds,
+  onSelectedMaterialIdsChange,
   onArtifactCreated,
   focusMode = false,
   onTurnComplete,
@@ -139,7 +145,12 @@ export function TutorChat({
       const response = await fetch(`/api/tutor/session/${sessionId}/turn`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({
+          message: userMessage,
+          content_filter: {
+            material_ids: selectedMaterialIds,
+          },
+        }),
         signal: abortController.signal,
       });
 
@@ -369,7 +380,22 @@ export function TutorChat({
       }
       setIsStreaming(false);
     }
-  }, [input, sessionId, isStreaming, onArtifactCreated, onTurnComplete]);
+  }, [
+    input,
+    sessionId,
+    isStreaming,
+    onArtifactCreated,
+    onTurnComplete,
+    selectedMaterialIds,
+  ]);
+
+  const toggleMaterial = (id: number) => {
+    onSelectedMaterialIdsChange(
+      selectedMaterialIds.includes(id)
+        ? selectedMaterialIds.filter((mid) => mid !== id)
+        : [...selectedMaterialIds, id]
+    );
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -394,7 +420,8 @@ export function TutorChat({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0">
+      <div className="flex flex-col h-full min-h-0 flex-1">
       {/* Messages */}
       <div
         ref={scrollRef}
@@ -573,6 +600,46 @@ export function TutorChat({
           )}
         </Button>
       </div>
+      </div>
+
+      {!focusMode && (
+        <aside className="hidden lg:flex w-80 border-l-2 border-primary/20 bg-zinc-950/70 flex-col min-h-0">
+          <div className="p-3 border-b border-primary/20">
+            <div className="font-arcade text-xs text-primary tracking-wider">MATERIALS IN CHAT</div>
+            <div className="font-terminal text-xs text-muted-foreground mt-1">
+              {selectedMaterialIds.length} selected
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
+            {availableMaterials.length === 0 ? (
+              <div className="font-terminal text-xs text-muted-foreground p-2">
+                No materials available for this course.
+              </div>
+            ) : (
+              availableMaterials.map((mat) => {
+                const checked = selectedMaterialIds.includes(mat.id);
+                const label = mat.title || mat.source_path || `Material ${mat.id}`;
+                return (
+                  <label
+                    key={mat.id}
+                    className="flex items-start gap-2 p-2 border border-primary/20 hover:border-primary/40 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleMaterial(mat.id)}
+                      className="mt-0.5 h-4 w-4 accent-red-500"
+                    />
+                    <span className="font-terminal text-xs leading-5 text-zinc-200 break-words">
+                      {label}
+                    </span>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </aside>
+      )}
     </div>
   );
 }

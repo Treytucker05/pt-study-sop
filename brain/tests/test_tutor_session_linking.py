@@ -12,6 +12,7 @@ import os
 import sys
 import tempfile
 import sqlite3
+import json
 
 import pytest
 
@@ -192,3 +193,105 @@ def test_send_turn_persists_and_reuses_response_id(client, monkeypatch):
     assert turns[0]["response_id"] == "resp-1"
     assert turns[1]["response_id"] == "resp-2"
     assert turns[0]["model_id"] == "gpt-5.3-codex"
+
+
+def test_send_turn_scales_material_retrieval_to_selected_materials(client, monkeypatch):
+    material_ids = list(range(1, 31))
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Material K Test",
+            "content_filter": {"material_ids": material_ids, "web_search": False},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    captured = {"k_materials": None, "material_ids": None}
+
+    def fake_get_dual_context(_question, **kwargs):
+        captured["k_materials"] = kwargs.get("k_materials")
+        captured["material_ids"] = kwargs.get("material_ids")
+        return {"materials": [], "instructions": []}
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "ok"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-k", "thread_id": "thread-k"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "Use the selected materials"},
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    assert captured["material_ids"] == material_ids
+    assert captured["k_materials"] == 30
+
+
+def test_send_turn_applies_per_turn_material_override(client, monkeypatch):
+    base_ids = [1, 2, 3]
+    override_ids = [10, 11]
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Override Test",
+            "content_filter": {"material_ids": base_ids, "web_search": False},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    captured = {"material_ids": None}
+
+    def fake_get_dual_context(_question, **kwargs):
+        captured["material_ids"] = kwargs.get("material_ids")
+        return {"materials": [], "instructions": []}
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "ok"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-ovr", "thread_id": "thread-ovr"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={
+            "message": "Use just two files",
+            "content_filter": {"material_ids": override_ids},
+        },
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    assert captured["material_ids"] == override_ids
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?",
+        (tutor_sid,),
+    )
+    row = dict(cur.fetchone())
+    conn.close()
+    saved_filter = json.loads(row["content_filter_json"])
+    assert saved_filter.get("material_ids") == override_ids

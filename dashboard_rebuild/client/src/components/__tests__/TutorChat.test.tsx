@@ -39,6 +39,9 @@ describe("TutorChat", () => {
      render(
        <TutorChat
          sessionId="sess-1"
+         availableMaterials={[]}
+         selectedMaterialIds={[]}
+         onSelectedMaterialIdsChange={vi.fn()}
          onArtifactCreated={onArtifactCreated}
          onTurnComplete={onTurnComplete}
        />
@@ -73,6 +76,9 @@ describe("TutorChat", () => {
      render(
        <TutorChat
          sessionId="sess-2"
+         availableMaterials={[]}
+         selectedMaterialIds={[]}
+         onSelectedMaterialIdsChange={vi.fn()}
          onArtifactCreated={onArtifactCreated}
          onTurnComplete={onTurnComplete}
        />
@@ -94,4 +100,3 @@ describe("TutorChat", () => {
     );
   });
 });
-
