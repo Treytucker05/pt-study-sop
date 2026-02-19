@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional
 
 from db_setup import DB_PATH, init_database
+from path_utils import resolve_existing_path
 
 logger = logging.getLogger(__name__)
 
@@ -298,9 +299,10 @@ def _ingest_document(
     """
     Shared ingestion implementation for any text-backed document type.
     """
-    file_path = Path(path)
+    display_path = Path(path)
+    file_path = resolve_existing_path(display_path)
     if not file_path.exists():
-        raise FileNotFoundError(f"Note file not found: {file_path}")
+        raise FileNotFoundError(f"Note file not found: {display_path}")
 
     raw_text = file_path.read_text(encoding="utf-8")
 
@@ -351,7 +353,7 @@ def _ingest_document(
         FROM rag_docs
         WHERE source_path = ? AND doc_type = ?
         """,
-        (str(file_path), doc_type),
+        (str(display_path), doc_type),
     )
     row = cur.fetchone()
 
@@ -431,11 +433,11 @@ def _ingest_document(
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            str(file_path),
+            str(display_path),
             course_val,
             tags,
             doc_type,
-            _infer_file_type(str(file_path), fallback=doc_type),
+            _infer_file_type(str(display_path), fallback=doc_type),
             file_size,
             content,
             checksum,
@@ -466,9 +468,10 @@ def ingest_document(
     """
     binary_types = {"pdf", "powerpoint", "mp4", "docx"}
     if doc_type in binary_types:
-        file_path = Path(path)
+        display_path = Path(path)
+        file_path = resolve_existing_path(display_path)
         if not file_path.exists():
-            raise FileNotFoundError(f"File not found: {file_path}")
+            raise FileNotFoundError(f"File not found: {display_path}")
 
         # Try text extraction for binary docs, but keep a metadata-only fallback.
         content = ""
@@ -500,7 +503,7 @@ def ingest_document(
         if extraction_error:
             metadata["extraction_error"] = extraction_error
         return _upsert_rag_doc(
-            source_path=str(file_path),
+            source_path=str(display_path),
             doc_type=doc_type,
             course_id=course_id,
             topic_tags=tags,

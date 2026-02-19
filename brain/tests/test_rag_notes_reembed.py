@@ -245,3 +245,49 @@ def test_text_ingest_clears_embeddings_on_checksum_change(
     assert row[0] == rag_notes._checksum("# Title\n\nNew body")
     assert row[1] == "# Title\n\nNew body"
     assert cleanup_calls == [([old_chroma_id], "materials")]
+
+
+def test_binary_ingest_uses_resolved_path_for_long_windows_paths(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    real_pdf = tmp_path / "real.pdf"
+    real_pdf.write_bytes(b"%PDF-1.4 placeholder")
+    fake_long_path = (
+        "C:\\Users\\treyt\\OneDrive\\Desktop\\PT School\\Therapeutic Interventions\\"
+        "Module 3 Primary Mobilty Impairments Swelling and edema, flexibility joint and soft tissue mobilty\\"
+        "Lymphedema Management\\Module 3, Part 1.2 Interventions to Address Primary Mobility Deficits due to Lymphedema.pdf"
+    )
+
+    monkeypatch.setattr(rag_notes, "resolve_existing_path", lambda _: real_pdf)
+
+    # ingest_document imports this lazily; patch module function directly.
+    import text_extractor
+
+    monkeypatch.setattr(
+        text_extractor,
+        "extract_text",
+        lambda _: {"content": "extracted markdown", "error": None, "metadata": {}},
+    )
+
+    captured: dict = {}
+
+    def _capture_upsert(**kwargs):
+        captured.update(kwargs)
+        return 99
+
+    monkeypatch.setattr(rag_notes, "_upsert_rag_doc", _capture_upsert)
+
+    result = rag_notes.ingest_document(
+        path=fake_long_path,
+        doc_type="pdf",
+        course_id=42,
+        topic_tags=["study-folder"],
+        corpus="materials",
+        folder_path="Therapeutic Interventions",
+        enabled=1,
+    )
+
+    assert result == 99
+    assert captured["source_path"] == fake_long_path
+    assert captured["content"] == "extracted markdown"
+    assert captured["file_size"] == real_pdf.stat().st_size

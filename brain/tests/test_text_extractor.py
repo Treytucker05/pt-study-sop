@@ -89,3 +89,25 @@ def test_extract_text_contract_for_plain_text_stays_stable(tmp_path: Path) -> No
     assert result["content"] == "# Header\n\nBody"
     assert result["metadata"]["file_type"] == "md"
     assert result["metadata"]["char_count"] == len(result["content"])
+
+
+def test_extract_text_uses_resolved_filesystem_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    real_path = tmp_path / "resolved.md"
+    real_path.write_text("resolved content", encoding="utf-8")
+    fake_long_path = (
+        r"C:\Users\treyt\OneDrive\Desktop\PT School\very\long\path\resolved.md"
+    )
+
+    monkeypatch.setattr(
+        text_extractor,
+        "resolve_existing_path",
+        lambda _: real_path,
+    )
+
+    result = text_extractor.extract_text(fake_long_path)
+
+    assert result["error"] is None
+    assert result["content"] == "resolved content"
+    assert result["metadata"]["file_name"] == "resolved.md"

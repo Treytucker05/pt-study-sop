@@ -18,6 +18,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
+from path_utils import resolve_existing_path
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -73,10 +75,13 @@ def _extract_pdf_mineru(path: Path) -> str:
     """Extract PDF via MinerU subprocess. Returns markdown string."""
     exe = _mineru_exe()
     with tempfile.TemporaryDirectory() as tmpdir:
+        source_arg = str(path)
+        if not source_arg.startswith("\\\\?\\"):
+            source_arg = source_arg.replace("\\", "/")
         # Use forward slashes for MSYS2 safety
         cmd = [
             str(exe),
-            str(path).replace("\\", "/"),
+            source_arg,
             "-o", tmpdir.replace("\\", "/"),
             "-m", "auto",
         ]
@@ -216,15 +221,16 @@ def extract_text(file_path: str) -> dict:
 
     Returns dict with keys: content, error, metadata.
     """
-    path = Path(file_path)
+    display_path = Path(file_path)
+    path = resolve_existing_path(display_path)
     if not path.exists():
         return {"content": "", "error": f"File not found: {file_path}", "metadata": {}}
 
-    ext = path.suffix.lower()
+    ext = display_path.suffix.lower()
     size = path.stat().st_size
 
     metadata = {
-        "file_name": path.name,
+        "file_name": display_path.name,
         "file_size": size,
         "file_type": ext.lstrip("."),
     }

@@ -177,3 +177,26 @@ px vitest run --reporter=verbose (341 passed)
 - Validation:
   - `pytest brain/tests/test_text_extractor.py` (pass)
   - `pytest brain/tests/` has pre-existing unrelated failures (e.g., `method_blocks.category` schema mismatch and DB lock cascades).
+
+## 2026-02-19 - Windows long-path support for OneDrive materials sync
+
+- Added shared path helper module:
+  - `brain/path_utils.py`
+  - Includes `resolve_existing_path()` with Windows `\\?\` extended-path fallback for long file paths.
+- Updated ingestion and extraction paths to use resolved filesystem paths while preserving original user-visible source paths:
+  - `brain/rag_notes.py`
+    - `_ingest_document` and `ingest_document` now resolve long paths before exists/stat/read operations.
+    - `source_path` stored in `rag_docs` remains the original (non-prefixed) path.
+  - `brain/text_extractor.py`
+    - `extract_text` now resolves filesystem path before exists/stat/read and extraction dispatch.
+    - metadata remains based on the original path (filename/type), while IO uses resolved path.
+    - MinerU subprocess path argument now avoids slash-rewrite for already-prefixed `\\?\` paths.
+- Added regression coverage:
+  - `brain/tests/test_text_extractor.py`
+    - verifies extraction uses resolved filesystem path.
+  - `brain/tests/test_rag_notes_reembed.py`
+    - verifies binary ingestion accepts resolved long path while storing original `source_path`.
+- Validation:
+  - `pytest brain/tests/test_rag_notes_reembed.py` -> `4 passed`
+  - `pytest brain/tests/test_text_extractor.py` -> `5 passed`
+  - `pytest brain/tests/test_tutor_rag_batching.py` -> `7 passed`
