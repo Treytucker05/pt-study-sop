@@ -264,6 +264,20 @@ The 75 original SOP files were consolidated into library files at `sop/library/`
 ### Codex MCP Cannot Review Inline Diffs
 Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks for a repo path instead. When the repo isn't reachable by Codex, do the code review manually using the standard checklist (bugs, edge cases, security, performance, type correctness).
 
+### Tutor RAG "6 Files" Symptom Diagnosis
+
+**Problem:** Tutor appeared to pull only ~6 files even when ~30 files were selected.
+**Cause:** Usually not preloading. This is typically turn-level scope loss or relevance narrowing. If a turn payload misses `content_filter.material_ids`, retrieval falls back to low default depth and appears constrained.
+**Solution:** Ensure every turn sends `content_filter.material_ids` plus `accuracy_profile`. Validate in browser Network on the `turn` request and in `retrieval_debug` (`material_ids_count`, `material_k`, `retrieved_material_unique_sources`).
+
+### Scoped Retrieval Tuning Rule (Latency vs Breadth)
+
+**Problem:** High per-turn latency in large selected-file scope.
+**Cause:** Over-fetch in MMR candidate fetch inflated rerank pools (`candidate_k * 4`, cap 2000), then many chunks were dropped by cap.
+**Solution:** Keep scoped candidate breadth policy and tune MMR fetch budget moderately:
+- `mmr_fetch_k = min(max(candidate_k * 3, candidate_k + 40), 1600)` in `brain/tutor_rag.py`.
+- Avoid aggressive candidate-pool cuts that reduce source breadth/confidence.
+
 ---
 
 ## Troubleshooting
