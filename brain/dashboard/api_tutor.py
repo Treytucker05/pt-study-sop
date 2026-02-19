@@ -38,6 +38,13 @@ from flask import Blueprint, Response, jsonify, request
 
 from db_setup import DB_PATH, get_connection, ensure_method_library_seeded
 from course_wheel_sync import ensure_course_in_wheel
+from tutor_accuracy_profiles import (
+    DEFAULT_ACCURACY_PROFILE,
+    accuracy_profile_config,
+    normalize_accuracy_profile,
+    resolve_instruction_retrieval_k as _resolve_instruction_k_for_profile,
+    resolve_material_retrieval_k as _resolve_material_k_for_profile,
+)
 
 tutor_bp = Blueprint("tutor", __name__, url_prefix="/api/tutor")
 
@@ -240,17 +247,23 @@ def _format_dual_context(dual: dict) -> tuple[str, str]:
     return material_text, instruction_text
 
 
-def _resolve_material_retrieval_k(material_ids: Optional[list[int]]) -> int:
+def _resolve_material_retrieval_k(
+    material_ids: Optional[list[int]],
+    accuracy_profile: str = DEFAULT_ACCURACY_PROFILE,
+) -> int:
     """
     Determine material retrieval depth for dual-context search.
 
-    Default behavior stays conservative (6) when no explicit material selection
-    is provided. When the wizard provides selected material IDs, scale retrieval
-    depth to cover that selection up to a safe ceiling.
+    Balanced profile preserves existing behavior; strict/coverage profiles tune
+    retrieval depth for higher confidence or broader source coverage.
     """
-    if not material_ids:
-        return 6
-    return min(max(6, len(material_ids)), 60)
+    return _resolve_material_k_for_profile(material_ids, accuracy_profile)
+
+
+def _resolve_instruction_retrieval_k(
+    accuracy_profile: str = DEFAULT_ACCURACY_PROFILE,
+) -> int:
+    return _resolve_instruction_k_for_profile(accuracy_profile)
 
 
 def _normalize_material_ids(value: Any) -> Optional[list[int]]:
@@ -330,6 +343,60 @@ def _material_sources_from_docs(
     return ordered
 
 
+def _source_concentration_stats(docs: list[Any]) -> tuple[Optional[str], float]:
+    """Return top source and its chunk share from a retrieved-doc list."""
+    if not docs:
+        return None, 0.0
+
+    counts: dict[str, int] = {}
+    for doc in docs:
+        source = str((getattr(doc, "metadata", None) or {}).get("source") or "").strip()
+        key = source or "Unknown"
+        counts[key] = counts.get(key, 0) + 1
+
+    top_source, top_count = max(counts.items(), key=lambda kv: kv[1])
+    share = float(top_count / len(docs))
+    return top_source, share
+
+
+def _retrieval_confidence_tier(score: float) -> str:
+    if score >= 0.75:
+        return "high"
+    if score >= 0.45:
+        return "medium"
+    return "low"
+
+
+def _compute_retrieval_confidence(
+    *,
+    selected_material_count: int,
+    material_k: int,
+    retrieved_unique_sources: int,
+    citations_unique_sources: int,
+    top_source_share: float,
+    dropped_by_cap: int,
+    merged_candidates: int,
+) -> float:
+    """
+    Heuristic confidence score [0, 1] used for runtime retrieval diagnostics.
+    """
+    if material_k <= 0:
+        return 0.0
+
+    target_scope = selected_material_count if selected_material_count > 0 else material_k
+    scope_denom = max(1, min(material_k, target_scope))
+    coverage = min(1.0, retrieved_unique_sources / scope_denom)
+    citation_alignment = min(
+        1.0,
+        citations_unique_sources / max(1, retrieved_unique_sources),
+    )
+    diversity = max(0.0, 1.0 - max(0.0, min(1.0, top_source_share)))
+    cap_penalty = min(1.0, dropped_by_cap / max(1, merged_candidates))
+
+    score = (0.50 * coverage) + (0.30 * citation_alignment) + (0.20 * diversity) - (0.10 * cap_penalty)
+    return round(max(0.0, min(1.0, score)), 4)
+
+
 def _citation_sources(citations: list[dict], *, max_items: Optional[int] = None) -> list[str]:
     """Collect ordered unique source labels from citation payloads."""
     seen: set[str] = set()
@@ -349,6 +416,7 @@ def _citation_sources(citations: list[dict], *, max_items: Optional[int] = None)
 
 def _build_retrieval_debug_payload(
     *,
+    accuracy_profile: str,
     material_ids: Optional[list[int]],
     selected_material_count: int,
     material_k: int,
@@ -356,12 +424,36 @@ def _build_retrieval_debug_payload(
     material_docs: list[Any],
     instruction_docs: list[Any],
     citations: list[dict],
+    rag_debug: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     """Build compact retrieval telemetry attached to SSE done events."""
     material_sources_all = _material_sources_from_docs(material_docs)
     instruction_sources_all = _material_sources_from_docs(instruction_docs)
     citation_sources_all = _citation_sources(citations)
+    top_source, top_share = _source_concentration_stats(material_docs)
+
+    rag_material = {}
+    rag_instruction = {}
+    if isinstance(rag_debug, dict):
+        rag_material = rag_debug.get("materials") or {}
+        rag_instruction = rag_debug.get("instructions") or {}
+
+    merged_candidates = int(rag_material.get("candidate_pool_merged") or 0)
+    dropped_by_cap = int(rag_material.get("candidate_pool_dropped_by_cap") or 0)
+    confidence = _compute_retrieval_confidence(
+        selected_material_count=selected_material_count,
+        material_k=material_k,
+        retrieved_unique_sources=len(material_sources_all),
+        citations_unique_sources=len(citation_sources_all),
+        top_source_share=top_share,
+        dropped_by_cap=dropped_by_cap,
+        merged_candidates=merged_candidates,
+    )
+    profile_cfg = accuracy_profile_config(accuracy_profile)
+
     return {
+        "accuracy_profile": normalize_accuracy_profile(accuracy_profile),
+        "accuracy_profile_label": profile_cfg.get("label"),
         "material_ids_provided": bool(material_ids),
         "material_ids_count": len(material_ids or []),
         "selected_material_count": selected_material_count,
@@ -370,12 +462,23 @@ def _build_retrieval_debug_payload(
         "retrieved_material_chunks": len(material_docs),
         "retrieved_material_unique_sources": len(material_sources_all),
         "retrieved_material_sources": material_sources_all[:20],
+        "material_top_source": top_source,
+        "material_top_source_share": round(top_share, 4),
         "retrieved_instruction_chunks": len(instruction_docs),
         "retrieved_instruction_unique_sources": len(instruction_sources_all),
         "retrieved_instruction_sources": instruction_sources_all[:10],
         "citations_total": len(citations),
         "citations_unique_sources": len(citation_sources_all),
         "citation_sources": citation_sources_all[:20],
+        "material_candidates_similarity": int(rag_material.get("candidate_pool_similarity") or 0),
+        "material_candidates_mmr": int(rag_material.get("candidate_pool_mmr") or 0),
+        "material_candidates_merged": merged_candidates,
+        "material_candidates_after_cap": int(rag_material.get("candidate_pool_after_cap") or 0),
+        "material_dropped_by_cap": dropped_by_cap,
+        "instruction_candidates_similarity": int(rag_instruction.get("candidate_pool_similarity") or 0),
+        "instruction_candidates_mmr": int(rag_instruction.get("candidate_pool_mmr") or 0),
+        "retrieval_confidence": confidence,
+        "retrieval_confidence_tier": _retrieval_confidence_tier(confidence),
     }
 
 
@@ -466,6 +569,27 @@ def _build_selected_scope_listing_response(
         lines.extend(f"- {label}" for label in selected_labels)
 
     return "\n".join(lines)
+
+
+def _accuracy_profile_prompt_guidance(accuracy_profile: str) -> str:
+    profile = normalize_accuracy_profile(accuracy_profile)
+    if profile == "strict":
+        return (
+            "- Active profile: STRICT.\n"
+            "- Prefer precision over speed. If evidence is thin, say so explicitly.\n"
+            "- Do not present uncertain claims as facts.\n"
+            "- Ground key claims in cited source text whenever possible."
+        )
+    if profile == "coverage":
+        return (
+            "- Active profile: COVERAGE.\n"
+            "- Synthesize across multiple selected files before final conclusions.\n"
+            "- Call out disagreements between sources when they appear."
+        )
+    return (
+        "- Active profile: BALANCED.\n"
+        "- Optimize for clear, accurate teaching with concise evidence references."
+    )
 
 
 def _sanitize_filename(name: str) -> str:
@@ -691,6 +815,18 @@ def create_session():
     mode = data.get("mode", "Core")
     topic = data.get("topic", "")
     content_filter = data.get("content_filter")
+    if isinstance(content_filter, dict):
+        normalized_filter = dict(content_filter)
+        normalized_filter["accuracy_profile"] = normalize_accuracy_profile(
+            normalized_filter.get("accuracy_profile")
+        )
+        if "material_ids" in normalized_filter:
+            normalized_filter["material_ids"] = (
+                _normalize_material_ids(normalized_filter.get("material_ids")) or []
+            )
+        content_filter = normalized_filter
+    else:
+        content_filter = None
     method_chain_id = data.get("method_chain_id")
     brain_session_id = data.get("brain_session_id")
 
@@ -900,32 +1036,38 @@ def send_turn(session_id: str):
             content_filter = json.loads(session["content_filter_json"])
         except (json.JSONDecodeError, TypeError):
             pass
+    if not isinstance(content_filter, dict):
+        content_filter = {}
 
     # Allow per-turn content_filter overrides from chat UI (e.g., material checkboxes).
     incoming_filter = data.get("content_filter")
     if isinstance(incoming_filter, dict):
-        merged = dict(content_filter or {})
+        merged = dict(content_filter)
         merged.update(incoming_filter)
         content_filter = merged
 
+    accuracy_profile = normalize_accuracy_profile(content_filter.get("accuracy_profile"))
+    content_filter["accuracy_profile"] = accuracy_profile
+
     # Extract material_ids from content filter (new dual-library approach)
     material_ids = None
-    if content_filter and "material_ids" in content_filter:
+    if "material_ids" in content_filter:
         material_ids = _normalize_material_ids(content_filter.get("material_ids"))
         content_filter["material_ids"] = material_ids or []
-    material_k = _resolve_material_retrieval_k(material_ids)
+    material_k = _resolve_material_retrieval_k(material_ids, accuracy_profile)
+    instruction_k = _resolve_instruction_retrieval_k(accuracy_profile)
     # Explicit material selection should override course scoping.
     retrieval_course_id = None if material_ids else session.get("course_id")
     selected_material_count, selected_material_labels = _material_scope_labels(material_ids)
 
     # Legacy support: folder_paths
     folder_paths = None
-    if content_filter and content_filter.get("folders"):
+    if content_filter.get("folders"):
         folder_paths = content_filter["folders"]
 
     # Read model override from content_filter
     codex_model: Optional[str] = None
-    if content_filter and content_filter.get("model"):
+    if content_filter.get("model"):
         raw_model = str(content_filter["model"]).strip()
         if (
             raw_model
@@ -935,7 +1077,7 @@ def send_turn(session_id: str):
             codex_model = raw_model
 
     # Read web search preference
-    enable_web_search = bool(content_filter and content_filter.get("web_search"))
+    enable_web_search = bool(content_filter.get("web_search"))
 
     turn_number = session["turn_count"] + 1
 
@@ -955,6 +1097,8 @@ def send_turn(session_id: str):
             from tutor_rag import get_dual_context, keyword_search_dual
             from tutor_prompt_builder import build_prompt_with_contexts
 
+            rag_debug: dict[str, Any] = {}
+
             # Dual search: prefer embedding search, fall back to keyword
             try:
                 dual = get_dual_context(
@@ -962,7 +1106,8 @@ def send_turn(session_id: str):
                     course_id=retrieval_course_id,
                     material_ids=material_ids,
                     k_materials=material_k,
-                    k_instructions=2,
+                    k_instructions=instruction_k,
+                    debug=rag_debug,
                 )
             except Exception:
                 dual = keyword_search_dual(
@@ -970,7 +1115,8 @@ def send_turn(session_id: str):
                     course_id=retrieval_course_id,
                     material_ids=material_ids,
                     k_materials=material_k,
-                    k_instructions=2,
+                    k_instructions=instruction_k,
+                    debug=rag_debug,
                 )
             material_text, instruction_text = _format_dual_context(dual)
 
@@ -992,6 +1138,10 @@ def send_turn(session_id: str):
                 instruction_context=instruction_text,
                 material_context=material_text,
             )
+            system_prompt += (
+                "\n\n## Retrieval Tuning\n"
+                f"{_accuracy_profile_prompt_guidance(accuracy_profile)}"
+            )
             if selected_material_count > 0:
                 selected_list = "\n".join(
                     f"- {name}" for name in selected_material_labels
@@ -1000,6 +1150,7 @@ def send_turn(session_id: str):
                     "\n\n## Selected Material Scope\n"
                     f"- Student selected materials for this turn: {selected_material_count}\n"
                     f"- Retrieval target depth this turn: {material_k}\n"
+                    f"- Instruction retrieval depth this turn: {instruction_k}\n"
                     "- Retrieved excerpts can be fewer than selected files because retrieval is relevance-based.\n"
                     "- If the student asks 'how many files are you using/seeing/have', answer with the selected count above first.\n"
                     "- Only mention retrieved/cited file count if they explicitly ask for retrieved/cited count.\n"
@@ -1079,6 +1230,7 @@ def send_turn(session_id: str):
                 ]
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
                 retrieval_debug_payload = _build_retrieval_debug_payload(
+                    accuracy_profile=accuracy_profile,
                     material_ids=material_ids,
                     selected_material_count=selected_material_count,
                     material_k=material_k,
@@ -1086,6 +1238,7 @@ def send_turn(session_id: str):
                     material_docs=material_docs,
                     instruction_docs=instruction_docs,
                     citations=citations,
+                    rag_debug=rag_debug,
                 )
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",
@@ -1114,6 +1267,7 @@ def send_turn(session_id: str):
                 ]
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
                 retrieval_debug_payload = _build_retrieval_debug_payload(
+                    accuracy_profile=accuracy_profile,
                     material_ids=material_ids,
                     selected_material_count=selected_material_count,
                     material_k=material_k,
@@ -1121,6 +1275,7 @@ def send_turn(session_id: str):
                     material_docs=material_docs,
                     instruction_docs=instruction_docs,
                     citations=citations,
+                    rag_debug=rag_debug,
                 )
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",
@@ -1282,6 +1437,7 @@ def send_turn(session_id: str):
                         )
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
                 retrieval_debug_payload = _build_retrieval_debug_payload(
+                    accuracy_profile=accuracy_profile,
                     material_ids=material_ids,
                     selected_material_count=selected_material_count,
                     material_k=material_k,
@@ -1289,6 +1445,7 @@ def send_turn(session_id: str):
                     material_docs=material_docs,
                     instruction_docs=instruction_docs,
                     citations=all_citations,
+                    rag_debug=rag_debug,
                 )
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",

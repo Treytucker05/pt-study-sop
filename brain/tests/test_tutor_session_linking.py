@@ -256,6 +256,55 @@ def test_send_turn_scales_material_retrieval_to_selected_materials(client, monke
     assert captured["k_materials"] == 30
 
 
+def test_send_turn_strict_profile_boosts_retrieval_depth(client, monkeypatch):
+    material_ids = list(range(1, 21))
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Strict Profile Retrieval Test",
+            "content_filter": {
+                "material_ids": material_ids,
+                "accuracy_profile": "strict",
+                "web_search": False,
+            },
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    captured = {"k_materials": None, "k_instructions": None}
+
+    def fake_get_dual_context(_question, **kwargs):
+        captured["k_materials"] = kwargs.get("k_materials")
+        captured["k_instructions"] = kwargs.get("k_instructions")
+        return {"materials": [], "instructions": []}
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "ok"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-strict", "thread_id": "thread-strict"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "Use strict profile"},
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    # Base k for 20 selected is 20; strict adds +4.
+    assert captured["k_materials"] == 24
+    assert captured["k_instructions"] == 3
+
+
 def test_send_turn_applies_per_turn_material_override(client, monkeypatch):
     base_ids = [1, 2, 3]
     override_ids = [10, 11]
@@ -693,6 +742,11 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     assert debug["retrieved_instruction_unique_sources"] == 1
     assert debug["citations_total"] >= 1
     assert debug["citations_unique_sources"] >= 1
+    assert debug["accuracy_profile"] == "balanced"
+    assert 0.0 <= debug["material_top_source_share"] <= 1.0
+    assert "material_dropped_by_cap" in debug
+    assert 0.0 <= debug["retrieval_confidence"] <= 1.0
+    assert debug["retrieval_confidence_tier"] in ("low", "medium", "high")
 
 
 def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, monkeypatch):
@@ -747,3 +801,6 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     assert debug["retrieved_material_unique_sources"] == 1
     assert debug["citations_total"] == 1
     assert debug["citations_unique_sources"] == 1
+    assert debug["accuracy_profile"] == "balanced"
+    assert "material_dropped_by_cap" in debug
+    assert 0.0 <= debug["retrieval_confidence"] <= 1.0

@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest non-track update: 2026-02-19 Tutor ANN diversification hardening (MMR merge + per-doc pre-cap + high-k fix) plus startup hard-stop and tutor retrieval reliability fixes (see `conductor/tracks/GENERAL/log.md`).
+Latest non-track update: 2026-02-19 Tutor live accuracy profiles + expanded retrieval telemetry + 50-question eval harness (plus ANN diversification/startup hard-stop reliability fixes) (see `conductor/tracks/GENERAL/log.md`).
 
 ---
 

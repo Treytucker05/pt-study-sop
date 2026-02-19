@@ -1118,6 +1118,7 @@ export type TutorMode =
   | "Drill"
   | "Diagnostic Sprint"
   | "Teaching Sprint";
+export type TutorAccuracyProfile = "balanced" | "strict" | "coverage";
 export type TutorSessionStatus = "active" | "completed" | "abandoned";
 
 export interface TutorCreateSessionRequest {
@@ -1125,7 +1126,13 @@ export interface TutorCreateSessionRequest {
   phase?: TutorPhase;
   mode?: TutorMode;
   topic?: string;
-  content_filter?: { material_ids?: number[]; model?: string; folders?: string[]; web_search?: boolean };
+  content_filter?: {
+    material_ids?: number[];
+    model?: string;
+    folders?: string[];
+    web_search?: boolean;
+    accuracy_profile?: TutorAccuracyProfile;
+  };
   method_chain_id?: number;
 }
 
@@ -1192,7 +1199,12 @@ export interface TutorSessionWithTurns extends TutorSession {
   brain_session_id: number | null;
   course_id: number | null;
   content_filter_json: string | null;
-  content_filter: { material_ids?: number[]; model?: string; web_search?: boolean } | null;
+  content_filter: {
+    material_ids?: number[];
+    model?: string;
+    web_search?: boolean;
+    accuracy_profile?: TutorAccuracyProfile;
+  } | null;
   turn_count: number;
   artifacts_json: string | null;
   lo_ids_json: string | null;
@@ -1371,6 +1383,35 @@ export interface TutorSSEChunk {
   artifacts?: unknown[];
   summary?: string;
   model?: string;
+  retrieval_debug?: TutorRetrievalDebug;
+}
+
+export interface TutorRetrievalDebug {
+  accuracy_profile?: TutorAccuracyProfile;
+  accuracy_profile_label?: string;
+  material_ids_provided?: boolean;
+  material_ids_count?: number;
+  selected_material_count?: number;
+  material_k?: number;
+  retrieval_course_id?: number | null;
+  retrieved_material_chunks?: number;
+  retrieved_material_unique_sources?: number;
+  retrieved_material_sources?: string[];
+  material_top_source?: string | null;
+  material_top_source_share?: number;
+  retrieved_instruction_chunks?: number;
+  retrieved_instruction_unique_sources?: number;
+  retrieved_instruction_sources?: string[];
+  citations_total?: number;
+  citations_unique_sources?: number;
+  citation_sources?: string[];
+  material_candidates_similarity?: number;
+  material_candidates_mmr?: number;
+  material_candidates_merged?: number;
+  material_candidates_after_cap?: number;
+  material_dropped_by_cap?: number;
+  retrieval_confidence?: number;
+  retrieval_confidence_tier?: "low" | "medium" | "high";
 }
 
 export interface TutorConfigCheck {

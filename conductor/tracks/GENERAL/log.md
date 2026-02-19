@@ -458,3 +458,42 @@ px vitest run --reporter=verbose (341 passed)
   - `pytest brain/tests/test_tutor_rag_batching.py -q` -> `15 passed`
   - `pytest brain/tests/test_tutor_rag_batching.py brain/tests/test_tutor_session_linking.py -q` -> `26 passed`
   - `pytest brain/tests/ -q` hit unrelated intermittent timeout in `brain/tests/test_obsidian_patch.py::test_patch_generation_creates_file` (Codex subprocess path); not in tutor retrieval code path.
+
+## 2026-02-19 - Tutor live accuracy profiles + expanded retrieval telemetry + 50-question eval harness
+
+- Added runtime accuracy profile support (`balanced`, `strict`, `coverage`) across Tutor session + turn flows:
+  - New profile helper module: `brain/tutor_accuracy_profiles.py`.
+  - `brain/dashboard/api_tutor.py` now normalizes/persists `content_filter.accuracy_profile`, and uses it to tune:
+    - `k_materials` via profile-aware `_resolve_material_retrieval_k(...)`
+    - `k_instructions` via `_resolve_instruction_retrieval_k(...)`
+  - System prompt now includes profile-specific guidance for strict vs coverage behavior.
+- Expanded retrieval telemetry in SSE `done.retrieval_debug`:
+  - Added `accuracy_profile`, `material_top_source`, `material_top_source_share`,
+    `material_dropped_by_cap`, candidate-pool counters, `retrieval_confidence`,
+    and `retrieval_confidence_tier`.
+  - Added confidence heuristic combining scope coverage, citation alignment,
+    source concentration, and cap-drop penalty.
+- Added deeper retrieval internals from RAG pipeline:
+  - `brain/tutor_rag.py` now supports optional `debug` passthrough for
+    `search_with_embeddings`, `get_dual_context`, and `keyword_search_dual`.
+  - Captures similarity/MMR candidate counts, merged/capped counts,
+    dropped-by-cap, fallback reason, and final concentration stats.
+- Frontend runtime tuning UI:
+  - `dashboard_rebuild/client/src/pages/tutor.tsx` now persists accuracy profile in localStorage and session content filter.
+  - `dashboard_rebuild/client/src/components/TutorChat.tsx` adds in-chat profile selector and sends `content_filter.accuracy_profile` every turn.
+  - Assistant message footer now surfaces retrieval debug metrics (profile, confidence, unique sources, concentration, dropped-by-cap).
+  - Updated TS API contracts in `dashboard_rebuild/client/src/api.ts`.
+- Added eval harness + fixture:
+  - `tools/tutor_retrieval_eval.py` CLI for batch retrieval evaluation.
+  - `brain/evals/tutor_eval_questions_50.json` with 50 question items for repeatable tuning runs.
+- Tests added/updated:
+  - `brain/tests/test_tutor_accuracy_profiles.py` (profile resolution + 50-question fixture integrity).
+  - `brain/tests/test_tutor_rag_batching.py` (debug candidate metrics assertions).
+  - `brain/tests/test_tutor_session_linking.py` (strict profile retrieval-depth behavior + expanded debug assertions).
+  - `dashboard_rebuild/client/src/components/__tests__/TutorChat.test.tsx` (profile included in turn payload).
+- Validation:
+  - `pytest brain/tests/test_tutor_rag_batching.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_accuracy_profiles.py -q` -> `32 passed`
+  - `pytest brain/tests/ -q` -> `319 passed, 17 skipped`
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorChat.test.tsx` -> `3 passed`
+  - `cd dashboard_rebuild && npm run build` -> success
+  - `python tools/tutor_retrieval_eval.py --keyword-only --limit 3` -> success, report emitted under `logs/tutor_eval/`

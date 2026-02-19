@@ -323,6 +323,34 @@ def test_search_with_embeddings_high_k_is_not_truncated_by_pre_cap(monkeypatch):
     assert len(docs) == 30
 
 
+def test_search_with_embeddings_populates_debug_candidate_metrics(monkeypatch):
+    sim_docs = [_fake_doc(1, text=f"doc1 chunk{i}") for i in range(20)]
+    for index, doc in enumerate(sim_docs):
+        doc.metadata["chunk_index"] = index
+
+    vs = _FakeSearchVectorStore(sim_docs, [])
+    monkeypatch.setattr("tutor_rag.init_vectorstore", lambda _collection: vs)
+
+    debug: dict = {}
+    docs = search_with_embeddings(
+        "alpha objective",
+        material_ids=[1],
+        collection_name=COLLECTION_MATERIALS,
+        k=6,
+        debug=debug,
+    )
+
+    assert len(docs) == 6
+    assert debug["used_keyword_fallback"] is False
+    assert debug["candidate_pool_similarity"] == 20
+    assert debug["candidate_pool_merged"] == 20
+    assert debug["candidate_pool_after_cap"] == 6
+    assert debug["candidate_pool_dropped_by_cap"] == 14
+    assert debug["final_chunks"] == 6
+    assert debug["final_unique_docs"] == 1
+    assert debug["final_top_doc_share"] == 1.0
+
+
 def test_get_dual_context_queries_materials_without_explicit_material_ids(monkeypatch):
     calls: list[dict] = []
 
@@ -354,7 +382,15 @@ def test_get_dual_context_queries_materials_without_explicit_material_ids(monkey
 def test_keyword_search_dual_queries_materials_without_explicit_material_ids(monkeypatch):
     calls: list[dict] = []
 
-    def fake_keyword_fallback(query, course_id=None, folder_paths=None, material_ids=None, k=6, corpus=None):  # noqa: ANN001,E501
+    def fake_keyword_fallback(  # noqa: ANN001,E501
+        query,
+        course_id=None,
+        folder_paths=None,
+        material_ids=None,
+        k=6,
+        corpus=None,
+        debug=None,
+    ):
         calls.append(
             {
                 "course_id": course_id,
@@ -362,6 +398,7 @@ def test_keyword_search_dual_queries_materials_without_explicit_material_ids(mon
                 "material_ids": material_ids,
                 "k": k,
                 "corpus": corpus,
+                "debug": debug,
             }
         )
         return []

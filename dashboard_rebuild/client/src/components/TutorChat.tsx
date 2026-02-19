@@ -14,7 +14,13 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { type Material, type TutorCitation, type TutorSSEChunk } from "@/lib/api";
+import {
+  type Material,
+  type TutorAccuracyProfile,
+  type TutorCitation,
+  type TutorRetrievalDebug,
+  type TutorSSEChunk,
+} from "@/lib/api";
 
 interface ToolAction {
   tool: string;
@@ -27,6 +33,7 @@ interface ChatMessage {
   content: string;
   citations?: TutorCitation[];
   model?: string;
+  retrievalDebug?: TutorRetrievalDebug;
   isStreaming?: boolean;
   toolActions?: ToolAction[];
 }
@@ -44,6 +51,8 @@ interface TutorChatProps {
   sessionId: string | null;
   availableMaterials: Material[];
   selectedMaterialIds: number[];
+  accuracyProfile: TutorAccuracyProfile;
+  onAccuracyProfileChange: (profile: TutorAccuracyProfile) => void;
   onSelectedMaterialIdsChange: (ids: number[]) => void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
   focusMode?: boolean;
@@ -91,6 +100,8 @@ export function TutorChat({
   sessionId,
   availableMaterials,
   selectedMaterialIds,
+  accuracyProfile,
+  onAccuracyProfileChange,
   onSelectedMaterialIdsChange,
   onArtifactCreated,
   focusMode = false,
@@ -149,6 +160,7 @@ export function TutorChat({
           message: userMessage,
           content_filter: {
             material_ids: selectedMaterialIds,
+            accuracy_profile: accuracyProfile,
           },
         }),
         signal: abortController.signal,
@@ -180,6 +192,7 @@ export function TutorChat({
       let fullText = "";
       let citations: TutorCitation[] = [];
       let modelId: string | undefined;
+      let retrievalDebug: TutorRetrievalDebug | undefined;
       let serverArtifactCmd: { type?: string; raw?: string } | null = null;
       let streamErrored = false;
       let doneSignal = false;
@@ -305,6 +318,7 @@ export function TutorChat({
             if (parsed.type === "done") {
               citations = parsed.citations ?? [];
               modelId = parsed.model;
+              retrievalDebug = parsed.retrieval_debug;
               // Backend detected natural language artifact command
               if (parsed.artifacts?.length) {
                 const cmd = parsed.artifacts[0] as { type?: string; raw?: string };
@@ -332,6 +346,7 @@ export function TutorChat({
           content: fullText,
           citations,
           model: modelId,
+          retrievalDebug,
           isStreaming: false,
           toolActions: toolActions.length > 0 ? toolActions : undefined,
         };
@@ -387,6 +402,7 @@ export function TutorChat({
     onArtifactCreated,
     onTurnComplete,
     selectedMaterialIds,
+    accuracyProfile,
   ]);
 
   const toggleMaterial = (id: number) => {
@@ -547,8 +563,13 @@ export function TutorChat({
               )}
 
               {/* Citations + Model */}
-              {(msg.citations?.length || msg.model) && !msg.isStreaming ? (
+              {(msg.citations?.length || msg.model || msg.retrievalDebug) && !msg.isStreaming ? (
                 <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
+                  {msg.retrievalDebug ? (
+                    <Badge variant="outline" className="text-[11px] rounded-none text-muted-foreground/80">
+                      RAG {msg.retrievalDebug.accuracy_profile ?? "balanced"} | conf {(msg.retrievalDebug.retrieval_confidence ?? 0).toFixed(2)} ({msg.retrievalDebug.retrieval_confidence_tier ?? "low"}) | uniq {msg.retrievalDebug.retrieved_material_unique_sources ?? 0} | top {Math.round((msg.retrievalDebug.material_top_source_share ?? 0) * 100)}% | dropped {msg.retrievalDebug.material_dropped_by_cap ?? 0}
+                    </Badge>
+                  ) : null}
                   {msg.citations?.map((c) =>
                     c.url ? (
                       <a
@@ -586,7 +607,26 @@ export function TutorChat({
         ))}
       </div>
 
-      <div className="flex items-center gap-2 p-3 border-t-2 border-primary/20">
+      <div className="flex flex-wrap items-center gap-2 p-3 border-t-2 border-primary/20">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <label
+            htmlFor="accuracy-profile-select"
+            className="font-terminal text-xs text-muted-foreground whitespace-nowrap"
+          >
+            Profile
+          </label>
+          <select
+            id="accuracy-profile-select"
+            value={accuracyProfile}
+            onChange={(e) => onAccuracyProfileChange(e.target.value as TutorAccuracyProfile)}
+            disabled={isStreaming}
+            className="h-9 bg-zinc-950 border-2 border-zinc-600 px-2 text-xs font-terminal text-zinc-100 focus:border-primary focus:outline-none disabled:opacity-50"
+          >
+            <option value="balanced">Balanced</option>
+            <option value="strict">Strict</option>
+            <option value="coverage">Coverage</option>
+          </select>
+        </div>
         <input
           ref={inputRef}
           value={input}
@@ -594,7 +634,7 @@ export function TutorChat({
           onKeyDown={handleKeyDown}
           placeholder="Ask a question..."
           disabled={isStreaming}
-          className="flex-1 bg-zinc-950 border-2 border-zinc-600 rounded-none px-3 py-2 text-[17px] leading-7 font-sans text-zinc-100 placeholder:text-zinc-400 focus:border-primary focus:outline-none disabled:opacity-50"
+          className="flex-1 min-w-[180px] bg-zinc-950 border-2 border-zinc-600 rounded-none px-3 py-2 text-[17px] leading-7 font-sans text-zinc-100 placeholder:text-zinc-400 focus:border-primary focus:outline-none disabled:opacity-50"
         />
         <Button
           onClick={sendMessage}

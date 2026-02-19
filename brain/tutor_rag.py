@@ -15,7 +15,7 @@ import pydantic_v1_patch  # noqa: F401  — must be first (fixes PEP 649 on Pyth
 import os
 import sqlite3
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from config import DB_PATH, load_env
 
@@ -356,6 +356,37 @@ def _cap_candidates_per_doc(docs: list, *, max_per_doc: int, max_total: int) -> 
     return capped
 
 
+def _doc_distribution_stats(docs: list) -> dict[str, object]:
+    """Compute lightweight concentration metrics for retrieval diagnostics."""
+    if not docs:
+        return {
+            "unique_docs": 0,
+            "top_doc_identity": None,
+            "top_doc_source": None,
+            "top_doc_count": 0,
+            "top_doc_share": 0.0,
+        }
+
+    counts: dict[str, int] = {}
+    top_source_by_identity: dict[str, str] = {}
+    for idx, doc in enumerate(docs):
+        identity = _doc_identity(doc, idx)
+        counts[identity] = counts.get(identity, 0) + 1
+        if identity not in top_source_by_identity:
+            source = str((getattr(doc, "metadata", None) or {}).get("source") or "").strip()
+            top_source_by_identity[identity] = source
+
+    top_identity, top_count = max(counts.items(), key=lambda kv: kv[1])
+    total = len(docs)
+    return {
+        "unique_docs": len(counts),
+        "top_doc_identity": top_identity,
+        "top_doc_source": top_source_by_identity.get(top_identity) or None,
+        "top_doc_count": top_count,
+        "top_doc_share": float(top_count / total) if total else 0.0,
+    }
+
+
 def _resolve_candidate_pool_size(k: int, material_ids: Optional[list[int]]) -> int:
     """
     Decide how many vector candidates to fetch before reranking.
@@ -451,12 +482,32 @@ def search_with_embeddings(
     material_ids: Optional[list[int]] = None,
     collection_name: str = COLLECTION_MATERIALS,
     k: int = 6,
+    debug: Optional[dict[str, Any]] = None,
 ):
     """
     Vector search via ChromaDB with keyword/diversity re-ranking.
     Fetches a widened candidate pool, then returns top k chunks.
     Falls back to keyword search if vectorstore is empty.
     """
+    if debug is not None:
+        debug.clear()
+        debug.update(
+            {
+                "collection": collection_name,
+                "k_requested": k,
+                "used_keyword_fallback": False,
+                "candidate_pool_similarity": 0,
+                "candidate_pool_mmr": 0,
+                "candidate_pool_merged": 0,
+                "candidate_pool_after_cap": 0,
+                "candidate_pool_dropped_by_cap": 0,
+                "final_chunks": 0,
+                "final_unique_docs": 0,
+                "final_top_doc_share": 0.0,
+                "final_top_doc_source": None,
+            }
+        )
+
     vs = init_vectorstore(collection_name)
 
     corpus_fallback = "instructions" if collection_name == COLLECTION_INSTRUCTIONS else None
@@ -464,11 +515,31 @@ def search_with_embeddings(
     try:
         collection = vs._collection
         if collection.count() == 0:
-            return _keyword_fallback(query, course_id, folder_paths, material_ids, k,
-                                     corpus=corpus_fallback)
+            if debug is not None:
+                debug["used_keyword_fallback"] = True
+                debug["fallback_reason"] = "empty_collection"
+            return _keyword_fallback(
+                query,
+                course_id,
+                folder_paths,
+                material_ids,
+                k,
+                corpus=corpus_fallback,
+                debug=debug,
+            )
     except Exception:
-        return _keyword_fallback(query, course_id, folder_paths, material_ids, k,
-                                 corpus=corpus_fallback)
+        if debug is not None:
+            debug["used_keyword_fallback"] = True
+            debug["fallback_reason"] = "collection_probe_failed"
+        return _keyword_fallback(
+            query,
+            course_id,
+            folder_paths,
+            material_ids,
+            k,
+            corpus=corpus_fallback,
+            debug=debug,
+        )
 
     # Build metadata filter
     where_filter = None
@@ -489,16 +560,22 @@ def search_with_embeddings(
 
     try:
         candidate_k = _resolve_candidate_pool_size(k, material_ids)
+        if debug is not None:
+            debug["candidate_k"] = candidate_k
         similarity_candidates = vs.similarity_search(
             query,
             k=candidate_k,
             filter=where_filter,
         )
+        if debug is not None:
+            debug["candidate_pool_similarity"] = len(similarity_candidates)
         mmr_candidates: list = []
         mmr_search = getattr(vs, "max_marginal_relevance_search", None)
         if callable(mmr_search):
             try:
                 mmr_fetch_k = min(max(candidate_k * 4, candidate_k + 40), 2000)
+                if debug is not None:
+                    debug["mmr_fetch_k"] = mmr_fetch_k
                 mmr_candidates = mmr_search(
                     query,
                     k=candidate_k,
@@ -508,30 +585,75 @@ def search_with_embeddings(
                 )
             except Exception:
                 mmr_candidates = []
+                if debug is not None:
+                    debug["mmr_error"] = True
+        if debug is not None:
+            debug["candidate_pool_mmr"] = len(mmr_candidates)
 
-        merged_candidates = _merge_candidate_pools(
+        merged_candidates_uncapped = _merge_candidate_pools(
             similarity_candidates,
             mmr_candidates,
             max_total=max(candidate_k * 2, k * 8),
         )
+        if debug is not None:
+            debug["candidate_pool_merged"] = len(merged_candidates_uncapped)
+
+        merged_candidates = merged_candidates_uncapped
 
         if collection_name == COLLECTION_MATERIALS and merged_candidates:
             # Keep enough per-doc candidates to satisfy high-k requests while
             # still preventing any single source from flooding the rerank pool.
             pre_cap = max(k, 6)
+            if debug is not None:
+                debug["pre_cap_per_doc"] = pre_cap
             merged_candidates = _cap_candidates_per_doc(
                 merged_candidates,
                 max_per_doc=pre_cap,
                 max_total=max(candidate_k, k),
             )
+            if debug is not None:
+                debug["candidate_pool_after_cap"] = len(merged_candidates)
+                debug["candidate_pool_dropped_by_cap"] = max(
+                    0, len(merged_candidates_uncapped) - len(merged_candidates)
+                )
+        elif debug is not None:
+            debug["candidate_pool_after_cap"] = len(merged_candidates)
 
         if merged_candidates:
-            return rerank_results(query, merged_candidates, k)
+            final_docs = rerank_results(query, merged_candidates, k)
+            if debug is not None:
+                dist = _doc_distribution_stats(final_docs)
+                debug["final_chunks"] = len(final_docs)
+                debug["final_unique_docs"] = dist["unique_docs"]
+                debug["final_top_doc_share"] = round(float(dist["top_doc_share"]), 4)
+                debug["final_top_doc_source"] = dist["top_doc_source"]
+            return final_docs
     except Exception:
-        pass
+        if debug is not None:
+            debug["used_keyword_fallback"] = True
+            debug["fallback_reason"] = "search_exception"
+        return _keyword_fallback(
+            query,
+            course_id,
+            folder_paths,
+            material_ids,
+            k,
+            corpus=corpus_fallback,
+            debug=debug,
+        )
 
-    return _keyword_fallback(query, course_id, folder_paths, material_ids, k,
-                             corpus=corpus_fallback)
+    if debug is not None:
+        debug["used_keyword_fallback"] = True
+        debug["fallback_reason"] = "no_candidates"
+    return _keyword_fallback(
+        query,
+        course_id,
+        folder_paths,
+        material_ids,
+        k,
+        corpus=corpus_fallback,
+        debug=debug,
+    )
 
 
 def _keyword_fallback(
@@ -541,6 +663,7 @@ def _keyword_fallback(
     material_ids: Optional[list[int]] = None,
     k: int = 6,
     corpus: Optional[str] = None,
+    debug: Optional[dict[str, Any]] = None,
 ):
     """Fallback to SQL keyword search when ChromaDB is empty/unavailable."""
     from langchain_core.documents import Document
@@ -616,6 +739,15 @@ def _keyword_fallback(
         )
 
     conn.close()
+    if debug is not None:
+        dist = _doc_distribution_stats(results)
+        debug["fallback_query_mode"] = "keyword_sql"
+        debug["final_chunks"] = len(results)
+        debug["final_unique_docs"] = dist["unique_docs"]
+        debug["final_top_doc_share"] = round(float(dist["top_doc_share"]), 4)
+        debug["final_top_doc_source"] = dist["top_doc_source"]
+        # Keyword fallback does not run vector candidate pre-cap.
+        debug["candidate_pool_after_cap"] = len(results)
     return results
 
 
@@ -672,6 +804,7 @@ def get_dual_context(
     material_ids: Optional[list[int]] = None,
     k_materials: int = 6,
     k_instructions: int = 4,
+    debug: Optional[dict[str, Any]] = None,
 ) -> dict:
     """
     Query both collections and return structured context.
@@ -681,19 +814,29 @@ def get_dual_context(
         instructions: list[Document],
     }
     """
+    material_debug: dict[str, Any] = {}
+    instruction_debug: dict[str, Any] = {}
+
     materials = search_with_embeddings(
         query,
         course_id=course_id,
         material_ids=material_ids,
         collection_name=COLLECTION_MATERIALS,
         k=k_materials,
+        debug=material_debug,
     )
 
     instructions = search_with_embeddings(
         query,
         collection_name=COLLECTION_INSTRUCTIONS,
         k=k_instructions,
+        debug=instruction_debug,
     )
+
+    if debug is not None:
+        debug.clear()
+        debug["materials"] = material_debug
+        debug["instructions"] = instruction_debug
 
     return {
         "materials": materials,
@@ -724,19 +867,30 @@ def keyword_search_dual(
     material_ids: Optional[list[int]] = None,
     k_materials: int = 6,
     k_instructions: int = 4,
+    debug: Optional[dict[str, Any]] = None,
 ) -> dict:
     """
     Keyword-only dual search (no embeddings). For Codex/ChatGPT provider.
 
     Returns: { materials: list[Document], instructions: list[Document] }
     """
+    material_debug: dict[str, Any] = {}
+    instruction_debug: dict[str, Any] = {}
+
     materials = _keyword_fallback(
         query, course_id, material_ids=material_ids, k=k_materials,
+        debug=material_debug,
     )
 
     instructions = _keyword_fallback(
         query, k=k_instructions, corpus="instructions",
+        debug=instruction_debug,
     )
+
+    if debug is not None:
+        debug.clear()
+        debug["materials"] = material_debug
+        debug["instructions"] = instruction_debug
 
     return {
         "materials": materials,

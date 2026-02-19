@@ -41,6 +41,8 @@ describe("TutorChat", () => {
          sessionId="sess-1"
          availableMaterials={[]}
          selectedMaterialIds={[]}
+         accuracyProfile="balanced"
+         onAccuracyProfileChange={vi.fn()}
          onSelectedMaterialIdsChange={vi.fn()}
          onArtifactCreated={onArtifactCreated}
          onTurnComplete={onTurnComplete}
@@ -78,6 +80,8 @@ describe("TutorChat", () => {
          sessionId="sess-2"
          availableMaterials={[]}
          selectedMaterialIds={[]}
+         accuracyProfile="balanced"
+         onAccuracyProfileChange={vi.fn()}
          onSelectedMaterialIdsChange={vi.fn()}
          onArtifactCreated={onArtifactCreated}
          onTurnComplete={onTurnComplete}
@@ -98,5 +102,38 @@ describe("TutorChat", () => {
         content: "This is the tutor response.",
       })
     );
+  });
+
+  it("sends active accuracy profile in turn content filter", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      makeSseResponse([
+        { type: "token", content: "ok" },
+        { type: "done", model: "codex" },
+      ])
+    );
+
+    render(
+      <TutorChat
+        sessionId="sess-3"
+        availableMaterials={[]}
+        selectedMaterialIds={[11, 12]}
+        accuracyProfile="strict"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Teach me from selected files" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+    const [, init] = fetchSpy.mock.calls[0];
+    const body = JSON.parse(String((init as RequestInit).body));
+    expect(body.content_filter.accuracy_profile).toBe("strict");
+    expect(body.content_filter.material_ids).toEqual([11, 12]);
   });
 });

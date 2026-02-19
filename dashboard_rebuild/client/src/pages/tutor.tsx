@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
   Material,
+  TutorAccuracyProfile,
   TutorMode,
   TutorSessionSummary,
   TutorTemplateChain,
@@ -57,9 +58,17 @@ function parseFacilitationSteps(prompt: string | undefined | null): string[] {
     .filter(Boolean);
 }
 
+function normalizeAccuracyProfile(value: unknown): TutorAccuracyProfile {
+  if (value === "strict" || value === "coverage" || value === "balanced") {
+    return value;
+  }
+  return "balanced";
+}
+
 export default function Tutor() {
   const queryClient = useQueryClient();
   const tutorMaterialStorageKey = "tutor.selected_material_ids.v1";
+  const tutorAccuracyProfileKey = "tutor.accuracy_profile.v1";
   const tutorWizardStorageKey = "tutor.wizard.state.v1";
   const tutorActiveSessionKey = "tutor.active_session.v1";
 
@@ -79,6 +88,13 @@ export default function Tutor() {
       }
     } catch { /* corrupted */ }
     return [];
+  });
+  const [accuracyProfile, setAccuracyProfile] = useState<TutorAccuracyProfile>(() => {
+    try {
+      return normalizeAccuracyProfile(localStorage.getItem(tutorAccuracyProfileKey));
+    } catch {
+      return "balanced";
+    }
   });
   const [mode, setMode] = useState<TutorMode>("Core");
   const [chainId, setChainId] = useState<number | undefined>();
@@ -130,6 +146,14 @@ export default function Tutor() {
 
   useEffect(() => {
     try {
+      localStorage.setItem(tutorAccuracyProfileKey, accuracyProfile);
+    } catch {
+      /* ignore */
+    }
+  }, [tutorAccuracyProfileKey, accuracyProfile]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem(
         tutorWizardStorageKey,
         JSON.stringify({
@@ -139,6 +163,7 @@ export default function Tutor() {
           chainId,
           customBlockIds,
           mode,
+          accuracyProfile,
           webSearch,
           selectedPaths,
         }),
@@ -154,6 +179,7 @@ export default function Tutor() {
         chainId,
         customBlockIds,
         mode,
+        accuracyProfile,
         webSearch,
         selectedPaths,
       ]);
@@ -205,6 +231,7 @@ export default function Tutor() {
         JSON.stringify(session.content_filter?.material_ids || []),
       );
     } catch { /* ignore */ }
+    setAccuracyProfile(normalizeAccuracyProfile(session.content_filter?.accuracy_profile));
     setWebSearch(Boolean(session.content_filter?.web_search));
     if (session.artifacts_json) {
       try {
@@ -247,6 +274,7 @@ export default function Tutor() {
         content_filter: {
           ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
           ...(selectedMaterials.length > 0 ? { material_ids: selectedMaterials } : {}),
+          accuracy_profile: accuracyProfile,
           ...(webSearch ? { web_search: true } : {}),
         },
         method_chain_id: resolvedChainId,
@@ -286,7 +314,7 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, mode, topic, selectedPaths, selectedMaterials, webSearch, chainId, customBlockIds, queryClient]);
+  }, [courseId, mode, topic, selectedPaths, selectedMaterials, accuracyProfile, webSearch, chainId, customBlockIds, queryClient]);
 
   const endSession = useCallback(async () => {
     if (!activeSessionId) return;
@@ -503,6 +531,7 @@ export default function Tutor() {
             setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
           }
           if (typeof parsed?.mode === "string") setMode(parsed.mode);
+          setAccuracyProfile(normalizeAccuracyProfile(parsed?.accuracyProfile));
           if (typeof parsed?.webSearch === "boolean") setWebSearch(parsed.webSearch);
           if (Array.isArray(parsed?.selectedPaths)) {
             setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
@@ -528,6 +557,7 @@ export default function Tutor() {
   }, [
     applySessionState,
     hasRestored,
+    tutorAccuracyProfileKey,
     tutorActiveSessionKey,
     tutorWizardStorageKey,
   ]);
@@ -587,6 +617,8 @@ export default function Tutor() {
                     sessionId={activeSessionId}
                     availableMaterials={chatMaterials}
                     selectedMaterialIds={selectedMaterials}
+                    accuracyProfile={accuracyProfile}
+                    onAccuracyProfileChange={setAccuracyProfile}
                     onSelectedMaterialIdsChange={setSelectedMaterials}
                     onArtifactCreated={handleArtifactCreated}
                     focusMode={focusMode}
