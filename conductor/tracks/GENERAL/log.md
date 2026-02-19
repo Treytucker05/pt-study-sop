@@ -200,3 +200,12 @@ px vitest run --reporter=verbose (341 passed)
   - `pytest brain/tests/test_rag_notes_reembed.py` -> `4 passed`
   - `pytest brain/tests/test_text_extractor.py` -> `5 passed`
   - `pytest brain/tests/test_tutor_rag_batching.py` -> `7 passed`
+
+## 2026-02-19 - UTC timestamp deprecation fix in DB health API
+
+- Replaced deprecated UTC call in `brain/dashboard/api_adapter.py`:
+  - from `datetime.utcnow().isoformat() + "Z"`
+  - to `datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")`
+- Added `timezone` import in the same module.
+- Validation:
+  - `python -m pytest brain/tests/test_security.py::TestAuthenticationGaps::test_db_health_no_auth brain/tests/test_security.py::TestErrorDisclosure::test_db_health_leaks_path -q` -> `2 passed`

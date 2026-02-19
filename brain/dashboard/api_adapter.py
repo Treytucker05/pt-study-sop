@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import sqlite3
 import json
 import os
@@ -519,7 +519,7 @@ def db_health():
 
     result = {
         "ok": False,
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "config_version": VERSION,
         "db_path": DB_PATH,
         "db_exists": _os.path.exists(DB_PATH),
