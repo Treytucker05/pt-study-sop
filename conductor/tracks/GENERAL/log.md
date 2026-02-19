@@ -335,3 +335,37 @@ px vitest run --reporter=verbose (341 passed)
   - rain/tests/test_tutor_session_linking.py
 - Validation:
   - python -m pytest brain/tests/test_tutor_session_linking.py -q (6 passed)
+
+## 2026-02-19 - Tutor retrieval diversification + deterministic file-count handling
+
+- Backend retrieval fixes:
+  - Added candidate-pool expansion for material-scoped vector search to reduce dominant-file collapse.
+  - Added diversity-aware reranking with per-document chunk caps.
+  - Files: `brain/tutor_rag.py`
+- Fallback behavior fix:
+  - `get_dual_context` and `keyword_search_dual` now retrieve materials even when `material_ids` is empty (course-scoped fallback works again).
+  - File: `brain/tutor_rag.py`
+- Tutor chat count-question fix:
+  - Added deterministic shortcut for material count questions ("how many files...") so response reports selected scope reliably.
+  - Preserves session continuity by not reusing prior `response_id` for shortcut turns.
+  - File: `brain/dashboard/api_tutor.py`
+- Tests added/updated:
+  - `brain/tests/test_tutor_rag_batching.py`
+  - `brain/tests/test_tutor_session_linking.py`
+  - Added coverage for diversity reranking, no-selection dual retrieval paths, material-count shortcut output, and response-id continuity.
+- Validation:
+  - `pytest brain/tests/test_tutor_rag_batching.py -q` -> `10 passed`
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `8 passed`
+
+## 2026-02-19 - Excalidraw unload-policy browser violation fix
+
+- Root cause:
+  - Browser warning came from Excalidraw internals registering `window` `unload` handlers in Brain Canvas.
+  - This surfaced as deprecated/blocked unload-policy warnings in console (`percentages-*.js` bundle).
+- Fix:
+  - Added a scoped shim in `dashboard_rebuild/client/src/components/brain/ExcalidrawCanvas.tsx` that remaps `unload` listeners to `pagehide` while canvas is mounted.
+  - Implemented listener mapping + ref-counted install/uninstall to avoid leaking global overrides across mounts.
+- Validation:
+  - `cd dashboard_rebuild && npm run build` -> success
+  - `pytest brain/tests/` -> `305 passed, 17 skipped`
+  - Browser verification on `http://127.0.0.1:5000/brain`: unload warning no longer present in console issues/messages.

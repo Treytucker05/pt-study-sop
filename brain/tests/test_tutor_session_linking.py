@@ -13,6 +13,7 @@ import sys
 import tempfile
 import sqlite3
 import json
+from types import SimpleNamespace
 
 import pytest
 
@@ -355,6 +356,152 @@ def test_send_turn_includes_selected_material_scope_in_prompt(client, monkeypatc
     assert "answer with the selected count above first" in prompt
     assert "Alpha Notes" in prompt
     assert "Beta Notes" in prompt
+
+
+def test_send_turn_material_count_question_uses_selected_scope(client, monkeypatch):
+    conn = sqlite3.connect(config.DB_PATH)
+    cur = conn.cursor()
+    cur.executemany(
+        """INSERT INTO rag_docs
+           (id, title, source_path, content, corpus, enabled, created_at, updated_at)
+           VALUES (?, ?, ?, ?, 'materials', 1, datetime('now'), datetime('now'))""",
+        [
+            (951, "Gamma Notes", "C:/materials/gamma.md", "gamma content"),
+            (952, "Delta Notes", "C:/materials/delta.md", "delta content"),
+        ],
+    )
+    conn.commit()
+    conn.close()
+
+    selected_ids = [951, 952]
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Material Count Test",
+            "content_filter": {"material_ids": selected_ids},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    def fake_get_dual_context(_question, **_kwargs):
+        return {
+            "materials": [
+                SimpleNamespace(
+                    page_content="gamma snippet",
+                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
+                ),
+                SimpleNamespace(
+                    page_content="delta snippet",
+                    metadata={"source": "C:/materials/delta.md", "rag_doc_id": 952},
+                ),
+            ],
+            "instructions": [],
+        }
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    stream_calls = {"count": 0}
+
+    def fake_stream(*_args, **_kwargs):
+        stream_calls["count"] += 1
+        yield {"type": "delta", "text": "llm-stream-should-not-run"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-count", "thread_id": "thread-count"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "How many files are you using?"},
+    )
+    assert turn_resp.status_code == 200
+    body = turn_resp.get_data(as_text=True)
+
+    assert "You selected 2 files for this turn." in body
+    assert "Retrieval for this question returned excerpts from 2 unique files" in body
+    assert stream_calls["count"] == 0
+
+
+def test_material_count_shortcut_does_not_overwrite_last_response_id(client, monkeypatch):
+    selected_ids = [951, 952]
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Material Count Continuity",
+            "content_filter": {"material_ids": selected_ids},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    def fake_get_dual_context(_question, **_kwargs):
+        return {
+            "materials": [
+                SimpleNamespace(
+                    page_content="gamma snippet",
+                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
+                ),
+            ],
+            "instructions": [],
+        }
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    stream_calls = {"count": 0}
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        stream_calls["count"] += 1
+        yield {"type": "delta", "text": "normal reply"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-1", "thread_id": "thread-1"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    first_turn = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "Teach me one concept"},
+    )
+    assert first_turn.status_code == 200
+    _ = first_turn.get_data(as_text=True)
+
+    second_turn = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "How many files are you using?"},
+    )
+    assert second_turn.status_code == 200
+    body = second_turn.get_data(as_text=True)
+    assert "You selected 2 files for this turn." in body
+    assert stream_calls["count"] == 1
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT turn_number, response_id FROM tutor_turns WHERE tutor_session_id = ? ORDER BY turn_number",
+        (tutor_sid,),
+    )
+    turns = [dict(r) for r in cur.fetchall()]
+    cur.execute(
+        "SELECT last_response_id FROM tutor_sessions WHERE session_id = ?",
+        (tutor_sid,),
+    )
+    session_row = dict(cur.fetchone())
+    conn.close()
+
+    assert turns[0]["response_id"] == "resp-1"
+    assert turns[1]["response_id"] is None
+    assert session_row["last_response_id"] == "resp-1"
 
 
 def test_send_turn_material_scope_overrides_course_filter(client, monkeypatch):

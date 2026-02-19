@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import uuid
 from datetime import datetime
@@ -308,6 +309,72 @@ def _material_scope_labels(
     visible = ordered_labels[:max_items]
     visible.append(f"... and {total - max_items} more selected files")
     return total, visible
+
+
+def _material_sources_from_docs(
+    docs: list[Any], *, max_items: Optional[int] = None
+) -> list[str]:
+    """Collect ordered unique source labels from retrieved LangChain documents."""
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for doc in docs:
+        source = str((getattr(doc, "metadata", None) or {}).get("source") or "").strip()
+        if not source or source in seen:
+            continue
+        seen.add(source)
+        ordered.append(source)
+        if max_items is not None and len(ordered) >= max_items:
+            break
+    return ordered
+
+
+def _is_material_count_question(question: str) -> bool:
+    """Detect user questions asking for a file/material count."""
+    q = (question or "").strip().lower()
+    if not q:
+        return False
+    patterns = (
+        r"\bhow many\b.{0,80}\b(files?|materials?|sources?)\b",
+        r"\bnumber of\b.{0,80}\b(files?|materials?|sources?)\b",
+        r"\bcount\b.{0,80}\b(files?|materials?|sources?)\b",
+    )
+    return any(re.search(pattern, q) for pattern in patterns)
+
+
+def _build_material_count_response(
+    *,
+    selected_count: int,
+    selected_labels: list[str],
+    retrieved_sources: list[str],
+) -> str:
+    """Build deterministic response for material-count questions."""
+    lines = [f"You selected {selected_count} files for this turn."]
+    retrieved_count = len(retrieved_sources)
+    if retrieved_count > 0:
+        lines.append(
+            "Retrieval for this question returned excerpts from "
+            f"{retrieved_count} unique files in that selected set."
+        )
+    else:
+        lines.append(
+            "No excerpts were retrieved for this exact question, "
+            "but scope remains your selected file set."
+        )
+    lines.append(
+        "Note: retrieval is chunk-based, so chunk count and cited file count can be smaller than selected scope."
+    )
+
+    if selected_labels:
+        lines.append("")
+        lines.append("Selected file scope:")
+        lines.extend(f"- {label}" for label in selected_labels)
+
+    if retrieved_sources:
+        lines.append("")
+        lines.append("Files retrieved for this question:")
+        lines.extend(f"- {source}" for source in retrieved_sources)
+
+    return "\n".join(lines)
 
 
 def _sanitize_filename(name: str) -> str:
@@ -894,157 +961,185 @@ def send_turn(session_id: str):
 ## Current Question
 {question}"""
 
-            from tutor_tools import get_tool_schemas, execute_tool
-            import json as _json
-
             api_model = codex_model or "gpt-5.3-codex"
-            url_citations: list[object] = []
-            tool_schemas = get_tool_schemas()
-            max_tool_rounds = 5
-            tool_round = 0
             prev_response_id: str | None = session.get("last_response_id")
             latest_response_id: str | None = prev_response_id
             latest_thread_id: str | None = session.get("codex_thread_id")
-            pending_tool_results: list[dict] = []
+            url_citations: list[object] = []
+            used_material_count_shortcut = False
 
-            try:
-                stream_kwargs: dict = {
-                    "model": codex_model or "gpt-5.3-codex",
-                    "timeout": 120,
-                    "web_search": enable_web_search,
-                    "tools": tool_schemas,
-                }
-                if prev_response_id:
-                    stream_kwargs["previous_response_id"] = prev_response_id
+            retrieved_material_sources = _material_sources_from_docs(
+                dual.get("materials") or [],
+                max_items=20,
+            )
 
-                while True:
-                    tool_calls_this_round: list[dict] = []
+            if selected_material_count > 0 and _is_material_count_question(question):
+                used_material_count_shortcut = True
+                full_response = _build_material_count_response(
+                    selected_count=selected_material_count,
+                    selected_labels=selected_material_labels,
+                    retrieved_sources=retrieved_material_sources,
+                )
+                citations = [
+                    {"source": src, "index": idx + 1}
+                    for idx, src in enumerate(retrieved_material_sources[:12])
+                ]
+                artifact_payload = [artifact_cmd] if artifact_cmd else None
+                yield format_sse_chunk(full_response)
+                yield format_sse_done(
+                    citations=citations,
+                    model=api_model,
+                    artifacts=artifact_payload,
+                )
+            else:
+                from tutor_tools import get_tool_schemas, execute_tool
+                import json as _json
 
-                    if pending_tool_results and prev_response_id:
+                tool_schemas = get_tool_schemas()
+                max_tool_rounds = 5
+                tool_round = 0
+                pending_tool_results: list[dict] = []
+
+                try:
+                    stream_kwargs: dict = {
+                        "model": codex_model or "gpt-5.3-codex",
+                        "timeout": 120,
+                        "web_search": enable_web_search,
+                        "tools": tool_schemas,
+                    }
+                    if prev_response_id:
                         stream_kwargs["previous_response_id"] = prev_response_id
-                        stream_kwargs["input_override"] = pending_tool_results
-                        pending_tool_results = []
-                    else:
-                        stream_kwargs.pop("input_override", None)
-                        if prev_response_id:
+
+                    while True:
+                        tool_calls_this_round: list[dict] = []
+
+                        if pending_tool_results and prev_response_id:
                             stream_kwargs["previous_response_id"] = prev_response_id
+                            stream_kwargs["input_override"] = pending_tool_results
+                            pending_tool_results = []
                         else:
-                            stream_kwargs.pop("previous_response_id", None)
+                            stream_kwargs.pop("input_override", None)
+                            if prev_response_id:
+                                stream_kwargs["previous_response_id"] = prev_response_id
+                            else:
+                                stream_kwargs.pop("previous_response_id", None)
 
-                    for chunk in stream_chatgpt_responses(
-                        system_prompt,
-                        user_prompt,
-                        **stream_kwargs,
-                    ):
-                        if chunk.get("type") == "delta":
-                            full_response += chunk.get("text", "")
-                            yield format_sse_chunk(chunk.get("text", ""))
-                        elif chunk.get("type") == "web_search":
+                        for chunk in stream_chatgpt_responses(
+                            system_prompt,
+                            user_prompt,
+                            **stream_kwargs,
+                        ):
+                            if chunk.get("type") == "delta":
+                                full_response += chunk.get("text", "")
+                                yield format_sse_chunk(chunk.get("text", ""))
+                            elif chunk.get("type") == "web_search":
+                                yield format_sse_chunk(
+                                    "", chunk_type=f"web_search_{chunk['status']}"
+                                )
+                            elif chunk.get("type") == "tool_call":
+                                tool_calls_this_round.append(chunk)
+                            elif chunk.get("type") == "error":
+                                raise RuntimeError(
+                                    chunk.get("error", "ChatGPT API failed")
+                                )
+                            elif chunk.get("type") == "done":
+                                api_model = chunk.get("model") or api_model
+                                prev_response_id = (
+                                    chunk.get("response_id") or prev_response_id
+                                )
+                                latest_response_id = prev_response_id
+                                latest_thread_id = (
+                                    chunk.get("thread_id")
+                                    or chunk.get("conversation_id")
+                                    or latest_thread_id
+                                )
+                                url_citations_raw = chunk.get("url_citations", [])
+                                if isinstance(url_citations_raw, list):
+                                    url_citations = url_citations_raw
+
+                        if not tool_calls_this_round:
+                            break
+
+                        tool_round += 1
+                        if tool_round > max_tool_rounds:
+                            yield format_sse_chunk("", chunk_type="tool_limit_reached")
+                            break
+
+                        for tc in tool_calls_this_round:
+                            tool_name = tc.get("name", "")
+                            call_id = tc.get("call_id", "")
+                            try:
+                                args = _json.loads(tc.get("arguments", "{}"))
+                            except _json.JSONDecodeError:
+                                args = {}
+
                             yield format_sse_chunk(
-                                "", chunk_type=f"web_search_{chunk['status']}"
+                                _json.dumps({"tool": tool_name, "arguments": args}),
+                                chunk_type="tool_call",
                             )
-                        elif chunk.get("type") == "tool_call":
-                            tool_calls_this_round.append(chunk)
-                        elif chunk.get("type") == "error":
-                            raise RuntimeError(chunk.get("error", "ChatGPT API failed"))
-                        elif chunk.get("type") == "done":
-                            api_model = chunk.get("model") or api_model
-                            prev_response_id = (
-                                chunk.get("response_id") or prev_response_id
+
+                            tool_result = execute_tool(
+                                tool_name, args, session_id=session_id
                             )
-                            latest_response_id = prev_response_id
-                            latest_thread_id = (
-                                chunk.get("thread_id")
-                                or chunk.get("conversation_id")
-                                or latest_thread_id
+
+                            yield format_sse_chunk(
+                                _json.dumps(
+                                    {
+                                        "tool": tool_name,
+                                        "success": tool_result.get("success", False),
+                                        "message": tool_result.get("message", ""),
+                                    }
+                                ),
+                                chunk_type="tool_result",
                             )
-                            url_citations_raw = chunk.get("url_citations", [])
-                            if isinstance(url_citations_raw, list):
-                                url_citations = url_citations_raw
 
-                    if not tool_calls_this_round:
-                        break
-
-                    tool_round += 1
-                    if tool_round > max_tool_rounds:
-                        yield format_sse_chunk("", chunk_type="tool_limit_reached")
-                        break
-
-                    for tc in tool_calls_this_round:
-                        tool_name = tc.get("name", "")
-                        call_id = tc.get("call_id", "")
-                        try:
-                            args = _json.loads(tc.get("arguments", "{}"))
-                        except _json.JSONDecodeError:
-                            args = {}
-
-                        yield format_sse_chunk(
-                            _json.dumps({"tool": tool_name, "arguments": args}),
-                            chunk_type="tool_call",
-                        )
-
-                        tool_result = execute_tool(
-                            tool_name, args, session_id=session_id
-                        )
-
-                        yield format_sse_chunk(
-                            _json.dumps(
+                            pending_tool_results.append(
                                 {
-                                    "tool": tool_name,
-                                    "success": tool_result.get("success", False),
-                                    "message": tool_result.get("message", ""),
+                                    "type": "function_call_output",
+                                    "call_id": call_id,
+                                    "output": _json.dumps(tool_result),
                                 }
-                            ),
-                            chunk_type="tool_result",
-                        )
+                            )
 
-                        pending_tool_results.append(
+                except Exception as stream_err:
+                    if not full_response:
+                        result = call_codex_json(
+                            system_prompt,
+                            user_prompt,
+                            model=codex_model,
+                            timeout=120,
+                            isolated=True,
+                        )
+                        if not result.get("success"):
+                            raise RuntimeError(result.get("error") or "Codex failed")
+                        full_response = (result.get("content") or "").strip()
+                        max_chars = 220
+                        for i in range(0, len(full_response), max_chars):
+                            yield format_sse_chunk(full_response[i : i + max_chars])
+                    else:
+                        raise stream_err
+
+                citations = extract_citations(full_response)
+                all_citations = citations
+                if url_citations:
+                    for uc in url_citations:
+                        if isinstance(uc, dict):
+                            source = uc.get("title") or uc.get("url", "")
+                            url = uc.get("url", "")
+                        else:
+                            source = str(uc)
+                            url = ""
+                        all_citations.append(
                             {
-                                "type": "function_call_output",
-                                "call_id": call_id,
-                                "output": _json.dumps(tool_result),
+                                "source": source,
+                                "url": url,
+                                "index": len(all_citations) + 1,
                             }
                         )
-
-            except Exception as stream_err:
-                if not full_response:
-                    result = call_codex_json(
-                        system_prompt,
-                        user_prompt,
-                        model=codex_model,
-                        timeout=120,
-                        isolated=True,
-                    )
-                    if not result.get("success"):
-                        raise RuntimeError(result.get("error") or "Codex failed")
-                    full_response = (result.get("content") or "").strip()
-                    max_chars = 220
-                    for i in range(0, len(full_response), max_chars):
-                        yield format_sse_chunk(full_response[i : i + max_chars])
-                else:
-                    raise stream_err
-
-            citations = extract_citations(full_response)
-            all_citations = citations
-            if url_citations:
-                for uc in url_citations:
-                    if isinstance(uc, dict):
-                        source = uc.get("title") or uc.get("url", "")
-                        url = uc.get("url", "")
-                    else:
-                        source = str(uc)
-                        url = ""
-                    all_citations.append(
-                        {
-                            "source": source,
-                            "url": url,
-                            "index": len(all_citations) + 1,
-                        }
-                    )
-            artifact_payload = [artifact_cmd] if artifact_cmd else None
-            yield format_sse_done(
-                citations=all_citations, model=api_model, artifacts=artifact_payload
-            )
+                artifact_payload = [artifact_cmd] if artifact_cmd else None
+                yield format_sse_done(
+                    citations=all_citations, model=api_model, artifacts=artifact_payload
+                )
 
         except Exception as e:
             yield format_sse_error(str(e))
@@ -1072,7 +1167,7 @@ def send_turn(session_id: str):
                     question,
                     full_response,
                     json.dumps(citations) if citations else None,
-                    latest_response_id,
+                    None if used_material_count_shortcut else latest_response_id,
                     api_model,
                     session.get("phase"),
                     json.dumps({"command": artifact_cmd}) if artifact_cmd else None,

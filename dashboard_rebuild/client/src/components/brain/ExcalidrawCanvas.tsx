@@ -40,6 +40,91 @@ interface ExcalidrawCanvasProps {
   ) => void;
 }
 
+type AnyListener = EventListenerOrEventListenerObject;
+type WindowWithUnloadShim = Window & {
+  __ptUnloadShimRefCount?: number;
+  __ptOriginalAddEventListener?: typeof window.addEventListener;
+  __ptOriginalRemoveEventListener?: typeof window.removeEventListener;
+  __ptUnloadListenerMap?: WeakMap<AnyListener, AnyListener>;
+};
+
+const remapEventType = (type: string) => (type === "unload" ? "pagehide" : type);
+
+const mapUnloadListener = (
+  win: WindowWithUnloadShim,
+  type: string,
+  listener: AnyListener | null,
+): AnyListener | null => {
+  if (type !== "unload" || !listener) return listener;
+
+  let listenerMap = win.__ptUnloadListenerMap;
+  if (!listenerMap) {
+    listenerMap = new WeakMap<AnyListener, AnyListener>();
+    win.__ptUnloadListenerMap = listenerMap;
+  }
+
+  const existing = listenerMap.get(listener);
+  if (existing) return existing;
+
+  const mappedListener: AnyListener =
+    typeof listener === "function"
+      ? ((event: Event) => {
+          (listener as EventListener)(event);
+        })
+      : {
+          handleEvent: (event: Event) => listener.handleEvent(event),
+        };
+
+  listenerMap.set(listener, mappedListener);
+  return mappedListener;
+};
+
+const installUnloadListenerShim = () => {
+  if (typeof window === "undefined") return () => {};
+
+  const win = window as WindowWithUnloadShim;
+  win.__ptUnloadShimRefCount = (win.__ptUnloadShimRefCount ?? 0) + 1;
+  if (win.__ptUnloadShimRefCount > 1) {
+    return () => {
+      win.__ptUnloadShimRefCount = Math.max(0, (win.__ptUnloadShimRefCount ?? 1) - 1);
+    };
+  }
+
+  const originalAdd = window.addEventListener.bind(window);
+  const originalRemove = window.removeEventListener.bind(window);
+  win.__ptOriginalAddEventListener = originalAdd;
+  win.__ptOriginalRemoveEventListener = originalRemove;
+
+  window.addEventListener = ((type: string, listener: AnyListener | null, options?: boolean | AddEventListenerOptions) => {
+    const mappedType = remapEventType(type);
+    const mappedListener = mapUnloadListener(win, type, listener);
+    if (!mappedListener) return;
+    originalAdd(mappedType, mappedListener, options);
+  }) as typeof window.addEventListener;
+
+  window.removeEventListener = ((type: string, listener: AnyListener | null, options?: boolean | EventListenerOptions) => {
+    const mappedType = remapEventType(type);
+    const mappedListener = mapUnloadListener(win, type, listener);
+    if (!mappedListener) return;
+    originalRemove(mappedType, mappedListener, options);
+  }) as typeof window.removeEventListener;
+
+  return () => {
+    win.__ptUnloadShimRefCount = Math.max(0, (win.__ptUnloadShimRefCount ?? 1) - 1);
+    if (win.__ptUnloadShimRefCount !== 0) return;
+
+    if (win.__ptOriginalAddEventListener) {
+      window.addEventListener = win.__ptOriginalAddEventListener;
+    }
+    if (win.__ptOriginalRemoveEventListener) {
+      window.removeEventListener = win.__ptOriginalRemoveEventListener;
+    }
+    win.__ptOriginalAddEventListener = undefined;
+    win.__ptOriginalRemoveEventListener = undefined;
+    win.__ptUnloadListenerMap = undefined;
+  };
+};
+
 /* ─── component ─── */
 export const ExcalidrawCanvas = forwardRef<
   ExcalidrawCanvasHandle,
@@ -61,6 +146,8 @@ export const ExcalidrawCanvas = forwardRef<
   const [filePickerPath, setFilePickerPath] = useState("Brain Canvas/Untitled.excalidraw");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+
+  useEffect(() => installUnloadListenerShim(), []);
 
   /* show template picker on first load when canvas is empty */
   useEffect(() => {

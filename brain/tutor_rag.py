@@ -28,6 +28,7 @@ COLLECTION_MATERIALS = "tutor_materials"
 COLLECTION_INSTRUCTIONS = "tutor_instructions"
 
 DEFAULT_CHROMA_BATCH_SIZE = 1000
+DEFAULT_MAX_CHUNKS_PER_DOC = 2
 
 
 def _get_openai_api_key() -> str:
@@ -289,30 +290,104 @@ def embed_rag_docs(
     return {"embedded": embedded, "skipped": skipped, "total_chunks": total_chunks}
 
 
-def rerank_results(query: str, docs: list, k_final: int) -> list:
-    """Re-rank retrieved documents by keyword overlap with the query.
+def _doc_identity(doc: object, fallback_index: int) -> str:
+    """Return a stable per-document identity for diversity controls."""
+    metadata = getattr(doc, "metadata", None) or {}
+    rag_doc_id = metadata.get("rag_doc_id")
+    if rag_doc_id is not None:
+        return f"id:{rag_doc_id}"
+    source = metadata.get("source")
+    if source:
+        return f"source:{source}"
+    return f"idx:{fallback_index}"
 
-    Scores each doc by counting how many query keywords appear in its text,
-    then returns the top ``k_final`` docs sorted by descending score.
+
+def _resolve_candidate_pool_size(k: int, material_ids: Optional[list[int]]) -> int:
     """
-    if len(docs) <= k_final:
+    Decide how many vector candidates to fetch before reranking.
+
+    Material-scoped retrieval needs a wider candidate pool so the final top-k can
+    include chunks from more than a handful of dominant files.
+    """
+    if not material_ids:
+        return max(k * 2, 12)
+    return min(max(k * 12, 120), 800)
+
+
+def rerank_results(
+    query: str,
+    docs: list,
+    k_final: int,
+    *,
+    max_chunks_per_doc: int = DEFAULT_MAX_CHUNKS_PER_DOC,
+) -> list:
+    """Re-rank results with keyword scoring plus per-file diversity caps."""
+    if not docs or k_final <= 0:
+        return []
+    if len(docs) <= k_final and max_chunks_per_doc <= 0:
         return docs
 
-    stop_words = {"the", "a", "an", "is", "are", "was", "were", "in", "on", "at",
-                  "to", "for", "of", "and", "or", "it", "this", "that", "with"}
-    keywords = [w.lower() for w in query.split() if w.lower() not in stop_words and len(w) > 2]
+    stop_words = {
+        "the", "a", "an", "is", "are", "was", "were", "in", "on", "at",
+        "to", "for", "of", "and", "or", "it", "this", "that", "with",
+    }
+    keywords = [
+        w.lower()
+        for w in query.split()
+        if w.lower() not in stop_words and len(w) > 2
+    ]
 
-    if not keywords:
-        return docs[:k_final]
+    scored: list[tuple[int, int, object]] = []
+    for idx, doc in enumerate(docs):
+        if keywords:
+            text_lower = str(getattr(doc, "page_content", "")).lower()
+            score = sum(1 for kw in keywords if kw in text_lower)
+        else:
+            score = 0
+        scored.append((score, idx, doc))
 
-    scored = []
-    for doc in docs:
-        text_lower = doc.page_content.lower()
-        score = sum(1 for kw in keywords if kw in text_lower)
-        scored.append((score, doc))
+    # Higher keyword score first; preserve original similarity order on ties.
+    scored.sort(key=lambda item: (-item[0], item[1]))
 
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return [doc for _, doc in scored[:k_final]]
+    selected: list[object] = []
+    selected_indexes: set[int] = set()
+    per_doc_counts: dict[str, int] = {}
+
+    # Pass 1: guarantee breadth (at most one chunk per source file).
+    for score, idx, doc in scored:
+        identity = _doc_identity(doc, idx)
+        if per_doc_counts.get(identity, 0) > 0:
+            continue
+        selected.append(doc)
+        selected_indexes.add(idx)
+        per_doc_counts[identity] = 1
+        if len(selected) >= k_final:
+            return selected[:k_final]
+
+    # Pass 2: fill while respecting max chunks per file.
+    cap = max_chunks_per_doc if max_chunks_per_doc > 0 else k_final
+    for score, idx, doc in scored:
+        if idx in selected_indexes:
+            continue
+        identity = _doc_identity(doc, idx)
+        if per_doc_counts.get(identity, 0) >= cap:
+            continue
+        selected.append(doc)
+        selected_indexes.add(idx)
+        per_doc_counts[identity] = per_doc_counts.get(identity, 0) + 1
+        if len(selected) >= k_final:
+            return selected[:k_final]
+
+    # Pass 3: if still short, fill from remaining regardless of cap.
+    for score, idx, doc in scored:
+        if idx in selected_indexes:
+            continue
+        selected.append(doc)
+        selected_indexes.add(idx)
+        if len(selected) >= k_final:
+            return selected[:k_final]
+
+    return selected[:k_final]
 
 
 def search_with_embeddings(
@@ -324,8 +399,8 @@ def search_with_embeddings(
     k: int = 6,
 ):
     """
-    Vector search via ChromaDB with keyword re-ranking.
-    Fetches 2*k candidates, re-ranks by keyword overlap, returns top k.
+    Vector search via ChromaDB with keyword/diversity re-ranking.
+    Fetches a widened candidate pool, then returns top k chunks.
     Falls back to keyword search if vectorstore is empty.
     """
     vs = init_vectorstore(collection_name)
@@ -359,10 +434,10 @@ def search_with_embeddings(
         where_filter = {"$and": conditions}
 
     try:
-        # Fetch 2x candidates for re-ranking
+        candidate_k = _resolve_candidate_pool_size(k, material_ids)
         results = vs.similarity_search(
             query,
-            k=k * 2,
+            k=candidate_k,
             filter=where_filter,
         )
         if results:
@@ -527,7 +602,7 @@ def get_dual_context(
         material_ids=material_ids,
         collection_name=COLLECTION_MATERIALS,
         k=k_materials,
-    ) if material_ids else []
+    )
 
     instructions = search_with_embeddings(
         query,
@@ -572,7 +647,7 @@ def keyword_search_dual(
     """
     materials = _keyword_fallback(
         query, course_id, material_ids=material_ids, k=k_materials,
-    ) if material_ids else []
+    )
 
     instructions = _keyword_fallback(
         query, k=k_instructions, corpus="instructions",
