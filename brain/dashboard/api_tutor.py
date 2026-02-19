@@ -28,6 +28,7 @@ import os
 import re
 import sqlite3
 import uuid
+import logging
 from datetime import datetime
 from pathlib import Path
 from threading import Lock, Thread
@@ -44,6 +45,7 @@ UPLOADS_DIR = Path(__file__).parent.parent / "data" / "uploads"
 SYNC_JOBS: dict[str, dict[str, Any]] = {}
 SYNC_JOBS_LOCK = Lock()
 SYNC_JOB_RETENTION = 30
+_LOG = logging.getLogger(__name__)
 
 _SELECTOR_COLS_ENSURED = False
 
@@ -326,6 +328,55 @@ def _material_sources_from_docs(
         if max_items is not None and len(ordered) >= max_items:
             break
     return ordered
+
+
+def _citation_sources(citations: list[dict], *, max_items: Optional[int] = None) -> list[str]:
+    """Collect ordered unique source labels from citation payloads."""
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for citation in citations:
+        if not isinstance(citation, dict):
+            continue
+        source = str(citation.get("source") or citation.get("url") or "").strip()
+        if not source or source in seen:
+            continue
+        seen.add(source)
+        ordered.append(source)
+        if max_items is not None and len(ordered) >= max_items:
+            break
+    return ordered
+
+
+def _build_retrieval_debug_payload(
+    *,
+    material_ids: Optional[list[int]],
+    selected_material_count: int,
+    material_k: int,
+    retrieval_course_id: Optional[int],
+    material_docs: list[Any],
+    instruction_docs: list[Any],
+    citations: list[dict],
+) -> dict[str, Any]:
+    """Build compact retrieval telemetry attached to SSE done events."""
+    material_sources_all = _material_sources_from_docs(material_docs)
+    instruction_sources_all = _material_sources_from_docs(instruction_docs)
+    citation_sources_all = _citation_sources(citations)
+    return {
+        "material_ids_provided": bool(material_ids),
+        "material_ids_count": len(material_ids or []),
+        "selected_material_count": selected_material_count,
+        "material_k": material_k,
+        "retrieval_course_id": retrieval_course_id,
+        "retrieved_material_chunks": len(material_docs),
+        "retrieved_material_unique_sources": len(material_sources_all),
+        "retrieved_material_sources": material_sources_all[:20],
+        "retrieved_instruction_chunks": len(instruction_docs),
+        "retrieved_instruction_unique_sources": len(instruction_sources_all),
+        "retrieved_instruction_sources": instruction_sources_all[:10],
+        "citations_total": len(citations),
+        "citations_unique_sources": len(citation_sources_all),
+        "citation_sources": citation_sources_all[:20],
+    }
 
 
 def _is_material_count_question(question: str) -> bool:
@@ -968,8 +1019,10 @@ def send_turn(session_id: str):
             url_citations: list[object] = []
             used_material_count_shortcut = False
 
+            material_docs = dual.get("materials") or []
+            instruction_docs = dual.get("instructions") or []
             retrieved_material_sources = _material_sources_from_docs(
-                dual.get("materials") or [],
+                material_docs,
                 max_items=20,
             )
 
@@ -985,11 +1038,27 @@ def send_turn(session_id: str):
                     for idx, src in enumerate(retrieved_material_sources[:12])
                 ]
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
+                retrieval_debug_payload = _build_retrieval_debug_payload(
+                    material_ids=material_ids,
+                    selected_material_count=selected_material_count,
+                    material_k=material_k,
+                    retrieval_course_id=retrieval_course_id,
+                    material_docs=material_docs,
+                    instruction_docs=instruction_docs,
+                    citations=citations,
+                )
+                _LOG.info(
+                    "Tutor retrieval debug session=%s turn=%s payload=%s",
+                    session_id,
+                    turn_number,
+                    json.dumps(retrieval_debug_payload, ensure_ascii=True),
+                )
                 yield format_sse_chunk(full_response)
                 yield format_sse_done(
                     citations=citations,
                     model=api_model,
                     artifacts=artifact_payload,
+                    retrieval_debug=retrieval_debug_payload,
                 )
             else:
                 from tutor_tools import get_tool_schemas, execute_tool
@@ -1137,8 +1206,26 @@ def send_turn(session_id: str):
                             }
                         )
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
+                retrieval_debug_payload = _build_retrieval_debug_payload(
+                    material_ids=material_ids,
+                    selected_material_count=selected_material_count,
+                    material_k=material_k,
+                    retrieval_course_id=retrieval_course_id,
+                    material_docs=material_docs,
+                    instruction_docs=instruction_docs,
+                    citations=all_citations,
+                )
+                _LOG.info(
+                    "Tutor retrieval debug session=%s turn=%s payload=%s",
+                    session_id,
+                    turn_number,
+                    json.dumps(retrieval_debug_payload, ensure_ascii=True),
+                )
                 yield format_sse_done(
-                    citations=all_citations, model=api_model, artifacts=artifact_payload
+                    citations=all_citations,
+                    model=api_model,
+                    artifacts=artifact_payload,
+                    retrieval_debug=retrieval_debug_payload,
                 )
 
         except Exception as e:

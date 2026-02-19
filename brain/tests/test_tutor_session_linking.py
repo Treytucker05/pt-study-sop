@@ -101,6 +101,22 @@ def _create_tutor_session(client, *, brain_session_id: int | None = None) -> str
     return sid
 
 
+def _extract_done_payload(sse_body: str) -> dict:
+    for line in sse_body.splitlines():
+        if not line.startswith("data: "):
+            continue
+        payload = line[6:]
+        if payload == "[DONE]":
+            continue
+        try:
+            parsed = json.loads(payload)
+        except json.JSONDecodeError:
+            continue
+        if parsed.get("type") == "done":
+            return parsed
+    return {}
+
+
 def test_link_archive_round_trip(client):
     archive_id = _create_archive_session(client)
     tutor_sid = _create_tutor_session(client)
@@ -555,3 +571,124 @@ def test_send_turn_material_scope_overrides_course_filter(client, monkeypatch):
 
     assert captured["course_id"] is None
     assert captured["material_ids"] == [2001, 2002]
+
+
+def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
+    selected_ids = [951, 952]
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Retrieval Debug Payload",
+            "content_filter": {"material_ids": selected_ids},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    def fake_get_dual_context(_question, **_kwargs):
+        return {
+            "materials": [
+                SimpleNamespace(
+                    page_content="gamma snippet",
+                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
+                ),
+                SimpleNamespace(
+                    page_content="delta snippet",
+                    metadata={"source": "C:/materials/delta.md", "rag_doc_id": 952},
+                ),
+            ],
+            "instructions": [
+                SimpleNamespace(
+                    page_content="instruction snippet",
+                    metadata={"source": "sop/library/17-control-plane.md"},
+                ),
+            ],
+        }
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "[Source: C:/materials/gamma.md]"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-debug", "thread_id": "thread-debug"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "Give me one cited point"},
+    )
+    assert turn_resp.status_code == 200
+    body = turn_resp.get_data(as_text=True)
+    done_payload = _extract_done_payload(body)
+    debug = done_payload.get("retrieval_debug")
+    assert isinstance(debug, dict)
+    assert debug["material_ids_provided"] is True
+    assert debug["material_ids_count"] == 2
+    assert debug["selected_material_count"] == 2
+    assert debug["material_k"] == 6
+    assert debug["retrieved_material_chunks"] == 2
+    assert debug["retrieved_material_unique_sources"] == 2
+    assert debug["retrieved_instruction_chunks"] == 1
+    assert debug["retrieved_instruction_unique_sources"] == 1
+    assert debug["citations_total"] >= 1
+    assert debug["citations_unique_sources"] >= 1
+
+
+def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, monkeypatch):
+    selected_ids = [951, 952]
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Retrieval Debug Count Shortcut",
+            "content_filter": {"material_ids": selected_ids},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    def fake_get_dual_context(_question, **_kwargs):
+        return {
+            "materials": [
+                SimpleNamespace(
+                    page_content="gamma snippet",
+                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
+                ),
+            ],
+            "instructions": [],
+        }
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        llm_provider,
+        "stream_chatgpt_responses",
+        lambda *_a, **_k: iter(()),
+    )
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "How many files are you using?"},
+    )
+    assert turn_resp.status_code == 200
+    body = turn_resp.get_data(as_text=True)
+    done_payload = _extract_done_payload(body)
+    debug = done_payload.get("retrieval_debug")
+    assert isinstance(debug, dict)
+    assert debug["material_ids_provided"] is True
+    assert debug["material_ids_count"] == 2
+    assert debug["selected_material_count"] == 2
+    assert debug["retrieved_material_chunks"] == 1
+    assert debug["retrieved_material_unique_sources"] == 1
+    assert debug["citations_total"] == 1
+    assert debug["citations_unique_sources"] == 1

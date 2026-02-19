@@ -389,3 +389,26 @@ px vitest run --reporter=verbose (341 passed)
   - Browser verification on `http://127.0.0.1:5000/tutor`:
     - no baseline console errors after reload
     - manual injected rejection with same message no longer logs uncaught promise noise.
+
+## 2026-02-19 - Tutor retrieval telemetry + ANN bottleneck diagnostics
+
+- Added per-turn retrieval telemetry to tutor SSE done payload:
+  - `brain/tutor_streaming.py`
+    - `format_sse_done` now accepts `retrieval_debug`.
+  - `brain/dashboard/api_tutor.py`
+    - Added `_citation_sources` and `_build_retrieval_debug_payload`.
+    - `send_turn` now attaches `retrieval_debug` on both normal turns and count-shortcut turns.
+    - Logs compact retrieval telemetry per turn via backend logger.
+- Added regression tests:
+  - `brain/tests/test_tutor_session_linking.py`
+    - `test_send_turn_done_payload_includes_retrieval_debug`
+    - `test_material_count_shortcut_done_payload_includes_retrieval_debug`
+- Diagnostic findings (runtime + ANN):
+  - Live server still served old payload shape until restart (no `retrieval_debug` key seen in live SSE).
+  - Flask test-client path confirms new `retrieval_debug` is present.
+  - Chroma candidate retrieval is heavily dominated by one source document for broad queries (doc id 207), reducing raw unique-doc diversity before rerank.
+  - Reranker is not the primary bottleneck when `k_final` is high; it can only work with whatever diversity ANN candidate pool returns.
+- Validation:
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `10 passed`
+  - `pytest brain/tests/test_tutor_rag_batching.py -q` -> `10 passed`
+  - `pytest brain/tests/` -> `307 passed, 17 skipped`

@@ -21,6 +21,7 @@ def format_sse_done(
     artifacts: Optional[list[dict]] = None,
     summary: Optional[str] = None,
     model: Optional[str] = None,
+    retrieval_debug: Optional[dict] = None,
 ) -> str:
     """Format the final SSE done event with metadata."""
     payload: dict = {"type": "done"}
@@ -32,6 +33,8 @@ def format_sse_done(
         payload["summary"] = summary
     if model:
         payload["model"] = model
+    if retrieval_debug:
+        payload["retrieval_debug"] = retrieval_debug
     return f"data: {json.dumps(payload)}\n\ndata: [DONE]\n\n"
 
 
