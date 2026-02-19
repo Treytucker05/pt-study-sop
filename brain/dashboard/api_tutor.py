@@ -247,7 +247,7 @@ def _resolve_material_retrieval_k(material_ids: Optional[list[int]]) -> int:
     """
     if not material_ids:
         return 6
-    return min(max(6, len(material_ids)), 30)
+    return min(max(6, len(material_ids)), 60)
 
 
 def _normalize_material_ids(value: Any) -> Optional[list[int]]:
@@ -756,6 +756,8 @@ def send_turn(session_id: str):
         material_ids = _normalize_material_ids(content_filter.get("material_ids"))
         content_filter["material_ids"] = material_ids or []
     material_k = _resolve_material_retrieval_k(material_ids)
+    # Explicit material selection should override course scoping.
+    retrieval_course_id = None if material_ids else session.get("course_id")
     selected_material_count, selected_material_labels = _material_scope_labels(material_ids)
 
     # Legacy support: folder_paths
@@ -799,7 +801,7 @@ def send_turn(session_id: str):
             try:
                 dual = get_dual_context(
                     question,
-                    course_id=session.get("course_id"),
+                    course_id=retrieval_course_id,
                     material_ids=material_ids,
                     k_materials=material_k,
                     k_instructions=2,
@@ -807,7 +809,7 @@ def send_turn(session_id: str):
             except Exception:
                 dual = keyword_search_dual(
                     question,
-                    course_id=session.get("course_id"),
+                    course_id=retrieval_course_id,
                     material_ids=material_ids,
                     k_materials=material_k,
                     k_instructions=2,

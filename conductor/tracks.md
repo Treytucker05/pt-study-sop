@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest non-track update: 2026-02-19 Tutor chat sidebar loads all enabled materials (see `conductor/tracks/GENERAL/log.md`).
+Latest non-track update: 2026-02-19 Retrieval scope fix for large selected file sets (see `conductor/tracks/GENERAL/log.md`).
 
 ---
 

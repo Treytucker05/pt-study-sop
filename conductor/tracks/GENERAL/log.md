@@ -311,3 +311,16 @@ px vitest run --reporter=verbose (341 passed)
 - File: dashboard_rebuild/client/src/pages/tutor.tsx
 - Validation:
   - cd dashboard_rebuild && npm run build (success)
+
+## 2026-02-19 - Retrieval scope fix for large selected file sets
+
+- Root cause fixed: when explicit material_ids were selected, tutor retrieval still AND-filtered by session course_id, collapsing results to a small subset (often ~6 files).
+- Updated tutor turn retrieval to treat explicit selected files as authoritative scope:
+  - etrieval_course_id = None when material_ids are present
+  - pass that through to both embedding and keyword dual search paths
+- Updated 	utor_rag filters so material_ids override course_id in both embedding and keyword fallback queries.
+- Increased selected-material retrieval cap from 30 to 60 chunks for broader coverage on larger selections.
+- Added regression test: 	est_send_turn_material_scope_overrides_course_filter.
+- Validation:
+  - python -m pytest brain/tests/test_tutor_session_linking.py -q (6 passed)
+  - python -m pytest brain/tests/test_tutor_rag_batching.py -q (7 passed)

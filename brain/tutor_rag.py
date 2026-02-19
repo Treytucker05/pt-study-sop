@@ -344,7 +344,9 @@ def search_with_embeddings(
     # Build metadata filter
     where_filter = None
     conditions = []
-    if course_id is not None:
+    # When explicit material IDs are provided, they define the scope and should
+    # not be additionally constrained by course_id.
+    if course_id is not None and not material_ids:
         conditions.append({"course_id": course_id})
     if folder_paths:
         conditions.append({"folder_path": {"$in": folder_paths}})
@@ -397,7 +399,8 @@ def _keyword_fallback(
         conditions.append("corpus = ?")
         params.append(corpus)
 
-    if course_id is not None:
+    # Explicit material IDs define scope; avoid over-constraining by course_id.
+    if course_id is not None and not material_ids:
         conditions.append("(course_id = ? OR course_id IS NULL)")
         params.append(course_id)
 

@@ -354,3 +354,56 @@ def test_send_turn_includes_selected_material_scope_in_prompt(client, monkeypatc
     assert "Student selected materials for this turn: 2" in prompt
     assert "Alpha Notes" in prompt
     assert "Beta Notes" in prompt
+
+
+def test_send_turn_material_scope_overrides_course_filter(client, monkeypatch):
+    conn = sqlite3.connect(config.DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        """INSERT OR IGNORE INTO courses (id, code, name, term, created_at)
+           VALUES (123, 'TEST123', 'Test Course 123', 'Test', datetime('now'))"""
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Cross-course material scope",
+            "course_id": 123,
+            "content_filter": {"material_ids": [2001, 2002]},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    captured: dict[str, object] = {"course_id": "unset", "material_ids": None}
+
+    def fake_get_dual_context(_question, **kwargs):
+        captured["course_id"] = kwargs.get("course_id")
+        captured["material_ids"] = kwargs.get("material_ids")
+        return {"materials": [], "instructions": []}
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "ok"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-cross", "thread_id": "thread-cross"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "Use selected files across courses"},
+    )
+    assert turn_resp.status_code == 200
+    _ = turn_resp.get_data(as_text=True)
+
+    assert captured["course_id"] is None
+    assert captured["material_ids"] == [2001, 2002]
