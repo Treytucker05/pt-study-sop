@@ -250,14 +250,14 @@ export default function MethodsPage() {
                     <MethodBlockCard block={block} showLegacyCategory />
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                       <button
-                        className="p-1 bg-black/80 border border-primary/40 hover:border-primary"
+                        className="p-1 bg-black/40 border border-primary/40 hover:border-primary"
                         onClick={() => setRatingTarget({ id: block.id, name: block.name, type: "method" })}
                         title="Rate"
                       >
                         <Star className="w-3 h-3 text-primary" />
                       </button>
                       <button
-                        className="p-1 bg-black/80 border border-destructive/40 hover:border-destructive text-destructive"
+                        className="p-1 bg-black/40 border border-destructive/40 hover:border-destructive text-destructive"
                         onClick={() => {
                           if (confirm(`Delete "${block.name}"?`)) deleteBlockMutation.mutate(block.id);
                         }}

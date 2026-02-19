@@ -96,7 +96,7 @@ export function BrainToolbar({ workspace, currentFolder, onFolderChange }: Brain
       <span
        className={cn(
         "w-1.5 h-1.5 rounded-full",
-        workspace.obsidianStatus?.connected ? "bg-green-500" : "bg-red-500"
+         workspace.obsidianStatus?.connected ? "bg-success" : "bg-destructive"
        )}
       />
       <span className="text-xs text-[hsl(var(--muted-foreground))] hidden sm:inline">Obsidian</span>
@@ -105,7 +105,7 @@ export function BrainToolbar({ workspace, currentFolder, onFolderChange }: Brain
       <span
        className={cn(
         "w-1.5 h-1.5 rounded-full",
-        workspace.ankiStatus?.connected ? "bg-green-500" : "bg-red-500"
+         workspace.ankiStatus?.connected ? "bg-success" : "bg-destructive"
        )}
       />
       <span className="text-xs text-[hsl(var(--muted-foreground))] hidden sm:inline">Anki</span>

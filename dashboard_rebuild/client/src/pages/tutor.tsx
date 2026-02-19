@@ -584,7 +584,7 @@ export default function Tutor() {
       <div className="flex flex-col h-full min-h-0">
         {/* ─── Main Content Area ─── */}
         <div className="flex-1 flex min-h-0">
-          <div className="flex-1 bg-zinc-950/80 border-x-2 border-primary/20 flex flex-col min-w-0 relative">
+          <div className="flex-1 bg-black/40 border-x-2 border-primary/20 flex flex-col min-w-0 relative">
             {showSetup ? (
               <div className="flex-1 min-h-0 overflow-y-auto w-full">
                 <div className="w-full max-w-full">
@@ -709,16 +709,16 @@ export default function Tutor() {
                 {/* Session status indicator */}
                 {!activeSessionId && (
                   <div className="flex items-center gap-2 p-2 border border-primary/20 bg-primary/5">
-                    <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
                     <span className="font-terminal text-xs text-muted-foreground">
                       No active session
                     </span>
                   </div>
                 )}
                 {configStatus && !configStatus.ok && (
-                  <div className="flex items-start gap-2 p-2 border border-yellow-400/40 bg-yellow-900/20">
-                    <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
-                    <span className="font-terminal text-[11px] text-yellow-300/90 leading-relaxed">
+                  <div className="flex items-start gap-2 p-2 border border-secondary/40 bg-secondary/10">
+                    <AlertTriangle className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
+                    <span className="font-terminal text-[11px] text-secondary/90 leading-relaxed">
                       {configStatus.issues.join(" · ")}
                     </span>
                   </div>
