@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type ScholarQuestion, type ScholarFinding, type TutorAuditItem, type ScholarClustersResponse } from "@/lib/api";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import type { Proposal } from "@shared/schema";
 import {
@@ -144,24 +144,24 @@ export default function Scholar() {
   }, [chatMessages]);
 
   // Derived metrics from Brain data (read-only calculations)
-  const recentSessions = sessions.slice(0, 20);
-  const totalMinutes = sessions.reduce((sum, s) => sum + (s.minutes || 0), 0);
+  const recentSessions = useMemo(() => sessions.slice(0, 20), [sessions]);
+  const totalMinutes = useMemo(() => sessions.reduce((sum, s) => sum + (s.minutes || 0), 0), [sessions]);
   const avgMinutesPerSession = sessions.length > 0 ? Math.round(totalMinutes / sessions.length) : 0;
-  const sessionsThisWeek = sessions.filter(s => {
+  const sessionsThisWeek = useMemo(() => sessions.filter(s => {
     const sessionDate = new Date(s.date);
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     return sessionDate >= weekAgo;
-  }).length;
+  }).length, [sessions]);
 
   // Identify potential issues from Brain data
-  const coursesWithLowActivity = courses.filter(c => (c.totalSessions || 0) < 3);
-  const confusionTopics = sessions
+  const coursesWithLowActivity = useMemo(() => courses.filter(c => (c.totalSessions || 0) < 3), [courses]);
+  const confusionTopics = useMemo(() => sessions
     .filter(s => s.confusions && s.confusions.length > 0)
-    .flatMap(s => s.confusions || []);
-  const unresolvedIssues = sessions
+    .flatMap(s => s.confusions || []), [sessions]);
+  const unresolvedIssues = useMemo(() => sessions
     .filter(s => s.issues && s.issues.length > 0)
-    .flatMap(s => s.issues || []);
+    .flatMap(s => s.issues || []), [sessions]);
 
   const hasConcerns =
     coursesWithLowActivity.length > 0 ||
@@ -233,7 +233,15 @@ export default function Scholar() {
                variant="outline"
                size="sm"
                className="rounded-none font-arcade text-xs border-primary/40"
-               onClick={() => queryClient.invalidateQueries()}
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["sessions"] });
+                  queryClient.invalidateQueries({ queryKey: ["courses"] });
+                  queryClient.invalidateQueries({ queryKey: ["proposals"] });
+                  queryClient.invalidateQueries({ queryKey: ["scholar-questions"] });
+                  queryClient.invalidateQueries({ queryKey: ["scholar-findings"] });
+                  queryClient.invalidateQueries({ queryKey: ["scholar-tutor-audit"] });
+                  queryClient.invalidateQueries({ queryKey: ["scholar-clusters"] });
+                }}
                data-testid="button-refresh-data"
              >
                <RefreshCw className={`${ICON_SM} mr-2`} /> REFRESH DATA

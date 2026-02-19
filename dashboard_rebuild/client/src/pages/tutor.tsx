@@ -168,8 +168,8 @@ export default function Tutor() {
           selectedPaths,
         }),
       );
-    } catch (error) {
-      void error;
+    } catch {
+      /* localStorage write failed — ignore */
     }
   }, [
         tutorWizardStorageKey,
@@ -252,8 +252,8 @@ export default function Tutor() {
     }
     try {
       localStorage.setItem(tutorActiveSessionKey, session.session_id);
-    } catch (error) {
-      void error;
+    } catch {
+      /* localStorage write failed — ignore */
     }
   }, [tutorMaterialStorageKey, tutorActiveSessionKey]);
 
@@ -282,8 +282,8 @@ export default function Tutor() {
       setActiveSessionId(session.session_id);
       try {
         localStorage.setItem(tutorActiveSessionKey, session.session_id);
-      } catch (error) {
-        void error;
+      } catch {
+        /* localStorage write failed — ignore */
       }
       setStartedAt(session.started_at);
       setArtifacts([]);
@@ -503,12 +503,12 @@ export default function Tutor() {
             localStorage.removeItem(tutorActiveSessionKey);
           }
         }
-      } catch (error) {
-        void error;
+      } catch {
+        /* session restore failed — clear stale key */
         try {
           localStorage.removeItem(tutorActiveSessionKey);
-        } catch (innerError) {
-          void innerError;
+        } catch {
+          /* localStorage remove failed — ignore */
         }
       }
 
@@ -537,8 +537,8 @@ export default function Tutor() {
             setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
           }
         }
-      } catch (error) {
-        void error;
+      } catch {
+        /* wizard state restore failed — ignore */
       }
 
       if (restoredCourseId) return;
@@ -548,8 +548,8 @@ export default function Tutor() {
         if (typeof currentCourse?.id === "number") {
           setCourseId((prev) => (typeof prev === "number" ? prev : currentCourse.id));
         }
-      } catch (error) {
-        void error;
+      } catch {
+        /* current course fetch failed — ignore */
       }
     };
 

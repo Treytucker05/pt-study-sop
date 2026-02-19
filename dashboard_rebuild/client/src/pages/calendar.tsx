@@ -154,13 +154,13 @@ function GoogleTasksBoard({ tasks, taskLists }: { tasks: GoogleTask[], taskLists
   );
 
   const moveMutation = useMutation({
-    mutationFn: (vars: any) => api.googleTasks.move(vars.taskId, vars.listId, vars.destListId, vars.previous, vars.parent),
+    mutationFn: (vars: { taskId: string; listId: string; destListId: string; previous?: string; parent?: string }) => api.googleTasks.move(vars.taskId, vars.listId, vars.destListId, vars.previous, vars.parent),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["google-tasks"] }),
     onError: () => toast({ title: "Move Failed", variant: "destructive" })
   });
 
   const updateMutation = useMutation({
-    mutationFn: (vars: { id: string, listId: string, data: any }) => api.googleTasks.update(vars.id, vars.listId, vars.data),
+    mutationFn: (vars: { id: string; listId: string; data: Partial<GoogleTask> }) => api.googleTasks.update(vars.id, vars.listId, vars.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-tasks"] });
       setEditingTask(null);
