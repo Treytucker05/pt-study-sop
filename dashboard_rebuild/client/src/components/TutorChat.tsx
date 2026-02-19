@@ -567,7 +567,7 @@ export function TutorChat({
                 <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
                   {msg.retrievalDebug ? (
                     <Badge variant="outline" className="text-[11px] rounded-none text-muted-foreground/80">
-                      RAG {msg.retrievalDebug.accuracy_profile ?? "balanced"} | conf {(msg.retrievalDebug.retrieval_confidence ?? 0).toFixed(2)} ({msg.retrievalDebug.retrieval_confidence_tier ?? "low"}) | uniq {msg.retrievalDebug.retrieved_material_unique_sources ?? 0} | top {Math.round((msg.retrievalDebug.material_top_source_share ?? 0) * 100)}% | dropped {msg.retrievalDebug.material_dropped_by_cap ?? 0}
+                      RAG {msg.retrievalDebug.effective_accuracy_profile ?? msg.retrievalDebug.accuracy_profile ?? "strict"}{msg.retrievalDebug.profile_escalated ? " (escalated)" : ""} | conf {(msg.retrievalDebug.retrieval_confidence ?? 0).toFixed(2)} ({msg.retrievalDebug.retrieval_confidence_tier ?? "low"}) | uniq {msg.retrievalDebug.retrieved_material_unique_sources ?? 0} | top {Math.round((msg.retrievalDebug.material_top_source_share ?? 0) * 100)}% | dropped {msg.retrievalDebug.material_dropped_by_cap ?? 0}
                     </Badge>
                   ) : null}
                   {msg.citations?.map((c) =>

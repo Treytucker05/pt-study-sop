@@ -592,6 +592,99 @@ def _accuracy_profile_prompt_guidance(accuracy_profile: str) -> str:
     )
 
 
+def _extract_material_retrieval_signals(
+    *,
+    material_docs: list[Any],
+    rag_debug: dict[str, Any],
+) -> dict[str, Any]:
+    rag_material = rag_debug.get("materials") if isinstance(rag_debug, dict) else {}
+    if not isinstance(rag_material, dict):
+        rag_material = {}
+
+    top_source, top_share = _source_concentration_stats(material_docs)
+    return {
+        "retrieved_chunks": len(material_docs),
+        "retrieved_unique_sources": len(_material_sources_from_docs(material_docs)),
+        "top_source": top_source,
+        "top_source_share": float(
+            rag_material.get("final_top_doc_share")
+            if rag_material.get("final_top_doc_share") is not None
+            else top_share
+        ),
+        "merged_candidates": int(rag_material.get("candidate_pool_merged") or 0),
+        "dropped_by_cap": int(rag_material.get("candidate_pool_dropped_by_cap") or 0),
+    }
+
+
+def _should_escalate_to_coverage(
+    *,
+    selected_material_count: int,
+    material_k: int,
+    signals: dict[str, Any],
+) -> tuple[bool, list[str]]:
+    """
+    Decide whether to retry retrieval with the coverage profile.
+
+    Trigger logic:
+    - dominant source concentration in selected scope (>=4 files), or
+    - weak breadth in large selected scope, or
+    - low preflight confidence in large selected scope.
+    """
+    reasons: list[str] = []
+    unique_sources = int(signals.get("retrieved_unique_sources") or 0)
+    top_source_share = float(signals.get("top_source_share") or 0.0)
+    dropped_by_cap = int(signals.get("dropped_by_cap") or 0)
+    merged_candidates = int(signals.get("merged_candidates") or 0)
+    large_scope = selected_material_count >= 8
+
+    preflight_confidence = _compute_retrieval_confidence(
+        selected_material_count=selected_material_count,
+        material_k=material_k,
+        retrieved_unique_sources=unique_sources,
+        citations_unique_sources=max(1, unique_sources),
+        top_source_share=top_source_share,
+        dropped_by_cap=dropped_by_cap,
+        merged_candidates=merged_candidates,
+    )
+
+    if selected_material_count >= 4 and top_source_share > 0.45:
+        reasons.append("dominant_source")
+    if large_scope and unique_sources < 4:
+        reasons.append("low_source_breadth")
+    if large_scope and preflight_confidence < 0.50:
+        reasons.append("low_preflight_confidence")
+
+    return bool(reasons), reasons
+
+
+def _build_insufficient_evidence_response(
+    *,
+    selected_count: int,
+    selected_labels: list[str],
+    retrieved_sources: list[str],
+    profile_used: str,
+) -> str:
+    lines = [
+        "I do not have enough reliable evidence in your selected files to answer that accurately yet.",
+        f"Current retrieval profile: {profile_used}.",
+        "Please narrow the question, select fewer files, or ask me to focus on a specific source.",
+    ]
+
+    if retrieved_sources:
+        lines.append("")
+        lines.append("Retrieved files for this attempt:")
+        lines.extend(f"- {src}" for src in retrieved_sources)
+
+    if selected_labels:
+        lines.append("")
+        lines.append(f"Selected scope ({selected_count} files):")
+        lines.extend(f"- {label}" for label in selected_labels[:20])
+        if selected_count > 20:
+            lines.append(f"- ... and {selected_count - 20} more")
+
+    return "\n".join(lines)
+
+
 def _sanitize_filename(name: str) -> str:
     import re
 
@@ -1097,27 +1190,79 @@ def send_turn(session_id: str):
             from tutor_rag import get_dual_context, keyword_search_dual
             from tutor_prompt_builder import build_prompt_with_contexts
 
+            requested_accuracy_profile = accuracy_profile
+            effective_accuracy_profile = requested_accuracy_profile
+            effective_material_k = material_k
+            effective_instruction_k = instruction_k
             rag_debug: dict[str, Any] = {}
+            profile_escalated = False
+            profile_escalation_reasons: list[str] = []
 
-            # Dual search: prefer embedding search, fall back to keyword
-            try:
-                dual = get_dual_context(
-                    question,
-                    course_id=retrieval_course_id,
-                    material_ids=material_ids,
-                    k_materials=material_k,
-                    k_instructions=instruction_k,
-                    debug=rag_debug,
+            def _run_dual_retrieval(
+                profile_name: str,
+                *,
+                material_k_value: int,
+                instruction_k_value: int,
+            ) -> tuple[dict, dict[str, Any]]:
+                retrieval_debug: dict[str, Any] = {}
+                try:
+                    result = get_dual_context(
+                        question,
+                        course_id=retrieval_course_id,
+                        material_ids=material_ids,
+                        k_materials=material_k_value,
+                        k_instructions=instruction_k_value,
+                        debug=retrieval_debug,
+                    )
+                except Exception:
+                    result = keyword_search_dual(
+                        question,
+                        course_id=retrieval_course_id,
+                        material_ids=material_ids,
+                        k_materials=material_k_value,
+                        k_instructions=instruction_k_value,
+                        debug=retrieval_debug,
+                    )
+                return result, retrieval_debug
+
+            dual, rag_debug = _run_dual_retrieval(
+                effective_accuracy_profile,
+                material_k_value=effective_material_k,
+                instruction_k_value=effective_instruction_k,
+            )
+
+            material_docs_initial = dual.get("materials") or []
+            initial_signals = _extract_material_retrieval_signals(
+                material_docs=material_docs_initial,
+                rag_debug=rag_debug,
+            )
+
+            should_escalate, escalation_reasons = _should_escalate_to_coverage(
+                selected_material_count=selected_material_count,
+                material_k=effective_material_k,
+                signals=initial_signals,
+            )
+
+            if (
+                selected_material_count > 0
+                and effective_accuracy_profile != "coverage"
+                and should_escalate
+            ):
+                effective_accuracy_profile = "coverage"
+                effective_material_k = _resolve_material_retrieval_k(
+                    material_ids, effective_accuracy_profile
                 )
-            except Exception:
-                dual = keyword_search_dual(
-                    question,
-                    course_id=retrieval_course_id,
-                    material_ids=material_ids,
-                    k_materials=material_k,
-                    k_instructions=instruction_k,
-                    debug=rag_debug,
+                effective_instruction_k = _resolve_instruction_retrieval_k(
+                    effective_accuracy_profile
                 )
+                dual, rag_debug = _run_dual_retrieval(
+                    effective_accuracy_profile,
+                    material_k_value=effective_material_k,
+                    instruction_k_value=effective_instruction_k,
+                )
+                profile_escalated = True
+                profile_escalation_reasons = escalation_reasons
+
             material_text, instruction_text = _format_dual_context(dual)
 
             # Graceful mode when no materials
@@ -1140,7 +1285,7 @@ def send_turn(session_id: str):
             )
             system_prompt += (
                 "\n\n## Retrieval Tuning\n"
-                f"{_accuracy_profile_prompt_guidance(accuracy_profile)}"
+                f"{_accuracy_profile_prompt_guidance(effective_accuracy_profile)}"
             )
             if selected_material_count > 0:
                 selected_list = "\n".join(
@@ -1149,14 +1294,21 @@ def send_turn(session_id: str):
                 system_prompt += (
                     "\n\n## Selected Material Scope\n"
                     f"- Student selected materials for this turn: {selected_material_count}\n"
-                    f"- Retrieval target depth this turn: {material_k}\n"
-                    f"- Instruction retrieval depth this turn: {instruction_k}\n"
+                    f"- Retrieval target depth this turn: {effective_material_k}\n"
+                    f"- Instruction retrieval depth this turn: {effective_instruction_k}\n"
                     "- Retrieved excerpts can be fewer than selected files because retrieval is relevance-based.\n"
                     "- If the student asks 'how many files are you using/seeing/have', answer with the selected count above first.\n"
                     "- Only mention retrieved/cited file count if they explicitly ask for retrieved/cited count.\n"
                     "- Do not frame selected-scope questions as 'I am using N retrieved files'.\n"
                     "Selected files:\n"
                     f"{selected_list}"
+                )
+            if profile_escalated:
+                system_prompt += (
+                    "\n\n## Retrieval Escalation\n"
+                    f"- Requested profile: {requested_accuracy_profile}\n"
+                    f"- Escalated profile: {effective_accuracy_profile}\n"
+                    f"- Escalation reason(s): {', '.join(profile_escalation_reasons) or 'weak_retrieval_signals'}\n"
                 )
 
             effective_model = codex_model or "gpt-5.3-codex"
@@ -1212,10 +1364,36 @@ def send_turn(session_id: str):
 
             material_docs = dual.get("materials") or []
             instruction_docs = dual.get("instructions") or []
+            final_signals = _extract_material_retrieval_signals(
+                material_docs=material_docs,
+                rag_debug=rag_debug,
+            )
             retrieved_material_sources = _material_sources_from_docs(
                 material_docs,
                 max_items=20,
             )
+            still_weak, weak_reasons = _should_escalate_to_coverage(
+                selected_material_count=selected_material_count,
+                material_k=effective_material_k,
+                signals=final_signals,
+            )
+
+            force_insufficient_evidence = (
+                selected_material_count > 0
+                and effective_accuracy_profile == "coverage"
+                and still_weak
+                and not _is_material_count_question(question)
+                and not _is_selected_scope_listing_question(question)
+            )
+
+            def _attach_profile_debug(payload: dict[str, Any]) -> dict[str, Any]:
+                payload["requested_accuracy_profile"] = requested_accuracy_profile
+                payload["effective_accuracy_profile"] = effective_accuracy_profile
+                payload["profile_escalated"] = profile_escalated
+                payload["profile_escalation_reasons"] = profile_escalation_reasons
+                payload["insufficient_evidence_guard"] = force_insufficient_evidence
+                payload["insufficient_evidence_reasons"] = weak_reasons if force_insufficient_evidence else []
+                return payload
 
             if selected_material_count > 0 and _is_material_count_question(question):
                 used_scope_shortcut = True
@@ -1229,17 +1407,17 @@ def send_turn(session_id: str):
                     for idx, src in enumerate(retrieved_material_sources[:12])
                 ]
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
-                retrieval_debug_payload = _build_retrieval_debug_payload(
-                    accuracy_profile=accuracy_profile,
+                retrieval_debug_payload = _attach_profile_debug(_build_retrieval_debug_payload(
+                    accuracy_profile=effective_accuracy_profile,
                     material_ids=material_ids,
                     selected_material_count=selected_material_count,
-                    material_k=material_k,
+                    material_k=effective_material_k,
                     retrieval_course_id=retrieval_course_id,
                     material_docs=material_docs,
                     instruction_docs=instruction_docs,
                     citations=citations,
                     rag_debug=rag_debug,
-                )
+                ))
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",
                     session_id,
@@ -1266,17 +1444,55 @@ def send_turn(session_id: str):
                     for idx, src in enumerate(citation_sources[:12])
                 ]
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
-                retrieval_debug_payload = _build_retrieval_debug_payload(
-                    accuracy_profile=accuracy_profile,
+                retrieval_debug_payload = _attach_profile_debug(_build_retrieval_debug_payload(
+                    accuracy_profile=effective_accuracy_profile,
                     material_ids=material_ids,
                     selected_material_count=selected_material_count,
-                    material_k=material_k,
+                    material_k=effective_material_k,
                     retrieval_course_id=retrieval_course_id,
                     material_docs=material_docs,
                     instruction_docs=instruction_docs,
                     citations=citations,
                     rag_debug=rag_debug,
+                ))
+                _LOG.info(
+                    "Tutor retrieval debug session=%s turn=%s payload=%s",
+                    session_id,
+                    turn_number,
+                    json.dumps(retrieval_debug_payload, ensure_ascii=True),
                 )
+                yield format_sse_chunk(full_response)
+                yield format_sse_done(
+                    citations=citations,
+                    model=api_model,
+                    artifacts=artifact_payload,
+                    retrieval_debug=retrieval_debug_payload,
+                )
+            elif force_insufficient_evidence:
+                used_scope_shortcut = True
+                full_response = _build_insufficient_evidence_response(
+                    selected_count=selected_material_count,
+                    selected_labels=selected_material_labels,
+                    retrieved_sources=retrieved_material_sources,
+                    profile_used=effective_accuracy_profile,
+                )
+                citation_sources = retrieved_material_sources or selected_material_labels
+                citations = [
+                    {"source": src, "index": idx + 1}
+                    for idx, src in enumerate(citation_sources[:12])
+                ]
+                artifact_payload = [artifact_cmd] if artifact_cmd else None
+                retrieval_debug_payload = _attach_profile_debug(_build_retrieval_debug_payload(
+                    accuracy_profile=effective_accuracy_profile,
+                    material_ids=material_ids,
+                    selected_material_count=selected_material_count,
+                    material_k=effective_material_k,
+                    retrieval_course_id=retrieval_course_id,
+                    material_docs=material_docs,
+                    instruction_docs=instruction_docs,
+                    citations=citations,
+                    rag_debug=rag_debug,
+                ))
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",
                     session_id,
@@ -1436,17 +1652,17 @@ def send_turn(session_id: str):
                             }
                         )
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
-                retrieval_debug_payload = _build_retrieval_debug_payload(
-                    accuracy_profile=accuracy_profile,
+                retrieval_debug_payload = _attach_profile_debug(_build_retrieval_debug_payload(
+                    accuracy_profile=effective_accuracy_profile,
                     material_ids=material_ids,
                     selected_material_count=selected_material_count,
-                    material_k=material_k,
+                    material_k=effective_material_k,
                     retrieval_course_id=retrieval_course_id,
                     material_docs=material_docs,
                     instruction_docs=instruction_docs,
                     citations=all_citations,
                     rag_debug=rag_debug,
-                )
+                ))
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",
                     session_id,

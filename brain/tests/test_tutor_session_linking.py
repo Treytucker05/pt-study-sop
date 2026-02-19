@@ -230,7 +230,14 @@ def test_send_turn_scales_material_retrieval_to_selected_materials(client, monke
     def fake_get_dual_context(_question, **kwargs):
         captured["k_materials"] = kwargs.get("k_materials")
         captured["material_ids"] = kwargs.get("material_ids")
-        return {"materials": [], "instructions": []}
+        materials = [
+            SimpleNamespace(
+                page_content=f"doc {idx}",
+                metadata={"source": f"C:/materials/doc-{idx}.md", "rag_doc_id": 8000 + idx, "chunk_index": 0},
+            )
+            for idx in range(1, 5)
+        ]
+        return {"materials": materials, "instructions": []}
 
     monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
     monkeypatch.setattr(
@@ -253,7 +260,7 @@ def test_send_turn_scales_material_retrieval_to_selected_materials(client, monke
     _ = turn_resp.get_data(as_text=True)
 
     assert captured["material_ids"] == material_ids
-    assert captured["k_materials"] == 30
+    assert captured["k_materials"] == 34
 
 
 def test_send_turn_strict_profile_boosts_retrieval_depth(client, monkeypatch):
@@ -278,7 +285,14 @@ def test_send_turn_strict_profile_boosts_retrieval_depth(client, monkeypatch):
     def fake_get_dual_context(_question, **kwargs):
         captured["k_materials"] = kwargs.get("k_materials")
         captured["k_instructions"] = kwargs.get("k_instructions")
-        return {"materials": [], "instructions": []}
+        materials = [
+            SimpleNamespace(
+                page_content=f"strict doc {idx}",
+                metadata={"source": f"C:/materials/strict-{idx}.md", "rag_doc_id": 8100 + idx, "chunk_index": 0},
+            )
+            for idx in range(1, 5)
+        ]
+        return {"materials": materials, "instructions": []}
 
     monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
     monkeypatch.setattr(
@@ -303,6 +317,133 @@ def test_send_turn_strict_profile_boosts_retrieval_depth(client, monkeypatch):
     # Base k for 20 selected is 20; strict adds +4.
     assert captured["k_materials"] == 24
     assert captured["k_instructions"] == 3
+
+
+def test_send_turn_auto_escalates_profile_to_coverage_on_weak_retrieval(client, monkeypatch):
+    material_ids = list(range(1, 11))
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Auto Escalation Test",
+            "content_filter": {"material_ids": material_ids},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    calls: list[dict] = []
+
+    def fake_get_dual_context(_question, **kwargs):
+        calls.append(kwargs)
+        if len(calls) == 1:
+            weak_docs = [
+                SimpleNamespace(
+                    page_content=f"weak chunk {i}",
+                    metadata={"source": "C:/materials/weak.md", "rag_doc_id": 5001, "chunk_index": i},
+                )
+                for i in range(6)
+            ]
+            return {"materials": weak_docs, "instructions": []}
+        broad_docs = [
+            SimpleNamespace(
+                page_content=f"broad chunk {i}",
+                metadata={"source": f"C:/materials/broad-{i}.md", "rag_doc_id": 6000 + i, "chunk_index": 0},
+            )
+            for i in range(5)
+        ]
+        return {"materials": broad_docs, "instructions": []}
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "answer"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-escalate", "thread_id": "thread-escalate"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "Explain the key concept"},
+    )
+    assert turn_resp.status_code == 200
+    body = turn_resp.get_data(as_text=True)
+    done_payload = _extract_done_payload(body)
+    debug = done_payload.get("retrieval_debug")
+    assert isinstance(debug, dict)
+
+    assert len(calls) == 2
+    assert calls[0]["k_materials"] == 14
+    assert calls[1]["k_materials"] == 22
+    assert debug["requested_accuracy_profile"] == "strict"
+    assert debug["effective_accuracy_profile"] == "coverage"
+    assert debug["profile_escalated"] is True
+    assert "dominant_source" in debug["profile_escalation_reasons"]
+    assert debug["insufficient_evidence_guard"] is False
+
+
+def test_send_turn_uses_insufficient_evidence_guard_when_coverage_still_weak(client, monkeypatch):
+    material_ids = list(range(1, 11))
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Insufficient Evidence Guard Test",
+            "content_filter": {"material_ids": material_ids},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    calls = {"dual": 0, "stream": 0}
+
+    def fake_get_dual_context(_question, **_kwargs):
+        calls["dual"] += 1
+        weak_docs = [
+            SimpleNamespace(
+                page_content=f"weak chunk {i}",
+                metadata={"source": "C:/materials/weak.md", "rag_doc_id": 7001, "chunk_index": i},
+            )
+            for i in range(6)
+        ]
+        return {"materials": weak_docs, "instructions": []}
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    def fake_stream(*_args, **_kwargs):
+        calls["stream"] += 1
+        yield {"type": "delta", "text": "llm should not run"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-guard", "thread_id": "thread-guard"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "Explain the mechanism in detail"},
+    )
+    assert turn_resp.status_code == 200
+    body = turn_resp.get_data(as_text=True)
+    done_payload = _extract_done_payload(body)
+    debug = done_payload.get("retrieval_debug")
+    assert isinstance(debug, dict)
+
+    assert calls["dual"] == 2
+    assert calls["stream"] == 0
+    assert "I do not have enough reliable evidence" in body
+    assert debug["requested_accuracy_profile"] == "strict"
+    assert debug["effective_accuracy_profile"] == "coverage"
+    assert debug["profile_escalated"] is True
+    assert debug["insufficient_evidence_guard"] is True
 
 
 def test_send_turn_applies_per_turn_material_override(client, monkeypatch):
@@ -735,14 +876,14 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     assert debug["material_ids_provided"] is True
     assert debug["material_ids_count"] == 2
     assert debug["selected_material_count"] == 2
-    assert debug["material_k"] == 6
+    assert debug["material_k"] == 10
     assert debug["retrieved_material_chunks"] == 2
     assert debug["retrieved_material_unique_sources"] == 2
     assert debug["retrieved_instruction_chunks"] == 1
     assert debug["retrieved_instruction_unique_sources"] == 1
     assert debug["citations_total"] >= 1
     assert debug["citations_unique_sources"] >= 1
-    assert debug["accuracy_profile"] == "balanced"
+    assert debug["accuracy_profile"] == "strict"
     assert 0.0 <= debug["material_top_source_share"] <= 1.0
     assert "material_dropped_by_cap" in debug
     assert 0.0 <= debug["retrieval_confidence"] <= 1.0
@@ -801,6 +942,6 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     assert debug["retrieved_material_unique_sources"] == 1
     assert debug["citations_total"] == 1
     assert debug["citations_unique_sources"] == 1
-    assert debug["accuracy_profile"] == "balanced"
+    assert debug["accuracy_profile"] == "strict"
     assert "material_dropped_by_cap" in debug
     assert 0.0 <= debug["retrieval_confidence"] <= 1.0

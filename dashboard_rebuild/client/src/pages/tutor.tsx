@@ -62,7 +62,7 @@ function normalizeAccuracyProfile(value: unknown): TutorAccuracyProfile {
   if (value === "strict" || value === "coverage" || value === "balanced") {
     return value;
   }
-  return "balanced";
+  return "strict";
 }
 
 export default function Tutor() {
@@ -93,7 +93,7 @@ export default function Tutor() {
     try {
       return normalizeAccuracyProfile(localStorage.getItem(tutorAccuracyProfileKey));
     } catch {
-      return "balanced";
+      return "strict";
     }
   });
   const [mode, setMode] = useState<TutorMode>("Core");

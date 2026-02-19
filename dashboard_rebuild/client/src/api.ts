@@ -1389,6 +1389,12 @@ export interface TutorSSEChunk {
 export interface TutorRetrievalDebug {
   accuracy_profile?: TutorAccuracyProfile;
   accuracy_profile_label?: string;
+  requested_accuracy_profile?: TutorAccuracyProfile;
+  effective_accuracy_profile?: TutorAccuracyProfile;
+  profile_escalated?: boolean;
+  profile_escalation_reasons?: string[];
+  insufficient_evidence_guard?: boolean;
+  insufficient_evidence_reasons?: string[];
   material_ids_provided?: boolean;
   material_ids_count?: number;
   selected_material_count?: number;

@@ -10,7 +10,7 @@ from typing import Any, Literal
 
 TutorAccuracyProfile = Literal["balanced", "strict", "coverage"]
 
-DEFAULT_ACCURACY_PROFILE: TutorAccuracyProfile = "balanced"
+DEFAULT_ACCURACY_PROFILE: TutorAccuracyProfile = "strict"
 
 ACCURACY_PROFILE_CONFIG: dict[TutorAccuracyProfile, dict[str, Any]] = {
     "balanced": {

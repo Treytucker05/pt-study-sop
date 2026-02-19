@@ -497,3 +497,33 @@ px vitest run --reporter=verbose (341 passed)
   - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorChat.test.tsx` -> `3 passed`
   - `cd dashboard_rebuild && npm run build` -> success
   - `python tools/tutor_retrieval_eval.py --keyword-only --limit 3` -> success, report emitted under `logs/tutor_eval/`
+
+## 2026-02-19 - Tutor recommendation rollout: strict default + coverage auto-escalation guard
+
+- Applied recommended runtime policy for higher tutor accuracy:
+  - Default profile changed from `balanced` to `strict` in `brain/tutor_accuracy_profiles.py`.
+  - Tutor page profile fallback/localStorage default aligned to `strict`.
+- Added automatic retrieval escalation in `brain/dashboard/api_tutor.py`:
+  - Start with requested profile (now default strict).
+  - Retry retrieval with `coverage` when weak signals are detected:
+    - dominant source concentration,
+    - low source breadth in larger selected scopes,
+    - low preflight confidence.
+- Added deterministic safety guard:
+  - If retrieval is still weak after coverage retry, tutor now returns
+    “insufficient evidence from selected files” response instead of guessing.
+  - Guard responses include selected scope/retrieved source context and still emit `retrieval_debug`.
+- Extended debug payload metadata:
+  - `requested_accuracy_profile`, `effective_accuracy_profile`,
+    `profile_escalated`, `profile_escalation_reasons`,
+    `insufficient_evidence_guard`, `insufficient_evidence_reasons`.
+- Frontend display now shows effective profile and escalation status in Tutor chat telemetry badge.
+- Tests updated/added for recommendation behavior:
+  - profile-depth expectations updated for strict default.
+  - auto-escalation to coverage test.
+  - insufficient-evidence guard shortcut test.
+- Validation:
+  - `pytest brain/tests/test_tutor_rag_batching.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_accuracy_profiles.py -q` -> `34 passed`
+  - `pytest brain/tests/ -q` -> `321 passed, 17 skipped`
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorChat.test.tsx` -> `3 passed`
+  - `cd dashboard_rebuild && npm run build` -> success
