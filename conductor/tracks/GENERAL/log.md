@@ -369,3 +369,23 @@ px vitest run --reporter=verbose (341 passed)
   - `cd dashboard_rebuild && npm run build` -> success
   - `pytest brain/tests/` -> `305 passed, 17 skipped`
   - Browser verification on `http://127.0.0.1:5000/brain`: unload warning no longer present in console issues/messages.
+
+## 2026-02-19 - Tutor page async message-channel console noise filter
+
+- Symptom:
+  - On `/tutor`, console repeatedly showed:
+    - `Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received`
+- Investigation:
+  - No `chrome.runtime`/`browser.runtime` listener messaging exists in app source.
+  - This error signature is known browser-extension async messaging noise surfacing as unhandled rejection in page context.
+- Fix:
+  - Added targeted runtime filter at app bootstrap:
+    - `dashboard_rebuild/client/src/lib/runtime-noise-filter.ts`
+    - ignores only known extension async message-channel rejection signatures via `unhandledrejection` `preventDefault`.
+  - Wired in `dashboard_rebuild/client/src/main.tsx`.
+- Validation:
+  - `cd dashboard_rebuild && npm run build` -> success
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorChat.test.tsx` -> `2 passed`
+  - Browser verification on `http://127.0.0.1:5000/tutor`:
+    - no baseline console errors after reload
+    - manual injected rejection with same message no longer logs uncaught promise noise.
