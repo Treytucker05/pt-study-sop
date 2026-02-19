@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import hashlib
+import logging
 import os
 import re
 import sqlite3
@@ -26,6 +27,8 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional
 
 from db_setup import DB_PATH, init_database
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -87,6 +90,38 @@ def _infer_file_type(source_path: str, fallback: str = "other") -> str:
     return fallback or "other"
 
 
+def _clear_rag_embeddings(cur: sqlite3.Cursor, rag_doc_id: int) -> list[str]:
+    """Delete rag_embeddings rows for a document and return prior chroma IDs."""
+    cur.execute(
+        "SELECT chroma_id FROM rag_embeddings WHERE rag_doc_id = ?",
+        (rag_doc_id,),
+    )
+    chroma_ids = [row["chroma_id"] for row in cur.fetchall() if row["chroma_id"]]
+    if chroma_ids:
+        cur.execute("DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (rag_doc_id,))
+    return chroma_ids
+
+
+def _delete_from_chroma(chroma_ids: list[str], *, corpus: str) -> None:
+    """Best-effort Chroma cleanup for stale chunks after checksum changes."""
+    if not chroma_ids:
+        return
+
+    try:
+        from tutor_rag import COLLECTION_INSTRUCTIONS, COLLECTION_MATERIALS, init_vectorstore
+
+        collection_name = (
+            COLLECTION_INSTRUCTIONS if corpus == "instructions" else COLLECTION_MATERIALS
+        )
+        vs = init_vectorstore(collection_name)
+        collection = getattr(vs, "_collection", None)
+        if collection:
+            collection.delete(ids=chroma_ids)
+    except Exception as exc:
+        # Do not block ingestion; SQLite cleanup above still forces re-embed.
+        logger.warning("Failed to delete stale Chroma IDs: %s", exc)
+
+
 def _upsert_rag_doc(
     *,
     source_path: str,
@@ -111,13 +146,18 @@ def _upsert_rag_doc(
     normalized_file_size = int(file_size) if file_size is not None else None
 
     cur.execute(
-        "SELECT id, checksum FROM rag_docs WHERE source_path = ? AND COALESCE(corpus, 'runtime') = ?",
+        """
+        SELECT id, checksum, COALESCE(corpus, 'runtime') AS corpus
+        FROM rag_docs
+        WHERE source_path = ? AND COALESCE(corpus, 'runtime') = ?
+        """,
         (source_path, corpus),
     )
     row = cur.fetchone()
 
     if row:
         existing_id = int(row["id"])
+        existing_corpus = (row["corpus"] or corpus or "runtime").strip().lower()
         if (row["checksum"] or "") == checksum:
             cur.execute(
                 """
@@ -140,6 +180,7 @@ def _upsert_rag_doc(
             conn.close()
             return existing_id
 
+        stale_chroma_ids = _clear_rag_embeddings(cur, existing_id)
         cur.execute(
             """
             UPDATE rag_docs
@@ -175,6 +216,7 @@ def _upsert_rag_doc(
         )
         conn.commit()
         conn.close()
+        _delete_from_chroma(stale_chroma_ids, corpus=existing_corpus)
         return existing_id
 
     cur.execute(
@@ -304,7 +346,11 @@ def _ingest_document(
 
     # See if this path already exists for this doc_type.
     cur.execute(
-        "SELECT id, checksum FROM rag_docs WHERE source_path = ? AND doc_type = ?",
+        """
+        SELECT id, checksum, COALESCE(corpus, 'runtime') AS corpus
+        FROM rag_docs
+        WHERE source_path = ? AND doc_type = ?
+        """,
         (str(file_path), doc_type),
     )
     row = cur.fetchone()
@@ -317,6 +363,7 @@ def _ingest_document(
 
     if row:
         existing_id = row["id"]
+        existing_corpus = (row["corpus"] or "runtime").strip().lower()
         if row["checksum"] == checksum:
             cur.execute(
                 """
@@ -337,6 +384,7 @@ def _ingest_document(
             conn.close()
             return existing_id
 
+        stale_chroma_ids = _clear_rag_embeddings(cur, int(existing_id))
         cur.execute(
             """
             UPDATE rag_docs
@@ -362,6 +410,7 @@ def _ingest_document(
         )
         conn.commit()
         conn.close()
+        _delete_from_chroma(stale_chroma_ids, corpus=existing_corpus)
         return existing_id
 
     # Insert new row.

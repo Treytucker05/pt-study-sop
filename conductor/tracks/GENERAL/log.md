@@ -129,6 +129,23 @@ px vitest run --reporter=verbose (341 passed)
 - Validation:
   - `python -m pytest brain/tests/ -q` -> `303 passed, 2 warnings`
 
+## 2026-02-19 - Post-merge finalization (PR #113)
+
+- Merged PR: `https://github.com/Treytucker05/pt-study-sop/pull/113`
+  - Merge commit: `8ee7244f4a9f44a3c9357a135f8176ab05c4360f`
+- Verified on `main` that tutor continuity + archive-linking changes are present:
+  - `brain/dashboard/api_tutor.py`
+  - `brain/llm_provider.py`
+  - `brain/db_setup.py`
+  - `brain/dashboard/api_methods.py`
+  - `brain/selector_bridge.py`
+- Verified method-schema compatibility regression is resolved on `main`:
+  - `python -m pytest brain/tests/test_methods_api.py -q` -> `19 passed`
+  - `python -m pytest brain/tests/test_chain_runner.py -q` -> `21 passed`
+- Cleaned up feature branch lifecycle:
+  - deleted remote branch `feat/chat-archive-linking`
+  - local worktree cleanup completed (see git worktree list)
+
 ## 2026-02-18 - Docling extraction path for RAG ingestion
 
 - Added optional Docling-first extraction in `brain/text_extractor.py` for `.pdf`, `.docx`, and `.pptx`, with automatic fallback to existing extractors when Docling is unavailable or fails.
