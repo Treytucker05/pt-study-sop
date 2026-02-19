@@ -61,6 +61,108 @@ function Quote-CommandPart {
   return $Value
 }
 
+function New-NameSlug {
+  param([string]$Value)
+
+  if ([string]::IsNullOrWhiteSpace($Value)) { return "" }
+  $slug = $Value.ToLowerInvariant()
+  $slug = $slug -replace "[^a-z0-9\\-_ ]", ""
+  $slug = $slug -replace "\s+", "-"
+  return $slug.Trim("-_")
+}
+
+function Get-PythonLauncher {
+  param()
+
+  foreach ($candidate in @("python", "py")) {
+    $cmd = Get-Command -Name $candidate -ErrorAction SilentlyContinue
+    if ($cmd) {
+      return [string]$cmd.Source
+    }
+  }
+
+  return ""
+}
+
+function Register-TaskBoardTask {
+  param(
+    [string]$ScriptRoot,
+    [string]$TaskText,
+    [string]$SessionId,
+    [string]$ToolName,
+    [string]$WorktreePath
+  )
+
+  $result = @{
+    TaskId = ""
+    Registered = $false
+  }
+
+  if ([string]::IsNullOrWhiteSpace($TaskText)) {
+    return $result
+  }
+
+  $taskBoardScript = Join-Path $ScriptRoot "agent_task_board.py"
+  if (-not (Test-Path -LiteralPath $taskBoardScript)) {
+    Write-Warning "Task board script missing; skipping auto registration: $taskBoardScript"
+    return $result
+  }
+
+  $python = Get-PythonLauncher
+  if ([string]::IsNullOrWhiteSpace($python)) {
+    Write-Warning "python/py not found on PATH; skipping task board registration."
+    return $result
+  }
+
+  $sessionSlug = New-NameSlug -Value $SessionId
+  if ([string]::IsNullOrWhiteSpace($sessionSlug)) {
+    $sessionSlug = Get-Date -Format "yyyyMMddHHmmss"
+  }
+
+  $taskId = "TASK-$sessionSlug"
+  $agentName = "$ToolName-$sessionSlug"
+
+  & $python $taskBoardScript init | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    Write-Warning "Unable to initialize task board; skipping auto registration."
+    return $result
+  }
+
+  $note = "Auto-registered by launch_codex_session.ps1 from -Task."
+  & $python $taskBoardScript add `
+    --task-id $taskId `
+    --title $TaskText `
+    --priority P1 `
+    --status in_progress `
+    --agent $agentName `
+    --role integrate `
+    --tool $ToolName `
+    --session $SessionId `
+    --worktree $WorktreePath `
+    --note $note | Out-Null
+
+  if ($LASTEXITCODE -ne 0) {
+    $reclaimNote = "Reclaimed by launch_codex_session.ps1."
+    & $python $taskBoardScript claim `
+      --task-id $taskId `
+      --agent $agentName `
+      --role integrate `
+      --tool $ToolName `
+      --session $SessionId `
+      --worktree $WorktreePath `
+      --force `
+      --note $reclaimNote | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      Write-Warning "Task board add/claim failed for '$taskId'; continuing launch."
+      return $result
+    }
+  }
+
+  $result.TaskId = $taskId
+  $result.Registered = $true
+  return $result
+}
+
 $scriptRoot = $PSScriptRoot
 $launcher = Join-Path $scriptRoot "new_session_worktree.ps1"
 
@@ -70,6 +172,16 @@ if (-not $worktreeLine) {
   throw "Unable to parse worktree path from launcher output."
 }
 $worktreePath = $worktreeLine -replace "^Worktree created:\s*", ""
+$resolvedSessionName = Split-Path -Path $worktreePath -Leaf
+if ([string]::IsNullOrWhiteSpace($resolvedSessionName)) {
+  $resolvedSessionName = $SessionName
+}
+if ([string]::IsNullOrWhiteSpace($resolvedSessionName)) {
+  $resolvedSessionName = Get-Date -Format "yyyyMMdd_HHmmss"
+}
+
+$registration = Register-TaskBoardTask -ScriptRoot $scriptRoot -TaskText $Task -SessionId $resolvedSessionName -ToolName $Tool -WorktreePath $worktreePath
+$taskId = [string]$registration.TaskId
 
 $launchCommand = ""
 switch ($Tool.ToLowerInvariant()) {
@@ -113,7 +225,21 @@ switch ($Tool.ToLowerInvariant()) {
   }
 }
 
-$terminalCommand = "cd `"$worktreePath`""
+$safeWorktree = $worktreePath.Replace("'", "''")
+$safeTool = $Tool.Replace("'", "''")
+$safeSession = $resolvedSessionName.Replace("'", "''")
+$agentNameSlug = New-NameSlug -Value "$Tool-$resolvedSessionName"
+if ([string]::IsNullOrWhiteSpace($agentNameSlug)) {
+  $agentNameSlug = "$Tool-session"
+}
+$safeAgentName = $agentNameSlug.Replace("'", "''")
+$safeTaskId = $taskId.Replace("'", "''")
+
+$terminalCommand = "`$host.UI.RawUI.WindowTitle = 'pt-study-sop:session:$safeAgentName'; `$env:PT_AGENT_NAME = '$safeAgentName'; `$env:PT_AGENT_ROLE = 'integrate'; `$env:PT_AGENT_TOOL = '$safeTool'; `$env:PT_AGENT_WORKTREE = '$safeWorktree'; `$env:PT_AGENT_SESSION = '$safeSession';"
+if (-not [string]::IsNullOrWhiteSpace($taskId)) {
+  $terminalCommand = "$terminalCommand `$env:PT_TASK_ID = '$safeTaskId';"
+}
+$terminalCommand = "$terminalCommand cd `"$worktreePath`"; if (Test-Path '.\scripts\agent_task_board.py') { function task-board { python .\scripts\agent_task_board.py @args }; Write-Host '[task-board] use: task-board list | task-board claim --task-id T-001' -ForegroundColor Cyan }"
 if (-not [string]::IsNullOrWhiteSpace($launchCommand)) {
   $terminalCommand = "$terminalCommand; $launchCommand"
 }

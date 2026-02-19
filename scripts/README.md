@@ -75,6 +75,10 @@ task-board claim --task-id T-001
 
 Agent identity defaults are auto-injected per launched shell (`PT_AGENT_NAME`, `PT_AGENT_ROLE`, `PT_AGENT_TOOL`, `PT_AGENT_SESSION`, `PT_AGENT_WORKTREE`), so ownership is distinct across parallel agents even without passing `--agent`.
 
+Goal-based launch routing:
+- `launch_codex_session.ps1 -Task "..."` now auto-initializes/updates the shared task board by creating an `in_progress` task and claiming it for the launched session.
+- The launched shell receives `PT_TASK_ID` plus `task-board` helper, so follow-up `heartbeat`/`done` commands stay tied to the same board task.
+
 ### Integrate role usage
 - Integrate role path/branch is `wt/integrate` and is meant for final merge conflict resolution and release readiness tasks.
 - For a dedicated integrate launch, use:

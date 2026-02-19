@@ -118,6 +118,7 @@ px vitest run --reporter=verbose (341 passed)
   - Optional `brain_session_id` on session creation
   - Preserve existing `brain_session_id` on `/end` instead of always creating a new archive row
   - File: `brain/dashboard/api_tutor.py`
+
 - Added `thread_id` passthrough from streaming response completion payload:
   - File: `brain/llm_provider.py`
 - Added method library compatibility hardening for mixed old/new schemas:
@@ -128,6 +129,17 @@ px vitest run --reporter=verbose (341 passed)
   - `brain/tests/test_tutor_session_linking.py` (archive-link + response-id continuity)
 - Validation:
   - `python -m pytest brain/tests/ -q` -> `303 passed, 2 warnings`
+
+## 2026-02-19 - Conductor metadata sync + task-board goal routing
+
+- Synced track metadata status fields to match `conductor/tracks.md`:
+  - `CP_MSS_CONTROL_PLANE_HARDENING_20260217/metadata.json` -> `status: complete`
+  - `FINISH_PLANNING_20260210/metadata.json` -> `status: archived`
+  - `refactor_frontend_backend_20260204/metadata.json` -> `status: archived`
+- Hardened goal-based launcher task routing:
+  - `scripts/launch_codex_session.ps1` now auto-registers goal launches (`-Task`) in `scripts/agent_task_board.py` and claims them as `in_progress`.
+  - Injects `PT_TASK_ID` and `task-board` helper into launched session so agents stay attached to the shared board context.
+- Cleaned stale shared task-board ownership by resolving old `in_progress` entries from Feb 17-18.
 
 ## 2026-02-19 - Post-merge finalization (PR #113)
 
