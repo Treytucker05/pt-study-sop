@@ -444,6 +444,61 @@ def test_send_turn_material_count_question_uses_selected_scope(client, monkeypat
     assert stream_calls["count"] == 0
 
 
+def test_send_turn_selected_scope_listing_question_uses_selected_scope(client, monkeypatch):
+    selected_ids = [951, 952]
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Material Scope Listing Test",
+            "content_filter": {"material_ids": selected_ids},
+        },
+    )
+    assert resp.status_code == 201
+    tutor_sid = resp.get_json()["session_id"]
+
+    def fake_get_dual_context(_question, **_kwargs):
+        return {
+            "materials": [
+                SimpleNamespace(
+                    page_content="gamma snippet",
+                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
+                ),
+            ],
+            "instructions": [],
+        }
+
+    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    stream_calls = {"count": 0}
+
+    def fake_stream(*_args, **_kwargs):
+        stream_calls["count"] += 1
+        yield {"type": "delta", "text": "llm-stream-should-not-run"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-list", "thread_id": "thread-list"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    turn_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "List every selected file you can currently access for this turn."},
+    )
+    assert turn_resp.status_code == 200
+    body = turn_resp.get_data(as_text=True)
+
+    assert "You selected 2 files for this turn." in body
+    assert "Files retrieved for this question:" in body
+    assert "All selected files:" in body
+    assert "Gamma Notes" in body
+    assert "Delta Notes" in body
+    assert stream_calls["count"] == 0
+
+
 def test_material_count_shortcut_does_not_overwrite_last_response_id(client, monkeypatch):
     selected_ids = [951, 952]
     resp = client.post(

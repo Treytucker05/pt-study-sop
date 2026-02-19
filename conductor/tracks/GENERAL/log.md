@@ -412,3 +412,21 @@ px vitest run --reporter=verbose (341 passed)
   - `pytest brain/tests/test_tutor_session_linking.py -q` -> `10 passed`
   - `pytest brain/tests/test_tutor_rag_batching.py -q` -> `10 passed`
   - `pytest brain/tests/` -> `307 passed, 17 skipped`
+
+## 2026-02-19 - Deterministic selected-file listing shortcut for tutor scope questions
+
+- Problem:
+  - Asking tutor to list available/selected files could return a tiny retrieved subset (often 1-6) instead of the actual selected scope.
+- Fix:
+  - Added selected-scope listing intent detection in `brain/dashboard/api_tutor.py`:
+    - `_is_selected_scope_listing_question`
+    - `_build_selected_scope_listing_response`
+  - In `send_turn`, if selected materials exist and question is a listing intent, bypass LLM streaming and return deterministic response:
+    - includes retrieved files for this question
+    - includes full selected file scope labels from `material_ids`
+  - Shortcut now uses shared `used_scope_shortcut` logic so `last_response_id` continuity is not overwritten by deterministic responses.
+- Tests:
+  - Added `test_send_turn_selected_scope_listing_question_uses_selected_scope` in `brain/tests/test_tutor_session_linking.py`.
+- Validation:
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `11 passed`
+  - `pytest brain/tests/test_tutor_rag_batching.py -q` -> `10 passed`

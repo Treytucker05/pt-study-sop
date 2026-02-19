@@ -392,6 +392,21 @@ def _is_material_count_question(question: str) -> bool:
     return any(re.search(pattern, q) for pattern in patterns)
 
 
+def _is_selected_scope_listing_question(question: str) -> bool:
+    """Detect user questions asking to list/show selected files/materials."""
+    q = (question or "").strip().lower()
+    if not q:
+        return False
+    if _is_material_count_question(q):
+        return False
+    patterns = (
+        r"\b(list|show)\b.{0,80}\b(selected )?(files?|materials?|sources?)\b",
+        r"\bwhat\b.{0,80}\b(files?|materials?|sources?)\b.{0,80}\b(access|using|selected|have)\b",
+        r"\bwhich\b.{0,80}\b(files?|materials?|sources?)\b.{0,80}\b(access|using|selected|have)\b",
+    )
+    return any(re.search(pattern, q) for pattern in patterns)
+
+
 def _build_material_count_response(
     *,
     selected_count: int,
@@ -424,6 +439,31 @@ def _build_material_count_response(
         lines.append("")
         lines.append("Files retrieved for this question:")
         lines.extend(f"- {source}" for source in retrieved_sources)
+
+    return "\n".join(lines)
+
+
+def _build_selected_scope_listing_response(
+    *,
+    selected_count: int,
+    selected_labels: list[str],
+    retrieved_sources: list[str],
+) -> str:
+    """Build deterministic response for selected-file listing questions."""
+    lines = [f"You selected {selected_count} files for this turn."]
+
+    if retrieved_sources:
+        lines.append("")
+        lines.append("Files retrieved for this question:")
+        lines.extend(f"- {source}" for source in retrieved_sources)
+    else:
+        lines.append("")
+        lines.append("No chunks were retrieved for this exact question.")
+
+    if selected_labels:
+        lines.append("")
+        lines.append("All selected files:")
+        lines.extend(f"- {label}" for label in selected_labels)
 
     return "\n".join(lines)
 
@@ -1017,7 +1057,7 @@ def send_turn(session_id: str):
             latest_response_id: str | None = prev_response_id
             latest_thread_id: str | None = session.get("codex_thread_id")
             url_citations: list[object] = []
-            used_material_count_shortcut = False
+            used_scope_shortcut = False
 
             material_docs = dual.get("materials") or []
             instruction_docs = dual.get("instructions") or []
@@ -1027,7 +1067,7 @@ def send_turn(session_id: str):
             )
 
             if selected_material_count > 0 and _is_material_count_question(question):
-                used_material_count_shortcut = True
+                used_scope_shortcut = True
                 full_response = _build_material_count_response(
                     selected_count=selected_material_count,
                     selected_labels=selected_material_labels,
@@ -1036,6 +1076,41 @@ def send_turn(session_id: str):
                 citations = [
                     {"source": src, "index": idx + 1}
                     for idx, src in enumerate(retrieved_material_sources[:12])
+                ]
+                artifact_payload = [artifact_cmd] if artifact_cmd else None
+                retrieval_debug_payload = _build_retrieval_debug_payload(
+                    material_ids=material_ids,
+                    selected_material_count=selected_material_count,
+                    material_k=material_k,
+                    retrieval_course_id=retrieval_course_id,
+                    material_docs=material_docs,
+                    instruction_docs=instruction_docs,
+                    citations=citations,
+                )
+                _LOG.info(
+                    "Tutor retrieval debug session=%s turn=%s payload=%s",
+                    session_id,
+                    turn_number,
+                    json.dumps(retrieval_debug_payload, ensure_ascii=True),
+                )
+                yield format_sse_chunk(full_response)
+                yield format_sse_done(
+                    citations=citations,
+                    model=api_model,
+                    artifacts=artifact_payload,
+                    retrieval_debug=retrieval_debug_payload,
+                )
+            elif selected_material_count > 0 and _is_selected_scope_listing_question(question):
+                used_scope_shortcut = True
+                full_response = _build_selected_scope_listing_response(
+                    selected_count=selected_material_count,
+                    selected_labels=selected_material_labels,
+                    retrieved_sources=retrieved_material_sources,
+                )
+                citation_sources = retrieved_material_sources or selected_material_labels
+                citations = [
+                    {"source": src, "index": idx + 1}
+                    for idx, src in enumerate(citation_sources[:12])
                 ]
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
                 retrieval_debug_payload = _build_retrieval_debug_payload(
@@ -1254,7 +1329,7 @@ def send_turn(session_id: str):
                     question,
                     full_response,
                     json.dumps(citations) if citations else None,
-                    None if used_material_count_shortcut else latest_response_id,
+                    None if used_scope_shortcut else latest_response_id,
                     api_model,
                     session.get("phase"),
                     json.dumps({"command": artifact_cmd}) if artifact_cmd else None,
