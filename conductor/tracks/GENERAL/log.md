@@ -430,3 +430,13 @@ px vitest run --reporter=verbose (341 passed)
 - Validation:
   - `pytest brain/tests/test_tutor_session_linking.py -q` -> `11 passed`
   - `pytest brain/tests/test_tutor_rag_batching.py -q` -> `10 passed`
+
+## 2026-02-19 - Startup hard-stop on port 5000 in Start_Dashboard.bat
+
+- Updated `Start_Dashboard.bat` to hard-stop any process currently listening on port `5000` before launching dashboard.
+- This prevents stale Flask processes from serving old backend code when restarting via batch file.
+- Retained existing targeted `dashboard_web.py` process cleanup as a secondary safeguard.
+- Validation:
+  - Ran `Start_Dashboard.bat` (with `SKIP_UI_BUILD=1` env set in invoking shell).
+  - Confirmed log line: `Hard-stopping PID ... bound to port 5000`.
+  - Confirmed dashboard still starts and serves `http://127.0.0.1:5000/tutor`.
