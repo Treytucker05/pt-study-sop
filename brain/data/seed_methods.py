@@ -1383,15 +1383,19 @@ def seed_methods(force: bool = False):
     if updated_blocks:
         print(f"[OK] Updated {updated_blocks} existing method blocks")
 
-    # Insert template chains (resolve block names to IDs; skip duplicates)
-    cursor.execute("SELECT name FROM method_chains")
-    existing_chain_names = {r[0] for r in cursor.fetchall()}
+    # Insert/update template chains (resolve block names to IDs; merge by name)
+    cursor.execute(
+        """
+        SELECT id, name, description, block_ids, context_tags, COALESCE(is_template, 0) AS is_template
+        FROM method_chains
+        """
+    )
+    existing_chains_by_name = {str(r[1]).strip().lower(): r for r in cursor.fetchall()}
 
     inserted_chains = 0
+    updated_chains = 0
     for chain in chains_src:
         if chain.get("is_template", 0) != 1:
-            continue
-        if chain["name"] in existing_chain_names:
             continue
 
         missing = [b for b in chain["blocks"] if b not in name_to_id]
@@ -1402,16 +1406,54 @@ def seed_methods(force: bool = False):
             continue
 
         block_ids = [name_to_id[name] for name in chain["blocks"]]
+        block_ids_json = json.dumps(block_ids)
+        context_tags_json = json.dumps(chain["context_tags"])
+        chain_name = chain["name"]
+        chain_key = chain_name.strip().lower()
+
+        existing = existing_chains_by_name.get(chain_key)
+        if existing:
+            existing_id = int(existing[0])
+            existing_description = existing[2] or ""
+            existing_block_ids = existing[3] or ""
+            existing_context_tags = existing[4] or ""
+            existing_is_template = int(existing[5] or 0)
+
+            if (
+                existing_is_template != 1
+                or existing_description != chain["description"]
+                or existing_block_ids != block_ids_json
+                or existing_context_tags != context_tags_json
+            ):
+                cursor.execute(
+                    """
+                    UPDATE method_chains
+                    SET description = ?,
+                        block_ids = ?,
+                        context_tags = ?,
+                        is_template = 1
+                    WHERE id = ?
+                    """,
+                    (
+                        chain["description"],
+                        block_ids_json,
+                        context_tags_json,
+                        existing_id,
+                    ),
+                )
+                updated_chains += 1
+            continue
+
         cursor.execute(
             """
             INSERT INTO method_chains (name, description, block_ids, context_tags, is_template, created_at)
             VALUES (?, ?, ?, ?, ?, datetime('now'))
             """,
             (
-                chain["name"],
+                chain_name,
                 chain["description"],
-                json.dumps(block_ids),
-                json.dumps(chain["context_tags"]),
+                block_ids_json,
+                context_tags_json,
                 chain["is_template"],
             ),
         )
@@ -1423,9 +1465,11 @@ def seed_methods(force: bool = False):
         print(
             f"[OK] No template chains to insert (template_chains={template_chain_count})"
         )
+    if updated_chains:
+        print(f"[OK] Updated {updated_chains} existing template chains")
 
     # Track seed operation in library_meta (store post-seed totals for clarity).
-    if force or inserted_blocks or updated_blocks or inserted_chains:
+    if force or inserted_blocks or updated_blocks or inserted_chains or updated_chains:
         cursor.execute("SELECT COUNT(*) FROM method_blocks")
         mb_total = int(cursor.fetchone()[0] or 0)
         cursor.execute("SELECT COUNT(*) FROM method_chains")

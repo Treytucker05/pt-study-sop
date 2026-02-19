@@ -1100,13 +1100,20 @@ def get_template_chains():
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    cur.execute(
-        """SELECT id, name, description, block_ids, context_tags
-           FROM method_chains
-           WHERE is_template = 1
-           ORDER BY name"""
-    )
+    query = """
+        SELECT id, name, description, block_ids, context_tags
+        FROM method_chains
+        WHERE COALESCE(is_template, 0) = 1
+        ORDER BY name
+    """
+    cur.execute(query)
     chains = [dict(r) for r in cur.fetchall()]
+
+    # If template flags were previously inconsistent, run a second seed pass and re-read.
+    if not chains:
+        ensure_method_library_seeded()
+        cur.execute(query)
+        chains = [dict(r) for r in cur.fetchall()]
 
     result = []
     for chain in chains:
