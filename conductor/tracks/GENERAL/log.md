@@ -146,6 +146,21 @@ px vitest run --reporter=verbose (341 passed)
   - deleted remote branch `feat/chat-archive-linking`
   - local worktree cleanup completed (see git worktree list)
 
+## 2026-02-19 - Pre-push hook stabilization for intermittent pytest capture crash
+
+- Updated managed hook generator `scripts/install_agent_guard_hooks.ps1`:
+  - pre-push now runs `python -m pytest brain/tests -q` and captures output to a temp log
+  - if failure matches known intermittent Python/pytest capture teardown crash:
+    - `ValueError: I/O operation on closed file`
+    - hook automatically retries once with `python -m pytest brain/tests -q -s`
+  - non-matching failures still fail fast and block push (no masking of legitimate test failures)
+- Reinstalled managed hooks:
+  - `.git/hooks/pre-commit`
+  - `.git/hooks/pre-push`
+- Validation:
+  - Verified generated `.git/hooks/pre-push` contains retry logic
+  - `python -m pytest brain/tests -q` currently fails in this working tree due unrelated syntax error in `brain/tests/test_rag_notes_reembed.py` (not caused by hook change)
+
 ## 2026-02-18 - Docling extraction path for RAG ingestion
 
 - Added optional Docling-first extraction in `brain/text_extractor.py` for `.pdf`, `.docx`, and `.pptx`, with automatic fallback to existing extractors when Docling is unavailable or fails.

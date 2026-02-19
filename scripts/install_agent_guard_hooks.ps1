@@ -145,7 +145,26 @@ echo "[pre-push] Project hub check"
 python scripts/validate_project_hub.py
 
 echo "[pre-push] Brain tests"
-python -m pytest brain/tests -q
+PYTEST_LOG="$(mktemp)"
+set +e
+python -m pytest brain/tests -q >"$PYTEST_LOG" 2>&1
+PYTEST_STATUS=$?
+set -e
+cat "$PYTEST_LOG"
+
+if [ "$PYTEST_STATUS" -ne 0 ] && grep -q "ValueError: I/O operation on closed file" "$PYTEST_LOG"; then
+  echo "[pre-push] Detected pytest capture teardown crash. Retrying without capture (-s)."
+  set +e
+  python -m pytest brain/tests -q -s >"$PYTEST_LOG" 2>&1
+  PYTEST_STATUS=$?
+  set -e
+  cat "$PYTEST_LOG"
+fi
+
+rm -f "$PYTEST_LOG"
+if [ "$PYTEST_STATUS" -ne 0 ]; then
+  exit "$PYTEST_STATUS"
+fi
 '@
 $prePushBody = $prePushBody.Replace("__MARKER__", $marker)
 
@@ -179,7 +198,7 @@ switch ($Action) {
     Write-Host "- scripts/sync_agent_config.ps1 -Mode Check"
     Write-Host "- scripts/check_docs_sync.py"
     Write-Host "- scripts/validate_project_hub.py"
-    Write-Host "- python -m pytest brain/tests -q (pre-push only)"
+    Write-Host "- python -m pytest brain/tests -q (pre-push only; auto-retry with -s on known capture crash)"
     Write-Host ""
     Write-Host "Existing unmanaged hooks are chained via:"
     Write-Host "- $preCommitSidecar"
