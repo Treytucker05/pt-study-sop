@@ -12,6 +12,7 @@ Returns: { content: str, error: str | None, metadata: dict }
 from __future__ import annotations
 
 import logging
+import re
 import subprocess
 import tempfile
 from functools import lru_cache
@@ -156,7 +157,7 @@ def _has_garbled_content(content: str, threshold: float = 0.05) -> bool:
         return False
     n = len(content)
     bad = content.count("\ufffd")
-    bad += sum(len(m.group()) for m in __import__("re").finditer(r"GLYPH<[^>]*>", content))
+    bad += sum(len(m.group()) for m in re.finditer(r"GLYPH<[^>]*>", content))
     bad += sum(1 for c in content if "\u0100" <= c <= "\u024f")
     return bad / n > threshold
 
@@ -224,43 +225,52 @@ def _extract_with_docling_ocr(path: Path, chunk_pages: int = 20) -> str:
     import pymupdf
 
     src = pymupdf.open(str(path))
-    total = len(src)
+    try:
+        total = len(src)
 
-    if total <= chunk_pages:
-        src.close()
-        text = _docling_ocr_convert(str(path))
-        if not text:
-            raise RuntimeError("Docling OCR conversion produced no content")
-        return text
+        if total <= chunk_pages:
+            text = _docling_ocr_convert(str(path))
+            if not text:
+                raise RuntimeError("Docling OCR conversion produced no content")
+            return text
 
-    logger.info("Splitting %d-page PDF into %d-page chunks for OCR", total, chunk_pages)
-    parts: list[str] = []
-    for start in range(0, total, chunk_pages):
-        end = min(start + chunk_pages, total)
-        chunk = pymupdf.open()
-        chunk.insert_pdf(src, from_page=start, to_page=end - 1)
-        tmp_path = os.path.join(tempfile.gettempdir(), f"_ocr_chunk_{start}.pdf")
-        try:
-            chunk.save(tmp_path)
-            chunk.close()
-            text = _docling_ocr_convert(tmp_path)
-            if text.strip():
-                parts.append(text)
-                logger.info("OCR chunk pages %d-%d: %d chars", start, end - 1, len(text))
-            else:
-                logger.warning("OCR chunk pages %d-%d: empty", start, end - 1)
-        except Exception as exc:
-            logger.warning("OCR chunk pages %d-%d failed: %s", start, end - 1, exc)
-        finally:
+        logger.info("Splitting %d-page PDF into %d-page chunks for OCR", total, chunk_pages)
+        parts: list[str] = []
+        for start in range(0, total, chunk_pages):
+            end = min(start + chunk_pages, total)
+            chunk = pymupdf.open()
+            tmp_path = ""
             try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
+                chunk.insert_pdf(src, from_page=start, to_page=end - 1)
+                with tempfile.NamedTemporaryFile(
+                    prefix=f"_ocr_chunk_{start}_", suffix=".pdf", delete=False
+                ) as tmp_file:
+                    tmp_path = tmp_file.name
+                chunk.save(tmp_path)
+                text = _docling_ocr_convert(tmp_path)
+                if text.strip():
+                    parts.append(text)
+                    logger.info("OCR chunk pages %d-%d: %d chars", start, end - 1, len(text))
+                else:
+                    logger.warning("OCR chunk pages %d-%d: empty", start, end - 1)
+            except Exception as exc:
+                logger.warning("OCR chunk pages %d-%d failed: %s", start, end - 1, exc)
+            finally:
+                try:
+                    chunk.close()
+                except Exception:
+                    pass
+                if tmp_path:
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
 
-    src.close()
-    if not parts:
-        raise RuntimeError("Docling OCR conversion produced no content")
-    return "\n\n".join(parts)
+        if not parts:
+            raise RuntimeError("Docling OCR conversion produced no content")
+        return "\n\n".join(parts)
+    finally:
+        src.close()
 
 
 def _try_docling(path: Path) -> tuple[Optional[str], list[str]]:

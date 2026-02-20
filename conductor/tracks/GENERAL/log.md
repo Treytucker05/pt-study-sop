@@ -603,3 +603,13 @@ px vitest run --reporter=verbose (341 passed)
 - Validation:
   - `pytest brain/tests/` -> `321 passed, 17 skipped`
   - `cd dashboard_rebuild && npm run build` -> success (non-blocking large-chunk warnings only)
+
+## 2026-02-20 - Follow-up hardening: concurrency-safe OCR chunk temp files
+
+- Addressed review-identified concurrency risk in `brain/text_extractor.py`:
+  - Replaced deterministic temp chunk names (`_ocr_chunk_{start}.pdf`) with unique `NamedTemporaryFile(..., delete=False)` paths.
+  - Added guaranteed `chunk.close()` in `finally` to avoid lingering file handles if chunk save/conversion fails.
+  - Wrapped source PDF handle in `try/finally` for guaranteed `src.close()` cleanup.
+  - Replaced dynamic `__import__("re")` usage with direct `import re` for clarity/maintainability in garble detection.
+- Validation:
+  - `pytest brain/tests/` -> `321 passed, 17 skipped`

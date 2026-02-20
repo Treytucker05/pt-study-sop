@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest non-track update: 2026-02-20 Tutor library extraction hardening (lossy-content telemetry + chunked OCR fallback + UI warning surface) in `brain/text_extractor.py`, `brain/dashboard/api_tutor.py`, and library UI/types (see `conductor/tracks/GENERAL/log.md`).
+Latest non-track update: 2026-02-20 Tutor library extraction hardening (lossy-content telemetry + chunked OCR fallback + concurrency-safe temp chunk handling + UI warning surface) in `brain/text_extractor.py`, `brain/dashboard/api_tutor.py`, and library UI/types (see `conductor/tracks/GENERAL/log.md`).
 
 ---
 
