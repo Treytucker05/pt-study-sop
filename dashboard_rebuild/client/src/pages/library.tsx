@@ -46,7 +46,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 
 const FILE_TYPE_LABEL: Record<string, string> = {
@@ -1215,8 +1216,8 @@ export default function Library() {
       </div>
 
       <Dialog open={viewingMaterialId !== null} onOpenChange={(open) => { if (!open) setViewingMaterialId(null); }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col gap-0">
+          <DialogHeader className="shrink-0 pb-3">
             <DialogTitle className="flex items-center gap-2">
               <FileText className={ICON_SM} />
               {materialContent?.title || "Material Content"}
@@ -1232,21 +1233,33 @@ export default function Library() {
               )}
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1 min-h-0 border border-primary/20 bg-black/40 p-4">
+          <div className="flex-1 min-h-0 overflow-y-auto border border-primary/20 bg-black/40 p-5">
             {isContentLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className={`${ICON_MD} animate-spin text-muted-foreground`} />
               </div>
             ) : materialContent?.content ? (
-              <pre className="whitespace-pre-wrap font-terminal text-sm text-foreground/90 leading-relaxed">
-                {materialContent.content}
-              </pre>
+              <div className="prose prose-invert prose-sm max-w-none font-terminal
+                prose-headings:font-arcade prose-headings:text-primary prose-headings:border-b prose-headings:border-primary/20 prose-headings:pb-1
+                prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
+                prose-p:text-foreground/90 prose-p:leading-relaxed
+                prose-li:text-foreground/90
+                prose-strong:text-primary/90
+                prose-table:border-collapse prose-th:border prose-th:border-primary/30 prose-th:bg-primary/10 prose-th:px-2 prose-th:py-1
+                prose-td:border prose-td:border-primary/20 prose-td:px-2 prose-td:py-1
+                prose-code:text-primary/80 prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded-none
+                prose-pre:bg-black/60 prose-pre:border prose-pre:border-primary/20"
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {materialContent.content}
+                </ReactMarkdown>
+              </div>
             ) : (
               <div className={`${TEXT_MUTED} text-center py-8`}>
                 No extracted content available for this material.
               </div>
             )}
-          </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
     </Layout>
