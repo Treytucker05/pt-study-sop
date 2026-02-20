@@ -577,3 +577,29 @@ px vitest run --reporter=verbose (341 passed)
     - `strict`: `hit_rate=0.667`, `avg_conf=0.531`, `avg_unique=16.33`, `avg_drop=597.50`, `elapsed=78.5s`
     - `balanced`: `hit_rate=0.667`, `avg_conf=0.513`, `avg_unique=15.67`, `avg_drop=523.83`, `elapsed=55.9s`
     - `coverage`: `hit_rate=0.667`, `avg_conf=0.557`, `avg_unique=17.83`, `avg_drop=730.50`, `elapsed=120.7s`
+
+## 2026-02-20 - Tutor library extraction hardening: lossy-content telemetry + chunked OCR fallback
+
+- Backend extraction and API updates:
+  - `brain/text_extractor.py`:
+    - Replaced replacement-char-only detection with `_has_garbled_content`, which now flags three garbling signals:
+      - Unicode replacement character (`U+FFFD`) ratio,
+      - synthetic glyph placeholders (`GLYPH<...>`),
+      - heavy Latin Extended A/B spillover.
+    - Lowered garbling retry threshold to `0.05` to trigger OCR fallback sooner for corrupted extracts.
+    - Refactored Docling OCR flow into `_docling_ocr_convert(...)` and updated `_extract_with_docling_ocr(...)` to OCR PDFs in page chunks using PyMuPDF, then concatenate chunk results.
+  - `brain/dashboard/api_tutor.py`:
+    - Sanitizes extracted content by removing replacement chars before returning.
+    - Adds extraction quality metadata to material-content response:
+      - `extraction_lossy` (boolean),
+      - `replacement_ratio` (rounded float).
+- Frontend updates:
+  - `dashboard_rebuild/client/src/api.ts`:
+    - `MaterialContent` now includes `extraction_lossy` and `replacement_ratio`.
+  - `dashboard_rebuild/client/src/pages/library.tsx`:
+    - Material viewer now surfaces a visible warning panel when extraction is lossy.
+    - Warning includes replacement-ratio percentage and still renders readable markdown when available.
+    - If no readable markdown remains, shows a clear empty-state message instead of silent failure.
+- Validation:
+  - `pytest brain/tests/` -> `321 passed, 17 skipped`
+  - `cd dashboard_rebuild && npm run build` -> success (non-blocking large-chunk warnings only)

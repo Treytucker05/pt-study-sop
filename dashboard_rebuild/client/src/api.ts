@@ -1354,6 +1354,8 @@ export interface MaterialContent {
   file_type: string | null;
   content: string;
   char_count: number;
+  extraction_lossy: boolean;
+  replacement_ratio: number;
 }
 
 export interface AutoLinkResult {

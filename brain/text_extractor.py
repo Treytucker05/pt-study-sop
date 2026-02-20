@@ -145,11 +145,20 @@ def _extract_pdf_pdfplumber(path: Path) -> str:
 # Dispatcher — tries tiers in order, falls through gracefully
 # ---------------------------------------------------------------------------
 
-def _has_high_replacement_ratio(content: str, threshold: float = 0.10) -> bool:
-    """Return True if more than `threshold` of characters are U+FFFD replacements."""
+def _has_garbled_content(content: str, threshold: float = 0.05) -> bool:
+    """Return True if content is garbled.
+
+    Combines three signals — U+FFFD replacements, Docling GLYPH tags, and
+    Latin Extended A/B chars (U+0100-U+024F) — because garbled PDFs often
+    spread damage across all three.  Uses 5% threshold on the combined count.
+    """
     if not content:
         return False
-    return content.count("\ufffd") / len(content) > threshold
+    n = len(content)
+    bad = content.count("\ufffd")
+    bad += sum(len(m.group()) for m in __import__("re").finditer(r"GLYPH<[^>]*>", content))
+    bad += sum(1 for c in content if "\u0100" <= c <= "\u024f")
+    return bad / n > threshold
 
 
 def _extract_with_docling(path: Path) -> str:
@@ -171,8 +180,8 @@ def _extract_with_docling(path: Path) -> str:
     raise RuntimeError("Docling conversion produced no content")
 
 
-def _extract_with_docling_ocr(path: Path) -> str:
-    """Extract PDF via Docling with forced full-page OCR (bypasses broken font maps)."""
+def _docling_ocr_convert(pdf_path: str) -> str:
+    """Run Docling OCR on a single PDF file, return markdown."""
     from docling.datamodel.base_models import InputFormat
     from docling.datamodel.pipeline_options import PdfPipelineOptions
     from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -184,11 +193,13 @@ def _extract_with_docling_ocr(path: Path) -> str:
         from docling.datamodel.pipeline_options import OcrOptions
         ocr_opts = OcrOptions(force_full_page_ocr=True)
 
-    pipeline_opts = PdfPipelineOptions(do_ocr=True, ocr_options=ocr_opts)
+    pipeline_opts = PdfPipelineOptions(
+        do_ocr=True, ocr_options=ocr_opts, images_scale=0.5, ocr_batch_size=1,
+    )
     converter = DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
     )
-    result = converter.convert(str(path))
+    result = converter.convert(pdf_path)
     doc = getattr(result, "document", result)
     for attr in ("export_to_markdown", "export_to_text"):
         exporter = getattr(doc, attr, None)
@@ -200,7 +211,56 @@ def _extract_with_docling_ocr(path: Path) -> str:
         text = getattr(doc, attr, None)
         if text:
             return str(text)
-    raise RuntimeError("Docling OCR conversion produced no content")
+    return ""
+
+
+def _extract_with_docling_ocr(path: Path, chunk_pages: int = 20) -> str:
+    """Extract PDF via Docling with forced full-page OCR.
+
+    Splits large PDFs into chunks to avoid memory exhaustion, then
+    concatenates the results.
+    """
+    import os
+    import pymupdf
+
+    src = pymupdf.open(str(path))
+    total = len(src)
+
+    if total <= chunk_pages:
+        src.close()
+        text = _docling_ocr_convert(str(path))
+        if not text:
+            raise RuntimeError("Docling OCR conversion produced no content")
+        return text
+
+    logger.info("Splitting %d-page PDF into %d-page chunks for OCR", total, chunk_pages)
+    parts: list[str] = []
+    for start in range(0, total, chunk_pages):
+        end = min(start + chunk_pages, total)
+        chunk = pymupdf.open()
+        chunk.insert_pdf(src, from_page=start, to_page=end - 1)
+        tmp_path = os.path.join(tempfile.gettempdir(), f"_ocr_chunk_{start}.pdf")
+        try:
+            chunk.save(tmp_path)
+            chunk.close()
+            text = _docling_ocr_convert(tmp_path)
+            if text.strip():
+                parts.append(text)
+                logger.info("OCR chunk pages %d-%d: %d chars", start, end - 1, len(text))
+            else:
+                logger.warning("OCR chunk pages %d-%d: empty", start, end - 1)
+        except Exception as exc:
+            logger.warning("OCR chunk pages %d-%d failed: %s", start, end - 1, exc)
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    src.close()
+    if not parts:
+        raise RuntimeError("Docling OCR conversion produced no content")
+    return "\n\n".join(parts)
 
 
 def _try_docling(path: Path) -> tuple[Optional[str], list[str]]:
@@ -213,7 +273,7 @@ def _try_docling(path: Path) -> tuple[Optional[str], list[str]]:
         if not content.strip():
             return None, ["docling: empty content"]
 
-        if _has_high_replacement_ratio(content) and path.suffix.lower() == ".pdf":
+        if _has_garbled_content(content) and path.suffix.lower() == ".pdf":
             ratio = content.count("\ufffd") / len(content)
             logger.warning(
                 "Docling text has %.0f%% replacement chars — retrying with forced OCR",
@@ -222,7 +282,7 @@ def _try_docling(path: Path) -> tuple[Optional[str], list[str]]:
             errors.append(f"docling: {ratio:.0%} replacement chars, retried with OCR")
             try:
                 ocr_content = _extract_with_docling_ocr(path)
-                if ocr_content.strip() and not _has_high_replacement_ratio(ocr_content):
+                if ocr_content.strip() and not _has_garbled_content(ocr_content):
                     return ocr_content, errors
                 errors.append("docling-ocr: still garbled or empty, using original")
             except Exception as ocr_exc:

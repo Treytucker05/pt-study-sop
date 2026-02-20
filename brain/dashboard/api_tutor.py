@@ -2704,7 +2704,14 @@ def get_material_content(material_id: int):
     if not row:
         return jsonify({"error": "Material not found"}), 404
 
-    content = row["content"] or ""
+    raw_content = row["content"] or ""
+    replacement_count = raw_content.count("\ufffd")
+    total = len(raw_content) or 1
+    ratio = replacement_count / total
+
+    # Strip replacement characters so the viewer gets clean text
+    content = raw_content.replace("\ufffd", "") if replacement_count else raw_content
+
     return jsonify({
         "id": row["id"],
         "title": row["title"] or "",
@@ -2712,6 +2719,8 @@ def get_material_content(material_id: int):
         "file_type": row["file_type"],
         "content": content,
         "char_count": len(content),
+        "extraction_lossy": ratio > 0.1,
+        "replacement_ratio": round(ratio, 3),
     })
 
 
