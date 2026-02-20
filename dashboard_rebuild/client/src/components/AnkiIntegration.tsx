@@ -119,19 +119,19 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
   };
 
   const content = (
-        <div className={compact ? "p-3 space-y-3" : "p-4 space-y-3"}>
+        <div className={compact ? "p-3 flex flex-col h-full min-h-0" : "p-4 space-y-3"}>
           {ankiLoading ? (
             <p className="font-terminal text-xs text-muted-foreground">Checking Anki...</p>
           ) : ankiStatus?.connected ? (
             <>
-              <div className="flex flex-wrap items-center gap-4 font-terminal text-xs">
+              <div className="flex flex-wrap items-center gap-4 font-terminal text-xs shrink-0">
                 <Badge variant="outline" className="bg-success/20 text-success border-success">Connected</Badge>
                 <span className="text-muted-foreground">Cards: <span className="text-primary font-arcade">{totalCards}</span></span>
                 <span className="text-muted-foreground">Due: <span className="text-secondary font-arcade">{ankiDue?.dueCount || 0}</span></span>
                 <span className="text-muted-foreground">Reviewed: <span className="font-arcade">{ankiStatus.reviewedToday || 0}</span></span>
                 <span className="text-muted-foreground">Decks: <span className="font-arcade">{ankiStatus.decks?.length || 0}</span></span>
               </div>
-              <div className="pt-2 flex gap-2">
+              <div className="pt-2 flex gap-2 shrink-0">
                 <Button
                   size="sm"
                   variant="outline"
@@ -171,8 +171,8 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                 </div>
               )}
               {pendingDrafts.length > 0 && (
-                <div className="pt-3 border-t border-secondary/30">
-                  <div className="flex justify-between items-center mb-2">
+                <div className="pt-3 border-t border-secondary/30 flex-1 min-h-0 flex flex-col mt-3">
+                  <div className="flex justify-between items-center mb-2 shrink-0">
                     <span className="font-arcade text-xs text-warning">PENDING CARDS ({pendingDrafts.length})</span>
                     <div className="flex gap-1">
                       <Button
@@ -192,7 +192,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                     </div>
                   </div>
                   {selectedDrafts.size > 0 && (
-                    <div className="flex gap-1 mb-2">
+                    <div className="flex gap-1 mb-2 shrink-0">
                       <Button
                         size="sm"
                         className="h-6 px-2 text-xs font-terminal bg-success hover:bg-success/80"
@@ -218,7 +218,7 @@ export function AnkiIntegration({ totalCards, compact }: AnkiIntegrationProps) {
                       </Button>
                     </div>
                   )}
-                  <ScrollArea className="h-[140px]">
+                  <ScrollArea className="flex-1 min-h-0">
                     <div className="space-y-2">
                       {pendingDrafts.map((draft) => (
                         <div key={draft.id} className={`p-2 bg-black/40 border text-xs ${selectedDrafts.has(draft.id) ? 'border-primary' : 'border-secondary/30'}`}>

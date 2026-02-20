@@ -144,37 +144,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     },
   });
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (notesLoading || createNoteMutation.isPending) return;
-    if (localStorage.getItem("planned-seeds-v1")) return;
-
-    const plannedSeeds = [
-      "Scholar update: migrate multi-agent orchestration to LangGraph (local-first).",
-      "LangChain: upgrade RAG to embeddings + retriever (later).",
-      "LangSmith: add tracing/evals for Scholar quality (later).",
-    ];
-
-    const existing = new Set(
-      notes.map((note) => (note.content || "").trim().toLowerCase())
-    );
-    const missing = plannedSeeds.filter(
-      (content) => !existing.has(content.toLowerCase())
-    );
-    if (!missing.length) {
-      localStorage.setItem("planned-seeds-v1", "done");
-      return;
-    }
-
-    missing.forEach((content, idx) => {
-      createNoteMutation.mutate({
-        content,
-        position: notesByType.planned.length + idx,
-        noteType: "planned",
-      });
-    });
-    localStorage.setItem("planned-seeds-v1", "done");
-  }, [notes, notesLoading, createNoteMutation, notesByType.planned.length]);
 
   const handleSaveNote = () => {
     if (newNote.trim()) {
