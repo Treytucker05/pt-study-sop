@@ -2683,6 +2683,39 @@ def delete_material(material_id: int):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/tutor/materials/<id>/content — Return extracted text content
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/materials/<int:material_id>/content", methods=["GET"])
+def get_material_content(material_id: int):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute(
+        "SELECT id, title, source_path, file_type, content, course_id "
+        "FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
+        (material_id,),
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Material not found"}), 404
+
+    content = row["content"] or ""
+    return jsonify({
+        "id": row["id"],
+        "title": row["title"] or "",
+        "source_path": row["source_path"],
+        "file_type": row["file_type"],
+        "content": content,
+        "char_count": len(content),
+    })
+
+
+# ---------------------------------------------------------------------------
 # POST /api/tutor/chain — Create/extend session chain
 # ---------------------------------------------------------------------------
 

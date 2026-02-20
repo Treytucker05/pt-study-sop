@@ -2,7 +2,7 @@ import Layout from "@/components/layout";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material, TutorSyncJobStatus, TutorContentSources } from "@/lib/api";
+import type { Material, MaterialContent, TutorSyncJobStatus, TutorContentSources } from "@/lib/api";
 import type { Course } from "@shared/schema";
 import { Link } from "wouter";
 import {
@@ -36,8 +36,17 @@ import {
   FolderOpen,
   ChevronRight,
   GraduationCap,
+  Eye,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 const FILE_TYPE_LABEL: Record<string, string> = {
@@ -247,6 +256,7 @@ function renderMaterialRow(
   startEdit: (mat: Material) => void,
   deleteConfirm: number | null,
   setDeleteConfirm: (id: number | null) => void,
+  viewContent: (id: number) => void,
 ) {
   const displayTitle = getMaterialTitle(mat);
   const folderLabel = getMaterialFolder(mat);
@@ -255,7 +265,7 @@ function renderMaterialRow(
     <div
       key={mat.id}
       className={`grid gap-2 px-2 py-1.5 items-center border-b border-primary/10 hover:bg-primary/5 transition-colors ${!mat.enabled ? "opacity-50" : ""}`}
-      style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 92px" }}
+      style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px" }}
     >
       <label className="flex items-center justify-center">
         <Checkbox
@@ -332,6 +342,13 @@ function renderMaterialRow(
       {/* Actions */}
       <div className="flex items-center gap-1 justify-end">
         <button
+          onClick={() => viewContent(mat.id)}
+          className="text-muted-foreground hover:text-primary transition-colors p-0.5"
+          title="View content"
+        >
+          <Eye className={ICON_SM} />
+        </button>
+        <button
           onClick={() => startEdit(mat)}
           className="text-muted-foreground hover:text-primary transition-colors p-0.5"
           title="Edit title"
@@ -385,6 +402,7 @@ export default function Library() {
   const [courseLinkTarget, setCourseLinkTarget] = useState<string>("");
   const [sidebarMode, setSidebarMode] = useState<"folders" | "courses">("folders");
   const [selectedCourseId, setSelectedCourseId] = useState<number | "unlinked" | null>(null);
+  const [viewingMaterialId, setViewingMaterialId] = useState<number | null>(null);
   const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem("tutor.selected_material_ids.v1");
@@ -408,6 +426,11 @@ export default function Library() {
     queryKey: ["tutor-content-sources"],
     queryFn: () => api.tutor.getContentSources(),
     enabled: sidebarMode === "courses",
+  });
+  const { data: materialContent, isLoading: isContentLoading } = useQuery<MaterialContent>({
+    queryKey: ["material-content", viewingMaterialId],
+    queryFn: () => api.tutor.getMaterialContent(viewingMaterialId!),
+    enabled: viewingMaterialId !== null,
   });
 
   const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
@@ -1141,7 +1164,7 @@ export default function Library() {
                       <div className="min-w-[900px]">
                         <div
                           className="grid gap-2 px-2 py-1 border-b border-primary/20 bg-black/60 sticky top-0 z-10"
-                          style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 92px" }}
+                          style={{ gridTemplateColumns: "28px minmax(210px,1.6fr) minmax(140px,1fr) 64px 72px 84px 116px" }}
                         >
                           <label
                             className="flex items-center justify-center cursor-pointer"
@@ -1178,6 +1201,7 @@ export default function Library() {
                             startEdit,
                             deleteConfirm,
                             setDeleteConfirm,
+                            setViewingMaterialId,
                           )
                         ))}
                       </div>
@@ -1189,6 +1213,42 @@ export default function Library() {
           </div>
         </div>
       </div>
+
+      <Dialog open={viewingMaterialId !== null} onOpenChange={(open) => { if (!open) setViewingMaterialId(null); }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className={ICON_SM} />
+              {materialContent?.title || "Material Content"}
+            </DialogTitle>
+            <DialogDescription className="flex items-center gap-2">
+              {materialContent?.file_type && (
+                <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1`}>
+                  {getFileTypeLabel(materialContent.file_type)}
+                </Badge>
+              )}
+              {materialContent?.char_count !== undefined && (
+                <span>{materialContent.char_count.toLocaleString()} characters</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 min-h-0 border border-primary/20 bg-black/40 p-4">
+            {isContentLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className={`${ICON_MD} animate-spin text-muted-foreground`} />
+              </div>
+            ) : materialContent?.content ? (
+              <pre className="whitespace-pre-wrap font-terminal text-sm text-foreground/90 leading-relaxed">
+                {materialContent.content}
+              </pre>
+            ) : (
+              <div className={`${TEXT_MUTED} text-center py-8`}>
+                No extracted content available for this material.
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
