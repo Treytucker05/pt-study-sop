@@ -145,6 +145,13 @@ def _extract_pdf_pdfplumber(path: Path) -> str:
 # Dispatcher — tries tiers in order, falls through gracefully
 # ---------------------------------------------------------------------------
 
+def _has_high_replacement_ratio(content: str, threshold: float = 0.10) -> bool:
+    """Return True if more than `threshold` of characters are U+FFFD replacements."""
+    if not content:
+        return False
+    return content.count("\ufffd") / len(content) > threshold
+
+
 def _extract_with_docling(path: Path) -> str:
     """Extract text/markdown using Docling."""
     from docling.document_converter import DocumentConverter
@@ -164,15 +171,64 @@ def _extract_with_docling(path: Path) -> str:
     raise RuntimeError("Docling conversion produced no content")
 
 
+def _extract_with_docling_ocr(path: Path) -> str:
+    """Extract PDF via Docling with forced full-page OCR (bypasses broken font maps)."""
+    from docling.datamodel.base_models import InputFormat
+    from docling.datamodel.pipeline_options import PdfPipelineOptions
+    from docling.document_converter import DocumentConverter, PdfFormatOption
+
+    try:
+        from docling.datamodel.pipeline_options import OcrAutoOptions
+        ocr_opts = OcrAutoOptions(force_full_page_ocr=True)
+    except ImportError:
+        from docling.datamodel.pipeline_options import OcrOptions
+        ocr_opts = OcrOptions(force_full_page_ocr=True)
+
+    pipeline_opts = PdfPipelineOptions(do_ocr=True, ocr_options=ocr_opts)
+    converter = DocumentConverter(
+        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
+    )
+    result = converter.convert(str(path))
+    doc = getattr(result, "document", result)
+    for attr in ("export_to_markdown", "export_to_text"):
+        exporter = getattr(doc, attr, None)
+        if callable(exporter):
+            text = exporter()
+            if text:
+                return str(text)
+    for attr in ("text", "raw_text"):
+        text = getattr(doc, attr, None)
+        if text:
+            return str(text)
+    raise RuntimeError("Docling OCR conversion produced no content")
+
+
 def _try_docling(path: Path) -> tuple[Optional[str], list[str]]:
-    """Try Docling once, returning optional content and non-fatal errors."""
+    """Try Docling, retrying with forced OCR if content is mostly garbled."""
     if not _check_docling():
         return None, []
+    errors: list[str] = []
     try:
         content = _extract_with_docling(path)
-        if content.strip():
-            return content, []
-        return None, ["docling: empty content"]
+        if not content.strip():
+            return None, ["docling: empty content"]
+
+        if _has_high_replacement_ratio(content) and path.suffix.lower() == ".pdf":
+            ratio = content.count("\ufffd") / len(content)
+            logger.warning(
+                "Docling text has %.0f%% replacement chars — retrying with forced OCR",
+                ratio * 100,
+            )
+            errors.append(f"docling: {ratio:.0%} replacement chars, retried with OCR")
+            try:
+                ocr_content = _extract_with_docling_ocr(path)
+                if ocr_content.strip() and not _has_high_replacement_ratio(ocr_content):
+                    return ocr_content, errors
+                errors.append("docling-ocr: still garbled or empty, using original")
+            except Exception as ocr_exc:
+                errors.append(f"docling-ocr: {ocr_exc}")
+
+        return content, errors
     except Exception as exc:
         return None, [f"docling: {exc}"]
 
