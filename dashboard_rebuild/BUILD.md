@@ -27,7 +27,7 @@ cd C:\pt-study-sop\dashboard_rebuild
 
 ## What Changed?
 
-**Before:** Build → `dist/public` → Copy → `brain/static/dist`
+**Before (legacy):** Build required an extra sync/copy step into `brain/static/dist`
 
 **Now:** Build → `brain/static/dist` (direct!)
 

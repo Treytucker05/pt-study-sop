@@ -13,10 +13,10 @@ def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
-def _tracked_readmes() -> list[Path]:
+def _tracked_files(pattern: str) -> list[Path]:
     try:
         result = subprocess.run(
-            ["git", "-C", str(ROOT), "ls-files", "*README*.md"],
+            ["git", "-C", str(ROOT), "ls-files", pattern],
             capture_output=True,
             text=True,
             check=True,
@@ -30,6 +30,14 @@ def _tracked_readmes() -> list[Path]:
             continue
         paths.append(ROOT / rel)
     return paths
+
+
+def _tracked_readmes() -> list[Path]:
+    return _tracked_files("*README*.md")
+
+
+def _tracked_markdown() -> list[Path]:
+    return _tracked_files("*.md")
 
 
 def main() -> None:
@@ -73,7 +81,6 @@ def main() -> None:
         "http://127.0.0.1:5000",
         "npm run build",
         "brain/static/dist",
-        "dashboard_rebuild/dist/public",
         "npm run dev",
     ]
     for phrase in required_guide_phrases:
@@ -117,6 +124,32 @@ def main() -> None:
                     if not any(h in line_lower for h in contextual_allow_hints):
                         failures.append(
                             f"{readme_file}:{i}: legacy term '{pat}' must be explicitly marked as legacy/compatibility."
+                        )
+
+    # Enforce deprecated-term hygiene across all tracked markdown.
+    # Historical/generated paths are excluded from strict failures.
+    markdown_strict_excluded_prefixes = (
+        "docs/archive/",
+        "sop/archive/",
+        "scholar/knowledge/",
+        "sop/runtime/knowledge_upload/",
+        "sop/tests/golden/",
+    )
+    markdown_allow_hints = ("legacy", "compatib", "deprecat", "archiv", "stale", "histor")
+
+    for md_file in _tracked_markdown():
+        rel = md_file.relative_to(ROOT).as_posix()
+        if any(rel.startswith(prefix) for prefix in markdown_strict_excluded_prefixes):
+            continue
+
+        text = _read_text(md_file)
+        for i, line in enumerate(text.splitlines(), start=1):
+            line_lower = line.lower()
+            for pat in strict_legacy_patterns:
+                if re.search(pat, line, flags=re.I):
+                    if not any(h in line_lower for h in markdown_allow_hints):
+                        failures.append(
+                            f"{md_file}:{i}: contains deprecated term '{pat}'."
                         )
 
     if failures:

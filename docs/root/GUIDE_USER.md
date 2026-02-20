@@ -46,7 +46,7 @@ Optional later:
 ## Troubleshooting
 - If nothing shows in the Dashboard, confirm WRAP logs exist in `brain/session_logs/` and run ingestion.
 - If Calendar sync fails, verify OAuth credentials in `brain/data/api_config.json`.
-- If the Brain page goes black, you are likely running a stale frontend bundle. Restart `Start_Dashboard.bat` and hard refresh the browser (Ctrl+F5). If it persists, rebuild the UI (`cd dashboard_rebuild; npm run build`) and re-sync `dashboard_rebuild/dist/public` -> `brain/static/dist`.
+- If the Brain page goes black, you are likely running a stale frontend bundle. Restart `Start_Dashboard.bat` and hard refresh the browser (Ctrl+F5). If it persists, rebuild the UI (`cd dashboard_rebuild; npm run build`) and restart the dashboard.
 
 ## Next Milestones (User-Facing)
 - Brain WRAP buckets and Anki template standardization.

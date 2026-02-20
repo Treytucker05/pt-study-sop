@@ -15,6 +15,15 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - blocks strict deprecated terms (`learning loop (V2)`, `dist/public`, `robocopy`)
   - permits legacy terms only when line explicitly marks legacy/compatibility context
 
+## 2026-02-20 - Markdown-wide terminology guard (follow-up)
+
+- Expanded `scripts/check_docs_sync.py` terminology checks from tracked README files to all tracked `*.md` files with scoped exclusions for historical/generated paths.
+- Updated active docs with stale build-path references to current direct-build workflow:
+  - `conductor/workflow.md`
+  - `dashboard_rebuild/BUILD.md`
+  - `docs/root/GUIDE_USER.md`
+- Clarified `docs/root/ARCHITECTURE_V2.md` title/status to mark legacy V2 label as historical terminology context.
+
 ## 2026-02-17 - Consolidate tracking into conductor
 
 - Archived 760-line CONTINUITY.md to docs/archive/

@@ -1,6 +1,6 @@
-# PT Study System - Domain Primitives and Learning Loop (V2)
+# PT Study System - Domain Primitives and Legacy V2 Learning-Loop Spec
 
-Status: CANONICAL (domain primitives + learning loop + implementation status)
+Status: CANONICAL for domain primitives; legacy label for historical "V2 learning-loop" terminology.
 Last updated: 2026-02-11
 Scope: Domain model + roles + scoring philosophy + current implementation gaps
 
@@ -463,4 +463,3 @@ WHAT'S STILL PENDING:
 | Hypothesis | `brain/db_setup.py` (scholar_hypotheses), `brain/dashboard/api_adapter.py` |
 | Experiment | `brain/db_setup.py` (scholar_experiments) |
 | Proposal | `brain/db_setup.py` (scholar_proposals), `brain/dashboard/api_adapter.py`, `scholar/proposal_cull.py` |
-

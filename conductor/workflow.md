@@ -161,7 +161,7 @@ cd dashboard_rebuild && npm install
 Start_Dashboard.bat              # Flask on port 5000
 pytest brain/tests/              # Run tests
 cd dashboard_rebuild && npm run build   # Build frontend
-robocopy dashboard_rebuild/dist/public brain/static/dist /MIR  # Sync
+# No manual sync step needed (build writes directly to brain/static/dist)
 ```
 
 ### Before Committing
