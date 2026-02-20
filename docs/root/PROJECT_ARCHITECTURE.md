@@ -5,7 +5,7 @@
 **Scope:** Entire repository (SOP, Brain, Scholar, Scripts)
 **Purpose:** Canonical technical documentation for system architecture, dependencies, and integration.
 
-> Canonical domain primitives + learning loop (V2): `docs/root/ARCHITECTURE_V2.md`.
+> Canonical domain primitives + CP-MSS v1.0 architecture: `sop/library/17-control-plane.md`.
 > Terminology note: current DB/UI `modules` are CourseModules (course material units), not LearningModules.
 
 ---
@@ -15,7 +15,7 @@
 The **PT Study System** is a personal AI operating system for DPT coursework, integrating four main pillars. Canonical dashboard behavior and flows are documented in `docs/dashboard_audit.md`.
 
 Core pillars:
-1.  **SOP System (`sop/`)**: A rigorous learning methodology (PEIR-RO cycle) and runtime protocol for "Structured Architect" (Custom GPT).
+1.  **SOP System (`sop/`)**: A rigorous learning methodology (CP-MSS v1.0) and runtime protocol for "Structured Architect" (Custom GPT).
 2.  **Scholar System (`scholar/`)**: A meta-system that audits study logs, detects friction, and proposes optimizations.
 3.  **Brain System (`brain/`)**: The central database, ingestion engine, and Flask-based analytics dashboard.
 4.  **Scripts & Automation (`scripts/`)**: Release validation, external integrations, and agent workflows.
@@ -57,6 +57,7 @@ sop/library/
 ├── 12-evidence.md
 ├── 13-custom-gpt-system-instructions.md
 ├── 14-lo-engine.md
+├── 17-control-plane.md
 └── README.md
 ```
 
@@ -74,14 +75,14 @@ sop/runtime/knowledge_upload/
 
 These files define the pedagogical backbone of the system.
 
-**1. `02-learning-cycle.md` (PEIRRO + KWIK)**
-Defines the 6-phase learning cycle that ALL sessions must follow:
-- **P**repare: Orient focus, clarify scope.
-- **E**ncode: Construct durable schemas (active, not passive).
-- **I**nterrogate: Question "why/how" during encoding.
-- **R**etrieve: Effortful recall without cues.
-- **R**efine: Targeted correction of errors.
-- **O**verlearn: Spaced repetition beyond mastery.
+**1. `17-control-plane.md` + `02-learning-cycle.md` (CP-MSS + KWIK)**
+Defines the canonical 6-stage learning cycle that ALL sessions must follow:
+- **PRIME**: orient and structure.
+- **CALIBRATE**: assess and prioritize.
+- **ENCODE**: construct durable schemas (active, not passive).
+- **REFERENCE**: generate retrieval targets and anchors.
+- **RETRIEVE**: effortful recall without cues.
+- **OVERLEARN**: close loop with artifacts and repetition.
 *Constraint:* NEVER deviate from this method.
 
 **2. `02-learning-cycle.md` (KWIK Flow)**
@@ -220,7 +221,7 @@ SQLite database with 17+ tables. Key tables:
 | `tutor_turns` | Chat history logs from the Tutor interface. |
 | `scraped_events` | Staged Blackboard items waiting for approval. |
 | `ingested_files` | Tracking checksums of ingested logs to prevent dupes. |
-| `method_blocks` | 34 evidence-backed study method blocks (PEIRRO categories). |
+| `method_blocks` | Evidence-backed study method blocks (CP control stages with legacy category compatibility). |
 | `method_chains` | Pre-built and custom method sequences with context tags. |
 | `method_ratings` | Post-session effectiveness and engagement ratings. |
 

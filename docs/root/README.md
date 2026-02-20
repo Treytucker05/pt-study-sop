@@ -1,6 +1,7 @@
 # Root Docs (Moved)
 
 This folder holds documentation that was previously in the repo root.
+Canonical learning/runtime model for this project is CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 
 ## Contents
 - `ARCHITECTURE_CONTEXT.md`

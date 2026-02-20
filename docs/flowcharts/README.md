@@ -1,6 +1,6 @@
 # PT Study SOP — Flowchart Index
 
-Complete visual breakdown of the PT Study Operating System architecture, learning cycles, and data flows.
+Complete visual breakdown of the PT Study Operating System architecture, CP-MSS v1.0 learning cycle, and data flows.
 
 ## Overview
 
@@ -15,7 +15,7 @@ This directory contains 6 comprehensive Mermaid flowcharts that decompose the PT
 
 Shows how all major components connect:
 - Material Ingestion → Tutor-Ready Packet
-- Tutor System (enforces M0-M6, PEIRRO, KWIK)
+- Tutor System (enforces M0-M6, CP-MSS, KWIK)
 - RAG Subsystem (source-lock compliance)
 - Brain (ingestion & storage)
 - Anki Bridge (card management)
@@ -43,18 +43,18 @@ Walks through all 6 modules in sequence:
 
 ---
 
-### 3. **PEIRRO + KWIK Learning Cycles** (`03-peirro-kwik-learning-cycles.mmd`)
+### 3. **Control Plane + KWIK Learning Cycles** (`03-peirro-kwik-learning-cycles.mmd`, legacy filename)
 **Purpose:** Cognitive framework (macro & micro loops)
 
 Shows how learning science is encoded:
-- **PEIRRO (macro):** 6-phase session cycle
-  - Prepare (M0-M1)
-  - Encode (M3) → **Activates KWIK**
-  - Interrogate (M3-M4)
-  - Retrieve (M4-M5)
-  - Refine (M6)
-  - Overlearn (M6 + post-session)
-- **KWIK (micro):** 5-step encoding flow nested inside PEIRRO Encode
+- **Control Plane (macro):** 6-stage session cycle
+  - PRIME
+  - CALIBRATE
+  - ENCODE (activates KWIK)
+  - REFERENCE
+  - RETRIEVE
+  - OVERLEARN
+- **KWIK (micro):** 5-step encoding flow nested inside the ENCODE stage
   1. Sound (phonetic seed)
   2. Function (true action)
   3. Image (tied to function)
@@ -93,7 +93,7 @@ Mandatory checks at session start:
 2. **Source-Lock** (grounded or UNVERIFIED)
 3. **Seed-Lock Ask-First** (learner attempts first)
 4. **Level Gating** (L2 before L4)
-5. **PEIRRO Cycle** (no skipping phases)
+5. **Control Plane Cycle** (no skipping stage contracts)
 6. **Exit Ticket** (mandatory)
 7. **Session Ledger** (mandatory)
 8. **No Phantom Outputs** (never invent missing data)
@@ -131,7 +131,7 @@ Traces data from tutor output to dashboard:
 For first-time users:
 1. Start with **01-system-overview.mmd** (see the forest)
 2. Read **02-session-flow-m0-to-m6.mmd** (walk the path)
-3. Study **03-peirro-kwik-learning-cycles.mmd** (understand the science)
+3. Study **03-peirro-kwik-learning-cycles.mmd** (legacy filename, Control Plane + KWIK science model)
 4. Dive into **04-content-engines-decision-tree.mmd** (choose what to teach)
 5. Memorize **05-core-rules-and-invariants.mmd** (rules that can't break)
 6. Reference **06-data-flow-and-schemas.mmd** (build backend/integration)
@@ -156,7 +156,7 @@ For first-time users:
 - Share 05 for quality assurance
 
 ### For Learning Science Review
-- Use 03 to validate PEIRRO + KWIK implementation
+- Use 03 to validate CP-MSS + KWIK implementation
 - Cross-check with evidence base in `sop/library/12-evidence.md`
 
 ---
@@ -182,7 +182,7 @@ These files use Mermaid syntax and can be viewed:
 These flowcharts are visual companions to:
 - **sop/library/00-overview.md** — System vision
 - **sop/library/01-core-rules.md** — Behavioral rules (→ 05-core-rules-and-invariants.mmd)
-- **sop/library/02-learning-cycle.md** — PEIRRO + KWIK (→ 03-peirro-kwik-learning-cycles.mmd)
+- **sop/library/02-learning-cycle.md** — CP-MSS + KWIK (→ `03-peirro-kwik-learning-cycles.mmd`, legacy filename)
 - **sop/library/04-engines.md** — Anatomy/Concept engines (→ 04-content-engines-decision-tree.mmd)
 - **sop/library/05-session-flow.md** — M0-M6 flow (→ 02-session-flow-m0-to-m6.mmd)
 - **sop/library/08-logging.md** — Session log schema (→ 06-data-flow-and-schemas.mmd)
@@ -210,7 +210,7 @@ PT Study SOP (Level 1: Vision)
   │  └─ Dashboard/Planner (spacing)
   │
   ├─ Learning Cycle (L3)
-  │  ├─ PEIRRO (macro: 6 phases)
+  │  ├─ Control Plane (macro: 6 stages)
   │  └─ KWIK (micro: 5 steps)
   │
   ├─ Session Flow (L2)
@@ -237,3 +237,5 @@ PT Study SOP (Level 1: Vision)
 ## Questions?
 
 See `sop/library/00-overview.md` for high-level overview, or reference the canonical files linked above for detailed explanations.
+
+Legacy note: The filename `03-peirro-kwik-learning-cycles.mmd` is retained for backward link compatibility; the canonical runtime model is CP-MSS v1.0.

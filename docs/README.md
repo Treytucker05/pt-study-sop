@@ -1,6 +1,8 @@
 # Docs
 
 Central documentation for the PT Study system.
+Canonical learning/runtime system: **CP-MSS v1.0** (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+If a doc conflicts with CP-MSS definitions, follow `sop/library/17-control-plane.md`.
 
 ## Docs Sync Policy (Single Source Of Truth)
 - Dev/run/build/test workflow: `docs/root/GUIDE_DEV.md`
@@ -14,6 +16,7 @@ Basic alignment is enforced by `python scripts/check_docs_sync.py` (CI).
 
 | Feature | Doc(s) |
 |---------|--------|
+| Control Plane (CP-MSS v1.0) | `sop/library/17-control-plane.md` |
 | Calendar/Tasks | `docs/calendar_tasks.md` |
 | Dashboard UI | `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`, `docs/full-ui-api-audit-2026-01-22.md` |
 | Scholar | `docs/brain_scholar_map.md` |
@@ -24,7 +27,6 @@ Basic alignment is enforced by `python scripts/check_docs_sync.py` (CI).
 | Vision & Theory | `docs/root/VISION_PPFW.md`, `docs/root/PPFW_RESEARCH_LOG.md` |
 | Brain System | `docs/root/PROJECT_ARCHITECTURE.md` (Brain section) |
 | Composable Methods | `sop/library/15-method-library.md` |
-| Control Plane (CP-MSS v1.0) | `sop/library/17-control-plane.md` |
 | Release Process | `docs/release/RELEASE_PROCESS.md` |
 
 ## Project Hub

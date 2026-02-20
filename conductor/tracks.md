@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest non-track update: 2026-02-19 Tutor strict-default rollout + coverage auto-escalation/insufficient-evidence guard, plus live accuracy profiles/eval harness (see `conductor/tracks/GENERAL/log.md`).
+Latest non-track update: 2026-02-20 CP-MSS-first README normalization + README terminology guardrail in `scripts/check_docs_sync.py` (see `conductor/tracks/GENERAL/log.md`).
 
 ---
 

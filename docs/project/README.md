@@ -1,6 +1,7 @@
 # Project Hub
 
 This folder is the canonical planning hub for the PT Study SOP project.
+Canonical system baseline for planning decisions: CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 
 ## Key files
 - [INDEX.md](INDEX.md) - Entry point for planning and execution.

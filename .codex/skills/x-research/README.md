@@ -1,5 +1,9 @@
 # x-research
 
+> Canonical PT Study system: CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+> If this file conflicts with current docs, follow `sop/library/17-control-plane.md`.
+
+
 X/Twitter research agent for [Claude Code](https://code.claude.com) and [OpenClaw](https://openclaw.ai). Search, filter, monitor — all from the terminal.
 
 ## What it does
@@ -190,3 +194,4 @@ x-research/
 ## License
 
 MIT
+

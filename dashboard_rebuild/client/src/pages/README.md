@@ -1,6 +1,8 @@
-﻿# Pages
+# Pages
 
 This folder contains route-level React pages for the dashboard rebuild.
+
+System context: tutor flows in these pages should present CP-MSS v1.0 stage language first.
 
 - `brain.tsx`: Brain analytics, chat, ingestion, and Obsidian/Anki panels.
 - `calendar.tsx`: Calendar and task management UI.
@@ -31,3 +33,4 @@ Attempts and results:
 Next steps (pending):
 - Capture exact repro steps per button, plus actual behavior (empty modal vs. no modal).
 - Add temporary modal debug logging to identify which dialog is opening and with what data.
+

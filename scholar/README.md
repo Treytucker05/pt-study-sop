@@ -1,6 +1,7 @@
 # The Scholar — Quickstart
 
-The Scholar is a dedicated meta-system designed to audit, analyze, and optimize the "Tutor" production system (v9.2). It operates independently from student sessions and focuses exclusively on pedagogical science and system reliability.
+The Scholar is a dedicated meta-system designed to audit, analyze, and optimize the Tutor production system in the CP-MSS v1.0 era. It operates independently from student sessions and focuses exclusively on pedagogical science and system reliability.
+Canonical tutor/runtime stage model: `PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`.
 
 ## What The Scholar IS NOT
 

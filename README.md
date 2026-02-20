@@ -235,7 +235,7 @@ The **SOP** (Standard Operating Procedure) defines the learning methodology. Sou
 |---|------|-------------|
 | 00 | `00-overview.md` | System identity, version history, library map |
 | 01 | `01-core-rules.md` | Behavioral rules: Source-Lock, Seed-Lock, No Phantom Outputs |
-| 02 | `02-learning-cycle.md` | PEIRRO macro cycle + KWIK encoding micro-loop |
+| 02 | `02-learning-cycle.md` | CP-MSS v1.0 operational cycle + KWIK encoding micro-loop (legacy PEIRRO compatibility noted in-file) |
 | 03 | `03-frameworks.md` | H/M/Y framework series + L1-L4 depth gating |
 | 04 | `04-engines.md` | Anatomy Engine (OIANA+) + Concept Engine |
 | 05 | `05-session-flow.md` | M0-M6 execution flow (Exposure Check + Split-Track) |
@@ -408,10 +408,10 @@ dashboard_rebuild/          brain/static/dist/
      |                            | Flask serves this
      | npm run build              | at localhost:5000
      v                            |
-  dist/public/ --- robocopy ----->+
+  build output writes directly --->+
 ```
 
-Never use `npm run dev`. Always build and copy.
+Never use `npm run dev`. Build with `npm run build` in `dashboard_rebuild` and run via `Start_Dashboard.bat`.
 
 ---
 
@@ -589,7 +589,7 @@ scripts/run_scholar.bat
 ### Post-Change Checklist
 
 1. **Backend changes:** `pytest brain/tests/`
-2. **Frontend changes:** `npm run build` + `robocopy` + restart Flask
+2. **Frontend changes:** `npm run build` in `dashboard_rebuild` + restart Flask
 3. **SOP changes:** `python sop/tools/build_runtime_bundle.py` + re-upload to CustomGPT
 
 ---

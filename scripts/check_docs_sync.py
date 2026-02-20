@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -10,6 +11,25 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def _read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _tracked_readmes() -> list[Path]:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(ROOT), "ls-files", "*README*.md"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except Exception:
+        return []
+    paths: list[Path] = []
+    for line in result.stdout.splitlines():
+        rel = line.strip()
+        if not rel:
+            continue
+        paths.append(ROOT / rel)
+    return paths
 
 
 def main() -> None:
@@ -62,6 +82,42 @@ def main() -> None:
 
     if "docs/root/GUIDE_DEV.md" not in claude:
         failures.append(f"{claude_path}: must point to docs/root/GUIDE_DEV.md as the canonical command reference")
+
+    # Enforce README terminology hygiene so CP-MSS stays first-class across entrypoints.
+    strict_legacy_patterns = (
+        r"learning loop \(V2\)",
+        r"\bdist/public\b",
+        r"\brobocopy\b",
+    )
+    contextual_legacy_patterns = (
+        r"\bPEIRRO\b",
+        r"\bPERRIO\b",
+        r"\bPEIR-RO\b",
+        r"\binterrogate\b",
+    )
+    contextual_allow_hints = ("legacy", "compatib")
+
+    for readme_file in _tracked_readmes():
+        text = _read_text(readme_file)
+
+        if not re.search(r"(CP-MSS|Control Plane)", text, flags=re.I):
+            failures.append(f"{readme_file}: must mention CP-MSS/Control Plane so current system is surfaced first")
+
+        for i, line in enumerate(text.splitlines(), start=1):
+            line_lower = line.lower()
+
+            for pat in strict_legacy_patterns:
+                if re.search(pat, line, flags=re.I):
+                    failures.append(
+                        f"{readme_file}:{i}: contains deprecated term '{pat}'. Use current CP-MSS wording."
+                    )
+
+            for pat in contextual_legacy_patterns:
+                if re.search(pat, line, flags=re.I):
+                    if not any(h in line_lower for h in contextual_allow_hints):
+                        failures.append(
+                            f"{readme_file}:{i}: legacy term '{pat}' must be explicitly marked as legacy/compatibility."
+                        )
 
     if failures:
         print("Docs sync check failed:")

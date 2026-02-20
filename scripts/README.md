@@ -1,6 +1,8 @@
-﻿# Scripts
+# Scripts
 
 Automation utilities for the PT Study SOP repo.
+
+System context: scripts support CP-MSS v1.0 operations and governance.
 
 ## Common entries
 - `generate_architecture_dump.ps1` - Regenerates `docs/root/ARCHITECTURE_CONTEXT.md`.
@@ -20,7 +22,7 @@ Automation utilities for the PT Study SOP repo.
 
 ## Notes
 - Run from repo root unless the script states otherwise.
-- Check `C:/pt-study-sop/permissions.json` for allowed commands.
+- Check local/global agent permission policy files before running new commands (for example `.claude/permissions.json` if present and `C:/Users/treyt/.claude/CLAUDE.md` guidance).
 
 ## Parallel Agent Quickstart
 ```powershell
@@ -94,3 +96,4 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_agent_guard_hook
 # Verify installed
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install_agent_guard_hooks.ps1 -Action status
 ```
+

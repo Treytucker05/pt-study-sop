@@ -2,6 +2,7 @@
 # Brain Dashboard Package
 
 This directory contains the modularized Flask application for the PT Study Brain Dashboard.
+System context: the tutor/session model is CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 
 ## Structure
 
@@ -24,3 +25,5 @@ python dashboard_web.py
 ```
 
 Or via the `Start_Dashboard.bat` launcher.
+
+Repo canonical run path: use `Start_Dashboard.bat` (port 5000).

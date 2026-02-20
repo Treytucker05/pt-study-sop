@@ -1,26 +1,11 @@
-# Tools
+# Tools Archive Notes
 
-## build_runtime_bundle.py
-Generates the Custom GPT knowledge upload files from canonical sources in `sop/src/`.
+> Canonical PT Study system: CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+> If this file conflicts with current docs, follow `sop/library/17-control-plane.md`.
 
-Run:
-```
-python sop/tools/build_runtime_bundle.py
-```
+Current canonical tooling:
+- Runtime bundle build: `python sop/tools/build_runtime_bundle.py`
+- Library validation: `python sop/tools/validate_library.py`
+- Log validation: `python sop/tools/validate_log_v9_4.py`
 
-Outputs:
-- `sop/runtime/knowledge_upload/00_INDEX_AND_RULES.md`
-- `sop/runtime/knowledge_upload/01_MODULES_M0-M6.md`
-- `sop/runtime/knowledge_upload/02_FRAMEWORKS.md`
-- `sop/runtime/knowledge_upload/03_ENGINES.md`
-- `sop/runtime/knowledge_upload/04_LOGGING_AND_TEMPLATES.md`
-- `sop/runtime/knowledge_upload/05_EXAMPLES_MINI.md`
-
-## validate_logs.py
-Validates Tracker or Enhanced JSON keys against schema v9.2.
-
-Run:
-```
-python sop/tools/validate_logs.py path/to/log.json --schema tracker
-python sop/tools/validate_logs.py path/to/log.json --schema enhanced
-```
+Historical tool notes in this folder are archival only.

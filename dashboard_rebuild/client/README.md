@@ -1,6 +1,7 @@
-﻿# Client
+# Client
 
 React app for the dashboard rebuild.
+System context: Tutor UI and session behavior use CP-MSS v1.0 stage language.
 
 ## Entry points
 - `src/App.tsx` - routing.

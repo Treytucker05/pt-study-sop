@@ -4,6 +4,17 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-20 - CP-MSS-first README normalization + guardrail
+
+- Updated all tracked `*README*.md` files so CP-MSS v1.0 / Control Plane is surfaced first (including archive/context/output READMEs).
+- Removed or replaced stale README wording that implied old build paths (`dist/public`, `robocopy`) or legacy-first framing.
+- Added/expanded compatibility notes so legacy terms are explicitly labeled as legacy/compatibility only.
+- Updated architecture entry docs to point to `sop/library/17-control-plane.md` as canonical.
+- Extended `scripts/check_docs_sync.py` with tracked-README terminology checks:
+  - requires CP-MSS/Control Plane mention
+  - blocks strict deprecated terms (`learning loop (V2)`, `dist/public`, `robocopy`)
+  - permits legacy terms only when line explicitly marks legacy/compatibility context
+
 ## 2026-02-17 - Consolidate tracking into conductor
 
 - Archived 760-line CONTINUITY.md to docs/archive/

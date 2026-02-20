@@ -1,8 +1,9 @@
-# PT Study Brain v9.3 (Dev)
+# PT Study Brain (CP-MSS v1.0 Era)
 
 Session tracking and analytics system for the PT Study SOP.
 
-Brain logs and WRAP activities map to the PEIRRO learning cycle (Prepare, Encode, Refine, Overlearn) for documentation clarity only.
+Canonical learning system: **CP-MSS v1.0** (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+Legacy PEIRRO category names are compatibility aliases only where still present in historical data paths.
 
 ---
 
@@ -36,12 +37,12 @@ python generate_resume.py
 
 ### LLM Intake (optional)
 
-Send plain text or v9.3 JSON directly to the Brain intake endpoint. This logs a session, stores the raw input, and drafts cards when present.
+Send plain text or JSON intake payloads directly to the Brain intake endpoint. This logs a session, stores the raw input, and drafts cards when present.
 
 ## Dashboard bundle (canonical)
 - The Flask app serves `brain/static/dist/index.html` as the one true dashboard.
 - Frontend source lives in this repo at `dashboard_rebuild/`.
-- Build steps: run `npm run build` in `dashboard_rebuild/`, then mirror-copy `dist/public` into `brain/static/dist`.
+- Build steps: run `npm run build` in `dashboard_rebuild/` (build output writes directly to `brain/static/dist`).
 - If the frontend breaks, rebuild and re-sync `brain/static/dist` (do not mix assets from other folders).
 
 ```powershell
@@ -100,11 +101,11 @@ brain/
 
 ---
 
-## Session Log Fields (v9.3)
+## Session Log Fields (Current)
 
 Notes:
-- v9.3 JSON logs (Tracker + Enhanced) are supported.
-- v9.2 markdown logs remain supported for backward compatibility.
+- JSON logs (Tracker + Enhanced payloads) are supported.
+- Legacy markdown logs remain supported for backward compatibility.
 
 ### Required
 
@@ -194,9 +195,9 @@ python rag_notes.py ingest session_logs/my_note.md --course-id 1 --topic-tags "a
 python rag_notes.py search "gluteal region landmarks" --limit 5
 ```
 
-## Database Schema (v9.3 + planning/RAG extensions)
+## Database Schema (Current + planning/RAG extensions)
 
-Core session logging uses the v9.3 `sessions` table. Key fields include:
+Core session logging uses the current `sessions` table. Key fields include:
 
 - `target_exam` - Exam/block being studied for
 - `source_lock` - Materials used in session
@@ -287,7 +288,7 @@ The dashboard exposes REST API endpoints:
 | `/api/syllabus/events` | GET | List course events with coverage analytics |
 | `/api/calendar/data` | GET | Get calendar data (events, sessions, planned) |
 | `/api/calendar/plan_session` | POST | Create planned spaced repetition session |
-| `/api/brain/chat` | POST | LLM intake: parse raw text or v9.3 JSON into a session and card drafts |
+| `/api/brain/chat` | POST | LLM intake: parse raw text or JSON payload into a session and card drafts |
 | `/api/gcal/status` | GET | Google Calendar auth status |
 | `/api/gcal/calendars` | GET | List Google calendars + selection |
 | `/api/gcal/config` | GET/POST | Read/update calendar sync settings |

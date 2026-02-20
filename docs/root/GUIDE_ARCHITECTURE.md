@@ -1,6 +1,6 @@
 # PT Study System — Architecture Spec
 
-> Canonical domain primitives + learning loop (V2): `docs/root/ARCHITECTURE_V2.md`.
+> Canonical runtime architecture: CP-MSS v1.0 in `sop/library/17-control-plane.md`.
 > This guide focuses on technical/system architecture (subsystems, integrations, data flow).
 
 ## Purpose
