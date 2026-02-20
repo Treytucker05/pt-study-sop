@@ -2,7 +2,7 @@ import Layout from "@/components/layout";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material, TutorSyncJobStatus } from "@/lib/api";
+import type { Material, TutorSyncJobStatus, TutorContentSources } from "@/lib/api";
 import type { Course } from "@shared/schema";
 import { Link } from "wouter";
 import {
@@ -35,6 +35,7 @@ import {
   Folder,
   FolderOpen,
   ChevronRight,
+  GraduationCap,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -382,6 +383,8 @@ export default function Library() {
   const [expandedFolderPaths, setExpandedFolderPaths] = useState<Set<string>>(new Set());
   const [initializedFolderExpansion, setInitializedFolderExpansion] = useState(false);
   const [courseLinkTarget, setCourseLinkTarget] = useState<string>("");
+  const [sidebarMode, setSidebarMode] = useState<"folders" | "courses">("folders");
+  const [selectedCourseId, setSelectedCourseId] = useState<number | "unlinked" | null>(null);
   const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem("tutor.selected_material_ids.v1");
@@ -401,6 +404,11 @@ export default function Library() {
     queryKey: ["courses-active"],
     queryFn: () => api.courses.getActive(),
   });
+  const { data: contentSources } = useQuery<TutorContentSources>({
+    queryKey: ["tutor-content-sources"],
+    queryFn: () => api.tutor.getContentSources(),
+    enabled: sidebarMode === "courses",
+  });
 
   const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
   const folderItems = useMemo(() => flattenFolders(folderTree), [folderTree]);
@@ -416,13 +424,45 @@ export default function Library() {
     () => getFolderNode(folderTree, selectedFolderPath),
     [folderTree, selectedFolderPath],
   );
+  const unlinkedCount = useMemo(
+    () => materials.filter((m) => m.course_id === null).length,
+    [materials],
+  );
   const visibleMaterials = useMemo(() => {
+    if (sidebarMode === "courses") {
+      let filtered: Material[];
+      if (selectedCourseId === null) {
+        filtered = materials;
+      } else if (selectedCourseId === "unlinked") {
+        filtered = materials.filter((m) => m.course_id === null);
+      } else {
+        filtered = materials.filter((m) => m.course_id === selectedCourseId);
+      }
+      return filtered.sort((a, b) => getMaterialTitle(a).localeCompare(getMaterialTitle(b)));
+    }
     if (!selectedFolderNode) return [];
     return collectFolderMaterials(selectedFolderNode).sort((a, b) =>
       getMaterialTitle(a).localeCompare(getMaterialTitle(b)),
     );
-  }, [selectedFolderNode]);
-  const selectedFolderLabel = selectedFolderPath || "All Materials";
+  }, [sidebarMode, selectedCourseId, materials, selectedFolderNode]);
+  const selectedFolderLabel = useMemo(() => {
+    if (sidebarMode === "courses") {
+      if (selectedCourseId === null) return "All Materials";
+      if (selectedCourseId === "unlinked") return "Unlinked";
+      const course = contentSources?.courses.find((c) => c.id === selectedCourseId);
+      return course ? (course.code || course.name) : "All Materials";
+    }
+    return selectedFolderPath || "All Materials";
+  }, [sidebarMode, selectedCourseId, contentSources, selectedFolderPath]);
+
+  const handleSidebarModeChange = (mode: "folders" | "courses") => {
+    setSidebarMode(mode);
+    if (mode === "folders") {
+      setSelectedCourseId(null);
+    } else {
+      setSelectedFolderPath(ALL_FOLDERS_KEY);
+    }
+  };
 
   const selectedForTutorSet = useMemo(() => new Set(selectedForTutor), [selectedForTutor]);
   const selectableVisibleMaterialIds = useMemo(
@@ -749,83 +789,162 @@ export default function Library() {
           <div className="flex flex-col lg:flex-row h-full min-h-0">
             <aside className="brain-workspace__sidebar-wrap w-full lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-primary/30 bg-black/40 flex flex-col min-h-0 max-h-[40vh] lg:max-h-none">
               <div className={`${PANEL_PADDING} border-b border-primary/20`}>
-                <div className={`${TEXT_PANEL_TITLE} mb-2`}>VAULT FOLDERS</div>
-                <div className={TEXT_MUTED}>Mirror your Obsidian-style folder tree.</div>
+                <div className="flex items-center gap-0 mb-2">
+                  <button
+                    type="button"
+                    className={`flex-1 font-arcade text-xs py-1.5 border-2 transition-colors ${
+                      sidebarMode === "folders"
+                        ? "border-primary bg-primary/20 text-primary"
+                        : "border-primary/30 text-muted-foreground hover:text-foreground hover:border-primary/50"
+                    }`}
+                    onClick={() => handleSidebarModeChange("folders")}
+                  >
+                    FOLDERS
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 font-arcade text-xs py-1.5 border-2 border-l-0 transition-colors ${
+                      sidebarMode === "courses"
+                        ? "border-primary bg-primary/20 text-primary"
+                        : "border-primary/30 text-muted-foreground hover:text-foreground hover:border-primary/50"
+                    }`}
+                    onClick={() => handleSidebarModeChange("courses")}
+                  >
+                    COURSES
+                  </button>
+                </div>
+                <div className={TEXT_MUTED}>
+                  {sidebarMode === "folders"
+                    ? "Mirror your Obsidian-style folder tree."
+                    : "Browse materials by linked course."}
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                <button
-                  className={`w-full rounded-none border px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
-                    selectedFolderPath === ALL_FOLDERS_KEY
-                      ? "border-primary/60 bg-primary/20 text-primary"
-                      : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
-                  }`}
-                  onClick={() => setSelectedFolderPath(ALL_FOLDERS_KEY)}
-                  type="button"
-                >
-                  <FolderOpen className={ICON_SM} />
-                  <span className="truncate flex-1">All Materials</span>
-                  <span className="text-[11px]">{materials.length}</span>
-                </button>
-                {visibleFolderItems.map((folder) => {
-                  const isSelected = selectedFolderPath === folder.path;
-                  const isExpanded = expandedFolderPaths.has(folder.path);
-                  const hasChildren = folder.hasChildren;
-                  return (
-                    <div
-                      key={folder.path}
+                {sidebarMode === "folders" ? (
+                  <>
+                    <button
+                      className={`w-full rounded-none border px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
+                        selectedFolderPath === ALL_FOLDERS_KEY
+                          ? "border-primary/60 bg-primary/20 text-primary"
+                          : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                      }`}
+                      onClick={() => setSelectedFolderPath(ALL_FOLDERS_KEY)}
+                      type="button"
                     >
-                      <div
-                        className={`w-full rounded-none border pr-2 py-1.5 text-left text-sm font-terminal flex items-center gap-1 transition-colors ${
-                          isSelected
-                            ? "border-primary/60 bg-primary/20 text-primary"
-                            : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
-                        }`}
-                        style={{ paddingLeft: `${0.45 + folder.depth * 0.85}rem` }}
-                        title={folder.path}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => {
-                          setSelectedFolderPath(folder.path);
-                          if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.target !== e.currentTarget) return;
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            setSelectedFolderPath(folder.path);
-                            if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
-                          }
-                        }}
-                      >
-                        {hasChildren ? (
-                          <button
-                            type="button"
-                            className="p-0.5 hover:text-primary transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFolderExpanded(folder.path);
+                      <FolderOpen className={ICON_SM} />
+                      <span className="truncate flex-1">All Materials</span>
+                      <span className="text-[11px]">{materials.length}</span>
+                    </button>
+                    {visibleFolderItems.map((folder) => {
+                      const isSelected = selectedFolderPath === folder.path;
+                      const isExpanded = expandedFolderPaths.has(folder.path);
+                      const hasChildren = folder.hasChildren;
+                      return (
+                        <div key={folder.path}>
+                          <div
+                            className={`w-full rounded-none border pr-2 py-1.5 text-left text-sm font-terminal flex items-center gap-1 transition-colors ${
+                              isSelected
+                                ? "border-primary/60 bg-primary/20 text-primary"
+                                : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                            }`}
+                            style={{ paddingLeft: `${0.45 + folder.depth * 0.85}rem` }}
+                            title={folder.path}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              setSelectedFolderPath(folder.path);
+                              if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
                             }}
-                            aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+                            onKeyDown={(e) => {
+                              if (e.target !== e.currentTarget) return;
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                setSelectedFolderPath(folder.path);
+                                if (hasChildren && !isExpanded) toggleFolderExpanded(folder.path);
+                              }
+                            }}
                           >
-                            <ChevronRight
-                              className={`${ICON_SM} transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
-                            />
-                          </button>
-                        ) : (
-                          <span className="w-4" />
-                        )}
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          {isSelected ? <FolderOpen className={ICON_SM} /> : <Folder className={ICON_SM} />}
-                          <span className="truncate flex-1">{folder.name}</span>
+                            {hasChildren ? (
+                              <button
+                                type="button"
+                                className="p-0.5 hover:text-primary transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFolderExpanded(folder.path);
+                                }}
+                                aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+                              >
+                                <ChevronRight
+                                  className={`${ICON_SM} transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
+                                />
+                              </button>
+                            ) : (
+                              <span className="w-4" />
+                            )}
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              {isSelected ? <FolderOpen className={ICON_SM} /> : <Folder className={ICON_SM} />}
+                              <span className="truncate flex-1">{folder.name}</span>
+                            </div>
+                            <span className="text-[11px]">{folder.filesCount}</span>
+                          </div>
                         </div>
-                        <span className="text-[11px]">{folder.filesCount}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                {!folderItems.length && materials.length === 0 ? (
-                  <div className={`${TEXT_MUTED} px-2 py-3 text-xs`}>Sync a folder or upload files to populate this rail.</div>
-                ) : null}
+                      );
+                    })}
+                    {!folderItems.length && materials.length === 0 ? (
+                      <div className={`${TEXT_MUTED} px-2 py-3 text-xs`}>Sync a folder or upload files to populate this rail.</div>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className={`w-full rounded-none border px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
+                        selectedCourseId === null
+                          ? "border-primary/60 bg-primary/20 text-primary"
+                          : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                      }`}
+                      onClick={() => setSelectedCourseId(null)}
+                      type="button"
+                    >
+                      <BookOpen className={ICON_SM} />
+                      <span className="truncate flex-1">All Materials</span>
+                      <span className="text-[11px]">{materials.length}</span>
+                    </button>
+                    {contentSources?.courses
+                      .filter((c) => c.id !== null)
+                      .map((course) => {
+                        const isSelected = selectedCourseId === course.id;
+                        return (
+                          <button
+                            key={course.id}
+                            className={`w-full rounded-none border px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
+                              isSelected
+                                ? "border-primary/60 bg-primary/20 text-primary"
+                                : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                            }`}
+                            onClick={() => setSelectedCourseId(course.id!)}
+                            type="button"
+                          >
+                            <GraduationCap className={ICON_SM} />
+                            <span className="truncate flex-1">{course.code || course.name}</span>
+                            <span className="text-[11px]">{course.doc_count}</span>
+                          </button>
+                        );
+                      })}
+                    <button
+                      className={`w-full rounded-none border px-2 py-1.5 text-left text-sm font-terminal flex items-center gap-2 transition-colors ${
+                        selectedCourseId === "unlinked"
+                          ? "border-primary/60 bg-primary/20 text-primary"
+                          : "border-primary/15 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                      }`}
+                      onClick={() => setSelectedCourseId("unlinked")}
+                      type="button"
+                    >
+                      <FileText className={`${ICON_SM} opacity-50`} />
+                      <span className="truncate flex-1">Unlinked</span>
+                      <span className="text-[11px]">{unlinkedCount}</span>
+                    </button>
+                  </>
+                )}
               </div>
             </aside>
 
@@ -907,7 +1026,7 @@ export default function Library() {
                   <div className="space-y-1">
                     <div className={TEXT_PANEL_TITLE}>YOUR MATERIALS</div>
                     <div className={TEXT_MUTED}>
-                      Folder: <span className="!text-white font-terminal">{selectedFolderLabel}</span> • showing {visibleMaterials.length} file{visibleMaterials.length === 1 ? "" : "s"}
+                      {sidebarMode === "courses" ? "Course" : "Folder"}: <span className="!text-white font-terminal">{selectedFolderLabel}</span> • showing {visibleMaterials.length} file{visibleMaterials.length === 1 ? "" : "s"}
                     </div>
                     <div className={TEXT_MUTED}>
                       Tutor selected in view: {selectedVisibleMaterialIds.length} file{selectedVisibleMaterialIds.length === 1 ? "" : "s"}
