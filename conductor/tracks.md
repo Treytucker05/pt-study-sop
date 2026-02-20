@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest non-track update: 2026-02-20 markdown-wide terminology guard across tracked `*.md` + stale build-path cleanup in active docs (see `conductor/tracks/GENERAL/log.md`).
+Latest non-track update: 2026-02-20 pre-push Brain test stabilization via pytest-aware LLM guard in `brain/llm_provider.py` (see `conductor/tracks/GENERAL/log.md`).
 
 ---
 

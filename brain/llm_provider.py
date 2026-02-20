@@ -21,6 +21,16 @@ DEFAULT_TIMEOUT_SECONDS = 60
 OPENAI_API_TIMEOUT = 30
 
 
+def _llm_blocked_in_test_mode() -> bool:
+    """
+    Prevent external LLM/Codex subprocess calls during pytest runs unless explicitly allowed.
+    """
+    allow_in_tests = os.environ.get("PT_ALLOW_LLM_IN_TESTS", "").strip().lower()
+    if allow_in_tests in {"1", "true", "yes", "on"}:
+        return False
+    return bool(os.environ.get("PYTEST_CURRENT_TEST"))
+
+
 def find_codex_cli() -> Optional[str]:
     """Find Codex CLI executable path."""
     npm_path = Path(os.environ.get("APPDATA", "")) / "npm" / "codex.cmd"
@@ -260,6 +270,15 @@ def call_llm(
     """
     Centralized LLM caller. Runtime path is Codex CLI only.
     """
+    if _llm_blocked_in_test_mode():
+        return {
+            "success": False,
+            "error": "LLM calls are disabled in pytest test mode.",
+            "content": None,
+            "fallback_available": False,
+            "fallback_models": [],
+        }
+
     provider_l = (provider or "").strip().lower()
     model_l = (model or "").strip().lower()
     base_url_candidates = [

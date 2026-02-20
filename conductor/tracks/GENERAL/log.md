@@ -24,6 +24,16 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `docs/root/GUIDE_USER.md`
 - Clarified `docs/root/ARCHITECTURE_V2.md` title/status to mark legacy V2 label as historical terminology context.
 
+## 2026-02-20 - Stabilize pre-push Brain tests (LLM test-mode guard)
+
+- Added pytest-aware guard in `brain/llm_provider.py` to prevent external LLM/Codex subprocess calls during pytest runs by default.
+- New escape hatch for intentional live-LLM tests: set `PT_ALLOW_LLM_IN_TESTS=1`.
+- Verified targeted flaky tests now run deterministically:
+  - `pytest brain/tests/test_calendar_nl.py`
+  - `pytest brain/tests/test_obsidian_patch.py`
+- Verified full pre-push suite path:
+  - `pytest brain/tests/` -> 321 passed, 17 skipped.
+
 ## 2026-02-17 - Consolidate tracking into conductor
 
 - Archived 760-line CONTINUITY.md to docs/archive/
