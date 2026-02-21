@@ -13,6 +13,7 @@ from __future__ import annotations
 import pydantic_v1_patch  # noqa: F401  — must be first (fixes PEP 649 on Python 3.14)
 
 import os
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any, Optional
@@ -34,6 +35,16 @@ SCOPED_CANDIDATE_MULTIPLIER = 12
 SCOPED_CANDIDATE_MIN = 120
 SCOPED_CANDIDATE_MAX = 800
 SCOPED_MMR_FETCH_MAX = 1600
+
+_IMAGE_MD_PATTERN = re.compile(r'!\[[^\]]*\]\([^)]+\)')
+_IMAGE_PLACEHOLDER = re.compile(r'<!--\s*image\s*-->', re.IGNORECASE)
+
+
+def strip_image_refs_for_rag(content: str) -> str:
+    """Remove markdown image references before RAG chunking."""
+    content = _IMAGE_MD_PATTERN.sub('', content)
+    content = _IMAGE_PLACEHOLDER.sub('', content)
+    return content
 
 
 def _get_openai_api_key() -> str:
@@ -89,6 +100,7 @@ def chunk_document(
     corpus: Optional[str] = None,
 ):
     """Split document content into LangChain Documents with metadata."""
+    content = strip_image_refs_for_rag(content)
     from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_core.documents import Document
 

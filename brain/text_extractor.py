@@ -11,6 +11,7 @@ Returns: { content: str, error: str | None, metadata: dict }
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 import subprocess
@@ -162,12 +163,73 @@ def _has_garbled_content(content: str, threshold: float = 0.05) -> bool:
     return bad / n > threshold
 
 
-def _extract_with_docling(path: Path) -> str:
-    """Extract text/markdown using Docling."""
-    from docling.document_converter import DocumentConverter
+def _build_pdf_pipeline_options(*, ocr_mode: bool = False) -> "PdfPipelineOptions":
+    """Build Docling PDF pipeline options for normal or OCR extraction."""
+    from docling.datamodel.pipeline_options import PdfPipelineOptions, TableStructureOptions
 
-    result = DocumentConverter().convert(str(path))
-    doc = getattr(result, "document", result)
+    try:
+        from docling.datamodel.pipeline_options import OcrAutoOptions
+    except ImportError:
+        from docling.datamodel.pipeline_options import OcrOptions as OcrAutoOptions
+
+    table_opts = TableStructureOptions(
+        do_cell_matching=not ocr_mode,
+        mode="accurate",
+    )
+    opts = PdfPipelineOptions(
+        do_table_structure=True,
+        table_structure_options=table_opts,
+        generate_picture_images=True,
+        images_scale=1.5 if not ocr_mode else 1.0,
+    )
+    if ocr_mode:
+        opts.ocr_options = OcrAutoOptions(force_full_page_ocr=True)
+        opts.do_ocr = True
+        opts.ocr_batch_size = 1
+    return opts
+
+
+def _export_docling_markdown(doc: object, source_path: Path) -> str:
+    """Export Docling document to markdown, saving images to disk."""
+    # Try the rich save_as_markdown path first (saves images)
+    try:
+        from docling.datamodel.document import ImageRefMode
+    except ImportError:
+        ImageRefMode = None
+
+    if ImageRefMode is not None:
+        source_hash = hashlib.md5(str(source_path).encode()).hexdigest()[:12]
+        image_dir = Path(__file__).parent / "data" / "extracted_images" / source_hash
+        image_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as tmp:
+                tmp_md = Path(tmp.name)
+            doc.save_as_markdown(
+                tmp_md,
+                artifacts_dir=image_dir,
+                image_mode=ImageRefMode.REFERENCED,
+            )
+            content = tmp_md.read_text(encoding="utf-8")
+            tmp_md.unlink(missing_ok=True)
+
+            # Clean up empty image dir
+            if not any(image_dir.iterdir()):
+                image_dir.rmdir()
+
+            if content.strip():
+                return content
+        except Exception as exc:
+            logger.debug("save_as_markdown failed, falling back: %s", exc)
+            tmp_md.unlink(missing_ok=True)
+            # Clean up empty image dir
+            try:
+                if not any(image_dir.iterdir()):
+                    image_dir.rmdir()
+            except Exception:
+                pass
+
+    # Fallback: standard export methods
     for attr in ("export_to_markdown", "export_to_text"):
         exporter = getattr(doc, attr, None)
         if callable(exporter):
@@ -181,38 +243,38 @@ def _extract_with_docling(path: Path) -> str:
     raise RuntimeError("Docling conversion produced no content")
 
 
+def _extract_with_docling(path: Path) -> str:
+    """Extract text/markdown using Docling."""
+    from docling.document_converter import DocumentConverter
+
+    if path.suffix.lower() == ".pdf":
+        from docling.datamodel.base_models import InputFormat
+        from docling.document_converter import PdfFormatOption
+
+        pipeline_opts = _build_pdf_pipeline_options(ocr_mode=False)
+        converter = DocumentConverter(
+            format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
+        )
+    else:
+        converter = DocumentConverter()
+
+    result = converter.convert(str(path))
+    doc = getattr(result, "document", result)
+    return _export_docling_markdown(doc, path)
+
+
 def _docling_ocr_convert(pdf_path: str) -> str:
     """Run Docling OCR on a single PDF file, return markdown."""
     from docling.datamodel.base_models import InputFormat
-    from docling.datamodel.pipeline_options import PdfPipelineOptions
     from docling.document_converter import DocumentConverter, PdfFormatOption
 
-    try:
-        from docling.datamodel.pipeline_options import OcrAutoOptions
-        ocr_opts = OcrAutoOptions(force_full_page_ocr=True)
-    except ImportError:
-        from docling.datamodel.pipeline_options import OcrOptions
-        ocr_opts = OcrOptions(force_full_page_ocr=True)
-
-    pipeline_opts = PdfPipelineOptions(
-        do_ocr=True, ocr_options=ocr_opts, images_scale=0.5, ocr_batch_size=1,
-    )
+    pipeline_opts = _build_pdf_pipeline_options(ocr_mode=True)
     converter = DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_opts)}
     )
     result = converter.convert(pdf_path)
     doc = getattr(result, "document", result)
-    for attr in ("export_to_markdown", "export_to_text"):
-        exporter = getattr(doc, attr, None)
-        if callable(exporter):
-            text = exporter()
-            if text:
-                return str(text)
-    for attr in ("text", "raw_text"):
-        text = getattr(doc, attr, None)
-        if text:
-            return str(text)
-    return ""
+    return _export_docling_markdown(doc, Path(pdf_path))
 
 
 def _extract_with_docling_ocr(path: Path, chunk_pages: int = 20) -> str:
