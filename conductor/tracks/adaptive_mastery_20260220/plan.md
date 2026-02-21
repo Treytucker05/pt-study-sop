@@ -11,7 +11,7 @@ Build an adaptive mastery system in 10 phases with strict dependency order. Each
 
 ---
 
-## Phase 0: Contracts and Pedagogy Primitives
+## Phase 0: Contracts and Pedagogy Primitives [checkpoint: d6de1f4]
 
 Define the foundational schemas, enums, and policy objects that every downstream phase depends on.
 
@@ -26,10 +26,10 @@ Define the foundational schemas, enums, and policy objects that every downstream
 
 ### Verification
 
-- [ ] All JSON Schemas validate sample data and reject invalid data
-- [ ] Edge type enum covers all 20 sample edges
-- [ ] Artifact validators reject incomplete artifacts
-- [ ] Move library enforced in pattern tests
+- [x] All JSON Schemas validate sample data and reject invalid data
+- [x] Edge type enum covers all 20 sample edges
+- [x] Artifact validators reject incomplete artifacts
+- [x] Move library enforced in pattern tests
 
 ---
 

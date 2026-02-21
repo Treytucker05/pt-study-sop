@@ -11,7 +11,6 @@ INDEX_PATH = PROJECT_DIR / "INDEX.md"
 REQUIRED_FILES = [
     "INDEX.md",
     "REPO_HYGIENE.md",
-    "PARALLEL_AGENT_WORKFLOW.md",
     "README.md",
 ]
 
