@@ -1,0 +1,16 @@
+{
+  "id": "adaptive_mastery_20260220",
+  "title": "Adaptive Mastery System",
+  "type": "feature",
+  "status": "in_progress",
+  "created": "2026-02-20T00:00:00Z",
+  "updated": "2026-02-20T00:00:00Z",
+  "phases": {
+    "total": 10,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 48,
+    "completed": 0
+  }
+}
