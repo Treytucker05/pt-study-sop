@@ -77,7 +77,7 @@ Capture every practice action as a structured event for downstream mastery compu
 
 ---
 
-## Phase 3: Student Model — BKT with Time-Aware Decay [checkpoint: pending]
+## Phase 3: Student Model — BKT with Time-Aware Decay [checkpoint: dea8be8]
 
 Implement Bayesian Knowledge Tracing with a forgetting-curve decay term for effective mastery.
 
@@ -99,23 +99,23 @@ Implement Bayesian Knowledge Tracing with a forgetting-curve decay term for effe
 
 ---
 
-## Phase 4: Concept Map as Curriculum Controller
+## Phase 4: Concept Map as Curriculum Controller [checkpoint: de5f2b27]
 
 Concept map nodes drive Locked/Available/Mastered status. Advance organizer provides big-picture view.
 
 ### Tasks
 
-- [ ] Task 4.1: Prerequisites on nodes — node model supports `prereqs[]` and prerequisite edges; persisted
-- [ ] Task 4.2: Status computation — Locked / Available / Mastered from effective mastery + prereqs
-- [ ] Task 4.3: Learner control with constraints — allow out-of-sequence practice, but downstream unlock depends on prereqs; log out-of-sequence events
-- [ ] Task 4.4: Advance organizer view — map-level "big picture" shows only epitome cluster + anchors; expands on mastery
+- [x] Task 4.1: Prerequisites on nodes — node model supports `prereqs[]` and prerequisite edges; persisted
+- [x] Task 4.2: Status computation — Locked / Available / Mastered from effective mastery + prereqs
+- [x] Task 4.3: Learner control with constraints — allow out-of-sequence practice, but downstream unlock depends on prereqs; log out-of-sequence events
+- [x] Task 4.4: Advance organizer view — map-level "big picture" shows only epitome cluster + anchors; expands on mastery
 
 ### Verification
 
-- [ ] Reload preserves prereqs
-- [ ] When prereqs cross threshold: Locked → Available
-- [ ] Out-of-sequence practice logs events but does not unlock gated nodes
-- [ ] Organizer hides peripheral nodes until unlocked
+- [x] Reload preserves prereqs
+- [x] When prereqs cross threshold: Locked → Available
+- [x] Out-of-sequence practice logs events but does not unlock gated nodes
+- [x] Organizer hides peripheral nodes until unlocked
 
 ---
 
