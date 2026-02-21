@@ -12,6 +12,7 @@ import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useToast } from "@/use-toast";
 import type { Note } from "@shared/schema";
 
 const NAV_ITEMS = [
@@ -42,6 +43,7 @@ const resolveNoteType = (note: Note): NoteCategory => {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { toast } = useToast();
   const currentPath = location === "/" ? "/" : "/" + location.split("/")[1];
   const isBrainPage = currentPath === "/brain";
   const isTutorPage = currentPath === "/tutor";
@@ -82,6 +84,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       setNewNote("");
+      toast({ title: "Note Saved" });
     },
   });
 
@@ -91,6 +94,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       setEditingId(null);
+      toast({ title: "Note Updated" });
     },
   });
 
@@ -98,6 +102,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     mutationFn: api.notes.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast({ title: "Note Deleted" });
     },
   });
 
@@ -141,6 +146,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast({ title: "Notes Reordered" });
     },
   });
 

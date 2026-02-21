@@ -31,6 +31,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type ScholarQuestion, type ScholarFinding, type TutorAuditItem, type ScholarClustersResponse } from "@/lib/api";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/use-toast";
 import type { Proposal } from "@shared/schema";
 import {
   TEXT_PANEL_TITLE,
@@ -69,6 +70,7 @@ interface ScholarMessage {
 
 export default function Scholar() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("summary");
   const [chatMessages, setChatMessages] = useState<ScholarMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -117,6 +119,7 @@ export default function Scholar() {
     mutationFn: api.scholar.runClustering,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholar-clusters"] });
+      toast({ title: "Clustering Complete", description: "Topic clusters updated." });
     },
   });
 
@@ -135,6 +138,7 @@ export default function Scholar() {
       api.proposals.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["proposals"] });
+      toast({ title: "Proposal Updated", description: "Status changed." });
     },
   });
 

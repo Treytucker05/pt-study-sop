@@ -11,7 +11,7 @@ For each page, verify: Feedback loops (toasts/dirty states), Resilience (localSt
 
 - [x] **Task 2.1:** `/` (Dashboard) - Complete audit.
 - [x] **Task 2.2:** `/brain` - Complete audit.
-- [ ] **Task 2.3:** `/calendar` - Complete audit.
+- [x] **Task 2.3:** `/calendar` - Complete audit.
 - [ ] **Task 2.4:** `/scholar` - Complete audit.
 - [ ] **Task 2.5:** `/tutor` - Complete audit.
 - [ ] **Task 2.6:** `/methods` - Complete audit.
