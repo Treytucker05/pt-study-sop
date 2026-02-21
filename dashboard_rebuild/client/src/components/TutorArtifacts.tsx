@@ -55,7 +55,6 @@ interface TutorArtifactsProps {
   sessionId: string | null;
   artifacts: TutorArtifact[];
   turnCount: number;
-  mode: string;
   topic: string;
   startedAt: string | null;
   onCreateArtifact: (artifact: { type: "note" | "card" | "map"; content: string; title: string }) => void;
@@ -83,7 +82,6 @@ export function TutorArtifacts({
   sessionId,
   artifacts,
   turnCount,
-  mode,
   topic,
   startedAt,
   recentSessions,
@@ -353,9 +351,6 @@ export function TutorArtifacts({
           {sessionId ? (
             <div className="space-y-2 pb-3 border-b border-muted-foreground/20">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-1.5`}>
-                  {mode}
-                </Badge>
                 <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-1.5 text-primary`}>
                   FIRST PASS
                 </Badge>
@@ -550,11 +545,10 @@ export function TutorArtifacts({
                       <div className="flex items-center gap-2">
                         <Badge
                           variant="outline"
-                          className={`${TEXT_BADGE} h-5 px-1.5 shrink-0 ${
-                            s.status === "active"
+                          className={`${TEXT_BADGE} h-5 px-1.5 shrink-0 ${s.status === "active"
                               ? "text-green-400 border-green-400/50"
                               : "text-muted-foreground"
-                          }`}
+                            }`}
                         >
                           {s.status === "active" ? "LIVE" : "DONE"}
                         </Badge>

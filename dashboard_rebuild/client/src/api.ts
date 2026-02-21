@@ -1,7 +1,7 @@
-import type { 
-  Session, InsertSession, 
-  CalendarEvent, InsertCalendarEvent, 
-  Task, InsertTask, 
+import type {
+  Session, InsertSession,
+  CalendarEvent, InsertCalendarEvent,
+  Task, InsertTask,
   Proposal, InsertProposal,
   ChatMessage, InsertChatMessage,
   Note, InsertNote,
@@ -268,7 +268,7 @@ export const api = {
 
   chat: {
     getMessages: (sessionId: string) => request<ChatMessage[]>(`/chat/${sessionId}`),
-    sendMessage: (sessionId: string, data: Omit<InsertChatMessage, "sessionId">) => 
+    sendMessage: (sessionId: string, data: Omit<InsertChatMessage, "sessionId">) =>
       request<ChatMessage>(`/chat/${sessionId}`, {
         method: "POST",
         body: JSON.stringify(data),
@@ -295,7 +295,7 @@ export const api = {
   googleTasks: {
     getLists: () => request<{ id: string; title: string }[]>("/google-tasks/lists"),
     getAll: () => request<GoogleTask[]>("/google-tasks"),
-    create: (listId: string, data: { title: string; status?: string; notes?: string; due?: string }) => 
+    create: (listId: string, data: { title: string; status?: string; notes?: string; due?: string }) =>
       request<GoogleTask>(`/google-tasks/${encodeURIComponent(listId)}`, {
         method: "POST",
         body: JSON.stringify(data),
@@ -354,7 +354,7 @@ export const api = {
 
   studyWheel: {
     getCurrentCourse: () => request<{ currentCourse: Course | null }>("/study-wheel/current"),
-    completeSession: (courseId: number, minutes: number, mode?: string) => 
+    completeSession: (courseId: number, minutes: number, mode?: string) =>
       request<{ session: Session; nextCourse: Course | null }>("/study-wheel/complete-session", {
         method: "POST",
         body: JSON.stringify({ courseId, minutes, mode }),
@@ -420,9 +420,9 @@ export const api = {
         typeof messageOrPayload === "string"
           ? { message: messageOrPayload, syncToObsidian, mode }
           : messageOrPayload;
-      return request<{ 
-        response: string; 
-        isStub: boolean; 
+      return request<{
+        response: string;
+        isStub: boolean;
         parsed?: boolean;
         wrapProcessed?: boolean;
         cardsCreated?: number;
@@ -448,7 +448,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ content, filename }),
     }),
-    ingestSessionJson: (sessionId: number, trackerJson?: Record<string, unknown>, enhancedJson?: Record<string, unknown>) => 
+    ingestSessionJson: (sessionId: number, trackerJson?: Record<string, unknown>, enhancedJson?: Record<string, unknown>) =>
       request<{ session_id: number; fields_updated: number }>("/brain/session-json", {
         method: "POST",
         body: JSON.stringify({ session_id: sessionId, tracker_json: trackerJson, enhanced_json: enhancedJson }),
@@ -960,7 +960,7 @@ export interface BrainOrganizePreviewResponse {
 
 // Method Library types
 // Control Plane (CP-MSS v1.0) categories + Legacy PEIRRO for backward compatibility
-export type MethodCategory = 
+export type MethodCategory =
   // Control Plane Stages (New)
   | "PRIME" | "CALIBRATE" | "ENCODE" | "REFERENCE" | "RETRIEVE" | "OVERLEARN"
   // Legacy PEIRRO (Backward compatibility)
@@ -1003,8 +1003,8 @@ export const CATEGORY_COLORS: Record<MethodCategory, string> = {
 export interface MethodBlock {
   id: number;
   name: string;
-  control_stage: string;      // Control Plane stage (PRIME, CALIBRATE, etc.)
-  category: MethodCategory;   // Legacy category (for backward compatibility)
+  control_stage?: string | null;      // Control Plane stage (PRIME, CALIBRATE, etc.)
+  category: MethodCategory | string;   // Legacy category (for backward compatibility)
   description: string | null;
   default_duration_min: number;
   energy_cost: string;
@@ -1033,6 +1033,7 @@ export interface MethodAnalyticsResponse {
   block_stats: {
     id: number;
     name: string;
+    control_stage?: string | null;
     category: string;
     usage_count: number;
     avg_effectiveness: number | null;
@@ -1143,7 +1144,7 @@ export interface TutorTemplateChain {
   id: number;
   name: string;
   description: string;
-  blocks: { id: number; name: string; category: string; description?: string; duration: number; facilitation_prompt?: string }[];
+  blocks: { id: number; name: string; control_stage?: string; category: string; description?: string; duration: number; facilitation_prompt?: string }[];
   context_tags: string;
 }
 

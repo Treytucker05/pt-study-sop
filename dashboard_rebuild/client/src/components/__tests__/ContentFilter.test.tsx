@@ -2,7 +2,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ComponentProps } from "react";
 import { ContentFilter } from "@/components/ContentFilter";
-import type { TutorMode } from "@/lib/api";
 
 const mockUseQuery = vi.fn();
 
@@ -42,9 +41,6 @@ function setupQueryMocks() {
         data: [
           { id: 1, name: "First Exposure (Core)", blocks: [{ id: 1 }] },
           { id: 2, name: "Review Sprint", blocks: [{ id: 1 }, { id: 2 }] },
-          { id: 3, name: "Quick Drill", blocks: [{ id: 1 }] },
-          { id: 4, name: "Low Energy", blocks: [{ id: 1 }] },
-          { id: 5, name: "Mastery Review", blocks: [{ id: 1 }] },
         ],
         isLoading: false,
         isError: false,
@@ -63,16 +59,12 @@ function renderFilter(overrides?: Partial<ComponentProps<typeof ContentFilter>>)
     setCourseId: vi.fn(),
     selectedMaterials: [],
     setSelectedMaterials: vi.fn(),
-    mode: "Core",
-    setMode: vi.fn(),
     chainId: undefined,
     setChainId: vi.fn(),
     customBlockIds: [],
     setCustomBlockIds: vi.fn(),
     topic: "",
     setTopic: vi.fn(),
-    webSearch: false,
-    setWebSearch: vi.fn(),
     onStartSession: vi.fn(),
     isStarting: false,
     hasActiveSession: false,
@@ -82,14 +74,6 @@ function renderFilter(overrides?: Partial<ComponentProps<typeof ContentFilter>>)
   return props;
 }
 
-function clickModeCard(label: string) {
-  const textNode = screen.getAllByText(label).find((node) => node.closest("button"));
-  if (!textNode) {
-    throw new Error(`Mode button not found: ${label}`);
-  }
-  fireEvent.click(textNode.closest("button")!);
-}
-
 describe("ContentFilter", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -97,26 +81,35 @@ describe("ContentFilter", () => {
     window.localStorage.clear();
   });
 
-  it("auto-picks the recommended chain when switching modes in templates tab", () => {
-    const setMode = vi.fn<(mode: TutorMode) => void>();
-    const setChainId = vi.fn<(id: number | undefined) => void>();
-    renderFilter({ setMode, setChainId });
+  it("renders chain templates and freeform option", () => {
+    renderFilter();
 
-    clickModeCard("REVIEW");
-
-    expect(setMode).toHaveBeenCalledWith("Sprint");
-    expect(setChainId).toHaveBeenCalledWith(2);
+    expect(screen.getByText("FREEFORM")).toBeInTheDocument();
+    expect(screen.getByText("FIRST EXPOSURE (CORE)")).toBeInTheDocument();
+    expect(screen.getByText("REVIEW SPRINT")).toBeInTheDocument();
   });
 
-  it("does not auto-pick chain when custom tab is active", () => {
-    const setMode = vi.fn<(mode: TutorMode) => void>();
-    const setChainId = vi.fn<(id: number | undefined) => void>();
-    renderFilter({ setMode, setChainId });
+  it("calls setChainId when clicking a template chain", () => {
+    const setChainId = vi.fn();
+    renderFilter({ setChainId });
+
+    const chainButton = screen.getByText("FIRST EXPOSURE (CORE)").closest("button");
+    fireEvent.click(chainButton!);
+
+    expect(setChainId).toHaveBeenCalledWith(1);
+  });
+
+  it("switching to custom tab clears chainId", () => {
+    const setChainId = vi.fn();
+    renderFilter({ setChainId });
 
     fireEvent.click(screen.getByRole("button", { name: "CUSTOM" }));
-    clickModeCard("REVIEW");
 
-    expect(setMode).toHaveBeenCalledWith("Sprint");
-    expect(setChainId).not.toHaveBeenCalledWith(2);
+    expect(setChainId).toHaveBeenCalledWith(undefined);
+  });
+
+  it("shows start session button", () => {
+    renderFilter();
+    expect(screen.getByText("START SESSION")).toBeInTheDocument();
   });
 });

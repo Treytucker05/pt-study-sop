@@ -46,14 +46,6 @@ import {
 
 // ─── Constants ───
 
-const PRIMARY_MODES: { value: TutorMode; label: string; desc: string }[] = [
-  { value: "Core", label: "LEARN", desc: "Prime + encode" },
-  { value: "Sprint", label: "REVIEW", desc: "Retrieve + refine" },
-  { value: "Quick Sprint", label: "QUICK", desc: "Quick retrieval" },
-  { value: "Light", label: "LIGHT", desc: "Low energy" },
-  { value: "Drill", label: "FIX", desc: "Target weak spots" },
-];
-
 type ChainMode = "template" | "custom" | "auto";
 
 // ─── Props ───
@@ -69,10 +61,6 @@ interface TutorWizardProps {
   setChainId: (id: number | undefined) => void;
   customBlockIds: number[];
   setCustomBlockIds: (ids: number[]) => void;
-  mode: TutorMode;
-  setMode: (mode: TutorMode) => void;
-  webSearch: boolean;
-  setWebSearch: (enabled: boolean) => void;
   onStartSession: () => void;
   isStarting: boolean;
   recentSessions: TutorSessionSummary[];
@@ -92,10 +80,6 @@ export function TutorWizard({
   setChainId,
   customBlockIds,
   setCustomBlockIds,
-  mode,
-  setMode,
-  webSearch,
-  setWebSearch,
   onStartSession,
   isStarting,
   recentSessions,
@@ -223,7 +207,6 @@ export function TutorWizard({
               setChainId={setChainId}
               customBlockIds={customBlockIds}
               setCustomBlockIds={setCustomBlockIds}
-              mode={mode}
             />
           )}
 
@@ -234,10 +217,6 @@ export function TutorWizard({
               topic={topic}
               selectedMaterials={selectedMaterials}
               selectedChainName={selectedChainName}
-              mode={mode}
-              setMode={setMode}
-              webSearch={webSearch}
-              setWebSearch={setWebSearch}
               onStartSession={onStartSession}
               isStarting={isStarting}
             />
@@ -396,7 +375,6 @@ function StepChain({
   setChainId,
   customBlockIds,
   setCustomBlockIds,
-  mode,
 }: {
   chainMode: ChainMode;
   setChainMode: (mode: ChainMode) => void;
@@ -405,7 +383,6 @@ function StepChain({
   setChainId: (id: number | undefined) => void;
   customBlockIds: number[];
   setCustomBlockIds: (ids: number[]) => void;
-  mode: TutorMode;
 }) {
   return (
     <div className={SECTION_GAP}>
@@ -595,36 +572,9 @@ function StepChain({
             </div>
             <div className="border border-primary/20 p-2 space-y-1">
               <div className="font-arcade text-xs text-primary/80 mb-1">MODE POLICY</div>
-              {mode === "Core" && (
-                <div className={`${TEXT_MUTED} text-xs`}>
-                  Core: Teach first, then test. Builds understanding before retrieval practice.
-                </div>
-              )}
-              {mode === "Sprint" && (
-                <div className={`${TEXT_MUTED} text-xs`}>
-                  Sprint: Test first, then fill gaps. Prioritizes retrieval practice for review.
-                </div>
-              )}
-              {mode === "Quick Sprint" && (
-                <div className={`${TEXT_MUTED} text-xs`}>
-                  Quick Sprint: Rapid-fire Q&A. Minimal explanation, maximum testing.
-                </div>
-              )}
-              {mode === "Light" && (
-                <div className={`${TEXT_MUTED} text-xs`}>
-                  Light: Low energy mode. Gentle pacing, more scaffolding, shorter exchanges.
-                </div>
-              )}
-              {mode === "Drill" && (
-                <div className={`${TEXT_MUTED} text-xs`}>
-                  Drill: Target weak spots. Focuses on areas flagged as difficult.
-                </div>
-              )}
-              {(mode === "Diagnostic Sprint" || mode === "Teaching Sprint") && (
-                <div className={`${TEXT_MUTED} text-xs`}>
-                  {mode}: Specialized sprint mode with tailored pacing.
-                </div>
-              )}
+              <div className={`${TEXT_MUTED} text-xs`}>
+                The system determines pacing and content delivery entirely based on the chain blocks or an automatic strategy.
+              </div>
             </div>
             {templateChains.length > 0 && (
               <div className={`${TEXT_MUTED} text-xs`}>
@@ -646,10 +596,6 @@ function StepConfirm({
   topic,
   selectedMaterials,
   selectedChainName,
-  mode,
-  setMode,
-  webSearch,
-  setWebSearch,
   onStartSession,
   isStarting,
 }: {
@@ -658,10 +604,6 @@ function StepConfirm({
   topic: string;
   selectedMaterials: number[];
   selectedChainName: string;
-  mode: TutorMode;
-  setMode: (mode: TutorMode) => void;
-  webSearch: boolean;
-  setWebSearch: (enabled: boolean) => void;
   onStartSession: () => void;
   isStarting: boolean;
 }) {
@@ -694,35 +636,6 @@ function StepConfirm({
         </div>
       </Card>
 
-      {/* Mode selector */}
-      <Card className="bg-black/40 border-2 border-primary rounded-none">
-        <div className="px-3 py-2 border-b border-primary/30">
-          <span className={TEXT_SECTION_LABEL}>STUDY MODE</span>
-        </div>
-        <div className="p-3 grid grid-cols-5 gap-1.5">
-          {PRIMARY_MODES.map((m) => {
-            const isActive = mode === m.value;
-            return (
-              <button
-                key={m.value}
-                onClick={() => {
-                  setMode(m.value);
-                  toast.success(`${m.label} mode selected`);
-                }}
-                className={`p-2 border-2 text-center transition-colors ${isActive
-                  ? "border-primary bg-primary/15 text-primary"
-                  : "border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                  }`}
-              >
-                <div className="font-arcade text-xs">{m.label}</div>
-                <div className="font-terminal text-xs mt-0.5 opacity-60">{m.desc}</div>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* Session options */}
       <Card className="bg-black/40 border-2 border-primary/40 rounded-none">
         <div className="px-3 py-2 border-b border-primary/30">
           <span className={TEXT_SECTION_LABEL}>SESSION OPTIONS</span>
@@ -731,19 +644,6 @@ function StepConfirm({
           <div className="font-terminal text-xs text-muted-foreground/80">
             Tutor session model is fixed to Codex.
           </div>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={webSearch}
-              onChange={(e) => setWebSearch(e.target.checked)}
-              className="accent-primary"
-            />
-            <span className={TEXT_BODY}>
-              <Globe className="inline w-4 h-4 mr-1 opacity-60" />
-              Enable web search
-            </span>
-          </label>
         </div>
       </Card>
 

@@ -1580,7 +1580,6 @@ def init_database():
             last_response_id TEXT,
             course_id INTEGER,
             phase TEXT NOT NULL DEFAULT 'first_pass',
-            mode TEXT DEFAULT 'Core',
             topic TEXT,
             content_filter_json TEXT,
             status TEXT DEFAULT 'active',
@@ -1604,6 +1603,16 @@ def init_database():
         CREATE INDEX IF NOT EXISTS idx_tutor_sessions_status
         ON tutor_sessions(status)
     """)
+
+    # --- Migration to drop mode column if it still exists ---
+    cursor.execute("PRAGMA table_info(tutor_sessions)")
+    ts_cols = {col[1] for col in cursor.fetchall()}
+    if "mode" in ts_cols:
+        try:
+            cursor.execute("ALTER TABLE tutor_sessions DROP COLUMN mode")
+            print("[INFO] Dropped 'mode' column from tutor_sessions table")
+        except sqlite3.OperationalError:
+            print("[WARN] Could not drop 'mode' column (SQLite might be too old)")
 
     # ------------------------------------------------------------------
     # Adaptive Tutor: session_chains (links related tutor sessions)

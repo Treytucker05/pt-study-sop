@@ -920,7 +920,6 @@ def create_session():
     if course_id is not None:
         ensure_course_in_wheel(int(course_id), active=True)
     phase = data.get("phase", "first_pass")
-    mode = data.get("mode", "Core")
     topic = data.get("topic", "")
     content_filter = data.get("content_filter")
     if isinstance(content_filter, dict):
@@ -992,17 +991,16 @@ def create_session():
 
     cur.execute(
         """INSERT INTO tutor_sessions
-           (session_id, brain_session_id, course_id, phase, mode, topic, content_filter_json,
+           (session_id, brain_session_id, course_id, phase, topic, content_filter_json,
             status, turn_count, method_chain_id, current_block_index, started_at,
             selector_chain_id, selector_score_json, selector_policy_version,
             selector_dependency_fix)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?)""",
         (
             session_id,
             linked_brain_session_id,
             course_id,
             phase,
-            mode,
             topic,
             json.dumps(content_filter) if content_filter else None,
             method_chain_id,
@@ -1033,7 +1031,6 @@ def create_session():
     response: dict[str, Any] = {
         "session_id": session_id,
         "phase": phase,
-        "mode": mode,
         "topic": topic,
         "status": "active",
         "brain_session_id": linked_brain_session_id,
@@ -1186,7 +1183,7 @@ def send_turn(session_id: str):
             codex_model = raw_model
 
     # Read web search preference
-    enable_web_search = bool(content_filter.get("web_search"))
+    enable_web_search = True
 
     turn_number = session["turn_count"] + 1
 
@@ -1581,7 +1578,7 @@ def send_turn(session_id: str):
                     stream_kwargs: dict = {
                         "model": codex_model or "gpt-5.3-codex",
                         "timeout": 120,
-                        "web_search": enable_web_search,
+                        "web_search": True,
                         "tools": tool_schemas,
                     }
                     if prev_response_id:
@@ -1830,16 +1827,15 @@ def send_turn(session_id: str):
 
             cur.execute(
                 """INSERT INTO tutor_turns
-                   (session_id, tutor_session_id, course_id, mode, turn_number,
+                   (session_id, tutor_session_id, course_id, turn_number,
                     question, answer, citations_json, response_id, model_id,
                     phase, artifacts_json, behavior_override, evaluation_json,
                     created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     session_id,
                     session_id,
                     session.get("course_id"),
-                    session.get("mode"),
                     turn_number,
                     question,
                     full_response,
@@ -2061,6 +2057,8 @@ def end_session(session_id: str):
     brain_session_id = session.get("brain_session_id")
     if not brain_session_id:
         try:
+            topic_str = session.get("topic") or "Session"
+            title = f"Tutor-{topic_str}"
             cur.execute(
                 """INSERT INTO sessions
                    (session_date, session_time, main_topic, study_mode,
@@ -2070,8 +2068,8 @@ def end_session(session_id: str):
                 (
                     now.strftime("%Y-%m-%d"),
                     now.strftime("%H:%M:%S"),
-                    session.get("topic") or "Tutor Session",
-                    f"Tutor-{session.get('mode', 'Core')}",
+                    title,
+                    title, # study_mode
                     now.isoformat(),
                     session.get("turn_count", 0) * 2,
                     session.get("turn_count", 0) * 2,
@@ -2194,14 +2192,27 @@ def get_linked_chat(brain_session_id: int):
         return jsonify({"error": "Archive session not found"}), 404
 
     cur.execute(
-        """SELECT id, session_id, course_id, phase, mode, topic, status, turn_count,
-                  started_at, ended_at, brain_session_id, codex_thread_id, last_response_id
+        """SELECT id, session_id, course_id, phase, topic, status, turn_count,
+           method_chain_id, current_block_index,
+           started_at, ended_at, brain_session_id, codex_thread_id, last_response_id
            FROM tutor_sessions
            WHERE brain_session_id = ?
-           ORDER BY started_at DESC""",
+           ORDER BY started_at DESC
+           LIMIT 1""",
         (brain_session_id,),
     )
-    linked_sessions = [dict(r) for r in cur.fetchall()]
+    row = cur.fetchone()
+    if not row:
+        cur.execute(
+            """SELECT id, session_id, course_id, phase, topic, status, turn_count,
+                      started_at, ended_at, brain_session_id, codex_thread_id, last_response_id
+               FROM tutor_sessions
+               WHERE session_id = ?""",
+            (brain_session_id,),
+        )
+        linked_sessions = [dict(r) for r in cur.fetchall()]
+    else:
+        linked_sessions = [dict(row)]
 
     if include_turns:
         for sess in linked_sessions:
@@ -2425,7 +2436,7 @@ def list_sessions():
     where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
     cur.execute(
-        f"""SELECT id, session_id, course_id, phase, mode, topic, status,
+        f"""SELECT id, session_id, course_id, phase, topic, status,
                    turn_count, method_chain_id, current_block_index,
                    started_at, ended_at, brain_session_id,
                    codex_thread_id, last_response_id

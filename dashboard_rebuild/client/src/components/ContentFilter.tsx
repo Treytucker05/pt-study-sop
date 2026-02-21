@@ -39,43 +39,17 @@ interface ContentFilterProps {
   setCourseId: (id: number | undefined) => void;
   selectedMaterials: number[];
   setSelectedMaterials: (ids: number[]) => void;
-  mode: TutorMode;
-  setMode: (mode: TutorMode) => void;
   chainId: number | undefined;
   setChainId: (id: number | undefined) => void;
   customBlockIds: number[];
   setCustomBlockIds: (ids: number[]) => void;
   topic: string;
   setTopic: (topic: string) => void;
-  webSearch: boolean;
-  setWebSearch: (enabled: boolean) => void;
   onStartSession: () => void;
   isStarting: boolean;
   hasActiveSession: boolean;
   compact?: boolean;
 }
-
-const PRIMARY_MODES: { value: TutorMode; label: string; desc: string }[] = [
-  { value: "Core", label: "LEARN", desc: "Prime + encode" },
-  { value: "Sprint", label: "REVIEW", desc: "Retrieve + refine" },
-  { value: "Quick Sprint", label: "QUICK", desc: "Quick retrieval" },
-  { value: "Light", label: "LIGHT", desc: "Low energy" },
-  { value: "Drill", label: "FIX", desc: "Target weak spots" },
-];
-
-const LEGACY_MODES: TutorMode[] = ["Teaching Sprint", "Diagnostic Sprint"];
-
-const MODE_TO_RECOMMENDED_CHAIN: Partial<Record<TutorMode, string>> = {
-  Core: "First Exposure (Core)",
-  Sprint: "Review Sprint",
-  "Quick Sprint": "Quick Drill",
-  Light: "Low Energy",
-  Drill: "Mastery Review",
-  "Teaching Sprint": "First Exposure (Core)",
-  "Diagnostic Sprint": "Review Sprint",
-};
-
-const LS_AUTOPICK_CHAIN_KEY = "tutor.autopick_chain.v1";
 
 function _lsGet(key: string): string | null {
   try {
@@ -91,12 +65,6 @@ function _lsSet(key: string, value: string): void {
   } catch {
     // ignore
   }
-}
-
-function _lsGetBool(key: string, fallback: boolean): boolean {
-  const raw = _lsGet(key);
-  if (raw === null) return fallback;
-  return raw === "true";
 }
 
 function SectionLabel({
@@ -119,16 +87,12 @@ export function ContentFilter({
   setCourseId,
   selectedMaterials,
   setSelectedMaterials,
-  mode,
-  setMode,
   chainId,
   setChainId,
   customBlockIds,
   setCustomBlockIds,
   topic,
   setTopic,
-  webSearch,
-  setWebSearch,
   onStartSession,
   isStarting,
   hasActiveSession,
@@ -157,10 +121,6 @@ export function ContentFilter({
     queryFn: () => api.courses.getActive(),
   });
 
-  const [autoPickChain, setAutoPickChain] = useState<boolean>(() =>
-    _lsGetBool(LS_AUTOPICK_CHAIN_KEY, true)
-  );
-  const [lastAutoPickMode, setLastAutoPickMode] = useState<TutorMode | null>(null);
   const [chainTab, setChainTab] = useState<"templates" | "custom">("templates");
 
   useEffect(() => {
@@ -170,60 +130,11 @@ export function ContentFilter({
     }
   }, [chainId, chainTab]);
 
-  useEffect(() => {
-    _lsSet(LS_AUTOPICK_CHAIN_KEY, String(autoPickChain));
-  }, [autoPickChain]);
-
-  const recommendedChainName = MODE_TO_RECOMMENDED_CHAIN[mode];
-  const recommendedChain = useMemo(() => {
-    if (!recommendedChainName) return undefined;
-    return templateChains.find((c) => c.name === recommendedChainName);
-  }, [templateChains, recommendedChainName]);
-
-  // Auto-pick recommended chain once we know the template list (only when Freeform).
-  useEffect(() => {
-    if (!autoPickChain) return;
-    if (chainTab !== "templates") return;
-    if (chainId !== undefined) return;
-    if (!recommendedChain) return;
-    if (lastAutoPickMode === mode) return;
-    setChainId(recommendedChain.id);
-    setLastAutoPickMode(mode);
-  }, [autoPickChain, chainTab, chainId, recommendedChain?.id, lastAutoPickMode, mode, setChainId]);
-
-  const applyMode = (next: TutorMode) => {
-    setMode(next);
-    if (!autoPickChain) return;
-    if (chainTab !== "templates") return;
-    if (chainId !== undefined) return;
-    const nextName = MODE_TO_RECOMMENDED_CHAIN[next];
-    if (!nextName) return;
-    const nextChain = templateChains.find((c) => c.name === nextName);
-    if (nextChain) {
-      setChainId(nextChain.id);
-      setLastAutoPickMode(next);
-    }
-  };
-
   // ─── COMPACT: inline toolbar ───
   if (compact) {
     const selectedChainName = templateChains.find((c) => c.id === chainId)?.name;
     return (
       <div className="flex flex-wrap items-end gap-3 p-3">
-        {/* Mode */}
-        <div>
-          <div className={`${TEXT_SECTION_LABEL} mb-1`}>Mode</div>
-          <select
-            value={mode}
-            onChange={(e) => applyMode(e.target.value as TutorMode)}
-            className={`${SELECT_BASE} border-[3px] border-double border-primary/30 h-9 w-[140px]`}
-          >
-            {PRIMARY_MODES.map((m) => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
-        </div>
-
         {/* Chain */}
         <div>
           <div className={`${TEXT_SECTION_LABEL} mb-1`}>Chain</div>
@@ -236,7 +147,6 @@ export function ContentFilter({
               }
               // Treat compact "Freeform" as an explicit override.
               setChainId(undefined);
-              setLastAutoPickMode(mode);
             }}
             className={`${SELECT_BASE} border-[3px] border-double border-primary/30 h-9 w-[180px]`}
           >
@@ -258,28 +168,16 @@ export function ContentFilter({
           />
         </div>
 
-        {/* Web search */}
-        <label className="flex items-center gap-1.5 h-9 cursor-pointer">
-          <Checkbox
-            checked={webSearch}
-            onCheckedChange={(v) => setWebSearch(!!v)}
-            className="w-3.5 h-3.5"
-          />
-          <Globe className={ICON_SM} />
-          <span className="font-terminal text-xs">Web</span>
-        </label>
-
         {/* Start button */}
         <Button
           onClick={onStartSession}
           disabled={isStarting || hasActiveSession}
-          className={`h-9 px-5 rounded-none border-2 font-arcade text-xs ${
-            hasActiveSession
-              ? "border-success/50 bg-success/10 text-success cursor-default"
-              : isStarting
+          className={`h-9 px-5 rounded-none border-2 font-arcade text-xs ${hasActiveSession
+            ? "border-success/50 bg-success/10 text-success cursor-default"
+            : isStarting
               ? "border-primary/50 bg-primary/10 text-primary cursor-wait"
               : "border-primary bg-primary/10 hover:bg-primary/20"
-          }`}
+            }`}
         >
           {isStarting ? (
             <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
@@ -319,89 +217,6 @@ export function ContentFilter({
       {/* Scrollable body */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className={`${PANEL_PADDING} space-y-2`}>
-          {/* Mode selector */}
-          <div>
-            <SectionLabel>Mode</SectionLabel>
-            {/* Custom layout: LEARN/QUICK top, FIX middle (full width), REVIEW/LIGHT bottom */}
-            <div className="space-y-1">
-              {/* Row 1: LEARN & QUICK */}
-              <div className="grid grid-cols-2 gap-1">
-                <button
-                  onClick={() => applyMode("Core")}
-                  className={`text-left px-2 py-2 border-2 transition-colors ${
-                    mode === "Core"
-                      ? "border-primary bg-primary/20 text-primary"
-                      : "border-primary/30 text-foreground/80 hover:border-primary/50 hover:text-foreground hover:bg-black/30"
-                  }`}
-                >
-                  <div className="font-arcade text-xs leading-tight truncate">LEARN</div>
-                  <div className={`${TEXT_MUTED} text-xs leading-tight truncate`}>Prime + encode</div>
-                </button>
-                <button
-                  onClick={() => applyMode("Quick Sprint")}
-                  className={`text-left px-2 py-2 border-2 transition-colors ${
-                    mode === "Quick Sprint"
-                      ? "border-primary bg-primary/20 text-primary"
-                      : "border-primary/30 text-foreground/80 hover:border-primary/50 hover:text-foreground hover:bg-black/30"
-                  }`}
-                >
-                  <div className="font-arcade text-xs leading-tight truncate">QUICK</div>
-                  <div className={`${TEXT_MUTED} text-xs leading-tight truncate`}>Quick retrieval</div>
-                </button>
-              </div>
-              
-              {/* Row 2: FIX (full width, centered) */}
-              <button
-                onClick={() => applyMode("Drill")}
-                className={`w-full text-left px-2 py-2 border-2 transition-colors ${
-                  mode === "Drill"
-                    ? "border-primary bg-primary/20 text-primary"
-                    : "border-primary/30 text-foreground/80 hover:border-primary/50 hover:text-foreground hover:bg-black/30"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-arcade text-xs leading-tight">FIX</div>
-                    <div className={`${TEXT_MUTED} text-xs leading-tight`}>Target weak spots</div>
-                  </div>
-                </div>
-              </button>
-              
-              {/* Row 3: REVIEW & LIGHT */}
-              <div className="grid grid-cols-2 gap-1">
-                <button
-                  onClick={() => applyMode("Sprint")}
-                  className={`text-left px-2 py-2 border-2 transition-colors ${
-                    mode === "Sprint"
-                      ? "border-primary bg-primary/20 text-primary"
-                      : "border-primary/30 text-foreground/80 hover:border-primary/50 hover:text-foreground hover:bg-black/30"
-                  }`}
-                >
-                  <div className="font-arcade text-xs leading-tight truncate">REVIEW</div>
-                  <div className={`${TEXT_MUTED} text-xs leading-tight truncate`}>Retrieve + refine</div>
-                </button>
-                <button
-                  onClick={() => applyMode("Light")}
-                  className={`text-left px-2 py-2 border-2 transition-colors ${
-                    mode === "Light"
-                      ? "border-primary bg-primary/20 text-primary"
-                      : "border-primary/30 text-foreground/80 hover:border-primary/50 hover:text-foreground hover:bg-black/30"
-                  }`}
-                >
-                  <div className="font-arcade text-xs leading-tight truncate">LIGHT</div>
-                  <div className={`${TEXT_MUTED} text-xs leading-tight truncate`}>Low energy</div>
-                </button>
-              </div>
-            </div>
-
-            <div className={`${TEXT_MUTED} text-xs mt-2`}>
-              Auto-picks a chain template. Override below.
-            </div>
-
-            {LEGACY_MODES.includes(mode) && (
-              <div className={`${TEXT_MUTED} text-xs mt-1`}>Legacy mode active: {mode}</div>
-            )}
-          </div>
 
           {/* Chain selector */}
           <div>
@@ -413,11 +228,10 @@ export function ContentFilter({
             <div className="grid grid-cols-2 gap-1 mb-2 min-w-0">
               <button
                 onClick={() => setChainTab("templates")}
-                className={`px-1.5 py-1 border-2 font-arcade text-xs truncate transition-colors ${
-                  chainTab === "templates"
-                    ? "border-primary bg-primary/20 text-primary"
-                    : "border-primary/30 text-foreground/80 hover:border-primary/50"
-                }`}
+                className={`px-1.5 py-1 border-2 font-arcade text-xs truncate transition-colors ${chainTab === "templates"
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-primary/30 text-foreground/80 hover:border-primary/50"
+                  }`}
               >
                 TEMPLATES
               </button>
@@ -425,14 +239,12 @@ export function ContentFilter({
                 onClick={() => {
                   setChainTab("custom");
                   setChainId(undefined);
-                  // Respect explicit custom selection and suppress immediate auto-pick.
-                  setLastAutoPickMode(mode);
+                  // Respect explicit custom selection
                 }}
-                className={`px-1.5 py-1 border-2 font-arcade text-xs truncate transition-colors ${
-                  chainTab === "custom"
-                    ? "border-primary bg-primary/20 text-primary"
-                    : "border-primary/30 text-foreground/80 hover:border-primary/50"
-                }`}
+                className={`px-1.5 py-1 border-2 font-arcade text-xs truncate transition-colors ${chainTab === "custom"
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-primary/30 text-foreground/80 hover:border-primary/50"
+                  }`}
               >
                 CUSTOM
               </button>
@@ -440,44 +252,6 @@ export function ContentFilter({
 
             {chainTab === "templates" ? (
               <>
-                {/* Recommended chain row */}
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className={`${TEXT_MUTED} text-xs min-w-0 truncate`}>
-                    <span className="opacity-70">Rec:</span>{" "}
-                    {recommendedChain ? (
-                      <>
-                        <span className="text-foreground font-medium">{recommendedChain.name}</span>
-                        <Badge variant="outline" className={`ml-1 ${TEXT_BADGE} h-4 px-1.5 text-xs`}>
-                          {recommendedChain.blocks.length} blocks
-                        </Badge>
-                      </>
-                    ) : chainsLoading ? (
-                      <Skeleton className="inline-block w-20 h-4 bg-primary/10" />
-                    ) : (
-                      <span className="opacity-70">—</span>
-                    )}
-                  </div>
-
-                  {recommendedChain && chainId !== recommendedChain.id && (
-                    <Button
-                      size="sm"
-                      onClick={() => setChainId(recommendedChain.id)}
-                      className="rounded-none h-6 px-2 font-arcade text-xs bg-primary text-primary-foreground hover:bg-primary/90 border border-primary"
-                    >
-                      APPLY
-                    </Button>
-                  )}
-                </div>
-
-                <label className={`flex items-center gap-2 ${TEXT_BODY} text-muted-foreground mb-2 cursor-pointer`}>
-                  <Checkbox
-                    checked={autoPickChain}
-                    onCheckedChange={(v) => setAutoPickChain(v === true)}
-                    className="w-3 h-3"
-                  />
-                  <span className="select-none text-xs">Auto-pick recommended chain</span>
-                </label>
-
                 {/* Chain list - card style with better borders */}
                 <ScrollArea className="h-40 border-[3px] border-double border-primary/30 bg-black/20">
                   <div className="p-1 space-y-1">
@@ -485,13 +259,11 @@ export function ContentFilter({
                     <button
                       onClick={() => {
                         setChainId(undefined);
-                        setLastAutoPickMode(mode);
                       }}
-                      className={`w-full text-left px-3 py-2 border-2 transition-all ${
-                        !chainId
-                          ? "border-primary bg-primary/20 text-primary"
-                          : "border-primary/20 text-foreground/80 hover:border-primary/40 hover:text-foreground hover:bg-black/30"
-                      }`}
+                      className={`w-full text-left px-3 py-2 border-2 transition-all ${!chainId
+                        ? "border-primary bg-primary/20 text-primary"
+                        : "border-primary/20 text-foreground/80 hover:border-primary/40 hover:text-foreground hover:bg-black/30"
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -513,11 +285,10 @@ export function ContentFilter({
                         <button
                           key={chain.id}
                           onClick={() => setChainId(chain.id)}
-                          className={`w-full text-left px-3 py-2 border-2 transition-all ${
-                            chainId === chain.id
-                              ? "border-primary bg-primary/20 text-primary"
-                              : "border-primary/20 text-foreground/80 hover:border-primary/40 hover:text-foreground hover:bg-black/30"
-                          }`}
+                          className={`w-full text-left px-3 py-2 border-2 transition-all ${chainId === chain.id
+                            ? "border-primary bg-primary/20 text-primary"
+                            : "border-primary/20 text-foreground/80 hover:border-primary/40 hover:text-foreground hover:bg-black/30"
+                            }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="min-w-0 flex-1">
@@ -550,16 +321,6 @@ export function ContentFilter({
               className={`${INPUT_BASE} border-[3px] border-double border-primary/30`}
             />
           </div>
-
-          {/* Web search */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox
-              checked={webSearch}
-              onCheckedChange={(v) => setWebSearch(!!v)}
-            />
-            <Globe className={ICON_SM} />
-            <span className={`${TEXT_BODY} text-xs`}>Web search</span>
-          </label>
 
           {/* Course selector */}
           <div>
@@ -607,13 +368,12 @@ export function ContentFilter({
         <Button
           onClick={onStartSession}
           disabled={isStarting || hasActiveSession}
-          className={`w-full h-9 rounded-none border-2 font-arcade text-xs ${
-            hasActiveSession
-              ? "border-success/50 bg-success/10 text-success cursor-default"
-              : isStarting
+          className={`w-full h-9 rounded-none border-2 font-arcade text-xs ${hasActiveSession
+            ? "border-success/50 bg-success/10 text-success cursor-default"
+            : isStarting
               ? "border-primary/50 bg-primary/10 text-primary cursor-wait"
               : "border-primary bg-primary/10 hover:bg-primary/20"
-          }`}
+            }`}
         >
           {isStarting ? (
             <Loader2 className={`${ICON_SM} animate-spin mr-1`} />

@@ -99,14 +99,12 @@ export default function Tutor() {
       return "strict";
     }
   });
-  const [mode, setMode] = useState<TutorMode>("Core");
   const [chainId, setChainId] = useState<number | undefined>();
   const [showMaterials, setShowMaterials] = useState(false);
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
   const [chainBlocks, setChainBlocks] = useState<TutorTemplateChain["blocks"]>([]);
   const [customBlockIds, setCustomBlockIds] = useState<number[]>([]);
   const [topic, setTopic] = useState("");
-  const [webSearch, setWebSearch] = useState(false);
 
   // Vault file picker
   const [selectedPaths, setSelectedPaths] = useState<string[]>(() => {
@@ -159,9 +157,7 @@ export default function Tutor() {
           selectedMaterials,
           chainId,
           customBlockIds,
-          mode,
           accuracyProfile,
-          webSearch,
           selectedPaths,
         }),
       );
@@ -175,9 +171,7 @@ export default function Tutor() {
     selectedMaterials,
     chainId,
     customBlockIds,
-    mode,
     accuracyProfile,
-    webSearch,
     selectedPaths,
   ]);
 
@@ -204,7 +198,6 @@ export default function Tutor() {
     setActiveSessionId(session.session_id);
     setTurnCount(session.turn_count);
     setStartedAt(session.started_at);
-    setMode(session.mode);
     setTopic(session.topic || "");
     setCourseId(session.course_id ?? undefined);
     setChainId(session.method_chain_id ?? undefined);
@@ -229,7 +222,6 @@ export default function Tutor() {
       );
     } catch { /* ignore */ }
     setAccuracyProfile(normalizeAccuracyProfile(session.content_filter?.accuracy_profile));
-    setWebSearch(Boolean(session.content_filter?.web_search));
     if (session.artifacts_json) {
       try {
         const parsed = JSON.parse(session.artifacts_json);
@@ -266,13 +258,13 @@ export default function Tutor() {
       const session = await api.tutor.createSession({
         course_id: courseId,
         phase: "first_pass",
-        mode,
+        mode: "Core",
         topic: topic || undefined,
         content_filter: {
           ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
           ...(selectedMaterials.length > 0 ? { material_ids: selectedMaterials } : {}),
           accuracy_profile: accuracyProfile,
-          ...(webSearch ? { web_search: true } : {}),
+          web_search: true,
         },
         method_chain_id: resolvedChainId,
       });
@@ -311,7 +303,7 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, mode, topic, selectedPaths, selectedMaterials, accuracyProfile, webSearch, chainId, customBlockIds, queryClient]);
+  }, [courseId, topic, selectedPaths, selectedMaterials, accuracyProfile, chainId, customBlockIds, queryClient]);
 
   const endSession = useCallback(async () => {
     if (!activeSessionId) return;
@@ -343,9 +335,9 @@ export default function Tutor() {
       const full = await api.tutor.getSession(activeSessionId);
       if (full.turns && full.turns.length > 0) {
         const lines: string[] = [
-          `# Tutor: ${topic || mode}`,
+          `# Tutor: ${topic || "Session"}`,
           `**Date:** ${new Date(startedAt || Date.now()).toLocaleDateString()}`,
-          `**Mode:** ${mode} | **Turns:** ${turnCount}`,
+          `**Turns:** ${turnCount}`,
           `**Artifacts:** ${artifacts.length}`,
           "",
           "---",
@@ -361,7 +353,7 @@ export default function Tutor() {
             lines.push("");
           }
         }
-        const filename = `Tutor - ${(topic || mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
+        const filename = `Tutor - ${(topic || "Session").replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
         const path = `Study Sessions/${filename}.md`;
         await api.obsidian.append(path, lines.join("\n"));
       }
@@ -376,7 +368,7 @@ export default function Tutor() {
     }
     await endSession();
     setShowEndConfirm(false);
-  }, [activeSessionId, topic, mode, startedAt, turnCount, artifacts.length, endSession]);
+  }, [activeSessionId, topic, startedAt, turnCount, artifacts.length, endSession]);
 
   const handleArtifactCreated = useCallback(
     async (artifact: { type: string; content: string; title?: string }) => {
@@ -527,9 +519,7 @@ export default function Tutor() {
           if (Array.isArray(parsed?.customBlockIds)) {
             setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
           }
-          if (typeof parsed?.mode === "string") setMode(parsed.mode);
           setAccuracyProfile(normalizeAccuracyProfile(parsed?.accuracyProfile));
-          if (typeof parsed?.webSearch === "boolean") setWebSearch(parsed.webSearch);
           if (Array.isArray(parsed?.selectedPaths)) {
             setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
           }
@@ -625,10 +615,6 @@ export default function Tutor() {
                     setChainId={setChainId}
                     customBlockIds={customBlockIds}
                     setCustomBlockIds={setCustomBlockIds}
-                    mode={mode}
-                    setMode={setMode}
-                    webSearch={webSearch}
-                    setWebSearch={setWebSearch}
                     onStartSession={startSession}
                     isStarting={isStarting}
                     recentSessions={recentSessions}
@@ -687,7 +673,6 @@ export default function Tutor() {
                     <div className="max-w-md mx-auto space-y-3">
                       <div className="font-arcade text-sm text-primary tracking-wider">SESSION COMPLETE</div>
                       <div className="flex items-center gap-4 font-terminal text-xs text-muted-foreground">
-                        <span>{mode}</span>
                         <span className="text-foreground">{topic || "No topic"}</span>
                         <span>{turnCount} turns</span>
                         {artifacts.length > 0 && <span>{artifacts.length} artifacts</span>}
@@ -749,7 +734,7 @@ export default function Tutor() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-1.5 text-primary border-primary/50`}>
-                      {mode}
+                      {topic ? "TOPIC" : "FREEFORM"}
                     </Badge>
                     <span className="font-terminal text-xs text-foreground truncate">{topic || "No topic"}</span>
                   </div>
@@ -1037,7 +1022,6 @@ export default function Tutor() {
                       sessionId={activeSessionId}
                       artifacts={artifacts}
                       turnCount={turnCount}
-                      mode={mode}
                       topic={topic}
                       startedAt={startedAt}
                       onCreateArtifact={handleArtifactCreated}
@@ -1138,7 +1122,6 @@ export default function Tutor() {
                     sessionId={activeSessionId}
                     artifacts={artifacts}
                     turnCount={turnCount}
-                    mode={mode}
                     topic={topic}
                     startedAt={startedAt}
                     onCreateArtifact={handleArtifactCreated}

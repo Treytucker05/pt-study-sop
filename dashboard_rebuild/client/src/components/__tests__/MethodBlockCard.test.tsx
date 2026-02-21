@@ -20,7 +20,7 @@ describe("MethodBlockCard", () => {
   it("renders block name and stage badge in full mode", () => {
     render(<MethodBlockCard block={baseBlock} />);
     expect(screen.getByText("Active Recall")).toBeInTheDocument();
-    expect(screen.getByText("RETRIEVE")).toBeInTheDocument();
+    expect(screen.getByText("RETRIEVAL")).toBeInTheDocument();
   });
 
   it("renders description and evidence in full mode", () => {

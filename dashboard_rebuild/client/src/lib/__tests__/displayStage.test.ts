@@ -36,23 +36,23 @@ describe("getDisplayStage", () => {
   });
 
   it("returns calibrate when tag includes calibrate", () => {
-    expect(getDisplayStage(makeBlock({ tags: ["calibrate", "solo"] }))).toBe("calibrate");
+    expect(getDisplayStage(makeBlock({ category: null, tags: ["calibrate", "solo"] }))).toBe("calibrate");
   });
 
-  it("returns calibrate for M-CAL- id prefix", () => {
-    expect(getDisplayStage(makeBlock({ id: "M-CAL-001" as any }))).toBe("calibrate");
+  it("prefers control_stage over category", () => {
+    expect(getDisplayStage(makeBlock({ control_stage: "prime", category: "encode" } as any))).toBe("priming");
   });
 
-  it("defaults to priming for unknown category", () => {
-    expect(getDisplayStage(makeBlock({ category: "unknown" }))).toBe("priming");
+  it("defaults to encoding for unknown category", () => {
+    expect(getDisplayStage(makeBlock({ category: "unknown" }))).toBe("encoding");
   });
 });
 
 describe("DISPLAY_STAGE_LABELS", () => {
   it("has labels for all stages", () => {
-    expect(DISPLAY_STAGE_LABELS.priming).toBe("PRIME");
+    expect(DISPLAY_STAGE_LABELS.priming).toBe("PRIMING");
     expect(DISPLAY_STAGE_LABELS.calibrate).toBe("CALIBRATE");
-    expect(DISPLAY_STAGE_LABELS.retrieval).toBe("RETRIEVE");
-    expect(DISPLAY_STAGE_LABELS.overlearning).toBe("OVERLEARN");
+    expect(DISPLAY_STAGE_LABELS.retrieval).toBe("RETRIEVAL");
+    expect(DISPLAY_STAGE_LABELS.overlearning).toBe("OVERLEARNING");
   });
 });
