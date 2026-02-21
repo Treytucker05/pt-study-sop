@@ -33,7 +33,7 @@ Define the foundational schemas, enums, and policy objects that every downstream
 
 ---
 
-## Phase 1: Obsidian Vault Integration + Hygiene [checkpoint: pending]
+## Phase 1: Obsidian Vault Integration + Hygiene [checkpoint: b680b10]
 
 Ingest Obsidian vault notes, extract frontmatter/aliases/links, store in document store, enforce lint rules, support incremental updates.
 
@@ -57,23 +57,23 @@ Ingest Obsidian vault notes, extract frontmatter/aliases/links, store in documen
 
 ---
 
-## Phase 2: Telemetry — Practice Events
+## Phase 2: Telemetry — Practice Events [checkpoint: pending]
 
 Capture every practice action as a structured event for downstream mastery computation and error analysis.
 
 ### Tasks
 
-- [ ] Task 2.1: `PracticeEvent` JSON Schema — `user_id`, `skill_id`, `timestamp`, `correct`, `confidence`, `latency_ms`, `hint_level`, `item_format`, `source`, `session_id`
-- [ ] Task 2.2: `practice_events` DB table + indexes on `(user_id, skill_id, timestamp)`
-- [ ] Task 2.3: Instrument attempts + hints — emit events for attempt outcome, hint request/level, evaluate-work calls, teach-back sessions
-- [ ] Task 2.4: `error_flags` table — `(user_id, skill_id, edge_id, error_type, severity, timestamp, evidence_ref)` for Phase 5 localized failure
+- [x] Task 2.1: `PracticeEvent` JSON Schema — `user_id`, `skill_id`, `timestamp`, `correct`, `confidence`, `latency_ms`, `hint_level`, `item_format`, `source`, `session_id`
+- [x] Task 2.2: `practice_events` DB table + indexes on `(user_id, skill_id, timestamp)`
+- [x] Task 2.3: Instrument attempts + hints — emit events for attempt outcome, hint request/level, evaluate-work calls, teach-back sessions
+- [x] Task 2.4: `error_flags` table — `(user_id, skill_id, edge_id, error_type, severity, timestamp, evidence_ref)` for Phase 5 localized failure
 
 ### Verification
 
-- [ ] Invalid events rejected by schema
-- [ ] One attempt produces exactly one event row
-- [ ] Hint produces separate hint event
-- [ ] Error flag links to correct skill
+- [x] Invalid events rejected by schema
+- [x] One attempt produces exactly one event row
+- [x] Hint produces separate hint event
+- [x] Error flag links to correct skill
 
 ---
 
