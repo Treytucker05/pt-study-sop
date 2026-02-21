@@ -1,15 +1,8 @@
-"""Unit tests for brain/selector_bridge.py
-
-NOTE: Tests below reference get_policy_version / reload_chain_catalog which
-were removed from selector_bridge after the CP-MSS v1.0 rewrite.  The whole
-module is skipped until the tests are updated to match the current API.
-"""
+"""Unit tests for brain/selector_bridge.py — CP-MSS v1.0 API."""
 
 import pytest
 
-pytestmark = pytest.mark.skip(
-    reason="selector_bridge API changed in CP-MSS v1.0 — tests need rewrite"
-)
+from brain.selector_bridge import get_policy_version, reload_chain_catalog, run_selector
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +57,7 @@ def test_run_selector_selected_blocks_is_list():
     assert len(result["selected_blocks"]) > 0
 
 
-def test_run_selector_score_tuple_is_list_of_ints():
+def test_run_selector_score_tuple_is_list_of_numbers():
     result = run_selector(assessment_mode="definition")
     assert isinstance(result["score_tuple"], list)
     assert all(isinstance(x, (int, float)) for x in result["score_tuple"])
@@ -113,8 +106,7 @@ def test_determinism_same_input_same_output():
 )
 def test_run_selector_valid_modes(mode: str):
     """Every standard assessment mode should produce a selection."""
-    m: str = mode  # pyright narrows from parametrize union
-    result = run_selector(assessment_mode=m)
+    result = run_selector(assessment_mode=mode)
     assert result["chain_id"]
     assert result["chain_name"]
 
@@ -137,3 +129,38 @@ def test_run_selector_with_all_optional_params():
     )
     assert result["chain_id"]
     assert isinstance(result["dependency_fix_applied"], bool)
+
+
+# ---------------------------------------------------------------------------
+# run_selector — routing rules
+# ---------------------------------------------------------------------------
+
+
+def test_low_energy_routes_to_minimal():
+    """Low energy should trigger the safety net (C-FE-MIN)."""
+    result = run_selector(assessment_mode="mechanism", energy="low")
+    assert result["chain_id"] == "C-FE-MIN"
+
+
+def test_short_time_routes_to_minimal():
+    """Time < 25 min should trigger the safety net."""
+    result = run_selector(assessment_mode="mechanism", time_available=15)
+    assert result["chain_id"] == "C-FE-MIN"
+
+
+def test_procedure_mode_routes_to_pro():
+    """Procedure assessment mode should route to C-FE-PRO."""
+    result = run_selector(assessment_mode="procedure", energy="high", time_available=45)
+    assert result["chain_id"] == "C-FE-PRO"
+
+
+def test_definition_mode_routes_to_minimal():
+    """Definition mode should route to C-FE-MIN."""
+    result = run_selector(assessment_mode="definition", energy="high", time_available=45)
+    assert result["chain_id"] == "C-FE-MIN"
+
+
+def test_mechanism_mode_routes_to_standard():
+    """Mechanism mode should route to C-FE-STD."""
+    result = run_selector(assessment_mode="mechanism", energy="high", time_available=45)
+    assert result["chain_id"] == "C-FE-STD"
