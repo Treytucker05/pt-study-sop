@@ -161,7 +161,7 @@ Teach-back module acts as novice questioner. Rubric maps deficiencies to skill_i
 
 ---
 
-## Phase 7: Graph RAG-lite with Pruning [checkpoint: pending]
+## Phase 7: Graph RAG-lite with Pruning [checkpoint: 29aa66d8]
 
 Build knowledge graph from Obsidian + course corpus. Hybrid retrieval with PCST subgraph pruning.
 
