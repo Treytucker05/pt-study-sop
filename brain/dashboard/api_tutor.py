@@ -1730,6 +1730,7 @@ def send_turn(session_id: str):
                 )
                 # Parse verdict from evaluate mode responses
                 parsed_verdict = None
+                mastery_update_payload = None
                 if behavior_override == "evaluate" and full_response:
                     parsed_verdict = parse_verdict(full_response)
                     if parsed_verdict:
@@ -1750,8 +1751,13 @@ def send_turn(session_id: str):
 
                             if skill_id and verdict_val in ("pass", "fail", "partial"):
                                 correct = verdict_val == "pass"
-                                bkt_update(adaptive_conn, "default", skill_id, correct, MasteryConfig())
+                                new_p = bkt_update(adaptive_conn, "default", skill_id, correct, MasteryConfig())
                                 emit_evaluate_work(adaptive_conn, "default", skill_id, correct, session_id)
+                                mastery_update_payload = {
+                                    "skill_id": skill_id,
+                                    "new_mastery": round(new_p, 4),
+                                    "correct": correct,
+                                }
 
                                 # M6: Record error flag on failure
                                 if verdict_val == "fail":
@@ -1783,7 +1789,9 @@ def send_turn(session_id: str):
                         # Block mastery if rubric is weak
                         try:
                             from adaptive.bkt import get_effective_mastery as _get_eff
+                            from adaptive.bkt import bkt_update as _bkt_tb
                             from adaptive.schemas import MasteryConfig as _MC2
+                            from adaptive.telemetry import emit_teach_back as _emit_tb
 
                             tb_skill = session.get("topic")
                             if tb_skill and rubric_blocks_mastery(parsed_teach_back):
@@ -1794,6 +1802,18 @@ def send_turn(session_id: str):
                                         "Teach-back gate blocking mastery for %s (eff=%.3f)",
                                         tb_skill, eff,
                                     )
+
+                            # Record BKT event for teach-back outcome
+                            tb_rating = parsed_teach_back.get("overall_rating")
+                            if tb_skill and tb_rating in ("pass", "fail", "partial"):
+                                tb_correct = tb_rating == "pass"
+                                new_p = _bkt_tb(adaptive_conn, "default", tb_skill, tb_correct, _MC2())
+                                _emit_tb(adaptive_conn, "default", tb_skill, tb_correct, session_id)
+                                mastery_update_payload = {
+                                    "skill_id": tb_skill,
+                                    "new_mastery": round(new_p, 4),
+                                    "correct": tb_correct,
+                                }
                         except (ImportError, Exception) as _tb_exc:
                             _LOG.debug("Teach-back mastery gate skipped: %s", _tb_exc)
 
@@ -1806,6 +1826,7 @@ def send_turn(session_id: str):
                     verdict=parsed_verdict,
                     concept_map=parsed_concept_map,
                     teach_back_rubric=parsed_teach_back,
+                    mastery_update=mastery_update_payload,
                 )
 
         except Exception as e:

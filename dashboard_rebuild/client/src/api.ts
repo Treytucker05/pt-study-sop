@@ -1450,6 +1450,7 @@ export interface TutorSSEChunk {
   verdict?: TutorVerdict;
   concept_map?: unknown;
   teach_back_rubric?: TeachBackRubric;
+  mastery_update?: { skill_id: string; new_mastery: number; correct: boolean };
 }
 
 export interface TutorRetrievalDebug {

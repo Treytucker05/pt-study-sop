@@ -274,3 +274,65 @@ class TestErrorFlags:
         cur = telem_db.execute("SELECT edge_id FROM error_flags WHERE skill_id = ?", ("cardio_hr",))
         row = cur.fetchone()
         assert row["edge_id"] is None
+
+
+# ---------------------------------------------------------------------------
+# Teach-back BKT integration (wired in api_tutor teach-back branch)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def bkt_telem_db(tmp_path):
+    """SQLite DB with both mastery and telemetry tables."""
+    db_path = str(tmp_path / "test_bkt_telem.db")
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    from brain.adaptive.telemetry import create_telemetry_tables
+    from brain.adaptive.bkt import create_mastery_tables
+    create_telemetry_tables(conn)
+    create_mastery_tables(conn)
+    yield conn
+    conn.close()
+
+
+class TestTeachBackBKTIntegration:
+    """Verify teach-back pass/fail records both BKT mastery and telemetry event."""
+
+    def test_teach_back_pass_updates_mastery_and_telemetry(self, bkt_telem_db):
+        from brain.adaptive.bkt import bkt_update, get_or_init_mastery
+        from brain.adaptive.schemas import MasteryConfig
+        from brain.adaptive.telemetry import emit_teach_back, query_events
+
+        cfg = MasteryConfig()
+        skill = "neuro_umn"
+        get_or_init_mastery(bkt_telem_db, "default", skill, cfg)
+        prior = get_or_init_mastery(bkt_telem_db, "default", skill, cfg)["p_mastery_latent"]
+
+        new_p = bkt_update(bkt_telem_db, "default", skill, correct=True, config=cfg)
+        emit_teach_back(bkt_telem_db, "default", skill, correct=True, session_id="sess_tb_1")
+
+        assert new_p > prior
+        rows = query_events(bkt_telem_db, user_id="default", skill_id=skill)
+        assert len(rows) == 1
+        assert rows[0]["source"] == "teach_back"
+        assert rows[0]["correct"] == 1
+
+    def test_teach_back_fail_lowers_mastery_and_records_event(self, bkt_telem_db):
+        from brain.adaptive.bkt import bkt_update, get_or_init_mastery
+        from brain.adaptive.schemas import MasteryConfig
+        from brain.adaptive.telemetry import emit_teach_back, query_events
+
+        cfg = MasteryConfig()
+        skill = "cardio_co"
+        get_or_init_mastery(bkt_telem_db, "default", skill, cfg)
+
+        # Build some mastery first
+        for _ in range(3):
+            bkt_update(bkt_telem_db, "default", skill, correct=True, config=cfg)
+
+        before = get_or_init_mastery(bkt_telem_db, "default", skill, cfg)["p_mastery_latent"]
+        new_p = bkt_update(bkt_telem_db, "default", skill, correct=False, config=cfg)
+        emit_teach_back(bkt_telem_db, "default", skill, correct=False, session_id="sess_tb_2")
+
+        assert new_p < before
+        rows = query_events(bkt_telem_db, user_id="default", skill_id=skill)
+        assert any(r["source"] == "teach_back" and r["correct"] == 0 for r in rows)

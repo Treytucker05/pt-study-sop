@@ -60,7 +60,7 @@ interface TutorChatProps {
   onAccuracyProfileChange: (profile: TutorAccuracyProfile) => void;
   onSelectedMaterialIdsChange: (ids: number[]) => void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
-  onTurnComplete?: () => void;
+  onTurnComplete?: (masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean }) => void;
 }
 
 type ArtifactType = "note" | "card" | "map";
@@ -332,6 +332,7 @@ export function TutorChat({
       let serverArtifactCmd: { type?: string; raw?: string } | null = null;
       let verdictData: TutorVerdict | undefined;
       let teachBackData: TeachBackRubric | undefined;
+      let masteryUpdateData: { skill_id: string; new_mastery: number; correct: boolean } | undefined;
       let streamErrored = false;
       let doneSignal = false;
       const toolActions: ToolAction[] = [];
@@ -459,6 +460,7 @@ export function TutorChat({
               retrievalDebug = parsed.retrieval_debug;
               verdictData = parsed.verdict;
               teachBackData = parsed.teach_back_rubric;
+              masteryUpdateData = parsed.mastery_update;
               // Backend detected natural language artifact command
               if (parsed.artifacts?.length) {
                 const cmd = parsed.artifacts[0] as { type?: string; raw?: string };
@@ -495,8 +497,8 @@ export function TutorChat({
         return updated;
       });
 
-      // Notify turn completion
-      onTurnComplete?.();
+      // Notify turn completion (with mastery update if present)
+      onTurnComplete?.(masteryUpdateData);
 
       // Handle artifact slash commands after response
       if (command.type) {

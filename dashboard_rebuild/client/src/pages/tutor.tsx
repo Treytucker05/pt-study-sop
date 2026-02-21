@@ -723,7 +723,12 @@ export default function Tutor() {
                       onAccuracyProfileChange={setAccuracyProfile}
                       onSelectedMaterialIdsChange={setSelectedMaterials}
                       onArtifactCreated={handleArtifactCreated}
-                      onTurnComplete={() => setTurnCount((prev) => prev + 1)}
+                      onTurnComplete={(masteryUpdate) => {
+                        setTurnCount((prev) => prev + 1);
+                        if (masteryUpdate) {
+                          queryClient.invalidateQueries({ queryKey: ["mastery-dashboard"] });
+                        }
+                      }}
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
