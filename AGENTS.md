@@ -110,8 +110,13 @@ C:\pt-study-sop\
 - Frontend UI: dashboard_rebuild/
 - Scholar research: scholar/
 - SOP definitions: sop/
-- Adaptive Tutor: brain/tutor_rag.py, brain/tutor_chains.py, brain/tutor_streaming.py, brain/dashboard/api_tutor.py
-- Tutor logs: brain/session_logs/ (Tutor itself is external)
+- Adaptive Tutor (Built-in Native):
+  - `dashboard_rebuild/client/src/pages/tutor.tsx` (Frontend UI Chat & Controls)
+  - `brain/dashboard/api_tutor.py` (Flask endpoints & streaming orchestration)
+  - `brain/tutor_rag.py` (Document retrieval, dual-context search)
+  - `brain/tutor_chains.py` (Method chain block progression)
+  - `brain/tutor_streaming.py` (SSE response formatting & citations)
+- Tutor logs: brain/session_logs/
 
 ## Control Plane Architecture (CP-MSS v1.0) - CURRENT
 
@@ -147,7 +152,6 @@ PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN
 - Type definitions in `dashboard_rebuild/client/src/api.ts`
 
 ## External Systems (from docs)
-- Tutor (CustomGPT): "Trey's Study System" (external only; no local launcher).
 - Anki (AnkiConnect): in active use; syncs card_drafts to Anki Desktop.
 - Google Calendar/Tasks: in active use; OAuth via Calendar page; config in brain/data/api_config.json.
 
@@ -301,7 +305,7 @@ Array.from(document.querySelectorAll('.fixed')).map(e => ({
 ## Detailed Guidelines
 - Project Workflow: conductor/workflow.md
 - Conductor Tracks: conductor/tracks.md
-- Parallel agent workflow: docs/project/PARALLEL_AGENT_WORKFLOW.md
+- Parallel agent workflow: Open multiple terminals and coordinate tasks using Conductor Tracks.
 
 *Full dev guide: `docs/root/GUIDE_DEV.md`*
 *Build details: `dashboard_rebuild/BUILD.md`*
