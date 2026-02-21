@@ -145,12 +145,140 @@ def seed_from_obsidian(conn: sqlite3.Connection) -> dict[str, int]:
                    VALUES (?, ?, 'links_to', 0.5, 1)""",
                 (src_id, tgt_id),
             )
+            edge_id = cur.lastrowid
             edges_created += 1
+            # Record provenance for seeded edge
+            cur.execute(
+                """INSERT INTO kg_provenance (entity_type, entity_id, source_type, source_ref)
+                   VALUES ('edge', ?, 'obsidian_link', ?)""",
+                (edge_id, src_path),
+            )
         except sqlite3.IntegrityError:
             skipped += 1
 
     conn.commit()
     return {"nodes_created": nodes_created, "edges_created": edges_created, "skipped": skipped}
+
+
+# ---------------------------------------------------------------------------
+# Typed relation extraction (Task 7.3)
+# ---------------------------------------------------------------------------
+
+# Pattern-based extraction: looks for "X requires Y", "X causes Y", etc.
+_TYPED_RELATION_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    ("requires", re.compile(r"(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\s+(?:requires?|depends?\s+on|needs?)\s+(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\b", re.IGNORECASE)),
+    ("causes", re.compile(r"(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\s+(?:causes?|leads?\s+to|produces?|results?\s+in)\s+(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\b", re.IGNORECASE)),
+    ("inhibits", re.compile(r"(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\s+(?:inhibits?|blocks?|prevents?|suppresses?)\s+(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\b", re.IGNORECASE)),
+    ("increases", re.compile(r"(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\s+(?:increases?|raises?|elevates?|enhances?)\s+(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\b", re.IGNORECASE)),
+    ("decreases", re.compile(r"(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\s+(?:decreases?|reduces?|lowers?|diminishes?)\s+(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\b", re.IGNORECASE)),
+    ("part_of", re.compile(r"(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\s+(?:is\s+(?:a\s+)?(?:part|component|subset)\s+of)\s+(\b[A-Z][a-z]+(?:\s+[A-Z]?[a-z]+){0,3})\b", re.IGNORECASE)),
+]
+
+
+def extract_typed_relations(
+    conn: sqlite3.Connection,
+    doc_path: str,
+    doc_content: str,
+) -> dict[str, int]:
+    """Extract typed relations from document content using regex patterns.
+
+    Creates edges with higher confidence (0.7) and provenance tracking.
+    Returns counts: {edges_created, skipped}.
+    """
+    from adaptive.vault_ingest import resolve_alias
+
+    cur = conn.cursor()
+    edges_created = 0
+    skipped = 0
+
+    for relation, pattern in _TYPED_RELATION_PATTERNS:
+        for match in pattern.finditer(doc_content):
+            src_raw = match.group(1).strip()
+            tgt_raw = match.group(2).strip()
+
+            # Skip very short matches (likely noise)
+            if len(src_raw) < 3 or len(tgt_raw) < 3:
+                continue
+
+            src_name = resolve_alias(conn, src_raw) or src_raw
+            tgt_name = resolve_alias(conn, tgt_raw) or tgt_raw
+
+            src_id = _get_or_create_node(cur, src_name, source_path=doc_path, link_only=0)
+            tgt_id = _get_or_create_node(cur, tgt_name, link_only=0)
+
+            try:
+                cur.execute(
+                    """INSERT INTO kg_edges (source_node_id, target_node_id, relation, confidence, link_only)
+                       VALUES (?, ?, ?, 0.7, 0)""",
+                    (src_id, tgt_id, relation),
+                )
+                edge_id = cur.lastrowid
+                edges_created += 1
+
+                # Record provenance with excerpt
+                excerpt_start = max(0, match.start() - 40)
+                excerpt_end = min(len(doc_content), match.end() + 40)
+                excerpt = doc_content[excerpt_start:excerpt_end].replace("\n", " ").strip()
+                cur.execute(
+                    """INSERT INTO kg_provenance (entity_type, entity_id, source_type, source_ref)
+                       VALUES ('edge', ?, 'typed_extraction', ?)""",
+                    (edge_id, f"{doc_path}||{excerpt}"),
+                )
+            except sqlite3.IntegrityError:
+                skipped += 1
+
+    conn.commit()
+    return {"edges_created": edges_created, "skipped": skipped}
+
+
+# ---------------------------------------------------------------------------
+# Incremental KG updates (Task 7.8)
+# ---------------------------------------------------------------------------
+
+def incremental_kg_update(
+    conn: sqlite3.Connection,
+    doc_path: str,
+    doc_content: str,
+) -> dict[str, int]:
+    """Re-extract edges for a changed document.
+
+    Deletes existing typed edges (not link_only) sourced from this doc,
+    then re-extracts. Link-only edges from obsidian_links are NOT touched.
+    Returns counts: {deleted, edges_created, skipped}.
+    """
+    cur = conn.cursor()
+
+    # Find nodes sourced from this doc
+    cur.execute("SELECT id FROM kg_nodes WHERE source_path = ?", (doc_path,))
+    node_ids = [row[0] for row in cur.fetchall()]
+
+    deleted = 0
+    if node_ids:
+        placeholders = ",".join("?" * len(node_ids))
+        # Delete typed (non link_only) edges where source is from this doc
+        cur.execute(
+            f"""DELETE FROM kg_edges
+                WHERE link_only = 0
+                AND source_node_id IN ({placeholders})""",
+            node_ids,
+        )
+        deleted = cur.rowcount
+
+        # Clean up orphaned provenance for deleted edges
+        cur.execute(
+            """DELETE FROM kg_provenance
+               WHERE entity_type = 'edge'
+               AND source_type = 'typed_extraction'
+               AND source_ref LIKE ?""",
+            (f"{doc_path}||%",),
+        )
+
+    conn.commit()
+
+    # Re-extract
+    result = extract_typed_relations(conn, doc_path, doc_content)
+    result["deleted"] = deleted
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -354,14 +482,96 @@ def prune_subgraph(
 def prune_subgraph_pcst(
     nodes: list[dict],
     edges: list[dict],
-    prizes: dict[int, float],
-    costs: dict[tuple[int, int], float],
-    budget: int,
+    prizes: Optional[dict[int, float]] = None,
+    costs: Optional[dict[tuple[int, int], float]] = None,
+    budget_tokens: int = 1500,
 ) -> tuple[list[dict], list[dict]]:
-    """Prize-Collecting Steiner Tree pruning (future implementation)."""
-    raise NotImplementedError(
-        "PCST pruning not yet implemented. Use prune_subgraph() instead."
+    """Prize-Collecting Steiner Tree approximation.
+
+    Greedy approximation that maximizes (node_prize - edge_cost) within
+    a token budget. Node prizes combine seed similarity and optional
+    curriculum mastery value. Edge costs penalize low-confidence and
+    link-only edges.
+
+    Args:
+        nodes: list of node dicts with 'id', 'is_seed', 'name'
+        edges: list of edge dicts with 'source', 'target', 'confidence', 'link_only'
+        prizes: optional {node_id: prize_value} — defaults to seed-based scoring
+        costs: optional {(src_id, tgt_id): cost} — defaults to confidence-based
+        budget_tokens: max tokens for pruned context
+
+    Returns (kept_nodes, kept_edges).
+    """
+    NODE_COST = 20
+    EDGE_COST = 15
+
+    # Default prizes: seeds get 1.0, others get 0.3
+    if prizes is None:
+        prizes = {}
+        for n in nodes:
+            prizes[n["id"]] = 1.0 if n.get("is_seed") else 0.3
+
+    # Default costs: inverse confidence, link_only penalty
+    if costs is None:
+        costs = {}
+        for e in edges:
+            base_cost = 1.0 - e.get("confidence", 0.5)
+            penalty = 0.3 if e.get("link_only") else 0.0
+            costs[(e["source"], e["target"])] = base_cost + penalty
+
+    # Build adjacency for connectivity check
+    adj: dict[int, list[tuple[int, dict]]] = {n["id"]: [] for n in nodes}
+    for e in edges:
+        if e["source"] in adj and e["target"] in adj:
+            adj[e["source"]].append((e["target"], e))
+            adj[e["target"]].append((e["source"], e))
+
+    # Score each node: prize - avg incident edge cost
+    node_scores: dict[int, float] = {}
+    for n in nodes:
+        nid = n["id"]
+        prize = prizes.get(nid, 0.0)
+        incident_costs = [
+            costs.get((e["source"], e["target"]), 0.5)
+            for e in edges
+            if e["source"] == nid or e["target"] == nid
+        ]
+        avg_cost = sum(incident_costs) / max(len(incident_costs), 1)
+        node_scores[nid] = prize - avg_cost * 0.5
+
+    # Sort by score descending, seeds always first
+    sorted_nodes = sorted(
+        nodes,
+        key=lambda n: (n.get("is_seed", False), node_scores.get(n["id"], 0)),
+        reverse=True,
     )
+
+    # Greedily add nodes within budget
+    kept_ids: set[int] = set()
+    kept_nodes: list[dict] = []
+    used = 0
+    for n in sorted_nodes:
+        if used + NODE_COST > budget_tokens:
+            break
+        kept_ids.add(n["id"])
+        kept_nodes.append(n)
+        used += NODE_COST
+
+    # Keep edges where both endpoints kept, sorted by lowest cost
+    candidate_edges = [
+        e for e in edges
+        if e["source"] in kept_ids and e["target"] in kept_ids
+    ]
+    candidate_edges.sort(key=lambda e: costs.get((e["source"], e["target"]), 0.5))
+
+    kept_edges: list[dict] = []
+    for e in candidate_edges:
+        if used + EDGE_COST > budget_tokens:
+            break
+        kept_edges.append(e)
+        used += EDGE_COST
+
+    return kept_nodes, kept_edges
 
 
 # ---------------------------------------------------------------------------
@@ -388,15 +598,35 @@ def build_context_pack(
             definition = f" — {definition[:120]}"
         lines.append(f"- **{n['name']}**{seed_marker}{definition}")
 
-    # Edge list
+    # Edge list with provenance excerpts
     if edges:
         lines.append("\n### Relationships")
-        # Build ID→name lookup
         id_to_name = {n["id"]: n["name"] for n in nodes}
+
+        # Load provenance excerpts for typed edges
+        edge_excerpts: dict[int, str] = {}
+        edge_ids = [e["id"] for e in edges if e.get("id")]
+        if edge_ids:
+            placeholders = ",".join("?" * len(edge_ids))
+            cur = conn.execute(
+                f"""SELECT entity_id, source_ref FROM kg_provenance
+                    WHERE entity_type = 'edge' AND source_type = 'typed_extraction'
+                    AND entity_id IN ({placeholders})""",
+                edge_ids,
+            )
+            for row in cur.fetchall():
+                ref = row[1] or ""
+                if "||" in ref:
+                    edge_excerpts[row[0]] = ref.split("||", 1)[1][:80]
+
         for e in edges:
             src = id_to_name.get(e["source"], f"#{e['source']}")
             tgt = id_to_name.get(e["target"], f"#{e['target']}")
             rel = e.get("relation", "links_to")
-            lines.append(f"- {src} --[{rel}]--> {tgt}")
+            line = f"- {src} --[{rel}]--> {tgt}"
+            excerpt = edge_excerpts.get(e.get("id", -1))
+            if excerpt:
+                line += f' (source: "{excerpt}")'
+            lines.append(line)
 
     return "\n".join(lines)

@@ -161,31 +161,31 @@ Teach-back module acts as novice questioner. Rubric maps deficiencies to skill_i
 
 ---
 
-## Phase 7: Graph RAG-lite with Pruning
+## Phase 7: Graph RAG-lite with Pruning [checkpoint: pending]
 
 Build knowledge graph from Obsidian + course corpus. Hybrid retrieval with PCST subgraph pruning.
 
 ### Tasks
 
-- [ ] Task 7.1: KG tables — `kg_nodes`, `kg_edges`, `kg_provenance`, `kg_edge_confidence` migrations
-- [ ] Task 7.2: Seed graph from Obsidian links — convert wikilinks to `links_to` edges with lower confidence
-- [ ] Task 7.3: Typed relation extraction — strict patterns and/or constrained LLM prompt; typed edges with confidence + provenance
-- [ ] Task 7.4: Alias-aware entity resolution — use `entity_aliases` to canonicalize during extraction and retrieval
-- [ ] Task 7.5: Hybrid retrieval candidate subgraph — vector top chunks → extract entities → expand neighborhood radius 2
-- [ ] Task 7.6: Subgraph pruning (PCST) — node prize = relevance + curriculum value; edge cost = inverse confidence + relation penalty; budget constraint; solve for compact subgraph
-- [ ] Task 7.7: Context pack assembly — pruned graph → minimal node defs + edge list with provenance excerpts + top chunks
-- [ ] Task 7.8: Incremental KG updates — changed doc checksum triggers re-extraction for affected doc only
+- [x] Task 7.1: KG tables — `kg_nodes`, `kg_edges`, `kg_provenance`, `kg_edge_confidence` migrations
+- [x] Task 7.2: Seed graph from Obsidian links — convert wikilinks to `links_to` edges with lower confidence
+- [x] Task 7.3: Typed relation extraction — strict patterns and/or constrained LLM prompt; typed edges with confidence + provenance
+- [x] Task 7.4: Alias-aware entity resolution — use `entity_aliases` to canonicalize during extraction and retrieval
+- [x] Task 7.5: Hybrid retrieval candidate subgraph — vector top chunks → extract entities → expand neighborhood radius 2
+- [x] Task 7.6: Subgraph pruning (PCST) — node prize = relevance + curriculum value; edge cost = inverse confidence + relation penalty; budget constraint; solve for compact subgraph
+- [x] Task 7.7: Context pack assembly — pruned graph → minimal node defs + edge list with provenance excerpts + top chunks
+- [x] Task 7.8: Incremental KG updates — changed doc checksum triggers re-extraction for affected doc only
 
 ### Verification
 
-- [ ] Every edge has provenance or `link_only=true`
-- [ ] Edge count equals parsed link count (seeding)
-- [ ] Sample 20 typed edges each have supporting excerpt
-- [ ] "CO" and "Cardiac Output" map to same canonical node
-- [ ] Candidate subgraph includes all seed entities
-- [ ] Pruned graph stays under budget; includes top-k seeds; deterministic
-- [ ] No uncited edge in final pack unless `link_only`
-- [ ] Editing one note changes only its incident edges
+- [x] Every edge has provenance or `link_only=true`
+- [x] Edge count equals parsed link count (seeding)
+- [x] Sample 20 typed edges each have supporting excerpt
+- [x] "CO" and "Cardiac Output" map to same canonical node
+- [x] Candidate subgraph includes all seed entities
+- [x] Pruned graph stays under budget; includes top-k seeds; deterministic
+- [x] No uncited edge in final pack unless `link_only`
+- [x] Editing one note changes only its incident edges
 
 ---
 
