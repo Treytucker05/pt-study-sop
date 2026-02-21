@@ -352,3 +352,21 @@ def lint_vault(vault_path: str) -> dict:
     # Sort for determinism
     issues.sort(key=lambda i: (i["path"], i["message"]))
     return {"issues": issues, "files_checked": len(files)}
+
+
+def resolve_alias(conn, alias_text: str) -> str | None:
+    """Resolve an alias to its canonical name (case-insensitive)."""
+    if not alias_text:
+        return None
+    cur = conn.execute(
+        "SELECT canonical FROM entity_aliases WHERE LOWER(alias) = LOWER(?)",
+        (alias_text.strip(),),
+    )
+    row = cur.fetchone()
+    return row["canonical"] if row else None
+
+
+def build_alias_index(conn) -> dict[str, str]:
+    """Build an in-memory alias→canonical dict for fast lookups."""
+    cur = conn.execute("SELECT alias, canonical FROM entity_aliases")
+    return {row["alias"].lower(): row["canonical"] for row in cur.fetchall()}
