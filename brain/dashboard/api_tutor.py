@@ -1295,11 +1295,15 @@ def send_turn(session_id: str):
                     "so the student knows to cross-reference."
                 )
 
+            # Open a dedicated connection for adaptive features inside the
+            # generator — the outer `conn` was closed before generate() runs.
+            adaptive_conn = get_connection()
+
             # Optional: GraphRAG-lite concept graph context
             graph_context_text = None
             try:
                 from adaptive.knowledge_graph import hybrid_retrieve
-                graph_result = hybrid_retrieve(question, conn)
+                graph_result = hybrid_retrieve(question, adaptive_conn)
                 if graph_result.get("context_text"):
                     graph_context_text = graph_result["context_text"]
             except (ImportError, Exception) as _kg_exc:
@@ -1384,7 +1388,7 @@ def send_turn(session_id: str):
 
                 topic_skill = session.get("topic")
                 if topic_skill:
-                    eff = _get_eff_mastery(conn, "default", topic_skill, _MC())
+                    eff = _get_eff_mastery(adaptive_conn, "default", topic_skill, _MC())
                     scaffold_directive = get_scaffolding_directive(eff)
                     system_prompt += f"\n\n{scaffold_directive}"
             except (ImportError, Exception) as _sc_exc:
@@ -1749,13 +1753,13 @@ def send_turn(session_id: str):
 
                             if skill_id and verdict_val in ("pass", "fail", "partial"):
                                 correct = verdict_val == "pass"
-                                bkt_update(conn, "default", skill_id, correct, MasteryConfig())
-                                emit_evaluate_work(conn, "default", skill_id, correct, session_id)
+                                bkt_update(adaptive_conn, "default", skill_id, correct, MasteryConfig())
+                                emit_evaluate_work(adaptive_conn, "default", skill_id, correct, session_id)
 
                                 # M6: Record error flag on failure
                                 if verdict_val == "fail":
                                     record_error_flag(
-                                        conn, "default", skill_id,
+                                        adaptive_conn, "default", skill_id,
                                         error_type=parsed_verdict.get("error_type", "unknown"),
                                         severity="medium",
                                         edge_id=error_loc.get("prereq_from"),
@@ -1786,7 +1790,7 @@ def send_turn(session_id: str):
 
                             tb_skill = session.get("topic")
                             if tb_skill and rubric_blocks_mastery(parsed_teach_back):
-                                eff = _get_eff(conn, "default", tb_skill, _MC2())
+                                eff = _get_eff(adaptive_conn, "default", tb_skill, _MC2())
                                 if eff >= _MC2().unlock_threshold:
                                     parsed_teach_back["_mastery_blocked"] = True
                                     _LOG.info(
@@ -1812,6 +1816,11 @@ def send_turn(session_id: str):
             full_response = f"[Error: {e}]"
             citations = []
             parsed_verdict = None
+        finally:
+            try:
+                adaptive_conn.close()
+            except Exception:
+                pass
 
         # After streaming completes, log the turn
         try:
