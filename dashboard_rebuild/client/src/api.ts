@@ -1121,6 +1121,7 @@ export type TutorMode =
   | "Diagnostic Sprint"
   | "Teaching Sprint";
 export type TutorAccuracyProfile = "balanced" | "strict" | "coverage";
+export type BehaviorOverride = "socratic" | "evaluate" | "concept_map";
 export type TutorSessionStatus = "active" | "completed" | "abandoned";
 
 export interface TutorCreateSessionRequest {
@@ -1388,6 +1389,25 @@ export interface DataRowsResponse {
   offset: number;
 }
 
+export interface TutorVerdictErrorLocation {
+  type: "concept" | "prerequisite" | "reasoning" | "recall";
+  node: string | null;
+  prereq_from: string | null;
+  prereq_to: string | null;
+}
+
+export interface TutorVerdict {
+  verdict: "pass" | "fail" | "partial";
+  error_location?: TutorVerdictErrorLocation | null;
+  error_type?: string | null;
+  why_wrong?: string | null;
+  next_hint?: string | null;
+  next_question?: string | null;
+  confidence?: number;
+  citations?: string[];
+  _validation_issues?: string[];
+}
+
 // SSE streaming helper for Tutor chat
 export interface TutorSSEChunk {
   type: "token" | "done" | "error" | "web_search_searching" | "web_search_completed" | "tool_call" | "tool_result" | "tool_limit_reached";
@@ -1397,6 +1417,9 @@ export interface TutorSSEChunk {
   summary?: string;
   model?: string;
   retrieval_debug?: TutorRetrievalDebug;
+  behavior_override?: BehaviorOverride;
+  verdict?: TutorVerdict;
+  concept_map?: unknown;
 }
 
 export interface TutorRetrievalDebug {

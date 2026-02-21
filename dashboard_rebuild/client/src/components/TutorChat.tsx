@@ -15,11 +15,13 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  type BehaviorOverride,
   type Material,
   type TutorAccuracyProfile,
   type TutorCitation,
   type TutorRetrievalDebug,
   type TutorSSEChunk,
+  type TutorVerdict,
 } from "@/lib/api";
 
 interface ToolAction {
@@ -36,6 +38,7 @@ interface ChatMessage {
   retrievalDebug?: TutorRetrievalDebug;
   isStreaming?: boolean;
   toolActions?: ToolAction[];
+  verdict?: TutorVerdict;
 }
 
 export interface ChainBlock {
@@ -96,6 +99,71 @@ const TOOL_ICONS: Record<string, typeof FileText> = {
   create_anki_card: CreditCard,
 };
 
+function VerdictBadge({ verdict }: { verdict: TutorVerdict }) {
+  const [expanded, setExpanded] = useState(false);
+  const color =
+    verdict.verdict === "pass"
+      ? "border-green-600 text-green-400 bg-green-950/30"
+      : verdict.verdict === "fail"
+        ? "border-red-600 text-red-400 bg-red-950/30"
+        : "border-yellow-600 text-yellow-400 bg-yellow-950/30";
+  const label =
+    verdict.verdict === "pass"
+      ? "PASS"
+      : verdict.verdict === "fail"
+        ? "FAIL"
+        : "PARTIAL";
+
+  return (
+    <div className={`mt-2 pt-2 border-t border-primary/20`}>
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className={`inline-flex items-center gap-2 px-3 py-1.5 font-arcade text-xs border-2 ${color}`}
+      >
+        {verdict.verdict === "pass" ? (
+          <CheckCircle2 className="w-4 h-4" />
+        ) : (
+          <XCircle className="w-4 h-4" />
+        )}
+        {label}
+        {verdict.confidence != null && (
+          <span className="font-terminal text-[10px] opacity-70">
+            ({Math.round(verdict.confidence * 100)}%)
+          </span>
+        )}
+      </button>
+      {expanded && (
+        <div className="mt-2 space-y-1 font-terminal text-xs text-zinc-300">
+          {verdict.why_wrong && (
+            <p>
+              <span className="text-red-400">Why wrong:</span> {verdict.why_wrong}
+            </p>
+          )}
+          {verdict.error_location?.node && (
+            <p>
+              <span className="text-yellow-400">Error at:</span>{" "}
+              {verdict.error_location.node}
+              {verdict.error_location.prereq_from &&
+                ` (prereq: ${verdict.error_location.prereq_from} → ${verdict.error_location.prereq_to})`}
+            </p>
+          )}
+          {verdict.next_hint && (
+            <p>
+              <span className="text-blue-400">Hint:</span> {verdict.next_hint}
+            </p>
+          )}
+          {verdict.next_question && (
+            <p>
+              <span className="text-primary">Next Q:</span> {verdict.next_question}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TutorChat({
   sessionId,
   availableMaterials,
@@ -110,6 +178,7 @@ export function TutorChat({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [behaviorOverride, setBehaviorOverride] = useState<BehaviorOverride | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
@@ -151,6 +220,8 @@ export function TutorChat({
       { role: "assistant", content: "", isStreaming: true },
     ]);
     setIsStreaming(true);
+    const activeBehavior = behaviorOverride;
+    setBehaviorOverride(null);
 
     try {
       const response = await fetch(`/api/tutor/session/${sessionId}/turn`, {
@@ -162,6 +233,7 @@ export function TutorChat({
             material_ids: selectedMaterialIds,
             accuracy_profile: accuracyProfile,
           },
+          behavior_override: activeBehavior,
         }),
         signal: abortController.signal,
       });
@@ -194,6 +266,7 @@ export function TutorChat({
       let modelId: string | undefined;
       let retrievalDebug: TutorRetrievalDebug | undefined;
       let serverArtifactCmd: { type?: string; raw?: string } | null = null;
+      let verdictData: TutorVerdict | undefined;
       let streamErrored = false;
       let doneSignal = false;
       const toolActions: ToolAction[] = [];
@@ -319,6 +392,7 @@ export function TutorChat({
               citations = parsed.citations ?? [];
               modelId = parsed.model;
               retrievalDebug = parsed.retrieval_debug;
+              verdictData = parsed.verdict;
               // Backend detected natural language artifact command
               if (parsed.artifacts?.length) {
                 const cmd = parsed.artifacts[0] as { type?: string; raw?: string };
@@ -349,6 +423,7 @@ export function TutorChat({
           retrievalDebug,
           isStreaming: false,
           toolActions: toolActions.length > 0 ? toolActions : undefined,
+          verdict: verdictData,
         };
         return updated;
       });
@@ -399,6 +474,7 @@ export function TutorChat({
     input,
     sessionId,
     isStreaming,
+    behaviorOverride,
     onArtifactCreated,
     onTurnComplete,
     selectedMaterialIds,
@@ -521,6 +597,10 @@ export function TutorChat({
                 </div>
               ) : null}
 
+              {msg.verdict && !msg.isStreaming && (
+                <VerdictBadge verdict={msg.verdict} />
+              )}
+
               {msg.role === "assistant" && msg.content && !msg.isStreaming && (
                 <div className="flex items-center gap-1 mt-2 pt-2 border-t border-primary/20">
                   <button
@@ -626,6 +706,37 @@ export function TutorChat({
             <option value="strict">Strict</option>
             <option value="coverage">Coverage</option>
           </select>
+        </div>
+        <div className="flex items-center gap-1">
+          {(["socratic", "evaluate", "concept_map"] as const).map((mode) => {
+            const active = behaviorOverride === mode;
+            const labels: Record<BehaviorOverride, string> = {
+              socratic: "Q",
+              evaluate: "E",
+              concept_map: "M",
+            };
+            const titles: Record<BehaviorOverride, string> = {
+              socratic: "Socratic — respond with questions only",
+              evaluate: "Evaluate — assess your answer",
+              concept_map: "Concept Map — generate Mermaid diagram",
+            };
+            return (
+              <button
+                key={mode}
+                type="button"
+                title={titles[mode]}
+                onClick={() => setBehaviorOverride(active ? null : mode)}
+                disabled={isStreaming}
+                className={`h-8 w-8 font-arcade text-xs border-2 transition-colors disabled:opacity-50 ${
+                  active
+                    ? "bg-primary/20 border-primary text-primary"
+                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                }`}
+              >
+                {labels[mode]}
+              </button>
+            );
+          })}
         </div>
         <input
           ref={inputRef}

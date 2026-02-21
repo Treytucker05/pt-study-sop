@@ -1859,6 +1859,38 @@ def init_database():
     _migrate_academic_deadlines(cursor)
     _migrate_scraped_events(cursor)
 
+    # ------------------------------------------------------------------
+    # Adaptive package tables (idempotent)
+    # ------------------------------------------------------------------
+    try:
+        from adaptive.bkt import create_mastery_tables
+        from adaptive.telemetry import create_telemetry_tables
+        from adaptive.curriculum import create_curriculum_tables
+        from adaptive.vault_ingest import create_vault_tables
+        from adaptive.knowledge_graph import create_kg_tables
+
+        create_mastery_tables(conn)
+        create_telemetry_tables(conn)
+        create_curriculum_tables(conn)
+        create_vault_tables(conn)
+        create_kg_tables(conn)
+        print("[OK] Adaptive package tables registered")
+    except ImportError as exc:
+        print(f"[WARN] Adaptive tables skipped (import failed): {exc}")
+
+    # tutor_turns: add evaluation_json + behavior_override columns
+    cursor.execute("PRAGMA table_info(tutor_turns)")
+    tt_cols_eval = {col[1] for col in cursor.fetchall()}
+    for col_name in ["evaluation_json", "behavior_override"]:
+        if col_name not in tt_cols_eval:
+            try:
+                cursor.execute(
+                    f"ALTER TABLE tutor_turns ADD COLUMN {col_name} TEXT"
+                )
+                print(f"[INFO] Added '{col_name}' column to tutor_turns table")
+            except sqlite3.OperationalError:
+                pass
+
     # Drop dead tables
     cursor.execute("DROP TABLE IF EXISTS wheel_config")
     cursor.execute("DROP TABLE IF EXISTS topics")

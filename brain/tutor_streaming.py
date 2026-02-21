@@ -22,6 +22,9 @@ def format_sse_done(
     summary: Optional[str] = None,
     model: Optional[str] = None,
     retrieval_debug: Optional[dict] = None,
+    behavior_override: Optional[str] = None,
+    verdict: Optional[dict] = None,
+    concept_map: Optional[dict] = None,
 ) -> str:
     """Format the final SSE done event with metadata."""
     payload: dict = {"type": "done"}
@@ -35,6 +38,12 @@ def format_sse_done(
         payload["model"] = model
     if retrieval_debug:
         payload["retrieval_debug"] = retrieval_debug
+    if behavior_override:
+        payload["behavior_override"] = behavior_override
+    if verdict:
+        payload["verdict"] = verdict
+    if concept_map:
+        payload["concept_map"] = concept_map
     return f"data: {json.dumps(payload)}\n\ndata: [DONE]\n\n"
 
 

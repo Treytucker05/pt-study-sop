@@ -144,7 +144,7 @@ def build_tutor_chain(
     chain = (
         RunnablePassthrough.assign(
             context=lambda x: format_docs(
-                retriever.invoke(x["question"])
+                retriever.invoke(x.get("retrieval_query", x["question"]))
             )
         )
         | prompt
