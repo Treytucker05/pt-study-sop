@@ -643,6 +643,13 @@ def create_task(
         return f"Error creating task: {error}"
 
     task_id = result.get("id", "") if result else ""
+    _log_calendar_action(
+        "create_task",
+        task_id,
+        pre_state=None,
+        post_state={"task_id": task_id, "tasklist_id": tasklist_id, "title": title},
+        description=f"Created task: {title}",
+    )
     return f"Created task '{title}'. Task ID: {task_id}"
 
 
@@ -696,11 +703,33 @@ def delete_task(
 
     tasklist_id = tasklist_id or _get_default_tasklist_id()
 
+    # Capture task data before deletion for undo
+    pre_state: dict | None = None
+    try:
+        task_data = service.tasks().get(tasklist=tasklist_id, task=task_id).execute()
+        pre_state = {
+            "task_id": task_id,
+            "tasklist_id": tasklist_id,
+            "title": task_data.get("title", ""),
+            "notes": task_data.get("notes", ""),
+            "due": task_data.get("due"),
+            "status": task_data.get("status", "needsAction"),
+        }
+    except Exception:
+        pass
+
     success, error = gcal.delete_google_task(tasklist_id, task_id, service=service)
 
     if error:
         return f"Error deleting task: {error}"
 
+    _log_calendar_action(
+        "delete_task",
+        task_id,
+        pre_state=pre_state,
+        post_state=None,
+        description=f"Deleted task: {task_id}",
+    )
     return f"Deleted task with ID: {task_id}"
 
 

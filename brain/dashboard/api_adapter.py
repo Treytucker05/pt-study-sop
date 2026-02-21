@@ -4205,21 +4205,29 @@ def undo_calendar_action_endpoint():
                 gcal.create_event("primary", body)
 
         elif action == "create_task":
-            # Inverse: Delete (need list_id - stored? No. Need to parse from pre/post or store list_id in ledger?)
-            # I didn't store list_id in ledger column specifically.
-            # But post_state might have it? (Not standard Google Task resource field?)
-            # Actually, Google Task resource doesn't always have 'listId'.
-            # Fail: I need list_id to delete.
-            # Assume I can find it or I should have stored context in description or separate col.
-            # For now, simplistic undo might fail for tasks if list_id missing.
-            # I'll try to find it from post_state json if I enriched it?
-            # In create_task above: I did NOT enrich post_state with listId.
-            # FIXME: Storing 'selfLink' might help?
-            pass  # TODO: Fix Task Undo context
+            # Inverse: Delete the created task
+            post_state = json.loads(post_json) if post_json else None
+            if post_state and post_state.get("tasklist_id") and post_state.get("task_id"):
+                service = gcal.get_tasks_service()
+                if service:
+                    service.tasks().delete(
+                        tasklist=post_state["tasklist_id"],
+                        task=post_state["task_id"],
+                    ).execute()
 
         elif action == "delete_task":
-            # Inverse: Re-create
-            pass
+            # Inverse: Re-create the deleted task from pre_state
+            if pre_state and pre_state.get("tasklist_id"):
+                service = gcal.get_tasks_service()
+                if service:
+                    body = {"title": pre_state.get("title", ""), "status": "needsAction"}
+                    if pre_state.get("notes"):
+                        body["notes"] = pre_state["notes"]
+                    if pre_state.get("due"):
+                        body["due"] = pre_state["due"]
+                    service.tasks().insert(
+                        tasklist=pre_state["tasklist_id"], body=body
+                    ).execute()
 
         # Delete ledger entry
         cur.execute("DELETE FROM calendar_action_ledger WHERE id = ?", (lid,))
