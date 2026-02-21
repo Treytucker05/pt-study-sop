@@ -207,7 +207,7 @@ Contract tests, telemetry guards, and hallucination resistance.
 
 ---
 
-## Phase 9: Measurement Loop (n-of-1 Optimization) [checkpoint: pending]
+## Phase 9: Measurement Loop (n-of-1 Optimization) [checkpoint: c1138302]
 
 Dashboard metrics and session toggles for controlled comparisons.
 
