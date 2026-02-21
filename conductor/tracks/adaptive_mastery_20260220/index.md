@@ -14,8 +14,8 @@ Knowledge-graph-powered adaptive tutoring: BKT with forgetting-curve decay, Obsi
 
 ## Progress
 
-- Phases: 6/10 complete
-- Tasks: 33/48 complete
+- Phases: 7/10 complete
+- Tasks: 35/48 complete
 
 ## Quick Links
 

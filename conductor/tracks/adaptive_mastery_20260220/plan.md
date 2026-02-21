@@ -145,19 +145,19 @@ Scaffold and fade hints based on mastery. "Evaluate My Work" localizes failure t
 
 ---
 
-## Phase 6: Teach-Back Gate (Feynman Technique)
+## Phase 6: Teach-Back Gate (Feynman Technique) [checkpoint: 6be55605]
 
 Teach-back module acts as novice questioner. Rubric maps deficiencies to skill_id/edge_id.
 
 ### Tasks
 
-- [ ] Task 6.1: Teach-back module — model acts as novice; asks probing questions only; no direct teaching
-- [ ] Task 6.2: Rubric artifact + mastery impact — accuracy, simplicity, missing links, incorrect edges, boundary confusion; maps to skill_id/edge_id; weak rubric prevents crossing mastery threshold
+- [x] Task 6.1: Teach-back module — model acts as novice; asks probing questions only; no direct teaching
+- [x] Task 6.2: Rubric artifact + mastery impact — accuracy, simplicity, missing links, incorrect edges, boundary confusion; maps to skill_id/edge_id; weak rubric prevents crossing mastery threshold
 
 ### Verification
 
-- [ ] Output contains no direct explanations above threshold
-- [ ] Weak rubric prevents mastery even with high quiz accuracy
+- [x] Output contains no direct explanations above threshold
+- [x] Weak rubric prevents mastery even with high quiz accuracy
 
 ---
 
