@@ -7,6 +7,9 @@
 | C-DP-001 | DEPTH | M-PRE-007, M-ENC-005, M-ENC-008, M-INT-002, M-REF-003, M-REF-004, M-RET-005, M-REF-001, M-OVR-002 | sop\library\chains\C-DP-001.yaml |
 | C-EP-001 | Exam Prep | M-PRE-002, M-REF-003, M-REF-004, M-RET-004, M-INT-004, M-REF-001, M-OVR-002 | sop\library\chains\C-EP-001.yaml |
 | C-FE-001 | First Exposure (Core) | M-PRE-001, M-PRE-008, M-PRE-009, M-CAL-001, M-CAL-002, M-CAL-003, M-ENC-001, M-REF-003, M-REF-004, M-RET-001, M-RET-006, M-RET-007, M-OVR-002, M-OVR-003 | sop\library\chains\C-FE-001.yaml |
+|  | First Exposure: Minimal |  | sop\library\chains\C-FE-MIN.yaml |
+|  | First Exposure: Procedure |  | sop\library\chains\C-FE-PRO.yaml |
+|  | First Exposure: Standard |  | sop\library\chains\C-FE-STD.yaml |
 | C-LE-001 | Low Energy | M-PRE-001, M-PRE-004, M-REF-003, M-REF-004, M-RET-003, M-OVR-001 | sop\library\chains\C-LE-001.yaml |
 | C-MR-001 | Mastery Review | M-REF-003, M-REF-004, M-RET-001, M-REF-001, M-REF-002, M-OVR-002 | sop\library\chains\C-MR-001.yaml |
 | C-PI-001 | Pathophysiology Intake | M-PRE-007, M-ENC-007, M-PRE-005, M-REF-003, M-REF-004, M-RET-001, M-REF-001 | sop\library\chains\C-PI-001.yaml |
