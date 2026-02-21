@@ -33,27 +33,27 @@ Define the foundational schemas, enums, and policy objects that every downstream
 
 ---
 
-## Phase 1: Obsidian Vault Integration + Hygiene
+## Phase 1: Obsidian Vault Integration + Hygiene [checkpoint: pending]
 
 Ingest Obsidian vault notes, extract frontmatter/aliases/links, store in document store, enforce lint rules, support incremental updates.
 
 ### Tasks
 
-- [ ] Task 1.1: Vault ingest scanner — `ingest_obsidian_vault(path)` discovers `.md` files
-- [ ] Task 1.2: Parse YAML frontmatter — extract `type`, `system`, `prereqs`, `tags`, `sources`, `aliases` (mandatory)
-- [ ] Task 1.3: Link extraction — parse `[[wikilinks]]` and markdown links into `(from_path, to_target, link_text)` tuples
-- [ ] Task 1.4: Alias normalization table — `entity_aliases(alias, canonical_id_or_title, source_path)` from YAML aliases
-- [ ] Task 1.5: Store vault notes in `rag_docs` — `source="obsidian"`, `path`, `checksum`; stable `doc_id`
-- [ ] Task 1.6: Vault lint report — YAML must contain `aliases`; optional `prereqs` for concept notes; standardized headings check
-- [ ] Task 1.7: Incremental updates — checksum-based; only reprocess changed notes, update links + aliases + chunks
+- [x] Task 1.1: Vault ingest scanner — `ingest_obsidian_vault(path)` discovers `.md` files
+- [x] Task 1.2: Parse YAML frontmatter — extract `type`, `system`, `prereqs`, `tags`, `sources`, `aliases` (mandatory)
+- [x] Task 1.3: Link extraction — parse `[[wikilinks]]` and markdown links into `(from_path, to_target, link_text)` tuples
+- [x] Task 1.4: Alias normalization table — `entity_aliases(alias, canonical_id_or_title, source_path)` from YAML aliases
+- [x] Task 1.5: Store vault notes in `rag_docs` — `source="obsidian"`, `path`, `checksum`; stable `doc_id`
+- [x] Task 1.6: Vault lint report — YAML must contain `aliases`; optional `prereqs` for concept notes; standardized headings check
+- [x] Task 1.7: Incremental updates — checksum-based; only reprocess changed notes, update links + aliases + chunks
 
 ### Verification
 
-- [ ] File count matches filesystem
-- [ ] Re-ingest without changes adds 0 rows
-- [ ] "CO" alias resolves to "Cardiac Output" canonical
-- [ ] Lint report is deterministic for 10 sample notes
-- [ ] Edit 1 file → only that file reprocessed
+- [x] File count matches filesystem
+- [x] Re-ingest without changes adds 0 rows
+- [x] "CO" alias resolves to "Cardiac Output" canonical
+- [x] Lint report is deterministic for 10 sample notes
+- [x] Edit 1 file → only that file reprocessed
 
 ---
 
