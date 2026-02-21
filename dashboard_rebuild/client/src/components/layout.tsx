@@ -318,7 +318,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={cn("nav-btn", isActive && "active")}
+                      className={cn("nav-btn font-arcade", isActive && "active")}
                     >
                       <item.icon className="w-3 h-3 lg:mr-1" />
                       <span className="hidden lg:inline">{item.label}</span>
@@ -332,14 +332,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="nav-btn border-primary/40 text-xs px-3">
+                <Button variant="outline" size="sm" className="nav-btn font-arcade border-primary/40 text-xs px-3">
                   NOTES
                 </Button>
               </SheetTrigger>
-                <SheetContent
-                  className="bg-black border-l-4 border-t-[3px] border-b-[3px] border-double border-primary w-[340px] sm:w-[480px] lg:w-[520px] shadow-2xl overflow-y-auto z-[100001] inset-y-3 h-auto [&>button]:hidden"
-                  style={{ zIndex: 100001 }}
-                >
+              <SheetContent
+                className="bg-black border-l-4 border-t-[3px] border-b-[3px] border-double border-primary w-[340px] sm:w-[480px] lg:w-[520px] shadow-2xl overflow-y-auto z-[100001] inset-y-3 h-auto [&>button]:hidden"
+                style={{ zIndex: 100001 }}
+              >
                 <div className="flex items-center gap-2 mb-4">
                   <SheetClose asChild>
                     <Button
@@ -387,15 +387,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         </Button>
                       ))}
                     </div>
-                    <Textarea 
-                      placeholder="TYPE_NOTE_HERE..." 
+                    <Textarea
+                      placeholder="TYPE_NOTE_HERE..."
                       value={newNote}
                       onChange={(e) => setNewNote(e.target.value)}
-                      className="h-20 bg-secondary/20 border-2 border-secondary font-terminal text-sm rounded-none resize-none focus-visible:ring-primary" 
+                      className="h-20 bg-secondary/20 border-2 border-secondary font-terminal text-sm rounded-none resize-none focus-visible:ring-primary"
                       data-testid="input-note-content"
                     />
-                    <Button 
-                      className="w-full font-arcade rounded-none text-xs" 
+                    <Button
+                      className="w-full font-arcade rounded-none text-xs"
                       size="sm"
                       onClick={handleSaveNote}
                       disabled={!newNote.trim() || createNoteMutation.isPending}
@@ -404,7 +404,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       <Save className="w-3 h-3 mr-2" /> ADD NOTE
                     </Button>
                   </div>
-                  
+
                   <div className="border-t border-secondary pt-2">
                     <div className="font-arcade text-xs text-muted-foreground mb-2">SAVED NOTES ({notes.length})</div>
                     <ScrollArea className="h-[calc(100vh-280px)]">
@@ -460,11 +460,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                           autoFocus
                                         />
                                         <div className="flex gap-1">
-                                  <Button 
-                                    size="sm" 
-                                    className="flex-1 rounded-none text-xs h-6"
-                                    onClick={() => updateNoteMutation.mutate({ id: note.id, data: { content: editingContent } })}
-                                  >
+                                          <Button
+                                            size="sm"
+                                            className="flex-1 rounded-none text-xs h-6"
+                                            onClick={() => updateNoteMutation.mutate({ id: note.id, data: { content: editingContent } })}
+                                          >
                                             <Check className="w-3 h-3" />
                                           </Button>
                                           <Button
@@ -538,7 +538,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={cn("nav-btn", isActive && "active")}
+                    className={cn("nav-btn font-arcade", isActive && "active")}
                     onClick={() => setMobileNavOpen(false)}
                   >
                     <item.icon className="w-3 h-3 mr-1" />

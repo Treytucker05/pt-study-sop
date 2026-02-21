@@ -43,6 +43,9 @@ import {
   Timer,
   SkipForward,
   Plus,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import {
   TEXT_MUTED,
@@ -98,6 +101,7 @@ export default function Tutor() {
   });
   const [mode, setMode] = useState<TutorMode>("Core");
   const [chainId, setChainId] = useState<number | undefined>();
+  const [showMaterials, setShowMaterials] = useState(false);
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
   const [chainBlocks, setChainBlocks] = useState<TutorTemplateChain["blocks"]>([]);
   const [customBlockIds, setCustomBlockIds] = useState<number[]>([]);
@@ -122,21 +126,14 @@ export default function Tutor() {
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [isShipping, setIsShipping] = useState(false);
 
   // Block timer
   const [blockTimerSeconds, setBlockTimerSeconds] = useState<number | null>(null);
   const [timerWarningShown, setTimerWarningShown] = useState(false);
-
-  useEffect(() => {
-    if (focusMode) {
-      setShowArtifacts(false);
-      setShowMobileSidebar(false);
-    }
-  }, [focusMode]);
 
   useEffect(() => {
     try {
@@ -172,17 +169,17 @@ export default function Tutor() {
       /* localStorage write failed — ignore */
     }
   }, [
-        tutorWizardStorageKey,
-        courseId,
-        topic,
-        selectedMaterials,
-        chainId,
-        customBlockIds,
-        mode,
-        accuracyProfile,
-        webSearch,
-        selectedPaths,
-      ]);
+    tutorWizardStorageKey,
+    courseId,
+    topic,
+    selectedMaterials,
+    chainId,
+    customBlockIds,
+    mode,
+    accuracyProfile,
+    webSearch,
+    selectedPaths,
+  ]);
 
   // Recent sessions
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
@@ -339,47 +336,47 @@ export default function Tutor() {
     }
   }, [activeSessionId, queryClient]);
 
-   const shipToBrainAndEnd = useCallback(async () => {
-     if (!activeSessionId) return;
-     setIsShipping(true);
-     try {
-       const full = await api.tutor.getSession(activeSessionId);
-       if (full.turns && full.turns.length > 0) {
-         const lines: string[] = [
-           `# Tutor: ${topic || mode}`,
-           `**Date:** ${new Date(startedAt || Date.now()).toLocaleDateString()}`,
-           `**Mode:** ${mode} | **Turns:** ${turnCount}`,
-           `**Artifacts:** ${artifacts.length}`,
-           "",
-           "---",
-           "",
-         ];
-         for (const turn of full.turns) {
-           lines.push(`## Q${turn.turn_number}`);
-           lines.push(turn.question);
-           lines.push("");
-           if (turn.answer) {
-             lines.push(`**Answer:**`);
-             lines.push(turn.answer);
-             lines.push("");
-           }
-         }
-         const filename = `Tutor - ${(topic || mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
-         const path = `Study Sessions/${filename}.md`;
-         await api.obsidian.append(path, lines.join("\n"));
-       }
-       // Show toast AFTER ship succeeds but BEFORE endSession unmounts component
-       setTimeout(() => {
-         toast.success("Session shipped to Brain");
-       }, 100);
-     } catch (err) {
-       toast.error(`Ship failed: ${err instanceof Error ? err.message : "Unknown"}`);
-     } finally {
-       setIsShipping(false);
-     }
-     await endSession();
-     setShowEndConfirm(false);
-   }, [activeSessionId, topic, mode, startedAt, turnCount, artifacts.length, endSession]);
+  const shipToBrainAndEnd = useCallback(async () => {
+    if (!activeSessionId) return;
+    setIsShipping(true);
+    try {
+      const full = await api.tutor.getSession(activeSessionId);
+      if (full.turns && full.turns.length > 0) {
+        const lines: string[] = [
+          `# Tutor: ${topic || mode}`,
+          `**Date:** ${new Date(startedAt || Date.now()).toLocaleDateString()}`,
+          `**Mode:** ${mode} | **Turns:** ${turnCount}`,
+          `**Artifacts:** ${artifacts.length}`,
+          "",
+          "---",
+          "",
+        ];
+        for (const turn of full.turns) {
+          lines.push(`## Q${turn.turn_number}`);
+          lines.push(turn.question);
+          lines.push("");
+          if (turn.answer) {
+            lines.push(`**Answer:**`);
+            lines.push(turn.answer);
+            lines.push("");
+          }
+        }
+        const filename = `Tutor - ${(topic || mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
+        const path = `Study Sessions/${filename}.md`;
+        await api.obsidian.append(path, lines.join("\n"));
+      }
+      // Show toast AFTER ship succeeds but BEFORE endSession unmounts component
+      setTimeout(() => {
+        toast.success("Session shipped to Brain");
+      }, 100);
+    } catch (err) {
+      toast.error(`Ship failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    } finally {
+      setIsShipping(false);
+    }
+    await endSession();
+    setShowEndConfirm(false);
+  }, [activeSessionId, topic, mode, startedAt, turnCount, artifacts.length, endSession]);
 
   const handleArtifactCreated = useCallback(
     async (artifact: { type: string; content: string; title?: string }) => {
@@ -562,6 +559,35 @@ export default function Tutor() {
     tutorWizardStorageKey,
   ]);
 
+  const toggleMaterial = useCallback((id: number) => {
+    setSelectedMaterials((prev) => {
+      const next = prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id];
+      try {
+        localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(next));
+      } catch { /* ignore */ }
+      return next;
+    });
+  }, [tutorMaterialStorageKey]);
+
+  const selectAllMaterials = useCallback(() => {
+    const allIds = chatMaterials.map((m) => m.id);
+    setSelectedMaterials(allIds);
+    try {
+      localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(allIds));
+    } catch { /* ignore */ }
+  }, [chatMaterials, tutorMaterialStorageKey]);
+
+  const clearMaterialSelection = useCallback(() => {
+    setSelectedMaterials([]);
+    try {
+      localStorage.setItem(tutorMaterialStorageKey, JSON.stringify([]));
+    } catch { /* ignore */ }
+  }, [tutorMaterialStorageKey]);
+
+  const getFileName = (path: string) => {
+    return path.split(/[/\\]/).pop() || path;
+  };
+
   // ─── Derived state ───
 
   // ─── SESSION VIEW ─── (active session, full-screen chat)
@@ -588,26 +614,26 @@ export default function Tutor() {
             {showSetup ? (
               <div className="flex-1 min-h-0 overflow-y-auto w-full">
                 <div className="w-full max-w-full">
-                <TutorWizard
-                  courseId={courseId}
-                  setCourseId={setCourseId}
-                  selectedMaterials={selectedMaterials}
-                  setSelectedMaterials={setSelectedMaterials}
-                  topic={topic}
-                  setTopic={setTopic}
-                  chainId={chainId}
-                  setChainId={setChainId}
-                  customBlockIds={customBlockIds}
-                  setCustomBlockIds={setCustomBlockIds}
-                  mode={mode}
-                  setMode={setMode}
-                  webSearch={webSearch}
-                  setWebSearch={setWebSearch}
-                  onStartSession={startSession}
-                  isStarting={isStarting}
-                  recentSessions={recentSessions}
-                  onResumeSession={(id) => { resumeSession(id); setShowSetup(false); }}
-                />
+                  <TutorWizard
+                    courseId={courseId}
+                    setCourseId={setCourseId}
+                    selectedMaterials={selectedMaterials}
+                    setSelectedMaterials={setSelectedMaterials}
+                    topic={topic}
+                    setTopic={setTopic}
+                    chainId={chainId}
+                    setChainId={setChainId}
+                    customBlockIds={customBlockIds}
+                    setCustomBlockIds={setCustomBlockIds}
+                    mode={mode}
+                    setMode={setMode}
+                    webSearch={webSearch}
+                    setWebSearch={setWebSearch}
+                    onStartSession={startSession}
+                    isStarting={isStarting}
+                    recentSessions={recentSessions}
+                    onResumeSession={(id) => { resumeSession(id); setShowSetup(false); }}
+                  />
                 </div>
               </div>
             ) : (
@@ -621,7 +647,6 @@ export default function Tutor() {
                     onAccuracyProfileChange={setAccuracyProfile}
                     onSelectedMaterialIdsChange={setSelectedMaterials}
                     onArtifactCreated={handleArtifactCreated}
-                    focusMode={focusMode}
                     onTurnComplete={() => setTurnCount((prev) => prev + 1)}
                   />
                 ) : (
@@ -641,23 +666,20 @@ export default function Tutor() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setFocusMode((prev) => !prev)}
-                    className="h-8 px-2 rounded-none font-terminal text-xs text-muted-foreground bg-black/60 border border-primary/30 hover:text-primary"
-                    title={focusMode ? "Exit focus mode" : "Enter focus mode"}
+                    onClick={() => {
+                      if (window.innerWidth >= 1024) {
+                        setShowRightSidebar((prev) => !prev);
+                      } else {
+                        setShowMobileSidebar(true);
+                      }
+                    }}
+                    className={`h-8 px-2 rounded-none font-arcade text-xs bg-black/40 border-2 shadow-none transition-colors ${showRightSidebar
+                      ? "border-primary text-primary hover:bg-primary/20"
+                      : "border-primary/30 text-muted-foreground hover:text-primary"
+                      }`}
                   >
-                    {focusMode ? <EyeOff className="w-3.5 h-3.5 mr-1" /> : <Eye className="w-3.5 h-3.5 mr-1" />}
-                    {focusMode ? "EXIT FOCUS" : "FOCUS"}
+                    TOOLS
                   </Button>
-                  {!focusMode && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowMobileSidebar(true)}
-                      className="h-8 px-2 rounded-none font-terminal text-xs text-muted-foreground bg-black/60 border border-primary/30 hover:text-primary lg:hidden"
-                    >
-                      TOOLS
-                    </Button>
-                  )}
                 </div>
 
                 {showEndConfirm && (
@@ -683,7 +705,7 @@ export default function Tutor() {
                           variant="ghost"
                           onClick={() => { endSession(); setShowEndConfirm(false); }}
                           disabled={isShipping}
-                          className="rounded-none font-terminal text-xs text-muted-foreground hover:text-foreground h-9 px-3"
+                          className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 border-2 border-transparent hover:border-primary/40 shadow-none"
                         >
                           END WITHOUT SAVING
                         </Button>
@@ -691,7 +713,7 @@ export default function Tutor() {
                           variant="ghost"
                           onClick={() => setShowEndConfirm(false)}
                           disabled={isShipping}
-                          className="rounded-none font-terminal text-xs text-muted-foreground hover:text-foreground h-9 px-3 ml-auto"
+                          className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 ml-auto border-2 border-transparent hover:border-primary/40 shadow-none"
                         >
                           CANCEL
                         </Button>
@@ -703,7 +725,7 @@ export default function Tutor() {
             )}
           </div>
 
-          {!focusMode && (
+          {showRightSidebar && (
             <aside className="hidden lg:flex w-[280px] shrink-0 bg-black/40 border-l-2 border-primary/30 flex-col min-h-0">
               <div className="shrink-0 border-b border-primary/20 p-3 space-y-3">
                 {/* Session status indicator */}
@@ -762,13 +784,12 @@ export default function Tutor() {
                         return (
                           <div
                             key={block.id}
-                            className={`flex items-center gap-2 px-1.5 py-1 border ${
-                              isCurrent
-                                ? "border-primary/40 bg-primary/10 text-primary"
-                                : isDone
-                                  ? "border-primary/20 bg-black/30 text-muted-foreground/70"
-                                  : "border-primary/10 text-muted-foreground/60"
-                            }`}
+                            className={`flex items-center gap-2 px-1.5 py-1 border ${isCurrent
+                              ? "border-primary/40 bg-primary/10 text-primary"
+                              : isDone
+                                ? "border-primary/20 bg-black/30 text-muted-foreground/70"
+                                : "border-primary/10 text-muted-foreground/60"
+                              }`}
                           >
                             <span className="font-terminal text-[10px] shrink-0">{idx + 1}.</span>
                             <span className={`font-terminal text-xs truncate ${isDone ? "line-through" : ""}`}>
@@ -802,11 +823,10 @@ export default function Tutor() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowSetup(true)}
-                    className={`h-8 rounded-none font-arcade text-xs justify-center ${
-                      showSetup
-                        ? "text-primary bg-primary/15 border border-primary/40"
-                        : "text-muted-foreground hover:text-primary"
-                    }`}
+                    className={`h-8 rounded-none font-arcade text-xs justify-center ${showSetup
+                      ? "text-primary bg-primary/15 border border-primary/40"
+                      : "text-muted-foreground hover:text-primary"
+                      }`}
                   >
                     <Settings2 className="w-3.5 h-3.5 mr-1" />
                     SETUP
@@ -815,11 +835,10 @@ export default function Tutor() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowSetup(false)}
-                    className={`h-8 rounded-none font-arcade text-xs justify-center ${
-                      !showSetup
-                        ? "text-primary bg-primary/15 border border-primary/40"
-                        : "text-muted-foreground hover:text-primary"
-                    }`}
+                    className={`h-8 rounded-none font-arcade text-xs justify-center ${!showSetup
+                      ? "text-primary bg-primary/15 border border-primary/40"
+                      : "text-muted-foreground hover:text-primary"
+                      }`}
                   >
                     <MessageSquare className="w-3.5 h-3.5 mr-1" />
                     CHAT
@@ -835,11 +854,10 @@ export default function Tutor() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowArtifacts((prev) => !prev)}
-                  className={`h-8 rounded-none font-terminal text-xs justify-start ${
-                    showArtifacts
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-primary"
-                  }`}
+                  className={`h-8 rounded-none font-terminal text-xs justify-start ${showArtifacts
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-primary"
+                    }`}
                 >
                   {showArtifacts ? (
                     <PanelRightClose className="w-3.5 h-3.5 mr-1" />
@@ -856,9 +874,8 @@ export default function Tutor() {
 
                 {blockTimerSeconds !== null && blockTimerSeconds > 0 && activeSessionId && (
                   <div className="border-2 border-primary/25 bg-black/50 p-2 space-y-2">
-                    <div className={`font-terminal text-sm flex items-center gap-1 ${
-                      blockTimerSeconds <= 60 ? "text-red-400 animate-pulse" : "text-primary"
-                    }`}>
+                    <div className={`font-terminal text-sm flex items-center gap-1 ${blockTimerSeconds <= 60 ? "text-red-400 animate-pulse" : "text-primary"
+                      }`}>
                       <Timer className="w-3.5 h-3.5" />
                       {formatTimer(blockTimerSeconds)}
                     </div>
@@ -902,6 +919,71 @@ export default function Tutor() {
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+                <div className="border-2 border-primary/20 bg-black/55 min-h-0">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowMaterials((prev) => !prev)}
+                    className="w-full h-8 rounded-none font-arcade text-xs justify-between text-primary hover:bg-primary/10"
+                  >
+                    <div className="flex items-center gap-2">
+                      {showMaterials ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                      MATERIALS IN CHAT
+                    </div>
+                    <Badge variant="outline" className="h-4 px-1 text-[10px] rounded-none">
+                      {selectedMaterials.length} / {chatMaterials.length}
+                    </Badge>
+                  </Button>
+
+                  {showMaterials && (
+                    <div className="p-2 border-t border-primary/20 space-y-2">
+                      <div className="flex justify-end gap-1 mb-2">
+                        <button
+                          type="button"
+                          onClick={selectAllMaterials}
+                          className="font-terminal text-[10px] px-1.5 py-0.5 border border-primary/30 text-primary hover:bg-primary/10"
+                        >
+                          All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={clearMaterialSelection}
+                          className="font-terminal text-[10px] px-1.5 py-0.5 border border-primary/30 text-muted-foreground hover:bg-black/60"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto space-y-1">
+                        {chatMaterials.length === 0 ? (
+                          <div className="font-terminal text-xs text-muted-foreground p-2">
+                            No materials available for this course.
+                          </div>
+                        ) : (
+                          chatMaterials.map((mat) => {
+                            const checked = selectedMaterials.includes(mat.id);
+                            const label = getFileName(mat.title || mat.source_path || `Material ${mat.id}`);
+                            return (
+                              <label
+                                key={mat.id}
+                                className="flex items-start gap-2 p-2 border border-primary/20 hover:border-primary/40 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleMaterial(mat.id)}
+                                  className="mt-0.5 h-4 w-4 shadow-none accent-red-500"
+                                />
+                                <span className="font-terminal text-xs leading-5 text-zinc-200 break-words">
+                                  {label}
+                                </span>
+                              </label>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {currentBlock && (
                   <div className="border-2 border-primary/20 bg-black/55 p-2 space-y-2">
                     <div className="flex items-center gap-2">
@@ -916,18 +998,18 @@ export default function Tutor() {
                         {currentBlock.description}
                       </p>
                     )}
-                     {facilitationSteps.length > 0 && facilitationSteps.length <= 15 && !facilitationSteps.some(s => s.includes('MISSING')) && (
-                       <ol className="space-y-1">
-                         {facilitationSteps.map((step, idx) => (
-                           <li key={idx} className="flex items-start gap-2 font-terminal text-xs text-muted-foreground">
-                             <span className="shrink-0 w-4 h-4 border border-primary/30 text-primary text-[10px] flex items-center justify-center mt-0.5">
-                               {idx + 1}
-                             </span>
-                             <span className="leading-relaxed">{step}</span>
-                           </li>
-                         ))}
-                       </ol>
-                     )}
+                    {facilitationSteps.length > 0 && facilitationSteps.length <= 15 && !facilitationSteps.some(s => s.includes('MISSING')) && (
+                      <ol className="space-y-1">
+                        {facilitationSteps.map((step, idx) => (
+                          <li key={idx} className="flex items-start gap-2 font-terminal text-xs text-muted-foreground">
+                            <span className="shrink-0 w-4 h-4 border border-primary/30 text-primary text-[10px] flex items-center justify-center mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <span className="leading-relaxed">{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
                   </div>
                 )}
 
@@ -969,7 +1051,7 @@ export default function Tutor() {
             </aside>
           )}
 
-          {showMobileSidebar && !focusMode && (
+          {showMobileSidebar && (
             <div className="lg:hidden absolute inset-y-0 right-0 z-50 w-[86vw] max-w-sm bg-black/95 border-l-2 border-primary/40 flex flex-col">
               <div className="shrink-0 p-2 border-b border-primary/20 flex items-center">
                 <span className="font-arcade text-xs text-primary">TOOLS</span>
@@ -988,11 +1070,10 @@ export default function Tutor() {
                     variant="ghost"
                     size="sm"
                     onClick={() => { setShowSetup(true); setShowMobileSidebar(false); }}
-                    className={`h-8 rounded-none font-arcade text-xs justify-center ${
-                      showSetup
-                        ? "text-primary bg-primary/15 border border-primary/40"
-                        : "text-muted-foreground hover:text-primary"
-                    }`}
+                    className={`h-8 rounded-none font-arcade text-xs justify-center ${showSetup
+                      ? "text-primary bg-primary/15 border border-primary/40"
+                      : "text-muted-foreground hover:text-primary"
+                      }`}
                   >
                     <Settings2 className="w-3.5 h-3.5 mr-1" />
                     SETUP
@@ -1001,11 +1082,10 @@ export default function Tutor() {
                     variant="ghost"
                     size="sm"
                     onClick={() => { setShowSetup(false); setShowMobileSidebar(false); }}
-                    className={`h-8 rounded-none font-arcade text-xs justify-center ${
-                      !showSetup
-                        ? "text-primary bg-primary/15 border border-primary/40"
-                        : "text-muted-foreground hover:text-primary"
-                    }`}
+                    className={`h-8 rounded-none font-arcade text-xs justify-center ${!showSetup
+                      ? "text-primary bg-primary/15 border border-primary/40"
+                      : "text-muted-foreground hover:text-primary"
+                      }`}
                   >
                     <MessageSquare className="w-3.5 h-3.5 mr-1" />
                     CHAT
@@ -1015,11 +1095,10 @@ export default function Tutor() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowArtifacts((prev) => !prev)}
-                  className={`h-8 w-full rounded-none font-terminal text-xs justify-start ${
-                    showArtifacts
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-primary"
-                  }`}
+                  className={`h-8 w-full rounded-none font-terminal text-xs justify-start ${showArtifacts
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-primary"
+                    }`}
                 >
                   {showArtifacts ? <PanelRightClose className="w-3.5 h-3.5 mr-1" /> : <PanelRightOpen className="w-3.5 h-3.5 mr-1" />}
                   ARTIFACTS
@@ -1144,9 +1223,8 @@ function RecentSessionCard({
         <div className="flex items-center gap-2">
           <Badge
             variant="outline"
-            className={`${TEXT_BADGE} h-5 px-1.5 shrink-0 ${
-              s.status === "active" ? "text-green-400 border-green-400/50" : "text-muted-foreground"
-            }`}
+            className={`${TEXT_BADGE} h-5 px-1.5 shrink-0 ${s.status === "active" ? "text-green-400 border-green-400/50" : "text-muted-foreground"
+              }`}
           >
             {s.status === "active" ? "LIVE" : "DONE"}
           </Badge>

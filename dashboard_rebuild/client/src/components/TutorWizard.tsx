@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MaterialSelector } from "@/components/MaterialSelector";
 import { TutorChainBuilder } from "@/components/TutorChainBuilder";
+import { toast } from "sonner";
 import {
   ArrowRight,
   ArrowLeft,
@@ -170,21 +171,19 @@ export function TutorWizard({
             <div key={s.label} className="flex items-center">
               {i > 0 && (
                 <div
-                  className={`w-8 h-0.5 mx-1 ${
-                    isDone ? "bg-primary" : "bg-primary/20"
-                  }`}
+                  className={`w-8 h-0.5 mx-1 ${isDone ? "bg-primary" : "bg-primary/20"
+                    }`}
                 />
               )}
               <button
                 onClick={() => i <= step && setStep(i)}
                 disabled={i > step}
-                className={`flex items-center gap-1.5 px-3 py-1.5 border-2 transition-colors ${
-                  isActive
-                    ? "border-primary bg-primary/15 text-primary"
-                    : isDone
+                className={`flex items-center gap-1.5 px-3 py-1.5 border-2 transition-colors ${isActive
+                  ? "border-primary bg-primary/15 text-primary"
+                  : isDone
                     ? "border-primary/50 bg-primary/5 text-primary/70"
                     : "border-primary/20 text-primary/30"
-                } ${i <= step ? "cursor-pointer hover:bg-primary/10" : "cursor-default"}`}
+                  } ${i <= step ? "cursor-pointer hover:bg-primary/10" : "cursor-default"}`}
               >
                 {isDone ? (
                   <Check className={ICON_SM} />
@@ -265,12 +264,11 @@ export function TutorWizard({
                 <button
                   key={s.session_id}
                   onClick={() => onResumeSession(s.session_id)}
-                  className="shrink-0 border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/10 px-2 py-0.5 font-terminal text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                  className="shrink-0 border-2 border-primary/20 hover:border-primary/50 hover:bg-black/40 px-2 py-0.5 font-arcade text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 shadow-none"
                 >
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      s.status === "active" ? "bg-green-400" : "bg-muted-foreground/40"
-                    }`}
+                    className={`w-1.5 h-1.5 rounded-full ${s.status === "active" ? "bg-green-400" : "bg-muted-foreground/40"
+                      }`}
                   />
                   <span className="truncate max-w-[80px]">{s.topic || s.mode}</span>
                   <span className="text-muted-foreground/50">{s.turn_count}t</span>
@@ -328,8 +326,9 @@ function StepCourseAndMaterials({
             onChange={(e) => {
               const v = e.target.value;
               setCourseId(v ? Number(v) : undefined);
+              toast.success("Course selection saved");
             }}
-            className={SELECT_BASE}
+            className={`${SELECT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
           >
             <option value="">All courses</option>
             {courses.map((c) => (
@@ -351,9 +350,14 @@ function StepCourseAndMaterials({
           <input
             type="text"
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+            onChange={(e) => {
+              setTopic(e.target.value);
+            }}
+            onBlur={(e) => {
+              if (e.target.value) toast.success("Topic saved");
+            }}
             placeholder="e.g., Hip joint anatomy, Gait cycle..."
-            className={INPUT_BASE}
+            className={`${INPUT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
           />
         </div>
       </Card>
@@ -447,11 +451,10 @@ function StepChain({
                   setChainId(undefined);
                 }
               }}
-              className={`p-3 border-2 text-left transition-colors ${
-                isActive
-                  ? "border-primary bg-primary/15 text-primary"
-                  : "border-primary/20 bg-black/40 text-muted-foreground hover:border-primary/40 hover:bg-primary/5"
-              }`}
+              className={`p-3 border-2 text-left transition-colors ${isActive
+                ? "border-primary bg-primary/15 text-primary"
+                : "border-primary/20 bg-black/40 text-muted-foreground hover:border-primary/40 hover:bg-primary/5"
+                }`}
             >
               <Icon className={`${ICON_MD} mb-1.5`} />
               <div className="font-arcade text-xs tracking-wider">{opt.label}</div>
@@ -485,11 +488,10 @@ function StepChain({
                   <button
                     key={chain.id}
                     onClick={() => setChainId(isSelected ? undefined : chain.id)}
-                    className={`w-full text-left px-3 py-2 border-2 transition-colors ${
-                      isSelected
-                        ? "border-primary bg-primary/10"
-                        : "border-transparent hover:border-primary/30 hover:bg-primary/5"
-                    }`}
+                    className={`w-full text-left px-3 py-2 border-2 transition-colors ${isSelected
+                      ? "border-primary bg-primary/10"
+                      : "border-transparent hover:border-primary/30 hover:bg-primary/5"
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -703,12 +705,14 @@ function StepConfirm({
             return (
               <button
                 key={m.value}
-                onClick={() => setMode(m.value)}
-                className={`p-2 border-2 text-center transition-colors ${
-                  isActive
-                    ? "border-primary bg-primary/15 text-primary"
-                    : "border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                }`}
+                onClick={() => {
+                  setMode(m.value);
+                  toast.success(`${m.label} mode selected`);
+                }}
+                className={`p-2 border-2 text-center transition-colors ${isActive
+                  ? "border-primary bg-primary/15 text-primary"
+                  : "border-primary/20 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  }`}
               >
                 <div className="font-arcade text-xs">{m.label}</div>
                 <div className="font-terminal text-xs mt-0.5 opacity-60">{m.desc}</div>

@@ -174,19 +174,27 @@ export function MaterialSelector({
   }, [handleUpload]);
 
   const toggle = (id: number) => {
+    const isSelecting = !selectedMaterials.includes(id);
     setSelectedMaterials(
-      selectedMaterials.includes(id)
-        ? selectedMaterials.filter((m) => m !== id)
-        : [...selectedMaterials, id]
+      isSelecting
+        ? [...selectedMaterials, id]
+        : selectedMaterials.filter((m) => m !== id)
     );
+    if (isSelecting) {
+      toast.success("Material selected");
+    } else {
+      toast.success("Material removed");
+    }
   };
 
   const toggleAll = () => {
     const target = courseId ? courseMaterials : materials;
     if (selectedMaterials.length === target.length) {
       setSelectedMaterials([]);
+      toast.success("Cleared all materials");
     } else {
       setSelectedMaterials(target.map((m) => m.id));
+      toast.success("Selected all materials");
     }
   };
 
@@ -199,11 +207,10 @@ export function MaterialSelector({
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
       disabled={uploading}
-      className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 border-2 border-dashed transition-colors font-terminal text-xs ${
-        dragOver
+      className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 border-2 border-dashed transition-colors font-terminal text-xs ${dragOver
           ? "border-primary bg-primary/10 text-primary"
           : "border-primary/30 bg-black/20 text-muted-foreground hover:border-primary/50 hover:text-foreground"
-      } ${uploading ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
+        } ${uploading ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
     >
       {uploading ? (
         <Loader2 className={`${ICON_SM} animate-spin`} />
@@ -253,11 +260,11 @@ export function MaterialSelector({
       <Checkbox
         checked={selectedMaterials.includes(mat.id)}
         onCheckedChange={() => toggle(mat.id)}
-        className="w-3 h-3 shrink-0"
+        className="w-3 h-3 shrink-0 shadow-none"
       />
       <FileText className={`${ICON_SM} text-primary/60 shrink-0`} />
-      <span 
-        className="truncate min-w-0 flex-1 max-w-[200px]" 
+      <span
+        className="truncate min-w-0 flex-1 max-w-[200px]"
         title={getFileNameFromPath(mat.title) || `Material ${mat.id}`}
       >
         {getFileNameFromPath(mat.title) || `Material ${mat.id}`}
@@ -284,7 +291,7 @@ export function MaterialSelector({
           <Checkbox
             checked={courseMaterials.length > 0 && selectedMaterials.length === courseMaterials.length}
             onCheckedChange={toggleAll}
-            className="w-3 h-3"
+            className="w-3 h-3 shadow-none"
           />
           <span>Select all</span>
           <Badge variant="outline" className={`ml-auto ${TEXT_BADGE} h-4 px-1`}>
@@ -323,9 +330,8 @@ export function MaterialSelector({
               type="button"
               onClick={handleDeleteSelected}
               disabled={deleting}
-              className={`flex items-center gap-1 px-1.5 py-0.5 font-terminal text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 transition-colors ${
-                deleting ? "opacity-50 cursor-wait" : ""
-              }`}
+              className={`flex items-center gap-1 px-1.5 py-0.5 font-terminal text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 transition-colors ${deleting ? "opacity-50 cursor-wait" : ""
+                }`}
             >
               {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
               Del

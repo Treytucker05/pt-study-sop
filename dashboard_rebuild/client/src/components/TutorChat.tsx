@@ -60,7 +60,6 @@ interface TutorChatProps {
   onAccuracyProfileChange: (profile: TutorAccuracyProfile) => void;
   onSelectedMaterialIdsChange: (ids: number[]) => void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
-  focusMode?: boolean;
   onTurnComplete?: () => void;
 }
 
@@ -238,7 +237,6 @@ export function TutorChat({
   onAccuracyProfileChange,
   onSelectedMaterialIdsChange,
   onArtifactCreated,
-  focusMode = false,
   onTurnComplete,
 }: TutorChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -550,21 +548,7 @@ export function TutorChat({
     accuracyProfile,
   ]);
 
-  const toggleMaterial = (id: number) => {
-    onSelectedMaterialIdsChange(
-      selectedMaterialIds.includes(id)
-        ? selectedMaterialIds.filter((mid) => mid !== id)
-        : [...selectedMaterialIds, id]
-    );
-  };
 
-  const selectAllMaterials = () => {
-    onSelectedMaterialIdsChange(availableMaterials.map((m) => m.id));
-  };
-
-  const clearMaterialSelection = () => {
-    onSelectedMaterialIdsChange([]);
-  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -594,8 +578,7 @@ export function TutorChat({
         {/* Messages */}
         <div
           ref={scrollRef}
-          className={`flex-1 overflow-y-auto space-y-4 bg-black/40 ${focusMode ? "p-5 md:p-6" : "p-4"
-            }`}
+          className="flex-1 overflow-y-auto space-y-4 bg-black/40 p-4 lg:p-6"
         >
           {messages.length === 0 && (
             <div className="text-center py-8 space-y-2">
@@ -615,10 +598,8 @@ export function TutorChat({
             >
               <div
                 className={`px-3 py-2 text-[17px] leading-7 font-terminal ${msg.role === "user"
-                    ? "max-w-[72%]"
-                    : focusMode
-                      ? "max-w-[98%]"
-                      : "max-w-[96%]"
+                  ? "max-w-[72%]"
+                  : "max-w-[96%]"
                   } ${msg.role === "user"
                     ? "bg-primary/15 border-2 border-primary/40 text-foreground"
                     : "bg-black/40 border-2 border-secondary text-foreground"
@@ -645,8 +626,8 @@ export function TutorChat({
                         <div
                           key={j}
                           className={`flex items-center gap-1.5 px-2 py-1 text-xs font-terminal border ${ta.success
-                              ? "border-green-600/50 text-green-400 bg-green-950/30"
-                              : "border-red-600/50 text-red-400 bg-red-950/30"
+                            ? "border-green-600/50 text-green-400 bg-green-950/30"
+                            : "border-red-600/50 text-red-400 bg-red-950/30"
                             }`}
                         >
                           {ta.success ? (
@@ -756,8 +737,8 @@ export function TutorChat({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 p-3 border-t-2 border-primary/20">
-          <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex flex-wrap items-center gap-4 p-4 lg:p-5 border-t-2 border-primary/20 bg-black/50">
+          <div className="flex items-center gap-2 min-w-0">
             <label
               htmlFor="accuracy-profile-select"
               className="font-terminal text-xs text-muted-foreground whitespace-nowrap"
@@ -776,14 +757,14 @@ export function TutorChat({
               <option value="coverage">Coverage</option>
             </select>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-2">
             {(["socratic", "evaluate", "concept_map", "teach_back"] as const).map((mode) => {
               const active = behaviorOverride === mode;
               const labels: Record<BehaviorOverride, string> = {
-                socratic: "Q",
-                evaluate: "E",
-                concept_map: "M",
-                teach_back: "T",
+                socratic: "ASK / SOCRATIC",
+                evaluate: "EVALUATE",
+                concept_map: "CONCEPT MAP",
+                teach_back: "TEACH-BACK",
               };
               const titles: Record<BehaviorOverride, string> = {
                 socratic: "Socratic — respond with questions only",
@@ -798,9 +779,9 @@ export function TutorChat({
                   title={titles[mode]}
                   onClick={() => setBehaviorOverride(active ? null : mode)}
                   disabled={isStreaming}
-                  className={`h-8 w-8 font-arcade text-xs border-2 transition-colors disabled:opacity-50 ${active
-                      ? "bg-primary/20 border-primary text-primary"
-                      : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                  className={`h-8 px-3 font-arcade text-[10px] tracking-wider border-2 transition-colors disabled:opacity-50 ${active
+                    ? "bg-primary/20 border-primary text-primary"
+                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
                     }`}
                 >
                   {labels[mode]}
@@ -831,63 +812,6 @@ export function TutorChat({
           </Button>
         </div>
       </div>
-
-      {!focusMode && (
-        <aside className="hidden lg:flex w-80 border-l-2 border-primary/20 bg-black/40 flex-col min-h-0">
-          <div className="p-3 border-b border-primary/20">
-            <div className="font-arcade text-xs text-primary tracking-wider">MATERIALS IN CHAT</div>
-            <div className="flex items-center justify-between gap-2 mt-1">
-              <div className="font-terminal text-xs text-muted-foreground">
-                {selectedMaterialIds.length} / {availableMaterials.length} selected
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={selectAllMaterials}
-                  className="font-terminal text-[10px] px-1.5 py-0.5 border border-primary/30 text-primary hover:bg-primary/10"
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  onClick={clearMaterialSelection}
-                  className="font-terminal text-[10px] px-1.5 py-0.5 border border-primary/20 text-muted-foreground hover:text-foreground"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
-            {availableMaterials.length === 0 ? (
-              <div className="font-terminal text-xs text-muted-foreground p-2">
-                No materials available for this course.
-              </div>
-            ) : (
-              availableMaterials.map((mat) => {
-                const checked = selectedMaterialIds.includes(mat.id);
-                const label = mat.title || mat.source_path || `Material ${mat.id}`;
-                return (
-                  <label
-                    key={mat.id}
-                    className="flex items-start gap-2 p-2 border border-primary/20 hover:border-primary/40 cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleMaterial(mat.id)}
-                      className="mt-0.5 h-4 w-4 accent-red-500"
-                    />
-                    <span className="font-terminal text-xs leading-5 text-zinc-200 break-words">
-                      {label}
-                    </span>
-                  </label>
-                );
-              })
-            )}
-          </div>
-        </aside>
-      )}
     </div>
   );
 }
