@@ -221,7 +221,9 @@ def _extract_with_docling_ocr(path: Path, chunk_pages: int = 20) -> str:
     Splits large PDFs into chunks to avoid memory exhaustion, then
     concatenates the results.
     """
+    import gc
     import os
+
     import pymupdf
 
     src = pymupdf.open(str(path))
@@ -247,6 +249,8 @@ def _extract_with_docling_ocr(path: Path, chunk_pages: int = 20) -> str:
                 ) as tmp_file:
                     tmp_path = tmp_file.name
                 chunk.save(tmp_path)
+                chunk.close()
+                chunk = None
                 text = _docling_ocr_convert(tmp_path)
                 if text.strip():
                     parts.append(text)
@@ -256,15 +260,17 @@ def _extract_with_docling_ocr(path: Path, chunk_pages: int = 20) -> str:
             except Exception as exc:
                 logger.warning("OCR chunk pages %d-%d failed: %s", start, end - 1, exc)
             finally:
-                try:
-                    chunk.close()
-                except Exception:
-                    pass
+                if chunk is not None:
+                    try:
+                        chunk.close()
+                    except Exception:
+                        pass
                 if tmp_path:
                     try:
                         os.unlink(tmp_path)
                     except OSError:
                         pass
+                gc.collect()
 
         if not parts:
             raise RuntimeError("Docling OCR conversion produced no content")
