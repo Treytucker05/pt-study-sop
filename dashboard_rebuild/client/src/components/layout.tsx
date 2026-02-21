@@ -86,6 +86,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setNewNote("");
       toast({ title: "Note Saved" });
     },
+    onError: (error: Error) => {
+      toast({ title: "Save failed", description: error.message || "Could not save note.", variant: "destructive" });
+    },
   });
 
   const updateNoteMutation = useMutation({
@@ -96,6 +99,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setEditingId(null);
       toast({ title: "Note Updated" });
     },
+    onError: (error: Error) => {
+      toast({ title: "Update failed", description: error.message || "Could not update note.", variant: "destructive" });
+    },
   });
 
   const deleteNoteMutation = useMutation({
@@ -103,6 +109,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       toast({ title: "Note Deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Delete failed", description: error.message || "Could not delete note.", variant: "destructive" });
     },
   });
 

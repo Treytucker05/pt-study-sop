@@ -30,6 +30,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type ScholarQuestion, type ScholarFinding, type TutorAuditItem, type ScholarClustersResponse } from "@/lib/api";
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/use-toast";
 import type { Proposal } from "@shared/schema";
@@ -71,6 +72,7 @@ interface ScholarMessage {
 export default function Scholar() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("summary");
   const [chatMessages, setChatMessages] = useState<ScholarMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -124,11 +126,14 @@ export default function Scholar() {
   });
 
   // Scholar orchestrator run
-  const [scholarRunning, setScholarRunning] = useState(false);
   const runScholarMutation = useMutation({
     mutationFn: api.scholar.run,
     onSuccess: () => {
-      setScholarRunning(true);
+      queryClient.invalidateQueries({ queryKey: ["scholarStatus"] });
+      toast({ title: "Scholar Run Started", description: "Analysis is running in the background." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Scholar Run Failed", description: error.message || "Could not start Scholar run.", variant: "destructive" });
     },
   });
 
@@ -292,10 +297,10 @@ export default function Scholar() {
                       size="sm"
                       className="rounded-none font-arcade text-xs border-primary text-primary h-7 px-3 gap-1"
                       onClick={() => runScholarMutation.mutate()}
-                      disabled={runScholarMutation.isPending || scholarRunning}
+                      disabled={runScholarMutation.isPending}
                     >
-                      <RefreshCw className={`w-3 h-3 ${(runScholarMutation.isPending || scholarRunning) ? "animate-spin" : ""}`} />
-                      {runScholarMutation.isPending ? "STARTING..." : scholarRunning ? "RUNNING..." : "RUN SCHOLAR"}
+                      <RefreshCw className={`w-3 h-3 ${runScholarMutation.isPending ? "animate-spin" : ""}`} />
+                      {runScholarMutation.isPending ? "STARTING..." : "RUN SCHOLAR"}
                     </Button>
                   </div>
                   <div className="grid md:grid-cols-3 gap-3 font-terminal text-sm text-muted-foreground">
@@ -455,9 +460,7 @@ export default function Scholar() {
                             variant="ghost"
                             size="sm"
                             className="rounded-none font-arcade text-xs"
-                            onClick={() => {
-                              window.location.href = "/brain";
-                            }}
+                            onClick={() => navigate("/brain")}
                             data-testid="cta-open-brain-from-summary"
                           >
                             REVIEW SESSIONS IN BRAIN
@@ -599,23 +602,27 @@ export default function Scholar() {
                         </CardHeader>
                         <CardContent className="p-4">
                           <div className="space-y-3">
-                            {tutorAuditItems.map((item, i) => (
-                              <div key={i} className="p-3 bg-black/40 border border-secondary/50">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-terminal text-sm">{item.issue ?? "Unknown issue"}</span>
-                                  <Badge variant="outline" className="rounded-none text-xs border-primary text-primary">
-                                    x{item.frequency ?? 0}
-                                  </Badge>
-                                </div>
-                                <div className="flex gap-1 flex-wrap">
-                                  {(item.courses || []).map((course: string, j: number) => (
-                                    <Badge key={j} variant="secondary" className="rounded-none text-[8px]">
-                                      {course}
+                            {tutorAuditItems.length === 0 ? (
+                              <p className="font-terminal text-xs text-muted-foreground">No recurrent issues detected yet. Run Scholar to analyze Tutor sessions.</p>
+                            ) : (
+                              tutorAuditItems.map((item, i) => (
+                                <div key={i} className="p-3 bg-black/40 border border-secondary/50">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="font-terminal text-sm">{item.issue ?? "Unknown issue"}</span>
+                                    <Badge variant="outline" className="rounded-none text-xs border-primary text-primary">
+                                      x{item.frequency ?? 0}
                                     </Badge>
-                                  ))}
+                                  </div>
+                                  <div className="flex gap-1 flex-wrap">
+                                    {(item.courses || []).map((course: string, j: number) => (
+                                      <Badge key={j} variant="secondary" className="rounded-none text-[8px]">
+                                        {course}
+                                      </Badge>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -830,8 +837,6 @@ export default function Scholar() {
                 )}
               </div>
             </TabsContent>
-
-
 
             {/* PROPOSALS TAB */}
             <TabsContent value="proposals" className="flex-1 overflow-auto mt-4">

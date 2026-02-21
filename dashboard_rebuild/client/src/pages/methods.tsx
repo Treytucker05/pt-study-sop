@@ -95,6 +95,9 @@ export default function MethodsPage() {
       setShowAddBlock(false);
       toast({ title: "Method block created" });
     },
+    onError: (error: Error) => {
+      toast({ title: "Create failed", description: error.message || "Could not create method block.", variant: "destructive" });
+    },
   });
 
   const deleteBlockMutation = useMutation({
@@ -103,6 +106,9 @@ export default function MethodsPage() {
       queryClient.invalidateQueries({ queryKey: ["methods"] });
       queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
       toast({ title: "Method block deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Delete failed", description: error.message || "Could not delete method block.", variant: "destructive" });
     },
   });
 
@@ -114,6 +120,9 @@ export default function MethodsPage() {
       setShowAddChain(false);
       toast({ title: "Chain created" });
     },
+    onError: (error: Error) => {
+      toast({ title: "Create failed", description: error.message || "Could not create chain.", variant: "destructive" });
+    },
   });
 
   const updateChainMutation = useMutation({
@@ -122,6 +131,9 @@ export default function MethodsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chains"] });
       toast({ title: "Chain updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Update failed", description: error.message || "Could not update chain.", variant: "destructive" });
     },
   });
 
@@ -133,6 +145,9 @@ export default function MethodsPage() {
       setSelectedChain(null);
       toast({ title: "Chain deleted" });
     },
+    onError: (error: Error) => {
+      toast({ title: "Delete failed", description: error.message || "Could not delete chain.", variant: "destructive" });
+    },
   });
 
   const rateMethodMutation = useMutation({
@@ -142,6 +157,9 @@ export default function MethodsPage() {
       queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
       toast({ title: "Rating submitted" });
     },
+    onError: (error: Error) => {
+      toast({ title: "Rating failed", description: error.message || "Could not submit rating.", variant: "destructive" });
+    },
   });
 
   const rateChainMutation = useMutation({
@@ -150,6 +168,9 @@ export default function MethodsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
       toast({ title: "Rating submitted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Rating failed", description: error.message || "Could not submit rating.", variant: "destructive" });
     },
   });
 
@@ -162,8 +183,12 @@ export default function MethodsPage() {
   });
 
   const handleSelectChain = async (chain: MethodChain) => {
-    const expanded = await api.chains.getOne(chain.id);
-    setSelectedChain(expanded);
+    try {
+      const expanded = await api.chains.getOne(chain.id);
+      setSelectedChain(expanded);
+    } catch (error) {
+      toast({ title: "Failed to load chain", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
+    }
   };
 
   const handleRateSubmit = (rating: { effectiveness: number; engagement: number; notes: string }) => {
@@ -297,6 +322,10 @@ export default function MethodsPage() {
 
             {chainsLoading ? (
               <p className="font-terminal text-base text-muted-foreground">Loading chains...</p>
+            ) : chains.length === 0 ? (
+              <p className="font-terminal text-base text-muted-foreground text-center py-8">
+                No chains yet. Create your first chain to combine method blocks into a study workflow.
+              </p>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Chain List */}
@@ -431,8 +460,12 @@ export default function MethodsPage() {
                           key={run.id}
                           className="border-b border-primary/20 hover:bg-primary/5 cursor-pointer"
                           onClick={async () => {
-                            const full = await api.chainRun.getOne(run.id);
-                            setRunResult(full);
+                            try {
+                              const full = await api.chainRun.getOne(run.id);
+                              setRunResult(full);
+                            } catch (error) {
+                              toast({ title: "Failed to load run", description: error instanceof Error ? error.message : "Unknown error", variant: "destructive" });
+                            }
                           }}
                         >
                           <td className="px-3 py-1.5 font-terminal text-base">{run.chain_name}</td>

@@ -12,11 +12,11 @@ For each page, verify: Feedback loops (toasts/dirty states), Resilience (localSt
 - [x] **Task 2.1:** `/` (Dashboard) - Complete audit.
 - [x] **Task 2.2:** `/brain` - Complete audit.
 - [x] **Task 2.3:** `/calendar` - Complete audit.
-- [ ] **Task 2.4:** `/scholar` - Complete audit.
-- [ ] **Task 2.5:** `/tutor` - Complete audit.
-- [ ] **Task 2.6:** `/methods` - Complete audit.
-- [ ] **Task 2.7:** `/library` - Complete audit.
+- [x] **Task 2.4:** `/scholar` - Complete audit.
+- [x] **Task 2.5:** `/tutor` - Complete audit.
+- [x] **Task 2.6:** `/methods` - Complete audit.
+- [x] **Task 2.7:** `/library` - Complete audit.
 
 ## Phase 3: Global Review & Polish
-- [ ] **Task 3.1:** Verify navigation (sidebar/header) active states and responsiveness.
-- [ ] **Task 3.2:** Final run-through of all Suspense boundaries and 404 fallbacks.
+- [x] **Task 3.1:** Verify navigation (sidebar/header) active states and responsiveness.
+- [x] **Task 3.2:** Final run-through of all Suspense boundaries and 404 fallbacks.
