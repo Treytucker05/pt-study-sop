@@ -57,7 +57,7 @@ Ingest Obsidian vault notes, extract frontmatter/aliases/links, store in documen
 
 ---
 
-## Phase 2: Telemetry — Practice Events [checkpoint: pending]
+## Phase 2: Telemetry — Practice Events [checkpoint: 0b13014]
 
 Capture every practice action as a structured event for downstream mastery computation and error analysis.
 
@@ -77,25 +77,25 @@ Capture every practice action as a structured event for downstream mastery compu
 
 ---
 
-## Phase 3: Student Model — BKT with Time-Aware Decay
+## Phase 3: Student Model — BKT with Time-Aware Decay [checkpoint: pending]
 
 Implement Bayesian Knowledge Tracing with a forgetting-curve decay term for effective mastery.
 
 ### Tasks
 
-- [ ] Task 3.1: `skill_mastery` table — `(user_id, skill_id, p_mastery_latent, p_learn, p_guess, p_slip, last_practiced_at, updated_at)` with defaults
-- [ ] Task 3.2: Pure BKT update function — latent mastery update on each observation
-- [ ] Task 3.3: Forgetting curve — `p_effective = decay(p_latent, delta_t)` with configurable lambda
-- [ ] Task 3.4: Decision policy uses effective mastery — unlock/mastered status, fading level, spaced retrieval due
-- [ ] Task 3.5: Parameter configuration — configurable priors (prior mastery, learn rate, guess, slip, decay lambda)
+- [x] Task 3.1: `skill_mastery` table — `(user_id, skill_id, p_mastery_latent, p_learn, p_guess, p_slip, last_practiced_at, updated_at)` with defaults
+- [x] Task 3.2: Pure BKT update function — latent mastery update on each observation
+- [x] Task 3.3: Forgetting curve — `p_effective = decay(p_latent, delta_t)` with configurable lambda
+- [x] Task 3.4: Decision policy uses effective mastery — unlock/mastered status, fading level, spaced retrieval due
+- [x] Task 3.5: Parameter configuration — configurable priors (prior mastery, learn rate, guess, slip, decay lambda)
 
 ### Verification
 
-- [ ] Correct streak increases latent mastery
-- [ ] Incorrect streak decreases/slows latent mastery
-- [ ] No practice for long interval → effective mastery decreases while latent stays stable
-- [ ] Same latent mastery yields different availability after long inactivity
-- [ ] Adjusting lambda changes decay rate
+- [x] Correct streak increases latent mastery
+- [x] Incorrect streak decreases/slows latent mastery
+- [x] No practice for long interval → effective mastery decreases while latent stays stable
+- [x] Same latent mastery yields different availability after long inactivity
+- [x] Adjusting lambda changes decay rate
 
 ---
 
