@@ -119,29 +119,29 @@ Concept map nodes drive Locked/Available/Mastered status. Advance organizer prov
 
 ---
 
-## Phase 5: Adaptive Scaffolding + Fading with Localized Failure
+## Phase 5: Adaptive Scaffolding + Fading with Localized Failure [checkpoint: e3574803]
 
 Scaffold and fade hints based on mastery. "Evaluate My Work" localizes failure to specific skills/edges.
 
 ### Tasks
 
-- [ ] Task 5.1: Fading ladder — define levels and allowed tutor behavior per level
-- [ ] Task 5.2: Hint dependence metric — rolling window hints/attempts per skill
-- [ ] Task 5.3: "Evaluate My Work" verdict — JSON with `overall_correct`, `primary_failure_skill_id`, `primary_failure_edge_id`, `failure_type`, `evidence`, `next_remediation_skill_ids[]`
-- [ ] Task 5.4: Log error flags from verdict — write `error_flags` rows for failure skill/edge
-- [ ] Task 5.5: "Why locked" panel — UI shows missing prereqs, flagged prereqs, specific edge failures
-- [ ] Task 5.6: Summarizers + synthesizers — after mastery: generate synthesis paragraph linking to mastered nodes; update map summary artifact
-- [ ] Task 5.7: Metacognitive scaffolding prompts — prompt learner to state prereq used and edge justifying step; gated by fading level
+- [x] Task 5.1: Fading ladder — define levels and allowed tutor behavior per level
+- [x] Task 5.2: Hint dependence metric — rolling window hints/attempts per skill
+- [x] Task 5.3: "Evaluate My Work" verdict — JSON with `overall_correct`, `primary_failure_skill_id`, `primary_failure_edge_id`, `failure_type`, `evidence`, `next_remediation_skill_ids[]`
+- [x] Task 5.4: Log error flags from verdict — write `error_flags` rows for failure skill/edge
+- [x] Task 5.5: "Why locked" panel — UI shows missing prereqs, flagged prereqs, specific edge failures
+- [x] Task 5.6: Summarizers + synthesizers — after mastery: generate synthesis paragraph linking to mastered nodes; update map summary artifact
+- [x] Task 5.7: Metacognitive scaffolding prompts — prompt learner to state prereq used and edge justifying step; gated by fading level
 
 ### Verification
 
-- [ ] Level selection deterministically changes prompt template
-- [ ] Hint dependence rises after hint-heavy attempts
-- [ ] Verdict without `primary_failure_skill_id` fails validation
-- [ ] Evaluate-work call produces at least one error flag row
-- [ ] "Why locked" panel shows flagged failure without manual intervention
-- [ ] Mastering a node triggers exactly one synthesis update
-- [ ] Metacognitive prompts appear at defined triggers; disappear at high mastery
+- [x] Level selection deterministically changes prompt template
+- [x] Hint dependence rises after hint-heavy attempts
+- [x] Verdict without `primary_failure_skill_id` fails validation
+- [x] Evaluate-work call produces at least one error flag row
+- [x] "Why locked" panel shows flagged failure without manual intervention
+- [x] Mastering a node triggers exactly one synthesis update
+- [x] Metacognitive prompts appear at defined triggers; disappear at high mastery
 
 ---
 

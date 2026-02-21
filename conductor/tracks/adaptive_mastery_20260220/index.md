@@ -1,7 +1,7 @@
 # Track: Adaptive Mastery System
 
 **ID:** adaptive_mastery_20260220
-**Status:** Pending
+**Status:** In Progress
 
 ## Summary
 
@@ -14,8 +14,8 @@ Knowledge-graph-powered adaptive tutoring: BKT with forgetting-curve decay, Obsi
 
 ## Progress
 
-- Phases: 0/10 complete
-- Tasks: 0/48 complete
+- Phases: 6/10 complete
+- Tasks: 33/48 complete
 
 ## Quick Links
 
