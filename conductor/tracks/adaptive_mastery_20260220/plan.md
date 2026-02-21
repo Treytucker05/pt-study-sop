@@ -189,21 +189,21 @@ Build knowledge graph from Obsidian + course corpus. Hybrid retrieval with PCST 
 
 ---
 
-## Phase 8: Regression and Safety Tests
+## Phase 8: Regression and Safety Tests [checkpoint: pending]
 
 Contract tests, telemetry guards, and hallucination resistance.
 
 ### Tasks
 
-- [ ] Task 8.1: Module output contract tests — JSON Schema compliance for all structured outputs
-- [ ] Task 8.2: Telemetry completeness guard — no practice action completes without event write
-- [ ] Task 8.3: Hallucination resistance checks — answers must cite chunks/edges; flag uncited claims
+- [x] Task 8.1: Module output contract tests — JSON Schema compliance for all structured outputs
+- [x] Task 8.2: Telemetry completeness guard — no practice action completes without event write
+- [x] Task 8.3: Hallucination resistance checks — answers must cite chunks/edges; flag uncited claims
 
 ### Verification
 
-- [ ] Any schema violation fails test suite
-- [ ] Simulated attempt without telemetry is blocked
-- [ ] Uncited answer sections trigger failure state
+- [x] Any schema violation fails test suite
+- [x] Simulated attempt without telemetry is blocked
+- [x] Uncited answer sections trigger failure state
 
 ---
 
