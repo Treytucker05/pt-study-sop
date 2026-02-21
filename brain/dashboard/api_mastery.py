@@ -205,3 +205,72 @@ def why_locked(skill_id: str):
         })
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Phase 9: Measurement Loop — Metrics + Session Toggles
+# ---------------------------------------------------------------------------
+
+@mastery_bp.route("/metrics", methods=["GET"])
+def metrics_dashboard():
+    """Per-skill metrics: mastery trajectory, hint dependence, time-to-correct, error recurrence."""
+    from adaptive.metrics import compute_dashboard_metrics
+
+    user_id = request.args.get("user_id", _DEFAULT_USER_ID)
+    conn = get_connection()
+    try:
+        metrics = compute_dashboard_metrics(conn, user_id)
+        return jsonify({"metrics": metrics, "count": len(metrics)})
+    finally:
+        conn.close()
+
+
+@mastery_bp.route("/metrics/<skill_id>", methods=["GET"])
+def skill_metrics(skill_id: str):
+    """Metrics for a single skill."""
+    from adaptive.metrics import compute_skill_metrics
+
+    user_id = request.args.get("user_id", _DEFAULT_USER_ID)
+    conn = get_connection()
+    try:
+        m = compute_skill_metrics(conn, user_id, skill_id)
+        return jsonify(m.to_dict())
+    finally:
+        conn.close()
+
+
+@mastery_bp.route("/session-config/<session_id>", methods=["GET"])
+def get_session_config(session_id: str):
+    """Get experiment configuration for a tutor session."""
+    from adaptive.session_config import load_session_config
+
+    conn = get_connection()
+    try:
+        cfg = load_session_config(conn, session_id)
+        return jsonify({"session_id": session_id, "config": cfg.to_dict()})
+    finally:
+        conn.close()
+
+
+@mastery_bp.route("/session-config/<session_id>", methods=["POST"])
+def set_session_config(session_id: str):
+    """Set experiment configuration for a tutor session."""
+    from adaptive.session_config import (
+        SessionConfig,
+        save_session_config,
+        validate_session_config,
+    )
+
+    data = request.get_json(silent=True) or {}
+    cfg = SessionConfig.from_dict(data)
+    is_valid, issues = validate_session_config(cfg)
+
+    if not is_valid:
+        return jsonify({"error": "Invalid config", "issues": issues}), 400
+
+    conn = get_connection()
+    try:
+        save_session_config(conn, session_id, cfg)
+        return jsonify({"session_id": session_id, "config": cfg.to_dict()})
+    finally:
+        conn.close()

@@ -207,28 +207,28 @@ Contract tests, telemetry guards, and hallucination resistance.
 
 ---
 
-## Phase 9: Measurement Loop (n-of-1 Optimization)
+## Phase 9: Measurement Loop (n-of-1 Optimization) [checkpoint: pending]
 
 Dashboard metrics and session toggles for controlled comparisons.
 
 ### Tasks
 
-- [ ] Task 9.1: Metrics dashboard — per-skill effective mastery trajectory, hint dependence, time-to-correct, error flag recurrence, retention outcomes
-- [ ] Task 9.2: Session toggles — 0.95 vs 0.98 threshold, vector-only vs Graph RAG-lite, fixed vs adaptive fading, pruning on/off; config recorded per session
+- [x] Task 9.1: Metrics dashboard — per-skill effective mastery trajectory, hint dependence, time-to-correct, error flag recurrence, retention outcomes
+- [x] Task 9.2: Session toggles — 0.95 vs 0.98 threshold, vector-only vs Graph RAG-lite, fixed vs adaptive fading, pruning on/off; config recorded per session
 
 ### Verification
 
-- [ ] After one session, metrics populate
-- [ ] Session log shows active configuration deterministically
+- [x] After one session, metrics populate
+- [x] Session log shows active configuration deterministically
 
 ---
 
 ## Final Verification
 
-- [ ] All acceptance criteria met (spec.md)
-- [ ] All tests passing (`pytest brain/tests/`)
+- [x] All acceptance criteria met (spec.md)
+- [x] All tests passing (`pytest brain/tests/`)
 - [ ] Frontend builds cleanly (`npm run build` in `dashboard_rebuild/`)
-- [ ] No regressions in existing 192+ tests
+- [x] No regressions in existing 192+ tests (629 passed)
 - [ ] Documentation updated for new modules
 - [ ] Ready for review
 
