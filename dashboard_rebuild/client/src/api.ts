@@ -698,6 +698,15 @@ export const api = {
       }),
   },
 
+  mastery: {
+    getDashboard: () => request<MasteryDashboardResponse>("/mastery/dashboard"),
+    getSkill: (id: string) => request<MasteryDetailResponse>(`/mastery/${encodeURIComponent(id)}`),
+    getWhyLocked: (id: string) => request<WhyLockedResponse>(`/mastery/${encodeURIComponent(id)}/why-locked`),
+    recordEvent: (data: { skill_id: string; correct: boolean; session_id?: string }) =>
+      request<{ skill_id: string; correct: boolean; new_mastery: number; event_id: number }>(
+        "/mastery/event", { method: "POST", body: JSON.stringify(data) }),
+  },
+
   data: {
     getTables: () => request<string[]>("/data/tables"),
     getSchema: (table: string) => request<DataTableSchema>(`/data/tables/${encodeURIComponent(table)}`),
@@ -1490,4 +1499,46 @@ export interface TutorEmbedStatus {
   total: number;
   embedded: number;
   pending: number;
+}
+
+// Mastery Dashboard types
+export interface MasterySkill {
+  skill_id: string;
+  name: string;
+  effective_mastery: number;
+  status: "locked" | "available" | "mastered";
+}
+
+export interface MasteryDashboardResponse {
+  skills: MasterySkill[];
+  count: number;
+}
+
+export interface MasteryDetailResponse {
+  skill_id: string;
+  effective_mastery: number;
+  status: string;
+  p_mastery_latent: number;
+  last_practiced_at: number | null;
+}
+
+export interface WhyLockedPrereq {
+  skill_id: string;
+  effective_mastery: number;
+  status: string;
+  needed: number;
+}
+
+export interface WhyLockedFlag {
+  skill_id: string;
+  flags: { error_type: string; severity: string; evidence_ref: string | null; created_at: string }[];
+}
+
+export interface WhyLockedResponse {
+  skill_id: string;
+  status: string;
+  missing_prereqs: WhyLockedPrereq[];
+  flagged_prereqs: WhyLockedFlag[];
+  recent_error_flags: { error_type: string; severity: string; edge_id: string | null; evidence_ref: string | null; created_at: string }[];
+  remediation_path: string[];
 }

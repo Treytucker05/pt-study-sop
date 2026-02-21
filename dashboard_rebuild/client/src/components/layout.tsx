@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Blocks, BookOpen, Save, Trash2, GripVertical, Pencil, X, Check, Menu } from "lucide-react";
+import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Blocks, TrendingUp, BookOpen, Save, Trash2, GripVertical, Pencil, X, Check, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { path: "/scholar", label: "SCHOLAR", icon: GraduationCap },
   { path: "/tutor", label: "TUTOR", icon: Bot },
   { path: "/methods", label: "METHODS", icon: Blocks },
+  { path: "/mastery", label: "MASTERY", icon: TrendingUp },
   { path: "/library", label: "LIBRARY", icon: BookOpen },
 ];
 
@@ -57,6 +58,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [dragOverCategory, setDragOverCategory] = useState<NoteCategory | null>(null);
   const [showTutor, setShowTutor] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState("");
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const queryClient = useQueryClient();
 
   // Expose tutor toggle to window for integration
@@ -592,7 +607,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 flex justify-between items-center text-xs text-muted-foreground font-terminal">
           <div className="flex gap-4">
             <span>STATUS: <span className="text-primary">ONLINE</span></span>
-            <span>SYNC: <span className="text-white">09:41 AM</span></span>
+            <span>SYNC: <span className="text-white">{currentTime}</span></span>
           </div>
           <div>v2.0.25 [BETA]</div>
         </div>

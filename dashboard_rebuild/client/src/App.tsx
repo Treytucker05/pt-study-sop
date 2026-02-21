@@ -11,6 +11,7 @@ const CalendarPage = lazy(() => import("@/pages/calendar"));
 const Scholar = lazy(() => import("@/pages/scholar"));
 const Tutor = lazy(() => import("@/pages/tutor"));
 const Methods = lazy(() => import("@/pages/methods"));
+const Mastery = lazy(() => import("@/pages/mastery"));
 const Library = lazy(() => import("@/pages/library"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -21,6 +22,7 @@ const ROUTES = [
   { path: "/scholar", Component: Scholar },
   { path: "/tutor", Component: Tutor },
   { path: "/methods", Component: Methods },
+  { path: "/mastery", Component: Mastery },
   { path: "/library", Component: Library },
 ];
 
