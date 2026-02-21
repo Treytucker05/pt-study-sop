@@ -814,6 +814,17 @@ Scholar questions chain effectiveness and proposes improvements.
     return "\n\n".join(sections) + "\n"
 
 
+def build_methods_from_yaml_direct() -> str:
+    """Generate 06_METHODS.md content directly from YAML specs.
+
+    Bypasses the markdown intermediate — generates the library in memory
+    and extracts the runtime sections in one pass.  15-method-library.md
+    is still written for human reference but is not consumed.
+    """
+    methods_text = build_methods_from_yaml()
+    return build_methods(methods_text)
+
+
 def _write_generated_method_library() -> None:
     """Generate 15-method-library.md from YAML and write to disk."""
     content = build_methods_from_yaml()
@@ -864,7 +875,6 @@ def build_runtime_bundle() -> None:
     logging = read_text(LIB_DIR / "08-logging.md")
     templates = read_text(LIB_DIR / "09-templates.md")
     examples = read_text(LIB_DIR / "11-examples.md")
-    methods = read_text(LIB_DIR / "15-method-library.md")
 
     outputs = {
         "00_INDEX_AND_RULES.md": (
@@ -893,7 +903,7 @@ def build_runtime_bundle() -> None:
         ),
         "06_METHODS.md": (
             [LIB_DIR / "15-method-library.md"],
-            build_methods(methods),
+            build_methods_from_yaml_direct(),
         ),
     }
 

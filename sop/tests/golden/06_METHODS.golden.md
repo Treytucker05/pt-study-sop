@@ -29,7 +29,7 @@ Each method block represents a single study activity.
 | Field | Type | Description |
 |-------|------|-------------|
 | `name` | string | Block name (e.g., "Brain Dump", "Teach-Back") |
-| `category` | enum | One of 6 PEIRRO phases (see below) |
+| `control_stage` | enum | One of 6 Control Plane stages (see below) |
 | `description` | string | What the block does |
 | `duration` | number | Typical minutes required |
 | `energy_cost` | enum | `low` / `medium` / `high` |
@@ -37,14 +37,14 @@ Each method block represents a single study activity.
 | `tags` | array | Descriptors (e.g., `["retrieval", "active"]`) |
 | `evidence` | string | Research citation (Author, Year; brief finding) |
 
-**Categories (PEIRRO phases):**
+**Categories (Control Plane stages):**
 
-1. **Prepare** — Prime attention, surface prior knowledge, build structure (e.g., micro precheck, confidence tagging, priority set, brain dump, prediction questions, prior knowledge scan, ai skeleton review, concept cluster, three-layer chunk, pre-test, structural extraction, emphasis audit)
-2. **Encode** — Attach meaning to material (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, think-aloud protocol, self-explanation protocol, mechanism trace, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking)
-3. **Retrieve** — Test recall without cues (e.g., free recall blurt, sprint quiz, fill-in-blank, mixed practice, variable retrieval, adversarial drill, timed sprint sets)
-4. **Interrogate** — Link to other content, apply, compare (e.g., analogy bridge, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder, one-page anchor, question bank seed)
-5. **Refine** — Analyze errors and relearn (e.g., error autopsy, mastery loop)
-6. **Overlearn** — Close loop, capture artifacts (e.g., exit ticket, anki card draft, drill sheet builder)
+1. **PRIME** — Prepare attention, surface prior knowledge, build structure (e.g., brain dump, prediction questions, prior knowledge scan, ai skeleton review, concept cluster, three-layer chunk, structural extraction, emphasis audit)
+2. **CALIBRATE** — Diagnostic micro-assessments to identify weaknesses before encoding (e.g., micro precheck, confidence tagging, priority set, pre-test)
+3. **ENCODE** — Attach meaning to material through active processing (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, think-aloud protocol, self-explanation protocol, mechanism trace, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking, analogy bridge, cross-topic link, side-by-side comparison, illness script builder)
+4. **REFERENCE** — Generate target cues and cheat sheets for retrieval (e.g., error autopsy, mastery loop, one-page anchor, question bank seed)
+5. **RETRIEVE** — Test recall with adversarial near-miss and timed sprints (e.g., clinical application, case walkthrough, free recall blurt, sprint quiz, fill-in-blank, mixed practice, variable retrieval, adversarial drill, timed sprint sets)
+6. **OVERLEARN** — Close loop, capture artifacts, Anki, drill sheets (e.g., exit ticket, anki card draft, drill sheet builder)
 
 **Evidence citation format:** `Author (Year); brief finding`
 
@@ -52,23 +52,27 @@ Each method block represents a single study activity.
 
 ## §2.1 Block Catalog (46 blocks)
 
-### Prepare (12 blocks)
+### PRIME (8 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
-| Micro Precheck | 4 min | medium | Kornell et al. (2009); Pretesting improves subsequent encoding and reveals calibration gaps |
-| Confidence Tagging | 3 min | low | Metcalfe (2017); Confidence monitoring improves targeting of corrective study actions |
-| Priority Set | 3 min | low | Rawson & Dunlosky (2011); Targeted corrective practice improves long-term retention more than broad restudy |
 | Brain Dump | 3 min | low | Brod et al. (2013); Prior knowledge activation improves encoding of new information by providing anchoring schemas |
 | Prediction Questions | 3 min | low | Pressley et al. (1990); Question-generation primes elaborative processing and improves comprehension |
 | Prior Knowledge Scan | 3 min | low | Ausubel (1968); Meaningful learning requires anchoring new information to existing schemas |
 | AI Skeleton Review | 5 min | low | Lorch & Lorch (1996); Advance organizers improve text comprehension by providing structural scaffolding |
 | Concept Cluster | 5 min | medium | Bower et al. (1969); Conceptual organization improves recall by 2-3x compared to random presentation |
 | Three-Layer Chunk | 5 min | medium | Miller (1956); Chunking manages cognitive load by organizing information into meaningful units |
-| Pre-Test | 5 min | low | Richland et al. (2009); Pre-testing primes encoding even when initial answers are wrong; the attempt creates retrieval hooks |
 | Structural Extraction | 5 min | medium | Ausubel (1968); Advance organizers improve comprehension when structure is established before detail |
 | Emphasis Audit | 4 min | low | Dunlosky et al. (2013); Metacognitive planning improves study efficiency and calibration |
 
-### Encode (14 blocks)
+### CALIBRATE (4 blocks)
+| Block | Duration | Energy | Evidence |
+|-------|----------|--------|----------|
+| Micro Precheck | 4 min | medium | Kornell et al. (2009); Pretesting improves subsequent encoding and reveals calibration gaps |
+| Confidence Tagging | 3 min | low | Metcalfe (2017); Confidence monitoring improves targeting of corrective study actions |
+| Priority Set | 3 min | low | Rawson & Dunlosky (2011); Targeted corrective practice improves long-term retention more than broad restudy |
+| Pre-Test | 5 min | low | Richland et al. (2009); Pre-testing primes encoding even when initial answers are wrong; the attempt creates retrieval hooks |
+
+### ENCODE (18 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | KWIK Hook | 3 min | medium | Paivio (1991); Dual-coding theory — combining verbal + visual improves retention by creating multiple retrieval paths |
@@ -85,10 +89,24 @@ Each method block represents a single study activity.
 | Clinical Decision Tree | 10 min | high | Charlin et al. (2000); Decision trees scaffold clinical reasoning and support diagnostic accuracy |
 | Memory Palace | 10 min | high | Yates (1966); Method of Loci has been used for 2500+ years; spatial memory is evolutionarily privileged |
 | Chain Linking | 8 min | medium | Bower & Winzenz (1970); Narrative chaining improves serial recall by creating meaningful connections between unrelated items |
+| Analogy Bridge | 3 min | medium | Gentner (1983); Analogical reasoning supports structural mapping and transfer across domains |
+| Cross-Topic Link | 3 min | medium | Pugh & Bergin (2006); Interest and retention deepen when learners see cross-domain connections |
+| Side-by-Side Comparison | 7 min | medium | Alfieri et al. (2013); Comparison-based learning improves discrimination and concept formation |
+| Illness Script Builder | 10 min | high | Schmidt & Rikers (2007); Illness scripts are the cognitive structure underlying expert clinical reasoning |
 
-### Retrieve (7 blocks)
+### REFERENCE (4 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
+| Error Autopsy | 5 min | medium | Metcalfe (2017); error correction with feedback is more effective than errorless learning |
+| Mastery Loop | 10 min | medium | Rawson & Dunlosky (2011); successive relearning combines testing + spacing for durable retention |
+| One-Page Anchor | 8 min | medium | Schmidt & Rikers (2007); Structured scripts and discriminators improve transfer and diagnostic reasoning |
+| Question Bank Seed | 8 min | medium | Roediger & Karpicke (2006); Retrieval-oriented item generation improves durable recall performance |
+
+### Retrieve (9 blocks)
+| Block | Duration | Energy | Evidence |
+|-------|----------|--------|----------|
+| Clinical Application | 5 min | high | Schmidt & Rikers (2007); Clinical application strengthens illness script formation and diagnostic reasoning |
+| Case Walkthrough | 10 min | high | Thistlethwaite et al. (2012); Case-based learning improves clinical reasoning in health professions education |
 | Free Recall Blurt | 5 min | medium | Roediger & Karpicke (2006); testing effect — retrieval practice > re-reading for long-term retention |
 | Sprint Quiz | 5 min | medium | McDaniel et al. (2007); quiz-based retrieval enhances later exam performance |
 | Fill-in-Blank | 5 min | low | Dunlosky et al. (2013); cloze-based retrieval is effective for factual knowledge |
@@ -96,24 +114,6 @@ Each method block represents a single study activity.
 | Variable Retrieval | 10 min | medium | Morris et al. (1977); PNAS 2024; varied retrieval practice produces more durable and transferable knowledge than constant retrieval |
 | Adversarial Drill | 8 min | high | Rohrer et al. (2015); Interleaved discrimination practice improves transfer on confusable categories |
 | Timed Sprint Sets | 8 min | high | Cepeda et al. (2006); Spaced retrieval with repeated timed attempts improves long-term access speed |
-
-### Interrogate (8 blocks)
-| Block | Duration | Energy | Evidence |
-|-------|----------|--------|----------|
-| Analogy Bridge | 3 min | medium | Gentner (1983); Analogical reasoning supports structural mapping and transfer across domains |
-| Clinical Application | 5 min | high | Schmidt & Rikers (2007); Clinical application strengthens illness script formation and diagnostic reasoning |
-| Cross-Topic Link | 3 min | medium | Pugh & Bergin (2006); Interest and retention deepen when learners see cross-domain connections |
-| Side-by-Side Comparison | 7 min | medium | Alfieri et al. (2013); Comparison-based learning improves discrimination and concept formation |
-| Case Walkthrough | 10 min | high | Thistlethwaite et al. (2012); Case-based learning improves clinical reasoning in health professions education |
-| Illness Script Builder | 10 min | high | Schmidt & Rikers (2007); Illness scripts are the cognitive structure underlying expert clinical reasoning |
-| One-Page Anchor | 8 min | medium | Schmidt & Rikers (2007); Structured scripts and discriminators improve transfer and diagnostic reasoning |
-| Question Bank Seed | 8 min | medium | Roediger & Karpicke (2006); Retrieval-oriented item generation improves durable recall performance |
-
-### Refine (2 blocks)
-| Block | Duration | Energy | Evidence |
-|-------|----------|--------|----------|
-| Error Autopsy | 5 min | medium | Metcalfe (2017); error correction with feedback is more effective than errorless learning |
-| Mastery Loop | 10 min | medium | Rawson & Dunlosky (2011); successive relearning combines testing + spacing for durable retention |
 
 ### Overlearn (3 blocks)
 | Block | Duration | Energy | Evidence |
@@ -124,7 +124,24 @@ Each method block represents a single study activity.
 
 ---
 
-## §4 Template Chains (15 chains)
+## §4 Template Chains (18 chains)
+
+### Control Plane Chains (CP-MSS v1.0)
+
+#### C-FE-STD. First Exposure: Standard
+**Blocks:** Structural Extraction → Micro Precheck → Comparison Table → One-Page Anchor → Question Bank Seed → Timed Sprint Sets
+**Context:** 
+**Use for:** 
+
+#### C-FE-MIN. First Exposure: Minimal
+**Blocks:** Structural Extraction → One-Page Anchor → Free Recall Blurt → Exit Ticket
+**Context:** 
+**Use for:** 
+
+#### C-FE-PRO. First Exposure: Procedure
+**Blocks:** Structural Extraction → Process Flowchart → One-Page Anchor → Case Walkthrough → Timed Sprint Sets
+**Context:** 
+**Use for:** 
 
 ### Core Chains
 
