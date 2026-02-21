@@ -224,8 +224,41 @@ SQLite database with 17+ tables. Key tables:
 | `method_blocks` | Evidence-backed study method blocks (CP control stages with legacy category compatibility). |
 | `method_chains` | Pre-built and custom method sequences with context tags. |
 | `method_ratings` | Post-session effectiveness and engagement ratings. |
+| `skill_mastery` | BKT mastery state per user/skill (latent, learn, guess, slip, decay). |
+| `practice_events` | Telemetry for every practice action (attempts, hints, evaluations). |
+| `error_flags` | Localized failure flags (skill/edge, error type, severity, evidence). |
+| `curriculum_nodes` | Concept map nodes with prereqs for curriculum gating. |
+| `vault_docs` | Obsidian vault notes with frontmatter, checksums, aliases. |
+| `kg_nodes` / `kg_edges` | Knowledge graph for Graph RAG-lite (typed relations, confidence). |
+| `kg_provenance` | Provenance tracking for KG edges (source excerpts). |
 
-### 4.2 Core Ingestion Scripts
+### 4.2 Adaptive Mastery System (`brain/adaptive/`)
+
+A 10-phase adaptive tutoring subsystem providing knowledge-graph-powered mastery tracking, curriculum gating, and scaffolding.
+
+| Module | Purpose |
+|--------|---------|
+| `schemas.py` | Foundational schemas: `MasteryConfig`, `Skill`, `Epitome`, `AdvanceOrganizer`, pedagogy move library, typed relation vocabulary. |
+| `bkt.py` | Bayesian Knowledge Tracing with forgetting-curve decay. Computes latent → effective mastery via configurable decay lambda. |
+| `telemetry.py` | Practice event capture: `emit_attempt`, `emit_hint`, `emit_evaluate_work`, `emit_teach_back`, `record_error_flag`. |
+| `curriculum.py` | Concept map as curriculum controller: prereq-based Locked/Available/Mastered status, learner control with constraints. |
+| `vault_ingest.py` | Obsidian vault integration: ingest, frontmatter parsing, wikilink extraction, alias normalization, incremental checksum updates. |
+| `knowledge_graph.py` | Graph RAG-lite: KG tables, seed from Obsidian links, typed relation extraction (regex), PCST subgraph pruning, hybrid retrieval, context pack assembly. |
+| `metrics.py` | Measurement loop: per-skill mastery trajectory, hint dependence, time-to-correct, error flag recurrence. |
+| `session_config.py` | Session experiment toggles: threshold (0.95/0.98), RAG mode, fading mode, pruning on/off. |
+
+**API Endpoints** (in `brain/dashboard/api_mastery.py`):
+- `GET /api/mastery/<skill_id>` — Effective mastery + status
+- `GET /api/mastery/dashboard` — All skills with mastery states
+- `POST /api/mastery/event` — Record practice event + BKT update
+- `GET /api/mastery/<skill_id>/why-locked` — Error localization (missing prereqs, flagged edges)
+- `GET /api/mastery/metrics` — Per-skill metrics dashboard
+- `GET /api/mastery/metrics/<skill_id>` — Single skill metrics
+- `GET/POST /api/mastery/session-config/<session_id>` — Experiment config
+
+**Test coverage:** 629+ tests across 10 phases (contract, telemetry, hallucination resistance, regression).
+
+### 4.3 Core Ingestion Scripts
 
 These scripts populate the database:
 

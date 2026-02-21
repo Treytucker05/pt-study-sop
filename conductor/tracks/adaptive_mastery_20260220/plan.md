@@ -3,7 +3,7 @@
 **Track ID:** adaptive_mastery_20260220
 **Spec:** [spec.md](./spec.md)
 **Created:** 2026-02-20
-**Status:** [~] In Progress
+**Status:** [x] Complete
 
 ## Overview
 
@@ -227,10 +227,10 @@ Dashboard metrics and session toggles for controlled comparisons.
 
 - [x] All acceptance criteria met (spec.md)
 - [x] All tests passing (`pytest brain/tests/`)
-- [ ] Frontend builds cleanly (`npm run build` in `dashboard_rebuild/`)
+- [x] Frontend builds cleanly (`npm run build` in `dashboard_rebuild/`)
 - [x] No regressions in existing 192+ tests (629 passed)
-- [ ] Documentation updated for new modules
-- [ ] Ready for review
+- [x] Documentation updated for new modules
+- [x] Ready for review
 
 ---
 

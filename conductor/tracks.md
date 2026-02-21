@@ -24,7 +24,7 @@ Latest non-track update: 2026-02-20 Tutor library extraction hardening (lossy-co
 - [x] **Track: Finish PT Study OS - Complete remaining gaps for daily use** (archived 2026-02-16 — outdated, most items shipped or no longer relevant)
   *Link: [./tracks/FINISH_PLANNING_20260210/](./tracks/FINISH_PLANNING_20260210/)*
 
-- [~] **Track: Adaptive Mastery System** (created 2026-02-20; 10 phases, 48 tasks)
+- [x] **Track: Adaptive Mastery System** (complete — created 2026-02-20; closed 2026-02-21; 10 phases, 48 tasks, 629 tests)
   BKT + forgetting curve, Obsidian vault integration, concept-map curriculum gating, adaptive scaffolding with localized failure, teach-back gates, Graph RAG-lite with PCST pruning, measurement loop.
   *Link: [./tracks/adaptive_mastery_20260220/](./tracks/adaptive_mastery_20260220/)*
 

@@ -46,8 +46,23 @@ Skip this section only for backend-only changes under `brain/`.
 - Dashboard reads metrics via API
 - Scholar reads DB + SOP, writes to `scholar/outputs/`
 
+## Adaptive Mastery System (`brain/adaptive/`)
+
+The adaptive mastery subsystem lives in `brain/adaptive/` with its own test suite. Key modules:
+- `bkt.py` — Bayesian Knowledge Tracing with forgetting-curve decay
+- `telemetry.py` — Practice event capture (attempts, hints, evaluations)
+- `curriculum.py` — Concept-map curriculum gating (Locked/Available/Mastered)
+- `knowledge_graph.py` — Graph RAG-lite with typed relation extraction + PCST pruning
+- `metrics.py` — Per-skill mastery trajectory, hint dependence, error recurrence
+- `session_config.py` — Experiment toggles (threshold, RAG mode, fading, pruning)
+
+API blueprint: `brain/dashboard/api_mastery.py` (registered at `/api/mastery/*`).
+
+See `docs/root/PROJECT_ARCHITECTURE.md` § 4.2 for full module map and endpoint list.
+
 ## Testing
-- Targeted: `pytest brain/tests/`
+- All tests: `pytest brain/tests/`
+- Adaptive only: `pytest brain/tests/test_adaptive_*.py brain/tests/test_measurement_loop.py brain/tests/test_regression_safety.py`
 - Release check: `python scripts/release_check.py`
 
 ## Docs Discipline
