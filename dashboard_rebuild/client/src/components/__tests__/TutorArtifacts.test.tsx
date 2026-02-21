@@ -27,7 +27,6 @@ function renderArtifacts(props?: Partial<ComponentProps<typeof TutorArtifacts>>)
     sessionId: "sess-active",
     artifacts: [] as TutorArtifact[],
     turnCount: 0,
-    mode: "Core",
     topic: "Topic",
     startedAt: new Date("2026-01-01T10:00:00Z").toISOString(),
     onCreateArtifact: vi.fn(),

@@ -39,9 +39,9 @@ const drafts = [
 ];
 
 describe("CardReviewTabs", () => {
-  let onApprove: ReturnType<typeof vi.fn>;
-  let onReject: ReturnType<typeof vi.fn>;
-  let onEdit: ReturnType<typeof vi.fn>;
+  let onApprove: any;
+  let onReject: any;
+  let onEdit: any;
 
   beforeEach(() => {
     vi.clearAllMocks();

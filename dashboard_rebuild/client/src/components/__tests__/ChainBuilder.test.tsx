@@ -44,7 +44,7 @@ const baseChain: MethodChain = {
 };
 
 describe("ChainBuilder", () => {
-  let onSave: ReturnType<typeof vi.fn>;
+  let onSave: any;
 
   beforeEach(() => {
     vi.clearAllMocks();

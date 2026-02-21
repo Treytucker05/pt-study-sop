@@ -737,79 +737,83 @@ export function TutorChat({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 p-4 lg:p-5 border-t-2 border-primary/20 bg-black/50">
-          <div className="flex items-center gap-2 min-w-0">
-            <label
-              htmlFor="accuracy-profile-select"
-              className="font-terminal text-xs text-muted-foreground whitespace-nowrap"
-            >
-              Profile
-            </label>
-            <select
-              id="accuracy-profile-select"
-              value={accuracyProfile}
-              onChange={(e) => onAccuracyProfileChange(e.target.value as TutorAccuracyProfile)}
+        <div className="flex flex-col gap-3 p-4 lg:p-5 border-t-2 border-primary/20 bg-black/50">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <label
+                htmlFor="accuracy-profile-select"
+                className="font-terminal text-xs text-muted-foreground whitespace-nowrap"
+              >
+                Profile
+              </label>
+              <select
+                id="accuracy-profile-select"
+                value={accuracyProfile}
+                onChange={(e) => onAccuracyProfileChange(e.target.value as TutorAccuracyProfile)}
+                disabled={isStreaming}
+                className="h-9 bg-black border-2 border-secondary px-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
+              >
+                <option value="balanced">Balanced</option>
+                <option value="strict">Strict</option>
+                <option value="coverage">Coverage</option>
+              </select>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {(["socratic", "evaluate", "concept_map", "teach_back"] as const).map((mode) => {
+                const active = behaviorOverride === mode;
+                const labels: Record<BehaviorOverride, string> = {
+                  socratic: "ASK / SOCRATIC",
+                  evaluate: "EVALUATE",
+                  concept_map: "CONCEPT MAP",
+                  teach_back: "TEACH-BACK",
+                };
+                const titles: Record<BehaviorOverride, string> = {
+                  socratic: "Socratic — respond with questions only",
+                  evaluate: "Evaluate — assess your answer",
+                  concept_map: "Concept Map — generate Mermaid diagram",
+                  teach_back: "Teach-Back — explain as if teaching a novice",
+                };
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    title={titles[mode]}
+                    onClick={() => setBehaviorOverride(active ? null : mode)}
+                    disabled={isStreaming}
+                    className={`h-8 px-3 font-arcade text-[10px] tracking-wider border-2 transition-colors disabled:opacity-50 ${active
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                      }`}
+                  >
+                    {labels[mode]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex md:flex-row flex-col items-stretch md:items-center gap-2">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask a question..."
               disabled={isStreaming}
-              className="h-9 bg-black border-2 border-secondary px-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
+              className="flex-1 min-w-[180px] bg-black/40 border-2 border-primary rounded-none px-3 py-2 text-[17px] leading-7 font-terminal text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none disabled:opacity-50 shadow-none"
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={!input.trim() || isStreaming}
+              aria-label="Send message"
+              className="rounded-none border-[3px] border-double border-primary h-11 w-full md:w-11 p-0 shrink-0"
             >
-              <option value="balanced">Balanced</option>
-              <option value="strict">Strict</option>
-              <option value="coverage">Coverage</option>
-            </select>
+              {isStreaming ? (
+                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+              ) : (
+                <Send className="w-5 h-5 mx-auto" />
+              )}
+            </Button>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {(["socratic", "evaluate", "concept_map", "teach_back"] as const).map((mode) => {
-              const active = behaviorOverride === mode;
-              const labels: Record<BehaviorOverride, string> = {
-                socratic: "ASK / SOCRATIC",
-                evaluate: "EVALUATE",
-                concept_map: "CONCEPT MAP",
-                teach_back: "TEACH-BACK",
-              };
-              const titles: Record<BehaviorOverride, string> = {
-                socratic: "Socratic — respond with questions only",
-                evaluate: "Evaluate — assess your answer",
-                concept_map: "Concept Map — generate Mermaid diagram",
-                teach_back: "Teach-Back — explain as if teaching a novice",
-              };
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  title={titles[mode]}
-                  onClick={() => setBehaviorOverride(active ? null : mode)}
-                  disabled={isStreaming}
-                  className={`h-8 px-3 font-arcade text-[10px] tracking-wider border-2 transition-colors disabled:opacity-50 ${active
-                    ? "bg-primary/20 border-primary text-primary"
-                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
-                    }`}
-                >
-                  {labels[mode]}
-                </button>
-              );
-            })}
-          </div>
-          <input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask a question..."
-            disabled={isStreaming}
-            className="flex-1 min-w-[180px] bg-black/40 border-2 border-primary rounded-none px-3 py-2 text-[17px] leading-7 font-terminal text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none disabled:opacity-50 shadow-none"
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={!input.trim() || isStreaming}
-            aria-label="Send message"
-            className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0"
-          >
-            {isStreaming ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </Button>
         </div>
       </div>
     </div>

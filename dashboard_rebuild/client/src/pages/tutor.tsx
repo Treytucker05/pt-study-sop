@@ -599,525 +599,202 @@ export default function Tutor() {
     <Layout>
       <div className="flex flex-col h-full min-h-0">
         {/* ─── Main Content Area ─── */}
-        <div className="flex-1 flex min-h-0">
-          <div className="flex-1 bg-black/40 border-x-2 border-primary/20 flex flex-col min-w-0 relative">
-            {showSetup ? (
-              <div className="flex-1 min-h-0 overflow-y-auto w-full">
-                <div className="w-full max-w-full">
-                  <TutorWizard
-                    courseId={courseId}
-                    setCourseId={setCourseId}
-                    selectedMaterials={selectedMaterials}
-                    setSelectedMaterials={setSelectedMaterials}
-                    topic={topic}
-                    setTopic={setTopic}
-                    chainId={chainId}
-                    setChainId={setChainId}
-                    customBlockIds={customBlockIds}
-                    setCustomBlockIds={setCustomBlockIds}
-                    onStartSession={startSession}
-                    isStarting={isStarting}
-                    recentSessions={recentSessions}
-                    onResumeSession={(id) => { resumeSession(id); setShowSetup(false); }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <>
-                {activeSessionId ? (
-                  <TutorChat
-                    sessionId={activeSessionId}
-                    availableMaterials={chatMaterials}
-                    selectedMaterialIds={selectedMaterials}
-                    accuracyProfile={accuracyProfile}
-                    onAccuracyProfileChange={setAccuracyProfile}
-                    onSelectedMaterialIdsChange={setSelectedMaterials}
-                    onArtifactCreated={handleArtifactCreated}
-                    onTurnComplete={() => setTurnCount((prev) => prev + 1)}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center space-y-3">
-                      <div className="font-arcade text-sm text-primary">
-                        READY TO LEARN
-                      </div>
-                      <div className="font-terminal text-sm text-muted-foreground max-w-sm">
-                        Click SETUP to configure your session, or select a recent session below to resume.
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (window.innerWidth >= 1024) {
-                        setShowRightSidebar((prev) => !prev);
-                      } else {
-                        setShowMobileSidebar(true);
-                      }
-                    }}
-                    className={`h-8 px-2 rounded-none font-arcade text-xs bg-black/40 border-2 shadow-none transition-colors ${showRightSidebar
-                      ? "border-primary text-primary hover:bg-primary/20"
-                      : "border-primary/30 text-muted-foreground hover:text-primary"
-                      }`}
-                  >
-                    TOOLS
-                  </Button>
-                </div>
-
-                {showEndConfirm && (
-                  <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4">
-                    <div className="max-w-md mx-auto space-y-3">
-                      <div className="font-arcade text-sm text-primary tracking-wider">SESSION COMPLETE</div>
-                      <div className="flex items-center gap-4 font-terminal text-xs text-muted-foreground">
-                        <span className="text-foreground">{topic || "No topic"}</span>
-                        <span>{turnCount} turns</span>
-                        {artifacts.length > 0 && <span>{artifacts.length} artifacts</span>}
-                      </div>
-                      <div className="flex items-center gap-2 pt-1">
-                        <Button
-                          onClick={shipToBrainAndEnd}
-                          disabled={isShipping}
-                          className="rounded-none font-arcade text-xs bg-primary/10 hover:bg-primary/20 border-2 border-primary text-primary gap-1.5 h-9 px-4"
-                        >
-                          {isShipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                          {isShipping ? "SHIPPING..." : "SHIP TO BRAIN"}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => { endSession(); setShowEndConfirm(false); }}
-                          disabled={isShipping}
-                          className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 border-2 border-transparent hover:border-primary/40 shadow-none"
-                        >
-                          END WITHOUT SAVING
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setShowEndConfirm(false)}
-                          disabled={isShipping}
-                          className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 ml-auto border-2 border-transparent hover:border-primary/40 shadow-none"
-                        >
-                          CANCEL
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {showRightSidebar && (
-            <aside className="hidden lg:flex w-[280px] shrink-0 bg-black/40 border-l-2 border-primary/30 flex-col min-h-0">
-              <div className="shrink-0 border-b border-primary/20 p-3 space-y-3">
-                {/* Session status indicator */}
-                {!activeSessionId && (
-                  <div className="flex items-center gap-2 p-2 border border-primary/20 bg-primary/5">
-                    <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-                    <span className="font-terminal text-xs text-muted-foreground">
-                      No active session
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-none bg-black/40 border-b-2 border-primary/20 p-2">
+            {/* Top Toolbar Area */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+              {activeSessionId && (
+                <>
+                  <Badge variant="outline" className={`${TEXT_BADGE} h-7 px-2 shrink-0 border-primary/30`}>
+                    <span className="text-muted-foreground mr-1">TOPIC:</span>
+                    <span className="text-foreground">{topic || "Freeform"}</span>
+                  </Badge>
+                  <div className={`flex items-center gap-3 px-2 ${TEXT_MUTED} text-xs border-r border-primary/20 shrink-0`}>
+                    <span className="flex items-center gap-1" title="Turns">
+                      <MessageSquare className={ICON_SM} />
+                      {turnCount}
                     </span>
-                  </div>
-                )}
-                {configStatus && !configStatus.ok && (
-                  <div className="flex items-start gap-2 p-2 border border-secondary/40 bg-secondary/10">
-                    <AlertTriangle className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
-                    <span className="font-terminal text-[11px] text-secondary/90 leading-relaxed">
-                      {configStatus.issues.join(" · ")}
-                    </span>
-                  </div>
-                )}
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-1.5 text-primary border-primary/50`}>
-                      {topic ? "TOPIC" : "FREEFORM"}
-                    </Badge>
-                    <span className="font-terminal text-xs text-foreground truncate">{topic || "No topic"}</span>
-                  </div>
-                  {activeSessionId && (
-                    <div className={`flex items-center gap-3 ${TEXT_MUTED}`}>
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className={ICON_SM} />
-                        {turnCount}
+                    {startedAt && (
+                      <span className="flex items-center gap-1" title="Started At">
+                        <Clock className={ICON_SM} />
+                        {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
-                      {startedAt && (
-                        <span className="flex items-center gap-1">
-                          <Clock className={ICON_SM} />
-                          {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {hasChain && activeSessionId && (
-                  <div className="border-2 border-primary/20 bg-black/55 p-2 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-arcade text-xs text-primary">MODULES</span>
-                      <Badge variant="outline" className="ml-auto rounded-none text-[10px]">
-                        {progressCount}/{chainBlocks.length}
-                      </Badge>
-                    </div>
-                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
-                      {chainBlocks.map((block, idx) => {
-                        const isDone = idx < currentBlockIndex;
-                        const isCurrent = idx === currentBlockIndex && !isChainComplete;
-                        return (
-                          <div
-                            key={block.id}
-                            className={`flex items-center gap-2 px-1.5 py-1 border ${isCurrent
-                              ? "border-primary/40 bg-primary/10 text-primary"
-                              : isDone
-                                ? "border-primary/20 bg-black/30 text-muted-foreground/70"
-                                : "border-primary/10 text-muted-foreground/60"
-                              }`}
-                          >
-                            <span className="font-terminal text-[10px] shrink-0">{idx + 1}.</span>
-                            <span className={`font-terminal text-xs truncate ${isDone ? "line-through" : ""}`}>
-                              {block.name}
-                            </span>
-                            {isDone && <Check className="w-3 h-3 ml-auto text-green-400" />}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {!isChainComplete ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={advanceBlock}
-                        className="h-7 w-full rounded-none text-xs font-arcade text-primary border border-primary/40 hover:bg-primary/10"
-                      >
-                        <SkipForward className="w-3 h-3 mr-1" />
-                        NEXT MODULE
-                      </Button>
-                    ) : (
-                      <div className="font-arcade text-[11px] text-green-400 border border-green-400/40 px-2 py-1 text-center">
-                        CHAIN COMPLETE
-                      </div>
                     )}
                   </div>
-                )}
+                </>
+              )}
 
-                <div className="grid grid-cols-2 gap-1 border-2 border-primary/20 p-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowSetup(true)}
-                    className={`h-8 rounded-none font-arcade text-xs justify-center ${showSetup
-                      ? "text-primary bg-primary/15 border border-primary/40"
-                      : "text-muted-foreground hover:text-primary"
-                      }`}
-                  >
-                    <Settings2 className="w-3.5 h-3.5 mr-1" />
-                    SETUP
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowSetup(false)}
-                    className={`h-8 rounded-none font-arcade text-xs justify-center ${!showSetup
-                      ? "text-primary bg-primary/15 border border-primary/40"
-                      : "text-muted-foreground hover:text-primary"
-                      }`}
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                    CHAT
-                    {turnCount > 0 && (
-                      <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
-                        {turnCount}
-                      </Badge>
-                    )}
-                  </Button>
-                </div>
-
+              <div className="flex items-center gap-1 shrink-0 ml-auto">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowArtifacts((prev) => !prev)}
-                  className={`h-8 rounded-none font-terminal text-xs justify-start ${showArtifacts
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-primary"
+                  onClick={() => setShowSetup(true)}
+                  className={`h-8 rounded-none font-arcade text-xs px-3 ${showSetup
+                    ? "text-primary bg-primary/15 border-2 border-primary/40"
+                    : "text-muted-foreground hover:text-primary border-2 border-transparent"
                     }`}
                 >
-                  {showArtifacts ? (
-                    <PanelRightClose className="w-3.5 h-3.5 mr-1" />
-                  ) : (
-                    <PanelRightOpen className="w-3.5 h-3.5 mr-1" />
-                  )}
-                  ARTIFACTS
-                  {artifacts.length > 0 && (
-                    <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none">
-                      {artifacts.length}
-                    </Badge>
-                  )}
+                  <Settings2 className="w-3.5 h-3.5 mr-1" />
+                  SETUP
                 </Button>
-
-                {blockTimerSeconds !== null && blockTimerSeconds > 0 && activeSessionId && (
-                  <div className="border-2 border-primary/25 bg-black/50 p-2 space-y-2">
-                    <div className={`font-terminal text-sm flex items-center gap-1 ${blockTimerSeconds <= 60 ? "text-red-400 animate-pulse" : "text-primary"
-                      }`}>
-                      <Timer className="w-3.5 h-3.5" />
-                      {formatTimer(blockTimerSeconds)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setBlockTimerSeconds((p) => (p ?? 0) + 300)}
-                        className="h-7 px-2 rounded-none text-xs font-terminal text-muted-foreground hover:text-primary"
-                        title="Add 5 minutes"
-                      >
-                        <Plus className="w-3 h-3 mr-1" />
-                        +5M
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setBlockTimerSeconds(null)}
-                        className="h-7 px-2 rounded-none text-xs font-terminal text-muted-foreground hover:text-foreground ml-auto"
-                        title="Dismiss timer"
-                      >
-                        <X className="w-3 h-3 mr-1" />
-                        CLEAR
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSetup(false)}
+                  className={`h-8 rounded-none font-arcade text-xs px-3 ${!showSetup
+                    ? "text-primary bg-primary/15 border-2 border-primary/40"
+                    : "text-muted-foreground hover:text-primary border-2 border-transparent"
+                    }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                  CHAT
+                </Button>
 
                 {activeSessionId && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowEndConfirm(true)}
-                    className="h-8 w-full rounded-none font-terminal text-xs justify-start text-red-400/70 hover:text-red-400 hover:bg-red-400/10"
-                    title="End session"
-                  >
-                    <Square className="w-3.5 h-3.5 mr-1" />
-                    END SESSION
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowArtifacts((prev) => !prev)}
+                      className={`h-8 rounded-none font-arcade text-xs px-3 ml-1 ${showArtifacts
+                        ? "text-primary bg-primary/10 border-2 border-primary/40"
+                        : "text-muted-foreground hover:text-primary border-2 border-transparent"
+                        }`}
+                    >
+                      {showArtifacts ? (
+                        <PanelRightClose className="w-3.5 h-3.5 mr-1" />
+                      ) : (
+                        <PanelRightOpen className="w-3.5 h-3.5 mr-1" />
+                      )}
+                      ARTIFACTS
+                      {artifacts.length > 0 && (
+                        <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
+                          {artifacts.length}
+                        </Badge>
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowEndConfirm(true)}
+                      className="h-8 rounded-none font-arcade text-xs px-3 text-red-400/70 hover:text-red-400 hover:bg-red-400/10 border-2 border-transparent"
+                      title="End session"
+                    >
+                      <Square className="w-3.5 h-3.5 mr-1" />
+                      END
+                    </Button>
+                  </>
                 )}
               </div>
+            </div>
+          </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
-                <div className="border-2 border-primary/20 bg-black/55 min-h-0">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowMaterials((prev) => !prev)}
-                    className="w-full h-8 rounded-none font-arcade text-xs justify-between text-primary hover:bg-primary/10"
-                  >
-                    <div className="flex items-center gap-2">
-                      {showMaterials ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                      MATERIALS IN CHAT
-                    </div>
-                    <Badge variant="outline" className="h-4 px-1 text-[10px] rounded-none">
-                      {selectedMaterials.length} / {chatMaterials.length}
-                    </Badge>
-                  </Button>
-
-                  {showMaterials && (
-                    <div className="p-2 border-t border-primary/20 space-y-2">
-                      <div className="flex justify-end gap-1 mb-2">
-                        <button
-                          type="button"
-                          onClick={selectAllMaterials}
-                          className="font-terminal text-[10px] px-1.5 py-0.5 border border-primary/30 text-primary hover:bg-primary/10"
-                        >
-                          All
-                        </button>
-                        <button
-                          type="button"
-                          onClick={clearMaterialSelection}
-                          className="font-terminal text-[10px] px-1.5 py-0.5 border border-primary/30 text-muted-foreground hover:bg-black/60"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                      <div className="max-h-48 overflow-y-auto space-y-1">
-                        {chatMaterials.length === 0 ? (
-                          <div className="font-terminal text-xs text-muted-foreground p-2">
-                            No materials available for this course.
-                          </div>
-                        ) : (
-                          chatMaterials.map((mat) => {
-                            const checked = selectedMaterials.includes(mat.id);
-                            const label = getFileName(mat.title || mat.source_path || `Material ${mat.id}`);
-                            return (
-                              <label
-                                key={mat.id}
-                                className="flex items-start gap-2 p-2 border border-primary/20 hover:border-primary/40 cursor-pointer"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggleMaterial(mat.id)}
-                                  className="mt-0.5 h-4 w-4 shadow-none accent-red-500"
-                                />
-                                <span className="font-terminal text-xs leading-5 text-zinc-200 break-words">
-                                  {label}
-                                </span>
-                              </label>
-                            );
-                          })
-                        )}
+          <div className="flex-1 flex min-h-0 relative">
+            <div className="flex-1 bg-black/40 flex flex-col min-w-0">
+              {showSetup ? (
+                <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
+                  <div className="w-full max-w-4xl mx-auto">
+                    <TutorWizard
+                      courseId={courseId}
+                      setCourseId={setCourseId}
+                      selectedMaterials={selectedMaterials}
+                      setSelectedMaterials={setSelectedMaterials}
+                      topic={topic}
+                      setTopic={setTopic}
+                      chainId={chainId}
+                      setChainId={setChainId}
+                      customBlockIds={customBlockIds}
+                      setCustomBlockIds={setCustomBlockIds}
+                      onStartSession={startSession}
+                      isStarting={isStarting}
+                      recentSessions={recentSessions}
+                      onResumeSession={(id) => { resumeSession(id); setShowSetup(false); }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {activeSessionId ? (
+                    <TutorChat
+                      sessionId={activeSessionId}
+                      availableMaterials={chatMaterials}
+                      selectedMaterialIds={selectedMaterials}
+                      accuracyProfile={accuracyProfile}
+                      onAccuracyProfileChange={setAccuracyProfile}
+                      onSelectedMaterialIdsChange={setSelectedMaterials}
+                      onArtifactCreated={handleArtifactCreated}
+                      onTurnComplete={() => setTurnCount((prev) => prev + 1)}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center space-y-3">
+                        <div className="font-arcade text-sm text-primary">
+                          READY TO LEARN
+                        </div>
+                        <div className="font-terminal text-sm text-muted-foreground max-w-sm">
+                          Click SETUP to configure your session, or select a recent session to resume.
+                        </div>
                       </div>
                     </div>
                   )}
-                </div>
 
-                {currentBlock && (
-                  <div className="border-2 border-primary/20 bg-black/55 p-2 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <ListChecks className="w-4 h-4 text-primary shrink-0" />
-                      <span className="font-arcade text-xs text-primary truncate">
-                        BLOCK GUIDANCE
-                      </span>
+                  {showEndConfirm && (
+                    <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+                      <div className="max-w-md mx-auto space-y-3">
+                        <div className="font-arcade text-sm text-primary tracking-wider">SESSION COMPLETE</div>
+                        <div className="flex items-center gap-4 font-terminal text-xs text-muted-foreground">
+                          <span className="text-foreground">{topic || "No topic"}</span>
+                          <span>{turnCount} turns</span>
+                          {artifacts.length > 0 && <span>{artifacts.length} artifacts</span>}
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <Button
+                            onClick={shipToBrainAndEnd}
+                            disabled={isShipping}
+                            className="rounded-none font-arcade text-xs bg-primary/10 hover:bg-primary/20 border-2 border-primary text-primary gap-1.5 h-9 px-4"
+                          >
+                            {isShipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                            {isShipping ? "SHIPPING..." : "SHIP TO BRAIN"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => { endSession(); setShowEndConfirm(false); }}
+                            disabled={isShipping}
+                            className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 border-2 border-transparent hover:border-primary/40 shadow-none"
+                          >
+                            END WITHOUT SAVING
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => setShowEndConfirm(false)}
+                            disabled={isShipping}
+                            className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 ml-auto border-2 border-transparent hover:border-primary/40 shadow-none"
+                          >
+                            CANCEL
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="font-terminal text-xs text-foreground">{currentBlock.name}</div>
-                    {currentBlock.description && (
-                      <p className="font-terminal text-xs text-muted-foreground leading-relaxed">
-                        {currentBlock.description}
-                      </p>
-                    )}
-                    {facilitationSteps.length > 0 && facilitationSteps.length <= 15 && !facilitationSteps.some(s => s.includes('MISSING')) && (
-                      <ol className="space-y-1">
-                        {facilitationSteps.map((step, idx) => (
-                          <li key={idx} className="flex items-start gap-2 font-terminal text-xs text-muted-foreground">
-                            <span className="shrink-0 w-4 h-4 border border-primary/30 text-primary text-[10px] flex items-center justify-center mt-0.5">
-                              {idx + 1}
-                            </span>
-                            <span className="leading-relaxed">{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-                  </div>
-                )}
+                  )}
+                </>
+              )}
+            </div>
 
-                <div className="border-2 border-primary/20 bg-black/55 p-2 space-y-2">
-                  <div className="font-arcade text-xs text-primary">COMMANDS</div>
-                  <div className="grid grid-cols-1 gap-1.5 font-terminal text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-3.5 h-3.5 text-primary" />
-                      <span>`/note` save current response as a note</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="w-3.5 h-3.5 text-primary" />
-                      <span>`/card` generate an Anki-style card</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Map className="w-3.5 h-3.5 text-primary" />
-                      <span>`/map` create a concept map from response</span>
-                    </div>
-                  </div>
-                </div>
-
-                {showArtifacts && (
-                  <div className="border-2 border-primary/20 bg-black/55 min-h-0">
-                    <TutorArtifacts
-                      sessionId={activeSessionId}
-                      artifacts={artifacts}
-                      turnCount={turnCount}
-                      topic={topic}
-                      startedAt={startedAt}
-                      onCreateArtifact={handleArtifactCreated}
-                      recentSessions={recentSessions}
-                      onResumeSession={resumeSession}
-                      onDeleteArtifacts={handleDeleteArtifacts}
-                    />
-                  </div>
-                )}
-              </div>
-            </aside>
-          )}
-
-          {showMobileSidebar && (
-            <div className="lg:hidden absolute inset-y-0 right-0 z-50 w-[86vw] max-w-sm bg-black/95 border-l-2 border-primary/40 flex flex-col">
-              <div className="shrink-0 p-2 border-b border-primary/20 flex items-center">
-                <span className="font-arcade text-xs text-primary">TOOLS</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowMobileSidebar(false)}
-                  className="ml-auto h-7 px-2 rounded-none text-xs font-terminal text-muted-foreground hover:text-foreground"
-                >
-                  CLOSE
-                </Button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                <div className="grid grid-cols-2 gap-1 border-2 border-primary/20 p-1">
+            {/* Right side panels overlaid when toggle is ON */}
+            {activeSessionId && !showSetup && showArtifacts && (
+              <div className="w-[320px] shrink-0 border-l-2 border-primary/30 bg-black/90 absolute right-0 inset-y-0 z-30 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.5)]">
+                <div className="flex items-center justify-between p-2 border-b-2 border-primary/20 bg-primary/5">
+                  <span className="font-arcade text-xs text-primary px-2">ARTIFACTS</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setShowSetup(true); setShowMobileSidebar(false); }}
-                    className={`h-8 rounded-none font-arcade text-xs justify-center ${showSetup
-                      ? "text-primary bg-primary/15 border border-primary/40"
-                      : "text-muted-foreground hover:text-primary"
-                      }`}
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-primary rounded-none"
+                    onClick={() => setShowArtifacts(false)}
                   >
-                    <Settings2 className="w-3.5 h-3.5 mr-1" />
-                    SETUP
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setShowSetup(false); setShowMobileSidebar(false); }}
-                    className={`h-8 rounded-none font-arcade text-xs justify-center ${!showSetup
-                      ? "text-primary bg-primary/15 border border-primary/40"
-                      : "text-muted-foreground hover:text-primary"
-                      }`}
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                    CHAT
+                    <X className="w-4 h-4" />
                   </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowArtifacts((prev) => !prev)}
-                  className={`h-8 w-full rounded-none font-terminal text-xs justify-start ${showArtifacts
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-primary"
-                    }`}
-                >
-                  {showArtifacts ? <PanelRightClose className="w-3.5 h-3.5 mr-1" /> : <PanelRightOpen className="w-3.5 h-3.5 mr-1" />}
-                  ARTIFACTS
-                </Button>
-                {hasChain && (
-                  <div className="border-2 border-primary/20 bg-black/55 p-2 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-arcade text-xs text-primary">MODULES</span>
-                      <Badge variant="outline" className="ml-auto rounded-none text-[10px]">
-                        {progressCount}/{chainBlocks.length}
-                      </Badge>
-                    </div>
-                    {!isChainComplete && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={advanceBlock}
-                        className="h-7 w-full rounded-none text-xs font-arcade text-primary border border-primary/40 hover:bg-primary/10"
-                      >
-                        <SkipForward className="w-3 h-3 mr-1" />
-                        NEXT MODULE
-                      </Button>
-                    )}
-                  </div>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowEndConfirm(true)}
-                  className="h-8 w-full rounded-none font-terminal text-xs justify-start text-red-400/70 hover:text-red-400 hover:bg-red-400/10"
-                >
-                  <Square className="w-3.5 h-3.5 mr-1" />
-                  END SESSION
-                </Button>
-                {showArtifacts && (
+                <div className="flex-1 min-h-0 overflow-y-auto">
                   <TutorArtifacts
                     sessionId={activeSessionId}
                     artifacts={artifacts}
@@ -1129,10 +806,10 @@ export default function Tutor() {
                     onResumeSession={resumeSession}
                     onDeleteArtifacts={handleDeleteArtifacts}
                   />
-                )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </Layout>

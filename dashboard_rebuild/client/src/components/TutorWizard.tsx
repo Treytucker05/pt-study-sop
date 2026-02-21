@@ -636,16 +636,6 @@ function StepConfirm({
         </div>
       </Card>
 
-      <Card className="bg-black/40 border-2 border-primary/40 rounded-none">
-        <div className="px-3 py-2 border-b border-primary/30">
-          <span className={TEXT_SECTION_LABEL}>SESSION OPTIONS</span>
-        </div>
-        <div className="p-3 space-y-3">
-          <div className="font-terminal text-xs text-muted-foreground/80">
-            Tutor session model is fixed to Codex.
-          </div>
-        </div>
-      </Card>
 
       {/* Start button */}
       <Button
