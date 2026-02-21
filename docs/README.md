@@ -18,7 +18,7 @@ Basic alignment is enforced by `python scripts/check_docs_sync.py` (CI).
 |---------|--------|
 | Control Plane (CP-MSS v1.0) | `sop/library/17-control-plane.md` |
 | Calendar/Tasks | `docs/calendar_tasks.md` |
-| Dashboard UI | `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`, `docs/full-ui-api-audit-2026-01-22.md` |
+| Dashboard UI | `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md` |
 | Scholar | `docs/brain_scholar_map.md` |
 | SOP System | `sop/library/00-overview.md` |
 | Architecture | `docs/root/PROJECT_ARCHITECTURE.md` |
