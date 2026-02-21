@@ -277,11 +277,70 @@ def _docling_ocr_convert(pdf_path: str) -> str:
     return _export_docling_markdown(doc, Path(pdf_path))
 
 
-def _extract_with_docling_ocr(path: Path, chunk_pages: int = 20) -> str:
+def _subprocess_ocr_convert(pdf_path: str, timeout: int = 300) -> str:
+    """Run Docling OCR in a separate subprocess for crash isolation.
+
+    Docling's C++ layer can segfault on certain garbled PDFs, killing the
+    host process.  By running OCR in a child process, a segfault (exit 139)
+    only kills that child — the parent continues with the next chunk.
+    """
+    import json
+    import sys
+
+    script = (
+        "import json, sys; "
+        "from pathlib import Path; "
+        "sys.path.insert(0, str(Path(__file__).parent) if '__file__' in dir() else '.')\n"
+        "from docling.datamodel.base_models import InputFormat; "
+        "from docling.document_converter import DocumentConverter, PdfFormatOption; "
+        "from docling.datamodel.pipeline_options import PdfPipelineOptions, TableStructureOptions; "
+        "try:\n"
+        "    from docling.datamodel.pipeline_options import OcrAutoOptions\n"
+        "except ImportError:\n"
+        "    from docling.datamodel.pipeline_options import OcrOptions as OcrAutoOptions\n"
+        "table_opts = TableStructureOptions(do_cell_matching=False, mode='accurate'); "
+        "opts = PdfPipelineOptions("
+        "do_table_structure=True, table_structure_options=table_opts, "
+        "generate_picture_images=False, images_scale=1.0); "
+        "opts.ocr_options = OcrAutoOptions(force_full_page_ocr=True); "
+        "opts.do_ocr = True; opts.ocr_batch_size = 1; "
+        "conv = DocumentConverter("
+        "format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=opts)}); "
+        "r = conv.convert(sys.argv[1]); "
+        "doc = getattr(r, 'document', r); "
+        "text = ''; "
+        "[text := str(f()) for a in ('export_to_markdown','export_to_text') "
+        "if (f := getattr(doc, a, None)) and callable(f) and not text]; "
+        "json.dump({'text': text or ''}, sys.stdout)"
+    )
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", script, pdf_path],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        if result.returncode != 0:
+            logger.warning(
+                "OCR subprocess exited %d for %s: %s",
+                result.returncode, pdf_path, result.stderr[:500],
+            )
+            return ""
+        payload = json.loads(result.stdout)
+        return payload.get("text", "")
+    except subprocess.TimeoutExpired:
+        logger.warning("OCR subprocess timed out after %ds for %s", timeout, pdf_path)
+        return ""
+    except (json.JSONDecodeError, Exception) as exc:
+        logger.warning("OCR subprocess result error for %s: %s", pdf_path, exc)
+        return ""
+
+
+def _extract_with_docling_ocr(path: Path, chunk_pages: int = 10) -> str:
     """Extract PDF via Docling with forced full-page OCR.
 
-    Splits large PDFs into chunks to avoid memory exhaustion, then
-    concatenates the results.
+    Splits large PDFs into chunks and runs each chunk's OCR in a
+    separate subprocess for crash isolation (segfault-safe).
     """
     import gc
     import os
@@ -293,12 +352,15 @@ def _extract_with_docling_ocr(path: Path, chunk_pages: int = 20) -> str:
         total = len(src)
 
         if total <= chunk_pages:
-            text = _docling_ocr_convert(str(path))
+            text = _subprocess_ocr_convert(str(path))
+            if not text:
+                # Fall back to in-process if subprocess fails
+                text = _docling_ocr_convert(str(path))
             if not text:
                 raise RuntimeError("Docling OCR conversion produced no content")
             return text
 
-        logger.info("Splitting %d-page PDF into %d-page chunks for OCR", total, chunk_pages)
+        logger.info("Splitting %d-page PDF into %d-page chunks for OCR (subprocess-isolated)", total, chunk_pages)
         parts: list[str] = []
         for start in range(0, total, chunk_pages):
             end = min(start + chunk_pages, total)
@@ -313,7 +375,11 @@ def _extract_with_docling_ocr(path: Path, chunk_pages: int = 20) -> str:
                 chunk.save(tmp_path)
                 chunk.close()
                 chunk = None
-                text = _docling_ocr_convert(tmp_path)
+                text = _subprocess_ocr_convert(tmp_path)
+                if not text.strip():
+                    # Fall back to in-process for this chunk
+                    logger.info("Subprocess empty for pages %d-%d, trying in-process", start, end - 1)
+                    text = _docling_ocr_convert(tmp_path)
                 if text.strip():
                     parts.append(text)
                     logger.info("OCR chunk pages %d-%d: %d chars", start, end - 1, len(text))
