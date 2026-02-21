@@ -189,7 +189,7 @@ Build knowledge graph from Obsidian + course corpus. Hybrid retrieval with PCST 
 
 ---
 
-## Phase 8: Regression and Safety Tests [checkpoint: pending]
+## Phase 8: Regression and Safety Tests [checkpoint: a6f09cca]
 
 Contract tests, telemetry guards, and hallucination resistance.
 
