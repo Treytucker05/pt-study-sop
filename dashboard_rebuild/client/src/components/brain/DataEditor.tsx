@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Trash2, ChevronLeft, ChevronRight, Check, X } from "lucide-react";
+import { useToast } from "@/use-toast";
 
 const PAGE_SIZE = 100;
 
@@ -14,6 +15,7 @@ interface EditingCell {
 
 export function DataEditor() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -43,6 +45,7 @@ export function DataEditor() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["data", "rows", selectedTable] });
       setEditing(null);
+      toast({ title: "Row updated", description: "Database record saved." });
     },
   });
 
@@ -51,6 +54,7 @@ export function DataEditor() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["data", "rows", selectedTable] });
       queryClient.invalidateQueries({ queryKey: ["data", "schema", selectedTable] });
+      toast({ title: "Row deleted", description: "Record removed from database." });
     },
   });
 
@@ -60,6 +64,7 @@ export function DataEditor() {
       queryClient.invalidateQueries({ queryKey: ["data", "rows", selectedTable] });
       queryClient.invalidateQueries({ queryKey: ["data", "schema", selectedTable] });
       setSelected(new Set());
+      toast({ title: "Rows deleted", description: "Records removed from database." });
     },
   });
 

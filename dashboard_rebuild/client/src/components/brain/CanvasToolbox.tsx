@@ -214,7 +214,7 @@ export function CanvasToolbox({
       className="absolute z-50 select-none"
       style={{ left: pos.x, top: pos.y }}
     >
-      <div className="bg-black/90 border-2 border-primary/60 shadow-lg shadow-primary/10">
+      <div className="bg-black/90 border-2 border-primary/60 shadow-none">
         {/* Header / drag bar */}
         <div
           className="flex items-center gap-1 px-1.5 py-0.5 bg-primary/10 cursor-grab active:cursor-grabbing border-b border-primary/30"
