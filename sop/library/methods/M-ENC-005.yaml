@@ -1,61 +1,74 @@
 id: M-ENC-005
 name: Why-Chain
 category: encode
-description: Ask 'why?' 3-5 times in succession about a concept to build causal depth. Each answer becomes the premise for the next question. Based on elaborative interrogation (Dunlosky et al.).
+description: Ask 'why?' 3-5 times in succession about a concept to build causal depth.
+  Each answer becomes the premise for the next question. Based on elaborative interrogation
+  (Dunlosky et al.).
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
 control_stage: ENCODE
 status: validated
 tags:
-  - elaboration
-  - causal
-  - depth
-  - evidence-based
+- elaboration
+- causal
+- depth
+- evidence-based
 mechanisms:
-  - elaboration
-  - generation
+- elaboration
+- generation
 inputs:
-  - Initial statement or fact to interrogate
-  - Source material for verification
+- Initial statement or fact to interrogate
+- Source material for verification
 steps:
-  - step: 1
-    action: Write the initial statement/fact
-    notes: "Example: 'ACE inhibitors cause cough'"
-  - step: 2
-    action: "Ask: 'Why is this true?'"
-    notes: Write the answer as a new statement
-  - step: 3
-    action: "Ask 'why?' about your answer"
-    notes: Go one level deeper
-  - step: 4
-    action: Repeat until you hit 3-5 levels or bedrock knowledge
-    notes: Bedrock = can't explain further without new learning
-  - step: 5
-    action: Verify chain accuracy with source material
-    notes: Flag any errors for correction
+- step: 1
+  action: Write the initial statement/fact
+  notes: 'Example: ''ACE inhibitors cause cough'''
+- step: 2
+  action: 'Ask: ''Why is this true?'''
+  notes: Write the answer as a new statement
+- step: 3
+  action: Ask 'why?' about your answer
+  notes: Go one level deeper
+- step: 4
+  action: Repeat until you hit 3-5 levels or bedrock knowledge
+  notes: Bedrock = can't explain further without new learning
+- step: 5
+  action: Verify chain accuracy with source material
+  notes: Flag any errors for correction
 outputs:
-  - Why-chain document (3-5 linked explanations)
-  - Depth level reached
-  - Verification status
+- Why-chain document (3-5 linked explanations)
+- Depth level reached
+- Verification status
 stop_criteria:
-  - 3-5 why levels completed
-  - Hit bedrock knowledge
-  - Chain verified against source
+- 3-5 why levels completed
+- Hit bedrock knowledge
+- Chain verified against source
 failure_modes:
-  - mode: Circular reasoning
-    mitigation: Each answer must introduce new information
-  - mode: Stopping too early
-    mitigation: Require minimum 3 levels
-  - mode: Making up explanations
-    mitigation: Verify each level against source
+- mode: Circular reasoning
+  mitigation: Each answer must introduce new information
+- mode: Stopping too early
+  mitigation: Require minimum 3 levels
+- mode: Making up explanations
+  mitigation: Verify each level against source
 logging_fields:
-  - initial_statement
-  - chain_depth
-  - verification_status
-  - bedrock_reached
+- initial_statement
+- chain_depth
+- verification_status
+- bedrock_reached
 evidence:
   citation: Dunlosky et al. (2013)
-  finding: Elaborative interrogation rated moderate utility for learning; builds causal understanding
+  finding: Elaborative interrogation rated moderate utility for learning; builds causal
+    understanding
   source: seed_methods.py
-evidence_raw: Dunlosky et al. (2013); elaborative interrogation rated moderate utility for learning
+evidence_raw: Dunlosky et al. (2013); elaborative interrogation rated moderate utility
+  for learning
+knobs:
+  cognitive_depth: mechanism
+  scaffolding_intensity: heavy_hints
+  output_format: markdown_table
+facilitation_prompt: You are guiding the student through the encoding phase. The student
+  needs to structure their knowledge. Your task is to generate a structured breakdown
+  at a mechanism level. Provide scaffolding at the heavy_hints level. Output your
+  response as a markdown_table.
+has_facilitation_prompt: Y

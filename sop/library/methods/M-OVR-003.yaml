@@ -1,42 +1,57 @@
 id: M-OVR-003
 name: Drill Sheet Builder
 category: overlearn
-description: Build an interleaved drill sheet (30-60 timed items) and define cross-session validation checks.
+description: Build an interleaved drill sheet (30-60 timed items) and define cross-session
+  validation checks.
 default_duration_min: 10
 energy_cost: medium
 best_stage: consolidation
 control_stage: OVERLEARN
 status: draft
 tags:
-  - overlearning
-  - drills
-  - consolidation
+- overlearning
+- drills
+- consolidation
 mechanisms:
-  - spacing
-  - interleaving
-  - retrieval
+- spacing
+- interleaving
+- retrieval
 inputs:
-  - Question Bank Seed
-  - ErrorLog trends
+- Question Bank Seed
+- ErrorLog trends
 steps:
-  - step: 1
-    action: Assemble 30-60 interleaved timed items
-    notes: Include weak objectives and prior misses
-  - step: 2
-    action: Define two-session validation criteria
-    notes: Same objective must be passed across two sessions
-  - step: 3
-    action: Store drill sheet and validation checklist artifacts
-    notes: Keep objective IDs attached to items
+- step: 1
+  action: Assemble 30-60 interleaved timed items
+  notes: Include weak objectives and prior misses
+- step: 2
+  action: Define two-session validation criteria
+  notes: Same objective must be passed across two sessions
+- step: 3
+  action: Store drill sheet and validation checklist artifacts
+  notes: Keep objective IDs attached to items
 outputs:
-  - DrillSheet
-  - CrossSessionValidation checklist
+- DrillSheet
+- CrossSessionValidation checklist
 stop_criteria:
-  - Drill sheet has 30-60 items
-  - Cross-session validation criteria defined
+- Drill sheet has 30-60 items
+- Cross-session validation criteria defined
 evidence:
   citation: Rawson & Dunlosky (2011)
   finding: Successive relearning with repeated retrieval strengthens durable mastery
   source: control-plane migration
-evidence_raw: Rawson & Dunlosky (2011); repeated relearning across sessions improves retention
-
+evidence_raw: Rawson & Dunlosky (2011); repeated relearning across sessions improves
+  retention
+knobs:
+  scaffolding_intensity: minimal_nudges
+  feedback_style: strict_gap_analysis
+  output_format: json_rubric
+facilitation_prompt: You are a strict examiner conducting a retrieval practice drill.
+  You must operate at a minimal_nudges level. Ask the student one question at a time.
+  Evaluate their answer strictly. Provide a hint based on the scaffolding level, but
+  NEVER reveal the final answer. Output a hidden JSON evaluation logging 'correct'
+  or 'incorrect' for the system telemetry.
+has_facilitation_prompt: Y
+gates:
+- rule: requires_reference_targets
+  threshold: 0.95
+  fallback_action: redirect_to_encode

@@ -1,68 +1,88 @@
 id: M-RET-005
 name: Variable Retrieval
 category: retrieve
-description: 'Retrieve the same concept in 3 different formats: (1) free recall, (2) application question, (3) compare/contrast. Varied retrieval contexts build more flexible memory traces.'
+description: 'Retrieve the same concept in 3 different formats: (1) free recall, (2)
+  application question, (3) compare/contrast. Varied retrieval contexts build more
+  flexible memory traces.'
 default_duration_min: 10
 energy_cost: medium
 best_stage: review
 control_stage: RETRIEVE
 status: validated
 tags:
-  - varied-practice
-  - transfer
-  - flexible-retrieval
+- varied-practice
+- transfer
+- flexible-retrieval
 mechanisms:
-  - retrieval
-  - transfer
-  - elaboration
-  - varied_practice
+- retrieval
+- transfer
+- elaboration
+- varied_practice
 inputs:
-  - Single concept or topic to retrieve
-  - Three retrieval format prompts (free recall, application, compare/contrast)
-  - Reference materials for verification (closed during retrieval)
+- Single concept or topic to retrieve
+- Three retrieval format prompts (free recall, application, compare/contrast)
+- Reference materials for verification (closed during retrieval)
 steps:
-  - step: 1
-    action: Select one concept to practice in varied formats
-    notes: Pick a concept you know reasonably well — this is for flexibility, not first learning
-  - step: 2
-    action: "Format 1 - Free Recall: Write everything you know about the concept"
-    notes: No prompts, no structure — just dump what you remember
-  - step: 3
-    action: "Format 2 - Application: Answer a scenario question using the concept"
-    notes: "Example: 'Patient presents with X, how does [concept] apply?'"
-  - step: 4
-    action: "Format 3 - Compare/Contrast: Explain how this concept differs from a related one"
-    notes: Discrimination builds stronger memory traces
-  - step: 5
-    action: Review and verify all three outputs against source materials
-    notes: Check for accuracy and completeness in each format
-  - step: 6
-    action: Note which format was hardest — that's where your weakness is
-    notes: Format difficulty reveals retrieval flexibility gaps
+- step: 1
+  action: Select one concept to practice in varied formats
+  notes: Pick a concept you know reasonably well — this is for flexibility, not first
+    learning
+- step: 2
+  action: 'Format 1 - Free Recall: Write everything you know about the concept'
+  notes: No prompts, no structure — just dump what you remember
+- step: 3
+  action: 'Format 2 - Application: Answer a scenario question using the concept'
+  notes: 'Example: ''Patient presents with X, how does [concept] apply?'''
+- step: 4
+  action: 'Format 3 - Compare/Contrast: Explain how this concept differs from a related
+    one'
+  notes: Discrimination builds stronger memory traces
+- step: 5
+  action: Review and verify all three outputs against source materials
+  notes: Check for accuracy and completeness in each format
+- step: 6
+  action: Note which format was hardest — that's where your weakness is
+  notes: Format difficulty reveals retrieval flexibility gaps
 outputs:
-  - Three retrieval outputs (free recall, application, compare/contrast)
-  - Accuracy assessment for each format
-  - Difficulty ranking of formats
-  - Flexibility gap identification
+- Three retrieval outputs (free recall, application, compare/contrast)
+- Accuracy assessment for each format
+- Difficulty ranking of formats
+- Flexibility gap identification
 stop_criteria:
-  - All three formats completed
-  - Verification against source complete
-  - Format difficulty pattern noted
+- All three formats completed
+- Verification against source complete
+- Format difficulty pattern noted
 failure_modes:
-  - mode: Rushing through formats without genuine retrieval effort
-    mitigation: Treat each format as a separate mini-test — commit before checking
-  - mode: Picking a concept you don't know well enough yet
-    mitigation: Variable retrieval is for flexibility — use on already-encoded material
-  - mode: Skipping the compare/contrast format
-    mitigation: Compare/contrast is often hardest — don't skip it
+- mode: Rushing through formats without genuine retrieval effort
+  mitigation: Treat each format as a separate mini-test — commit before checking
+- mode: Picking a concept you don't know well enough yet
+  mitigation: Variable retrieval is for flexibility — use on already-encoded material
+- mode: Skipping the compare/contrast format
+  mitigation: Compare/contrast is often hardest — don't skip it
 logging_fields:
-  - concept_practiced
-  - format_1_accuracy
-  - format_2_accuracy
-  - format_3_accuracy
-  - hardest_format
+- concept_practiced
+- format_1_accuracy
+- format_2_accuracy
+- format_3_accuracy
+- hardest_format
 evidence:
   citation: Morris et al. (1977)
-  finding: PNAS 2024; varied retrieval practice produces more durable and transferable knowledge than constant retrieval
+  finding: PNAS 2024; varied retrieval practice produces more durable and transferable
+    knowledge than constant retrieval
   source: seed_methods.py
-evidence_raw: Morris et al. (1977); PNAS 2024; varied retrieval practice produces more durable and transferable knowledge than constant retrieval
+evidence_raw: Morris et al. (1977); PNAS 2024; varied retrieval practice produces
+  more durable and transferable knowledge than constant retrieval
+knobs:
+  scaffolding_intensity: minimal_nudges
+  feedback_style: strict_gap_analysis
+  output_format: json_rubric
+facilitation_prompt: You are a strict examiner conducting a retrieval practice drill.
+  You must operate at a minimal_nudges level. Ask the student one question at a time.
+  Evaluate their answer strictly. Provide a hint based on the scaffolding level, but
+  NEVER reveal the final answer. Output a hidden JSON evaluation logging 'correct'
+  or 'incorrect' for the system telemetry.
+has_facilitation_prompt: Y
+gates:
+- rule: requires_reference_targets
+  threshold: 0.95
+  fallback_action: redirect_to_encode

@@ -1,42 +1,51 @@
 id: M-PRE-009
 name: Emphasis Audit
 category: prepare
-description: Audit what matters most before studying. Separate must-know targets from nice-to-know detail and set explicit goal targets for this run.
+description: Audit what matters most before studying. Separate must-know targets from
+  nice-to-know detail and set explicit goal targets for this run.
 default_duration_min: 4
 energy_cost: low
 best_stage: first_exposure
 control_stage: PRIME
 status: draft
 tags:
-  - prime
-  - prioritization
-  - goal-setting
+- prime
+- prioritization
+- goal-setting
 mechanisms:
-  - metacognitive_monitoring
-  - calibration
+- metacognitive_monitoring
+- calibration
 inputs:
-  - Objectives list
-  - Upcoming assessment context
+- Objectives list
+- Upcoming assessment context
 steps:
-  - step: 1
-    action: Mark each objective as must-know or secondary
-    notes: Use exam relevance and frequency
-  - step: 2
-    action: Record top 3 goal targets for this session
-    notes: Goals must be observable
-  - step: 3
-    action: Capture unknowns and predictions
-    notes: Unknown is allowed and expected
+- step: 1
+  action: Mark each objective as must-know or secondary
+  notes: Use exam relevance and frequency
+- step: 2
+  action: Record top 3 goal targets for this session
+  notes: Goals must be observable
+- step: 3
+  action: Capture unknowns and predictions
+  notes: Unknown is allowed and expected
 outputs:
-  - GoalTargets
-  - Unknowns
-  - Predictions
+- GoalTargets
+- Unknowns
+- Predictions
 stop_criteria:
-  - Top 3 goals are explicit
-  - Unknowns and predictions captured
+- Top 3 goals are explicit
+- Unknowns and predictions captured
 evidence:
   citation: Dunlosky et al. (2013)
   finding: Metacognitive planning improves study efficiency and calibration
   source: control-plane migration
 evidence_raw: Dunlosky et al. (2013); planning and monitoring improve learning outcomes
-
+knobs:
+  feedback_style: supportive_synthesis
+  cognitive_depth: definition
+  output_format: bulleted_list
+facilitation_prompt: You are an expert tutor preparing the student for a new topic.
+  Using a supportive_synthesis approach, help the student map their existing knowledge
+  to the upcoming concept. Keep the focus at a definition level to serve as an advance
+  organizer.
+has_facilitation_prompt: Y

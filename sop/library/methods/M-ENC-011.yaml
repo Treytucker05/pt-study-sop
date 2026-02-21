@@ -1,68 +1,78 @@
 id: M-ENC-011
 name: Process Flowchart
 category: encode
-description: Draw a sequential diagram showing a process, pathway, or algorithm. Include decision points where applicable. Use Mermaid graph TD syntax for dashboard editor.
+description: Draw a sequential diagram showing a process, pathway, or algorithm. Include
+  decision points where applicable. Use Mermaid graph TD syntax for dashboard editor.
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
 control_stage: ENCODE
 status: validated
 tags:
-  - visual
-  - mermaid
-  - sequential
-  - procedural
+- visual
+- mermaid
+- sequential
+- procedural
 mechanisms:
-  - elaboration
-  - dual_coding
-  - generation
+- elaboration
+- dual_coding
+- generation
 inputs:
-  - Process or algorithm to diagram
-  - Source material with step sequence
-  - Mermaid editor or blank paper
+- Process or algorithm to diagram
+- Source material with step sequence
+- Mermaid editor or blank paper
 steps:
-  - step: 1
-    action: Identify the start point (input/trigger)
-    notes: What initiates this process?
-  - step: 2
-    action: List all steps in sequential order
-    notes: Include every decision point
-  - step: 3
-    action: Draw boxes for steps, diamonds for decisions
-    notes: Standard flowchart conventions
-  - step: 4
-    action: Connect with arrows showing flow direction
-    notes: Label decision branches (Yes/No, High/Low)
-  - step: 5
-    action: Identify loops and feedback points
-    notes: Where does the process repeat or reset?
-  - step: 6
-    action: Verify against source material
-    notes: Flag any missing or incorrect steps
+- step: 1
+  action: Identify the start point (input/trigger)
+  notes: What initiates this process?
+- step: 2
+  action: List all steps in sequential order
+  notes: Include every decision point
+- step: 3
+  action: Draw boxes for steps, diamonds for decisions
+  notes: Standard flowchart conventions
+- step: 4
+  action: Connect with arrows showing flow direction
+  notes: Label decision branches (Yes/No, High/Low)
+- step: 5
+  action: Identify loops and feedback points
+  notes: Where does the process repeat or reset?
+- step: 6
+  action: Verify against source material
+  notes: Flag any missing or incorrect steps
 outputs:
-  - Completed flowchart
-  - Mermaid code (if using dashboard)
-  - Decision point list
-  - Loop/feedback points identified
+- Completed flowchart
+- Mermaid code (if using dashboard)
+- Decision point list
+- Loop/feedback points identified
 stop_criteria:
-  - All steps included
-  - All decisions branched correctly
-  - Flowchart verified against source
+- All steps included
+- All decisions branched correctly
+- Flowchart verified against source
 failure_modes:
-  - mode: Missing decision branches
-    mitigation: Every diamond must have labeled Yes/No paths
-  - mode: Linear-only thinking
-    mitigation: Actively look for loops and feedback
-  - mode: Too complex single diagram
-    mitigation: Split into sub-processes if >12 steps
+- mode: Missing decision branches
+  mitigation: Every diamond must have labeled Yes/No paths
+- mode: Linear-only thinking
+  mitigation: Actively look for loops and feedback
+- mode: Too complex single diagram
+  mitigation: Split into sub-processes if >12 steps
 logging_fields:
-  - process_charted
-  - step_count
-  - decision_count
-  - loop_count
-  - verification_status
+- process_charted
+- step_count
+- decision_count
+- loop_count
+- verification_status
 evidence:
   citation: Winn (1991)
   finding: Spatial-sequential diagrams improve procedural understanding and memory
   source: seed_methods.py
 evidence_raw: Winn (1991); spatial-sequential diagrams improve procedural understanding
+knobs:
+  cognitive_depth: mechanism
+  scaffolding_intensity: heavy_hints
+  output_format: markdown_table
+facilitation_prompt: You are guiding the student through the encoding phase. The student
+  needs to structure their knowledge. Your task is to generate a structured breakdown
+  at a mechanism level. Provide scaffolding at the heavy_hints level. Output your
+  response as a markdown_table.
+has_facilitation_prompt: Y

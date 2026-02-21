@@ -1,66 +1,79 @@
 id: M-ENC-006
 name: Think-Aloud Protocol
 category: encode
-description: Verbalize your reasoning step-by-step while working through a problem or reading. Exposes gaps in logic and strengthens self-explanation. Based on Chi et al. self-explanation research.
+description: Verbalize your reasoning step-by-step while working through a problem
+  or reading. Exposes gaps in logic and strengthens self-explanation. Based on Chi
+  et al. self-explanation research.
 default_duration_min: 5
 energy_cost: medium
 best_stage: review
 control_stage: ENCODE
 status: validated
 tags:
-  - self-explanation
-  - metacognition
-  - verbal
-  - evidence-based
+- self-explanation
+- metacognition
+- verbal
+- evidence-based
 mechanisms:
-  - elaboration
-  - calibration
-  - feedback
+- elaboration
+- calibration
+- feedback
 inputs:
-  - Problem or passage to work through
-  - Recording device (optional but recommended)
-  - Quiet environment for speaking aloud
+- Problem or passage to work through
+- Recording device (optional but recommended)
+- Quiet environment for speaking aloud
 steps:
-  - step: 1
-    action: Read the first sentence or problem step
-    notes: Take one unit at a time
-  - step: 2
-    action: Verbalize what you understand from it
-    notes: "Say: 'This means that...'"
-  - step: 3
-    action: Explain how it connects to what came before
-    notes: "Say: 'This follows because...'"
-  - step: 4
-    action: Predict what comes next
-    notes: "Say: 'So I expect...'"
-  - step: 5
-    action: Note any confusion points aloud
-    notes: "Say: 'I'm confused about...'"
-  - step: 6
-    action: Move to next unit and repeat
-    notes: Continue until passage/problem complete
+- step: 1
+  action: Read the first sentence or problem step
+  notes: Take one unit at a time
+- step: 2
+  action: Verbalize what you understand from it
+  notes: 'Say: ''This means that...'''
+- step: 3
+  action: Explain how it connects to what came before
+  notes: 'Say: ''This follows because...'''
+- step: 4
+  action: Predict what comes next
+  notes: 'Say: ''So I expect...'''
+- step: 5
+  action: Note any confusion points aloud
+  notes: 'Say: ''I''m confused about...'''
+- step: 6
+  action: Move to next unit and repeat
+  notes: Continue until passage/problem complete
 outputs:
-  - Think-aloud recording or notes
-  - Confusion points list
-  - Connection map (implicit)
+- Think-aloud recording or notes
+- Confusion points list
+- Connection map (implicit)
 stop_criteria:
-  - Passage or problem fully processed
-  - All confusion points noted
-  - 5 minutes elapsed (or content complete)
+- Passage or problem fully processed
+- All confusion points noted
+- 5 minutes elapsed (or content complete)
 failure_modes:
-  - mode: Silent reading
-    mitigation: Must vocalize; silent defeats the purpose
-  - mode: Just reading aloud without explaining
-    mitigation: Require "This means..." after each unit
-  - mode: Skipping confusion points
-    mitigation: Pause and note whenever hesitation occurs
+- mode: Silent reading
+  mitigation: Must vocalize; silent defeats the purpose
+- mode: Just reading aloud without explaining
+  mitigation: Require "This means..." after each unit
+- mode: Skipping confusion points
+  mitigation: Pause and note whenever hesitation occurs
 logging_fields:
-  - content_processed
-  - confusion_count
-  - prediction_accuracy
-  - total_time
+- content_processed
+- confusion_count
+- prediction_accuracy
+- total_time
 evidence:
   citation: Chi et al. (1994)
-  finding: Self-explanation leads to deeper understanding and better problem-solving across domains
+  finding: Self-explanation leads to deeper understanding and better problem-solving
+    across domains
   source: seed_methods.py
-evidence_raw: Chi et al. (1994); self-explanation leads to deeper understanding and better problem-solving
+evidence_raw: Chi et al. (1994); self-explanation leads to deeper understanding and
+  better problem-solving
+knobs:
+  cognitive_depth: mechanism
+  scaffolding_intensity: heavy_hints
+  output_format: markdown_table
+facilitation_prompt: You are guiding the student through the encoding phase. The student
+  needs to structure their knowledge. Your task is to generate a structured breakdown
+  at a mechanism level. Provide scaffolding at the heavy_hints level. Output your
+  response as a markdown_table.
+has_facilitation_prompt: Y

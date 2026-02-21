@@ -1,41 +1,51 @@
 id: M-CAL-001
 name: Micro Precheck
 category: prepare
-description: Run a short diagnostic calibration set (5-10 items in 2-5 minutes) to estimate current readiness without grading.
+description: Run a short diagnostic calibration set (5-10 items in 2-5 minutes) to
+  estimate current readiness without grading.
 default_duration_min: 4
 energy_cost: medium
 best_stage: first_exposure
 control_stage: CALIBRATE
 status: draft
 tags:
-  - calibrate
-  - diagnostic
-  - baseline
+- calibrate
+- diagnostic
+- baseline
 mechanisms:
-  - calibration
-  - retrieval
+- calibration
+- retrieval
 inputs:
-  - Objective list
-  - Item prompts aligned to assessment mode
+- Objective list
+- Item prompts aligned to assessment mode
 steps:
-  - step: 1
-    action: Start timer for 2-5 minutes
-    notes: Hard-stop at 5 minutes
-  - step: 2
-    action: Attempt 5-10 short items with no hints
-    notes: If any item exceeds 45 seconds, mark miss and move on
-  - step: 3
-    action: Mark response state as hit or miss
-    notes: No grading summary beyond hit/miss
+- step: 1
+  action: Start timer for 2-5 minutes
+  notes: Hard-stop at 5 minutes
+- step: 2
+  action: Attempt 5-10 short items with no hints
+  notes: If any item exceeds 45 seconds, mark miss and move on
+- step: 3
+  action: Mark response state as hit or miss
+  notes: No grading summary beyond hit/miss
 outputs:
-  - CalibrateResults.csv
-  - Item hit/miss baseline
+- CalibrateResults.csv
+- Item hit/miss baseline
 stop_criteria:
-  - 5-10 items attempted
-  - Timer <=5 minutes
+- 5-10 items attempted
+- Timer <=5 minutes
 evidence:
   citation: Kornell et al. (2009)
   finding: Pretesting improves subsequent encoding and reveals calibration gaps
   source: control-plane migration
-evidence_raw: Kornell et al. (2009); pretesting supports later learning even with initial misses
-
+evidence_raw: Kornell et al. (2009); pretesting supports later learning even with
+  initial misses
+knobs:
+  feedback_style: supportive_synthesis
+  cognitive_depth: definition
+  output_format: bulleted_list
+facilitation_prompt: You are an expert tutor preparing the student for a new topic.
+  Using a supportive_synthesis approach, help the student map their existing knowledge
+  to the upcoming concept. Keep the focus at a definition level to serve as an advance
+  organizer.
+has_facilitation_prompt: Y

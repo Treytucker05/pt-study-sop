@@ -1,68 +1,80 @@
 id: M-ENC-009
 name: Concept Map
 category: encode
-description: Build a node-and-link diagram showing relationships between concepts. Self-constructed maps force elaboration and reveal structural gaps. Use Mermaid syntax for dashboard editor.
+description: Build a node-and-link diagram showing relationships between concepts.
+  Self-constructed maps force elaboration and reveal structural gaps. Use Mermaid
+  syntax for dashboard editor.
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
 control_stage: ENCODE
 status: validated
 tags:
-  - visual
-  - mermaid
-  - relationships
-  - elaboration
-  - sop-core
+- visual
+- mermaid
+- relationships
+- elaboration
+- sop-core
 mechanisms:
-  - elaboration
-  - dual_coding
-  - generation
+- elaboration
+- dual_coding
+- generation
 inputs:
-  - Topic with multiple related concepts (5-15 nodes)
-  - Blank paper or Mermaid editor
-  - Source material for verification
+- Topic with multiple related concepts (5-15 nodes)
+- Blank paper or Mermaid editor
+- Source material for verification
 steps:
-  - step: 1
-    action: List all key concepts from the topic (nodes)
-    notes: 5-15 concepts is optimal; more becomes unwieldy
-  - step: 2
-    action: Place the central concept in the middle
-    notes: This is the hub of your map
-  - step: 3
-    action: Connect related concepts with labeled arrows
-    notes: "Labels describe relationship: 'causes', 'is-a', 'has-a', 'regulates'"
-  - step: 4
-    action: Add cross-links between non-adjacent nodes
-    notes: Cross-links show deeper understanding
-  - step: 5
-    action: Verify relationships against source
-    notes: Flag any incorrect links
-  - step: 6
-    action: Identify missing concepts and add them
-    notes: Gaps in the map reveal gaps in knowledge
+- step: 1
+  action: List all key concepts from the topic (nodes)
+  notes: 5-15 concepts is optimal; more becomes unwieldy
+- step: 2
+  action: Place the central concept in the middle
+  notes: This is the hub of your map
+- step: 3
+  action: Connect related concepts with labeled arrows
+  notes: 'Labels describe relationship: ''causes'', ''is-a'', ''has-a'', ''regulates'''
+- step: 4
+  action: Add cross-links between non-adjacent nodes
+  notes: Cross-links show deeper understanding
+- step: 5
+  action: Verify relationships against source
+  notes: Flag any incorrect links
+- step: 6
+  action: Identify missing concepts and add them
+  notes: Gaps in the map reveal gaps in knowledge
 outputs:
-  - Concept map (nodes + labeled links)
-  - Cross-link count
-  - Missing concept list
-  - Mermaid code (if using dashboard)
+- Concept map (nodes + labeled links)
+- Cross-link count
+- Missing concept list
+- Mermaid code (if using dashboard)
 stop_criteria:
-  - All concepts placed and connected
-  - Relationships labeled
-  - Map verified against source
+- All concepts placed and connected
+- Relationships labeled
+- Map verified against source
 failure_modes:
-  - mode: Unlabeled arrows
-    mitigation: Require relationship type on every link
-  - mode: Spoke-only structure
-    mitigation: Require at least 2 cross-links between peripheral nodes
-  - mode: Too many nodes
-    mitigation: Limit to 15 nodes; chunk into sub-maps if needed
+- mode: Unlabeled arrows
+  mitigation: Require relationship type on every link
+- mode: Spoke-only structure
+  mitigation: Require at least 2 cross-links between peripheral nodes
+- mode: Too many nodes
+  mitigation: Limit to 15 nodes; chunk into sub-maps if needed
 logging_fields:
-  - node_count
-  - link_count
-  - cross_link_count
-  - gaps_identified
+- node_count
+- link_count
+- cross_link_count
+- gaps_identified
 evidence:
   citation: Nesbit & Adesope (2006)
-  finding: "Concept maps d=0.82; self-constructed > provided (d=1.00 vs 0.37)"
+  finding: Concept maps d=0.82; self-constructed > provided (d=1.00 vs 0.37)
   source: seed_methods.py
-evidence_raw: Nesbit & Adesope (2006) d=0.82; self-constructed > provided (d=1.00 vs 0.37)
+evidence_raw: Nesbit & Adesope (2006) d=0.82; self-constructed > provided (d=1.00
+  vs 0.37)
+knobs:
+  cognitive_depth: mechanism
+  scaffolding_intensity: heavy_hints
+  output_format: markdown_table
+facilitation_prompt: You are guiding the student through the encoding phase. The student
+  needs to structure their knowledge. Your task is to generate a structured breakdown
+  at a mechanism level. Provide scaffolding at the heavy_hints level. Output your
+  response as a markdown_table.
+has_facilitation_prompt: Y

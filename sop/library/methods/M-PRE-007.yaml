@@ -1,63 +1,75 @@
 id: M-PRE-007
 name: Pre-Test
 category: prepare
-description: Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply.
+description: Attempt to answer questions on the topic BEFORE studying it. Getting
+  answers wrong primes the brain to encode the correct information more deeply.
 default_duration_min: 5
 energy_cost: low
 best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
 tags:
-  - pre-testing
-  - priming
-  - desirable-difficulty
-  - sop-core
+- pre-testing
+- priming
+- desirable-difficulty
+- sop-core
 mechanisms:
-  - retrieval
-  - desirable_difficulty
-  - calibration
+- retrieval
+- desirable_difficulty
+- calibration
 inputs:
-  - Pre-test questions (3-5 questions on upcoming topic)
-  - Timer (5 min max)
-  - Answer sheet (to record guesses)
+- Pre-test questions (3-5 questions on upcoming topic)
+- Timer (5 min max)
+- Answer sheet (to record guesses)
 steps:
-  - step: 1
-    action: Read pre-test questions without looking at source material
-    notes: Questions can come from Tutor, past exams, or learning objectives
-  - step: 2
-    action: Attempt to answer each question — guess if uncertain
-    notes: Wrong answers are valuable; they prime encoding
-  - step: 3
-    action: Rate confidence for each answer (1-5)
-    notes: Calibration awareness is part of the benefit
-  - step: 4
-    action: Do NOT check answers yet
-    notes: Answers come during study; the gap creates encoding motivation
-  - step: 5
-    action: Keep pre-test visible during study
-    notes: Check answers as you encounter them in the material
+- step: 1
+  action: Read pre-test questions without looking at source material
+  notes: Questions can come from Tutor, past exams, or learning objectives
+- step: 2
+  action: Attempt to answer each question — guess if uncertain
+  notes: Wrong answers are valuable; they prime encoding
+- step: 3
+  action: Rate confidence for each answer (1-5)
+  notes: Calibration awareness is part of the benefit
+- step: 4
+  action: Do NOT check answers yet
+  notes: Answers come during study; the gap creates encoding motivation
+- step: 5
+  action: Keep pre-test visible during study
+  notes: Check answers as you encounter them in the material
 outputs:
-  - Pre-test answers (with confidence ratings)
-  - Encoding priming for correct answers
-  - Calibration baseline
+- Pre-test answers (with confidence ratings)
+- Encoding priming for correct answers
+- Calibration baseline
 stop_criteria:
-  - All questions attempted
-  - Confidence rated
-  - 5 minutes elapsed
+- All questions attempted
+- Confidence rated
+- 5 minutes elapsed
 failure_modes:
-  - mode: Checking answers immediately
-    mitigation: Delay answer checking until after encoding phase
-  - mode: Refusing to guess
-    mitigation: Require an answer for every question; guessing is the point
-  - mode: Pre-test too hard
-    mitigation: Include mix of difficulty; some should be answerable from prior knowledge
+- mode: Checking answers immediately
+  mitigation: Delay answer checking until after encoding phase
+- mode: Refusing to guess
+  mitigation: Require an answer for every question; guessing is the point
+- mode: Pre-test too hard
+  mitigation: Include mix of difficulty; some should be answerable from prior knowledge
 logging_fields:
-  - pretest_question_count
-  - pretest_correct_count
-  - average_confidence
-  - confidence_calibration_error
+- pretest_question_count
+- pretest_correct_count
+- average_confidence
+- confidence_calibration_error
 evidence:
   citation: Richland et al. (2009)
-  finding: Pre-testing primes encoding even when initial answers are wrong; the attempt creates retrieval hooks
+  finding: Pre-testing primes encoding even when initial answers are wrong; the attempt
+    creates retrieval hooks
   source: seed_methods.py
-evidence_raw: Richland et al. (2009); Kornell et al. (2009); pre-testing primes encoding even when initial answers are wrong
+evidence_raw: Richland et al. (2009); Kornell et al. (2009); pre-testing primes encoding
+  even when initial answers are wrong
+knobs:
+  feedback_style: supportive_synthesis
+  cognitive_depth: definition
+  output_format: bulleted_list
+facilitation_prompt: You are an expert tutor preparing the student for a new topic.
+  Using a supportive_synthesis approach, help the student map their existing knowledge
+  to the upcoming concept. Keep the focus at a definition level to serve as an advance
+  organizer.
+has_facilitation_prompt: Y

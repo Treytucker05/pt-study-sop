@@ -1,61 +1,73 @@
 id: M-PRE-001
 name: Brain Dump
 category: prepare
-description: Free-write everything you already know about the topic for 2-3 min. Surfaces prior knowledge and sets a baseline.
+description: Free-write everything you already know about the topic for 2-3 min. Surfaces
+  prior knowledge and sets a baseline.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - warm-up
-  - recall
-  - low-stakes
-  - sop-core
+- warm-up
+- recall
+- low-stakes
+- sop-core
 mechanisms:
-  - generation
-  - retrieval
-  - calibration
+- generation
+- retrieval
+- calibration
 inputs:
-  - Topic name or concept to study
-  - Timer (3 min recommended)
-  - Blank paper or text area
+- Topic name or concept to study
+- Timer (3 min recommended)
+- Blank paper or text area
 steps:
-  - step: 1
-    action: Set a timer for 2-3 minutes
-    notes: Strict time limit prevents overthinking
-  - step: 2
-    action: Write continuously about everything you know on the topic
-    notes: Stream of consciousness — no pausing, no editing, no looking things up
-  - step: 3
-    action: When stuck, write "I don't know..." and continue
-    notes: Identifying gaps is part of the value
-  - step: 4
-    action: Stop when timer ends
-    notes: Do not extend — the constraint is the feature
-  - step: 5
-    action: Review what you wrote and note surprises
-    notes: Often you know more (or less) than expected
+- step: 1
+  action: Set a timer for 2-3 minutes
+  notes: Strict time limit prevents overthinking
+- step: 2
+  action: Write continuously about everything you know on the topic
+  notes: Stream of consciousness — no pausing, no editing, no looking things up
+- step: 3
+  action: When stuck, write "I don't know..." and continue
+  notes: Identifying gaps is part of the value
+- step: 4
+  action: Stop when timer ends
+  notes: Do not extend — the constraint is the feature
+- step: 5
+  action: Review what you wrote and note surprises
+  notes: Often you know more (or less) than expected
 outputs:
-  - Brain dump notes (raw text)
-  - Prior knowledge baseline
-  - Identified knowledge gaps
+- Brain dump notes (raw text)
+- Prior knowledge baseline
+- Identified knowledge gaps
 stop_criteria:
-  - Timer ends (hard stop)
-  - You've exhausted everything you can recall
+- Timer ends (hard stop)
+- You've exhausted everything you can recall
 failure_modes:
-  - mode: Perfectionism paralysis
-    mitigation: Remind that messy is fine — this is a dump, not a draft
-  - mode: Going too long
-    mitigation: Enforce strict timer; value is in the constraint
-  - mode: Looking things up mid-dump
-    mitigation: Close all references before starting
+- mode: Perfectionism paralysis
+  mitigation: Remind that messy is fine — this is a dump, not a draft
+- mode: Going too long
+  mitigation: Enforce strict timer; value is in the constraint
+- mode: Looking things up mid-dump
+  mitigation: Close all references before starting
 logging_fields:
-  - brain_dump_word_count
-  - prior_knowledge_level
-  - gaps_identified
+- brain_dump_word_count
+- prior_knowledge_level
+- gaps_identified
 evidence:
   citation: Brod et al. (2013)
-  finding: Prior knowledge activation improves encoding of new information by providing anchoring schemas
+  finding: Prior knowledge activation improves encoding of new information by providing
+    anchoring schemas
   source: seed_methods.py
-evidence_raw: Brod et al. (2013); prior knowledge activation improves encoding of new information
+evidence_raw: Brod et al. (2013); prior knowledge activation improves encoding of
+  new information
+knobs:
+  feedback_style: supportive_synthesis
+  cognitive_depth: definition
+  output_format: bulleted_list
+facilitation_prompt: You are an expert tutor preparing the student for a new topic.
+  Using a supportive_synthesis approach, help the student map their existing knowledge
+  to the upcoming concept. Keep the focus at a definition level to serve as an advance
+  organizer.
+has_facilitation_prompt: Y

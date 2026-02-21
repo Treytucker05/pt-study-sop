@@ -587,6 +587,13 @@ px vitest run --reporter=verbose (341 passed)
       - synthetic glyph placeholders (`GLYPH<...>`),
       - heavy Latin Extended A/B spillover.
     - Lowered garbling retry threshold to `0.05` to trigger OCR fallback sooner for corrupted extracts.
+
+## 2026-02-21 - Method facilitation prompt automation + bulk backfill
+
+- Added `scripts/update_missing_method_prompts.py` to automate backfilling method YAML metadata when `has_facilitation_prompt` is missing.
+- Script injects standardized `knobs`, category-specific `facilitation_prompt`, `has_facilitation_prompt: Y`, and mandatory `gates` for `retrieve`/`refine`/`overlearn` categories.
+- Ran the script across `sop/library/methods/` and updated 38 files in supported categories (`prepare`, `encode`, `refine`, `retrieve`, `overlearn`).
+- Left 8 `interrogate` category files unchanged because no facilitation template was specified for that category in the requested rule set.
     - Refactored Docling OCR flow into `_docling_ocr_convert(...)` and updated `_extract_with_docling_ocr(...)` to OCR PDFs in page chunks using PyMuPDF, then concatenate chunk results.
   - `brain/dashboard/api_tutor.py`:
     - Sanitizes extracted content by removing replacement chars before returning.

@@ -1,70 +1,85 @@
 id: M-REF-002
 name: Mastery Loop
 category: refine
-description: Re-study items missed during retrieval, then immediately re-test. Repeat until all items are recalled correctly. Based on successive relearning (Rawson & Dunlosky).
+description: Re-study items missed during retrieval, then immediately re-test. Repeat
+  until all items are recalled correctly. Based on successive relearning (Rawson &
+  Dunlosky).
 default_duration_min: 10
 energy_cost: medium
 best_stage: consolidation
 control_stage: REFERENCE
 status: validated
 tags:
-  - successive-relearning
-  - mastery
-  - retest
-  - evidence-based
+- successive-relearning
+- mastery
+- retest
+- evidence-based
 mechanisms:
-  - retrieval
-  - spacing
-  - successive_relearning
-  - mastery_learning
+- retrieval
+- spacing
+- successive_relearning
+- mastery_learning
 inputs:
-  - List of missed items from retrieval practice
-  - Source materials for re-study
-  - Testing mechanism (flashcards, quiz, or Tutor)
-  - Loop tracker (to count iterations)
+- List of missed items from retrieval practice
+- Source materials for re-study
+- Testing mechanism (flashcards, quiz, or Tutor)
+- Loop tracker (to count iterations)
 steps:
-  - step: 1
-    action: Identify all items missed in recent retrieval practice
-    notes: These are your mastery targets — items that need successive relearning
-  - step: 2
-    action: Re-study the first missed item using source materials
-    notes: Brief focused study — 30-60 seconds per item, not lengthy review
-  - step: 3
-    action: Immediately re-test the item without looking at source
-    notes: The test must come immediately after study — no delay
-  - step: 4
-    action: If correct, move to next missed item; if incorrect, mark for another loop
-    notes: Track which items needed multiple loops
-  - step: 5
-    action: After all items attempted, loop back to any that were still incorrect
-    notes: Continue until all items recalled correctly at least once
-  - step: 6
-    action: Record total loops needed per item for future spacing decisions
-    notes: Items needing 3+ loops are weak anchors — schedule for earlier review
+- step: 1
+  action: Identify all items missed in recent retrieval practice
+  notes: These are your mastery targets — items that need successive relearning
+- step: 2
+  action: Re-study the first missed item using source materials
+  notes: Brief focused study — 30-60 seconds per item, not lengthy review
+- step: 3
+  action: Immediately re-test the item without looking at source
+  notes: The test must come immediately after study — no delay
+- step: 4
+  action: If correct, move to next missed item; if incorrect, mark for another loop
+  notes: Track which items needed multiple loops
+- step: 5
+  action: After all items attempted, loop back to any that were still incorrect
+  notes: Continue until all items recalled correctly at least once
+- step: 6
+  action: Record total loops needed per item for future spacing decisions
+  notes: Items needing 3+ loops are weak anchors — schedule for earlier review
 outputs:
-  - Mastery achieved on all targeted items
-  - Loop count per item (difficulty metric)
-  - Weak anchor list (items needing 3+ loops)
-  - Updated spacing recommendations
+- Mastery achieved on all targeted items
+- Loop count per item (difficulty metric)
+- Weak anchor list (items needing 3+ loops)
+- Updated spacing recommendations
 stop_criteria:
-  - All items recalled correctly at least once
-  - Maximum loop limit reached (e.g., 5 loops per item)
-  - Time budget exhausted (with partial progress logged)
+- All items recalled correctly at least once
+- Maximum loop limit reached (e.g., 5 loops per item)
+- Time budget exhausted (with partial progress logged)
 failure_modes:
-  - mode: Re-studying too long before re-testing
-    mitigation: Keep re-study brief (30-60 sec) — the test is where learning happens
-  - mode: Stopping after first correct recall (no overlearning)
-    mitigation: For weak items, aim for 2 correct recalls before moving on
-  - mode: Not tracking loop counts
-    mitigation: Loop counts are diagnostic — always record them
+- mode: Re-studying too long before re-testing
+  mitigation: Keep re-study brief (30-60 sec) — the test is where learning happens
+- mode: Stopping after first correct recall (no overlearning)
+  mitigation: For weak items, aim for 2 correct recalls before moving on
+- mode: Not tracking loop counts
+  mitigation: Loop counts are diagnostic — always record them
 logging_fields:
-  - items_targeted
-  - items_mastered
-  - average_loops_to_mastery
-  - weak_anchors_flagged
-  - total_time_spent
+- items_targeted
+- items_mastered
+- average_loops_to_mastery
+- weak_anchors_flagged
+- total_time_spent
 evidence:
   citation: Rawson & Dunlosky (2011)
   finding: successive relearning combines testing + spacing for durable retention
   source: seed_methods.py
-evidence_raw: Rawson & Dunlosky (2011); successive relearning combines testing + spacing for durable retention
+evidence_raw: Rawson & Dunlosky (2011); successive relearning combines testing + spacing
+  for durable retention
+knobs:
+  feedback_style: socratic_probing
+  cognitive_depth: mechanism
+facilitation_prompt: You are a diagnostic tutor helping a student refine their mental
+  model. The student has demonstrated a misconception. Using elaborative interrogation,
+  ask targeted 'why' and 'how' questions to help them uncover the root cause. Maintain
+  a socratic_probing tone and do not reveal the correct answer directly.
+has_facilitation_prompt: Y
+gates:
+- rule: requires_reference_targets
+  threshold: 0.95
+  fallback_action: redirect_to_encode

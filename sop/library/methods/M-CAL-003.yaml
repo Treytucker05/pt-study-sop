@@ -1,39 +1,50 @@
 id: M-CAL-003
 name: Priority Set
 category: prepare
-description: Convert calibrate misses into a deterministic top-3 weakness set that drives ENCODE method selection.
+description: Convert calibrate misses into a deterministic top-3 weakness set that
+  drives ENCODE method selection.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: CALIBRATE
 status: draft
 tags:
-  - calibrate
-  - prioritization
-  - sequencing
+- calibrate
+- prioritization
+- sequencing
 mechanisms:
-  - adaptive_sequencing
+- adaptive_sequencing
 inputs:
-  - Calibrate results
-  - Confidence tags
+- Calibrate results
+- Confidence tags
 steps:
-  - step: 1
-    action: Group misses by weakness type
-    notes: Use Recall/Confusion/Rule/Representation/Procedure/Computation/Speed
-  - step: 2
-    action: Rank weaknesses by impact and frequency
-    notes: High-confidence misses rank above low-confidence misses
-  - step: 3
-    action: Select top 3 weaknesses for ENCODE
-    notes: Output is deterministic and explicit
+- step: 1
+  action: Group misses by weakness type
+  notes: Use Recall/Confusion/Rule/Representation/Procedure/Computation/Speed
+- step: 2
+  action: Rank weaknesses by impact and frequency
+  notes: High-confidence misses rank above low-confidence misses
+- step: 3
+  action: Select top 3 weaknesses for ENCODE
+  notes: Output is deterministic and explicit
 outputs:
-  - PrioritySet (top 3 weaknesses)
-  - Weakness to method mapping seed
+- PrioritySet (top 3 weaknesses)
+- Weakness to method mapping seed
 stop_criteria:
-  - Exactly 3 prioritized weaknesses
+- Exactly 3 prioritized weaknesses
 evidence:
   citation: Rawson & Dunlosky (2011)
-  finding: Targeted corrective practice improves long-term retention more than broad restudy
+  finding: Targeted corrective practice improves long-term retention more than broad
+    restudy
   source: control-plane migration
-evidence_raw: Rawson & Dunlosky (2011); focused relearning outperforms untargeted review
-
+evidence_raw: Rawson & Dunlosky (2011); focused relearning outperforms untargeted
+  review
+knobs:
+  feedback_style: supportive_synthesis
+  cognitive_depth: definition
+  output_format: bulleted_list
+facilitation_prompt: You are an expert tutor preparing the student for a new topic.
+  Using a supportive_synthesis approach, help the student map their existing knowledge
+  to the upcoming concept. Keep the focus at a definition level to serve as an advance
+  organizer.
+has_facilitation_prompt: Y

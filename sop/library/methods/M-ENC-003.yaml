@@ -1,68 +1,80 @@
 id: M-ENC-003
 name: Draw-Label
 category: encode
-description: Sketch the structure (anatomy, pathway, concept map) and label from memory. Fill gaps with source material.
+description: Sketch the structure (anatomy, pathway, concept map) and label from memory.
+  Fill gaps with source material.
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
 control_stage: ENCODE
 status: validated
 tags:
-  - visual
-  - anatomy
-  - drawing
-  - active
-  - retrieval
+- visual
+- anatomy
+- drawing
+- active
+- retrieval
 mechanisms:
-  - dual_coding
-  - retrieval
-  - generation
+- dual_coding
+- retrieval
+- generation
 inputs:
-  - Structure to draw (anatomy, pathway, diagram)
-  - Blank paper or drawing surface
-  - Source material for gap-filling
+- Structure to draw (anatomy, pathway, diagram)
+- Blank paper or drawing surface
+- Source material for gap-filling
 steps:
-  - step: 1
-    action: Close or cover source material
-    notes: Drawing from memory is the key mechanism
-  - step: 2
-    action: Sketch the basic structure/outline from memory
-    notes: Rough is fine — focus on spatial relationships
-  - step: 3
-    action: Label as many parts as you can recall
-    notes: Leave blank where uncertain
-  - step: 4
-    action: Check source material for gaps
-    notes: Note which labels you missed
-  - step: 5
-    action: Fill in missing labels with a different color
-    notes: Different color highlights gaps for review
-  - step: 6
-    action: Redraw from memory if >30% gaps
-    notes: Repeat until <30% gaps
+- step: 1
+  action: Close or cover source material
+  notes: Drawing from memory is the key mechanism
+- step: 2
+  action: Sketch the basic structure/outline from memory
+  notes: Rough is fine — focus on spatial relationships
+- step: 3
+  action: Label as many parts as you can recall
+  notes: Leave blank where uncertain
+- step: 4
+  action: Check source material for gaps
+  notes: Note which labels you missed
+- step: 5
+  action: Fill in missing labels with a different color
+  notes: Different color highlights gaps for review
+- step: 6
+  action: Redraw from memory if >30% gaps
+  notes: Repeat until <30% gaps
 outputs:
-  - Completed labeled diagram
-  - Gap list (what was missing)
-  - Accuracy percentage
+- Completed labeled diagram
+- Gap list (what was missing)
+- Accuracy percentage
 stop_criteria:
-  - Diagram complete with all labels
-  - Gap rate <30%
-  - 10 minutes elapsed (or earlier if complete)
+- Diagram complete with all labels
+- Gap rate <30%
+- 10 minutes elapsed (or earlier if complete)
 failure_modes:
-  - mode: Looking at source while drawing
-    mitigation: Physically cover source material
-  - mode: Focusing on artistic quality
-    mitigation: Emphasize accuracy over beauty; stick figures acceptable
-  - mode: Not tracking gaps
-    mitigation: Require different-color pen for filled gaps
+- mode: Looking at source while drawing
+  mitigation: Physically cover source material
+- mode: Focusing on artistic quality
+  mitigation: Emphasize accuracy over beauty; stick figures acceptable
+- mode: Not tracking gaps
+  mitigation: Require different-color pen for filled gaps
 logging_fields:
-  - structure_drawn
-  - labels_recalled
-  - labels_missed
-  - gap_percentage
-  - redraw_count
+- structure_drawn
+- labels_recalled
+- labels_missed
+- gap_percentage
+- redraw_count
 evidence:
   citation: Wammes et al. (2016)
-  finding: Drawing effect — drawing produces superior memory compared to writing, especially for visual-spatial content
+  finding: Drawing effect — drawing produces superior memory compared to writing,
+    especially for visual-spatial content
   source: seed_methods.py
-evidence_raw: Wammes et al. (2016); drawing effect — drawing produces superior memory compared to writing
+evidence_raw: Wammes et al. (2016); drawing effect — drawing produces superior memory
+  compared to writing
+knobs:
+  cognitive_depth: mechanism
+  scaffolding_intensity: heavy_hints
+  output_format: markdown_table
+facilitation_prompt: You are guiding the student through the encoding phase. The student
+  needs to structure their knowledge. Your task is to generate a structured breakdown
+  at a mechanism level. Provide scaffolding at the heavy_hints level. Output your
+  response as a markdown_table.
+has_facilitation_prompt: Y

@@ -1,57 +1,68 @@
 id: M-PRE-002
 name: Prediction Questions
 category: prepare
-description: Write 3-5 questions you expect the material to answer. Creates forward hooks for active reading.
+description: Write 3-5 questions you expect the material to answer. Creates forward
+  hooks for active reading.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - priming
-  - curiosity
-  - metacognition
-  - sop-core
+- priming
+- curiosity
+- metacognition
+- sop-core
 mechanisms:
-  - generation
-  - elaboration
-  - calibration
+- generation
+- elaboration
+- calibration
 inputs:
-  - Topic title or lecture heading
-  - Brief overview (syllabus, chapter title, or slide deck title)
+- Topic title or lecture heading
+- Brief overview (syllabus, chapter title, or slide deck title)
 steps:
-  - step: 1
-    action: Read only the topic title and any section headings
-    notes: Do NOT read the content yet
-  - step: 2
-    action: Write 3-5 questions you expect the material to answer
-    notes: "Use question stems: What is...? How does...? Why does...? When would...?"
-  - step: 3
-    action: Rank questions by curiosity level (1-3)
-    notes: Higher curiosity = stronger encoding hooks
-  - step: 4
-    action: Keep questions visible during study
-    notes: Check them off as you find answers
+- step: 1
+  action: Read only the topic title and any section headings
+  notes: Do NOT read the content yet
+- step: 2
+  action: Write 3-5 questions you expect the material to answer
+  notes: 'Use question stems: What is...? How does...? Why does...? When would...?'
+- step: 3
+  action: Rank questions by curiosity level (1-3)
+  notes: Higher curiosity = stronger encoding hooks
+- step: 4
+  action: Keep questions visible during study
+  notes: Check them off as you find answers
 outputs:
-  - List of prediction questions (3-5)
-  - Curiosity ranking
-  - Forward hooks for active reading
+- List of prediction questions (3-5)
+- Curiosity ranking
+- Forward hooks for active reading
 stop_criteria:
-  - 3-5 questions written
-  - 3 minutes elapsed
+- 3-5 questions written
+- 3 minutes elapsed
 failure_modes:
-  - mode: Questions too vague
-    mitigation: "Require specificity: 'What are the 3 types of...' not 'What is this about?'"
-  - mode: Peeking at content first
-    mitigation: Cover/close content until questions are written
-  - mode: Skipping the ranking step
-    mitigation: Ranking activates metacognitive engagement
+- mode: Questions too vague
+  mitigation: 'Require specificity: ''What are the 3 types of...'' not ''What is this
+    about?'''
+- mode: Peeking at content first
+  mitigation: Cover/close content until questions are written
+- mode: Skipping the ranking step
+  mitigation: Ranking activates metacognitive engagement
 logging_fields:
-  - question_count
-  - questions_answered_during_session
-  - curiosity_satisfaction_rate
+- question_count
+- questions_answered_during_session
+- curiosity_satisfaction_rate
 evidence:
   citation: Pressley et al. (1990)
   finding: Question-generation primes elaborative processing and improves comprehension
   source: seed_methods.py
 evidence_raw: Pressley et al. (1990); question-generation primes elaborative processing
+knobs:
+  feedback_style: supportive_synthesis
+  cognitive_depth: definition
+  output_format: bulleted_list
+facilitation_prompt: You are an expert tutor preparing the student for a new topic.
+  Using a supportive_synthesis approach, help the student map their existing knowledge
+  to the upcoming concept. Keep the focus at a definition level to serve as an advance
+  organizer.
+has_facilitation_prompt: Y

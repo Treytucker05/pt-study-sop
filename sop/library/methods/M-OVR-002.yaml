@@ -1,78 +1,95 @@
 id: M-OVR-002
 name: Anki Card Draft
 category: overlearn
-description: Draft 3-5 Anki cards for the session's key concepts. Use cloze or basic format. Brain syncs to Anki.
+description: Draft 3-5 Anki cards for the session's key concepts. Use cloze or basic
+  format. Brain syncs to Anki.
 default_duration_min: 5
 energy_cost: low
 best_stage: consolidation
 control_stage: OVERLEARN
 status: validated
 tags:
-  - anki
-  - spaced-repetition
-  - artifacts
+- anki
+- spaced-repetition
+- artifacts
 mechanisms:
-  - spacing
-  - retrieval
-  - generation
-  - artifact_creation
+- spacing
+- retrieval
+- generation
+- artifact_creation
 inputs:
-  - Session notes and key concepts
-  - Anki card template (cloze or basic)
-  - Card draft staging area (Brain or text file)
-  - Target deck name
+- Session notes and key concepts
+- Anki card template (cloze or basic)
+- Card draft staging area (Brain or text file)
+- Target deck name
 gating_rules:
-  - Output ONLY canonical card blocks. No prose before/after cards.
-  - Produce 3-5 cards total.
-  - Each card must use exact labels and line order:
-    CARD N:, TYPE:, FRONT:, BACK:, TAGS:
-  - Do not use bullets, markdown tables, CSV, or JSON.
+- Output ONLY canonical card blocks. No prose before/after cards.
+- Produce 3-5 cards total.
+- Each card must use exact labels and line order: null
+  CARD N:, TYPE:, FRONT:, BACK:, TAGS: null
+- Do not use bullets, markdown tables, CSV, or JSON.
 steps:
-  - step: 1
-    action: Review session notes and identify 3-5 highest-value concepts
-    notes: Prioritize weak anchors, new vocabulary, and easily confused items
-  - step: 2
-    action: Choose card format for each concept (cloze vs. basic Q&A)
-    notes: Cloze for vocabulary/facts; Basic for "why" questions and processes
-  - step: 3
-    action: Draft the front of each card (question or cloze deletion)
-    notes: One fact per card — no "double-barreled" cards
-  - step: 4
-    action: Draft the back of each card (answer)
-    notes: Keep answers concise — elaboration goes in the "Extra" field
-  - step: 5
-    action: Add context tags (topic, source, date)
-    notes: Tags enable filtered study and tracking
-  - step: 6
-    action: Stage cards for sync to Anki via Brain
-    notes: Brain's Anki integration handles the actual sync
-  - step: 7
-    action: Final format check before submit
-    notes: Verify output contains only CARD blocks and exact label lines
+- step: 1
+  action: Review session notes and identify 3-5 highest-value concepts
+  notes: Prioritize weak anchors, new vocabulary, and easily confused items
+- step: 2
+  action: Choose card format for each concept (cloze vs. basic Q&A)
+  notes: Cloze for vocabulary/facts; Basic for "why" questions and processes
+- step: 3
+  action: Draft the front of each card (question or cloze deletion)
+  notes: One fact per card — no "double-barreled" cards
+- step: 4
+  action: Draft the back of each card (answer)
+  notes: Keep answers concise — elaboration goes in the "Extra" field
+- step: 5
+  action: Add context tags (topic, source, date)
+  notes: Tags enable filtered study and tracking
+- step: 6
+  action: Stage cards for sync to Anki via Brain
+  notes: Brain's Anki integration handles the actual sync
+- step: 7
+  action: Final format check before submit
+  notes: Verify output contains only CARD blocks and exact label lines
 outputs:
-  - 3-5 drafted Anki cards
-  - Cards tagged by topic and source
-  - Cards staged in Brain for Anki sync
-  - Card count logged to session record
+- 3-5 drafted Anki cards
+- Cards tagged by topic and source
+- Cards staged in Brain for Anki sync
+- Card count logged to session record
 stop_criteria:
-  - 3-5 cards drafted (minimum 3)
-  - All cards follow single-fact rule
-  - Every card has TYPE, FRONT, BACK, TAGS label lines
-  - Cards staged for sync
+- 3-5 cards drafted (minimum 3)
+- All cards follow single-fact rule
+- Every card has TYPE, FRONT, BACK, TAGS label lines
+- Cards staged for sync
 failure_modes:
-  - mode: Double-barreled cards (multiple facts per card)
-    mitigation: Split into separate cards — one fact each
-  - mode: Cards too complex (essay answers)
-    mitigation: If answer takes > 10 seconds to recall, simplify
-  - mode: Drafting cards for material not yet understood
-    mitigation: Only card concepts you can already explain — cards are for retention, not learning
+- mode: Double-barreled cards (multiple facts per card)
+  mitigation: Split into separate cards — one fact each
+- mode: Cards too complex (essay answers)
+  mitigation: If answer takes > 10 seconds to recall, simplify
+- mode: Drafting cards for material not yet understood
+  mitigation: Only card concepts you can already explain — cards are for retention,
+    not learning
 logging_fields:
-  - cards_drafted
-  - card_format_breakdown
-  - topics_covered
-  - cards_synced_to_anki
+- cards_drafted
+- card_format_breakdown
+- topics_covered
+- cards_synced_to_anki
 evidence:
   citation: Kornell (2009)
   finding: Cepeda et al. (2006); spaced retrieval via flashcards is high-utility
   source: seed_methods.py
-evidence_raw: Kornell (2009); Cepeda et al. (2006); spaced retrieval via flashcards is high-utility
+evidence_raw: Kornell (2009); Cepeda et al. (2006); spaced retrieval via flashcards
+  is high-utility
+knobs:
+  scaffolding_intensity: minimal_nudges
+  feedback_style: strict_gap_analysis
+  output_format: json_rubric
+facilitation_prompt: You are a strict examiner conducting a retrieval practice drill.
+  You must operate at a minimal_nudges level. Ask the student one question at a time.
+  Evaluate their answer strictly. Provide a hint based on the scaffolding level, but
+  NEVER reveal the final answer. Output a hidden JSON evaluation logging 'correct'
+  or 'incorrect' for the system telemetry.
+has_facilitation_prompt: Y
+gates:
+- rule: requires_reference_targets
+  threshold: 0.95
+  fallback_action: redirect_to_encode

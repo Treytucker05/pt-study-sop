@@ -1,42 +1,58 @@
 id: M-RET-007
 name: Timed Sprint Sets
 category: retrieve
-description: Execute timed retrieval sprints and record latency per item to expose speed bottlenecks.
+description: Execute timed retrieval sprints and record latency per item to expose
+  speed bottlenecks.
 default_duration_min: 8
 energy_cost: high
 best_stage: review
 control_stage: RETRIEVE
 status: draft
 tags:
-  - retrieval
-  - timing
-  - latency
+- retrieval
+- timing
+- latency
 mechanisms:
-  - retrieval
-  - desirable_difficulty
+- retrieval
+- desirable_difficulty
 inputs:
-  - Question Bank Seed
-  - Timer
+- Question Bank Seed
+- Timer
 steps:
-  - step: 1
-    action: Run short timed sets with strict item clocks
-    notes: Mark misses at >45s and move on
-  - step: 2
-    action: Record time_to_answer for each item
-    notes: Capture accuracy and confidence together
-  - step: 3
-    action: Push misses to ErrorLog.csv
-    notes: Tag Speed when latency is the limiting factor
+- step: 1
+  action: Run short timed sets with strict item clocks
+  notes: Mark misses at >45s and move on
+- step: 2
+  action: Record time_to_answer for each item
+  notes: Capture accuracy and confidence together
+- step: 3
+  action: Push misses to ErrorLog.csv
+  notes: Tag Speed when latency is the limiting factor
 outputs:
-  - Timed sprint result set
-  - Latency log
-  - ErrorLog updates
+- Timed sprint result set
+- Latency log
+- ErrorLog updates
 stop_criteria:
-  - Item-level latency captured
-  - Misses and speed failures logged
+- Item-level latency captured
+- Misses and speed failures logged
 evidence:
   citation: Cepeda et al. (2006)
-  finding: Spaced retrieval with repeated timed attempts improves long-term access speed
+  finding: Spaced retrieval with repeated timed attempts improves long-term access
+    speed
   source: control-plane migration
-evidence_raw: Cepeda et al. (2006); repeated retrieval improves recall and response fluency
-
+evidence_raw: Cepeda et al. (2006); repeated retrieval improves recall and response
+  fluency
+knobs:
+  scaffolding_intensity: minimal_nudges
+  feedback_style: strict_gap_analysis
+  output_format: json_rubric
+facilitation_prompt: You are a strict examiner conducting a retrieval practice drill.
+  You must operate at a minimal_nudges level. Ask the student one question at a time.
+  Evaluate their answer strictly. Provide a hint based on the scaffolding level, but
+  NEVER reveal the final answer. Output a hidden JSON evaluation logging 'correct'
+  or 'incorrect' for the system telemetry.
+has_facilitation_prompt: Y
+gates:
+- rule: requires_reference_targets
+  threshold: 0.95
+  fallback_action: redirect_to_encode

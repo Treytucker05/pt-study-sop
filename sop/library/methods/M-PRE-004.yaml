@@ -1,61 +1,72 @@
 id: M-PRE-004
 name: AI Skeleton Review
 category: prepare
-description: Have Tutor generate a topic skeleton with main headings and subheadings. Review for 2-3 min to build mental map.
+description: Have Tutor generate a topic skeleton with main headings and subheadings.
+  Review for 2-3 min to build mental map.
 default_duration_min: 5
 energy_cost: low
 best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - overview
-  - structure
-  - ai-assisted
-  - advance-organizer
+- overview
+- structure
+- ai-assisted
+- advance-organizer
 mechanisms:
-  - elaboration
-  - worked_examples
+- elaboration
+- worked_examples
 inputs:
-  - Topic name
-  - Source materials (uploaded to Tutor)
-  - Request for skeleton generation
+- Topic name
+- Source materials (uploaded to Tutor)
+- Request for skeleton generation
 steps:
-  - step: 1
-    action: "Ask Tutor: 'Generate a skeleton outline for [topic] with main headings and 2-3 subheadings each'"
-    notes: Tutor uses Source-Lock to ensure accuracy
-  - step: 2
-    action: Review the skeleton for 2-3 minutes
-    notes: Don't try to memorize — just get the shape
-  - step: 3
-    action: Identify the 3 most important sections
-    notes: These become priority targets for encoding
-  - step: 4
-    action: Note any unfamiliar terms in headings
-    notes: These need definition before deep study
-  - step: 5
-    action: Keep skeleton visible during study as navigation aid
-    notes: Check off sections as you complete them
+- step: 1
+  action: 'Ask Tutor: ''Generate a skeleton outline for [topic] with main headings
+    and 2-3 subheadings each'''
+  notes: Tutor uses Source-Lock to ensure accuracy
+- step: 2
+  action: Review the skeleton for 2-3 minutes
+  notes: Don't try to memorize — just get the shape
+- step: 3
+  action: Identify the 3 most important sections
+  notes: These become priority targets for encoding
+- step: 4
+  action: Note any unfamiliar terms in headings
+  notes: These need definition before deep study
+- step: 5
+  action: Keep skeleton visible during study as navigation aid
+  notes: Check off sections as you complete them
 outputs:
-  - Topic skeleton (hierarchical outline)
-  - Priority sections identified (top 3)
-  - Unfamiliar term list
+- Topic skeleton (hierarchical outline)
+- Priority sections identified (top 3)
+- Unfamiliar term list
 stop_criteria:
-  - Skeleton reviewed
-  - Priority sections marked
-  - 5 minutes elapsed
+- Skeleton reviewed
+- Priority sections marked
+- 5 minutes elapsed
 failure_modes:
-  - mode: Skeleton too detailed
-    mitigation: Request 2 levels only (headings + subheadings)
-  - mode: Trying to memorize the skeleton
-    mitigation: Goal is orientation, not retention
-  - mode: Skeleton contains errors
-    mitigation: Cross-check against source materials; flag discrepancies
+- mode: Skeleton too detailed
+  mitigation: Request 2 levels only (headings + subheadings)
+- mode: Trying to memorize the skeleton
+  mitigation: Goal is orientation, not retention
+- mode: Skeleton contains errors
+  mitigation: Cross-check against source materials; flag discrepancies
 logging_fields:
-  - skeleton_section_count
-  - priority_sections
-  - unfamiliar_terms_count
+- skeleton_section_count
+- priority_sections
+- unfamiliar_terms_count
 evidence:
   citation: Lorch & Lorch (1996)
   finding: Advance organizers improve text comprehension by providing structural scaffolding
   source: seed_methods.py
 evidence_raw: Lorch & Lorch (1996); advance organizers improve text comprehension
+knobs:
+  feedback_style: supportive_synthesis
+  cognitive_depth: definition
+  output_format: bulleted_list
+facilitation_prompt: You are an expert tutor preparing the student for a new topic.
+  Using a supportive_synthesis approach, help the student map their existing knowledge
+  to the upcoming concept. Keep the focus at a definition level to serve as an advance
+  organizer.
+has_facilitation_prompt: Y

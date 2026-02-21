@@ -1,66 +1,79 @@
 id: M-ENC-007
 name: Self-Explanation Protocol
 category: encode
-description: After reading each paragraph or concept, pause and explain to yourself WHY each step follows from the previous one. Focus on explaining the reasoning, not just restating facts.
+description: After reading each paragraph or concept, pause and explain to yourself
+  WHY each step follows from the previous one. Focus on explaining the reasoning,
+  not just restating facts.
 default_duration_min: 7
 energy_cost: medium
 best_stage: first_exposure
 control_stage: ENCODE
 status: validated
 tags:
-  - self-explanation
-  - comprehension
-  - causal-reasoning
-  - evidence-based
+- self-explanation
+- comprehension
+- causal-reasoning
+- evidence-based
 mechanisms:
-  - elaboration
-  - generation
-  - calibration
+- elaboration
+- generation
+- calibration
 inputs:
-  - Text passage or concept sequence
-  - Note-taking area
-  - Timer (optional)
+- Text passage or concept sequence
+- Note-taking area
+- Timer (optional)
 steps:
-  - step: 1
-    action: Read one paragraph or concept unit
-    notes: One unit at a time — don't batch
-  - step: 2
-    action: Stop and explain WHY this follows from the previous content
-    notes: "Ask: 'Why does this make sense given what came before?'"
-  - step: 3
-    action: Write your explanation in your own words
-    notes: Writing forces precision
-  - step: 4
-    action: Identify any inference gaps
-    notes: Where are you assuming knowledge you don't have?
-  - step: 5
-    action: Flag gaps for follow-up
-    notes: These become targeted study items
-  - step: 6
-    action: Move to next unit and repeat
-    notes: Continue through entire passage
+- step: 1
+  action: Read one paragraph or concept unit
+  notes: One unit at a time — don't batch
+- step: 2
+  action: Stop and explain WHY this follows from the previous content
+  notes: 'Ask: ''Why does this make sense given what came before?'''
+- step: 3
+  action: Write your explanation in your own words
+  notes: Writing forces precision
+- step: 4
+  action: Identify any inference gaps
+  notes: Where are you assuming knowledge you don't have?
+- step: 5
+  action: Flag gaps for follow-up
+  notes: These become targeted study items
+- step: 6
+  action: Move to next unit and repeat
+  notes: Continue through entire passage
 outputs:
-  - Self-explanation notes (per paragraph)
-  - Inference gap list
-  - Comprehension checkpoints
+- Self-explanation notes (per paragraph)
+- Inference gap list
+- Comprehension checkpoints
 stop_criteria:
-  - All paragraphs processed
-  - Major gaps flagged
-  - 7 minutes elapsed (or content complete)
+- All paragraphs processed
+- Major gaps flagged
+- 7 minutes elapsed (or content complete)
 failure_modes:
-  - mode: Just restating facts
-    mitigation: Require causal connectors — "because", "therefore", "this leads to"
-  - mode: Skipping "obvious" sections
-    mitigation: Explain everything; "obvious" often means "unexamined"
-  - mode: Not writing explanations
-    mitigation: Written notes required; verbal insufficient
+- mode: Just restating facts
+  mitigation: Require causal connectors — "because", "therefore", "this leads to"
+- mode: Skipping "obvious" sections
+  mitigation: Explain everything; "obvious" often means "unexamined"
+- mode: Not writing explanations
+  mitigation: Written notes required; verbal insufficient
 logging_fields:
-  - paragraphs_processed
-  - explanations_generated
-  - gaps_flagged
-  - time_per_unit
+- paragraphs_processed
+- explanations_generated
+- gaps_flagged
+- time_per_unit
 evidence:
   citation: Chi et al. (1994)
-  finding: Self-explanation rated moderate-high utility across domains; works by generating inferences
+  finding: Self-explanation rated moderate-high utility across domains; works by generating
+    inferences
   source: seed_methods.py
-evidence_raw: Chi et al. (1994); Dunlosky et al. (2013); self-explanation rated moderate-high utility across domains
+evidence_raw: Chi et al. (1994); Dunlosky et al. (2013); self-explanation rated moderate-high
+  utility across domains
+knobs:
+  cognitive_depth: mechanism
+  scaffolding_intensity: heavy_hints
+  output_format: markdown_table
+facilitation_prompt: You are guiding the student through the encoding phase. The student
+  needs to structure their knowledge. Your task is to generate a structured breakdown
+  at a mechanism level. Provide scaffolding at the heavy_hints level. Output your
+  response as a markdown_table.
+has_facilitation_prompt: Y

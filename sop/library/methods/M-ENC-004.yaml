@@ -1,66 +1,76 @@
 id: M-ENC-004
 name: Teach-Back
 category: encode
-description: Explain the concept aloud as if teaching a classmate. Identify points where explanation breaks down.
+description: Explain the concept aloud as if teaching a classmate. Identify points
+  where explanation breaks down.
 default_duration_min: 5
 energy_cost: high
 best_stage: review
 control_stage: ENCODE
 status: validated
 tags:
-  - verbal
-  - feynman
-  - deep-processing
-  - sop-core
+- verbal
+- feynman
+- deep-processing
+- sop-core
 mechanisms:
-  - generation
-  - elaboration
-  - calibration
+- generation
+- elaboration
+- calibration
 inputs:
-  - Concept to teach
-  - Imaginary student (or real one)
-  - Recording device (optional)
+- Concept to teach
+- Imaginary student (or real one)
+- Recording device (optional)
 steps:
-  - step: 1
-    action: State the concept you will teach
-    notes: Be specific about scope
-  - step: 2
-    action: Explain the concept aloud as if to a first-year student
-    notes: Use simple language; avoid jargon
-  - step: 3
-    action: Note any points where you stumble or hesitate
-    notes: These are knowledge gaps
-  - step: 4
-    action: Answer the imaginary student's "why?" and "how?" questions
-    notes: Force yourself to go deeper
-  - step: 5
-    action: Identify breakdown points
-    notes: Where did the explanation fail?
-  - step: 6
-    action: Return to source for breakdown areas only
-    notes: Targeted review, not full re-read
+- step: 1
+  action: State the concept you will teach
+  notes: Be specific about scope
+- step: 2
+  action: Explain the concept aloud as if to a first-year student
+  notes: Use simple language; avoid jargon
+- step: 3
+  action: Note any points where you stumble or hesitate
+  notes: These are knowledge gaps
+- step: 4
+  action: Answer the imaginary student's "why?" and "how?" questions
+  notes: Force yourself to go deeper
+- step: 5
+  action: Identify breakdown points
+  notes: Where did the explanation fail?
+- step: 6
+  action: Return to source for breakdown areas only
+  notes: Targeted review, not full re-read
 outputs:
-  - Verbal explanation (recorded or noted)
-  - Breakdown points list
-  - Targeted review areas
+- Verbal explanation (recorded or noted)
+- Breakdown points list
+- Targeted review areas
 stop_criteria:
-  - Full explanation delivered
-  - Breakdown points identified
-  - 5 minutes elapsed
+- Full explanation delivered
+- Breakdown points identified
+- 5 minutes elapsed
 failure_modes:
-  - mode: Reading instead of explaining
-    mitigation: Close source material during teach-back
-  - mode: Skipping "dumb" questions
-    mitigation: Force "why?" after every statement
-  - mode: Not identifying breakdowns
-    mitigation: Record and listen back; gaps become obvious
+- mode: Reading instead of explaining
+  mitigation: Close source material during teach-back
+- mode: Skipping "dumb" questions
+  mitigation: Force "why?" after every statement
+- mode: Not identifying breakdowns
+  mitigation: Record and listen back; gaps become obvious
 logging_fields:
-  - concept_taught
-  - breakdown_count
-  - fluency_rating
-  - targeted_review_items
+- concept_taught
+- breakdown_count
+- fluency_rating
+- targeted_review_items
 evidence:
   citation: Nestojko et al. (2014)
   finding: Expecting to teach enhances encoding and organization of information
   source: seed_methods.py
 evidence_raw: Nestojko et al. (2014); expecting to teach enhances encoding and organization
+knobs:
+  cognitive_depth: mechanism
+  scaffolding_intensity: heavy_hints
+  output_format: markdown_table
+facilitation_prompt: You are guiding the student through the encoding phase. The student
+  needs to structure their knowledge. Your task is to generate a structured breakdown
+  at a mechanism level. Provide scaffolding at the heavy_hints level. Output your
+  response as a markdown_table.
+has_facilitation_prompt: Y

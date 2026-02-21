@@ -1,68 +1,81 @@
 id: M-ENC-008
 name: Mechanism Trace
 category: encode
-description: "Trace the causal mechanism step-by-step: what triggers what, and why. Build a cause→effect chain from input to output. Especially useful for pathophysiology and physiological pathways."
+description: 'Trace the causal mechanism step-by-step: what triggers what, and why.
+  Build a cause→effect chain from input to output. Especially useful for pathophysiology
+  and physiological pathways.'
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
 control_stage: ENCODE
 status: validated
 tags:
-  - causal-reasoning
-  - mechanism
-  - pathophysiology
-  - transfer
-  - clinical
+- causal-reasoning
+- mechanism
+- pathophysiology
+- transfer
+- clinical
 mechanisms:
-  - elaboration
-  - transfer
-  - generation
+- elaboration
+- transfer
+- generation
 inputs:
-  - Pathway or mechanism to trace
-  - Source material with mechanism details
-  - Flowchart template or blank paper
+- Pathway or mechanism to trace
+- Source material with mechanism details
+- Flowchart template or blank paper
 steps:
-  - step: 1
-    action: Identify the trigger (initial cause or stimulus)
-    notes: "Example: 'ACE inhibitor blocks ACE enzyme'"
-  - step: 2
-    action: "Ask: 'What happens next as a direct result?'"
-    notes: Write the immediate downstream effect
-  - step: 3
-    action: Repeat step 2 until you reach the final outcome
-    notes: Each step must cause the next
-  - step: 4
-    action: Add "because" statements at each arrow
-    notes: "Why does A cause B? Fill in the mechanism."
-  - step: 5
-    action: Verify chain against source material
-    notes: Flag any errors or gaps
-  - step: 6
-    action: Note branch points where mechanisms diverge
-    notes: Real pathways often have multiple effects
+- step: 1
+  action: Identify the trigger (initial cause or stimulus)
+  notes: 'Example: ''ACE inhibitor blocks ACE enzyme'''
+- step: 2
+  action: 'Ask: ''What happens next as a direct result?'''
+  notes: Write the immediate downstream effect
+- step: 3
+  action: Repeat step 2 until you reach the final outcome
+  notes: Each step must cause the next
+- step: 4
+  action: Add "because" statements at each arrow
+  notes: Why does A cause B? Fill in the mechanism.
+- step: 5
+  action: Verify chain against source material
+  notes: Flag any errors or gaps
+- step: 6
+  action: Note branch points where mechanisms diverge
+  notes: Real pathways often have multiple effects
 outputs:
-  - Complete mechanism chain (trigger to outcome)
-  - Because statements for each step
-  - Branch points identified
-  - Verification status
+- Complete mechanism chain (trigger to outcome)
+- Because statements for each step
+- Branch points identified
+- Verification status
 stop_criteria:
-  - Chain reaches final outcome
-  - All "because" statements filled
-  - Chain verified against source
+- Chain reaches final outcome
+- All "because" statements filled
+- Chain verified against source
 failure_modes:
-  - mode: Skipping intermediate steps
-    mitigation: Require explicit A→B→C, not A→C
-  - mode: Vague "because" statements
-    mitigation: Must cite specific molecular/cellular mechanism
-  - mode: Linear thinking only
-    mitigation: Actively look for branch points and parallel effects
+- mode: Skipping intermediate steps
+  mitigation: Require explicit A→B→C, not A→C
+- mode: Vague "because" statements
+  mitigation: Must cite specific molecular/cellular mechanism
+- mode: Linear thinking only
+  mitigation: Actively look for branch points and parallel effects
 logging_fields:
-  - mechanism_traced
-  - chain_length
-  - branch_points
-  - verification_errors
+- mechanism_traced
+- chain_length
+- branch_points
+- verification_errors
 evidence:
   citation: Kulasegaram et al. (2013)
-  finding: Causal reasoning with biomedical mechanisms supports diagnostic transfer to novel cases
+  finding: Causal reasoning with biomedical mechanisms supports diagnostic transfer
+    to novel cases
   source: seed_methods.py
-evidence_raw: Kulasegaram et al. (2013); causal reasoning with biomedical mechanisms supports diagnostic transfer
+evidence_raw: Kulasegaram et al. (2013); causal reasoning with biomedical mechanisms
+  supports diagnostic transfer
+knobs:
+  cognitive_depth: mechanism
+  scaffolding_intensity: heavy_hints
+  output_format: markdown_table
+facilitation_prompt: You are guiding the student through the encoding phase. The student
+  needs to structure their knowledge. Your task is to generate a structured breakdown
+  at a mechanism level. Provide scaffolding at the heavy_hints level. Output your
+  response as a markdown_table.
+has_facilitation_prompt: Y

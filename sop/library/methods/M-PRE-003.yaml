@@ -1,60 +1,71 @@
 id: M-PRE-003
 name: Prior Knowledge Scan
 category: prepare
-description: List related concepts you already know. Identify connections to previous modules.
+description: List related concepts you already know. Identify connections to previous
+  modules.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - schema-activation
-  - connections
-  - transfer
+- schema-activation
+- connections
+- transfer
 mechanisms:
-  - retrieval
-  - elaboration
-  - transfer
+- retrieval
+- elaboration
+- transfer
 inputs:
-  - New topic name
-  - Access to previous module/course notes (optional)
+- New topic name
+- Access to previous module/course notes (optional)
 steps:
-  - step: 1
-    action: Write the new topic at center of page
-    notes: This becomes the hub for connection mapping
-  - step: 2
-    action: List 3-5 related concepts you already know
-    notes: These can be from this course, other courses, or general knowledge
-  - step: 3
-    action: Draw arrows showing how each relates to the new topic
-    notes: "Label arrows with relationship type: 'causes', 'part of', 'similar to'"
-  - step: 4
-    action: Identify the strongest connection
-    notes: This becomes your primary anchoring schema
-  - step: 5
-    action: Note any prerequisite gaps
-    notes: If a connection feels weak, flag it for review
+- step: 1
+  action: Write the new topic at center of page
+  notes: This becomes the hub for connection mapping
+- step: 2
+  action: List 3-5 related concepts you already know
+  notes: These can be from this course, other courses, or general knowledge
+- step: 3
+  action: Draw arrows showing how each relates to the new topic
+  notes: 'Label arrows with relationship type: ''causes'', ''part of'', ''similar
+    to'''
+- step: 4
+  action: Identify the strongest connection
+  notes: This becomes your primary anchoring schema
+- step: 5
+  action: Note any prerequisite gaps
+  notes: If a connection feels weak, flag it for review
 outputs:
-  - Connection map (topic + related concepts)
-  - Primary anchoring schema identified
-  - Prerequisite gap list
+- Connection map (topic + related concepts)
+- Primary anchoring schema identified
+- Prerequisite gap list
 stop_criteria:
-  - 3-5 connections identified
-  - Primary anchor selected
-  - 3 minutes elapsed
+- 3-5 connections identified
+- Primary anchor selected
+- 3 minutes elapsed
 failure_modes:
-  - mode: No connections found
-    mitigation: Prompt with broader categories — anatomy, physiology, pathology
-  - mode: Connections too superficial
-    mitigation: Require relationship labels on arrows
-  - mode: Spending too long on drawing
-    mitigation: Text list is acceptable; visual is optional enhancement
+- mode: No connections found
+  mitigation: Prompt with broader categories — anatomy, physiology, pathology
+- mode: Connections too superficial
+  mitigation: Require relationship labels on arrows
+- mode: Spending too long on drawing
+  mitigation: Text list is acceptable; visual is optional enhancement
 logging_fields:
-  - connection_count
-  - primary_anchor_topic
-  - prerequisite_gaps
+- connection_count
+- primary_anchor_topic
+- prerequisite_gaps
 evidence:
   citation: Ausubel (1968)
   finding: Meaningful learning requires anchoring new information to existing schemas
   source: seed_methods.py
 evidence_raw: Ausubel (1968); meaningful learning requires anchoring to existing schemas
+knobs:
+  feedback_style: supportive_synthesis
+  cognitive_depth: definition
+  output_format: bulleted_list
+facilitation_prompt: You are an expert tutor preparing the student for a new topic.
+  Using a supportive_synthesis approach, help the student map their existing knowledge
+  to the upcoming concept. Keep the focus at a definition level to serve as an advance
+  organizer.
+has_facilitation_prompt: Y
