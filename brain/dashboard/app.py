@@ -26,12 +26,14 @@ def create_app():
     from dashboard.api_chain_runner import chain_runner_bp
     from dashboard.api_tutor import tutor_bp
     from dashboard.api_data import data_bp
+    from dashboard.api_mastery import mastery_bp
 
     app.register_blueprint(adapter_bp)  # /api/* routes - must be first
     app.register_blueprint(methods_bp)  # /api/methods, /api/chains
     app.register_blueprint(chain_runner_bp)  # /api/chain-run
     app.register_blueprint(tutor_bp)  # /api/tutor/*
     app.register_blueprint(data_bp)  # /api/data/*
+    app.register_blueprint(mastery_bp)  # /api/mastery/*
     app.register_blueprint(dashboard_bp)
 
     # DEBUG: Print all registered routes

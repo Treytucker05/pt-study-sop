@@ -38,6 +38,15 @@ from flask import Blueprint, Response, jsonify, request
 
 from db_setup import DB_PATH, get_connection, ensure_method_library_seeded
 from course_wheel_sync import ensure_course_in_wheel
+from tutor_behavior_directives import get_directive
+from tutor_verdict import (
+    CONCEPT_MAP_PROMPT_SUFFIX,
+    VERDICT_PROMPT_SUFFIX,
+    parse_concept_map,
+    parse_verdict,
+    strip_verdict_marker,
+    validate_verdict,
+)
 from tutor_accuracy_profiles import (
     DEFAULT_ACCURACY_PROFILE,
     accuracy_profile_config,
@@ -1089,6 +1098,7 @@ def get_session(session_id: str):
 def send_turn(session_id: str):
     data = request.get_json(silent=True) or {}
     question = data.get("message", "").strip()
+    behavior_override = data.get("behavior_override")
     if not question:
         return jsonify({"error": "message is required"}), 400
 
@@ -1177,6 +1187,11 @@ def send_turn(session_id: str):
     def generate():
         full_response = ""
         citations = []
+        parsed_verdict = None
+        api_model = codex_model or "gpt-5.3-codex"
+        latest_response_id = None
+        latest_thread_id = None
+        used_scope_shortcut = False
 
         from tutor_streaming import (
             format_sse_chunk,
@@ -1274,6 +1289,16 @@ def send_turn(session_id: str):
                     "so the student knows to cross-reference."
                 )
 
+            # Optional: GraphRAG-lite concept graph context
+            graph_context_text = None
+            try:
+                from adaptive.knowledge_graph import hybrid_retrieve
+                graph_result = hybrid_retrieve(question, conn)
+                if graph_result.get("context_text"):
+                    graph_context_text = graph_result["context_text"]
+            except (ImportError, Exception) as _kg_exc:
+                _LOG.debug("GraphRAG skipped: %s", _kg_exc)
+
             # Materials go in system prompt (not user prompt)
             system_prompt = build_prompt_with_contexts(
                 current_block=block_info,
@@ -1282,6 +1307,7 @@ def send_turn(session_id: str):
                 topic=session.get("topic"),
                 instruction_context=instruction_text,
                 material_context=material_text,
+                graph_context=graph_context_text,
             )
             system_prompt += (
                 "\n\n## Retrieval Tuning\n"
@@ -1336,6 +1362,26 @@ def send_turn(session_id: str):
                 f"If asked what model you are, state this exactly."
             )
 
+            # Append structured output contracts for behavior overrides
+            if behavior_override == "evaluate":
+                system_prompt += VERDICT_PROMPT_SUFFIX
+            elif behavior_override == "concept_map":
+                system_prompt += CONCEPT_MAP_PROMPT_SUFFIX
+
+            # M8: Adaptive scaffolding based on mastery level
+            try:
+                from adaptive.bkt import get_effective_mastery as _get_eff_mastery
+                from adaptive.schemas import MasteryConfig as _MC
+                from tutor_scaffolding import get_scaffolding_directive
+
+                topic_skill = session.get("topic")
+                if topic_skill:
+                    eff = _get_eff_mastery(conn, "default", topic_skill, _MC())
+                    scaffold_directive = get_scaffolding_directive(eff)
+                    system_prompt += f"\n\n{scaffold_directive}"
+            except (ImportError, Exception) as _sc_exc:
+                _LOG.debug("Scaffolding skipped: %s", _sc_exc)
+
             # Build user prompt: chat history + question
             recent_turns = turns[-12:] if len(turns) > 12 else turns
             history_lines: list[str] = []
@@ -1349,7 +1395,8 @@ def send_turn(session_id: str):
                     history_lines.append(f"Assistant: {ans}")
             history_text = "\n".join(history_lines).strip() or "(no prior turns)"
 
-            user_prompt = f"""## Chat History
+            directive = get_directive(behavior_override)
+            user_prompt = f"""{directive + chr(10) if directive else ""}## Chat History
 {history_text}
 
 ## Current Question
@@ -1361,6 +1408,8 @@ def send_turn(session_id: str):
             latest_thread_id: str | None = session.get("codex_thread_id")
             url_citations: list[object] = []
             used_scope_shortcut = False
+            parsed_verdict = None
+            parsed_concept_map = None
 
             material_docs = dual.get("materials") or []
             instruction_docs = dual.get("instructions") or []
@@ -1669,17 +1718,63 @@ def send_turn(session_id: str):
                     turn_number,
                     json.dumps(retrieval_debug_payload, ensure_ascii=True),
                 )
+                # Parse verdict from evaluate mode responses
+                parsed_verdict = None
+                if behavior_override == "evaluate" and full_response:
+                    parsed_verdict = parse_verdict(full_response)
+                    if parsed_verdict:
+                        is_valid, v_issues = validate_verdict(parsed_verdict)
+                        if not is_valid:
+                            _LOG.warning("Verdict validation issues: %s", v_issues)
+                            parsed_verdict["_validation_issues"] = v_issues
+
+                        # M5: Wire verdict to BKT mastery tracking
+                        try:
+                            from adaptive.bkt import bkt_update
+                            from adaptive.schemas import MasteryConfig
+                            from adaptive.telemetry import emit_evaluate_work, record_error_flag
+
+                            verdict_val = parsed_verdict.get("verdict")
+                            error_loc = parsed_verdict.get("error_location") or {}
+                            skill_id = error_loc.get("node") or session.get("topic")
+
+                            if skill_id and verdict_val in ("pass", "fail", "partial"):
+                                correct = verdict_val == "pass"
+                                bkt_update(conn, "default", skill_id, correct, MasteryConfig())
+                                emit_evaluate_work(conn, "default", skill_id, correct, session_id)
+
+                                # M6: Record error flag on failure
+                                if verdict_val == "fail":
+                                    record_error_flag(
+                                        conn, "default", skill_id,
+                                        error_type=parsed_verdict.get("error_type", "unknown"),
+                                        severity="medium",
+                                        edge_id=error_loc.get("prereq_from"),
+                                        evidence_ref=parsed_verdict.get("why_wrong"),
+                                    )
+                        except (ImportError, Exception) as _bkt_exc:
+                            _LOG.debug("BKT update skipped: %s", _bkt_exc)
+
+                # Parse concept map from concept_map mode responses
+                parsed_concept_map = None
+                if behavior_override == "concept_map" and full_response:
+                    parsed_concept_map = parse_concept_map(full_response)
+
                 yield format_sse_done(
                     citations=all_citations,
                     model=api_model,
                     artifacts=artifact_payload,
                     retrieval_debug=retrieval_debug_payload,
+                    behavior_override=behavior_override,
+                    verdict=parsed_verdict,
+                    concept_map=parsed_concept_map,
                 )
 
         except Exception as e:
             yield format_sse_error(str(e))
             full_response = f"[Error: {e}]"
             citations = []
+            parsed_verdict = None
 
         # After streaming completes, log the turn
         try:
@@ -1691,8 +1786,9 @@ def send_turn(session_id: str):
                 """INSERT INTO tutor_turns
                    (session_id, tutor_session_id, course_id, mode, turn_number,
                     question, answer, citations_json, response_id, model_id,
-                    phase, artifacts_json, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    phase, artifacts_json, behavior_override, evaluation_json,
+                    created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     session_id,
                     session_id,
@@ -1706,6 +1802,8 @@ def send_turn(session_id: str):
                     api_model,
                     session.get("phase"),
                     json.dumps({"command": artifact_cmd}) if artifact_cmd else None,
+                    behavior_override,
+                    json.dumps(parsed_verdict) if parsed_verdict else None,
                     now,
                 ),
             )
