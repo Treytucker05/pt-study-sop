@@ -164,24 +164,34 @@ function GoogleTasksBoard({ tasks, taskLists }: { tasks: GoogleTask[], taskLists
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-tasks"] });
       setEditingTask(null);
+      toast({ title: "Task Updated" });
     }
   });
 
   const createMutation = useMutation({
     mutationFn: (vars: { listId: string, title: string }) => api.googleTasks.create(vars.listId, { title: vars.title, status: 'needsAction' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["google-tasks"] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["google-tasks"] });
+      toast({ title: "Task Created" });
+    }
   });
 
   const deleteMutation = useMutation({
     mutationFn: (vars: { id: string, listId: string }) => api.googleTasks.delete(vars.id, vars.listId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["google-tasks"] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["google-tasks"] });
+      toast({ title: "Task Deleted" });
+    }
   });
 
   const toggleMutation = useMutation({
     mutationFn: (task: GoogleTask) => api.googleTasks.update(task.id, task.listId, {
       status: task.status === 'completed' ? 'needsAction' : 'completed'
     }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["google-tasks"] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["google-tasks"] });
+      toast({ title: "Task Status Changed" });
+    }
   });
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -413,12 +423,24 @@ export default function CalendarPage() {
 
   // Calendar Organization State
   const [pinnedCalendars, setPinnedCalendars] = useState<string[]>(() => {
-    const saved = localStorage.getItem("pinnedCalendars");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("pinnedCalendars");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch { /* ignore corrupted */ }
+    return [];
   });
   const [hiddenCalendars, setHiddenCalendars] = useState<string[]>(() => {
-    const saved = localStorage.getItem("hiddenCalendars");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("hiddenCalendars");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch { /* ignore corrupted */ }
+    return [];
   });
   const [showCalendarSettings, setShowCalendarSettings] = useState(false);
   const calendarOrderSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -767,6 +789,7 @@ export default function CalendarPage() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       setShowEventModal(false);
       resetNewEvent();
+      toast({ title: "Event Created", description: "Local event added to your calendar." });
     },
   });
 
@@ -777,6 +800,7 @@ export default function CalendarPage() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       setShowEditModal(false);
       setSelectedEvent(null);
+      toast({ title: "Event Updated", description: "Local event saved successfully." });
     },
   });
 
@@ -786,6 +810,7 @@ export default function CalendarPage() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       setShowEditModal(false);
       setSelectedEvent(null);
+      toast({ title: "Event Deleted", description: "Local event removed from calendar." });
     },
   });
 
@@ -1321,11 +1346,11 @@ export default function CalendarPage() {
       return {
         backgroundColor: `rgba(${r}, ${g}, ${b}, 0.35)`,
         borderLeftColor: event.calendarColor,
-        boxShadow: `0 4px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1)`,
+        boxShadow: `none`,
       };
     }
     return {
-      boxShadow: `0 4px 6px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1)`,
+      boxShadow: `none`,
     };
   };
 
