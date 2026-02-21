@@ -1121,7 +1121,7 @@ export type TutorMode =
   | "Diagnostic Sprint"
   | "Teaching Sprint";
 export type TutorAccuracyProfile = "balanced" | "strict" | "coverage";
-export type BehaviorOverride = "socratic" | "evaluate" | "concept_map";
+export type BehaviorOverride = "socratic" | "evaluate" | "concept_map" | "teach_back";
 export type TutorSessionStatus = "active" | "completed" | "abandoned";
 
 export interface TutorCreateSessionRequest {
@@ -1408,6 +1408,25 @@ export interface TutorVerdict {
   _validation_issues?: string[];
 }
 
+export interface TeachBackRubricGap {
+  skill_id: string;
+  edge_id?: string | null;
+}
+
+export interface TeachBackRubric {
+  overall_rating: "pass" | "partial" | "fail";
+  accuracy_score: number;
+  breadth_score: number;
+  synthesis_score: number;
+  misconceptions?: string[];
+  gaps?: TeachBackRubricGap[];
+  strengths?: string[];
+  next_focus?: string;
+  confidence?: number;
+  _validation_issues?: string[];
+  _mastery_blocked?: boolean;
+}
+
 // SSE streaming helper for Tutor chat
 export interface TutorSSEChunk {
   type: "token" | "done" | "error" | "web_search_searching" | "web_search_completed" | "tool_call" | "tool_result" | "tool_limit_reached";
@@ -1420,6 +1439,7 @@ export interface TutorSSEChunk {
   behavior_override?: BehaviorOverride;
   verdict?: TutorVerdict;
   concept_map?: unknown;
+  teach_back_rubric?: TeachBackRubric;
 }
 
 export interface TutorRetrievalDebug {

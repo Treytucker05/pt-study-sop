@@ -17,6 +17,7 @@ import remarkGfm from "remark-gfm";
 import {
   type BehaviorOverride,
   type Material,
+  type TeachBackRubric,
   type TutorAccuracyProfile,
   type TutorCitation,
   type TutorRetrievalDebug,
@@ -39,6 +40,7 @@ interface ChatMessage {
   isStreaming?: boolean;
   toolActions?: ToolAction[];
   verdict?: TutorVerdict;
+  teachBackRubric?: TeachBackRubric;
 }
 
 export interface ChainBlock {
@@ -164,6 +166,70 @@ function VerdictBadge({ verdict }: { verdict: TutorVerdict }) {
   );
 }
 
+function TeachBackBadge({ rubric }: { rubric: TeachBackRubric }) {
+  const [expanded, setExpanded] = useState(false);
+  const color =
+    rubric.overall_rating === "pass"
+      ? "border-green-600 text-green-400 bg-green-950/30"
+      : rubric.overall_rating === "fail"
+        ? "border-red-600 text-red-400 bg-red-950/30"
+        : "border-yellow-600 text-yellow-400 bg-yellow-950/30";
+  const label =
+    rubric.overall_rating === "pass"
+      ? "TEACH-BACK PASS"
+      : rubric.overall_rating === "fail"
+        ? "TEACH-BACK FAIL"
+        : "TEACH-BACK PARTIAL";
+
+  return (
+    <div className="mt-2 pt-2 border-t border-primary/20">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className={`inline-flex items-center gap-2 px-3 py-1.5 font-arcade text-xs border-2 ${color}`}
+      >
+        {rubric.overall_rating === "pass" ? (
+          <CheckCircle2 className="w-4 h-4" />
+        ) : (
+          <XCircle className="w-4 h-4" />
+        )}
+        {label}
+        <span className="font-terminal text-[10px] opacity-70">
+          A:{rubric.accuracy_score} B:{rubric.breadth_score} S:{rubric.synthesis_score}
+        </span>
+      </button>
+      {expanded && (
+        <div className="mt-2 space-y-1 font-terminal text-xs text-zinc-300">
+          {rubric._mastery_blocked && (
+            <p className="text-red-400">Mastery blocked — improve teach-back to unlock</p>
+          )}
+          {rubric.strengths && rubric.strengths.length > 0 && (
+            <p>
+              <span className="text-green-400">Strengths:</span> {rubric.strengths.join(", ")}
+            </p>
+          )}
+          {rubric.misconceptions && rubric.misconceptions.length > 0 && (
+            <p>
+              <span className="text-red-400">Misconceptions:</span> {rubric.misconceptions.join(", ")}
+            </p>
+          )}
+          {rubric.gaps && rubric.gaps.length > 0 && (
+            <p>
+              <span className="text-yellow-400">Gaps:</span>{" "}
+              {rubric.gaps.map((g) => g.skill_id).join(", ")}
+            </p>
+          )}
+          {rubric.next_focus && (
+            <p>
+              <span className="text-primary">Next focus:</span> {rubric.next_focus}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TutorChat({
   sessionId,
   availableMaterials,
@@ -267,6 +333,7 @@ export function TutorChat({
       let retrievalDebug: TutorRetrievalDebug | undefined;
       let serverArtifactCmd: { type?: string; raw?: string } | null = null;
       let verdictData: TutorVerdict | undefined;
+      let teachBackData: TeachBackRubric | undefined;
       let streamErrored = false;
       let doneSignal = false;
       const toolActions: ToolAction[] = [];
@@ -393,6 +460,7 @@ export function TutorChat({
               modelId = parsed.model;
               retrievalDebug = parsed.retrieval_debug;
               verdictData = parsed.verdict;
+              teachBackData = parsed.teach_back_rubric;
               // Backend detected natural language artifact command
               if (parsed.artifacts?.length) {
                 const cmd = parsed.artifacts[0] as { type?: string; raw?: string };
@@ -424,6 +492,7 @@ export function TutorChat({
           isStreaming: false,
           toolActions: toolActions.length > 0 ? toolActions : undefined,
           verdict: verdictData,
+          teachBackRubric: teachBackData,
         };
         return updated;
       });
@@ -522,244 +591,245 @@ export function TutorChat({
   return (
     <div className="flex h-full min-h-0">
       <div className="flex flex-col h-full min-h-0 flex-1">
-      {/* Messages */}
-      <div
-        ref={scrollRef}
-        className={`flex-1 overflow-y-auto space-y-4 bg-black/40 ${
-          focusMode ? "p-5 md:p-6" : "p-4"
-        }`}
-      >
-        {messages.length === 0 && (
-          <div className="text-center py-8 space-y-2">
-            <div className="font-arcade text-sm text-primary">
-              SESSION STARTED
+        {/* Messages */}
+        <div
+          ref={scrollRef}
+          className={`flex-1 overflow-y-auto space-y-4 bg-black/40 ${focusMode ? "p-5 md:p-6" : "p-4"
+            }`}
+        >
+          {messages.length === 0 && (
+            <div className="text-center py-8 space-y-2">
+              <div className="font-arcade text-sm text-primary">
+                SESSION STARTED
+              </div>
+              <div className="font-terminal text-lg text-muted-foreground leading-7">
+                Ask a question to begin learning. Use /note, /card, or /map for artifacts.
+              </div>
             </div>
-            <div className="font-terminal text-lg text-muted-foreground leading-7">
-              Ask a question to begin learning. Use /note, /card, or /map for artifacts.
-            </div>
-          </div>
-        )}
+          )}
 
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+          {messages.map((msg, i) => (
             <div
-              className={`px-3 py-2 text-[17px] leading-7 font-terminal ${
-                msg.role === "user"
-                  ? "max-w-[72%]"
-                  : focusMode
-                    ? "max-w-[98%]"
-                    : "max-w-[96%]"
-              } ${
-                msg.role === "user"
-                  ? "bg-primary/15 border-2 border-primary/40 text-foreground"
-                  : "bg-black/40 border-2 border-secondary text-foreground"
-              }`}
+              key={i}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.role === "assistant" ? (
-                <div className="prose prose-invert prose-lg max-w-none font-terminal [&_p]:my-2 [&_li]:my-1 [&_p]:leading-7 [&_li]:leading-7 [&_code]:text-base [&_pre]:text-base">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content || (msg.isStreaming ? "..." : "")}
-                  </ReactMarkdown>
-                  {msg.isStreaming && (
-                    <span className="inline-block w-2 h-3 bg-primary animate-pulse ml-0.5" />
-                  )}
-                </div>
-              ) : (
-                <div>{msg.content}</div>
-              )}
+              <div
+                className={`px-3 py-2 text-[17px] leading-7 font-terminal ${msg.role === "user"
+                    ? "max-w-[72%]"
+                    : focusMode
+                      ? "max-w-[98%]"
+                      : "max-w-[96%]"
+                  } ${msg.role === "user"
+                    ? "bg-primary/15 border-2 border-primary/40 text-foreground"
+                    : "bg-black/40 border-2 border-secondary text-foreground"
+                  }`}
+              >
+                {msg.role === "assistant" ? (
+                  <div className="prose prose-invert prose-lg max-w-none font-terminal [&_p]:my-2 [&_li]:my-1 [&_p]:leading-7 [&_li]:leading-7 [&_code]:text-base [&_pre]:text-base">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content || (msg.isStreaming ? "..." : "")}
+                    </ReactMarkdown>
+                    {msg.isStreaming && (
+                      <span className="inline-block w-2 h-3 bg-primary animate-pulse ml-0.5" />
+                    )}
+                  </div>
+                ) : (
+                  <div>{msg.content}</div>
+                )}
 
-              {msg.role === "assistant" && msg.toolActions?.length ? (
-                <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-primary/20">
-                  {msg.toolActions.map((ta, j) => {
-                    const Icon = TOOL_ICONS[ta.tool] ?? FileText;
-                    return (
-                      <div
-                        key={j}
-                        className={`flex items-center gap-1.5 px-2 py-1 text-xs font-terminal border ${
-                          ta.success
-                            ? "border-green-600/50 text-green-400 bg-green-950/30"
-                            : "border-red-600/50 text-red-400 bg-red-950/30"
-                        }`}
-                      >
-                        {ta.success ? (
-                          <CheckCircle2 className="w-3 h-3 shrink-0" />
-                        ) : (
-                          <XCircle className="w-3 h-3 shrink-0" />
-                        )}
-                        <Icon className="w-3 h-3 shrink-0" />
-                        <span className="truncate max-w-[200px]">{ta.message}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
+                {msg.role === "assistant" && msg.toolActions?.length ? (
+                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-primary/20">
+                    {msg.toolActions.map((ta, j) => {
+                      const Icon = TOOL_ICONS[ta.tool] ?? FileText;
+                      return (
+                        <div
+                          key={j}
+                          className={`flex items-center gap-1.5 px-2 py-1 text-xs font-terminal border ${ta.success
+                              ? "border-green-600/50 text-green-400 bg-green-950/30"
+                              : "border-red-600/50 text-red-400 bg-red-950/30"
+                            }`}
+                        >
+                          {ta.success ? (
+                            <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          ) : (
+                            <XCircle className="w-3 h-3 shrink-0" />
+                          )}
+                          <Icon className="w-3 h-3 shrink-0" />
+                          <span className="truncate max-w-[200px]">{ta.message}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
 
-              {msg.verdict && !msg.isStreaming && (
-                <VerdictBadge verdict={msg.verdict} />
-              )}
+                {msg.verdict && !msg.isStreaming && (
+                  <VerdictBadge verdict={msg.verdict} />
+                )}
 
-              {msg.role === "assistant" && msg.content && !msg.isStreaming && (
-                <div className="flex items-center gap-1 mt-2 pt-2 border-t border-primary/20">
-                  <button
-                    onClick={() =>
-                      onArtifactCreated({
-                        type: "note",
-                        content: msg.content,
-                        title: `Tutor note ${i}`,
-                      })
-                    }
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-terminal text-muted-foreground hover:text-primary hover:bg-primary/10 border border-primary/20 hover:border-primary/50 transition-colors"
-                  >
-                    <FileText className="w-3 h-3" /> Save Note
-                  </button>
-                  <button
-                    onClick={() =>
-                      onArtifactCreated({
-                        type: "card",
-                        content: msg.content,
-                        title: `Tutor card ${i}`,
-                      })
-                    }
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-terminal text-muted-foreground hover:text-primary hover:bg-primary/10 border border-primary/20 hover:border-primary/50 transition-colors"
-                  >
-                    <CreditCard className="w-3 h-3" /> Create Card
-                  </button>
-                  <button
-                    onClick={() => {
-                      onArtifactCreated({
-                        type: "map",
-                        content: msg.content,
-                        title: `Tutor map ${i}`,
-                      });
-                    }}
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-terminal text-muted-foreground hover:text-primary hover:bg-primary/10 border border-primary/20 hover:border-primary/50 transition-colors"
-                  >
-                    <Map className="w-3 h-3" /> Create Map
-                  </button>
-                </div>
-              )}
+                {msg.teachBackRubric && !msg.isStreaming && (
+                  <TeachBackBadge rubric={msg.teachBackRubric} />
+                )}
 
-              {/* Citations + Model */}
-              {(msg.citations?.length || msg.model || msg.retrievalDebug) && !msg.isStreaming ? (
-                <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
-                  {msg.retrievalDebug ? (
-                    <Badge variant="outline" className="text-[11px] rounded-none text-muted-foreground/80">
-                      RAG {msg.retrievalDebug.effective_accuracy_profile ?? msg.retrievalDebug.accuracy_profile ?? "strict"}{msg.retrievalDebug.profile_escalated ? " (escalated)" : ""} | conf {(msg.retrievalDebug.retrieval_confidence ?? 0).toFixed(2)} ({msg.retrievalDebug.retrieval_confidence_tier ?? "low"}) | uniq {msg.retrievalDebug.retrieved_material_unique_sources ?? 0} | top {Math.round((msg.retrievalDebug.material_top_source_share ?? 0) * 100)}% | dropped {msg.retrievalDebug.material_dropped_by_cap ?? 0}
-                    </Badge>
-                  ) : null}
-                  {msg.citations?.map((c) =>
-                    c.url ? (
-                      <a
-                        key={c.index}
-                        href={c.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                {msg.role === "assistant" && msg.content && !msg.isStreaming && (
+                  <div className="flex items-center gap-1 mt-2 pt-2 border-t border-primary/20">
+                    <button
+                      onClick={() =>
+                        onArtifactCreated({
+                          type: "note",
+                          content: msg.content,
+                          title: `Tutor note ${i}`,
+                        })
+                      }
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                    >
+                      <FileText className="w-3 h-3 text-primary/60" /> Save Note
+                    </button>
+                    <button
+                      onClick={() =>
+                        onArtifactCreated({
+                          type: "card",
+                          content: msg.content,
+                          title: `Tutor card ${i}`,
+                        })
+                      }
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                    >
+                      <CreditCard className="w-3 h-3 text-primary/60" /> Create Card
+                    </button>
+                    <button
+                      onClick={() => {
+                        onArtifactCreated({
+                          type: "map",
+                          content: msg.content,
+                          title: `Tutor map ${i}`,
+                        });
+                      }}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                    >
+                      <Map className="w-3 h-3 text-primary/60" /> Create Map
+                    </button>
+                  </div>
+                )}
+
+                {/* Citations + Model */}
+                {(msg.citations?.length || msg.model || msg.retrievalDebug) && !msg.isStreaming ? (
+                  <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
+                    {msg.retrievalDebug ? (
+                      <Badge variant="outline" className="text-[11px] rounded-none text-muted-foreground/80">
+                        RAG {msg.retrievalDebug.effective_accuracy_profile ?? msg.retrievalDebug.accuracy_profile ?? "strict"}{msg.retrievalDebug.profile_escalated ? " (escalated)" : ""} | conf {(msg.retrievalDebug.retrieval_confidence ?? 0).toFixed(2)} ({msg.retrievalDebug.retrieval_confidence_tier ?? "low"}) | uniq {msg.retrievalDebug.retrieved_material_unique_sources ?? 0} | top {Math.round((msg.retrievalDebug.material_top_source_share ?? 0) * 100)}% | dropped {msg.retrievalDebug.material_dropped_by_cap ?? 0}
+                      </Badge>
+                    ) : null}
+                    {msg.citations?.map((c) =>
+                      c.url ? (
+                        <a
+                          key={c.index}
+                          href={c.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Badge
+                            variant="outline"
+                            className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
+                          >
+                            [{c.index}] {c.source}
+                          </Badge>
+                        </a>
+                      ) : (
                         <Badge
+                          key={c.index}
                           variant="outline"
-                          className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
+                          className="text-sm rounded-none"
                         >
                           [{c.index}] {c.source}
                         </Badge>
-                      </a>
-                    ) : (
-                      <Badge
-                        key={c.index}
-                        variant="outline"
-                        className="text-sm rounded-none"
-                      >
-                        [{c.index}] {c.source}
+                      )
+                    )}
+                    {msg.model && (
+                      <Badge variant="outline" className="text-sm rounded-none text-muted-foreground/60 ml-auto">
+                        {msg.model}
                       </Badge>
-                    )
-                  )}
-                  {msg.model && (
-                    <Badge variant="outline" className="text-sm rounded-none text-muted-foreground/60 ml-auto">
-                      {msg.model}
-                    </Badge>
-                  )}
-                </div>
-              ) : null}
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <div className="flex flex-wrap items-center gap-2 p-3 border-t-2 border-primary/20">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <label
-            htmlFor="accuracy-profile-select"
-            className="font-terminal text-xs text-muted-foreground whitespace-nowrap"
-          >
-            Profile
-          </label>
-          <select
-            id="accuracy-profile-select"
-            value={accuracyProfile}
-            onChange={(e) => onAccuracyProfileChange(e.target.value as TutorAccuracyProfile)}
+        <div className="flex flex-wrap items-center gap-2 p-3 border-t-2 border-primary/20">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <label
+              htmlFor="accuracy-profile-select"
+              className="font-terminal text-xs text-muted-foreground whitespace-nowrap"
+            >
+              Profile
+            </label>
+            <select
+              id="accuracy-profile-select"
+              value={accuracyProfile}
+              onChange={(e) => onAccuracyProfileChange(e.target.value as TutorAccuracyProfile)}
+              disabled={isStreaming}
+              className="h-9 bg-black border-2 border-secondary px-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
+            >
+              <option value="balanced">Balanced</option>
+              <option value="strict">Strict</option>
+              <option value="coverage">Coverage</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-1">
+            {(["socratic", "evaluate", "concept_map", "teach_back"] as const).map((mode) => {
+              const active = behaviorOverride === mode;
+              const labels: Record<BehaviorOverride, string> = {
+                socratic: "Q",
+                evaluate: "E",
+                concept_map: "M",
+                teach_back: "T",
+              };
+              const titles: Record<BehaviorOverride, string> = {
+                socratic: "Socratic — respond with questions only",
+                evaluate: "Evaluate — assess your answer",
+                concept_map: "Concept Map — generate Mermaid diagram",
+                teach_back: "Teach-Back — explain as if teaching a novice",
+              };
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  title={titles[mode]}
+                  onClick={() => setBehaviorOverride(active ? null : mode)}
+                  disabled={isStreaming}
+                  className={`h-8 w-8 font-arcade text-xs border-2 transition-colors disabled:opacity-50 ${active
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                    }`}
+                >
+                  {labels[mode]}
+                </button>
+              );
+            })}
+          </div>
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask a question..."
             disabled={isStreaming}
-            className="h-9 bg-black border-2 border-secondary px-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none disabled:opacity-50"
+            className="flex-1 min-w-[180px] bg-black/40 border-2 border-primary rounded-none px-3 py-2 text-[17px] leading-7 font-terminal text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none disabled:opacity-50 shadow-none"
+          />
+          <Button
+            onClick={sendMessage}
+            disabled={!input.trim() || isStreaming}
+            aria-label="Send message"
+            className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0"
           >
-            <option value="balanced">Balanced</option>
-            <option value="strict">Strict</option>
-            <option value="coverage">Coverage</option>
-          </select>
+            {isStreaming ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </Button>
         </div>
-        <div className="flex items-center gap-1">
-          {(["socratic", "evaluate", "concept_map"] as const).map((mode) => {
-            const active = behaviorOverride === mode;
-            const labels: Record<BehaviorOverride, string> = {
-              socratic: "Q",
-              evaluate: "E",
-              concept_map: "M",
-            };
-            const titles: Record<BehaviorOverride, string> = {
-              socratic: "Socratic — respond with questions only",
-              evaluate: "Evaluate — assess your answer",
-              concept_map: "Concept Map — generate Mermaid diagram",
-            };
-            return (
-              <button
-                key={mode}
-                type="button"
-                title={titles[mode]}
-                onClick={() => setBehaviorOverride(active ? null : mode)}
-                disabled={isStreaming}
-                className={`h-8 w-8 font-arcade text-xs border-2 transition-colors disabled:opacity-50 ${
-                  active
-                    ? "bg-primary/20 border-primary text-primary"
-                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
-                }`}
-              >
-                {labels[mode]}
-              </button>
-            );
-          })}
-        </div>
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask a question..."
-          disabled={isStreaming}
-          className="flex-1 min-w-[180px] bg-black border-2 border-secondary rounded-none px-3 py-2 text-[17px] leading-7 font-terminal text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none disabled:opacity-50"
-        />
-        <Button
-          onClick={sendMessage}
-          disabled={!input.trim() || isStreaming}
-          aria-label="Send message"
-          className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0"
-        >
-          {isStreaming ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <Send className="w-5 h-5" />
-          )}
-        </Button>
-      </div>
       </div>
 
       {!focusMode && (

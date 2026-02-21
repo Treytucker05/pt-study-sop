@@ -47,6 +47,12 @@ from tutor_verdict import (
     strip_verdict_marker,
     validate_verdict,
 )
+from tutor_teach_back import (
+    TEACH_BACK_PROMPT_SUFFIX,
+    parse_teach_back_rubric,
+    validate_teach_back_rubric,
+    rubric_blocks_mastery,
+)
 from tutor_accuracy_profiles import (
     DEFAULT_ACCURACY_PROFILE,
     accuracy_profile_config,
@@ -1367,6 +1373,8 @@ def send_turn(session_id: str):
                 system_prompt += VERDICT_PROMPT_SUFFIX
             elif behavior_override == "concept_map":
                 system_prompt += CONCEPT_MAP_PROMPT_SUFFIX
+            elif behavior_override == "teach_back":
+                system_prompt += TEACH_BACK_PROMPT_SUFFIX
 
             # M8: Adaptive scaffolding based on mastery level
             try:
@@ -1410,6 +1418,7 @@ def send_turn(session_id: str):
             used_scope_shortcut = False
             parsed_verdict = None
             parsed_concept_map = None
+            parsed_teach_back = None
 
             material_docs = dual.get("materials") or []
             instruction_docs = dual.get("instructions") or []
@@ -1760,6 +1769,33 @@ def send_turn(session_id: str):
                 if behavior_override == "concept_map" and full_response:
                     parsed_concept_map = parse_concept_map(full_response)
 
+                # Parse teach-back rubric and enforce mastery gate
+                parsed_teach_back = None
+                if behavior_override == "teach_back" and full_response:
+                    parsed_teach_back = parse_teach_back_rubric(full_response)
+                    if parsed_teach_back:
+                        is_valid, tb_issues = validate_teach_back_rubric(parsed_teach_back)
+                        if not is_valid:
+                            _LOG.warning("Teach-back rubric issues: %s", tb_issues)
+                            parsed_teach_back["_validation_issues"] = tb_issues
+
+                        # Block mastery if rubric is weak
+                        try:
+                            from adaptive.bkt import get_effective_mastery as _get_eff
+                            from adaptive.schemas import MasteryConfig as _MC2
+
+                            tb_skill = session.get("topic")
+                            if tb_skill and rubric_blocks_mastery(parsed_teach_back):
+                                eff = _get_eff(conn, "default", tb_skill, _MC2())
+                                if eff >= _MC2().unlock_threshold:
+                                    parsed_teach_back["_mastery_blocked"] = True
+                                    _LOG.info(
+                                        "Teach-back gate blocking mastery for %s (eff=%.3f)",
+                                        tb_skill, eff,
+                                    )
+                        except (ImportError, Exception) as _tb_exc:
+                            _LOG.debug("Teach-back mastery gate skipped: %s", _tb_exc)
+
                 yield format_sse_done(
                     citations=all_citations,
                     model=api_model,
@@ -1768,6 +1804,7 @@ def send_turn(session_id: str):
                     behavior_override=behavior_override,
                     verdict=parsed_verdict,
                     concept_map=parsed_concept_map,
+                    teach_back_rubric=parsed_teach_back,
                 )
 
         except Exception as e:

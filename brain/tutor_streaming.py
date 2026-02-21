@@ -25,6 +25,7 @@ def format_sse_done(
     behavior_override: Optional[str] = None,
     verdict: Optional[dict] = None,
     concept_map: Optional[dict] = None,
+    teach_back_rubric: Optional[dict] = None,
 ) -> str:
     """Format the final SSE done event with metadata."""
     payload: dict = {"type": "done"}
@@ -44,6 +45,8 @@ def format_sse_done(
         payload["verdict"] = verdict
     if concept_map:
         payload["concept_map"] = concept_map
+    if teach_back_rubric:
+        payload["teach_back_rubric"] = teach_back_rubric
     return f"data: {json.dumps(payload)}\n\ndata: [DONE]\n\n"
 
 
