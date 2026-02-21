@@ -27,3 +27,8 @@ Latest non-track update: 2026-02-20 Tutor library extraction hardening (lossy-co
 - [~] **Track: Adaptive Mastery System** (created 2026-02-20; 10 phases, 48 tasks)
   BKT + forgetting curve, Obsidian vault integration, concept-map curriculum gating, adaptive scaffolding with localized failure, teach-back gates, Graph RAG-lite with PCST pruning, measurement loop.
   *Link: [./tracks/adaptive_mastery_20260220/](./tracks/adaptive_mastery_20260220/)*
+
+- [ ] **Track: UI/UX Professional Audit** (created 2026-02-20; 3 phases, 11 tasks)
+  Systematic professional-grade QA and UI/UX review tailored to the Retro Arcade design system.
+  *Link: [./tracks/ui_ux_audit_20260220/](./tracks/ui_ux_audit_20260220/)*
+
