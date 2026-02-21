@@ -284,12 +284,10 @@ def _try_docling(path: Path) -> tuple[Optional[str], list[str]]:
             return None, ["docling: empty content"]
 
         if _has_garbled_content(content) and path.suffix.lower() == ".pdf":
-            ratio = content.count("\ufffd") / len(content)
             logger.warning(
-                "Docling text has %.0f%% replacement chars — retrying with forced OCR",
-                ratio * 100,
+                "Docling text is garbled (broken font mapping) — retrying with forced OCR",
             )
-            errors.append(f"docling: {ratio:.0%} replacement chars, retried with OCR")
+            errors.append("docling: garbled content detected, retried with OCR")
             try:
                 ocr_content = _extract_with_docling_ocr(path)
                 if ocr_content.strip() and not _has_garbled_content(ocr_content):
