@@ -88,6 +88,7 @@ def build_prompt_with_contexts(
     topic: Optional[str] = None,
     instruction_context: Optional[str] = None,
     material_context: Optional[str] = None,
+    graph_context: Optional[str] = None,
 ) -> str:
     parts: list[str] = [_format_tier1(course_id, topic)]
 
@@ -110,6 +111,9 @@ def build_prompt_with_contexts(
             "## Retrieved Study Materials\n"
             + material_context
         )
+
+    if graph_context and graph_context.strip():
+        parts.append(graph_context)
 
     return "\n\n".join(parts)
 

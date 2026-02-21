@@ -27,6 +27,7 @@ _vectorstores: dict[str, object] = {}
 
 COLLECTION_MATERIALS = "tutor_materials"
 COLLECTION_INSTRUCTIONS = "tutor_instructions"
+COLLECTION_NOTES = "tutor_notes"
 
 DEFAULT_CHROMA_BATCH_SIZE = 1000
 DEFAULT_MAX_CHUNKS_PER_DOC = 2
@@ -917,3 +918,65 @@ def keyword_search_dual(
         "materials": materials,
         "instructions": instructions,
     }
+
+
+# ---------------------------------------------------------------------------
+# Vault notes embedding (for GraphRAG-lite)
+# ---------------------------------------------------------------------------
+
+def embed_vault_notes(conn: sqlite3.Connection) -> dict[str, int]:
+    """Read vault_docs, chunk, and embed into the tutor_notes collection.
+
+    Returns summary with embedded/skipped counts.
+    """
+    cur = conn.execute("SELECT id, path, content FROM vault_docs WHERE content IS NOT NULL")
+    rows = cur.fetchall()
+
+    if not rows:
+        return {"embedded": 0, "skipped": 0}
+
+    vs = init_vectorstore(COLLECTION_NOTES)
+    existing_ids = set(vs._collection.get()["ids"]) if vs._collection.count() > 0 else set()
+
+    texts: list[str] = []
+    metadatas: list[dict] = []
+    ids: list[str] = []
+    skipped = 0
+
+    for row in rows:
+        doc_id = row[0]
+        path = row[1]
+        content = row[2]
+        if not content or not content.strip():
+            skipped += 1
+            continue
+
+        chunks = chunk_document(content)
+        for i, chunk in enumerate(chunks):
+            chroma_id = f"vault-{doc_id}-{i}"
+            if chroma_id in existing_ids:
+                skipped += 1
+                continue
+            texts.append(chunk)
+            metadatas.append({"source_path": path, "doc_id": doc_id, "chunk_index": i})
+            ids.append(chroma_id)
+
+    if texts:
+        _add_documents_batched(vs, texts, metadatas, ids)
+
+    return {"embedded": len(texts), "skipped": skipped}
+
+
+def search_notes(query: str, k: int = 4) -> list[dict]:
+    """Vector search in the vault notes collection."""
+    try:
+        vs = init_vectorstore(COLLECTION_NOTES)
+        if vs._collection.count() == 0:
+            return []
+        results = vs.similarity_search(query, k=k)
+        return [
+            {"content": doc.page_content, "metadata": doc.metadata}
+            for doc in results
+        ]
+    except Exception:
+        return []
