@@ -182,6 +182,7 @@ export default function Dashboard() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-tasks"] });
+      toast({ title: "Task updated", description: "Task status has been changed." });
     },
   });
 
@@ -191,6 +192,7 @@ export default function Dashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-tasks"] });
       setNewTaskTitle("");
+      toast({ title: "Task created", description: "New task added to your list." });
     },
   });
 
@@ -204,6 +206,7 @@ export default function Dashboard() {
       setEditTaskNotes("");
       setEditTaskDue("");
       setEditTaskDeadlineType("none");
+      toast({ title: "Task saved", description: "Task details updated." });
     },
   });
 
@@ -211,6 +214,7 @@ export default function Dashboard() {
     mutationFn: (task: GoogleTask) => api.googleTasks.delete(task.id, task.listId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["google-tasks"] });
+      toast({ title: "Task deleted", description: "Task has been removed." });
     },
   });
 
@@ -232,6 +236,7 @@ export default function Dashboard() {
     mutationFn: (id: number) => api.academicDeadlines.toggleComplete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["academic-deadlines"] });
+      toast({ title: "Deadline updated", description: "Deadline status changed." });
     },
   });
 
