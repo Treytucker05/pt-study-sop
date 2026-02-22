@@ -68,6 +68,7 @@ Progress notes:
 - Wizard now exposes PRIME scope selector and persists it in local/session state.
 - `M-PRE-008` hardening added: full YAML contract (constraints/knobs/outputs/stop criteria) + PRIME runtime guardrail injection in tutor orchestration.
 - `M-PRE-008` dependency note locked: objective context comes from `M-PRE-010` or existing North Star (pairing recommended, not mandatory); added basic/schema priming time windows.
+- Method-card prompt baseline now enforced across the full library: every YAML method card has a tutor-facing `facilitation_prompt`; `M-PRE-003` now includes conditional-use stipulations and fallback route (`M-PRE-010 -> M-PRE-008`) when prior context is missing.
 
 ### A5) PRIME Acceptance Criteria
 - [ ] Any PRIME block run produces orientation artifacts only.

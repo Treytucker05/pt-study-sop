@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest non-track update: 2026-02-22 Clarified `M-PRE-008` dependency + timing (M-PRE-010 or North Star context; basic/schema priming windows) in method spec and PRIME matrix (see `conductor/tracks/GENERAL/log.md`).
+Latest non-track update: 2026-02-22 Added tutor-facing `facilitation_prompt` coverage across all method cards and hardened `M-PRE-003` conditional PRIME stipulations (see `conductor/tracks/GENERAL/log.md`).
 
 ---
 

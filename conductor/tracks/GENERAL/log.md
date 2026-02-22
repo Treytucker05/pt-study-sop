@@ -813,3 +813,18 @@ px vitest run --reporter=verbose (341 passed)
   - added North Star rules to authoritative read order
   - added write-rule pointer for North Star/session-start logic updates
   - added non-negotiable default: planning blocked until North Star validation.
+
+## 2026-02-22 - Method-card tutor prompt coverage hardening
+
+- Added tutor-facing `facilitation_prompt` blocks to every method card missing one:
+  - `sop/library/methods/*.yaml` (41 files updated across PRIME/CALIBRATE/ENCODE/REFERENCE/RETRIEVE/OVERLEARN/INTEGRATE sets)
+- Hardened PRIME conditional behavior for prior-knowledge scan:
+  - `sop/library/methods/M-PRE-003.yaml`
+  - Added explicit stipulations:
+    - only run when prior context (North Star/notes) exists
+    - fallback route to `M-PRE-010 -> M-PRE-008` when context is missing
+    - PRIME non-assessment boundary lock
+- Validation:
+  - Prompt coverage audit: all method cards now contain exactly one `facilitation_prompt`
+  - `pytest brain/tests/` -> blocked by pre-existing import-path collection errors (`ModuleNotFoundError: brain` in adaptive tests)
+  - `pytest brain/tests/test_api_contracts.py brain/tests/test_tutor_session_linking.py` -> `61 passed`

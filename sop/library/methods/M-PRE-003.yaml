@@ -1,7 +1,7 @@
 id: M-PRE-003
 name: Prior Knowledge Scan
 category: prepare
-description: List related concepts you already know. Identify connections to previous modules.
+description: Conditional PRIME method that maps known concepts to the new topic when prior notes or North Star context already exist.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
@@ -15,9 +15,15 @@ mechanisms:
   - retrieval
   - elaboration
   - transfer
+stipulations:
+  - Run only when prior context exists (North Star and/or prior notes linked to the current learning objective).
+  - If no prior context exists, skip this method and route to M-PRE-010 followed by M-PRE-008.
+  - PRIME boundary: orientation only; no scored probes and no answer-checking.
+  - Use this for connection mapping, not for calibration.
 inputs:
   - New topic name
-  - Access to previous module/course notes (optional)
+  - Access to previous module/course notes (required)
+  - North Star objective context (preferred)
 steps:
   - step: 1
     action: Write the new topic at center of page
@@ -38,11 +44,15 @@ outputs:
   - Connection map (topic + related concepts)
   - Primary anchoring schema identified
   - Prerequisite gap list
+  - Optional follow_up_targets list for unresolved prerequisite gaps
 stop_criteria:
+  - At least 1 prior context source referenced
   - 3-5 connections identified
   - Primary anchor selected
   - 3 minutes elapsed
 failure_modes:
+  - mode: No prior context available
+    mitigation: Skip M-PRE-003 and run M-PRE-010 then M-PRE-008
   - mode: No connections found
     mitigation: Prompt with broader categories — anatomy, physiology, pathology
   - mode: Connections too superficial
@@ -50,11 +60,29 @@ failure_modes:
   - mode: Spending too long on drawing
     mitigation: Text list is acceptable; visual is optional enhancement
 logging_fields:
+  - context_sources_used
   - connection_count
   - primary_anchor_topic
   - prerequisite_gaps
+  - skipped_reason
 evidence:
   citation: Ausubel (1968)
   finding: Meaningful learning requires anchoring new information to existing schemas
   source: seed_methods.py
 evidence_raw: Ausubel (1968); meaningful learning requires anchoring to existing schemas
+
+facilitation_prompt: |
+  You are running this method card in its assigned control stage. Execute only what this card defines.
+
+  Operational instructions:
+  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
+  2) Follow the listed steps in order and keep output concise, structured, and actionable.
+  3) Enforce control-stage boundaries:
+     - PRIME: orientation and structure only; no scored checks or hidden calibration.
+     - CALIBRATE: measure current state with confidence + performance signals.
+     - ENCODE: force active processing; avoid passive lecture-only output.
+     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
+     - RETRIEVE: require learner attempt before revealing full answers.
+     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
+  4) Produce the outputs/artifacts listed on this card.
+  5) Stop when stop_criteria are met and log required telemetry fields.
