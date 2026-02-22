@@ -599,7 +599,7 @@ export function TutorChat({
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`px-3 py-2 text-[17px] leading-7 font-terminal ${msg.role === "user"
+                className={`px-3 py-2 text-[17px] leading-7 font-terminal overflow-hidden ${msg.role === "user"
                   ? "max-w-[72%]"
                   : "max-w-[96%]"
                   } ${msg.role === "user"
@@ -608,12 +608,20 @@ export function TutorChat({
                   }`}
               >
                 {msg.role === "assistant" ? (
-                  <div className="prose prose-invert prose-lg max-w-none font-terminal [&_p]:my-2 [&_li]:my-1 [&_p]:leading-7 [&_li]:leading-7 [&_code]:text-base [&_pre]:text-base">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {msg.content || (msg.isStreaming ? "..." : "")}
-                    </ReactMarkdown>
-                    {msg.isStreaming && (
-                      <span className="inline-block w-2 h-3 bg-primary animate-pulse ml-0.5" />
+                  <div className="prose prose-invert prose-lg max-w-none font-terminal [&_p]:my-2 [&_li]:my-1 [&_p]:leading-7 [&_li]:leading-7 [&_code]:text-base [&_pre]:text-base [&_pre]:overflow-x-auto [&_code]:break-words [&_a]:break-all">
+                    {msg.content ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                      </ReactMarkdown>
+                    ) : msg.isStreaming ? (
+                      <div className="flex items-center gap-1.5 py-1">
+                        <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    ) : null}
+                    {msg.isStreaming && msg.content && (
+                      <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
                     )}
                   </div>
                 ) : (

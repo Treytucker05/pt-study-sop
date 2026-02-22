@@ -6,6 +6,7 @@ target_assessment_mode: ["procedure"]
 est_duration_min: 45
 
 method_ids:
+  - M-PRE-010  # Learning Objectives Primer (mandatory first)
   - M-PRE-008  # Structural Extraction
   - M-ENC-011  # Process Flowchart (Map the steps)
   - M-REF-003  # One-Page Anchor

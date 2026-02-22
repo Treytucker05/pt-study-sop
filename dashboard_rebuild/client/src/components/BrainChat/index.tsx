@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { BrainChatPayload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,7 @@ import { PreviewDialog } from "./PreviewDialog";
 import { usePreview } from "./usePreview";
 import type { ChatMessage, Mode, IngestTarget, ApiContent } from "./types";
 import { buildApiContent } from "./types";
+import { AnkiIntegration } from "@/components/AnkiIntegration";
 
 export function BrainChat() {
   // Core state
@@ -30,6 +31,11 @@ export function BrainChat() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const preview = usePreview();
+
+  const { data: metrics } = useQuery({
+    queryKey: ["brain", "metrics"],
+    queryFn: api.brain.getMetrics,
+  });
 
   // Image handling
   const addImage = useCallback((file: File) => {
@@ -298,24 +304,35 @@ export function BrainChat() {
         setPromptCopied={setPromptCopied}
       />
 
-      <MessageList
-        messages={messages}
-        loading={loading}
-        mode={mode}
-        scrollRef={scrollRef}
-      />
+      {mode === "anki" ? (
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <AnkiIntegration
+            totalCards={metrics?.totalCards || 0}
+            compact
+          />
+        </div>
+      ) : (
+        <>
+          <MessageList
+            messages={messages}
+            loading={loading}
+            mode={mode}
+            scrollRef={scrollRef}
+          />
 
-      <PendingImages images={pendingImages} onRemove={removeImage} />
+          <PendingImages images={pendingImages} onRemove={removeImage} />
 
-      <ChatInput
-        input={input}
-        setInput={setInput}
-        onSend={send}
-        onImageSelect={handleImageSelect}
-        onPaste={handlePaste}
-        loading={loading}
-        mode={mode}
-      />
+          <ChatInput
+            input={input}
+            setInput={setInput}
+            onSend={send}
+            onImageSelect={handleImageSelect}
+            onPaste={handlePaste}
+            loading={loading}
+            mode={mode}
+          />
+        </>
+      )}
 
       <PreviewDialog
         open={preview.open}

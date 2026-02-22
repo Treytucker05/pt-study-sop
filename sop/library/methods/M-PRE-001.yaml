@@ -1,61 +1,17 @@
 id: M-PRE-001
 name: Brain Dump
 category: prepare
-description: Free-write everything you already know about the topic for 2-3 min. Surfaces prior knowledge and sets a baseline.
+control_stage: PRIME
 default_duration_min: 3
 energy_cost: low
-best_stage: first_exposure
-control_stage: PRIME
-status: validated
-tags:
-  - warm-up
-  - recall
-  - low-stakes
-  - sop-core
-mechanisms:
-  - generation
-  - retrieval
-  - calibration
-inputs:
-  - Topic name or concept to study
-  - Timer (3 min recommended)
-  - Blank paper or text area
-steps:
-  - step: 1
-    action: Set a timer for 2-3 minutes
-    notes: Strict time limit prevents overthinking
-  - step: 2
-    action: Write continuously about everything you know on the topic
-    notes: Stream of consciousness — no pausing, no editing, no looking things up
-  - step: 3
-    action: When stuck, write "I don't know..." and continue
-    notes: Identifying gaps is part of the value
-  - step: 4
-    action: Stop when timer ends
-    notes: Do not extend — the constraint is the feature
-  - step: 5
-    action: Review what you wrote and note surprises
-    notes: Often you know more (or less) than expected
-outputs:
-  - Brain dump notes (raw text)
-  - Prior knowledge baseline
-  - Identified knowledge gaps
-stop_criteria:
-  - Timer ends (hard stop)
-  - You've exhausted everything you can recall
-failure_modes:
-  - mode: Perfectionism paralysis
-    mitigation: Remind that messy is fine — this is a dump, not a draft
-  - mode: Going too long
-    mitigation: Enforce strict timer; value is in the constraint
-  - mode: Looking things up mid-dump
-    mitigation: Close all references before starting
-logging_fields:
-  - brain_dump_word_count
-  - prior_knowledge_level
-  - gaps_identified
-evidence:
-  citation: Brod et al. (2013)
-  finding: Prior knowledge activation improves encoding of new information by providing anchoring schemas
-  source: seed_methods.py
-evidence_raw: Brod et al. (2013); prior knowledge activation improves encoding of new information
+has_steps: Y
+has_outputs_or_artifacts: Y
+outputs_summary: "Brain dump notes (raw text); Prior knowledge baseline; Identified knowledge gaps"
+knobs:
+  feedback_style:
+    type: enum
+    options: [supportive_synthesis, strict_gap_analysis]
+    default: supportive_synthesis
+
+facilitation_prompt: |
+  The user is performing a 'brain dump' to synthesize the concepts they were just taught. Do not treat this as a quiz or penalize them for guessing. Your task is to analyze their raw text against the established concept map. Using a {feedback_style} approach, categorize their brain dump into two brief lists: 1) 'Strong Connections' (what they successfully linked) and 2) 'Missing Nodes' (key concepts from the map they forgot to mention). Do not ask follow-up questions; simply provide the synthesis.

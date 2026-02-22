@@ -1,0 +1,67 @@
+id: M-PRE-010
+name: Learning Objectives Primer
+category: prepare
+control_stage: PRIME
+default_duration_min: 3
+energy_cost: low
+has_steps: Y
+has_outputs_or_artifacts: Y
+outputs_summary: "ModuleObjectiveMap or FocusObjectiveCard; selected focus objective; learner acknowledgment"
+knobs:
+  objective_scope:
+    type: enum
+    options: [module_all, single_focus]
+    default: module_all
+  cognitive_depth:
+    type: enum
+    options: [foundational_recall, conceptual_understanding, clinical_application]
+    default: conceptual_understanding
+  delivery_style:
+    type: enum
+    options: [direct_statement, inquiry_based_preview]
+    default: direct_statement
+constraints:
+  objective_source_precedence: instructor_over_source
+  module_all_requires_north_star: true
+  single_focus_requires_focus_objective_id: true
+  non_assessment: true
+  no_scored_checks: true
+  no_retrieval_grading: true
+steps:
+  - step: 1
+    action: Resolve objective source
+    notes: Load North Star first; use instructor learning objectives first; only synthesize from source material when instructor objectives are missing.
+  - step: 2
+    action: Build objective view by scope
+    notes: module_all => publish full module objective map; single_focus => publish one measurable objective card.
+  - step: 3
+    action: Define focus target
+    notes: module_all => learner selects one focus objective for zoom-in; single_focus => focus objective already fixed.
+  - step: 4
+    action: Request learner acknowledgment
+    notes: Confirmation only, not scored probing.
+outputs:
+  - ModuleObjectiveMap
+  - FocusObjectiveCard
+  - SelectedFocusObjectiveId
+  - LearnerAcknowledgment
+stop_criteria:
+  - module_all scope publishes all active module objectives from North Star
+  - single_focus scope publishes exactly one measurable focus objective
+  - focus objective is selected for downstream chain steps
+  - learner acknowledges goals before PRIME continues
+
+facilitation_prompt: |
+  You are running M-PRE-010 (Learning Objectives Primer) in PRIME stage.
+  This stage is non-assessment: do not quiz, grade, or run retrieval checks.
+
+  Objective source precedence:
+  1) Instructor-provided learning objectives (use verbatim whenever available)
+  2) Source-material-derived objectives (only if instructor objectives are missing)
+
+  Operate by {objective_scope}:
+  - module_all: publish a high-level map of all active module objectives from North Star, then ask learner to pick one focus objective for zoom-in.
+  - single_focus: publish exactly one measurable focus objective card.
+
+  Use {cognitive_depth} level and {delivery_style} tone. Ask for learner acknowledgment only, then stop.
+  Do not begin core teaching content inside this method.

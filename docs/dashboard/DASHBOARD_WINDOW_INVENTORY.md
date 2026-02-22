@@ -193,6 +193,11 @@ Source: `dashboard_rebuild/client/src/pages/tutor.tsx`
   - Left: Content Filter (`dashboard_rebuild/client/src/components/ContentFilter.tsx`)
   - Center: Chat (`dashboard_rebuild/client/src/components/TutorChat.tsx`)
   - Right: Artifacts + resume (`dashboard_rebuild/client/src/components/TutorArtifacts.tsx`)
+- Flow model:
+  - Click **TUTOR** in nav to open `/tutor`.
+  - If there is a live session in `tutor.active_session.v1`, default view is **CHAT**.
+  - If there is no live session, default view is **WIZARD** (3-page setup flow: Materials, Chain, Start).
+  - Starting a session creates it from `POST /api/tutor/session` and switches to **CHAT**.
 - Reads: `api.tutor.getContentSources`, `api.tutor.getTemplateChains`, `api.tutor.getMaterials`, `api.tutor.listSessions`.
 - Writes: `api.tutor.createSession`, `api.tutor.sendTurn` (SSE), `api.tutor.advanceBlock`, `api.tutor.createArtifact`, `api.tutor.endSession`, `api.tutor.uploadMaterial`.
 - Backend: `brain/dashboard/api_tutor.py` routes `/api/tutor/*` (plus `brain/tutor_rag.py`, `brain/tutor_chains.py`, `brain/tutor_streaming.py`).

@@ -7,6 +7,7 @@ import type {
   Material,
   TutorAccuracyProfile,
   TutorMode,
+  TutorObjectiveScope,
   TutorSessionSummary,
   TutorTemplateChain,
   TutorSessionWithTurns,
@@ -68,10 +69,18 @@ function normalizeAccuracyProfile(value: unknown): TutorAccuracyProfile {
   return "strict";
 }
 
+function normalizeObjectiveScope(value: unknown): TutorObjectiveScope {
+  if (value === "module_all" || value === "single_focus") {
+    return value;
+  }
+  return "module_all";
+}
+
 export default function Tutor() {
   const queryClient = useQueryClient();
   const tutorMaterialStorageKey = "tutor.selected_material_ids.v1";
   const tutorAccuracyProfileKey = "tutor.accuracy_profile.v1";
+  const tutorObjectiveScopeKey = "tutor.objective_scope.v1";
   const tutorWizardStorageKey = "tutor.wizard.state.v1";
   const tutorActiveSessionKey = "tutor.active_session.v1";
 
@@ -123,7 +132,20 @@ export default function Tutor() {
   const [turnCount, setTurnCount] = useState(0);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [showArtifacts, setShowArtifacts] = useState(false);
-  const [showSetup, setShowSetup] = useState(false);
+  const [showSetup, setShowSetup] = useState<boolean>(() => {
+    try {
+      return !Boolean(localStorage.getItem(tutorActiveSessionKey));
+    } catch {
+      return true;
+    }
+  });
+  const [objectiveScope, setObjectiveScope] = useState<TutorObjectiveScope>(() => {
+    try {
+      return normalizeObjectiveScope(localStorage.getItem(tutorObjectiveScopeKey));
+    } catch {
+      return "module_all";
+    }
+  });
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -149,6 +171,14 @@ export default function Tutor() {
 
   useEffect(() => {
     try {
+      localStorage.setItem(tutorObjectiveScopeKey, objectiveScope);
+    } catch {
+      /* ignore */
+    }
+  }, [tutorObjectiveScopeKey, objectiveScope]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem(
         tutorWizardStorageKey,
         JSON.stringify({
@@ -158,6 +188,7 @@ export default function Tutor() {
           chainId,
           customBlockIds,
           accuracyProfile,
+          objectiveScope,
           selectedPaths,
         }),
       );
@@ -172,6 +203,7 @@ export default function Tutor() {
     chainId,
     customBlockIds,
     accuracyProfile,
+    objectiveScope,
     selectedPaths,
   ]);
 
@@ -222,6 +254,7 @@ export default function Tutor() {
       );
     } catch { /* ignore */ }
     setAccuracyProfile(normalizeAccuracyProfile(session.content_filter?.accuracy_profile));
+    setObjectiveScope(normalizeObjectiveScope(session.content_filter?.objective_scope));
     if (session.artifacts_json) {
       try {
         const parsed = JSON.parse(session.artifacts_json);
@@ -260,10 +293,12 @@ export default function Tutor() {
         phase: "first_pass",
         mode: "Core",
         topic: topic || undefined,
+        objective_scope: objectiveScope,
         content_filter: {
           ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
           ...(selectedMaterials.length > 0 ? { material_ids: selectedMaterials } : {}),
           accuracy_profile: accuracyProfile,
+          objective_scope: objectiveScope,
           web_search: true,
         },
         method_chain_id: resolvedChainId,
@@ -303,30 +338,41 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, topic, selectedPaths, selectedMaterials, accuracyProfile, chainId, customBlockIds, queryClient]);
+  }, [courseId, topic, selectedPaths, selectedMaterials, accuracyProfile, objectiveScope, chainId, customBlockIds, queryClient]);
 
-  const endSession = useCallback(async () => {
-    if (!activeSessionId) return;
-    try {
-      await api.tutor.endSession(activeSessionId);
-      toast.success("Session ended");
-      setActiveSessionId(null);
+  const clearActiveSessionState = useCallback(() => {
+    setActiveSessionId(null);
+    setArtifacts([]);
+    setTurnCount(0);
+    setStartedAt(null);
+    setCurrentBlockIndex(0);
+    setChainBlocks([]);
+    setShowSetup(true);
+    setShowArtifacts(false);
+  }, []);
+
+  const endSessionById = useCallback(async (sessionId: string) => {
+    await api.tutor.endSession(sessionId);
+    if (sessionId === activeSessionId) {
       try {
         localStorage.removeItem(tutorActiveSessionKey);
       } catch (error) {
         void error;
       }
-      setArtifacts([]);
-      setTurnCount(0);
-      setStartedAt(null);
-      setCurrentBlockIndex(0);
-      setChainBlocks([]);
-      setShowArtifacts(false);
-      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      clearActiveSessionState();
+    }
+    queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+  }, [activeSessionId, clearActiveSessionState, queryClient, tutorActiveSessionKey]);
+
+  const endSession = useCallback(async () => {
+    if (!activeSessionId) return;
+    try {
+      await endSessionById(activeSessionId);
+      toast.success("Session ended");
     } catch (err) {
       toast.error(`Failed to end session: ${err instanceof Error ? err.message : "Unknown"}`);
     }
-  }, [activeSessionId, queryClient]);
+  }, [activeSessionId, endSessionById]);
 
   const shipToBrainAndEnd = useCallback(async () => {
     if (!activeSessionId) return;
@@ -501,7 +547,11 @@ export default function Tutor() {
         }
       }
 
-      if (resumed) return;
+      if (resumed) {
+        setShowSetup(false);
+        return;
+      }
+      setShowSetup(true);
 
       try {
         const saved = localStorage.getItem(tutorWizardStorageKey);
@@ -520,6 +570,7 @@ export default function Tutor() {
             setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
           }
           setAccuracyProfile(normalizeAccuracyProfile(parsed?.accuracyProfile));
+          setObjectiveScope(normalizeObjectiveScope(parsed?.objectiveScope));
           if (Array.isArray(parsed?.selectedPaths)) {
             setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
           }
@@ -545,6 +596,7 @@ export default function Tutor() {
     applySessionState,
     hasRestored,
     tutorAccuracyProfileKey,
+    tutorObjectiveScopeKey,
     tutorActiveSessionKey,
     tutorWizardStorageKey,
   ]);
@@ -635,7 +687,7 @@ export default function Tutor() {
                     }`}
                 >
                   <Settings2 className="w-3.5 h-3.5 mr-1" />
-                  SETUP
+                  WIZARD
                 </Button>
                 <Button
                   variant="ghost"
@@ -705,6 +757,8 @@ export default function Tutor() {
                       setChainId={setChainId}
                       customBlockIds={customBlockIds}
                       setCustomBlockIds={setCustomBlockIds}
+                      objectiveScope={objectiveScope}
+                      setObjectiveScope={setObjectiveScope}
                       onStartSession={startSession}
                       isStarting={isStarting}
                       recentSessions={recentSessions}
@@ -737,7 +791,7 @@ export default function Tutor() {
                           READY TO LEARN
                         </div>
                         <div className="font-terminal text-sm text-muted-foreground max-w-sm">
-                          Click SETUP to configure your session, or select a recent session to resume.
+                          Click WIZARD to configure your session, or select a recent session to resume.
                         </div>
                       </div>
                     </div>
@@ -810,6 +864,7 @@ export default function Tutor() {
                     recentSessions={recentSessions}
                     onResumeSession={resumeSession}
                     onDeleteArtifacts={handleDeleteArtifacts}
+                    onEndSession={endSessionById}
                   />
                 </div>
               </div>

@@ -1131,6 +1131,7 @@ export type TutorMode =
   | "Diagnostic Sprint"
   | "Teaching Sprint";
 export type TutorAccuracyProfile = "balanced" | "strict" | "coverage";
+export type TutorObjectiveScope = "module_all" | "single_focus";
 export type BehaviorOverride = "socratic" | "evaluate" | "concept_map" | "teach_back";
 export type TutorSessionStatus = "active" | "completed" | "abandoned";
 
@@ -1139,12 +1140,16 @@ export interface TutorCreateSessionRequest {
   phase?: TutorPhase;
   mode?: TutorMode;
   topic?: string;
+  objective_scope?: TutorObjectiveScope;
+  focus_objective_id?: string;
   content_filter?: {
     material_ids?: number[];
     model?: string;
     folders?: string[];
     web_search?: boolean;
     accuracy_profile?: TutorAccuracyProfile;
+    objective_scope?: TutorObjectiveScope;
+    focus_objective_id?: string;
   };
   method_chain_id?: number;
 }
@@ -1181,13 +1186,22 @@ export interface TutorBlockProgress {
 export interface TutorSession {
   session_id: string;
   phase: TutorPhase;
-  mode: TutorMode;
+  mode?: TutorMode;
   topic: string;
   status: TutorSessionStatus;
   started_at: string;
   method_chain_id?: number | null;
   current_block_index?: number;
   current_block_name?: string | null;
+  objective_scope?: TutorObjectiveScope;
+  focus_objective_id?: string | null;
+  north_star?: {
+    path: string;
+    status: string;
+    module_name: string;
+    objective_ids: string[];
+  };
+  reference_targets_count?: number;
 }
 
 export interface TutorTurn {
@@ -1217,6 +1231,19 @@ export interface TutorSessionWithTurns extends TutorSession {
     model?: string;
     web_search?: boolean;
     accuracy_profile?: TutorAccuracyProfile;
+    objective_scope?: TutorObjectiveScope;
+    focus_objective_id?: string;
+    reference_targets?: string[];
+    follow_up_targets?: string[];
+    module_name?: string;
+    module_prefix?: string;
+    enforce_reference_bounds?: boolean;
+    north_star?: {
+      path: string;
+      status: string;
+      module_name: string;
+      objective_ids: string[];
+    };
   } | null;
   turn_count: number;
   artifacts_json: string | null;
@@ -1232,7 +1259,7 @@ export interface TutorSessionSummary {
   session_id: string;
   course_id: number | null;
   phase: TutorPhase;
-  mode: TutorMode;
+  mode?: TutorMode;
   topic: string;
   status: TutorSessionStatus;
   turn_count: number;

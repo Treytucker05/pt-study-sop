@@ -1,0 +1,179 @@
+{
+  "name": "generate_obsidian_artifacts",
+  "description": "Generates deterministic Obsidian session and concept notes with mandatory wiki-linking.",
+  "strict": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "control_stage": {
+            "type": "string",
+            "enum": [
+              "PRIME",
+              "CALIBRATE",
+              "ENCODE",
+              "REFERENCE",
+              "RETRIEVE",
+              "OVERLEARN"
+            ]
+          },
+          "method_id": {
+            "type": "string",
+            "description": "e.g., M-PRE-001"
+          },
+          "knob_snapshot": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "control_stage",
+          "method_id",
+          "knob_snapshot"
+        ],
+        "additionalProperties": false
+      },
+      "session": {
+        "type": "object",
+        "properties": {
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "IDs of source material referenced"
+          },
+          "unknowns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\[\\[.+\\]\\]$"
+            },
+            "description": "Exact wiki-links to concepts not yet grasped"
+          },
+          "follow_up_targets": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\[\\[.+\\]\\]$"
+            },
+            "description": "Exact wiki-links deferred to next session"
+          },
+          "stage_flow": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Chronological sequence of stages executed in this session"
+          }
+        },
+        "required": [
+          "source_ids",
+          "unknowns",
+          "follow_up_targets",
+          "stage_flow"
+        ],
+        "additionalProperties": false
+      },
+      "concepts": {
+        "type": "array",
+        "description": "Strict limit: 3-5 core concepts.",
+        "minItems": 3,
+        "maxItems": 5,
+        "items": {
+          "type": "object",
+          "properties": {
+            "file_name": {
+              "type": "string",
+              "description": "Exact concept name. Used as the wiki-link target."
+            },
+            "why_it_matters": {
+              "type": "string",
+              "description": "Clinical or functional significance."
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^\\[\\[.+\\]\\]$"
+              },
+              "description": "Exact wiki-links to required prior knowledge."
+            },
+            "retrieval_targets": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Specific probes mapped for future CALIBRATE stages."
+            },
+            "common_errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Common misconceptions or pitfalls."
+            },
+            "next_review_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "YYYY-MM-DD or null when not yet scheduled."
+            },
+            "relationships": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "target_concept": {
+                    "type": "string",
+                    "pattern": "^\\[\\[.+\\]\\]$",
+                    "description": "Exact wiki-link, e.g., '[[Depolarization]]'"
+                  },
+                  "relationship_type": {
+                    "type": "string",
+                    "enum": [
+                      "depends_on",
+                      "prerequisite_for",
+                      "contrasts_with",
+                      "part_of",
+                      "causes",
+                      "synergizes_with",
+                      "clinical_application_of"
+                    ]
+                  }
+                },
+                "required": [
+                  "target_concept",
+                  "relationship_type"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "file_name",
+            "why_it_matters",
+            "prerequisites",
+            "retrieval_targets",
+            "common_errors",
+            "next_review_date",
+            "relationships"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "metadata",
+      "session",
+      "concepts"
+    ],
+    "additionalProperties": false
+  }
+}

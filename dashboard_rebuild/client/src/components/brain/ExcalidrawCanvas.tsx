@@ -69,18 +69,18 @@ const mapUnloadListener = (
   const mappedListener: AnyListener =
     typeof listener === "function"
       ? ((event: Event) => {
-          (listener as EventListener)(event);
-        })
+        (listener as EventListener)(event);
+      })
       : {
-          handleEvent: (event: Event) => listener.handleEvent(event),
-        };
+        handleEvent: (event: Event) => listener.handleEvent(event),
+      };
 
   listenerMap.set(listener, mappedListener);
   return mappedListener;
 };
 
 const installUnloadListenerShim = () => {
-  if (typeof window === "undefined") return () => {};
+  if (typeof window === "undefined") return () => { };
 
   const win = window as WindowWithUnloadShim;
   win.__ptUnloadShimRefCount = (win.__ptUnloadShimRefCount ?? 0) + 1;
@@ -149,16 +149,7 @@ export const ExcalidrawCanvas = forwardRef<
 
   useEffect(() => installUnloadListenerShim(), []);
 
-  /* show template picker on first load when canvas is empty */
-  useEffect(() => {
-    if (excalidrawAPI && showTemplatesOnMount.current) {
-      showTemplatesOnMount.current = false;
-      const els = excalidrawAPI.getSceneElements();
-      if (!els || els.length === 0) {
-        setShowTemplates(true);
-      }
-    }
-  }, [excalidrawAPI]);
+
 
   /* ── imperative handle (unchanged API) ── */
   useImperativeHandle(
@@ -384,16 +375,6 @@ export const ExcalidrawCanvas = forwardRef<
         >
           <Save className="w-3.5 h-3.5" />
           {isSaving ? "Saving..." : "Save"}
-        </button>
-
-        <button
-          onClick={openSavePicker}
-          disabled={isSaving}
-          className="px-2 h-6 font-terminal text-[13px] bg-transparent border-none text-muted-foreground cursor-pointer flex items-center gap-1 transition-colors hover:text-foreground hover:bg-primary/10 rounded-none disabled:opacity-50"
-          title="Save As..."
-        >
-          <FilePlus className="w-3.5 h-3.5" />
-          As
         </button>
 
         <button

@@ -1,0 +1,33 @@
+src/components/__tests__/CardReviewTabs.test.tsx(57,9): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(id: number) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(id: number) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(id: number): void'.
+src/components/__tests__/CardReviewTabs.test.tsx(58,9): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(id: number) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(id: number) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(id: number): void'.
+src/components/__tests__/CardReviewTabs.test.tsx(59,9): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(draft: CardDraft) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(draft: CardDraft) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(draft: CardDraft): void'.
+src/components/__tests__/CardReviewTabs.test.tsx(123,9): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(id: number) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(id: number) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(id: number): void'.
+src/components/__tests__/CardReviewTabs.test.tsx(124,9): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(id: number) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(id: number) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(id: number): void'.
+src/components/__tests__/CardReviewTabs.test.tsx(125,9): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(draft: CardDraft) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(draft: CardDraft) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(draft: CardDraft): void'.
+src/components/__tests__/ChainBuilder.test.tsx(55,63): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(blockIds: number[]) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(blockIds: number[]) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(blockIds: number[]): void'.
+src/components/__tests__/ChainBuilder.test.tsx(63,64): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(blockIds: number[]) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(blockIds: number[]) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(blockIds: number[]): void'.
+src/components/__tests__/ChainBuilder.test.tsx(69,58): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(blockIds: number[]) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(blockIds: number[]) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(blockIds: number[]): void'.
+src/components/__tests__/ChainBuilder.test.tsx(88,63): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(blockIds: number[]) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(blockIds: number[]) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(blockIds: number[]): void'.
+src/components/__tests__/ChainBuilder.test.tsx(100,63): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '(blockIds: number[]) => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '(blockIds: number[]) => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(blockIds: number[]): void'.

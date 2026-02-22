@@ -4,6 +4,135 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-22 - Tutor runtime wiring (North Star gate + PRIME chain enforcement)
+
+- Added deterministic tutor note schema artifact:
+  - `docs/schemas/tutor_note_schema_v1_1.json`
+- Wired North Star/session-start gate into tutor runtime:
+  - `brain/dashboard/api_tutor.py`
+  - Session creation now builds/reviews North Star, injects `reference_targets`, `follow_up_targets`, `module_prefix`, and enables `enforce_reference_bounds`.
+- Wired turn-time bounds enforcement and notes continuity:
+  - `brain/dashboard/api_tutor.py`
+  - Turn requests now hard-block on missing/out-of-bounds reference targets when enforcement is active.
+  - Added prioritized Obsidian notes context (module -> follow-up-target-linked -> global fallback) to prompt context.
+- Added prioritized notes retrieval helper:
+  - `brain/tutor_rag.py`
+  - `search_notes_prioritized(...)` for module-aware and target-aware note selection.
+- Updated First Exposure chain order to require learning objectives primer first:
+  - `sop/library/chains/C-FE-001.yaml`
+  - `sop/library/chains/C-FE-STD.yaml`
+  - `sop/library/chains/C-FE-MIN.yaml`
+  - `sop/library/chains/C-FE-PRO.yaml`
+  - `M-PRE-010` is now first PRIME step in FE flows.
+
+## 2026-02-22 - PRIME step 1 lock (M-PRE-010)
+
+- Hardened `M-PRE-010` method contract:
+  - `sop/library/methods/M-PRE-010.yaml`
+  - Added explicit non-assessment constraints, objective source precedence (instructor first), required outputs, stop criteria, and tighter facilitation prompt.
+- Updated PRIME policy draft with locked step-1 specification:
+  - `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`
+  - Added final contract, locked knobs, and runtime wiring notes for `M-PRE-010`.
+
+## 2026-02-22 - PRIME scope update (module-wide first)
+
+- Updated `M-PRE-010` to remove fixed `3-5` objective constraint and support two scope modes:
+  - `module_all` (default): map all active module objectives for big-picture PRIME.
+  - `single_focus`: prime one objective for zoom-in.
+- Added `objective_scope` knob and updated method outputs/stop criteria:
+  - `sop/library/methods/M-PRE-010.yaml`
+- Synced PRIME draft matrix to new scope behavior:
+  - `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`
+
+## 2026-02-22 - objective_scope wiring complete (backend + UI)
+
+- Backend (`brain/dashboard/api_tutor.py`):
+  - Added `objective_scope` normalization (`module_all | single_focus`) and `focus_objective_id` handling.
+  - Session creation now persists scope in `content_filter` and exposes scope metadata in session response.
+  - Reference-bound enforcement now defaults to:
+    - `true` for `single_focus`
+    - `false` for `module_all` unless explicitly enabled.
+  - System prompt now includes explicit PRIME scope directives.
+  - Added pytest-safe guard to skip prioritized note-vector lookup in test context.
+- Frontend types (`dashboard_rebuild/client/src/api.ts`):
+  - Added `TutorObjectiveScope` type.
+  - Extended tutor session/content filter types for `objective_scope`, `focus_objective_id`, and North Star metadata.
+- Wizard/UI (`dashboard_rebuild/client/src/pages/tutor.tsx`, `dashboard_rebuild/client/src/components/TutorWizard.tsx`):
+  - Added persistent PRIME scope selector (whole module vs single objective).
+  - Scope now flows into session creation payload and session restore.
+  - Step confirm summary now displays PRIME scope.
+- Validation run:
+  - `python -m py_compile brain/dashboard/api_tutor.py` ✅
+  - `pytest brain/tests/test_api_contracts.py brain/tests/test_tutor_session_linking.py` ✅ (61 passed)
+  - `npm run build` in `dashboard_rebuild` ✅
+
+## 2026-02-22 - Tutor paperwork cleanup (truth hierarchy)
+
+- Added single navigation file for canonical read/write order:
+  - `docs/root/TUTOR_TRUTH_PATH.md`
+- Marked large canon doc as reference background (not first requirement source):
+  - `docs/root/TUTOR_CONTROL_PLANE_CANON.md`
+- Goal:
+  - reduce repeated re-explanation
+  - prevent requirement drift by enforcing one clear documentation path
+  
+
+## 2026-02-22 - PRIME vs CALIBRATE boundary hardening
+
+- Updated category canon to enforce boundary:
+  - `docs/root/TUTOR_CATEGORY_DEFINITIONS.md`
+  - PRIME is non-assessment; CALIBRATE starts assessment probes.
+- Updated owner intent persistence:
+  - `docs/root/TUTOR_OWNER_INTENT.md`
+  - explicit requirement that PRIME cannot ask scored knowledge-check questions.
+- Added method-selection governance file:
+  - `docs/root/TUTOR_METHOD_SELECTION_RULES.md`
+  - includes stage admission rules, question-type contract, first-exposure defaults, chain rules, and deterministic Given/When/Then checks.
+  
+
+## 2026-02-22 - First-exposure-first owner intent lock
+
+- Added owner intent persistence file:
+  - `docs/root/TUTOR_OWNER_INTENT.md`
+- Captured non-negotiable product requirements so future sessions do not require re-explaining:
+  - first-exposure-first default (`~90% unseen material`)
+  - PRIME must structure/teach before assessment pressure
+  - CALIBRATE should follow primer, not lead on unseen content
+  - Mind Map representation default remains `ASCII`
+- Updated category canon to reflect this requirement:
+  - `docs/root/TUTOR_CATEGORY_DEFINITIONS.md`
+  - PRIME and CALIBRATE semantics now explicitly enforce first-exposure behavior
+  - Added explicit first-exposure policy block
+  
+
+## 2026-02-22 - Tutor categories-only canonical baseline
+
+- Added a dedicated categories-only source-of-truth file:
+  - `docs/root/TUTOR_CATEGORY_DEFINITIONS.md`
+- Purpose:
+  - lock category semantics first (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`)
+  - keep method/knob/chain decisions out of this file to reduce prompt and documentation drift
+- Includes:
+  - plain-language definitions
+  - operational role, entry/exit criteria, and anti-goals per category
+  - hard dependency law (`REFERENCE` targets required before `RETRIEVE`)
+  - category design rules and explicit out-of-scope boundaries
+  
+
+## 2026-02-22 - Tutor control-plane canon (categories phase baseline)
+
+- Added canonical control-plane category document:
+  - `docs/root/TUTOR_CONTROL_PLANE_CANON.md`
+- Defined category-first semantics for:
+  - `PRIME`, `CALIBRATE`, `ENCODE`, `REFERENCE`, `RETRIEVE`, `OVERLEARN`
+- Document includes:
+  - operational role per category
+  - system usage contract (input/output/done state)
+  - strict in-repo evidence anchors from method YAML citation fields
+  - hard-rule section (dependency law + control-stage requirement)
+  - runtime drift register for current known mismatches across YAML/DB/API/UI
+- Purpose: establish a single source of truth for category semantics before method-by-method vetting and knob governance.
+
 ## 2026-02-20 - CP-MSS-first README normalization + guardrail
 
 - Updated all tracked `*README*.md` files so CP-MSS v1.0 / Control Plane is surfaced first (including archive/context/output READMEs).
@@ -613,3 +742,42 @@ px vitest run --reporter=verbose (341 passed)
   - Replaced dynamic `__import__("re")` usage with direct `import re` for clarity/maintainability in garble detection.
 - Validation:
   - `pytest brain/tests/` -> `321 passed, 17 skipped`
+
+## 2026-02-22 - Tutor documentation organization: execution tracker + note-link policy lock
+
+- Added `docs/root/TUTOR_TODO.md` as active tutor execution tracker with ordered workstreams:
+  - PRIME method blocks (top priority: rules, knobs, implementation plan)
+  - Obsidian + RAG graph integration tasks
+  - chain/method transfer integrity tasks
+- Updated `docs/root/TUTOR_TRUTH_PATH.md` to reference `docs/root/TUTOR_TODO.md` as reference-only execution tracker.
+- Updated `docs/root/TUTOR_OWNER_INTENT.md` to lock non-negotiable requirement:
+  - Tutor-generated Obsidian notes must include wiki links at creation time.
+
+## 2026-02-22 - PRIME drafting kickoff: policy + knob matrices
+
+- Added `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md` as working draft for:
+  - PRIME method policy contract matrix
+  - PRIME knob matrix (existing + proposed additions)
+  - PRIME sequence draft and manager-reconciliation open items
+- Updated `docs/root/TUTOR_TODO.md` progress:
+  - marked PRIME inventory confirmation complete
+  - marked PRIME policy/knob definition tasks as in-progress
+- Updated `docs/root/TUTOR_TRUTH_PATH.md` reference list to include the PRIME draft matrix as a non-canonical working document.
+
+## 2026-02-22 - North Star rules locked as canonical session-start gate
+
+- Added new canonical file: `docs/root/TUTOR_NORTH_STAR_RULES.md`
+  - hard North Star gate before planning
+  - canonical North Star path format
+  - instructor-objectives-win conflict rule
+  - strict objective status enum
+  - 100% concept-to-objective mapping rule for intake
+  - event-driven North Star refresh
+  - N-1 + targeted links context loading
+  - graceful fallback for missing objective IDs
+  - required PRIME method baseline and stage boundaries
+  - schema constraints (3-5 concept cap + wiki-link validation)
+- Updated `docs/root/TUTOR_TRUTH_PATH.md`
+  - added North Star rules to authoritative read order
+  - added write-rule pointer for North Star/session-start logic updates
+  - added non-negotiable default: planning blocked until North Star validation.

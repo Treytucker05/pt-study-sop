@@ -6,7 +6,9 @@ Personal study OS that captures sessions, produces metrics and Anki-ready output
 
 Response style: straight to the point, no fluff.
 
-Global instructions: read `C:\Users\treyt\.claude\CLAUDE.md` first, then this file.
+Onboarding order:
+1. Start with this `AGENTS.md` for project-specific rules.
+2. Then read `C:\Users\treyt\.claude\CLAUDE.md` for global preferences.
 
 ---
 

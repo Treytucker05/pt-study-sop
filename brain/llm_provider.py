@@ -858,12 +858,13 @@ def stream_chatgpt_responses(
     system_prompt: str,
     user_prompt: str,
     *,
-    model: str = "gpt-5.3-codex",
+    model: str = "gpt-5.3-codex-spark",
     timeout: int = 120,
     web_search: bool = False,
     tools: list[dict] | None = None,
     previous_response_id: str | None = None,
     input_override: list[dict] | None = None,
+    reasoning_effort: str | None = None,
 ):
     """
     Streaming generator for ChatGPT backend API.
@@ -890,6 +891,8 @@ def stream_chatgpt_responses(
         "stream": True,
         "text": {"verbosity": verbosity},
     }
+    if reasoning_effort:
+        payload["reasoning"] = {"effort": reasoning_effort}
     if previous_response_id:
         payload["previous_response_id"] = previous_response_id
 

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
@@ -62,6 +62,7 @@ interface TutorArtifactsProps {
   onResumeSession: (sessionId: string) => void;
   /** Delete selected artifact entries by index (persists to session). Called after API success. */
   onDeleteArtifacts?: (sessionId: string, indexes: number[]) => Promise<void>;
+  onEndSession?: (sessionId: string) => Promise<void> | void;
 }
 
 const ARTIFACT_ICONS = {
@@ -87,16 +88,20 @@ export function TutorArtifacts({
   recentSessions,
   onResumeSession,
   onDeleteArtifacts,
+  onEndSession,
 }: TutorArtifactsProps) {
   const queryClient = useQueryClient();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [endConfirm, setEndConfirm] = useState<string | null>(null);
   const [savingSession, setSavingSession] = useState<string | null>(null);
+  const [endingSession, setEndingSession] = useState<string | null>(null);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(() => new Set());
   const [selectedArtifactIndices, setSelectedArtifactIndices] = useState<Set<number>>(() => new Set());
   const [deletingSessions, setDeletingSessions] = useState(false);
   const [deletingArtifacts, setDeletingArtifacts] = useState(false);
+  const [endingSessions, setEndingSessions] = useState(false);
   const [bulkConfirm, setBulkConfirm] = useState<
-    null | { type: "sessions"; count: number } | { type: "artifacts"; count: number }
+    null | { type: "sessions"; action: "delete" | "end"; count: number } | { type: "artifacts"; count: number }
   >(null);
 
   const visibleSessions = recentSessions.slice(0, VISIBLE_SESSIONS_LIMIT);
@@ -104,6 +109,12 @@ export function TutorArtifacts({
     (count, session) => (selectedSessionIds.has(session.session_id) ? count + 1 : count),
     0
   );
+  const selectedActiveSessionIds = useMemo(() => {
+    return visibleSessions
+      .filter((session) => selectedSessionIds.has(session.session_id) && session.status === "active")
+      .map((session) => session.session_id);
+  }, [selectedSessionIds, visibleSessions]);
+  const selectedActiveVisibleSessionsCount = selectedActiveSessionIds.length;
 
   useEffect(() => {
     const visibleIds = new Set(visibleSessions.map((s) => s.session_id));
@@ -179,8 +190,16 @@ export function TutorArtifacts({
   const handleBulkDeleteSessionsClick = useCallback(() => {
     const count = selectedSessionIds.size;
     if (count === 0) return;
-    setBulkConfirm({ type: "sessions", count });
+    setEndConfirm(null);
+    setBulkConfirm({ type: "sessions", action: "delete", count });
   }, [selectedSessionIds.size]);
+
+  const handleBulkEndSessionsClick = useCallback(() => {
+    if (selectedActiveVisibleSessionsCount === 0) return;
+    setDeleteConfirm(null);
+    setEndConfirm(null);
+    setBulkConfirm({ type: "sessions", action: "end", count: selectedActiveVisibleSessionsCount });
+  }, [selectedActiveVisibleSessionsCount]);
 
   const handleBulkDeleteSessionsConfirm = useCallback(async () => {
     const ids = Array.from(selectedSessionIds);
@@ -207,6 +226,36 @@ export function TutorArtifacts({
       queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
     }
   }, [selectedSessionIds, queryClient]);
+
+  const handleBulkEndSessionsConfirm = useCallback(async () => {
+    if (selectedActiveSessionIds.length === 0) return;
+    const ids = [...selectedActiveSessionIds];
+    setBulkConfirm(null);
+    setEndingSessions(true);
+    let ended = 0;
+    for (const sid of ids) {
+      try {
+        if (onEndSession) {
+          await onEndSession(sid);
+        } else {
+          await api.tutor.endSession(sid);
+        }
+        ended++;
+        setSelectedSessionIds((prev) => {
+          const next = new Set(prev);
+          next.delete(sid);
+          return next;
+        });
+      } catch (err) {
+        toast.error(`End failed: ${err instanceof Error ? err.message : "Unknown"}`);
+      }
+    }
+    setEndingSessions(false);
+    if (ended > 0) {
+      toast.success(`${ended} session${ended > 1 ? "s" : ""} ended`);
+      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+    }
+  }, [selectedActiveSessionIds, onEndSession, queryClient]);
 
   const handleBulkDeleteArtifactsClick = useCallback(() => {
     if (!sessionId || selectedArtifactIndices.size === 0 || !onDeleteArtifacts) return;
@@ -245,7 +294,34 @@ export function TutorArtifacts({
     }
   };
 
+  const handleEnd = async (sid: string) => {
+    setEndConfirm(null);
+    if (endingSession) return;
+    setEndingSession(sid);
+    try {
+      if (onEndSession) {
+        await onEndSession(sid);
+      } else {
+        await api.tutor.endSession(sid);
+      }
+      toast.success("Session ended");
+      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      setSelectedSessionIds((prev) => {
+        const next = new Set(prev);
+        next.delete(sid);
+        return next;
+      });
+    } catch (err) {
+      toast.error(`End failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    } finally {
+      setEndingSession(null);
+    }
+  };
+
   const handleSaveToObsidian = async (session: TutorSessionSummary) => {
+    const displayMode = session.mode || "Core";
+    const displayTopic = session.topic || displayMode || "Tutor Session";
+
     setSavingSession(session.session_id);
     try {
       const full = await api.tutor.getSession(session.session_id);
@@ -255,9 +331,9 @@ export function TutorArtifacts({
       }
 
       const lines: string[] = [
-        `# Tutor: ${session.topic || session.mode}`,
+        `# Tutor: ${displayTopic}`,
         `**Date:** ${new Date(session.started_at).toLocaleDateString()}`,
-        `**Mode:** ${session.mode} | **Turns:** ${session.turn_count}`,
+        `**Mode:** ${displayMode} | **Turns:** ${session.turn_count}`,
         "",
         "---",
         "",
@@ -292,7 +368,7 @@ export function TutorArtifacts({
         } catch { /* ignore parse errors */ }
       }
 
-      const filename = `Tutor - ${(session.topic || session.mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
+      const filename = `Tutor - ${displayTopic.replace(/[^a-zA-Z0-9 ]/g, "").trim() || "Session"}`;
       const path = `Study Sessions/${filename}.md`;
 
       await api.obsidian.append(path, lines.join("\n"));
@@ -311,11 +387,13 @@ export function TutorArtifacts({
         <AlertDialogContent className="bg-black border-[3px] border-double border-primary rounded-none gap-4 p-4">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-arcade text-primary tracking-wider text-sm">
-              DELETE?
+              {bulkConfirm?.type === "sessions" && bulkConfirm.action === "end" ? "END?" : "CONFIRM?"}
             </AlertDialogTitle>
             <AlertDialogDescription className={`${TEXT_BODY} font-terminal text-muted-foreground`}>
               {bulkConfirm?.type === "sessions" &&
-                `Delete ${bulkConfirm.count} selected session${bulkConfirm.count > 1 ? "s" : ""}? This cannot be undone.`}
+                `${bulkConfirm.action === "end" ? "End" : "Delete"} ${bulkConfirm.count} selected active session${bulkConfirm.count > 1 ? "s" : ""}? ${
+                  bulkConfirm.action === "end" ? "This will complete" : "This cannot be undone."
+                }.`}
               {bulkConfirm?.type === "artifacts" &&
                 `Delete ${bulkConfirm.count} selected artifact${bulkConfirm.count > 1 ? "s" : ""}? This cannot be undone.`}
             </AlertDialogDescription>
@@ -327,14 +405,15 @@ export function TutorArtifacts({
             >
               CANCEL
             </AlertDialogCancel>
-            <AlertDialogAction
+              <AlertDialogAction
               className="rounded-none font-arcade text-xs bg-primary/20 text-primary border-2 border-primary hover:bg-primary/30"
               onClick={() => {
-                if (bulkConfirm?.type === "sessions") handleBulkDeleteSessionsConfirm();
+                if (bulkConfirm?.type === "sessions" && bulkConfirm.action === "delete") handleBulkDeleteSessionsConfirm();
+                if (bulkConfirm?.type === "sessions" && bulkConfirm.action === "end") handleBulkEndSessionsConfirm();
                 if (bulkConfirm?.type === "artifacts") handleBulkDeleteArtifactsConfirm();
               }}
             >
-              DELETE
+              {bulkConfirm?.type === "sessions" && bulkConfirm.action === "end" ? "END" : "DELETE"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -511,6 +590,17 @@ export function TutorArtifacts({
                     {deletingSessions ? "..." : "Delete"}
                   </Button>
                 )}
+                {selectedActiveVisibleSessionsCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 rounded-none font-terminal text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-1"
+                    disabled={endingSessions}
+                    onClick={handleBulkEndSessionsClick}
+                  >
+                    {endingSessions ? <Loader2 className={ICON_SM} /> : "END"}
+                  </Button>
+                )}
               </div>
               {visibleSessions.map((s) => (
                 <div
@@ -542,33 +632,41 @@ export function TutorArtifacts({
                       className="w-3 h-3 shrink-0 mt-0.5"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={`${TEXT_BADGE} h-5 px-1.5 shrink-0 ${s.status === "active"
-                              ? "text-green-400 border-green-400/50"
-                              : "text-muted-foreground"
-                            }`}
-                        >
-                          {s.status === "active" ? "LIVE" : "DONE"}
-                        </Badge>
-                        <span className={`font-terminal text-sm truncate flex-1`}>
-                          {s.topic || s.mode}
-                        </span>
-                      </div>
-                      <div className={`flex items-center gap-2 mt-1.5 ${TEXT_MUTED}`}>
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className={ICON_SM} />
-                          {s.turn_count}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className={ICON_SM} />
-                          {new Date(s.started_at).toLocaleDateString()}
-                        </span>
-                        <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 ml-auto`}>
-                          {s.mode}
-                        </Badge>
-                      </div>
+                      {(() => {
+                        const mode = s.mode || "Core";
+                        const topic = s.topic || mode || "Tutor Session";
+                        return (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="outline"
+                                className={`${TEXT_BADGE} h-5 px-1.5 shrink-0 ${s.status === "active"
+                                    ? "text-green-400 border-green-400/50"
+                                    : "text-muted-foreground"
+                                  }`}
+                              >
+                                {s.status === "active" ? "LIVE" : "DONE"}
+                              </Badge>
+                              <span className={`font-terminal text-sm truncate flex-1`}>
+                                {topic}
+                              </span>
+                            </div>
+                            <div className={`flex items-center gap-2 mt-1.5 ${TEXT_MUTED}`}>
+                              <span className="flex items-center gap-1">
+                                <MessageSquare className={ICON_SM} />
+                                {s.turn_count}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className={ICON_SM} />
+                                {new Date(s.started_at).toLocaleDateString()}
+                              </span>
+                              <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 ml-auto`}>
+                                {mode}
+                              </Badge>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -587,6 +685,53 @@ export function TutorArtifacts({
                       <FolderOpen className={`${ICON_SM} mr-1`} />
                       {savingSession === s.session_id ? "SAVING..." : "SAVE"}
                     </Button>
+
+                    {s.status === "active" && (
+                      endConfirm === s.session_id ? (
+                        <div className="flex items-center gap-0.5">
+                          <span className="font-terminal text-sm text-red-400 mr-1">End?</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 rounded-none text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                            disabled={endingSession === s.session_id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEnd(s.session_id);
+                              setDeleteConfirm(null);
+                              setEndConfirm(null);
+                            }}
+                          >
+                            <Check className={ICON_SM} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEndConfirm(null);
+                            }}
+                          >
+                            <X className={ICON_SM} />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 rounded-none text-muted-foreground hover:text-red-400"
+                          disabled={endingSession === s.session_id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirm(null);
+                            setEndConfirm(s.session_id);
+                          }}
+                        >
+                          END
+                        </Button>
+                      )
+                    )}
 
                     <div className="ml-auto">
                       {deleteConfirm === s.session_id ? (

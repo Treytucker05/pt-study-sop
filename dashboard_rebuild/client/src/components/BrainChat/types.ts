@@ -9,7 +9,7 @@ export interface ChatMessage {
   };
 }
 
-export type Mode = "chat" | "ingest";
+export type Mode = "chat" | "ingest" | "anki";
 export type IngestTarget = "anki" | "obsidian" | "both";
 
 export type ApiContent = string | Array<{

@@ -36,6 +36,7 @@ Optional later:
 ## Tutor Sessions
 - Tutor follows the SOP (M0–M6) and ends with WRAP output.
 - If no sources are provided, outputs are marked **unverified**.
+- For the step-by-step tutor interaction flow and session-state behavior, see [`GUIDE_TUTOR_FLOW.md`](./GUIDE_TUTOR_FLOW.md).
 
 ## Where Your Data Lives
 - Session logs: `brain/session_logs/*.md`

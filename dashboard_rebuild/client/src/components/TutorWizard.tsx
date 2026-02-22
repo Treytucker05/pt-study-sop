@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, CATEGORY_COLORS } from "@/lib/api";
 import type {
   TutorMode,
+  TutorObjectiveScope,
   TutorSessionSummary,
   TutorTemplateChain,
   TutorContentSources,
@@ -61,6 +62,8 @@ interface TutorWizardProps {
   setChainId: (id: number | undefined) => void;
   customBlockIds: number[];
   setCustomBlockIds: (ids: number[]) => void;
+  objectiveScope: TutorObjectiveScope;
+  setObjectiveScope: (scope: TutorObjectiveScope) => void;
   onStartSession: () => void;
   isStarting: boolean;
   recentSessions: TutorSessionSummary[];
@@ -80,6 +83,8 @@ export function TutorWizard({
   setChainId,
   customBlockIds,
   setCustomBlockIds,
+  objectiveScope,
+  setObjectiveScope,
   onStartSession,
   isStarting,
   recentSessions,
@@ -193,6 +198,8 @@ export function TutorWizard({
               setCourseId={setCourseId}
               topic={topic}
               setTopic={setTopic}
+              objectiveScope={objectiveScope}
+              setObjectiveScope={setObjectiveScope}
               selectedMaterials={selectedMaterials}
               setSelectedMaterials={setSelectedMaterials}
             />
@@ -215,6 +222,7 @@ export function TutorWizard({
               courseId={courseId}
               courses={courses}
               topic={topic}
+              objectiveScope={objectiveScope}
               selectedMaterials={selectedMaterials}
               selectedChainName={selectedChainName}
               onStartSession={onStartSession}
@@ -245,12 +253,20 @@ export function TutorWizard({
                   onClick={() => onResumeSession(s.session_id)}
                   className="shrink-0 border-2 border-primary/20 hover:border-primary/50 hover:bg-black/40 px-2 py-0.5 font-arcade text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 shadow-none"
                 >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${s.status === "active" ? "bg-green-400" : "bg-muted-foreground/40"
-                      }`}
-                  />
-                  <span className="truncate max-w-[80px]">{s.topic || s.mode}</span>
-                  <span className="text-muted-foreground/50">{s.turn_count}t</span>
+                  {(() => {
+                    const displayMode = s.mode || "Core";
+                    const displayTopic = s.topic || displayMode || "Tutor Session";
+                    return (
+                      <>
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${s.status === "active" ? "bg-green-400" : "bg-muted-foreground/40"
+                            }`}
+                        />
+                        <span className="truncate max-w-[80px]">{displayTopic}</span>
+                        <span className="text-muted-foreground/50">{s.turn_count}t</span>
+                      </>
+                    );
+                  })()}
                 </button>
               ))}
             </div>
@@ -281,6 +297,8 @@ function StepCourseAndMaterials({
   setCourseId,
   topic,
   setTopic,
+  objectiveScope,
+  setObjectiveScope,
   selectedMaterials,
   setSelectedMaterials,
 }: {
@@ -289,6 +307,8 @@ function StepCourseAndMaterials({
   setCourseId: (id: number | undefined) => void;
   topic: string;
   setTopic: (topic: string) => void;
+  objectiveScope: TutorObjectiveScope;
+  setObjectiveScope: (scope: TutorObjectiveScope) => void;
   selectedMaterials: number[];
   setSelectedMaterials: (ids: number[]) => void;
 }) {
@@ -338,6 +358,30 @@ function StepCourseAndMaterials({
             placeholder="e.g., Hip joint anatomy, Gait cycle..."
             className={`${INPUT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
           />
+        </div>
+      </Card>
+
+      {/* PRIME scope */}
+      <Card className="bg-black/40 border-2 border-primary rounded-none">
+        <div className="px-3 py-2 border-b border-primary/30">
+          <span className={TEXT_SECTION_LABEL}>PRIME SCOPE</span>
+        </div>
+        <div className="p-3">
+          <select
+            value={objectiveScope}
+            onChange={(e) => {
+              const next = (e.target.value === "single_focus" ? "single_focus" : "module_all") as TutorObjectiveScope;
+              setObjectiveScope(next);
+              toast.success("PRIME scope saved");
+            }}
+            className={`${SELECT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
+          >
+            <option value="module_all">Whole module first (big picture)</option>
+            <option value="single_focus">Single objective first (zoom-in)</option>
+          </select>
+          <div className={`${TEXT_MUTED} mt-2 text-xs`}>
+            Module-first shows all active North Star objectives, then you pick one objective to focus.
+          </div>
         </div>
       </Card>
 
@@ -447,7 +491,7 @@ function StepChain({
           <div className="px-3 py-2 border-b border-primary/30">
             <span className={TEXT_SECTION_LABEL}>TEMPLATE CHAINS</span>
           </div>
-          <ScrollArea className="max-h-[400px]">
+          <div className="max-h-[400px] overflow-y-auto">
             <div className="p-2 space-y-1">
               {templateChains.map((chain) => {
                 const isSelected = chainId === chain.id;
@@ -537,7 +581,7 @@ function StepChain({
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         </Card>
       )}
 
@@ -594,6 +638,7 @@ function StepConfirm({
   courseId,
   courses,
   topic,
+  objectiveScope,
   selectedMaterials,
   selectedChainName,
   onStartSession,
@@ -602,6 +647,7 @@ function StepConfirm({
   courseId: number | undefined;
   courses: TutorContentSources["courses"];
   topic: string;
+  objectiveScope: TutorObjectiveScope;
   selectedMaterials: number[];
   selectedChainName: string;
   onStartSession: () => void;
@@ -631,6 +677,10 @@ function StepConfirm({
                 : "None selected"
             }
             muted={selectedMaterials.length === 0}
+          />
+          <SummaryRow
+            label="PRIME SCOPE"
+            value={objectiveScope === "module_all" ? "Whole module first" : "Single objective first"}
           />
           <SummaryRow label="CHAIN" value={selectedChainName} />
         </div>

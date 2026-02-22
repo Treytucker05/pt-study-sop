@@ -30,30 +30,39 @@ export function ModeToggle({
       <div className="flex bg-black/40 border border-primary/40 rounded-none overflow-hidden mr-2">
         <button
           onClick={() => setMode("chat")}
-          className={`flex items-center gap-1 px-2 py-0.5 text-xs font-arcade transition-colors ${
-            mode === "chat"
+          className={`flex items-center gap-1 px-2 py-0.5 text-xs font-arcade transition-colors ${mode === "chat"
               ? "bg-primary text-black"
               : "text-muted-foreground hover:text-foreground"
-          }`}
+            }`}
         >
           <MessageSquare className="w-3 h-3" /> CHAT
         </button>
         <button
           onClick={() => setMode("ingest")}
-          className={`flex items-center gap-1 px-2 py-0.5 text-xs font-arcade transition-colors ${
-            mode === "ingest"
+          className={`flex items-center gap-1 px-2 py-0.5 text-xs font-arcade transition-colors ${mode === "ingest"
               ? "bg-primary text-black"
               : "text-muted-foreground hover:text-foreground"
-          }`}
+            }`}
         >
           <BrainCircuit className="w-3 h-3" /> INGEST
+        </button>
+        <button
+          onClick={() => setMode("anki")}
+          className={`flex items-center gap-1 px-2 py-0.5 text-xs font-arcade transition-colors ${mode === "anki"
+              ? "bg-primary text-black"
+              : "text-muted-foreground hover:text-foreground"
+            }`}
+        >
+          <Layers className="w-3 h-3" /> ANKI
         </button>
       </div>
 
       <p className="text-xs text-muted-foreground truncate flex-1">
         {mode === "chat"
           ? "Chat with Gemini Flash"
-          : "Paste notes to create cards & save sessions"}
+          : mode === "ingest"
+            ? "Paste notes to create cards & save sessions"
+            : "Review pending Anki cards"}
       </p>
 
       {mode === "ingest" && (
@@ -63,11 +72,10 @@ export function ModeToggle({
               <button
                 key={t}
                 onClick={() => setIngestTarget(t)}
-                className={`flex items-center gap-1 px-2 py-0.5 text-xs font-arcade transition-colors ${
-                  ingestTarget === t
+                className={`flex items-center gap-1 px-2 py-0.5 text-xs font-arcade transition-colors ${ingestTarget === t
                     ? "bg-primary text-black"
                     : "text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 {t === "anki" && (
                   <>

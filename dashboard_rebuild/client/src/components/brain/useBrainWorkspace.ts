@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getCoursePaths } from "@/config/courses";
 
-export type MainMode = "canvas" | "edit" | "graph" | "table" | "anki" | "data";
+export type MainMode = "canvas" | "edit" | "graph" | "table" | "data";
 
-const VALID_MAIN_MODES: MainMode[] = ["canvas", "edit", "graph", "table", "anki", "data"];
+const VALID_MAIN_MODES: MainMode[] = ["canvas", "edit", "graph", "table", "data"];
 
 function loadState<T>(key: string, fallback: T): T {
   try {

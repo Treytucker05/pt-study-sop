@@ -7,6 +7,7 @@ est_duration_min: 35
 
 # THE LAW: M-REF-004 (Target Gen) MUST precede M-RET-* (Retrieval)
 method_ids:
+  - M-PRE-010  # Learning Objectives Primer (mandatory first)
   - M-PRE-008  # Structural Extraction (Structure)
   - M-CAL-001  # Micro Precheck (Baseline)
   - M-ENC-010  # Comparison Table (Deep Encode)

@@ -13,11 +13,10 @@ import type { BrainWorkspace } from "./useBrainWorkspace";
 
 const TABS = [
   { id: "canvas" as const, label: "CANVAS", icon: PenTool, hint: "Alt+1" },
-  { id: "edit" as const, label: "EDIT", icon: Pencil, hint: "Alt+2" },
+  { id: "edit" as const, label: "NOTES", icon: Pencil, hint: "Alt+2" },
   { id: "graph" as const, label: "GRAPH", icon: Network, hint: "Alt+3" },
   { id: "table" as const, label: "TABLE", icon: Table2, hint: "Alt+4" },
-  { id: "anki" as const, label: "ANKI", icon: Layers, hint: "Alt+5" },
-  { id: "data" as const, label: "DATA", icon: Database, hint: "Alt+6" },
+  { id: "data" as const, label: "DATA", icon: Database, hint: "Alt+5" },
 ] as const;
 
 interface MainContentProps {
@@ -94,11 +93,6 @@ export function MainContent({ workspace }: MainContentProps) {
             >
               <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
               {tab.label}
-              {tab.id === "anki" && workspace.pendingDrafts.length > 0 && (
-                <span className="ml-1 px-1 py-0 text-xs bg-secondary text-primary-foreground font-arcade">
-                  {workspace.pendingDrafts.length}
-                </span>
-              )}
             </button>
           );
         })}
@@ -143,17 +137,17 @@ export function MainContent({ workspace }: MainContentProps) {
             className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
-          <ErrorBoundary
-            key={`canvas-${errorKeys["canvas"] || 0}`}
-            fallback={
-              <TabErrorFallback
-                tabName="CANVAS"
-                onReset={() => resetErrorBoundary("canvas")}
-              />
-            }
-          >
-            <ExcalidrawCanvas workspace={workspace} />
-          </ErrorBoundary>
+            <ErrorBoundary
+              key={`canvas-${errorKeys["canvas"] || 0}`}
+              fallback={
+                <TabErrorFallback
+                  tabName="CANVAS"
+                  onReset={() => resetErrorBoundary("canvas")}
+                />
+              }
+            >
+              <ExcalidrawCanvas workspace={workspace} />
+            </ErrorBoundary>
           </div>
         )}
 
@@ -166,17 +160,17 @@ export function MainContent({ workspace }: MainContentProps) {
             className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
-          <ErrorBoundary
-            key={`edit-${errorKeys["edit"] || 0}`}
-            fallback={
-              <TabErrorFallback
-                tabName="EDIT"
-                onReset={() => resetErrorBoundary("edit")}
-              />
-            }
-          >
-            <VaultEditor workspace={workspace} />
-          </ErrorBoundary>
+            <ErrorBoundary
+              key={`edit-${errorKeys["edit"] || 0}`}
+              fallback={
+                <TabErrorFallback
+                  tabName="EDIT"
+                  onReset={() => resetErrorBoundary("edit")}
+                />
+              }
+            >
+              <VaultEditor workspace={workspace} />
+            </ErrorBoundary>
           </div>
         )}
 
@@ -189,17 +183,17 @@ export function MainContent({ workspace }: MainContentProps) {
             className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
-          <ErrorBoundary
-            key={`graph-${errorKeys["graph"] || 0}`}
-            fallback={
-              <TabErrorFallback
-                tabName="GRAPH"
-                onReset={() => resetErrorBoundary("graph")}
-              />
-            }
-          >
-            <GraphPanel />
-          </ErrorBoundary>
+            <ErrorBoundary
+              key={`graph-${errorKeys["graph"] || 0}`}
+              fallback={
+                <TabErrorFallback
+                  tabName="GRAPH"
+                  onReset={() => resetErrorBoundary("graph")}
+                />
+              }
+            >
+              <GraphPanel />
+            </ErrorBoundary>
           </div>
         )}
 
@@ -212,45 +206,21 @@ export function MainContent({ workspace }: MainContentProps) {
             className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
-          <ErrorBoundary
-            key={`table-${errorKeys["table"] || 0}`}
-            fallback={
-              <TabErrorFallback
-                tabName="TABLE"
-                onReset={() => resetErrorBoundary("table")}
-              />
-            }
-          >
-            <ComparisonTableEditor />
-          </ErrorBoundary>
+            <ErrorBoundary
+              key={`table-${errorKeys["table"] || 0}`}
+              fallback={
+                <TabErrorFallback
+                  tabName="TABLE"
+                  onReset={() => resetErrorBoundary("table")}
+                />
+              }
+            >
+              <ComparisonTableEditor />
+            </ErrorBoundary>
           </div>
         )}
 
-        {currentTab === "anki" && (
-          <div
-            id="brain-tabpanel-anki"
-            role="tabpanel"
-            aria-labelledby="brain-tab-anki"
-            data-tab="anki"
-            className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
-            tabIndex={0}
-          >
-          <ErrorBoundary
-            key={`anki-${errorKeys["anki"] || 0}`}
-            fallback={
-              <TabErrorFallback
-                tabName="ANKI"
-                onReset={() => resetErrorBoundary("anki")}
-              />
-            }
-          >
-            <AnkiIntegration
-              totalCards={workspace.metrics?.totalCards || 0}
-              compact
-            />
-          </ErrorBoundary>
-          </div>
-        )}
+
 
         {currentTab === "data" && (
           <div
@@ -261,17 +231,17 @@ export function MainContent({ workspace }: MainContentProps) {
             className="flex-1 min-h-0 overflow-hidden flex flex-col brain-tab-enter"
             tabIndex={0}
           >
-          <ErrorBoundary
-            key={`data-${errorKeys["data"] || 0}`}
-            fallback={
-              <TabErrorFallback
-                tabName="DATA"
-                onReset={() => resetErrorBoundary("data")}
-              />
-            }
-          >
-            <DataEditor />
-          </ErrorBoundary>
+            <ErrorBoundary
+              key={`data-${errorKeys["data"] || 0}`}
+              fallback={
+                <TabErrorFallback
+                  tabName="DATA"
+                  onReset={() => resetErrorBoundary("data")}
+                />
+              }
+            >
+              <DataEditor />
+            </ErrorBoundary>
           </div>
         )}
       </div>

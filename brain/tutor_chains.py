@@ -243,7 +243,44 @@ def generate_recall_questions(content: str, topic: str) -> list[dict]:
     Generate simple recall questions from content.
     Returns list of {question, expected_answer, difficulty} dicts.
     """
-    return []
+    text = (content or "").strip()
+    if not text:
+        return []
+
+    sentence_separators = r"(?<=[.!?])\s+"
+    sentences = [s.strip() for s in re.split(sentence_separators, text.replace("\n", " ")) if s.strip()]
+    if not sentences and text:
+        sentences = [line.strip() for line in text.split("\n") if line.strip()]
+
+    questions: list[dict] = []
+    topic_label = topic.strip() or "this topic"
+
+    for sentence in sentences[:3]:
+        if len(sentence) < 20:
+            continue
+        phrase = sentence[:120].rstrip(".! ?")
+        difficulty = "easy" if len(sentence) < 140 else "medium"
+        questions.append(
+            {
+                "question": (
+                    f"Recall: In {topic_label}, what is the key idea: "
+                    f"\"{phrase}\"?"
+                ),
+                "expected_answer": sentence,
+                "difficulty": difficulty,
+            }
+        )
+
+    if not questions:
+        return [
+            {
+                "question": f"Recall: Can you summarize the main point about {topic_label}?",
+                "expected_answer": topic_label,
+                "difficulty": "easy",
+            }
+        ]
+
+    return questions
 
 
 # ---------------------------------------------------------------------------

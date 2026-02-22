@@ -70,6 +70,14 @@ SYNC_JOB_RETENTION = 30
 _LOG = logging.getLogger(__name__)
 
 _SELECTOR_COLS_ENSURED = False
+_WIKILINK_PATTERN = re.compile(r"\[\[([^\]]+)\]\]")
+_NORTH_STAR_OBJECTIVE_PATTERN = re.compile(
+    r"\[\[(OBJ-[^\]]+)\]\].*status:\s*([a-z_]+)",
+    re.IGNORECASE,
+)
+_TUTOR_NOTE_SCHEMA_PATH = (
+    Path(__file__).resolve().parents[2] / "docs" / "schemas" / "tutor_note_schema_v1_1.json"
+)
 
 
 def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
@@ -134,6 +142,384 @@ def _gen_session_id() -> str:
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     short = uuid.uuid4().hex[:6]
     return f"tutor-{ts}-{short}"
+
+
+def _sanitize_module_name(raw: Any) -> str:
+    value = str(raw or "").strip()
+    if not value:
+        return "General Module"
+    value = re.sub(r'[\\/:*?"<>|]+', " ", value)
+    value = re.sub(r"\s+", " ", value).strip()
+    return value or "General Module"
+
+
+def _canonical_north_star_path(module_name: str) -> str:
+    safe_name = _sanitize_module_name(module_name)
+    return f"Modules/{safe_name}/_North_Star_{safe_name}.md"
+
+
+def _wikilink(label: str) -> str:
+    clean = str(label or "").strip()
+    return f"[[{clean}]]" if clean else ""
+
+
+def _strip_wikilink(value: str) -> str:
+    s = str(value or "").strip()
+    if s.startswith("[[") and s.endswith("]]") and len(s) > 4:
+        return s[2:-2].strip()
+    return s
+
+
+def _extract_wikilinks(text: str, *, max_items: int = 80) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for match in _WIKILINK_PATTERN.finditer(text or ""):
+        link = _wikilink(match.group(1))
+        if not link or link in seen:
+            continue
+        seen.add(link)
+        ordered.append(link)
+        if len(ordered) >= max_items:
+            break
+    return ordered
+
+
+def _normalize_wikilinks(value: Any, *, max_items: int = 80) -> list[str]:
+    if isinstance(value, str):
+        return _extract_wikilinks(value, max_items=max_items)
+    if not isinstance(value, list):
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        label = _strip_wikilink(item)
+        if not label:
+            continue
+        link = _wikilink(label)
+        if link in seen:
+            continue
+        seen.add(link)
+        out.append(link)
+        if len(out) >= max_items:
+            break
+    return out
+
+
+def _normalize_objective_status(raw_status: Any) -> str:
+    status = str(raw_status or "").strip().lower()
+    valid = {"not_started", "active", "needs_review", "mastered"}
+    if status in valid:
+        return status
+    if status in {"in_progress", "current"}:
+        return "active"
+    if status in {"review", "stale"}:
+        return "needs_review"
+    if status in {"done", "completed"}:
+        return "mastered"
+    return "not_started"
+
+
+def _normalize_objective_id(raw_id: Any, index: int) -> str:
+    candidate = str(raw_id or "").strip()
+    candidate = re.sub(r"\s+", "-", candidate)
+    candidate = re.sub(r"[^A-Za-z0-9_-]", "", candidate)
+    if not candidate:
+        candidate = f"{index:03d}"
+    candidate = candidate.upper()
+    if not candidate.startswith("OBJ-"):
+        candidate = f"OBJ-{candidate}"
+    return candidate
+
+
+def _normalize_objective_scope(raw_scope: Any) -> str:
+    scope = str(raw_scope or "").strip().lower()
+    if scope in {"module_all", "single_focus"}:
+        return scope
+    return "module_all"
+
+
+def _collect_objectives_from_payload(raw: Any) -> list[dict[str, str]]:
+    if not isinstance(raw, list):
+        return []
+    items: list[dict[str, str]] = []
+    for idx, item in enumerate(raw, start=1):
+        if isinstance(item, str):
+            title = item.strip()
+            if not title:
+                continue
+            items.append(
+                {
+                    "objective_id": _normalize_objective_id(None, idx),
+                    "title": title,
+                    "status": "not_started",
+                }
+            )
+            continue
+        if isinstance(item, dict):
+            title = str(item.get("title") or item.get("objective") or "").strip()
+            if not title:
+                continue
+            raw_obj_id = item.get("objective_id") or item.get("lo_code") or item.get("id")
+            items.append(
+                {
+                    "objective_id": _normalize_objective_id(raw_obj_id, idx),
+                    "title": title,
+                    "status": _normalize_objective_status(item.get("status")),
+                }
+            )
+    return items
+
+
+def _collect_objectives_from_db(
+    course_id: Optional[int],
+    module_id: Optional[int] = None,
+    *,
+    max_items: int = 40,
+) -> list[dict[str, str]]:
+    if not course_id:
+        return []
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    if module_id:
+        cur.execute(
+            """
+            SELECT lo_code, title, status
+            FROM learning_objectives
+            WHERE course_id = ? AND module_id = ?
+            ORDER BY id ASC
+            LIMIT ?
+            """,
+            (course_id, module_id, max_items),
+        )
+    else:
+        cur.execute(
+            """
+            SELECT lo_code, title, status
+            FROM learning_objectives
+            WHERE course_id = ?
+            ORDER BY id ASC
+            LIMIT ?
+            """,
+            (course_id, max_items),
+        )
+    rows = cur.fetchall()
+    conn.close()
+
+    items: list[dict[str, str]] = []
+    for idx, row in enumerate(rows, start=1):
+        title = str(row["title"] or "").strip()
+        if not title:
+            continue
+        items.append(
+            {
+                "objective_id": _normalize_objective_id(row["lo_code"], idx),
+                "title": title,
+                "status": _normalize_objective_status(row["status"]),
+            }
+        )
+    return items
+
+
+def _parse_existing_north_star_objectives(content: str) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for line in (content or "").splitlines():
+        m = _NORTH_STAR_OBJECTIVE_PATTERN.search(line)
+        if not m:
+            continue
+        parsed[m.group(1).strip()] = _normalize_objective_status(m.group(2))
+    return parsed
+
+
+def _build_north_star_markdown(
+    *,
+    module_name: str,
+    topic: str,
+    objectives: list[dict[str, str]],
+    source_ids: list[int],
+) -> str:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    lines: list[str] = [
+        "---",
+        "note_type: north_star",
+        f"module_name: {module_name}",
+        f"updated_at: {now}",
+        "---",
+        "",
+        f"# North Star - {module_name}",
+        "",
+        "## Topic",
+        topic or module_name,
+        "",
+        "## Objective Status Board",
+    ]
+
+    for obj in objectives:
+        objective_link = _wikilink(obj["objective_id"])
+        concept_link = _wikilink(obj["title"])
+        lines.append(
+            f"- {objective_link} — {concept_link} | status: {obj['status']}"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Active Objectives",
+        ]
+    )
+    active = [o for o in objectives if o["status"] in {"active", "needs_review"}]
+    if not active:
+        active = objectives[: min(3, len(objectives))]
+    for obj in active:
+        lines.append(f"- {_wikilink(obj['objective_id'])}")
+
+    lines.extend(
+        [
+            "",
+            "## Follow Up Targets",
+            "- [[OBJ-UNMAPPED]]",
+            "",
+            "## Source IDs",
+            "- " + (", ".join(str(x) for x in source_ids) if source_ids else "none"),
+            "",
+            "## Session Links",
+            "- (auto-filled by tutor sessions)",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _ensure_north_star_context(
+    *,
+    course_id: Optional[int],
+    module_id: Optional[int],
+    module_name: Optional[str],
+    topic: str,
+    learning_objectives: Any,
+    source_ids: list[int],
+) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+    """
+    Hard-gate North Star flow:
+    - If exists: review and update only on detected objective changes.
+    - If missing: build before planning.
+    """
+    # Local import prevents blueprint import cycles at module import time.
+    from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
+
+    derived_module_name = _sanitize_module_name(module_name or topic or f"Course-{course_id or 'General'}")
+    north_star_path = _canonical_north_star_path(derived_module_name)
+
+    objectives = _collect_objectives_from_payload(learning_objectives)
+    if not objectives:
+        objectives = _collect_objectives_from_db(course_id, module_id)
+    if not objectives:
+        fallback_title = topic.strip() or derived_module_name
+        objectives = [
+            {
+                "objective_id": "OBJ-UNMAPPED",
+                "title": fallback_title,
+                "status": "active",
+            }
+        ]
+
+    desired_statuses = {o["objective_id"]: o["status"] for o in objectives}
+    current_content = ""
+    status = "built"
+
+    existing = obsidian_get_file(north_star_path)
+    if existing.get("success"):
+        current_content = str(existing.get("content") or "")
+        current_statuses = _parse_existing_north_star_objectives(current_content)
+        needs_update = False
+        for oid, st in desired_statuses.items():
+            if current_statuses.get(oid) != st:
+                needs_update = True
+                break
+        if needs_update:
+            new_content = _build_north_star_markdown(
+                module_name=derived_module_name,
+                topic=topic,
+                objectives=objectives,
+                source_ids=source_ids,
+            )
+            save_res = obsidian_save_file(north_star_path, new_content)
+            if not save_res.get("success"):
+                return None, f"North Star update failed: {save_res.get('error', 'unknown error')}"
+            current_content = new_content
+            status = "updated"
+        else:
+            status = "reviewed"
+    else:
+        new_content = _build_north_star_markdown(
+            module_name=derived_module_name,
+            topic=topic,
+            objectives=objectives,
+            source_ids=source_ids,
+        )
+        save_res = obsidian_save_file(north_star_path, new_content)
+        if not save_res.get("success"):
+            return None, f"North Star build failed: {save_res.get('error', 'unknown error')}"
+        current_content = new_content
+        status = "built"
+
+    objective_links = [_wikilink(o["objective_id"]) for o in objectives]
+    title_links = [_wikilink(o["title"]) for o in objectives if o.get("title")]
+    reference_targets = _normalize_wikilinks(
+        _extract_wikilinks(current_content) + objective_links + title_links,
+        max_items=80,
+    )
+    if not reference_targets:
+        reference_targets = ["[[OBJ-UNMAPPED]]"]
+
+    return (
+        {
+            "path": north_star_path,
+            "module_name": derived_module_name,
+            "status": status,
+            "reference_targets": reference_targets,
+            "follow_up_targets": ["[[OBJ-UNMAPPED]]"],
+            "objective_ids": [o["objective_id"] for o in objectives],
+        },
+        None,
+    )
+
+
+def _question_within_reference_targets(question: str, reference_targets: list[str]) -> bool:
+    q = re.sub(r"[^a-z0-9\s]", " ", (question or "").lower())
+    q = re.sub(r"\s+", " ", q).strip()
+    if not q:
+        return False
+    # Allow broad planning/overview prompts without forcing concept-name matches.
+    if any(token in q for token in ("overview", "big picture", "north star", "plan")):
+        return True
+
+    labels = [_strip_wikilink(t).lower() for t in reference_targets if t]
+    for label in labels:
+        if not label:
+            continue
+        if label in q:
+            return True
+        tokens = [tok for tok in re.split(r"[^a-z0-9]+", label) if len(tok) >= 4]
+        if any(tok in q for tok in tokens):
+            return True
+    return False
+
+
+def _format_notes_context(note_hits: list[dict[str, Any]], *, max_items: int = 8) -> str:
+    if not note_hits:
+        return ""
+    parts: list[str] = []
+    for idx, hit in enumerate(note_hits[:max_items], start=1):
+        metadata = hit.get("metadata") or {}
+        source = metadata.get("source_path") or metadata.get("source") or "vault-note"
+        content = str(hit.get("content") or "").strip()
+        if len(content) > 600:
+            content = content[:600] + "..."
+        parts.append(f"[{idx}] {source}\n{content}")
+    return "\n\n---\n\n".join(parts)
 
 
 def _get_tutor_session(conn, session_id: str) -> Optional[dict]:
@@ -921,6 +1307,7 @@ def create_session():
         ensure_course_in_wheel(int(course_id), active=True)
     phase = data.get("phase", "first_pass")
     topic = data.get("topic", "")
+    mode = data.get("mode", "Core") or "Core"
     content_filter = data.get("content_filter")
     if isinstance(content_filter, dict):
         normalized_filter = dict(content_filter)
@@ -936,6 +1323,26 @@ def create_session():
         content_filter = None
     method_chain_id = data.get("method_chain_id")
     brain_session_id = data.get("brain_session_id")
+    module_name = data.get("module_name")
+    learning_objectives = data.get("learning_objectives")
+    objective_scope = _normalize_objective_scope(data.get("objective_scope"))
+    focus_objective_id = str(data.get("focus_objective_id") or "").strip()
+    source_ids = _normalize_material_ids(data.get("source_ids")) or []
+    module_id: Optional[int] = None
+    if data.get("module_id") is not None:
+        try:
+            module_id = int(data.get("module_id"))
+        except (TypeError, ValueError):
+            return jsonify({"error": "module_id must be an integer"}), 400
+
+    if not source_ids and isinstance(content_filter, dict):
+        source_ids = _normalize_material_ids(content_filter.get("material_ids")) or []
+        objective_scope = _normalize_objective_scope(
+            content_filter.get("objective_scope") or objective_scope
+        )
+        focus_objective_id = str(
+            content_filter.get("focus_objective_id") or focus_objective_id
+        ).strip()
 
     selector_meta: dict[str, Any] = {}
 
@@ -969,6 +1376,71 @@ def create_session():
             logging.getLogger(__name__).warning(
                 "Selector policy failed, continuing without", exc_info=True
             )
+
+    north_star_ctx, north_star_error = _ensure_north_star_context(
+        course_id=int(course_id) if course_id is not None else None,
+        module_id=module_id,
+        module_name=module_name,
+        topic=topic,
+        learning_objectives=learning_objectives,
+        source_ids=source_ids,
+    )
+    if north_star_error:
+        return jsonify({"error": north_star_error}), 500
+
+    if not isinstance(content_filter, dict):
+        content_filter = {}
+
+    content_filter["accuracy_profile"] = normalize_accuracy_profile(
+        content_filter.get("accuracy_profile")
+    )
+    content_filter["objective_scope"] = _normalize_objective_scope(
+        content_filter.get("objective_scope") or objective_scope
+    )
+    if "material_ids" in content_filter:
+        content_filter["material_ids"] = (
+            _normalize_material_ids(content_filter.get("material_ids")) or []
+        )
+    if source_ids:
+        content_filter["source_ids"] = source_ids
+
+    if north_star_ctx:
+        module_prefix = str(Path(str(north_star_ctx["path"])).parent).replace("\\", "/")
+        content_filter["module_name"] = north_star_ctx.get("module_name")
+        content_filter["module_prefix"] = module_prefix
+        content_filter["north_star"] = {
+            "path": north_star_ctx.get("path"),
+            "status": north_star_ctx.get("status"),
+            "module_name": north_star_ctx.get("module_name"),
+            "objective_ids": north_star_ctx.get("objective_ids") or [],
+        }
+        content_filter["reference_targets"] = (
+            north_star_ctx.get("reference_targets") or []
+        )
+        content_filter["follow_up_targets"] = (
+            north_star_ctx.get("follow_up_targets") or []
+        )
+        requested_enforce = content_filter.get("enforce_reference_bounds")
+        if requested_enforce is None:
+            content_filter["enforce_reference_bounds"] = (
+                content_filter.get("objective_scope") == "single_focus"
+            )
+        else:
+            content_filter["enforce_reference_bounds"] = bool(requested_enforce)
+        if (
+            content_filter.get("objective_scope") == "single_focus"
+            and not focus_objective_id
+            and north_star_ctx.get("objective_ids")
+        ):
+            focus_objective_id = str(north_star_ctx["objective_ids"][0] or "").strip()
+
+        if focus_objective_id:
+            focus_wikilink = _wikilink(_strip_wikilink(focus_objective_id))
+            content_filter["focus_objective_id"] = _strip_wikilink(focus_wikilink)
+            refs = _normalize_wikilinks(content_filter.get("reference_targets"), max_items=80)
+            if focus_wikilink and focus_wikilink not in refs:
+                refs = [focus_wikilink, *refs]
+            content_filter["reference_targets"] = _normalize_wikilinks(refs, max_items=80)
 
     session_id = _gen_session_id()
     now = datetime.now().isoformat()
@@ -1031,6 +1503,7 @@ def create_session():
     response: dict[str, Any] = {
         "session_id": session_id,
         "phase": phase,
+        "mode": mode,
         "topic": topic,
         "status": "active",
         "brain_session_id": linked_brain_session_id,
@@ -1043,6 +1516,18 @@ def create_session():
     }
     if selector_meta:
         response["selector"] = selector_meta
+    if north_star_ctx:
+        response["north_star"] = {
+            "path": north_star_ctx.get("path"),
+            "status": north_star_ctx.get("status"),
+            "module_name": north_star_ctx.get("module_name"),
+            "objective_ids": north_star_ctx.get("objective_ids") or [],
+        }
+        response["objective_scope"] = content_filter.get("objective_scope") or "module_all"
+        response["focus_objective_id"] = content_filter.get("focus_objective_id")
+        response["reference_targets_count"] = len(
+            north_star_ctx.get("reference_targets") or []
+        )
 
     return jsonify(response), 201
 
@@ -1073,6 +1558,8 @@ def get_session(session_id: str):
                     pass
 
     session["turns"] = turns
+    if not session.get("mode"):
+        session["mode"] = "Core"
     if session.get("content_filter_json"):
         try:
             session["content_filter"] = json.loads(session["content_filter_json"])
@@ -1152,6 +1639,54 @@ def send_turn(session_id: str):
         merged.update(incoming_filter)
         content_filter = merged
 
+    reference_targets = _normalize_wikilinks(
+        content_filter.get("reference_targets"), max_items=80
+    )
+    follow_up_targets = _normalize_wikilinks(
+        content_filter.get("follow_up_targets"), max_items=40
+    )
+    enforce_reference_bounds = bool(content_filter.get("enforce_reference_bounds"))
+    objective_scope = _normalize_objective_scope(content_filter.get("objective_scope"))
+    focus_objective_id = str(content_filter.get("focus_objective_id") or "").strip()
+    module_prefix = str(content_filter.get("module_prefix") or "").strip().replace(
+        "\\", "/"
+    )
+    north_star = content_filter.get("north_star")
+    if not isinstance(north_star, dict):
+        north_star = None
+
+    if enforce_reference_bounds:
+        if not reference_targets:
+            return (
+                jsonify(
+                    {
+                        "error": "No active reference targets. Build REFERENCE targets before retrieval.",
+                        "code": "REFERENCE_TARGETS_MISSING",
+                    }
+                ),
+                400,
+            )
+        if not _question_within_reference_targets(question, reference_targets):
+            return (
+                jsonify(
+                    {
+                        "error": "Concept outside current reference bounds.",
+                        "code": "REFERENCE_BOUNDS_VIOLATION",
+                        "reference_targets": reference_targets[:20],
+                    }
+                ),
+                400,
+            )
+
+    content_filter["reference_targets"] = reference_targets
+    content_filter["follow_up_targets"] = follow_up_targets
+    content_filter["enforce_reference_bounds"] = enforce_reference_bounds
+    content_filter["objective_scope"] = objective_scope
+    if focus_objective_id:
+        content_filter["focus_objective_id"] = _strip_wikilink(focus_objective_id)
+    if module_prefix:
+        content_filter["module_prefix"] = module_prefix
+
     accuracy_profile = normalize_accuracy_profile(content_filter.get("accuracy_profile"))
     content_filter["accuracy_profile"] = accuracy_profile
 
@@ -1191,7 +1726,7 @@ def send_turn(session_id: str):
         full_response = ""
         citations = []
         parsed_verdict = None
-        api_model = codex_model or "gpt-5.3-codex"
+        api_model = codex_model or "gpt-5.3-codex-spark"
         latest_response_id = None
         latest_thread_id = None
         used_scope_shortcut = False
@@ -1205,7 +1740,11 @@ def send_turn(session_id: str):
 
         try:
             from llm_provider import stream_chatgpt_responses, call_codex_json
-            from tutor_rag import get_dual_context, keyword_search_dual
+            from tutor_rag import (
+                get_dual_context,
+                keyword_search_dual,
+                search_notes_prioritized,
+            )
             from tutor_prompt_builder import build_prompt_with_contexts
 
             requested_accuracy_profile = accuracy_profile
@@ -1292,6 +1831,28 @@ def send_turn(session_id: str):
                     "so the student knows to cross-reference."
                 )
 
+            notes_context_text = ""
+            try:
+                if not os.environ.get("PYTEST_CURRENT_TEST"):
+                    note_hits = search_notes_prioritized(
+                        question,
+                        module_prefix=module_prefix or None,
+                        follow_up_targets=follow_up_targets,
+                        k_module=4,
+                        k_linked=3,
+                        k_global=2,
+                    )
+                    notes_context_text = _format_notes_context(note_hits, max_items=8)
+            except Exception:
+                notes_context_text = ""
+
+            if notes_context_text:
+                material_text = (
+                    f"{material_text}\n\n## Obsidian Notes Context\n"
+                    "Use this prior-session context for continuity and objective alignment.\n\n"
+                    f"{notes_context_text}"
+                )
+
             # Open a dedicated connection for adaptive features inside the
             # generator — the outer `conn` was closed before generate() runs.
             adaptive_conn = get_connection()
@@ -1320,6 +1881,46 @@ def send_turn(session_id: str):
                 "\n\n## Retrieval Tuning\n"
                 f"{_accuracy_profile_prompt_guidance(effective_accuracy_profile)}"
             )
+            if north_star:
+                objective_ids = north_star.get("objective_ids") or []
+                objective_lines = "\n".join(
+                    f"- {_wikilink(str(oid))}"
+                    for oid in objective_ids
+                    if str(oid or "").strip()
+                )
+                if not objective_lines:
+                    objective_lines = "- [[OBJ-UNMAPPED]]"
+                system_prompt += (
+                    "\n\n## North Star Context\n"
+                    f"- Module: {north_star.get('module_name') or 'General Module'}\n"
+                    f"- File: {north_star.get('path') or '(missing)'}\n"
+                    f"- Status: {north_star.get('status') or 'unknown'}\n"
+                    "- Objectives in scope:\n"
+                    f"{objective_lines}"
+                )
+            if enforce_reference_bounds and reference_targets:
+                bounded_targets = "\n".join(f"- {t}" for t in reference_targets[:20])
+                system_prompt += (
+                    "\n\n## Active Reference Bounds\n"
+                    "- Only answer inside these targets for this turn.\n"
+                    "- If a question is outside bounds, ask to add it as a follow-up target first.\n"
+                    "Targets:\n"
+                    f"{bounded_targets}"
+                )
+            system_prompt += (
+                "\n\n## PRIME Objective Scope\n"
+                f"- Active scope: {objective_scope}\n"
+            )
+            if objective_scope == "module_all":
+                system_prompt += (
+                    "- Use module-level big-picture orientation first, then ask learner to choose one focus objective.\n"
+                )
+            else:
+                focus_link = _wikilink(_strip_wikilink(focus_objective_id)) if focus_objective_id else ""
+                system_prompt += (
+                    "- Stay on one focus objective for this turn.\n"
+                    f"- Focus objective: {focus_link or '[[OBJ-UNMAPPED]]'}\n"
+                )
             if selected_material_count > 0:
                 selected_list = "\n".join(
                     f"- {name}" for name in selected_material_labels
@@ -1344,7 +1945,7 @@ def send_turn(session_id: str):
                     f"- Escalation reason(s): {', '.join(profile_escalation_reasons) or 'weak_retrieval_signals'}\n"
                 )
 
-            effective_model = codex_model or "gpt-5.3-codex"
+            effective_model = codex_model or "gpt-5.3-codex-spark"
             system_prompt += (
                 "\n\n## Tooling\n"
                 "Do not run shell commands or attempt to read local files.\n"
@@ -1411,7 +2012,7 @@ def send_turn(session_id: str):
 ## Current Question
 {question}"""
 
-            api_model = codex_model or "gpt-5.3-codex"
+            api_model = codex_model or "gpt-5.3-codex-spark"
             prev_response_id: str | None = session.get("last_response_id")
             latest_response_id: str | None = prev_response_id
             latest_thread_id: str | None = session.get("codex_thread_id")
@@ -1576,10 +2177,11 @@ def send_turn(session_id: str):
 
                 try:
                     stream_kwargs: dict = {
-                        "model": codex_model or "gpt-5.3-codex",
+                        "model": codex_model or "gpt-5.3-codex-spark",
                         "timeout": 120,
                         "web_search": True,
                         "tools": tool_schemas,
+                        "reasoning_effort": "high",
                     }
                     if prev_response_id:
                         stream_kwargs["previous_response_id"] = prev_response_id
@@ -2458,7 +3060,7 @@ def list_sessions():
 
     cur.execute(
         f"""SELECT id, session_id, course_id, phase, topic, status,
-                   turn_count, method_chain_id, current_block_index,
+                   "Core" AS mode, turn_count, method_chain_id, current_block_index,
                    started_at, ended_at, brain_session_id,
                    codex_thread_id, last_response_id
             FROM tutor_sessions

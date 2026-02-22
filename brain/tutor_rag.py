@@ -938,8 +938,9 @@ def embed_vault_notes(conn: sqlite3.Connection) -> dict[str, int]:
     vs = init_vectorstore(COLLECTION_NOTES)
     existing_ids = set(vs._collection.get()["ids"]) if vs._collection.count() > 0 else set()
 
-    texts: list[str] = []
-    metadatas: list[dict] = []
+    from langchain_core.documents import Document
+
+    documents: list = []
     ids: list[str] = []
     skipped = 0
 
@@ -957,14 +958,27 @@ def embed_vault_notes(conn: sqlite3.Connection) -> dict[str, int]:
             if chroma_id in existing_ids:
                 skipped += 1
                 continue
-            texts.append(chunk)
-            metadatas.append({"source_path": path, "doc_id": doc_id, "chunk_index": i})
+            chunk_metadata = {
+                "source_path": path,
+                "doc_id": doc_id,
+                "chunk_index": i,
+                "source": path,
+                "rag_doc_id": doc_id,
+                "chunk_source": "vault",
+            }
+            chunk_metadata.update(getattr(chunk, "metadata", {}))
+            documents.append(
+                Document(
+                    page_content=getattr(chunk, "page_content", str(chunk)),
+                    metadata=chunk_metadata,
+                )
+            )
             ids.append(chroma_id)
 
-    if texts:
-        _add_documents_batched(vs, texts, metadatas, ids)
+    if documents:
+        _add_documents_batched(vs, documents, ids)
 
-    return {"embedded": len(texts), "skipped": skipped}
+    return {"embedded": len(documents), "skipped": skipped}
 
 
 def search_notes(query: str, k: int = 4) -> list[dict]:
@@ -978,5 +992,92 @@ def search_notes(query: str, k: int = 4) -> list[dict]:
             {"content": doc.page_content, "metadata": doc.metadata}
             for doc in results
         ]
+    except Exception:
+        return []
+
+
+def _strip_wikilink(value: str) -> str:
+    s = (value or "").strip()
+    if s.startswith("[[") and s.endswith("]]") and len(s) > 4:
+        return s[2:-2].strip()
+    return s
+
+
+def _normalize_module_prefix(module_prefix: Optional[str]) -> str:
+    return str(module_prefix or "").strip().replace("\\", "/").lower().rstrip("/")
+
+
+def search_notes_prioritized(
+    query: str,
+    *,
+    module_prefix: Optional[str] = None,
+    follow_up_targets: Optional[list[str]] = None,
+    k_module: int = 4,
+    k_linked: int = 3,
+    k_global: int = 2,
+) -> list[dict]:
+    """
+    Prioritized notes retrieval:
+      1) Notes inside the current module folder
+      2) Notes mentioning follow-up targets
+      3) Global semantic notes fallback
+    """
+    try:
+        vs = init_vectorstore(COLLECTION_NOTES)
+        if vs._collection.count() == 0:
+            return []
+
+        requested_total = max(1, k_module + k_linked + k_global)
+        fetch_k = max(12, requested_total * 3)
+        results = vs.similarity_search(query, k=fetch_k)
+
+        module_key = _normalize_module_prefix(module_prefix)
+        target_labels = [
+            _strip_wikilink(t).lower()
+            for t in (follow_up_targets or [])
+            if isinstance(t, str) and _strip_wikilink(t)
+        ]
+
+        module_bucket: list[dict] = []
+        linked_bucket: list[dict] = []
+        global_bucket: list[dict] = []
+        seen: set[tuple[str, int]] = set()
+
+        for doc in results:
+            metadata = dict(getattr(doc, "metadata", {}) or {})
+            content = str(getattr(doc, "page_content", ""))
+            path = str(
+                metadata.get("source_path")
+                or metadata.get("source")
+                or ""
+            ).replace("\\", "/")
+            chunk_idx = int(metadata.get("chunk_index") or 0)
+            key = (path, chunk_idx)
+            if key in seen:
+                continue
+            seen.add(key)
+
+            payload = {"content": content, "metadata": metadata}
+            path_l = path.lower()
+            content_l = content.lower()
+
+            if module_key and (path_l.startswith(module_key) or f"/{module_key}/" in path_l):
+                module_bucket.append(payload)
+                continue
+
+            if target_labels and any(label and label in content_l for label in target_labels):
+                linked_bucket.append(payload)
+                continue
+
+            global_bucket.append(payload)
+
+        selected: list[dict] = []
+        selected.extend(module_bucket[: max(k_module, 0)])
+        selected.extend(linked_bucket[: max(k_linked, 0)])
+        selected.extend(global_bucket[: max(k_global, 0)])
+
+        if not selected:
+            return global_bucket[:requested_total]
+        return selected[:requested_total]
     except Exception:
         return []
