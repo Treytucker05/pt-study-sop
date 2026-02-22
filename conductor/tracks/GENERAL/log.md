@@ -66,6 +66,21 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `pytest brain/tests/test_api_contracts.py brain/tests/test_tutor_session_linking.py` ✅ (61 passed)
   - `npm run build` in `dashboard_rebuild` ✅
 
+## 2026-02-22 - PRIME step 2 lock (M-PRE-008 Structural Extraction)
+
+- Hardened `M-PRE-008` method contract in YAML:
+  - `sop/library/methods/M-PRE-008.yaml`
+  - Added non-assessment constraints, scope behavior (`module_all`/`single_focus`), required outputs, knob definitions, and stop criteria.
+- Added runtime PRIME guardrails for M-PRE-008 execution:
+  - `brain/dashboard/api_tutor.py`
+  - PRIME block now receives hard non-assessment directives; Structural Extraction block receives explicit output/boundary contract.
+- Synced PRIME hardening tracker content:
+  - `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`
+  - `docs/root/TUTOR_TODO.md`
+- Validation run:
+  - `python -m py_compile brain/dashboard/api_tutor.py` ✅
+  - `pytest brain/tests/test_api_contracts.py brain/tests/test_tutor_session_linking.py` ✅ (61 passed)
+
 ## 2026-02-22 - Tutor paperwork cleanup (truth hierarchy)
 
 - Added single navigation file for canonical read/write order:

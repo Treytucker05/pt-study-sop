@@ -1,7 +1,7 @@
 id: M-PRE-008
 name: Structural Extraction
 category: prepare
-description: Extract a compact structural spine from source material before detail work. Build at most 12 high-signal nodes and link each node to one objective.
+description: Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective.
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
@@ -14,28 +14,74 @@ tags:
 mechanisms:
   - scaffolding
   - metacognitive_monitoring
+knobs:
+  node_cap:
+    type: int
+    min: 6
+    max: 12
+    default: 10
+  output_format:
+    type: enum
+    options: [ascii_tree, bulleted_spine, markdown_table]
+    default: ascii_tree
+  objective_link_required:
+    type: bool
+    default: true
+constraints:
+  non_assessment: true
+  no_scored_checks: true
+  no_retrieval_grading: true
+  objective_source_precedence: instructor_over_source
+  module_all_includes_all_active_objectives: true
+  single_focus_requires_focus_objective_id: true
+  objective_link_required_hard_lock: true
+  trivia_node_exclusion: true
 inputs:
-  - Topic objectives
+  - North Star objectives
   - Source packet
+  - objective_scope (module_all | single_focus)
+  - focus_objective_id (required in single_focus)
 steps:
   - step: 1
-    action: List objective IDs for the topic
-    notes: Keep objective wording verbatim
+    action: Resolve objective scope and objective set
+    notes: module_all uses all active module objectives; single_focus uses only the selected objective.
   - step: 2
-    action: Extract no more than 12 structural nodes
-    notes: Prefer mechanism or decision nodes over trivia
+    action: Extract structural spine nodes
+    notes: Keep node count <= node_cap; prefer mechanism/decision nodes over trivia.
   - step: 3
-    action: Link each node to at least one objective ID
-    notes: Unlinked nodes are removed
+    action: Link each node to objective IDs
+    notes: Any unlinked node is removed when objective_link_required=true.
+  - step: 4
+    action: Mark unknown or low-confidence nodes
+    notes: Unknowns are orientation markers only; do not score or quiz.
 outputs:
-  - Spine (<=12 nodes)
+  - StructuralSpine
   - Objective linkage map
+  - UnknownNodeList
+  - PriorityNodes
 stop_criteria:
-  - Spine has <=12 nodes
-  - Every node links to >=1 objective
+  - Spine node count <= node_cap
+  - Every node links to >=1 objective when objective_link_required=true
+  - UnknownNodeList is present (can be empty)
+  - No scored probes or retrieval grading emitted
 evidence:
   citation: Ausubel (1968)
   finding: Advance organizers improve comprehension when structure is established before detail
   source: control-plane migration
 evidence_raw: Ausubel (1968); structural organizers improve meaningful learning
+facilitation_prompt: |
+  You are running M-PRE-008 (Structural Extraction) in PRIME stage.
+  This method is non-assessment: do not quiz, grade, or run retrieval checks.
+
+  Use objective_scope:
+  - module_all: build a high-level spine across all active module objectives.
+  - single_focus: build a spine only for the selected focus objective.
+
+  Produce:
+  1) StructuralSpine (<= node_cap, high-signal nodes only)
+  2) Objective linkage map (every node linked to >=1 objective)
+  3) UnknownNodeList (orientation gaps, not scores)
+  4) PriorityNodes (what to cover first)
+
+  Exclude trivia and avoid deep teaching details in this method.
 

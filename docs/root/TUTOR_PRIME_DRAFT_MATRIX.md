@@ -55,6 +55,43 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
   - non-assessment constraints
   - explicit steps/outputs/stop criteria
 
+## Step 2 (Locked) — M-PRE-008 Structural Extraction
+
+### Contract (Final for implementation)
+- Stage: `PRIME` only.
+- Intent: build a compact orientation spine tied directly to objectives.
+- Scope behavior:
+  - `module_all`: spine spans all active module objectives.
+  - `single_focus`: spine constrained to selected focus objective.
+- Required outputs:
+  - `StructuralSpine`
+  - `Objective linkage map`
+  - `UnknownNodeList`
+  - `PriorityNodes`
+- Hard blocked behaviors:
+  - scored questions
+  - retrieval checks
+  - confidence scoring
+  - deep-detail teaching
+- Exit criteria:
+  - spine node count within cap
+  - every node linked to at least one objective
+  - unknown list captured (can be empty)
+
+### Knobs (Locked for step 2)
+- `node_cap` (int): min `6`, max `12`, default `10`
+- `output_format` (enum): `ascii_tree | bulleted_spine | markdown_table` (default `ascii_tree`)
+- `objective_link_required` (bool): default `true` (hard lock `true` in PRIME)
+
+### Metrics (M-PRE-008)
+- `spine_node_count`
+- `objective_link_coverage_rate` (linked nodes / total nodes)
+- `unknown_node_count`
+- `priority_node_count`
+- `prime_assessment_violation_count` (target `0`)
+- `prime_retrieval_violation_count` (target `0`)
+- `trivia_node_rate` (target near `0`)
+
 ## Matrix A — PRIME Policy Contract
 
 | Method ID | Method | Stage | Draft intent | Required outputs | Allowed behavior | Blocked behavior |

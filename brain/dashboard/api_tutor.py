@@ -1907,6 +1907,22 @@ def send_turn(session_id: str):
                     "Targets:\n"
                     f"{bounded_targets}"
                 )
+            if block_info and str(block_info.get("control_stage") or "").upper() == "PRIME":
+                system_prompt += (
+                    "\n\n## PRIME Stage Guardrails (Hard)\n"
+                    "- PRIME is orientation only.\n"
+                    "- Do not run scored checks, retrieval grading, or confidence scoring.\n"
+                    "- Use PRIME outputs to prepare downstream CALIBRATE/ENCODE work.\n"
+                )
+                block_name_l = str(block_info.get("name") or "").strip().lower()
+                if block_name_l == "structural extraction":
+                    system_prompt += (
+                        "\n## M-PRE-008 Contract\n"
+                        "- Build a compact structural spine of high-signal nodes.\n"
+                        "- Link every node to at least one objective.\n"
+                        "- Include UnknownNodeList and PriorityNodes.\n"
+                        "- Exclude trivia and avoid deep content teaching in this method.\n"
+                    )
             system_prompt += (
                 "\n\n## PRIME Objective Scope\n"
                 f"- Active scope: {objective_scope}\n"

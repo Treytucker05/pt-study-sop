@@ -66,6 +66,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 Progress notes:
 - `M-PRE-010` now supports scope knob (`module_all` / `single_focus`) and is wired into session creation + prompt context.
 - Wizard now exposes PRIME scope selector and persists it in local/session state.
+- `M-PRE-008` hardening added: full YAML contract (constraints/knobs/outputs/stop criteria) + PRIME runtime guardrail injection in tutor orchestration.
 
 ### A5) PRIME Acceptance Criteria
 - [ ] Any PRIME block run produces orientation artifacts only.

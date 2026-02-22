@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest non-track update: 2026-02-22 Wired `objective_scope` end-to-end (API + wizard UI + PRIME prompt context) and validated targeted tutor tests/build (see `conductor/tracks/GENERAL/log.md`).
+Latest non-track update: 2026-02-22 Hardened PRIME `M-PRE-008` end-to-end (YAML contract + runtime guardrails) and validated targeted tutor tests (see `conductor/tracks/GENERAL/log.md`).
 
 ---
 
