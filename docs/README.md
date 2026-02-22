@@ -24,6 +24,7 @@ Basic alignment is enforced by `python scripts/check_docs_sync.py` (CI).
 | Architecture | `docs/root/PROJECT_ARCHITECTURE.md` |
 | Data Contracts | `docs/contracts/INDEX.md` |
 | Tutor/SOP Explorer | `docs/dashboard/TUTOR_PAGE_SOP_EXPLORER_v1.0.md` |
+| Tutor Video Ingest (MP4 -> RAG/Obsidian) | `docs/root/TUTOR_VIDEO_INGEST_PLAN.md` |
 | Vision & Theory | `docs/root/VISION_PPFW.md`, `docs/root/PPFW_RESEARCH_LOG.md` |
 | Brain System | `docs/root/PROJECT_ARCHITECTURE.md` (Brain section) |
 | Composable Methods | `sop/library/15-method-library.md` |

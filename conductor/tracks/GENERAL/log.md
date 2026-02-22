@@ -1025,3 +1025,16 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - `python -m pytest brain/tests/` -> 671 passed
   - `powershell -ExecutionPolicy Bypass -File scripts/smoke_tutor_readonly.ps1` -> 6 passed, 0 failed
   - `npm run build` (dashboard_rebuild) -> PASS
+## 2026-02-22 16:05 - Hybrid video ingest planning + conductor track set creation
+- Added implementation task list for MP4 study workflow: `docs/root/TUTOR_VIDEO_INGEST_PLAN.md`.
+- Updated tutor execution tracker with active video ingest workstream: `docs/root/TUTOR_TODO.md`.
+- Added docs index reference: `docs/README.md`.
+- Created new conductor track set:
+  - `conductor/tracks/video_ingest_local_20260222/` (spec, plan, index, metadata)
+  - `conductor/tracks/video_enrichment_api_20260222/` (spec, plan, index, metadata)
+  - `conductor/tracks/video_tutor_integration_20260222/` (spec, plan, index, metadata)
+- Updated `conductor/tracks.md` with planned active priorities and meta-track scope.
+- Planning is aligned to current codebase constraints:
+  - upload endpoint extension gate in `brain/text_extractor.py`
+  - existing materials sync and mp4 binary ingest path in `brain/rag_notes.py` + `brain/dashboard/api_tutor.py`
+  - retrieval/embedding path in `brain/tutor_rag.py`.

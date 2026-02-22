@@ -1,0 +1,18 @@
+{
+  "id": "video_enrichment_api_20260222",
+  "title": "Video Enrichment API (Selective)",
+  "type": "feature",
+  "status": "planned",
+  "created": "2026-02-22T00:00:00Z",
+  "updated": "2026-02-22T00:00:00Z",
+  "current_phase": 1,
+  "current_task": "Task 1.1",
+  "phases": {
+    "total": 4,
+    "completed": 0
+  },
+  "tasks": {
+    "total": 13,
+    "completed": 0
+  }
+}

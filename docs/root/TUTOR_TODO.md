@@ -7,6 +7,8 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 ## Current Focus (Active)
 - [ ] Nail down PRIME method blocks (rules, knobs/acute variables, and implementation plan).
 - Draft artifact created: `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`
+- [ ] Implement hybrid video ingest for study workflow (free local pipeline + selective API enrichment).
+- Execution plan: `docs/root/TUTOR_VIDEO_INGEST_PLAN.md`
 
 ## Recent Completed Wiring (2026-02-22)
 - [x] Added strict tutor note schema: `docs/schemas/tutor_note_schema_v1_1.json`
@@ -122,3 +124,8 @@ Progress notes:
 1. [ ] Build PRIME method-by-method policy table (method -> intent -> allowed outputs -> blocked behaviors).
 2. [ ] Build PRIME knob table (method -> knobs -> defaults -> constraints).
 3. [ ] Draft implementation checklist mapped to exact files/functions.
+
+## Workstream F — Video Ingest (Free + API Hybrid) [New]
+- [ ] Execute Phase 1-2 from `docs/root/TUTOR_VIDEO_INGEST_PLAN.md` (local ingest + RAG bridge).
+- [ ] Execute Phase 4-5 (backend process/status endpoints + UI wiring for MP4 processing).
+- [ ] Execute Phase 3 + 6 + 7 (API enrichment, budget guardrails, retrieval tuning).
