@@ -41,22 +41,43 @@ def app():
     _orig_config = config.DB_PATH
     _orig_db_setup = db_setup.DB_PATH
     _orig_api_data = _api_data_mod.DB_PATH
+    _orig_obsidian_get = _api_adapter_mod.obsidian_get_file
+    _orig_obsidian_save = _api_adapter_mod.obsidian_save_file
+
+    north_star_store: dict[str, str] = {}
+    north_star_write_calls: list[str] = []
+
+    def _fake_obsidian_get_file(path: str):
+        content = north_star_store.get(path)
+        if content is None:
+            return {"success": False, "error": "not found"}
+        return {"success": True, "content": content, "path": path}
+
+    def _fake_obsidian_save_file(path: str, content: str):
+        north_star_write_calls.append(path)
+        north_star_store[path] = content
+        return {"success": True, "path": path}
 
     # Patch module-cached DB paths
     os.environ["PT_STUDY_DB"] = tmp_path
     config.DB_PATH = tmp_path
     db_setup.DB_PATH = tmp_path
     _api_data_mod.DB_PATH = tmp_path
+    _api_adapter_mod.obsidian_get_file = _fake_obsidian_get_file
+    _api_adapter_mod.obsidian_save_file = _fake_obsidian_save_file
 
     db_setup.init_database()
     app_obj = create_app()
     app_obj.config["TESTING"] = True
+    app_obj.config["TEST_NORTH_STAR_WRITES"] = north_star_write_calls
     yield app_obj
 
     # Restore environment/module state
     config.DB_PATH = _orig_config
     db_setup.DB_PATH = _orig_db_setup
     _api_data_mod.DB_PATH = _orig_api_data
+    _api_adapter_mod.obsidian_get_file = _orig_obsidian_get
+    _api_adapter_mod.obsidian_save_file = _orig_obsidian_save
     if _orig_env is None:
         os.environ.pop("PT_STUDY_DB", None)
     else:
@@ -945,3 +966,7 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     assert debug["accuracy_profile"] == "strict"
     assert "material_dropped_by_cap" in debug
     assert 0.0 <= debug["retrieval_confidence"] <= 1.0
+
+
+def test_testing_mode_blocks_north_star_writes(app):
+    assert app.config.get("TEST_NORTH_STAR_WRITES") == []

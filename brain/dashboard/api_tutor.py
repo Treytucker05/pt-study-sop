@@ -34,7 +34,7 @@ from pathlib import Path
 from threading import Lock, Thread
 from typing import Any, Optional
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, current_app, has_app_context, jsonify, request
 
 from db_setup import DB_PATH, get_connection, ensure_method_library_seeded
 from course_wheel_sync import ensure_course_in_wheel
@@ -392,6 +392,24 @@ def _build_north_star_markdown(
     return "\n".join(lines)
 
 
+def _north_star_io_disabled() -> bool:
+    """Disable Obsidian North Star I/O for tests/safety guard contexts."""
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return True
+
+    raw_guard = str(os.environ.get("PT_DISABLE_OBSIDIAN_WRITES") or "").strip().lower()
+    if raw_guard in {"1", "true", "yes", "on"}:
+        return True
+
+    try:
+        if has_app_context() and bool(getattr(current_app, "testing", False)):
+            return True
+    except Exception:
+        pass
+
+    return False
+
+
 def _ensure_north_star_context(
     *,
     course_id: Optional[int],
@@ -429,16 +447,39 @@ def _ensure_north_star_context(
     current_content = ""
     status = "built"
 
-    existing = obsidian_get_file(north_star_path)
-    if existing.get("success"):
-        current_content = str(existing.get("content") or "")
-        current_statuses = _parse_existing_north_star_objectives(current_content)
-        needs_update = False
-        for oid, st in desired_statuses.items():
-            if current_statuses.get(oid) != st:
-                needs_update = True
-                break
-        if needs_update:
+    if _north_star_io_disabled():
+        current_content = _build_north_star_markdown(
+            module_name=derived_module_name,
+            topic=topic,
+            objectives=objectives,
+            source_ids=source_ids,
+        )
+        status = "test_mode_no_write"
+    else:
+        existing = obsidian_get_file(north_star_path)
+        if existing.get("success"):
+            current_content = str(existing.get("content") or "")
+            current_statuses = _parse_existing_north_star_objectives(current_content)
+            needs_update = False
+            for oid, st in desired_statuses.items():
+                if current_statuses.get(oid) != st:
+                    needs_update = True
+                    break
+            if needs_update:
+                new_content = _build_north_star_markdown(
+                    module_name=derived_module_name,
+                    topic=topic,
+                    objectives=objectives,
+                    source_ids=source_ids,
+                )
+                save_res = obsidian_save_file(north_star_path, new_content)
+                if not save_res.get("success"):
+                    return None, f"North Star update failed: {save_res.get('error', 'unknown error')}"
+                current_content = new_content
+                status = "updated"
+            else:
+                status = "reviewed"
+        else:
             new_content = _build_north_star_markdown(
                 module_name=derived_module_name,
                 topic=topic,
@@ -447,23 +488,9 @@ def _ensure_north_star_context(
             )
             save_res = obsidian_save_file(north_star_path, new_content)
             if not save_res.get("success"):
-                return None, f"North Star update failed: {save_res.get('error', 'unknown error')}"
+                return None, f"North Star build failed: {save_res.get('error', 'unknown error')}"
             current_content = new_content
-            status = "updated"
-        else:
-            status = "reviewed"
-    else:
-        new_content = _build_north_star_markdown(
-            module_name=derived_module_name,
-            topic=topic,
-            objectives=objectives,
-            source_ids=source_ids,
-        )
-        save_res = obsidian_save_file(north_star_path, new_content)
-        if not save_res.get("success"):
-            return None, f"North Star build failed: {save_res.get('error', 'unknown error')}"
-        current_content = new_content
-        status = "built"
+            status = "built"
 
     objective_links = [_wikilink(o["objective_id"]) for o in objectives]
     title_links = [_wikilink(o["title"]) for o in objectives if o.get("title")]

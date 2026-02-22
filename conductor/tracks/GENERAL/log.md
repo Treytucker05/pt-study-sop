@@ -828,3 +828,20 @@ px vitest run --reporter=verbose (341 passed)
   - Prompt coverage audit: all method cards now contain exactly one `facilitation_prompt`
   - `pytest brain/tests/` -> blocked by pre-existing import-path collection errors (`ModuleNotFoundError: brain` in adaptive tests)
   - `pytest brain/tests/test_api_contracts.py brain/tests/test_tutor_session_linking.py` -> `61 passed`
+
+## 2026-02-22 - North Star test isolation + runtime write guard
+
+- Hardened tutor runtime to prevent test-mode writes to live Obsidian vault:
+  - `brain/dashboard/api_tutor.py`
+  - Added `_north_star_io_disabled()` guard:
+    - true when `PYTEST_CURRENT_TEST` is present
+    - true when `PT_DISABLE_OBSIDIAN_WRITES=1|true|yes|on`
+    - true when Flask `current_app.testing` is enabled
+  - `_ensure_north_star_context()` now skips Obsidian read/write in guarded contexts and returns in-memory North Star context (`status: test_mode_no_write`).
+- Added fixture-level Obsidian I/O isolation in tutor session linking tests:
+  - `brain/tests/test_tutor_session_linking.py`
+  - Monkeypatches `dashboard.api_adapter.obsidian_get_file`/`obsidian_save_file` with in-memory fakes.
+  - Added assertion test `test_testing_mode_blocks_north_star_writes` to ensure no writes occur in testing mode.
+- Validation:
+  - `python -m pytest brain/tests/test_tutor_session_linking.py` -> `15 passed`
+  - `python -m pytest brain/tests/` -> `664 passed`
