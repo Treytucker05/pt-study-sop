@@ -92,6 +92,12 @@ Progress notes:
   - Tutor chat execution
 - [ ] Add drift checks for method-stage mismatch and missing knob defaults.
 
+## Workstream D — CALIBRATE Hardening (Completed 2026-02-22)
+- [x] Hardened `M-CAL-001` (Micro Precheck) with scored-baseline constraints and full tutor prompt.
+- [x] Hardened `M-CAL-002` (Confidence Tagging) with miscalibration risk outputs and full tutor prompt.
+- [x] Hardened `M-CAL-003` (Priority Set) with deterministic top-3 routing and full tutor prompt.
+- [x] Added Obsidian category note: `Study System/Categories/Calibrate.md` with operational spec + prompt blocks.
+
 ## Immediate Next 3 Tasks
 1. [ ] Build PRIME method-by-method policy table (method -> intent -> allowed outputs -> blocked behaviors).
 2. [ ] Build PRIME knob table (method -> knobs -> defaults -> constraints).

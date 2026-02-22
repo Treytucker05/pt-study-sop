@@ -870,3 +870,17 @@ px vitest run --reporter=verbose (341 passed)
   - `docs/root/TUTOR_TODO.md`
 - Validation:
   - `python -m pytest brain/tests/` -> `664 passed`
+
+## 2026-02-22 - CALIBRATE hardening pass (all CAL method cards)
+
+- Hardened all CAL method YAML cards with method-specific contracts and tutor prompts:
+  - `sop/library/methods/M-CAL-001.yaml`
+  - `sop/library/methods/M-CAL-002.yaml`
+  - `sop/library/methods/M-CAL-003.yaml`
+- Added clear CALIBRATE stage boundaries and deterministic routing outputs:
+  - short scored baseline (`M-CAL-001`)
+  - confidence alignment (`M-CAL-002`)
+  - deterministic top-3 weakness routing seed (`M-CAL-003`)
+- Added Obsidian category canon note for CALIBRATE:
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Calibrate.md`
+  - includes rules, flow, method summaries, and full tutor prompt blocks.

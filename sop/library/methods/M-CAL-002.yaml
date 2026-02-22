@@ -1,55 +1,103 @@
 id: M-CAL-002
 name: Confidence Tagging
 category: prepare
-description: Add confidence tags (H/M/L) for each calibrate item to separate knowledge gaps from confidence miscalibration.
+description: Convert raw item responses into confidence-calibrated signals to detect overconfidence and underconfidence.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: CALIBRATE
-status: draft
+status: validated
 tags:
   - calibrate
   - confidence
   - metacognition
+  - risk-detection
 mechanisms:
   - metacognitive_monitoring
   - calibration
+stipulations:
+  - Confidence must be captured before correctness feedback.
+  - High-confidence misses are highest-priority risk signals.
+  - Confidence alone cannot lower difficulty without performance evidence.
+when_to_use:
+  - Immediately after M-CAL-001 item attempts.
+  - Any time learner behavior suggests miscalibration.
+when_not_to_use:
+  - Skip only if confidence data is already captured at item level.
+knobs:
+  confidence_scale:
+    type: enum
+    options: [HML, one_to_five]
+    default: HML
+  miscalibration_threshold:
+    type: float
+    min: 0.1
+    max: 0.4
+    default: 0.2
+constraints:
+  confidence_before_feedback_required: true
+  confidence_only_adaptation_disallowed: true
 inputs:
   - Calibrate item responses
+  - Item correctness
+  - Item latency
 steps:
   - step: 1
-    action: Tag each item as H, M, or L confidence
-    notes: Tag before reviewing correctness
+    action: Apply confidence tag to each item
+    notes: Use configured confidence_scale.
   - step: 2
-    action: Flag high-confidence misses
-    notes: These become top priority for ENCODE
+    action: Identify high-confidence misses and low-confidence hits
+    notes: Both are miscalibration signals.
   - step: 3
-    action: Record confidence with response latency
-    notes: Keep item-level detail
+    action: Compute calibration bias summary
+    notes: Compare confidence pattern to correctness pattern.
+  - step: 4
+    action: Emit risk flags for routing
+    notes: These feed M-CAL-003 and ENCODE method selection.
 outputs:
-  - Confidence-tagged calibrate set
-  - High-confidence miss list
+  - ConfidenceTaggedResults
+  - HighConfidenceMisses
+  - LowConfidenceHits
+  - CalibrationRiskFlags
 stop_criteria:
-  - Every calibrate item has an H/M/L tag
+  - Every attempted item has confidence tag
+  - Risk flags generated
+failure_modes:
+  - mode: Learner always picks same confidence level
+    mitigation: Collapse scale to HML and continue.
+  - mode: Confidence captured after feedback
+    mitigation: Invalidate tag and re-prompt before revealing correctness.
+  - mode: Confidence manipulated to force easier flow
+    mitigation: Weight adaptation by correctness and latency first.
+logging_fields:
+  - confidence_scale
+  - high_confidence_miss_count
+  - low_confidence_hit_count
+  - calibration_bias_score
+  - risk_flag_count
 evidence:
   citation: Metcalfe (2017)
-  finding: Confidence monitoring improves targeting of corrective study actions
+  finding: Calibration monitoring supports targeted corrective learning.
   source: control-plane migration
-evidence_raw: Metcalfe (2017); metacognitive calibration improves error correction
-
+evidence_strength: high
+primary_citations:
+  - Metcalfe (2017)
+  - Dunlosky et al. (2013)
+evidence_raw: Confidence-calibration signals improve targeting of corrective study actions.
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-CAL-002 (Confidence Tagging) in CALIBRATE stage.
+  Convert item attempts into actionable calibration signals.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Requirements:
+  - Tag each item with confidence ({confidence_scale}) before correctness feedback.
+  - Detect and list high-confidence misses and low-confidence hits.
+  - Compute calibration risk using {miscalibration_threshold} as alert boundary.
+
+  Return exactly:
+  1) ConfidenceTaggedResults
+  2) HighConfidenceMisses
+  3) LowConfidenceHits
+  4) CalibrationRiskFlags
+
+  Do not teach content here. This method is diagnostic routing only.

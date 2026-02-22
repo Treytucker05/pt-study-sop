@@ -1,55 +1,101 @@
 id: M-CAL-003
 name: Priority Set
 category: prepare
-description: Convert calibrate misses into a deterministic top-3 weakness set that drives ENCODE method selection.
+description: Build a deterministic top-3 weakness set from CALIBRATE telemetry to drive ENCODE method selection.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: CALIBRATE
-status: draft
+status: validated
 tags:
   - calibrate
   - prioritization
   - sequencing
+  - deterministic-routing
 mechanisms:
   - adaptive_sequencing
+  - error_localization
+stipulations:
+  - Output must be deterministic and ranked.
+  - Exactly top 3 weaknesses are emitted.
+  - Ranking favors high-confidence misses and repeated errors.
+when_to_use:
+  - After M-CAL-001 and M-CAL-002 complete.
+  - Before selecting ENCODE methods.
+when_not_to_use:
+  - If fewer than 3 valid items exist; run micro-recalibration first.
+knobs:
+  top_k:
+    type: int
+    min: 3
+    max: 3
+    default: 3
+  weighting_profile:
+    type: enum
+    options: [balanced, confidence_heavy, latency_heavy]
+    default: balanced
+constraints:
+  deterministic_output_required: true
+  top_k_fixed: true
 inputs:
-  - Calibrate results
-  - Confidence tags
+  - Calibrate correctness and latency
+  - Confidence-tagged results
+  - Error-type labels
 steps:
   - step: 1
-    action: Group misses by weakness type
-    notes: Use Recall/Confusion/Rule/Representation/Procedure/Computation/Speed
+    action: Aggregate misses by error type
+    notes: Use Recall, Confusion, Rule, Representation, Procedure, Computation, Speed.
   - step: 2
-    action: Rank weaknesses by impact and frequency
-    notes: High-confidence misses rank above low-confidence misses
+    action: Score weakness impact using weighting_profile
+    notes: Include frequency, confidence mismatch, and latency.
   - step: 3
-    action: Select top 3 weaknesses for ENCODE
-    notes: Output is deterministic and explicit
+    action: Rank weaknesses and emit top_k
+    notes: Must produce exactly 3 ranked items.
+  - step: 4
+    action: Map each weakness to next ENCODE action seed
+    notes: Provide method-family recommendation only, not full lesson.
 outputs:
-  - PrioritySet (top 3 weaknesses)
-  - Weakness to method mapping seed
+  - PrioritySet
+  - WeaknessScoreTable
+  - EncodeRoutingSeed
 stop_criteria:
-  - Exactly 3 prioritized weaknesses
+  - Exactly 3 prioritized weaknesses output
+  - EncodeRoutingSeed created
+failure_modes:
+  - mode: Too little data for stable ranking
+    mitigation: Trigger micro-recalibration with 2-3 extra items.
+  - mode: Ranking ties remain unresolved
+    mitigation: Break ties by high-confidence miss count, then frequency.
+  - mode: Output drifts into teaching
+    mitigation: Restrict to ranked diagnostics and routing only.
+logging_fields:
+  - top_k
+  - weighting_profile
+  - priority_set
+  - tie_break_applied
 evidence:
-  citation: Rawson & Dunlosky (2011)
-  finding: Targeted corrective practice improves long-term retention more than broad restudy
+  citation: Rawson and Dunlosky (2011)
+  finding: Targeted corrective practice outperforms broad untargeted restudy.
   source: control-plane migration
-evidence_raw: Rawson & Dunlosky (2011); focused relearning outperforms untargeted review
-
+evidence_strength: high
+primary_citations:
+  - Rawson and Dunlosky (2011)
+  - Bjork and Bjork (2011)
+evidence_raw: Focused relearning based on diagnosed weaknesses improves long-term retention.
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-CAL-003 (Priority Set) in CALIBRATE stage.
+  Build a deterministic ranked weakness set for ENCODE routing.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Requirements:
+  - Use correctness, latency, confidence, and error types.
+  - Apply {weighting_profile}.
+  - Emit exactly {top_k} weaknesses (fixed at 3).
+  - Add one ENCODE method-family seed per weakness.
+
+  Return exactly:
+  1) PrioritySet
+  2) WeaknessScoreTable
+  3) EncodeRoutingSeed
+
+  Do not provide full teaching or answer explanations in this method.
