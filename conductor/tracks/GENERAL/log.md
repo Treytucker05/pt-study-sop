@@ -4,6 +4,35 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-22 - Tutor structured finalize pipeline + graph sync wiring
+
+- Implemented strict schema-driven Tutor artifact finalization in `brain/dashboard/api_tutor.py`:
+  - Added JSON schema loading/validation via `docs/schemas/tutor_note_schema_v1_1.json`
+  - Added mode-aware concept-count enforcement (`module_all`, `single_focus`, `focused_batch`)
+  - Added deterministic markdown renderers for session/concept notes
+  - Added deterministic Obsidian merge/save helper with wikilink-aware merge path
+- Added new Tutor endpoints:
+  - `POST /api/tutor/session/<id>/finalize`
+  - `POST /api/tutor/session/<id>/sync-graph`
+  - Extended `POST /api/tutor/session/<id>/artifact` with `type=structured_notes`
+- Added graph sync integration on save:
+  - Writes now call incremental KG update per saved note path
+  - Endpoint responses include graph sync telemetry
+- Routed Tutor tool saves through unified merge+graph path:
+  - Updated `brain/tutor_tools.py` `save_to_obsidian` execution to use `api_tutor.save_tool_note_to_obsidian`
+  - `execute_tool` now passes `session_id` through for `save_to_obsidian`
+- Updated tutor note schema for mode-based concept limits:
+  - Added `metadata.session_mode` enum
+  - Added conditional constraints for concept counts by mode
+- Added/updated tests:
+  - `brain/tests/test_tutor_session_linking.py`
+    - finalize writes + artifact index coverage
+    - invalid single-focus concept count rejection
+    - session graph sync endpoint coverage
+- Validation:
+  - `python -m pytest brain/tests/test_tutor_session_linking.py -q` -> `18 passed`
+  - `python -m pytest brain/tests/` -> `667 passed`
+
 ## 2026-02-22 - Obsidian category canon regeneration (all 6 stages)
 
 - Regenerated every category page from method YAML contracts so each method includes full runtime prompt blocks and deterministic method metadata:

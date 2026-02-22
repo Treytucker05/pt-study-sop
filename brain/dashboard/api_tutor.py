@@ -7,6 +7,8 @@ Endpoints:
   POST   /api/tutor/session/<id>/turn     — Send message, SSE stream response
   POST   /api/tutor/session/<id>/end      — End session, create Brain record
   POST   /api/tutor/session/<id>/artifact — Create note/card/map mid-session
+  POST   /api/tutor/session/<id>/finalize — Write structured tutor artifacts to Obsidian
+  POST   /api/tutor/session/<id>/sync-graph — Re-sync graph for session note paths
   POST   /api/tutor/session/<id>/advance-block — Advance to next block in chain
   GET    /api/tutor/sessions              — List sessions
   GET    /api/tutor/content-sources       — Get available courses + materials
@@ -35,6 +37,7 @@ from threading import Lock, Thread
 from typing import Any, Optional
 
 from flask import Blueprint, Response, current_app, has_app_context, jsonify, request
+from jsonschema import Draft202012Validator
 
 from db_setup import DB_PATH, get_connection, ensure_method_library_seeded
 from course_wheel_sync import ensure_course_in_wheel
@@ -78,6 +81,13 @@ _NORTH_STAR_OBJECTIVE_PATTERN = re.compile(
 _TUTOR_NOTE_SCHEMA_PATH = (
     Path(__file__).resolve().parents[2] / "docs" / "schemas" / "tutor_note_schema_v1_1.json"
 )
+_TUTOR_NOTE_SCHEMA_DOC: Optional[dict[str, Any]] = None
+_TUTOR_NOTE_SCHEMA_VALIDATOR: Optional[Draft202012Validator] = None
+_TUTOR_SESSION_MODE_LIMITS: dict[str, tuple[int, int]] = {
+    "module_all": (0, 200),
+    "single_focus": (1, 1),
+    "focused_batch": (3, 5),
+}
 
 
 def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
@@ -238,6 +248,122 @@ def _normalize_objective_scope(raw_scope: Any) -> str:
     if scope in {"module_all", "single_focus"}:
         return scope
     return "module_all"
+
+
+def _normalize_session_mode(raw_mode: Any) -> str:
+    mode = str(raw_mode or "").strip().lower()
+    if mode in _TUTOR_SESSION_MODE_LIMITS:
+        return mode
+    return "focused_batch"
+
+
+def _default_session_mode_from_scope(scope: str) -> str:
+    normalized_scope = _normalize_objective_scope(scope)
+    if normalized_scope == "single_focus":
+        return "single_focus"
+    return "module_all"
+
+
+def _load_tutor_note_schema_validator() -> Draft202012Validator:
+    global _TUTOR_NOTE_SCHEMA_DOC
+    global _TUTOR_NOTE_SCHEMA_VALIDATOR
+
+    if _TUTOR_NOTE_SCHEMA_VALIDATOR is not None:
+        return _TUTOR_NOTE_SCHEMA_VALIDATOR
+
+    with _TUTOR_NOTE_SCHEMA_PATH.open("r", encoding="utf-8") as fh:
+        schema_doc = json.load(fh)
+
+    schema = schema_doc.get("schema") if isinstance(schema_doc, dict) else None
+    if not isinstance(schema, dict):
+        raise ValueError("Invalid tutor note schema: missing 'schema' object")
+
+    _TUTOR_NOTE_SCHEMA_DOC = schema_doc
+    _TUTOR_NOTE_SCHEMA_VALIDATOR = Draft202012Validator(schema)
+    return _TUTOR_NOTE_SCHEMA_VALIDATOR
+
+
+def _normalize_tutor_artifact_payload(
+    payload: dict[str, Any],
+    *,
+    default_session_mode: str,
+) -> dict[str, Any]:
+    normalized = json.loads(json.dumps(payload))
+
+    metadata = normalized.get("metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+        normalized["metadata"] = metadata
+    metadata["session_mode"] = _normalize_session_mode(
+        metadata.get("session_mode") or default_session_mode
+    )
+
+    session = normalized.get("session")
+    if not isinstance(session, dict):
+        session = {}
+        normalized["session"] = session
+    session["unknowns"] = _normalize_wikilinks(session.get("unknowns"), max_items=80)
+    session["follow_up_targets"] = _normalize_wikilinks(
+        session.get("follow_up_targets"), max_items=80
+    )
+
+    concepts = normalized.get("concepts")
+    if not isinstance(concepts, list):
+        concepts = []
+        normalized["concepts"] = concepts
+    for concept in concepts:
+        if not isinstance(concept, dict):
+            continue
+        concept["prerequisites"] = _normalize_wikilinks(
+            concept.get("prerequisites"), max_items=80
+        )
+        relationships = concept.get("relationships")
+        if not isinstance(relationships, list):
+            concept["relationships"] = []
+            continue
+        norm_relationships: list[dict[str, Any]] = []
+        for rel in relationships:
+            if not isinstance(rel, dict):
+                continue
+            link = _normalize_wikilinks([rel.get("target_concept")], max_items=1)
+            norm_relationships.append(
+                {
+                    "target_concept": link[0] if link else "",
+                    "relationship_type": rel.get("relationship_type"),
+                }
+            )
+        concept["relationships"] = norm_relationships
+
+    return normalized
+
+
+def _validate_tutor_artifact_payload(
+    payload: dict[str, Any],
+    *,
+    default_session_mode: str,
+) -> tuple[Optional[dict[str, Any]], list[str]]:
+    validator = _load_tutor_note_schema_validator()
+    normalized = _normalize_tutor_artifact_payload(
+        payload, default_session_mode=default_session_mode
+    )
+
+    errors: list[str] = []
+    for err in sorted(validator.iter_errors(normalized), key=lambda e: list(e.path)):
+        path = ".".join(str(p) for p in err.path) or "(root)"
+        errors.append(f"{path}: {err.message}")
+
+    metadata = normalized.get("metadata") or {}
+    session_mode = _normalize_session_mode(metadata.get("session_mode"))
+    concept_count = len(normalized.get("concepts") or [])
+    min_items, max_items = _TUTOR_SESSION_MODE_LIMITS[session_mode]
+    if not (min_items <= concept_count <= max_items):
+        errors.append(
+            f"concepts: session_mode '{session_mode}' requires between {min_items} and {max_items} concepts (got {concept_count})"
+        )
+
+    if errors:
+        return None, errors
+    return normalized, []
 
 
 def _collect_objectives_from_payload(raw: Any) -> list[dict[str, str]]:
@@ -547,6 +673,411 @@ def _format_notes_context(note_hits: list[dict[str, Any]], *, max_items: int = 8
             content = content[:600] + "..."
         parts.append(f"[{idx}] {source}\n{content}")
     return "\n\n---\n\n".join(parts)
+
+
+def _sanitize_note_fragment(raw: Any, *, fallback: str) -> str:
+    value = str(raw or "").strip()
+    value = re.sub(r'[\\/:*?"<>|]+', " ", value)
+    value = re.sub(r"\s+", " ", value).strip()
+    if not value:
+        value = fallback
+    return value.replace(" ", "_")
+
+
+def _render_tutor_session_markdown(
+    artifact: dict[str, Any],
+    *,
+    session_id: str,
+    topic: str,
+    module_name: str,
+) -> str:
+    metadata = artifact.get("metadata") or {}
+    session = artifact.get("session") or {}
+    concepts = artifact.get("concepts") or []
+    concept_links = [
+        _wikilink(str(c.get("file_name") or "").strip())
+        for c in concepts
+        if isinstance(c, dict) and str(c.get("file_name") or "").strip()
+    ]
+    concept_links = [c for c in concept_links if c]
+
+    lines: list[str] = [
+        "---",
+        "note_type: tutor_session",
+        f"session_id: {session_id}",
+        f"topic: {topic or module_name}",
+        f"module_name: {module_name}",
+        f"control_stage: {metadata.get('control_stage', 'UNKNOWN')}",
+        f"method_id: {metadata.get('method_id', 'UNKNOWN')}",
+        f"session_mode: {metadata.get('session_mode', 'focused_batch')}",
+        f"updated_at: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        "---",
+        "",
+        f"# Tutor Session - {topic or module_name}",
+        "",
+        "## Stage Flow",
+    ]
+    for stage in session.get("stage_flow") or []:
+        lines.append(f"- {stage}")
+
+    lines.extend(["", "## Concepts Covered"])
+    if concept_links:
+        lines.extend(f"- {c}" for c in concept_links)
+    else:
+        lines.append("- (none)")
+
+    lines.extend(["", "## Unknowns"])
+    unknowns = session.get("unknowns") or []
+    if unknowns:
+        lines.extend(f"- {u}" for u in unknowns)
+    else:
+        lines.append("- (none)")
+
+    lines.extend(["", "## Follow Up Targets"])
+    follow = session.get("follow_up_targets") or []
+    if follow:
+        lines.extend(f"- {f}" for f in follow)
+    else:
+        lines.append("- (none)")
+
+    lines.extend(["", "## Source IDs"])
+    source_ids = session.get("source_ids") or []
+    if source_ids:
+        lines.extend(f"- {sid}" for sid in source_ids)
+    else:
+        lines.append("- (none)")
+
+    return "\n".join(lines).strip() + "\n"
+
+
+def _render_tutor_concept_markdown(
+    concept: dict[str, Any],
+    *,
+    module_name: str,
+) -> str:
+    file_name = str(concept.get("file_name") or "").strip() or "Untitled Concept"
+    lines: list[str] = [
+        "---",
+        "note_type: tutor_concept",
+        f"module_name: {module_name}",
+        f"updated_at: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        "---",
+        "",
+        f"# {file_name}",
+        "",
+        "## Why It Matters",
+        str(concept.get("why_it_matters") or ""),
+        "",
+        "## Prerequisites",
+    ]
+
+    prereq = concept.get("prerequisites") or []
+    if prereq:
+        lines.extend(f"- {p}" for p in prereq)
+    else:
+        lines.append("- (none)")
+
+    lines.extend(["", "## Retrieval Targets"])
+    retrieval_targets = concept.get("retrieval_targets") or []
+    if retrieval_targets:
+        lines.extend(f"- {t}" for t in retrieval_targets)
+    else:
+        lines.append("- (none)")
+
+    lines.extend(["", "## Common Errors"])
+    common_errors = concept.get("common_errors") or []
+    if common_errors:
+        lines.extend(f"- {e}" for e in common_errors)
+    else:
+        lines.append("- (none)")
+
+    lines.extend(
+        [
+            "",
+            "## Relationships",
+        ]
+    )
+    relationships = concept.get("relationships") or []
+    if relationships:
+        for rel in relationships:
+            if not isinstance(rel, dict):
+                continue
+            target = rel.get("target_concept") or "[[Unknown]]"
+            rel_type = rel.get("relationship_type") or "related_to"
+            lines.append(f"- {target} ({rel_type})")
+    else:
+        lines.append("- (none)")
+
+    lines.extend(
+        [
+            "",
+            "## Next Review Date",
+            str(concept.get("next_review_date") or "unscheduled"),
+        ]
+    )
+    return "\n".join(lines).strip() + "\n"
+
+
+def _merge_and_save_obsidian_note(
+    *,
+    path: str,
+    content: str,
+    session_id: Optional[str],
+) -> dict[str, Any]:
+    from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
+    from obsidian_index import get_vault_index
+    from obsidian_merge import merge_sections
+
+    existing_resp = obsidian_get_file(path)
+    existing_content = (
+        str(existing_resp.get("content") or "") if existing_resp.get("success") else ""
+    )
+    vault_result = get_vault_index()
+    vault_notes = (
+        vault_result.get("notes", []) if isinstance(vault_result, dict) and vault_result.get("success") else []
+    )
+    merged_content = merge_sections(
+        existing_content,
+        content,
+        session_id=session_id,
+        vault_index=vault_notes,
+    )
+    save_result = obsidian_save_file(path, merged_content)
+    if not save_result.get("success"):
+        return {
+            "success": False,
+            "path": path,
+            "error": save_result.get("error", "failed_to_save_obsidian_note"),
+        }
+    return {"success": True, "path": path, "content": merged_content}
+
+
+def _sync_graph_for_paths(
+    *,
+    conn: sqlite3.Connection,
+    notes_by_path: dict[str, str],
+) -> dict[str, Any]:
+    from adaptive.knowledge_graph import create_kg_tables, incremental_kg_update
+
+    create_kg_tables(conn)
+    total_deleted = 0
+    total_edges_created = 0
+    total_skipped = 0
+    per_path: dict[str, dict[str, int]] = {}
+
+    for path, content in notes_by_path.items():
+        if not path or not isinstance(content, str):
+            continue
+        try:
+            result = incremental_kg_update(conn, path, content)
+            deleted = int(result.get("deleted", 0))
+            edges_created = int(result.get("edges_created", 0))
+            skipped = int(result.get("skipped", 0))
+            total_deleted += deleted
+            total_edges_created += edges_created
+            total_skipped += skipped
+            per_path[path] = {
+                "deleted": deleted,
+                "edges_created": edges_created,
+                "skipped": skipped,
+            }
+        except Exception as exc:
+            per_path[path] = {
+                "deleted": 0,
+                "edges_created": 0,
+                "skipped": 0,
+                "error": str(exc),
+            }
+
+    return {
+        "status": "ok",
+        "notes_synced": len(per_path),
+        "deleted": total_deleted,
+        "edges_created": total_edges_created,
+        "skipped": total_skipped,
+        "paths": per_path,
+    }
+
+
+def save_tool_note_to_obsidian(
+    *,
+    path: str,
+    content: str,
+    session_id: Optional[str] = None,
+) -> dict[str, Any]:
+    if not path or not content:
+        return {"success": False, "error": "path and content are required"}
+
+    save_result = _merge_and_save_obsidian_note(
+        path=path,
+        content=content,
+        session_id=session_id,
+    )
+    if not save_result.get("success"):
+        return save_result
+
+    conn = get_connection()
+    try:
+        graph_sync = _sync_graph_for_paths(
+            conn=conn,
+            notes_by_path={path: str(save_result.get("content") or "")},
+        )
+    finally:
+        conn.close()
+
+    return {
+        "success": True,
+        "message": f"Saved to Obsidian: {path}",
+        "path": path,
+        "bytes": len(content),
+        "graph_sync": graph_sync,
+    }
+
+
+def _finalize_structured_notes_for_session(
+    *,
+    conn: sqlite3.Connection,
+    session_id: str,
+    session_row: dict[str, Any],
+    artifact_payload: dict[str, Any],
+) -> tuple[Optional[dict[str, Any]], list[str]]:
+    content_filter: dict[str, Any] = {}
+    if session_row.get("content_filter_json"):
+        try:
+            parsed_filter = json.loads(session_row["content_filter_json"])
+            if isinstance(parsed_filter, dict):
+                content_filter = dict(parsed_filter)
+        except (json.JSONDecodeError, TypeError):
+            content_filter = {}
+
+    default_mode = _default_session_mode_from_scope(
+        content_filter.get("objective_scope")
+    )
+    normalized_payload, validation_errors = _validate_tutor_artifact_payload(
+        artifact_payload, default_session_mode=default_mode
+    )
+    if validation_errors:
+        return None, validation_errors
+    assert normalized_payload is not None
+
+    metadata = normalized_payload.get("metadata") or {}
+    session_data = normalized_payload.get("session") or {}
+    concepts = normalized_payload.get("concepts") or []
+    module_name = _sanitize_module_name(
+        content_filter.get("module_name") or session_row.get("topic") or "General Module"
+    )
+    topic = str(session_row.get("topic") or module_name).strip()
+    now = datetime.now()
+    date_key = now.strftime("%Y-%m-%d")
+    topic_fragment = _sanitize_note_fragment(topic, fallback="Tutor_Session")
+    session_path = f"Modules/{module_name}/Sessions/{date_key}_Session_{topic_fragment}.md"
+
+    rendered_notes: dict[str, str] = {}
+    saved_paths: list[str] = []
+    concept_paths: list[str] = []
+
+    session_markdown = _render_tutor_session_markdown(
+        normalized_payload,
+        session_id=session_id,
+        topic=topic,
+        module_name=module_name,
+    )
+    save_session = _merge_and_save_obsidian_note(
+        path=session_path,
+        content=session_markdown,
+        session_id=session_id,
+    )
+    if not save_session.get("success"):
+        return None, [str(save_session.get("error") or "failed_to_save_session_note")]
+    rendered_notes[session_path] = str(save_session.get("content") or session_markdown)
+    saved_paths.append(session_path)
+
+    for concept in concepts:
+        if not isinstance(concept, dict):
+            continue
+        name = str(concept.get("file_name") or "").strip()
+        if not name:
+            continue
+        concept_fragment = _sanitize_note_fragment(name, fallback="Concept")
+        concept_path = f"Modules/{module_name}/Concepts/{concept_fragment}.md"
+        concept_markdown = _render_tutor_concept_markdown(
+            concept,
+            module_name=module_name,
+        )
+        save_concept = _merge_and_save_obsidian_note(
+            path=concept_path,
+            content=concept_markdown,
+            session_id=session_id,
+        )
+        if not save_concept.get("success"):
+            return None, [str(save_concept.get("error") or f"failed_to_save_{name}")]
+        rendered_notes[concept_path] = str(save_concept.get("content") or concept_markdown)
+        saved_paths.append(concept_path)
+        concept_paths.append(concept_path)
+
+    graph_sync = _sync_graph_for_paths(conn=conn, notes_by_path=rendered_notes)
+
+    existing_artifacts = session_row.get("artifacts_json")
+    artifacts = []
+    if existing_artifacts:
+        try:
+            parsed_artifacts = json.loads(existing_artifacts)
+            if isinstance(parsed_artifacts, list):
+                artifacts = parsed_artifacts
+        except (json.JSONDecodeError, TypeError):
+            artifacts = []
+
+    artifact_entry = {
+        "type": "structured_notes",
+        "created_at": now.isoformat(),
+        "session_mode": metadata.get("session_mode"),
+        "control_stage": metadata.get("control_stage"),
+        "method_id": metadata.get("method_id"),
+        "session_path": session_path,
+        "concept_paths": concept_paths,
+        "graph_sync": {
+            "notes_synced": graph_sync.get("notes_synced", 0),
+            "edges_created": graph_sync.get("edges_created", 0),
+            "deleted": graph_sync.get("deleted", 0),
+            "skipped": graph_sync.get("skipped", 0),
+        },
+    }
+    artifacts.append(artifact_entry)
+
+    content_filter["follow_up_targets"] = _normalize_wikilinks(
+        session_data.get("follow_up_targets"), max_items=80
+    )
+    content_filter["reference_targets"] = _normalize_wikilinks(
+        (content_filter.get("reference_targets") or [])
+        + list(content_filter["follow_up_targets"]),
+        max_items=80,
+    )
+
+    cur = conn.cursor()
+    cur.execute(
+        """UPDATE tutor_sessions
+           SET artifacts_json = ?, content_filter_json = ?
+           WHERE session_id = ?""",
+        (
+            json.dumps(artifacts),
+            json.dumps(content_filter),
+            session_id,
+        ),
+    )
+    conn.commit()
+
+    return (
+        {
+            "session_id": session_id,
+            "type": "structured_notes",
+            "session_path": session_path,
+            "concept_paths": concept_paths,
+            "saved_paths": saved_paths,
+            "graph_sync": graph_sync,
+            "artifact": artifact_entry,
+        },
+        [],
+    )
 
 
 def _get_tutor_session(conn, session_id: str) -> Optional[dict]:
@@ -2943,14 +3474,31 @@ def create_artifact(session_id: str):
     content = data.get("content", "")
     title = data.get("title", "")
 
-    if artifact_type not in ("note", "card", "map"):
-        return jsonify({"error": "type must be 'note', 'card', or 'map'"}), 400
+    if artifact_type not in ("note", "card", "map", "structured_notes"):
+        return jsonify({"error": "type must be 'note', 'card', 'map', or 'structured_notes'"}), 400
 
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)
     if not session:
         conn.close()
         return jsonify({"error": "Session not found"}), 404
+
+    if artifact_type == "structured_notes":
+        payload = data.get("artifact")
+        if not isinstance(payload, dict):
+            payload = data.get("payload")
+        if not isinstance(payload, dict):
+            payload = data
+        result, errors = _finalize_structured_notes_for_session(
+            conn=conn,
+            session_id=session_id,
+            session_row=session,
+            artifact_payload=payload,
+        )
+        conn.close()
+        if errors:
+            return jsonify({"error": "validation_failed", "details": errors}), 400
+        return jsonify(result), 201
 
     result: dict[str, object] = {"type": artifact_type, "session_id": session_id}
 
@@ -3027,6 +3575,118 @@ def create_artifact(session_id: str):
     conn.close()
 
     return jsonify(result), 201
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/session/<id>/finalize — Write structured tutor artifacts
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/finalize", methods=["POST"])
+def finalize_session_artifacts(session_id: str):
+    data = request.get_json(silent=True) or {}
+    payload = data.get("artifact")
+    if not isinstance(payload, dict):
+        payload = data.get("payload")
+    if not isinstance(payload, dict):
+        return jsonify({"error": "artifact payload is required"}), 400
+
+    conn = get_connection()
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    result, errors = _finalize_structured_notes_for_session(
+        conn=conn,
+        session_id=session_id,
+        session_row=session,
+        artifact_payload=payload,
+    )
+    conn.close()
+    if errors:
+        return jsonify({"error": "validation_failed", "details": errors}), 400
+    return jsonify(result), 201
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/session/<id>/sync-graph — Re-sync graph for session notes
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/sync-graph", methods=["POST"])
+def sync_session_graph(session_id: str):
+    data = request.get_json(silent=True) or {}
+    raw_paths = data.get("paths")
+
+    conn = get_connection()
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    paths: list[str] = []
+    if isinstance(raw_paths, list):
+        paths = [str(p).strip() for p in raw_paths if str(p or "").strip()]
+    else:
+        artifacts_json = session.get("artifacts_json")
+        if artifacts_json:
+            try:
+                artifacts = json.loads(artifacts_json)
+            except (json.JSONDecodeError, TypeError):
+                artifacts = []
+            if isinstance(artifacts, list):
+                for artifact in artifacts:
+                    if not isinstance(artifact, dict):
+                        continue
+                    path = artifact.get("path")
+                    if isinstance(path, str) and path.strip():
+                        paths.append(path.strip())
+                    session_path = artifact.get("session_path")
+                    if isinstance(session_path, str) and session_path.strip():
+                        paths.append(session_path.strip())
+                    concept_paths = artifact.get("concept_paths")
+                    if isinstance(concept_paths, list):
+                        paths.extend(
+                            str(cp).strip()
+                            for cp in concept_paths
+                            if isinstance(cp, str) and cp.strip()
+                        )
+
+    dedup_paths: list[str] = []
+    seen_paths: set[str] = set()
+    for path in paths:
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
+        dedup_paths.append(path)
+
+    if not dedup_paths:
+        conn.close()
+        return jsonify({"error": "No note paths available for graph sync"}), 400
+
+    from dashboard.api_adapter import obsidian_get_file
+
+    notes_by_path: dict[str, str] = {}
+    for path in dedup_paths:
+        note_res = obsidian_get_file(path)
+        if note_res.get("success"):
+            notes_by_path[path] = str(note_res.get("content") or "")
+
+    if not notes_by_path:
+        conn.close()
+        return jsonify({"error": "No readable notes found for graph sync"}), 400
+
+    graph_sync = _sync_graph_for_paths(conn=conn, notes_by_path=notes_by_path)
+    conn.close()
+    return jsonify(
+        {
+            "session_id": session_id,
+            "requested_paths": dedup_paths,
+            "synced_paths": list(notes_by_path.keys()),
+            "graph_sync": graph_sync,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------

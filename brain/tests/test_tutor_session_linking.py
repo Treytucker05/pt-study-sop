@@ -70,6 +70,7 @@ def app():
     app_obj = create_app()
     app_obj.config["TESTING"] = True
     app_obj.config["TEST_NORTH_STAR_WRITES"] = north_star_write_calls
+    app_obj.config["TEST_OBSIDIAN_STORE"] = north_star_store
     yield app_obj
 
     # Restore environment/module state
@@ -968,5 +969,179 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     assert 0.0 <= debug["retrieval_confidence"] <= 1.0
 
 
+def test_finalize_structured_notes_writes_obsidian_and_artifact_index(client, app, monkeypatch):
+    tutor_sid = _create_tutor_session(client)
+
+    monkeypatch.setattr(
+        _api_tutor_mod,
+        "_sync_graph_for_paths",
+        lambda **_kwargs: {
+            "status": "ok",
+            "notes_synced": 2,
+            "deleted": 0,
+            "edges_created": 3,
+            "skipped": 0,
+            "paths": {},
+        },
+    )
+
+    payload = {
+        "metadata": {
+            "control_stage": "PRIME",
+            "method_id": "M-PRE-010",
+            "session_mode": "single_focus",
+            "knob_snapshot": {},
+        },
+        "session": {
+            "source_ids": ["src-1"],
+            "unknowns": ["[[Unknown Concept]]"],
+            "follow_up_targets": ["[[Follow Up Concept]]"],
+            "stage_flow": ["PRIME", "CALIBRATE"],
+        },
+        "concepts": [
+            {
+                "file_name": "Action Potential",
+                "why_it_matters": "Core mechanism in neuro and muscle physiology.",
+                "prerequisites": ["[[Membrane Potential]]"],
+                "retrieval_targets": ["Define depolarization sequence."],
+                "common_errors": ["Confusing depolarization with repolarization."],
+                "next_review_date": None,
+                "relationships": [
+                    {
+                        "target_concept": "[[Depolarization]]",
+                        "relationship_type": "part_of",
+                    }
+                ],
+            }
+        ],
+    }
+
+    resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/finalize",
+        json={"artifact": payload},
+    )
+    assert resp.status_code == 201
+    data = resp.get_json()
+    assert data["type"] == "structured_notes"
+    assert isinstance(data.get("session_path"), str) and data["session_path"]
+    assert isinstance(data.get("concept_paths"), list) and len(data["concept_paths"]) == 1
+    assert data["graph_sync"]["notes_synced"] == 2
+
+    store = app.config.get("TEST_OBSIDIAN_STORE") or {}
+    assert data["session_path"] in store
+    assert data["concept_paths"][0] in store
+
+    session_resp = client.get(f"/api/tutor/session/{tutor_sid}")
+    assert session_resp.status_code == 200
+    session_data = session_resp.get_json()
+    artifacts = session_data.get("artifacts_json")
+    if isinstance(artifacts, str):
+        artifacts = json.loads(artifacts)
+    assert isinstance(artifacts, list)
+    assert any(a.get("type") == "structured_notes" for a in artifacts if isinstance(a, dict))
+
+
+def test_finalize_rejects_invalid_single_focus_concept_count(client):
+    tutor_sid = _create_tutor_session(client)
+    invalid_payload = {
+        "metadata": {
+            "control_stage": "ENCODE",
+            "method_id": "M-ENC-004",
+            "session_mode": "single_focus",
+            "knob_snapshot": {},
+        },
+        "session": {
+            "source_ids": [],
+            "unknowns": [],
+            "follow_up_targets": [],
+            "stage_flow": ["ENCODE"],
+        },
+        "concepts": [
+            {
+                "file_name": "Concept A",
+                "why_it_matters": "A",
+                "prerequisites": [],
+                "retrieval_targets": [],
+                "common_errors": [],
+                "next_review_date": None,
+                "relationships": [],
+            },
+            {
+                "file_name": "Concept B",
+                "why_it_matters": "B",
+                "prerequisites": [],
+                "retrieval_targets": [],
+                "common_errors": [],
+                "next_review_date": None,
+                "relationships": [],
+            },
+        ],
+    }
+    resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/finalize",
+        json={"artifact": invalid_payload},
+    )
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["error"] == "validation_failed"
+    assert any("session_mode 'single_focus'" in detail for detail in body.get("details", []))
+
+
+def test_sync_graph_uses_session_artifact_paths(client, monkeypatch):
+    tutor_sid = _create_tutor_session(client)
+    payload = {
+        "metadata": {
+            "control_stage": "REFERENCE",
+            "method_id": "M-REF-003",
+            "session_mode": "single_focus",
+            "knob_snapshot": {},
+        },
+        "session": {
+            "source_ids": ["s1"],
+            "unknowns": [],
+            "follow_up_targets": ["[[Target X]]"],
+            "stage_flow": ["REFERENCE"],
+        },
+        "concepts": [
+            {
+                "file_name": "Concept Sync",
+                "why_it_matters": "sync test",
+                "prerequisites": [],
+                "retrieval_targets": ["What is Concept Sync?"],
+                "common_errors": [],
+                "next_review_date": None,
+                "relationships": [],
+            }
+        ],
+    }
+
+    monkeypatch.setattr(
+        _api_tutor_mod,
+        "_sync_graph_for_paths",
+        lambda **kwargs: {
+            "status": "ok",
+            "notes_synced": len(kwargs.get("notes_by_path", {})),
+            "deleted": 0,
+            "edges_created": 1,
+            "skipped": 0,
+            "paths": {},
+        },
+    )
+
+    finalize_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/finalize",
+        json={"artifact": payload},
+    )
+    assert finalize_resp.status_code == 201
+    sync_resp = client.post(f"/api/tutor/session/{tutor_sid}/sync-graph", json={})
+    assert sync_resp.status_code == 200
+    sync_data = sync_resp.get_json()
+    assert sync_data["session_id"] == tutor_sid
+    assert isinstance(sync_data.get("synced_paths"), list)
+    assert len(sync_data["synced_paths"]) >= 2
+    assert sync_data["graph_sync"]["notes_synced"] >= 2
+
+
 def test_testing_mode_blocks_north_star_writes(app):
-    assert app.config.get("TEST_NORTH_STAR_WRITES") == []
+    writes = app.config.get("TEST_NORTH_STAR_WRITES") or []
+    assert all("_North_Star_" not in w for w in writes)

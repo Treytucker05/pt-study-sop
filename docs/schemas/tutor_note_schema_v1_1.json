@@ -23,6 +23,15 @@
             "type": "string",
             "description": "e.g., M-PRE-001"
           },
+          "session_mode": {
+            "type": "string",
+            "enum": [
+              "module_all",
+              "single_focus",
+              "focused_batch"
+            ],
+            "description": "Controls concept scope constraints for this artifact."
+          },
           "knob_snapshot": {
             "type": [
               "object",
@@ -34,6 +43,7 @@
         "required": [
           "control_stage",
           "method_id",
+          "session_mode",
           "knob_snapshot"
         ],
         "additionalProperties": false
@@ -82,9 +92,7 @@
       },
       "concepts": {
         "type": "array",
-        "description": "Strict limit: 3-5 core concepts.",
-        "minItems": 3,
-        "maxItems": 5,
+        "description": "Concept scope is constrained by metadata.session_mode.",
         "items": {
           "type": "object",
           "properties": {
@@ -173,6 +181,71 @@
       "metadata",
       "session",
       "concepts"
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "metadata": {
+              "properties": {
+                "session_mode": {
+                  "const": "single_focus"
+                }
+              }
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "concepts": {
+              "minItems": 1,
+              "maxItems": 1
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "metadata": {
+              "properties": {
+                "session_mode": {
+                  "const": "focused_batch"
+                }
+              }
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "concepts": {
+              "minItems": 3,
+              "maxItems": 5
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "metadata": {
+              "properties": {
+                "session_mode": {
+                  "const": "module_all"
+                }
+              }
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "concepts": {
+              "minItems": 0,
+              "maxItems": 200
+            }
+          }
+        }
+      }
     ],
     "additionalProperties": false
   }

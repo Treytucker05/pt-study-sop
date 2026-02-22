@@ -13,8 +13,11 @@
       "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-memory"]
     },
     "codex-cli": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "@cexll/codex-mcp-server"]
+      "command": "codex-mcp",
+      "args": [],
+      "env": {
+        "MCP_TOOL_TIMEOUT": "36000000"
+      }
     },
     "stitch": {
       "command": "cmd",

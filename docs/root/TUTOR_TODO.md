@@ -80,9 +80,16 @@ Progress notes:
 
 ## Workstream B — Obsidian + RAG Graph (Next)
 - [x] Finalize note artifact schema (`session_note`, `concept_note`, `graph_links`).
-- [~] Implement wiki-link generation rules at artifact creation.
+- [x] Implement wiki-link generation rules at artifact creation.
 - [x] Add retrieval priority: module notes -> linked neighbors -> broader notes.
-- [ ] Add note graph extraction and persistence plan.
+- [x] Add note graph extraction and persistence plan.
+
+Progress notes:
+- Added strict structured artifact finalize pipeline in `api_tutor.py` with schema validation + deterministic session/concept markdown output.
+- Added `POST /api/tutor/session/<id>/finalize` and `POST /api/tutor/session/<id>/sync-graph`.
+- Extended `POST /api/tutor/session/<id>/artifact` to accept `type=structured_notes`.
+- Routed `save_to_obsidian` tutor tool through merge+graph sync path.
+- Added mode-based concept limits (`module_all` / `single_focus` / `focused_batch`) into schema + runtime validation.
 
 ## Workstream C — Chain/Method Transfer Integrity
 - [ ] Verify methods/chains are consistently represented across:

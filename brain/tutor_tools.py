@@ -191,8 +191,12 @@ TUTOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
 # ---------------------------------------------------------------------------
 
 
-def execute_save_to_obsidian(arguments: dict[str, Any]) -> dict[str, Any]:
-    """Save/append content to a file in the Obsidian vault."""
+def execute_save_to_obsidian(
+    arguments: dict[str, Any],
+    *,
+    session_id: str | int | None = None,
+) -> dict[str, Any]:
+    """Save/merge content to a file in the Obsidian vault and sync graph."""
     path = arguments.get("path", "")
     content = arguments.get("content", "")
 
@@ -200,23 +204,16 @@ def execute_save_to_obsidian(arguments: dict[str, Any]) -> dict[str, Any]:
         return {"success": False, "error": "Missing required fields: path and content"}
 
     try:
-        from brain.dashboard.api_adapter import obsidian_append
+        from brain.dashboard.api_tutor import save_tool_note_to_obsidian
 
-        result = obsidian_append(path, content)
+        result = save_tool_note_to_obsidian(
+            path=path,
+            content=content,
+            session_id=str(session_id) if session_id is not None else None,
+        )
         if result.get("success"):
-            log.info(
-                "Tutor tool: saved to Obsidian — %s (%d bytes)", path, len(content)
-            )
-            return {
-                "success": True,
-                "message": f"Saved to Obsidian: {path}",
-                "path": path,
-                "bytes": len(content),
-            }
-        return {
-            "success": False,
-            "error": result.get("error", "Unknown Obsidian error"),
-        }
+            log.info("Tutor tool: merged/saved to Obsidian — %s (%d bytes)", path, len(content))
+        return result
     except Exception as e:
         log.exception("Tutor tool save_to_obsidian failed")
         return {"success": False, "error": str(e)}
@@ -399,7 +396,7 @@ def execute_tool(
         return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
     # Pass session_id for tools that need it
-    if tool_name in ("create_anki_card", "create_figma_diagram"):
+    if tool_name in ("save_to_obsidian", "create_anki_card", "create_figma_diagram"):
         return handler(arguments, session_id=session_id)
     return handler(arguments)
 
