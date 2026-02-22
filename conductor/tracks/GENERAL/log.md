@@ -4,6 +4,20 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-22 - Obsidian category canon regeneration (all 6 stages)
+
+- Regenerated every category page from method YAML contracts so each method includes full runtime prompt blocks and deterministic method metadata:
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Prime.md`
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Calibrate.md`
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Encode.md`
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Reference.md`
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Retrieve.md`
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Overlearn.md`
+- Updated category index:
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Categories.md`
+- Validation:
+  - `python -m pytest brain/tests/` -> `664 passed`
+
 ## 2026-02-22 - Tutor runtime wiring (North Star gate + PRIME chain enforcement)
 
 - Added deterministic tutor note schema artifact:
@@ -884,3 +898,21 @@ px vitest run --reporter=verbose (341 passed)
 - Added Obsidian category canon note for CALIBRATE:
   - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Calibrate.md`
   - includes rules, flow, method summaries, and full tutor prompt blocks.
+
+## 2026-02-22 - Remaining category hardening + Obsidian category pages
+
+- Hardened remaining method cards by replacing generic fallback prompts with method-specific stage-bound prompts:
+  - ENCODE: `M-ENC-001..014` (existing set)
+  - REFERENCE: `M-REF-001..004`
+  - RETRIEVE: `M-RET-001..007`
+  - OVERLEARN: `M-OVR-001..003`
+  - INTEGRATED stage-mapped methods also updated where applicable:
+    - `M-INT-001,002,003,004,006` and `M-PRE-007` (CALIBRATE-owned pre-test)
+- Draft statuses in these touched cards were promoted to `validated` as part of prompt-contract hardening.
+- Created/updated Obsidian category pages with full method inventory + prompt blocks:
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Encode.md`
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Reference.md`
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Retrieve.md`
+  - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Overlearn.md`
+- Validation:
+  - `python -m pytest brain/tests/` -> `664 passed`

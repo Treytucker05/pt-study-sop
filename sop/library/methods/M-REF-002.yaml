@@ -70,17 +70,23 @@ evidence:
 evidence_raw: Rawson & Dunlosky (2011); successive relearning combines testing + spacing for durable retention
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-REF-002 (Mastery Loop) in REFERENCE stage.
+  Execute this method card exactly and keep outputs deterministic.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Stage hard rules:
+  - Build concrete anchors and artifacts.
+  - Map concept to applied context.
+  - Do not skip artifact creation.
+
+  Required outputs:
+  - Mastery achieved on all targeted items
+  - Loop count per item (difficulty metric)
+  - Weak anchor list (items needing 3+ loops)
+  - Updated spacing recommendations
+
+  Stop conditions:
+  - All items recalled correctly at least once
+  - Maximum loop limit reached (e.g., 5 loops per item)
+  - Time budget exhausted (with partial progress logged)
+
+  If required inputs are missing, request only the minimum needed input and continue.

@@ -69,17 +69,24 @@ evidence:
 evidence_raw: Tanner (2012); metacognitive reflection improves self-regulated learning
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-OVR-001 (Exit Ticket) in OVERLEARN stage.
+  Execute this method card exactly and keep outputs deterministic.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Stage hard rules:
+  - Run bounded fluency reps.
+  - Respect fatigue and stop caps.
+  - Prioritize durable retention over speed only.
+
+  Required outputs:
+  - Exit ticket (3-part response)
+  - Key takeaways list
+  - Muddy points / weak anchors
+  - Next action commitment
+  - Questions for next session
+
+  Stop conditions:
+  - All three questions answered
+  - Next action is specific and actionable
+  - Exit ticket logged to session record
+
+  If required inputs are missing, request only the minimum needed input and continue.

@@ -6,7 +6,7 @@ default_duration_min: 8
 energy_cost: medium
 best_stage: exam_prep
 control_stage: REFERENCE
-status: draft
+status: validated
 artifact_type: outline
 tags:
   - reference
@@ -43,17 +43,20 @@ evidence_raw: Roediger & Karpicke (2006); retrieval practice outperforms rereadi
 
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-REF-004 (Question Bank Seed) in REFERENCE stage.
+  Execute this method card exactly and keep outputs deterministic.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Stage hard rules:
+  - Build concrete anchors and artifacts.
+  - Map concept to applied context.
+  - Do not skip artifact creation.
+
+  Required outputs:
+  - Question Bank Seed (10-20 items, mode-tagged)
+  - Coverage check draft
+
+  Stop conditions:
+  - At least 10 and at most 20 items
+  - Every item tagged by objective and assessment mode
+
+  If required inputs are missing, request only the minimum needed input and continue.

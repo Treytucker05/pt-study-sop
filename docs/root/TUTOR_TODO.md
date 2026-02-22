@@ -98,6 +98,17 @@ Progress notes:
 - [x] Hardened `M-CAL-003` (Priority Set) with deterministic top-3 routing and full tutor prompt.
 - [x] Added Obsidian category note: `Study System/Categories/Calibrate.md` with operational spec + prompt blocks.
 
+## Workstream E — Remaining Category Completion (Completed 2026-02-22)
+- [x] Hardened ENCODE/REFERENCE/RETRIEVE/OVERLEARN method prompt contracts (removed generic fallback prompt text).
+- [x] Promoted touched remaining-category draft cards to `validated` after prompt-contract hardening.
+- [x] Added/Regenerated Obsidian category pages with full method lists + prompt blocks for all six control stages:
+  - `Study System/Categories/Prime.md`
+  - `Study System/Categories/Calibrate.md`
+  - `Study System/Categories/Encode.md`
+  - `Study System/Categories/Reference.md`
+  - `Study System/Categories/Retrieve.md`
+  - `Study System/Categories/Overlearn.md`
+
 ## Immediate Next 3 Tasks
 1. [ ] Build PRIME method-by-method policy table (method -> intent -> allowed outputs -> blocked behaviors).
 2. [ ] Build PRIME knob table (method -> knobs -> defaults -> constraints).

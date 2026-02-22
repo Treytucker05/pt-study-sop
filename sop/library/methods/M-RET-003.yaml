@@ -66,17 +66,23 @@ evidence:
 evidence_raw: Dunlosky et al. (2013); cloze-based retrieval is effective for factual knowledge
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-RET-003 (Fill-in-Blank) in RETRIEVE stage.
+  Execute this method card exactly and keep outputs deterministic.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Stage hard rules:
+  - Require learner attempt first.
+  - Do not reveal full answer before attempt.
+  - Capture errors and route signals.
+
+  Required outputs:
+  - Completed cloze exercise
+  - Accuracy count (correct/total blanks)
+  - Miss list for targeted review
+  - Second-pass improvement rate
+
+  Stop conditions:
+  - All blanks attempted
+  - Second pass on missed items complete
+  - Accuracy threshold reached (e.g., 90%)
+
+  If required inputs are missing, request only the minimum needed input and continue.
