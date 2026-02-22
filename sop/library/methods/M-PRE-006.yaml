@@ -1,77 +1,96 @@
 id: M-PRE-006
-name: Three-Layer Chunk
+name: Structural Skimming + Pillar Mapping
 category: prepare
-description: "Break topic into 3 layers: big picture, key details, edge cases. Process one layer at a time."
+description: Rapidly skim headings/visual cues and map 3-5 top pillars before deep reading.
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - chunking
-  - depth-first
+  - skimming
   - structure
+  - pillars
   - cognitive-load
 mechanisms:
-  - elaboration
-  - desirable_difficulty
+  - schema_activation
+  - chunking
+stipulations:
+  - Use structural signals only (headings, subheadings, bold terms, diagrams).
+  - Do not summarize paragraphs at this stage.
+  - PRIME boundary applies: no scoring, no correctness judgment.
+when_to_use:
+  - Slide decks, textbooks, lecture packets.
+  - Learners who need fast structure before details.
+when_not_to_use:
+  - Highly spatial content where diagram-first review is required.
+  - Sessions with fewer than 3 minutes total.
+knobs:
+  pillar_count:
+    type: int
+    min: 3
+    max: 5
+    default: 4
+  output_mode:
+    type: enum
+    options: [nested_list, numbered_spine, markdown_table]
+    default: nested_list
+constraints:
+  non_assessment: true
+  paragraph_summaries_disallowed: true
 inputs:
-  - Topic content (slides, notes, textbook section)
-  - Three-column template (Big Picture | Key Details | Edge Cases)
+  - Topic packet (headings + visual cues)
+  - Learning objectives (optional)
 steps:
   - step: 1
-    action: "Layer 1 — Big Picture: Write the main concept in 1-2 sentences"
-    notes: "Answer: What is this topic fundamentally about?"
+    action: Scan structural cues only
+    notes: headings, subheadings, bold terms, diagrams.
   - step: 2
-    action: "Layer 2 — Key Details: List 3-5 must-know facts"
-    notes: These are the core testable items
+    action: Extract 3-5 top pillars
+    notes: Pillars should represent conceptual buckets.
   - step: 3
-    action: "Layer 3 — Edge Cases: Note exceptions, special cases, clinical pearls"
-    notes: These differentiate good from great understanding
+    action: Map one-line descriptor under each pillar
+    notes: Descriptor is structural, not explanatory.
   - step: 4
-    action: Review layers in order — don't jump ahead
-    notes: Each layer builds on the previous
-  - step: 5
-    action: Identify which layer needs most study time
-    notes: Usually Layer 2 for exams; Layer 3 for clinical
+    action: Link pillars to module objective IDs when available
+    notes: Unlinked pillars get flagged for follow-up.
 outputs:
-  - Three-layer breakdown document
-  - Study priority assignment
-  - Layered mental model
+  - PillarMap
+  - ObjectiveLinks
+  - FollowUpTargets
 stop_criteria:
-  - All three layers populated
-  - Study priority identified
+  - 3-5 pillars extracted
+  - Every pillar has descriptor text
   - 5 minutes elapsed
 failure_modes:
-  - mode: Layers too unbalanced
-    mitigation: Big Picture should be 1-2 sentences max; force brevity
-  - mode: Skipping to edge cases too early
-    mitigation: Gate Layer 3 until Layer 2 is solid
-  - mode: Key details too vague
-    mitigation: Require specific facts, not summaries
+  - mode: LLM drifts into paragraph summarization
+    mitigation: Enforce structural-only extraction output.
+  - mode: Too many pillars
+    mitigation: Cap at pillar_count and merge related nodes.
 logging_fields:
-  - big_picture_word_count
-  - key_detail_count
-  - edge_case_count
-  - priority_layer
+  - pillar_count
+  - objective_link_count
+  - follow_up_target_count
 evidence:
-  citation: Miller (1956)
-  finding: Chunking manages cognitive load by organizing information into meaningful units
-  source: seed_methods.py
-evidence_raw: Miller (1956); Gobet et al. (2001); chunking manages cognitive load
+  citation: Ausubel (1960)
+  finding: Advance structure before detail improves assimilation of new material.
+  source: research synthesis
+evidence_strength: high
+primary_citations:
+  - Ausubel (1960)
+  - Hattie (2009)
+evidence_raw: Structural pre-exposure reduces overload and improves comprehension.
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-PRE-006 (Structural Skimming + Pillar Mapping) in PRIME.
+  Use only structural cues; do not summarize full paragraphs.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Produce:
+  1) PillarMap (3-5 pillars, {output_mode})
+  2) ObjectiveLinks
+  3) FollowUpTargets
+
+  Hard constraints:
+  - Non-assessment.
+  - Structural-only output.
+  - Respect pillar_count cap.

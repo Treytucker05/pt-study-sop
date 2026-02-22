@@ -54,7 +54,7 @@ failure_modes:
   - mode: No prior context available
     mitigation: Skip M-PRE-003 and run M-PRE-010 then M-PRE-008
   - mode: No connections found
-    mitigation: Prompt with broader categories — anatomy, physiology, pathology
+    mitigation: Prompt with broader categories - anatomy, physiology, pathology
   - mode: Connections too superficial
     mitigation: Require relationship labels on arrows
   - mode: Spending too long on drawing
@@ -69,20 +69,25 @@ evidence:
   citation: Ausubel (1968)
   finding: Meaningful learning requires anchoring new information to existing schemas
   source: seed_methods.py
+evidence_strength: high
+primary_citations:
+  - Ausubel (1968)
+  - Luiten et al. (1980)
 evidence_raw: Ausubel (1968); meaningful learning requires anchoring to existing schemas
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-PRE-003 (Prior Knowledge Scan) in PRIME stage.
+  This method is conditional and non-assessment.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Hard rules:
+  - Run only if prior notes/North Star context exist.
+  - If no prior context exists, skip and route to M-PRE-010 then M-PRE-008.
+  - Do not score or confidence-rate responses.
+
+  Produce exactly:
+  1) ConnectionMap (topic -> known related concepts with labeled links)
+  2) PrimaryAnchor
+  3) PrerequisiteGaps
+  4) FollowUpTargets
+
+  Keep to top-level orientation output; no deep teaching in this method.

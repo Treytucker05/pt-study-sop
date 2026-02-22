@@ -70,6 +70,7 @@ Progress notes:
 - `M-PRE-008` dependency note locked: objective context comes from `M-PRE-010` or existing North Star (pairing recommended, not mandatory); added basic/schema priming time windows.
 - Method-card prompt baseline now enforced across the full library: every YAML method card has a tutor-facing `facilitation_prompt`; `M-PRE-003` now includes conditional-use stipulations and fallback route (`M-PRE-010 -> M-PRE-008`) when prior context is missing.
 - Test isolation hardening complete: North Star write path is blocked in test mode (`api_tutor` guard), and tutor session-linking tests now monkeypatch Obsidian I/O to in-memory fakes with a zero-write assertion.
+- PRIME hardening pass completed for all active PRIME methods (`M-PRE-001/002/003/004/005/006/008/009/010`) with method-specific execution prompts, when-to-use / when-not-to-use rules, and top-down output contracts aligned to recent research mappings.
 
 ### A5) PRIME Acceptance Criteria
 - [ ] Any PRIME block run produces orientation artifacts only.

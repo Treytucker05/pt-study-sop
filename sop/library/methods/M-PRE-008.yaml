@@ -6,14 +6,21 @@ default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
 control_stage: PRIME
-status: draft
+status: validated
 tags:
   - prime
   - structure
   - orientation
+  - schema-priming
 mechanisms:
   - scaffolding
   - metacognitive_monitoring
+when_to_use:
+  - Dense or complex modules where the learner needs a high-signal schema first.
+  - Medical/STEM/exam-prep content with many interacting concepts.
+when_not_to_use:
+  - Very short sessions where M-PRE-010 alone is sufficient.
+  - Ultra-simple fact lists better handled with direct objective framing.
 knobs:
   priming_depth_mode:
     type: enum
@@ -78,8 +85,12 @@ stop_criteria:
   - No scored probes or retrieval grading emitted
 evidence:
   citation: Ausubel (1968)
-  finding: Advance organizers improve comprehension when structure is established before detail
+  finding: Advance organizers improve comprehension when structure is established before detail.
   source: control-plane migration
+evidence_strength: medium_high
+primary_citations:
+  - Ausubel (1968)
+  - Sung (2025)
 evidence_raw: Ausubel (1968); structural organizers improve meaningful learning
 facilitation_prompt: |
   You are running M-PRE-008 (Structural Extraction) in PRIME stage.

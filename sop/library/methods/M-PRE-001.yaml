@@ -4,14 +4,77 @@ category: prepare
 control_stage: PRIME
 default_duration_min: 3
 energy_cost: low
+status: draft
+best_stage: first_exposure
 has_steps: Y
 has_outputs_or_artifacts: Y
-outputs_summary: "Brain dump notes (raw text); Prior knowledge baseline; Identified knowledge gaps"
+outputs_summary: "Connection refresh list; known-knowns snapshot; flagged gaps"
+stipulations:
+  - Use only when prior notes or prior North Star artifacts already exist for this objective.
+  - Do not run for first-contact unseen content with no prior context.
+  - PRIME boundary applies: no scoring, no grading, no confidence judgment.
+when_to_use:
+  - Learner is returning to a topic with existing notes.
+  - Tutor needs a fast re-orientation pass before ENCODE/REFERENCE.
+when_not_to_use:
+  - Brand-new topic with no prior notes (route to M-PRE-010 then M-PRE-008).
+  - High-anxiety learner who reads this as a test.
 knobs:
   feedback_style:
     type: enum
     options: [supportive_synthesis, strict_gap_analysis]
     default: supportive_synthesis
+constraints:
+  prior_context_required: true
+  non_assessment: true
+  no_scored_checks: true
+inputs:
+  - Topic name
+  - Prior notes/North Star links
+steps:
+  - step: 1
+    action: Ask for a quick 60-120 second free write of what the learner already remembers.
+    notes: Orientation only; no correctness scoring.
+  - step: 2
+    action: Extract anchor nodes that align with existing objective targets.
+    notes: Keep only top-level concepts.
+  - step: 3
+    action: Mark obvious missing nodes as follow-up anchors.
+    notes: Missing nodes are routing hints, not penalties.
+outputs:
+  - StrongConnections
+  - MissingNodes
+  - FollowUpTargets
+stop_criteria:
+  - At least 3 anchor nodes captured
+  - MissingNodes recorded
+  - 3 minutes elapsed
+failure_modes:
+  - mode: Learner treats it like a quiz
+    mitigation: Explicitly state this is orientation, not assessment.
+  - mode: No prior context exists
+    mitigation: Skip and route to M-PRE-010 then M-PRE-008.
+logging_fields:
+  - prior_context_present
+  - strong_connection_count
+  - missing_node_count
+  - skipped_reason
+evidence_strength: medium
+primary_citations:
+  - Ausubel (1968)
+  - Bjork & Bjork (2011)
 
 facilitation_prompt: |
-  The user is performing a 'brain dump' to synthesize the concepts they were just taught. Do not treat this as a quiz or penalize them for guessing. Your task is to analyze their raw text against the established concept map. Using a {feedback_style} approach, categorize their brain dump into two brief lists: 1) 'Strong Connections' (what they successfully linked) and 2) 'Missing Nodes' (key concepts from the map they forgot to mention). Do not ask follow-up questions; simply provide the synthesis.
+  You are running M-PRE-001 (Brain Dump) in PRIME stage.
+  This is orientation only, not assessment.
+
+  Hard rules:
+  - If prior notes/North Star context are missing, do not run this method. Route to M-PRE-010 then M-PRE-008.
+  - Do not score, grade, or confidence-rate the learner.
+
+  Ask for a brief free write, then return exactly:
+  1) StrongConnections (what they already linked correctly at a top level)
+  2) MissingNodes (important anchors not mentioned)
+  3) FollowUpTargets (wikilinks for downstream focus)
+
+  Use {feedback_style} tone. Keep output concise and structural.

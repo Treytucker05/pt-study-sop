@@ -1,58 +1,87 @@
 id: M-PRE-009
-name: Emphasis Audit
+name: Syntopical Big-Picture Synthesis
 category: prepare
-description: Audit what matters most before studying. Separate must-know targets from nice-to-know detail and set explicit goal targets for this run.
-default_duration_min: 4
+description: Synthesize top-level structure across 2-3 sources into one module-level hierarchy with cross-links.
+default_duration_min: 6
 energy_cost: low
 best_stage: first_exposure
 control_stage: PRIME
-status: draft
+status: validated
 tags:
   - prime
-  - prioritization
-  - goal-setting
+  - syntopical
+  - synthesis
+  - hierarchy
 mechanisms:
-  - metacognitive_monitoring
-  - calibration
+  - schema_activation
+  - integration
+stipulations:
+  - Use at most 2-3 sources to keep the synthesis bounded.
+  - Resolve contradictions at a top-down level; do not deep-dive details.
+  - PRIME boundary applies: no scored checks.
+when_to_use:
+  - Multi-source study packets (slides + summary + glossary).
+  - Clinical reasoning or research-heavy topics that need integration.
+when_not_to_use:
+  - Single-source content where cross-source synthesis adds no value.
+  - Time budgets below 3 minutes.
+knobs:
+  source_cap:
+    type: int
+    min: 2
+    max: 3
+    default: 3
+  synthesis_format:
+    type: enum
+    options: [hierarchy, comparison_table, hybrid]
+    default: hierarchy
+constraints:
+  non_assessment: true
+  source_cap_hard_lock: true
 inputs:
-  - Objectives list
-  - Upcoming assessment context
+  - 2-3 source excerpts
+  - Learning objectives (optional)
 steps:
   - step: 1
-    action: Mark each objective as must-know or secondary
-    notes: Use exam relevance and frequency
+    action: Extract top-level pillars from each source
+    notes: Only headings and conceptual anchors.
   - step: 2
-    action: Record top 3 goal targets for this session
-    notes: Goals must be observable
+    action: Merge overlapping pillars into one unified structure
+    notes: Preserve source-specific distinctions where needed.
   - step: 3
-    action: Capture unknowns and predictions
-    notes: Unknown is allowed and expected
+    action: Add cross-links and conflict notes
+    notes: Mark unresolved conflicts as follow-up targets.
 outputs:
-  - GoalTargets
-  - Unknowns
-  - Predictions
+  - UnifiedTopDownTree
+  - CrossSourceLinks
+  - ConflictFlags
+  - FollowUpTargets
 stop_criteria:
-  - Top 3 goals are explicit
-  - Unknowns and predictions captured
+  - Unified tree generated from all included sources
+  - Cross-links recorded
+  - Conflict flags captured
 evidence:
-  citation: Dunlosky et al. (2013)
-  finding: Metacognitive planning improves study efficiency and calibration
-  source: control-plane migration
-evidence_raw: Dunlosky et al. (2013); planning and monitoring improve learning outcomes
+  citation: Ausubel (1968)
+  finding: Comparative organizers support integration across related sources.
+  source: research synthesis
+evidence_strength: medium
+primary_citations:
+  - Ausubel (1968)
+  - Sung (2025)
+evidence_raw: Syntopical synthesis improves macro-structure orientation when multiple sources are used.
 
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-PRE-009 (Syntopical Big-Picture Synthesis) in PRIME.
+  Build one integrated top-down view from up to {source_cap} sources.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Return exactly:
+  1) UnifiedTopDownTree ({synthesis_format})
+  2) CrossSourceLinks
+  3) ConflictFlags
+  4) FollowUpTargets
+
+  Rules:
+  - Keep synthesis high-level.
+  - Non-assessment only.
+  - If only one source is available, skip this method.

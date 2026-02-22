@@ -1,73 +1,93 @@
 id: M-PRE-002
-name: Prediction Questions
+name: Overarching Pre-Question Set
 category: prepare
-description: Write 3-5 questions you expect the material to answer. Creates forward hooks for active reading.
+description: Generate 3-5 broad why/how/where-fit questions before deep study to set conceptual hooks.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: PRIME
-status: validated
+status: draft
 tags:
   - priming
-  - curiosity
+  - prequestions
   - metacognition
   - sop-core
 mechanisms:
   - generation
   - elaboration
-  - calibration
+stipulations:
+  - Use broad conceptual questions only (no narrow fact checks).
+  - Questions are non-scored orientation prompts in PRIME.
+  - If learner anxiety is high, reduce to 1-2 scaffolded prompts or skip.
+when_to_use:
+  - New topic where conceptual framing is unclear.
+  - Learner benefits from curiosity hooks before details.
+when_not_to_use:
+  - Learner shows high anxiety with open-ended prompts.
+  - Session time is too short to process questions meaningfully.
+constraints:
+  non_assessment: true
+  no_scored_checks: true
+  question_cap_min: 3
+  question_cap_max: 5
 inputs:
   - Topic title or lecture heading
-  - Brief overview (syllabus, chapter title, or slide deck title)
+  - 2-3 high-level keywords or headings
 steps:
   - step: 1
-    action: Read only the topic title and any section headings
-    notes: Do NOT read the content yet
+    action: Read topic title plus 2-3 high-level headings
+    notes: Do not enter detail paragraphs.
   - step: 2
-    action: Write 3-5 questions you expect the material to answer
-    notes: "Use question stems: What is...? How does...? Why does...? When would...?"
+    action: Generate 3-5 broad conceptual prompts
+    notes: Prefer stems like Why, How, Where does this fit.
   - step: 3
-    action: Rank questions by curiosity level (1-3)
-    notes: Higher curiosity = stronger encoding hooks
+    action: Rank prompts by expected leverage
+    notes: Choose top 1-2 prompts to carry into next method.
   - step: 4
-    action: Keep questions visible during study
-    notes: Check them off as you find answers
+    action: Record unresolved prompts as follow-up targets
+    notes: Use these as CALIBRATE/ENCODE inputs.
 outputs:
-  - List of prediction questions (3-5)
-  - Curiosity ranking
-  - Forward hooks for active reading
+  - PreQuestionSet
+  - PriorityPrompts
+  - FollowUpTargets
 stop_criteria:
-  - 3-5 questions written
+  - 3-5 broad prompts generated
+  - Priority prompts selected
   - 3 minutes elapsed
 failure_modes:
-  - mode: Questions too vague
-    mitigation: "Require specificity: 'What are the 3 types of...' not 'What is this about?'"
-  - mode: Peeking at content first
-    mitigation: Cover/close content until questions are written
-  - mode: Skipping the ranking step
-    mitigation: Ranking activates metacognitive engagement
+  - mode: Prompts become detailed quiz items
+    mitigation: Reframe to conceptual why/how/fit questions only.
+  - mode: Learner anxiety rises from open prompts
+    mitigation: Reduce to 1-2 scaffolded prompts or skip method.
+  - mode: Prompts are too vague to use downstream
+    mitigation: Attach each prompt to one explicit objective tag.
 logging_fields:
-  - question_count
-  - questions_answered_during_session
-  - curiosity_satisfaction_rate
+  - prequestion_count
+  - priority_prompt_count
+  - skipped_for_anxiety
 evidence:
-  citation: Pressley et al. (1990)
-  finding: Question-generation primes elaborative processing and improves comprehension
-  source: seed_methods.py
-evidence_raw: Pressley et al. (1990); question-generation primes elaborative processing
+  citation: Jamison et al. (2023/2024)
+  finding: Prequestions improve downstream learning when paired with structured follow-up.
+  source: research synthesis
+evidence_strength: high
+primary_citations:
+  - Jamison et al. (2023/2024)
+  - Roediger & Karpicke (2006)
+evidence_raw: Prequestions potentiate later learning and retrieval when scaffolded.
 
 facilitation_prompt: |
-  You are running this method card in its assigned control stage. Execute only what this card defines.
+  You are running M-PRE-002 (Overarching Pre-Question Set) in PRIME stage.
+  This method is orientation only and never scored.
 
-  Operational instructions:
-  1) Confirm required inputs from the card before starting. If inputs are missing, request only the minimum missing input.
-  2) Follow the listed steps in order and keep output concise, structured, and actionable.
-  3) Enforce control-stage boundaries:
-     - PRIME: orientation and structure only; no scored checks or hidden calibration.
-     - CALIBRATE: measure current state with confidence + performance signals.
-     - ENCODE: force active processing; avoid passive lecture-only output.
-     - REFERENCE: build concrete anchors/artifacts before any retrieval demand.
-     - RETRIEVE: require learner attempt before revealing full answers.
-     - OVERLEARN: run bounded fluency reps and stop at fatigue/cap criteria.
-  4) Produce the outputs/artifacts listed on this card.
-  5) Stop when stop_criteria are met and log required telemetry fields.
+  Produce exactly 3-5 broad conceptual prompts from topic title + headings.
+  Prompt style:
+  - Why does this matter?
+  - How does it work at a high level?
+  - Where does it fit in the module?
+
+  Then return:
+  1) PreQuestionSet
+  2) PriorityPrompts (top 1-2)
+  3) FollowUpTargets
+
+  If learner anxiety is high, reduce to 1-2 scaffolded prompts or skip and route to M-PRE-010.

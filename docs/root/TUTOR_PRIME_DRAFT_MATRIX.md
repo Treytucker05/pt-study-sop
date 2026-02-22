@@ -7,7 +7,7 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 ## Draft Boundary Rules (Locked Inputs)
 - PRIME is orientation/teaching only (non-assessment).
 - CALIBRATE starts scored probes.
-- First-exposure default intake is 3-5 core concepts.
+- First-exposure default starts module-wide (`module_all`) then zooms to one objective (`single_focus`).
 - Visual boundary uses `Provide vs Produce`:
   - PRIME: tutor provides scaffold visuals.
   - ENCODE: learner produces/manipulates visuals.
@@ -101,14 +101,14 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 | Method ID | Method | Stage | Draft intent | Required outputs | Allowed behavior | Blocked behavior |
 |---|---|---|---|---|---|---|
 | M-PRE-010 | Learning Objectives Primer | PRIME | Set 3-5 measurable targets before content depth | Objectives list; learner acknowledgment | Goal framing; expectation setting | Scored questioning; retrieval grading |
-| M-PRE-004 | AI Skeleton Review | PRIME | Provide high-level structural map of topic | Hierarchical skeleton; priority sections | Tutor-provided orientation map | Deep detail teaching; assessment prompts |
+| M-PRE-004 | Hierarchical Advance Organizer | PRIME | Provide high-level pillar tree before detail | PillarTree; PriorKnowledgeLinks; StructuralHypotheses | Tutor-provided orientation map | Deep detail teaching; assessment prompts |
 | M-PRE-008 | Structural Extraction | PRIME | Build compact topic spine linked to objectives | Spine <=12 nodes; objective linkage map | Structure extraction from source | Trivia expansion; scoring correctness |
-| M-PRE-009 | Emphasis Audit | PRIME | Separate must-know from secondary and set run goals | GoalTargets; Unknowns; Predictions | Priority setting; uncertainty capture | Quiz-style checks; confidence scoring |
+| M-PRE-009 | Syntopical Big-Picture Synthesis | PRIME | Merge 2-3 sources into one top-down map | UnifiedTopDownTree; CrossSourceLinks; ConflictFlags | Multi-source structural synthesis | Deep detail teaching; quiz behavior |
 | M-PRE-003 | Prior Knowledge Scan | PRIME | Surface anchors and prerequisite gaps | Connection map; primary anchor; gap list | Connection labeling; optional visual | Penalizing weak prior knowledge |
-| M-PRE-005 | Concept Cluster | PRIME | Organize terms into meaningful clusters | 3-5 labeled clusters; inter-cluster links | Tutor-guided organization | Detailed mechanism testing |
-| M-PRE-006 | Three-Layer Chunk | PRIME | Layer topic into big picture, key details, edge cases | Three-layer breakdown; priority assignment | Ordered chunking guidance | Retrieval scoring; timed pressure |
-| M-PRE-002 | Prediction Questions | PRIME | Generate forward hooks for focused reading | 3-5 prediction questions; curiosity ranking | Curiosity priming; orientation questions | Grading answers; confidence scoring |
-| M-PRE-001 | Brain Dump | PRIME | Synthesize learner’s current map after orientation | Strong Connections; Missing Nodes; gap baseline | Non-scored synthesis feedback | Quiz framing; penalization; follow-up testing |
+| M-PRE-005 | Skeleton Concept Hierarchy | PRIME | Build bare category map (depth <=2) | SkeletonMap; CategoryLabels; CrossLinks | Tutor-guided structural map | Detailed mechanism testing |
+| M-PRE-006 | Structural Skimming + Pillar Mapping | PRIME | Rapidly extract 3-5 pillars from structure cues | PillarMap; ObjectiveLinks; FollowUpTargets | Structural skim and map | Paragraph-level summarization; scoring |
+| M-PRE-002 | Overarching Pre-Question Set | PRIME | Optional conceptual hook prompts before detail | PreQuestionSet; PriorityPrompts; FollowUpTargets | Non-scored conceptual prompts | Grading answers; confidence scoring |
+| M-PRE-001 | Brain Dump (Conditional) | PRIME | Optional returner-only anchor refresh | StrongConnections; MissingNodes; FollowUpTargets | Non-scored synthesis feedback | Use on first-contact unseen content |
 
 ## Boundary Note (Not PRIME)
 - `M-PRE-007 Pre-Test` is currently `CALIBRATE`, and should stay assessment-owned.
@@ -138,14 +138,14 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 
 ## Draft PRIME Sequence (Implementation-Oriented)
 1. `M-PRE-010` Learning Objectives Primer  
-2. `M-PRE-004` AI Skeleton Review  
+2. `M-PRE-004` Hierarchical Advance Organizer  
 3. `M-PRE-008` Structural Extraction  
-4. `M-PRE-009` Emphasis Audit  
+4. `M-PRE-009` Syntopical Big-Picture Synthesis  
 5. `M-PRE-003` Prior Knowledge Scan  
-6. `M-PRE-005` Concept Cluster  
-7. `M-PRE-006` Three-Layer Chunk  
-8. `M-PRE-002` Prediction Questions  
-9. `M-PRE-001` Brain Dump
+6. `M-PRE-005` Skeleton Concept Hierarchy  
+7. `M-PRE-006` Structural Skimming + Pillar Mapping  
+8. `M-PRE-002` Overarching Pre-Question Set (optional)  
+9. `M-PRE-001` Brain Dump (conditional/optional)
 
 ## Open Items to Resolve with Manager Output
 - Confirm which draft knobs become canonical vs remain optional.

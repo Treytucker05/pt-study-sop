@@ -845,3 +845,28 @@ px vitest run --reporter=verbose (341 passed)
 - Validation:
   - `python -m pytest brain/tests/test_tutor_session_linking.py` -> `15 passed`
   - `python -m pytest brain/tests/` -> `664 passed`
+
+## 2026-02-22 - PRIME method hardening pass (all active PRIME cards)
+
+- Hardened all active PRIME method cards with method-specific contracts, usage boundaries, and non-generic tutor prompts:
+  - `sop/library/methods/M-PRE-001.yaml`
+  - `sop/library/methods/M-PRE-002.yaml`
+  - `sop/library/methods/M-PRE-003.yaml`
+  - `sop/library/methods/M-PRE-004.yaml`
+  - `sop/library/methods/M-PRE-005.yaml`
+  - `sop/library/methods/M-PRE-006.yaml`
+  - `sop/library/methods/M-PRE-008.yaml`
+  - `sop/library/methods/M-PRE-009.yaml`
+  - `sop/library/methods/M-PRE-010.yaml`
+- Aligned PRIME method naming/mapping to recent research fit:
+  - `M-PRE-004` -> Hierarchical Advance Organizer
+  - `M-PRE-005` -> Skeleton Concept Hierarchy
+  - `M-PRE-006` -> Structural Skimming + Pillar Mapping
+  - `M-PRE-009` -> Syntopical Big-Picture Synthesis
+  - `M-PRE-002` -> Overarching Pre-Question Set (optional)
+  - `M-PRE-001` -> Brain Dump (conditional)
+- Updated PRIME draft matrix and TODO tracker:
+  - `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`
+  - `docs/root/TUTOR_TODO.md`
+- Validation:
+  - `python -m pytest brain/tests/` -> `664 passed`

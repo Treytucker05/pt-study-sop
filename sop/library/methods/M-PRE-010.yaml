@@ -27,6 +27,11 @@ constraints:
   non_assessment: true
   no_scored_checks: true
   no_retrieval_grading: true
+when_to_use:
+  - Session start for any new module/topic.
+  - Re-entry after long gap where objective state must be re-anchored.
+when_not_to_use:
+  - Never skip for first exposure; this is the mandatory PRIME gate.
 steps:
   - step: 1
     action: Resolve objective source
@@ -50,6 +55,10 @@ stop_criteria:
   - single_focus scope publishes exactly one measurable focus objective
   - focus objective is selected for downstream chain steps
   - learner acknowledges goals before PRIME continues
+evidence_strength: high
+primary_citations:
+  - Ausubel (1968)
+  - Hattie (2009)
 
 facilitation_prompt: |
   You are running M-PRE-010 (Learning Objectives Primer) in PRIME stage.
