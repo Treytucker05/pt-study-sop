@@ -60,6 +60,7 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 ### Contract (Final for implementation)
 - Stage: `PRIME` only.
 - Intent: build a compact orientation spine tied directly to objectives.
+- Dependency note: requires objective context, sourced from either `M-PRE-010` (current flow) or existing `North Star` (prior context). Pairing with `M-PRE-010` is recommended, not mandatory.
 - Scope behavior:
   - `module_all`: spine spans all active module objectives.
   - `single_focus`: spine constrained to selected focus objective.
@@ -79,6 +80,9 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
   - unknown list captured (can be empty)
 
 ### Knobs (Locked for step 2)
+- `priming_depth_mode` (enum): `basic | schema` (default `basic`)
+  - `basic` target window: `2-5` min
+  - `schema` target window: `5-10` min for complex topics
 - `node_cap` (int): min `6`, max `12`, default `10`
 - `output_format` (enum): `ascii_tree | bulleted_spine | markdown_table` (default `ascii_tree`)
 - `objective_link_required` (bool): default `true` (hard lock `true` in PRIME)

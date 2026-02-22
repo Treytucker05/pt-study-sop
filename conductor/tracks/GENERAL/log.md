@@ -81,6 +81,23 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `python -m py_compile brain/dashboard/api_tutor.py` ✅
   - `pytest brain/tests/test_api_contracts.py brain/tests/test_tutor_session_linking.py` ✅ (61 passed)
 
+## 2026-02-22 - M-PRE-008 dependency and timing clarification
+
+- Updated `M-PRE-008` contract to explicitly note dependency behavior:
+  - Requires objective context from either:
+    - `M-PRE-010` in current flow, or
+    - existing North Star from prior context.
+  - Pairing with `M-PRE-010` is recommended but not mandatory.
+- Added priming depth timing guidance for `M-PRE-008`:
+  - `basic`: 2-5 minutes
+  - `schema`: 5-10 minutes (complex topics)
+- Updated files:
+  - `sop/library/methods/M-PRE-008.yaml`
+  - `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `python -m py_compile brain/dashboard/api_tutor.py` ✅
+  - `pytest brain/tests/test_api_contracts.py brain/tests/test_tutor_session_linking.py` ✅ (61 passed)
+
 ## 2026-02-22 - Tutor paperwork cleanup (truth hierarchy)
 
 - Added single navigation file for canonical read/write order:

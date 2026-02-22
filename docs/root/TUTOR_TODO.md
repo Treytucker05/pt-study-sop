@@ -67,6 +67,7 @@ Progress notes:
 - `M-PRE-010` now supports scope knob (`module_all` / `single_focus`) and is wired into session creation + prompt context.
 - Wizard now exposes PRIME scope selector and persists it in local/session state.
 - `M-PRE-008` hardening added: full YAML contract (constraints/knobs/outputs/stop criteria) + PRIME runtime guardrail injection in tutor orchestration.
+- `M-PRE-008` dependency note locked: objective context comes from `M-PRE-010` or existing North Star (pairing recommended, not mandatory); added basic/schema priming time windows.
 
 ### A5) PRIME Acceptance Criteria
 - [ ] Any PRIME block run produces orientation artifacts only.

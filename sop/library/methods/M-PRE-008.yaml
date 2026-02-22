@@ -15,6 +15,10 @@ mechanisms:
   - scaffolding
   - metacognitive_monitoring
 knobs:
+  priming_depth_mode:
+    type: enum
+    options: [basic, schema]
+    default: basic
   node_cap:
     type: int
     min: 6
@@ -31,6 +35,14 @@ constraints:
   non_assessment: true
   no_scored_checks: true
   no_retrieval_grading: true
+  objective_context_required: true
+  objective_context_sources: [M-PRE-010, North_Star]
+  objective_context_pairing_with_M_PRE_010_recommended: true
+  objective_context_pairing_with_M_PRE_010_mandatory: false
+  basic_priming_time_window_min: 2
+  basic_priming_time_window_max: 5
+  schema_priming_time_window_min: 5
+  schema_priming_time_window_max: 10
   objective_source_precedence: instructor_over_source
   module_all_includes_all_active_objectives: true
   single_focus_requires_focus_objective_id: true
@@ -44,7 +56,7 @@ inputs:
 steps:
   - step: 1
     action: Resolve objective scope and objective set
-    notes: module_all uses all active module objectives; single_focus uses only the selected objective.
+    notes: Objective context can come from M-PRE-010 in current flow OR existing North Star from prior sessions; module_all uses all active module objectives; single_focus uses only the selected objective.
   - step: 2
     action: Extract structural spine nodes
     notes: Keep node count <= node_cap; prefer mechanism/decision nodes over trivia.
@@ -72,6 +84,15 @@ evidence_raw: Ausubel (1968); structural organizers improve meaningful learning
 facilitation_prompt: |
   You are running M-PRE-008 (Structural Extraction) in PRIME stage.
   This method is non-assessment: do not quiz, grade, or run retrieval checks.
+
+  Dependency note:
+  - M-PRE-008 requires objective context.
+  - Objective context may come from M-PRE-010 in this flow OR an already-built North Star.
+  - Pairing with M-PRE-010 is recommended, not mandatory.
+
+  Time guidance by priming_depth_mode:
+  - basic: 2-5 minutes
+  - schema: 5-10 minutes for complex topics
 
   Use objective_scope:
   - module_all: build a high-level spine across all active module objectives.
