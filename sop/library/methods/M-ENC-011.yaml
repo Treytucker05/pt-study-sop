@@ -8,83 +8,121 @@ best_stage: first_exposure
 control_stage: ENCODE
 status: validated
 tags:
-  - visual
-  - mermaid
-  - sequential
-  - procedural
+- visual
+- mermaid
+- sequential
+- procedural
 mechanisms:
-  - elaboration
-  - dual_coding
-  - generation
+- elaboration
+- dual_coding
+- generation
+knobs:
+  guidance_level:
+    type: enum
+    options:
+    - light
+    - medium
+    - high
+    default: medium
+  output_format:
+    type: enum
+    options:
+    - bullets
+    - table
+    - ascii
+    default: bullets
+constraints:
+  active_processing_required: true
+  objective_scope_required: true
+  no_final_answer_only: true
 inputs:
-  - Process or algorithm to diagram
-  - Source material with step sequence
-  - Mermaid editor or blank paper
+- Process or algorithm to diagram
+- Source material with step sequence
+- Mermaid editor or blank paper
 steps:
-  - step: 1
-    action: Identify the start point (input/trigger)
-    notes: What initiates this process?
-  - step: 2
-    action: List all steps in sequential order
-    notes: Include every decision point
-  - step: 3
-    action: Draw boxes for steps, diamonds for decisions
-    notes: Standard flowchart conventions
-  - step: 4
-    action: Connect with arrows showing flow direction
-    notes: Label decision branches (Yes/No, High/Low)
-  - step: 5
-    action: Identify loops and feedback points
-    notes: Where does the process repeat or reset?
-  - step: 6
-    action: Verify against source material
-    notes: Flag any missing or incorrect steps
+- step: 1
+  action: Identify the start point (input/trigger)
+  notes: What initiates this process?
+- step: 2
+  action: List all steps in sequential order
+  notes: Include every decision point
+- step: 3
+  action: Draw boxes for steps, diamonds for decisions
+  notes: Standard flowchart conventions
+- step: 4
+  action: Connect with arrows showing flow direction
+  notes: Label decision branches (Yes/No, High/Low)
+- step: 5
+  action: Identify loops and feedback points
+  notes: Where does the process repeat or reset?
+- step: 6
+  action: Verify against source material
+  notes: Flag any missing or incorrect steps
 outputs:
-  - Completed flowchart
-  - Mermaid code (if using dashboard)
-  - Decision point list
-  - Loop/feedback points identified
+- Completed flowchart
+- Mermaid code (if using dashboard)
+- Decision point list
+- Loop/feedback points identified
 stop_criteria:
-  - All steps included
-  - All decisions branched correctly
-  - Flowchart verified against source
+- All steps included
+- All decisions branched correctly
+- Flowchart verified against source
 failure_modes:
-  - mode: Missing decision branches
-    mitigation: Every diamond must have labeled Yes/No paths
-  - mode: Linear-only thinking
-    mitigation: Actively look for loops and feedback
-  - mode: Too complex single diagram
-    mitigation: Split into sub-processes if >12 steps
+- mode: Missing decision branches
+  mitigation: Every diamond must have labeled Yes/No paths
+- mode: Linear-only thinking
+  mitigation: Actively look for loops and feedback
+- mode: Too complex single diagram
+  mitigation: Split into sub-processes if >12 steps
 logging_fields:
-  - process_charted
-  - step_count
-  - decision_count
-  - loop_count
-  - verification_status
+- process_charted
+- step_count
+- decision_count
+- loop_count
+- verification_status
 evidence:
   citation: Winn (1991)
   finding: Spatial-sequential diagrams improve procedural understanding and memory
   source: seed_methods.py
 evidence_raw: Winn (1991); spatial-sequential diagrams improve procedural understanding
+facilitation_prompt: 'You are running M-ENC-011 (Process Flowchart) in ENCODE stage.
 
-facilitation_prompt: |
-  You are running M-ENC-011 (Process Flowchart) in ENCODE stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Force active learner processing.
+
   - Prefer transformation over passive lecture.
+
   - Keep focus on target concept scope.
 
+
   Required outputs:
+
   - Completed flowchart
+
   - Mermaid code (if using dashboard)
+
   - Decision point list
+
   - Loop/feedback points identified
 
+
   Stop conditions:
+
   - All steps included
+
   - All decisions branched correctly
+
   - Flowchart verified against source
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Force active processing (explain, transform, or map), not passive reading.
+- Keep output scoped to mapped objectives only.
+artifact_type: flowchart

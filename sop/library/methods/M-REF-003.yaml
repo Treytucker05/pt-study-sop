@@ -9,51 +9,88 @@ control_stage: REFERENCE
 status: validated
 artifact_type: outline
 tags:
-  - reference
-  - anchor
-  - synthesis
+- reference
+- anchor
+- synthesis
 mechanisms:
-  - elaboration
-  - discrimination
+- elaboration
+- discrimination
+knobs:
+  artifact_depth:
+    type: enum
+    options:
+    - compact
+    - standard
+    - detailed
+    default: standard
+  link_density:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+constraints:
+  target_artifact_required: true
+  retrieval_blocked_without_targets: true
+  objective_scope_required: true
 inputs:
-  - PrioritySet
-  - Source-grounded notes
+- PrioritySet
+- Source-grounded notes
 steps:
-  - step: 1
-    action: Capture minimal definitions only
-    notes: Keep to high-value distinctions
-  - step: 2
-    action: Write decision rules and triggers
-    notes: Focus on rapid discrimination cues
-  - step: 3
-    action: Add 3 canonical examples and 3 near-miss examples
-    notes: Include trap notes for common errors
+- step: 1
+  action: Capture minimal definitions only
+  notes: Keep to high-value distinctions
+- step: 2
+  action: Write decision rules and triggers
+  notes: Focus on rapid discrimination cues
+- step: 3
+  action: Add 3 canonical examples and 3 near-miss examples
+  notes: Include trap notes for common errors
 outputs:
-  - One-Page Anchor
-  - Trap list and near-miss set
+- One-Page Anchor
+- Trap list and near-miss set
 stop_criteria:
-  - Definitions, decision rules, examples, near-miss, traps all present
+- Definitions, decision rules, examples, near-miss, traps all present
 evidence:
   citation: Schmidt & Rikers (2007)
   finding: Structured scripts and discriminators improve transfer and diagnostic reasoning
   source: control-plane migration
 evidence_raw: Schmidt & Rikers (2007); structured reference schemas improve clinical reasoning
+facilitation_prompt: 'You are running M-REF-003 (One-Page Anchor) in REFERENCE stage.
 
-
-facilitation_prompt: |
-  You are running M-REF-003 (One-Page Anchor) in REFERENCE stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Build concrete anchors and artifacts.
+
   - Map concept to applied context.
+
   - Do not skip artifact creation.
 
+
   Required outputs:
+
   - One-Page Anchor
+
   - Trap list and near-miss set
 
+
   Stop conditions:
+
   - Definitions, decision rules, examples, near-miss, traps all present
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Produce structured targets that RETRIEVE can directly test.
+- No retrieval drills until reference targets are explicit.
+failure_modes:
+- mode: Artifact too vague for retrieval
+  mitigation: Rewrite targets into explicit prompts/answers.
+- mode: Reference bloat
+  mitigation: Trim to objective-critical content only.

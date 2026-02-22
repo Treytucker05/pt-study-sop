@@ -8,23 +8,23 @@ best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - skimming
-  - structure
-  - pillars
-  - cognitive-load
+- skimming
+- structure
+- pillars
+- cognitive-load
 mechanisms:
-  - schema_activation
-  - chunking
+- schema_activation
+- chunking
 stipulations:
-  - Use structural signals only (headings, subheadings, bold terms, diagrams).
-  - Do not summarize paragraphs at this stage.
-  - PRIME boundary applies: no scoring, no correctness judgment.
+- Use structural signals only (headings, subheadings, bold terms, diagrams).
+- Do not summarize paragraphs at this stage.
+- PRIME boundary applies: no scoring, no correctness judgment.
 when_to_use:
-  - Slide decks, textbooks, lecture packets.
-  - Learners who need fast structure before details.
+- Slide decks, textbooks, lecture packets.
+- Learners who need fast structure before details.
 when_not_to_use:
-  - Highly spatial content where diagram-first review is required.
-  - Sessions with fewer than 3 minutes total.
+- Highly spatial content where diagram-first review is required.
+- Sessions with fewer than 3 minutes total.
 knobs:
   pillar_count:
     type: int
@@ -33,64 +33,80 @@ knobs:
     default: 4
   output_mode:
     type: enum
-    options: [nested_list, numbered_spine, markdown_table]
+    options:
+    - nested_list
+    - numbered_spine
+    - markdown_table
     default: nested_list
 constraints:
   non_assessment: true
   paragraph_summaries_disallowed: true
 inputs:
-  - Topic packet (headings + visual cues)
-  - Learning objectives (optional)
+- Topic packet (headings + visual cues)
+- Learning objectives (optional)
 steps:
-  - step: 1
-    action: Scan structural cues only
-    notes: headings, subheadings, bold terms, diagrams.
-  - step: 2
-    action: Extract 3-5 top pillars
-    notes: Pillars should represent conceptual buckets.
-  - step: 3
-    action: Map one-line descriptor under each pillar
-    notes: Descriptor is structural, not explanatory.
-  - step: 4
-    action: Link pillars to module objective IDs when available
-    notes: Unlinked pillars get flagged for follow-up.
+- step: 1
+  action: Scan structural cues only
+  notes: headings, subheadings, bold terms, diagrams.
+- step: 2
+  action: Extract 3-5 top pillars
+  notes: Pillars should represent conceptual buckets.
+- step: 3
+  action: Map one-line descriptor under each pillar
+  notes: Descriptor is structural, not explanatory.
+- step: 4
+  action: Link pillars to module objective IDs when available
+  notes: Unlinked pillars get flagged for follow-up.
 outputs:
-  - PillarMap
-  - ObjectiveLinks
-  - FollowUpTargets
+- PillarMap
+- ObjectiveLinks
+- FollowUpTargets
 stop_criteria:
-  - 3-5 pillars extracted
-  - Every pillar has descriptor text
-  - 5 minutes elapsed
+- 3-5 pillars extracted
+- Every pillar has descriptor text
+- 5 minutes elapsed
 failure_modes:
-  - mode: LLM drifts into paragraph summarization
-    mitigation: Enforce structural-only extraction output.
-  - mode: Too many pillars
-    mitigation: Cap at pillar_count and merge related nodes.
+- mode: LLM drifts into paragraph summarization
+  mitigation: Enforce structural-only extraction output.
+- mode: Too many pillars
+  mitigation: Cap at pillar_count and merge related nodes.
 logging_fields:
-  - pillar_count
-  - objective_link_count
-  - follow_up_target_count
+- pillar_count
+- objective_link_count
+- follow_up_target_count
 evidence:
   citation: Ausubel (1960)
   finding: Advance structure before detail improves assimilation of new material.
   source: research synthesis
 evidence_strength: high
 primary_citations:
-  - Ausubel (1960)
-  - Hattie (2009)
+- Ausubel (1960)
+- Hattie (2009)
 evidence_raw: Structural pre-exposure reduces overload and improves comprehension.
+facilitation_prompt: 'You are running M-PRE-006 (Structural Skimming + Pillar Mapping) in PRIME.
 
-facilitation_prompt: |
-  You are running M-PRE-006 (Structural Skimming + Pillar Mapping) in PRIME.
   Use only structural cues; do not summarize full paragraphs.
 
+
   Produce:
+
   1) PillarMap (3-5 pillars, {output_mode})
+
   2) ObjectiveLinks
+
   3) FollowUpTargets
 
+
   Hard constraints:
+
   - Non-assessment.
+
   - Structural-only output.
+
   - Respect pillar_count cap.
+
+  '
+gating_rules:
+- Do not assess or score the learner in PRIME.
+- Stay at orientation level and avoid full solution reveal.
+artifact_type: notes

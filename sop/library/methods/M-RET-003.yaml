@@ -8,81 +8,118 @@ best_stage: review
 control_stage: RETRIEVE
 status: validated
 tags:
-  - cloze
-  - vocabulary
-  - targeted
+- cloze
+- vocabulary
+- targeted
 mechanisms:
-  - retrieval
-  - cued_recall
-  - vocabulary_encoding
+- retrieval
+- cued_recall
+- vocabulary_encoding
+knobs:
+  difficulty:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+  feedback_timing:
+    type: enum
+    options:
+    - immediate
+    - after_attempt
+    default: after_attempt
+constraints:
+  attempt_required_before_feedback: true
+  closed_note_first: true
+  route_back_on_repeated_miss: true
 inputs:
-  - Notes or text with key terms identified
-  - Cloze deletion tool (or manually blanked printout)
-  - Answer key for verification
+- Notes or text with key terms identified
+- Cloze deletion tool (or manually blanked printout)
+- Answer key for verification
 steps:
-  - step: 1
-    action: Prepare cloze material by blanking key terms (or use pre-made)
-    notes: Target vocabulary, definitions, key names, and critical facts
-  - step: 2
-    action: Read each sentence with the blank
-    notes: Use context clues — this is cued recall, not free recall
-  - step: 3
-    action: Write or speak the missing term before checking
-    notes: Commit to answer first — no peeking at answer key
-  - step: 4
-    action: Check answer immediately after each item
-    notes: Immediate feedback strengthens correct memories, corrects errors
-  - step: 5
-    action: Mark items missed for targeted review
-    notes: Create a miss list for focused re-study
-  - step: 6
-    action: Re-attempt missed items after completing all blanks
-    notes: Second pass often shows improvement — track this
+- step: 1
+  action: Prepare cloze material by blanking key terms (or use pre-made)
+  notes: Target vocabulary, definitions, key names, and critical facts
+- step: 2
+  action: Read each sentence with the blank
+  notes: Use context clues — this is cued recall, not free recall
+- step: 3
+  action: Write or speak the missing term before checking
+  notes: Commit to answer first — no peeking at answer key
+- step: 4
+  action: Check answer immediately after each item
+  notes: Immediate feedback strengthens correct memories, corrects errors
+- step: 5
+  action: Mark items missed for targeted review
+  notes: Create a miss list for focused re-study
+- step: 6
+  action: Re-attempt missed items after completing all blanks
+  notes: Second pass often shows improvement — track this
 outputs:
-  - Completed cloze exercise
-  - Accuracy count (correct/total blanks)
-  - Miss list for targeted review
-  - Second-pass improvement rate
+- Completed cloze exercise
+- Accuracy count (correct/total blanks)
+- Miss list for targeted review
+- Second-pass improvement rate
 stop_criteria:
-  - All blanks attempted
-  - Second pass on missed items complete
-  - Accuracy threshold reached (e.g., 90%)
+- All blanks attempted
+- Second pass on missed items complete
+- Accuracy threshold reached (e.g., 90%)
 failure_modes:
-  - mode: Blanking too many terms (cognitive overload)
-    mitigation: 1 blank per sentence maximum; focus on highest-value terms
-  - mode: Using blanks that have no context clues
-    mitigation: Ensure surrounding context provides retrieval cues
-  - mode: Rushing without committing to answers
-    mitigation: Say/write answer before looking — no peeking
+- mode: Blanking too many terms (cognitive overload)
+  mitigation: 1 blank per sentence maximum; focus on highest-value terms
+- mode: Using blanks that have no context clues
+  mitigation: Ensure surrounding context provides retrieval cues
+- mode: Rushing without committing to answers
+  mitigation: Say/write answer before looking — no peeking
 logging_fields:
-  - blanks_attempted
-  - blanks_correct
-  - accuracy_percent
-  - second_pass_improvement
+- blanks_attempted
+- blanks_correct
+- accuracy_percent
+- second_pass_improvement
 evidence:
   citation: Dunlosky et al. (2013)
   finding: cloze-based retrieval is effective for factual knowledge
   source: seed_methods.py
 evidence_raw: Dunlosky et al. (2013); cloze-based retrieval is effective for factual knowledge
+facilitation_prompt: 'You are running M-RET-003 (Fill-in-Blank) in RETRIEVE stage.
 
-facilitation_prompt: |
-  You are running M-RET-003 (Fill-in-Blank) in RETRIEVE stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Require learner attempt first.
+
   - Do not reveal full answer before attempt.
+
   - Capture errors and route signals.
 
+
   Required outputs:
+
   - Completed cloze exercise
+
   - Accuracy count (correct/total blanks)
+
   - Miss list for targeted review
+
   - Second-pass improvement rate
 
+
   Stop conditions:
+
   - All blanks attempted
+
   - Second pass on missed items complete
+
   - Accuracy threshold reached (e.g., 90%)
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Require closed-note recall first, then feedback.
+- If repeated misses occur, route back to ENCODE or REFERENCE.
+artifact_type: notes

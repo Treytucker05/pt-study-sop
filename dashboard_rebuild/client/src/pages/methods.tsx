@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Blocks, Link2, BarChart3, Plus, Star, Play, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { Blocks, Link2, BarChart3, Plus, Star, Play, Loader2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,8 +16,9 @@ import { api } from "@/lib/api";
 import { DISPLAY_STAGE_LABELS, getDisplayStage, type DisplayStage } from "@/lib/displayStage";
 import type { MethodBlock, MethodChain, MethodChainExpanded, ChainRunResult, ChainRunSummary, MethodCategory } from "@/api";
 
-const DISPLAY_STAGES: Array<DisplayStage | "all"> = [
+const DISPLAY_STAGES: Array<DisplayStage | "all" | "favorites"> = [
   "all",
+  "favorites",
   "priming",
   "calibrate",
   "encoding",
@@ -25,15 +26,6 @@ const DISPLAY_STAGES: Array<DisplayStage | "all"> = [
   "retrieval",
   "overlearning",
 ];
-
-const LEGACY_CATEGORY_LABELS: Record<string, string> = {
-  prepare: "Prepare",
-  encode: "Encode",
-  interrogate: "Interrogate",
-  retrieve: "Retrieve",
-  refine: "Refine",
-  overlearn: "Overlearn",
-};
 
 const TAB_ITEMS = [
   { id: "library", label: "LIBRARY", icon: Blocks },
@@ -45,14 +37,29 @@ type TabId = (typeof TAB_ITEMS)[number]["id"];
 
 export default function MethodsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("library");
-  const [stageFilter, setStageFilter] = useState<DisplayStage | "all">("all");
+  const [stageFilter, setStageFilter] = useState<DisplayStage | "all" | "favorites">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddBlock, setShowAddBlock] = useState(false);
   const [showAddChain, setShowAddChain] = useState(false);
   const [selectedChain, setSelectedChain] = useState<MethodChainExpanded | null>(null);
+  const [editingBlock, setEditingBlock] = useState<MethodBlock | null>(null);
   const [ratingTarget, setRatingTarget] = useState<{ id: number; name: string; type: "method" | "chain" } | null>(null);
   const [runTarget, setRunTarget] = useState<{ id: number; name: string } | null>(null);
   const [runResult, setRunResult] = useState<ChainRunResult | null>(null);
+  const [favoriteMethodIds, setFavoriteMethodIds] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem("methods.favoriteIds");
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "number") : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("methods.favoriteIds", JSON.stringify(favoriteMethodIds));
+  }, [favoriteMethodIds]);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -125,6 +132,20 @@ export default function MethodsPage() {
     },
   });
 
+  const updateBlockMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<MethodBlock> }) =>
+      api.methods.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["methods"] });
+      queryClient.invalidateQueries({ queryKey: ["methods-analytics"] });
+      setEditingBlock(null);
+      toast({ title: "Method block updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Update failed", description: error.message || "Could not update method block.", variant: "destructive" });
+    },
+  });
+
   const updateChainMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<MethodChain> }) =>
       api.chains.update(id, data),
@@ -177,10 +198,17 @@ export default function MethodsPage() {
   // Filter blocks
   const filteredBlocks = blocks.filter((b) => {
     const displayStage = getDisplayStage(b);
-    if (stageFilter !== "all" && displayStage !== stageFilter) return false;
+    if (stageFilter === "favorites" && !favoriteMethodIds.includes(b.id)) return false;
+    if (stageFilter !== "all" && stageFilter !== "favorites" && displayStage !== stageFilter) return false;
     if (searchQuery && !b.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
+
+  const toggleFavorite = (id: number) => {
+    setFavoriteMethodIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const handleSelectChain = async (chain: MethodChain) => {
     try {
@@ -252,7 +280,11 @@ export default function MethodsPage() {
                           : "border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-muted-foreground/50 hover:bg-black/30"
                       }`}
                     >
-                    {stage === "all" ? "ALL" : DISPLAY_STAGE_LABELS[stage]}
+                    {stage === "all"
+                      ? "ALL"
+                      : stage === "favorites"
+                        ? "FAVORITES"
+                        : DISPLAY_STAGE_LABELS[stage]}
                   </button>
                 ))}
               </div>
@@ -271,24 +303,36 @@ export default function MethodsPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 card-stagger">
                 {filteredBlocks.map((block) => (
-                  <div key={block.id} className="relative group">
+                  <div key={block.id} className="relative">
                     <MethodBlockCard block={block} showLegacyCategory />
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                    <div className="mt-2 flex items-center justify-end gap-2">
                       <button
-                        className="p-1 bg-black/40 border border-primary/40 hover:border-primary"
-                        onClick={() => setRatingTarget({ id: block.id, name: block.name, type: "method" })}
-                        title="Rate"
+                        className={`inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double transition-colors font-arcade text-[10px] tracking-wide ${
+                          favoriteMethodIds.includes(block.id)
+                            ? "border-warning bg-warning/20 text-warning hover:bg-warning/30"
+                            : "border-muted-foreground/40 bg-black/50 text-muted-foreground hover:text-warning hover:border-warning/60 hover:bg-warning/10"
+                        }`}
+                        onClick={() => toggleFavorite(block.id)}
+                        title={favoriteMethodIds.includes(block.id) ? "Remove favorite" : "Add favorite"}
                       >
-                        <Star className="w-3 h-3 text-primary" />
+                        <Star className={`w-3 h-3 ${favoriteMethodIds.includes(block.id) ? "fill-current" : ""}`} />
+                        FAV
                       </button>
                       <button
-                        className="p-1 bg-black/40 border border-destructive/40 hover:border-destructive text-destructive"
-                        onClick={() => {
-                          if (confirm(`Delete "${block.name}"?`)) deleteBlockMutation.mutate(block.id);
-                        }}
-                        title="Delete"
+                        className="inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/40 bg-black/50 text-primary hover:border-primary hover:bg-primary/15 transition-colors font-arcade text-[10px] tracking-wide"
+                        onClick={() => setRatingTarget({ id: block.id, name: block.name, type: "method" })}
+                        title="Rate block"
                       >
-                        <span className="text-xs">x</span>
+                        <BarChart3 className="w-3 h-3" />
+                        RATE
+                      </button>
+                      <button
+                        className="inline-flex items-center gap-1 px-2 py-1 border-[3px] border-double border-primary/30 bg-black/50 text-muted-foreground hover:text-foreground hover:border-primary/60 hover:bg-primary/10 transition-colors font-arcade text-[10px] tracking-wide"
+                        onClick={() => setEditingBlock(block)}
+                        title="Edit block settings"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        EDIT
                       </button>
                     </div>
                   </div>
@@ -297,7 +341,9 @@ export default function MethodsPage() {
             )}
             {!blocksLoading && filteredBlocks.length === 0 && (
               <p className="font-terminal text-base text-muted-foreground text-center py-8">
-                No methods found. {stageFilter !== "all" ? "Try a different category." : "Add your first method block."}
+                {stageFilter === "favorites"
+                  ? "No favorites yet. Mark blocks with FAV to pin them here."
+                  : `No methods found. ${stageFilter !== "all" ? "Try a different category." : "Add your first method block."}`}
               </p>
             )}
           </div>
@@ -515,6 +561,20 @@ export default function MethodsPage() {
           onSubmit={(data) => createBlockMutation.mutate(data)}
         />
 
+        {/* Edit Block Dialog */}
+        <EditBlockDialog
+          open={!!editingBlock}
+          block={editingBlock}
+          onClose={() => setEditingBlock(null)}
+          onSave={(id, data) => updateBlockMutation.mutate({ id, data })}
+          onDelete={(id) => {
+            if (confirm(`Delete "${editingBlock?.name || "this block"}"?`)) {
+              deleteBlockMutation.mutate(id);
+              setEditingBlock(null);
+            }
+          }}
+        />
+
         {/* Add Chain Dialog */}
         <AddChainDialog
           open={showAddChain}
@@ -619,25 +679,24 @@ function AddBlockDialog({
             onChange={(e) => setName(e.target.value)}
             className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
           />
-          <Select value={category} onValueChange={(value) => setCategory(value as MethodCategory)}>
-            <SelectTrigger className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-black border-2 border-primary rounded-none">
-              {categoryOptions.map((c) => (
-                <SelectItem key={c} value={c} className="font-terminal text-sm">
-                  {LEGACY_CATEGORY_LABELS[c] || c.charAt(0).toUpperCase() + c.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as MethodCategory)}
+            className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {categoryOptions.map((c) => (
+              <option key={c} value={c} className="bg-black text-white">
+                {c}
+              </option>
+            ))}
+          </select>
           <Textarea
             placeholder="Description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="h-16 rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base resize-none"
           />
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="font-arcade text-xs text-muted-foreground">DURATION</label>
               <Input
@@ -649,31 +708,32 @@ function AddBlockDialog({
             </div>
             <div>
               <label className="font-arcade text-xs text-muted-foreground">ENERGY</label>
-              <Select value={energyCost} onValueChange={setEnergyCost}>
-                <SelectTrigger className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-black border-2 border-primary rounded-none">
-                  {["low", "medium", "high"].map((e) => (
-                    <SelectItem key={e} value={e} className="font-terminal text-sm">{e}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={energyCost}
+                onChange={(e) => setEnergyCost(e.target.value)}
+                className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {["low", "medium", "high"].map((e) => (
+                  <option key={e} value={e} className="bg-black text-white">
+                    {e}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div>
-              <label className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
-              <Select value={bestStage} onValueChange={setBestStage}>
-                <SelectTrigger className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base">
-                  <SelectValue placeholder="Any" />
-                </SelectTrigger>
-                <SelectContent className="bg-black border-2 border-primary rounded-none">
-                  <SelectItem value="first_exposure" className="font-terminal text-sm">First Exposure</SelectItem>
-                  <SelectItem value="review" className="font-terminal text-sm">Review</SelectItem>
-                  <SelectItem value="exam_prep" className="font-terminal text-sm">Exam Prep</SelectItem>
-                  <SelectItem value="consolidation" className="font-terminal text-sm">Consolidation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          </div>
+          <div>
+            <label className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
+            <select
+              value={bestStage}
+              onChange={(e) => setBestStage(e.target.value)}
+              className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="" className="bg-black text-white">Any</option>
+              <option value="first_exposure" className="bg-black text-white">First Exposure</option>
+              <option value="review" className="bg-black text-white">Review</option>
+              <option value="exam_prep" className="bg-black text-white">Exam Prep</option>
+              <option value="consolidation" className="bg-black text-white">Consolidation</option>
+            </select>
           </div>
           <Button
             className="w-full font-arcade rounded-none text-xs"
@@ -744,6 +804,209 @@ function AddChainDialog({
           >
             CREATE CHAIN
           </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Edit Block Dialog
+// ---------------------------------------------------------------------------
+function EditBlockDialog({
+  open,
+  block,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  open: boolean;
+  block: MethodBlock | null;
+  onClose: () => void;
+  onSave: (id: number, data: Partial<MethodBlock>) => void;
+  onDelete: (id: number) => void;
+}) {
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState<MethodCategory>("PRIME");
+  const [description, setDescription] = useState("");
+  const [facilitationPrompt, setFacilitationPrompt] = useState("");
+  const [fullScreenText, setFullScreenText] = useState(false);
+  const [duration, setDuration] = useState(5);
+  const [energyCost, setEnergyCost] = useState("medium");
+  const [bestStage, setBestStage] = useState("");
+
+  const categoryOptions: MethodCategory[] = [
+    "PRIME",
+    "CALIBRATE",
+    "ENCODE",
+    "REFERENCE",
+    "RETRIEVE",
+    "OVERLEARN",
+  ];
+  const categoryLabel: Record<MethodCategory, string> = {
+    PRIME: "PRIMING",
+    CALIBRATE: "CALIBRATE",
+    ENCODE: "ENCODING",
+    REFERENCE: "REFERENCE",
+    RETRIEVE: "RETRIEVAL",
+    OVERLEARN: "OVERLEARNING",
+  };
+  const legacyToControl: Record<string, MethodCategory> = {
+    PREPARE: "PRIME",
+    ENCODE: "ENCODE",
+    INTERROGATE: "REFERENCE",
+    RETRIEVE: "RETRIEVE",
+    REFINE: "OVERLEARN",
+    OVERLEARN: "OVERLEARN",
+  };
+  const normalizeCategory = (b: MethodBlock): MethodCategory => {
+    const control = String(b.control_stage ?? "").toUpperCase();
+    if (categoryOptions.includes(control as MethodCategory)) return control as MethodCategory;
+    const raw = String(b.category ?? "").toUpperCase();
+    if (categoryOptions.includes(raw as MethodCategory)) return raw as MethodCategory;
+    return legacyToControl[raw] ?? "PRIME";
+  };
+
+  useEffect(() => {
+    if (!block) return;
+    setName(block.name ?? "");
+    setCategory(normalizeCategory(block));
+    setDescription(block.description ?? "");
+    setFacilitationPrompt(block.facilitation_prompt ?? "");
+    setDuration(block.default_duration_min ?? 5);
+    setEnergyCost(block.energy_cost ?? "medium");
+    setBestStage(block.best_stage ?? "");
+    setFullScreenText(false);
+  }, [block]);
+
+  const handleSave = () => {
+    if (!block || !name.trim()) return;
+    onSave(block.id, {
+      name: name.trim(),
+      category,
+      description: description.trim() || null,
+      default_duration_min: duration,
+      energy_cost: energyCost,
+      best_stage: bestStage || null,
+      facilitation_prompt: facilitationPrompt.trim() || null,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className={`bg-black border-[3px] border-double border-primary rounded-none ${fullScreenText ? "max-w-[96vw] w-[96vw] h-[92vh]" : "max-w-lg"}`}>
+        <div className="flex items-center justify-between">
+          <DialogTitle className="font-arcade text-sm text-primary">EDIT METHOD BLOCK</DialogTitle>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
+            onClick={() => setFullScreenText((v) => !v)}
+          >
+            {fullScreenText ? "EXIT FULL" : "FULL TEXT"}
+          </Button>
+        </div>
+        <DialogDescription className="sr-only">Edit method block settings</DialogDescription>
+        <div className={`space-y-3 mt-2 ${fullScreenText ? "h-[calc(92vh-7rem)] overflow-y-auto pr-1" : ""}`}>
+          <Input
+            placeholder="Method name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
+          />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as MethodCategory)}
+            className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {categoryOptions.map((c) => (
+              <option key={c} value={c} className="bg-black text-white">
+                {categoryLabel[c]}
+              </option>
+            ))}
+          </select>
+          <Textarea
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className={`${fullScreenText ? "h-32" : "h-16"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base resize-y`}
+          />
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-arcade text-xs text-muted-foreground">TUTOR PROMPT</label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
+                onClick={() => setFacilitationPrompt(block?.facilitation_prompt ?? "")}
+              >
+                RESET PROMPT
+              </Button>
+            </div>
+            <Textarea
+              placeholder="Facilitation prompt used by the tutor for this method..."
+              value={facilitationPrompt}
+              onChange={(e) => setFacilitationPrompt(e.target.value)}
+              className={`${fullScreenText ? "h-[42vh]" : "h-32"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-sm resize-y`}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="font-arcade text-xs text-muted-foreground">DURATION</label>
+              <Input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+                className="rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-base"
+              />
+            </div>
+            <div>
+              <label className="font-arcade text-xs text-muted-foreground">ENERGY</label>
+              <select
+                value={energyCost}
+                onChange={(e) => setEnergyCost(e.target.value)}
+                className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {["low", "medium", "high"].map((e) => (
+                  <option key={e} value={e} className="bg-black text-white">
+                    {e}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="font-arcade text-xs text-muted-foreground">BEST STAGE</label>
+            <select
+              value={bestStage}
+              onChange={(e) => setBestStage(e.target.value)}
+              className="h-9 w-full rounded-none border-2 border-primary/40 bg-black/60 px-3 py-2 font-terminal text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="" className="bg-black text-white">Any</option>
+              <option value="first_exposure" className="bg-black text-white">First Exposure</option>
+              <option value="review" className="bg-black text-white">Review</option>
+              <option value="exam_prep" className="bg-black text-white">Exam Prep</option>
+              <option value="consolidation" className="bg-black text-white">Consolidation</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              className="w-full font-arcade rounded-none text-xs border-[3px] border-double border-destructive/50 text-destructive hover:bg-destructive/10"
+              onClick={() => block && onDelete(block.id)}
+            >
+              DELETE
+            </Button>
+            <Button
+              className="w-full font-arcade rounded-none text-xs"
+              onClick={handleSave}
+              disabled={!name.trim()}
+            >
+              SAVE
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

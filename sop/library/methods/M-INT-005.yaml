@@ -2,16 +2,70 @@ id: M-INT-005
 name: Case Walkthrough
 category: interrogate
 control_stage: RETRIEVE
+description: 'Walk through a realistic case to retrieve reasoning steps, identify gaps, and reinforce application accuracy.'
 default_duration_min: 10
 energy_cost: high
 has_steps: Y
 has_outputs_or_artifacts: Y
-outputs_summary: "Case walkthrough narrative; Assessment plan; Reasoning verification"
+outputs_summary: Case walkthrough narrative; Assessment plan; Reasoning verification
 knobs:
   guidance_level:
     type: enum
-    options: [fully_worked_example, partial_scaffold]
-    default: fully_worked_example
+    options:
+    - case_prompt_only
+    - partial_scaffold
+    - targeted_hint
+    default: partial_scaffold
+facilitation_prompt: 'You are running M-INT-005 (Case Walkthrough) in RETRIEVE stage.
 
-facilitation_prompt: |
-  Provide a {guidance_level} showing how the concept map applies to a real-world clinical scenario. Actively teach the student by walking through the mechanism step-by-step. Do not test or quiz the student; your goal here is direct instruction via a practical, worked example.
+  Require an attempt-first case response before feedback.
+
+  Use {guidance_level}:
+  - case_prompt_only: present the case and require full learner reasoning.
+  - partial_scaffold: allow limited structure prompts without revealing final answer.
+  - targeted_hint: provide one focused hint after an attempt, then require revised answer.
+
+  Return:
+  1) LearnerCaseResponse
+  2) ErrorTags
+  3) ConfidenceTag
+  4) CorrectiveFeedback
+  5) NextTargetedProbe
+
+  '
+constraints:
+  attempt_required_before_feedback: true
+  closed_note_first: true
+  route_back_on_repeated_miss: true
+steps:
+- step: 1
+  action: Start RETRIEVE protocol within scope
+  notes: Respect stage boundaries.
+- step: 2
+  action: Execute method actions in order
+  notes: Capture required telemetry/artifacts.
+- step: 3
+  action: Emit required outputs and handoff
+  notes: Do not drift into another stage.
+inputs:
+- Reference targets or question bank
+- Scoring rubric and confidence capture
+gating_rules:
+- Require closed-note recall first, then feedback.
+- If repeated misses occur, route back to ENCODE or REFERENCE.
+outputs:
+- LearnerCaseResponse
+- ErrorTags
+- ConfidenceTag
+- CorrectiveFeedback
+- NextTargetedProbe
+stop_criteria:
+- Attempt-first response completed
+- Corrective feedback delivered
+- Next targeted probe produced
+failure_modes:
+- mode: Answer leakage
+  mitigation: Re-enforce attempt-first then feedback.
+- mode: Repeated misses
+  mitigation: Route back to ENCODE with targeted scaffold.
+artifact_type: notes

@@ -8,53 +8,91 @@ best_stage: exam_prep
 control_stage: RETRIEVE
 status: validated
 tags:
-  - retrieval
-  - adversarial
-  - confusables
+- retrieval
+- adversarial
+- confusables
 mechanisms:
-  - discrimination
-  - retrieval
+- discrimination
+- retrieval
+knobs:
+  difficulty:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+  feedback_timing:
+    type: enum
+    options:
+    - immediate
+    - after_attempt
+    default: after_attempt
+constraints:
+  attempt_required_before_feedback: true
+  closed_note_first: true
+  route_back_on_repeated_miss: true
 inputs:
-  - Confusable pairs from Spine or ErrorLog
-  - Question Bank Seed
+- Confusable pairs from Spine or ErrorLog
+- Question Bank Seed
 steps:
-  - step: 1
-    action: Select confusable pairs with highest error risk
-    notes: Use recent Confusion errors first
-  - step: 2
-    action: Ask near-miss prompts with minimal cues
-    notes: Require explicit discriminator in each response
-  - step: 3
-    action: Log misses to ErrorLog.csv
-    notes: Include error_type and fix_applied
+- step: 1
+  action: Select confusable pairs with highest error risk
+  notes: Use recent Confusion errors first
+- step: 2
+  action: Ask near-miss prompts with minimal cues
+  notes: Require explicit discriminator in each response
+- step: 3
+  action: Log misses to ErrorLog.csv
+  notes: Include error_type and fix_applied
 outputs:
-  - Adversarial near-miss results
-  - ErrorLog updates
+- Adversarial near-miss results
+- ErrorLog updates
 stop_criteria:
-  - Near-miss set completed
-  - All misses logged
+- Near-miss set completed
+- All misses logged
 evidence:
   citation: Rohrer et al. (2015)
   finding: Interleaved discrimination practice improves transfer on confusable categories
   source: control-plane migration
 evidence_raw: Rohrer et al. (2015); discrimination practice strengthens near-miss recognition
+facilitation_prompt: 'You are running M-RET-006 (Adversarial Drill) in RETRIEVE stage.
 
-
-facilitation_prompt: |
-  You are running M-RET-006 (Adversarial Drill) in RETRIEVE stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Require learner attempt first.
+
   - Do not reveal full answer before attempt.
+
   - Capture errors and route signals.
 
+
   Required outputs:
+
   - Adversarial near-miss results
+
   - ErrorLog updates
 
+
   Stop conditions:
+
   - Near-miss set completed
+
   - All misses logged
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Require closed-note recall first, then feedback.
+- If repeated misses occur, route back to ENCODE or REFERENCE.
+failure_modes:
+- mode: Answer leakage
+  mitigation: Re-enforce attempt-first then feedback.
+- mode: Repeated misses
+  mitigation: Route back to ENCODE with targeted scaffold.
+artifact_type: notes

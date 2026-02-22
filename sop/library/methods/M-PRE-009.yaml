@@ -8,23 +8,23 @@ best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - prime
-  - syntopical
-  - synthesis
-  - hierarchy
+- prime
+- syntopical
+- synthesis
+- hierarchy
 mechanisms:
-  - schema_activation
-  - integration
+- schema_activation
+- integration
 stipulations:
-  - Use at most 2-3 sources to keep the synthesis bounded.
-  - Resolve contradictions at a top-down level; do not deep-dive details.
-  - PRIME boundary applies: no scored checks.
+- Use at most 2-3 sources to keep the synthesis bounded.
+- Resolve contradictions at a top-down level; do not deep-dive details.
+- PRIME boundary applies: no scored checks.
 when_to_use:
-  - Multi-source study packets (slides + summary + glossary).
-  - Clinical reasoning or research-heavy topics that need integration.
+- Multi-source study packets (slides + summary + glossary).
+- Clinical reasoning or research-heavy topics that need integration.
 when_not_to_use:
-  - Single-source content where cross-source synthesis adds no value.
-  - Time budgets below 3 minutes.
+- Single-source content where cross-source synthesis adds no value.
+- Time budgets below 3 minutes.
 knobs:
   source_cap:
     type: int
@@ -33,55 +33,76 @@ knobs:
     default: 3
   synthesis_format:
     type: enum
-    options: [hierarchy, comparison_table, hybrid]
+    options:
+    - hierarchy
+    - comparison_table
+    - hybrid
     default: hierarchy
 constraints:
   non_assessment: true
   source_cap_hard_lock: true
 inputs:
-  - 2-3 source excerpts
-  - Learning objectives (optional)
+- 2-3 source excerpts
+- Learning objectives (optional)
 steps:
-  - step: 1
-    action: Extract top-level pillars from each source
-    notes: Only headings and conceptual anchors.
-  - step: 2
-    action: Merge overlapping pillars into one unified structure
-    notes: Preserve source-specific distinctions where needed.
-  - step: 3
-    action: Add cross-links and conflict notes
-    notes: Mark unresolved conflicts as follow-up targets.
+- step: 1
+  action: Extract top-level pillars from each source
+  notes: Only headings and conceptual anchors.
+- step: 2
+  action: Merge overlapping pillars into one unified structure
+  notes: Preserve source-specific distinctions where needed.
+- step: 3
+  action: Add cross-links and conflict notes
+  notes: Mark unresolved conflicts as follow-up targets.
 outputs:
-  - UnifiedTopDownTree
-  - CrossSourceLinks
-  - ConflictFlags
-  - FollowUpTargets
+- UnifiedTopDownTree
+- CrossSourceLinks
+- ConflictFlags
+- FollowUpTargets
 stop_criteria:
-  - Unified tree generated from all included sources
-  - Cross-links recorded
-  - Conflict flags captured
+- Unified tree generated from all included sources
+- Cross-links recorded
+- Conflict flags captured
 evidence:
   citation: Ausubel (1968)
   finding: Comparative organizers support integration across related sources.
   source: research synthesis
 evidence_strength: medium
 primary_citations:
-  - Ausubel (1968)
-  - Sung (2025)
+- Ausubel (1968)
+- Sung (2025)
 evidence_raw: Syntopical synthesis improves macro-structure orientation when multiple sources are used.
+facilitation_prompt: 'You are running M-PRE-009 (Syntopical Big-Picture Synthesis) in PRIME.
 
-
-facilitation_prompt: |
-  You are running M-PRE-009 (Syntopical Big-Picture Synthesis) in PRIME.
   Build one integrated top-down view from up to {source_cap} sources.
 
+
   Return exactly:
+
   1) UnifiedTopDownTree ({synthesis_format})
+
   2) CrossSourceLinks
+
   3) ConflictFlags
+
   4) FollowUpTargets
 
+
   Rules:
+
   - Keep synthesis high-level.
+
   - Non-assessment only.
+
   - If only one source is available, skip this method.
+
+  '
+gating_rules:
+- Do not assess or score the learner in PRIME.
+- Stay at orientation level and avoid full solution reveal.
+failure_modes:
+- mode: Scope too broad
+  mitigation: Reduce to objective-aligned scaffold and continue.
+- mode: Drift into testing
+  mitigation: Return to orientation-only behavior.
+artifact_type: notes

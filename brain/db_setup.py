@@ -2169,7 +2169,21 @@ def _load_seed_methods_module():
     return module
 
 
+_METHOD_LIBRARY_ENSURED = False
+
+
 def ensure_method_library_seeded() -> None:
+    global _METHOD_LIBRARY_ENSURED
+    if _METHOD_LIBRARY_ENSURED:
+        return
+
+    strict_sync = os.environ.get("PT_METHOD_LIBRARY_STRICT_SYNC", "1").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -2183,12 +2197,18 @@ def ensure_method_library_seeded() -> None:
     except sqlite3.OperationalError:
         return
 
-    if block_count > 0 and template_chain_count > 0:
+    if block_count > 0 and template_chain_count > 0 and not strict_sync:
+        _METHOD_LIBRARY_ENSURED = True
         return
 
     module = _load_seed_methods_module()
     if module and hasattr(module, "seed_methods"):
-        module.seed_methods(force=False)
+        try:
+            module.seed_methods(force=False, strict_sync=strict_sync)
+        except TypeError:
+            # Backward compatibility with older seed_methods signatures.
+            module.seed_methods(force=False)
+    _METHOD_LIBRARY_ENSURED = True
 
 
 # ------------------------------------------------------------------

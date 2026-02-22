@@ -19,6 +19,7 @@ System context: scripts support CP-MSS v1.0 operations and governance.
 - `run_scholar.bat` - Run Scholar workflows.
 - `parallel launch shortcut` - Use `C:/Users/treyt/OneDrive/Desktop/Travel Laptop/Parallel Work/01_Launch_Parallel_Wizard.bat` for the one-file prompting flow.
 - `check_parallel_setup.ps1` - Run health validation across scripts, worktrees, launchers, and task board.
+- `sync_tutor_category_docs.py` - One-command sync: regenerate Obsidian tutor category pages from `sop/library/methods/*.yaml`.
 
 ## Notes
 - Run from repo root unless the script states otherwise.

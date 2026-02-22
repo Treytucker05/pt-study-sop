@@ -8,54 +8,93 @@ best_stage: consolidation
 control_stage: OVERLEARN
 status: validated
 tags:
-  - overlearning
-  - drills
-  - consolidation
+- overlearning
+- drills
+- consolidation
 mechanisms:
-  - spacing
-  - interleaving
-  - retrieval
+- spacing
+- interleaving
+- retrieval
+knobs:
+  intensity:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+  speed_pressure:
+    type: enum
+    options:
+    - off
+    - soft
+    - hard
+    default: soft
+constraints:
+  mastery_required_before_speed: true
+  burnout_cap_rounds: 3
+  preserve_accuracy_threshold: 0.8
 inputs:
-  - Question Bank Seed
-  - ErrorLog trends
+- Question Bank Seed
+- ErrorLog trends
 steps:
-  - step: 1
-    action: Assemble 30-60 interleaved timed items
-    notes: Include weak objectives and prior misses
-  - step: 2
-    action: Define two-session validation criteria
-    notes: Same objective must be passed across two sessions
-  - step: 3
-    action: Store drill sheet and validation checklist artifacts
-    notes: Keep objective IDs attached to items
+- step: 1
+  action: Assemble 30-60 interleaved timed items
+  notes: Include weak objectives and prior misses
+- step: 2
+  action: Define two-session validation criteria
+  notes: Same objective must be passed across two sessions
+- step: 3
+  action: Store drill sheet and validation checklist artifacts
+  notes: Keep objective IDs attached to items
 outputs:
-  - DrillSheet
-  - CrossSessionValidation checklist
+- DrillSheet
+- CrossSessionValidation checklist
 stop_criteria:
-  - Drill sheet has 30-60 items
-  - Cross-session validation criteria defined
+- Drill sheet has 30-60 items
+- Cross-session validation criteria defined
 evidence:
   citation: Rawson & Dunlosky (2011)
   finding: Successive relearning with repeated retrieval strengthens durable mastery
   source: control-plane migration
 evidence_raw: Rawson & Dunlosky (2011); repeated relearning across sessions improves retention
+facilitation_prompt: 'You are running M-OVR-003 (Drill Sheet Builder) in OVERLEARN stage.
 
-
-facilitation_prompt: |
-  You are running M-OVR-003 (Drill Sheet Builder) in OVERLEARN stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Run bounded fluency reps.
+
   - Respect fatigue and stop caps.
+
   - Prioritize durable retention over speed only.
 
+
   Required outputs:
+
   - DrillSheet
+
   - CrossSessionValidation checklist
 
+
   Stop conditions:
+
   - Drill sheet has 30-60 items
+
   - Cross-session validation criteria defined
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Run only after stable retrieval performance.
+- Stop after cap is met to avoid burnout loops.
+failure_modes:
+- mode: Burnout/fatigue
+  mitigation: Stop loop early and schedule spaced review.
+- mode: Speed over accuracy collapse
+  mitigation: Reduce time pressure and recover accuracy first.
+artifact_type: notes

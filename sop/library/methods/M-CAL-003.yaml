@@ -37,6 +37,11 @@ knobs:
 constraints:
   deterministic_output_required: true
   top_k_fixed: true
+gating_rules:
+  - Emit exactly top_k weaknesses (fixed at 3).
+  - Apply deterministic tie-breaks (high-confidence misses, then frequency).
+  - Output ranking and routing seeds only; no teaching/explanations.
+  - Keep ranking scoped to current objective telemetry only.
 inputs:
   - Calibrate correctness and latency
   - Confidence-tagged results
@@ -58,6 +63,7 @@ outputs:
   - PrioritySet
   - WeaknessScoreTable
   - EncodeRoutingSeed
+artifact_type: notes
 stop_criteria:
   - Exactly 3 prioritized weaknesses output
   - EncodeRoutingSeed created

@@ -8,84 +8,121 @@ best_stage: review
 control_stage: RETRIEVE
 status: validated
 tags:
-  - quiz
-  - speed
-  - rsr
-  - ai-assisted
+- quiz
+- speed
+- rsr
+- ai-assisted
 mechanisms:
-  - retrieval
-  - testing
-  - calibration
-  - spacing
+- retrieval
+- testing
+- calibration
+- spacing
+knobs:
+  difficulty:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+  feedback_timing:
+    type: enum
+    options:
+    - immediate
+    - after_attempt
+    default: after_attempt
+constraints:
+  attempt_required_before_feedback: true
+  closed_note_first: true
+  route_back_on_repeated_miss: true
 inputs:
-  - Topic or concept set for quiz
-  - Tutor AI (or pre-made question set)
-  - Timer (5 min recommended)
-  - Scoring tracker (correct/incorrect tally)
+- Topic or concept set for quiz
+- Tutor AI (or pre-made question set)
+- Timer (5 min recommended)
+- Scoring tracker (correct/incorrect tally)
 steps:
-  - step: 1
-    action: Request sprint quiz from Tutor on the target topic
-    notes: Specify topic scope and number of questions (10-15 typical)
-  - step: 2
-    action: Set timer for 5 minutes
-    notes: Speed adds desirable difficulty and prevents overthinking
-  - step: 3
-    action: Answer each question aloud or in writing before seeing feedback
-    notes: Must commit to an answer — no "I think maybe..."
-  - step: 4
-    action: Track correct/incorrect for each question immediately
-    notes: Keep running tally for RSR calculation
-  - step: 5
-    action: Note any questions that felt uncertain even if correct
-    notes: Near-misses are weak anchors — flag for review
-  - step: 6
-    action: Calculate RSR percentage at end (correct / total × 100)
-    notes: RSR < 80% = needs more encoding; RSR > 90% = ready to advance
+- step: 1
+  action: Request sprint quiz from Tutor on the target topic
+  notes: Specify topic scope and number of questions (10-15 typical)
+- step: 2
+  action: Set timer for 5 minutes
+  notes: Speed adds desirable difficulty and prevents overthinking
+- step: 3
+  action: Answer each question aloud or in writing before seeing feedback
+  notes: Must commit to an answer — no "I think maybe..."
+- step: 4
+  action: Track correct/incorrect for each question immediately
+  notes: Keep running tally for RSR calculation
+- step: 5
+  action: Note any questions that felt uncertain even if correct
+  notes: Near-misses are weak anchors — flag for review
+- step: 6
+  action: Calculate RSR percentage at end (correct / total × 100)
+  notes: RSR < 80% = needs more encoding; RSR > 90% = ready to advance
 outputs:
-  - RSR percentage (correct/total)
-  - List of missed questions
-  - Weak anchor flags (uncertain but correct)
-  - Topics needing re-encoding
+- RSR percentage (correct/total)
+- List of missed questions
+- Weak anchor flags (uncertain but correct)
+- Topics needing re-encoding
 stop_criteria:
-  - Timer ends
-  - All planned questions answered
-  - RSR threshold achieved (if targeting specific level)
+- Timer ends
+- All planned questions answered
+- RSR threshold achieved (if targeting specific level)
 failure_modes:
-  - mode: Looking up answers during quiz
-    mitigation: Treat as test conditions — no references allowed
-  - mode: Not committing to answers (hedging)
-    mitigation: Force binary commit before seeing correct answer
-  - mode: Skipping RSR calculation
-    mitigation: RSR is the whole point — always calculate and log
+- mode: Looking up answers during quiz
+  mitigation: Treat as test conditions — no references allowed
+- mode: Not committing to answers (hedging)
+  mitigation: Force binary commit before seeing correct answer
+- mode: Skipping RSR calculation
+  mitigation: RSR is the whole point — always calculate and log
 logging_fields:
-  - questions_attempted
-  - questions_correct
-  - rsr_percent
-  - weak_anchors_flagged
+- questions_attempted
+- questions_correct
+- rsr_percent
+- weak_anchors_flagged
 evidence:
   citation: McDaniel et al. (2007)
   finding: quiz-based retrieval enhances later exam performance
   source: seed_methods.py
 evidence_raw: McDaniel et al. (2007); quiz-based retrieval enhances later exam performance
+facilitation_prompt: 'You are running M-RET-002 (Sprint Quiz) in RETRIEVE stage.
 
-facilitation_prompt: |
-  You are running M-RET-002 (Sprint Quiz) in RETRIEVE stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Require learner attempt first.
+
   - Do not reveal full answer before attempt.
+
   - Capture errors and route signals.
 
+
   Required outputs:
+
   - RSR percentage (correct/total)
+
   - List of missed questions
+
   - Weak anchor flags (uncertain but correct)
+
   - Topics needing re-encoding
 
+
   Stop conditions:
+
   - Timer ends
+
   - All planned questions answered
+
   - RSR threshold achieved (if targeting specific level)
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Require closed-note recall first, then feedback.
+- If repeated misses occur, route back to ENCODE or REFERENCE.
+artifact_type: notes

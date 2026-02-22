@@ -9,54 +9,92 @@ control_stage: REFERENCE
 status: validated
 artifact_type: outline
 tags:
-  - reference
-  - question-bank
-  - retrieval-design
+- reference
+- question-bank
+- retrieval-design
 mechanisms:
-  - retrieval
-  - transfer
+- retrieval
+- transfer
+knobs:
+  artifact_depth:
+    type: enum
+    options:
+    - compact
+    - standard
+    - detailed
+    default: standard
+  link_density:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+constraints:
+  target_artifact_required: true
+  retrieval_blocked_without_targets: true
+  objective_scope_required: true
 inputs:
-  - Objectives
-  - One-Page Anchor
-  - Assessment mode selector
+- Objectives
+- One-Page Anchor
+- Assessment mode selector
 steps:
-  - step: 1
-    action: Generate 10-20 questions tied to objective IDs
-    notes: Distribute across selected assessment mode
-  - step: 2
-    action: Tag each item with mode and objective_id
-    notes: Ensure coverage across objectives
-  - step: 3
-    action: Mark high-risk confusable items for adversarial drills
-    notes: Feed directly into RETRIEVE stage
+- step: 1
+  action: Generate 10-20 questions tied to objective IDs
+  notes: Distribute across selected assessment mode
+- step: 2
+  action: Tag each item with mode and objective_id
+  notes: Ensure coverage across objectives
+- step: 3
+  action: Mark high-risk confusable items for adversarial drills
+  notes: Feed directly into RETRIEVE stage
 outputs:
-  - Question Bank Seed (10-20 items, mode-tagged)
-  - Coverage check draft
+- Question Bank Seed (10-20 items, mode-tagged)
+- Coverage check draft
 stop_criteria:
-  - At least 10 and at most 20 items
-  - Every item tagged by objective and assessment mode
+- At least 10 and at most 20 items
+- Every item tagged by objective and assessment mode
 evidence:
   citation: Roediger & Karpicke (2006)
   finding: Retrieval-oriented item generation improves durable recall performance
   source: control-plane migration
 evidence_raw: Roediger & Karpicke (2006); retrieval practice outperforms rereading for retention
+facilitation_prompt: 'You are running M-REF-004 (Question Bank Seed) in REFERENCE stage.
 
-
-facilitation_prompt: |
-  You are running M-REF-004 (Question Bank Seed) in REFERENCE stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Build concrete anchors and artifacts.
+
   - Map concept to applied context.
+
   - Do not skip artifact creation.
 
+
   Required outputs:
+
   - Question Bank Seed (10-20 items, mode-tagged)
+
   - Coverage check draft
 
+
   Stop conditions:
+
   - At least 10 and at most 20 items
+
   - Every item tagged by objective and assessment mode
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Produce structured targets that RETRIEVE can directly test.
+- No retrieval drills until reference targets are explicit.
+failure_modes:
+- mode: Artifact too vague for retrieval
+  mitigation: Rewrite targets into explicit prompts/answers.
+- mode: Reference bloat
+  mitigation: Trim to objective-critical content only.

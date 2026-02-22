@@ -177,3 +177,83 @@ def test_seed_methods_upgrades_existing_chain_to_template(tmp_path: Path, monkey
     assert json.loads(row[1]) == [block_a_id, block_b_id]
     assert json.loads(row[2]) == {"mode": "core"}
     assert int(row[3]) == 1
+
+
+def test_seed_methods_strict_sync_updates_stale_artifact_type(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db_path = tmp_path / "seed_methods_strict.db"
+    _init_seed_db(db_path)
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    # Simulate a non-placeholder existing row with stale artifact_type.
+    cur.execute(
+        """
+        INSERT INTO method_blocks
+            (method_id, name, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, artifact_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "M-ENC-001",
+            "KWIK Hook",
+            "ENCODE",
+            "Old but non-placeholder description",
+            3,
+            "medium",
+            "first_exposure",
+            json.dumps(["mnemonic"]),
+            "old evidence",
+            "cards",
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    module = _load_seed_methods_module()
+
+    def _get_conn():
+        return sqlite3.connect(db_path)
+
+    monkeypatch.setattr(module, "get_connection", _get_conn)
+    monkeypatch.setattr(module, "regenerate_prompts", lambda: None)
+    monkeypatch.setattr(module, "_insert_library_meta", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        module,
+        "load_from_yaml",
+        lambda: {
+            "version": "test",
+            "methods": [
+                {
+                    "method_id": "M-ENC-001",
+                    "name": "KWIK Hook",
+                    "control_stage": "ENCODE",
+                    "description": "Canonical description",
+                    "default_duration_min": 3,
+                    "energy_cost": "medium",
+                    "best_stage": "first_exposure",
+                    "tags": ["mnemonic", "kwik"],
+                    "evidence": "canonical evidence",
+                    "artifact_type": "notes",
+                }
+            ],
+            "chains": [],
+        },
+    )
+
+    module.seed_methods(force=False, strict_sync=True)
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT method_id, name, description, artifact_type FROM method_blocks WHERE method_id = ?",
+        ("M-ENC-001",),
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    assert row is not None
+    assert row[0] == "M-ENC-001"
+    assert row[1] == "KWIK Hook"
+    assert row[2] == "Canonical description"
+    assert row[3] == "notes"

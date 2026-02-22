@@ -8,23 +8,23 @@ best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - organization
-  - visual
-  - grouping
-  - chunking
+- organization
+- visual
+- grouping
+- chunking
 mechanisms:
-  - elaboration
-  - discrimination
+- elaboration
+- discrimination
 stipulations:
-  - Keep map skeletal: depth limited to 2 levels.
-  - Use descriptors only; avoid explanation paragraphs.
-  - PRIME boundary applies: no scoring.
+- Keep map skeletal: depth limited to 2 levels.
+- Use descriptors only; avoid explanation paragraphs.
+- PRIME boundary applies: no scoring.
 when_to_use:
-  - Big-picture orientation for integrative topics.
-  - Learners who think visually and need category scaffolding.
+- Big-picture orientation for integrative topics.
+- Learners who think visually and need category scaffolding.
 when_not_to_use:
-  - Pure procedural skill acquisition where step flow is primary.
-  - Sessions with <3 minutes available.
+- Pure procedural skill acquisition where step flow is primary.
+- Sessions with <3 minutes available.
 knobs:
   node_count_cap:
     type: int
@@ -33,65 +33,87 @@ knobs:
     default: 6
   map_format:
     type: enum
-    options: [ascii_tree, mermaid, nested_bullets]
+    options:
+    - ascii_tree
+    - mermaid
+    - nested_bullets
     default: ascii_tree
 constraints:
   non_assessment: true
   max_depth: 2
 inputs:
-  - Topic title
-  - Section headings or term list
+- Topic title
+- Section headings or term list
 steps:
-  - step: 1
-    action: Set central node as topic
-    notes: Single core node only.
-  - step: 2
-    action: Derive 4-6 first-ring categories
-    notes: Categories should be mutually distinct.
-  - step: 3
-    action: Attach 1-2 descriptor tokens under each category
-    notes: Descriptors are labels, not explanations.
-  - step: 4
-    action: Add cross-links between categories where needed
-    notes: Use short relation labels only.
+- step: 1
+  action: Set central node as topic
+  notes: Single core node only.
+- step: 2
+  action: Derive 4-6 first-ring categories
+  notes: Categories should be mutually distinct.
+- step: 3
+  action: Attach 1-2 descriptor tokens under each category
+  notes: Descriptors are labels, not explanations.
+- step: 4
+  action: Add cross-links between categories where needed
+  notes: Use short relation labels only.
 outputs:
-  - SkeletonMap
-  - CategoryLabels
-  - CrossLinks
+- SkeletonMap
+- CategoryLabels
+- CrossLinks
 stop_criteria:
-  - First-ring categories between 4 and 6
-  - Map depth <=2
-  - 5 minutes elapsed
+- First-ring categories between 4 and 6
+- Map depth <=2
+- 5 minutes elapsed
 failure_modes:
-  - mode: Map turns into paragraph notes
-    mitigation: Enforce descriptor-only output.
-  - mode: Too many nodes causing overload
-    mitigation: Apply node_count_cap and drop leaf-level detail.
+- mode: Map turns into paragraph notes
+  mitigation: Enforce descriptor-only output.
+- mode: Too many nodes causing overload
+  mitigation: Apply node_count_cap and drop leaf-level detail.
 logging_fields:
-  - category_count
-  - cross_link_count
-  - map_depth
+- category_count
+- cross_link_count
+- map_depth
 evidence:
   citation: Novak & Cañas (2008)
   finding: Concept mapping supports meaningful learning when structures are constrained and explicit.
   source: research synthesis
 evidence_strength: medium
 primary_citations:
-  - Novak & Cañas (2008)
-  - Paivio (1991)
+- Novak & Cañas (2008)
+- Paivio (1991)
 evidence_raw: Concept hierarchies support schema orientation and later encoding.
+facilitation_prompt: 'You are running M-PRE-005 (Skeleton Concept Hierarchy) in PRIME stage.
 
-facilitation_prompt: |
-  You are running M-PRE-005 (Skeleton Concept Hierarchy) in PRIME stage.
+  This method is non-assessment.
+
   Build a bare hierarchy, not explanations.
 
+
   Rules:
+
   - Central topic -> 4-6 categories -> 1-2 descriptors each.
+
   - Depth max = 2.
+
   - Use {map_format}; respect node_count_cap.
+
   - No scoring or quiz prompts.
 
+
   Return:
+
   1) SkeletonMap
+
   2) CategoryLabels
+
   3) CrossLinks
+
+  Stop condition:
+  - End when category count and depth constraints are satisfied.
+
+  '
+gating_rules:
+- Do not assess or score the learner in PRIME.
+- Stay at orientation level and avoid full solution reveal.
+artifact_type: concept-map

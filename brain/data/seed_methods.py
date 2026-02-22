@@ -855,6 +855,124 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
     control_stage = yaml_data.get("control_stage", yaml_data.get("control_stage", ""))
     duration = yaml_data.get("default_duration_min", 5)
     description = yaml_data.get("description", "")
+    stage_key = str(control_stage or "").upper().strip()
+
+    default_inputs = {
+        "PRIME": [
+            "North Star objectives for current module",
+            "Selected source slice for current focus",
+        ],
+        "CALIBRATE": [
+            "Learner responses",
+            "Confidence tags",
+        ],
+        "ENCODE": [
+            "Target concept from objective map",
+            "Current misconception or gap signal",
+        ],
+        "REFERENCE": [
+            "Encoded concept summary",
+            "Reference target format for downstream retrieval",
+        ],
+        "RETRIEVE": [
+            "Reference targets or question bank",
+            "Scoring rubric and confidence capture",
+        ],
+        "OVERLEARN": [
+            "Stable retrieval targets",
+            "Speed/accuracy logs from prior attempts",
+        ],
+    }
+
+    default_gating_rules = {
+        "PRIME": [
+            "Do not assess or score the learner in PRIME.",
+            "Stay at orientation level and avoid full solution reveal.",
+        ],
+        "CALIBRATE": [
+            "Require a best attempt before giving correction.",
+            "Capture confidence and accuracy for each item.",
+        ],
+        "ENCODE": [
+            "Force active processing (explain, transform, or map), not passive reading.",
+            "Keep output scoped to mapped objectives only.",
+        ],
+        "REFERENCE": [
+            "Produce structured targets that RETRIEVE can directly test.",
+            "No retrieval drills until reference targets are explicit.",
+        ],
+        "RETRIEVE": [
+            "Require closed-note recall first, then feedback.",
+            "If repeated misses occur, route back to ENCODE or REFERENCE.",
+        ],
+        "OVERLEARN": [
+            "Run only after stable retrieval performance.",
+            "Stop after cap is met to avoid burnout loops.",
+        ],
+    }
+
+    default_outputs = {
+        "PRIME": ["Orientation scaffold aligned to module objectives"],
+        "CALIBRATE": ["Item-level accuracy and confidence baseline"],
+        "ENCODE": ["Learner-generated explanation or structured encoding artifact"],
+        "REFERENCE": ["Reusable reference artifact and retrieval targets"],
+        "RETRIEVE": ["Recall performance with error tags and confidence"],
+        "OVERLEARN": ["Fluency run summary and next review interval"],
+    }
+
+    default_stop_criteria = {
+        "PRIME": ["Learner confirms big-picture orientation for current scope"],
+        "CALIBRATE": ["Timebox complete and calibration signals logged"],
+        "ENCODE": ["Learner can explain concept in own words with minimal support"],
+        "REFERENCE": ["Reference artifact finalized and linked to targets"],
+        "RETRIEVE": ["All planned prompts attempted and feedback delivered"],
+        "OVERLEARN": ["Fluency cap reached or stopping threshold triggered"],
+    }
+
+    default_failure_modes = {
+        "PRIME": [
+            ("Scope too broad", "Reduce to objective-aligned scaffold and continue."),
+            ("Drift into testing", "Return to orientation-only behavior."),
+        ],
+        "CALIBRATE": [
+            ("Guessing without attempt", "Require best attempt before hints."),
+            ("Confidence not captured", "Re-run confidence tagging for missing items."),
+        ],
+        "ENCODE": [
+            (
+                "Passive repetition",
+                "Switch to self-explanation or transform-the-content prompt.",
+            ),
+            ("Overload", "Lower complexity and continue with one concept at a time."),
+        ],
+        "REFERENCE": [
+            (
+                "Artifact too vague for retrieval",
+                "Rewrite targets into explicit prompts/answers.",
+            ),
+            ("Reference bloat", "Trim to objective-critical content only."),
+        ],
+        "RETRIEVE": [
+            ("Answer leakage", "Re-enforce attempt-first then feedback."),
+            ("Repeated misses", "Route back to ENCODE with targeted scaffold."),
+        ],
+        "OVERLEARN": [
+            ("Burnout/fatigue", "Stop loop early and schedule spaced review."),
+            (
+                "Speed over accuracy collapse",
+                "Reduce time pressure and recover accuracy first.",
+            ),
+        ],
+    }
+
+    default_artifact_type = {
+        "PRIME": "notes",
+        "CALIBRATE": "notes",
+        "ENCODE": "notes",
+        "REFERENCE": "notes",
+        "RETRIEVE": "notes",
+        "OVERLEARN": "notes",
+    }
 
     gating_rules = None
     if "gating_rules" in yaml_data:
@@ -884,7 +1002,7 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
             if notes:
                 step_lines.append(f"   - {notes}")
     else:
-        step_lines.append("1. MISSING")
+        step_lines.append("1. Execute the method protocol exactly within current stage boundaries.")
     parts.append("\n".join(step_lines))
 
     # Inputs
@@ -892,7 +1010,10 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
     if inputs:
         parts.append("### Required Inputs\n" + "\n".join(f"- {inp}" for inp in inputs))
     else:
-        parts.append("### Required Inputs\n- MISSING")
+        stage_inputs = default_inputs.get(
+            stage_key, ["Current objective scope", "Learner response context"]
+        )
+        parts.append("### Required Inputs\n" + "\n".join(f"- {inp}" for inp in stage_inputs))
 
     if gating_rules:
         if isinstance(gating_rules, list):
@@ -907,7 +1028,10 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
         else:
             parts.append(f"### Gating Rules\n- {gating_rules}")
     else:
-        parts.append("### Gating Rules\n- MISSING")
+        stage_rules = default_gating_rules.get(
+            stage_key, ["Keep execution deterministic and stage-bounded."]
+        )
+        parts.append("### Gating Rules\n" + "\n".join(f"- {rule}" for rule in stage_rules))
 
     # Outputs
     outputs = yaml_data.get("outputs", [])
@@ -916,7 +1040,12 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
             "### Expected Outputs\n" + "\n".join(f"- {out}" for out in outputs)
         )
     else:
-        parts.append("### Expected Outputs\n- MISSING")
+        stage_outputs = default_outputs.get(
+            stage_key, ["Structured output aligned to current block."]
+        )
+        parts.append(
+            "### Expected Outputs\n" + "\n".join(f"- {out}" for out in stage_outputs)
+        )
 
     # Stop criteria
     stop_criteria = yaml_data.get("stop_criteria", [])
@@ -925,18 +1054,29 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
             "### Stop Criteria\n" + "\n".join(f"- {sc}" for sc in stop_criteria)
         )
     else:
-        parts.append("### Stop Criteria\n- MISSING")
+        stage_stop = default_stop_criteria.get(
+            stage_key, ["Timebox complete and required outputs delivered."]
+        )
+        parts.append("### Stop Criteria\n" + "\n".join(f"- {sc}" for sc in stage_stop))
 
     # Failure modes
     failure_modes = yaml_data.get("failure_modes", [])
     fm_lines = ["### Failure Modes"]
     if failure_modes:
         for fm in failure_modes:
-            mode = fm.get("mode", "")
-            mitigation = fm.get("mitigation", "")
-            fm_lines.append(f"- **{mode}** → {mitigation}")
+            if isinstance(fm, dict):
+                mode = fm.get("mode", "")
+                mitigation = fm.get("mitigation", "")
+                fm_lines.append(f"- **{mode}** → {mitigation}")
+            else:
+                fm_lines.append(f"- {str(fm)}")
     else:
-        fm_lines.append("- MISSING")
+        stage_fm = default_failure_modes.get(
+            stage_key,
+            [("Unspecified failure", "Fallback to lower complexity and continue.")],
+        )
+        for mode, mitigation in stage_fm:
+            fm_lines.append(f"- **{mode}** → {mitigation}")
     parts.append("\n".join(fm_lines))
 
     # Evidence
@@ -950,10 +1090,9 @@ def generate_facilitation_prompt(yaml_data: dict) -> str:
 
     # Artifact format requirements (canonical spec for machine-readable outputs)
     artifact_type = yaml_data.get("artifact_type", "")
-    if artifact_type:
-        parts.append(f"### Artifacts\n- artifact_type: {artifact_type}")
-    else:
-        parts.append("### Artifacts\n- artifact_type: MISSING")
+    if not artifact_type:
+        artifact_type = default_artifact_type.get(stage_key, "notes")
+    parts.append(f"### Artifacts\n- artifact_type: {artifact_type}")
     if artifact_type == "cards":
         parts.append(
             "### Required Output Format (Anki Cards)\n"
@@ -1025,43 +1164,53 @@ def regenerate_prompts() -> None:
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT id, name, control_stage, description, default_duration_min, energy_cost, artifact_type FROM method_blocks"
+        "SELECT id, method_id, name, control_stage, description, default_duration_min, energy_cost, artifact_type FROM method_blocks"
     )
-    name_to_block: dict[str, dict] = {}
+    id_to_block: dict[int, dict] = {}
     name_to_id: dict[str, int] = {}
+    method_id_to_id: dict[str, int] = {}
     for row in cursor.fetchall():
         block = {
             "id": row[0],
-            "name": row[1],
-            "control_stage": row[2] or "",
-            "description": row[3] or "",
-            "default_duration_min": row[4] or 5,
-            "energy_cost": row[5] or "medium",
-            "artifact_type": row[6] or "",
+            "method_id": (row[1] or "").strip(),
+            "name": row[2],
+            "control_stage": row[3] or "",
+            "description": row[4] or "",
+            "default_duration_min": row[5] or 5,
+            "energy_cost": row[6] or "medium",
+            "artifact_type": row[7] or "",
         }
-        name_to_id[row[1]] = row[0]
-        name_to_block[row[1]] = block
+        id_to_block[block["id"]] = block
+        name_to_id[block["name"]] = block["id"]
+        if block["method_id"]:
+            method_id_to_id[block["method_id"]] = block["id"]
 
     updated = 0
-    yaml_names_seen: set[str] = set()
+    yaml_resolved_ids: set[int] = set()
 
     for path in sorted(_METHODS_DIR.glob("*.yaml")):
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         if not data:
             continue
 
+        yaml_method_id = (data.get("id") or "").strip()
         block_name = data.get("name", "")
-        yaml_names_seen.add(block_name)
-        block_id = name_to_id.get(block_name)
+        block_id = method_id_to_id.get(yaml_method_id)
         if block_id is None:
-            print(f"[WARN] YAML block '{block_name}' not found in DB — skipping")
+            block_id = name_to_id.get(block_name)
+        if block_id is None:
+            if yaml_method_id:
+                print(
+                    f"[WARN] YAML block '{block_name}' ({yaml_method_id}) not found in DB — skipping"
+                )
+            else:
+                print(f"[WARN] YAML block '{block_name}' not found in DB — skipping")
             continue
+        yaml_resolved_ids.add(block_id)
 
         # Inject artifact_type from DB so format examples are embedded
         if "artifact_type" not in data:
-            data["artifact_type"] = name_to_block.get(block_name, {}).get(
-                "artifact_type", ""
-            )
+            data["artifact_type"] = id_to_block.get(block_id, {}).get("artifact_type", "")
         prompt = generate_facilitation_prompt(data)
         cursor.execute(
             "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
@@ -1070,17 +1219,15 @@ def regenerate_prompts() -> None:
         updated += 1
 
     # Fallback for blocks without YAML definitions
-    for block_name, block_id in name_to_id.items():
-        if block_name not in yaml_names_seen:
-            base_block = name_to_block.get(block_name)
-            if not base_block:
-                continue
-            prompt = generate_facilitation_prompt(base_block)
-            cursor.execute(
-                "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
-                (prompt, block_id),
-            )
-            updated += 1
+    for block_id, base_block in id_to_block.items():
+        if block_id in yaml_resolved_ids:
+            continue
+        prompt = generate_facilitation_prompt(base_block)
+        cursor.execute(
+            "UPDATE method_blocks SET facilitation_prompt = ? WHERE id = ?",
+            (prompt, block_id),
+        )
+        updated += 1
 
     conn.commit()
     conn.close()
@@ -1201,8 +1348,15 @@ def _insert_library_meta(
         print(f"[WARN] Could not insert library_meta: {e}")
 
 
-def seed_methods(force: bool = False):
-    """Insert/merge default method blocks and template chains (idempotent unless --force)."""
+def seed_methods(force: bool = False, strict_sync: bool = False):
+    """Insert/merge default method blocks and template chains.
+
+    Args:
+        force: When True, wipe method tables and reseed from source.
+        strict_sync: When True, reconcile existing rows to canonical YAML values
+            for runtime-critical fields (including artifact_type), not just
+            placeholder rows.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -1265,10 +1419,14 @@ def seed_methods(force: bool = False):
 
     cursor.execute(f"SELECT {', '.join(select_cols)} FROM method_blocks")
     existing_by_name = {}
+    existing_by_method_id = {}
     name_to_id = {}
     for row in cursor.fetchall():
         rec = dict(zip(select_cols, row))
         existing_by_name[rec["name"]] = rec
+        mid = (rec.get("method_id") or "").strip()
+        if mid:
+            existing_by_method_id[mid] = rec
         name_to_id[rec["name"]] = rec["id"]
 
     # Guardrail: remove obvious placeholder rows with missing canonical IDs.
@@ -1295,7 +1453,11 @@ def seed_methods(force: bool = False):
             )
             continue
 
-        existing = existing_by_name.get(block["name"])
+        existing = None
+        if method_id_value:
+            existing = existing_by_method_id.get(method_id_value)
+        if not existing:
+            existing = existing_by_name.get(block["name"])
         if not existing:
             cursor.execute(
                 """
@@ -1318,6 +1480,9 @@ def seed_methods(force: bool = False):
             name_to_id[block["name"]] = cursor.lastrowid
             inserted_blocks += 1
             continue
+
+        # Ensure canonical name can resolve to existing id even if DB row name drifted.
+        name_to_id[block["name"]] = existing["id"]
 
         # Conservative fix-up: only overwrite rows that look like placeholders.
         desc = (existing.get("description") or "").strip()
@@ -1343,7 +1508,40 @@ def seed_methods(force: bool = False):
             and method_id_value
             and not (existing.get("method_id") or "")
         )
-        if needs_update or needs_method_id_update:
+
+        desired_tags_json = json.dumps(block["tags"])
+        existing_tags_json = tags_raw if isinstance(tags_raw, str) else json.dumps(tags_raw or [])
+
+        strict_field_drift = False
+        if strict_sync:
+            strict_field_drift = any(
+                [
+                    (existing.get("name") or "") != block["name"],
+                    (existing.get("control_stage") or "") != block["control_stage"],
+                    (existing.get("description") or "") != (block["description"] or ""),
+                    int(existing.get("default_duration_min") or 0)
+                    != int(block["default_duration_min"] or 0),
+                    (existing.get("energy_cost") or "") != (block["energy_cost"] or ""),
+                    (existing.get("best_stage") or "") != (block["best_stage"] or ""),
+                    existing_tags_json != desired_tags_json,
+                    (
+                        "evidence" in mb_cols
+                        and (existing.get("evidence") or "") != (block.get("evidence") or "")
+                    ),
+                    (
+                        "artifact_type" in mb_cols
+                        and (existing.get("artifact_type") or "")
+                        != (block.get("artifact_type") or "")
+                    ),
+                    (
+                        "method_id" in mb_cols
+                        and method_id_value
+                        and (existing.get("method_id") or "") != method_id_value
+                    ),
+                ]
+            )
+
+        if needs_update or needs_method_id_update or strict_field_drift:
             set_cols = [
                 "method_id = ?",
                 "control_stage = ?",
@@ -1360,8 +1558,11 @@ def seed_methods(force: bool = False):
                 block["default_duration_min"],
                 block["energy_cost"],
                 block["best_stage"],
-                json.dumps(block["tags"]),
+                desired_tags_json,
             ]
+            if strict_sync and (existing.get("name") or "") != block["name"]:
+                set_cols.insert(0, "name = ?")
+                values.insert(0, block["name"])
             if "evidence" in mb_cols:
                 set_cols.append("evidence = ?")
                 values.append(block.get("evidence"))
@@ -1485,6 +1686,7 @@ def seed_methods(force: bool = False):
 
 if __name__ == "__main__":
     force = "--force" in sys.argv
+    strict_sync = "--strict-sync" in sys.argv
     migrate = "--migrate" in sys.argv
     regen_prompts = "--regenerate-prompts" in sys.argv
 
@@ -1493,4 +1695,4 @@ if __name__ == "__main__":
     elif regen_prompts:
         regenerate_prompts()
     else:
-        seed_methods(force=force)
+        seed_methods(force=force, strict_sync=strict_sync)

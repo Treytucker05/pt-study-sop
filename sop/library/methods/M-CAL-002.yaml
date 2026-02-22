@@ -37,6 +37,11 @@ knobs:
 constraints:
   confidence_before_feedback_required: true
   confidence_only_adaptation_disallowed: true
+gating_rules:
+  - Capture confidence before correctness feedback for every attempted item.
+  - Treat this block as diagnostic-only; do not teach or explain content deeply.
+  - Never lower difficulty based on confidence alone; require correctness/latency corroboration.
+  - Preserve a single confidence_scale throughout the block.
 inputs:
   - Calibrate item responses
   - Item correctness
@@ -59,6 +64,7 @@ outputs:
   - HighConfidenceMisses
   - LowConfidenceHits
   - CalibrationRiskFlags
+artifact_type: notes
 stop_criteria:
   - Every attempted item has confidence tag
   - Risk flags generated

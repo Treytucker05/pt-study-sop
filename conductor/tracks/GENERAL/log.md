@@ -945,3 +945,83 @@ px vitest run --reporter=verbose (341 passed)
   - `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Overlearn.md`
 - Validation:
   - `python -m pytest brain/tests/` -> `664 passed`
+
+## 2026-02-22 - Methods library action controls UX hardening
+
+- Updated methods library card controls in `dashboard_rebuild/client/src/pages/methods.tsx`:
+  - Replaced hover/overlay action buttons with persistent controls below each card (no text overlap).
+  - Replaced destructive `x` quick action with `EDIT` action.
+  - Kept `RATE` action visible and restyled for consistent retro UI readability.
+- Added full `Edit Block` dialog (name, category, description, duration, energy, best stage) with save + delete actions.
+- Added update mutation wiring via `api.methods.update` with cache invalidation and toasts.
+- Validation:
+  - `npm run build` (dashboard_rebuild) -> PASS
+  - `pytest brain/tests/` with `PYTHONPATH=C:\pt-study-sop` -> `667 passed`
+
+## 2026-02-22 - Methods favorites UX + separate rating action
+
+- Methods library UI updated in `dashboard_rebuild/client/src/pages/methods.tsx`:
+  - Star action converted to persistent favorite toggle (saved in localStorage key `methods.favoriteIds`).
+  - Added `FAVORITES` filter tab in stage/category filter row.
+  - Added separate `RATE` button (rating dialog) while keeping `EDIT` button.
+  - Action controls remain always visible and positioned below cards to avoid overlapping card text.
+- Validation:
+  - `npm run build` (dashboard_rebuild) -> PASS
+  - `pytest brain/tests/` with `PYTHONPATH=C:\pt-study-sop` -> `667 passed`
+
+## 2026-02-22 - Methods edit dialog fixes (dropdown, sizing, tutor prompt)
+
+- Fixed Methods `Edit Block` dialog in `dashboard_rebuild/client/src/pages/methods.tsx`:
+  - Category dropdown now normalizes legacy values (`prepare/interrogate/refine/...`) to control-plane categories so select always works.
+  - Category labels now use explicit control-plane labels (PRIMING/CALIBRATE/ENCODING/REFERENCE/RETRIEVAL/OVERLEARNING).
+  - Best stage selector moved to full-width row and trigger set to no-wrap to prevent text clipping.
+  - Added editable `TUTOR PROMPT` textarea bound to `facilitation_prompt`, persisted via method update API.
+  - Dialog widened (`max-w-lg`) for stable control spacing.
+- Validation:
+  - `npm run build` (dashboard_rebuild) -> PASS
+  - `pytest brain/tests/` with `PYTHONPATH=C:\pt-study-sop` -> `667 passed`
+
+## 2026-02-22 - Methods dropdown fix + reset/full-text controls
+
+- Fixed dropdown interaction reliability by raising Select popup layer globally:
+  - `dashboard_rebuild/client/src/components/ui/select.tsx` changed `SelectContent` z-index to `z-[200]`.
+- Updated methods edit dialog in `dashboard_rebuild/client/src/pages/methods.tsx`:
+  - Added `FULL TEXT` toggle to expand dialog and text editors.
+  - Added `RESET PROMPT` button to restore `facilitation_prompt` from current block.
+  - Added stronger select content z-index override (`z-[240]`) inside dialog selects.
+  - Improved text areas: description now resizable, tutor prompt scales in fullscreen.
+- Validation:
+  - `npm run build` (dashboard_rebuild) -> PASS
+  - `pytest brain/tests/` with `PYTHONPATH=C:\pt-study-sop` -> `667 passed`
+## 2026-02-22 14:19 - Method card hardening sweep
+- Hardened all remaining non-hardened method YAML cards in sop/library/methods.
+- Added missing description, knobs, and constraints using control-stage defaults across 39 files.
+- Fixed stage-behavior mismatch in M-INT-005 (RETRIEVE attempt-first prompt).
+- Validation: python -m pytest brain/tests/ => 667 passed.
+## 2026-02-22 14:24 - Full category hardening + Obsidian sync + CI guardrails
+- Completed semantic hardening pass across method YAML cards with stage-boundary consistency checks.
+- Normalized remaining PRIME prompt boundaries (
+on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
+- Synced Obsidian category pages from method cards: Prime.md, Calibrate.md, Encode.md, Reference.md, Retrieve.md, Overlearn.md, and Categories.md.
+- Added rain/tests/test_method_cards_hardening.py to enforce required method card fields and stage semantics in CI.
+- Validation: python -m pytest brain/tests/ => 669 passed.
+## 2026-02-22 14:36 - Prompt quality pass + category sync command + live chain smoke
+- Performed strict prompt quality pass across all method cards; tightened weak prompts (M-ENC-009, M-INT-005, M-PRE-005).
+- Added one-command Obsidian category sync script: scripts/sync_tutor_category_docs.py.
+- Added regression test for sync script: rain/tests/test_sync_tutor_category_docs.py.
+- Updated script docs (scripts/README.md) and tutor tracker (docs/root/TUTOR_TODO.md).
+- Executed live chain smoke runs with writes disabled:
+  - Temp chain (Brain Dump -> Micro Precheck -> KWIK Hook) failed at step 3 due artifact validator expecting cards (useful drift signal).
+  - Temp chain (Learning Objectives Primer -> Micro Precheck -> Why-Chain) completed successfully.
+- Validation: python -m pytest brain/tests/ => 670 passed.
+## 2026-02-22 15:05 - Strict method-library drift sync + runtime verification
+- Implemented strict DB/YAML reconciliation path in `brain/data/seed_methods.py` (`strict_sync` mode) so non-placeholder rows are corrected for runtime-critical fields (including `artifact_type`).
+- Added startup guard in `brain/db_setup.py` (`ensure_method_library_seeded`) to run one-time strict sync by default via `PT_METHOD_LIBRARY_STRICT_SYNC`.
+- Added regression test `test_seed_methods_strict_sync_updates_stale_artifact_type` in `brain/tests/test_seed_methods.py`.
+- Applied live strict sync: `python brain/data/seed_methods.py --strict-sync`.
+- Verified runtime fix: `M-ENC-001` now resolves to `artifact_type='notes'` in `brain/data/pt_study.db`.
+- Validation:
+  - `pytest brain/tests/test_seed_methods.py brain/tests/test_method_cards_hardening.py brain/tests/test_sync_tutor_category_docs.py` -> 5 passed
+  - `python -m pytest brain/tests/` -> 671 passed
+  - `powershell -ExecutionPolicy Bypass -File scripts/smoke_tutor_readonly.ps1` -> 6 passed, 0 failed
+  - `npm run build` (dashboard_rebuild) -> PASS

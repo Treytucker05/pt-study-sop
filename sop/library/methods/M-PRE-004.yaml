@@ -9,32 +9,36 @@ best_stage: first_exposure
 status: validated
 has_steps: Y
 has_outputs_or_artifacts: Y
-outputs_summary: "PillarTree; PriorKnowledgeLinks; Hypotheses"
+outputs_summary: PillarTree; PriorKnowledgeLinks; Hypotheses
 tags:
-  - advance-organizer
-  - hierarchy
-  - top-down
+- advance-organizer
+- hierarchy
+- top-down
 mechanisms:
-  - schema_activation
-  - subsumption
+- schema_activation
+- subsumption
 stipulations:
-  - Keep abstraction high; do not include leaf-level memorization details.
-  - Start from most inclusive concept, then descend one level only.
-  - PRIME boundary applies: no scoring and no quiz behavior.
+- Keep abstraction high; do not include leaf-level memorization details.
+- Start from most inclusive concept, then descend one level only.
+- PRIME boundary applies: no scoring and no quiz behavior.
 when_to_use:
-  - New, dense, or mechanism-heavy topics.
-  - Learners who prefer big-picture-first orientation.
+- New, dense, or mechanism-heavy topics.
+- Learners who prefer big-picture-first orientation.
 when_not_to_use:
-  - Learner already demonstrates expert-level schema familiarity.
-  - Ultra-familiar topics where organizer adds redundancy.
+- Learner already demonstrates expert-level schema familiarity.
+- Ultra-familiar topics where organizer adds redundancy.
 knobs:
   complexity_level:
     type: enum
-    options: [epitome_only, intermediate_outline]
+    options:
+    - epitome_only
+    - intermediate_outline
     default: intermediate_outline
   representation_format:
     type: enum
-    options: [markdown_tree, mermaid]
+    options:
+    - markdown_tree
+    - mermaid
     default: markdown_tree
 constraints:
   non_assessment: true
@@ -42,56 +46,72 @@ constraints:
   pillar_max: 5
   max_depth: 2
 inputs:
-  - Topic title
-  - Learning objectives (preferred)
-  - Prior mastered topics (optional)
+- Topic title
+- Learning objectives (preferred)
+- Prior mastered topics (optional)
 steps:
-  - step: 1
-    action: Identify the most inclusive parent concept
-    notes: One sentence maximum.
-  - step: 2
-    action: Extract 3-5 pillar concepts
-    notes: Pillars should subsume upcoming details.
-  - step: 3
-    action: Add one sub-branch per pillar
-    notes: Keep depth <=2 and omit leaf trivia.
-  - step: 4
-    action: Add one comparative link to prior knowledge for each pillar
-    notes: Use concise bridge statements.
+- step: 1
+  action: Identify the most inclusive parent concept
+  notes: One sentence maximum.
+- step: 2
+  action: Extract 3-5 pillar concepts
+  notes: Pillars should subsume upcoming details.
+- step: 3
+  action: Add one sub-branch per pillar
+  notes: Keep depth <=2 and omit leaf trivia.
+- step: 4
+  action: Add one comparative link to prior knowledge for each pillar
+  notes: Use concise bridge statements.
 outputs:
-  - PillarTree
-  - PriorKnowledgeLinks
-  - StructuralHypotheses
+- PillarTree
+- PriorKnowledgeLinks
+- StructuralHypotheses
 stop_criteria:
-  - Pillar count between 3 and 5
-  - Depth <=2
-  - Every pillar has at least one prior-knowledge bridge
+- Pillar count between 3 and 5
+- Depth <=2
+- Every pillar has at least one prior-knowledge bridge
 failure_modes:
-  - mode: Tree becomes detail-heavy
-    mitigation: Collapse leaf nodes to pillar/sub-branch only.
-  - mode: No prior bridge links
-    mitigation: Force one bridge sentence per pillar.
+- mode: Tree becomes detail-heavy
+  mitigation: Collapse leaf nodes to pillar/sub-branch only.
+- mode: No prior bridge links
+  mitigation: Force one bridge sentence per pillar.
 logging_fields:
-  - pillar_count
-  - depth_level
-  - bridge_link_count
+- pillar_count
+- depth_level
+- bridge_link_count
 evidence_strength: high
 primary_citations:
-  - Ausubel (1960)
-  - Luiten et al. (1980)
-  - Hattie (2009)
+- Ausubel (1960)
+- Luiten et al. (1980)
+- Hattie (2009)
+facilitation_prompt: 'You are running M-PRE-004 (Hierarchical Advance Organizer) in PRIME stage.
 
-facilitation_prompt: |
-  You are running M-PRE-004 (Hierarchical Advance Organizer) in PRIME stage.
+  This method is non-assessment.
+
   Build a top-down organizer, not a lesson and not a quiz.
 
+
   Requirements:
+
   - 3-5 pillars, max depth 2.
+
   - One concise prior-knowledge bridge per pillar.
+
   - Output in {representation_format} at {complexity_level}.
+
   - No scoring, no checks, no retrieval prompts.
 
+
   Return exactly:
+
   1) PillarTree
+
   2) PriorKnowledgeLinks
+
   3) StructuralHypotheses
+
+  '
+gating_rules:
+- Do not assess or score the learner in PRIME.
+- Stay at orientation level and avoid full solution reveal.
+artifact_type: notes

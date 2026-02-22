@@ -8,85 +8,122 @@ best_stage: exam_prep
 control_stage: RETRIEVE
 status: validated
 tags:
-  - interleaving
-  - discrimination
-  - mixed
-  - evidence-based
+- interleaving
+- discrimination
+- mixed
+- evidence-based
 mechanisms:
-  - retrieval
-  - interleaving
-  - discrimination
-  - transfer
+- retrieval
+- interleaving
+- discrimination
+- transfer
+knobs:
+  difficulty:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+  feedback_timing:
+    type: enum
+    options:
+    - immediate
+    - after_attempt
+    default: after_attempt
+constraints:
+  attempt_required_before_feedback: true
+  closed_note_first: true
+  route_back_on_repeated_miss: true
 inputs:
-  - 2-3 different topics for interleaving
-  - Question bank or Tutor AI covering all topics
-  - Timer (10 min recommended)
-  - Randomization method (shuffle cards, AI random selection)
+- 2-3 different topics for interleaving
+- Question bank or Tutor AI covering all topics
+- Timer (10 min recommended)
+- Randomization method (shuffle cards, AI random selection)
 steps:
-  - step: 1
-    action: Select 2-3 distinct but related topics for the session
-    notes: Best with topics that could be confused (e.g., similar muscle actions)
-  - step: 2
-    action: Create or request a mixed question set
-    notes: Questions should be randomly ordered, not blocked by topic
-  - step: 3
-    action: Answer each question, noting which topic it belongs to
-    notes: The discrimination ("which topic is this?") is part of the learning
-  - step: 4
-    action: After answering, verify correctness AND topic classification
-    notes: Both content and categorization matter
-  - step: 5
-    action: Track accuracy by topic separately
-    notes: Identifies which topic needs more work
-  - step: 6
-    action: Reflect on discrimination patterns — which topics did you confuse?
-    notes: Confusion patterns reveal conceptual boundaries to strengthen
+- step: 1
+  action: Select 2-3 distinct but related topics for the session
+  notes: Best with topics that could be confused (e.g., similar muscle actions)
+- step: 2
+  action: Create or request a mixed question set
+  notes: Questions should be randomly ordered, not blocked by topic
+- step: 3
+  action: Answer each question, noting which topic it belongs to
+  notes: The discrimination ("which topic is this?") is part of the learning
+- step: 4
+  action: After answering, verify correctness AND topic classification
+  notes: Both content and categorization matter
+- step: 5
+  action: Track accuracy by topic separately
+  notes: Identifies which topic needs more work
+- step: 6
+  action: Reflect on discrimination patterns — which topics did you confuse?
+  notes: Confusion patterns reveal conceptual boundaries to strengthen
 outputs:
-  - Overall accuracy across all topics
-  - Per-topic accuracy breakdown
-  - Confusion matrix (which topics got mixed up)
-  - Discrimination insights (what cues distinguish topics)
+- Overall accuracy across all topics
+- Per-topic accuracy breakdown
+- Confusion matrix (which topics got mixed up)
+- Discrimination insights (what cues distinguish topics)
 stop_criteria:
-  - Timer ends (10 min)
-  - All questions in the mixed set answered
-  - Discrimination accuracy meets threshold (can correctly identify topic)
+- Timer ends (10 min)
+- All questions in the mixed set answered
+- Discrimination accuracy meets threshold (can correctly identify topic)
 failure_modes:
-  - mode: Blocked practice creeping in (doing all topic A, then all topic B)
-    mitigation: Enforce randomization — shuffle before starting
-  - mode: Not tracking which topic each question belongs to
-    mitigation: Label each question with its topic before answering
-  - mode: Frustration at harder recall (interleaving feels harder)
-    mitigation: Remind that difficulty is the point — harder now, easier later
+- mode: Blocked practice creeping in (doing all topic A, then all topic B)
+  mitigation: Enforce randomization — shuffle before starting
+- mode: Not tracking which topic each question belongs to
+  mitigation: Label each question with its topic before answering
+- mode: Frustration at harder recall (interleaving feels harder)
+  mitigation: Remind that difficulty is the point — harder now, easier later
 logging_fields:
-  - topics_interleaved
-  - questions_per_topic
-  - overall_accuracy
-  - per_topic_accuracy
-  - confusion_pairs
+- topics_interleaved
+- questions_per_topic
+- overall_accuracy
+- per_topic_accuracy
+- confusion_pairs
 evidence:
   citation: Rohrer et al. (2015)
   finding: interleaved practice improves discrimination and transfer
   source: seed_methods.py
 evidence_raw: Rohrer et al. (2015); interleaved practice improves discrimination and transfer
+facilitation_prompt: 'You are running M-RET-004 (Mixed Practice) in RETRIEVE stage.
 
-facilitation_prompt: |
-  You are running M-RET-004 (Mixed Practice) in RETRIEVE stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Require learner attempt first.
+
   - Do not reveal full answer before attempt.
+
   - Capture errors and route signals.
 
+
   Required outputs:
+
   - Overall accuracy across all topics
+
   - Per-topic accuracy breakdown
+
   - Confusion matrix (which topics got mixed up)
+
   - Discrimination insights (what cues distinguish topics)
 
+
   Stop conditions:
+
   - Timer ends (10 min)
+
   - All questions in the mixed set answered
+
   - Discrimination accuracy meets threshold (can correctly identify topic)
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Require closed-note recall first, then feedback.
+- If repeated misses occur, route back to ENCODE or REFERENCE.
+artifact_type: notes

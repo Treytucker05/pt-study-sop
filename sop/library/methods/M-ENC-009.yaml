@@ -2,16 +2,65 @@ id: M-ENC-009
 name: Concept Map
 category: encode
 control_stage: ENCODE
+description: 'Generate a learner-usable concept map that captures core nodes and labeled links for objective-scoped encoding.'
 default_duration_min: 10
 energy_cost: high
 has_steps: Y
 has_outputs_or_artifacts: Y
-outputs_summary: "Concept map (nodes + labeled links); Mermaid code"
+outputs_summary: Concept map (nodes + labeled links); Mermaid code
 knobs:
   diagram_format:
     type: enum
-    options: [mermaid, ascii, markdown_list]
+    options:
+    - mermaid
+    - ascii
+    - markdown_list
     default: mermaid
+facilitation_prompt: 'Analyze the skeleton outline just provided and generate a concept map visualizing the relationships between the core components. You MUST format your visual output strictly using {diagram_format}.
 
-facilitation_prompt: |
-  Analyze the skeleton outline just provided and generate a concept map visualizing the relationships between the core components. You MUST format your visual output strictly using {diagram_format}.
+  You are running M-ENC-009 (Concept Map) in ENCODE stage.
+
+  Stage boundary:
+  - ENCODE requires active processing. Do not passively summarize.
+  - Keep map scoped to the current objective only.
+
+  Build and return exactly:
+  1) ConceptMapNodes
+  2) ConceptMapLinks
+  3) MermaidOrAsciiMap
+  4) One-ParagraphLearnerExplanation
+
+  Stop condition:
+  - End when the learner can explain the concept map structure in their own words with minimal support.
+
+  '
+constraints:
+  active_processing_required: true
+  objective_scope_required: true
+  no_final_answer_only: true
+steps:
+- step: 1
+  action: Start ENCODE protocol within scope
+  notes: Respect stage boundaries.
+- step: 2
+  action: Execute method actions in order
+  notes: Capture required telemetry/artifacts.
+- step: 3
+  action: Emit required outputs and handoff
+  notes: Do not drift into another stage.
+inputs:
+- Target concept from objective map
+- Current misconception or gap signal
+gating_rules:
+- Force active processing (explain, transform, or map), not passive reading.
+- Keep output scoped to mapped objectives only.
+outputs:
+- Learner-generated explanation or structured encoding artifact
+stop_criteria:
+- Learner can explain concept in own words with minimal support
+failure_modes:
+- mode: Passive repetition
+  mitigation: Switch to self-explanation or transform-the-content prompt.
+- mode: Overload
+  mitigation: Lower complexity and continue with one concept at a time.
+artifact_type: concept-map

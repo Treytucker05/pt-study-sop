@@ -8,86 +8,119 @@ best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - schema-activation
-  - connections
-  - transfer
+- schema-activation
+- connections
+- transfer
 mechanisms:
-  - retrieval
-  - elaboration
-  - transfer
+- retrieval
+- elaboration
+- transfer
 stipulations:
-  - Run only when prior context exists (North Star and/or prior notes linked to the current learning objective).
-  - If no prior context exists, skip this method and route to M-PRE-010 followed by M-PRE-008.
-  - PRIME boundary: orientation only; no scored probes and no answer-checking.
-  - Use this for connection mapping, not for calibration.
+- Run only when prior context exists (North Star and/or prior notes linked to the current learning objective).
+- If no prior context exists, skip this method and route to M-PRE-010 followed by M-PRE-008.
+- PRIME boundary: orientation only; no scored probes and no answer-checking.
+- Use this for connection mapping, not for calibration.
+knobs:
+  priming_scope:
+    type: enum
+    options:
+    - module_all
+    - single_focus
+    default: single_focus
+  guidance_level:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+constraints:
+  non_assessment: true
+  no_scored_checks: true
+  no_retrieval_grading: true
 inputs:
-  - New topic name
-  - Access to previous module/course notes (required)
-  - North Star objective context (preferred)
+- New topic name
+- Access to previous module/course notes (required)
+- North Star objective context (preferred)
 steps:
-  - step: 1
-    action: Write the new topic at center of page
-    notes: This becomes the hub for connection mapping
-  - step: 2
-    action: List 3-5 related concepts you already know
-    notes: These can be from this course, other courses, or general knowledge
-  - step: 3
-    action: Draw arrows showing how each relates to the new topic
-    notes: "Label arrows with relationship type: 'causes', 'part of', 'similar to'"
-  - step: 4
-    action: Identify the strongest connection
-    notes: This becomes your primary anchoring schema
-  - step: 5
-    action: Note any prerequisite gaps
-    notes: If a connection feels weak, flag it for review
+- step: 1
+  action: Write the new topic at center of page
+  notes: This becomes the hub for connection mapping
+- step: 2
+  action: List 3-5 related concepts you already know
+  notes: These can be from this course, other courses, or general knowledge
+- step: 3
+  action: Draw arrows showing how each relates to the new topic
+  notes: 'Label arrows with relationship type: ''causes'', ''part of'', ''similar to'''
+- step: 4
+  action: Identify the strongest connection
+  notes: This becomes your primary anchoring schema
+- step: 5
+  action: Note any prerequisite gaps
+  notes: If a connection feels weak, flag it for review
 outputs:
-  - Connection map (topic + related concepts)
-  - Primary anchoring schema identified
-  - Prerequisite gap list
-  - Optional follow_up_targets list for unresolved prerequisite gaps
+- Connection map (topic + related concepts)
+- Primary anchoring schema identified
+- Prerequisite gap list
+- Optional follow_up_targets list for unresolved prerequisite gaps
 stop_criteria:
-  - At least 1 prior context source referenced
-  - 3-5 connections identified
-  - Primary anchor selected
-  - 3 minutes elapsed
+- At least 1 prior context source referenced
+- 3-5 connections identified
+- Primary anchor selected
+- 3 minutes elapsed
 failure_modes:
-  - mode: No prior context available
-    mitigation: Skip M-PRE-003 and run M-PRE-010 then M-PRE-008
-  - mode: No connections found
-    mitigation: Prompt with broader categories - anatomy, physiology, pathology
-  - mode: Connections too superficial
-    mitigation: Require relationship labels on arrows
-  - mode: Spending too long on drawing
-    mitigation: Text list is acceptable; visual is optional enhancement
+- mode: No prior context available
+  mitigation: Skip M-PRE-003 and run M-PRE-010 then M-PRE-008
+- mode: No connections found
+  mitigation: Prompt with broader categories - anatomy, physiology, pathology
+- mode: Connections too superficial
+  mitigation: Require relationship labels on arrows
+- mode: Spending too long on drawing
+  mitigation: Text list is acceptable; visual is optional enhancement
 logging_fields:
-  - context_sources_used
-  - connection_count
-  - primary_anchor_topic
-  - prerequisite_gaps
-  - skipped_reason
+- context_sources_used
+- connection_count
+- primary_anchor_topic
+- prerequisite_gaps
+- skipped_reason
 evidence:
   citation: Ausubel (1968)
   finding: Meaningful learning requires anchoring new information to existing schemas
   source: seed_methods.py
 evidence_strength: high
 primary_citations:
-  - Ausubel (1968)
-  - Luiten et al. (1980)
+- Ausubel (1968)
+- Luiten et al. (1980)
 evidence_raw: Ausubel (1968); meaningful learning requires anchoring to existing schemas
+facilitation_prompt: 'You are running M-PRE-003 (Prior Knowledge Scan) in PRIME stage.
 
-facilitation_prompt: |
-  You are running M-PRE-003 (Prior Knowledge Scan) in PRIME stage.
   This method is conditional and non-assessment.
 
+
   Hard rules:
+
   - Run only if prior notes/North Star context exist.
+
   - If no prior context exists, skip and route to M-PRE-010 then M-PRE-008.
+
   - Do not score or confidence-rate responses.
 
+
   Produce exactly:
+
   1) ConnectionMap (topic -> known related concepts with labeled links)
+
   2) PrimaryAnchor
+
   3) PrerequisiteGaps
+
   4) FollowUpTargets
 
+
   Keep to top-level orientation output; no deep teaching in this method.
+
+  '
+gating_rules:
+- Do not assess or score the learner in PRIME.
+- Stay at orientation level and avoid full solution reveal.
+artifact_type: notes

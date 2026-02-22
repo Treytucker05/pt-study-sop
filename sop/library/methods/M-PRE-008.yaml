@@ -8,23 +8,25 @@ best_stage: first_exposure
 control_stage: PRIME
 status: validated
 tags:
-  - prime
-  - structure
-  - orientation
-  - schema-priming
+- prime
+- structure
+- orientation
+- schema-priming
 mechanisms:
-  - scaffolding
-  - metacognitive_monitoring
+- scaffolding
+- metacognitive_monitoring
 when_to_use:
-  - Dense or complex modules where the learner needs a high-signal schema first.
-  - Medical/STEM/exam-prep content with many interacting concepts.
+- Dense or complex modules where the learner needs a high-signal schema first.
+- Medical/STEM/exam-prep content with many interacting concepts.
 when_not_to_use:
-  - Very short sessions where M-PRE-010 alone is sufficient.
-  - Ultra-simple fact lists better handled with direct objective framing.
+- Very short sessions where M-PRE-010 alone is sufficient.
+- Ultra-simple fact lists better handled with direct objective framing.
 knobs:
   priming_depth_mode:
     type: enum
-    options: [basic, schema]
+    options:
+    - basic
+    - schema
     default: basic
   node_cap:
     type: int
@@ -33,7 +35,10 @@ knobs:
     default: 10
   output_format:
     type: enum
-    options: [ascii_tree, bulleted_spine, markdown_table]
+    options:
+    - ascii_tree
+    - bulleted_spine
+    - markdown_table
     default: ascii_tree
   objective_link_required:
     type: bool
@@ -43,7 +48,9 @@ constraints:
   no_scored_checks: true
   no_retrieval_grading: true
   objective_context_required: true
-  objective_context_sources: [M-PRE-010, North_Star]
+  objective_context_sources:
+  - M-PRE-010
+  - North_Star
   objective_context_pairing_with_M_PRE_010_recommended: true
   objective_context_pairing_with_M_PRE_010_mandatory: false
   basic_priming_time_window_min: 2
@@ -56,64 +63,90 @@ constraints:
   objective_link_required_hard_lock: true
   trivia_node_exclusion: true
 inputs:
-  - North Star objectives
-  - Source packet
-  - objective_scope (module_all | single_focus)
-  - focus_objective_id (required in single_focus)
+- North Star objectives
+- Source packet
+- objective_scope (module_all | single_focus)
+- focus_objective_id (required in single_focus)
 steps:
-  - step: 1
-    action: Resolve objective scope and objective set
-    notes: Objective context can come from M-PRE-010 in current flow OR existing North Star from prior sessions; module_all uses all active module objectives; single_focus uses only the selected objective.
-  - step: 2
-    action: Extract structural spine nodes
-    notes: Keep node count <= node_cap; prefer mechanism/decision nodes over trivia.
-  - step: 3
-    action: Link each node to objective IDs
-    notes: Any unlinked node is removed when objective_link_required=true.
-  - step: 4
-    action: Mark unknown or low-confidence nodes
-    notes: Unknowns are orientation markers only; do not score or quiz.
+- step: 1
+  action: Resolve objective scope and objective set
+  notes: Objective context can come from M-PRE-010 in current flow OR existing North Star from prior sessions; module_all uses all active module objectives; single_focus uses only the selected objective.
+- step: 2
+  action: Extract structural spine nodes
+  notes: Keep node count <= node_cap; prefer mechanism/decision nodes over trivia.
+- step: 3
+  action: Link each node to objective IDs
+  notes: Any unlinked node is removed when objective_link_required=true.
+- step: 4
+  action: Mark unknown or low-confidence nodes
+  notes: Unknowns are orientation markers only; do not score or quiz.
 outputs:
-  - StructuralSpine
-  - Objective linkage map
-  - UnknownNodeList
-  - PriorityNodes
+- StructuralSpine
+- Objective linkage map
+- UnknownNodeList
+- PriorityNodes
 stop_criteria:
-  - Spine node count <= node_cap
-  - Every node links to >=1 objective when objective_link_required=true
-  - UnknownNodeList is present (can be empty)
-  - No scored probes or retrieval grading emitted
+- Spine node count <= node_cap
+- Every node links to >=1 objective when objective_link_required=true
+- UnknownNodeList is present (can be empty)
+- No scored probes or retrieval grading emitted
 evidence:
   citation: Ausubel (1968)
   finding: Advance organizers improve comprehension when structure is established before detail.
   source: control-plane migration
 evidence_strength: medium_high
 primary_citations:
-  - Ausubel (1968)
-  - Sung (2025)
+- Ausubel (1968)
+- Sung (2025)
 evidence_raw: Ausubel (1968); structural organizers improve meaningful learning
-facilitation_prompt: |
-  You are running M-PRE-008 (Structural Extraction) in PRIME stage.
+facilitation_prompt: 'You are running M-PRE-008 (Structural Extraction) in PRIME stage.
+
   This method is non-assessment: do not quiz, grade, or run retrieval checks.
 
+
   Dependency note:
+
   - M-PRE-008 requires objective context.
+
   - Objective context may come from M-PRE-010 in this flow OR an already-built North Star.
+
   - Pairing with M-PRE-010 is recommended, not mandatory.
 
+
   Time guidance by priming_depth_mode:
+
   - basic: 2-5 minutes
+
   - schema: 5-10 minutes for complex topics
 
+
   Use objective_scope:
+
   - module_all: build a high-level spine across all active module objectives.
+
   - single_focus: build a spine only for the selected focus objective.
 
+
   Produce:
+
   1) StructuralSpine (<= node_cap, high-signal nodes only)
+
   2) Objective linkage map (every node linked to >=1 objective)
+
   3) UnknownNodeList (orientation gaps, not scores)
+
   4) PriorityNodes (what to cover first)
+
 
   Exclude trivia and avoid deep teaching details in this method.
 
+  '
+gating_rules:
+- Do not assess or score the learner in PRIME.
+- Stay at orientation level and avoid full solution reveal.
+failure_modes:
+- mode: Scope too broad
+  mitigation: Reduce to objective-aligned scaffold and continue.
+- mode: Drift into testing
+  mitigation: Return to orientation-only behavior.
+artifact_type: notes

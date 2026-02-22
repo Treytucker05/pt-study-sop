@@ -71,6 +71,7 @@ Progress notes:
 - Method-card prompt baseline now enforced across the full library: every YAML method card has a tutor-facing `facilitation_prompt`; `M-PRE-003` now includes conditional-use stipulations and fallback route (`M-PRE-010 -> M-PRE-008`) when prior context is missing.
 - Test isolation hardening complete: North Star write path is blocked in test mode (`api_tutor` guard), and tutor session-linking tests now monkeypatch Obsidian I/O to in-memory fakes with a zero-write assertion.
 - PRIME hardening pass completed for all active PRIME methods (`M-PRE-001/002/003/004/005/006/008/009/010`) with method-specific execution prompts, when-to-use / when-not-to-use rules, and top-down output contracts aligned to recent research mappings.
+- Live smoke runs completed (Obsidian/Anki writes disabled): one intentional fail path exposed DB-vs-YAML artifact drift on `M-ENC-001`; one module-all PRIME->CALIBRATE->ENCODE run completed successfully.
 
 ### A5) PRIME Acceptance Criteria
 - [ ] Any PRIME block run produces orientation artifacts only.
@@ -115,6 +116,7 @@ Progress notes:
   - `Study System/Categories/Reference.md`
   - `Study System/Categories/Retrieve.md`
   - `Study System/Categories/Overlearn.md`
+- [x] Added one-command category sync script: `python scripts/sync_tutor_category_docs.py` (+ test guard `brain/tests/test_sync_tutor_category_docs.py`).
 
 ## Immediate Next 3 Tasks
 1. [ ] Build PRIME method-by-method policy table (method -> intent -> allowed outputs -> blocked behaviors).

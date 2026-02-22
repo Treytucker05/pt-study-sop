@@ -8,55 +8,94 @@ best_stage: review
 control_stage: RETRIEVE
 status: validated
 tags:
-  - retrieval
-  - timing
-  - latency
+- retrieval
+- timing
+- latency
 mechanisms:
-  - retrieval
-  - desirable_difficulty
+- retrieval
+- desirable_difficulty
+knobs:
+  difficulty:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+  feedback_timing:
+    type: enum
+    options:
+    - immediate
+    - after_attempt
+    default: after_attempt
+constraints:
+  attempt_required_before_feedback: true
+  closed_note_first: true
+  route_back_on_repeated_miss: true
 inputs:
-  - Question Bank Seed
-  - Timer
+- Question Bank Seed
+- Timer
 steps:
-  - step: 1
-    action: Run short timed sets with strict item clocks
-    notes: Mark misses at >45s and move on
-  - step: 2
-    action: Record time_to_answer for each item
-    notes: Capture accuracy and confidence together
-  - step: 3
-    action: Push misses to ErrorLog.csv
-    notes: Tag Speed when latency is the limiting factor
+- step: 1
+  action: Run short timed sets with strict item clocks
+  notes: Mark misses at >45s and move on
+- step: 2
+  action: Record time_to_answer for each item
+  notes: Capture accuracy and confidence together
+- step: 3
+  action: Push misses to ErrorLog.csv
+  notes: Tag Speed when latency is the limiting factor
 outputs:
-  - Timed sprint result set
-  - Latency log
-  - ErrorLog updates
+- Timed sprint result set
+- Latency log
+- ErrorLog updates
 stop_criteria:
-  - Item-level latency captured
-  - Misses and speed failures logged
+- Item-level latency captured
+- Misses and speed failures logged
 evidence:
   citation: Cepeda et al. (2006)
   finding: Spaced retrieval with repeated timed attempts improves long-term access speed
   source: control-plane migration
 evidence_raw: Cepeda et al. (2006); repeated retrieval improves recall and response fluency
+facilitation_prompt: 'You are running M-RET-007 (Timed Sprint Sets) in RETRIEVE stage.
 
-
-facilitation_prompt: |
-  You are running M-RET-007 (Timed Sprint Sets) in RETRIEVE stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Require learner attempt first.
+
   - Do not reveal full answer before attempt.
+
   - Capture errors and route signals.
 
+
   Required outputs:
+
   - Timed sprint result set
+
   - Latency log
+
   - ErrorLog updates
 
+
   Stop conditions:
+
   - Item-level latency captured
+
   - Misses and speed failures logged
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Require closed-note recall first, then feedback.
+- If repeated misses occur, route back to ENCODE or REFERENCE.
+failure_modes:
+- mode: Answer leakage
+  mitigation: Re-enforce attempt-first then feedback.
+- mode: Repeated misses
+  mitigation: Route back to ENCODE with targeted scaffold.
+artifact_type: notes

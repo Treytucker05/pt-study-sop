@@ -8,82 +8,119 @@ best_stage: review
 control_stage: RETRIEVE
 status: validated
 tags:
-  - recall
-  - testing-effect
-  - self-assessment
+- recall
+- testing-effect
+- self-assessment
 mechanisms:
-  - retrieval
-  - generation
-  - calibration
+- retrieval
+- generation
+- calibration
+knobs:
+  difficulty:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+  feedback_timing:
+    type: enum
+    options:
+    - immediate
+    - after_attempt
+    default: after_attempt
+constraints:
+  attempt_required_before_feedback: true
+  closed_note_first: true
+  route_back_on_repeated_miss: true
 inputs:
-  - Topic or concept to recall
-  - Blank paper or text area
-  - Timer (5 min recommended)
-  - Reference materials (closed during recall, opened for comparison)
+- Topic or concept to recall
+- Blank paper or text area
+- Timer (5 min recommended)
+- Reference materials (closed during recall, opened for comparison)
 steps:
-  - step: 1
-    action: Close all materials and reference sources
-    notes: Materials must be completely hidden — no peeking allowed
-  - step: 2
-    action: Set timer for 5 minutes
-    notes: Time pressure adds desirable difficulty
-  - step: 3
-    action: Write everything you remember about the topic
-    notes: Stream of consciousness — include facts, relationships, examples, anything
-  - step: 4
-    action: When stuck, write "?" and move to next thing you remember
-    notes: Gaps are valuable data — mark them explicitly
-  - step: 5
-    action: Stop when timer ends or you've exhausted recall
-    notes: Don't extend time — constraint is the feature
-  - step: 6
-    action: Open materials and compare your output to the source
-    notes: Mark correct items, identify missing items, note errors
+- step: 1
+  action: Close all materials and reference sources
+  notes: Materials must be completely hidden — no peeking allowed
+- step: 2
+  action: Set timer for 5 minutes
+  notes: Time pressure adds desirable difficulty
+- step: 3
+  action: Write everything you remember about the topic
+  notes: Stream of consciousness — include facts, relationships, examples, anything
+- step: 4
+  action: When stuck, write "?" and move to next thing you remember
+  notes: Gaps are valuable data — mark them explicitly
+- step: 5
+  action: Stop when timer ends or you've exhausted recall
+  notes: Don't extend time — constraint is the feature
+- step: 6
+  action: Open materials and compare your output to the source
+  notes: Mark correct items, identify missing items, note errors
 outputs:
-  - Free recall dump (raw text with gaps marked)
-  - Accuracy assessment (what was correct vs. incorrect)
-  - Gap list (what was missing)
-  - RSR percentage estimate
+- Free recall dump (raw text with gaps marked)
+- Accuracy assessment (what was correct vs. incorrect)
+- Gap list (what was missing)
+- RSR percentage estimate
 stop_criteria:
-  - Timer ends (hard stop)
-  - You've exhausted everything you can recall
-  - Comparison with source is complete
+- Timer ends (hard stop)
+- You've exhausted everything you can recall
+- Comparison with source is complete
 failure_modes:
-  - mode: Peeking during recall
-    mitigation: Physically move materials out of sight before starting
-  - mode: Stopping too early when recall feels hard
-    mitigation: Push through the difficulty — that's where learning happens
-  - mode: Skipping the comparison step
-    mitigation: Comparison is mandatory — it's where you learn what you missed
+- mode: Peeking during recall
+  mitigation: Physically move materials out of sight before starting
+- mode: Stopping too early when recall feels hard
+  mitigation: Push through the difficulty — that's where learning happens
+- mode: Skipping the comparison step
+  mitigation: Comparison is mandatory — it's where you learn what you missed
 logging_fields:
-  - recall_word_count
-  - accuracy_percent
-  - gaps_identified
-  - rsr_estimate
+- recall_word_count
+- accuracy_percent
+- gaps_identified
+- rsr_estimate
 evidence:
   citation: Roediger & Karpicke (2006)
   finding: testing effect — retrieval practice > re-reading for long-term retention
   source: seed_methods.py
 evidence_raw: Roediger & Karpicke (2006); testing effect — retrieval practice > re-reading for long-term retention
+facilitation_prompt: 'You are running M-RET-001 (Free Recall Blurt) in RETRIEVE stage.
 
-facilitation_prompt: |
-  You are running M-RET-001 (Free Recall Blurt) in RETRIEVE stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Require learner attempt first.
+
   - Do not reveal full answer before attempt.
+
   - Capture errors and route signals.
 
+
   Required outputs:
+
   - Free recall dump (raw text with gaps marked)
+
   - Accuracy assessment (what was correct vs. incorrect)
+
   - Gap list (what was missing)
+
   - RSR percentage estimate
 
+
   Stop conditions:
+
   - Timer ends (hard stop)
-  - You've exhausted everything you can recall
+
+  - You''ve exhausted everything you can recall
+
   - Comparison with source is complete
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Require closed-note recall first, then feedback.
+- If repeated misses occur, route back to ENCODE or REFERENCE.
+artifact_type: notes

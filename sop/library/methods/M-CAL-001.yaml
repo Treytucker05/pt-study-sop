@@ -45,6 +45,11 @@ constraints:
   scored_stage: true
   hard_time_cap_min: 5
   hint_before_attempt_disallowed: true
+gating_rules:
+  - Require one best-attempt response per item before hints or answer reveal.
+  - Keep all items constrained to active objective scope.
+  - Maintain hard time cap; do not exceed max_duration_min.
+  - Do not switch into teaching mode during this block.
 inputs:
   - Active objective targets
   - Calibrate item set aligned to scope
@@ -67,6 +72,7 @@ outputs:
   - ReadinessSnapshot
   - CalibrationGapSummary
   - DominantErrorSeed
+artifact_type: notes
 stop_criteria:
   - item_count items attempted or timer cap reached
   - Per-item confidence tags captured

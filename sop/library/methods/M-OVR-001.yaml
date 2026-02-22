@@ -8,85 +8,124 @@ best_stage: consolidation
 control_stage: OVERLEARN
 status: validated
 tags:
-  - reflection
-  - meta
-  - wrap
-  - sop-core
+- reflection
+- meta
+- wrap
+- sop-core
 mechanisms:
-  - metacognition
-  - reflection
-  - calibration
-  - planning
+- metacognition
+- reflection
+- calibration
+- planning
+knobs:
+  intensity:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
+  speed_pressure:
+    type: enum
+    options:
+    - off
+    - soft
+    - hard
+    default: soft
+constraints:
+  mastery_required_before_speed: true
+  burnout_cap_rounds: 3
+  preserve_accuracy_threshold: 0.8
 inputs:
-  - Completed study session
-  - Exit ticket template (3 questions)
-  - Session notes or artifacts for reference
+- Completed study session
+- Exit ticket template (3 questions)
+- Session notes or artifacts for reference
 steps:
-  - step: 1
-    action: "Answer Question 1: 'What did I learn today?'"
-    notes: Free recall format — blurt 3-5 key takeaways without looking at notes
-  - step: 2
-    action: "Answer Question 2: 'What's still muddy?'"
-    notes: Identify 1-2 specific confusions, gaps, or uncertain areas
-  - step: 3
-    action: "Answer Question 3: 'What's my next action?'"
-    notes: Concrete, specific next step — not vague ("review more")
-  - step: 4
-    action: Review your blurt against session materials
-    notes: Did you miss any major points? Add them if critical.
-  - step: 5
-    action: Convert muddy points into specific questions for next session
-    notes: "Transform 'I'm confused about X' into 'How does X work when Y?'"
-  - step: 6
-    action: Log exit ticket to session record
-    notes: This feeds into scheduling and gap tracking systems
+- step: 1
+  action: 'Answer Question 1: ''What did I learn today?'''
+  notes: Free recall format — blurt 3-5 key takeaways without looking at notes
+- step: 2
+  action: 'Answer Question 2: ''What''s still muddy?'''
+  notes: Identify 1-2 specific confusions, gaps, or uncertain areas
+- step: 3
+  action: 'Answer Question 3: ''What''s my next action?'''
+  notes: Concrete, specific next step — not vague ("review more")
+- step: 4
+  action: Review your blurt against session materials
+  notes: Did you miss any major points? Add them if critical.
+- step: 5
+  action: Convert muddy points into specific questions for next session
+  notes: Transform 'I'm confused about X' into 'How does X work when Y?'
+- step: 6
+  action: Log exit ticket to session record
+  notes: This feeds into scheduling and gap tracking systems
 outputs:
-  - Exit ticket (3-part response)
-  - Key takeaways list
-  - Muddy points / weak anchors
-  - Next action commitment
-  - Questions for next session
+- Exit ticket (3-part response)
+- Key takeaways list
+- Muddy points / weak anchors
+- Next action commitment
+- Questions for next session
 stop_criteria:
-  - All three questions answered
-  - Next action is specific and actionable
-  - Exit ticket logged to session record
+- All three questions answered
+- Next action is specific and actionable
+- Exit ticket logged to session record
 failure_modes:
-  - mode: Generic answers ("I learned a lot")
-    mitigation: Force specificity — name actual concepts, facts, or skills
-  - mode: Skipping the muddy point question
-    mitigation: Something is always muddy — dig for it
-  - mode: Vague next action ("study more")
-    mitigation: Next action must pass the "could I do this in 15 min?" test
+- mode: Generic answers ("I learned a lot")
+  mitigation: Force specificity — name actual concepts, facts, or skills
+- mode: Skipping the muddy point question
+  mitigation: Something is always muddy — dig for it
+- mode: Vague next action ("study more")
+  mitigation: Next action must pass the "could I do this in 15 min?" test
 logging_fields:
-  - takeaways_count
-  - muddy_points_identified
-  - next_action_specificity
-  - exit_ticket_completed
+- takeaways_count
+- muddy_points_identified
+- next_action_specificity
+- exit_ticket_completed
 evidence:
   citation: Tanner (2012)
   finding: metacognitive reflection improves self-regulated learning
   source: seed_methods.py
 evidence_raw: Tanner (2012); metacognitive reflection improves self-regulated learning
+facilitation_prompt: 'You are running M-OVR-001 (Exit Ticket) in OVERLEARN stage.
 
-facilitation_prompt: |
-  You are running M-OVR-001 (Exit Ticket) in OVERLEARN stage.
   Execute this method card exactly and keep outputs deterministic.
 
+
   Stage hard rules:
+
   - Run bounded fluency reps.
+
   - Respect fatigue and stop caps.
+
   - Prioritize durable retention over speed only.
 
+
   Required outputs:
+
   - Exit ticket (3-part response)
+
   - Key takeaways list
+
   - Muddy points / weak anchors
+
   - Next action commitment
+
   - Questions for next session
 
+
   Stop conditions:
+
   - All three questions answered
+
   - Next action is specific and actionable
+
   - Exit ticket logged to session record
 
+
   If required inputs are missing, request only the minimum needed input and continue.
+
+  '
+gating_rules:
+- Run only after stable retrieval performance.
+- Stop after cap is met to avoid burnout loops.
+artifact_type: notes

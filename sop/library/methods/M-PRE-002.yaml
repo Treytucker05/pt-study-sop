@@ -8,86 +8,117 @@ best_stage: first_exposure
 control_stage: PRIME
 status: draft
 tags:
-  - priming
-  - prequestions
-  - metacognition
-  - sop-core
+- priming
+- prequestions
+- metacognition
+- sop-core
 mechanisms:
-  - generation
-  - elaboration
+- generation
+- elaboration
 stipulations:
-  - Use broad conceptual questions only (no narrow fact checks).
-  - Questions are non-scored orientation prompts in PRIME.
-  - If learner anxiety is high, reduce to 1-2 scaffolded prompts or skip.
+- Use broad conceptual questions only (no narrow fact checks).
+- Questions are non-scored orientation prompts in PRIME.
+- If learner anxiety is high, reduce to 1-2 scaffolded prompts or skip.
 when_to_use:
-  - New topic where conceptual framing is unclear.
-  - Learner benefits from curiosity hooks before details.
+- New topic where conceptual framing is unclear.
+- Learner benefits from curiosity hooks before details.
 when_not_to_use:
-  - Learner shows high anxiety with open-ended prompts.
-  - Session time is too short to process questions meaningfully.
+- Learner shows high anxiety with open-ended prompts.
+- Session time is too short to process questions meaningfully.
+knobs:
+  priming_scope:
+    type: enum
+    options:
+    - module_all
+    - single_focus
+    default: single_focus
+  guidance_level:
+    type: enum
+    options:
+    - low
+    - medium
+    - high
+    default: medium
 constraints:
   non_assessment: true
   no_scored_checks: true
   question_cap_min: 3
   question_cap_max: 5
 inputs:
-  - Topic title or lecture heading
-  - 2-3 high-level keywords or headings
+- Topic title or lecture heading
+- 2-3 high-level keywords or headings
 steps:
-  - step: 1
-    action: Read topic title plus 2-3 high-level headings
-    notes: Do not enter detail paragraphs.
-  - step: 2
-    action: Generate 3-5 broad conceptual prompts
-    notes: Prefer stems like Why, How, Where does this fit.
-  - step: 3
-    action: Rank prompts by expected leverage
-    notes: Choose top 1-2 prompts to carry into next method.
-  - step: 4
-    action: Record unresolved prompts as follow-up targets
-    notes: Use these as CALIBRATE/ENCODE inputs.
+- step: 1
+  action: Read topic title plus 2-3 high-level headings
+  notes: Do not enter detail paragraphs.
+- step: 2
+  action: Generate 3-5 broad conceptual prompts
+  notes: Prefer stems like Why, How, Where does this fit.
+- step: 3
+  action: Rank prompts by expected leverage
+  notes: Choose top 1-2 prompts to carry into next method.
+- step: 4
+  action: Record unresolved prompts as follow-up targets
+  notes: Use these as CALIBRATE/ENCODE inputs.
 outputs:
-  - PreQuestionSet
-  - PriorityPrompts
-  - FollowUpTargets
+- PreQuestionSet
+- PriorityPrompts
+- FollowUpTargets
 stop_criteria:
-  - 3-5 broad prompts generated
-  - Priority prompts selected
-  - 3 minutes elapsed
+- 3-5 broad prompts generated
+- Priority prompts selected
+- 3 minutes elapsed
 failure_modes:
-  - mode: Prompts become detailed quiz items
-    mitigation: Reframe to conceptual why/how/fit questions only.
-  - mode: Learner anxiety rises from open prompts
-    mitigation: Reduce to 1-2 scaffolded prompts or skip method.
-  - mode: Prompts are too vague to use downstream
-    mitigation: Attach each prompt to one explicit objective tag.
+- mode: Prompts become detailed quiz items
+  mitigation: Reframe to conceptual why/how/fit questions only.
+- mode: Learner anxiety rises from open prompts
+  mitigation: Reduce to 1-2 scaffolded prompts or skip method.
+- mode: Prompts are too vague to use downstream
+  mitigation: Attach each prompt to one explicit objective tag.
 logging_fields:
-  - prequestion_count
-  - priority_prompt_count
-  - skipped_for_anxiety
+- prequestion_count
+- priority_prompt_count
+- skipped_for_anxiety
 evidence:
   citation: Jamison et al. (2023/2024)
   finding: Prequestions improve downstream learning when paired with structured follow-up.
   source: research synthesis
 evidence_strength: high
 primary_citations:
-  - Jamison et al. (2023/2024)
-  - Roediger & Karpicke (2006)
+- Jamison et al. (2023/2024)
+- Roediger & Karpicke (2006)
 evidence_raw: Prequestions potentiate later learning and retrieval when scaffolded.
+facilitation_prompt: 'You are running M-PRE-002 (Overarching Pre-Question Set) in PRIME stage.
 
-facilitation_prompt: |
-  You are running M-PRE-002 (Overarching Pre-Question Set) in PRIME stage.
+  This method is non-assessment.
+
   This method is orientation only and never scored.
 
+
   Produce exactly 3-5 broad conceptual prompts from topic title + headings.
+
   Prompt style:
+
   - Why does this matter?
+
   - How does it work at a high level?
+
   - Where does it fit in the module?
 
+
   Then return:
+
   1) PreQuestionSet
+
   2) PriorityPrompts (top 1-2)
+
   3) FollowUpTargets
 
+
   If learner anxiety is high, reduce to 1-2 scaffolded prompts or skip and route to M-PRE-010.
+
+  '
+gating_rules:
+- Do not assess or score the learner in PRIME.
+- Stay at orientation level and avoid full solution reveal.
+artifact_type: notes
