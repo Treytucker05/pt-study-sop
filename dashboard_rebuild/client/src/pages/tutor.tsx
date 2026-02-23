@@ -582,16 +582,21 @@ export default function Tutor() {
   const handleDeleteArtifacts = useCallback(
     async (sid: string, indexes: number[]) => {
       await api.tutor.deleteArtifacts(sid, indexes);
-      setArtifacts((prev) => {
-        const sorted = [...indexes].sort((a, b) => b - a);
-        const next = [...prev];
-        for (const i of sorted) {
-          if (i >= 0 && i < next.length) next.splice(i, 1);
-        }
-        return next;
-      });
+      // Only update local artifacts state if deleting from the active session
+      if (sid === activeSessionId) {
+        setArtifacts((prev) => {
+          const sorted = [...indexes].sort((a, b) => b - a);
+          const next = [...prev];
+          for (const i of sorted) {
+            if (i >= 0 && i < next.length) next.splice(i, 1);
+          }
+          return next;
+        });
+      }
+      // Refresh session list so old session artifact counts update
+      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
     },
-    []
+    [activeSessionId, queryClient]
   );
 
   const resumeSession = useCallback(
