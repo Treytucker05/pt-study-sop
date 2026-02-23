@@ -117,3 +117,93 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 1. [ ] Build PRIME method-by-method policy table (intent -> allowed outputs -> blocked behavior).
 2. [ ] Build PRIME knob table (knob -> type -> defaults -> constraints).
 3. [ ] Map both tables to exact implementation files and verify in one dry session.
+
+## Granular Close-Out Queue (last-mile items from last tasks)
+
+### Queue A — PRIME Hardening Closure
+
+- [ ] A1.1 Lock `PRIME` method boundaries for all 9 cards in one pass.
+  - Files: `sop/library/methods/M-PRE-001.yaml` ... `M-PRE-010.yaml`
+  - Done when: every method contract has `stage=PRIME`, `assessment=false`, and explicitly forbidden/allowed question behavior.
+
+- [ ] A1.2 Finalize and publish one canonical PRIME policy matrix.
+  - Files: `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`, `docs/root/TUTOR_NORTH_STAR_RULES.md`, `docs/root/TUTOR_TRUTH_PATH.md`
+  - Done when: `M-PRE-010` and `M-PRE-008` are marked `CONFIRMED` and no active TODO item references the draft as unresolved.
+
+- [ ] A1.3 Finish and freeze `module_all` / `single_focus` PRIME behavior.
+  - Files: `docs/root/TUTOR_NORTH_STAR_RULES.md`, `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`, `brain/dashboard/api_tutor.py`, `dashboard_rebuild/client/src/pages/tutor.tsx`, `dashboard_rebuild/client/src/api.ts`
+  - Done when: decision is hard-locked to module-first default and single-focus opt-in with consistent UI/backend schema and no fallback ambiguity.
+
+- [ ] A1.4 Close PRIME non-assessment enforcement in runtime.
+  - Files: `brain/dashboard/api_tutor.py`, `brain/dashboard/api_contracts.py` (if applicable), `brain/tutor_chains.py`, `dashboard_rebuild/client/src/pages/methods.tsx`
+  - Done when: automated check rejects any scored artifact/type-0 confidence fields in PRIME and no PRIME block can emit retrieval grade output.
+
+- [ ] A1.5 Verify PRIME control knobs are fully wired end-to-end.
+  - Files: `sop/library/methods/*`, `brain/db_setup.py`, `brain/tutor_method_registry.py`, `brain/data/seed_methods.py`, `dashboard_rebuild/client/src/pages/methods.tsx`
+  - Done when: all PRIME methods expose at least one active knob with bounds + fallback behavior and can be edited without UI validation errors.
+
+### Queue B — Chain/Method Transfer Integrity
+
+- [ ] B1.1 Add parity check for method metadata across YAML, DB seed, runtime, and wizard/editor.
+  - Files: `scripts/`, `brain/data/seed_methods.py`, `brain/db_setup.py`, `dashboard_rebuild/client/src/pages/methods.tsx`
+  - Done when: a single command shows zero mismatched `control_stage`, `artifact_type`, or `best_stage` between YAML and DB cache.
+
+- [ ] B1.2 Add one-pass stage-method validation check in tutor launch.
+  - Files: `brain/tutor_chains.py`, `brain/dashboard/api_tutor.py`, `brain/tests/test_tutor_session_linking.py`
+  - Done when: chain starts with `PRIME` and rejects invalid `stage->method` pairing before LLM call.
+
+- [ ] B1.3 Add runtime drift detector for missing `knob_snapshot`, missing method prompt, or missing artifact contract.
+  - Files: `brain/dashboard/api_tutor.py`, `brain/tutor_tooling.py`, `brain/tests/test_method_cards_hardening.py`
+  - Done when: 1) runtime telemetry includes block reason for every mismatch and 2) no critical mismatch enters active session.
+
+- [ ] B1.4 Produce one-page method integrity smoke report.
+  - Files: `scripts/`, `docs/root/TUTOR_TODO.md`
+  - Done when: each method row reports `method_id`, `stage`, `artifact_type`, and required knobs as pass/fail.
+
+### Queue C — Category Coverage and Documentation Closure
+
+- [ ] C1.1 Ensure all 6 category pages include full method list + tutor prompt blocks.
+  - Files: `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Prime.md`, `.../Calibrate.md`, `.../Encode.md`, `.../Reference.md`, `.../Retrieve.md`, `.../Overlearn.md`, `.../Categories.md`
+  - Done when: each category page has method inventory + `Method Contract` table + one executable prompt per method.
+
+- [ ] C1.2 Reconcile manager-facing notes with code reality.
+  - Files: `docs/root/TUTOR_TRUTH_PATH.md`, `docs/root/TUTOR_CATEGORY_DEFINITIONS.md`, `docs/root/TUTOR_METHOD_SELECTION_RULES.md`, `docs/root/TUTOR_NORTH_STAR_RULES.md`
+  - Done when: there are no policy contradictions (e.g., "3-5 concepts only" vs "module_all mode") across these files.
+
+- [ ] C1.3 Add/refresh "close-out" log for last-mile decisions and blockers.
+  - Files: `conductor/tracks.md`, `conductor/tracks/GENERAL/log.md`
+  - Done when: every unresolved blocker from this chat is explicitly logged with owner + expected fix date.
+
+### Queue D — Video+MP4 + Budget Failover Closure
+
+- [ ] D2.1 Verify normal-session MP4 path works in non-admin flows.
+  - Files: `brain/dashboard/api_tutor.py`, `dashboard_rebuild/client/src/pages/tutor.tsx`, `dashboard_rebuild/client/src/components/MaterialSelector.tsx`
+  - Done when: MP4 can be loaded from chat/materials and appears in selected-material retrieval context without manual API-only scripts.
+
+- [ ] D2.2 Implement explicit key rotation and budget-failover visibility.
+  - Files: `brain/.env`, `brain/video_ingest_bridge.py`, `brain/dashboard/api_tutor.py`, `dashboard_rebuild/client/src/components/TutorChat.tsx`
+  - Done when: provider switching is automatic on quota/rate signals and user sees current provider + remaining budget status.
+
+- [ ] D2.3 Add regression test for MP4 session-context + provider fallback.
+  - Files: `brain/tests/test_video_process_api.py`, `brain/tests/test_tutor_session_linking.py`
+  - Done when: tests cover upload->process->scope->chat-turn retrieval path with fallback simulation.
+
+### Queue E — UI/Method Controls (Methods Board Polish)
+
+- [ ] E1.1 Lock methods controls (Favorite/Rate/Edit) and remove stale destructive action from board cards.
+  - Files: `dashboard_rebuild/client/src/pages/methods.tsx`
+  - Done when: controls are always-visible, non-overlapping, and map to documented actions.
+
+- [ ] E1.2 Validate dropdown/select reliability in method edit workflows.
+  - Files: `dashboard_rebuild/client/src/pages/methods.tsx`, `dashboard_rebuild/client/src/components/ui/select.tsx`
+  - Done when: category/stage dropdown selections save reliably in one interaction on desktop and mobile widths.
+
+- [ ] E1.3 Restore compact fallback path for prompt edits and reset behavior.
+  - Files: `dashboard_rebuild/client/src/pages/methods.tsx`, `brain/dashboard/api_tutor.py`
+  - Done when: tutor prompt edits preserve schema fields and can be reset to canonical template in one action.
+
+## Execution Rules for this board
+
+- Do not mark a task complete until its "done when" criteria pass in code and tests or are manually verified.
+- Keep task scope one step at a time; no broad refactors without a linked queue ID.
+- For every completed queue item that changes behavior, add one dated entry to `conductor/tracks/GENERAL/log.md`.
