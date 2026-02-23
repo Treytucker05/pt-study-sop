@@ -81,7 +81,7 @@ describe("request() core contract", () => {
 
   it("throws on non-ok responses", async () => {
     mockError(404, "Not Found");
-    await expect(api.sessions.getOne(999)).rejects.toThrow("API Error: Not Found");
+    await expect(api.sessions.getOne(999)).rejects.toThrow("API 404: Not Found");
   });
 
   it("apiRequest delegates to request", async () => {
@@ -516,16 +516,16 @@ describe("api.studyWheel contract", () => {
 describe("error handling contract", () => {
   it("throws with status text for 404", async () => {
     mockError(404, "Not Found");
-    await expect(api.methods.getOne(999)).rejects.toThrow("API Error: Not Found");
+    await expect(api.methods.getOne(999)).rejects.toThrow("API 404: Not Found");
   });
 
   it("throws with status text for 500", async () => {
     mockError(500, "Internal Server Error");
-    await expect(api.courses.getAll()).rejects.toThrow("API Error: Internal Server Error");
+    await expect(api.courses.getAll()).rejects.toThrow("API 500: Internal Server Error");
   });
 
   it("throws with status text for 400", async () => {
     mockError(400, "Bad Request");
-    await expect(api.methods.create({} as any)).rejects.toThrow("API Error: Bad Request");
+    await expect(api.methods.create({} as any)).rejects.toThrow("API 400: Bad Request");
   });
 });

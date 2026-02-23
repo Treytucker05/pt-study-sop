@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ComponentProps } from "react";
 import { TutorWizard } from "@/components/TutorWizard";
 import type { TutorMode, TutorSessionSummary, TutorTemplateChain } from "@/lib/api";
+import { QUERY_KEYS } from "@/test/query-keys";
 
 const mockUseQuery = vi.fn();
 
@@ -21,7 +22,7 @@ vi.mock("@/components/TutorChainBuilder", () => ({
 function setupQueryMocks() {
   mockUseQuery.mockImplementation((opts: { queryKey: string[] }) => {
     const key = opts.queryKey[0];
-    if (key === "tutor-content-sources") {
+    if (key === QUERY_KEYS.TUTOR_CONTENT_SOURCES) {
       return {
         data: {
           courses: [
@@ -37,7 +38,7 @@ function setupQueryMocks() {
         isError: false,
       };
     }
-    if (key === "tutor-chains-templates") {
+    if (key === QUERY_KEYS.TUTOR_CHAINS_TEMPLATES) {
       return {
         data: [
           {
@@ -98,16 +99,17 @@ describe("TutorWizard", () => {
   it("renders step 0 (course selection) on mount", () => {
     renderWizard();
 
-    // Check for step progress bar
-    expect(screen.getByText("1. COURSE")).toBeInTheDocument();
-    expect(screen.getByText("2. CHAIN")).toBeInTheDocument();
-    expect(screen.getByText("3. START")).toBeInTheDocument();
+    // Step labels should show correct text content
+    expect(screen.getByText("1. COURSE")).toHaveTextContent("1. COURSE");
+    expect(screen.getByText("2. CHAIN")).toHaveTextContent("2. CHAIN");
+    expect(screen.getByText("3. START")).toHaveTextContent("3. START");
 
-    // Check for material selector (step 0 component)
+    // Material selector is rendered on step 0
     expect(screen.getByTestId("material-selector")).toBeInTheDocument();
 
-    // Check for NEXT button
-    expect(screen.getByRole("button", { name: /NEXT/i })).toBeInTheDocument();
+    // NEXT button should be enabled for navigation
+    const nextBtn = screen.getByRole("button", { name: /NEXT/i });
+    expect(nextBtn).toBeEnabled();
   });
 
   it("clicking NEXT advances to step 1", async () => {

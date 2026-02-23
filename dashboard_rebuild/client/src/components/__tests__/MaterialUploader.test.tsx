@@ -145,4 +145,79 @@ describe("MaterialUploader", () => {
     expect(screen.getByText("lecture.mp4")).toBeInTheDocument();
     expect(screen.getByText("UPLOAD 2 FILES")).toBeInTheDocument();
   });
+
+  it("accepts DOCX files", () => {
+    render(<MaterialUploader />, { wrapper: createWrapper() });
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const docx = new File(["doc data"], "outline.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    Object.defineProperty(input, "files", { value: [docx] });
+    fireEvent.change(input);
+
+    expect(screen.getByText("outline.docx")).toBeInTheDocument();
+  });
+
+  it("accepts PPTX files", () => {
+    render(<MaterialUploader />, { wrapper: createWrapper() });
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const pptx = new File(["ppt data"], "lecture.pptx", {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    });
+    Object.defineProperty(input, "files", { value: [pptx] });
+    fireEvent.change(input);
+
+    expect(screen.getByText("lecture.pptx")).toBeInTheDocument();
+  });
+
+  it("accepts TXT and MD files", () => {
+    render(<MaterialUploader />, { wrapper: createWrapper() });
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const txt = new File(["notes"], "study.txt", { type: "text/plain" });
+    const md = new File(["# Notes"], "notes.md", { type: "text/markdown" });
+    Object.defineProperty(input, "files", { value: [txt, md] });
+    fireEvent.change(input);
+
+    expect(screen.getByText("study.txt")).toBeInTheDocument();
+    expect(screen.getByText("notes.md")).toBeInTheDocument();
+  });
+
+  it("rejects multiple unsupported files together", async () => {
+    const { toast } = await import("sonner");
+    render(<MaterialUploader />, { wrapper: createWrapper() });
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const exe = new File(["bin"], "virus.exe", { type: "application/octet-stream" });
+    const svg = new File(["<svg>"], "icon.svg", { type: "image/svg+xml" });
+    Object.defineProperty(input, "files", { value: [exe, svg] });
+    fireEvent.change(input);
+
+    expect(toast.error).toHaveBeenCalled();
+    expect(screen.queryByText("virus.exe")).not.toBeInTheDocument();
+    expect(screen.queryByText("icon.svg")).not.toBeInTheDocument();
+  });
+
+  it("shows singular 'FILE' text for single file", () => {
+    render(<MaterialUploader />, { wrapper: createWrapper() });
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = createFile("single.pdf");
+    Object.defineProperty(input, "files", { value: [file] });
+    fireEvent.change(input);
+
+    expect(screen.getByText("UPLOAD 1 FILE")).toBeInTheDocument();
+  });
+
+  it("handles empty file list from input", () => {
+    render(<MaterialUploader />, { wrapper: createWrapper() });
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    Object.defineProperty(input, "files", { value: [] });
+    fireEvent.change(input);
+
+    expect(screen.queryByText(/UPLOAD/)).not.toBeInTheDocument();
+  });
 });

@@ -32,7 +32,7 @@ describe("request / apiRequest", () => {
 
   it("throws on non-OK response", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse(null, 404, "Not Found"));
-    await expect(apiRequest("/nope")).rejects.toThrow("API Error: Not Found");
+    await expect(apiRequest("/nope")).rejects.toThrow("API 404: Not Found");
   });
 
   it("returns undefined for 204 No Content", async () => {
@@ -1085,5 +1085,96 @@ describe("api.brain extended", () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ session_id: 1, fields_updated: 3 }));
     await api.brain.ingestSessionJson(1, { tracker: "data" });
     expect(mockFetch).toHaveBeenCalledWith("/api/brain/session-json", expect.objectContaining({ method: "POST" }));
+  });
+});
+
+// ── Error handling edge cases ────────────────────────────────────────
+
+describe("apiRequest error handling", () => {
+  it("throws with JSON error body detail", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 422,
+      statusText: "Unprocessable Entity",
+      headers: new Headers({ "content-type": "application/json" }),
+      json: () => Promise.resolve({ error: "Invalid session ID" }),
+    });
+    await expect(apiRequest("/sessions/bad")).rejects.toThrow("API 422: Invalid session ID");
+  });
+
+  it("throws with text body when content-type is not JSON", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 502,
+      statusText: "Bad Gateway",
+      headers: new Headers({ "content-type": "text/html" }),
+      text: () => Promise.resolve("Upstream server error"),
+      json: () => Promise.reject(new Error("not json")),
+    });
+    await expect(apiRequest("/sessions")).rejects.toThrow("API 502: Upstream server error");
+  });
+
+  it("falls back to statusText when body parsing fails", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      headers: new Headers({ "content-type": "application/json" }),
+      json: () => Promise.reject(new Error("broken body")),
+    });
+    await expect(apiRequest("/test")).rejects.toThrow("API 500: Internal Server Error");
+  });
+
+  it("handles network failure (fetch rejects)", async () => {
+    mockFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await expect(apiRequest("/sessions")).rejects.toThrow("Failed to fetch");
+  });
+
+  it("handles malformed JSON response on success", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: () => Promise.reject(new SyntaxError("Unexpected token")),
+    });
+    await expect(apiRequest("/sessions")).rejects.toThrow("Unexpected token");
+  });
+
+  it("handles 401 Unauthorized", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: "Unauthorized",
+      headers: new Headers({ "content-type": "application/json" }),
+      json: () => Promise.resolve({ message: "Session expired" }),
+    });
+    await expect(apiRequest("/sessions")).rejects.toThrow("API 401: Session expired");
+  });
+
+  it("handles 403 Forbidden", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: "Forbidden",
+      headers: new Headers({ "content-type": "application/json" }),
+      json: () => Promise.resolve({ error: "Insufficient permissions" }),
+    });
+    await expect(apiRequest("/admin/settings")).rejects.toThrow("API 403: Insufficient permissions");
+  });
+
+  it("handles empty error body gracefully", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      headers: new Headers({ "content-type": "application/json" }),
+      json: () => Promise.resolve({}),
+    });
+    await expect(apiRequest("/test")).rejects.toThrow("API 500: Internal Server Error");
+  });
+
+  it("handles timeout-like abort signal", async () => {
+    mockFetch.mockRejectedValueOnce(new DOMException("The operation was aborted", "AbortError"));
+    await expect(apiRequest("/sessions")).rejects.toThrow("The operation was aborted");
   });
 });
