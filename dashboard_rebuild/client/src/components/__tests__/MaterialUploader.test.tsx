@@ -51,7 +51,7 @@ describe("MaterialUploader", () => {
   it("renders the drop zone", () => {
     render(<MaterialUploader />, { wrapper: createWrapper() });
     expect(screen.getByText("Drop files or click to browse")).toBeInTheDocument();
-    expect(screen.getByText("PDF, DOCX, PPTX, MD, TXT")).toBeInTheDocument();
+    expect(screen.getByText("PDF, DOCX, PPTX, MD, TXT, MP4")).toBeInTheDocument();
   });
 
   it("adds valid files to queue via file input", () => {
@@ -117,6 +117,32 @@ describe("MaterialUploader", () => {
 
     expect(screen.getByText("a.pdf")).toBeInTheDocument();
     expect(screen.getByText("b.md")).toBeInTheDocument();
+    expect(screen.getByText("UPLOAD 2 FILES")).toBeInTheDocument();
+  });
+
+  it("accepts MP4 video files", () => {
+    render(<MaterialUploader />, { wrapper: createWrapper() });
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const mp4 = new File(["video data"], "lecture.mp4", { type: "video/mp4" });
+    Object.defineProperty(input, "files", { value: [mp4] });
+    fireEvent.change(input);
+
+    expect(screen.getByText("lecture.mp4")).toBeInTheDocument();
+    expect(screen.getByText("UPLOAD 1 FILE")).toBeInTheDocument();
+  });
+
+  it("accepts MP4 alongside other file types", () => {
+    render(<MaterialUploader />, { wrapper: createWrapper() });
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const pdf = createFile("notes.pdf");
+    const mp4 = new File(["video data"], "lecture.mp4", { type: "video/mp4" });
+    Object.defineProperty(input, "files", { value: [pdf, mp4] });
+    fireEvent.change(input);
+
+    expect(screen.getByText("notes.pdf")).toBeInTheDocument();
+    expect(screen.getByText("lecture.mp4")).toBeInTheDocument();
     expect(screen.getByText("UPLOAD 2 FILES")).toBeInTheDocument();
   });
 });

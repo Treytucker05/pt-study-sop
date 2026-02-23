@@ -1900,6 +1900,33 @@ def init_database():
             except sqlite3.OperationalError:
                 pass
 
+    # ------------------------------------------------------------------
+    # Video Enrichment: API usage tracking
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS video_api_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            video_hash TEXT NOT NULL,
+            model TEXT NOT NULL,
+            prompt_tokens INTEGER DEFAULT 0,
+            completion_tokens INTEGER DEFAULT 0,
+            estimated_cost_usd REAL DEFAULT 0.0,
+            segment_range TEXT,
+            material_id INTEGER,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_video_api_usage_hash
+        ON video_api_usage(video_hash)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_video_api_usage_month
+        ON video_api_usage(created_at)
+    """)
+
     # Drop dead tables
     cursor.execute("DROP TABLE IF EXISTS wheel_config")
     cursor.execute("DROP TABLE IF EXISTS topics")
@@ -1909,7 +1936,7 @@ def init_database():
     conn.close()
 
     print(f"[OK] Database initialized at: {DB_PATH}")
-    print("[OK] Schema version: 9.4 + planning/RAG/methods/chain-runs/tutor extensions")
+    print("[OK] Schema version: 9.5 + video enrichment API usage")
 
 
 def migrate_method_categories():

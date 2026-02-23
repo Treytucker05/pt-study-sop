@@ -2,11 +2,13 @@
 Local MP4 ingestion pipeline for Tutor study materials.
 
 Pipeline:
-1) extract mono 16k audio with ffmpeg
-2) transcribe with faster-whisper (timestamped segments)
-3) extract keyframes on a fixed interval with ffmpeg
-4) OCR keyframes (optional; pytesseract + Pillow)
-5) emit markdown + JSON artifacts
+1) transcribe MP4 directly with faster-whisper (PyAV decodes audio internally)
+2) extract keyframes on a fixed interval with ffmpeg
+3) OCR keyframes (optional; PaddleOCR or pytesseract + Pillow)
+4) emit markdown + JSON artifacts
+
+Note: ffmpeg is only required for keyframe extraction, not transcription.
+faster-whisper bundles PyAV which decodes MP4 audio natively.
 """
 
 from __future__ import annotations
@@ -18,9 +20,14 @@ import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 VIDEO_INGEST_ROOT = Path(__file__).resolve().parent / "data" / "video_ingest"
+
+PT_DOMAIN_PROMPT = (
+    "Physical therapy lecture covering anatomy, biomechanics, neuroscience, "
+    "musculoskeletal system, rehabilitation techniques."
+)
 
 
 class VideoIngestError(RuntimeError):
@@ -90,11 +97,18 @@ def extract_audio(video_path: Path, audio_path: Path) -> None:
 
 
 def transcribe_audio(
-    audio_path: Path,
+    media_path: Path,
     *,
     model_size: str = "base",
     language: Optional[str] = None,
+    initial_prompt: Optional[str] = PT_DOMAIN_PROMPT,
 ) -> list[dict[str, Any]]:
+    """Transcribe audio/video with faster-whisper.
+
+    *media_path* can be an MP4 video (PyAV decodes audio internally) or a
+    pre-extracted WAV/FLAC.  Word-level timestamps and per-segment confidence
+    metadata (avg_logprob, no_speech_prob) are always captured.
+    """
     try:
         from faster_whisper import WhisperModel
     except ImportError as exc:
@@ -104,9 +118,11 @@ def transcribe_audio(
 
     model = WhisperModel(model_size, device="auto", compute_type="int8")
     segments_iter, _info = model.transcribe(
-        str(audio_path),
+        str(media_path),
         language=language,
         vad_filter=True,
+        word_timestamps=True,
+        initial_prompt=initial_prompt,
     )
     segments: list[dict[str, Any]] = []
     for seg in segments_iter:
@@ -122,10 +138,12 @@ def transcribe_audio(
                 "start_ts": _format_timestamp(start),
                 "end_ts": _format_timestamp(end),
                 "text": text,
+                "avg_logprob": float(getattr(seg, "avg_logprob", 0.0)),
+                "no_speech_prob": float(getattr(seg, "no_speech_prob", 0.0)),
             }
         )
     if not segments:
-        raise VideoIngestError("No transcript segments produced from audio.")
+        raise VideoIngestError("No transcript segments produced from media.")
     return segments
 
 
@@ -154,9 +172,33 @@ def extract_keyframes(
     return frames
 
 
-def run_ocr(frame_paths: list[Path]) -> dict[str, str]:
-    if not frame_paths:
+def _ocr_paddleocr(frame_paths: list[Path]) -> dict[str, str]:
+    """OCR frames using PaddleOCR (higher accuracy on slides/diagrams)."""
+    try:
+        from paddleocr import PaddleOCR
+    except ImportError:
         return {}
+
+    ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+    ocr_map: dict[str, str] = {}
+    for frame in frame_paths:
+        try:
+            result = ocr.ocr(str(frame), cls=True)
+            lines: list[str] = []
+            for page in (result or []):
+                for line in (page or []):
+                    if line and len(line) >= 2:
+                        lines.append(str(line[1][0]).strip())
+            text = " ".join(lines).strip()
+        except Exception:
+            text = ""
+        if text:
+            ocr_map[frame.name] = text
+    return ocr_map
+
+
+def _ocr_pytesseract(frame_paths: list[Path]) -> dict[str, str]:
+    """OCR frames using pytesseract (widely available fallback)."""
     try:
         import pytesseract
         from PIL import Image
@@ -172,6 +214,21 @@ def run_ocr(frame_paths: list[Path]) -> dict[str, str]:
         if text:
             ocr_map[frame.name] = text
     return ocr_map
+
+
+def run_ocr(
+    frame_paths: list[Path],
+    *,
+    backend: Literal["pytesseract", "paddleocr"] = "pytesseract",
+) -> dict[str, str]:
+    if not frame_paths:
+        return {}
+    if backend == "paddleocr":
+        result = _ocr_paddleocr(frame_paths)
+        if result:
+            return result
+        # fall back to pytesseract if PaddleOCR unavailable
+    return _ocr_pytesseract(frame_paths)
 
 
 def _build_transcript_markdown(title: str, segments: list[dict[str, Any]]) -> str:
@@ -215,6 +272,8 @@ def process_video(
     model_size: str = "base",
     keyframe_interval_sec: int = 20,
     use_ocr: bool = True,
+    ocr_backend: Literal["pytesseract", "paddleocr"] = "pytesseract",
+    initial_prompt: Optional[str] = PT_DOMAIN_PROMPT,
 ) -> dict[str, Any]:
     source = Path(video_path)
     if not source.exists() or not source.is_file():
@@ -230,7 +289,6 @@ def process_video(
     out_dir = root / f"{slug}_{stamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    audio_path = out_dir / "audio.wav"
     frames_dir = out_dir / "keyframes"
     transcript_json_path = out_dir / "transcript.json"
     segments_json_path = out_dir / "segments.json"
@@ -239,14 +297,20 @@ def process_video(
     visual_notes_md_path = out_dir / f"{slug}_visual_notes.md"
     manifest_path = out_dir / "manifest.json"
 
-    extract_audio(source, audio_path)
-    segments = transcribe_audio(audio_path, model_size=model_size, language=language)
+    # Transcribe directly from MP4 — faster-whisper's PyAV decodes audio natively.
+    # No separate audio extraction step needed for transcription.
+    segments = transcribe_audio(
+        source,
+        model_size=model_size,
+        language=language,
+        initial_prompt=initial_prompt,
+    )
     frame_paths = extract_keyframes(
         source,
         frames_dir,
         interval_sec=keyframe_interval_sec,
     )
-    ocr_map = run_ocr(frame_paths) if use_ocr else {}
+    ocr_map = run_ocr(frame_paths, backend=ocr_backend) if use_ocr else {}
 
     transcript_json_path.write_text(
         json.dumps({"segments": segments}, indent=2),
@@ -281,6 +345,7 @@ def process_video(
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "model_size": model_size,
         "language": language,
+        "initial_prompt": initial_prompt,
         "keyframe_interval_sec": max(int(keyframe_interval_sec), 1),
         "segments_count": len(segments),
         "keyframes_count": len(frame_paths),
