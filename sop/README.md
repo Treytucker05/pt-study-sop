@@ -82,7 +82,7 @@ pytest sop/tests/test_validate_library.py -v    # validator tests
    id: M-CAT-NNN
    name: Method Name
    control_stage: PRIME # one of: PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN
-   category: prime      # one of: prime, calibrate, encode, interrogate, reference, retrieve, overlearn
+   category: prime      # one of: prime, calibrate, encode, reference, retrieve, overlearn
    description: What this method does.
    default_duration_min: 5
    energy_cost: medium   # low, medium, high
