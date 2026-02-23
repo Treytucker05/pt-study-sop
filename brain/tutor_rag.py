@@ -30,7 +30,7 @@ COLLECTION_INSTRUCTIONS = "tutor_instructions"
 COLLECTION_NOTES = "tutor_notes"
 
 DEFAULT_CHROMA_BATCH_SIZE = 1000
-DEFAULT_MAX_CHUNKS_PER_DOC = 2
+DEFAULT_MAX_CHUNKS_PER_DOC = 4
 DEFAULT_MMR_LAMBDA_MULT = 0.2
 SCOPED_CANDIDATE_MULTIPLIER = 12
 SCOPED_CANDIDATE_MIN = 120
@@ -89,36 +89,37 @@ def init_vectorstore(collection_name: str = COLLECTION_MATERIALS, persist_dir: O
     return vs
 
 
+SMALL_DOC_CHAR_LIMIT = 8_000  # ~2000 tokens — fits in one embedding, no splitting needed
+MIN_CHUNK_CHARS = 50  # filter out header-only fragments
+
+
 def chunk_document(
     content: str,
-    source_path: str,
+    source_path: str = "",
     *,
-    chunk_size: int = 500,
-    chunk_overlap: int = 100,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 150,
     course_id: Optional[int] = None,
     folder_path: Optional[str] = None,
     rag_doc_id: Optional[int] = None,
     corpus: Optional[str] = None,
 ):
-    """Split document content into LangChain Documents with metadata."""
+    """Split document content into LangChain Documents with metadata.
+
+    Strategy:
+      - Small docs (<=8000 chars): returned as a single chunk (no splitting).
+      - Larger docs: two-stage split — first by markdown headers to keep
+        sections intact, then by character count within each section.
+    """
     content = strip_image_refs_for_rag(content)
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_core.documents import Document
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n## ", "\n### ", "\n\n", "\n", ". ", " "],
-    )
+    stripped = content.strip()
+    if not stripped:
+        return []
 
-    chunks = splitter.split_text(content)
-
-    docs = []
-    for i, chunk_text in enumerate(chunks):
-        metadata = {
-            "source": source_path,
-            "chunk_index": i,
-        }
+    def _build_metadata(index: int) -> dict:
+        metadata: dict = {"source": source_path, "chunk_index": index}
         if course_id is not None:
             metadata["course_id"] = course_id
         if folder_path:
@@ -127,8 +128,46 @@ def chunk_document(
             metadata["rag_doc_id"] = rag_doc_id
         if corpus:
             metadata["corpus"] = corpus
+        return metadata
 
-        docs.append(Document(page_content=chunk_text, metadata=metadata))
+    # Small-document bypass — return the whole thing as one chunk
+    if len(stripped) <= SMALL_DOC_CHAR_LIMIT:
+        return [Document(page_content=stripped, metadata=_build_metadata(0))]
+
+    # Two-stage splitting for larger documents
+    from langchain_text_splitters import (
+        MarkdownHeaderTextSplitter,
+        RecursiveCharacterTextSplitter,
+    )
+
+    # Stage 1: split by markdown headers (keeps header text in page_content)
+    headers_to_split_on = [("#", "H1"), ("##", "H2"), ("###", "H3")]
+    md_splitter = MarkdownHeaderTextSplitter(
+        headers_to_split_on=headers_to_split_on,
+        strip_headers=False,
+    )
+    header_splits = md_splitter.split_text(stripped)
+
+    # Stage 2: constrain chunk size within each header section
+    char_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", ". ", " "],
+    )
+    raw_chunks = char_splitter.split_documents(header_splits)
+
+    # Filter out tiny/empty fragments (e.g. bare header lines)
+    docs = []
+    for chunk in raw_chunks:
+        text = chunk.page_content.strip()
+        if len(text) < MIN_CHUNK_CHARS:
+            continue
+        docs.append(
+            Document(
+                page_content=text,
+                metadata=_build_metadata(len(docs)),
+            )
+        )
 
     return docs
 
@@ -418,19 +457,20 @@ def _resolve_candidate_pool_size(k: int, material_ids: Optional[list[int]]) -> i
     return min(candidate_k, SCOPED_CANDIDATE_MAX)
 
 
-def rerank_results(
-    query: str,
-    docs: list,
-    k_final: int,
-    *,
-    max_chunks_per_doc: int = DEFAULT_MAX_CHUNKS_PER_DOC,
-) -> list:
-    """Re-rank results with keyword scoring plus per-file diversity caps."""
-    if not docs or k_final <= 0:
-        return []
-    if len(docs) <= k_final and max_chunks_per_doc <= 0:
-        return docs
+_RERANKER: object | None = None
 
+
+def _get_reranker():
+    """Lazy-load a lightweight cross-encoder for reranking (~17 MB, cached after first call)."""
+    global _RERANKER
+    if _RERANKER is None:
+        from sentence_transformers import CrossEncoder
+        _RERANKER = CrossEncoder("cross-encoder/ms-marco-TinyBERT-L-2-v2")
+    return _RERANKER
+
+
+def _keyword_score(query: str, docs: list) -> list[tuple[float, int, object]]:
+    """Fallback keyword scoring when cross-encoder is unavailable."""
     stop_words = {
         "the", "a", "an", "is", "are", "was", "were", "in", "on", "at",
         "to", "for", "of", "and", "or", "it", "this", "that", "with",
@@ -440,17 +480,45 @@ def rerank_results(
         for w in query.split()
         if w.lower() not in stop_words and len(w) > 2
     ]
-
-    scored: list[tuple[int, int, object]] = []
+    scored: list[tuple[float, int, object]] = []
     for idx, doc in enumerate(docs):
         if keywords:
             text_lower = str(getattr(doc, "page_content", "")).lower()
-            score = sum(1 for kw in keywords if kw in text_lower)
+            score = float(sum(1 for kw in keywords if kw in text_lower))
         else:
-            score = 0
+            score = 0.0
         scored.append((score, idx, doc))
+    return scored
 
-    # Higher keyword score first; preserve original similarity order on ties.
+
+def rerank_results(
+    query: str,
+    docs: list,
+    k_final: int,
+    *,
+    max_chunks_per_doc: int = DEFAULT_MAX_CHUNKS_PER_DOC,
+) -> list:
+    """Re-rank results with cross-encoder scoring plus per-file diversity caps.
+
+    Falls back to keyword scoring if the cross-encoder model fails to load.
+    """
+    if not docs or k_final <= 0:
+        return []
+    if len(docs) <= k_final and max_chunks_per_doc <= 0:
+        return docs
+
+    # Score with cross-encoder (preferred) or keyword counting (fallback)
+    try:
+        reranker = _get_reranker()
+        pairs = [(query, str(getattr(d, "page_content", ""))) for d in docs]
+        scores = reranker.predict(pairs)
+        scored: list[tuple[float, int, object]] = [
+            (float(scores[i]), i, docs[i]) for i in range(len(docs))
+        ]
+    except Exception:
+        scored = _keyword_score(query, docs)
+
+    # Higher score first; preserve original similarity order on ties.
     scored.sort(key=lambda item: (-item[0], item[1]))
 
     selected: list[object] = []
@@ -1004,7 +1072,7 @@ def embed_vault_notes(conn: sqlite3.Connection) -> dict[str, int]:
             skipped += 1
             continue
 
-        chunks = chunk_document(content)
+        chunks = chunk_document(content, path)
         for i, chunk in enumerate(chunks):
             chroma_id = f"vault-{doc_id}-{i}"
             if chroma_id in existing_ids:

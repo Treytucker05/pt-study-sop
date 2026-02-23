@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import logging
 import time
 import subprocess
 import tempfile
@@ -19,6 +20,7 @@ load_env()
 # Configuration
 DEFAULT_TIMEOUT_SECONDS = 60
 OPENAI_API_TIMEOUT = 30
+GEMINI_DEFAULT_MODEL = "gemini-3-pro"
 
 
 def _llm_blocked_in_test_mode() -> bool:
@@ -52,6 +54,27 @@ def find_codex_cli() -> Optional[str]:
     return None
 
 
+def find_gemini_cli() -> Optional[str]:
+    """Find Gemini CLI executable path."""
+    npm_path = Path(os.environ.get("APPDATA", "")) / "npm" / "gemini.cmd"
+    if npm_path.exists():
+        return str(npm_path)
+
+    try:
+        result = subprocess.run(
+            ["where.exe", "gemini"] if os.name == "nt" else ["which", "gemini"],
+            capture_output=True,
+            timeout=5,
+            text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip().split("\n")[0]
+    except Exception:
+        pass
+
+    return None
+
+
 def call_llm(
     system_prompt: str,
     user_prompt: str,
@@ -60,7 +83,7 @@ def call_llm(
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
     isolated: bool = False,
 ) -> Dict[str, Any]:
-    """Centralized LLM caller. All calls route through Codex CLI."""
+    """Centralized LLM caller. Routes to Codex CLI (default) or Gemini CLI."""
     if _llm_blocked_in_test_mode():
         return {
             "success": False,
@@ -70,7 +93,92 @@ def call_llm(
             "fallback_models": [],
         }
 
+    if provider == "gemini":
+        gem_model = None if model == "default" else model
+        return _call_gemini(system_prompt, user_prompt, timeout=timeout, model=gem_model, isolated=isolated)
+
     return _call_codex(system_prompt, user_prompt, timeout, isolated=isolated)
+
+
+def _call_gemini(
+    system_prompt: str,
+    user_prompt: str,
+    *,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    model: Optional[str] = None,
+    isolated: bool = True,
+) -> Dict[str, Any]:
+    """Call Gemini CLI subprocess and return response dict."""
+    gemini_cmd = find_gemini_cli()
+    if not gemini_cmd:
+        return {
+            "success": False,
+            "error": "Gemini CLI not found. Install: npm install -g @anthropic-ai/gemini or via Google AI Studio.",
+            "content": None,
+            "fallback_available": True,
+            "fallback_models": ["codex"],
+        }
+
+    full_prompt = f"System: {system_prompt}\n\nUser: {user_prompt}"
+
+    # Write prompt to temp file (Windows encoding workaround)
+    prompt_file = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".txt", encoding="utf-8", delete=False
+    )
+    prompt_file.write(full_prompt)
+    prompt_file.close()
+
+    cmd_prefix: list[str]
+    if os.name == "nt" and Path(gemini_cmd).suffix.lower() in (".cmd", ".bat"):
+        cmd_prefix = ["cmd.exe", "/c", gemini_cmd]
+    else:
+        cmd_prefix = [gemini_cmd]
+
+    cmd_args = cmd_prefix + [
+        "--yolo",
+        "--output-format", "text",
+        "--sandbox",
+    ]
+    if model:
+        cmd_args.extend(["--model", model])
+    cmd_args.extend(["--prompt", f"@{prompt_file.name}"])
+
+    try:
+        result = subprocess.run(
+            cmd_args,
+            capture_output=True,
+            timeout=timeout,
+        )
+        stdout = result.stdout.decode("utf-8", errors="replace").strip()
+        stderr = result.stderr.decode("utf-8", errors="replace").strip()
+
+        if result.returncode == 0 and stdout:
+            return {"success": True, "content": stdout, "error": None}
+        return {
+            "success": False,
+            "error": f"Gemini exit {result.returncode}: {stderr or stdout}",
+            "content": None,
+            "fallback_available": True,
+            "fallback_models": ["codex"],
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "success": False,
+            "error": f"Gemini CLI timed out after {timeout} seconds.",
+            "content": None,
+            "fallback_available": True,
+            "fallback_models": ["codex"],
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Exception calling Gemini: {e}",
+            "content": None,
+            "fallback_available": True,
+            "fallback_models": ["codex"],
+        }
+    finally:
+        Path(prompt_file.name).unlink(missing_ok=True)
 
 
 def _call_codex(
@@ -675,6 +783,12 @@ def stream_chatgpt_responses(
         payload["tool_choice"] = tool_choice
 
     body = json.dumps(payload)
+    logging.getLogger(__name__).debug(
+        "LLM request: model=%s tool_choice=%s tools=%s",
+        payload.get("model"),
+        payload.get("tool_choice", "(not set)"),
+        [t.get("name") or t.get("type") for t in payload.get("tools", [])],
+    )
 
     headers = {
         "Authorization": f"Bearer {auth['access_token']}",
