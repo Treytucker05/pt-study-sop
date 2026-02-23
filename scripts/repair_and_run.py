@@ -10,7 +10,7 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
     context_arch = repo_root / "context" / "architecture"
     sop_methods = repo_root / "sop" / "library" / "methods"
-    school_notes = repo_root / "PT School Semester 2"
+    school_notes = repo_root / "Treys School"
 
     # 1) Ensure context/architecture exists
     context_arch.mkdir(parents=True, exist_ok=True)

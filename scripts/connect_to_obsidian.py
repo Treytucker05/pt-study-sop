@@ -4,7 +4,7 @@ import subprocess
 import sys
 
 # The user's specific vault path
-DEFAULT_VAULT_PATH = r"C:\Users\treyt\OneDrive\Desktop\pt-study-sop\PT School Semester 2"
+DEFAULT_VAULT_PATH = r"C:\Users\treyt\Desktop\Treys School"
 
 
 def create_symlink():

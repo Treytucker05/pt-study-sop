@@ -4,7 +4,7 @@ param(
 
     # Portable canonical agent config lives in the Obsidian vault.
     # Copy-sync only (no junctions/symlinks) to keep tools predictable.
-    [string]$VaultConfigRoot = "C:\\Users\\treyt\\Desktop\\PT School Semester 2\\agents\\config"
+    [string]$VaultConfigRoot = "C:\\Users\\treyt\\Desktop\\Treys School\\agents\\config"
 )
 
 $ErrorActionPreference = "Stop"

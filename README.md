@@ -40,7 +40,7 @@ Four pillars work in a continuous loop:
 
 | Pillar | What It Does | Location |
 |--------|-------------|----------|
-| **SOP** | Defines *how* learning happens (15 library files) | `sop/library/` |
+| **SOP** | Defines *how* learning happens (50 method blocks + 19 chains) | `sop/library/` |
 | **Brain** | Stores sessions, serves API, hosts dashboard | `brain/` |
 | **Dashboard** | Surfaces metrics, manages ingestion, calendar, Anki | `dashboard_rebuild/` |
 | **Scholar** | Audits session logs, proposes evidence-based improvements | `scholar/` |
@@ -54,8 +54,9 @@ Four pillars work in a continuous loop:
 ```
 +------------------+     runtime prompt      +------------------+
 |  SOP Library     |------------------------>|  Custom GPT      |
-|  (15 .md files)  |     + 6 knowledge       |  (Tutor)         |
-+------------------+       bundles           +--------+---------+
+|  (50 methods +   |     + 6 knowledge       |  (Tutor)         |
+|   19 chains)     |       bundles           +--------+---------+
++------------------+
         ^                                             |
         |  proposals                     Exit Ticket + Session Ledger
         |                                             |
@@ -300,7 +301,7 @@ The `brain/selector.py` router automatically selects the optimal chain based on 
 Built from `sop/library/` via `python sop/tools/build_runtime_bundle.py`:
 
 ```
-sop/library/ (15 files)
+sop/library/ (50 methods + 19 chains)
        |
        | build_runtime_bundle.py
        v
@@ -521,7 +522,7 @@ SQLite at `brain/data/pt_study.db`. Schema managed in `brain/db_setup.py`.
 
 +------------------+     +------------------+     +------------------+
 |  method_blocks   |     |  method_chains   |     |  method_ratings  |
-|  (46 CP stages)  |     |  (6 CP chains)   |     |  (user ratings)  |
+|  (50 CP stages)  |     |  (19 CP chains)  |     |  (user ratings)  |
 +------------------+     +------------------+     +------------------+
 
 +------------------+     +------------------+     +------------------+
@@ -618,7 +619,7 @@ pt-study-sop/
 |   +-- client/src/         #   Pages, components, API client
 |   +-- package.json        #   Dependencies
 +-- sop/                    # Study Operating Procedure
-|   +-- library/            #   Canonical SOP (15 files, read-only)
+|   +-- library/            #   Canonical SOP (50 methods + 19 chains, YAML)
 |   +-- runtime/            #   Generated bundles + prompt
 |   +-- tools/              #   Build + validation scripts
 |   +-- tests/              #   Golden JSON + behavioral tests

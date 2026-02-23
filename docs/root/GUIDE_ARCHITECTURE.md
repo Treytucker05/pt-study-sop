@@ -20,7 +20,7 @@ See `docs/system_map.md` for the diagram and loop definitions.
 - **SOP Runtime:** `sop/library/` (canonical) and `sop/runtime/` (generated bundle)
 - **Brain DB + APIs:** `brain/` and `brain/dashboard/`
 - **Scholar Workflows:** `scholar/workflows/`
-- **Obsidian Vault:** `C:\Users\treyt\Desktop\PT School Semester 2` (notes under `projects/pt-study-sop/`)
+- **Obsidian Vault:** `C:\Users\treyt\Desktop\Treys School` (notes under `projects/pt-study-sop/`)
 
 ## Key Data Stores
 - `brain/data/pt_study.db` (source of truth)

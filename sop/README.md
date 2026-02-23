@@ -8,8 +8,8 @@ Canonical stage model is CP-MSS v1.0: `PRIME -> CALIBRATE -> ENCODE -> REFERENCE
 ```
 sop/
   library/
-    methods/          # M-XXX-NNN.yaml — 34 method block specs
-    chains/           # C-XX(X)-NNN.yaml — 13 chain specs
+    methods/          # M-XXX-NNN.yaml — 50 method block specs
+    chains/           # C-XX(X)-NNN.yaml — 19 chain specs
     meta/
       taxonomy.yaml   # Categories, mechanisms, stages, class types
       version.yaml    # Library version (semver)
@@ -82,7 +82,7 @@ pytest sop/tests/test_validate_library.py -v    # validator tests
    id: M-CAT-NNN
    name: Method Name
    control_stage: PRIME # one of: PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN
-   category: prepare    # optional legacy compatibility field
+   category: prime      # one of: prime, calibrate, encode, interrogate, reference, retrieve, overlearn
    description: What this method does.
    default_duration_min: 5
    energy_cost: medium   # low, medium, high

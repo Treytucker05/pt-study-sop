@@ -42,6 +42,16 @@ If anything conflicts (docs, scripts, or older SOPs), `sop/library/` wins. `sop/
 **Library file map:**
 ```
 sop/library/
+├── methods/           # M-XXX-NNN.yaml — 50 method block specs
+├── chains/            # C-XX(X)-NNN.yaml — 19 chain specs
+├── meta/
+│   ├── taxonomy.yaml  # Categories, mechanisms, stages, class types
+│   └── version.yaml   # Library version (semver)
+├── templates/
+│   └── session_log_template.yaml
+├── research/
+│   ├── prompts/       # Scholar research prompt templates
+│   └── tickets/       # ET-NNN.yaml evidence tickets
 ├── 00-overview.md
 ├── 01-core-rules.md
 ├── 02-learning-cycle.md
@@ -57,6 +67,7 @@ sop/library/
 ├── 12-evidence.md
 ├── 13-custom-gpt-system-instructions.md
 ├── 14-lo-engine.md
+├── 15-method-library.md  # AUTO-GENERATED from YAML — do not edit
 ├── 17-control-plane.md
 └── README.md
 ```
@@ -395,7 +406,7 @@ How the pillars talk to each other.
 - **RAG Latency:** Local embeddings can be slow on first load.
 
 ### 8.3 Medium
-- **Test Coverage:** Only 2 distinct test files exist (`tests/`). Need to cover ingestion edge cases.
+- **Test Coverage:** Tests exist across `brain/tests/`, `sop/tests/`, and `dashboard_rebuild/` (Vitest + React Testing Library). Coverage continues to expand.
 - **Mobile CSS:** 90s theme has some touch target overlapping issues on small screens.
 
 ---
