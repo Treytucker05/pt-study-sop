@@ -1,0 +1,38 @@
+{
+  "mode": "off",
+  "model_preference": "flash",
+  "budget": {
+    "monthly_cap_usd": 5.00,
+    "per_video_cap_usd": 0.50,
+    "local_only_fallback": true
+  },
+  "models": {
+    "flash": {
+      "name": "gemini-2.5-flash",
+      "input_cost_per_1m_tokens": 0.10,
+      "est_tokens_per_hour_video": 1040000,
+      "est_cost_per_hour_video": 0.10,
+      "free_tier_rpd": 500
+    },
+    "pro": {
+      "name": "gemini-2.5-pro",
+      "input_cost_per_1m_tokens": 1.25,
+      "est_tokens_per_hour_video": 1040000,
+      "est_cost_per_hour_video": 1.30,
+      "free_tier_rpd": 100
+    }
+  },
+  "flagging": {
+    "avg_logprob_threshold": -0.7,
+    "no_speech_prob_threshold": 0.5,
+    "ocr_density_min_chars": 20
+  },
+  "cache": {
+    "enabled": true,
+    "key_format": "{video_hash}:{start_sec}-{end_sec}:{prompt_version}"
+  },
+  "_notes": {
+    "recommendation": "Flash for enrichment, Pro only for complex visual reasoning",
+    "pricing_date": "2026-02-22"
+  }
+}

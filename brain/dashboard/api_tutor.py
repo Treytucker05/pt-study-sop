@@ -4682,3 +4682,84 @@ def get_video_process_status(job_id: str):
     if not job:
         return jsonify({"error": "Video job not found"}), 404
     return jsonify(job), 200
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/materials/video/enrich — Enrich processed video via API
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/materials/video/enrich", methods=["POST"])
+def enrich_video_material():
+    data = request.get_json(silent=True) or {}
+    material_id = data.get("material_id")
+    if material_id is None:
+        return jsonify({"error": "material_id is required"}), 400
+
+    try:
+        material_id_int = int(material_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid material_id"}), 400
+
+    mode = data.get("mode")
+
+    conn = db_setup.get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, source_path, file_path, file_type, title FROM rag_docs WHERE id = ?",
+        (material_id_int,),
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Material not found"}), 404
+
+    source_path = str(row["file_path"] or row["source_path"] or "")
+    file_type = str(row["file_type"] or "").lower()
+    if file_type != "mp4" and not source_path.lower().endswith(".mp4"):
+        return jsonify({"error": "Material is not an mp4 video"}), 400
+
+    if not Path(source_path).exists():
+        return jsonify({"error": f"Video file not found on disk: {source_path}"}), 400
+
+    # Find the most recent segments.json for this video
+    from video_ingest_local import VIDEO_INGEST_ROOT, _slugify
+    slug = _slugify(Path(source_path).stem)
+    matching_dirs = sorted(
+        VIDEO_INGEST_ROOT.glob(f"{slug}_*"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    ) if VIDEO_INGEST_ROOT.exists() else []
+
+    segments: list[dict] = []
+    segments_path = None
+    for d in matching_dirs:
+        sp = d / "segments.json"
+        if sp.exists():
+            segments_path = sp
+            import json as _json
+            segments = _json.loads(sp.read_text(encoding="utf-8"))
+            break
+
+    if not segments:
+        return jsonify({"error": "No processed segments found. Run video/process first."}), 400
+
+    try:
+        from video_enrich_api import enrich_video, emit_enrichment_markdown
+        result = enrich_video(
+            video_path=source_path,
+            segments=segments,
+            material_id=material_id_int,
+            mode=mode,
+        )
+
+        # If enrichment produced results, emit markdown and ingest via RAG bridge
+        if result.get("status") == "ok" and result.get("results"):
+            output_dir = str(segments_path.parent) if segments_path else str(VIDEO_INGEST_ROOT)
+            md_path = emit_enrichment_markdown(slug, result["results"], output_dir)
+            result["enrichment_md_path"] = md_path
+
+        return jsonify({"ok": True, "material_id": material_id_int, **result}), 200
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
