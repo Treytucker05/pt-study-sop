@@ -105,8 +105,8 @@ describe("API error message sanitization", () => {
   });
 
   it("request() throws with statusText, not response body", async () => {
-    // The api.ts request() function throws: `API Error: ${response.statusText}`
-    // This is SAFER than including the body, which could contain stack traces.
+    // The api.ts request() function throws: `API ${response.status}: ${suffix}`
+    // When headers are missing/unreadable, it falls back to statusText (safe).
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -120,7 +120,7 @@ describe("API error message sanitization", () => {
     const { request } = await import("@/api");
     // Use a wrapper to access the private request function via apiRequest
     const { apiRequest } = await import("@/api");
-    await expect(apiRequest("/sessions")).rejects.toThrow("API Error: Internal Server Error");
+    await expect(apiRequest("/sessions")).rejects.toThrow("API 500: Internal Server Error");
   });
 
   it("error message does not contain file paths", async () => {
@@ -176,18 +176,19 @@ describe("API error message sanitization", () => {
 describe("Error display patterns", () => {
   /**
    * Multiple components display err.message to users via toast or status text.
-   * The api.ts request() function throws `API Error: ${statusText}` which is
-   * safe because statusText is a standard HTTP phrase, not server-generated.
+   * The api.ts request() function throws `API ${status}: ${suffix}` which
+   * falls back to statusText (a standard HTTP phrase) when body parsing fails.
    *
    * Components that use raw fetch (BrainChat, TutorChat) may display
    * server error bodies — those should be audited separately.
    */
 
-  it("API Error format only includes HTTP status text", () => {
-    // Simulate the error format from api.ts:84
+  it("API error format only includes HTTP status code and text", () => {
+    // Simulate the error format from api.ts when body parsing fails
+    const status = 404;
     const statusText = "Not Found";
-    const error = new Error(`API Error: ${statusText}`);
-    expect(error.message).toBe("API Error: Not Found");
+    const error = new Error(`API ${status}: ${statusText}`);
+    expect(error.message).toBe("API 404: Not Found");
     expect(error.message).not.toContain("sqlite3");
     expect(error.message).not.toContain("Traceback");
     expect(error.message).not.toContain("/home");
@@ -201,8 +202,8 @@ describe("Error display patterns", () => {
       404: "Not Found",
       500: "Internal Server Error",
     };
-    for (const [, text] of Object.entries(safeCodes)) {
-      const msg = `API Error: ${text}`;
+    for (const [code, text] of Object.entries(safeCodes)) {
+      const msg = `API ${code}: ${text}`;
       // None of these leak internal info
       expect(msg).not.toMatch(/\.(py|js|ts|db|sqlite)/);
       expect(msg).not.toMatch(/\/[a-z]+\//i); // no file paths
