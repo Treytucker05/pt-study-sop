@@ -74,6 +74,20 @@ function formatSize(bytes: number | null | undefined): string {
   return `${(safeBytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
+function resolveMaterialAssetUrl(src: string | undefined, materialId: number): string {
+  const raw = String(src || "").trim();
+  if (!raw) return "";
+  if (/^(https?:|data:|blob:|\/)/i.test(raw)) return raw;
+  const normalized = raw.replace(/\\/g, "/").replace(/^\.\/+/, "");
+  const encodedPath = normalized
+    .split("/")
+    .filter(Boolean)
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+  if (!encodedPath) return "";
+  return `/api/tutor/materials/${materialId}/asset/${encodedPath}`;
+}
+
 function getMaterialTitle(mat: Material): string {
   const toBaseName = (value: string): string => {
     const normalized = (value || "").replace(/\\/g, "/").trim();
@@ -259,9 +273,15 @@ function renderMaterialRow(
   deleteConfirm: number | null,
   setDeleteConfirm: (id: number | null) => void,
   viewContent: (id: number) => void,
+  reextractContent: (id: number) => void,
+  isReextracting: boolean,
 ) {
   const displayTitle = getMaterialTitle(mat);
   const folderLabel = getMaterialFolder(mat);
+  const normalizedType = (mat.file_type || "").toLowerCase();
+  const canReextract = ["pdf", "docx", "pptx", "powerpoint"].includes(normalizedType);
+  const hasDoclingAssets = Boolean(mat.has_docling_assets);
+  const doclingAssetCount = Number(mat.docling_asset_count || 0);
 
   return (
     <div
@@ -316,9 +336,20 @@ function renderMaterialRow(
       </div>
 
       {/* Type */}
-      <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 w-fit`}>
-        {getFileTypeLabel(mat.file_type)}
-      </Badge>
+      <div className="flex items-center gap-1">
+        <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 w-fit`}>
+          {getFileTypeLabel(mat.file_type)}
+        </Badge>
+        {canReextract ? (
+          <Badge
+            variant="outline"
+            className={`${TEXT_BADGE} h-4 px-1 w-fit ${hasDoclingAssets ? "border-green-500/60 text-green-300" : "border-yellow-500/60 text-yellow-300"}`}
+            title={hasDoclingAssets ? `${doclingAssetCount} Docling asset${doclingAssetCount === 1 ? "" : "s"} detected` : "No Docling image assets detected"}
+          >
+            D:{doclingAssetCount}
+          </Badge>
+        ) : null}
+      </div>
 
       {/* Size */}
       <div className={TEXT_MUTED}>{formatSize(getMaterialSize(mat))}</div>
@@ -350,6 +381,16 @@ function renderMaterialRow(
         >
           <Eye className={ICON_SM} />
         </button>
+        {canReextract ? (
+          <button
+            onClick={() => reextractContent(mat.id)}
+            disabled={isReextracting}
+            className="text-muted-foreground hover:text-primary transition-colors p-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Re-extract with Docling"
+          >
+            <RefreshCw className={`${ICON_SM} ${isReextracting ? "animate-spin" : ""}`} />
+          </button>
+        ) : null}
         <button
           onClick={() => startEdit(mat)}
           className="text-muted-foreground hover:text-primary transition-colors p-0.5"
@@ -398,6 +439,7 @@ export default function Library() {
   const [syncJobId, setSyncJobId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<TutorSyncJobStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [reextractingMaterialIds, setReextractingMaterialIds] = useState<number[]>([]);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string>(ALL_FOLDERS_KEY);
   const [expandedFolderPaths, setExpandedFolderPaths] = useState<Set<string>>(new Set());
   const [initializedFolderExpansion, setInitializedFolderExpansion] = useState(false);
@@ -544,6 +586,15 @@ export default function Library() {
 
     let cancelled = false;
     let transientFailures = 0;
+    let pollTimeoutId: number | null = null;
+
+    const scheduleNextPoll = () => {
+      if (cancelled) return;
+      if (pollTimeoutId !== null) {
+        window.clearTimeout(pollTimeoutId);
+      }
+      pollTimeoutId = window.setTimeout(pollSyncStatus, 1500);
+    };
 
     const pollSyncStatus = async () => {
       try {
@@ -585,7 +636,7 @@ export default function Library() {
         if (cancelled) return;
         transientFailures += 1;
         if (transientFailures < 5) {
-          window.setTimeout(pollSyncStatus, 1500);
+          scheduleNextPoll();
           return;
         }
         setSyncing(false);
@@ -594,15 +645,16 @@ export default function Library() {
         return;
       }
 
-      if (!cancelled) {
-        window.setTimeout(pollSyncStatus, 1500);
-      }
+      scheduleNextPoll();
     };
 
     pollSyncStatus();
 
     return () => {
       cancelled = true;
+      if (pollTimeoutId !== null) {
+        window.clearTimeout(pollTimeoutId);
+      }
     };
   }, [syncJobId, queryClient]);
 
@@ -781,6 +833,25 @@ export default function Library() {
       setSyncJobId(null);
       setSyncStatus(null);
       toast.error(`Sync failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    }
+  };
+
+  const reextractMaterial = async (materialId: number) => {
+    if (reextractingMaterialIds.includes(materialId)) return;
+    setReextractingMaterialIds((prev) => [...prev, materialId]);
+    try {
+      const result = await api.tutor.reextractMaterial(materialId);
+      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
+      queryClient.invalidateQueries({ queryKey: ["material-content", materialId] });
+      if (result.has_docling_assets) {
+        toast.success(`Re-extracted with Docling (${result.docling_asset_count} assets)`);
+      } else {
+        toast.warning("Re-extracted with Docling, but no image assets were produced.");
+      }
+    } catch (err) {
+      toast.error(`Re-extract failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    } finally {
+      setReextractingMaterialIds((prev) => prev.filter((id) => id !== materialId));
     }
   };
 
@@ -1038,6 +1109,11 @@ export default function Library() {
                                 <li key={i} className="break-all">{err}</li>
                               ))}
                             </ul>
+                            {Number((syncStatus?.sync_result as { errors_total?: number } | undefined)?.errors_total || 0) > (syncStatus!.sync_result!.errors as string[]).length ? (
+                              <div className="mt-1 text-red-300">
+                                Showing first {(syncStatus!.sync_result!.errors as string[]).length} of {Number((syncStatus!.sync_result as { errors_total?: number }).errors_total)} errors.
+                              </div>
+                            ) : null}
                           </details>
                         ) : null}
                       </div>
@@ -1204,6 +1280,8 @@ export default function Library() {
                             deleteConfirm,
                             setDeleteConfirm,
                             setViewingMaterialId,
+                            reextractMaterial,
+                            reextractingMaterialIds.includes(mat.id),
                           )
                         ))}
                       </div>
@@ -1263,7 +1341,23 @@ export default function Library() {
                     prose-code:text-primary/80 prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded-none
                     prose-pre:bg-black/60 prose-pre:border prose-pre:border-primary/20"
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        img: ({ src, alt }: { src?: string; alt?: string }) => {
+                          const resolvedSrc = resolveMaterialAssetUrl(src, materialContent.id);
+                          if (!resolvedSrc) return null;
+                          return (
+                            <img
+                              src={resolvedSrc}
+                              alt={alt || "Extracted figure"}
+                              loading="lazy"
+                              className="max-w-full h-auto border border-primary/30 bg-black/20"
+                            />
+                          );
+                        },
+                      }}
+                    >
                       {materialContent.content}
                     </ReactMarkdown>
                   </div>
@@ -1283,7 +1377,23 @@ export default function Library() {
                 prose-code:text-primary/80 prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded-none
                 prose-pre:bg-black/60 prose-pre:border prose-pre:border-primary/20"
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: ({ src, alt }: { src?: string; alt?: string }) => {
+                      const resolvedSrc = resolveMaterialAssetUrl(src, materialContent.id);
+                      if (!resolvedSrc) return null;
+                      return (
+                        <img
+                          src={resolvedSrc}
+                          alt={alt || "Extracted figure"}
+                          loading="lazy"
+                          className="max-w-full h-auto border border-primary/30 bg-black/20"
+                        />
+                      );
+                    },
+                  }}
+                >
                   {materialContent.content}
                 </ReactMarkdown>
               </div>

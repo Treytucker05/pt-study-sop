@@ -81,7 +81,21 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
+    let detail = "";
+    try {
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const body = await response.json() as { error?: string; message?: string; detail?: string };
+        detail = String(body.error || body.message || body.detail || "").trim();
+      } else {
+        const text = (await response.text()).trim();
+        if (text) detail = text.slice(0, 500);
+      }
+    } catch {
+      // Fall back to status text when body parsing fails.
+    }
+    const suffix = detail || response.statusText || "Request failed";
+    throw new Error(`API ${response.status}: ${suffix}`);
   }
 
   if (response.status === 204) {
@@ -709,6 +723,11 @@ export const api = {
       }),
     deleteMaterial: (id: number) =>
       request<{ deleted: boolean }>(`/tutor/materials/${id}`, { method: "DELETE" }),
+    reextractMaterial: (id: number) =>
+      request<{ ok: boolean; id: number; has_docling_assets: boolean; docling_asset_count: number }>(
+        `/tutor/materials/${id}/reextract`,
+        { method: "POST" },
+      ),
     getMaterialContent: (id: number) =>
       request<MaterialContent>(`/tutor/materials/${id}/content`),
     autoLinkMaterials: () =>
@@ -1090,6 +1109,9 @@ export interface MethodBlock {
   tags: string[];
   evidence: string | null;
   facilitation_prompt?: string | null;
+  knobs?: Record<string, unknown>;
+  constraints?: Record<string, unknown>;
+  has_active_knobs?: boolean;
   created_at: string;
 }
 
@@ -1491,6 +1513,8 @@ export interface Material {
   checksum: string | null;
   created_at: string;
   updated_at: string | null;
+  has_docling_assets?: boolean;
+  docling_asset_count?: number;
 }
 
 export interface MaterialContent {

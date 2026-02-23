@@ -830,6 +830,8 @@ function EditBlockDialog({
   const [category, setCategory] = useState<MethodCategory>("PRIME");
   const [description, setDescription] = useState("");
   const [facilitationPrompt, setFacilitationPrompt] = useState("");
+  const [knobsJson, setKnobsJson] = useState("{}");
+  const [knobError, setKnobError] = useState<string | null>(null);
   const [fullScreenText, setFullScreenText] = useState(false);
   const [duration, setDuration] = useState(5);
   const [energyCost, setEnergyCost] = useState("medium");
@@ -876,11 +878,26 @@ function EditBlockDialog({
     setDuration(block.default_duration_min ?? 5);
     setEnergyCost(block.energy_cost ?? "medium");
     setBestStage(block.best_stage ?? "");
+    setKnobsJson(JSON.stringify(block.knobs ?? {}, null, 2));
+    setKnobError(null);
     setFullScreenText(false);
   }, [block]);
 
   const handleSave = () => {
     if (!block || !name.trim()) return;
+    let parsedKnobs: Record<string, unknown> = {};
+    try {
+      const parsed = JSON.parse(knobsJson || "{}");
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        setKnobError("Knobs must be a JSON object.");
+        return;
+      }
+      parsedKnobs = parsed as Record<string, unknown>;
+      setKnobError(null);
+    } catch {
+      setKnobError("Invalid knobs JSON. Fix syntax before saving.");
+      return;
+    }
     onSave(block.id, {
       name: name.trim(),
       category,
@@ -889,6 +906,7 @@ function EditBlockDialog({
       energy_cost: energyCost,
       best_stage: bestStage || null,
       facilitation_prompt: facilitationPrompt.trim() || null,
+      knobs: parsedKnobs,
     });
   };
 
@@ -951,6 +969,35 @@ function EditBlockDialog({
               onChange={(e) => setFacilitationPrompt(e.target.value)}
               className={`${fullScreenText ? "h-[42vh]" : "h-32"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-sm resize-y`}
             />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-arcade text-xs text-muted-foreground">KNOBS JSON</label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
+                onClick={() => {
+                  setKnobsJson(JSON.stringify(block?.knobs ?? {}, null, 2));
+                  setKnobError(null);
+                }}
+              >
+                RESET KNOBS
+              </Button>
+            </div>
+            <Textarea
+              placeholder="Per-method knobs JSON (validated on save)"
+              value={knobsJson}
+              onChange={(e) => {
+                setKnobsJson(e.target.value);
+                if (knobError) setKnobError(null);
+              }}
+              className={`${fullScreenText ? "h-40" : "h-28"} rounded-none border-2 border-primary/40 bg-black/60 font-terminal text-xs resize-y`}
+            />
+            {knobError && (
+              <p className="mt-1 font-terminal text-xs text-destructive">{knobError}</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
