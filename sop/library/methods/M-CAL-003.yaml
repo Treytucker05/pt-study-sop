@@ -1,6 +1,6 @@
 id: M-CAL-003
 name: Priority Set
-category: prepare
+category: calibrate
 description: Build a deterministic top-3 weakness set from CALIBRATE telemetry to drive ENCODE method selection.
 default_duration_min: 3
 energy_cost: low
@@ -8,100 +8,104 @@ best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
 tags:
-  - calibrate
-  - prioritization
-  - sequencing
-  - deterministic-routing
+- calibrate
+- prioritization
+- sequencing
+- deterministic-routing
 mechanisms:
-  - adaptive_sequencing
-  - error_localization
+- adaptive_sequencing
+- error_localization
 stipulations:
-  - Output must be deterministic and ranked.
-  - Exactly top 3 weaknesses are emitted.
-  - Ranking favors high-confidence misses and repeated errors.
+- Output must be deterministic and ranked.
+- Exactly top 3 weaknesses are emitted.
+- Ranking favors high-confidence misses and repeated errors.
 when_to_use:
-  - After M-CAL-001 and M-CAL-002 complete.
-  - Before selecting ENCODE methods.
+- After M-CAL-001 and M-CAL-002 complete.
+- Before selecting ENCODE methods.
 when_not_to_use:
-  - If fewer than 3 valid items exist; run micro-recalibration first.
+- If fewer than 3 valid items exist; run micro-recalibration first.
 knobs:
-  top_k:
-    type: int
-    min: 3
-    max: 3
-    default: 3
-  weighting_profile:
-    type: enum
-    options: [balanced, confidence_heavy, latency_heavy]
-    default: balanced
+  top_k: 3
+  weighting_profile: balanced
 constraints:
   deterministic_output_required: true
   top_k_fixed: true
 gating_rules:
-  - Emit exactly top_k weaknesses (fixed at 3).
-  - Apply deterministic tie-breaks (high-confidence misses, then frequency).
-  - Output ranking and routing seeds only; no teaching/explanations.
-  - Keep ranking scoped to current objective telemetry only.
+- Emit exactly top_k weaknesses (fixed at 3).
+- Apply deterministic tie-breaks (high-confidence misses, then frequency).
+- Output ranking and routing seeds only; no teaching/explanations.
+- Keep ranking scoped to current objective telemetry only.
 inputs:
-  - Calibrate correctness and latency
-  - Confidence-tagged results
-  - Error-type labels
+- Calibrate correctness and latency
+- Confidence-tagged results
+- Error-type labels
 steps:
-  - step: 1
-    action: Aggregate misses by error type
-    notes: Use Recall, Confusion, Rule, Representation, Procedure, Computation, Speed.
-  - step: 2
-    action: Score weakness impact using weighting_profile
-    notes: Include frequency, confidence mismatch, and latency.
-  - step: 3
-    action: Rank weaknesses and emit top_k
-    notes: Must produce exactly 3 ranked items.
-  - step: 4
-    action: Map each weakness to next ENCODE action seed
-    notes: Provide method-family recommendation only, not full lesson.
+- step: 1
+  action: Aggregate misses by error type
+  notes: Use Recall, Confusion, Rule, Representation, Procedure, Computation, Speed.
+- step: 2
+  action: Score weakness impact using weighting_profile
+  notes: Include frequency, confidence mismatch, and latency.
+- step: 3
+  action: Rank weaknesses and emit top_k
+  notes: Must produce exactly 3 ranked items.
+- step: 4
+  action: Map each weakness to next ENCODE action seed
+  notes: Provide method-family recommendation only, not full lesson.
 outputs:
-  - PrioritySet
-  - WeaknessScoreTable
-  - EncodeRoutingSeed
+- PrioritySet
+- WeaknessScoreTable
+- EncodeRoutingSeed
 artifact_type: notes
 stop_criteria:
-  - Exactly 3 prioritized weaknesses output
-  - EncodeRoutingSeed created
+- Exactly 3 prioritized weaknesses output
+- EncodeRoutingSeed created
 failure_modes:
-  - mode: Too little data for stable ranking
-    mitigation: Trigger micro-recalibration with 2-3 extra items.
-  - mode: Ranking ties remain unresolved
-    mitigation: Break ties by high-confidence miss count, then frequency.
-  - mode: Output drifts into teaching
-    mitigation: Restrict to ranked diagnostics and routing only.
+- mode: Too little data for stable ranking
+  mitigation: Trigger micro-recalibration with 2-3 extra items.
+- mode: Ranking ties remain unresolved
+  mitigation: Break ties by high-confidence miss count, then frequency.
+- mode: Output drifts into teaching
+  mitigation: Restrict to ranked diagnostics and routing only.
 logging_fields:
-  - top_k
-  - weighting_profile
-  - priority_set
-  - tie_break_applied
+- top_k
+- weighting_profile
+- priority_set
+- tie_break_applied
 evidence:
   citation: Rawson and Dunlosky (2011)
   finding: Targeted corrective practice outperforms broad untargeted restudy.
   source: control-plane migration
 evidence_strength: high
 primary_citations:
-  - Rawson and Dunlosky (2011)
-  - Bjork and Bjork (2011)
+- Rawson and Dunlosky (2011)
+- Bjork and Bjork (2011)
 evidence_raw: Focused relearning based on diagnosed weaknesses improves long-term retention.
+facilitation_prompt: 'You are running M-CAL-003 (Priority Set) in CALIBRATE stage.
 
-facilitation_prompt: |
-  You are running M-CAL-003 (Priority Set) in CALIBRATE stage.
   Build a deterministic ranked weakness set for ENCODE routing.
 
+
   Requirements:
+
   - Use correctness, latency, confidence, and error types.
+
   - Apply {weighting_profile}.
+
   - Emit exactly {top_k} weaknesses (fixed at 3).
+
   - Add one ENCODE method-family seed per weakness.
 
+
   Return exactly:
+
   1) PrioritySet
+
   2) WeaknessScoreTable
+
   3) EncodeRoutingSeed
 
+
   Do not provide full teaching or answer explanations in this method.
+
+  '

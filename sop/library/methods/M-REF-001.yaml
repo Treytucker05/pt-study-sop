@@ -1,7 +1,8 @@
 id: M-REF-001
 name: Error Autopsy
-category: refine
-description: 'Review errors from retrieval practice. For each error: (1) What did I say? (2) What''s correct? (3) Why did I confuse them? (4) What cue will prevent this next time? Metacognitive error analysis.'
+category: reference
+description: 'Review errors from retrieval practice. For each error: (1) What did I say? (2) What''s correct? (3) Why did
+  I confuse them? (4) What cue will prevent this next time? Metacognitive error analysis.'
 default_duration_min: 5
 energy_cost: medium
 best_stage: exam_prep
@@ -18,20 +19,8 @@ mechanisms:
 - elaboration
 - discrimination
 knobs:
-  artifact_depth:
-    type: enum
-    options:
-    - compact
-    - standard
-    - detailed
-    default: standard
-  link_density:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
+  artifact_depth: standard
+  link_density: medium
 constraints:
   target_artifact_required: true
   retrieval_blocked_without_targets: true

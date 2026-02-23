@@ -1,7 +1,8 @@
 id: M-REF-002
 name: Mastery Loop
-category: refine
-description: Re-study items missed during retrieval, then immediately re-test. Repeat until all items are recalled correctly. Based on successive relearning (Rawson & Dunlosky).
+category: reference
+description: Re-study items missed during retrieval, then immediately re-test. Repeat until all items are recalled correctly.
+  Based on successive relearning (Rawson & Dunlosky).
 default_duration_min: 10
 energy_cost: medium
 best_stage: consolidation
@@ -18,20 +19,8 @@ mechanisms:
 - successive_relearning
 - mastery_learning
 knobs:
-  artifact_depth:
-    type: enum
-    options:
-    - compact
-    - standard
-    - detailed
-    default: standard
-  link_density:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
+  artifact_depth: standard
+  link_density: medium
 constraints:
   target_artifact_required: true
   retrieval_blocked_without_targets: true

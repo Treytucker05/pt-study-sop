@@ -1,6 +1,6 @@
 id: M-REF-004
 name: Question Bank Seed
-category: interrogate
+category: reference
 description: Generate a mode-tagged seed bank of 10-20 retrieval questions from objectives and anchor artifacts.
 default_duration_min: 8
 energy_cost: medium
@@ -16,20 +16,8 @@ mechanisms:
 - retrieval
 - transfer
 knobs:
-  artifact_depth:
-    type: enum
-    options:
-    - compact
-    - standard
-    - detailed
-    default: standard
-  link_density:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
+  artifact_depth: standard
+  link_density: medium
 constraints:
   target_artifact_required: true
   retrieval_blocked_without_targets: true

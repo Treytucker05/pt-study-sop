@@ -1,7 +1,8 @@
 id: M-RET-004
 name: Mixed Practice
 category: retrieve
-description: Interleave questions from 2-3 different topics in a single retrieval block. Builds discrimination and prevents blocked-practice illusion. Based on interleaving research (Rohrer et al.).
+description: Interleave questions from 2-3 different topics in a single retrieval block. Builds discrimination and prevents
+  blocked-practice illusion. Based on interleaving research (Rohrer et al.).
 default_duration_min: 10
 energy_cost: high
 best_stage: exam_prep
@@ -18,19 +19,8 @@ mechanisms:
 - discrimination
 - transfer
 knobs:
-  difficulty:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
-  feedback_timing:
-    type: enum
-    options:
-    - immediate
-    - after_attempt
-    default: after_attempt
+  difficulty: medium
+  feedback_timing: after_attempt
 constraints:
   attempt_required_before_feedback: true
   closed_note_first: true

@@ -1,6 +1,6 @@
 id: M-CAL-002
 name: Confidence Tagging
-category: prepare
+category: calibrate
 description: Convert raw item responses into confidence-calibrated signals to detect overconfidence and underconfidence.
 default_duration_min: 3
 energy_cost: low
@@ -8,102 +8,106 @@ best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
 tags:
-  - calibrate
-  - confidence
-  - metacognition
-  - risk-detection
+- calibrate
+- confidence
+- metacognition
+- risk-detection
 mechanisms:
-  - metacognitive_monitoring
-  - calibration
+- metacognitive_monitoring
+- calibration
 stipulations:
-  - Confidence must be captured before correctness feedback.
-  - High-confidence misses are highest-priority risk signals.
-  - Confidence alone cannot lower difficulty without performance evidence.
+- Confidence must be captured before correctness feedback.
+- High-confidence misses are highest-priority risk signals.
+- Confidence alone cannot lower difficulty without performance evidence.
 when_to_use:
-  - Immediately after M-CAL-001 item attempts.
-  - Any time learner behavior suggests miscalibration.
+- Immediately after M-CAL-001 item attempts.
+- Any time learner behavior suggests miscalibration.
 when_not_to_use:
-  - Skip only if confidence data is already captured at item level.
+- Skip only if confidence data is already captured at item level.
 knobs:
-  confidence_scale:
-    type: enum
-    options: [HML, one_to_five]
-    default: HML
-  miscalibration_threshold:
-    type: float
-    min: 0.1
-    max: 0.4
-    default: 0.2
+  confidence_scale: HML
+  miscalibration_threshold: 0.2
 constraints:
   confidence_before_feedback_required: true
   confidence_only_adaptation_disallowed: true
 gating_rules:
-  - Capture confidence before correctness feedback for every attempted item.
-  - Treat this block as diagnostic-only; do not teach or explain content deeply.
-  - Never lower difficulty based on confidence alone; require correctness/latency corroboration.
-  - Preserve a single confidence_scale throughout the block.
+- Capture confidence before correctness feedback for every attempted item.
+- Treat this block as diagnostic-only; do not teach or explain content deeply.
+- Never lower difficulty based on confidence alone; require correctness/latency corroboration.
+- Preserve a single confidence_scale throughout the block.
 inputs:
-  - Calibrate item responses
-  - Item correctness
-  - Item latency
+- Calibrate item responses
+- Item correctness
+- Item latency
 steps:
-  - step: 1
-    action: Apply confidence tag to each item
-    notes: Use configured confidence_scale.
-  - step: 2
-    action: Identify high-confidence misses and low-confidence hits
-    notes: Both are miscalibration signals.
-  - step: 3
-    action: Compute calibration bias summary
-    notes: Compare confidence pattern to correctness pattern.
-  - step: 4
-    action: Emit risk flags for routing
-    notes: These feed M-CAL-003 and ENCODE method selection.
+- step: 1
+  action: Apply confidence tag to each item
+  notes: Use configured confidence_scale.
+- step: 2
+  action: Identify high-confidence misses and low-confidence hits
+  notes: Both are miscalibration signals.
+- step: 3
+  action: Compute calibration bias summary
+  notes: Compare confidence pattern to correctness pattern.
+- step: 4
+  action: Emit risk flags for routing
+  notes: These feed M-CAL-003 and ENCODE method selection.
 outputs:
-  - ConfidenceTaggedResults
-  - HighConfidenceMisses
-  - LowConfidenceHits
-  - CalibrationRiskFlags
+- ConfidenceTaggedResults
+- HighConfidenceMisses
+- LowConfidenceHits
+- CalibrationRiskFlags
 artifact_type: notes
 stop_criteria:
-  - Every attempted item has confidence tag
-  - Risk flags generated
+- Every attempted item has confidence tag
+- Risk flags generated
 failure_modes:
-  - mode: Learner always picks same confidence level
-    mitigation: Collapse scale to HML and continue.
-  - mode: Confidence captured after feedback
-    mitigation: Invalidate tag and re-prompt before revealing correctness.
-  - mode: Confidence manipulated to force easier flow
-    mitigation: Weight adaptation by correctness and latency first.
+- mode: Learner always picks same confidence level
+  mitigation: Collapse scale to HML and continue.
+- mode: Confidence captured after feedback
+  mitigation: Invalidate tag and re-prompt before revealing correctness.
+- mode: Confidence manipulated to force easier flow
+  mitigation: Weight adaptation by correctness and latency first.
 logging_fields:
-  - confidence_scale
-  - high_confidence_miss_count
-  - low_confidence_hit_count
-  - calibration_bias_score
-  - risk_flag_count
+- confidence_scale
+- high_confidence_miss_count
+- low_confidence_hit_count
+- calibration_bias_score
+- risk_flag_count
 evidence:
   citation: Metcalfe (2017)
   finding: Calibration monitoring supports targeted corrective learning.
   source: control-plane migration
 evidence_strength: high
 primary_citations:
-  - Metcalfe (2017)
-  - Dunlosky et al. (2013)
+- Metcalfe (2017)
+- Dunlosky et al. (2013)
 evidence_raw: Confidence-calibration signals improve targeting of corrective study actions.
+facilitation_prompt: 'You are running M-CAL-002 (Confidence Tagging) in CALIBRATE stage.
 
-facilitation_prompt: |
-  You are running M-CAL-002 (Confidence Tagging) in CALIBRATE stage.
   Convert item attempts into actionable calibration signals.
 
+
   Requirements:
+
   - Tag each item with confidence ({confidence_scale}) before correctness feedback.
+
   - Detect and list high-confidence misses and low-confidence hits.
+
   - Compute calibration risk using {miscalibration_threshold} as alert boundary.
 
+
   Return exactly:
+
   1) ConfidenceTaggedResults
+
   2) HighConfidenceMisses
+
   3) LowConfidenceHits
+
   4) CalibrationRiskFlags
 
+
   Do not teach content here. This method is diagnostic routing only.
+
+  '

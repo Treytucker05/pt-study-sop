@@ -17,20 +17,8 @@ mechanisms:
 - generation
 - artifact_creation
 knobs:
-  intensity:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
-  speed_pressure:
-    type: enum
-    options:
-    - off
-    - soft
-    - hard
-    default: soft
+  intensity: medium
+  speed_pressure: soft
 constraints:
   mastery_required_before_speed: true
   burnout_cap_rounds: 3

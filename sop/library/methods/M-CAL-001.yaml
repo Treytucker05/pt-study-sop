@@ -1,6 +1,6 @@
 id: M-CAL-001
 name: Micro Precheck
-category: prepare
+category: calibrate
 description: Run a short scored baseline (2-5 minutes) to estimate current readiness before ENCODE.
 default_duration_min: 4
 energy_cost: medium
@@ -8,113 +8,114 @@ best_stage: first_exposure
 control_stage: CALIBRATE
 status: validated
 tags:
-  - calibrate
-  - diagnostic
-  - baseline
-  - confidence
+- calibrate
+- diagnostic
+- baseline
+- confidence
 mechanisms:
-  - calibration
-  - retrieval
-  - metacognitive_monitoring
+- calibration
+- retrieval
+- metacognitive_monitoring
 stipulations:
-  - This is the first scored stage after PRIME.
-  - Require an attempt before hints or full answer reveal.
-  - Keep scope bounded to active objective targets.
+- This is the first scored stage after PRIME.
+- Require an attempt before hints or full answer reveal.
+- Keep scope bounded to active objective targets.
 when_to_use:
-  - Immediately after PRIME exits.
-  - When readiness is unknown or likely drifted.
+- Immediately after PRIME exits.
+- When readiness is unknown or likely drifted.
 when_not_to_use:
-  - Never before PRIME for first exposure.
-  - Skip only when emergency time constraints force direct review mode.
+- Never before PRIME for first exposure.
+- Skip only when emergency time constraints force direct review mode.
 knobs:
-  item_count:
-    type: int
-    min: 3
-    max: 10
-    default: 5
-  max_duration_min:
-    type: int
-    min: 2
-    max: 5
-    default: 4
-  confidence_scale:
-    type: enum
-    options: [HML, one_to_five]
-    default: HML
+  item_count: 5
+  max_duration_min: 4
+  confidence_scale: HML
 constraints:
   scored_stage: true
   hard_time_cap_min: 5
   hint_before_attempt_disallowed: true
 gating_rules:
-  - Require one best-attempt response per item before hints or answer reveal.
-  - Keep all items constrained to active objective scope.
-  - Maintain hard time cap; do not exceed max_duration_min.
-  - Do not switch into teaching mode during this block.
+- Require one best-attempt response per item before hints or answer reveal.
+- Keep all items constrained to active objective scope.
+- Maintain hard time cap; do not exceed max_duration_min.
+- Do not switch into teaching mode during this block.
 inputs:
-  - Active objective targets
-  - Calibrate item set aligned to scope
-  - objective_scope and focus objective context
+- Active objective targets
+- Calibrate item set aligned to scope
+- objective_scope and focus objective context
 steps:
-  - step: 1
-    action: Start timed calibrate block
-    notes: Use max_duration_min hard cap.
-  - step: 2
-    action: Deliver item_count short items with no hints first
-    notes: Attempt required for each item.
-  - step: 3
-    action: Capture correctness, latency, and confidence per item
-    notes: Confidence tagging required before correctness feedback.
-  - step: 4
-    action: Compute quick readiness snapshot
-    notes: Summarize accuracy, calibration gap, and dominant error class.
+- step: 1
+  action: Start timed calibrate block
+  notes: Use max_duration_min hard cap.
+- step: 2
+  action: Deliver item_count short items with no hints first
+  notes: Attempt required for each item.
+- step: 3
+  action: Capture correctness, latency, and confidence per item
+  notes: Confidence tagging required before correctness feedback.
+- step: 4
+  action: Compute quick readiness snapshot
+  notes: Summarize accuracy, calibration gap, and dominant error class.
 outputs:
-  - CalibrateItemResults
-  - ReadinessSnapshot
-  - CalibrationGapSummary
-  - DominantErrorSeed
+- CalibrateItemResults
+- ReadinessSnapshot
+- CalibrationGapSummary
+- DominantErrorSeed
 artifact_type: notes
 stop_criteria:
-  - item_count items attempted or timer cap reached
-  - Per-item confidence tags captured
-  - ReadinessSnapshot generated
+- item_count items attempted or timer cap reached
+- Per-item confidence tags captured
+- ReadinessSnapshot generated
 failure_modes:
-  - mode: Learner requests answer without attempt
-    mitigation: Provide a minimal hint and require attempt.
-  - mode: Overlong single item stalls the block
-    mitigation: Mark miss, continue to next item.
-  - mode: Out-of-scope items appear
-    mitigation: Drop item and replace with objective-linked item.
+- mode: Learner requests answer without attempt
+  mitigation: Provide a minimal hint and require attempt.
+- mode: Overlong single item stalls the block
+  mitigation: Mark miss, continue to next item.
+- mode: Out-of-scope items appear
+  mitigation: Drop item and replace with objective-linked item.
 logging_fields:
-  - item_count_attempted
-  - item_count_correct
-  - average_latency_sec
-  - confidence_scale
-  - overconfidence_miss_count
-  - dominant_error_type
+- item_count_attempted
+- item_count_correct
+- average_latency_sec
+- confidence_scale
+- overconfidence_miss_count
+- dominant_error_type
 evidence:
   citation: Kornell et al. (2009)
   finding: Pretesting improves later learning and reveals knowledge gaps.
   source: control-plane migration
 evidence_strength: high
 primary_citations:
-  - Kornell et al. (2009)
-  - Roediger and Karpicke (2006)
+- Kornell et al. (2009)
+- Roediger and Karpicke (2006)
 evidence_raw: Pretesting and retrieval attempts improve downstream encoding and retention.
+facilitation_prompt: 'You are running M-CAL-001 (Micro Precheck) in CALIBRATE stage.
 
-facilitation_prompt: |
-  You are running M-CAL-001 (Micro Precheck) in CALIBRATE stage.
   This is a scored baseline, but still brief and low-friction.
 
+
   Requirements:
+
   - Run {item_count} short items within {max_duration_min} minutes (hard cap <=5).
+
   - Require learner attempt before any answer reveal.
+
   - Capture per-item correctness, latency, and confidence ({confidence_scale}).
+
   - Keep items inside active objective scope only.
 
+
   Return exactly:
+
   1) CalibrateItemResults
+
   2) ReadinessSnapshot
+
   3) CalibrationGapSummary
+
   4) DominantErrorSeed
 
+
   Do not move into deep teaching here. Hand off to M-CAL-002 / M-CAL-003 and then ENCODE.
+
+  '

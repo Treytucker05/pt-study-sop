@@ -1,7 +1,8 @@
 id: M-REF-003
 name: One-Page Anchor
-category: interrogate
-description: Build a single-page reference anchor containing minimal definitions, decision rules, canonical examples, near-misses, and traps.
+category: reference
+description: Build a single-page reference anchor containing minimal definitions, decision rules, canonical examples, near-misses,
+  and traps.
 default_duration_min: 8
 energy_cost: medium
 best_stage: exam_prep
@@ -16,20 +17,8 @@ mechanisms:
 - elaboration
 - discrimination
 knobs:
-  artifact_depth:
-    type: enum
-    options:
-    - compact
-    - standard
-    - detailed
-    default: standard
-  link_density:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
+  artifact_depth: standard
+  link_density: medium
 constraints:
   target_artifact_required: true
   retrieval_blocked_without_targets: true

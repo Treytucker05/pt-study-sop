@@ -54,3 +54,280 @@ knobs:
     type: integer
     min: 5
     max: 180
+
+  # --- Method-level knobs (extracted from method YAML specs) ---
+
+  artifact_depth:
+    description: Depth of generated reference artifacts.
+    type: enum
+    allowed_values:
+      - compact
+      - standard
+      - detailed
+
+  assessment_mode:
+    description: Target assessment mode for chain routing.
+    type: enum
+    allowed_values:
+      - classification
+      - mechanism
+      - computation
+      - definition
+      - procedure
+      - spatial
+      - recognition
+      - synthesis
+
+  cognitive_depth:
+    description: Target cognitive depth for learning objectives.
+    type: enum
+    allowed_values:
+      - foundational_recall
+      - conceptual_understanding
+      - clinical_application
+
+  complexity_level:
+    description: Complexity of structural output.
+    type: enum
+    allowed_values:
+      - epitome_only
+      - intermediate_outline
+
+  confidence_scale:
+    description: Scale used for confidence judgments.
+    type: enum
+    allowed_values:
+      - HML
+      - h_m_l
+      - one_to_five
+
+  delivery_style:
+    description: How learning objectives are presented.
+    type: enum
+    allowed_values:
+      - direct_statement
+      - inquiry_based_preview
+
+  diagram_format:
+    description: Format for generated diagrams.
+    type: enum
+    allowed_values:
+      - mermaid
+      - ascii
+      - markdown_list
+
+  difficulty:
+    description: Difficulty level for retrieval and interrogation tasks.
+    type: enum
+    allowed_values:
+      - low
+      - medium
+      - high
+
+  feedback_style:
+    description: Style of feedback delivery during priming.
+    type: enum
+    allowed_values:
+      - supportive_synthesis
+      - strict_gap_analysis
+
+  feedback_timing:
+    description: When feedback is given during retrieval practice.
+    type: enum
+    allowed_values:
+      - immediate
+      - after_attempt
+
+  guidance_level:
+    description: Amount of scaffolding provided during encoding.
+    type: enum
+    allowed_values:
+      - low
+      - light
+      - medium
+      - high
+      - case_prompt_only
+      - partial_scaffold
+      - targeted_hint
+
+  intensity:
+    description: Intensity level for overlearning drills.
+    type: enum
+    allowed_values:
+      - low
+      - medium
+      - high
+
+  item_count:
+    description: Number of items in a calibration or quiz set.
+    type: integer
+    min: 3
+    max: 10
+
+  link_density:
+    description: Density of cross-links in reference artifacts.
+    type: enum
+    allowed_values:
+      - low
+      - medium
+      - high
+
+  map_format:
+    description: Output format for concept maps.
+    type: enum
+    allowed_values:
+      - ascii_tree
+      - mermaid
+      - nested_bullets
+
+  max_duration_min:
+    description: Maximum duration in minutes for a calibration task.
+    type: integer
+    min: 2
+    max: 5
+
+  miscalibration_threshold:
+    description: Threshold for flagging confidence miscalibration.
+    type: number
+    min: 0.1
+    max: 0.4
+
+  near_miss_intensity:
+    description: Intensity of near-miss distractors in retrieval.
+    type: enum
+    allowed_values:
+      - low
+      - high
+
+  node_cap:
+    description: Maximum nodes in a structural extraction output.
+    type: integer
+    min: 6
+    max: 12
+
+  node_count_cap:
+    description: Maximum node count for concept maps.
+    type: integer
+    min: 4
+    max: 8
+
+  objective_link_required:
+    description: Whether output must link back to learning objectives.
+    type: boolean
+
+  objective_scope:
+    description: Scope of learning objectives coverage.
+    type: enum
+    allowed_values:
+      - module_all
+      - single_focus
+
+  output_format:
+    description: Format for method output artifacts.
+    type: enum
+    allowed_values:
+      - ascii
+      - ascii_tree
+      - bulleted_spine
+      - bullets
+      - markdown_table
+      - table
+
+  output_mode:
+    description: Output mode for structural methods.
+    type: enum
+    allowed_values:
+      - nested_list
+      - numbered_spine
+      - markdown_table
+
+  pillar_count:
+    description: Number of structural pillars in an outline.
+    type: integer
+    min: 3
+    max: 5
+
+  priming_depth_mode:
+    description: Depth mode for priming structural extraction.
+    type: enum
+    allowed_values:
+      - basic
+      - schema
+
+  priming_scope:
+    description: Scope of priming questions.
+    type: enum
+    allowed_values:
+      - module_all
+      - single_focus
+
+  probe_count:
+    description: Number of probe questions in calibration.
+    type: integer
+    min: 1
+    max: 5
+
+  representation_format:
+    description: Format for structural representations.
+    type: enum
+    allowed_values:
+      - markdown_tree
+      - mermaid
+
+  retrieval_support:
+    description: Level of retrieval support provided.
+    type: enum
+    allowed_values:
+      - minimal
+      - moderate
+      - full
+
+  source_cap:
+    description: Maximum number of source references to synthesize.
+    type: integer
+    min: 2
+    max: 3
+
+  speed_pressure:
+    description: Time pressure applied during overlearning drills.
+    type: enum
+    allowed_values:
+      - "False"
+      - soft
+      - hard
+
+  synthesis_format:
+    description: Format for cross-source synthesis output.
+    type: enum
+    allowed_values:
+      - hierarchy
+      - comparison_table
+      - hybrid
+
+  time_available_min:
+    description: Estimated minutes available (chain-level override).
+    type: integer
+    min: 5
+    max: 180
+
+  timed:
+    description: Whether time pressure is applied to retrieval.
+    type: enum
+    allowed_values:
+      - "off"
+      - soft
+      - hard
+
+  top_k:
+    description: Number of top-priority items to select.
+    type: integer
+    min: 3
+    max: 10
+
+  weighting_profile:
+    description: Weighting profile for priority scoring.
+    type: enum
+    allowed_values:
+      - balanced
+      - confidence_heavy
+      - latency_heavy

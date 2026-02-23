@@ -1,7 +1,8 @@
 id: M-ENC-012
 name: Clinical Decision Tree
 category: encode
-description: 'Build a branching decision diagram: presentation → key findings → differential → tests → diagnosis. Scaffolds clinical reasoning into explicit decision points.'
+description: 'Build a branching decision diagram: presentation → key findings → differential → tests → diagnosis. Scaffolds
+  clinical reasoning into explicit decision points.'
 default_duration_min: 10
 energy_cost: high
 best_stage: exam_prep
@@ -18,20 +19,8 @@ mechanisms:
 - discrimination
 - transfer
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

@@ -1,16 +1,28 @@
-id: C-TREY-001
+id: C-TRY-001
 name: Trey's New Material Chain
-description: A top-down, teach-first pedagogical sequence. Starts with a big-picture skeleton, moves to a visual concept map, provides a fully worked case example, and ends with a student brain dump for synthesis.
+description: >-
+  A top-down, teach-first pedagogical sequence. Starts with a big-picture
+  skeleton, moves to a visual concept map, provides a fully worked case
+  example, and ends with a student brain dump for synthesis.
 blocks:
-- M-PRE-004
-- M-ENC-009
-- M-INT-005
-- M-PRE-001
-allowed_modes: [all]
+  - M-PRE-004
+  - M-ENC-009
+  - M-INT-005
+  - M-PRE-001
+allowed_modes:
+  - classification
+  - mechanism
+  - definition
+gates:
+  - prime_artifacts_present
+  - encode_artifact_complete
+failure_actions:
+  - inject_reference_targets_before_retrieve
+  - substitute_by_error_type_mapping
 requires_reference_targets: false
 context_tags:
   stage: first_exposure
   energy: medium
   time_available: 30
 is_template: true
-status: active
+status: draft

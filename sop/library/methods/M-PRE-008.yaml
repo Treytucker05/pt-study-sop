@@ -1,7 +1,8 @@
 id: M-PRE-008
 name: Structural Extraction
-category: prepare
-description: Extract a compact structural spine from source material before detail work. Build high-signal nodes and link every node to at least one objective.
+category: prime
+description: Extract a compact structural spine from source material before detail work. Build high-signal nodes and link
+  every node to at least one objective.
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
@@ -22,27 +23,10 @@ when_not_to_use:
 - Very short sessions where M-PRE-010 alone is sufficient.
 - Ultra-simple fact lists better handled with direct objective framing.
 knobs:
-  priming_depth_mode:
-    type: enum
-    options:
-    - basic
-    - schema
-    default: basic
-  node_cap:
-    type: int
-    min: 6
-    max: 12
-    default: 10
-  output_format:
-    type: enum
-    options:
-    - ascii_tree
-    - bulleted_spine
-    - markdown_table
-    default: ascii_tree
-  objective_link_required:
-    type: bool
-    default: true
+  priming_depth_mode: basic
+  node_cap: 10
+  output_format: ascii_tree
+  objective_link_required: true
 constraints:
   non_assessment: true
   no_scored_checks: true
@@ -69,7 +53,8 @@ inputs:
 steps:
 - step: 1
   action: Resolve objective scope and objective set
-  notes: Objective context can come from M-PRE-010 in current flow OR existing North Star from prior sessions; module_all uses all active module objectives; single_focus uses only the selected objective.
+  notes: Objective context can come from M-PRE-010 in current flow OR existing North Star from prior sessions; module_all
+    uses all active module objectives; single_focus uses only the selected objective.
 - step: 2
   action: Extract structural spine nodes
   notes: Keep node count <= node_cap; prefer mechanism/decision nodes over trivia.
@@ -109,7 +94,8 @@ facilitation_prompt: 'You are running M-PRE-008 (Structural Extraction) in PRIME
 
   - Objective context may come from M-PRE-010 in this flow OR an already-built North Star.
 
-  - In PRIME for first-contact material, run M-PRE-010 before M-PRE-008. If North Star already exists, the prerequisite remains satisfied.
+  - In PRIME for first-contact material, run M-PRE-010 before M-PRE-008. If North Star already exists, the prerequisite remains
+  satisfied.
 
 
   Time guidance by priming_depth_mode:

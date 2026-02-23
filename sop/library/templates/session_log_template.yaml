@@ -610,3 +610,121 @@ session_fields:
     type: integer
     required: false
 
+  # --- Additional method-specific logging fields ---
+
+  - name: average_latency_sec
+    type: float
+    required: false
+
+  - name: bridge_link_count
+    type: integer
+    required: false
+
+  - name: calibration_bias_score
+    type: float
+    required: false
+
+  - name: category_count
+    type: integer
+    required: false
+
+  - name: confidence_scale
+    type: string
+    required: false
+
+  - name: context_sources_used
+    type: integer
+    required: false
+
+  - name: depth_level
+    type: string
+    required: false
+
+  - name: dominant_error_type
+    type: string
+    required: false
+
+  - name: follow_up_target_count
+    type: integer
+    required: false
+
+  - name: high_confidence_miss_count
+    type: integer
+    required: false
+
+  - name: item_count_attempted
+    type: integer
+    required: false
+
+  - name: item_count_correct
+    type: integer
+    required: false
+
+  - name: low_confidence_hit_count
+    type: integer
+    required: false
+
+  - name: map_depth
+    type: integer
+    required: false
+
+  - name: missing_node_count
+    type: integer
+    required: false
+
+  - name: objective_link_count
+    type: integer
+    required: false
+
+  - name: overconfidence_miss_count
+    type: integer
+    required: false
+
+  - name: pillar_count
+    type: integer
+    required: false
+
+  - name: prequestion_count
+    type: integer
+    required: false
+
+  - name: prior_context_present
+    type: boolean
+    required: false
+
+  - name: priority_prompt_count
+    type: integer
+    required: false
+
+  - name: priority_set
+    type: string
+    required: false
+
+  - name: risk_flag_count
+    type: integer
+    required: false
+
+  - name: skipped_for_anxiety
+    type: boolean
+    required: false
+
+  - name: skipped_reason
+    type: string
+    required: false
+
+  - name: strong_connection_count
+    type: integer
+    required: false
+
+  - name: tie_break_applied
+    type: boolean
+    required: false
+
+  - name: top_k
+    type: integer
+    required: false
+
+  - name: weighting_profile
+    type: string
+    required: false
+

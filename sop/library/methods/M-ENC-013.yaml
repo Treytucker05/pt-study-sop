@@ -1,7 +1,8 @@
 id: M-ENC-013
 name: Memory Palace
 category: encode
-description: Use spatial memory to encode ordered sequences by associating items with familiar locations. Based on the ancient Method of Loci used by Greek orators and memory champions.
+description: Use spatial memory to encode ordered sequences by associating items with familiar locations. Based on the ancient
+  Method of Loci used by Greek orators and memory champions.
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
@@ -19,20 +20,8 @@ mechanisms:
 - visualization
 - generation
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true
