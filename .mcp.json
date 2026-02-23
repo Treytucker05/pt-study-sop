@@ -25,6 +25,22 @@
       "env": {
         "STITCH_API_KEY": "AQ.Ab8RN6KbQ9kwkEBoB99ilag-pk1Gt-uCHIBf3uoMpSziCaT4PQ"
       }
+    },
+    "shadcn": {
+      "command": "cmd",
+      "args": ["/c", "npx", "shadcn@latest", "mcp"]
+    },
+    "context7": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@upstash/context7-mcp"]
+    },
+    "gemini": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@houtini/gemini-mcp"]
+    },
+    "claude": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "claude-mcp"]
     }
   }
 }
