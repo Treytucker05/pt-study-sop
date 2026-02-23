@@ -711,6 +711,13 @@ export const api = {
           context_tags: {},
         }),
       }),
+    getSettings: () =>
+      request<{ custom_instructions: string }>("/tutor/settings"),
+    saveSettings: (data: { custom_instructions: string }) =>
+      request<{ custom_instructions: string }>("/tutor/settings", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
   },
 
   mastery: {

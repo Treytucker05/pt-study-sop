@@ -10,34 +10,66 @@ Architecture:
 
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
+_LOG = logging.getLogger(__name__)
+
 
 # ═══════════════════════════════════════════════════════════════════════════
-# BASE PROMPT — 3 universal rules (every session, every chain step)
+# BASE PROMPT — role + session context (always-on, every session)
 # ═══════════════════════════════════════════════════════════════════════════
 
-TIER1_BASE_PROMPT = """You are the PT Study Tutor, a study partner for physical therapy education.
+_BASE_TEMPLATE = """You are the PT Study Tutor, a study partner for physical therapy education.
 
 Current session context:
 - Course: {course_id}
 - Topic: {topic}
 
 ## Rules
-1. **Source-Lock**: Always check Retrieved Study Materials first. If you answer from training knowledge instead, mark it as [From training knowledge — verify with your textbooks]. Cite materials using [Source: filename].
-2. **Define Abbreviations**: On first use of any abbreviation, spell it out — e.g., ACL (Anterior Cruciate Ligament), BP (Blood Pressure).
-3. **Be Interactive**: Keep replies short (≤2 paragraphs or ≤6 bullets). Work through ONE small step at a time. Always end with a question or next action for the student.
+{rules}
 """
+
+# Default rules — used when no custom instructions are configured
+DEFAULT_RULES = (
+    '1. **Source-Lock**: Always check Retrieved Study Materials first. '
+    'If you answer from training knowledge instead, mark it as '
+    '[From training knowledge — verify with your textbooks]. '
+    'Cite materials using [Source: filename].\n'
+    '2. **Define Abbreviations**: On first use of any abbreviation, '
+    'spell it out — e.g., ACL (Anterior Cruciate Ligament), BP (Blood Pressure).\n'
+    '3. **Be Interactive**: Keep replies short (≤2 paragraphs or ≤6 bullets). '
+    'Work through ONE small step at a time. Always end with a question or '
+    'next action for the student.'
+)
+
+# Backwards-compatible alias — old callers that reference TIER1_BASE_PROMPT
+TIER1_BASE_PROMPT = _BASE_TEMPLATE.replace("{rules}", DEFAULT_RULES)
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
+def _load_custom_instructions() -> str:
+    """Read custom instructions from api_config.json, falling back to defaults."""
+    try:
+        from dashboard.utils import load_api_config
+        cfg = load_api_config()
+        custom = cfg.get("tutor_custom_instructions", "")
+        if isinstance(custom, str) and custom.strip():
+            return custom.strip()
+    except Exception:
+        _LOG.debug("Could not load custom instructions from config, using defaults")
+    return DEFAULT_RULES
+
+
 def _format_tier1(course_id: Optional[int], topic: Optional[str]) -> str:
-    return TIER1_BASE_PROMPT.format(
+    rules = _load_custom_instructions()
+    return _BASE_TEMPLATE.format(
         course_id=course_id or "Not specified",
         topic=topic or "Not specified",
+        rules=rules,
     )
 
 

@@ -20,6 +20,8 @@ import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts"
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Bot,
   PanelRightClose,
@@ -47,6 +49,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   TEXT_MUTED,
@@ -154,6 +157,12 @@ export default function Tutor() {
   // Block timer
   const [blockTimerSeconds, setBlockTimerSeconds] = useState<number | null>(null);
   const [timerWarningShown, setTimerWarningShown] = useState(false);
+
+  // Settings dialog
+  const [showSettings, setShowSettings] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState("");
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   useEffect(() => {
     try {
@@ -282,6 +291,46 @@ export default function Tutor() {
       /* localStorage write failed — ignore */
     }
   }, [tutorMaterialStorageKey, tutorActiveSessionKey]);
+
+  const openSettings = useCallback(async () => {
+    setShowSettings(true);
+    setSettingsLoading(true);
+    try {
+      const data = await api.tutor.getSettings();
+      setCustomInstructions(data.custom_instructions);
+    } catch {
+      toast.error("Failed to load tutor settings");
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
+  const saveSettings = useCallback(async () => {
+    setSettingsSaving(true);
+    try {
+      await api.tutor.saveSettings({ custom_instructions: customInstructions });
+      toast.success("Custom instructions saved");
+      setShowSettings(false);
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setSettingsSaving(false);
+    }
+  }, [customInstructions]);
+
+  const restoreDefaultInstructions = useCallback(async () => {
+    setSettingsLoading(true);
+    try {
+      await api.tutor.saveSettings({ custom_instructions: "" });
+      const data = await api.tutor.getSettings();
+      setCustomInstructions(data.custom_instructions);
+      toast.success("Restored default instructions");
+    } catch {
+      toast.error("Failed to restore defaults");
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
 
   const startSession = useCallback(async () => {
     setIsStarting(true);
@@ -696,6 +745,15 @@ export default function Tutor() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={openSettings}
+                  className="h-8 rounded-none font-arcade text-xs px-3 text-muted-foreground hover:text-primary border-2 border-transparent"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 mr-1" />
+                  SETTINGS
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setShowSetup(false)}
                   className={`h-8 rounded-none font-arcade text-xs px-3 ${!showSetup
                     ? "text-primary bg-primary/15 border-2 border-primary/40"
@@ -878,6 +936,66 @@ export default function Tutor() {
           </div>
         </div>
       </div>
+      {/* ── Settings Dialog ── */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-lg">
+          <DialogTitle className="font-arcade text-primary text-sm tracking-wider">
+            TUTOR SETTINGS
+          </DialogTitle>
+          <div className="space-y-3 mt-2">
+            <label className="font-arcade text-xs text-muted-foreground">
+              Custom Instructions
+            </label>
+            {settingsLoading ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                Loading...
+              </div>
+            ) : (
+              <Textarea
+                value={customInstructions}
+                onChange={(e) => setCustomInstructions(e.target.value)}
+                rows={10}
+                className="bg-black border-2 border-primary/40 rounded-none font-terminal text-sm resize-y"
+                placeholder="Enter custom instructions for the tutor..."
+              />
+            )}
+            <div className="flex items-center justify-between pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={restoreDefaultInstructions}
+                disabled={settingsLoading || settingsSaving}
+                className="h-8 rounded-none font-arcade text-xs text-muted-foreground hover:text-primary border-2 border-transparent"
+              >
+                RESTORE DEFAULTS
+              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSettings(false)}
+                  className="h-8 rounded-none font-arcade text-xs text-muted-foreground hover:text-primary border-2 border-transparent"
+                >
+                  CANCEL
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={saveSettings}
+                  disabled={settingsLoading || settingsSaving}
+                  className="h-8 rounded-none font-arcade text-xs bg-primary text-primary-foreground hover:bg-primary/80 border-2 border-primary"
+                >
+                  {settingsSaving ? (
+                    <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> SAVING...</>
+                  ) : (
+                    "SAVE"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

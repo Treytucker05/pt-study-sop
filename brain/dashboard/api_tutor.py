@@ -41,6 +41,8 @@ from typing import Any, Optional
 from flask import Blueprint, Response, current_app, has_app_context, jsonify, request
 from jsonschema import Draft202012Validator
 
+from dashboard.utils import load_api_config, save_api_config
+
 from db_setup import DB_PATH, get_connection, ensure_method_library_seeded
 from course_wheel_sync import ensure_course_in_wheel
 from tutor_behavior_directives import get_directive
@@ -4830,3 +4832,45 @@ def enrich_video_material():
         return jsonify({"ok": True, "material_id": material_id_int, **result}), 200
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
+
+
+# ── Tutor Settings (custom instructions) ─────────────────────────────────
+
+_DEFAULT_CUSTOM_INSTRUCTIONS = (
+    '1. **Source-Lock**: Always check Retrieved Study Materials first. '
+    'If you answer from training knowledge instead, mark it as '
+    '[From training knowledge — verify with your textbooks]. '
+    'Cite materials using [Source: filename].\n'
+    '2. **Define Abbreviations**: On first use of any abbreviation, '
+    'spell it out — e.g., ACL (Anterior Cruciate Ligament), BP (Blood Pressure).\n'
+    '3. **Be Interactive**: Keep replies short (≤2 paragraphs or ≤6 bullets). '
+    'Work through ONE small step at a time. Always end with a question or '
+    'next action for the student.'
+)
+
+
+@tutor_bp.route("/settings", methods=["GET"])
+def get_tutor_settings():
+    cfg = load_api_config()
+    return jsonify({
+        "custom_instructions": cfg.get(
+            "tutor_custom_instructions", _DEFAULT_CUSTOM_INSTRUCTIONS
+        ),
+    })
+
+
+@tutor_bp.route("/settings", methods=["PUT"])
+def put_tutor_settings():
+    data = request.get_json(silent=True) or {}
+    custom = data.get("custom_instructions")
+    if custom is None:
+        return jsonify({"error": "custom_instructions is required"}), 400
+    if not isinstance(custom, str):
+        return jsonify({"error": "custom_instructions must be a string"}), 400
+
+    cfg = load_api_config()
+    cfg["tutor_custom_instructions"] = custom.strip()
+    save_api_config(cfg)
+    return jsonify({
+        "custom_instructions": cfg["tutor_custom_instructions"],
+    })
