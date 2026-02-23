@@ -2637,6 +2637,7 @@ def send_turn(session_id: str):
                 "\n\n## Retrieval Tuning\n"
                 f"{_accuracy_profile_prompt_guidance(effective_accuracy_profile)}"
             )
+            _needs_lo_save = False
             if north_star:
                 objective_ids = north_star.get("objective_ids") or []
                 objective_lines = "\n".join(
@@ -2654,7 +2655,10 @@ def send_turn(session_id: str):
                     "- Objectives in scope:\n"
                     f"{objective_lines}"
                 )
-                if not _session_has_real_objectives(north_star) and turn_number <= 5:
+                _needs_lo_save = (
+                    not _session_has_real_objectives(north_star) and turn_number <= 5
+                )
+                if _needs_lo_save:
                     system_prompt += (
                         "\n\n## Missing Learning Objectives\n"
                         "No learning objectives are set for this module yet. "
@@ -2971,6 +2975,11 @@ def send_turn(session_id: str):
                         "tools": tool_schemas,
                         "reasoning_effort": "high",
                     }
+                    # Hint the model to call save_learning_objectives when
+                    # the missing-LO directive is active and the student has
+                    # had at least one turn to approve (turn >= 2).
+                    if _needs_lo_save and turn_number >= 2:
+                        stream_kwargs["tool_choice"] = "required"
                     if prev_response_id:
                         stream_kwargs["previous_response_id"] = prev_response_id
 

@@ -629,6 +629,7 @@ def stream_chatgpt_responses(
     timeout: int = 120,
     web_search: bool = False,
     tools: list[dict] | None = None,
+    tool_choice: str | dict | None = None,
     previous_response_id: str | None = None,
     input_override: list[dict] | None = None,
     reasoning_effort: str | None = None,
@@ -670,6 +671,8 @@ def stream_chatgpt_responses(
         all_tools.extend(tools)
     if all_tools:
         payload["tools"] = all_tools
+    if tool_choice is not None and all_tools:
+        payload["tool_choice"] = tool_choice
 
     body = json.dumps(payload)
 
