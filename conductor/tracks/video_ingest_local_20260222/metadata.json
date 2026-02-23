@@ -2,17 +2,17 @@
   "id": "video_ingest_local_20260222",
   "title": "Video Ingest Local Pipeline",
   "type": "feature",
-  "status": "planned",
+  "status": "complete",
   "created": "2026-02-22T00:00:00Z",
-  "updated": "2026-02-22T00:00:00Z",
-  "current_phase": 1,
-  "current_task": "Task 1.1",
+  "updated": "2026-02-23T00:00:00Z",
+  "current_phase": 5,
+  "current_task": "done",
   "phases": {
-    "total": 4,
-    "completed": 0
+    "total": 5,
+    "completed": 5
   },
   "tasks": {
-    "total": 14,
-    "completed": 0
+    "total": 16,
+    "completed": 15
   }
 }

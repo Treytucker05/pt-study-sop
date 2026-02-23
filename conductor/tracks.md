@@ -4,21 +4,24 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest non-track update: 2026-02-23 Implemented local MP4 processing + tutor process/status APIs + frontend process/polling UI; validated with full backend tests and frontend build (see `conductor/tracks/GENERAL/log.md`).
+Latest update: 2026-02-23 Completed all 3 video pipeline tracks (local ingest, enrichment API, tutor integration). 689 backend tests, 8 frontend tests passing. Merged via PR #115.
 
 ---
 
-- [ ] **Track: Video Ingest Local Pipeline** (in progress — created 2026-02-22; priority 1)
+- [x] **Track Set: Hybrid Video Study Pipeline** (complete — 2026-02-22 to 2026-02-23; all 3 tracks done)
+  Scope doc: `docs/root/TUTOR_VIDEO_INGEST_PLAN.md`
+
+- [x] **Track: Video Ingest Local Pipeline** (complete — created 2026-02-22; closed 2026-02-23; 5 phases, 15/16 tasks)
+  Pipeline hardened: direct MP4 transcription, PT domain prompt, word timestamps, confidence metadata, OCR backend config.
   *Link: [./tracks/video_ingest_local_20260222/](./tracks/video_ingest_local_20260222/)*
 
-- [ ] **Track: Video Enrichment API (Selective)** (planned — created 2026-02-22; priority 2)
+- [x] **Track: Video Enrichment API (Selective)** (complete — created 2026-02-22; closed 2026-02-23; 4 phases, 13/13 tasks)
+  Gemini File API provider, budget caps, caching, flagging, enrichment markdown emission. Mode defaults to "off".
   *Link: [./tracks/video_enrichment_api_20260222/](./tracks/video_enrichment_api_20260222/)*
 
-- [ ] **Track: Video Tutor Integration** (in progress — created 2026-02-22; priority 3)
+- [x] **Track: Video Tutor Integration** (complete — created 2026-02-22; closed 2026-02-23; 4 phases, 14/14 tasks)
+  Process/status/enrich endpoints, video-query heuristics, transcript chunk boosting, timestamp citations, frontend MP4 tests.
   *Link: [./tracks/video_tutor_integration_20260222/](./tracks/video_tutor_integration_20260222/)*
-
-- [ ] **Track Set: Hybrid Video Study Pipeline** (planned meta-track — sequence: local ingest -> selective API enrichment -> tutor integration)
-  Scope doc: `docs/root/TUTOR_VIDEO_INGEST_PLAN.md`
 
 - [x] **Track: Tutor Tool-Calling** (complete — started 2026-02-17; closed 2026-02-17; Phases 1-5 done)
   Backend: `brain/tutor_tools.py`, `brain/figma_mcp_client.py`, `brain/llm_provider.py`, `brain/dashboard/api_tutor.py`. Frontend: `TutorChat.tsx`, `api.ts`.
