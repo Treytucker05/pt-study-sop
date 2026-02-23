@@ -24,7 +24,7 @@ def read_yaml(path: Path):
 
 
 def rel_path(path: Path) -> str:
-    return str(path.relative_to(ROOT))
+    return path.relative_to(ROOT).as_posix()
 
 
 def find_line_number(text: str, predicate) -> int | None:
