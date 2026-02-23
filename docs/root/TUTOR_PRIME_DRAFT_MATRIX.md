@@ -1,10 +1,10 @@
-# PRIME Draft Matrix (Policy + Knobs)
+# PRIME Method Matrix (Policy + Knobs)
 
-Date: 2026-02-22  
-Status: Draft for manager reconciliation  
+Date: 2026-02-23  
+Status: Locked for implementation  
 Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 
-## Draft Boundary Rules (Locked Inputs)
+## Locked Boundary Rules (Locked Inputs)
 - PRIME is orientation/teaching only (non-assessment).
 - CALIBRATE starts scored probes.
 - First-exposure default starts module-wide (`module_all`) then zooms to one objective (`single_focus`).
@@ -60,7 +60,7 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 ### Contract (Final for implementation)
 - Stage: `PRIME` only.
 - Intent: build a compact orientation spine tied directly to objectives.
-- Dependency note: requires objective context, sourced from either `M-PRE-010` (current flow) or existing `North Star` (prior context). Pairing with `M-PRE-010` is recommended, not mandatory.
+- Dependency note: requires objective context, sourced from either `M-PRE-010` (current flow) or existing `North Star` (prior context). In first-contact material, this method runs after `M-PRE-010`.
 - Scope behavior:
   - `module_all`: spine spans all active module objectives.
   - `single_focus`: spine constrained to selected focus objective.
@@ -98,9 +98,9 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 
 ## Matrix A — PRIME Policy Contract
 
-| Method ID | Method | Stage | Draft intent | Required outputs | Allowed behavior | Blocked behavior |
+| Method ID | Method | Stage | Intent | Required outputs | Allowed behavior | Blocked behavior |
 |---|---|---|---|---|---|---|
-| M-PRE-010 | Learning Objectives Primer | PRIME | Set 3-5 measurable targets before content depth | Objectives list; learner acknowledgment | Goal framing; expectation setting | Scored questioning; retrieval grading |
+| M-PRE-010 | Learning Objectives Primer | PRIME | Establish instructor-aligned objective map first (module-wide or single-focus) | Objectives list; learner acknowledgment | Goal framing; expectation setting | Scored questioning; retrieval grading |
 | M-PRE-004 | Hierarchical Advance Organizer | PRIME | Provide high-level pillar tree before detail | PillarTree; PriorKnowledgeLinks; StructuralHypotheses | Tutor-provided orientation map | Deep detail teaching; assessment prompts |
 | M-PRE-008 | Structural Extraction | PRIME | Build compact topic spine linked to objectives | Spine <=12 nodes; objective linkage map | Structure extraction from source | Trivia expansion; scoring correctness |
 | M-PRE-009 | Syntopical Big-Picture Synthesis | PRIME | Merge 2-3 sources into one top-down map | UnifiedTopDownTree; CrossSourceLinks; ConflictFlags | Multi-source structural synthesis | Deep detail teaching; quiz behavior |
@@ -118,25 +118,25 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 
 ## Matrix B — PRIME Knob Matrix (Existing + Draft Additions)
 
-| Method ID | Knob | Type | Default | Draft bounds/options | Draft lock/escalate/rollback |
+| Method ID | Knob | Type | Default | Bounds/options | Lock/escalate/rollback |
 |---|---|---|---|---|---|
 | M-PRE-010 | cognitive_depth | enum | conceptual_understanding | foundational_recall, conceptual_understanding, clinical_application | Lock to foundational/conceptual in first exposure; escalate to clinical after stable CALIBRATE |
 | M-PRE-010 | delivery_style | enum | direct_statement | direct_statement, inquiry_based_preview | Lock to direct_statement when energy/time low |
 | M-PRE-004 | complexity_level | enum | intermediate_outline | epitome_only, intermediate_outline, detailed_hierarchy | Roll back to epitome_only if overload signs appear |
 | M-PRE-001 | feedback_style | enum | supportive_synthesis | supportive_synthesis, strict_gap_analysis | Lock supportive in first exposure; allow strict only after repeated sessions |
-| M-PRE-002 | question_count (draft) | int | 4 | min 3, max 5 | Lock at 3 when cognitive load high |
-| M-PRE-002 | question_scope (draft) | enum | foundational | foundational, mixed | Keep foundational in first exposure |
-| M-PRE-003 | map_format (draft) | enum | bullet_list | bullet_list, ascii_map | Roll back to bullet_list if map complexity rises |
-| M-PRE-003 | connection_target (draft) | int | 3 | min 3, max 5 | Lock at 3 for low energy/time |
-| M-PRE-005 | cluster_limit (draft) | int | 4 | min 3, max 5 | Roll back if one cluster dominates |
-| M-PRE-005 | render_format (draft) | enum | ascii_list | ascii_list, ascii_map, markdown_table | Lock to ascii_list by default |
-| M-PRE-006 | detail_depth (draft) | enum | standard | light, standard, expanded | Keep light/standard in first exposure |
-| M-PRE-008 | node_cap (draft) | int | 10 | min 6, max 12 | Hard cap 12; no escalation beyond 12 |
-| M-PRE-008 | objective_link_required (draft) | bool | true | true/false | Hard lock true in PRIME |
-| M-PRE-009 | goal_count (draft) | int | 3 | fixed 3 | Hard lock 3 to keep focus |
-| M-PRE-009 | prediction_required (draft) | bool | true | true/false | Hard lock true in PRIME |
+| M-PRE-002 | question_count | int | 4 | min 3, max 5 | Lock at 3 when cognitive load high |
+| M-PRE-002 | question_scope | enum | foundational | foundational, mixed | Keep foundational in first exposure |
+| M-PRE-003 | map_format | enum | bullet_list | bullet_list, ascii_map | Roll back to bullet_list if map complexity rises |
+| M-PRE-003 | connection_target | int | 3 | min 3, max 5 | Lock at 3 for low energy/time |
+| M-PRE-005 | cluster_limit | int | 4 | min 3, max 5 | Roll back if one cluster dominates |
+| M-PRE-005 | render_format | enum | ascii_list | ascii_list, ascii_map, markdown_table | Lock to ascii_list by default |
+| M-PRE-006 | detail_depth | enum | standard | light, standard, expanded | Keep light/standard in first exposure |
+| M-PRE-008 | node_cap | int | 10 | min 6, max 12 | Hard cap 12; no escalation beyond 12 |
+| M-PRE-008 | objective_link_required | bool | true | true/false | Hard lock true in PRIME |
+| M-PRE-009 | goal_count | int | 3 | fixed 3 | Hard lock 3 to keep focus |
+| M-PRE-009 | prediction_required | bool | true | true/false | Hard lock true in PRIME |
 
-## Draft PRIME Sequence (Implementation-Oriented)
+## PRIME Sequence (Implementation-Oriented)
 1. `M-PRE-010` Learning Objectives Primer  
 2. `M-PRE-004` Hierarchical Advance Organizer  
 3. `M-PRE-008` Structural Extraction  
@@ -147,7 +147,5 @@ Scope: PRIME method blocks only (with CALIBRATE boundary note for `M-PRE-007`)
 8. `M-PRE-002` Overarching Pre-Question Set (optional)  
 9. `M-PRE-001` Brain Dump (conditional/optional)
 
-## Open Items to Resolve with Manager Output
-- Confirm which draft knobs become canonical vs remain optional.
-- Confirm whether Prediction Questions should remain PRIME in first-exposure mode or become optional-only.
-- Confirm whether PRIME-lite variants are needed for any ENCODE visual methods.
+## Open Items
+- Confirm PRIME-lite requirement for any additional ENCODE visuals after this release.

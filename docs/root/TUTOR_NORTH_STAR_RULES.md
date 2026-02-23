@@ -7,8 +7,8 @@
 - **Why:** Prevents plan generation from partial or hallucinated context. If missing, the tutor halts study planning and strictly triggers a `build_north_star` workflow.
 
 ## 2. Canonical North Star Path & Format
-- **Ruling:** Path: `Modules/[Module_Name]/_North_Star_[Module_Name].md`. 
-- **Why:** The leading underscore pins it to the top of the module's Obsidian folder. Consistent naming ensures the local RAG router can deterministically locate the global module state without vector search guessing.
+- **Ruling:** Path: `Study notes/<Class>/<Module or week>/<Subtopic>/_North_Star.md`.
+- **Why:** This matches the live vault schema for the class → module/week → subtopic hierarchy and deterministic local retrieval.
 
 ## 3. Conflict Resolution: Instructor vs. Source
 - **Ruling:** **Instructor Objectives ALWAYS win.**
@@ -19,8 +19,8 @@
 - **Why:** The agent cannot mathematically route sessions or calculate completion percentages without consistent state semantics. Free-text statuses are banned.
 
 ## 5. Minimum Objective Coverage
-- **Ruling:** **100% Concept Mapping.** 
-- **Why:** Every concept in the 3-5 intake batch must explicitly map to at least one active objective. Concepts that fall outside the objective scope are dropped to prevent "orphaned" studying.
+- **Ruling:** **100% Objective Mapping.**
+- **Why:** Every concept introduced in this session must explicitly map to an active objective. In `module_all`, this means all nodes stay tied to the module objective set; in `single_focus`, ties are limited to the focus objective until expansion is authorized.
 
 ## 6. North Star Auto-Refresh
 - **Ruling:** **Event-Driven (Detected Changes Only).**
@@ -35,7 +35,8 @@
 - **Why:** We cannot brick a study session because a syllabus PDF parsed poorly. If source material lacks mapped IDs, the tutor groups it under a synthetic ID (e.g., `OBJ-UNMAPPED`), proceeds with the session, and tags it for user review.
 
 ## 9. Required PRIME Methods
-- **Ruling:** **M-PRE-010 (Learning Objectives Primer)** is mandatory and runs first. It must be paired with exactly **one** structural visual scaffold (e.g., Concept Cluster or AI Skeleton Review).
+- **Ruling:** **M-PRE-010 (Learning Objectives Primer)** is mandatory and runs first.
+- **Companion Rule:** In PRIME for first-contact material, **M-PRE-010 must be paired with **M-PRE-008** to create a structural overview before moving to ENCODE.
 - **Why:** Anchors the student to the objective immediately, setting a consistent, goal-oriented default learning experience before dense text is introduced.
 
 ## 10. Assessment Boundary (PRIME vs. CALIBRATE)
@@ -48,5 +49,4 @@
 
 ## 12. Schema Constraints
 - **Ruling:** **CONFIRMED.** 
-- **Why:** Strict 3-5 concept cap. Strict wiki-link validation (`[[Concept Name]]`) required at artifact creation. Keeps generation stable and ensures Obsidian graph safety.
-
+- **Why:** Strict wiki-link validation (`[[Concept Name]]`) is required at artifact creation. Keep generation deterministic and safe for Obsidian graph operations.

@@ -6,7 +6,7 @@ default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
 control_stage: PRIME
-status: draft
+status: validated
 tags:
 - priming
 - prequestions

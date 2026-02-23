@@ -51,8 +51,7 @@ constraints:
   objective_context_sources:
   - M-PRE-010
   - North_Star
-  objective_context_pairing_with_M_PRE_010_recommended: true
-  objective_context_pairing_with_M_PRE_010_mandatory: false
+  objective_context_pairing_with_M_PRE_010_mandatory: true
   basic_priming_time_window_min: 2
   basic_priming_time_window_max: 5
   schema_priming_time_window_min: 5
@@ -110,7 +109,7 @@ facilitation_prompt: 'You are running M-PRE-008 (Structural Extraction) in PRIME
 
   - Objective context may come from M-PRE-010 in this flow OR an already-built North Star.
 
-  - Pairing with M-PRE-010 is recommended, not mandatory.
+  - In PRIME for first-contact material, run M-PRE-010 before M-PRE-008. If North Star already exists, the prerequisite remains satisfied.
 
 
   Time guidance by priming_depth_mode:

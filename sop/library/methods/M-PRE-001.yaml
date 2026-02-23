@@ -5,7 +5,7 @@ control_stage: PRIME
 description: 'Rapid orientation recall over existing notes to identify strong anchors and missing nodes before deeper work.'
 default_duration_min: 3
 energy_cost: low
-status: draft
+status: validated
 best_stage: first_exposure
 has_steps: Y
 has_outputs_or_artifacts: Y

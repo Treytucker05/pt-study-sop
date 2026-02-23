@@ -18,8 +18,7 @@ Purpose: prevent documentation drift by defining exactly where to read and write
   - Active execution tracker (priority order, implementation tasks, current focus).
   - Do not store canonical policy here; store policy in authoritative docs above.
 - `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`
-  - Working draft for PRIME method policy/knob matrices pending manager reconciliation.
-  - Promote finalized decisions into canonical docs.
+  - PRIME method policy + knob matrix (canonical after PRIME hardening).
 
 ## Write Rules
 - If owner preference changes:

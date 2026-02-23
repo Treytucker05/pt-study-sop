@@ -1,6 +1,7 @@
 id: M-PRE-010
 name: Learning Objectives Primer
 category: prepare
+status: validated
 control_stage: PRIME
 description: 'Anchor the session to instructor-aligned learning objectives and choose module-wide or single-focus direction before deeper study.'
 default_duration_min: 3
