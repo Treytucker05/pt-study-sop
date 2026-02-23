@@ -1,24 +1,30 @@
-chain_id: C-FE-PRO
+id: C-FE-PRO
 name: "First Exposure: Procedure"
-category: "First Exposure"
-is_template: 1
-target_assessment_mode: ["procedure"]
-est_duration_min: 45
-
-method_ids:
+description: >-
+  Procedure-focused first-exposure chain for high-energy sessions.
+  Maps process steps, generates anchors, runs case walkthrough with
+  fault injection, and closes with timed sprint retrieval.
+blocks:
   - M-PRE-010  # Learning Objectives Primer (mandatory first)
   - M-PRE-008  # Structural Extraction
   - M-ENC-011  # Process Flowchart (Map the steps)
   - M-REF-003  # One-Page Anchor
   - M-INT-005  # Case Walkthrough (Fault Injection for procedures)
   - M-RET-007  # Timed Sprint Sets
-
-default_knobs:
-  energy: "high"
-  assessment_mode: "procedure"
-  near_miss_intensity: "high"
-
+allowed_modes:
+  - procedure
 gates:
-  - method: M-INT-005
-    criterion: "cascade_misses"
-    value: 0
+  - cascade_misses_eq_0
+failure_actions:
+  - inject_reference_targets_before_retrieve
+  - substitute_by_error_type_mapping
+  - re_run_retrieval_gate_after_insertion
+requires_reference_targets: true
+is_template: true
+status: draft
+context_tags:
+  energy: high
+default_knobs:
+  energy: high
+  assessment_mode: procedure
+  near_miss_intensity: high

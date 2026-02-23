@@ -27,11 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          elif [ -f brain/requirements.txt ]; then
-            pip install -r brain/requirements.txt
-          fi
+          pip install -r brain/requirements.txt
           pip install pytest
 
       - name: Docs sync check
@@ -52,7 +48,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements-tools.txt pytest
+        run: pip install -r sop/requirements.txt pytest
 
       - name: Validate library (strict)
         run: python sop/tools/validate_library.py --strict

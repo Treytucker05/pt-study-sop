@@ -1,7 +1,8 @@
 id: M-RET-005
 name: Variable Retrieval
 category: retrieve
-description: 'Retrieve the same concept in 3 different formats: (1) free recall, (2) application question, (3) compare/contrast. Varied retrieval contexts build more flexible memory traces.'
+description: 'Retrieve the same concept in 3 different formats: (1) free recall, (2) application question, (3) compare/contrast.
+  Varied retrieval contexts build more flexible memory traces.'
 default_duration_min: 10
 energy_cost: medium
 best_stage: review
@@ -17,19 +18,8 @@ mechanisms:
 - elaboration
 - varied_practice
 knobs:
-  difficulty:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
-  feedback_timing:
-    type: enum
-    options:
-    - immediate
-    - after_attempt
-    default: after_attempt
+  difficulty: medium
+  feedback_timing: after_attempt
 constraints:
   attempt_required_before_feedback: true
   closed_note_first: true
@@ -83,7 +73,8 @@ evidence:
   citation: Morris et al. (1977)
   finding: PNAS 2024; varied retrieval practice produces more durable and transferable knowledge than constant retrieval
   source: seed_methods.py
-evidence_raw: Morris et al. (1977); PNAS 2024; varied retrieval practice produces more durable and transferable knowledge than constant retrieval
+evidence_raw: Morris et al. (1977); PNAS 2024; varied retrieval practice produces more durable and transferable knowledge
+  than constant retrieval
 facilitation_prompt: 'You are running M-RET-005 (Variable Retrieval) in RETRIEVE stage.
 
   Execute this method card exactly and keep outputs deterministic.

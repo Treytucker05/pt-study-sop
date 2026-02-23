@@ -24,6 +24,11 @@ categories:
     description: "Test recall with adversarial near-miss and timed sprints"
     prefix: RET
     aliases: ["recall", "test", "practice"]
+  interrogate:
+    label: "INTERROGATE"
+    description: "Active questioning and self-testing to strengthen encoding"
+    prefix: INT
+    aliases: ["question", "self_test", "interrogation"]
   overlearn:
     label: "OVERLEARN"
     description: "Close loop, capture artifacts, Anki, drill sheets"

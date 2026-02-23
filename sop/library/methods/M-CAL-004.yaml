@@ -1,12 +1,12 @@
 id: M-CAL-004
 name: Story Confidence Tag
-category: prepare
+category: calibrate
 description: 'After receiving the big-picture narrative overview, rate your confidence in the story as a whole. Can you retell the narrative thread? Where does the story break down? Light-touch calibration that respects top-down learners — no item-level quizzing.'
 default_duration_min: 2
 energy_cost: low
 best_stage: first_exposure
 control_stage: CALIBRATE
-status: active
+status: core
 tags:
 - calibrate
 - confidence
@@ -30,18 +30,7 @@ when_not_to_use:
 - After item-level pretest (use M-CAL-002 instead)
 - When material has no narrative structure
 knobs:
-  confidence_scale:
-    type: enum
-    options:
-    - three_point
-    - five_point
-    default: three_point
-  probe_depth:
-    type: enum
-    options:
-    - surface
-    - structural
-    default: surface
+  confidence_scale: HML
 constraints:
   non_assessment: true
   narrative_level_only: true
@@ -75,9 +64,9 @@ failure_modes:
 - mode: Takes too long
   mitigation: 'Hard cap at 2 minutes. Quick gut check, not deep analysis'
 logging_fields:
-- story_confidence_rating
-- fuzzy_zone_count
-- priority_targets
+- average_confidence
+- gaps_identified
+- priority_set
 evidence:
   citation: Metcalfe (2017)
   finding: 'Metacognitive monitoring at the schema level identifies high-value encoding targets'

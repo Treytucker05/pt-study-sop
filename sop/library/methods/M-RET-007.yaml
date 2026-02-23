@@ -15,19 +15,8 @@ mechanisms:
 - retrieval
 - desirable_difficulty
 knobs:
-  difficulty:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
-  feedback_timing:
-    type: enum
-    options:
-    - immediate
-    - after_attempt
-    default: after_attempt
+  difficulty: medium
+  feedback_timing: after_attempt
 constraints:
   attempt_required_before_feedback: true
   closed_note_first: true

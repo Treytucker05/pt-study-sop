@@ -5,7 +5,7 @@ description: 'Apply the concept to a clinical scenario. Ask: how would this pres
 default_duration_min: 5
 energy_cost: high
 best_stage: exam_prep
-control_stage: RETRIEVE
+control_stage: ENCODE
 status: validated
 tags:
 - clinical
@@ -17,19 +17,8 @@ mechanisms:
 - elaboration
 - generation
 knobs:
-  difficulty:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
-  feedback_timing:
-    type: enum
-    options:
-    - immediate
-    - after_attempt
-    default: after_attempt
+  difficulty: medium
+  feedback_timing: after_attempt
 constraints:
   attempt_required_before_feedback: true
   closed_note_first: true
@@ -79,7 +68,9 @@ evidence:
   finding: Clinical application strengthens illness script formation and diagnostic reasoning
   source: seed_methods.py
 evidence_raw: Schmidt & Rikers (2007); clinical application strengthens illness script formation
-facilitation_prompt: 'You are running M-INT-002 (Clinical Application) in RETRIEVE stage.
+facilitation_prompt: 'You are running M-INT-002 (Clinical Application) in ENCODE stage.
+
+  The learner must actively transform the concept into a clinical scenario.
 
   Execute this method card exactly and keep outputs deterministic.
 

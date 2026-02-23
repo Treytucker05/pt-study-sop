@@ -1,6 +1,6 @@
 id: M-PRE-009
 name: Syntopical Big-Picture Synthesis
-category: prepare
+category: prime
 description: Synthesize top-level structure across 2-3 sources into one module-level hierarchy with cross-links.
 default_duration_min: 6
 energy_cost: low
@@ -26,18 +26,8 @@ when_not_to_use:
 - Single-source content where cross-source synthesis adds no value.
 - Time budgets below 3 minutes.
 knobs:
-  source_cap:
-    type: int
-    min: 2
-    max: 3
-    default: 3
-  synthesis_format:
-    type: enum
-    options:
-    - hierarchy
-    - comparison_table
-    - hybrid
-    default: hierarchy
+  source_cap: 3
+  synthesis_format: hierarchy
 constraints:
   non_assessment: true
   source_cap_hard_lock: true

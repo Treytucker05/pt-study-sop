@@ -18,20 +18,8 @@ mechanisms:
 - retrieval
 - generation
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

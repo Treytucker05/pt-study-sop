@@ -1,7 +1,8 @@
 id: M-ENC-006
 name: Think-Aloud Protocol
 category: encode
-description: Verbalize your reasoning step-by-step while working through a problem or reading. Exposes gaps in logic and strengthens self-explanation. Based on Chi et al. self-explanation research.
+description: Verbalize your reasoning step-by-step while working through a problem or reading. Exposes gaps in logic and strengthens
+  self-explanation. Based on Chi et al. self-explanation research.
 default_duration_min: 5
 energy_cost: medium
 best_stage: review
@@ -17,20 +18,8 @@ mechanisms:
 - calibration
 - feedback
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

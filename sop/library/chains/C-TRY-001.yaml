@@ -1,4 +1,4 @@
-id: C-TREY-001
+id: C-TRY-001
 name: Top-Down Narrative Mastery
 description: 'Trey''s primary chain. Top-down narrative processor flow: big-picture H1 map → hand-draw spatial encoding → story confidence check → L1-L2 narrative build with Kwik sound-stories + analogies → One-Page Anchor (hand-draw) → gentle story recall after learner says "ready" → Teach-back + Post-Learn Brain Dump for closure. 45 min, medium energy, framework-only. Tutor ingests material, teaches interactively with "does this click?" pauses, never quizzes prematurely.'
 blocks:
@@ -31,8 +31,5 @@ context_tags:
   stage: first_exposure
   energy: medium
   time_available: 45
-  learner_style: top_down_narrative
-  hand_draw_max: 2
-  interactive_pauses: true
 is_template: true
-status: active
+status: draft
