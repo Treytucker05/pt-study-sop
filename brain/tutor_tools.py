@@ -181,10 +181,12 @@ CREATE_FIGMA_DIAGRAM_SCHEMA: dict[str, Any] = {
 SAVE_LEARNING_OBJECTIVES_SCHEMA: dict[str, Any] = {
     "type": "function",
     "name": "save_learning_objectives",
+    "strict": True,
     "description": (
-        "Save approved learning objectives for the current module. "
-        "Use after confirming objectives with the student during the "
-        "Missing Learning Objectives workflow."
+        "Save learning objectives to the database and rebuild the North Star note. "
+        "You MUST call this tool when the student approves learning objectives. "
+        "This persists them so future turns have real objective IDs instead of OBJ-UNMAPPED. "
+        "Do not tell the student you cannot save — use this tool."
     ),
     "parameters": {
         "type": "object",
@@ -204,11 +206,13 @@ SAVE_LEARNING_OBJECTIVES_SCHEMA: dict[str, Any] = {
                         },
                     },
                     "required": ["id", "description"],
+                    "additionalProperties": False,
                 },
                 "description": "List of learning objectives to save",
             },
         },
         "required": ["objectives"],
+        "additionalProperties": False,
     },
 }
 

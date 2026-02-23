@@ -2654,10 +2654,11 @@ def send_turn(session_id: str):
                     "- Objectives in scope:\n"
                     f"{objective_lines}"
                 )
-                if not _session_has_real_objectives(north_star) and turn_number <= 2:
+                if not _session_has_real_objectives(north_star) and turn_number <= 5:
                     system_prompt += (
                         "\n\n## Missing Learning Objectives\n"
-                        "No learning objectives are set for this module yet. Before starting the lesson:\n"
+                        "No learning objectives are set for this module yet. "
+                        "You MUST resolve this before teaching content.\n"
                         '1. Ask the student: "I don\'t have learning objectives for this module yet. '
                         'Are they in your loaded study materials, or would you like to type them in?"\n'
                         "2. If in materials: scan the Retrieved Study Materials for explicit learning objectives, "
@@ -2665,8 +2666,9 @@ def send_turn(session_id: str):
                         "3. If student types them: acknowledge and format them the same way\n"
                         "4. If student says skip: proceed without objectives (use general teaching mode)\n"
                         '5. Ask for confirmation before continuing: "Are these objectives correct? [Approve / Edit / Skip]"\n'
-                        "6. Once approved, call the `save_learning_objectives` tool with the finalized list. "
-                        'Each objective needs an `id` (e.g. "OBJ-HIP-FLEXORS") and a `description`.'
+                        "6. **IMPORTANT**: Once the student approves, you MUST call the `save_learning_objectives` tool "
+                        "to persist them. Pass an array of objectives, each with an `id` (e.g. \"OBJ-HIP-FLEXORS\") "
+                        "and a `description` (the full objective text). Do NOT skip this step or say you cannot save them."
                     )
             if enforce_reference_bounds and reference_targets:
                 bounded_targets = "\n".join(f"- {t}" for t in reference_targets[:20])
