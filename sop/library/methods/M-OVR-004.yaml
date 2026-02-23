@@ -6,7 +6,7 @@ default_duration_min: 7
 energy_cost: medium
 best_stage: consolidation
 control_stage: OVERLEARN
-status: active
+status: core
 tags:
 - recall
 - brain-dump
@@ -33,26 +33,9 @@ when_not_to_use:
 - Very short sessions (<15 min) where Exit Ticket suffices
 - Pure drill/speed sessions where Exit Ticket is better fit
 knobs:
-  dump_format:
-    type: enum
-    options:
-    - freewrite
-    - structured
-    - list
-    default: freewrite
-  gap_fill_mode:
-    type: enum
-    options:
-    - highlight_only
-    - fill_and_annotate
-    default: fill_and_annotate
-  prompt_focus:
-    type: enum
-    options:
-    - everything
-    - stories_only
-    - connections_only
-    default: everything
+  output_format: bullets
+  feedback_style: strict_gap_analysis
+  priming_scope: module_all
 constraints:
   closed_note_first: true
   time_cap_minutes: 7
@@ -100,11 +83,11 @@ failure_modes:
 - mode: Skipping the gap comparison
   mitigation: Gap comparison is mandatory. It reveals what did not encode.
 logging_fields:
-- dump_word_count
-- gap_count
-- retention_estimate
-- time_spent_dump
-- time_spent_gap_fill
+- brain_dump_word_count
+- gaps_identified
+- rsr_estimate
+- total_time
+- total_time_spent
 evidence:
   citation: RetrievalPractice.org (2017)
   finding: '5-minute free recall sessions strengthen past and future learning, improve organization, and identify gaps without stakes'

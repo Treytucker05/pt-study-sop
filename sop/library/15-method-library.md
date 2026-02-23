@@ -31,20 +31,20 @@ Each method block represents a single study activity.
 
 **Categories (Control Plane stages):**
 
-1. **PRIME** — Prepare attention, surface prior knowledge, build structure (e.g., brain dump, overarching pre-question set, prior knowledge scan, hierarchical advance organizer, skeleton concept hierarchy, structural skimming + pillar mapping, pre-test, structural extraction, syntopical big-picture synthesis, learning objectives primer)
-2. **CALIBRATE** — Diagnostic micro-assessments to identify weaknesses before encoding (e.g., micro precheck, confidence tagging, priority set)
+1. **PRIME** — Prepare attention, surface prior knowledge, build structure (e.g., brain dump, overarching pre-question set, prior knowledge scan, hierarchical advance organizer, skeleton concept hierarchy, structural skimming + pillar mapping, pre-test, structural extraction, syntopical big-picture synthesis, learning objectives primer, hand-draw map)
+2. **CALIBRATE** — Diagnostic micro-assessments to identify weaknesses before encoding (e.g., micro precheck, confidence tagging, priority set, story confidence tag)
 3. **ENCODE** — Attach meaning to material through active processing (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, think-aloud protocol, self-explanation protocol, mechanism trace, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking, analogy bridge, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder)
 4. **REFERENCE** — Generate target cues and cheat sheets for retrieval (e.g., error autopsy, mastery loop, one-page anchor, question bank seed)
 5. **RETRIEVE** — Test recall with adversarial near-miss and timed sprints (e.g., free recall blurt, sprint quiz, fill-in-blank, mixed practice, variable retrieval, adversarial drill, timed sprint sets)
-6. **OVERLEARN** — Close loop, capture artifacts, Anki, drill sheets (e.g., exit ticket, anki card draft, drill sheet builder)
+6. **OVERLEARN** — Close loop, capture artifacts, Anki, drill sheets (e.g., exit ticket, anki card draft, drill sheet builder, post-learn brain dump)
 
 **Evidence citation format:** `Author (Year); brief finding`
 
 ---
 
-## §2.1 Block Catalog (47 blocks)
+## §2.1 Block Catalog (50 blocks)
 
-### PRIME (10 blocks)
+### PRIME (11 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Brain Dump | 3 min | low | Ausubel (1968); Bjork & Bjork (2011); prior knowledge activation strengthens subsequent encoding |
@@ -57,13 +57,15 @@ Each method block represents a single study activity.
 | Structural Extraction | 5 min | medium | Ausubel (1968); Advance organizers improve comprehension when structure is established before detail. |
 | Syntopical Big-Picture Synthesis | 6 min | low | Ausubel (1968); Comparative organizers support integration across related sources. |
 | Learning Objectives Primer | 3 min | low | Ausubel (1968); Hattie (2009); explicit learning objectives improve encoding direction and metacognitive monitoring |
+| Hand-Draw Map | 5 min | medium | Wammes et al. (2016); Drawing effect — drawing doubles free-recall rates (45% vs 20%) through multimodal encoding combining motor, visual, and semantic processing |
 
-### CALIBRATE (3 blocks)
+### CALIBRATE (4 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Micro Precheck | 4 min | medium | Kornell et al. (2009); Pretesting improves later learning and reveals knowledge gaps. |
 | Confidence Tagging | 3 min | low | Metcalfe (2017); Calibration monitoring supports targeted corrective learning. |
 | Priority Set | 3 min | low | Rawson and Dunlosky (2011); Targeted corrective practice outperforms broad untargeted restudy. |
+| Story Confidence Tag | 2 min | low | Metcalfe (2017); Metacognitive monitoring at the schema level identifies high-value encoding targets |
 
 ### ENCODE (20 blocks)
 | Block | Duration | Energy | Evidence |
@@ -108,12 +110,13 @@ Each method block represents a single study activity.
 | Adversarial Drill | 8 min | high | Rohrer et al. (2015); Interleaved discrimination practice improves transfer on confusable categories |
 | Timed Sprint Sets | 8 min | high | Cepeda et al. (2006); Spaced retrieval with repeated timed attempts improves long-term access speed |
 
-### Overlearn (3 blocks)
+### Overlearn (4 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | Exit Ticket | 3 min | low | Tanner (2012); metacognitive reflection improves self-regulated learning |
 | Anki Card Draft | 5 min | low | Kornell (2009); Cepeda et al. (2006); spaced retrieval via flashcards is high-utility |
 | Drill Sheet Builder | 10 min | medium | Rawson & Dunlosky (2011); Successive relearning with repeated retrieval strengthens durable mastery |
+| Post-Learn Brain Dump | 7 min | medium | RetrievalPractice.org (2017); 5-minute free recall sessions strengthen past and future learning, improve organization, and identify gaps without stakes |
 
 ---
 

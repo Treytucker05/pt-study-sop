@@ -1,12 +1,12 @@
 id: M-PRE-011
 name: Hand-Draw Map
-category: prepare
+category: prime
 description: 'Hand-draw a spatial mind map of the topic structure using own words, simple pictures, colors, and spatial positioning. Close eyes afterward to recall layout — positions trigger details. Max 5 minutes, never full rewrite.'
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
 control_stage: PRIME
-status: active
+status: core
 tags:
 - spatial
 - hand-draw
@@ -33,25 +33,9 @@ when_not_to_use:
 - Time is severely constrained (<15 min total session)
 - Learner has already hand-drawn this topic recently
 knobs:
-  map_style:
-    type: enum
-    options:
-    - radial
-    - hierarchical
-    - freeform
-    default: radial
-  branch_limit:
-    type: int
-    min: 3
-    max: 8
-    default: 5
-  pic_density:
-    type: enum
-    options:
-    - none
-    - simple
-    - moderate
-    default: simple
+  map_format: ascii_tree
+  node_count_cap: 5
+  confidence_scale: HML
 constraints:
   non_assessment: true
   active_processing_required: true
@@ -95,10 +79,10 @@ failure_modes:
 - mode: Skipping the eyes-closed recall step
   mitigation: 'This IS the point. 10 seconds minimum with eyes closed'
 logging_fields:
-- branch_count
-- pic_count
-- spatial_recall_confidence
-- time_spent_seconds
+- branch_points
+- node_count
+- average_confidence
+- total_time
 evidence:
   citation: Wammes et al. (2016)
   finding: 'Drawing effect — drawing doubles free-recall rates (45% vs 20%) through multimodal encoding combining motor, visual, and semantic processing'
