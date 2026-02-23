@@ -226,37 +226,21 @@ METHOD_BLOCKS = [
         ],
     },
     {
-        "name": "Think-Aloud Protocol",
-        "control_stage": "ENCODE",
-        "description": "Verbalize your reasoning step-by-step while working through a problem or reading. Exposes gaps in logic and strengthens self-explanation. Based on Chi et al. self-explanation research.",
-        "default_duration_min": 5,
-        "energy_cost": "medium",
-        "best_stage": "review",
-        "tags": ["self-explanation", "metacognition", "verbal", "evidence-based"],
-        "evidence": "Chi et al. (1994); self-explanation leads to deeper understanding and better problem-solving",
-        "icap_level": "constructive",
-        "clt_target": "increase-germane",
-        "research_terms": [
-            "self_explanation",
-            "metacognitive_monitoring",
-            "cognitive_apprenticeship",
-        ],
-    },
-    {
         "name": "Self-Explanation Protocol",
         "control_stage": "ENCODE",
-        "description": "After reading each paragraph or concept, pause and explain to yourself WHY each step follows from the previous one. Focus on explaining the reasoning, not just restating facts.",
+        "description": "After reading each paragraph or concept, pause and explain WHY each step follows from the previous one. Supports silent, spoken, or written verbalization modes. Focus on reasoning, not restating facts. Merges Think-Aloud Protocol (formerly M-ENC-006).",
         "default_duration_min": 7,
         "energy_cost": "medium",
         "best_stage": "first_exposure",
-        "tags": ["self-explanation", "comprehension", "causal-reasoning"],
-        "evidence": "Chi et al. (1994); Dunlosky et al. (2013); self-explanation rated moderate-high utility across domains",
+        "tags": ["self-explanation", "comprehension", "causal-reasoning", "metacognition", "verbal", "evidence-based"],
+        "evidence": "Chi et al. (1994); Dunlosky et al. (2013); self-explanation rated moderate-high utility across domains. Think-aloud verbalization (Ericsson & Simon, 1993) exposes reasoning gaps.",
         "icap_level": "constructive",
         "clt_target": "increase-germane",
         "research_terms": [
             "self_explanation",
             "elaborative_interrogation",
             "transfer_appropriate_processing",
+            "metacognitive_monitoring",
         ],
     },
     {
@@ -667,7 +651,7 @@ METHOD_BLOCKS = [
 TEMPLATE_CHAINS = [
     {
         "name": "First Exposure (Core)",
-        "description": "Full PEIRRO cycle for new material. Prepare → Encode → Retrieve → Interrogate → Overlearn. Retrieval before generative encoding per Potts & Shanks (2022).",
+        "description": "Full PEIRRO cycle for new material. Prepare → Encode → Retrieve → Interrogate → Overlearn. Retrieval before generative encoding per Roelle et al. (2022).",
         "blocks": [
             "Brain Dump",
             "AI Skeleton Review",

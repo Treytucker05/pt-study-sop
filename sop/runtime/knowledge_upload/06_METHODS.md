@@ -153,7 +153,7 @@ Each method block represents a single study activity.
 **Blocks:** Learning Objectives Primer → Structural Extraction → Syntopical Big-Picture Synthesis → Micro Precheck → Confidence Tagging → Priority Set → KWIK Hook → One-Page Anchor → Question Bank Seed → Free Recall Blurt → Adversarial Drill → Timed Sprint Sets → Anki Card Draft → Drill Sheet Builder
 **Context:** first exposure, high energy, 55 min
 **Use for:** Control-plane first exposure flow. PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN with deterministic Priority Set routing.
-**Note:** Retrieval (Free Recall) comes before generative encoding (KWIK Hook) per Potts & Shanks (2022) — lower cognitive load, higher gains.
+**Note:** Retrieval (Free Recall) comes before generative encoding (KWIK Hook) per Roelle et al. (2022) — lower cognitive load, higher gains.
 
 #### 2. Review Sprint
 **Blocks:** Overarching Pre-Question Set → One-Page Anchor → Question Bank Seed → Sprint Quiz → Clinical Application → Exit Ticket

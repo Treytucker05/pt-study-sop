@@ -70,9 +70,10 @@ logging_fields:
 - retrieval_accuracy
 - time_to_build
 evidence:
-  citation: Yates (1966)
-  finding: Method of Loci has been used for 2500+ years; spatial memory is evolutionarily privileged
-  source: Cicero, De Oratore
+  citation: Dresler et al. (2017)
+  finding: fMRI study showed memory athletes using Method of Loci exhibit distinct patterns of functional brain connectivity; 40 days of loci training significantly improved recall in naive subjects
+  source: Neuron, 93(5), 1227-1235
+evidence_raw: Dresler et al. (2017); fMRI shows Method of Loci training rewires functional connectivity and improves recall. Historical roots in Yates (1966), The Art of Memory.
 facilitation_prompt: 'You are running M-ENC-013 (Memory Palace) in ENCODE stage.
 
   Execute this method card exactly and keep outputs deterministic.

@@ -47,7 +47,7 @@ steps:
   notes: Near-misses are weak anchors — flag for review
 - step: 6
   action: Calculate RSR percentage at end (correct / total × 100)
-  notes: RSR < 80% = needs more encoding; RSR > 90% = ready to advance
+  notes: RSR < 80% = needs more encoding; RSR > 85% = ready to advance
 outputs:
 - RSR percentage (correct/total)
 - List of missed questions

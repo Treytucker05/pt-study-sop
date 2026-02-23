@@ -593,7 +593,7 @@ def _render_template_chains(chains: list[dict], id_to_name: dict[str, str]) -> s
             if cname == "First Exposure (Core)":
                 lines.append(
                     "**Note:** Retrieval (Free Recall) comes before generative "
-                    "encoding (KWIK Hook) per Potts & Shanks (2022) — lower "
+                    "encoding (KWIK Hook) per Roelle et al. (2022) — lower "
                     "cognitive load, higher gains."
                 )
             lines.append("")
