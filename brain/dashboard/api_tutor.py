@@ -30,6 +30,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import hashlib
 import sqlite3
 import uuid
 import logging
@@ -37,8 +38,9 @@ from datetime import datetime
 from pathlib import Path
 from threading import Lock, Thread
 from typing import Any, Optional
+from urllib.parse import quote
 
-from flask import Blueprint, Response, current_app, has_app_context, jsonify, request
+from flask import Blueprint, Response, current_app, has_app_context, jsonify, request, send_file
 from jsonschema import Draft202012Validator
 
 from dashboard.utils import load_api_config, save_api_config
@@ -78,12 +80,17 @@ VIDEO_JOBS: dict[str, dict[str, Any]] = {}
 VIDEO_JOBS_LOCK = Lock()
 VIDEO_JOB_RETENTION = 30
 _LOG = logging.getLogger(__name__)
+EXTRACTED_IMAGES_ROOT = Path(__file__).resolve().parents[1] / "data" / "extracted_images"
+_IMAGE_PLACEHOLDER_PATTERN = re.compile(r"<!--\s*image\s*-->", re.IGNORECASE)
 
 _SELECTOR_COLS_ENSURED = False
 _WIKILINK_PATTERN = re.compile(r"\[\[([^\]]+)\]\]")
-_NORTH_STAR_OBJECTIVE_PATTERN = re.compile(
+_NORTH_STAR_OBJECTIVE_PATTERN_OLD = re.compile(
     r"\[\[(OBJ-[^\]]+)\]\].*status:\s*([a-z_]+)",
     re.IGNORECASE,
+)
+_NORTH_STAR_OBJECTIVE_PATTERN_NEW = re.compile(
+    r"^\s*\d+\.\s+\[\[(OBJ-[^\]]+)\]\]\s+(.+)$",
 )
 _TUTOR_NOTE_SCHEMA_PATH = (
     Path(__file__).resolve().parents[2] / "docs" / "schemas" / "tutor_note_schema_v1_1.json"
@@ -497,70 +504,54 @@ def _collect_objectives_from_db(
 def _parse_existing_north_star_objectives(content: str) -> dict[str, str]:
     parsed: dict[str, str] = {}
     for line in (content or "").splitlines():
-        m = _NORTH_STAR_OBJECTIVE_PATTERN.search(line)
-        if not m:
+        # Old format: [[OBJ-ID]] ... status: active
+        m = _NORTH_STAR_OBJECTIVE_PATTERN_OLD.search(line)
+        if m:
+            parsed[m.group(1).strip()] = _normalize_objective_status(m.group(2))
             continue
-        parsed[m.group(1).strip()] = _normalize_objective_status(m.group(2))
+        # New format: 1. [[OBJ-ID]] Description text
+        m2 = _NORTH_STAR_OBJECTIVE_PATTERN_NEW.match(line)
+        if m2:
+            parsed[m2.group(1).strip()] = "active"
     return parsed
 
 
 def _build_north_star_markdown(
     *,
     module_name: str,
+    course_name: str = "",
     topic: str,
     objectives: list[dict[str, str]],
     source_ids: list[int],
 ) -> str:
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
-    lines: list[str] = [
-        "---",
-        "note_type: north_star",
-        f"module_name: {module_name}",
-        f"updated_at: {now}",
-        "---",
-        "",
-        f"# North Star - {module_name}",
-        "",
-        "## Topic",
-        topic or module_name,
-        "",
-        "## Objective Status Board",
+    from tutor_templates import _render_north_star_markdown
+
+    # Group objectives by their 'group' field (or single flat group)
+    groups_map: dict[str, list[dict[str, str]]] = {}
+    group_order: list[str] = []
+    for obj in objectives:
+        group_name = str(obj.get("group") or module_name)
+        if group_name not in groups_map:
+            groups_map[group_name] = []
+            group_order.append(group_name)
+        groups_map[group_name].append({
+            "id": obj.get("objective_id", ""),
+            "description": obj.get("title", ""),
+            "status": obj.get("status", "active"),
+        })
+
+    objective_groups = [
+        {"name": name, "objectives": groups_map[name]}
+        for name in group_order
     ]
 
-    for obj in objectives:
-        objective_link = _wikilink(obj["objective_id"])
-        concept_link = _wikilink(obj["title"])
-        lines.append(
-            f"- {objective_link} — {concept_link} | status: {obj['status']}"
-        )
-
-    lines.extend(
-        [
-            "",
-            "## Active Objectives",
-        ]
-    )
-    active = [o for o in objectives if o["status"] in {"active", "needs_review"}]
-    if not active:
-        active = objectives[: min(3, len(objectives))]
-    for obj in active:
-        lines.append(f"- {_wikilink(obj['objective_id'])}")
-
-    lines.extend(
-        [
-            "",
-            "## Follow Up Targets",
-            "- [[OBJ-UNMAPPED]]",
-            "",
-            "## Source IDs",
-            "- " + (", ".join(str(x) for x in source_ids) if source_ids else "none"),
-            "",
-            "## Session Links",
-            "- (auto-filled by tutor sessions)",
-            "",
-        ]
-    )
-    return "\n".join(lines)
+    payload: dict[str, Any] = {
+        "module_name": module_name,
+        "course_name": course_name,
+        "objective_groups": objective_groups,
+        "follow_up_targets": ["[[OBJ-UNMAPPED]]"],
+    }
+    return _render_north_star_markdown(payload)
 
 
 def _session_has_real_objectives(north_star: Optional[dict]) -> bool:
@@ -572,6 +563,84 @@ def _session_has_real_objectives(north_star: Optional[dict]) -> bool:
         str(oid or "").strip() and str(oid).strip() != "OBJ-UNMAPPED"
         for oid in objective_ids
     )
+
+
+_LO_LIST_RE = re.compile(r"^\s*(?:\d+[.)]\s+|[-*]\s+)(.+)$")
+
+
+_GROUP_HEADER_RE = re.compile(
+    r"^(?:\*\*|##?\s+)(?:[IVXLC]+\.\s+)?(.+?)(?:\*\*)?$"
+)
+
+
+def _extract_objectives_from_text(text: str) -> list[dict] | None:
+    """Parse learning objectives from the model's free-text response.
+
+    Returns a list of ``{"id": "OBJ-...", "description": "...", "group": "..."}`` dicts,
+    or *None* if no confident extraction is possible (avoids false positives).
+
+    Detects bold section headers like ``**I. Hip and Pelvis**`` or
+    ``## Hip and Pelvis`` and tags extracted objectives with their group name.
+    """
+    if not text:
+        return None
+
+    header_re = re.compile(
+        r"(?:learning\s+objectives?|objectives?|here\s+are\s+the)",
+        re.IGNORECASE,
+    )
+    lines = text.splitlines()
+    collecting = False
+    current_group = ""
+    items: list[tuple[str, str]] = []  # (text, group)
+
+    for line in lines:
+        stripped = line.strip()
+        if not collecting and header_re.search(stripped):
+            collecting = True
+            m = _LO_LIST_RE.match(stripped)
+            if m:
+                items.append((m.group(1).strip(), current_group))
+            continue
+        if collecting:
+            # Detect group headers (bold or markdown heading with optional roman numeral)
+            gm = _GROUP_HEADER_RE.match(stripped)
+            if gm and not _LO_LIST_RE.match(stripped):
+                current_group = gm.group(1).strip()
+                continue
+            m = _LO_LIST_RE.match(stripped)
+            if m:
+                items.append((m.group(1).strip(), current_group))
+            elif stripped == "":
+                continue
+            else:
+                break
+
+    if len(items) < 2:
+        return None
+
+    objectives: list[dict] = []
+    for item_text, group in items:
+        desc = re.sub(r"^OBJ-\S+\s*[—\-–:]\s*", "", item_text).strip()
+        if not desc:
+            desc = item_text
+        slug = _objective_slug(desc)
+        obj: dict[str, str] = {"id": slug, "description": desc}
+        if group:
+            obj["group"] = group
+        objectives.append(obj)
+
+    return objectives
+
+
+def _objective_slug(description: str) -> str:
+    """Generate an OBJ-KEYWORD ID from a description string."""
+    # Take first few meaningful words, uppercase, join with hyphens.
+    words = re.sub(r"[^a-zA-Z0-9\s]", "", description).split()
+    # Pick up to 3 words, skip tiny words.
+    chosen = [w.upper() for w in words if len(w) > 2][:3]
+    slug = "-".join(chosen) if chosen else "GENERAL"
+    return f"OBJ-{slug}"
 
 
 def _north_star_io_disabled() -> bool:
@@ -639,6 +708,7 @@ def _ensure_north_star_context(
     if _north_star_io_disabled():
         current_content = _build_north_star_markdown(
             module_name=derived_module_name,
+            course_name=derived_course,
             topic=topic,
             objectives=objectives,
             source_ids=source_ids,
@@ -657,6 +727,7 @@ def _ensure_north_star_context(
             if needs_update:
                 new_content = _build_north_star_markdown(
                     module_name=derived_module_name,
+                    course_name=derived_course,
                     topic=topic,
                     objectives=objectives,
                     source_ids=source_ids,
@@ -671,6 +742,7 @@ def _ensure_north_star_context(
         else:
             new_content = _build_north_star_markdown(
                 module_name=derived_module_name,
+                course_name=derived_course,
                 topic=topic,
                 objectives=objectives,
                 source_ids=source_ids,
@@ -964,7 +1036,12 @@ def save_learning_objectives_from_tool(
 
         # --- 3. Rebuild North Star ---
         lo_dicts = [
-            {"objective_id": code, "title": obj.get("description", code), "status": "active"}
+            {
+                "objective_id": code,
+                "title": obj.get("description", code),
+                "status": "active",
+                "group": obj.get("group", ""),
+            }
             for code, obj in zip(inserted_codes, objectives)
         ]
         ns_ctx, ns_err = _ensure_north_star_context(
@@ -2036,6 +2113,163 @@ def _launch_materials_sync_job(root: Path, allowed_exts: Optional[set[str]]) -> 
     return job_id
 
 
+def _compact_sync_result_for_status(sync_result: Any) -> Any:
+    """Trim large sync payloads so status polling stays lightweight."""
+    if not isinstance(sync_result, dict):
+        return sync_result
+
+    raw_errors = sync_result.get("errors")
+    errors = [str(item) for item in raw_errors] if isinstance(raw_errors, list) else []
+    error_preview_limit = 20
+    preview_errors = errors[:error_preview_limit]
+
+    raw_doc_ids = sync_result.get("doc_ids")
+    doc_ids_count = len(raw_doc_ids) if isinstance(raw_doc_ids, list) else 0
+
+    return {
+        "ok": bool(sync_result.get("ok")),
+        "total": int(sync_result.get("total") or 0),
+        "processed": int(sync_result.get("processed") or 0),
+        "failed": int(sync_result.get("failed") or len(errors)),
+        "errors": preview_errors,
+        "errors_total": len(errors),
+        "errors_truncated": len(errors) > error_preview_limit,
+        "doc_ids_count": doc_ids_count,
+    }
+
+
+def _compact_embed_result_for_status(embed_result: Any) -> Any:
+    if not isinstance(embed_result, dict):
+        return embed_result
+
+    if "error" in embed_result and embed_result.get("error"):
+        return {"error": str(embed_result.get("error"))}
+
+    return {
+        "embedded": int(embed_result.get("embedded") or 0),
+        "skipped": int(embed_result.get("skipped") or 0),
+        "total_chunks": int(embed_result.get("total_chunks") or 0),
+    }
+
+
+def _material_asset_hash_candidates(source_path: Optional[str], file_path: Optional[str]) -> list[str]:
+    """Build hash candidates that match text_extractor's extracted_images folder naming."""
+    raw_candidates: list[str] = []
+    for raw in (file_path, source_path):
+        value = str(raw or "").strip()
+        if not value:
+            continue
+        raw_candidates.append(value)
+        raw_candidates.append(value.replace("/", "\\"))
+        raw_candidates.append(value.replace("\\", "/"))
+        try:
+            resolved = str(Path(value).expanduser().resolve())
+            raw_candidates.append(resolved)
+            raw_candidates.append(resolved.replace("/", "\\"))
+            raw_candidates.append(resolved.replace("\\", "/"))
+        except Exception:
+            pass
+
+    seen: set[str] = set()
+    hashes: list[str] = []
+    for candidate in raw_candidates:
+        normalized = candidate.strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        digest = hashlib.md5(normalized.encode("utf-8")).hexdigest()[:12]
+        if digest not in hashes:
+            hashes.append(digest)
+    return hashes
+
+
+def _find_extracted_asset_dir(source_path: Optional[str], file_path: Optional[str]) -> Optional[Path]:
+    if not EXTRACTED_IMAGES_ROOT.exists():
+        return None
+    for digest in _material_asset_hash_candidates(source_path, file_path):
+        candidate = EXTRACTED_IMAGES_ROOT / digest
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+    return None
+
+
+def _inject_extracted_images(
+    content: str,
+    *,
+    material_id: int,
+    asset_dir: Optional[Path],
+) -> str:
+    """Replace Docling <!-- image --> placeholders with served markdown image links."""
+    if not content or not _IMAGE_PLACEHOLDER_PATTERN.search(content):
+        return content
+    if not asset_dir or not asset_dir.exists():
+        return _IMAGE_PLACEHOLDER_PATTERN.sub("", content)
+
+    image_files = sorted(
+        [
+            path
+            for path in asset_dir.iterdir()
+            if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+        ],
+        key=lambda path: path.name.lower(),
+    )
+    if not image_files:
+        return _IMAGE_PLACEHOLDER_PATTERN.sub("", content)
+
+    index = {"value": 0}
+
+    def _replace(_match: re.Match[str]) -> str:
+        current = index["value"]
+        index["value"] += 1
+        if current >= len(image_files):
+            return ""
+        filename = quote(image_files[current].name.replace("\\", "/"))
+        return f"\n![Extracted image {current + 1}](/api/tutor/materials/{material_id}/asset/{filename})\n"
+
+    return _IMAGE_PLACEHOLDER_PATTERN.sub(_replace, content)
+
+
+def _rewrite_extracted_image_links(
+    content: str,
+    *,
+    material_id: int,
+    asset_dir: Optional[Path],
+) -> str:
+    """Rewrite markdown image links to tutor asset URLs when they reference local files."""
+    if not content or "![" not in content:
+        return content
+    if not asset_dir or not asset_dir.exists():
+        return content
+
+    valid_files = {
+        path.name.lower()
+        for path in asset_dir.iterdir()
+        if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+    }
+    if not valid_files:
+        return content
+
+    pattern = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+
+    def _replace(match: re.Match[str]) -> str:
+        alt = match.group(1)
+        raw_url = match.group(2).strip().strip("<>").strip("'\"")
+        if not raw_url:
+            return match.group(0)
+        lowered = raw_url.lower()
+        if lowered.startswith("http://") or lowered.startswith("https://") or lowered.startswith("/api/tutor/materials/"):
+            return match.group(0)
+
+        normalized = raw_url.replace("\\", "/")
+        filename = Path(normalized).name
+        if not filename or filename.lower() not in valid_files:
+            return match.group(0)
+        encoded = quote(filename)
+        return f"![{alt}](/api/tutor/materials/{material_id}/asset/{encoded})"
+
+    return pattern.sub(_replace, content)
+
+
 # ---------------------------------------------------------------------------
 # POST /api/tutor/session — Create a new tutor session
 # ---------------------------------------------------------------------------
@@ -2479,6 +2713,11 @@ def send_turn(session_id: str):
     turn_number = session["turn_count"] + 1
 
     def generate():
+        _LOG.debug(
+            "generate() entered for session=%s turn=%d",
+            session_id,
+            session["turn_count"] + 1,
+        )
         full_response = ""
         citations = []
         parsed_verdict = None
@@ -2638,6 +2877,7 @@ def send_turn(session_id: str):
                 f"{_accuracy_profile_prompt_guidance(effective_accuracy_profile)}"
             )
             _needs_lo_save = False
+            _lo_save_called = False
             if north_star:
                 objective_ids = north_star.get("objective_ids") or []
                 objective_lines = "\n".join(
@@ -3093,6 +3333,7 @@ def send_turn(session_id: str):
                                 tool_name == "save_learning_objectives"
                                 and tool_result.get("success")
                             ):
+                                _lo_save_called = True
                                 try:
                                     _cf_conn = get_connection()
                                     _cf_row = _get_tutor_session(_cf_conn, session_id)
@@ -3121,6 +3362,53 @@ def send_turn(session_id: str):
                             yield format_sse_chunk(full_response[i : i + max_chars])
                     else:
                         raise stream_err
+
+                # --- Auto-invocation fallback ---
+                # If the LO-save directive was active but the model never
+                # called save_learning_objectives, try to extract objectives
+                # from the model's text response and invoke the tool ourselves.
+                if _needs_lo_save and not _lo_save_called and full_response:
+                    extracted = _extract_objectives_from_text(full_response)
+                    if extracted:
+                        _LOG.info(
+                            "Auto-invoking save_learning_objectives "
+                            "(model failed to call tool): %d objectives",
+                            len(extracted),
+                        )
+                        from tutor_tools import execute_save_learning_objectives
+
+                        tool_result = execute_save_learning_objectives(
+                            {"objectives": extracted},
+                            session_id=session_id,
+                        )
+                        if tool_result.get("success"):
+                            _lo_save_called = True
+                            try:
+                                _cf_conn = get_connection()
+                                _cf_row = _get_tutor_session(
+                                    _cf_conn, session_id
+                                )
+                                _cf_conn.close()
+                                if _cf_row and _cf_row.get(
+                                    "content_filter_json"
+                                ):
+                                    _fresh = json.loads(
+                                        _cf_row["content_filter_json"]
+                                    )
+                                    if isinstance(_fresh, dict):
+                                        content_filter.update(_fresh)
+                            except Exception:
+                                pass
+                            yield format_sse_chunk(
+                                "\n\n---\n"
+                                "*Learning objectives saved automatically.*\n",
+                            )
+                        else:
+                            _LOG.warning(
+                                "Auto-invoke save_learning_objectives "
+                                "failed: %s",
+                                tool_result.get("error"),
+                            )
 
                 citations = extract_citations(full_response)
                 all_citations = citations
@@ -4446,7 +4734,7 @@ def get_material_content(material_id: int):
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, title, source_path, file_type, content, course_id "
+        "SELECT id, title, source_path, file_path, file_type, content, course_id "
         "FROM rag_docs WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
         (material_id,),
     )
@@ -4463,6 +4751,9 @@ def get_material_content(material_id: int):
 
     # Strip replacement characters so the viewer gets clean text
     content = raw_content.replace("\ufffd", "") if replacement_count else raw_content
+    asset_dir = _find_extracted_asset_dir(row["source_path"], row["file_path"])
+    content = _inject_extracted_images(content, material_id=row["id"], asset_dir=asset_dir)
+    content = _rewrite_extracted_image_links(content, material_id=row["id"], asset_dir=asset_dir)
 
     return jsonify({
         "id": row["id"],
@@ -4474,6 +4765,47 @@ def get_material_content(material_id: int):
         "extraction_lossy": ratio > 0.1,
         "replacement_ratio": round(ratio, 3),
     })
+
+
+@tutor_bp.route("/materials/<int:material_id>/asset/<path:asset_path>", methods=["GET"])
+def get_material_asset(material_id: int, asset_path: str):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, source_path, file_path FROM rag_docs "
+        "WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'",
+        (material_id,),
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Material not found"}), 404
+
+    normalized = str(asset_path or "").replace("\\", "/").split("?", 1)[0].split("#", 1)[0].strip("/")
+    if not normalized:
+        return jsonify({"error": "Invalid asset path"}), 400
+
+    requested = Path(normalized)
+    if requested.is_absolute() or ".." in requested.parts:
+        return jsonify({"error": "Invalid asset path"}), 400
+
+    asset_dir = _find_extracted_asset_dir(row["source_path"], row["file_path"])
+    if not asset_dir:
+        return jsonify({"error": "No extracted assets for this material"}), 404
+
+    root = asset_dir.resolve()
+    candidate = (asset_dir / requested).resolve()
+    try:
+        candidate.relative_to(root)
+    except Exception:
+        return jsonify({"error": "Invalid asset path"}), 400
+
+    if not candidate.exists() or not candidate.is_file():
+        return jsonify({"error": "Asset not found"}), 404
+
+    return send_file(candidate)
 
 
 # ---------------------------------------------------------------------------
@@ -4753,6 +5085,9 @@ def get_materials_sync_status(job_id: str):
 
     if not job:
         return jsonify({"error": "Sync job not found"}), 404
+
+    job["sync_result"] = _compact_sync_result_for_status(job.get("sync_result"))
+    job["embed_result"] = _compact_embed_result_for_status(job.get("embed_result"))
     return jsonify(job), 200
 
 

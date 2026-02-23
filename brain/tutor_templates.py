@@ -168,28 +168,96 @@ updated_at: {updated_at}
     return rendered.rstrip() + "\n"
 
 
+_ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+          "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"]
+
+
 def _render_north_star_markdown(payload: dict[str, Any]) -> str:
+    module_name = str(payload.get("module_name") or "Module")
+    course_name = str(payload.get("course_name") or "")
+
+    groups: list[dict[str, Any]] = list(payload.get("objective_groups") or [])
+    if not groups:
+        # Flat-list fallback: wrap all objectives in a single group
+        flat_objs = list(payload.get("objectives") or [])
+        if flat_objs:
+            groups = [{"name": module_name, "objectives": [
+                {"id": str(o), "description": str(o), "status": "active"}
+                if not isinstance(o, dict) else o
+                for o in flat_objs
+            ]}]
+
+    # Count totals
+    total = 0
+    mastered = 0
+    for g in groups:
+        for o in g.get("objectives") or []:
+            total += 1
+            if str(o.get("status") or "").lower() == "mastered":
+                mastered += 1
+
+    # Build YAML frontmatter
+    fm_lines = [
+        "note_type: north_star",
+        f"module_name: {module_name}",
+    ]
+    if course_name:
+        fm_lines.append(f"course_name: {course_name}")
+    fm_lines.extend([
+        f"updated_at: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        f"objective_count: {total}",
+        f"mastered_count: {mastered}",
+    ])
+    frontmatter = "\n".join(fm_lines)
+
+    title = f"{module_name} — Learning Objectives"
+    intro = "Themes in this section have been mapped to your course goals and study sessions."
+
+    # Build objective sections
+    sections: list[str] = []
+    for idx, group in enumerate(groups):
+        group_name = str(group.get("name") or f"Group {idx + 1}")
+        objs = list(group.get("objectives") or [])
+        group_mastered = sum(
+            1 for o in objs if str(o.get("status") or "").lower() == "mastered"
+        )
+        numeral = _ROMAN[idx] if idx < len(_ROMAN) else str(idx + 1)
+        header = f"## {numeral}. {group_name} ({group_mastered}/{len(objs)} mastered)"
+        lines = [header, ""]
+        for i, obj in enumerate(objs, 1):
+            obj_id = str(obj.get("id") or obj.get("objective_id") or f"OBJ-{i}")
+            desc = str(obj.get("description") or obj.get("title") or obj_id)
+            lines.append(f"{i}. [[{obj_id}]] {desc}")
+        sections.append("\n".join(lines))
+
+    objective_sections = "\n\n".join(sections) if sections else "(no objectives yet)"
+
+    follow_up_items = list(payload.get("follow_up_targets") or [])
+    follow_up_targets = "\n".join(f"- {t}" for t in follow_up_items) if follow_up_items else "- (auto-filled after tutor sessions)"
+
     fallback = """---
-note_type: north_star
-updated_at: {updated_at}
+{frontmatter}
 ---
 
 # {title}
 
-## Objectives
-{objectives}
+{intro}
 
-## Scope
-{scope}
+{objective_sections}
+
+## Follow-Up Targets
+
+{follow_up_targets}
 """
     template = _read_template("north_star.md.tmpl", fallback=fallback)
     rendered = template.format_map(
         _SafeFormatDict(
             {
-                "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "title": str(payload.get("title") or "North Star"),
-                "objectives": _bullets(list(payload.get("objectives") or [])),
-                "scope": str(payload.get("scope") or "").strip(),
+                "frontmatter": frontmatter,
+                "title": title,
+                "intro": intro,
+                "objective_sections": objective_sections,
+                "follow_up_targets": follow_up_targets,
             }
         )
     )
