@@ -12,6 +12,8 @@ knobs:
   guidance_level: partial_scaffold
 facilitation_prompt: 'You are running M-INT-005 (Case Walkthrough) in ENCODE stage.
 
+  The learner must actively transform clinical knowledge into case-based reasoning.
+
   Require an attempt-first case response before feedback.
 
   Use {guidance_level}: - case_prompt_only: present the case and require full learner reasoning. - partial_scaffold: allow

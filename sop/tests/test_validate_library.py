@@ -42,7 +42,7 @@ def write_error_log_csv(path: Path, header: list[str] | None = None) -> None:
 VALID_METHOD = {
     "id": "M-PRE-901",
     "name": "Test Method",
-    "category": "prepare",
+    "category": "prime",
     "description": "A test method.",
     "default_duration_min": 5,
     "energy_cost": "low",
@@ -74,10 +74,10 @@ VALID_CHAIN = {
 
 VALID_TAXONOMY = {
     "categories": {
-        "prepare": {
-            "label": "Prepare",
+        "prime": {
+            "label": "Prime",
             "prefix": "PRE",
-            "aliases": ["prep"],
+            "aliases": ["prep", "prepare"],
         },
         "retrieve": {
             "label": "Retrieve",
@@ -155,11 +155,11 @@ class TestRealLibrary:
 
     def test_real_library_method_count(self) -> None:
         methods_dir = Path(__file__).resolve().parents[1] / "library" / "methods"
-        assert len(list(methods_dir.glob("*.yaml"))) == 46
+        assert len(list(methods_dir.glob("*.yaml"))) == 47
 
     def test_real_library_chain_count(self) -> None:
         chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"
-        assert len(list(chains_dir.glob("*.yaml"))) == 15
+        assert len(list(chains_dir.glob("*.yaml"))) == 19
 
     def test_first_exposure_core_mode_coverage(self) -> None:
         chains_dir = Path(__file__).resolve().parents[1] / "library" / "chains"
@@ -372,7 +372,7 @@ class TestChainDependencyRule:
         lib = tmp_path / "sop" / "library"
         self._write_common_meta(lib)
 
-        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prepare", "control_stage": "PRIME"}
+        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prime", "control_stage": "PRIME"}
         ret = {
             **VALID_METHOD,
             "id": "M-RET-001",
@@ -404,7 +404,7 @@ class TestChainDependencyRule:
         lib = tmp_path / "sop" / "library"
         self._write_common_meta(lib)
 
-        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prepare", "control_stage": "PRIME"}
+        pre = {**VALID_METHOD, "id": "M-PRE-001", "name": "Pre", "category": "prime", "control_stage": "PRIME"}
         ret = {
             **VALID_METHOD,
             "id": "M-RET-001",

@@ -21,6 +21,7 @@ knobs:
   probe_count: 3
   confidence_scale: h_m_l
 constraints:
+  non_assessment: true
   confidence_capture_required: true
   short_window_min: 2
   short_window_max: 5
@@ -70,6 +71,8 @@ evidence:
   source: seed_methods.py
 evidence_raw: Richland et al. (2009); Kornell et al. (2009); pre-testing primes encoding even when initial answers are wrong
 facilitation_prompt: 'You are running M-PRE-007 (Pre-Test) in PRIME stage.
+
+  This method is non-assessment: do not quiz or score the learner. Pre-test items prime encoding, not grading.
 
   Execute this method card exactly and keep outputs deterministic.
 
