@@ -546,7 +546,7 @@ def extract_text(file_path: str) -> dict:
     size = path.stat().st_size
 
     metadata = {
-        "file_name": display_path.name,
+        "file_name": path.name,
         "file_size": size,
         "file_type": ext.lstrip("."),
     }
