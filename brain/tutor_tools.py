@@ -181,7 +181,6 @@ CREATE_FIGMA_DIAGRAM_SCHEMA: dict[str, Any] = {
 SAVE_LEARNING_OBJECTIVES_SCHEMA: dict[str, Any] = {
     "type": "function",
     "name": "save_learning_objectives",
-    "strict": True,
     "description": (
         "Save learning objectives to the database and rebuild the North Star note. "
         "You MUST call this tool when the student approves learning objectives. "
@@ -198,7 +197,7 @@ SAVE_LEARNING_OBJECTIVES_SCHEMA: dict[str, Any] = {
                     "properties": {
                         "id": {
                             "type": "string",
-                            "description": 'Objective code, e.g. "OBJ-HIP-FLEXORS"',
+                            "description": 'Objective code, e.g. "OBJ-1", "OBJ-2"',
                         },
                         "description": {
                             "type": "string",
@@ -206,13 +205,19 @@ SAVE_LEARNING_OBJECTIVES_SCHEMA: dict[str, Any] = {
                         },
                     },
                     "required": ["id", "description"],
-                    "additionalProperties": False,
                 },
                 "description": "List of learning objectives to save",
             },
+            "save_folder": {
+                "type": "string",
+                "description": (
+                    "Obsidian vault-relative folder path where the North Star and "
+                    "study notes should be saved. Ask the student for this before "
+                    "calling. Example: 'Study Notes/Movement Science/Construct 2/Hip and Pelvis'"
+                ),
+            },
         },
         "required": ["objectives"],
-        "additionalProperties": False,
     },
 }
 
@@ -425,12 +430,15 @@ def execute_save_learning_objectives(
     if session_id is None:
         return {"success": False, "error": "session_id is required"}
 
+    save_folder = str(arguments.get("save_folder") or "").strip() or None
+
     try:
         from brain.dashboard.api_tutor import save_learning_objectives_from_tool
 
         result = save_learning_objectives_from_tool(
             session_id=str(session_id),
             objectives=objectives,
+            save_folder=save_folder,
         )
         if result.get("success"):
             log.info(

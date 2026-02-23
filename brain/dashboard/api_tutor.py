@@ -586,13 +586,15 @@ def _collect_objectives_from_payload(raw: Any) -> list[dict[str, str]]:
             if not title:
                 continue
             raw_obj_id = item.get("objective_id") or item.get("lo_code") or item.get("id")
-            items.append(
-                {
-                    "objective_id": _normalize_objective_id(raw_obj_id, idx),
-                    "title": title,
-                    "status": _normalize_objective_status(item.get("status")),
-                }
-            )
+            obj: dict[str, str] = {
+                "objective_id": _normalize_objective_id(raw_obj_id, idx),
+                "title": title,
+                "status": _normalize_objective_status(item.get("status")),
+            }
+            group = str(item.get("group") or "").strip()
+            if group:
+                obj["group"] = group
+            items.append(obj)
     return items
 
 
@@ -610,7 +612,7 @@ def _collect_objectives_from_db(
     if module_id:
         cur.execute(
             """
-            SELECT lo_code, title, status
+            SELECT lo_code, title, status, group_name
             FROM learning_objectives
             WHERE course_id = ? AND module_id = ?
             ORDER BY id ASC
@@ -621,7 +623,7 @@ def _collect_objectives_from_db(
     else:
         cur.execute(
             """
-            SELECT lo_code, title, status
+            SELECT lo_code, title, status, group_name
             FROM learning_objectives
             WHERE course_id = ?
             ORDER BY id ASC
@@ -637,13 +639,15 @@ def _collect_objectives_from_db(
         title = str(row["title"] or "").strip()
         if not title:
             continue
-        items.append(
-            {
-                "objective_id": _normalize_objective_id(row["lo_code"], idx),
-                "title": title,
-                "status": _normalize_objective_status(row["status"]),
-            }
-        )
+        obj: dict[str, str] = {
+            "objective_id": _normalize_objective_id(row["lo_code"], idx),
+            "title": title,
+            "status": _normalize_objective_status(row["status"]),
+        }
+        group = str(row["group_name"] or "").strip()
+        if group:
+            obj["group"] = group
+        items.append(obj)
     return items
 
 
@@ -766,12 +770,11 @@ def _extract_objectives_from_text(text: str) -> list[dict] | None:
         return None
 
     objectives: list[dict] = []
-    for item_text, group in items:
-        desc = re.sub(r"^OBJ-\S+\s*[—\-–:]\s*", "", item_text).strip()
+    for idx, (item_text, group) in enumerate(items, 1):
+        desc = re.sub(r"^OBJ-\S+\s*[\u2014\-\u2013:]\s*", "", item_text).strip()
         if not desc:
             desc = item_text
-        slug = _objective_slug(desc)
-        obj: dict[str, str] = {"id": slug, "description": desc}
+        obj: dict[str, str] = {"id": f"OBJ-{idx}", "description": desc}
         if group:
             obj["group"] = group
         objectives.append(obj)
@@ -816,11 +819,15 @@ def _ensure_north_star_context(
     learning_objectives: Any,
     source_ids: list[int],
     force_refresh: bool = False,
+    path_override: Optional[str] = None,
 ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
     """
     Hard-gate North Star flow:
     - If exists: review and update only on detected objective changes.
     - If missing: build before planning.
+
+    If *path_override* is a vault-relative folder path, the North Star file
+    is saved there instead of the auto-generated location.
     """
     # Local import prevents blueprint import cycles at module import time.
     from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
@@ -828,15 +835,34 @@ def _ensure_north_star_context(
     derived_module_name = _sanitize_module_name(module_name or topic or f"Module-{course_id or 'General'}")
     derived_subtopic = _sanitize_path_segment(topic or derived_module_name, fallback=derived_module_name)
     derived_course = _resolve_class_label(course_id)
-    north_star_path = _canonical_north_star_path(
-        course_label=derived_course,
-        module_or_week=derived_module_name,
-        subtopic=derived_subtopic,
-    )
 
-    objectives = _collect_objectives_from_payload(learning_objectives)
-    if not objectives:
-        objectives = _collect_objectives_from_db(course_id, module_id)
+    if path_override:
+        # User-provided vault folder — use directly
+        clean = path_override.strip().rstrip("/").rstrip("\\")
+        north_star_path = f"{clean}/_North_Star.md"
+    else:
+        north_star_path = _canonical_north_star_path(
+            course_label=derived_course,
+            module_or_week=derived_module_name,
+            subtopic=derived_subtopic,
+        )
+
+    # Always merge payload objectives with DB objectives so the North Star
+    # accumulates across topics (e.g., Hip + Knee in the same construct).
+    payload_objectives = _collect_objectives_from_payload(learning_objectives)
+    db_objectives = _collect_objectives_from_db(course_id, module_id)
+
+    # Merge: DB provides the base, payload overrides matching IDs
+    seen_ids: set[str] = set()
+    objectives: list[dict[str, str]] = []
+    for obj in payload_objectives:
+        oid = obj["objective_id"]
+        seen_ids.add(oid)
+        objectives.append(obj)
+    for obj in db_objectives:
+        if obj["objective_id"] not in seen_ids:
+            objectives.append(obj)
+
     if not objectives:
         fallback_title = topic.strip() or derived_module_name
         objectives = [
@@ -886,18 +912,34 @@ def _ensure_north_star_context(
             else:
                 status = "reviewed"
         else:
-            new_content = _build_north_star_markdown(
-                module_name=derived_module_name,
-                course_name=derived_course,
-                topic=topic,
-                objectives=objectives,
-                source_ids=source_ids,
+            # File missing. If real objectives exist but no path_override was
+            # given, the user may have deleted the file intentionally (e.g. to
+            # relocate it).  Signal "needs_path" so the turn handler re-asks.
+            has_real = any(
+                o["objective_id"] != "OBJ-UNMAPPED" for o in objectives
             )
-            save_res = obsidian_save_file(north_star_path, new_content)
-            if not save_res.get("success"):
-                return None, f"North Star build failed: {save_res.get('error', 'unknown error')}"
-            current_content = new_content
-            status = "built"
+            if has_real and not path_override:
+                current_content = _build_north_star_markdown(
+                    module_name=derived_module_name,
+                    course_name=derived_course,
+                    topic=topic,
+                    objectives=objectives,
+                    source_ids=source_ids,
+                )
+                status = "needs_path"
+            else:
+                new_content = _build_north_star_markdown(
+                    module_name=derived_module_name,
+                    course_name=derived_course,
+                    topic=topic,
+                    objectives=objectives,
+                    source_ids=source_ids,
+                )
+                save_res = obsidian_save_file(north_star_path, new_content)
+                if not save_res.get("success"):
+                    return None, f"North Star build failed: {save_res.get('error', 'unknown error')}"
+                current_content = new_content
+                status = "built"
 
     objective_links = [_wikilink(o["objective_id"]) for o in objectives]
     title_links = [_wikilink(o["title"]) for o in objectives if o.get("title")]
@@ -1114,6 +1156,7 @@ def save_learning_objectives_from_tool(
     *,
     session_id: str,
     objectives: list[dict[str, str]],
+    save_folder: Optional[str] = None,
 ) -> dict[str, Any]:
     """Persist approved learning objectives and rebuild the North Star note.
 
@@ -1122,6 +1165,9 @@ def save_learning_objectives_from_tool(
       2. INSERT each objective into ``learning_objectives`` (upsert on lo_code+course_id).
       3. Rebuild the North Star note via ``_ensure_north_star_context(force_refresh=True)``.
       4. Update ``content_filter_json`` so ``_session_has_real_objectives()`` returns True.
+
+    If *save_folder* is provided (vault-relative path), the North Star and future
+    notes are saved there instead of the auto-generated path.
     """
     conn = get_connection()
     try:
@@ -1151,6 +1197,8 @@ def save_learning_objectives_from_tool(
         source_ids = content_filter.get("source_ids") or []
 
         # --- 2. INSERT into learning_objectives (upsert by course_id+lo_code) ---
+        # group_name = session topic so objectives are grouped by topic in North Star
+        group_name = str(topic or "").strip() or None
         now = datetime.now().isoformat()
         inserted_codes: list[str] = []
         cur = conn.cursor()
@@ -1167,37 +1215,31 @@ def save_learning_objectives_from_tool(
             existing = cur.fetchone()
             if existing:
                 cur.execute(
-                    "UPDATE learning_objectives SET title = ?, updated_at = ? WHERE id = ?",
-                    (title, now, existing[0] if isinstance(existing, tuple) else existing["id"]),
+                    "UPDATE learning_objectives SET title = ?, group_name = COALESCE(?, group_name), updated_at = ? WHERE id = ?",
+                    (title, group_name, now, existing[0] if isinstance(existing, tuple) else existing["id"]),
                 )
             else:
                 cur.execute(
                     """INSERT INTO learning_objectives
-                       (course_id, module_id, lo_code, title, status, created_at, updated_at)
-                       VALUES (?, ?, ?, ?, 'active', ?, ?)""",
-                    (course_id, module_id, lo_code, title, now, now),
+                       (course_id, module_id, lo_code, title, status, group_name, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, 'active', ?, ?, ?)""",
+                    (course_id, module_id, lo_code, title, group_name, now, now),
                 )
             inserted_codes.append(lo_code)
         conn.commit()
 
-        # --- 3. Rebuild North Star ---
-        lo_dicts = [
-            {
-                "objective_id": code,
-                "title": obj.get("description", code),
-                "status": "active",
-                "group": obj.get("group", ""),
-            }
-            for code, obj in zip(inserted_codes, objectives)
-        ]
+        # --- 3. Rebuild North Star from ALL objectives in DB (not just this batch) ---
+        # Pass learning_objectives=None so _ensure_north_star_context merges from DB,
+        # picking up objectives from previous sessions (e.g., Hip + Knee).
         ns_ctx, ns_err = _ensure_north_star_context(
             course_id=course_id,
             module_id=module_id,
             module_name=module_name,
             topic=topic,
-            learning_objectives=lo_dicts,
+            learning_objectives=None,
             source_ids=source_ids,
             force_refresh=True,
+            path_override=save_folder,
         )
         if ns_err:
             _LOG.warning("North Star rebuild warning: %s", ns_err)
@@ -2540,6 +2582,7 @@ def create_session():
                 "Selector policy failed, continuing without", exc_info=True
             )
 
+    vault_folder = str((content_filter or {}).get("vault_folder") or "").strip() or None
     north_star_ctx, north_star_error = _ensure_north_star_context(
         course_id=int(course_id) if course_id is not None else None,
         module_id=module_id,
@@ -2548,6 +2591,7 @@ def create_session():
         learning_objectives=learning_objectives,
         source_ids=source_ids,
         force_refresh=north_star_refresh,
+        path_override=vault_folder,
     )
     if north_star_error:
         return jsonify({"error": north_star_error}), 500
@@ -3210,22 +3254,46 @@ def send_turn(session_id: str):
                 )
                 _needs_lo_save = (
                     not _session_has_real_objectives(north_star) and turn_number <= 5
+                ) or (
+                    north_star.get("status") == "needs_path" and turn_number <= 8
                 )
-                if _needs_lo_save:
+                _is_needs_path = north_star.get("status") == "needs_path"
+                if _needs_lo_save and _is_needs_path:
+                    # Objectives exist in DB but North Star file was deleted
+                    system_prompt += (
+                        "\n\n## North Star File Missing\n"
+                        "The North Star note was deleted from Obsidian but learning objectives "
+                        "are still saved in the database. Before continuing, ask the student "
+                        "where to re-save the North Star.\n"
+                        '1. Ask: "Your North Star file was removed. '
+                        'Where should I save your learning objectives? '
+                        'Example: Study Notes/Movement Science/Construct 2/Hip and Pelvis"\n'
+                        "2. Once the student provides a folder, call `save_learning_objectives` "
+                        "with the existing objectives and the new `save_folder`.\n"
+                        "3. If the student says skip or default, call `save_learning_objectives` "
+                        "without `save_folder` to use the auto-generated path."
+                    )
+                elif _needs_lo_save:
                     system_prompt += (
                         "\n\n## Missing Learning Objectives\n"
                         "No learning objectives are set for this module yet. "
                         "You MUST resolve this before teaching content.\n"
                         '1. Ask the student: "I don\'t have learning objectives for this module yet. '
                         'Are they in your loaded study materials, or would you like to type them in?"\n'
-                        "2. If in materials: scan the Retrieved Study Materials for explicit learning objectives, "
-                        "chapter goals, or key competencies. Propose 3-8 objectives in format: OBJ-KEYWORD \u2014 Description\n"
-                        "3. If student types them: acknowledge and format them the same way\n"
+                        "2. If in materials: scan the Retrieved Study Materials for ALL explicit learning objectives, "
+                        "chapter goals, or key competencies. List EVERY objective found — do not summarize, combine, or truncate. "
+                        "Number them sequentially: OBJ-1, OBJ-2, OBJ-3, etc. Format: OBJ-N \u2014 Full objective text\n"
+                        "3. If student types them: acknowledge and number them the same way\n"
                         "4. If student says skip: proceed without objectives (use general teaching mode)\n"
-                        '5. Ask for confirmation before continuing: "Are these objectives correct? [Approve / Edit / Skip]"\n'
-                        "6. **IMPORTANT**: Once the student approves, you MUST call the `save_learning_objectives` tool "
-                        "to persist them. Pass an array of objectives, each with an `id` (e.g. \"OBJ-HIP-FLEXORS\") "
-                        "and a `description` (the full objective text). Do NOT skip this step or say you cannot save them."
+                        '5. Ask for confirmation: "Are these objectives correct? [Approve / Edit / Skip]"\n'
+                        "6. After approval, ask where to save in Obsidian: "
+                        '"What folder should I save these to? Example: '
+                        'Study Notes/Movement Science/Construct 2/Hip and Pelvis"\n'
+                        "7. **IMPORTANT**: Once approved AND folder confirmed, call `save_learning_objectives`. "
+                        "Pass `objectives` (array with `id` like \"OBJ-1\" and `description`) "
+                        "and `save_folder` (the vault path the student provided). "
+                        "If the student says 'default' or doesn't care, omit save_folder. "
+                        "Do NOT skip this step or say you cannot save them."
                     )
             if enforce_reference_bounds and reference_targets:
                 bounded_targets = "\n".join(f"- {t}" for t in reference_targets[:20])

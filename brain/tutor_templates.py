@@ -210,10 +210,11 @@ def _render_north_star_markdown(payload: dict[str, Any]) -> str:
     ])
     frontmatter = "\n".join(fm_lines)
 
-    title = f"{module_name} — Learning Objectives"
-    intro = "Themes in this section have been mapped to your course goals and study sessions."
+    title = f"{module_name} \u2014 Learning Objectives"
+    intro = f"**{total} objectives** \u2014 {mastered} mastered"
 
     # Build objective sections
+    single_group = len(groups) == 1
     sections: list[str] = []
     for idx, group in enumerate(groups):
         group_name = str(group.get("name") or f"Group {idx + 1}")
@@ -221,9 +222,11 @@ def _render_north_star_markdown(payload: dict[str, Any]) -> str:
         group_mastered = sum(
             1 for o in objs if str(o.get("status") or "").lower() == "mastered"
         )
-        numeral = _ROMAN[idx] if idx < len(_ROMAN) else str(idx + 1)
-        header = f"## {numeral}. {group_name} ({group_mastered}/{len(objs)} mastered)"
-        lines = [header, ""]
+        lines: list[str] = []
+        if not single_group:
+            numeral = _ROMAN[idx] if idx < len(_ROMAN) else str(idx + 1)
+            header = f"## {numeral}. {group_name} ({group_mastered}/{len(objs)} mastered)"
+            lines.extend([header, ""])
         for i, obj in enumerate(objs, 1):
             obj_id = str(obj.get("id") or obj.get("objective_id") or f"OBJ-{i}")
             desc = str(obj.get("description") or obj.get("title") or obj_id)

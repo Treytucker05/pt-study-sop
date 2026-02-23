@@ -1,6 +1,6 @@
 import Layout from "@/components/layout";
 import { Card } from "@/components/ui/card";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
@@ -91,6 +91,7 @@ export default function Tutor() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [hasRestored, setHasRestored] = useState(false);
+  const [restoredTurns, setRestoredTurns] = useState<{ question: string; answer: string | null }[] | undefined>();
 
   // Filter state
   const [courseId, setCourseId] = useState<number | undefined>();
@@ -117,6 +118,13 @@ export default function Tutor() {
   const [chainBlocks, setChainBlocks] = useState<TutorTemplateChain["blocks"]>([]);
   const [customBlockIds, setCustomBlockIds] = useState<number[]>([]);
   const [topic, setTopic] = useState("");
+
+  // Vault save folder
+  const [vaultFolder, setVaultFolder] = useState<string>(() => {
+    try {
+      return localStorage.getItem("tutor.vault_folder.v1") || "";
+    } catch { return ""; }
+  });
 
   // Vault file picker
   const [selectedPaths, setSelectedPaths] = useState<string[]>(() => {
@@ -188,6 +196,12 @@ export default function Tutor() {
 
   useEffect(() => {
     try {
+      localStorage.setItem("tutor.vault_folder.v1", vaultFolder);
+    } catch { /* ignore */ }
+  }, [vaultFolder]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem(
         tutorWizardStorageKey,
         JSON.stringify({
@@ -215,6 +229,15 @@ export default function Tutor() {
     objectiveScope,
     selectedPaths,
   ]);
+
+  // Clear material selection when course changes (skip initial mount)
+  const prevCourseRef = useRef(courseId);
+  useEffect(() => {
+    if (prevCourseRef.current !== courseId) {
+      prevCourseRef.current = courseId;
+      setSelectedMaterials([]);
+    }
+  }, [courseId]);
 
   // Recent sessions
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({
@@ -285,6 +308,12 @@ export default function Tutor() {
         setArtifacts([]);
       }
     }
+    // Hydrate chat messages from server turns so navigation doesn't lose history
+    if (session.turns && session.turns.length > 0) {
+      setRestoredTurns(session.turns.map((t) => ({ question: t.question, answer: t.answer })));
+    } else {
+      setRestoredTurns(undefined);
+    }
     try {
       localStorage.setItem(tutorActiveSessionKey, session.session_id);
     } catch {
@@ -350,6 +379,7 @@ export default function Tutor() {
         content_filter: {
           ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
           ...(selectedMaterials.length > 0 ? { material_ids: selectedMaterials } : {}),
+          ...(vaultFolder.trim() ? { vault_folder: vaultFolder.trim() } : {}),
           accuracy_profile: accuracyProfile,
           objective_scope: objectiveScope,
           web_search: true,
@@ -363,8 +393,11 @@ export default function Tutor() {
         /* localStorage write failed — ignore */
       }
       setStartedAt(session.started_at);
+      setRestoredTurns(undefined);
       setArtifacts([]);
       setTurnCount(0);
+      // Force-refresh materials list so chat sidebar is up-to-date
+      queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });
       setCurrentBlockIndex(session.current_block_index ?? 0);
       setShowSetup(false);
 
@@ -391,10 +424,11 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, topic, selectedPaths, selectedMaterials, accuracyProfile, objectiveScope, chainId, customBlockIds, queryClient]);
+  }, [courseId, topic, selectedPaths, selectedMaterials, vaultFolder, accuracyProfile, objectiveScope, chainId, customBlockIds, queryClient]);
 
   const clearActiveSessionState = useCallback(() => {
     setActiveSessionId(null);
+    setRestoredTurns(undefined);
     setArtifacts([]);
     setTurnCount(0);
     setStartedAt(null);
@@ -821,10 +855,21 @@ export default function Tutor() {
                       setCustomBlockIds={setCustomBlockIds}
                       objectiveScope={objectiveScope}
                       setObjectiveScope={setObjectiveScope}
+                      vaultFolder={vaultFolder}
+                      setVaultFolder={setVaultFolder}
                       onStartSession={startSession}
                       isStarting={isStarting}
                       recentSessions={recentSessions}
                       onResumeSession={(id) => { resumeSession(id); setShowSetup(false); }}
+                      onDeleteSession={async (id) => {
+                        try {
+                          await api.tutor.deleteSession(id);
+                          queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+                          toast.success("Session deleted");
+                        } catch {
+                          toast.error("Failed to delete session");
+                        }
+                      }}
                     />
                   </div>
                 </div>
@@ -841,6 +886,7 @@ export default function Tutor() {
                       onSelectedMaterialIdsChange={setSelectedMaterials}
                       onMaterialsChanged={refreshChatMaterials}
                       onArtifactCreated={handleArtifactCreated}
+                      initialTurns={restoredTurns}
                       onTurnComplete={(masteryUpdate) => {
                         setTurnCount((prev) => prev + 1);
                         if (masteryUpdate) {

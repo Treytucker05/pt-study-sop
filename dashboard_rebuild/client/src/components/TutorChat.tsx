@@ -79,6 +79,7 @@ interface TutorChatProps {
   onMaterialsChanged?: () => Promise<void> | void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
   onTurnComplete?: (masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean }) => void;
+  initialTurns?: { question: string; answer: string | null }[];
 }
 
 type ArtifactType = "note" | "card" | "map";
@@ -447,6 +448,7 @@ export function TutorChat({
   onMaterialsChanged,
   onArtifactCreated,
   onTurnComplete,
+  initialTurns,
 }: TutorChatProps) {
   const vaultSelectionKey = "tutor.chat.selected_vault_paths.v1";
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -495,13 +497,25 @@ export function TutorChat({
   }, [sessionId]);
 
   // Reset transient chat state when session context changes.
+  // If initialTurns are provided (session restore), hydrate messages from them.
   useEffect(() => {
     streamAbortRef.current?.abort();
     streamAbortRef.current = null;
-    setMessages([]);
     setInput("");
     setIsStreaming(false);
-  }, [sessionId]);
+    if (initialTurns && initialTurns.length > 0) {
+      const restored: ChatMessage[] = [];
+      for (const turn of initialTurns) {
+        restored.push({ role: "user", content: turn.question });
+        if (turn.answer) {
+          restored.push({ role: "assistant", content: turn.answer });
+        }
+      }
+      setMessages(restored);
+    } else {
+      setMessages([]);
+    }
+  }, [sessionId, initialTurns]);
 
   useEffect(() => {
     try {

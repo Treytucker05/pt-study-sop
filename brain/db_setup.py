@@ -731,6 +731,16 @@ def init_database():
         # Column might not exist in some edge cases; ignore.
         pass
 
+    # Add group_name to learning_objectives for North Star topic grouping
+    cursor.execute("PRAGMA table_info(learning_objectives)")
+    lo_cols = {col[1] for col in cursor.fetchall()}
+    if "group_name" not in lo_cols:
+        try:
+            cursor.execute("ALTER TABLE learning_objectives ADD COLUMN group_name TEXT")
+            print("[INFO] Added 'group_name' column to learning_objectives table")
+        except sqlite3.OperationalError:
+            pass
+
     # Indexes for common queries on sessions
     cursor.execute(
         """

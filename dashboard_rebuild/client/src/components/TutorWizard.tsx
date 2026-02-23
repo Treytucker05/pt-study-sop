@@ -43,6 +43,7 @@ import {
   Globe,
   Wand2,
   Cpu,
+  X,
 } from "lucide-react";
 
 // ─── Constants ───
@@ -64,10 +65,13 @@ interface TutorWizardProps {
   setCustomBlockIds: (ids: number[]) => void;
   objectiveScope: TutorObjectiveScope;
   setObjectiveScope: (scope: TutorObjectiveScope) => void;
+  vaultFolder: string;
+  setVaultFolder: (folder: string) => void;
   onStartSession: () => void;
   isStarting: boolean;
   recentSessions: TutorSessionSummary[];
   onResumeSession: (id: string) => void;
+  onDeleteSession?: (id: string) => Promise<void>;
 }
 
 // ─── Component ───
@@ -85,10 +89,13 @@ export function TutorWizard({
   setCustomBlockIds,
   objectiveScope,
   setObjectiveScope,
+  vaultFolder,
+  setVaultFolder,
   onStartSession,
   isStarting,
   recentSessions,
   onResumeSession,
+  onDeleteSession,
 }: TutorWizardProps) {
   const wizardProgressKey = "tutor.wizard.progress.v1";
   const [step, setStep] = useState(0);
@@ -202,6 +209,8 @@ export function TutorWizard({
               setObjectiveScope={setObjectiveScope}
               selectedMaterials={selectedMaterials}
               setSelectedMaterials={setSelectedMaterials}
+              vaultFolder={vaultFolder}
+              setVaultFolder={setVaultFolder}
             />
           )}
 
@@ -248,26 +257,33 @@ export function TutorWizard({
             <div className="flex items-center gap-2 overflow-x-auto">
               <span className="font-arcade text-xs text-primary/50 shrink-0">RECENT:</span>
               {recentSessions.slice(0, 5).map((s) => (
-                <button
+                <div
                   key={s.session_id}
-                  onClick={() => onResumeSession(s.session_id)}
-                  className="shrink-0 border-2 border-primary/20 hover:border-primary/50 hover:bg-black/40 px-2 py-0.5 font-arcade text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 shadow-none"
+                  className="shrink-0 border-2 border-primary/20 hover:border-primary/50 hover:bg-black/40 font-arcade text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center shadow-none"
                 >
-                  {(() => {
-                    const displayMode = s.mode || "Core";
-                    const displayTopic = s.topic || displayMode || "Tutor Session";
-                    return (
-                      <>
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${s.status === "active" ? "bg-green-400" : "bg-muted-foreground/40"
-                            }`}
-                        />
-                        <span className="truncate max-w-[80px]">{displayTopic}</span>
-                        <span className="text-muted-foreground/50">{s.turn_count}t</span>
-                      </>
-                    );
-                  })()}
-                </button>
+                  <button
+                    onClick={() => onResumeSession(s.session_id)}
+                    className="px-2 py-0.5 flex items-center gap-1.5"
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${s.status === "active" ? "bg-green-400" : "bg-muted-foreground/40"}`}
+                    />
+                    <span className="truncate max-w-[80px]">{s.topic || s.mode || "Session"}</span>
+                    <span className="text-muted-foreground/50">{s.turn_count}t</span>
+                  </button>
+                  {onDeleteSession && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteSession(s.session_id);
+                      }}
+                      className="px-1 py-0.5 text-muted-foreground/40 hover:text-red-400 transition-colors"
+                      title="Delete session"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           ) : (
@@ -301,6 +317,8 @@ function StepCourseAndMaterials({
   setObjectiveScope,
   selectedMaterials,
   setSelectedMaterials,
+  vaultFolder,
+  setVaultFolder,
 }: {
   courses: TutorContentSources["courses"];
   courseId: number | undefined;
@@ -311,6 +329,8 @@ function StepCourseAndMaterials({
   setObjectiveScope: (scope: TutorObjectiveScope) => void;
   selectedMaterials: number[];
   setSelectedMaterials: (ids: number[]) => void;
+  vaultFolder: string;
+  setVaultFolder: (folder: string) => void;
 }) {
   return (
     <div className={`${SECTION_GAP} w-full max-w-full min-w-0`}>
@@ -404,6 +424,25 @@ function StepCourseAndMaterials({
             />
           </div>
         </ScrollArea>
+      </Card>
+
+      {/* Vault save folder */}
+      <Card className="bg-black/40 border-2 border-primary rounded-none">
+        <div className="px-3 py-2 border-b border-primary/30">
+          <span className={TEXT_SECTION_LABEL}>OBSIDIAN SAVE FOLDER</span>
+        </div>
+        <div className="p-3">
+          <input
+            type="text"
+            value={vaultFolder}
+            onChange={(e) => setVaultFolder(e.target.value)}
+            placeholder="e.g., Study Notes/Movement Science/Construct 2/Hip and Pelvis"
+            className={`${INPUT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
+          />
+          <div className={`${TEXT_MUTED} mt-2 text-xs`}>
+            Vault-relative folder for North Star and study notes. Leave blank for auto-generated path.
+          </div>
+        </div>
       </Card>
     </div>
   );
