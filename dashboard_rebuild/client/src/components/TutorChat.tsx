@@ -100,8 +100,28 @@ function _basename(path: string): string {
 }
 
 function normalizeVaultItems(payload: unknown): VaultSelectable[] {
-  const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
   const input = payload as Record<string, unknown> | unknown[];
+  const normalized: VaultSelectable[] = [];
+  const seen = new Set<string>();
+
+  const pathsObj =
+    !Array.isArray(input) && input && typeof input === "object"
+      ? (input as Record<string, unknown>).paths
+      : undefined;
+  if (pathsObj && typeof pathsObj === "object" && !Array.isArray(pathsObj)) {
+    for (const [noteName, fullPathRaw] of Object.entries(pathsObj as Record<string, unknown>)) {
+      const fullPath = String(fullPathRaw || "").trim();
+      if (!fullPath || seen.has(fullPath)) continue;
+      seen.add(fullPath);
+      normalized.push({
+        path: fullPath,
+        type: "file",
+        label: String(noteName || _basename(fullPath)).trim() || _basename(fullPath),
+      });
+    }
+  }
+
+  const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
   const rawItems = Array.isArray(input)
     ? input
     : [
@@ -109,9 +129,7 @@ function normalizeVaultItems(payload: unknown): VaultSelectable[] {
         ...asArray((input as Record<string, unknown>)?.["files"]),
         ...asArray((input as Record<string, unknown>)?.["entries"]),
       ];
-
   const out: VaultSelectable[] = [];
-  const seen = new Set<string>();
   for (const item of rawItems) {
     if (!item || typeof item !== "object") continue;
     const rec = item as Record<string, unknown>;
@@ -129,7 +147,8 @@ function normalizeVaultItems(payload: unknown): VaultSelectable[] {
       label: _basename(path),
     });
   }
-  return out.sort((a, b) => a.path.localeCompare(b.path));
+  const merged = [...normalized, ...out];
+  return merged.sort((a, b) => a.path.localeCompare(b.path));
 }
 
 function parseArtifactCommand(message: string): { type: ArtifactType | null; title: string } {
@@ -989,6 +1008,7 @@ export function TutorChat({
             onChange={(e) => void handleUploadFiles(e.target.files)}
           />
           <div className="border-2 border-primary/30 bg-black/50 p-2 space-y-2">
+            <div className="font-arcade text-[10px] text-muted-foreground tracking-wider">ACTIVE SOURCES</div>
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge variant="outline" className="rounded-none h-6 text-[10px] font-arcade border-primary/40">
                 MAT {selectedMaterialIds.length}
@@ -1108,7 +1128,7 @@ export function TutorChat({
 
       {isSourcesOpen && (
         <div className="absolute inset-0 z-40 bg-black/50">
-          <aside className="absolute right-0 top-0 h-full w-full max-w-md border-l-2 border-primary bg-black/95 flex flex-col">
+          <aside className="absolute left-0 top-0 h-full w-full max-w-md border-r-2 border-primary bg-black/95 flex flex-col">
             <div className="flex items-center gap-2 p-3 border-b border-primary/30">
               <div className="font-arcade text-xs text-primary tracking-wider">SOURCES</div>
               <Badge variant="outline" className="rounded-none h-5 px-1.5 text-[10px] border-primary/40">
@@ -1318,6 +1338,19 @@ export function TutorChat({
                       <div><span className="text-foreground">Subtopic:</span> {northStarSummary?.subtopic_name || "N/A"}</div>
                       <div><span className="text-foreground">Status:</span> {northStarSummary?.status || "unknown"}</div>
                       <div><span className="text-foreground">Path:</span> {northStarSummary?.path || "N/A"}</div>
+                    </div>
+                  </div>
+                  <div className="border border-primary/20 p-2">
+                    <div className="font-arcade text-[10px] text-primary mb-2">OBJECTIVES</div>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {(northStarSummary?.objective_ids || []).slice(0, 80).map((oid) => (
+                        <div key={oid} className="text-xs font-terminal text-muted-foreground border border-secondary/30 px-2 py-1">
+                          {oid}
+                        </div>
+                      ))}
+                      {(!northStarSummary?.objective_ids || northStarSummary.objective_ids.length === 0) && (
+                        <div className="text-xs font-terminal text-muted-foreground">No objective IDs loaded.</div>
+                      )}
                     </div>
                   </div>
                   <div className="border border-primary/20 p-2">

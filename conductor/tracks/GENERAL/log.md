@@ -8,10 +8,11 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 - Implemented a slideout `SOURCES` sidebar directly in `dashboard_rebuild/client/src/components/TutorChat.tsx` (no shared page/backend edits):
   - Tabs: `MATERIALS`, `VAULT`, `NORTH STAR`
+  - Slideout anchored to the **left** side of tutor chat.
   - `MATERIALS`: per-material on/off toggles, add-file button, drag/drop upload, all/none actions
-  - `VAULT`: loads Obsidian vault index, search/filter, file/folder multi-select toggles for per-turn scope
-  - `NORTH STAR`: displays active North Star metadata and reference targets from session context
-- Added an `Active Sources` strip above chat input (materials, vault count, North Star status + selected chips).
+  - `VAULT`: loads Obsidian vault index, search/filter, file/folder multi-select toggles for per-turn scope; parser now supports backend `notes + paths` index shape.
+  - `NORTH STAR`: displays active North Star metadata, objective IDs, and reference targets from session context
+- Added a labeled `Active Sources` strip above chat input (materials, vault count, North Star status + selected chips).
 - Per-turn tutor requests now include selected vault paths in `content_filter.folders` from chat scope.
 - Validation:
   - `npm run build` (frontend) -> success
