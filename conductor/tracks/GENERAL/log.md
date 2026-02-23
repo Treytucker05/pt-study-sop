@@ -1175,3 +1175,13 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - `python -m pytest brain/tests/test_video_ingest_local.py brain/tests/test_video_ingest_bridge.py brain/tests/test_video_process_api.py` -> 6 passed
   - `python -m pytest brain/tests/` -> 677 passed
   - `cd dashboard_rebuild && npm run build` -> PASS
+## 2026-02-23 - Tutor planning board and track status normalization
+
+- Reworked `docs/root/TUTOR_TODO.md` into an execution board with:
+  - explicit active sprint lanes,
+  - ordered PRIME hardening tasks,
+  - explicit chain-integrity tasks,
+  - blocking tasks for video-path completion.
+- Updated `conductor/tracks.md` with current active-workstream line:
+  - `Tutor PRIME hardening + transfer integrity`
+- Kept remaining historical track entries unchanged for audit continuity.
