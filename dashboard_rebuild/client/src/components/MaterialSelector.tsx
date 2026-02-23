@@ -10,7 +10,7 @@ import {
 } from "@/lib/theme";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FileText, Upload, Trash2, ArrowRightLeft } from "lucide-react";
+import { Loader2, FileText, Upload, Trash2, ArrowRightLeft, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { Course } from "@shared/schema";
 
@@ -65,6 +65,7 @@ export function MaterialSelector({
   const [deleting, setDeleting] = useState(false);
   const [moving, setMoving] = useState(false);
   const [processingVideos, setProcessingVideos] = useState(false);
+  const [enrichingVideos, setEnrichingVideos] = useState(false);
   const [videoJobsByMaterial, setVideoJobsByMaterial] = useState<Record<number, MaterialVideoJobState>>({});
 
   const { data: courses = [] } = useQuery<Course[]>({
@@ -102,6 +103,12 @@ export function MaterialSelector({
       .filter((m) => selected.has(m.id) && (m.file_type || "").toLowerCase() === "mp4")
       .map((m) => m.id);
   }, [courseMaterials, selectedMaterials]);
+
+  const enrichableVideoIds = useMemo(() => {
+    return selectedVideoIds.filter(
+      (id) => videoJobsByMaterial[id]?.status === "completed",
+    );
+  }, [selectedVideoIds, videoJobsByMaterial]);
 
   const handleUpload = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
@@ -211,6 +218,34 @@ export function MaterialSelector({
       toast.success(`Started video processing for ${started} item${started > 1 ? "s" : ""}`);
     }
   }, [selectedVideoIds]);
+
+  const handleEnrichSelectedVideos = useCallback(async () => {
+    if (enrichableVideoIds.length === 0) {
+      toast.error("No processed MP4s selected for enrichment");
+      return;
+    }
+
+    setEnrichingVideos(true);
+    let enriched = 0;
+    for (const materialId of enrichableVideoIds) {
+      try {
+        const result = await api.tutor.enrichVideoMaterial(materialId);
+        if (result.ok) {
+          enriched++;
+        } else {
+          toast.error(`Enrichment failed for material ${materialId}: ${result.error || "unknown"}`);
+        }
+      } catch {
+        toast.error(`Enrichment request failed for material ${materialId}`);
+      }
+    }
+
+    setEnrichingVideos(false);
+    if (enriched > 0) {
+      toast.success(`Enriched ${enriched} video${enriched > 1 ? "s" : ""}`);
+      queryClient.invalidateQueries({ queryKey: ["tutor-materials"] });
+    }
+  }, [enrichableVideoIds, queryClient]);
 
   useEffect(() => {
     const activeEntries = Object.entries(videoJobsByMaterial).filter(
@@ -457,6 +492,23 @@ export function MaterialSelector({
                   <Upload className="w-3 h-3" />
                 )}
                 Process MP4 ({selectedVideoIds.length})
+              </button>
+            )}
+            {enrichableVideoIds.length > 0 && (
+              <button
+                type="button"
+                onClick={handleEnrichSelectedVideos}
+                disabled={enrichingVideos}
+                className={`flex items-center gap-1 px-1.5 py-0.5 font-terminal text-xs text-purple-300 hover:text-purple-200 hover:bg-purple-500/10 border border-purple-500/30 transition-colors ${
+                  enrichingVideos ? "opacity-50 cursor-wait" : ""
+                }`}
+              >
+                {enrichingVideos ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3 h-3" />
+                )}
+                Enrich ({enrichableVideoIds.length})
               </button>
             )}
             {/* Move to course */}

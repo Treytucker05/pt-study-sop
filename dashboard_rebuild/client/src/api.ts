@@ -655,6 +655,11 @@ export const api = {
       }),
     getVideoProcessStatus: (jobId: string) =>
       request<TutorVideoJobStatus>(`/tutor/materials/video/status/${encodeURIComponent(jobId)}`),
+    enrichVideoMaterial: (materialId: number, opts?: { mode?: string }) =>
+      request<TutorVideoEnrichResult>("/tutor/materials/video/enrich", {
+        method: "POST",
+        body: JSON.stringify({ material_id: materialId, ...(opts || {}) }),
+      }),
     uploadMaterial: async (file: File, opts?: { course_id?: number; title?: string; tags?: string }) => {
       const form = new FormData();
       form.append("file", file);
@@ -1402,6 +1407,15 @@ export interface TutorVideoJobStatus {
   last_error?: string | null;
   manifest?: Record<string, unknown> | null;
   ingest_result?: Record<string, unknown> | null;
+}
+
+export interface TutorVideoEnrichResult {
+  ok: boolean;
+  material_id: number;
+  status?: string;
+  results?: Record<string, unknown>[];
+  enrichment_md_path?: string;
+  error?: string;
 }
 
 export interface Material {

@@ -13,7 +13,8 @@ def test_ingest_video_artifacts_ingests_docs_and_embeds(
     transcript_md.write_text("# transcript", encoding="utf-8")
     visual_md.write_text("# visual", encoding="utf-8")
 
-    ingest_calls = []
+    ingest_calls: list[dict] = []
+    linkage_calls: list[dict] = []
 
     def fake_ingest_document(
         file_path: str,
@@ -38,11 +39,27 @@ def test_ingest_video_artifacts_ingests_docs_and_embeds(
         )
         return 101 if doc_type == "transcript" else 202
 
+    def fake_persist_linkage(
+        doc_id: int,
+        material_id: int,
+        source_video_path: str,
+        doc_role: str,
+    ) -> None:
+        linkage_calls.append(
+            {
+                "doc_id": doc_id,
+                "material_id": material_id,
+                "source_video_path": source_video_path,
+                "doc_role": doc_role,
+            }
+        )
+
     monkeypatch.setattr("video_ingest_bridge.ingest_document", fake_ingest_document)
     monkeypatch.setattr(
         "video_ingest_bridge.embed_rag_docs",
         lambda corpus="materials": {"embedded": 2, "corpus": corpus},
     )
+    monkeypatch.setattr("video_ingest_bridge._persist_video_linkage", fake_persist_linkage)
 
     result = ingest_video_artifacts(
         material_id=77,
@@ -60,3 +77,12 @@ def test_ingest_video_artifacts_ingests_docs_and_embeds(
     assert len(ingest_calls) == 2
     assert ingest_calls[0]["doc_type"] == "transcript"
     assert ingest_calls[1]["doc_type"] == "note"
+
+    # Verify linkage metadata was persisted for both docs
+    assert len(linkage_calls) == 2
+    assert linkage_calls[0]["doc_id"] == 101
+    assert linkage_calls[0]["material_id"] == 77
+    assert linkage_calls[0]["doc_role"] == "transcript"
+    assert "lecture.mp4" in linkage_calls[0]["source_video_path"]
+    assert linkage_calls[1]["doc_id"] == 202
+    assert linkage_calls[1]["doc_role"] == "visual_notes"
