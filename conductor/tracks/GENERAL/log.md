@@ -4,6 +4,38 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-23 - Tutor Obsidian authoring CRUD + template rendering wired
+
+- Added Obsidian CRUD endpoints in `brain/dashboard/api_adapter.py`:
+  - `POST /obsidian/folder`
+  - `DELETE /obsidian/folder`
+  - `DELETE /obsidian/file`
+  - `POST /obsidian/move`
+  - `POST /obsidian/template/render`
+- Hardened path handling for Obsidian API interactions:
+  - central relative-path normalization
+  - URL-safe path encoding
+  - vault-root filesystem fallback for folder ops not exposed by Local REST API
+  - root-bounded filesystem guards to prevent path traversal.
+- Added shared template renderer in `brain/tutor_templates.py` and template files:
+  - `sop/templates/notes/session_note.md.tmpl`
+  - `sop/templates/notes/concept_note.md.tmpl`
+  - `sop/templates/notes/north_star.md.tmpl`
+  - `sop/templates/notes/reference_targets.md.tmpl`
+- Updated tutor rendering path in `brain/dashboard/api_tutor.py` to use template-backed renderers instead of inline formatting.
+- Expanded frontend API client in `dashboard_rebuild/client/src/api.ts` for CRUD + template render calls.
+- Updated tutor sidebar Vault UX in `dashboard_rebuild/client/src/components/TutorChat.tsx`:
+  - new actions: `NEW FOLDER`, `NEW NOTE`, `EDIT`, `RENAME`, `DELETE`
+  - in-sidebar note editor (path + content) for deterministic authoring from tutor chat
+  - tree refresh wiring reused for CRUD operations.
+- Added tests:
+  - `brain/tests/test_obsidian_crud.py`
+  - `brain/tests/test_tutor_templates.py`
+- Validation:
+  - `cd dashboard_rebuild && npm run build` -> PASS
+  - `python -m pytest brain/tests/` -> PASS (`697 passed`)
+  - Note: plain `pytest brain/tests/` can fail in this shell due module-path resolution; `python -m pytest` used as canonical invocation.
+
 ## 2026-02-23 - Tutor Vault pane switched to Brain-style folder tree
 
 - Updated `dashboard_rebuild/client/src/components/TutorChat.tsx` Vault tab rendering to match Brain page behavior:

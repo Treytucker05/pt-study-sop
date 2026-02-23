@@ -13,12 +13,11 @@ System context: scripts support CP-MSS v1.0 operations and governance.
 - `launch_codex_session.ps1` - Start one-off named agent sessions (`-Tool codex` default; `-Tool opencode` and `-Tool kimi` supported).
 - `agent_worktrees.ps1` - Create/manage named persistent worktrees (integrate/ui/brain[/docs]) for parallel agents. Supports multi-agent launch (`open-many` / `dispatch-many`), role routing, and quick status.
 - `bootstrap_parallel_agents.ps1` - One-command bootstrap: ensure worktrees + launch selected agent profile across multiple roles.
-- `agent_task_board.py` - Shared cross-worktree task registry (claim/start/heartbeat/done/block/release with timestamps and ownership).
 - `install_agent_guard_hooks.ps1` - Install optional local git hooks (`pre-commit`, `pre-push`) to enforce drift checks and baseline tests during parallel agent workflows.
 - `parallel_launch_wizard.ps1` - Interactive launcher that prompts for role selection and agent counts (Codex/Claude) and starts all requested sessions.
 - `run_scholar.bat` - Run Scholar workflows.
 - `parallel launch shortcut` - Use `C:/Users/treyt/OneDrive/Desktop/Travel Laptop/Parallel Work/01_Launch_Parallel_Wizard.bat` for the one-file prompting flow.
-- `check_parallel_setup.ps1` - Run health validation across scripts, worktrees, launchers, and task board.
+- `check_parallel_setup.ps1` - Run health validation across scripts, worktrees, and launchers.
 - `sync_tutor_category_docs.py` - One-command sync: regenerate Obsidian tutor category pages from `sop/library/methods/*.yaml`.
 - `video_ingest_local.py` - Local MP4 pipeline (ffmpeg + faster-whisper + optional OCR) that emits transcript/visual-note artifacts for tutor ingest.
 
@@ -55,33 +54,10 @@ Bootstrap dry-run preview:
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\bootstrap_parallel_agents.ps1 -Profile swarm -IncludeDocs -OpenDocs -DryRun
 ```
 
-## Shared Task Board
-```powershell
-# Show shared board path (stored under git common dir, shared by all worktrees)
-python .\scripts\agent_task_board.py where
-
-# Add/claim/finish lifecycle
-python .\scripts\agent_task_board.py add --task-id T-001 --title "Polish Brain tab UX" --priority P1
-python .\scripts\agent_task_board.py claim --task-id T-001 --agent codex-ui --role ui
-python .\scripts\agent_task_board.py heartbeat --task-id T-001 --note "working through edge states"
-python .\scripts\agent_task_board.py done --task-id T-001 --note "implemented + verified"
-
-# View board
-python .\scripts\agent_task_board.py list
-python .\scripts\agent_task_board.py status
-```
-
-Each spawned agent shell now includes a helper command:
-```powershell
-task-board list
-task-board claim --task-id T-001
-```
-
-Agent identity defaults are auto-injected per launched shell (`PT_AGENT_NAME`, `PT_AGENT_ROLE`, `PT_AGENT_TOOL`, `PT_AGENT_SESSION`, `PT_AGENT_WORKTREE`), so ownership is distinct across parallel agents even without passing `--agent`.
-
-Goal-based launch routing:
-- `launch_codex_session.ps1 -Task "..."` now auto-initializes/updates the shared task board by creating an `in_progress` task and claiming it for the launched session.
-- The launched shell receives `PT_TASK_ID` plus `task-board` helper, so follow-up `heartbeat`/`done` commands stay tied to the same board task.
+## Coordination Source of Truth
+- Use `conductor/tracks.md` as the only active coordination board.
+- Use each track's `plan.md` checkboxes for task ownership and progress.
+- Use `conductor/tracks/GENERAL/log.md` for chronological, non-track-specific updates.
 
 ### Integrate role usage
 - Integrate role path/branch is `wt/integrate` and is meant for final merge conflict resolution and release readiness tasks.

@@ -16,6 +16,8 @@ import {
   RefreshCw,
   RotateCcw,
   Target,
+  Pencil,
+  Trash2,
   X,
   ChevronRight,
   ChevronDown,
@@ -92,8 +94,43 @@ interface NorthStarSummary {
   reference_targets?: string[];
 }
 
+interface VaultEditorState {
+  open: boolean;
+  path: string;
+  content: string;
+  saving: boolean;
+}
+
 function _basename(path: string): string {
   return String(path || "").split(/[\\/]/).pop() || path;
+}
+
+function _parentPath(path: string): string {
+  const normalized = String(path || "").replace(/\\/g, "/").replace(/\/+$/, "");
+  const idx = normalized.lastIndexOf("/");
+  if (idx <= 0) return "";
+  return normalized.slice(0, idx);
+}
+
+function _defaultNoteContent(notePath: string): string {
+  const title = _basename(notePath).replace(/\.md$/i, "") || "New Note";
+  const timestamp = new Date().toISOString();
+  return `---
+note_type: study_note
+created_at: ${timestamp}
+updated_at: ${timestamp}
+---
+
+# ${title}
+
+## Summary
+
+## Key Points
+- 
+
+## Questions
+- 
+`;
 }
 
 const VAULT_TREE_INDENT = 16;
@@ -434,6 +471,12 @@ export function TutorChat({
     }
   });
   const [northStarSummary, setNorthStarSummary] = useState<NorthStarSummary | null>(null);
+  const [vaultEditor, setVaultEditor] = useState<VaultEditorState>({
+    open: false,
+    path: "",
+    content: "",
+    saving: false,
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -538,6 +581,170 @@ export function TutorChat({
       return next;
     });
   }, []);
+
+  const refreshVaultTree = useCallback(() => {
+    setExpandedVaultFolders(new Set());
+    setVaultRefreshToken((prev) => prev + 1);
+  }, []);
+
+  const openVaultEditor = useCallback(async (path: string, initialContent?: string) => {
+    const normalized = String(path || "").trim();
+    if (!normalized) return;
+    if (typeof initialContent === "string") {
+      setVaultEditor({ open: true, path: normalized, content: initialContent, saving: false });
+      return;
+    }
+    try {
+      const res = await api.obsidian.getFile(normalized);
+      if (!res.success) {
+        toast.error(res.error || "Failed to load file");
+        return;
+      }
+      setVaultEditor({
+        open: true,
+        path: normalized,
+        content: String(res.content || ""),
+        saving: false,
+      });
+    } catch (err) {
+      toast.error(`Failed to load note: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  }, []);
+
+  const handleCreateVaultFolder = useCallback(async () => {
+    const base =
+      selectedVaultPaths.length === 1 && !selectedVaultPaths[0].toLowerCase().endsWith(".md")
+        ? selectedVaultPaths[0]
+        : "";
+    const suggestion = base ? `${base}/New Folder` : "Study notes/New Folder";
+    const inputPath = window.prompt("Create folder path:", suggestion);
+    if (!inputPath) return;
+    try {
+      const res = await api.obsidian.createFolder(inputPath);
+      if (!res.success) {
+        toast.error(res.error || "Failed to create folder");
+        return;
+      }
+      toast.success(`Folder created: ${res.path || inputPath}`);
+      refreshVaultTree();
+    } catch (err) {
+      toast.error(`Create folder failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  }, [refreshVaultTree, selectedVaultPaths]);
+
+  const handleCreateVaultNote = useCallback(async () => {
+    const base =
+      selectedVaultPaths.length === 1 && !selectedVaultPaths[0].toLowerCase().endsWith(".md")
+        ? selectedVaultPaths[0]
+        : selectedVaultPaths.length === 1
+          ? _parentPath(selectedVaultPaths[0])
+          : "";
+    const suggestion = base ? `${base}/New_Note.md` : "Study notes/New_Note.md";
+    const inputPath = window.prompt("Create note path (.md):", suggestion);
+    if (!inputPath) return;
+    const normalized = inputPath.trim().endsWith(".md") ? inputPath.trim() : `${inputPath.trim()}.md`;
+    const content = _defaultNoteContent(normalized);
+    try {
+      const res = await api.obsidian.saveFile(normalized, content);
+      if (!res.success) {
+        toast.error(res.error || "Failed to create note");
+        return;
+      }
+      setSelectedVaultPaths([normalized]);
+      toast.success(`Note created: ${normalized}`);
+      refreshVaultTree();
+      await openVaultEditor(normalized, content);
+    } catch (err) {
+      toast.error(`Create note failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  }, [openVaultEditor, refreshVaultTree, selectedVaultPaths]);
+
+  const handleEditSelectedVaultNote = useCallback(async () => {
+    if (selectedVaultPaths.length !== 1) {
+      toast.error("Select exactly one note to edit.");
+      return;
+    }
+    const path = selectedVaultPaths[0];
+    if (!path.toLowerCase().endsWith(".md")) {
+      toast.error("Only markdown notes can be edited.");
+      return;
+    }
+    await openVaultEditor(path);
+  }, [openVaultEditor, selectedVaultPaths]);
+
+  const handleRenameSelectedVaultPath = useCallback(async () => {
+    if (selectedVaultPaths.length !== 1) {
+      toast.error("Select exactly one file or folder to rename.");
+      return;
+    }
+    const currentPath = selectedVaultPaths[0];
+    const nextPath = window.prompt("Rename/move to:", currentPath);
+    if (!nextPath || nextPath.trim() === currentPath) return;
+    try {
+      const res = await api.obsidian.movePath(currentPath, nextPath.trim());
+      if (!res.success) {
+        toast.error(res.error || "Move failed");
+        return;
+      }
+      setSelectedVaultPaths([nextPath.trim()]);
+      toast.success("Path updated.");
+      refreshVaultTree();
+    } catch (err) {
+      toast.error(`Move failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  }, [refreshVaultTree, selectedVaultPaths]);
+
+  const handleDeleteSelectedVaultPaths = useCallback(async () => {
+    if (selectedVaultPaths.length === 0) {
+      toast.error("Select at least one path to delete.");
+      return;
+    }
+    const confirmDelete = window.confirm(
+      `Delete ${selectedVaultPaths.length} selected path(s)? This cannot be undone.`,
+    );
+    if (!confirmDelete) return;
+
+    const failures: string[] = [];
+    for (const path of selectedVaultPaths) {
+      try {
+        const isNote = path.toLowerCase().endsWith(".md");
+        const res = isNote
+          ? await api.obsidian.deleteFile(path)
+          : await api.obsidian.deleteFolder(path, true);
+        if (!res.success) failures.push(`${path}: ${res.error || "delete failed"}`);
+      } catch (err) {
+        failures.push(`${path}: ${err instanceof Error ? err.message : "delete failed"}`);
+      }
+    }
+
+    if (failures.length > 0) {
+      toast.error(`Some deletes failed (${failures.length}).`);
+    } else {
+      toast.success("Selected paths deleted.");
+    }
+    setSelectedVaultPaths([]);
+    refreshVaultTree();
+  }, [refreshVaultTree, selectedVaultPaths]);
+
+  const handleSaveVaultEditor = useCallback(async () => {
+    if (!vaultEditor.path.trim()) return;
+    setVaultEditor((prev) => ({ ...prev, saving: true }));
+    try {
+      const res = await api.obsidian.saveFile(vaultEditor.path, vaultEditor.content);
+      if (!res.success) {
+        toast.error(res.error || "Failed to save note");
+        setVaultEditor((prev) => ({ ...prev, saving: false }));
+        return;
+      }
+      toast.success("Note saved.");
+      setSelectedVaultPaths([vaultEditor.path]);
+      setVaultEditor((prev) => ({ ...prev, saving: false, open: false }));
+      refreshVaultTree();
+    } catch (err) {
+      toast.error(`Save failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      setVaultEditor((prev) => ({ ...prev, saving: false }));
+    }
+  }, [refreshVaultTree, vaultEditor.content, vaultEditor.path]);
 
   const toggleMaterial = useCallback(
     (materialId: number) => {
@@ -1367,10 +1574,7 @@ export function TutorChat({
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => {
-                        setExpandedVaultFolders(new Set());
-                        setVaultRefreshToken((prev) => prev + 1);
-                      }}
+                      onClick={refreshVaultTree}
                       disabled={isLoadingVault}
                       className="h-9 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
                     >
@@ -1381,12 +1585,98 @@ export function TutorChat({
                     <Button
                       type="button"
                       variant="ghost"
+                      onClick={() => void handleCreateVaultFolder()}
+                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                    >
+                      <FolderPlus className="w-3.5 h-3.5 mr-1" />
+                      NEW FOLDER
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => void handleCreateVaultNote()}
+                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                    >
+                      <FileTextIcon className="w-3.5 h-3.5 mr-1" />
+                      NEW NOTE
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => void handleEditSelectedVaultNote()}
+                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1" />
+                      EDIT
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => void handleRenameSelectedVaultPath()}
+                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                    >
+                      RENAME
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={() => setSelectedVaultPaths([])}
                       className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
                     >
                       CLEAR SELECTED
                     </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => void handleDeleteSelectedVaultPaths()}
+                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-red-500/50 text-red-300 hover:border-red-400 hover:text-red-200"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+                      DELETE
+                    </Button>
                   </div>
+                  {vaultEditor.open ? (
+                    <div className="border border-primary/30 p-2 space-y-2">
+                      <div className="font-arcade text-[10px] text-primary">EDIT NOTE</div>
+                      <input
+                        value={vaultEditor.path}
+                        onChange={(e) =>
+                          setVaultEditor((prev) => ({ ...prev, path: e.target.value }))
+                        }
+                        className="w-full h-8 bg-black border border-secondary px-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none"
+                      />
+                      <textarea
+                        value={vaultEditor.content}
+                        onChange={(e) =>
+                          setVaultEditor((prev) => ({ ...prev, content: e.target.value }))
+                        }
+                        className="w-full min-h-[220px] bg-black border border-secondary px-2 py-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none resize-y"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => void handleSaveVaultEditor()}
+                          disabled={vaultEditor.saving}
+                          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-primary/70 bg-primary/10 hover:bg-primary/20"
+                        >
+                          {vaultEditor.saving ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+                          ) : null}
+                          SAVE
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() =>
+                            setVaultEditor((prev) => ({ ...prev, open: false, saving: false }))
+                          }
+                          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                        >
+                          CANCEL
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="max-h-[52vh] overflow-y-auto space-y-1 pr-1">
                     {filteredVaultRootEntries.map((entry) => {
                       const trimmed = String(entry || "").trim();

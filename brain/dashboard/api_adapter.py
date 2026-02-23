@@ -5,8 +5,11 @@ import json
 import os
 import logging
 import re
+import shutil
 import requests
 from typing import List, Dict, Any, Optional
+from pathlib import Path
+from urllib.parse import quote
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +127,80 @@ def _request_obsidian(method: str, path: str, timeout: int = 10, **kwargs):
     return None, last_error
 
 
+def _read_env_value(key: str) -> str:
+    val = os.environ.get(key, "").strip()
+    if val:
+        return val
+    env_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"
+    )
+    if not os.path.exists(env_path):
+        return ""
+    try:
+        with open(env_path, "r", encoding="utf-8") as fh:
+            for raw in fh:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                if k.strip() != key:
+                    continue
+                return v.strip().strip('"').strip("'")
+    except Exception:
+        return ""
+    return ""
+
+
+def _encode_vault_rel_path(path: str) -> str:
+    normalized = str(path or "").replace("\\", "/").strip("/")
+    return quote(normalized, safe="/")
+
+
+def _normalize_obsidian_rel_path(path: str, *, expect_folder: bool = False) -> str:
+    rel = str(path or "").replace("\\", "/").strip()
+    rel = rel.lstrip("/").rstrip("/")
+    rel = re.sub(r"/+", "/", rel)
+    if not rel:
+        raise ValueError("path is required")
+    if rel.startswith(".") or ".." in rel.split("/"):
+        raise ValueError("path traversal is not allowed")
+    if ":" in rel:
+        raise ValueError("absolute paths are not allowed")
+    if expect_folder and rel.lower().endswith(".md"):
+        raise ValueError("folder path cannot end with .md")
+    return rel
+
+
+def _obsidian_vault_root_path() -> Optional[Path]:
+    candidates = [
+        _read_env_value("OBSIDIAN_VAULT_FS_PATH"),
+        _read_env_value("PT_OBSIDIAN_VAULT_PATH"),
+        _read_env_value("TREYS_SCHOOL_VAULT_PATH"),
+        r"C:\Users\treyt\Desktop\Treys School",
+    ]
+    for candidate in candidates:
+        if not candidate:
+            continue
+        root = Path(candidate).expanduser()
+        if root.exists() and root.is_dir():
+            return root.resolve()
+    return None
+
+
+def _resolve_vault_fs_path(rel_path: str) -> Path:
+    root = _obsidian_vault_root_path()
+    if root is None:
+        raise FileNotFoundError(
+            "Obsidian vault path is not configured. Set OBSIDIAN_VAULT_FS_PATH."
+        )
+    target = (root / rel_path).resolve()
+    try:
+        target.relative_to(root)
+    except ValueError:
+        raise ValueError("path is outside configured Obsidian vault")
+    return target
+
+
 def obsidian_health_check() -> dict:
     """Check if Obsidian Local REST API is running."""
     try:
@@ -148,10 +225,12 @@ def obsidian_health_check() -> dict:
 def obsidian_append(path: str, content: str) -> dict:
     """Append content to a file in Obsidian vault using Local REST API."""
     try:
+        rel_path = _normalize_obsidian_rel_path(path)
+        encoded = _encode_vault_rel_path(rel_path)
         # Local REST API uses POST to append content
         resp, error = _request_obsidian(
             "POST",
-            f"/vault/{path}",
+            f"/vault/{encoded}",
             data=content.encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {_obsidian_api_key()}",
@@ -162,7 +241,7 @@ def obsidian_append(path: str, content: str) -> dict:
         if error or resp is None:
             return {"success": False, "error": error or "No response from Obsidian"}
         if resp.status_code in [200, 204]:
-            return {"success": True, "path": path, "bytes": len(content)}
+            return {"success": True, "path": rel_path, "bytes": len(content)}
         return {"success": False, "error": f"Status {resp.status_code}: {resp.text}"}
     except requests.exceptions.ConnectionError:
         return {"success": False, "error": "Obsidian not running or plugin disabled"}
@@ -173,7 +252,12 @@ def obsidian_append(path: str, content: str) -> dict:
 def obsidian_list_files(folder: str = "") -> dict:
     """List files in Obsidian vault folder."""
     try:
-        path = "/vault/" if not folder else f"/vault/{folder}/"
+        if folder:
+            rel_folder = _normalize_obsidian_rel_path(folder, expect_folder=True)
+            encoded = _encode_vault_rel_path(rel_folder)
+            path = f"/vault/{encoded}/"
+        else:
+            path = "/vault/"
         resp, error = _request_obsidian(
             "GET",
             path,
@@ -237,9 +321,11 @@ def obsidian_list_files(folder: str = "") -> dict:
 def obsidian_get_file(path: str) -> dict:
     """Get content of a file from Obsidian vault."""
     try:
+        rel_path = _normalize_obsidian_rel_path(path)
+        encoded = _encode_vault_rel_path(rel_path)
         resp, error = _request_obsidian(
             "GET",
-            f"/vault/{path}",
+            f"/vault/{encoded}",
             headers={
                 "Authorization": f"Bearer {_obsidian_api_key()}",
                 "Accept": "text/markdown",
@@ -249,7 +335,7 @@ def obsidian_get_file(path: str) -> dict:
         if error or resp is None:
             return {"success": False, "error": error or "No response from Obsidian"}
         if resp.status_code == 200:
-            return {"success": True, "content": resp.text, "path": path}
+            return {"success": True, "content": resp.text, "path": rel_path}
         return {"success": False, "error": f"Status {resp.status_code}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -258,9 +344,11 @@ def obsidian_get_file(path: str) -> dict:
 def obsidian_save_file(path: str, content: str) -> dict:
     """Save/overwrite a file in Obsidian vault."""
     try:
+        rel_path = _normalize_obsidian_rel_path(path)
+        encoded = _encode_vault_rel_path(rel_path)
         resp, error = _request_obsidian(
             "PUT",
-            f"/vault/{path}",
+            f"/vault/{encoded}",
             data=content.encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {_obsidian_api_key()}",
@@ -271,8 +359,93 @@ def obsidian_save_file(path: str, content: str) -> dict:
         if error or resp is None:
             return {"success": False, "error": error or "No response from Obsidian"}
         if resp.status_code in [200, 204]:
-            return {"success": True, "path": path}
+            return {"success": True, "path": rel_path}
         return {"success": False, "error": f"Status {resp.status_code}: {resp.text}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def obsidian_create_folder(path: str) -> dict:
+    """Create a folder in Obsidian vault via local filesystem path."""
+    try:
+        rel_path = _normalize_obsidian_rel_path(path, expect_folder=True)
+        target = _resolve_vault_fs_path(rel_path)
+        target.mkdir(parents=True, exist_ok=True)
+        return {"success": True, "path": rel_path, "created": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def obsidian_delete_file(path: str) -> dict:
+    """Delete a file in Obsidian vault."""
+    try:
+        rel_path = _normalize_obsidian_rel_path(path)
+        encoded = _encode_vault_rel_path(rel_path)
+        resp, error = _request_obsidian(
+            "DELETE",
+            f"/vault/{encoded}",
+            headers={"Authorization": f"Bearer {_obsidian_api_key()}"},
+            timeout=10,
+        )
+        if resp is not None and resp.status_code in (200, 204):
+            return {"success": True, "path": rel_path, "deleted": True}
+        # Fallback to filesystem delete if REST delete is unavailable.
+        target = _resolve_vault_fs_path(rel_path)
+        if not target.exists():
+            return {"success": False, "error": f"File not found: {rel_path}"}
+        if target.is_dir():
+            return {"success": False, "error": "Path is a folder; use folder delete"}
+        target.unlink()
+        return {"success": True, "path": rel_path, "deleted": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def obsidian_delete_folder(path: str, *, recursive: bool = False) -> dict:
+    """Delete a folder in Obsidian vault via local filesystem path."""
+    try:
+        rel_path = _normalize_obsidian_rel_path(path, expect_folder=True)
+        target = _resolve_vault_fs_path(rel_path)
+        if not target.exists():
+            return {"success": False, "error": f"Folder not found: {rel_path}"}
+        if not target.is_dir():
+            return {"success": False, "error": "Path is not a folder"}
+
+        if recursive:
+            shutil.rmtree(target)
+            return {"success": True, "path": rel_path, "deleted": True}
+
+        if any(target.iterdir()):
+            return {
+                "success": False,
+                "error": "Folder is not empty; set recursive=true to delete",
+            }
+        target.rmdir()
+        return {"success": True, "path": rel_path, "deleted": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def obsidian_move_path(from_path: str, to_path: str) -> dict:
+    """Move/rename a file or folder inside Obsidian vault."""
+    try:
+        rel_from = _normalize_obsidian_rel_path(from_path)
+        rel_to = _normalize_obsidian_rel_path(to_path)
+        source = _resolve_vault_fs_path(rel_from)
+        target = _resolve_vault_fs_path(rel_to)
+        if not source.exists():
+            return {"success": False, "error": f"Source not found: {rel_from}"}
+        if target.exists():
+            return {"success": False, "error": f"Target already exists: {rel_to}"}
+
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(target))
+        return {
+            "success": True,
+            "from_path": rel_from,
+            "to_path": rel_to,
+            "moved": True,
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -8678,6 +8851,97 @@ def put_obsidian_file():
     if result.get("success"):
         return jsonify(result)
     return jsonify(result), 500
+
+
+@adapter_bp.route("/obsidian/file", methods=["DELETE"])
+def delete_obsidian_file():
+    """Delete a file from Obsidian vault."""
+    path = request.args.get("path", "")
+    if not path:
+        data = request.get_json(silent=True) or {}
+        path = str(data.get("path") or "")
+    if not path.strip():
+        return jsonify({"success": False, "error": "path is required"}), 400
+
+    result = obsidian_delete_file(path)
+    if result.get("success"):
+        return jsonify(result)
+    return jsonify(result), 400
+
+
+@adapter_bp.route("/obsidian/folder", methods=["POST"])
+def create_obsidian_folder():
+    """Create a folder in Obsidian vault."""
+    data = request.get_json(silent=True) or {}
+    path = str(data.get("path") or "")
+    if not path.strip():
+        return jsonify({"success": False, "error": "path is required"}), 400
+    result = obsidian_create_folder(path)
+    if result.get("success"):
+        return jsonify(result)
+    return jsonify(result), 400
+
+
+@adapter_bp.route("/obsidian/folder", methods=["DELETE"])
+def delete_obsidian_folder():
+    """Delete a folder from Obsidian vault."""
+    path = request.args.get("path", "")
+    recursive_q = request.args.get("recursive", "false").lower()
+    recursive = recursive_q in ("1", "true", "yes")
+
+    if not path:
+        data = request.get_json(silent=True) or {}
+        path = str(data.get("path") or "")
+        recursive = bool(data.get("recursive", recursive))
+
+    if not path.strip():
+        return jsonify({"success": False, "error": "path is required"}), 400
+
+    result = obsidian_delete_folder(path, recursive=recursive)
+    if result.get("success"):
+        return jsonify(result)
+    return jsonify(result), 400
+
+
+@adapter_bp.route("/obsidian/move", methods=["POST"])
+def move_obsidian_path():
+    """Move or rename a vault file/folder."""
+    data = request.get_json(silent=True) or {}
+    from_path = str(data.get("from_path") or data.get("fromPath") or "")
+    to_path = str(data.get("to_path") or data.get("toPath") or "")
+    if not from_path.strip() or not to_path.strip():
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "from_path and to_path are required",
+                }
+            ),
+            400,
+        )
+    result = obsidian_move_path(from_path, to_path)
+    if result.get("success"):
+        return jsonify(result)
+    return jsonify(result), 400
+
+
+@adapter_bp.route("/obsidian/template/render", methods=["POST"])
+def render_obsidian_template():
+    """Render an Obsidian markdown template with strict payload validation."""
+    data = request.get_json(silent=True) or {}
+    template_id = str(data.get("template_id") or data.get("templateId") or "").strip()
+    payload = data.get("payload")
+    if not template_id:
+        return jsonify({"success": False, "error": "template_id is required"}), 400
+    if not isinstance(payload, dict):
+        return jsonify({"success": False, "error": "payload must be an object"}), 400
+
+    from tutor_templates import render_template_artifact
+
+    result = render_template_artifact(template_id, payload)
+    if result.get("success"):
+        return jsonify(result)
+    return jsonify(result), 400
 
 
 @adapter_bp.route("/obsidian/vault-index", methods=["GET"])

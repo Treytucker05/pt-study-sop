@@ -563,6 +563,17 @@ def _build_north_star_markdown(
     return "\n".join(lines)
 
 
+def _session_has_real_objectives(north_star: Optional[dict]) -> bool:
+    """Return True if the north star has at least one real (non-UNMAPPED) objective."""
+    if not north_star:
+        return False
+    objective_ids = north_star.get("objective_ids") or []
+    return any(
+        str(oid or "").strip() and str(oid).strip() != "OBJ-UNMAPPED"
+        for oid in objective_ids
+    )
+
+
 def _north_star_io_disabled() -> bool:
     """Disable Obsidian North Star I/O for tests/safety guard contexts."""
     if os.environ.get("PYTEST_CURRENT_TEST"):
@@ -745,63 +756,14 @@ def _render_tutor_session_markdown(
     topic: str,
     module_name: str,
 ) -> str:
-    metadata = artifact.get("metadata") or {}
-    session = artifact.get("session") or {}
-    concepts = artifact.get("concepts") or []
-    concept_links = [
-        _wikilink(str(c.get("file_name") or "").strip())
-        for c in concepts
-        if isinstance(c, dict) and str(c.get("file_name") or "").strip()
-    ]
-    concept_links = [c for c in concept_links if c]
+    from tutor_templates import render_session_note_markdown
 
-    lines: list[str] = [
-        "---",
-        "note_type: tutor_session",
-        f"session_id: {session_id}",
-        f"topic: {topic or module_name}",
-        f"module_name: {module_name}",
-        f"control_stage: {metadata.get('control_stage', 'UNKNOWN')}",
-        f"method_id: {metadata.get('method_id', 'UNKNOWN')}",
-        f"session_mode: {metadata.get('session_mode', 'focused_batch')}",
-        f"updated_at: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        "---",
-        "",
-        f"# Tutor Session - {topic or module_name}",
-        "",
-        "## Stage Flow",
-    ]
-    for stage in session.get("stage_flow") or []:
-        lines.append(f"- {stage}")
-
-    lines.extend(["", "## Concepts Covered"])
-    if concept_links:
-        lines.extend(f"- {c}" for c in concept_links)
-    else:
-        lines.append("- (none)")
-
-    lines.extend(["", "## Unknowns"])
-    unknowns = session.get("unknowns") or []
-    if unknowns:
-        lines.extend(f"- {u}" for u in unknowns)
-    else:
-        lines.append("- (none)")
-
-    lines.extend(["", "## Follow Up Targets"])
-    follow = session.get("follow_up_targets") or []
-    if follow:
-        lines.extend(f"- {f}" for f in follow)
-    else:
-        lines.append("- (none)")
-
-    lines.extend(["", "## Source IDs"])
-    source_ids = session.get("source_ids") or []
-    if source_ids:
-        lines.extend(f"- {sid}" for sid in source_ids)
-    else:
-        lines.append("- (none)")
-
-    return "\n".join(lines).strip() + "\n"
+    return render_session_note_markdown(
+        artifact=artifact,
+        session_id=session_id,
+        topic=topic,
+        module_name=module_name,
+    )
 
 
 def _render_tutor_concept_markdown(
@@ -809,67 +771,9 @@ def _render_tutor_concept_markdown(
     *,
     module_name: str,
 ) -> str:
-    file_name = str(concept.get("file_name") or "").strip() or "Untitled Concept"
-    lines: list[str] = [
-        "---",
-        "note_type: tutor_concept",
-        f"module_name: {module_name}",
-        f"updated_at: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        "---",
-        "",
-        f"# {file_name}",
-        "",
-        "## Why It Matters",
-        str(concept.get("why_it_matters") or ""),
-        "",
-        "## Prerequisites",
-    ]
+    from tutor_templates import render_concept_note_markdown
 
-    prereq = concept.get("prerequisites") or []
-    if prereq:
-        lines.extend(f"- {p}" for p in prereq)
-    else:
-        lines.append("- (none)")
-
-    lines.extend(["", "## Retrieval Targets"])
-    retrieval_targets = concept.get("retrieval_targets") or []
-    if retrieval_targets:
-        lines.extend(f"- {t}" for t in retrieval_targets)
-    else:
-        lines.append("- (none)")
-
-    lines.extend(["", "## Common Errors"])
-    common_errors = concept.get("common_errors") or []
-    if common_errors:
-        lines.extend(f"- {e}" for e in common_errors)
-    else:
-        lines.append("- (none)")
-
-    lines.extend(
-        [
-            "",
-            "## Relationships",
-        ]
-    )
-    relationships = concept.get("relationships") or []
-    if relationships:
-        for rel in relationships:
-            if not isinstance(rel, dict):
-                continue
-            target = rel.get("target_concept") or "[[Unknown]]"
-            rel_type = rel.get("relationship_type") or "related_to"
-            lines.append(f"- {target} ({rel_type})")
-    else:
-        lines.append("- (none)")
-
-    lines.extend(
-        [
-            "",
-            "## Next Review Date",
-            str(concept.get("next_review_date") or "unscheduled"),
-        ]
-    )
-    return "\n".join(lines).strip() + "\n"
+    return render_concept_note_markdown(concept=concept, module_name=module_name)
 
 
 def _merge_and_save_obsidian_note(
@@ -2625,6 +2529,18 @@ def send_turn(session_id: str):
                     "- Objectives in scope:\n"
                     f"{objective_lines}"
                 )
+                if not _session_has_real_objectives(north_star) and turn_number <= 2:
+                    system_prompt += (
+                        "\n\n## Missing Learning Objectives\n"
+                        "No learning objectives are set for this module yet. Before starting the lesson:\n"
+                        '1. Ask the student: "I don\'t have learning objectives for this module yet. '
+                        'Are they in your loaded study materials, or would you like to type them in?"\n'
+                        "2. If in materials: scan the Retrieved Study Materials for explicit learning objectives, "
+                        "chapter goals, or key competencies. Propose 3-8 objectives in format: OBJ-KEYWORD \u2014 Description\n"
+                        "3. If student types them: acknowledge and format them the same way\n"
+                        "4. If student says skip: proceed without objectives (use general teaching mode)\n"
+                        '5. Ask for confirmation before continuing: "Are these objectives correct? [Approve / Edit / Skip]"'
+                    )
             if enforce_reference_bounds and reference_targets:
                 bounded_targets = "\n".join(f"- {t}" for t in reference_targets[:20])
                 system_prompt += (

@@ -532,6 +532,30 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ path, content }),
     }),
+    deleteFile: (path: string) =>
+      request<ObsidianCrudResult>(`/obsidian/file?path=${encodeURIComponent(path)}`, {
+        method: "DELETE",
+      }),
+    createFolder: (path: string) =>
+      request<ObsidianCrudResult>("/obsidian/folder", {
+        method: "POST",
+        body: JSON.stringify({ path }),
+      }),
+    deleteFolder: (path: string, recursive: boolean = false) =>
+      request<ObsidianCrudResult>(
+        `/obsidian/folder?path=${encodeURIComponent(path)}&recursive=${recursive ? "1" : "0"}`,
+        { method: "DELETE" },
+      ),
+    movePath: (fromPath: string, toPath: string) =>
+      request<ObsidianMoveResult>("/obsidian/move", {
+        method: "POST",
+        body: JSON.stringify({ from_path: fromPath, to_path: toPath }),
+      }),
+    renderTemplate: (templateId: string, payload: Record<string, unknown>) =>
+      request<ObsidianTemplateRenderResult>("/obsidian/template/render", {
+        method: "POST",
+        body: JSON.stringify({ template_id: templateId, payload }),
+      }),
   },
 
   methods: {
@@ -918,6 +942,29 @@ export interface ObsidianFileResult {
   success: boolean;
   content?: string;
   path?: string;
+  error?: string;
+}
+
+export interface ObsidianCrudResult {
+  success: boolean;
+  path?: string;
+  created?: boolean;
+  deleted?: boolean;
+  error?: string;
+}
+
+export interface ObsidianMoveResult {
+  success: boolean;
+  from_path?: string;
+  to_path?: string;
+  moved?: boolean;
+  error?: string;
+}
+
+export interface ObsidianTemplateRenderResult {
+  success: boolean;
+  template_id?: string;
+  content?: string;
   error?: string;
 }
 
