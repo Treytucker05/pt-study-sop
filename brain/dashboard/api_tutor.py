@@ -4852,10 +4852,9 @@ _DEFAULT_CUSTOM_INSTRUCTIONS = (
 @tutor_bp.route("/settings", methods=["GET"])
 def get_tutor_settings():
     cfg = load_api_config()
+    value = (cfg.get("tutor_custom_instructions") or "").strip()
     return jsonify({
-        "custom_instructions": cfg.get(
-            "tutor_custom_instructions", _DEFAULT_CUSTOM_INSTRUCTIONS
-        ),
+        "custom_instructions": value if value else _DEFAULT_CUSTOM_INSTRUCTIONS,
     })
 
 
