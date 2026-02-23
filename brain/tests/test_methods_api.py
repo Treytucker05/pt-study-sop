@@ -50,6 +50,35 @@ class TestMethodBlocks:
         assert resp.status_code == 200
         assert isinstance(resp.get_json(), list)
 
+    def test_prime_methods_include_knob_contract(self, client):
+        # Seed a PRIME method with an active knob so the test is self-contained
+        create_resp = client.post(
+            "/api/methods",
+            data=json.dumps({
+                "name": "Prime Knob Test Method",
+                "category": "prepare",
+                "description": "Seed for knob contract test",
+                "default_duration_min": 5,
+                "energy_cost": "low",
+                "control_stage": "PRIME",
+                "knobs": {"intensity": {"value": 3, "fallback": 1}},
+            }),
+            content_type="application/json",
+        )
+        assert create_resp.status_code == 201
+
+        resp = client.get("/api/methods?category=prepare")
+        assert resp.status_code == 200
+        methods = resp.get_json()
+        prime = [m for m in methods if str(m.get("control_stage", "")).upper() == "PRIME"]
+        assert prime, "Expected at least one PRIME method"
+        assert any(bool(m.get("has_active_knobs")) for m in prime)
+        first_with_knobs = next(m for m in prime if m.get("has_active_knobs"))
+        assert isinstance(first_with_knobs.get("knobs"), dict)
+        knob = next(iter(first_with_knobs["knobs"].values()))
+        assert isinstance(knob, dict)
+        assert "fallback" in knob
+
     def test_create_method(self, client):
         resp = client.post(
             "/api/methods",
@@ -123,6 +152,32 @@ class TestMethodBlocks:
         # Verify
         resp = client.get(f"/api/methods/{mid}")
         assert resp.get_json()["description"] == "Updated description"
+
+    def test_update_method_knobs_round_trip(self, client):
+        mid = TestMethodBlocks._created_id
+        resp = client.put(
+            f"/api/methods/{mid}",
+            data=json.dumps(
+                {
+                    "knobs": {
+                        "scope_mode": {
+                            "type": "enum",
+                            "options": ["module_all", "single_focus"],
+                            "default": "module_all",
+                        }
+                    }
+                }
+            ),
+            content_type="application/json",
+        )
+        assert resp.status_code == 200
+
+        get_resp = client.get(f"/api/methods/{mid}")
+        assert get_resp.status_code == 200
+        data = get_resp.get_json()
+        assert isinstance(data.get("knobs"), dict)
+        assert "scope_mode" in data["knobs"]
+        assert data["knobs"]["scope_mode"]["fallback"]["mode"] == "default_on_invalid"
 
     def test_delete_method(self, client):
         # Create then delete
