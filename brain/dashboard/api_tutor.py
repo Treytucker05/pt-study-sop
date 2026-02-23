@@ -2963,6 +2963,13 @@ def send_turn(session_id: str):
                 import json as _json
 
                 tool_schemas = get_tool_schemas()
+                _LOG.info(
+                    "Tutor tools: %d schemas loaded — %s | needs_lo_save=%s turn=%d",
+                    len(tool_schemas),
+                    [s.get("name") for s in tool_schemas],
+                    _needs_lo_save,
+                    turn_number,
+                )
                 max_tool_rounds = 5
                 tool_round = 0
                 pending_tool_results: list[dict] = []
@@ -2980,6 +2987,12 @@ def send_turn(session_id: str):
                     # had at least one turn to approve (turn >= 2).
                     if _needs_lo_save and turn_number >= 2:
                         stream_kwargs["tool_choice"] = "required"
+                    _LOG.info(
+                        "Tutor stream_kwargs: model=%s tool_choice=%s tools_count=%d",
+                        stream_kwargs.get("model"),
+                        stream_kwargs.get("tool_choice", "auto(default)"),
+                        len(stream_kwargs.get("tools", [])),
+                    )
                     if prev_response_id:
                         stream_kwargs["previous_response_id"] = prev_response_id
 
