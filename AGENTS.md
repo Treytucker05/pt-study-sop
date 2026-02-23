@@ -10,6 +10,22 @@ Onboarding order:
 1. Start with this `AGENTS.md` for project-specific rules.
 2. Then read `C:\Users\treyt\.claude\CLAUDE.md` for global preferences.
 
+## Current Plan (as of 2026-02-23)
+
+Active execution plan: `docs/root/TUTOR_TODO.md`
+
+Primary active workstream:
+- Tutor PRIME hardening and transfer-integrity checks before broader scope expansion.
+
+Current priority order in `TUTOR_TODO.md`:
+1. PRIME method policy and knob hardening.
+2. PRIME runtime chain and transfer integrity checks.
+3. Completion and hardening of MP4/video workflow in normal study sessions.
+
+Execution rule:
+- Do not begin major work until the task is listed in the `Current Sprint` section of `docs/root/TUTOR_TODO.md`.
+- If work is not listed there, add it to `docs/root/TUTOR_TODO.md` first, then execute.
+
 ---
 
 ## How To Run The Server (DO NOT SKIP)
@@ -219,6 +235,17 @@ Skip step 1 for backend-only changes.
     extract_*, parse_*, method_*.json, *_prompt.txt, etc.), delete it before
     committing or ensure it matches a .gitignore rule. Never commit generated
     JSON blobs, one-off extraction scripts, or subagent prompt/output files.
+17. Default multi-agent execution model:
+   - Assign work by file ownership to minimize overlap:
+     - Backend/runtime: `brain/`, `scripts/`
+     - Frontend: `dashboard_rebuild/`
+     - Canon/process/docs: `conductor/`, `docs/`, `sop/library/`, `obsidian/`
+   - For each agent task, claim one primary artifact scope in `docs/root/TUTOR_TODO.md` before editing.
+   - Keep edits non-overlapping unless the file is intentionally shared.
+   - After each agent pass:
+     - update `conductor/tracks/GENERAL/log.md` (or active plan)
+     - update `conductor/tracks.md` if status changes
+     - include a short completion note in `docs/root/TUTOR_TODO.md`.
 
 ---
 
