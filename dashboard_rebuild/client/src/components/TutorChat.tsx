@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,6 +15,11 @@ import {
   FolderPlus,
   RefreshCw,
   RotateCcw,
+  Target,
+  X,
+  FileText as FileTextIcon,
+  Folder as FolderIcon,
+  SlidersHorizontal,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -72,6 +77,60 @@ interface TutorChatProps {
 }
 
 type ArtifactType = "note" | "card" | "map";
+type SourceTab = "materials" | "vault" | "north_star";
+
+interface VaultSelectable {
+  path: string;
+  type: "file" | "folder";
+  label: string;
+}
+
+interface NorthStarSummary {
+  path?: string;
+  status?: string;
+  module_name?: string;
+  course_name?: string;
+  subtopic_name?: string;
+  objective_ids?: string[];
+  reference_targets?: string[];
+}
+
+function _basename(path: string): string {
+  return String(path || "").split(/[\\/]/).pop() || path;
+}
+
+function normalizeVaultItems(payload: unknown): VaultSelectable[] {
+  const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+  const input = payload as Record<string, unknown> | unknown[];
+  const rawItems = Array.isArray(input)
+    ? input
+    : [
+        ...asArray((input as Record<string, unknown>)?.["items"]),
+        ...asArray((input as Record<string, unknown>)?.["files"]),
+        ...asArray((input as Record<string, unknown>)?.["entries"]),
+      ];
+
+  const out: VaultSelectable[] = [];
+  const seen = new Set<string>();
+  for (const item of rawItems) {
+    if (!item || typeof item !== "object") continue;
+    const rec = item as Record<string, unknown>;
+    const path = String(rec.path || rec.file_path || rec.full_path || "").trim();
+    if (!path || seen.has(path)) continue;
+    seen.add(path);
+    const rawType = String(rec.type || rec.kind || "").toLowerCase();
+    const type: "file" | "folder" =
+      rawType === "folder" || rawType === "dir" || rawType === "directory"
+        ? "folder"
+        : "file";
+    out.push({
+      path,
+      type,
+      label: _basename(path),
+    });
+  }
+  return out.sort((a, b) => a.path.localeCompare(b.path));
+}
 
 function parseArtifactCommand(message: string): { type: ArtifactType | null; title: string } {
   const trimmed = message.trim();
@@ -249,13 +308,29 @@ export function TutorChat({
   onArtifactCreated,
   onTurnComplete,
 }: TutorChatProps) {
+  const vaultSelectionKey = "tutor.chat.selected_vault_paths.v1";
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [behaviorOverride, setBehaviorOverride] = useState<BehaviorOverride | null>(null);
-  const [showMaterialPanel, setShowMaterialPanel] = useState(true);
+  const [isSourcesOpen, setIsSourcesOpen] = useState(false);
+  const [sourcesTab, setSourcesTab] = useState<SourceTab>("materials");
   const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isLoadingVault, setIsLoadingVault] = useState(false);
+  const [vaultSearch, setVaultSearch] = useState("");
+  const [vaultItems, setVaultItems] = useState<VaultSelectable[]>([]);
+  const [selectedVaultPaths, setSelectedVaultPaths] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(vaultSelectionKey);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : [];
+    } catch {
+      return [];
+    }
+  });
+  const [northStarSummary, setNorthStarSummary] = useState<NorthStarSummary | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -281,6 +356,84 @@ export function TutorChat({
     setInput("");
     setIsStreaming(false);
   }, [sessionId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(vaultSelectionKey, JSON.stringify(selectedVaultPaths));
+    } catch {
+      /* ignore localStorage write errors */
+    }
+  }, [selectedVaultPaths]);
+
+  const loadVaultIndex = useCallback(
+    async (refresh: boolean = false) => {
+      setIsLoadingVault(true);
+      try {
+        const payload = await api.obsidian.getVaultIndex(refresh);
+        setVaultItems(normalizeVaultItems(payload));
+      } catch (err) {
+        toast.error(`Vault index load failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      } finally {
+        setIsLoadingVault(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!sessionId) return;
+    let alive = true;
+    const loadSessionContext = async () => {
+      try {
+        const session = await api.tutor.getSession(sessionId);
+        const filter = (session.content_filter || {}) as Record<string, unknown>;
+        const folders = Array.isArray(filter.folders)
+          ? filter.folders.filter((v): v is string => typeof v === "string")
+          : [];
+        if (alive && folders.length > 0) {
+          setSelectedVaultPaths((prev) => (prev.length > 0 ? prev : folders));
+        }
+        const northStar = filter.north_star;
+        const refs = Array.isArray(filter.reference_targets)
+          ? filter.reference_targets.filter((v): v is string => typeof v === "string")
+          : [];
+        if (alive && northStar && typeof northStar === "object") {
+          const rec = northStar as Record<string, unknown>;
+          setNorthStarSummary({
+            path: typeof rec.path === "string" ? rec.path : undefined,
+            status: typeof rec.status === "string" ? rec.status : undefined,
+            module_name: typeof rec.module_name === "string" ? rec.module_name : undefined,
+            course_name: typeof rec.course_name === "string" ? rec.course_name : undefined,
+            subtopic_name: typeof rec.subtopic_name === "string" ? rec.subtopic_name : undefined,
+            objective_ids: Array.isArray(rec.objective_ids)
+              ? rec.objective_ids.filter((v): v is string => typeof v === "string")
+              : [],
+            reference_targets: refs,
+          });
+        } else if (alive) {
+          setNorthStarSummary(null);
+        }
+      } catch {
+        if (alive) setNorthStarSummary(null);
+      }
+    };
+    void loadSessionContext();
+    return () => {
+      alive = false;
+    };
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (isSourcesOpen && sourcesTab === "vault" && vaultItems.length === 0) {
+      void loadVaultIndex(false);
+    }
+  }, [isSourcesOpen, sourcesTab, vaultItems.length, loadVaultIndex]);
+
+  const toggleVaultPath = useCallback((path: string) => {
+    setSelectedVaultPaths((prev) =>
+      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path],
+    );
+  }, []);
 
   const toggleMaterial = useCallback(
     (materialId: number) => {
@@ -359,6 +512,7 @@ export function TutorChat({
           content_filter: {
             material_ids: selectedMaterialIds,
             accuracy_profile: accuracyProfile,
+            ...(selectedVaultPaths.length > 0 ? { folders: selectedVaultPaths } : {}),
           },
           behavior_override: activeBehavior,
         }),
@@ -610,6 +764,7 @@ export function TutorChat({
     onArtifactCreated,
     onTurnComplete,
     selectedMaterialIds,
+    selectedVaultPaths,
     accuracyProfile,
   ]);
 
@@ -621,6 +776,22 @@ export function TutorChat({
       sendMessage();
     }
   };
+
+  const selectedMaterialLabels = useMemo(
+    () =>
+      availableMaterials
+        .filter((m) => selectedMaterialIds.includes(m.id))
+        .map((m) => m.title || `Material ${m.id}`),
+    [availableMaterials, selectedMaterialIds],
+  );
+
+  const filteredVaultItems = useMemo(() => {
+    const q = vaultSearch.trim().toLowerCase();
+    if (!q) return vaultItems;
+    return vaultItems.filter(
+      (item) => item.path.toLowerCase().includes(q) || item.label.toLowerCase().includes(q),
+    );
+  }, [vaultItems, vaultSearch]);
 
   if (!sessionId) {
     return (
@@ -638,7 +809,7 @@ export function TutorChat({
   }
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="relative flex h-full min-h-0">
       <div className="flex flex-col h-full min-h-0 flex-1">
         {/* Messages */}
         <div
@@ -817,119 +988,46 @@ export function TutorChat({
             className="hidden"
             onChange={(e) => void handleUploadFiles(e.target.files)}
           />
-
-          <div className="border-2 border-primary/30 bg-black/50">
-            <div className="flex flex-wrap items-center gap-2 p-2 border-b border-primary/20">
-              <button
-                type="button"
-                onClick={() => setShowMaterialPanel((prev) => !prev)}
-                className="h-8 px-3 font-arcade text-[10px] tracking-wider border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
-              >
-                {showMaterialPanel ? "HIDE MATERIALS" : "SHOW MATERIALS"}
-              </button>
+          <div className="border-2 border-primary/30 bg-black/50 p-2 space-y-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <Badge variant="outline" className="rounded-none h-6 text-[10px] font-arcade border-primary/40">
-                LOADED {selectedMaterialIds.length}/{availableMaterials.length}
+                MAT {selectedMaterialIds.length}
               </Badge>
-              <Button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingMaterial}
-                className="h-8 rounded-none px-3 font-arcade text-[10px] gap-1.5 border-2 border-primary/60 bg-primary/10 hover:bg-primary/20"
-              >
-                {isUploadingMaterial ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <FolderPlus className="w-3.5 h-3.5" />
-                )}
-                ADD FILE
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={selectAllMaterials}
-                className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
-              >
-                <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                ALL
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={clearSelectedMaterials}
-                className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
-              >
-                <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                NONE
-              </Button>
+              <Badge variant="outline" className="rounded-none h-6 text-[10px] font-arcade border-primary/40">
+                VAULT {selectedVaultPaths.length}
+              </Badge>
+              {northStarSummary?.status ? (
+                <Badge variant="outline" className="rounded-none h-6 text-[10px] font-arcade border-primary/40">
+                  NS {northStarSummary.status.toUpperCase()}
+                </Badge>
+              ) : null}
+              {selectedMaterialLabels.slice(0, 3).map((label) => (
+                <Badge key={label} variant="outline" className="rounded-none text-[10px] font-terminal border-primary/30">
+                  {label}
+                </Badge>
+              ))}
+              {selectedVaultPaths.slice(0, 2).map((path) => (
+                <Badge key={path} variant="outline" className="rounded-none text-[10px] font-terminal border-primary/30">
+                  {_basename(path)}
+                </Badge>
+              ))}
             </div>
-            {showMaterialPanel && (
-              <div className="p-2 space-y-2">
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragActive(true);
-                  }}
-                  onDragLeave={() => setIsDragActive(false)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setIsDragActive(false);
-                    void handleUploadFiles(e.dataTransfer.files);
-                  }}
-                  className={`border-2 border-dashed px-3 py-2 text-xs font-terminal ${
-                    isDragActive ? "border-primary text-primary bg-primary/10" : "border-secondary/40 text-muted-foreground"
-                  }`}
-                >
-                  <Upload className="w-3.5 h-3.5 inline mr-1.5" />
-                  Drag file here to add to chat + library, or use ADD FILE.
-                </div>
-
-                {selectedMaterialIds.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {availableMaterials
-                      .filter((m) => selectedMaterialIds.includes(m.id))
-                      .map((m) => (
-                        <Badge
-                          key={`selected-${m.id}`}
-                          variant="outline"
-                          className="rounded-none text-[10px] font-terminal border-primary/50"
-                        >
-                          {m.title || `Material ${m.id}`}
-                        </Badge>
-                      ))}
-                  </div>
-                )}
-
-                <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
-                  {availableMaterials.map((material) => {
-                    const checked = selectedMaterialIds.includes(material.id);
-                    return (
-                      <label
-                        key={material.id}
-                        className={`flex items-center gap-2 px-2 py-1 border text-xs font-terminal cursor-pointer ${
-                          checked
-                            ? "border-primary/60 bg-primary/10 text-foreground"
-                            : "border-secondary/30 text-muted-foreground hover:border-secondary/60 hover:text-foreground"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleMaterial(material.id)}
-                          className="h-3.5 w-3.5 accent-red-500"
-                        />
-                        <span className="truncate">
-                          {material.title || `Material ${material.id}`}{" "}
-                          <span className="opacity-60">({material.file_type || "file"})</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setIsSourcesOpen((prev) => !prev)}
+              className={`h-9 rounded-none px-3 font-arcade text-[10px] border-2 ${
+                isSourcesOpen
+                  ? "border-primary text-primary bg-primary/15"
+                  : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 mr-1.5" />
+              SOURCES
+            </Button>
             <div className="flex items-center gap-2 min-w-0">
               <label
                 htmlFor="accuracy-profile-select"
@@ -1007,6 +1105,242 @@ export function TutorChat({
           </div>
         </div>
       </div>
+
+      {isSourcesOpen && (
+        <div className="absolute inset-0 z-40 bg-black/50">
+          <aside className="absolute right-0 top-0 h-full w-full max-w-md border-l-2 border-primary bg-black/95 flex flex-col">
+            <div className="flex items-center gap-2 p-3 border-b border-primary/30">
+              <div className="font-arcade text-xs text-primary tracking-wider">SOURCES</div>
+              <Badge variant="outline" className="rounded-none h-5 px-1.5 text-[10px] border-primary/40">
+                {sourcesTab.toUpperCase()}
+              </Badge>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsSourcesOpen(false)}
+                className="ml-auto h-8 w-8 p-0 rounded-none border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-1 p-2 border-b border-primary/20">
+              <button
+                type="button"
+                onClick={() => setSourcesTab("materials")}
+                className={`h-8 px-2 font-arcade text-[10px] border-2 ${
+                  sourcesTab === "materials"
+                    ? "border-primary text-primary bg-primary/10"
+                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                }`}
+              >
+                MATERIALS
+              </button>
+              <button
+                type="button"
+                onClick={() => setSourcesTab("vault")}
+                className={`h-8 px-2 font-arcade text-[10px] border-2 ${
+                  sourcesTab === "vault"
+                    ? "border-primary text-primary bg-primary/10"
+                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                }`}
+              >
+                VAULT
+              </button>
+              <button
+                type="button"
+                onClick={() => setSourcesTab("north_star")}
+                className={`h-8 px-2 font-arcade text-[10px] border-2 ${
+                  sourcesTab === "north_star"
+                    ? "border-primary text-primary bg-primary/10"
+                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                }`}
+              >
+                NORTH STAR
+              </button>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+              {sourcesTab === "materials" && (
+                <>
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragActive(true);
+                    }}
+                    onDragLeave={() => setIsDragActive(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragActive(false);
+                      void handleUploadFiles(e.dataTransfer.files);
+                    }}
+                    className={`border-2 border-dashed px-3 py-2 text-xs font-terminal ${
+                      isDragActive ? "border-primary text-primary bg-primary/10" : "border-secondary/40 text-muted-foreground"
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5 inline mr-1.5" />
+                    Drag file here to add to chat + library.
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingMaterial}
+                      className="h-8 rounded-none px-3 font-arcade text-[10px] gap-1.5 border-2 border-primary/60 bg-primary/10 hover:bg-primary/20"
+                    >
+                      {isUploadingMaterial ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <FolderPlus className="w-3.5 h-3.5" />
+                      )}
+                      ADD FILE
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={selectAllMaterials}
+                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                      ALL
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={clearSelectedMaterials}
+                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                      NONE
+                    </Button>
+                  </div>
+                  <div className="max-h-[48vh] overflow-y-auto space-y-1 pr-1">
+                    {availableMaterials.map((material) => {
+                      const checked = selectedMaterialIds.includes(material.id);
+                      return (
+                        <label
+                          key={material.id}
+                          className={`flex items-center gap-2 px-2 py-1 border text-xs font-terminal cursor-pointer ${
+                            checked
+                              ? "border-primary/60 bg-primary/10 text-foreground"
+                              : "border-secondary/30 text-muted-foreground hover:border-secondary/60 hover:text-foreground"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleMaterial(material.id)}
+                            className="h-3.5 w-3.5 accent-red-500"
+                          />
+                          <span className="truncate">
+                            {material.title || `Material ${material.id}`}{" "}
+                            <span className="opacity-60">({material.file_type || "file"})</span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {sourcesTab === "vault" && (
+                <>
+                  <div className="flex gap-2">
+                    <input
+                      value={vaultSearch}
+                      onChange={(e) => setVaultSearch(e.target.value)}
+                      placeholder="Search vault paths..."
+                      className="flex-1 h-9 bg-black border-2 border-secondary px-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => void loadVaultIndex(true)}
+                      disabled={isLoadingVault}
+                      className="h-9 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                    >
+                      {isLoadingVault ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setSelectedVaultPaths([])}
+                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+                    >
+                      CLEAR SELECTED
+                    </Button>
+                  </div>
+                  <div className="max-h-[52vh] overflow-y-auto space-y-1 pr-1">
+                    {filteredVaultItems.map((item) => {
+                      const checked = selectedVaultPaths.includes(item.path);
+                      return (
+                        <label
+                          key={item.path}
+                          className={`flex items-center gap-2 px-2 py-1 border text-xs font-terminal cursor-pointer ${
+                            checked
+                              ? "border-primary/60 bg-primary/10 text-foreground"
+                              : "border-secondary/30 text-muted-foreground hover:border-secondary/60 hover:text-foreground"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleVaultPath(item.path)}
+                            className="h-3.5 w-3.5 accent-red-500"
+                          />
+                          {item.type === "folder" ? (
+                            <FolderIcon className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                          ) : (
+                            <FileTextIcon className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                          )}
+                          <span className="truncate">{item.path}</span>
+                        </label>
+                      );
+                    })}
+                    {!isLoadingVault && filteredVaultItems.length === 0 && (
+                      <div className="text-xs font-terminal text-muted-foreground border border-secondary/30 p-2">
+                        No vault items found.
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {sourcesTab === "north_star" && (
+                <div className="space-y-2">
+                  <div className="border border-primary/30 p-2">
+                    <div className="font-arcade text-[10px] text-primary mb-2">NORTH STAR CONTEXT</div>
+                    <div className="text-xs font-terminal text-muted-foreground space-y-1">
+                      <div><span className="text-foreground">Course:</span> {northStarSummary?.course_name || "N/A"}</div>
+                      <div><span className="text-foreground">Module:</span> {northStarSummary?.module_name || "N/A"}</div>
+                      <div><span className="text-foreground">Subtopic:</span> {northStarSummary?.subtopic_name || "N/A"}</div>
+                      <div><span className="text-foreground">Status:</span> {northStarSummary?.status || "unknown"}</div>
+                      <div><span className="text-foreground">Path:</span> {northStarSummary?.path || "N/A"}</div>
+                    </div>
+                  </div>
+                  <div className="border border-primary/20 p-2">
+                    <div className="font-arcade text-[10px] text-primary mb-2 flex items-center gap-1">
+                      <Target className="w-3.5 h-3.5" /> REFERENCE TARGETS
+                    </div>
+                    <div className="max-h-56 overflow-y-auto space-y-1">
+                      {(northStarSummary?.reference_targets || []).slice(0, 80).map((ref) => (
+                        <div key={ref} className="text-xs font-terminal text-muted-foreground border border-secondary/30 px-2 py-1">
+                          {ref}
+                        </div>
+                      ))}
+                      {(!northStarSummary?.reference_targets || northStarSummary.reference_targets.length === 0) && (
+                        <div className="text-xs font-terminal text-muted-foreground">No active reference targets.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }
