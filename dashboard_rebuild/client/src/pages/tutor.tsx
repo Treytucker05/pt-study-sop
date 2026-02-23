@@ -226,6 +226,10 @@ export default function Tutor() {
     staleTime: 60 * 1000,
   });
 
+  const refreshChatMaterials = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });
+  }, [queryClient]);
+
   const applySessionState = useCallback((session: TutorSessionWithTurns) => {
     setActiveSessionId(session.session_id);
     setTurnCount(session.turn_count);
@@ -771,11 +775,13 @@ export default function Tutor() {
                   {activeSessionId ? (
                     <TutorChat
                       sessionId={activeSessionId}
+                      courseId={courseId}
                       availableMaterials={chatMaterials}
                       selectedMaterialIds={selectedMaterials}
                       accuracyProfile={accuracyProfile}
                       onAccuracyProfileChange={setAccuracyProfile}
                       onSelectedMaterialIdsChange={setSelectedMaterials}
+                      onMaterialsChanged={refreshChatMaterials}
                       onArtifactCreated={handleArtifactCreated}
                       onTurnComplete={(masteryUpdate) => {
                         setTurnCount((prev) => prev + 1);

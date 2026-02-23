@@ -11,10 +11,15 @@ import {
   XCircle,
   BookOpen,
   StickyNote,
+  Upload,
+  FolderPlus,
+  RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  api,
   type BehaviorOverride,
   type Material,
   type TeachBackRubric,
@@ -24,6 +29,7 @@ import {
   type TutorSSEChunk,
   type TutorVerdict,
 } from "@/lib/api";
+import { toast } from "sonner";
 
 interface ToolAction {
   tool: string;
@@ -54,11 +60,13 @@ export interface ChainBlock {
 
 interface TutorChatProps {
   sessionId: string | null;
+  courseId?: number;
   availableMaterials: Material[];
   selectedMaterialIds: number[];
   accuracyProfile: TutorAccuracyProfile;
   onAccuracyProfileChange: (profile: TutorAccuracyProfile) => void;
   onSelectedMaterialIdsChange: (ids: number[]) => void;
+  onMaterialsChanged?: () => Promise<void> | void;
   onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
   onTurnComplete?: (masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean }) => void;
 }
@@ -231,11 +239,13 @@ function TeachBackBadge({ rubric }: { rubric: TeachBackRubric }) {
 
 export function TutorChat({
   sessionId,
+  courseId,
   availableMaterials,
   selectedMaterialIds,
   accuracyProfile,
   onAccuracyProfileChange,
   onSelectedMaterialIdsChange,
+  onMaterialsChanged,
   onArtifactCreated,
   onTurnComplete,
 }: TutorChatProps) {
@@ -243,8 +253,12 @@ export function TutorChat({
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [behaviorOverride, setBehaviorOverride] = useState<BehaviorOverride | null>(null);
+  const [showMaterialPanel, setShowMaterialPanel] = useState(true);
+  const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
 
   // Auto-scroll to bottom
@@ -267,6 +281,55 @@ export function TutorChat({
     setInput("");
     setIsStreaming(false);
   }, [sessionId]);
+
+  const toggleMaterial = useCallback(
+    (materialId: number) => {
+      if (selectedMaterialIds.includes(materialId)) {
+        onSelectedMaterialIdsChange(selectedMaterialIds.filter((id) => id !== materialId));
+        return;
+      }
+      onSelectedMaterialIdsChange([...selectedMaterialIds, materialId]);
+    },
+    [onSelectedMaterialIdsChange, selectedMaterialIds],
+  );
+
+  const selectAllMaterials = useCallback(() => {
+    onSelectedMaterialIdsChange(availableMaterials.map((m) => m.id));
+  }, [availableMaterials, onSelectedMaterialIdsChange]);
+
+  const clearSelectedMaterials = useCallback(() => {
+    onSelectedMaterialIdsChange([]);
+  }, [onSelectedMaterialIdsChange]);
+
+  const handleUploadFiles = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      setIsUploadingMaterial(true);
+      try {
+        const uploadedIds: number[] = [];
+        for (const file of Array.from(files)) {
+          const result = await api.tutor.uploadMaterial(file, { course_id: courseId });
+          uploadedIds.push(result.duplicate_of?.id ?? result.id);
+        }
+        if (onMaterialsChanged) {
+          await onMaterialsChanged();
+        }
+        const merged = Array.from(new Set([...selectedMaterialIds, ...uploadedIds]));
+        onSelectedMaterialIdsChange(merged);
+        toast.success(
+          uploadedIds.length === 1
+            ? "Material uploaded and added to this chat"
+            : `${uploadedIds.length} materials uploaded and added to this chat`,
+        );
+      } catch (err) {
+        toast.error(`Upload failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      } finally {
+        setIsUploadingMaterial(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [courseId, onMaterialsChanged, onSelectedMaterialIdsChange, selectedMaterialIds],
+  );
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionId || isStreaming) return;
@@ -748,6 +811,124 @@ export function TutorChat({
         </div>
 
         <div className="flex flex-col gap-3 p-4 lg:p-5 border-t-2 border-primary/20 bg-black/50">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => void handleUploadFiles(e.target.files)}
+          />
+
+          <div className="border-2 border-primary/30 bg-black/50">
+            <div className="flex flex-wrap items-center gap-2 p-2 border-b border-primary/20">
+              <button
+                type="button"
+                onClick={() => setShowMaterialPanel((prev) => !prev)}
+                className="h-8 px-3 font-arcade text-[10px] tracking-wider border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+              >
+                {showMaterialPanel ? "HIDE MATERIALS" : "SHOW MATERIALS"}
+              </button>
+              <Badge variant="outline" className="rounded-none h-6 text-[10px] font-arcade border-primary/40">
+                LOADED {selectedMaterialIds.length}/{availableMaterials.length}
+              </Badge>
+              <Button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingMaterial}
+                className="h-8 rounded-none px-3 font-arcade text-[10px] gap-1.5 border-2 border-primary/60 bg-primary/10 hover:bg-primary/20"
+              >
+                {isUploadingMaterial ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <FolderPlus className="w-3.5 h-3.5" />
+                )}
+                ADD FILE
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={selectAllMaterials}
+                className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                ALL
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={clearSelectedMaterials}
+                className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                NONE
+              </Button>
+            </div>
+            {showMaterialPanel && (
+              <div className="p-2 space-y-2">
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragActive(true);
+                  }}
+                  onDragLeave={() => setIsDragActive(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragActive(false);
+                    void handleUploadFiles(e.dataTransfer.files);
+                  }}
+                  className={`border-2 border-dashed px-3 py-2 text-xs font-terminal ${
+                    isDragActive ? "border-primary text-primary bg-primary/10" : "border-secondary/40 text-muted-foreground"
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5 inline mr-1.5" />
+                  Drag file here to add to chat + library, or use ADD FILE.
+                </div>
+
+                {selectedMaterialIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {availableMaterials
+                      .filter((m) => selectedMaterialIds.includes(m.id))
+                      .map((m) => (
+                        <Badge
+                          key={`selected-${m.id}`}
+                          variant="outline"
+                          className="rounded-none text-[10px] font-terminal border-primary/50"
+                        >
+                          {m.title || `Material ${m.id}`}
+                        </Badge>
+                      ))}
+                  </div>
+                )}
+
+                <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                  {availableMaterials.map((material) => {
+                    const checked = selectedMaterialIds.includes(material.id);
+                    return (
+                      <label
+                        key={material.id}
+                        className={`flex items-center gap-2 px-2 py-1 border text-xs font-terminal cursor-pointer ${
+                          checked
+                            ? "border-primary/60 bg-primary/10 text-foreground"
+                            : "border-secondary/30 text-muted-foreground hover:border-secondary/60 hover:text-foreground"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleMaterial(material.id)}
+                          className="h-3.5 w-3.5 accent-red-500"
+                        />
+                        <span className="truncate">
+                          {material.title || `Material ${material.id}`}{" "}
+                          <span className="opacity-60">({material.file_type || "file"})</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2 min-w-0">
               <label

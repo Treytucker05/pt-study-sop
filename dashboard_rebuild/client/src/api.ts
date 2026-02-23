@@ -1157,6 +1157,7 @@ export interface TutorCreateSessionRequest {
   topic?: string;
   objective_scope?: TutorObjectiveScope;
   focus_objective_id?: string;
+  north_star_refresh?: boolean;
   content_filter?: {
     material_ids?: number[];
     model?: string;
@@ -1165,6 +1166,7 @@ export interface TutorCreateSessionRequest {
     accuracy_profile?: TutorAccuracyProfile;
     objective_scope?: TutorObjectiveScope;
     focus_objective_id?: string;
+    north_star_refresh?: boolean;
   };
   method_chain_id?: number;
 }
@@ -1214,6 +1216,8 @@ export interface TutorSession {
     path: string;
     status: string;
     module_name: string;
+    course_name?: string;
+    subtopic_name?: string;
     objective_ids: string[];
   };
   reference_targets_count?: number;
@@ -1257,6 +1261,8 @@ export interface TutorSessionWithTurns extends TutorSession {
       path: string;
       status: string;
       module_name: string;
+      course_name?: string;
+      subtopic_name?: string;
       objective_ids: string[];
     };
   } | null;

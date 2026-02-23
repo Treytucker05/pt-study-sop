@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest update: 2026-02-23 Completed all 3 video pipeline tracks (local ingest, enrichment API, tutor integration). 689 backend tests, 8 frontend tests passing. Merged via PR #115.
+Latest update: 2026-02-23 Added tutor North Star pathing + in-chat material toggle/upload controls (see `conductor/tracks/GENERAL/log.md`). Video pipeline track set remains complete (PR #115).
 
 ---
 

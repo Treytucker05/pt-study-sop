@@ -168,9 +168,47 @@ def _sanitize_module_name(raw: Any) -> str:
     return value or "General Module"
 
 
-def _canonical_north_star_path(module_name: str) -> str:
-    safe_name = _sanitize_module_name(module_name)
-    return f"Modules/{safe_name}/_North_Star_{safe_name}.md"
+def _sanitize_path_segment(raw: Any, *, fallback: str) -> str:
+    value = str(raw or "").strip()
+    value = re.sub(r'[\\/:*?"<>|]+', " ", value)
+    value = re.sub(r"\s+", " ", value).strip()
+    return value or fallback
+
+
+def _resolve_class_label(course_id: Optional[int]) -> str:
+    if course_id is None:
+        return "General Class"
+
+    conn: Optional[sqlite3.Connection] = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM courses WHERE id = ?", (int(course_id),))
+        row = cur.fetchone()
+        if row:
+            try:
+                raw_name = row["name"]  # sqlite3.Row path
+            except Exception:
+                raw_name = row[0] if isinstance(row, tuple) and row else None
+            return _sanitize_path_segment(raw_name, fallback=f"Class {course_id}")
+    except Exception:
+        pass
+    finally:
+        if conn is not None:
+            conn.close()
+
+    return _sanitize_path_segment(f"Class {course_id}", fallback="General Class")
+
+
+def _study_notes_base_path(*, course_label: str, module_or_week: str, subtopic: str) -> str:
+    safe_course = _sanitize_path_segment(course_label, fallback="General Class")
+    safe_module = _sanitize_path_segment(module_or_week, fallback="General Module")
+    safe_subtopic = _sanitize_path_segment(subtopic, fallback="General Topic")
+    return f"Study notes/{safe_course}/{safe_module}/{safe_subtopic}"
+
+
+def _canonical_north_star_path(*, course_label: str, module_or_week: str, subtopic: str) -> str:
+    return f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/_North_Star.md"
 
 
 def _wikilink(label: str) -> str:
@@ -549,6 +587,7 @@ def _ensure_north_star_context(
     topic: str,
     learning_objectives: Any,
     source_ids: list[int],
+    force_refresh: bool = False,
 ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
     """
     Hard-gate North Star flow:
@@ -558,8 +597,14 @@ def _ensure_north_star_context(
     # Local import prevents blueprint import cycles at module import time.
     from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
 
-    derived_module_name = _sanitize_module_name(module_name or topic or f"Course-{course_id or 'General'}")
-    north_star_path = _canonical_north_star_path(derived_module_name)
+    derived_module_name = _sanitize_module_name(module_name or topic or f"Module-{course_id or 'General'}")
+    derived_subtopic = _sanitize_path_segment(topic or derived_module_name, fallback=derived_module_name)
+    derived_course = _resolve_class_label(course_id)
+    north_star_path = _canonical_north_star_path(
+        course_label=derived_course,
+        module_or_week=derived_module_name,
+        subtopic=derived_subtopic,
+    )
 
     objectives = _collect_objectives_from_payload(learning_objectives)
     if not objectives:
@@ -591,7 +636,7 @@ def _ensure_north_star_context(
         if existing.get("success"):
             current_content = str(existing.get("content") or "")
             current_statuses = _parse_existing_north_star_objectives(current_content)
-            needs_update = False
+            needs_update = bool(force_refresh)
             for oid, st in desired_statuses.items():
                 if current_statuses.get(oid) != st:
                     needs_update = True
@@ -607,7 +652,7 @@ def _ensure_north_star_context(
                 if not save_res.get("success"):
                     return None, f"North Star update failed: {save_res.get('error', 'unknown error')}"
                 current_content = new_content
-                status = "updated"
+                status = "refreshed" if force_refresh else "updated"
             else:
                 status = "reviewed"
         else:
@@ -636,6 +681,8 @@ def _ensure_north_star_context(
         {
             "path": north_star_path,
             "module_name": derived_module_name,
+            "course_name": derived_course,
+            "subtopic_name": derived_subtopic,
             "status": status,
             "reference_targets": reference_targets,
             "follow_up_targets": ["[[OBJ-UNMAPPED]]"],
@@ -972,10 +1019,17 @@ def _finalize_structured_notes_for_session(
         content_filter.get("module_name") or session_row.get("topic") or "General Module"
     )
     topic = str(session_row.get("topic") or module_name).strip()
+    subtopic = _sanitize_path_segment(topic or module_name, fallback=module_name)
+    course_label = _resolve_class_label(session_row.get("course_id"))
+    study_base = _study_notes_base_path(
+        course_label=course_label,
+        module_or_week=module_name,
+        subtopic=subtopic,
+    )
     now = datetime.now()
     date_key = now.strftime("%Y-%m-%d")
     topic_fragment = _sanitize_note_fragment(topic, fallback="Tutor_Session")
-    session_path = f"Modules/{module_name}/Sessions/{date_key}_Session_{topic_fragment}.md"
+    session_path = f"{study_base}/Sessions/{date_key}_Session_{topic_fragment}.md"
 
     rendered_notes: dict[str, str] = {}
     saved_paths: list[str] = []
@@ -1004,7 +1058,7 @@ def _finalize_structured_notes_for_session(
         if not name:
             continue
         concept_fragment = _sanitize_note_fragment(name, fallback="Concept")
-        concept_path = f"Modules/{module_name}/Concepts/{concept_fragment}.md"
+        concept_path = f"{study_base}/Concepts/{concept_fragment}.md"
         concept_markdown = _render_tutor_concept_markdown(
             concept,
             module_name=module_name,
@@ -2001,6 +2055,12 @@ def create_session():
         focus_objective_id = str(
             content_filter.get("focus_objective_id") or focus_objective_id
         ).strip()
+    north_star_refresh = bool(
+        data.get(
+            "north_star_refresh",
+            (content_filter.get("north_star_refresh") if isinstance(content_filter, dict) else False),
+        )
+    )
 
     selector_meta: dict[str, Any] = {}
 
@@ -2042,6 +2102,7 @@ def create_session():
         topic=topic,
         learning_objectives=learning_objectives,
         source_ids=source_ids,
+        force_refresh=north_star_refresh,
     )
     if north_star_error:
         return jsonify({"error": north_star_error}), 500
@@ -2061,6 +2122,8 @@ def create_session():
         )
     if source_ids:
         content_filter["source_ids"] = source_ids
+    if north_star_refresh:
+        content_filter["north_star_refresh"] = True
 
     if north_star_ctx:
         module_prefix = str(Path(str(north_star_ctx["path"])).parent).replace("\\", "/")
@@ -2070,6 +2133,8 @@ def create_session():
             "path": north_star_ctx.get("path"),
             "status": north_star_ctx.get("status"),
             "module_name": north_star_ctx.get("module_name"),
+            "course_name": north_star_ctx.get("course_name"),
+            "subtopic_name": north_star_ctx.get("subtopic_name"),
             "objective_ids": north_star_ctx.get("objective_ids") or [],
         }
         content_filter["reference_targets"] = (
@@ -2179,6 +2244,8 @@ def create_session():
             "path": north_star_ctx.get("path"),
             "status": north_star_ctx.get("status"),
             "module_name": north_star_ctx.get("module_name"),
+            "course_name": north_star_ctx.get("course_name"),
+            "subtopic_name": north_star_ctx.get("subtopic_name"),
             "objective_ids": north_star_ctx.get("objective_ids") or [],
         }
         response["objective_scope"] = content_filter.get("objective_scope") or "module_all"

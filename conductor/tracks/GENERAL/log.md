@@ -4,6 +4,31 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-23 - Tutor North Star pathing + in-chat material control
+
+- Implemented North Star review/build updates with explicit manual refresh support (`north_star_refresh`) in:
+  - `brain/dashboard/api_tutor.py`
+- Updated canonical study-note pathing to structured hierarchy:
+  - `Study notes/<Class>/<Module or week>/<Subtopic>/...`
+  - North Star file now resolves to `.../_North_Star.md`
+  - Session/concept finalize note outputs now follow the same hierarchy.
+- Added in-chat material control panel in:
+  - `dashboard_rebuild/client/src/components/TutorChat.tsx`
+  - Visible loaded material count + selected badges
+  - Per-material on/off toggles during active chat
+  - Add-file button and drag/drop upload directly from chat (uploads to tutor library and auto-selects for current chat)
+  - Quick actions: select all / clear selection
+- Wired parent refresh callback + course-aware upload context in:
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+- Extended tutor API typings for North Star refresh and metadata fields:
+  - `dashboard_rebuild/client/src/api.ts`
+- Updated North Star write guard assertion in:
+  - `brain/tests/test_tutor_session_linking.py`
+- Validation:
+  - `pytest brain/tests/test_tutor_session_linking.py` -> `18 passed`
+  - `npm run build` (frontend) -> success
+  - `pytest brain/tests/` currently hits existing environment import failures (`ModuleNotFoundError: No module named 'brain'` in unrelated adaptive/selector tests).
+
 ## 2026-02-22 - Tutor structured finalize pipeline + graph sync wiring
 
 - Implemented strict schema-driven Tutor artifact finalization in `brain/dashboard/api_tutor.py`:
