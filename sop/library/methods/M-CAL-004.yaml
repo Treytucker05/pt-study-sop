@@ -1,0 +1,111 @@
+id: M-CAL-004
+name: Story Confidence Tag
+category: prepare
+description: 'After receiving the big-picture narrative overview, rate your confidence in the story as a whole. Can you retell the narrative thread? Where does the story break down? Light-touch calibration that respects top-down learners — no item-level quizzing.'
+default_duration_min: 2
+energy_cost: low
+best_stage: first_exposure
+control_stage: CALIBRATE
+status: active
+tags:
+- calibrate
+- confidence
+- narrative
+- top-down
+- metacognition
+mechanisms:
+- metacognitive_monitoring
+- calibration
+- schema_assessment
+stipulations:
+- Must happen AFTER the learner has received a narrative overview, not before
+- No item-level questions — this is story-level confidence only
+- Confidence captured before any corrective feedback
+- Respects the top-down flow — does not break narrative immersion
+when_to_use:
+- After a narrative PRIME or L1-L2 encoding build
+- When learner prefers top-down big-picture processing
+- Before deciding depth of encoding needed
+when_not_to_use:
+- After item-level pretest (use M-CAL-002 instead)
+- When material has no narrative structure
+knobs:
+  confidence_scale:
+    type: enum
+    options:
+    - three_point
+    - five_point
+    default: three_point
+  probe_depth:
+    type: enum
+    options:
+    - surface
+    - structural
+    default: surface
+constraints:
+  non_assessment: true
+  narrative_level_only: true
+  no_item_quizzing: true
+inputs:
+- Completed narrative overview from PRIME or early ENCODE
+- The story thread the learner just received
+steps:
+- step: 1
+  action: 'Ask: "Can you see the whole story in your head? Rate 1-3: (1) fuzzy, (2) partial, (3) clear"'
+  notes: 'Quick gut check — no overthinking'
+- step: 2
+  action: 'Ask: "Where does the story break down or get fuzzy?"'
+  notes: 'Identify the weakest part of the narrative thread'
+- step: 3
+  action: 'Tag fuzzy areas as priority targets for deeper encoding'
+  notes: 'These become the focus areas for ENCODE phase'
+outputs:
+- Story confidence rating (1-3)
+- Fuzzy zones list (narrative breakdown points)
+- Priority encoding targets
+stop_criteria:
+- Confidence rating captured
+- At least one fuzzy zone identified (or explicit "none — it all clicks")
+- Takes less than 2 minutes
+failure_modes:
+- mode: Learner says they got it all when they did not
+  mitigation: Ask them to retell the story arc in 2 sentences. If they cannot, recalibrate.
+- mode: Turns into a quiz
+  mitigation: 'Stop. This is story-level confidence only, not item testing'
+- mode: Takes too long
+  mitigation: 'Hard cap at 2 minutes. Quick gut check, not deep analysis'
+logging_fields:
+- story_confidence_rating
+- fuzzy_zone_count
+- priority_targets
+evidence:
+  citation: Metcalfe (2017)
+  finding: 'Metacognitive monitoring at the schema level identifies high-value encoding targets'
+  source: grok-session
+evidence_raw: 'Metcalfe (2017); calibration monitoring. Structural Learning (2023); top-down processing reduces overload for big-picture learners'
+evidence_strength: moderate
+primary_citations:
+- Metcalfe (2017)
+- Dunlosky et al. (2013)
+gating_rules:
+- Capture confidence before correctness feedback.
+- Diagnostic only — do not teach or explain content.
+- Stay at narrative/story level, not item level.
+artifact_type: notes
+facilitation_prompt: |
+  You are running M-CAL-004 (Story Confidence Tag) in CALIBRATE stage.
+  Capture narrative-level confidence after the big-picture overview.
+
+  Requirements:
+  - Ask learner to rate story confidence on {confidence_scale} scale.
+  - Ask where the narrative breaks down or gets fuzzy.
+  - Tag fuzzy areas as priority targets for deeper encoding.
+  - No item-level questions — story-level confidence only.
+  - Hard cap at 2 minutes.
+
+  Return exactly:
+  1) StoryConfidenceRating
+  2) FuzzyZonesList (narrative breakdown points)
+  3) PriorityEncodingTargets
+
+  Do not teach or explain content. This method is diagnostic only.

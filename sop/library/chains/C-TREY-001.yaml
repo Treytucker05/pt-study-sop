@@ -1,16 +1,38 @@
 id: C-TREY-001
-name: Trey's New Material Chain
-description: A top-down, teach-first pedagogical sequence. Starts with a big-picture skeleton, moves to a visual concept map, provides a fully worked case example, and ends with a student brain dump for synthesis.
+name: Top-Down Narrative Mastery
+description: 'Trey''s primary chain. Top-down narrative processor flow: big-picture H1 map → hand-draw spatial encoding → story confidence check → L1-L2 narrative build with Kwik sound-stories + analogies → One-Page Anchor (hand-draw) → gentle story recall after learner says "ready" → Teach-back + Post-Learn Brain Dump for closure. 45 min, medium energy, framework-only. Tutor ingests material, teaches interactively with "does this click?" pauses, never quizzes prematurely.'
 blocks:
-- M-PRE-004
-- M-ENC-009
-- M-INT-005
-- M-PRE-001
-allowed_modes: [all]
-requires_reference_targets: false
+- M-PRE-004      # Hierarchical Advance Organizer (H1 map — 5 min)
+- M-PRE-011      # Hand-Draw Map (spatial mind map — 5 min cap)
+- M-CAL-004      # Story Confidence Tag (narrative-level calibration — 2 min)
+- M-ENC-001      # KWIK Hook (sound-story mnemonics — 3 min per term)
+- M-INT-001      # Analogy Bridge (cross-domain connections — 5 min)
+- M-REF-003      # One-Page Anchor (hand-draw reference sheet — 5 min)
+- M-RET-001      # Free Recall Blurt (gentle story recall — 5 min)
+- M-ENC-004      # Teach-Back (explain it back — 5 min)
+- M-OVR-004      # Post-Learn Brain Dump (full recall + gap fill — 7 min)
+allowed_modes:
+- classification
+- mechanism
+- definition
+- procedure
+- spatial
+gates:
+- prime_artifacts_present
+- calibrate_before_deep_encode
+- learner_confirms_ready_before_retrieve
+- retrieve_after_reference_only
+failure_actions:
+- if_story_confidence_low_repeat_narrative
+- if_recall_poor_return_to_encode
+- substitute_by_error_type_mapping
+requires_reference_targets: true
 context_tags:
   stage: first_exposure
   energy: medium
-  time_available: 30
+  time_available: 45
+  learner_style: top_down_narrative
+  hand_draw_max: 2
+  interactive_pauses: true
 is_template: true
 status: active

@@ -1,0 +1,133 @@
+id: M-PRE-011
+name: Hand-Draw Map
+category: prepare
+description: 'Hand-draw a spatial mind map of the topic structure using own words, simple pictures, colors, and spatial positioning. Close eyes afterward to recall layout — positions trigger details. Max 5 minutes, never full rewrite.'
+default_duration_min: 5
+energy_cost: medium
+best_stage: first_exposure
+control_stage: PRIME
+status: active
+tags:
+- spatial
+- hand-draw
+- mind-map
+- visual
+- encoding
+- own-words
+mechanisms:
+- dual_coding
+- generation
+- spatial_encoding
+- motor_encoding
+stipulations:
+- Own words only — never copy verbatim from source
+- Simple pictures and colors, not artistic drawings
+- Max 5 minutes per block, max 1-2 hand-draws per session
+- Purpose is spatial encoding, not note-taking
+when_to_use:
+- After receiving a structural overview (H1 map or advance organizer)
+- When spatial positioning aids recall (anatomy, pathways, hierarchies)
+- First exposure to new material with clear structure
+when_not_to_use:
+- Material is purely procedural or sequential (use flowchart instead)
+- Time is severely constrained (<15 min total session)
+- Learner has already hand-drawn this topic recently
+knobs:
+  map_style:
+    type: enum
+    options:
+    - radial
+    - hierarchical
+    - freeform
+    default: radial
+  branch_limit:
+    type: int
+    min: 3
+    max: 8
+    default: 5
+  pic_density:
+    type: enum
+    options:
+    - none
+    - simple
+    - moderate
+    default: simple
+constraints:
+  non_assessment: true
+  active_processing_required: true
+  time_cap_minutes: 5
+  max_per_session: 2
+  own_words_required: true
+inputs:
+- Structural overview or H1 map from prior PRIME block
+- Blank paper and colored pens/markers
+- Timer set to 5 minutes
+steps:
+- step: 1
+  action: 'Review the structural overview from the previous block'
+  notes: 'Spend 30 seconds scanning — do NOT start drawing yet'
+- step: 2
+  action: 'Place the central concept in the middle of the page'
+  notes: 'Use your own words, not the textbook label'
+- step: 3
+  action: 'Draw 3-5 main branches using different colors'
+  notes: 'Each branch = one pillar or major category'
+- step: 4
+  action: 'Add simple pictures or icons to anchor key concepts'
+  notes: 'Stick figures, arrows, symbols — not art. Speed over beauty'
+- step: 5
+  action: 'Close eyes and mentally walk through the map layout'
+  notes: 'Can you see the positions? Colors? Pictures? This is the spatial recall test'
+outputs:
+- Hand-drawn spatial mind map (physical artifact)
+- Spatial recall confidence (can you see the layout with eyes closed?)
+stop_criteria:
+- 5-minute timer ends (hard stop)
+- Map has central concept + 3-5 branches with at least 1 picture each
+- Eyes-closed spatial recall attempted
+failure_modes:
+- mode: Spending too long on drawing quality
+  mitigation: 'Set timer visible. Ugly is fine — speed over beauty'
+- mode: Copying verbatim from source
+  mitigation: 'Close source material. Draw from memory of overview'
+- mode: Drawing too many branches (overload)
+  mitigation: 'Cap at branch_limit. Combine related items'
+- mode: Skipping the eyes-closed recall step
+  mitigation: 'This IS the point. 10 seconds minimum with eyes closed'
+logging_fields:
+- branch_count
+- pic_count
+- spatial_recall_confidence
+- time_spent_seconds
+evidence:
+  citation: Wammes et al. (2016)
+  finding: 'Drawing effect — drawing doubles free-recall rates (45% vs 20%) through multimodal encoding combining motor, visual, and semantic processing'
+  source: grok-session
+evidence_raw: 'Wammes et al. (2016); drawing effect — 45% vs 20% recall; Fan (2023) drawing as cognitive tool; Van der Weel (2024) handwriting brain connectivity'
+evidence_strength: high
+primary_citations:
+- Wammes et al. (2016)
+- Fan (2023)
+- Van der Weel & Van der Meer (2024)
+gating_rules:
+- Do not assess or score the learner in PRIME.
+- Stay at orientation level — this is encoding, not retrieval.
+artifact_type: notes
+facilitation_prompt: |
+  You are running M-PRE-011 (Hand-Draw Map) in PRIME stage.
+  Guide the learner to create a spatial mind map of the topic structure.
+
+  Requirements:
+  - Learner reviews the structural overview (30 sec scan, no drawing yet).
+  - Central concept placed in middle of page using own words.
+  - Draw {branch_limit} main branches using different colors.
+  - Add simple pictures/icons to anchor key concepts (speed over beauty).
+  - Close eyes and mentally walk through the map layout.
+
+  Return exactly:
+  1) MapStructureConfirmation (central concept + branch count)
+  2) SpatialRecallConfidence (can learner see layout with eyes closed?)
+  3) TimeSpent (hard stop at {time_cap_minutes} min)
+
+  This is a non-assessment activity. Do not quiz or score the learner.
+  This is orientation-level encoding, not retrieval.

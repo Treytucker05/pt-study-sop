@@ -1,0 +1,142 @@
+id: M-OVR-004
+name: Post-Learn Brain Dump
+category: overlearn
+description: 'Close all materials. Write everything you remember from the session — stories, connections, details, anything. Then open materials, compare, identify gaps, and fill them in. Different from Free Recall Blurt: this is comprehensive session-level closure, not topic-level retrieval practice.'
+default_duration_min: 7
+energy_cost: medium
+best_stage: consolidation
+control_stage: OVERLEARN
+status: active
+tags:
+- recall
+- brain-dump
+- metacognition
+- gap-detection
+- closure
+- session-wrap
+mechanisms:
+- retrieval
+- generation
+- metacognition
+- consolidation
+- error_detection
+stipulations:
+- All materials must be closed during the dump phase
+- Dump is comprehensive (whole session), not focused on one topic
+- Gap-fill phase is targeted — only fill identified gaps, don't re-study everything
+- Time-capped at 7 minutes total (5 dump + 2 gap-fill)
+when_to_use:
+- End of any learning session as closure activity
+- After encoding + retrieval blocks to consolidate
+- When learner wants metacognitive summary of what stuck vs. what didn't
+when_not_to_use:
+- Very short sessions (<15 min) where Exit Ticket suffices
+- Pure drill/speed sessions where Exit Ticket is better fit
+knobs:
+  dump_format:
+    type: enum
+    options:
+    - freewrite
+    - structured
+    - list
+    default: freewrite
+  gap_fill_mode:
+    type: enum
+    options:
+    - highlight_only
+    - fill_and_annotate
+    default: fill_and_annotate
+  prompt_focus:
+    type: enum
+    options:
+    - everything
+    - stories_only
+    - connections_only
+    default: everything
+constraints:
+  closed_note_first: true
+  time_cap_minutes: 7
+  dump_before_review: true
+inputs:
+- Completed study session (all blocks done)
+- Blank paper or text area
+- Timer (5 min dump + 2 min gap-fill)
+- Session materials (closed during dump, opened for gap-fill)
+steps:
+- step: 1
+  action: 'Close ALL materials — notes, slides, textbook, everything'
+  notes: 'Materials must be completely out of sight'
+- step: 2
+  action: 'Set timer for 5 minutes. Write everything you remember from this session'
+  notes: 'Stream of consciousness. Stories, facts, connections, pictures, analogies — anything that comes to mind'
+- step: 3
+  action: 'When stuck, write "?" and keep going'
+  notes: 'Gaps are data, not failures. Mark them and move on'
+- step: 4
+  action: 'Timer ends. Open materials and compare your dump to the session content'
+  notes: 'Spend max 2 minutes on this comparison'
+- step: 5
+  action: 'Identify gaps — what did you miss? What was wrong?'
+  notes: 'Circle or highlight missing items. These are priority review targets'
+- step: 6
+  action: 'Fill gaps with brief annotations (not full re-study)'
+  notes: 'One-line corrections or additions only. This is gap-fill, not re-learning'
+outputs:
+- Brain dump text (raw recall)
+- Gap list (what was missing or wrong)
+- Gap-fill annotations
+- Session retention estimate (percentage of material recalled)
+stop_criteria:
+- 7-minute total timer ends (hard stop)
+- Dump phase complete + gap comparison done
+- At least one gap identified and annotated
+failure_modes:
+- mode: Peeking during dump phase
+  mitigation: 'Physically remove materials from workspace before starting'
+- mode: Spending too long on gap-fill (turning into re-study)
+  mitigation: '2-minute hard cap on gap-fill. One-line annotations only'
+- mode: Writing nothing because "I forgot everything"
+  mitigation: 'Start with any single fact or story fragment. Memory cascades from there'
+- mode: Skipping the gap comparison
+  mitigation: Gap comparison is mandatory. It reveals what did not encode.
+logging_fields:
+- dump_word_count
+- gap_count
+- retention_estimate
+- time_spent_dump
+- time_spent_gap_fill
+evidence:
+  citation: RetrievalPractice.org (2017)
+  finding: '5-minute free recall sessions strengthen past and future learning, improve organization, and identify gaps without stakes'
+  source: grok-session
+evidence_raw: 'RetrievalPractice.org (2017); free recall strengthens retention. Roediger & Karpicke (2006); testing effect. Karpicke & Blunt (2011); retrieval > concept mapping for retention'
+evidence_strength: high
+primary_citations:
+- Roediger & Karpicke (2006)
+- Karpicke & Blunt (2011)
+- RetrievalPractice.org (2017)
+gating_rules:
+- Run only after encoding and retrieval blocks are complete.
+- Materials must be closed during dump phase.
+- Gap-fill is targeted, not comprehensive re-study.
+artifact_type: notes
+facilitation_prompt: |
+  You are running M-OVR-004 (Post-Learn Brain Dump) in OVERLEARN stage.
+  Guide the learner through comprehensive session-level free recall and gap-fill.
+
+  Requirements:
+  - Ensure ALL materials are closed before dump phase begins.
+  - Set timer for 5 minutes. Learner writes everything remembered ({dump_format}).
+  - When stuck, write "?" and keep going — gaps are data, not failures.
+  - After 5 min, open materials and compare (max 2 min).
+  - Identify gaps — what was missed or wrong?
+  - Fill gaps with one-line annotations only ({gap_fill_mode}).
+
+  Return exactly:
+  1) DumpWordCount
+  2) GapCount (items missed or wrong)
+  3) GapFillAnnotations
+  4) RetentionEstimate (percentage of session material recalled)
+
+  This builds recall fluency at the session level — comprehensive, not item-by-item.
+  Hard stop at {time_cap_minutes} minutes total. This is closure, not re-learning.
