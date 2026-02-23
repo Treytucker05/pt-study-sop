@@ -4,17 +4,17 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest non-track update: 2026-02-22 Added hybrid video ingestion implementation plan and created new conductor track set for local ingest, API enrichment, and tutor integration (see `conductor/tracks/GENERAL/log.md`).
+Latest non-track update: 2026-02-23 Implemented local MP4 processing + tutor process/status APIs + frontend process/polling UI; validated with full backend tests and frontend build (see `conductor/tracks/GENERAL/log.md`).
 
 ---
 
-- [ ] **Track: Video Ingest Local Pipeline** (planned — created 2026-02-22; priority 1)
+- [ ] **Track: Video Ingest Local Pipeline** (in progress — created 2026-02-22; priority 1)
   *Link: [./tracks/video_ingest_local_20260222/](./tracks/video_ingest_local_20260222/)*
 
 - [ ] **Track: Video Enrichment API (Selective)** (planned — created 2026-02-22; priority 2)
   *Link: [./tracks/video_enrichment_api_20260222/](./tracks/video_enrichment_api_20260222/)*
 
-- [ ] **Track: Video Tutor Integration** (planned — created 2026-02-22; priority 3)
+- [ ] **Track: Video Tutor Integration** (in progress — created 2026-02-22; priority 3)
   *Link: [./tracks/video_tutor_integration_20260222/](./tracks/video_tutor_integration_20260222/)*
 
 - [ ] **Track Set: Hybrid Video Study Pipeline** (planned meta-track — sequence: local ingest -> selective API enrichment -> tutor integration)

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, Loader2, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 
-const ACCEPTED = ".pdf,.md,.docx,.pptx,.txt";
+const ACCEPTED = ".pdf,.md,.docx,.pptx,.txt,.mp4";
 
 interface MaterialUploaderProps {
   courseId?: number;
@@ -29,7 +29,7 @@ export function MaterialUploader({ courseId, onUploadComplete }: MaterialUploade
   const handleFiles = useCallback((files: FileList | File[]) => {
     const arr = Array.from(files).filter((f) => {
       const ext = f.name.split(".").pop()?.toLowerCase();
-      return ["pdf", "md", "docx", "pptx", "txt"].includes(ext || "");
+      return ["pdf", "md", "docx", "pptx", "txt", "mp4"].includes(ext || "");
     });
     if (arr.length === 0) {
       toast.error("No supported files selected");
@@ -96,7 +96,7 @@ export function MaterialUploader({ courseId, onUploadComplete }: MaterialUploade
       >
         <Upload className={`${ICON_SM} mx-auto mb-1 text-muted-foreground`} />
         <div className={TEXT_MUTED}>Drop files or click to browse</div>
-        <div className={`${TEXT_MUTED} opacity-60`}>PDF, DOCX, PPTX, MD, TXT</div>
+        <div className={`${TEXT_MUTED} opacity-60`}>PDF, DOCX, PPTX, MD, TXT, MP4</div>
       </div>
 
       <input

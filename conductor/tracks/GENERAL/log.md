@@ -1038,3 +1038,26 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - upload endpoint extension gate in `brain/text_extractor.py`
   - existing materials sync and mp4 binary ingest path in `brain/rag_notes.py` + `brain/dashboard/api_tutor.py`
   - retrieval/embedding path in `brain/tutor_rag.py`.
+
+## 2026-02-23 00:00 - MP4 video ingest implementation (local + tutor workflow)
+- Added local ingest pipeline and bridge:
+  - `brain/video_ingest_local.py` (ffmpeg audio extraction, faster-whisper transcript, keyframes, optional OCR, artifact writer)
+  - `brain/video_ingest_bridge.py` (ingest transcript/visual markdown into materials corpus + embed)
+  - `scripts/video_ingest_local.py` CLI entrypoint
+- Added tutor backend video workflow in `brain/dashboard/api_tutor.py`:
+  - MP4 support in `/api/tutor/materials/upload`
+  - `POST /api/tutor/materials/video/process`
+  - `GET /api/tutor/materials/video/status/<job_id>`
+  - background job state + async process/ingest execution.
+- Added frontend API + UI wiring:
+  - `dashboard_rebuild/client/src/api.ts` new methods/types for video process/status
+  - `dashboard_rebuild/client/src/components/MaterialSelector.tsx` process-selected-MP4 action + polling + per-row status badges
+  - `.mp4` accepted in material selectors/uploader.
+- Added tests:
+  - `brain/tests/test_video_ingest_local.py`
+  - `brain/tests/test_video_ingest_bridge.py`
+  - `brain/tests/test_video_process_api.py`
+- Validation:
+  - `python -m pytest brain/tests/test_video_ingest_local.py brain/tests/test_video_ingest_bridge.py brain/tests/test_video_process_api.py` -> 6 passed
+  - `python -m pytest brain/tests/` -> 677 passed
+  - `cd dashboard_rebuild && npm run build` -> PASS

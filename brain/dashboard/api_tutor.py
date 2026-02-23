@@ -18,6 +18,8 @@ Endpoints:
   POST   /api/tutor/embed                 — Trigger embedding for rag_docs
   POST   /api/tutor/materials/sync         — Sync local materials folder to rag_docs
   POST   /api/tutor/materials/upload      — Upload study material
+  POST   /api/tutor/materials/video/process — Process uploaded MP4 into study artifacts
+  GET    /api/tutor/materials/video/status/<job_id> — Get MP4 processing status
   GET    /api/tutor/materials             — List materials library
   PUT    /api/tutor/materials/<id>        — Update material metadata
   DELETE /api/tutor/materials/<id>        — Delete material + file + embeddings
@@ -70,6 +72,9 @@ UPLOADS_DIR = Path(__file__).parent.parent / "data" / "uploads"
 SYNC_JOBS: dict[str, dict[str, Any]] = {}
 SYNC_JOBS_LOCK = Lock()
 SYNC_JOB_RETENTION = 30
+VIDEO_JOBS: dict[str, dict[str, Any]] = {}
+VIDEO_JOBS_LOCK = Lock()
+VIDEO_JOB_RETENTION = 30
 _LOG = logging.getLogger(__name__)
 
 _SELECTOR_COLS_ENSURED = False
@@ -1699,6 +1704,101 @@ def _trim_sync_jobs() -> None:
         )
         for old_job_id, _ in ordered_jobs[: len(SYNC_JOBS) - SYNC_JOB_RETENTION]:
             SYNC_JOBS.pop(old_job_id, None)
+
+
+def _update_video_job(job_id: str, **payload: Any) -> None:
+    with VIDEO_JOBS_LOCK:
+        job = VIDEO_JOBS.setdefault(job_id, {"job_id": job_id})
+        job.update(payload)
+
+
+def _trim_video_jobs() -> None:
+    with VIDEO_JOBS_LOCK:
+        if len(VIDEO_JOBS) <= VIDEO_JOB_RETENTION:
+            return
+        ordered_jobs = sorted(
+            VIDEO_JOBS.items(),
+            key=lambda item: str(item[1].get("started_at") or ""),
+        )
+        for old_job_id, _ in ordered_jobs[: len(VIDEO_JOBS) - VIDEO_JOB_RETENTION]:
+            VIDEO_JOBS.pop(old_job_id, None)
+
+
+def _launch_video_process_job(
+    *,
+    material_id: int,
+    source_path: str,
+    title: str,
+    course_id: Optional[int],
+    model_size: str = "base",
+    language: Optional[str] = None,
+    keyframe_interval_sec: int = 20,
+) -> str:
+    job_id = uuid.uuid4().hex
+    _update_video_job(
+        job_id,
+        status="pending",
+        phase="pending",
+        material_id=material_id,
+        source_path=source_path,
+        title=title,
+        model_size=model_size,
+        language=language,
+        keyframe_interval_sec=keyframe_interval_sec,
+        started_at=datetime.now().isoformat(),
+        finished_at=None,
+        last_error=None,
+        manifest=None,
+        ingest_result=None,
+    )
+    _trim_video_jobs()
+
+    def _runner() -> None:
+        try:
+            from video_ingest_bridge import ingest_video_artifacts
+            from video_ingest_local import process_video
+
+            _update_video_job(job_id, status="running", phase="processing")
+            manifest = process_video(
+                source_path,
+                model_size=model_size,
+                language=language,
+                keyframe_interval_sec=keyframe_interval_sec,
+            )
+            _update_video_job(job_id, phase="ingesting", manifest=manifest)
+
+            artifacts = (manifest or {}).get("artifacts") or {}
+            transcript_md_path = str(artifacts.get("transcript_md_path") or "")
+            visual_notes_md_path = str(artifacts.get("visual_notes_md_path") or "")
+            if not transcript_md_path or not visual_notes_md_path:
+                raise RuntimeError("Video processing did not return markdown artifact paths.")
+
+            ingest_result = ingest_video_artifacts(
+                material_id=material_id,
+                source_video_path=source_path,
+                transcript_md_path=transcript_md_path,
+                visual_notes_md_path=visual_notes_md_path,
+                course_id=course_id,
+                corpus="materials",
+            )
+            _update_video_job(
+                job_id,
+                status="completed",
+                phase="completed",
+                ingest_result=ingest_result,
+            )
+        except Exception as exc:
+            _update_video_job(
+                job_id,
+                status="failed",
+                phase="failed",
+                last_error=str(exc),
+            )
+        finally:
+            _update_video_job(job_id, finished_at=datetime.now().isoformat())
+
+    Thread(target=_runner, daemon=True).start()
+    return job_id
 
 
 def _auto_link_materials_to_courses(conn: sqlite3.Connection) -> dict:
@@ -3863,14 +3963,17 @@ def upload_material():
     from text_extractor import get_file_type, extract_text, SUPPORTED_EXTENSIONS
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in SUPPORTED_EXTENSIONS:
+    allowed_extensions = set(SUPPORTED_EXTENSIONS) | {".mp4"}
+    if ext not in allowed_extensions:
         return jsonify(
             {
-                "error": f"Unsupported file type: {ext}. Supported: {', '.join(SUPPORTED_EXTENSIONS)}"
+                "error": f"Unsupported file type: {ext}. Supported: {', '.join(sorted(allowed_extensions))}"
             }
         ), 400
 
-    file_type = get_file_type(file.filename)
+    file_type = "mp4" if ext == ".mp4" else get_file_type(file.filename)
+    if not file_type:
+        return jsonify({"error": f"Could not infer file type from extension: {ext}"}), 400
     title = request.form.get("title", Path(file.filename).stem)
     course_id = request.form.get("course_id", type=int)
     tags = request.form.get("tags", "")
@@ -3885,15 +3988,29 @@ def upload_material():
 
     file_size = disk_path.stat().st_size
 
-    # Extract text
-    extraction = extract_text(str(disk_path))
-    content = extraction["content"]
-    extraction_error = extraction["error"]
+    # Extract text (mp4 is processed in dedicated video pipeline, so keep upload fast).
+    if ext == ".mp4":
+        content = ""
+        extraction_error = None
+    else:
+        extraction = extract_text(str(disk_path))
+        content = extraction["content"]
+        extraction_error = extraction["error"]
 
     # Insert into rag_docs
     import hashlib
 
-    checksum = hashlib.sha256(content.encode("utf-8")).hexdigest() if content else ""
+    if content:
+        checksum = hashlib.sha256(content.encode("utf-8")).hexdigest()
+    else:
+        hasher = hashlib.sha256()
+        with disk_path.open("rb") as f:
+            while True:
+                chunk = f.read(1024 * 1024)
+                if not chunk:
+                    break
+                hasher.update(chunk)
+        checksum = hasher.hexdigest()
 
     conn = get_connection()
     cur = conn.cursor()
@@ -3935,8 +4052,9 @@ def upload_material():
     conn.commit()
 
     # Attempt embedding (non-blocking — don't fail the upload if embedding fails)
+    # Skip for mp4 upload rows because they have no text until video processing runs.
     embedded = False
-    if content and not extraction_error:
+    if ext != ".mp4" and content and not extraction_error:
         try:
             from tutor_rag import embed_rag_docs
 
@@ -4482,4 +4600,85 @@ def get_materials_sync_status(job_id: str):
 
     if not job:
         return jsonify({"error": "Sync job not found"}), 404
+    return jsonify(job), 200
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/materials/video/process — Process uploaded MP4 to study docs
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/materials/video/process", methods=["POST"])
+def process_video_material():
+    data = request.get_json(silent=True) or {}
+    material_id = data.get("material_id")
+    if material_id is None:
+        return jsonify({"error": "material_id is required"}), 400
+
+    try:
+        material_id_int = int(material_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "material_id must be an integer"}), 400
+
+    model_size = str(data.get("model_size") or "base").strip() or "base"
+    language = data.get("language")
+    if language is not None:
+        language = str(language).strip() or None
+    try:
+        keyframe_interval_sec = int(data.get("keyframe_interval_sec") or 20)
+    except (TypeError, ValueError):
+        return jsonify({"error": "keyframe_interval_sec must be an integer"}), 400
+    keyframe_interval_sec = max(keyframe_interval_sec, 1)
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT id, source_path, file_path, title, course_id, file_type
+        FROM rag_docs
+        WHERE id = ?
+          AND COALESCE(corpus, 'materials') = 'materials'
+        """,
+        (material_id_int,),
+    )
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": "Material not found"}), 404
+
+    file_type = str(row["file_type"] or "").strip().lower()
+    source_path = str(row["file_path"] or row["source_path"] or "").strip()
+    if not source_path:
+        return jsonify({"error": "Material file path is missing"}), 400
+    if file_type != "mp4" and not source_path.lower().endswith(".mp4"):
+        return jsonify({"error": "Material is not an mp4 video"}), 400
+    if not Path(source_path).exists():
+        return jsonify({"error": f"Material file not found on disk: {source_path}"}), 400
+
+    job_id = _launch_video_process_job(
+        material_id=material_id_int,
+        source_path=source_path,
+        title=str(row["title"] or ""),
+        course_id=row["course_id"],
+        model_size=model_size,
+        language=language,
+        keyframe_interval_sec=keyframe_interval_sec,
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "job_id": job_id,
+            "material_id": material_id_int,
+            "source_path": source_path,
+        }
+    ), 202
+
+
+@tutor_bp.route("/materials/video/status/<job_id>", methods=["GET"])
+def get_video_process_status(job_id: str):
+    with VIDEO_JOBS_LOCK:
+        job = dict(VIDEO_JOBS.get(job_id) or {})
+    if not job:
+        return jsonify({"error": "Video job not found"}), 404
     return jsonify(job), 200

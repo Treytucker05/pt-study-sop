@@ -20,6 +20,7 @@ System context: scripts support CP-MSS v1.0 operations and governance.
 - `parallel launch shortcut` - Use `C:/Users/treyt/OneDrive/Desktop/Travel Laptop/Parallel Work/01_Launch_Parallel_Wizard.bat` for the one-file prompting flow.
 - `check_parallel_setup.ps1` - Run health validation across scripts, worktrees, launchers, and task board.
 - `sync_tutor_category_docs.py` - One-command sync: regenerate Obsidian tutor category pages from `sop/library/methods/*.yaml`.
+- `video_ingest_local.py` - Local MP4 pipeline (ffmpeg + faster-whisper + optional OCR) that emits transcript/visual-note artifacts for tutor ingest.
 
 ## Notes
 - Run from repo root unless the script states otherwise.

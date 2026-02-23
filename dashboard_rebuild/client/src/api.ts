@@ -645,6 +645,16 @@ export const api = {
       }),
     getSyncMaterialsStatus: (jobId: string) =>
       request<TutorSyncJobStatus>(`/tutor/materials/sync/status/${encodeURIComponent(jobId)}`),
+    processVideoMaterial: (
+      materialId: number,
+      opts?: { model_size?: string; language?: string; keyframe_interval_sec?: number },
+    ) =>
+      request<TutorVideoProcessStartResult>("/tutor/materials/video/process", {
+        method: "POST",
+        body: JSON.stringify({ material_id: materialId, ...(opts || {}) }),
+      }),
+    getVideoProcessStatus: (jobId: string) =>
+      request<TutorVideoJobStatus>(`/tutor/materials/video/status/${encodeURIComponent(jobId)}`),
     uploadMaterial: async (file: File, opts?: { course_id?: number; title?: string; tags?: string }) => {
       const form = new FormData();
       form.append("file", file);
@@ -1368,6 +1378,30 @@ export interface TutorSyncJobStatus {
   embed_result?: TutorEmbedResult | { error: string } | null;
   started_at: string;
   finished_at?: string | null;
+}
+
+export interface TutorVideoProcessStartResult {
+  ok: boolean;
+  job_id: string;
+  material_id: number;
+  source_path: string;
+}
+
+export interface TutorVideoJobStatus {
+  job_id: string;
+  status: "pending" | "running" | "completed" | "failed";
+  phase?: string;
+  material_id: number;
+  source_path?: string;
+  title?: string;
+  model_size?: string;
+  language?: string | null;
+  keyframe_interval_sec?: number;
+  started_at?: string;
+  finished_at?: string | null;
+  last_error?: string | null;
+  manifest?: Record<string, unknown> | null;
+  ingest_result?: Record<string, unknown> | null;
 }
 
 export interface Material {
