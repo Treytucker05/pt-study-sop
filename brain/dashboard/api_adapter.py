@@ -7424,9 +7424,7 @@ def brain_quick_chat():
     def generate():
         import urllib.request
         import urllib.error
-        from llm_provider import OPENROUTER_API_KEY
-
-        api_key = OPENROUTER_API_KEY or os.environ.get("OPENROUTER_API_KEY")
+        api_key = os.environ.get("OPENROUTER_API_KEY")
         if not api_key:
             yield 'data: {"error": "OPENROUTER_API_KEY not set."}\n\n'
             return
