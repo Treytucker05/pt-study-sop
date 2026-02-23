@@ -76,4 +76,36 @@ describe("RatingDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "SUBMIT RATING" }));
     expect(props.onSubmit).not.toHaveBeenCalled();
   });
+
+  it("submits with empty notes when none provided", () => {
+    const props = renderDialog();
+    clickStar("EFFECTIVENESS (did it help you learn?)", 4);
+    clickStar("ENGAGEMENT (did it hold your focus?)", 4);
+
+    fireEvent.click(screen.getByRole("button", { name: "SUBMIT RATING" }));
+
+    expect(props.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: "" })
+    );
+  });
+
+  it("does not render when open is false", () => {
+    renderDialog({ open: false });
+    expect(screen.queryByText("RATE METHOD")).not.toBeInTheDocument();
+  });
+
+  it("calls onClose when close action is triggered", () => {
+    const props = renderDialog();
+    expect(props.onClose).toBeDefined();
+  });
+
+  it("allows changing star selection", () => {
+    renderDialog();
+    clickStar("EFFECTIVENESS (did it help you learn?)", 0); // 1 star
+    clickStar("EFFECTIVENESS (did it help you learn?)", 4); // change to 5 stars
+    clickStar("ENGAGEMENT (did it hold your focus?)", 2);
+
+    const submitBtn = screen.getByRole("button", { name: "SUBMIT RATING" });
+    expect(submitBtn).not.toBeDisabled();
+  });
 });

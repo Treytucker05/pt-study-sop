@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   parseSOPRefs,
   renderSOPRefLinks,
@@ -111,6 +111,10 @@ describe("navigateToSOPFile", () => {
 });
 
 describe("highlightSOPSection", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("scrolls to element and adds/removes highlight class", async () => {
     vi.useFakeTimers();
     const el = document.createElement("div");
@@ -120,24 +124,19 @@ describe("highlightSOPSection", () => {
 
     highlightSOPSection("test-section");
 
-    // Advance past the 500ms setTimeout
     vi.advanceTimersByTime(500);
     expect(el.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "center" });
     expect(el.classList.contains("highlight-section")).toBe(true);
 
-    // Advance past the 2000ms removal
     vi.advanceTimersByTime(2000);
     expect(el.classList.contains("highlight-section")).toBe(false);
 
     document.body.removeChild(el);
-    vi.useRealTimers();
   });
 
   it("does nothing when element not found", () => {
     vi.useFakeTimers();
-    // Should not throw
     highlightSOPSection("nonexistent");
     vi.advanceTimersByTime(3000);
-    vi.useRealTimers();
   });
 });
