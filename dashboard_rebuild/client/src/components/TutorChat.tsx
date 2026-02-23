@@ -17,12 +17,15 @@ import {
   RotateCcw,
   Target,
   X,
+  ChevronRight,
+  ChevronDown,
   FileText as FileTextIcon,
   Folder as FolderIcon,
   SlidersHorizontal,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useQuery } from "@tanstack/react-query";
 import {
   api,
   type BehaviorOverride,
@@ -79,12 +82,6 @@ interface TutorChatProps {
 type ArtifactType = "note" | "card" | "map";
 type SourceTab = "materials" | "vault" | "north_star";
 
-interface VaultSelectable {
-  path: string;
-  type: "file" | "folder";
-  label: string;
-}
-
 interface NorthStarSummary {
   path?: string;
   status?: string;
@@ -99,56 +96,143 @@ function _basename(path: string): string {
   return String(path || "").split(/[\\/]/).pop() || path;
 }
 
-function normalizeVaultItems(payload: unknown): VaultSelectable[] {
-  const input = payload as Record<string, unknown> | unknown[];
-  const normalized: VaultSelectable[] = [];
-  const seen = new Set<string>();
+const VAULT_TREE_INDENT = 16;
 
-  const pathsObj =
-    !Array.isArray(input) && input && typeof input === "object"
-      ? (input as Record<string, unknown>).paths
-      : undefined;
-  if (pathsObj && typeof pathsObj === "object" && !Array.isArray(pathsObj)) {
-    for (const [noteName, fullPathRaw] of Object.entries(pathsObj as Record<string, unknown>)) {
-      const fullPath = String(fullPathRaw || "").trim();
-      if (!fullPath || seen.has(fullPath)) continue;
-      seen.add(fullPath);
-      normalized.push({
-        path: fullPath,
-        type: "file",
-        label: String(noteName || _basename(fullPath)).trim() || _basename(fullPath),
-      });
-    }
-  }
+interface VaultTreeRowProps {
+  fullPath: string;
+  name: string;
+  isFolder: boolean;
+  depth: number;
+  checked: boolean;
+  expanded: boolean;
+  onTogglePath: (path: string) => void;
+  onToggleFolder: (path: string) => void;
+}
 
-  const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
-  const rawItems = Array.isArray(input)
-    ? input
-    : [
-        ...asArray((input as Record<string, unknown>)?.["items"]),
-        ...asArray((input as Record<string, unknown>)?.["files"]),
-        ...asArray((input as Record<string, unknown>)?.["entries"]),
-      ];
-  const out: VaultSelectable[] = [];
-  for (const item of rawItems) {
-    if (!item || typeof item !== "object") continue;
-    const rec = item as Record<string, unknown>;
-    const path = String(rec.path || rec.file_path || rec.full_path || "").trim();
-    if (!path || seen.has(path)) continue;
-    seen.add(path);
-    const rawType = String(rec.type || rec.kind || "").toLowerCase();
-    const type: "file" | "folder" =
-      rawType === "folder" || rawType === "dir" || rawType === "directory"
-        ? "folder"
-        : "file";
-    out.push({
-      path,
-      type,
-      label: _basename(path),
-    });
-  }
-  const merged = [...normalized, ...out];
-  return merged.sort((a, b) => a.path.localeCompare(b.path));
+function VaultTreeRow({
+  fullPath,
+  name,
+  isFolder,
+  depth,
+  checked,
+  expanded,
+  onTogglePath,
+  onToggleFolder,
+}: VaultTreeRowProps) {
+  return (
+    <div
+      className={`flex items-center gap-2 py-1 pr-2 border text-xs font-terminal ${
+        checked
+          ? "border-primary/60 bg-primary/10 text-foreground"
+          : "border-secondary/30 text-muted-foreground hover:border-secondary/60 hover:text-foreground"
+      }`}
+      style={{ paddingLeft: `${8 + depth * VAULT_TREE_INDENT}px` }}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={() => onTogglePath(fullPath)}
+        className="h-3.5 w-3.5 accent-red-500 shrink-0"
+      />
+      {isFolder ? (
+        <button
+          type="button"
+          onClick={() => onToggleFolder(fullPath)}
+          className="flex items-center gap-1 min-w-0 flex-1"
+        >
+          {expanded ? (
+            <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
+          ) : (
+            <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+          )}
+          <FolderIcon className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+          <span className="truncate">{name}</span>
+        </button>
+      ) : (
+        <>
+          <span className="w-3 shrink-0" />
+          <FileTextIcon className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+          <span className="truncate">{name}</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+interface VaultTreeChildrenProps {
+  folderPath: string;
+  depth: number;
+  selectedPaths: string[];
+  expandedFolders: Set<string>;
+  onTogglePath: (path: string) => void;
+  onToggleFolder: (path: string) => void;
+  searchQuery: string;
+  refreshToken: number;
+  enabled: boolean;
+}
+
+function VaultTreeChildren({
+  folderPath,
+  depth,
+  selectedPaths,
+  expandedFolders,
+  onTogglePath,
+  onToggleFolder,
+  searchQuery,
+  refreshToken,
+  enabled,
+}: VaultTreeChildrenProps) {
+  const { data } = useQuery({
+    queryKey: ["tutor", "obsidian", "files", folderPath, refreshToken],
+    queryFn: () => api.obsidian.getFiles(folderPath),
+    enabled,
+  });
+
+  const entries = Array.isArray(data?.files) ? data.files : [];
+  const q = searchQuery.trim().toLowerCase();
+
+  return (
+    <>
+      {entries.map((entry) => {
+        const trimmed = String(entry || "").trim();
+        if (!trimmed) return null;
+        const isFolder = trimmed.endsWith("/");
+        const cleaned = trimmed.replace(/\/$/, "");
+        const name = _basename(cleaned);
+        const fullPath = folderPath ? `${folderPath}/${name}` : name;
+        if (q && !fullPath.toLowerCase().includes(q)) return null;
+        const expanded = isFolder ? expandedFolders.has(fullPath) : false;
+
+        return (
+          <div key={fullPath}>
+            <VaultTreeRow
+              fullPath={fullPath}
+              name={name}
+              isFolder={isFolder}
+              depth={depth}
+              checked={selectedPaths.includes(fullPath)}
+              expanded={expanded}
+              onTogglePath={onTogglePath}
+              onToggleFolder={onToggleFolder}
+            />
+            {isFolder && expanded && (
+              <VaultTreeChildren
+                folderPath={fullPath}
+                depth={depth + 1}
+                selectedPaths={selectedPaths}
+                expandedFolders={expandedFolders}
+                onTogglePath={onTogglePath}
+                onToggleFolder={onToggleFolder}
+                searchQuery={searchQuery}
+                refreshToken={refreshToken}
+                enabled={enabled}
+              />
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
 }
 
 function parseArtifactCommand(message: string): { type: ArtifactType | null; title: string } {
@@ -336,9 +420,9 @@ export function TutorChat({
   const [sourcesTab, setSourcesTab] = useState<SourceTab>("materials");
   const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
-  const [isLoadingVault, setIsLoadingVault] = useState(false);
   const [vaultSearch, setVaultSearch] = useState("");
-  const [vaultItems, setVaultItems] = useState<VaultSelectable[]>([]);
+  const [vaultRefreshToken, setVaultRefreshToken] = useState(0);
+  const [expandedVaultFolders, setExpandedVaultFolders] = useState<Set<string>>(new Set());
   const [selectedVaultPaths, setSelectedVaultPaths] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem(vaultSelectionKey);
@@ -384,20 +468,15 @@ export function TutorChat({
     }
   }, [selectedVaultPaths]);
 
-  const loadVaultIndex = useCallback(
-    async (refresh: boolean = false) => {
-      setIsLoadingVault(true);
-      try {
-        const payload = await api.obsidian.getVaultIndex(refresh);
-        setVaultItems(normalizeVaultItems(payload));
-      } catch (err) {
-        toast.error(`Vault index load failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-      } finally {
-        setIsLoadingVault(false);
-      }
-    },
-    [],
-  );
+  const {
+    data: vaultRootData,
+    isFetching: isLoadingVault,
+    error: vaultLoadError,
+  } = useQuery({
+    queryKey: ["tutor", "obsidian", "files", "root", vaultRefreshToken],
+    queryFn: () => api.obsidian.getFiles(""),
+    enabled: isSourcesOpen && sourcesTab === "vault",
+  });
 
   useEffect(() => {
     if (!sessionId) return;
@@ -442,16 +521,22 @@ export function TutorChat({
     };
   }, [sessionId]);
 
-  useEffect(() => {
-    if (isSourcesOpen && sourcesTab === "vault" && vaultItems.length === 0) {
-      void loadVaultIndex(false);
-    }
-  }, [isSourcesOpen, sourcesTab, vaultItems.length, loadVaultIndex]);
-
   const toggleVaultPath = useCallback((path: string) => {
     setSelectedVaultPaths((prev) =>
       prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path],
     );
+  }, []);
+
+  const toggleVaultFolder = useCallback((path: string) => {
+    setExpandedVaultFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
   }, []);
 
   const toggleMaterial = useCallback(
@@ -804,13 +889,20 @@ export function TutorChat({
     [availableMaterials, selectedMaterialIds],
   );
 
-  const filteredVaultItems = useMemo(() => {
+  const vaultRootEntries = useMemo(() => {
+    return Array.isArray(vaultRootData?.files) ? vaultRootData.files : [];
+  }, [vaultRootData]);
+
+  const filteredVaultRootEntries = useMemo(() => {
     const q = vaultSearch.trim().toLowerCase();
-    if (!q) return vaultItems;
-    return vaultItems.filter(
-      (item) => item.path.toLowerCase().includes(q) || item.label.toLowerCase().includes(q),
-    );
-  }, [vaultItems, vaultSearch]);
+    if (!q) return vaultRootEntries;
+    return vaultRootEntries.filter((entry) => {
+      const raw = String(entry || "").trim();
+      if (!raw) return false;
+      if (raw.endsWith("/")) return true;
+      return raw.toLowerCase().includes(q);
+    });
+  }, [vaultRootEntries, vaultSearch]);
 
   if (!sessionId) {
     return (
@@ -1275,7 +1367,10 @@ export function TutorChat({
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => void loadVaultIndex(true)}
+                      onClick={() => {
+                        setExpandedVaultFolders(new Set());
+                        setVaultRefreshToken((prev) => prev + 1);
+                      }}
                       disabled={isLoadingVault}
                       className="h-9 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
                     >
@@ -1293,33 +1388,49 @@ export function TutorChat({
                     </Button>
                   </div>
                   <div className="max-h-[52vh] overflow-y-auto space-y-1 pr-1">
-                    {filteredVaultItems.map((item) => {
-                      const checked = selectedVaultPaths.includes(item.path);
+                    {filteredVaultRootEntries.map((entry) => {
+                      const trimmed = String(entry || "").trim();
+                      if (!trimmed) return null;
+                      const isFolder = trimmed.endsWith("/");
+                      const cleaned = trimmed.replace(/\/$/, "");
+                      const name = _basename(cleaned);
+                      const fullPath = cleaned;
+                      const expanded = isFolder ? expandedVaultFolders.has(fullPath) : false;
+
                       return (
-                        <label
-                          key={item.path}
-                          className={`flex items-center gap-2 px-2 py-1 border text-xs font-terminal cursor-pointer ${
-                            checked
-                              ? "border-primary/60 bg-primary/10 text-foreground"
-                              : "border-secondary/30 text-muted-foreground hover:border-secondary/60 hover:text-foreground"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleVaultPath(item.path)}
-                            className="h-3.5 w-3.5 accent-red-500"
+                        <div key={fullPath}>
+                          <VaultTreeRow
+                            fullPath={fullPath}
+                            name={name}
+                            isFolder={isFolder}
+                            depth={0}
+                            checked={selectedVaultPaths.includes(fullPath)}
+                            expanded={expanded}
+                            onTogglePath={toggleVaultPath}
+                            onToggleFolder={toggleVaultFolder}
                           />
-                          {item.type === "folder" ? (
-                            <FolderIcon className="w-3.5 h-3.5 text-primary/70 shrink-0" />
-                          ) : (
-                            <FileTextIcon className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                          {isFolder && expanded && (
+                            <VaultTreeChildren
+                              folderPath={fullPath}
+                              depth={1}
+                              selectedPaths={selectedVaultPaths}
+                              expandedFolders={expandedVaultFolders}
+                              onTogglePath={toggleVaultPath}
+                              onToggleFolder={toggleVaultFolder}
+                              searchQuery={vaultSearch}
+                              refreshToken={vaultRefreshToken}
+                              enabled={isSourcesOpen && sourcesTab === "vault"}
+                            />
                           )}
-                          <span className="truncate">{item.path}</span>
-                        </label>
+                        </div>
                       );
                     })}
-                    {!isLoadingVault && filteredVaultItems.length === 0 && (
+                    {vaultLoadError ? (
+                      <div className="text-xs font-terminal text-red-400 border border-red-500/40 p-2">
+                        Vault load failed: {vaultLoadError instanceof Error ? vaultLoadError.message : "Unknown error"}
+                      </div>
+                    ) : null}
+                    {!isLoadingVault && filteredVaultRootEntries.length === 0 && (
                       <div className="text-xs font-terminal text-muted-foreground border border-secondary/30 p-2">
                         No vault items found.
                       </div>

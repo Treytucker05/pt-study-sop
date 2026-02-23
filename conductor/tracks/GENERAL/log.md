@@ -4,6 +4,18 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-23 - Tutor Vault pane switched to Brain-style folder tree
+
+- Updated `dashboard_rebuild/client/src/components/TutorChat.tsx` Vault tab rendering to match Brain page behavior:
+  - Replaced flat `vault-index` path list UI with recursive folder/subfolder tree rendering backed by `/obsidian/files`.
+  - Added expand/collapse folder controls with persistent per-folder state while panel is open.
+  - Kept per-path checkbox selection so folders/files can be toggled into tutor scope.
+  - Kept refresh control and rewired it to invalidate/reload tree queries.
+  - Kept search, now applied against tree paths during recursive rendering.
+- Validation:
+  - `cd dashboard_rebuild && npm run build` -> PASS
+  - `pytest brain/tests/` -> FAIL at collection due existing import-path environment issue (`ModuleNotFoundError: No module named 'brain'`), unrelated to this frontend-only change.
+
 ## 2026-02-23 - Obsidian vault index parity fix (spaces + endpoint precedence)
 
 - Fixed `brain/obsidian_index.py` so tutor vault indexing now matches the real Obsidian tree:

@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest update: 2026-02-23 Obsidian vault index parity fixed (env URL precedence + folder URL-encoding), restoring real vault visibility in tutor Sources/Vault (see `conductor/tracks/GENERAL/log.md`). Video pipeline track set remains complete (PR #115).
+Latest update: 2026-02-23 Tutor chat Vault tab now uses Brain-style recursive folder tree rendering (`/obsidian/files`) with visible folders/subfolders, expand/collapse, and scoped selection (see `conductor/tracks/GENERAL/log.md`). Video pipeline track set remains complete (PR #115).
 
 ---
 
