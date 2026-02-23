@@ -256,6 +256,11 @@ Skip step 1 for backend-only changes.
 | `npm run dev` | Opens port 3000, doesn't serve Python API |
 | Forgetting hard refresh | Browser shows old cached build |
 | Multiple servers | Port conflicts — use `Start_Dashboard.bat` only |
+| Using `category: prepare` in YAML | Legacy alias — canonical enum is `prime`. CI rejects non-canonical values. |
+| Using `status: active` in YAML | Not a valid enum — use `draft`, `core`, `optional`, `validated`, or `deprecated`. |
+| Windows backslash paths in CI | GitHub Actions runs Linux — use `Path.relative_to().as_posix()` for cross-platform paths. |
+| Merging PR before CI is green | CI fixes on feature branch don't land on main. Cherry-pick to a fix branch if this happens. |
+| Missing `prompt_keywords` in ENCODE methods | CI `test_method_cards_hardening` requires ENCODE methods to include "actively transform" keywords. |
 
 ---
 
@@ -302,6 +307,24 @@ Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks f
 **Problem:** Tutor appeared to pull only ~6 files even when ~30 files were selected.
 **Cause:** Usually not preloading. This is typically turn-level scope loss or relevance narrowing. If a turn payload misses `content_filter.material_ids`, retrieval falls back to low default depth and appears constrained.
 **Solution:** Ensure every turn sends `content_filter.material_ids` plus `accuracy_profile`. Validate in browser Network on the `turn` request and in `retrieval_debug` (`material_ids_count`, `material_k`, `retrieved_material_unique_sources`).
+
+### YAML Strict Validation in CI
+The `sop_validate` CI job enforces strict rules on all method and chain YAML files:
+- **Category enum**: Must be one of `prime`, `calibrate`, `encode`, `interrogate`, `reference`, `retrieve`, `overlearn`. Legacy aliases (`prepare`, `refine`, `review`) are rejected.
+- **Status enum**: Must be one of `draft`, `core`, `optional`, `validated`, `deprecated`. Never use `active`.
+- **Required fields**: Every method must have `id`, `name`, `category`, `status`, `description`, `knobs` (list), `constraints` (dict). Every chain must have `id`, `name`, `status`, `description`, `blocks` (list).
+- **ENCODE prompt keywords**: Methods with `category: encode` must include "actively transform" or similar generative-processing verbs in `prompt_keywords`.
+- **Golden-file export tests**: `test_export_methods.py` and `test_export_chains.py` compare runtime exports against `sop/tests/golden/`. After adding/modifying methods or chains, regenerate golden files: `python sop/tests/regen_golden.py`.
+
+### Cross-Platform Path Handling
+Python scripts that produce paths for CI comparison (e.g., `sop/scripts/export_methods.py`) must use `Path.relative_to(base).as_posix()` to emit forward-slash paths. GitHub Actions runs on Linux, so backslash Windows paths will fail diff checks. Always test path output with `as_posix()`.
+
+### Cherry-Pick Workflow for Premature Merges
+If a PR gets merged before CI fixes land (e.g., PR #116), the fix commits live on the feature branch but not on `main`. Recovery:
+1. Create `fix/ci-green` from `origin/main`.
+2. `git cherry-pick` the fix commits from the old branch.
+3. Resolve conflicts (IDs may have changed if new methods were added on main).
+4. Open a new PR (e.g., PR #117) targeting main.
 
 ### Scoped Retrieval Tuning Rule (Latency vs Breadth)
 

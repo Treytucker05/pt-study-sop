@@ -7,7 +7,7 @@ This guide covers how to run the stack, update docs, and extend the system safel
 - Backend: Python + Flask (Brain/Dashboard)
 - DB: SQLite (`brain/data/pt_study.db`)
 - Frontend: React build served from `brain/static/dist/`
-- Knowledge base: Obsidian vault at `C:\Users\treyt\Desktop\PT School Semester 2` (notes under `projects/pt-study-sop/`)
+- Knowledge base: Obsidian vault at `C:\Users\treyt\Desktop\Treys School` (notes under `projects/pt-study-sop/`)
 
 ## Run Locally
 1. Install Python deps (first time): `python -m pip install -r requirements.txt`

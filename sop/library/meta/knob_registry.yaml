@@ -233,6 +233,14 @@ knobs:
       - markdown_table
       - table
 
+  verbalization_mode:
+    description: Mode of verbal expression for self-explanation and think-aloud protocols.
+    type: enum
+    allowed_values:
+      - silent
+      - spoken
+      - written
+
   output_mode:
     description: Output mode for structural methods.
     type: enum

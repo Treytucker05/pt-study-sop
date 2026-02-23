@@ -80,7 +80,7 @@ coverage/
 
 # Local/unrelated directories (keep on disk; ignore in git)
 Arcade-RetroDesignNEW/
-PT School Semester 2/
+Treys School/
 ui/
 jules-sdk/
 dashboard_rebuild/client/node_modules/.vite/

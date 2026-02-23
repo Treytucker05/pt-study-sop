@@ -4,6 +4,30 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-23 - CI green fix (PR #117) + documentation audit
+
+- Created `fix/ci-green` branch from `origin/main` to land CI fixes that were stranded after PR #116 was merged prematurely.
+- Cherry-picked 5 CI fix commits covering:
+  - `brain/requirements.txt` and `sop/requirements.txt` creation for CI dependency install.
+  - Strict YAML validation fixes across 56 method/chain files (category enum, status enum, required fields, knobs/constraints structure).
+  - ENCODE `prompt_keywords` ("actively transform") additions.
+  - Golden-file regeneration (`sop/tests/golden/`) and `regen_golden.py` helper script.
+  - Cross-platform path fixes (`Path.as_posix()`) in export scripts for Linux CI.
+- Fixed 3 new methods from `ec9e2cd2` (M-CAL-004, M-OVR-004, M-PRE-011) for category/status/knobs compliance.
+- Renamed `C-TREY-001.yaml` → `C-TRY-001.yaml` to match valid chain prefix pattern.
+- PR #117: https://github.com/Treytucker05/pt-study-sop/pull/117 — all 3 CI jobs green.
+- Full documentation audit (14 files):
+  - Fixed stale method/chain counts in `README.md`, `sop/README.md`, `docs/root/VISION_PPFW.md` (15/34/46 → 50 methods, 6/13 → 19 chains).
+  - Fixed Obsidian vault path ("PT School Semester 2" → "Treys School") in 10 files.
+  - Fixed `sop/README.md` category example (`prepare` → `prime`).
+  - Updated `docs/root/PROJECT_ARCHITECTURE.md` library file map + test coverage.
+- AGENTS.md audit:
+  - Added 3 new CI-related learnings (YAML strict validation, cross-platform paths, cherry-pick workflow).
+  - Added 5 new entries to "Common Mistakes To Avoid" table (category/status enums, Windows paths, premature merge, prompt keywords).
+- Validation:
+  - `python -m pytest brain/tests/` -> 706 passed
+  - All 3 CI jobs green on PR #117
+
 ## 2026-02-23 - RAG chunking fix + Gemini CLI provider wiring
 
 - Fixed RAG chunking in `brain/tutor_rag.py`:

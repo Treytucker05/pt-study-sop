@@ -8976,7 +8976,7 @@ def get_obsidian_graph():
 @adapter_bp.route("/obsidian/config", methods=["GET"])
 def get_obsidian_config():
     """Get Obsidian configuration for frontend."""
-    vault_name = os.environ.get("OBSIDIAN_VAULT_NAME", "PT School Semester 2")
+    vault_name = os.environ.get("OBSIDIAN_VAULT_NAME", "Treys School")
     return jsonify(
         {
             "vaultName": vault_name,

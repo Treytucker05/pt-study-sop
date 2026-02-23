@@ -28,7 +28,7 @@ Optional later:
 - Connect Calendar/Tasks + Anki sync.
 
 ## Quick Start
-1. Open Obsidian at `C:\Users\treyt\Desktop\PT School Semester 2`.
+1. Open Obsidian at `C:\Users\treyt\Desktop\Treys School`.
 2. Start Tutor (Custom GPT) and use the runtime prompt: `sop/runtime/runtime_prompt.md`.
 3. Launch Dashboard with `Start_Dashboard.bat` and open `http://127.0.0.1:5000`.
 4. Save WRAP logs to `brain/session_logs/` or use Dashboard upload.
@@ -41,7 +41,7 @@ Optional later:
 ## Where Your Data Lives
 - Session logs: `brain/session_logs/*.md`
 - Database: `brain/data/pt_study.db`
-- Obsidian notes: `C:\Users\treyt\Desktop\PT School Semester 2` (see `projects/pt-study-sop/`)
+- Obsidian notes: `C:\Users\treyt\Desktop\Treys School` (see `projects/pt-study-sop/`)
 - Scholar outputs: `scholar/outputs/`
 
 ## Troubleshooting

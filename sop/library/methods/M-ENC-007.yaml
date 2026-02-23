@@ -20,28 +20,9 @@ mechanisms:
 - calibration
 - feedback
 knobs:
-  verbalization_mode:
-    type: enum
-    options:
-    - silent
-    - spoken
-    - written
-    default: written
-    description: silent = internal self-explanation; spoken = think-aloud vocalization (exposes reasoning gaps); written = notes with causal connectors
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  verbalization_mode: written
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true
