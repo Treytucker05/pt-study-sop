@@ -1,0 +1,8 @@
+# Brain module third-party dependencies
+flask>=3.0,<4
+requests>=2.31,<3
+jsonschema>=4.20,<5
+pydantic>=2.5,<3
+PyYAML>=6.0,<7
+werkzeug>=3.0,<4
+pytest-timeout>=2.2,<3
