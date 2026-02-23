@@ -10,6 +10,7 @@ Tools:
   3. create_anki_card           — draft an Anki flashcard for spaced repetition
   4. create_figma_diagram       — create a visual diagram in Figma (requires Figma MCP)
   5. save_learning_objectives   — persist approved LOs to DB and rebuild North Star
+  6. rate_method_block          — record student feedback on a study method block
 """
 
 from __future__ import annotations
@@ -221,6 +222,42 @@ SAVE_LEARNING_OBJECTIVES_SCHEMA: dict[str, Any] = {
     },
 }
 
+RATE_METHOD_BLOCK_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "name": "rate_method_block",
+    "description": (
+        "Record the student's feedback on a study method block. "
+        "Use when the student says a method worked well, didn't help, "
+        "was too easy/hard, or gives any opinion on a study technique."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "block_name": {
+                "type": "string",
+                "description": "Name of the method block (e.g. 'Free Recall Quiz', 'Concept Mapping')",
+            },
+            "effectiveness": {
+                "type": "integer",
+                "description": "How effective the method was (1=not helpful, 3=neutral, 5=very helpful)",
+                "minimum": 1,
+                "maximum": 5,
+            },
+            "engagement": {
+                "type": "integer",
+                "description": "How engaged the student was (1=bored, 3=neutral, 5=very engaged)",
+                "minimum": 1,
+                "maximum": 5,
+            },
+            "notes": {
+                "type": "string",
+                "description": "Optional: specific feedback from the student",
+            },
+        },
+        "required": ["block_name", "effectiveness", "engagement"],
+    },
+}
+
 # All tool schemas in a single list for passing to the API
 TUTOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
     SAVE_TO_OBSIDIAN_SCHEMA,
@@ -228,6 +265,7 @@ TUTOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
     CREATE_ANKI_CARD_SCHEMA,
     CREATE_FIGMA_DIAGRAM_SCHEMA,
     SAVE_LEARNING_OBJECTIVES_SCHEMA,
+    RATE_METHOD_BLOCK_SCHEMA,
 ]
 
 
@@ -452,6 +490,89 @@ def execute_save_learning_objectives(
         return {"success": False, "error": str(e)}
 
 
+def execute_rate_method_block(
+    arguments: dict[str, Any],
+    *,
+    session_id: str | int | None = None,
+) -> dict[str, Any]:
+    """Record student feedback on a method block."""
+    block_name = arguments.get("block_name", "")
+    effectiveness = arguments.get("effectiveness", 3)
+    engagement = arguments.get("engagement", 3)
+    notes = arguments.get("notes", "")
+
+    if not block_name:
+        return {"success": False, "error": "Missing required field: block_name"}
+
+    try:
+        from brain.dashboard.api_adapter import get_connection
+
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Look up block by name (case-insensitive)
+        cur.execute(
+            "SELECT id FROM method_blocks WHERE LOWER(name) = LOWER(?)",
+            (block_name,),
+        )
+        row = cur.fetchone()
+        block_id = row[0] if row else None
+
+        if not block_id:
+            # Try slug match
+            slug = block_name.lower().replace(" ", "-").replace("_", "-")
+            cur.execute(
+                "SELECT id FROM method_blocks WHERE slug = ?",
+                (slug,),
+            )
+            row = cur.fetchone()
+            block_id = row[0] if row else None
+
+        # Get chain_id and brain_session_id from tutor session
+        chain_id = None
+        brain_session_id = None
+        if session_id:
+            cur.execute(
+                "SELECT method_chain_id, brain_session_id FROM tutor_sessions WHERE session_id = ?",
+                (str(session_id),),
+            )
+            sess_row = cur.fetchone()
+            if sess_row:
+                chain_id = sess_row[0]
+                brain_session_id = sess_row[1]
+
+        now = datetime.now().isoformat()
+        cur.execute(
+            """INSERT INTO method_ratings
+            (method_block_id, chain_id, session_id, effectiveness, engagement, notes, context, rated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                block_id,
+                chain_id,
+                brain_session_id,
+                effectiveness,
+                engagement,
+                notes,
+                json.dumps({"source": "tutor_tool", "tutor_session_id": str(session_id)}),
+                now,
+            ),
+        )
+        rating_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+
+        log.info("Tutor tool: rated method block %s — eff=%d eng=%d", block_name, effectiveness, engagement)
+        return {
+            "success": True,
+            "message": f"Recorded feedback for {block_name}: effectiveness={effectiveness}, engagement={engagement}",
+            "rating_id": rating_id,
+            "block_id": block_id,
+        }
+    except Exception as e:
+        log.exception("Tutor tool rate_method_block failed")
+        return {"success": False, "error": str(e)}
+
+
 # ---------------------------------------------------------------------------
 # Tool registry — maps tool names to execution functions
 # ---------------------------------------------------------------------------
@@ -462,6 +583,7 @@ TOOL_REGISTRY: dict[str, Any] = {
     "create_anki_card": execute_create_anki_card,
     "create_figma_diagram": execute_create_figma_diagram,
     "save_learning_objectives": execute_save_learning_objectives,
+    "rate_method_block": execute_rate_method_block,
 }
 
 
@@ -482,6 +604,7 @@ def execute_tool(
         "create_anki_card",
         "create_figma_diagram",
         "save_learning_objectives",
+        "rate_method_block",
     ):
         return handler(arguments, session_id=session_id)
     return handler(arguments)

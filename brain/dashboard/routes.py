@@ -153,7 +153,17 @@ def api_scholar():
 
 @dashboard_bp.route("/api/scholar/digest")
 def api_scholar_digest():
-    """Fetch latest Scholar digest from the database (fast, DB-first)."""
+    """Fetch latest Scholar digest from the database (fast, DB-first).
+
+    Pass ?refresh=true to regenerate the weekly digest before querying.
+    """
+    # Optionally regenerate digest before fetching
+    if request.args.get("refresh", "").lower() == "true":
+        try:
+            generate_weekly_digest(days=7)
+        except Exception:
+            pass  # Best-effort refresh; still return DB state below
+
     try:
         from dashboard.scholar import get_scholar_run_status
         run_status = get_scholar_run_status()

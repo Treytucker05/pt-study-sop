@@ -3022,6 +3022,37 @@ def create_session():
             (session_id, first_block["id"], now),
         )
 
+        # Populate session_chains for this chain+topic combo
+        try:
+            chain_row = cur.execute(
+                "SELECT name FROM method_chains WHERE id = ?",
+                (method_chain_id,),
+            ).fetchone()
+            if chain_row:
+                chain_name = chain_row[0]
+                existing = cur.execute(
+                    "SELECT id, session_ids_json FROM session_chains WHERE chain_name = ? AND topic = ?",
+                    (chain_name, topic),
+                ).fetchone()
+                if existing:
+                    ids = json.loads(existing[1] or "[]")
+                    ids.append(session_id)
+                    cur.execute(
+                        "UPDATE session_chains SET session_ids_json = ?, updated_at = ? WHERE id = ?",
+                        (json.dumps(ids), now, existing[0]),
+                    )
+                else:
+                    cur.execute(
+                        """INSERT INTO session_chains (chain_name, topic, session_ids_json, created_at, updated_at)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (chain_name, topic, json.dumps([session_id]), now, now),
+                    )
+        except Exception:
+            import logging
+            logging.getLogger(__name__).warning(
+                "Failed to populate session_chains", exc_info=True
+            )
+
     conn.commit()
     conn.close()
 
@@ -3055,6 +3086,21 @@ def create_session():
         response["reference_targets_count"] = len(
             north_star_ctx.get("reference_targets") or []
         )
+
+    # --- Method recommendations from Scholar data ---
+    try:
+        from dashboard.method_analysis import get_context_recommendations
+
+        rec_context: dict[str, Any] = {}
+        if isinstance(content_filter, dict):
+            rec_context["stage"] = content_filter.get("stage")
+            rec_context["energy"] = content_filter.get("energy")
+            rec_context["class_type"] = content_filter.get("class_type")
+        recs = get_context_recommendations(**{k: v for k, v in rec_context.items() if v})
+        if recs:
+            response["recommended_chains"] = recs
+    except Exception:
+        pass  # Best-effort — don't block session creation
 
     return jsonify(response), 201
 
@@ -3689,6 +3735,28 @@ def send_turn(session_id: str):
                     system_prompt += f"\n\n{scaffold_directive}"
             except (ImportError, Exception) as _sc_exc:
                 _LOG.debug("Scaffolding skipped: %s", _sc_exc)
+
+            # Scholar method recommendations for this context
+            try:
+                from dashboard.method_analysis import get_context_recommendations as _get_recs
+
+                rec_kw: dict[str, Any] = {}
+                if isinstance(content_filter, dict):
+                    for _rk in ("stage", "energy", "class_type"):
+                        if content_filter.get(_rk):
+                            rec_kw[_rk] = content_filter[_rk]
+                if rec_kw:
+                    recs = _get_recs(**rec_kw)
+                    if recs:
+                        rec_lines = [f"- {r['name']}" for r in recs[:3]]
+                        system_prompt += (
+                            "\n\n## Scholar-Recommended Methods\n"
+                            "Based on past session ratings, these chains work well "
+                            "for this context:\n" + "\n".join(rec_lines) + "\n"
+                            "Mention these if the student asks which method to try next."
+                        )
+            except Exception:
+                pass  # Best-effort
 
             # Build user prompt: chat history + question
             recent_turns = turns[-12:] if len(turns) > 12 else turns
@@ -4639,6 +4707,53 @@ def end_session(session_id: str):
         except Exception as exc:
             _LOG.warning("end_session North Star refresh failed: %s", exc)
 
+    # --- Auto-capture method_ratings for completed blocks ---
+    ratings_captured = 0
+    try:
+        cur_rt = conn.cursor()
+        cur_rt.execute(
+            """SELECT block_slug, block_index, notes, started_at, ended_at
+               FROM tutor_block_transitions
+               WHERE tutor_session_id = ? AND ended_at IS NOT NULL""",
+            (session_id,),
+        )
+        completed_blocks = cur_rt.fetchall()
+
+        method_chain_id = session.get("method_chain_id")
+        rating_context = json.dumps({
+            "course_id": content_filter.get("course_id"),
+            "module_id": content_filter.get("module_id"),
+            "topic": session.get("topic"),
+            "session_mode": content_filter.get("session_mode"),
+        })
+
+        for block_row in completed_blocks:
+            slug = block_row["block_slug"]
+            notes = block_row["notes"]
+
+            cur_rt.execute(
+                "SELECT id FROM method_blocks WHERE slug = ?",
+                (slug,),
+            )
+            mb_row = cur_rt.fetchone()
+            if not mb_row:
+                continue
+            mb_id = mb_row["id"]
+
+            cur_rt.execute(
+                """INSERT INTO method_ratings
+                   (method_block_id, chain_id, session_id,
+                    effectiveness, engagement, notes, context)
+                   VALUES (?, ?, ?, 3, 3, ?, ?)""",
+                (mb_id, method_chain_id, brain_session_id, notes, rating_context),
+            )
+            ratings_captured += 1
+
+        if ratings_captured:
+            conn.commit()
+    except Exception as exc:
+        _LOG.warning("end_session auto-capture method_ratings failed: %s", exc)
+
     conn.close()
 
     return jsonify(
@@ -4653,6 +4768,7 @@ def end_session(session_id: str):
                 "artifacts": artifact_summary,
                 "objective_ids": objective_ids,
                 "chain_name": chain_name,
+                "ratings_captured": ratings_captured,
             },
             "graph_sync": graph_sync_result,
             "north_star_refresh": north_star_refresh,
