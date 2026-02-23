@@ -70,6 +70,8 @@ evidence:
 evidence_raw: Schmidt & Rikers (2007); clinical application strengthens illness script formation
 facilitation_prompt: 'You are running M-INT-002 (Clinical Application) in ENCODE stage.
 
+  The learner must actively transform the concept into a clinical scenario.
+
   Execute this method card exactly and keep outputs deterministic.
 
 
