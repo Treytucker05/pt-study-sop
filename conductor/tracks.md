@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Latest update: 2026-02-23 Tutor chat now supports Obsidian vault CRUD (create/edit/rename/delete file/folder), deterministic note template rendering, and left-sidebar authoring controls; validated with `npm run build` and `python -m pytest brain/tests/` (697 passed). See `conductor/tracks/GENERAL/log.md`.
+Latest update: 2026-02-23 Tutor chat footer was simplified by removing the confusing Active Sources bar; docs remain synced to current Obsidian CRUD + template-render behavior. See `conductor/tracks/GENERAL/log.md`.
 
 ---
 

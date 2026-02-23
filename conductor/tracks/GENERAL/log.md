@@ -4,6 +4,25 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-23 - Tutor chat footer cleanup (removed Active Sources bar)
+
+- Removed the `ACTIVE SOURCES` badge strip from Tutor chat composer area in:
+  - `dashboard_rebuild/client/src/components/TutorChat.tsx`
+- Reason:
+  - badges represented selected scope state and could drift from user expectation of "actually used this turn", creating confusion during study flow.
+- Validation:
+  - `cd dashboard_rebuild && npm run build` -> PASS
+  - `python -m pytest brain/tests/` -> PASS (`697 passed`)
+
+## 2026-02-23 - README sync for Tutor vault CRUD and source controls
+
+- Updated canonical docs to reflect shipped tutor source/vault workflow and current Obsidian API surface:
+  - `README.md`
+    - refreshed Obsidian endpoint table (`/status`, `/file` CRUD, `/folder` CRUD, `/move`, `/template/render`, `/append`)
+    - updated `/tutor` page description to include sources drawer + vault authoring context.
+  - `dashboard_rebuild/client/src/pages/README.md`
+    - expanded `tutor.tsx` description to clarify scope ownership (materials, vault, North Star filters feeding `TutorChat`).
+
 ## 2026-02-23 - Tutor Obsidian authoring CRUD + template rendering wired
 
 - Added Obsidian CRUD endpoints in `brain/dashboard/api_adapter.py`:

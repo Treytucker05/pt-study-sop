@@ -362,9 +362,16 @@ brain/
 | GET | `/api/sessions` | All sessions (with filters) |
 | GET | `/api/sessions/<id>` | Single session |
 | GET | `/api/session_stats` | Aggregate stats |
-| GET | `/api/obsidian/health` | Obsidian plugin status |
+| GET | `/api/obsidian/status` | Obsidian plugin status |
 | GET | `/api/obsidian/files` | List vault files |
-| POST | `/api/obsidian/save` | Save/append to vault |
+| GET | `/api/obsidian/file` | Read vault file |
+| PUT | `/api/obsidian/file` | Save/overwrite vault file |
+| DELETE | `/api/obsidian/file` | Delete vault file |
+| POST | `/api/obsidian/folder` | Create vault folder |
+| DELETE | `/api/obsidian/folder` | Delete vault folder |
+| POST | `/api/obsidian/move` | Move/rename vault path |
+| POST | `/api/obsidian/template/render` | Render strict note template payload |
+| POST | `/api/obsidian/append` | Append content to file |
 | GET | `/api/gcal/status` | Google Calendar auth status |
 | POST | `/api/gcal/sync` | Two-way calendar sync |
 | GET | `/api/methods/blocks` | Method block library |
@@ -396,7 +403,7 @@ localhost:5000/
   +-- /brain      Brain (session ingestion, logs, Anki sync)
   +-- /calendar   Calendar (Google Calendar/Tasks, local events)
   +-- /scholar    Scholar (runs, proposals, lifecycle panel)
-  +-- /tutor      Tutor (SOP explorer, chat interface)
+  +-- /tutor      Tutor (chat, sources drawer, North Star, vault authoring)
   +-- /methods    Methods (block library, chains, analytics)
 ```
 

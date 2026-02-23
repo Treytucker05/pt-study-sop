@@ -1306,32 +1306,6 @@ export function TutorChat({
             className="hidden"
             onChange={(e) => void handleUploadFiles(e.target.files)}
           />
-          <div className="border-2 border-primary/30 bg-black/50 p-2 space-y-2">
-            <div className="font-arcade text-[10px] text-muted-foreground tracking-wider">ACTIVE SOURCES</div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Badge variant="outline" className="rounded-none h-6 text-[10px] font-arcade border-primary/40">
-                MAT {selectedMaterialIds.length}
-              </Badge>
-              <Badge variant="outline" className="rounded-none h-6 text-[10px] font-arcade border-primary/40">
-                VAULT {selectedVaultPaths.length}
-              </Badge>
-              {northStarSummary?.status ? (
-                <Badge variant="outline" className="rounded-none h-6 text-[10px] font-arcade border-primary/40">
-                  NS {northStarSummary.status.toUpperCase()}
-                </Badge>
-              ) : null}
-              {selectedMaterialLabels.slice(0, 3).map((label) => (
-                <Badge key={label} variant="outline" className="rounded-none text-[10px] font-terminal border-primary/30">
-                  {label}
-                </Badge>
-              ))}
-              {selectedVaultPaths.slice(0, 2).map((path) => (
-                <Badge key={path} variant="outline" className="rounded-none text-[10px] font-terminal border-primary/30">
-                  {_basename(path)}
-                </Badge>
-              ))}
-            </div>
-          </div>
 
           <div className="flex flex-wrap items-center gap-4">
             <Button

@@ -8,7 +8,7 @@ System context: tutor flows in these pages should present CP-MSS v1.0 stage lang
 - `calendar.tsx`: Calendar and task management UI.
 - `dashboard.tsx`: Main dashboard overview.
 - `scholar.tsx`: Scholar insights and reports.
-- `tutor.tsx`: Tutor chat history and controls.
+- `tutor.tsx`: Tutor session setup + chat shell; manages materials scope, vault scope, North Star context, and passes source filters to `TutorChat`.
 
 ## Persistent UI issue log (modal overlay)
 
