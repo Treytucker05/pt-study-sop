@@ -4,6 +4,18 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-23 - Obsidian vault index parity fix (spaces + endpoint precedence)
+
+- Fixed `brain/obsidian_index.py` so tutor vault indexing now matches the real Obsidian tree:
+  - Reads `OBSIDIAN_API_URL` / `OBSIDIAN_API_URLS` / `OBSIDIAN_API_KEY` from `brain/.env` when process env is unset.
+  - Prioritizes configured API URL list correctly for index/content calls.
+  - URL-encodes folder paths during recursive `/vault/<folder>/` listing (critical for folders with spaces like `Study Notes` / `Study System`).
+  - Uses resilient multi-endpoint retry for note-content fetch (`_get_note_content`).
+- Verification:
+  - Local index refresh now returns full vault scope (count moved from `1` to `10` in this environment), including:
+    - `Study Notes/Movement Science/Construct 2/Lower Quarter Learning Objectives.md`
+    - `Study System/Categories/*.md`
+
 ## 2026-02-23 - Tutor Sources slideout sidebar (chat-only integration)
 
 - Implemented a slideout `SOURCES` sidebar directly in `dashboard_rebuild/client/src/components/TutorChat.tsx` (no shared page/backend edits):

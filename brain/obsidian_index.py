@@ -28,12 +28,33 @@ _OBSIDIAN_FALLBACK_URLS = [
 ]
 
 
+def _read_env_value(key: str) -> str:
+    value = os.environ.get(key, "").strip()
+    if value:
+        return value
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    if not os.path.exists(env_path):
+        return ""
+    try:
+        with open(env_path, "r", encoding="utf-8") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                if k.strip() == key:
+                    return v.strip().strip('"').strip("'")
+    except Exception:
+        return ""
+    return ""
+
+
 def _obsidian_api_urls() -> List[str]:
     urls = []
     seen = set()
 
-    explicit_url = os.environ.get("OBSIDIAN_API_URL", "").strip()
-    extra_urls = os.environ.get("OBSIDIAN_API_URLS", "").strip()
+    explicit_url = _read_env_value("OBSIDIAN_API_URL")
+    extra_urls = _read_env_value("OBSIDIAN_API_URLS")
 
     candidates = [explicit_url, OBSIDIAN_API_URL] + _OBSIDIAN_FALLBACK_URLS
     if extra_urls:
@@ -50,16 +71,7 @@ def _obsidian_api_urls() -> List[str]:
 
 
 def _get_api_key() -> str:
-    key = os.environ.get("OBSIDIAN_API_KEY", "")
-    if key:
-        return key
-    env_path = os.path.join(os.path.dirname(__file__), ".env")
-    if os.path.exists(env_path):
-        with open(env_path, "r") as f:
-            for line in f:
-                if line.startswith("OBSIDIAN_API_KEY="):
-                    return line.split("=", 1)[1].strip().strip('"').strip("'")
-    return ""
+    return _read_env_value("OBSIDIAN_API_KEY")
 
 
 def _list_folder(folder: str) -> List[dict]:
@@ -70,7 +82,8 @@ def _list_folder(folder: str) -> List[dict]:
 
     folder_path = "/vault/"
     if folder:
-        folder_path = f"/vault/{folder}/"
+        encoded_folder = urllib.parse.quote(str(folder).strip("/"), safe="/")
+        folder_path = f"/vault/{encoded_folder}/"
 
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
@@ -206,23 +219,23 @@ def _get_note_content(path: str) -> Optional[str]:
     if not api_key:
         return None
 
-    encoded = urllib.parse.quote(path, safe="/")
-    url = f"{OBSIDIAN_API_URL}/vault/{encoded}"
-
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
 
-    req = urllib.request.Request(url, headers={
-        "Authorization": f"Bearer {api_key}",
-        "Accept": "text/markdown",
-    })
-
-    try:
-        with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
-            return resp.read().decode("utf-8")
-    except Exception:
-        return None
+    encoded = urllib.parse.quote(path, safe="/")
+    for base_url in _obsidian_api_urls():
+        url = f"{base_url}/vault/{encoded}"
+        req = urllib.request.Request(url, headers={
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "text/markdown",
+        })
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
+                return resp.read().decode("utf-8")
+        except Exception:
+            continue
+    return None
 
 
 def _parse_wikilinks(content: str) -> List[str]:
