@@ -5,10 +5,11 @@ Provides function-tool definitions for the OpenAI Responses API and
 server-side execution handlers that call existing Brain endpoints.
 
 Tools:
-  1. save_to_obsidian      — append a study note to Obsidian vault
-  2. create_note           — create a quick note on the dashboard Notes page
-  3. create_anki_card      — draft an Anki flashcard for spaced repetition
-  4. create_figma_diagram  — create a visual diagram in Figma (requires Figma MCP)
+  1. save_to_obsidian           — append a study note to Obsidian vault
+  2. create_note                — create a quick note on the dashboard Notes page
+  3. create_anki_card           — draft an Anki flashcard for spaced repetition
+  4. create_figma_diagram       — create a visual diagram in Figma (requires Figma MCP)
+  5. save_learning_objectives   — persist approved LOs to DB and rebuild North Star
 """
 
 from __future__ import annotations
@@ -177,12 +178,47 @@ CREATE_FIGMA_DIAGRAM_SCHEMA: dict[str, Any] = {
     },
 }
 
+SAVE_LEARNING_OBJECTIVES_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "name": "save_learning_objectives",
+    "description": (
+        "Save approved learning objectives for the current module. "
+        "Use after confirming objectives with the student during the "
+        "Missing Learning Objectives workflow."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "objectives": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": 'Objective code, e.g. "OBJ-HIP-FLEXORS"',
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "Full objective text",
+                        },
+                    },
+                    "required": ["id", "description"],
+                },
+                "description": "List of learning objectives to save",
+            },
+        },
+        "required": ["objectives"],
+    },
+}
+
 # All tool schemas in a single list for passing to the API
 TUTOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
     SAVE_TO_OBSIDIAN_SCHEMA,
     CREATE_NOTE_SCHEMA,
     CREATE_ANKI_CARD_SCHEMA,
     CREATE_FIGMA_DIAGRAM_SCHEMA,
+    SAVE_LEARNING_OBJECTIVES_SCHEMA,
 ]
 
 
@@ -372,6 +408,38 @@ def execute_create_figma_diagram(
         return {"success": False, "error": str(e)}
 
 
+def execute_save_learning_objectives(
+    arguments: dict[str, Any],
+    *,
+    session_id: str | int | None = None,
+) -> dict[str, Any]:
+    """Persist approved learning objectives to DB and rebuild the North Star note."""
+    objectives = arguments.get("objectives")
+    if not objectives or not isinstance(objectives, list):
+        return {"success": False, "error": "Missing required field: objectives (array)"}
+
+    if session_id is None:
+        return {"success": False, "error": "session_id is required"}
+
+    try:
+        from brain.dashboard.api_tutor import save_learning_objectives_from_tool
+
+        result = save_learning_objectives_from_tool(
+            session_id=str(session_id),
+            objectives=objectives,
+        )
+        if result.get("success"):
+            log.info(
+                "Tutor tool: saved %d learning objectives for session %s",
+                len(objectives),
+                session_id,
+            )
+        return result
+    except Exception as e:
+        log.exception("Tutor tool save_learning_objectives failed")
+        return {"success": False, "error": str(e)}
+
+
 # ---------------------------------------------------------------------------
 # Tool registry — maps tool names to execution functions
 # ---------------------------------------------------------------------------
@@ -381,6 +449,7 @@ TOOL_REGISTRY: dict[str, Any] = {
     "create_note": execute_create_note,
     "create_anki_card": execute_create_anki_card,
     "create_figma_diagram": execute_create_figma_diagram,
+    "save_learning_objectives": execute_save_learning_objectives,
 }
 
 
@@ -396,7 +465,12 @@ def execute_tool(
         return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
     # Pass session_id for tools that need it
-    if tool_name in ("save_to_obsidian", "create_anki_card", "create_figma_diagram"):
+    if tool_name in (
+        "save_to_obsidian",
+        "create_anki_card",
+        "create_figma_diagram",
+        "save_learning_objectives",
+    ):
         return handler(arguments, session_id=session_id)
     return handler(arguments)
 

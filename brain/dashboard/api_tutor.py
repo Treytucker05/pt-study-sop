@@ -892,6 +892,131 @@ def save_tool_note_to_obsidian(
     }
 
 
+def save_learning_objectives_from_tool(
+    *,
+    session_id: str,
+    objectives: list[dict[str, str]],
+) -> dict[str, Any]:
+    """Persist approved learning objectives and rebuild the North Star note.
+
+    Called by the ``save_learning_objectives`` tutor tool.  Steps:
+      1. Read the tutor session to get ``course_id`` and ``content_filter_json``.
+      2. INSERT each objective into ``learning_objectives`` (upsert on lo_code+course_id).
+      3. Rebuild the North Star note via ``_ensure_north_star_context(force_refresh=True)``.
+      4. Update ``content_filter_json`` so ``_session_has_real_objectives()`` returns True.
+    """
+    conn = get_connection()
+    try:
+        session_row = _get_tutor_session(conn, session_id)
+        if not session_row:
+            return {"success": False, "error": "Session not found"}
+
+        course_id = session_row.get("course_id")
+        if not course_id:
+            return {"success": False, "error": "Session has no course_id"}
+
+        # --- 1. Parse existing content_filter ---
+        content_filter: dict[str, Any] = {}
+        raw_cf = session_row.get("content_filter_json")
+        if raw_cf:
+            try:
+                parsed = json.loads(raw_cf)
+                if isinstance(parsed, dict):
+                    content_filter = parsed
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        north_star = content_filter.get("north_star") or {}
+        module_id = content_filter.get("module_id")
+        module_name = north_star.get("module_name") or content_filter.get("module_name")
+        topic = session_row.get("topic") or module_name or ""
+        source_ids = content_filter.get("source_ids") or []
+
+        # --- 2. INSERT into learning_objectives (upsert by course_id+lo_code) ---
+        now = datetime.now().isoformat()
+        inserted_codes: list[str] = []
+        cur = conn.cursor()
+        for idx, obj in enumerate(objectives):
+            lo_code = _normalize_objective_id(obj.get("id", ""), idx)
+            title = str(obj.get("description", "")).strip()
+            if not title:
+                title = lo_code
+
+            cur.execute(
+                "SELECT id FROM learning_objectives WHERE course_id = ? AND lo_code = ?",
+                (course_id, lo_code),
+            )
+            existing = cur.fetchone()
+            if existing:
+                cur.execute(
+                    "UPDATE learning_objectives SET title = ?, updated_at = ? WHERE id = ?",
+                    (title, now, existing[0] if isinstance(existing, tuple) else existing["id"]),
+                )
+            else:
+                cur.execute(
+                    """INSERT INTO learning_objectives
+                       (course_id, module_id, lo_code, title, status, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, 'active', ?, ?)""",
+                    (course_id, module_id, lo_code, title, now, now),
+                )
+            inserted_codes.append(lo_code)
+        conn.commit()
+
+        # --- 3. Rebuild North Star ---
+        lo_dicts = [
+            {"objective_id": code, "title": obj.get("description", code), "status": "active"}
+            for code, obj in zip(inserted_codes, objectives)
+        ]
+        ns_ctx, ns_err = _ensure_north_star_context(
+            course_id=course_id,
+            module_id=module_id,
+            module_name=module_name,
+            topic=topic,
+            learning_objectives=lo_dicts,
+            source_ids=source_ids,
+            force_refresh=True,
+        )
+        if ns_err:
+            _LOG.warning("North Star rebuild warning: %s", ns_err)
+
+        # --- 4. Update session content_filter_json ---
+        if ns_ctx:
+            module_prefix = str(Path(str(ns_ctx["path"])).parent).replace("\\", "/")
+            content_filter["module_name"] = ns_ctx.get("module_name")
+            content_filter["module_prefix"] = module_prefix
+            content_filter["north_star"] = {
+                "path": ns_ctx.get("path"),
+                "status": ns_ctx.get("status"),
+                "module_name": ns_ctx.get("module_name"),
+                "course_name": ns_ctx.get("course_name"),
+                "subtopic_name": ns_ctx.get("subtopic_name"),
+                "objective_ids": ns_ctx.get("objective_ids") or [],
+            }
+            content_filter["reference_targets"] = (
+                ns_ctx.get("reference_targets") or []
+            )
+            content_filter["follow_up_targets"] = (
+                ns_ctx.get("follow_up_targets") or []
+            )
+
+        cur.execute(
+            "UPDATE tutor_sessions SET content_filter_json = ? WHERE session_id = ?",
+            (json.dumps(content_filter), session_id),
+        )
+        conn.commit()
+
+        return {
+            "success": True,
+            "message": f"Saved {len(inserted_codes)} learning objectives",
+            "objective_ids": inserted_codes,
+        }
+    except Exception as e:
+        _LOG.exception("save_learning_objectives_from_tool failed")
+        return {"success": False, "error": str(e)}
+    finally:
+        conn.close()
+
+
 def _finalize_structured_notes_for_session(
     *,
     conn: sqlite3.Connection,
@@ -2539,7 +2664,9 @@ def send_turn(session_id: str):
                         "chapter goals, or key competencies. Propose 3-8 objectives in format: OBJ-KEYWORD \u2014 Description\n"
                         "3. If student types them: acknowledge and format them the same way\n"
                         "4. If student says skip: proceed without objectives (use general teaching mode)\n"
-                        '5. Ask for confirmation before continuing: "Are these objectives correct? [Approve / Edit / Skip]"'
+                        '5. Ask for confirmation before continuing: "Are these objectives correct? [Approve / Edit / Skip]"\n'
+                        "6. Once approved, call the `save_learning_objectives` tool with the finalized list. "
+                        'Each objective needs an `id` (e.g. "OBJ-HIP-FLEXORS") and a `description`.'
                     )
             if enforce_reference_bounds and reference_targets:
                 bounded_targets = "\n".join(f"- {t}" for t in reference_targets[:20])
@@ -2935,6 +3062,23 @@ def send_turn(session_id: str):
                                     "output": _json.dumps(tool_result),
                                 }
                             )
+
+                            # Re-merge content_filter after LO save to prevent
+                            # the turn-end UPDATE from clobbering the tool's DB write.
+                            if (
+                                tool_name == "save_learning_objectives"
+                                and tool_result.get("success")
+                            ):
+                                try:
+                                    _cf_conn = get_connection()
+                                    _cf_row = _get_tutor_session(_cf_conn, session_id)
+                                    _cf_conn.close()
+                                    if _cf_row and _cf_row.get("content_filter_json"):
+                                        _fresh = _json.loads(_cf_row["content_filter_json"])
+                                        if isinstance(_fresh, dict):
+                                            content_filter.update(_fresh)
+                                except Exception:
+                                    pass
 
                 except Exception as stream_err:
                     if not full_response:
