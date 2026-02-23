@@ -36,7 +36,7 @@
     },
     "gemini": {
       "command": "cmd",
-      "args": ["/c", "npx", "-y", "@houtini/gemini-mcp"]
+      "args": ["/c", "npx", "-y", "gemini-mcp-tool"]
     },
     "claude": {
       "command": "cmd",
