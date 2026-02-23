@@ -476,6 +476,7 @@ def ingest_document(
         # Try text extraction for binary docs, but keep a metadata-only fallback.
         content = ""
         extraction_error = None
+        extraction_metadata: dict[str, Any] = {}
         if doc_type in {"pdf", "powerpoint", "docx"}:
             try:
                 from text_extractor import extract_text
@@ -483,9 +484,11 @@ def ingest_document(
                 extracted = extract_text(str(file_path))
                 content = extracted.get("content", "") or ""
                 extraction_error = extracted.get("error")
+                extraction_metadata = extracted.get("metadata") if isinstance(extracted.get("metadata"), dict) else {}
             except Exception as exc:
                 extraction_error = str(exc)
                 content = ""
+                extraction_metadata = {}
 
         # Use content hash when content is available for stable updates; otherwise file bytes.
         if content:
@@ -500,6 +503,8 @@ def ingest_document(
             "ingested_at": datetime.now().isoformat(timespec="seconds"),
             "note": "Binary file processed with extractor when available; content may be empty when extraction fails.",
         }
+        if extraction_metadata:
+            metadata["extraction_metadata"] = extraction_metadata
         if extraction_error:
             metadata["extraction_error"] = extraction_error
         return _upsert_rag_doc(

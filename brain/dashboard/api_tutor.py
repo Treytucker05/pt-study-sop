@@ -102,6 +102,103 @@ _TUTOR_SESSION_MODE_LIMITS: dict[str, tuple[int, int]] = {
     "single_focus": (1, 1),
     "focused_batch": (3, 5),
 }
+_METHODS_YAML_DIR = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods"
+_METHOD_CONTRACT_CACHE: dict[str, Any] = {"stamp": None, "by_id": {}}
+
+
+def _safe_json_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, dict):
+                return parsed
+        except (json.JSONDecodeError, TypeError):
+            return {}
+    return {}
+
+
+def _extract_knob_defaults(knobs_payload: Any) -> dict[str, Any]:
+    if not isinstance(knobs_payload, dict):
+        return {}
+    defaults: dict[str, Any] = {}
+    for knob_name, knob_spec in knobs_payload.items():
+        if not isinstance(knob_name, str):
+            continue
+        if isinstance(knob_spec, dict) and "default" in knob_spec:
+            defaults[knob_name] = knob_spec.get("default")
+    return defaults
+
+
+def _load_method_contracts() -> dict[str, dict[str, Any]]:
+    files = sorted(_METHODS_YAML_DIR.glob("*.yaml"))
+    if not files:
+        return {}
+
+    stamp = tuple((p.name, p.stat().st_mtime_ns, p.stat().st_size) for p in files)
+    if _METHOD_CONTRACT_CACHE.get("stamp") == stamp:
+        cached = _METHOD_CONTRACT_CACHE.get("by_id")
+        if isinstance(cached, dict):
+            return cached
+
+    try:
+        import yaml  # type: ignore
+    except Exception:
+        _METHOD_CONTRACT_CACHE["stamp"] = stamp
+        _METHOD_CONTRACT_CACHE["by_id"] = {}
+        return {}
+
+    by_id: dict[str, dict[str, Any]] = {}
+    for path in files:
+        try:
+            raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(raw, dict):
+            continue
+        method_id = str(raw.get("id") or "").strip()
+        if not method_id:
+            continue
+        knobs_raw = raw.get("knobs")
+        knobs = knobs_raw if isinstance(knobs_raw, dict) else {}
+        by_id[method_id] = {
+            "method_id": method_id,
+            "control_stage": str(raw.get("control_stage") or "").strip().upper(),
+            "artifact_type": str(raw.get("artifact_type") or "").strip(),
+            "best_stage": str(raw.get("best_stage") or "").strip(),
+            "facilitation_prompt": str(raw.get("facilitation_prompt") or "").strip(),
+            "knob_defaults": _extract_knob_defaults(knobs),
+        }
+
+    _METHOD_CONTRACT_CACHE["stamp"] = stamp
+    _METHOD_CONTRACT_CACHE["by_id"] = by_id
+    return by_id
+
+
+def _validate_chain_launch_blocks(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    contracts = _load_method_contracts()
+    for index, block in enumerate(blocks):
+        method_id = str(block.get("method_id") or "").strip()
+        if not method_id:
+            continue
+        contract = contracts.get(method_id) or {}
+        expected_stage = str(contract.get("control_stage") or "").strip().upper()
+        actual_stage = str(block.get("control_stage") or "").strip().upper()
+        if expected_stage and actual_stage and expected_stage != actual_stage:
+            issues.append(
+                {
+                    "code": "METHOD_STAGE_MISMATCH",
+                    "index": index,
+                    "method_id": method_id,
+                    "block_id": block.get("id"),
+                    "block_name": block.get("name"),
+                    "expected_stage": expected_stage,
+                    "actual_stage": actual_stage,
+                }
+            )
+    return issues
 
 
 def _ensure_selector_columns(conn: sqlite3.Connection) -> None:
@@ -416,6 +513,55 @@ def _validate_tutor_artifact_payload(
     if errors:
         return None, errors
     return normalized, []
+
+
+_PRIME_DISALLOWED_ASSESSMENT_KEYS = (
+    "score",
+    "grade",
+    "confidence",
+    "accuracy",
+    "calibration",
+    "mastery",
+    "verdict",
+    "rubric",
+)
+
+
+def _walk_payload_keys(payload: Any, path: str = "") -> list[tuple[str, str]]:
+    found: list[tuple[str, str]] = []
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            key_str = str(key)
+            key_path = f"{path}.{key_str}" if path else key_str
+            found.append((key_path, key_str.lower()))
+            found.extend(_walk_payload_keys(value, key_path))
+    elif isinstance(payload, list):
+        for idx, item in enumerate(payload):
+            item_path = f"{path}[{idx}]" if path else f"[{idx}]"
+            found.extend(_walk_payload_keys(item, item_path))
+    return found
+
+
+def _prime_assessment_violations(payload: dict[str, Any]) -> list[str]:
+    violations: list[str] = []
+    for key_path, key_lower in _walk_payload_keys(payload):
+        if any(token in key_lower for token in _PRIME_DISALLOWED_ASSESSMENT_KEYS):
+            violations.append(f"{key_path}: assessment fields are not allowed in PRIME")
+
+    session = payload.get("session")
+    if isinstance(session, dict):
+        stage_flow = session.get("stage_flow")
+        if isinstance(stage_flow, list):
+            disallowed = [
+                str(stage).upper()
+                for stage in stage_flow
+                if str(stage).upper() in {"RETRIEVE", "OVERLEARN"}
+            ]
+            if disallowed:
+                violations.append(
+                    "session.stage_flow: RETRIEVE/OVERLEARN cannot be emitted from PRIME artifacts"
+                )
+    return violations
 
 
 def _collect_objectives_from_payload(raw: Any) -> list[dict[str, str]]:
@@ -1121,6 +1267,12 @@ def _finalize_structured_notes_for_session(
     assert normalized_payload is not None
 
     metadata = normalized_payload.get("metadata") or {}
+    active_stage = _active_control_stage_for_session(conn, session_row)
+    payload_stage = str(metadata.get("control_stage") or "").upper()
+    if payload_stage == "PRIME" or active_stage == "PRIME":
+        prime_violations = _prime_assessment_violations(normalized_payload)
+        if prime_violations:
+            return None, [f"prime_guardrail: {msg}" for msg in prime_violations]
     session_data = normalized_payload.get("session") or {}
     concepts = normalized_payload.get("concepts") or []
     module_name = _sanitize_module_name(
@@ -1291,7 +1443,8 @@ def _resolve_chain_blocks(conn, chain_id: int) -> list[dict]:
 
     placeholders = ",".join("?" * len(block_ids))
     cur.execute(
-        f"""SELECT id, name, control_stage, description, default_duration_min, evidence, facilitation_prompt
+        f"""SELECT id, method_id, name, control_stage, best_stage, description,
+                   default_duration_min, evidence, facilitation_prompt, artifact_type, knob_overrides_json
             FROM method_blocks WHERE id IN ({placeholders})""",
         block_ids,
     )
@@ -1302,6 +1455,9 @@ def _resolve_chain_blocks(conn, chain_id: int) -> list[dict]:
     for bid in block_ids:
         if bid in block_map:
             b = block_map[bid]
+            b["method_id"] = str(b.get("method_id") or "").strip()
+            b["control_stage"] = str(b.get("control_stage") or "").strip().upper()
+            b["knob_overrides_json"] = _safe_json_dict(b.get("knob_overrides_json"))
             b["duration"] = b.pop("default_duration_min", None)
             ordered.append(b)
     return ordered
@@ -1334,11 +1490,15 @@ def _build_chain_info(
         b = blocks[current_index]
         block_info = {
             "name": b["name"],
+            "method_id": b.get("method_id", ""),
             "description": b.get("description", ""),
             "category": b.get("control_stage", ""),
+            "control_stage": b.get("control_stage", ""),
             "evidence": b.get("evidence", ""),
-            "duration": b.get("default_duration_min", 5),
+            "duration": b.get("duration", 5),
             "facilitation_prompt": b.get("facilitation_prompt", ""),
+            "artifact_type": b.get("artifact_type", ""),
+            "knob_overrides_json": b.get("knob_overrides_json", {}),
         }
 
     # Chain overview
@@ -1350,6 +1510,26 @@ def _build_chain_info(
     }
 
     return block_info, chain_info
+
+
+def _active_control_stage_for_session(
+    conn: sqlite3.Connection,
+    session_row: dict[str, Any],
+) -> str:
+    chain_id = session_row.get("method_chain_id")
+    if not chain_id:
+        return ""
+    blocks = _resolve_chain_blocks(conn, int(chain_id))
+    if not blocks:
+        return ""
+    idx = session_row.get("current_block_index", 0) or 0
+    try:
+        idx = int(idx)
+    except (TypeError, ValueError):
+        idx = 0
+    if idx < 0 or idx >= len(blocks):
+        return ""
+    return str(blocks[idx].get("control_stage") or "").upper()
 
 
 def _format_dual_context(dual: dict) -> tuple[str, str]:
@@ -2475,15 +2655,46 @@ def create_session():
     first_block_name = None
     if method_chain_id:
         blocks = _resolve_chain_blocks(conn, method_chain_id)
-        if blocks:
-            first_block = blocks[0]
-            first_block_name = first_block["name"]
-            cur.execute(
-                """INSERT INTO tutor_block_transitions
-                   (tutor_session_id, block_id, block_index, started_at)
-                   VALUES (?, ?, 0, ?)""",
-                (session_id, first_block["id"], now),
-            )
+        if not blocks:
+            conn.close()
+            return jsonify(
+                {
+                    "error": "Method chain has no blocks.",
+                    "code": "CHAIN_EMPTY",
+                    "method_chain_id": method_chain_id,
+                }
+            ), 400
+        first_block = blocks[0]
+        first_stage = str(first_block.get("control_stage") or "").upper()
+        if first_stage != "PRIME":
+            conn.close()
+            return jsonify(
+                {
+                    "error": "Method chain must start with PRIME.",
+                    "code": "CHAIN_PRIME_REQUIRED",
+                    "method_chain_id": method_chain_id,
+                    "first_block_name": first_block.get("name"),
+                    "first_block_stage": first_stage or "UNKNOWN",
+                }
+            ), 400
+        launch_issues = _validate_chain_launch_blocks(blocks)
+        if launch_issues:
+            conn.close()
+            return jsonify(
+                {
+                    "error": "Method chain contains stage mismatches versus canonical method contracts.",
+                    "code": "METHOD_STAGE_MISMATCH",
+                    "method_chain_id": method_chain_id,
+                    "details": launch_issues,
+                }
+            ), 400
+        first_block_name = first_block["name"]
+        cur.execute(
+            """INSERT INTO tutor_block_transitions
+               (tutor_session_id, block_id, block_index, started_at)
+               VALUES (?, ?, 0, ?)""",
+            (session_id, first_block["id"], now),
+        )
 
     conn.commit()
     conn.close()
@@ -2604,6 +2815,88 @@ def send_turn(session_id: str):
         block_info, chain_info = _build_chain_info(
             conn, session["method_chain_id"], current_idx
         )
+    active_stage = str((block_info or {}).get("category") or "").upper()
+    active_method_id = str((block_info or {}).get("method_id") or "").strip()
+    method_contract = _load_method_contracts().get(active_method_id, {}) if active_method_id else {}
+    runtime_drift_events: list[dict[str, Any]] = []
+    if block_info and active_method_id:
+        expected_stage = str(method_contract.get("control_stage") or "").strip().upper()
+        if expected_stage and active_stage and expected_stage != active_stage:
+            conn.close()
+            return (
+                jsonify(
+                    {
+                        "error": "Active block stage does not match canonical method contract.",
+                        "code": "METHOD_STAGE_MISMATCH_RUNTIME",
+                        "active_stage": active_stage,
+                        "method_id": active_method_id,
+                        "expected_stage": expected_stage,
+                    }
+                ),
+                409,
+            )
+
+        prompt_db = str(block_info.get("facilitation_prompt") or "").strip()
+        prompt_contract = str(method_contract.get("facilitation_prompt") or "").strip()
+        if not prompt_db and prompt_contract:
+            block_info["facilitation_prompt"] = prompt_contract
+            runtime_drift_events.append(
+                {
+                    "severity": "warning",
+                    "code": "MISSING_METHOD_PROMPT_FILLED",
+                    "method_id": active_method_id,
+                    "source": "yaml_contract",
+                }
+            )
+            prompt_db = prompt_contract
+
+        artifact_db = str(block_info.get("artifact_type") or "").strip()
+        artifact_contract = str(method_contract.get("artifact_type") or "").strip()
+        if not artifact_db and artifact_contract:
+            block_info["artifact_type"] = artifact_contract
+            runtime_drift_events.append(
+                {
+                    "severity": "warning",
+                    "code": "MISSING_ARTIFACT_CONTRACT_FILLED",
+                    "method_id": active_method_id,
+                    "source": "yaml_contract",
+                }
+            )
+            artifact_db = artifact_contract
+
+        critical_issues: list[str] = []
+        if not prompt_db:
+            critical_issues.append("missing_method_prompt")
+        if not artifact_db:
+            critical_issues.append("missing_artifact_contract")
+        if critical_issues:
+            conn.close()
+            return (
+                jsonify(
+                    {
+                        "error": "Critical method contract drift detected for active block.",
+                        "code": "METHOD_CONTRACT_DRIFT",
+                        "active_stage": active_stage,
+                        "method_id": active_method_id,
+                        "critical_issues": critical_issues,
+                    }
+                ),
+                409,
+            )
+
+    behavior_override_norm = str(behavior_override or "").strip().lower()
+    if active_stage == "PRIME" and behavior_override_norm in {"evaluate", "teach_back"}:
+        conn.close()
+        return (
+            jsonify(
+                {
+                    "error": "Assessment behavior is blocked in PRIME. Move to CALIBRATE for scored checks.",
+                    "code": "PRIME_ASSESSMENT_BLOCKED",
+                    "active_stage": "PRIME",
+                }
+            ),
+            400,
+        )
 
     conn.close()
 
@@ -2621,6 +2914,26 @@ def send_turn(session_id: str):
             pass
     if not isinstance(content_filter, dict):
         content_filter = {}
+    if active_method_id:
+        snapshot = content_filter.get("knob_snapshot")
+        if not isinstance(snapshot, dict) or not snapshot:
+            fallback_snapshot = {}
+            contract_defaults = method_contract.get("knob_defaults")
+            if isinstance(contract_defaults, dict):
+                fallback_snapshot.update(contract_defaults)
+            if not fallback_snapshot:
+                fallback_snapshot = _extract_knob_defaults(
+                    (block_info or {}).get("knob_overrides_json")
+                )
+            content_filter["knob_snapshot"] = fallback_snapshot
+            runtime_drift_events.append(
+                {
+                    "severity": "warning",
+                    "code": "MISSING_KNOB_SNAPSHOT_FILLED",
+                    "method_id": active_method_id,
+                    "filled": bool(fallback_snapshot),
+                }
+            )
 
     # Allow per-turn content_filter overrides from chat UI (e.g., material checkboxes).
     incoming_filter = data.get("content_filter")
@@ -3085,6 +3398,10 @@ def send_turn(session_id: str):
                 payload["profile_escalation_reasons"] = profile_escalation_reasons
                 payload["insufficient_evidence_guard"] = force_insufficient_evidence
                 payload["insufficient_evidence_reasons"] = weak_reasons if force_insufficient_evidence else []
+                payload["active_stage"] = active_stage
+                payload["active_method_id"] = active_method_id
+                if runtime_drift_events:
+                    payload["runtime_drift_events"] = runtime_drift_events
                 return payload
 
             if selected_material_count > 0 and _is_material_count_question(question):
@@ -4024,6 +4341,22 @@ def create_artifact(session_id: str):
         conn.close()
         return jsonify({"error": "Session not found"}), 404
 
+    active_stage = _active_control_stage_for_session(conn, session)
+    if active_stage == "PRIME":
+        prime_violations = _prime_assessment_violations(data)
+        if prime_violations:
+            conn.close()
+            return (
+                jsonify(
+                    {
+                        "error": "validation_failed",
+                        "code": "PRIME_ASSESSMENT_BLOCKED",
+                        "details": [f"prime_guardrail: {msg}" for msg in prime_violations],
+                    }
+                ),
+                400,
+            )
+
     if artifact_type == "structured_notes":
         payload = data.get("artifact")
         if not isinstance(payload, dict):
@@ -4555,6 +4888,7 @@ def list_materials():
         f"""SELECT id,
                    COALESCE(NULLIF(TRIM(title), ''), source_path, 'Material ' || id) as title,
                    source_path,
+                   file_path,
                    COALESCE(folder_path, '') as folder_path,
                    COALESCE(
                      file_type,
@@ -4589,15 +4923,34 @@ def list_materials():
     materials = [dict(r) for r in cur.fetchall()]
     file_size_updates: list[tuple[int, int]] = []
     for material in materials:
+        source_path = (material.get("source_path") or "").strip()
+        file_path = (material.get("file_path") or "").strip()
+        asset_dir = _find_extracted_asset_dir(source_path, file_path)
+        asset_count = 0
+        if asset_dir and asset_dir.exists():
+            try:
+                asset_count = len(
+                    [
+                        p
+                        for p in asset_dir.iterdir()
+                        if p.is_file()
+                        and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+                    ]
+                )
+            except Exception:
+                asset_count = 0
+        material["has_docling_assets"] = asset_count > 0
+        material["docling_asset_count"] = int(asset_count)
+
         try:
             if int(material.get("file_size") or 0) <= 0:
-                source_path = (material.get("source_path") or "").strip()
                 if source_path and os.path.isfile(source_path):
                     material["file_size"] = os.path.getsize(source_path)
                     file_size_updates.append((material["file_size"], material["id"]))
         except Exception:
             # Keep safe zero fallback on any filesystem issue.
             material["file_size"] = int(material.get("file_size") or 0)
+        material.pop("file_path", None)
 
     if file_size_updates:
         cur.executemany(
@@ -4659,6 +5012,88 @@ def update_material(material_id: int):
     conn.close()
 
     return jsonify({"id": material_id, "updated": True})
+
+
+@tutor_bp.route("/materials/<int:material_id>/reextract", methods=["POST"])
+def reextract_material(material_id: int):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT id, source_path, file_path, doc_type, file_type, course_id, topic_tags,
+               COALESCE(corpus, 'materials') AS corpus,
+               COALESCE(folder_path, '') AS folder_path,
+               COALESCE(enabled, 1) AS enabled
+        FROM rag_docs
+        WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'
+        """,
+        (material_id,),
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Material not found"}), 404
+
+    source_path = str(row["file_path"] or row["source_path"] or "").strip()
+    if not source_path or not Path(source_path).exists():
+        return jsonify({"error": f"Source file not found: {source_path or '(empty)'}"}), 400
+
+    doc_type = str(row["doc_type"] or row["file_type"] or "").strip().lower()
+    if doc_type in {"ppt", "pptx"}:
+        doc_type = "powerpoint"
+    if doc_type == "upload":
+        file_type = str(row["file_type"] or "").strip().lower()
+        if file_type in {"ppt", "pptx"}:
+            doc_type = "powerpoint"
+        else:
+            doc_type = file_type or doc_type
+
+    if doc_type not in {"pdf", "docx", "powerpoint"}:
+        return jsonify({"error": "Re-extract is supported for PDF, DOCX, and PPTX materials only"}), 400
+
+    tags = [t.strip() for t in str(row["topic_tags"] or "").split(",") if t.strip()]
+
+    try:
+        from rag_notes import ingest_document
+
+        ingest_document(
+            path=source_path,
+            doc_type=doc_type,
+            course_id=row["course_id"],
+            topic_tags=tags,
+            corpus=str(row["corpus"] or "materials"),
+            folder_path=str(row["folder_path"] or ""),
+            enabled=int(row["enabled"] or 1),
+        )
+    except Exception as exc:
+        return jsonify({"error": f"Re-extract failed: {exc}"}), 500
+
+    asset_dir = _find_extracted_asset_dir(row["source_path"], row["file_path"])
+    asset_count = 0
+    if asset_dir and asset_dir.exists():
+        try:
+            asset_count = len(
+                [
+                    p
+                    for p in asset_dir.iterdir()
+                    if p.is_file()
+                    and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+                ]
+            )
+        except Exception:
+            asset_count = 0
+
+    return jsonify(
+        {
+            "ok": True,
+            "id": material_id,
+            "has_docling_assets": asset_count > 0,
+            "docling_asset_count": int(asset_count),
+        }
+    ), 200
 
 
 # ---------------------------------------------------------------------------

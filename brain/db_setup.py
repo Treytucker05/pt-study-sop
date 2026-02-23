@@ -1297,6 +1297,7 @@ def init_database():
             energy_cost TEXT DEFAULT 'medium',
             best_stage TEXT,
             tags TEXT,
+            knob_overrides_json TEXT,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -1420,6 +1421,7 @@ def init_database():
         ("assessment_type", "TEXT"),
         ("artifact_type", "TEXT"),
         ("research_terms", "TEXT"),
+        ("knob_overrides_json", "TEXT"),
     ]
     for col_name, col_type in module_card_cols:
         if col_name not in mb_cols:

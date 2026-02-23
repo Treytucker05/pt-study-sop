@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import inspect
 import re
 import subprocess
 import tempfile
@@ -186,45 +187,102 @@ def _build_pdf_pipeline_options(*, ocr_mode: bool = False) -> "PdfPipelineOption
         opts.ocr_options = OcrAutoOptions(force_full_page_ocr=True)
         opts.do_ocr = True
         opts.ocr_batch_size = 1
+    else:
+        # Keep default extraction lightweight; OCR fallback is handled separately.
+        try:
+            opts.do_ocr = False
+        except Exception:
+            pass
     return opts
 
 
 def _export_docling_markdown(doc: object, source_path: Path) -> str:
     """Export Docling document to markdown, saving images to disk."""
-    # Try the rich save_as_markdown path first (saves images)
     try:
-        from docling.datamodel.document import ImageRefMode
+        from docling_core.types.doc.base import ImageRefMode
     except ImportError:
         ImageRefMode = None
 
-    if ImageRefMode is not None:
+    save_as_markdown = getattr(doc, "save_as_markdown", None)
+    if callable(save_as_markdown):
         source_hash = hashlib.md5(str(source_path).encode()).hexdigest()[:12]
         image_dir = Path(__file__).parent / "data" / "extracted_images" / source_hash
         image_dir.mkdir(parents=True, exist_ok=True)
 
+        def _replace_image_placeholders(markdown: str) -> str:
+            if "<!-- image -->" not in markdown.lower():
+                return markdown
+            image_files = sorted(
+                [
+                    p.name
+                    for p in image_dir.iterdir()
+                    if p.is_file() and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+                ],
+                key=str.lower,
+            )
+            if not image_files:
+                return markdown
+            idx = {"value": 0}
+
+            def _replace(_match: re.Match[str]) -> str:
+                current = idx["value"]
+                idx["value"] += 1
+                if current >= len(image_files):
+                    return ""
+                return f"\n![Extracted image {current + 1}]({image_files[current]})\n"
+
+            return re.sub(r"<!--\s*image\s*-->", _replace, markdown, flags=re.IGNORECASE)
+
+        tmp_md: Optional[Path] = None
         try:
             with tempfile.NamedTemporaryFile(suffix=".md", delete=False) as tmp:
                 tmp_md = Path(tmp.name)
-            doc.save_as_markdown(
-                tmp_md,
-                artifacts_dir=image_dir,
-                image_mode=ImageRefMode.REFERENCED,
-            )
-            content = tmp_md.read_text(encoding="utf-8")
-            tmp_md.unlink(missing_ok=True)
 
-            # Clean up empty image dir
-            if not any(image_dir.iterdir()):
-                image_dir.rmdir()
+            try:
+                signature = inspect.signature(save_as_markdown)
+                params = set(signature.parameters.keys())
+            except Exception:
+                params = set()
+
+            kwargs: dict[str, object] = {}
+            if "artifacts_dir" in params:
+                kwargs["artifacts_dir"] = image_dir
+            elif "image_dir" in params:
+                kwargs["image_dir"] = image_dir
+            elif "assets_dir" in params:
+                kwargs["assets_dir"] = image_dir
+            if "image_mode" in params and ImageRefMode is not None:
+                kwargs["image_mode"] = ImageRefMode.REFERENCED
+
+            attempts: list[dict[str, object]] = [kwargs] if kwargs else []
+            if kwargs and "image_mode" in kwargs:
+                fallback = dict(kwargs)
+                fallback.pop("image_mode", None)
+                if fallback not in attempts:
+                    attempts.append(fallback)
+            if {} not in attempts:
+                attempts.append({})
+
+            content = ""
+            for attempt in attempts:
+                try:
+                    save_as_markdown(tmp_md, **attempt)
+                    content = tmp_md.read_text(encoding="utf-8")
+                    if content.strip():
+                        content = _replace_image_placeholders(content)
+                        break
+                except TypeError:
+                    continue
 
             if content.strip():
                 return content
         except Exception as exc:
             logger.debug("save_as_markdown failed, falling back: %s", exc)
-            tmp_md.unlink(missing_ok=True)
-            # Clean up empty image dir
+        finally:
+            if tmp_md is not None:
+                tmp_md.unlink(missing_ok=True)
             try:
-                if not any(image_dir.iterdir()):
+                if image_dir.exists() and not any(image_dir.iterdir()):
                     image_dir.rmdir()
             except Exception:
                 pass

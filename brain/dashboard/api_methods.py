@@ -11,12 +11,187 @@ Endpoints:
   GET                /api/methods/analytics  — method effectiveness analytics
 """
 
-from flask import Blueprint, jsonify, request
+from __future__ import annotations
+
+import copy
 import json
+from pathlib import Path
+from typing import Any
+
+from flask import Blueprint, jsonify, request
 from db_setup import get_connection, ensure_method_library_seeded
 
 methods_bp = Blueprint("methods", __name__, url_prefix="/api")
 _METHOD_BLOCK_COLS_ENSURED = False
+_METHODS_DIR = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods"
+_METHODS_YAML_CACHE: dict[str, Any] = {"stamp": None, "cards": {}}
+
+
+def _safe_json_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return dict(value)
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, dict):
+                return parsed
+        except (TypeError, ValueError):
+            return {}
+    return {}
+
+
+def _to_int(value: Any) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_float(value: Any) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalize_knobs(knobs: Any) -> dict[str, dict[str, Any]]:
+    if not isinstance(knobs, dict):
+        return {}
+
+    normalized: dict[str, dict[str, Any]] = {}
+    for raw_name, raw_spec in knobs.items():
+        name = str(raw_name or "").strip()
+        if not name or not isinstance(raw_spec, dict):
+            continue
+        spec = copy.deepcopy(raw_spec)
+        knob_type = str(spec.get("type") or "string").strip().lower()
+        if knob_type == "integer":
+            knob_type = "int"
+        spec["type"] = knob_type
+
+        if knob_type == "enum":
+            options = [str(v) for v in (spec.get("options") or []) if str(v).strip()]
+            if not options:
+                continue
+            default = spec.get("default")
+            if default not in options:
+                default = options[0]
+            spec["options"] = options
+            spec["default"] = default
+            spec["fallback"] = {
+                "mode": "default_on_invalid",
+                "default": default,
+            }
+        elif knob_type == "int":
+            min_v = _to_int(spec.get("min"))
+            max_v = _to_int(spec.get("max"))
+            default = _to_int(spec.get("default"))
+            if min_v is None:
+                min_v = 0
+            if max_v is None:
+                max_v = min_v + 10
+            if max_v < min_v:
+                min_v, max_v = max_v, min_v
+            if default is None:
+                default = min_v
+            default = max(min_v, min(max_v, default))
+            spec["min"] = min_v
+            spec["max"] = max_v
+            spec["default"] = default
+            spec["fallback"] = {
+                "mode": "clamp",
+                "min": min_v,
+                "max": max_v,
+                "default": default,
+            }
+        elif knob_type == "float":
+            min_v = _to_float(spec.get("min"))
+            max_v = _to_float(spec.get("max"))
+            default = _to_float(spec.get("default"))
+            if min_v is None:
+                min_v = 0.0
+            if max_v is None:
+                max_v = min_v + 1.0
+            if max_v < min_v:
+                min_v, max_v = max_v, min_v
+            if default is None:
+                default = min_v
+            default = max(min_v, min(max_v, default))
+            spec["min"] = min_v
+            spec["max"] = max_v
+            spec["default"] = default
+            spec["fallback"] = {
+                "mode": "clamp",
+                "min": min_v,
+                "max": max_v,
+                "default": default,
+            }
+        elif knob_type == "bool":
+            default = bool(spec.get("default", False))
+            spec["default"] = default
+            spec["fallback"] = {
+                "mode": "default_on_invalid",
+                "default": default,
+            }
+        else:
+            default = spec.get("default")
+            if default is None:
+                default = ""
+            spec["default"] = default
+            spec["fallback"] = {
+                "mode": "default_on_invalid",
+                "default": default,
+            }
+
+        normalized[name] = spec
+    return normalized
+
+
+def _load_method_cards_from_yaml() -> dict[str, dict[str, Any]]:
+    if not _METHODS_DIR.exists():
+        return {}
+    try:
+        import yaml
+    except ImportError:
+        return {}
+
+    files = sorted(_METHODS_DIR.glob("*.yaml"))
+    stamp = tuple((f.name, f.stat().st_mtime_ns) for f in files)
+    if _METHODS_YAML_CACHE.get("stamp") == stamp:
+        return _METHODS_YAML_CACHE.get("cards") or {}
+
+    cards: dict[str, dict[str, Any]] = {}
+    for path in files:
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(data, dict):
+            continue
+        method_id = str(data.get("id") or "").strip()
+        if not method_id:
+            continue
+        cards[method_id] = {
+            "knobs": _normalize_knobs(data.get("knobs") or {}),
+            "constraints": dict(data.get("constraints") or {}),
+        }
+
+    _METHODS_YAML_CACHE["stamp"] = stamp
+    _METHODS_YAML_CACHE["cards"] = cards
+    return cards
+
+
+def _apply_method_knob_payload(row: dict[str, Any], cards_by_method_id: dict[str, dict[str, Any]]) -> None:
+    method_id = str(row.get("method_id") or "").strip()
+    card = cards_by_method_id.get(method_id) or {}
+    base_knobs = _normalize_knobs(card.get("knobs") or {})
+    overrides = _safe_json_dict(row.get("knob_overrides_json"))
+    if overrides:
+        base_knobs = _normalize_knobs(overrides)
+    row["knobs"] = base_knobs
+    row["constraints"] = card.get("constraints") or {}
+    row["has_active_knobs"] = bool(base_knobs)
+
 
 
 def _ensure_method_blocks_columns(conn) -> None:
@@ -36,6 +211,8 @@ def _ensure_method_blocks_columns(conn) -> None:
             )
         if "category" not in cols:
             cursor.execute("ALTER TABLE method_blocks ADD COLUMN category TEXT")
+        if "knob_overrides_json" not in cols:
+            cursor.execute("ALTER TABLE method_blocks ADD COLUMN knob_overrides_json TEXT")
 
         cursor.execute(
             """
@@ -114,6 +291,8 @@ def list_methods():
     rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
     conn.close()
     
+    cards_by_method_id = _load_method_cards_from_yaml()
+
     # Map new Control Plane stages back to old categories for frontend compatibility
     stage_to_category = {
         'PRIME': 'prepare',
@@ -136,10 +315,12 @@ def list_methods():
             "research_terms",
         ):
             row[json_field] = _parse_json(row.get(json_field))
+        row["knob_overrides_json"] = _parse_json(row.get("knob_overrides_json"))
         
         # Add backward-compatible 'category' field based on control_stage
         stage = row.get('control_stage', '')
         row['category'] = stage_to_category.get(stage, stage.lower())
+        _apply_method_knob_payload(row, cards_by_method_id)
     
     return jsonify(rows)
 
@@ -166,6 +347,7 @@ def get_method(method_id: int):
         "research_terms",
     ):
         result[json_field] = _parse_json(result.get(json_field))
+    result["knob_overrides_json"] = _parse_json(result.get("knob_overrides_json"))
     
     # Add backward-compatible 'category' field based on control_stage
     stage_to_category = {
@@ -178,6 +360,7 @@ def get_method(method_id: int):
     }
     stage = result.get('control_stage', '')
     result['category'] = stage_to_category.get(stage, stage.lower())
+    _apply_method_knob_payload(result, _load_method_cards_from_yaml())
     
     return jsonify(result)
 
@@ -211,6 +394,13 @@ def create_method():
         "OVERLEARN": "overlearn",
     }
     legacy_category = stage_to_category.get(stage, str(control_stage).lower())
+    knobs_payload = None
+    if "knobs" in data:
+        if not isinstance(data["knobs"], dict):
+            return jsonify({"error": "knobs must be an object"}), 400
+        knobs_payload = _normalize_knobs(data.get("knobs"))
+        if not knobs_payload and data.get("knobs"):
+            return jsonify({"error": "knobs payload is invalid"}), 400
 
     conn = get_connection()
     _ensure_method_blocks_columns(conn)
@@ -218,8 +408,8 @@ def create_method():
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO method_blocks (name, category, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, inputs, outputs, strategy_label, failure_modes, variants, scoring_hooks, icap_level, clt_target, assessment_type, artifact_type, research_terms, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            INSERT INTO method_blocks (name, category, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, inputs, outputs, strategy_label, failure_modes, variants, scoring_hooks, icap_level, clt_target, assessment_type, artifact_type, research_terms, knob_overrides_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             """,
             (
                 name,
@@ -242,6 +432,7 @@ def create_method():
                 data.get("assessment_type"),
                 data.get("artifact_type"),
                 json.dumps(data.get("research_terms", [])),
+                json.dumps(knobs_payload) if knobs_payload else None,
             ),
         )
         new_id = cursor.lastrowid
@@ -313,6 +504,14 @@ def update_method(method_id: int):
         if json_key in data:
             fields.append(f"{json_key} = ?")
             values.append(json.dumps(data[json_key]))
+    if "knobs" in data:
+        if not isinstance(data["knobs"], dict):
+            return jsonify({"error": "knobs must be an object"}), 400
+        normalized_knobs = _normalize_knobs(data.get("knobs"))
+        if not normalized_knobs and data.get("knobs"):
+            return jsonify({"error": "knobs payload is invalid"}), 400
+        fields.append("knob_overrides_json = ?")
+        values.append(json.dumps(normalized_knobs))
 
     if not fields:
         return jsonify({"error": "No valid fields to update"}), 400
@@ -413,6 +612,8 @@ def get_chain(chain_id: int):
                 "research_terms",
             ):
                 block[json_field] = _parse_json(block.get(json_field))
+            block["knob_overrides_json"] = _parse_json(block.get("knob_overrides_json"))
+            _apply_method_knob_payload(block, _load_method_cards_from_yaml())
             blocks_map[block["id"]] = block
         result["blocks"] = [blocks_map[bid] for bid in block_ids if bid in blocks_map]
     else:

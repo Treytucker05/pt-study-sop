@@ -110,10 +110,17 @@ def _create_archive_session(client) -> int:
     return int(data["id"])
 
 
-def _create_tutor_session(client, *, brain_session_id: int | None = None) -> str:
+def _create_tutor_session(
+    client,
+    *,
+    brain_session_id: int | None = None,
+    method_chain_id: int | None = None,
+) -> str:
     payload = {"mode": "Core", "topic": "Tutor Link Test"}
     if brain_session_id is not None:
         payload["brain_session_id"] = brain_session_id
+    if method_chain_id is not None:
+        payload["method_chain_id"] = method_chain_id
     resp = client.post("/api/tutor/session", json=payload)
     assert resp.status_code == 201
     data = resp.get_json()
@@ -121,6 +128,62 @@ def _create_tutor_session(client, *, brain_session_id: int | None = None) -> str
     sid = data.get("session_id")
     assert isinstance(sid, str) and sid
     return sid
+
+
+def _insert_method_block(
+    *,
+    name: str,
+    control_stage: str,
+    method_id: str = "",
+    facilitation_prompt: str = "Prompt",
+    artifact_type: str = "notes",
+    knob_overrides_json: str = "{}",
+) -> int:
+    conn = sqlite3.connect(config.DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO method_blocks
+            (method_id, name, category, control_stage, description, default_duration_min,
+             energy_cost, best_stage, tags, evidence, facilitation_prompt, artifact_type,
+             knob_overrides_json, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        """,
+        (
+            method_id,
+            name,
+            "prepare",
+            control_stage,
+            "test block",
+            5,
+            "low",
+            "first_exposure",
+            "[]",
+            "",
+            facilitation_prompt,
+            artifact_type,
+            knob_overrides_json,
+        ),
+    )
+    block_id = int(cur.lastrowid)
+    conn.commit()
+    conn.close()
+    return block_id
+
+
+def _create_chain(client, *, name: str, block_ids: list[int]) -> int:
+    chain_resp = client.post(
+        "/api/chains",
+        json={
+            "name": name,
+            "description": "test chain",
+            "block_ids": block_ids,
+            "context_tags": {},
+            "is_template": 0,
+        },
+    )
+    assert chain_resp.status_code == 201
+    return int(chain_resp.get_json()["id"])
 
 
 def _extract_done_payload(sse_body: str) -> dict:
@@ -1085,6 +1148,186 @@ def test_finalize_rejects_invalid_single_focus_concept_count(client):
     body = resp.get_json()
     assert body["error"] == "validation_failed"
     assert any("session_mode 'single_focus'" in detail for detail in body.get("details", []))
+
+
+def test_finalize_rejects_prime_confidence_fields(client):
+    tutor_sid = _create_tutor_session(client)
+    payload = {
+        "metadata": {
+            "control_stage": "PRIME",
+            "method_id": "M-PRE-010",
+            "session_mode": "single_focus",
+            "knob_snapshot": {"confidence_score": 0.0},
+        },
+        "session": {
+            "source_ids": ["src-1"],
+            "unknowns": [],
+            "follow_up_targets": [],
+            "stage_flow": ["PRIME"],
+        },
+        "concepts": [
+            {
+                "file_name": "Prime Concept",
+                "why_it_matters": "Prime guardrail test.",
+                "prerequisites": [],
+                "retrieval_targets": [],
+                "common_errors": [],
+                "next_review_date": None,
+                "relationships": [],
+            }
+        ],
+    }
+
+    resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/finalize",
+        json={"artifact": payload},
+    )
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["error"] == "validation_failed"
+    assert any("prime_guardrail" in detail for detail in body.get("details", []))
+
+
+def test_send_turn_blocks_prime_evaluate_mode(client):
+    method_resp = client.post(
+        "/api/methods",
+        json={"name": "Prime Guard Test Method", "category": "prepare"},
+    )
+    assert method_resp.status_code == 201
+    method_id = int(method_resp.get_json()["id"])
+
+    chain_resp = client.post(
+        "/api/chains",
+        json={
+            "name": "Prime Guard Test Chain",
+            "description": "Prime-first chain for guardrail test",
+            "block_ids": [method_id],
+            "context_tags": {},
+            "is_template": 0,
+        },
+    )
+    assert chain_resp.status_code == 201
+    chain_id = int(chain_resp.get_json()["id"])
+
+    tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
+
+    resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "Please evaluate me", "behavior_override": "evaluate"},
+    )
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["code"] == "PRIME_ASSESSMENT_BLOCKED"
+    assert body["active_stage"] == "PRIME"
+
+
+def test_create_session_rejects_chain_not_starting_prime(client):
+    block_id = _insert_method_block(
+        name="Chain Start Not Prime",
+        control_stage="ENCODE",
+        method_id="M-ENC-001",
+    )
+    chain_id = _create_chain(client, name="Bad Start Chain", block_ids=[block_id])
+    resp = client.post(
+        "/api/tutor/session",
+        json={"mode": "Core", "topic": "bad start", "method_chain_id": chain_id},
+    )
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["code"] == "CHAIN_PRIME_REQUIRED"
+
+
+def test_create_session_rejects_stage_method_mismatch(client):
+    block_id = _insert_method_block(
+        name="Stage Mismatch Block",
+        control_stage="PRIME",
+        method_id="M-CAL-001",
+        facilitation_prompt="Prompt",
+        artifact_type="notes",
+    )
+    chain_id = _create_chain(client, name="Mismatch Chain", block_ids=[block_id])
+    resp = client.post(
+        "/api/tutor/session",
+        json={"mode": "Core", "topic": "mismatch", "method_chain_id": chain_id},
+    )
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["code"] == "METHOD_STAGE_MISMATCH"
+    assert isinstance(body.get("details"), list)
+    assert body["details"][0]["method_id"] == "M-CAL-001"
+
+
+def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, monkeypatch):
+    block_id = _insert_method_block(
+        name="Prime Drift Autofill",
+        control_stage="PRIME",
+        method_id="M-PRE-010",
+        facilitation_prompt="prompt from db",
+        artifact_type="notes",
+        knob_overrides_json="{}",
+    )
+    chain_id = _create_chain(client, name="Prime Drift Autofill Chain", block_ids=[block_id])
+    tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
+
+    monkeypatch.setattr(
+        tutor_rag, "get_dual_context", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(
+        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+    )
+    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
+    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+
+    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
+        yield {"type": "delta", "text": "ok"}
+        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-1", "thread_id": "thread-1"}
+
+    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
+
+    resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "prime turn"},
+    )
+    assert resp.status_code == 200
+    done = _extract_done_payload(resp.get_data(as_text=True))
+    retrieval_debug = done.get("retrieval_debug") or {}
+    drift_events = retrieval_debug.get("runtime_drift_events") or []
+    assert any(event.get("code") == "MISSING_KNOB_SNAPSHOT_FILLED" for event in drift_events)
+    assert retrieval_debug.get("active_method_id") == "M-PRE-010"
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?", (tutor_sid,))
+    row = cur.fetchone()
+    conn.close()
+    assert row is not None
+    content_filter = json.loads(row["content_filter_json"] or "{}")
+    assert isinstance(content_filter.get("knob_snapshot"), dict)
+
+
+def test_send_turn_blocks_when_prompt_and_artifact_contract_missing(client, monkeypatch):
+    block_id = _insert_method_block(
+        name="Prime Contract Missing",
+        control_stage="PRIME",
+        method_id="M-PRE-010",
+        facilitation_prompt="",
+        artifact_type="",
+    )
+    chain_id = _create_chain(client, name="Prime Contract Missing Chain", block_ids=[block_id])
+    tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
+
+    monkeypatch.setattr(_api_tutor_mod, "_load_method_contracts", lambda: {})
+
+    resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/turn",
+        json={"message": "prime turn"},
+    )
+    assert resp.status_code == 409
+    body = resp.get_json()
+    assert body["code"] == "METHOD_CONTRACT_DRIFT"
+    assert "missing_method_prompt" in body.get("critical_issues", [])
+    assert "missing_artifact_contract" in body.get("critical_issues", [])
 
 
 def test_sync_graph_uses_session_artifact_paths(client, monkeypatch):

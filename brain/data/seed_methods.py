@@ -1280,6 +1280,7 @@ def load_from_yaml() -> dict | None:
                     "evidence": evidence_str,
                     "artifact_type": data.get("artifact_type")
                     or _artifact_type_lookup.get(data["name"], ""),
+                    "knob_overrides_json": data.get("knobs", {}),
                 }
             )
 
@@ -1416,6 +1417,8 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
     ]
     if "evidence" in mb_cols:
         select_cols.append("evidence")
+    if "knob_overrides_json" in mb_cols:
+        select_cols.append("knob_overrides_json")
 
     cursor.execute(f"SELECT {', '.join(select_cols)} FROM method_blocks")
     existing_by_name = {}
@@ -1461,8 +1464,8 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
         if not existing:
             cursor.execute(
                 """
-                INSERT INTO method_blocks (method_id, name, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, artifact_type, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                INSERT INTO method_blocks (method_id, name, control_stage, description, default_duration_min, energy_cost, best_stage, tags, evidence, artifact_type, knob_overrides_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                 """,
                 (
                     method_id_value,
@@ -1475,6 +1478,7 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
                     json.dumps(block["tags"]),
                     block.get("evidence"),
                     block.get("artifact_type", ""),
+                    json.dumps(block.get("knob_overrides_json") or {}),
                 ),
             )
             name_to_id[block["name"]] = cursor.lastrowid
@@ -1538,6 +1542,11 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
                         and method_id_value
                         and (existing.get("method_id") or "") != method_id_value
                     ),
+                    (
+                        "knob_overrides_json" in mb_cols
+                        and (existing.get("knob_overrides_json") or "")
+                        != json.dumps(block.get("knob_overrides_json") or {})
+                    ),
                 ]
             )
 
@@ -1569,6 +1578,9 @@ def seed_methods(force: bool = False, strict_sync: bool = False):
             if "artifact_type" in mb_cols:
                 set_cols.append("artifact_type = ?")
                 values.append(block.get("artifact_type", ""))
+            if "knob_overrides_json" in mb_cols:
+                set_cols.append("knob_overrides_json = ?")
+                values.append(json.dumps(block.get("knob_overrides_json") or {}))
             values.append(existing["id"])
             cursor.execute(
                 f"UPDATE method_blocks SET {', '.join(set_cols)} WHERE id = ?",
