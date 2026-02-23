@@ -1,7 +1,8 @@
 id: M-ENC-008
 name: Mechanism Trace
 category: encode
-description: 'Trace the causal mechanism step-by-step: what triggers what, and why. Build a cause→effect chain from input to output. Especially useful for pathophysiology and physiological pathways.'
+description: 'Trace the causal mechanism step-by-step: what triggers what, and why. Build a cause→effect chain from input
+  to output. Especially useful for pathophysiology and physiological pathways.'
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
@@ -18,20 +19,8 @@ mechanisms:
 - transfer
 - generation
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

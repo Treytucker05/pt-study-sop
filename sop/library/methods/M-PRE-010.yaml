@@ -1,34 +1,19 @@
 id: M-PRE-010
 name: Learning Objectives Primer
-category: prepare
+category: prime
 status: validated
 control_stage: PRIME
-description: 'Anchor the session to instructor-aligned learning objectives and choose module-wide or single-focus direction before deeper study.'
+description: Anchor the session to instructor-aligned learning objectives and choose module-wide or single-focus direction
+  before deeper study.
 default_duration_min: 3
 energy_cost: low
 has_steps: Y
 has_outputs_or_artifacts: Y
 outputs_summary: ModuleObjectiveMap or FocusObjectiveCard; selected focus objective; learner acknowledgment
 knobs:
-  objective_scope:
-    type: enum
-    options:
-    - module_all
-    - single_focus
-    default: module_all
-  cognitive_depth:
-    type: enum
-    options:
-    - foundational_recall
-    - conceptual_understanding
-    - clinical_application
-    default: conceptual_understanding
-  delivery_style:
-    type: enum
-    options:
-    - direct_statement
-    - inquiry_based_preview
-    default: direct_statement
+  objective_scope: module_all
+  cognitive_depth: conceptual_understanding
+  delivery_style: direct_statement
 constraints:
   objective_source_precedence: instructor_over_source
   module_all_requires_north_star: true
@@ -44,7 +29,8 @@ when_not_to_use:
 steps:
 - step: 1
   action: Resolve objective source
-  notes: Load North Star first; use instructor learning objectives first; only synthesize from source material when instructor objectives are missing.
+  notes: Load North Star first; use instructor learning objectives first; only synthesize from source material when instructor
+    objectives are missing.
 - step: 2
   action: Build objective view by scope
   notes: module_all => publish full module objective map; single_focus => publish one measurable objective card.
@@ -82,7 +68,8 @@ facilitation_prompt: 'You are running M-PRE-010 (Learning Objectives Primer) in 
 
   Operate by {objective_scope}:
 
-  - module_all: publish a high-level map of all active module objectives from North Star, then ask learner to pick one focus objective for zoom-in.
+  - module_all: publish a high-level map of all active module objectives from North Star, then ask learner to pick one focus
+  objective for zoom-in.
 
   - single_focus: publish exactly one measurable focus objective card.
 
@@ -104,3 +91,4 @@ failure_modes:
 - mode: Drift into testing
   mitigation: Return to orientation-only behavior.
 artifact_type: notes
+evidence_raw: Ausubel (1968); Hattie (2009); explicit learning objectives improve encoding direction and metacognitive monitoring

@@ -1,7 +1,8 @@
 id: M-ENC-011
 name: Process Flowchart
 category: encode
-description: Draw a sequential diagram showing a process, pathway, or algorithm. Include decision points where applicable. Use Mermaid graph TD syntax for dashboard editor.
+description: Draw a sequential diagram showing a process, pathway, or algorithm. Include decision points where applicable.
+  Use Mermaid graph TD syntax for dashboard editor.
 default_duration_min: 10
 energy_cost: high
 best_stage: first_exposure
@@ -17,20 +18,8 @@ mechanisms:
 - dual_coding
 - generation
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

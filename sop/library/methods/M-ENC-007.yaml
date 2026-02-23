@@ -1,7 +1,8 @@
 id: M-ENC-007
 name: Self-Explanation Protocol
 category: encode
-description: After reading each paragraph or concept, pause and explain to yourself WHY each step follows from the previous one. Focus on explaining the reasoning, not just restating facts.
+description: After reading each paragraph or concept, pause and explain to yourself WHY each step follows from the previous
+  one. Focus on explaining the reasoning, not just restating facts.
 default_duration_min: 7
 energy_cost: medium
 best_stage: first_exposure
@@ -17,20 +18,8 @@ mechanisms:
 - generation
 - calibration
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

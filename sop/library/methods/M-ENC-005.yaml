@@ -1,7 +1,8 @@
 id: M-ENC-005
 name: Why-Chain
 category: encode
-description: Ask 'why?' 3-5 times in succession about a concept to build causal depth. Each answer becomes the premise for the next question. Based on elaborative interrogation (Dunlosky et al.).
+description: Ask 'why?' 3-5 times in succession about a concept to build causal depth. Each answer becomes the premise for
+  the next question. Based on elaborative interrogation (Dunlosky et al.).
 default_duration_min: 5
 energy_cost: medium
 best_stage: first_exposure
@@ -16,20 +17,8 @@ mechanisms:
 - elaboration
 - generation
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

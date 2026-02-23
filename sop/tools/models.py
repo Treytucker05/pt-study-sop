@@ -17,11 +17,12 @@ from pydantic import BaseModel, Field, field_validator
 # ---------------------------------------------------------------------------
 
 class Category(str, Enum):
-    prepare = "prepare"
+    prime = "prime"
+    calibrate = "calibrate"
     encode = "encode"
     interrogate = "interrogate"
+    reference = "reference"
     retrieve = "retrieve"
-    refine = "refine"
     overlearn = "overlearn"
 
 
@@ -139,8 +140,8 @@ class Chain(BaseModel):
     @field_validator("id")
     @classmethod
     def validate_id_format(cls, v: str) -> str:
-        if not re.match(r"^C-[A-Z]{2,3}-\d{3}$", v):
-            raise ValueError(f"Chain ID must match C-XX(X)-NNN, got: {v}")
+        if not re.match(r"^C-[A-Z]{2,3}-(\d{3}|[A-Z]{3})$", v):
+            raise ValueError(f"Chain ID must match C-XX(X)-NNN or C-XX(X)-XXX, got: {v}")
         return v
 
 

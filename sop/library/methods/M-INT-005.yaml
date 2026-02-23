@@ -1,36 +1,24 @@
 id: M-INT-005
 name: Case Walkthrough
 category: interrogate
-control_stage: RETRIEVE
-description: 'Walk through a realistic case to retrieve reasoning steps, identify gaps, and reinforce application accuracy.'
+control_stage: ENCODE
+description: Walk through a realistic case to retrieve reasoning steps, identify gaps, and reinforce application accuracy.
 default_duration_min: 10
 energy_cost: high
 has_steps: Y
 has_outputs_or_artifacts: Y
 outputs_summary: Case walkthrough narrative; Assessment plan; Reasoning verification
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - case_prompt_only
-    - partial_scaffold
-    - targeted_hint
-    default: partial_scaffold
-facilitation_prompt: 'You are running M-INT-005 (Case Walkthrough) in RETRIEVE stage.
+  guidance_level: partial_scaffold
+facilitation_prompt: 'You are running M-INT-005 (Case Walkthrough) in ENCODE stage.
 
   Require an attempt-first case response before feedback.
 
-  Use {guidance_level}:
-  - case_prompt_only: present the case and require full learner reasoning.
-  - partial_scaffold: allow limited structure prompts without revealing final answer.
-  - targeted_hint: provide one focused hint after an attempt, then require revised answer.
+  Use {guidance_level}: - case_prompt_only: present the case and require full learner reasoning. - partial_scaffold: allow
+  limited structure prompts without revealing final answer. - targeted_hint: provide one focused hint after an attempt, then
+  require revised answer.
 
-  Return:
-  1) LearnerCaseResponse
-  2) ErrorTags
-  3) ConfidenceTag
-  4) CorrectiveFeedback
-  5) NextTargetedProbe
+  Return: 1) LearnerCaseResponse 2) ErrorTags 3) ConfidenceTag 4) CorrectiveFeedback 5) NextTargetedProbe
 
   '
 constraints:
@@ -69,3 +57,4 @@ failure_modes:
 - mode: Repeated misses
   mitigation: Route back to ENCODE with targeted scaffold.
 artifact_type: notes
+evidence_raw: Schmidt & Rikers (2007); case-based walkthrough strengthens illness script formation and transfer

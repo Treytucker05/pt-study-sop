@@ -1,7 +1,8 @@
 id: M-ENC-014
 name: Chain Linking
 category: encode
-description: Create a bizarre narrative story connecting unrelated items. The absurdity makes it memorable without spatial locations.
+description: Create a bizarre narrative story connecting unrelated items. The absurdity makes it memorable without spatial
+  locations.
 default_duration_min: 8
 energy_cost: medium
 best_stage: first_exposure
@@ -18,20 +19,8 @@ mechanisms:
 - narrative_encoding
 - generation
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

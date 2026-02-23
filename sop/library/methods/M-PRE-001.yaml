@@ -1,8 +1,8 @@
 id: M-PRE-001
 name: Brain Dump
-category: prepare
+category: prime
 control_stage: PRIME
-description: 'Rapid orientation recall over existing notes to identify strong anchors and missing nodes before deeper work.'
+description: Rapid orientation recall over existing notes to identify strong anchors and missing nodes before deeper work.
 default_duration_min: 3
 energy_cost: low
 status: validated
@@ -21,12 +21,7 @@ when_not_to_use:
 - Brand-new topic with no prior notes (route to M-PRE-010 then M-PRE-008).
 - High-anxiety learner who reads this as a test.
 knobs:
-  feedback_style:
-    type: enum
-    options:
-    - supportive_synthesis
-    - strict_gap_analysis
-    default: supportive_synthesis
+  feedback_style: supportive_synthesis
 constraints:
   prior_context_required: true
   non_assessment: true
@@ -96,3 +91,4 @@ gating_rules:
 - Do not assess or score the learner in PRIME.
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: notes
+evidence_raw: Ausubel (1968); Bjork & Bjork (2011); prior knowledge activation strengthens subsequent encoding

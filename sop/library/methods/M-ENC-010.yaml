@@ -1,7 +1,8 @@
 id: M-ENC-010
 name: Comparison Table
 category: encode
-description: Create a side-by-side table comparing 2-4 confusable concepts across shared features. Highlight discriminating features. Builds differential diagnosis skill.
+description: Create a side-by-side table comparing 2-4 confusable concepts across shared features. Highlight discriminating
+  features. Builds differential diagnosis skill.
 default_duration_min: 7
 energy_cost: medium
 best_stage: review
@@ -19,20 +20,8 @@ mechanisms:
 - elaboration
 - dual_coding
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

@@ -1,6 +1,6 @@
 id: M-PRE-002
 name: Overarching Pre-Question Set
-category: prepare
+category: prime
 description: Generate 3-5 broad why/how/where-fit questions before deep study to set conceptual hooks.
 default_duration_min: 3
 energy_cost: low
@@ -26,19 +26,8 @@ when_not_to_use:
 - Learner shows high anxiety with open-ended prompts.
 - Session time is too short to process questions meaningfully.
 knobs:
-  priming_scope:
-    type: enum
-    options:
-    - module_all
-    - single_focus
-    default: single_focus
-  guidance_level:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
+  priming_scope: single_focus
+  guidance_level: medium
 constraints:
   non_assessment: true
   no_scored_checks: true

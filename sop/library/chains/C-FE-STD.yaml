@@ -1,12 +1,12 @@
-chain_id: C-FE-STD
+id: C-FE-STD
 name: "First Exposure: Standard"
-category: "First Exposure"
-is_template: 1
-target_assessment_mode: ["classification", "mechanism"]
-est_duration_min: 35
-
+description: >-
+  Standard first-exposure chain for medium-energy sessions targeting
+  classification and mechanism modes. Full PEIRRO cycle with structural
+  extraction, calibration, comparison encoding, reference generation,
+  and timed retrieval sprint.
 # THE LAW: M-REF-004 (Target Gen) MUST precede M-RET-* (Retrieval)
-method_ids:
+blocks:
   - M-PRE-010  # Learning Objectives Primer (mandatory first)
   - M-PRE-008  # Structural Extraction (Structure)
   - M-CAL-001  # Micro Precheck (Baseline)
@@ -14,17 +14,24 @@ method_ids:
   - M-REF-003  # One-Page Anchor (Cue Gen 1)
   - M-REF-004  # Question Bank Seed (Cue Gen 2 - The Targets)
   - M-RET-007  # Timed Sprint Sets (Retrieval)
-
-default_knobs:
-  energy: "medium"
-  near_miss_intensity: "low"
-  time_available_min: 35
-  timed: "soft"
-
+allowed_modes:
+  - classification
+  - mechanism
 gates:
-  - method: M-ENC-010
-    criterion: "tie_breakers_complete"
-    value: true
-  - method: M-RET-007
-    criterion: "accuracy"
-    value: 0.85
+  - tie_breakers_complete
+  - rsr_accuracy_ge_0.85
+failure_actions:
+  - inject_reference_targets_before_retrieve
+  - substitute_by_error_type_mapping
+  - re_run_retrieval_gate_after_insertion
+requires_reference_targets: true
+is_template: true
+status: draft
+context_tags:
+  energy: medium
+  time_available: 35
+default_knobs:
+  energy: medium
+  near_miss_intensity: low
+  time_available_min: 35
+  timed: soft

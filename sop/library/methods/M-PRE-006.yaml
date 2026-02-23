@@ -1,6 +1,6 @@
 id: M-PRE-006
 name: Structural Skimming + Pillar Mapping
-category: prepare
+category: prime
 description: Rapidly skim headings/visual cues and map 3-5 top pillars before deep reading.
 default_duration_min: 5
 energy_cost: medium
@@ -26,18 +26,8 @@ when_not_to_use:
 - Highly spatial content where diagram-first review is required.
 - Sessions with fewer than 3 minutes total.
 knobs:
-  pillar_count:
-    type: int
-    min: 3
-    max: 5
-    default: 4
-  output_mode:
-    type: enum
-    options:
-    - nested_list
-    - numbered_spine
-    - markdown_table
-    default: nested_list
+  pillar_count: 4
+  output_mode: nested_list
 constraints:
   non_assessment: true
   paragraph_summaries_disallowed: true

@@ -1,7 +1,8 @@
 id: M-PRE-003
 name: Prior Knowledge Scan
-category: prepare
-description: Conditional PRIME method that maps known concepts to the new topic when prior notes or North Star context already exist.
+category: prime
+description: Conditional PRIME method that maps known concepts to the new topic when prior notes or North Star context already
+  exist.
 default_duration_min: 3
 energy_cost: low
 best_stage: first_exposure
@@ -21,19 +22,8 @@ stipulations:
 - PRIME boundary: orientation only; no scored probes and no answer-checking.
 - Use this for connection mapping, not for calibration.
 knobs:
-  priming_scope:
-    type: enum
-    options:
-    - module_all
-    - single_focus
-    default: single_focus
-  guidance_level:
-    type: enum
-    options:
-    - low
-    - medium
-    - high
-    default: medium
+  priming_scope: single_focus
+  guidance_level: medium
 constraints:
   non_assessment: true
   no_scored_checks: true

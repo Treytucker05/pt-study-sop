@@ -1,7 +1,8 @@
 id: M-INT-004
 name: Side-by-Side Comparison
 category: interrogate
-description: Place two confusable concepts in a comparison table (features, functions, clinical signs). Identify discriminating features. Builds differential diagnosis skill.
+description: Place two confusable concepts in a comparison table (features, functions, clinical signs). Identify discriminating
+  features. Builds differential diagnosis skill.
 default_duration_min: 7
 energy_cost: medium
 best_stage: review
@@ -17,20 +18,8 @@ mechanisms:
 - discrimination
 - elaboration
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

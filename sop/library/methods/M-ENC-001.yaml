@@ -1,7 +1,9 @@
 id: M-ENC-001
 name: KWIK Hook
 category: encode
-description: 'Structured 6-step encoding protocol for new terms. Sound (phonetic cue) → Function (true meaning) → Image (vivid visual tied to function) → Entwine (PIE method: personal meaning) → Resonance (learner confirms it clicks) → Lock (record as card/log). Each step is gated — don''t skip ahead.'
+description: 'Structured 6-step encoding protocol for new terms. Sound (phonetic cue) → Function (true meaning) → Image (vivid
+  visual tied to function) → Entwine (PIE method: personal meaning) → Resonance (learner confirms it clicks) → Lock (record
+  as card/log). Each step is gated — don''t skip ahead.'
 default_duration_min: 3
 energy_cost: medium
 best_stage: first_exposure
@@ -20,20 +22,8 @@ mechanisms:
 - generation
 - emotional_encoding
 knobs:
-  guidance_level:
-    type: enum
-    options:
-    - light
-    - medium
-    - high
-    default: medium
-  output_format:
-    type: enum
-    options:
-    - bullets
-    - table
-    - ascii
-    default: bullets
+  guidance_level: medium
+  output_format: bullets
 constraints:
   active_processing_required: true
   objective_scope_required: true

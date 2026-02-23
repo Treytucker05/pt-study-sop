@@ -1,6 +1,6 @@
 id: M-PRE-005
 name: Skeleton Concept Hierarchy
-category: prepare
+category: prime
 description: Generate a bare concept hierarchy (topic core -> 4-6 categories -> short descriptors) without deep explanations.
 default_duration_min: 5
 energy_cost: medium
@@ -26,18 +26,8 @@ when_not_to_use:
 - Pure procedural skill acquisition where step flow is primary.
 - Sessions with <3 minutes available.
 knobs:
-  node_count_cap:
-    type: int
-    min: 4
-    max: 8
-    default: 6
-  map_format:
-    type: enum
-    options:
-    - ascii_tree
-    - mermaid
-    - nested_bullets
-    default: ascii_tree
+  node_count_cap: 6
+  map_format: ascii_tree
 constraints:
   non_assessment: true
   max_depth: 2
@@ -109,8 +99,7 @@ facilitation_prompt: 'You are running M-PRE-005 (Skeleton Concept Hierarchy) in 
 
   3) CrossLinks
 
-  Stop condition:
-  - End when category count and depth constraints are satisfied.
+  Stop condition: - End when category count and depth constraints are satisfied.
 
   '
 gating_rules:

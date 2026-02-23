@@ -1,11 +1,12 @@
 id: M-PRE-007
 name: Pre-Test
-category: prepare
-description: Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode the correct information more deeply.
+category: prime
+description: Attempt to answer questions on the topic BEFORE studying it. Getting answers wrong primes the brain to encode
+  the correct information more deeply.
 default_duration_min: 5
 energy_cost: low
 best_stage: first_exposure
-control_stage: CALIBRATE
+control_stage: PRIME
 status: validated
 tags:
 - pre-testing
@@ -17,17 +18,8 @@ mechanisms:
 - desirable_difficulty
 - calibration
 knobs:
-  probe_count:
-    type: int
-    min: 1
-    max: 5
-    default: 3
-  confidence_scale:
-    type: enum
-    options:
-    - h_m_l
-    - one_to_five
-    default: h_m_l
+  probe_count: 3
+  confidence_scale: h_m_l
 constraints:
   confidence_capture_required: true
   short_window_min: 2
@@ -77,7 +69,7 @@ evidence:
   finding: Pre-testing primes encoding even when initial answers are wrong; the attempt creates retrieval hooks
   source: seed_methods.py
 evidence_raw: Richland et al. (2009); Kornell et al. (2009); pre-testing primes encoding even when initial answers are wrong
-facilitation_prompt: 'You are running M-PRE-007 (Pre-Test) in CALIBRATE stage.
+facilitation_prompt: 'You are running M-PRE-007 (Pre-Test) in PRIME stage.
 
   Execute this method card exactly and keep outputs deterministic.
 
