@@ -4,6 +4,55 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-02-23 - RAG chunking fix + Gemini CLI provider wiring
+
+- Fixed RAG chunking in `brain/tutor_rag.py`:
+  - Small-document bypass: docs ≤8,000 chars returned as a single chunk (no splitting).
+    Hip Complex lecture (6,542 chars) was previously split into 14 fragments; now returns 1 chunk with all content intact.
+  - Two-stage splitting for larger docs: `MarkdownHeaderTextSplitter` (keeps headers attached to content) → `RecursiveCharacterTextSplitter` (1000 chars, 150 overlap).
+  - Minimum chunk filter: chunks <50 chars dropped (kills header-only fragments like bare `## Learning Objectives`).
+  - Bumped `DEFAULT_MAX_CHUNKS_PER_DOC` from 2 → 4.
+  - Cross-encoder reranker (`cross-encoder/ms-marco-TinyBERT-L-2-v2`) replaces keyword-count scoring; falls back to keywords if model fails to load.
+  - Fixed latent bug: `embed_vault_notes()` was calling `chunk_document(content)` without required `source_path` arg.
+  - Changed `source_path` default to `""` for backward compatibility.
+- Wired Gemini CLI as second LLM provider in `brain/llm_provider.py`:
+  - `find_gemini_cli()` discovers binary (mirrors Codex pattern: `%APPDATA%/npm/gemini.cmd` then `where.exe`).
+  - `_call_gemini()` subprocess call with `--yolo --sandbox --output-format text`, temp-file prompt, proper cleanup.
+  - `call_llm(provider="gemini")` routes to Gemini; default remains Codex.
+  - `GEMINI_DEFAULT_MODEL = "gemini-3-pro"` (user has Google AI Ultra with 1M+ context).
+- Fixed pre-existing test failure in `brain/tests/test_methods_api.py`:
+  - `test_prime_methods_include_knob_contract` now creates its own PRIME method with knobs instead of relying on missing seed data.
+- Validation:
+  - `python -m pytest brain/tests/ -q` -> `706 passed`
+  - Re-embedded Hip Complex lecture (doc 426): 14 fragments → 1 chunk, "learning objectives" query now returns full content.
+  - Cross-encoder model download + inference verified.
+
+## 2026-02-23 - Queue B transfer integrity closure (B1.1-B1.4)
+
+- Added launch-time chain/method validation in `brain/dashboard/api_tutor.py`:
+  - hard reject if chain does not start with PRIME (`CHAIN_PRIME_REQUIRED`)
+  - hard reject when block stage mismatches canonical YAML method contract (`METHOD_STAGE_MISMATCH`).
+- Added runtime drift detection in `brain/dashboard/api_tutor.py`:
+  - detects/fills missing method prompt and artifact contract from YAML for canonical methods,
+  - blocks critical missing-contract cases before LLM call (`METHOD_CONTRACT_DRIFT`),
+  - auto-fills missing `knob_snapshot` from method defaults and emits `runtime_drift_events` in retrieval telemetry.
+- Added integrity smoke command/script:
+  - `scripts/method_integrity_smoke.py`
+  - writes one-page report to `docs/root/TUTOR_METHOD_INTEGRITY_SMOKE.md`
+  - reports `method_id -> stage -> artifact_type -> required_knobs` with PASS/WARN/FAIL.
+- Added regression tests in `brain/tests/test_tutor_session_linking.py`:
+  - non-PRIME chain start rejection
+  - stage/method mismatch rejection
+  - knob snapshot auto-fill + runtime drift telemetry
+  - critical contract drift block.
+- Updated trackers:
+  - `docs/root/TUTOR_TODO.md` (B1.1-B1.4 marked complete)
+  - `conductor/tracks.md` latest status line.
+- Validation:
+  - `python -m py_compile brain/dashboard/api_tutor.py scripts/method_integrity_smoke.py brain/tests/test_tutor_session_linking.py` -> PASS
+  - `python -m pytest brain/tests/test_tutor_session_linking.py` -> `24 passed`
+  - `python scripts/method_integrity_smoke.py` -> `Failures: 0` (knob cache warnings surfaced as WARN for legacy DB rows).
+
 ## 2026-02-23 - Tutor chat footer cleanup (removed Active Sources bar)
 
 - Removed the `ACTIVE SOURCES` badge strip from Tutor chat composer area in:
@@ -1185,3 +1234,23 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 - Updated `conductor/tracks.md` with current active-workstream line:
   - `Tutor PRIME hardening + transfer integrity`
 - Kept remaining historical track entries unchanged for audit continuity.
+
+## 2026-02-23 - A1.4 PRIME runtime non-assessment enforcement
+- Added hard PRIME runtime guardrails in rain/dashboard/api_tutor.py:
+  - blocks ehavior_override=evaluate|teach_back while active stage is PRIME (returns PRIME_ASSESSMENT_BLOCKED).
+  - validates artifact/finalize payload trees for assessment fields (score, grade, confidence, ccuracy, calibration, mastery, erdict, ubric) when stage is PRIME.
+  - rejects PRIME artifacts that include RETRIEVE/OVERLEARN in session.stage_flow.
+- Added regression tests in rain/tests/test_tutor_session_linking.py:
+  - 	est_finalize_rejects_prime_confidence_fields`n  - 	est_send_turn_blocks_prime_evaluate_mode`n- Updated board status in docs/root/TUTOR_TODO.md (A1.4 checked).
+
+## 2026-02-23 - A1.5 PRIME knob wiring end-to-end
+- Implemented method knob contract wiring with bounds + fallback semantics in rain/dashboard/api_methods.py:
+  - YAML knob definitions loaded per method_id`n  - normalized knob schema adds deterministic fallback policy per knob type
+  - PRIME and non-PRIME methods now expose knobs, constraints, and has_active_knobs in API responses
+  - API accepts/saves edited knob payloads via knob_overrides_json.
+- Added DB compatibility for knob overrides:
+  - rain/db_setup.py adds method_blocks.knob_overrides_json on create/migrate.
+  - rain/data/seed_methods.py seeds/syncs knob definitions from YAML into DB override field.
+- Added Methods UI knob editing with JSON validation + reset in dashboard_rebuild/client/src/pages/methods.tsx.
+- Removed PRIME guardrail test skip dependency by creating explicit PRIME-first chain in test setup (rain/tests/test_tutor_session_linking.py).
+- Added method API tests for knob contract and knob update round-trip (rain/tests/test_methods_api.py).

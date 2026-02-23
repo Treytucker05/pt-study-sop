@@ -6,7 +6,7 @@ Update policy: after every significant change, update this file (and the active 
 
 Active status: `Tutor PRIME hardening + transfer integrity` is the current in-progress workstream; board reference is `docs/root/TUTOR_TODO.md`.
 
-Latest update: 2026-02-23 Tutor chat footer was simplified by removing the confusing Active Sources bar; docs remain synced to current Obsidian CRUD + template-render behavior. See `conductor/tracks/GENERAL/log.md`.
+Latest update: 2026-02-23 Fixed RAG chunking (small-doc bypass, two-stage header-aware splitting, cross-encoder reranker) and wired Gemini CLI as second LLM provider. See `conductor/tracks/GENERAL/log.md`.
 
 ---
 

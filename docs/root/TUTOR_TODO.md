@@ -15,11 +15,11 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 ## Active Sprint 2026-02-23
 
 ### Sprint 1: Finish PRIME Hardening (Priority)
-- [ ] A1. Build PRIME policy table for all 9 methods.
+- [x] A1. Build PRIME policy table for all 9 methods.
   - For each method: intent, allowed outputs, blocked behaviors, allowed transitions
-- [ ] A2. Build PRIME knobs table.
+- [x] A2. Build PRIME knobs table.
   - For each method: knob name, type, bounds, lock/escalate/rollback, defaults
-- [ ] A3. Finalize PRIME runtime guardrails.
+- [x] A3. Finalize PRIME runtime guardrails.
   - enforce non-assessment behavior
   - block assessment prompts/scored checks in PRIME
   - validate output shape (schema-aware)
@@ -31,6 +31,11 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [ ] B1. Verify method mapping parity across YAML, DB seed, wizard, and runtime.
 - [ ] B2. Add one-pass drift check for method-stage mismatch and missing critical knobs.
 - [ ] B3. Add one-page smoke report (`method_id -> stage -> artifact_type -> required knobs`).
+
+### Sprint 2b: RAG + LLM Provider (Completed 2026-02-23)
+- [x] B4. Fix RAG chunking for small docs (small-doc bypass ≤8K chars, two-stage header-aware splitting).
+- [x] B5. Add cross-encoder reranker (`ms-marco-TinyBERT-L-2-v2`) to replace keyword scoring.
+- [x] B6. Wire Gemini CLI as second LLM provider (`call_llm(provider="gemini")`).
 
 ### Sprint 3: Video Study Pipeline Finish
 - [ ] C1. Confirm hybrid ingest routing for local vs API path.
@@ -51,7 +56,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - `M-PRE-008` Structural Extraction
   - `M-PRE-009` Syntopical Big-Picture Synthesis
   - `M-PRE-010` Learning Objectives Primer
-- [ ] Set final Provide/Produce policy for each visualization method.
+- [x] Set final Provide/Produce policy for each visualization method.
 
 ### A2) PRIME Execution Contract (Policy)
 - [x] Define PRIME output contract per method:
@@ -114,51 +119,53 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [ ] Add clear user-facing controls for failover and quota indicators.
 
 ## Immediate Next 3 Tasks (Use in this order)
-1. [ ] Build PRIME method-by-method policy table (intent -> allowed outputs -> blocked behavior).
-2. [ ] Build PRIME knob table (knob -> type -> defaults -> constraints).
-3. [ ] Map both tables to exact implementation files and verify in one dry session.
+1. [x] Close PRIME non-assessment enforcement in runtime (A1.4).
+2. [x] Verify PRIME control knobs are fully wired end-to-end (A1.5).
+3. [ ] Validate prime method routing + stage transitions in one end-to-end dry session.
 
 ## Granular Close-Out Queue (last-mile items from last tasks)
 
 ### Queue A — PRIME Hardening Closure
 
-- [ ] A1.1 Lock `PRIME` method boundaries for all 9 cards in one pass.
+- [x] A1.1 Lock `PRIME` method boundaries for all 9 cards in one pass.
   - Files: `sop/library/methods/M-PRE-001.yaml` ... `M-PRE-010.yaml`
   - Done when: every method contract has `stage=PRIME`, `assessment=false`, and explicitly forbidden/allowed question behavior.
 
-- [ ] A1.2 Finalize and publish one canonical PRIME policy matrix.
+- [x] A1.2 Finalize and publish one canonical PRIME policy matrix.
   - Files: `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`, `docs/root/TUTOR_NORTH_STAR_RULES.md`, `docs/root/TUTOR_TRUTH_PATH.md`
   - Done when: `M-PRE-010` and `M-PRE-008` are marked `CONFIRMED` and no active TODO item references the draft as unresolved.
 
-- [ ] A1.3 Finish and freeze `module_all` / `single_focus` PRIME behavior.
+- [x] A1.3 Finish and freeze `module_all` / `single_focus` PRIME behavior.
   - Files: `docs/root/TUTOR_NORTH_STAR_RULES.md`, `docs/root/TUTOR_PRIME_DRAFT_MATRIX.md`, `brain/dashboard/api_tutor.py`, `dashboard_rebuild/client/src/pages/tutor.tsx`, `dashboard_rebuild/client/src/api.ts`
   - Done when: decision is hard-locked to module-first default and single-focus opt-in with consistent UI/backend schema and no fallback ambiguity.
 
-- [ ] A1.4 Close PRIME non-assessment enforcement in runtime.
+- [x] A1.4 Close PRIME non-assessment enforcement in runtime.
   - Files: `brain/dashboard/api_tutor.py`, `brain/dashboard/api_contracts.py` (if applicable), `brain/tutor_chains.py`, `dashboard_rebuild/client/src/pages/methods.tsx`
   - Done when: automated check rejects any scored artifact/type-0 confidence fields in PRIME and no PRIME block can emit retrieval grade output.
 
-- [ ] A1.5 Verify PRIME control knobs are fully wired end-to-end.
+- [x] A1.5 Verify PRIME control knobs are fully wired end-to-end.
   - Files: `sop/library/methods/*`, `brain/db_setup.py`, `brain/tutor_method_registry.py`, `brain/data/seed_methods.py`, `dashboard_rebuild/client/src/pages/methods.tsx`
   - Done when: all PRIME methods expose at least one active knob with bounds + fallback behavior and can be edited without UI validation errors.
 
 ### Queue B — Chain/Method Transfer Integrity
 
-- [ ] B1.1 Add parity check for method metadata across YAML, DB seed, runtime, and wizard/editor.
+- [x] B1.1 Add parity check for method metadata across YAML, DB seed, runtime, and wizard/editor.
   - Files: `scripts/`, `brain/data/seed_methods.py`, `brain/db_setup.py`, `dashboard_rebuild/client/src/pages/methods.tsx`
   - Done when: a single command shows zero mismatched `control_stage`, `artifact_type`, or `best_stage` between YAML and DB cache.
+  - Completed via: `python scripts/method_integrity_smoke.py` (`Failures: 0`; warnings currently only on missing DB knob cache fields for older DBs).
 
-- [ ] B1.2 Add one-pass stage-method validation check in tutor launch.
+- [x] B1.2 Add one-pass stage-method validation check in tutor launch.
   - Files: `brain/tutor_chains.py`, `brain/dashboard/api_tutor.py`, `brain/tests/test_tutor_session_linking.py`
   - Done when: chain starts with `PRIME` and rejects invalid `stage->method` pairing before LLM call.
 
-- [ ] B1.3 Add runtime drift detector for missing `knob_snapshot`, missing method prompt, or missing artifact contract.
+- [x] B1.3 Add runtime drift detector for missing `knob_snapshot`, missing method prompt, or missing artifact contract.
   - Files: `brain/dashboard/api_tutor.py`, `brain/tutor_tooling.py`, `brain/tests/test_method_cards_hardening.py`
   - Done when: 1) runtime telemetry includes block reason for every mismatch and 2) no critical mismatch enters active session.
 
-- [ ] B1.4 Produce one-page method integrity smoke report.
+- [x] B1.4 Produce one-page method integrity smoke report.
   - Files: `scripts/`, `docs/root/TUTOR_TODO.md`
   - Done when: each method row reports `method_id`, `stage`, `artifact_type`, and required knobs as pass/fail.
+  - Report path: `docs/root/TUTOR_METHOD_INTEGRITY_SMOKE.md`.
 
 ### Queue C — Category Coverage and Documentation Closure
 
