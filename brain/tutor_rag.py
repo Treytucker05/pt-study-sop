@@ -643,6 +643,8 @@ def search_with_embeddings(
 
         if merged_candidates:
             final_docs = rerank_results(query, merged_candidates, k)
+            if is_video_query(query):
+                final_docs = boost_video_chunks(final_docs, query)
             if debug is not None:
                 dist = _doc_distribution_stats(final_docs)
                 debug["final_chunks"] = len(final_docs)
@@ -918,6 +920,56 @@ def keyword_search_dual(
         "materials": materials,
         "instructions": instructions,
     }
+
+
+# ---------------------------------------------------------------------------
+# Video query detection & chunk boosting
+# ---------------------------------------------------------------------------
+
+_VIDEO_TIME_PATTERN = re.compile(
+    r'\b\d{1,2}:\d{2}(?::\d{2})?\b'
+    r'|'
+    r'\bat\s+\d+\s*(?:min(?:ute)?s?|sec(?:ond)?s?)\b',
+    re.IGNORECASE,
+)
+
+_VIDEO_KEYWORDS: frozenset[str] = frozenset({
+    "video", "lecture video", "recording", "lecture recording",
+    "timestamp", "slide", "frame", "keyframe", "visual", "screen",
+})
+
+
+def is_video_query(query: str) -> bool:
+    """Detect whether a query is asking about video/lecture content."""
+    if _VIDEO_TIME_PATTERN.search(query):
+        return True
+    query_lower = query.lower()
+    return any(kw in query_lower for kw in _VIDEO_KEYWORDS)
+
+
+def _is_video_chunk(doc: object) -> bool:
+    """Check if a document chunk originates from video ingest."""
+    metadata = getattr(doc, "metadata", None) or {}
+    topic_tags = metadata.get("topic_tags", [])
+    if isinstance(topic_tags, str):
+        topic_tags = [t.strip() for t in topic_tags.split(",")]
+    video_tags = {"transcript", "visual_notes", "video"}
+    if video_tags & set(topic_tags):
+        return True
+    folder_path = str(metadata.get("folder_path") or "")
+    return "video_ingest" in folder_path
+
+
+def boost_video_chunks(docs: list, query: str) -> list:
+    """Reorder docs so video-origin chunks appear first when query is video-related."""
+    video: list = []
+    other: list = []
+    for doc in docs:
+        if _is_video_chunk(doc):
+            video.append(doc)
+        else:
+            other.append(doc)
+    return video + other
 
 
 # ---------------------------------------------------------------------------

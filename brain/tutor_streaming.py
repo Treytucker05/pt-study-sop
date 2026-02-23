@@ -7,6 +7,7 @@ Matches the existing SSE pattern from api_adapter.py brain_quick_chat.
 from __future__ import annotations
 
 import json
+import re
 from typing import Generator, Optional
 
 
@@ -176,3 +177,74 @@ def collect_stream(generator) -> tuple[str, list[dict]]:
             pass
 
     return full_text, citations
+
+
+# ---------------------------------------------------------------------------
+# Video timestamp citation formatting
+# ---------------------------------------------------------------------------
+
+_TIMESTAMP_RANGE_PATTERN = re.compile(
+    r'\[(\d{1,2}:\d{2}:\d{2})\s*->\s*\d{1,2}:\d{2}:\d{2}\]'
+)
+_TIMESTAMP_SINGLE_PATTERN = re.compile(
+    r'\[(\d{1,2}:\d{2}:\d{2})\]'
+)
+
+
+def extract_timestamps_from_chunk(text: str) -> list[str]:
+    """Find all [HH:MM:SS] or [HH:MM:SS -> HH:MM:SS] patterns; return start timestamps."""
+    timestamps: list[str] = []
+    seen: set[str] = set()
+    for match in _TIMESTAMP_RANGE_PATTERN.finditer(text):
+        ts = match.group(1)
+        if ts not in seen:
+            seen.add(ts)
+            timestamps.append(ts)
+    for match in _TIMESTAMP_SINGLE_PATTERN.finditer(text):
+        ts = match.group(1)
+        if ts not in seen:
+            seen.add(ts)
+            timestamps.append(ts)
+    return timestamps
+
+
+def _is_video_origin(metadata: dict) -> bool:
+    """Check if chunk metadata indicates a video source."""
+    topic_tags = metadata.get("topic_tags", [])
+    if isinstance(topic_tags, str):
+        topic_tags = [t.strip() for t in topic_tags.split(",")]
+    if {"transcript", "visual_notes", "video"} & set(topic_tags):
+        return True
+    folder_path = str(metadata.get("folder_path") or "")
+    return "video_ingest" in folder_path
+
+
+def format_video_citations(chunks: list) -> list[dict]:
+    """Build timestamp-aware citations from video-origin chunks.
+
+    Returns a list of dicts: {"source": path, "timestamp": "HH:MM:SS", "text": snippet}
+    """
+    citations: list[dict] = []
+    for chunk in chunks:
+        metadata = getattr(chunk, "metadata", None) or {}
+        if not _is_video_origin(metadata):
+            continue
+        content = str(getattr(chunk, "page_content", ""))
+        source = str(metadata.get("source") or metadata.get("source_path") or "")
+        timestamps = extract_timestamps_from_chunk(content)
+        if not timestamps:
+            citations.append({
+                "source": source,
+                "timestamp": "",
+                "text": content[:200],
+            })
+            continue
+        for ts in timestamps:
+            snippet_start = content.find(ts)
+            snippet = content[max(0, snippet_start - 40):snippet_start + 60].strip()
+            citations.append({
+                "source": source,
+                "timestamp": ts,
+                "text": snippet,
+            })
+    return citations
