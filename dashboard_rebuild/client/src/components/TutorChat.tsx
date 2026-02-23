@@ -7,6 +7,8 @@ import {
   FileText,
   CreditCard,
   Map,
+  Table2,
+  Network,
   CheckCircle2,
   XCircle,
   BookOpen,
@@ -82,7 +84,7 @@ interface TutorChatProps {
   initialTurns?: { question: string; answer: string | null }[];
 }
 
-type ArtifactType = "note" | "card" | "map";
+type ArtifactType = "note" | "card" | "map" | "table" | "structured_map";
 type SourceTab = "materials" | "vault" | "north_star";
 
 interface NorthStarSummary {
@@ -293,7 +295,58 @@ function parseArtifactCommand(message: string): { type: ArtifactType | null; tit
       title: trimmed.replace(/^\/(map|diagram)\s*/i, "").trim(),
     };
   }
+  if (/^\/table\b/i.test(trimmed)) {
+    return {
+      type: "table",
+      title: trimmed.replace(/^\/table\s*/i, "").trim(),
+    };
+  }
+  if (/^\/(structured[_-]?map|smap)\b/i.test(trimmed)) {
+    return {
+      type: "structured_map",
+      title: trimmed.replace(/^\/(structured[_-]?map|smap)\s*/i, "").trim(),
+    };
+  }
   return { type: null, title: "" };
+}
+
+/**
+ * Detect markdown tables in LLM response text.
+ * Returns the first table found (pipe-delimited with separator row).
+ */
+function detectMarkdownTable(text: string): string | null {
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length - 2; i++) {
+    const headerLine = lines[i].trim();
+    const sepLine = lines[i + 1].trim();
+    // Header must have pipes, separator must be pipes + dashes
+    if (
+      headerLine.includes("|") &&
+      /^[\s|:-]+$/.test(sepLine) &&
+      sepLine.includes("-")
+    ) {
+      // Collect the full table
+      const tableLines = [lines[i], lines[i + 1]];
+      for (let j = i + 2; j < lines.length; j++) {
+        if (lines[j].trim().includes("|")) {
+          tableLines.push(lines[j]);
+        } else {
+          break;
+        }
+      }
+      if (tableLines.length >= 3) return tableLines.join("\n");
+    }
+  }
+  return null;
+}
+
+/**
+ * Detect mermaid code blocks in LLM response text.
+ * Returns the mermaid content (without fences) if found.
+ */
+function detectMermaidBlock(text: string): string | null {
+  const match = text.match(/```mermaid\s*\n([\s\S]*?)```/);
+  return match ? match[1].trim() : null;
 }
 
 const TOOL_LABELS: Record<string, string> = {
@@ -1052,14 +1105,32 @@ export function TutorChat({
         });
       } else if (
         serverArtifactCmd?.type &&
-        (serverArtifactCmd.type === "note" || serverArtifactCmd.type === "card" || serverArtifactCmd.type === "map")
+        ["note", "card", "map", "table", "structured_map"].includes(serverArtifactCmd.type)
       ) {
-        // Backend detected natural language artifact command (e.g. "put that in my notes")
+        // Backend detected natural language artifact command
         onArtifactCreated({
           type: serverArtifactCmd.type,
           content: fullText,
           title: userMessage.slice(0, 80).trim(),
         });
+      } else {
+        // Auto-detect tables and structured maps in the response
+        const detectedTable = detectMarkdownTable(fullText);
+        if (detectedTable) {
+          onArtifactCreated({
+            type: "table",
+            content: detectedTable,
+            title: `Table from turn`,
+          });
+        }
+        const detectedMermaid = detectMermaidBlock(fullText);
+        if (detectedMermaid) {
+          onArtifactCreated({
+            type: "structured_map",
+            content: "```mermaid\n" + detectedMermaid + "\n```",
+            title: `Structured map from turn`,
+          });
+        }
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -1154,7 +1225,7 @@ export function TutorChat({
                 SESSION STARTED
               </div>
               <div className="font-terminal text-lg text-muted-foreground leading-7">
-                Ask a question to begin learning. Use /note, /card, or /map for artifacts.
+                Ask a question to begin learning. Use /note, /card, /map, /table, or /smap for artifacts.
               </div>
             </div>
           )}
@@ -1265,6 +1336,40 @@ export function TutorChat({
                     >
                       <Map className="w-3 h-3 text-primary/60" /> Create Map
                     </button>
+                    {detectMarkdownTable(msg.content) && (
+                      <button
+                        onClick={() => {
+                          const table = detectMarkdownTable(msg.content);
+                          if (table) {
+                            onArtifactCreated({
+                              type: "table",
+                              content: table,
+                              title: `Table ${i}`,
+                            });
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                      >
+                        <Table2 className="w-3 h-3 text-primary/60" /> Save Table
+                      </button>
+                    )}
+                    {detectMermaidBlock(msg.content) && (
+                      <button
+                        onClick={() => {
+                          const mermaid = detectMermaidBlock(msg.content);
+                          if (mermaid) {
+                            onArtifactCreated({
+                              type: "structured_map",
+                              content: "```mermaid\n" + mermaid + "\n```",
+                              title: `Structured map ${i}`,
+                            });
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+                      >
+                        <Network className="w-3 h-3 text-primary/60" /> Save Map
+                      </button>
+                    )}
                   </div>
                 )}
 

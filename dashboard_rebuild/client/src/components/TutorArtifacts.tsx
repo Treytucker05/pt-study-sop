@@ -39,12 +39,16 @@ import {
   Check,
   X,
   Loader2,
+  Table2,
+  Network,
+  ExternalLink,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { TutorSessionSummary } from "@/lib/api";
+import type { TutorSessionSummary, TutorSessionWrapSummary } from "@/lib/api";
 
 export interface TutorArtifact {
-  type: "note" | "card" | "map";
+  type: "note" | "card" | "map" | "table" | "structured_map";
   title: string;
   content: string;
   createdAt: string;
@@ -57,7 +61,8 @@ interface TutorArtifactsProps {
   turnCount: number;
   topic: string;
   startedAt: string | null;
-  onCreateArtifact: (artifact: { type: "note" | "card" | "map"; content: string; title: string }) => void;
+  onCreateArtifact: (artifact: { type: "note" | "card" | "map" | "table" | "structured_map"; content: string; title: string }) => void;
+  isSessionCompleted?: boolean;
   recentSessions: TutorSessionSummary[];
   onResumeSession: (sessionId: string) => void;
   /** Delete selected artifact entries by index (persists to session). Called after API success. */
@@ -65,19 +70,391 @@ interface TutorArtifactsProps {
   onEndSession?: (sessionId: string) => Promise<void> | void;
 }
 
-const ARTIFACT_ICONS = {
+const ARTIFACT_ICONS: Record<string, typeof FileText> = {
   note: FileText,
   card: CreditCard,
   map: Map,
-} as const;
+  table: Table2,
+  structured_map: Network,
+};
 
-const ARTIFACT_COLORS = {
+const ARTIFACT_COLORS: Record<string, string> = {
   note: "text-blue-400",
   card: "text-yellow-400",
   map: "text-green-400",
-} as const;
+  table: "text-cyan-400",
+  structured_map: "text-purple-400",
+};
 
 const VISIBLE_SESSIONS_LIMIT = 8;
+
+// ---------------------------------------------------------------------------
+// Markdown table parser
+// ---------------------------------------------------------------------------
+
+function parseMarkdownTable(md: string): { headers: string[]; rows: string[][] } | null {
+  const lines = md.trim().split("\n").filter((l) => l.trim());
+  if (lines.length < 2) return null;
+
+  const parseLine = (line: string): string[] =>
+    line.split("|").map((c) => c.trim()).filter((_, i, arr) => i > 0 && i < arr.length);
+
+  const headers = parseLine(lines[0]);
+  if (headers.length === 0) return null;
+
+  // Check for separator row (must contain dashes)
+  const sep = lines[1];
+  if (!/^[\s|:-]+$/.test(sep)) return null;
+
+  const rows: string[][] = [];
+  for (let i = 2; i < lines.length; i++) {
+    const cells = parseLine(lines[i]);
+    if (cells.length > 0) rows.push(cells);
+  }
+
+  return { headers, rows };
+}
+
+// ---------------------------------------------------------------------------
+// Table artifact renderer
+// ---------------------------------------------------------------------------
+
+function ArtifactTable({ content }: { content: string }) {
+  const table = parseMarkdownTable(content);
+  if (!table) {
+    return <div className={`${TEXT_MUTED} mt-1 line-clamp-3`}>{content.slice(0, 200)}</div>;
+  }
+
+  return (
+    <div className="mt-2 overflow-x-auto">
+      <table className="border-2 border-primary w-full border-collapse">
+        <thead>
+          <tr className="bg-primary/20">
+            {table.headers.map((h, i) => (
+              <th
+                key={i}
+                className="font-arcade text-xs uppercase text-primary/80 px-2 py-1.5 text-left border border-primary/30"
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, ri) => (
+            <tr key={ri} className={ri % 2 === 0 ? "bg-card/50" : ""}>
+              {row.map((cell, ci) => (
+                <td
+                  key={ci}
+                  className="font-terminal text-sm px-2 py-1 border border-primary/20 text-foreground"
+                >
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Structured map artifact renderer
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert mermaid graph content into Obsidian .canvas JSON format.
+ * Parses nodes and edges from simple mermaid graph/flowchart syntax.
+ */
+function mermaidToCanvasJson(mermaidContent: string, title: string): string {
+  const raw = mermaidContent.replace(/```mermaid\s*\n?/, "").replace(/```\s*$/, "").trim();
+  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+
+  const nodes: { id: string; x: number; y: number; width: number; height: number; type: string; text: string }[] = [];
+  const edges: { id: string; fromNode: string; toNode: string; fromSide: string; toSide: string }[] = [];
+  const nodeSet = new Set<string>();
+  let edgeIdx = 0;
+
+  const ensureNode = (id: string, label?: string) => {
+    if (nodeSet.has(id)) return;
+    nodeSet.add(id);
+    const col = nodes.length % 3;
+    const row = Math.floor(nodes.length / 3);
+    nodes.push({
+      id,
+      x: col * 280 + 40,
+      y: row * 160 + 40,
+      width: 240,
+      height: 80,
+      type: "text",
+      text: label || id,
+    });
+  };
+
+  // Parse mermaid lines for nodes and edges (simple flowchart patterns)
+  for (const line of lines) {
+    if (/^(graph|flowchart|mindmap)\b/i.test(line)) continue;
+    // Match: A --> B, A["label"] --> B["label"], A --- B, A --> |text| B
+    const edgeMatch = line.match(
+      /^(\w+)(?:\["([^"]+)"\]|\(["']?([^)"']+)["']?\))?\s*(?:-->|---|==>|-.->)\s*(?:\|[^|]*\|\s*)?(\w+)(?:\["([^"]+)"\]|\(["']?([^)"']+)["']?\))?/
+    );
+    if (edgeMatch) {
+      const fromId = edgeMatch[1];
+      const fromLabel = edgeMatch[2] || edgeMatch[3];
+      const toId = edgeMatch[4];
+      const toLabel = edgeMatch[5] || edgeMatch[6];
+      ensureNode(fromId, fromLabel);
+      ensureNode(toId, toLabel);
+      edges.push({
+        id: `edge-${edgeIdx++}`,
+        fromNode: fromId,
+        toNode: toId,
+        fromSide: "right",
+        toSide: "left",
+      });
+      continue;
+    }
+    // Standalone node: A["label"] or A("label")
+    const nodeMatch = line.match(/^(\w+)(?:\["([^"]+)"\]|\(["']?([^)"']+)["']?\))\s*$/);
+    if (nodeMatch) {
+      ensureNode(nodeMatch[1], nodeMatch[2] || nodeMatch[3]);
+    }
+  }
+
+  // If no nodes parsed, create a single node with the raw content
+  if (nodes.length === 0) {
+    nodes.push({
+      id: "root",
+      x: 40,
+      y: 40,
+      width: 400,
+      height: 200,
+      type: "text",
+      text: `# ${title}\n\n${raw}`,
+    });
+  }
+
+  return JSON.stringify({ nodes, edges }, null, 2);
+}
+
+function ArtifactStructuredMap({ content, title }: { content: string; title: string }) {
+  const [saving, setSaving] = useState(false);
+  const isMermaid = content.trimStart().startsWith("```mermaid");
+  const figmaUrl = content.match(/https?:\/\/(?:www\.)?figma\.com\/\S+/)?.[0];
+
+  const handleSaveCanvas = async () => {
+    setSaving(true);
+    try {
+      const canvasJson = mermaidToCanvasJson(content, title || "Structured Map");
+      const safeName = (title || "Structured Map").replace(/[^a-zA-Z0-9 ]/g, "").trim() || "Map";
+      const path = `Study Sessions/${safeName}.canvas`;
+      await api.obsidian.saveFile(path, canvasJson);
+      toast.success(`Canvas saved: ${path}`);
+    } catch (err) {
+      toast.error(`Canvas save failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-1 relative">
+      <Badge
+        variant="outline"
+        className="absolute top-1 right-1 z-10 text-purple-400 border-purple-400/50 font-arcade text-[8px] px-1 h-4"
+      >
+        STRUCTURED MAP
+      </Badge>
+      {isMermaid ? (
+        <div className={`${TEXT_MUTED} mt-1 line-clamp-3`}>
+          {content.replace(/```mermaid\n?/, "").replace(/```$/, "").slice(0, 120)}
+        </div>
+      ) : (
+        <div className={`${TEXT_MUTED} mt-1 line-clamp-2`}>{content.slice(0, 100)}</div>
+      )}
+      <div className="flex items-center gap-1 mt-1 flex-wrap">
+        {figmaUrl && (
+          <a
+            href={figmaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-terminal text-sm text-purple-400 hover:text-purple-300 border border-purple-400/40 px-2 py-0.5"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open in Figma
+          </a>
+        )}
+        {isMermaid && (
+          <Button
+            variant="outline"
+            size="sm"
+            className={`${BTN_OUTLINE} gap-1`}
+            disabled={saving}
+            onClick={handleSaveCanvas}
+          >
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <FolderOpen className="w-3 h-3" />}
+            {saving ? "Saving..." : "Save as Canvas"}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Session Wrap Panel
+// ---------------------------------------------------------------------------
+
+function SessionWrapPanel({
+  sessionId,
+  isCompleted,
+}: {
+  sessionId: string;
+  isCompleted: boolean;
+}) {
+  const [summary, setSummary] = useState<TutorSessionWrapSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isCompleted || !sessionId) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    api.tutor
+      .getSessionSummary(sessionId)
+      .then((data) => {
+        if (!cancelled) setSummary(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load summary");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [sessionId, isCompleted]);
+
+  if (!isCompleted) return null;
+
+  const formatDuration = (seconds: number): string => {
+    const m = Math.floor(seconds / 60);
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    return `${h}h ${m % 60}m`;
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.tutor.getSessionSummary(`${sessionId}?save=true`);
+      toast.success("Summary saved to Obsidian");
+    } catch (err) {
+      toast.error(`Save failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-2 border-accent bg-card p-4 space-y-3">
+      <div className="font-arcade text-sm text-accent tracking-wider flex items-center gap-2">
+        <BarChart3 className="w-4 h-4" />
+        SESSION WRAP
+      </div>
+
+      {loading && (
+        <div className="flex items-center gap-2 text-muted-foreground font-terminal text-sm py-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading summary...
+        </div>
+      )}
+
+      {error && (
+        <div className="font-terminal text-sm text-red-400">{error}</div>
+      )}
+
+      {summary && (
+        <>
+          {/* Stats row */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="border border-primary/30 bg-black/40 px-2 py-1 text-center min-w-[60px]">
+              <div className="font-arcade text-xs text-primary">{formatDuration(summary.duration_seconds)}</div>
+              <div className="font-terminal text-xs text-muted-foreground">Duration</div>
+            </div>
+            <div className="border border-primary/30 bg-black/40 px-2 py-1 text-center min-w-[60px]">
+              <div className="font-arcade text-xs text-primary">{summary.turn_count}</div>
+              <div className="font-terminal text-xs text-muted-foreground">Turns</div>
+            </div>
+            <div className="border border-primary/30 bg-black/40 px-2 py-1 text-center min-w-[60px]">
+              <div className="font-arcade text-xs text-primary">{summary.artifact_count}</div>
+              <div className="font-terminal text-xs text-muted-foreground">Artifacts</div>
+            </div>
+          </div>
+
+          {/* Objectives covered */}
+          {summary.objectives_covered.length > 0 && (
+            <div className="space-y-1">
+              <div className="font-arcade text-xs text-primary/70 uppercase tracking-wider">Objectives</div>
+              {summary.objectives_covered.map((obj) => (
+                <div key={obj.id} className="flex items-center gap-2 font-terminal text-sm">
+                  <span
+                    className={
+                      obj.status === "covered"
+                        ? "text-green-400"
+                        : obj.status === "partial"
+                        ? "text-yellow-400"
+                        : "text-muted-foreground/50"
+                    }
+                  >
+                    {obj.status === "covered" ? "+" : obj.status === "partial" ? "~" : "-"}
+                  </span>
+                  <span className="text-foreground">{obj.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Chain progress */}
+          {summary.chain_progress && (
+            <div className="space-y-1">
+              <div className="font-arcade text-xs text-primary/70 uppercase tracking-wider">
+                Chain: {summary.chain_progress.chain_name}
+              </div>
+              <div className="w-full h-2 bg-black/60 border border-primary/30">
+                <div
+                  className="h-full bg-primary/60"
+                  style={{
+                    width: `${Math.round(
+                      (summary.chain_progress.current_block / summary.chain_progress.total_blocks) * 100
+                    )}%`,
+                  }}
+                />
+              </div>
+              <div className="font-terminal text-xs text-muted-foreground">
+                {summary.chain_progress.current_block}/{summary.chain_progress.total_blocks} blocks
+              </div>
+            </div>
+          )}
+
+          {/* Save button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className={`${BTN_OUTLINE} w-full gap-1.5`}
+            disabled={saving}
+            onClick={handleSave}
+          >
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <FolderOpen className="w-3 h-3" />}
+            {saving ? "Saving..." : "Save to Obsidian"}
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function TutorArtifacts({
   sessionId,
@@ -89,6 +466,7 @@ export function TutorArtifacts({
   onResumeSession,
   onDeleteArtifacts,
   onEndSession,
+  isSessionCompleted,
 }: TutorArtifactsProps) {
   const queryClient = useQueryClient();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -489,8 +867,8 @@ export function TutorArtifacts({
                 )}
               </div>
               {artifacts.map((a, i) => {
-                const Icon = ARTIFACT_ICONS[a.type];
-                const color = ARTIFACT_COLORS[a.type];
+                const Icon = ARTIFACT_ICONS[a.type] || FileText;
+                const color = ARTIFACT_COLORS[a.type] || "text-muted-foreground";
                 return (
                   <div
                     key={i}
@@ -526,12 +904,29 @@ export function TutorArtifacts({
                         </Button>
                       )}
                     </div>
-                    {a.content && (
+                    {a.type === "table" && a.content ? (
+                      <ArtifactTable content={a.content} />
+                    ) : a.type === "structured_map" && a.content ? (
+                      <ArtifactStructuredMap content={a.content} title={a.title || ""} />
+                    ) : a.content ? (
                       <div className={`${TEXT_MUTED} mt-1 line-clamp-2`}>
                         {a.content.slice(0, 100)}
                       </div>
-                    )}
+                    ) : null}
                     {a.type === "map" && a.content && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`${BTN_OUTLINE} mt-1`}
+                        onClick={() => {
+                          localStorage.setItem("tutor-mermaid-import", a.content);
+                          window.location.href = "/brain";
+                        }}
+                      >
+                        <Map className={ICON_SM} /> Send to Brain
+                      </Button>
+                    )}
+                    {a.type === "structured_map" && a.content && a.content.trimStart().startsWith("```mermaid") && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -557,9 +952,14 @@ export function TutorArtifacts({
                 No artifacts yet
               </div>
               <div className={`${TEXT_MUTED} text-muted-foreground/30`}>
-                Use /note, /card, or /map
+                Use /note, /card, /map, /table, or /smap
               </div>
             </div>
+          )}
+
+          {/* Session wrap summary (only when completed) */}
+          {sessionId && isSessionCompleted && (
+            <SessionWrapPanel sessionId={sessionId} isCompleted={true} />
           )}
 
           {/* Recent sessions */}

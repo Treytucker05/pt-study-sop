@@ -754,6 +754,10 @@ export const api = {
           context_tags: {},
         }),
       }),
+    getSessionSummary: (sessionId: string) =>
+      request<TutorSessionWrapSummary>(`/tutor/session/${sessionId}/summary`),
+    getChainStatus: (sessionId: string) =>
+      request<TutorChainStatusResponse>(`/tutor/session/${sessionId}/chain-status`),
     getSettings: () =>
       request<{ custom_instructions: string }>("/tutor/settings"),
     saveSettings: (data: { custom_instructions: string }) =>
@@ -1644,6 +1648,25 @@ export interface TutorRetrievalDebug {
   material_dropped_by_cap?: number;
   retrieval_confidence?: number;
   retrieval_confidence_tier?: "low" | "medium" | "high";
+}
+
+export interface TutorSessionWrapSummary {
+  session_id: string;
+  topic: string;
+  mode?: string;
+  duration_seconds: number;
+  turn_count: number;
+  artifact_count: number;
+  objectives_covered: { id: string; name: string; status: "covered" | "partial" | "missed" }[];
+  chain_progress?: { current_block: number; total_blocks: number; chain_name: string };
+}
+
+export interface TutorChainStatusResponse {
+  chain_id: number | null;
+  chain_name: string | null;
+  current_block: number;
+  total_blocks: number;
+  blocks: { index: number; name: string; category: string; completed: boolean }[];
 }
 
 export interface TutorConfigCheck {

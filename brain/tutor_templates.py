@@ -267,6 +267,109 @@ def _render_north_star_markdown(payload: dict[str, Any]) -> str:
     return rendered.rstrip() + "\n"
 
 
+def _render_session_wrap_markdown(payload: dict[str, Any]) -> str:
+    topic = str(payload.get("topic") or "Session")
+    session_id = str(payload.get("session_id") or "")
+    module_name = str(payload.get("module_name") or "")
+    duration = payload.get("duration_minutes") or 0
+    turn_count = payload.get("turn_count") or 0
+    session_mode = str(payload.get("session_mode") or "focused_batch")
+    chain_name = str(payload.get("chain_name") or "")
+    chain_progress = str(payload.get("chain_progress") or "")
+
+    # Objectives — numbered list with status emoji
+    objectives: list[dict[str, Any]] = list(payload.get("objectives") or [])
+    obj_lines: list[str] = []
+    for i, obj in enumerate(objectives, 1):
+        desc = str(obj.get("description") or obj.get("id") or f"Objective {i}")
+        status = str(obj.get("status") or "active").lower()
+        emoji = "\u2705" if status == "mastered" else "\u2b55"
+        obj_lines.append(f"{i}. {emoji} {desc}")
+    objectives_section = "\n".join(obj_lines) if obj_lines else "- (none covered)"
+
+    # Artifacts — bullet counts by type
+    artifacts: list[dict[str, Any]] = list(payload.get("artifacts") or [])
+    artifact_lines: list[str] = []
+    for a in artifacts:
+        a_type = str(a.get("type") or "unknown")
+        a_count = a.get("count") or 0
+        artifact_lines.append(f"- {a_type}: {a_count}")
+    artifacts_section = "\n".join(artifact_lines) if artifact_lines else "- (none)"
+
+    # Chain progress
+    blocks_completed: list[str] = list(payload.get("blocks_completed") or [])
+    chain_lines: list[str] = []
+    if chain_name:
+        chain_lines.append(f"**Chain**: {chain_name}")
+    if chain_progress:
+        chain_lines.append(f"**Progress**: {chain_progress}")
+    if blocks_completed:
+        chain_lines.append(f"**Blocks completed**: {', '.join(blocks_completed)}")
+    chain_section = "\n".join(chain_lines) if chain_lines else "- (no chain used)"
+
+    fallback = """---
+note_type: session_wrap
+session_id: {session_id}
+topic: {topic}
+module_name: {module_name}
+duration_minutes: {duration_minutes}
+updated_at: {updated_at}
+---
+
+# Session Wrap \u2014 {topic}
+
+## Summary
+
+| Turns | Duration | Mode |
+|-------|----------|------|
+| {turn_count} | {duration_minutes} min | {session_mode} |
+
+## Objectives Covered
+
+{objectives_section}
+
+## Artifacts Created
+
+{artifacts_section}
+
+## Chain Progress
+
+{chain_section}
+
+## Follow-Up Targets
+
+{follow_up_targets}
+
+## Key Takeaways
+
+{key_takeaways}
+"""
+    template = _read_template("session_wrap.md.tmpl", fallback=fallback)
+    rendered = template.format_map(
+        _SafeFormatDict(
+            {
+                "session_id": session_id,
+                "topic": topic,
+                "module_name": module_name,
+                "duration_minutes": duration,
+                "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "turn_count": turn_count,
+                "session_mode": session_mode,
+                "objectives_section": objectives_section,
+                "artifacts_section": artifacts_section,
+                "chain_section": chain_section,
+                "follow_up_targets": _bullets(
+                    list(payload.get("follow_up_targets") or [])
+                ),
+                "key_takeaways": _bullets(
+                    list(payload.get("key_takeaways") or [])
+                ) if payload.get("key_takeaways") else "- (to be filled after reflection)",
+            }
+        )
+    )
+    return rendered.rstrip() + "\n"
+
+
 def _render_reference_targets_markdown(payload: dict[str, Any]) -> str:
     fallback = """---
 note_type: reference_targets
@@ -327,6 +430,7 @@ def render_template_artifact(template_id: str, payload: dict[str, Any]) -> dict[
     renderers: dict[str, Callable[[dict[str, Any]], str]] = {
         "north_star": _render_north_star_markdown,
         "reference_targets": _render_reference_targets_markdown,
+        "session_wrap": _render_session_wrap_markdown,
     }
     if template in renderers:
         content = renderers[template](payload)
@@ -334,5 +438,5 @@ def render_template_artifact(template_id: str, payload: dict[str, Any]) -> dict[
 
     return {
         "success": False,
-        "error": "Unsupported template_id. Use session_note, concept_note, north_star, or reference_targets.",
+        "error": "Unsupported template_id. Use session_note, concept_note, north_star, reference_targets, or session_wrap.",
     }

@@ -1778,6 +1778,12 @@ def init_database():
         ON tutor_block_transitions(tutor_session_id)
     """)
 
+    # Migration: add notes column to tutor_block_transitions
+    cursor.execute("PRAGMA table_info(tutor_block_transitions)")
+    _tbt_cols = {r[1] for r in cursor.fetchall()}
+    if "notes" not in _tbt_cols:
+        cursor.execute("ALTER TABLE tutor_block_transitions ADD COLUMN notes TEXT")
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS scholar_runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

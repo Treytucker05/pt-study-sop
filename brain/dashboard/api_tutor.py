@@ -9,6 +9,7 @@ Endpoints:
   POST   /api/tutor/session/<id>/artifact — Create note/card/map mid-session
   POST   /api/tutor/session/<id>/finalize — Write structured tutor artifacts to Obsidian
   POST   /api/tutor/session/<id>/sync-graph — Re-sync graph for session note paths
+  GET    /api/tutor/session/<id>/chain-status — Full chain progress for session
   POST   /api/tutor/session/<id>/advance-block — Advance to next block in chain
   GET    /api/tutor/sessions              — List sessions
   GET    /api/tutor/content-sources       — Get available courses + materials
@@ -1441,6 +1442,185 @@ def _finalize_structured_notes_for_session(
     )
 
 
+def _reconcile_obsidian_state(session: dict) -> None:
+    """Check whether Obsidian files referenced by a session still exist.
+
+    Called on GET /session/<id> (reconcile-on-load).  Mutates *session* dict
+    in place so the response reflects the current vault state.
+
+    - North Star: if the file is missing, sets ``north_star.status`` to
+      ``"needs_path"`` and persists the change to SQLite.
+    - Artifacts: flags each artifact entry with ``"missing": True`` if its
+      ``session_path`` or any of its ``concept_paths`` no longer exist.
+    """
+    from dashboard.api_adapter import obsidian_get_file
+
+    session_id = session.get("session_id")
+    if not session_id:
+        return
+
+    # --- North Star reconciliation ---
+    cf_raw = session.get("content_filter_json")
+    content_filter: Optional[dict] = None
+    if cf_raw:
+        try:
+            content_filter = json.loads(cf_raw) if isinstance(cf_raw, str) else cf_raw
+        except (json.JSONDecodeError, TypeError):
+            content_filter = None
+
+    ns_changed = False
+    if content_filter and isinstance(content_filter.get("north_star"), dict):
+        ns = content_filter["north_star"]
+        ns_path = ns.get("path")
+        ns_status = ns.get("status")
+        # Only check if there's a path and the status isn't already needs_path
+        if ns_path and ns_status not in ("needs_path", "test_mode_no_write"):
+            result = obsidian_get_file(ns_path)
+            if not result.get("success"):
+                ns["status"] = "needs_path"
+                ns_changed = True
+
+    # --- Artifact reconciliation ---
+    art_raw = session.get("artifacts_json")
+    artifacts: list = []
+    if art_raw:
+        try:
+            artifacts = json.loads(art_raw) if isinstance(art_raw, str) else art_raw
+        except (json.JSONDecodeError, TypeError):
+            artifacts = []
+    if not isinstance(artifacts, list):
+        artifacts = []
+
+    art_changed = False
+    for art in artifacts:
+        if not isinstance(art, dict):
+            continue
+        missing_paths: list[str] = []
+
+        sp = art.get("session_path")
+        if sp:
+            res = obsidian_get_file(sp)
+            if not res.get("success"):
+                missing_paths.append(sp)
+
+        for cp in art.get("concept_paths") or []:
+            res = obsidian_get_file(cp)
+            if not res.get("success"):
+                missing_paths.append(cp)
+
+        if missing_paths:
+            art["missing"] = True
+            art["missing_paths"] = missing_paths
+            art_changed = True
+        else:
+            # Clear stale flags from previous reconcile
+            art.pop("missing", None)
+            art.pop("missing_paths", None)
+
+    # Persist changes to SQLite if anything was updated
+    if ns_changed or art_changed:
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            if ns_changed and content_filter is not None:
+                cur.execute(
+                    "UPDATE tutor_sessions SET content_filter_json = ? WHERE session_id = ?",
+                    (json.dumps(content_filter), session_id),
+                )
+            if art_changed:
+                cur.execute(
+                    "UPDATE tutor_sessions SET artifacts_json = ? WHERE session_id = ?",
+                    (json.dumps(artifacts), session_id),
+                )
+            conn.commit()
+            conn.close()
+        except Exception:
+            logging.getLogger(__name__).warning(
+                "reconcile_obsidian_state: failed to persist changes for %s",
+                session_id,
+                exc_info=True,
+            )
+
+    # Update the in-memory session dict so the response reflects reality
+    if ns_changed and content_filter is not None:
+        session["content_filter_json"] = json.dumps(content_filter)
+        session["content_filter"] = content_filter
+    if art_changed:
+        session["artifacts_json"] = json.dumps(artifacts)
+
+
+def _delete_artifact_obsidian_files(artifact: dict) -> list[str]:
+    """Delete Obsidian files referenced by a single artifact entry.
+
+    Returns a list of paths that were successfully deleted.
+    """
+    from dashboard.api_adapter import obsidian_delete_file
+
+    deleted: list[str] = []
+    sp = artifact.get("session_path")
+    if sp:
+        res = obsidian_delete_file(sp)
+        if res.get("success"):
+            deleted.append(sp)
+
+    for cp in artifact.get("concept_paths") or []:
+        res = obsidian_delete_file(cp)
+        if res.get("success"):
+            deleted.append(cp)
+
+    return deleted
+
+
+def _cascade_delete_obsidian_files(session: dict) -> list[str]:
+    """Delete all Obsidian files owned by a session (North Star + artifacts).
+
+    Called from ``delete_session`` before the DB rows are removed.
+    Returns a list of vault-relative paths that were successfully deleted.
+    """
+    from dashboard.api_adapter import obsidian_delete_file
+
+    log = logging.getLogger(__name__)
+    deleted: list[str] = []
+
+    # 1. North Star file
+    cf_raw = session.get("content_filter_json")
+    if cf_raw:
+        try:
+            cf = json.loads(cf_raw) if isinstance(cf_raw, str) else cf_raw
+        except (json.JSONDecodeError, TypeError):
+            cf = None
+        if isinstance(cf, dict):
+            ns = cf.get("north_star") or {}
+            ns_path = ns.get("path")
+            if ns_path:
+                res = obsidian_delete_file(ns_path)
+                if res.get("success"):
+                    deleted.append(ns_path)
+                else:
+                    log.debug("cascade_delete: North Star not found at %s", ns_path)
+
+    # 2. Artifact files (session notes + concept notes)
+    art_raw = session.get("artifacts_json")
+    if art_raw:
+        try:
+            artifacts = json.loads(art_raw) if isinstance(art_raw, str) else art_raw
+        except (json.JSONDecodeError, TypeError):
+            artifacts = []
+        if isinstance(artifacts, list):
+            for art in artifacts:
+                if isinstance(art, dict):
+                    deleted.extend(_delete_artifact_obsidian_files(art))
+
+    if deleted:
+        log.info(
+            "cascade_delete: removed %d Obsidian file(s) for session %s",
+            len(deleted),
+            session.get("session_id"),
+        )
+
+    return deleted
+
+
 def _get_tutor_session(conn, session_id: str) -> Optional[dict]:
     """Fetch a tutor_sessions row as dict."""
     conn.row_factory = sqlite3.Row
@@ -1552,6 +1732,75 @@ def _build_chain_info(
     }
 
     return block_info, chain_info
+
+
+def _get_chain_status(conn, session_id: str) -> Optional[dict]:
+    """Build a chain-status dict for a tutor session.
+
+    Returns None if session not found or has no chain assigned.
+    Used by GET chain-status endpoint and POST advance-block.
+    """
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        return None
+
+    chain_id = session.get("method_chain_id")
+    if not chain_id:
+        return None
+
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, name, description FROM method_chains WHERE id = ?",
+        (int(chain_id),),
+    )
+    chain_row = cur.fetchone()
+    if not chain_row:
+        return None
+
+    blocks = _resolve_chain_blocks(conn, int(chain_id))
+    if not blocks:
+        return None
+
+    current_pos = session.get("current_block_index", 0) or 0
+    try:
+        current_pos = int(current_pos)
+    except (TypeError, ValueError):
+        current_pos = 0
+    current_pos = max(0, min(current_pos, len(blocks) - 1))
+
+    def _block_summary(b: dict) -> dict:
+        return {
+            "id": b.get("id"),
+            "name": b.get("name", ""),
+            "method_id": b.get("method_id", ""),
+            "description": b.get("description", ""),
+            "category": b.get("control_stage", ""),
+            "knobs": b.get("knob_overrides_json") or {},
+            "duration": b.get("duration") or b.get("default_duration_min", 5),
+            "facilitation_prompt": b.get("facilitation_prompt", ""),
+            "artifact_type": b.get("artifact_type", ""),
+        }
+
+    total = len(blocks)
+    current_block = _block_summary(blocks[current_pos])
+    next_block = _block_summary(blocks[current_pos + 1]) if current_pos + 1 < total else None
+    completed = [b["name"] for b in blocks[:current_pos]]
+    remaining = [b["name"] for b in blocks[current_pos + 1:]]
+    progress_pct = int(round(current_pos / total * 100)) if total else 0
+
+    return {
+        "chain_name": chain_row["name"],
+        "chain_id": chain_row["id"],
+        "total_blocks": total,
+        "current_position": current_pos,
+        "current_block": current_block,
+        "next_block": next_block,
+        "completed_blocks": completed,
+        "remaining_blocks": remaining,
+        "progress_pct": progress_pct,
+        "is_complete": current_pos >= total - 1 and total > 0,
+    }
 
 
 def _active_control_stage_for_session(
@@ -2819,6 +3068,9 @@ def get_session(session_id: str):
         if blocks and 0 <= idx < len(blocks):
             session["current_block_name"] = blocks[idx]["name"]
 
+    # --- Reconcile-on-load: verify Obsidian files still exist ---
+    _reconcile_obsidian_state(session)
+
     conn.close()
 
     return jsonify(session)
@@ -4011,6 +4263,27 @@ def send_turn(session_id: str):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/tutor/session/<id>/chain-status — Full chain progress for session
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/chain-status", methods=["GET"])
+def get_chain_status(session_id: str):
+    conn = get_connection()
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    status = _get_chain_status(conn, session_id)
+    conn.close()
+    if not status:
+        return jsonify({"error": "Session has no method chain"}), 400
+
+    return jsonify(status)
+
+
+# ---------------------------------------------------------------------------
 # POST /api/tutor/session/<id>/advance-block — Advance to next block in chain
 # ---------------------------------------------------------------------------
 
@@ -4032,18 +4305,10 @@ def advance_block(session_id: str):
     current_idx = session.get("current_block_index", 0) or 0
 
     if current_idx >= len(blocks) - 1:
+        # Already at last block — return current chain status
+        status = _get_chain_status(conn, session_id)
         conn.close()
-        return jsonify(
-            {
-                "block_index": current_idx,
-                "block_name": blocks[current_idx]["name"] if blocks else "",
-                "block_description": blocks[current_idx].get("description", "")
-                if blocks
-                else "",
-                "is_last": True,
-                "complete": True,
-            }
-        )
+        return jsonify(status or {"error": "Chain status unavailable"})
 
     now = datetime.now().isoformat()
     cur = conn.cursor()
@@ -4058,6 +4323,16 @@ def advance_block(session_id: str):
     next_idx = current_idx + 1
     next_block = blocks[next_idx]
 
+    data = request.get_json(silent=True) or {}
+    block_notes = str(data.get("block_notes") or "").strip()
+    if block_notes:
+        cur.execute(
+            """UPDATE tutor_block_transitions
+               SET notes = ?
+               WHERE tutor_session_id = ? AND block_index = ? AND ended_at = ?""",
+            (block_notes, session_id, current_idx, now),
+        )
+
     cur.execute(
         "UPDATE tutor_sessions SET current_block_index = ? WHERE session_id = ?",
         (next_idx, session_id),
@@ -4071,20 +4346,11 @@ def advance_block(session_id: str):
     )
 
     conn.commit()
+
+    status = _get_chain_status(conn, session_id)
     conn.close()
 
-    return jsonify(
-        {
-            "block_index": next_idx,
-            "block_name": next_block["name"],
-            "block_description": next_block.get("description", ""),
-            "block_category": next_block.get("control_stage", ""),
-            "block_duration": next_block.get("duration")
-            or next_block.get("default_duration_min", 5),
-            "facilitation_prompt": next_block.get("facilitation_prompt", ""),
-            "is_last": next_idx >= len(blocks) - 1,
-        }
-    )
+    return jsonify(status or {"error": "Chain status unavailable"})
 
 
 # ---------------------------------------------------------------------------
@@ -4218,6 +4484,128 @@ def end_session(session_id: str):
         )
 
     conn.commit()
+
+    # --- Compute summary data ---
+    conn.row_factory = sqlite3.Row
+    cur2 = conn.cursor()
+
+    # Turn count
+    cur2.execute(
+        "SELECT COUNT(*) AS cnt FROM tutor_turns WHERE tutor_session_id = ?",
+        (session_id,),
+    )
+    turn_count = cur2.fetchone()["cnt"]
+
+    # Duration in minutes (from created_at to now)
+    created_at_str = session.get("created_at") or now.isoformat()
+    try:
+        created_at = datetime.fromisoformat(created_at_str)
+        duration_minutes = round((now - created_at).total_seconds() / 60, 1)
+    except (ValueError, TypeError):
+        duration_minutes = 0
+
+    # Parse artifacts_json and group by type
+    artifacts_json_raw = session.get("artifacts_json")
+    artifacts_list: list[dict[str, Any]] = []
+    if artifacts_json_raw:
+        try:
+            parsed = json.loads(artifacts_json_raw)
+            if isinstance(parsed, list):
+                artifacts_list = parsed
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    artifact_summary: dict[str, int] = {}
+    for art in artifacts_list:
+        if isinstance(art, dict):
+            art_type = art.get("type") or art.get("artifact_type") or "unknown"
+            artifact_summary[art_type] = artifact_summary.get(art_type, 0) + 1
+
+    # Parse content_filter_json for objective_ids and chain_name
+    content_filter_raw = session.get("content_filter_json")
+    content_filter: dict[str, Any] = {}
+    if content_filter_raw:
+        try:
+            content_filter = json.loads(content_filter_raw)
+            if not isinstance(content_filter, dict):
+                content_filter = {}
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    north_star = content_filter.get("north_star") or {}
+    objective_ids = north_star.get("objective_ids") or []
+    chain_name = content_filter.get("chain_name") or None
+    vault_folder = content_filter.get("vault_folder") or None
+
+    # --- Auto-sync vault graph ---
+    graph_sync_result: Optional[dict[str, Any]] = None
+    try:
+        note_paths: list[str] = []
+        for art in artifacts_list:
+            if not isinstance(art, dict):
+                continue
+            for key in ("path", "session_path"):
+                val = art.get(key)
+                if isinstance(val, str) and val.strip():
+                    note_paths.append(val.strip())
+            concept_paths = art.get("concept_paths")
+            if isinstance(concept_paths, list):
+                note_paths.extend(
+                    str(cp).strip()
+                    for cp in concept_paths
+                    if isinstance(cp, str) and cp.strip()
+                )
+
+        # Deduplicate
+        seen: set[str] = set()
+        dedup_paths: list[str] = []
+        for p in note_paths:
+            if p not in seen:
+                seen.add(p)
+                dedup_paths.append(p)
+
+        if dedup_paths:
+            from dashboard.api_adapter import obsidian_get_file
+
+            notes_by_path: dict[str, str] = {}
+            for path in dedup_paths:
+                note_res = obsidian_get_file(path)
+                if note_res.get("success"):
+                    notes_by_path[path] = str(note_res.get("content") or "")
+
+            if notes_by_path:
+                graph_sync_result = _sync_graph_for_paths(
+                    conn=conn, notes_by_path=notes_by_path,
+                )
+                _LOG.info(
+                    "end_session graph sync: %d notes, %d edges created",
+                    graph_sync_result.get("notes_synced", 0),
+                    graph_sync_result.get("edges_created", 0),
+                )
+    except Exception as exc:
+        _LOG.warning("end_session graph sync failed: %s", exc)
+
+    # --- Refresh North Star if objectives exist ---
+    north_star_refresh: Optional[dict[str, Any]] = None
+    if objective_ids:
+        try:
+            ns_result, ns_err = _ensure_north_star_context(
+                course_id=content_filter.get("course_id"),
+                module_id=content_filter.get("module_id"),
+                module_name=content_filter.get("module_name"),
+                topic=session.get("topic") or "",
+                learning_objectives=north_star.get("objectives") or objective_ids,
+                source_ids=content_filter.get("source_ids") or [],
+                force_refresh=True,
+                path_override=vault_folder,
+            )
+            if ns_result:
+                north_star_refresh = {"path": ns_result.get("path"), "updated": True}
+            elif ns_err:
+                _LOG.warning("end_session North Star refresh error: %s", ns_err)
+        except Exception as exc:
+            _LOG.warning("end_session North Star refresh failed: %s", exc)
+
     conn.close()
 
     return jsonify(
@@ -4226,8 +4614,176 @@ def end_session(session_id: str):
             "status": "completed",
             "brain_session_id": brain_session_id,
             "ended_at": now.isoformat(),
+            "summary": {
+                "turn_count": turn_count,
+                "duration_minutes": duration_minutes,
+                "artifacts": artifact_summary,
+                "objective_ids": objective_ids,
+                "chain_name": chain_name,
+            },
+            "graph_sync": graph_sync_result,
+            "north_star_refresh": north_star_refresh,
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/tutor/session/<id>/summary — Full session summary + optional Obsidian save
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/summary", methods=["GET"])
+def get_session_summary(session_id: str):
+    """Return full session summary and optionally save wrap note to Obsidian.
+
+    Query params:
+      ?save=true  — also render and save session wrap note to Obsidian
+    """
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    now = datetime.now()
+
+    # --- Turn count ---
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT COUNT(*) AS cnt FROM tutor_turns WHERE tutor_session_id = ?",
+        (session_id,),
+    )
+    turn_count = cur.fetchone()["cnt"]
+
+    # --- Duration ---
+    created_at_str = session.get("created_at") or now.isoformat()
+    try:
+        created_at = datetime.fromisoformat(created_at_str)
+        duration_minutes = round((now - created_at).total_seconds() / 60, 1)
+    except (ValueError, TypeError):
+        duration_minutes = 0
+
+    # --- Artifacts ---
+    artifacts_json_raw = session.get("artifacts_json")
+    artifacts_list: list[dict[str, Any]] = []
+    if artifacts_json_raw:
+        try:
+            parsed = json.loads(artifacts_json_raw)
+            if isinstance(parsed, list):
+                artifacts_list = parsed
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    artifact_counts: dict[str, int] = {}
+    for art in artifacts_list:
+        if isinstance(art, dict):
+            art_type = art.get("type") or art.get("artifact_type") or "unknown"
+            artifact_counts[art_type] = artifact_counts.get(art_type, 0) + 1
+
+    # --- Content filter (objectives, chain, vault_folder) ---
+    content_filter: dict[str, Any] = {}
+    raw_cf = session.get("content_filter_json")
+    if raw_cf:
+        try:
+            cf = json.loads(raw_cf)
+            if isinstance(cf, dict):
+                content_filter = cf
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    north_star = content_filter.get("north_star") or {}
+    objective_ids = north_star.get("objective_ids") or []
+    chain_name = content_filter.get("chain_name") or None
+    vault_folder = str(content_filter.get("vault_folder") or "").strip() or None
+    module_name = north_star.get("module_name") or content_filter.get("module_name") or ""
+    topic = session.get("topic") or module_name or "Session"
+    session_mode = content_filter.get("session_mode") or "focused_batch"
+
+    # --- Resolve objectives from DB for descriptions ---
+    objectives_detail: list[dict[str, str]] = []
+    if objective_ids:
+        course_id = content_filter.get("course_id")
+        if course_id:
+            db_objs = _collect_objectives_from_db(course_id, content_filter.get("module_id"))
+            obj_map = {o["objective_id"]: o for o in db_objs}
+            for oid in objective_ids:
+                obj = obj_map.get(oid, {})
+                objectives_detail.append({
+                    "id": oid,
+                    "description": obj.get("title", oid),
+                    "status": obj.get("status", "active"),
+                })
+
+    # --- Chain progress ---
+    chain_status = None
+    if chain_name:
+        try:
+            chain_status = _get_chain_status(conn, session_id)
+        except Exception:
+            pass
+
+    chain_progress = ""
+    blocks_completed: list[str] = []
+    if chain_status:
+        total = chain_status.get("total_blocks", 0)
+        pos = chain_status.get("current_position", 0)
+        chain_progress = f"{pos}/{total} blocks"
+        blocks_completed = chain_status.get("completed_blocks") or []
+
+    # --- Follow-up targets ---
+    follow_up_targets = content_filter.get("follow_up_targets") or []
+
+    conn.close()
+
+    # --- Build summary response ---
+    summary = {
+        "session_id": session_id,
+        "topic": topic,
+        "module_name": module_name,
+        "session_mode": session_mode,
+        "turn_count": turn_count,
+        "duration_minutes": duration_minutes,
+        "artifacts": [
+            {"type": t, "count": c} for t, c in artifact_counts.items()
+        ],
+        "objectives": objectives_detail,
+        "chain_name": chain_name,
+        "chain_progress": chain_progress,
+        "blocks_completed": blocks_completed,
+        "follow_up_targets": follow_up_targets,
+    }
+
+    # --- Optional: save wrap note to Obsidian ---
+    wrap_saved = None
+    if request.args.get("save", "").lower() == "true":
+        try:
+            from tutor_templates import render_template_artifact
+
+            wrap_result = render_template_artifact("session_wrap", summary)
+            if wrap_result.get("success"):
+                from dashboard.api_adapter import obsidian_save_file
+
+                if vault_folder:
+                    wrap_path = f"{vault_folder}/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
+                else:
+                    wrap_path = f"Study Notes/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
+
+                save_res = obsidian_save_file(wrap_path, wrap_result["content"])
+                if save_res.get("success"):
+                    wrap_saved = {"path": wrap_path, "saved": True}
+                    _LOG.info("Session wrap saved to %s", wrap_path)
+                else:
+                    wrap_saved = {"path": wrap_path, "saved": False, "error": save_res.get("error")}
+        except Exception as exc:
+            _LOG.warning("Session wrap save failed: %s", exc)
+            wrap_saved = {"saved": False, "error": str(exc)}
+
+    response = dict(summary)
+    if wrap_saved is not None:
+        response["wrap_saved"] = wrap_saved
+
+    return jsonify(response)
 
 
 # ---------------------------------------------------------------------------
@@ -4369,14 +4925,15 @@ def get_linked_chat(brain_session_id: int):
 @tutor_bp.route("/session/<session_id>", methods=["DELETE"])
 def delete_session(session_id: str):
     conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute("SELECT id FROM tutor_sessions WHERE session_id = ?", (session_id,))
-    row = cur.fetchone()
-    if not row:
+    session = _get_tutor_session(conn, session_id)
+    if not session:
         conn.close()
         return jsonify({"error": "Session not found"}), 404
 
+    # --- Delete cascade: remove Obsidian files before deleting DB rows ---
+    deleted_paths = _cascade_delete_obsidian_files(session)
+
+    cur = conn.cursor()
     cur.execute("DELETE FROM tutor_turns WHERE tutor_session_id = ?", (session_id,))
     cur.execute(
         "DELETE FROM tutor_block_transitions WHERE tutor_session_id = ?", (session_id,)
@@ -4385,7 +4942,11 @@ def delete_session(session_id: str):
     conn.commit()
     conn.close()
 
-    return jsonify({"deleted": True, "session_id": session_id})
+    return jsonify({
+        "deleted": True,
+        "session_id": session_id,
+        "obsidian_deleted": deleted_paths,
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -4659,6 +5220,16 @@ def delete_artifacts(session_id: str):
     if not isinstance(artifacts, list):
         artifacts = []
 
+    # Collect Obsidian paths from artifacts being removed, then delete
+    deleted_paths: list[str] = []
+    for i in sorted(set(indexes)):
+        if 0 <= i < len(artifacts):
+            art = artifacts[i]
+            if isinstance(art, dict):
+                deleted_paths.extend(
+                    _delete_artifact_obsidian_files(art)
+                )
+
     # Remove by index (descending so indices stay valid)
     for i in sorted(set(indexes), reverse=True):
         if 0 <= i < len(artifacts):
@@ -4672,7 +5243,11 @@ def delete_artifacts(session_id: str):
     conn.commit()
     conn.close()
 
-    return jsonify({"deleted": len(indexes), "session_id": session_id})
+    return jsonify({
+        "deleted": len(indexes),
+        "session_id": session_id,
+        "obsidian_deleted": deleted_paths,
+    })
 
 
 # ---------------------------------------------------------------------------
