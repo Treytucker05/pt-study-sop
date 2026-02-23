@@ -1517,6 +1517,39 @@ def _reconcile_obsidian_state(session: dict) -> None:
             art.pop("missing", None)
             art.pop("missing_paths", None)
 
+    # --- Learning-objective cleanup when North Star is gone ---
+    # If the user deleted the North Star from Obsidian, the objectives that
+    # lived inside it should also be removed from the dashboard (SQLite).
+    lo_deleted = 0
+    if ns_changed and content_filter is not None:
+        ns = content_filter.get("north_star") or {}
+        obj_ids: list[str] = ns.get("objective_ids") or []
+        course_id = session.get("course_id")
+        if obj_ids and course_id:
+            try:
+                conn_lo = get_connection()
+                cur_lo = conn_lo.cursor()
+                placeholders = ",".join("?" for _ in obj_ids)
+                cur_lo.execute(
+                    f"DELETE FROM learning_objectives WHERE course_id = ? AND lo_code IN ({placeholders})",
+                    [course_id] + obj_ids,
+                )
+                lo_deleted = cur_lo.rowcount
+                conn_lo.commit()
+                conn_lo.close()
+            except Exception:
+                logging.getLogger(__name__).warning(
+                    "reconcile_obsidian_state: failed to delete LOs for %s",
+                    session_id,
+                    exc_info=True,
+                )
+        if lo_deleted:
+            logging.getLogger(__name__).info(
+                "reconcile_obsidian_state: deleted %d orphaned LO(s) for session %s",
+                lo_deleted,
+                session_id,
+            )
+
     # Persist changes to SQLite if anything was updated
     if ns_changed or art_changed:
         try:
@@ -4933,6 +4966,27 @@ def delete_session(session_id: str):
     # --- Delete cascade: remove Obsidian files before deleting DB rows ---
     deleted_paths = _cascade_delete_obsidian_files(session)
 
+    # --- Delete learning objectives linked to this session's North Star ---
+    lo_deleted = 0
+    cf_raw = session.get("content_filter_json")
+    if cf_raw:
+        try:
+            cf = json.loads(cf_raw) if isinstance(cf_raw, str) else cf_raw
+        except (json.JSONDecodeError, TypeError):
+            cf = None
+        if isinstance(cf, dict):
+            ns = cf.get("north_star") or {}
+            obj_ids: list[str] = ns.get("objective_ids") or []
+            course_id = session.get("course_id")
+            if obj_ids and course_id:
+                cur_lo = conn.cursor()
+                placeholders = ",".join("?" for _ in obj_ids)
+                cur_lo.execute(
+                    f"DELETE FROM learning_objectives WHERE course_id = ? AND lo_code IN ({placeholders})",
+                    [course_id] + obj_ids,
+                )
+                lo_deleted = cur_lo.rowcount
+
     cur = conn.cursor()
     cur.execute("DELETE FROM tutor_turns WHERE tutor_session_id = ?", (session_id,))
     cur.execute(
@@ -4946,6 +5000,7 @@ def delete_session(session_id: str):
         "deleted": True,
         "session_id": session_id,
         "obsidian_deleted": deleted_paths,
+        "objectives_deleted": lo_deleted,
     })
 
 
