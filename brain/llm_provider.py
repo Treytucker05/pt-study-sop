@@ -625,7 +625,7 @@ def stream_chatgpt_responses(
     system_prompt: str,
     user_prompt: str,
     *,
-    model: str = "gpt-5.3-codex-spark",
+    model: str = "gpt-5.3-codex",
     timeout: int = 120,
     web_search: bool = False,
     tools: list[dict] | None = None,

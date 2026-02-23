@@ -2482,7 +2482,7 @@ def send_turn(session_id: str):
         full_response = ""
         citations = []
         parsed_verdict = None
-        api_model = codex_model or "gpt-5.3-codex-spark"
+        api_model = codex_model or "gpt-5.3-codex"
         latest_response_id = None
         latest_thread_id = None
         used_scope_shortcut = False
@@ -2737,7 +2737,7 @@ def send_turn(session_id: str):
                     f"- Escalation reason(s): {', '.join(profile_escalation_reasons) or 'weak_retrieval_signals'}\n"
                 )
 
-            effective_model = codex_model or "gpt-5.3-codex-spark"
+            effective_model = codex_model or "gpt-5.3-codex"
             system_prompt += (
                 "\n\n## Tooling\n"
                 "Do not run shell commands or attempt to read local files.\n"
@@ -2804,7 +2804,7 @@ def send_turn(session_id: str):
 ## Current Question
 {question}"""
 
-            api_model = codex_model or "gpt-5.3-codex-spark"
+            api_model = codex_model or "gpt-5.3-codex"
             prev_response_id: str | None = session.get("last_response_id")
             latest_response_id: str | None = prev_response_id
             latest_thread_id: str | None = session.get("codex_thread_id")
@@ -2969,7 +2969,7 @@ def send_turn(session_id: str):
 
                 try:
                     stream_kwargs: dict = {
-                        "model": codex_model or "gpt-5.3-codex-spark",
+                        "model": codex_model or "gpt-5.3-codex",
                         "timeout": 120,
                         "web_search": True,
                         "tools": tool_schemas,
