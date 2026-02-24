@@ -78,6 +78,13 @@ export interface JanitorIssue {
   fix_data: Record<string, string>;
 }
 
+export interface JanitorOptions {
+  course: string[];
+  course_code: Record<string, string>;
+  unit_type: string[];
+  note_type: string[];
+}
+
 export interface JanitorHealthResponse {
   available: boolean;
   notes_scanned: number;
@@ -838,6 +845,7 @@ export const api = {
         "/janitor/enrich",
         { method: "POST", body: JSON.stringify({ path }) },
       ),
+    getOptions: () => request<JanitorOptions>("/janitor/options"),
   },
 };
 

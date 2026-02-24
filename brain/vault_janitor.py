@@ -336,8 +336,10 @@ def scan_vault(
 
 def apply_fix(issue: JanitorIssue) -> dict:
     """Apply a single fix. Currently supports frontmatter fixes only."""
-    if issue.issue_type != "missing_frontmatter" or not issue.fixable:
+    if issue.issue_type != "missing_frontmatter":
         return {"success": False, "path": issue.path, "detail": "Not fixable"}
+    if not issue.fix_data.get(issue.field):
+        return {"success": False, "path": issue.path, "detail": f"No value for '{issue.field}'"}
 
     from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
 

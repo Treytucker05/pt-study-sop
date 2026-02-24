@@ -305,6 +305,39 @@ class TestApplyFix:
 
     @patch("dashboard.api_adapter.obsidian_save_file")
     @patch("dashboard.api_adapter.obsidian_get_file")
+    def test_manual_fix_with_fix_data(self, mock_get, mock_save):
+        """Manual fix: fixable=False but fix_data has a value → succeeds."""
+        mock_get.return_value = {"success": True, "content": MISSING_FM_NOTE}
+        mock_save.return_value = {"success": True}
+
+        issue = JanitorIssue(
+            issue_type="missing_frontmatter",
+            path="note.md",
+            field="course_code",
+            fixable=False,
+            fix_data={"course_code": "PHYT_6313"},
+        )
+        result = apply_fix(issue)
+        assert result["success"] is True
+
+        saved_content = mock_save.call_args[0][1]
+        assert "course_code: PHYT_6313" in saved_content
+
+    def test_manual_fix_without_fix_data(self):
+        """Manual fix: fixable=False and empty fix_data → error."""
+        issue = JanitorIssue(
+            issue_type="missing_frontmatter",
+            path="note.md",
+            field="course_code",
+            fixable=False,
+            fix_data={},
+        )
+        result = apply_fix(issue)
+        assert result["success"] is False
+        assert "No value for 'course_code'" in result["detail"]
+
+    @patch("dashboard.api_adapter.obsidian_save_file")
+    @patch("dashboard.api_adapter.obsidian_get_file")
     def test_adds_frontmatter_when_none_exists(self, mock_get, mock_save):
         mock_get.return_value = {"success": True, "content": NO_FM_NOTE}
         mock_save.return_value = {"success": True}

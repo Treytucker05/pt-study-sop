@@ -93,6 +93,32 @@ def janitor_fix():
     return jsonify({"results": results})
 
 
+@janitor_bp.route("/options", methods=["GET"])
+def janitor_options():
+    """Return valid dropdown values for manual frontmatter fix."""
+    import config
+    from course_map import load_course_map
+    from vault_janitor import _NOTE_TYPE_PATTERNS
+
+    course_list: list[str] = config.SESSION_SCHEMA.get("course", {}).get("options", [])
+
+    cmap = load_course_map()
+    course_code_map: dict[str, str] = {}
+    unit_types: set[str] = set()
+    for c in cmap.courses:
+        course_code_map[c.label] = c.code
+        unit_types.add(c.unit_type)
+
+    note_types: list[str] = sorted({nt for _, nt in _NOTE_TYPE_PATTERNS})
+
+    return jsonify({
+        "course": course_list,
+        "course_code": course_code_map,
+        "unit_type": sorted(unit_types),
+        "note_type": note_types,
+    })
+
+
 @janitor_bp.route("/enrich", methods=["POST"])
 def janitor_enrich():
     """Add wikilinks to a note via LLM concept linking."""

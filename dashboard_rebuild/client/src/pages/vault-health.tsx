@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shield, AlertTriangle, Link2, Copy, FolderOpen, FileWarning, Wrench, Sparkles, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import { Shield, AlertTriangle, Link2, Copy, FolderOpen, FileWarning, Wrench, Sparkles, ChevronDown, ChevronRight, Loader2, X } from "lucide-react";
 import Layout from "@/components/layout";
 import { api } from "@/lib/api";
-import type { JanitorIssue, JanitorHealthResponse, JanitorScanResponse } from "@/api";
+import type { JanitorIssue, JanitorHealthResponse, JanitorScanResponse, JanitorOptions } from "@/api";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/use-toast";
 
@@ -14,6 +14,104 @@ const ISSUE_CONFIG: Record<string, { label: string; color: string; Icon: typeof 
   casing_mismatch: { label: "CASING CONFLICTS", color: "text-orange-400", Icon: AlertTriangle },
   duplicate: { label: "DUPLICATES", color: "text-purple-400", Icon: Copy },
 };
+
+/** Map frontmatter field names to the options key they draw from. */
+const FIELD_OPTIONS_KEY: Record<string, keyof JanitorOptions> = {
+  course: "course",
+  course_code: "course_code",
+  unit_type: "unit_type",
+  note_type: "note_type",
+};
+
+function getOptionsForField(field: string, options: JanitorOptions | undefined): string[] {
+  if (!options) return [];
+  const key = FIELD_OPTIONS_KEY[field];
+  if (!key) return [];
+  const val = options[key];
+  if (Array.isArray(val)) return val;
+  if (typeof val === "object") return Object.values(val);
+  return [];
+}
+
+// ---------------------------------------------------------------------------
+// ManualFixModal
+// ---------------------------------------------------------------------------
+
+function ManualFixModal({
+  issue,
+  options,
+  onApply,
+  onCancel,
+  applying,
+}: {
+  issue: JanitorIssue;
+  options: JanitorOptions | undefined;
+  onApply: (issue: JanitorIssue) => void;
+  onCancel: () => void;
+  applying: boolean;
+}) {
+  const [value, setValue] = useState("");
+  const choices = getOptionsForField(issue.field, options);
+
+  function handleApply() {
+    if (!value) return;
+    const fixData: Record<string, string> = { ...issue.fix_data, [issue.field]: value };
+
+    // Smart course_code auto-fill: when fixing "course", also set course_code
+    if (issue.field === "course" && options?.course_code[value]) {
+      fixData.course_code = options.course_code[value];
+    }
+
+    onApply({ ...issue, fixable: true, fix_data: fixData });
+  }
+
+  return (
+    <div className="border-2 border-primary bg-background p-3 mt-1 space-y-3 font-terminal text-xs">
+      <div className="flex items-center justify-between">
+        <span className="text-primary">
+          Set <span className="font-arcade">{issue.field}</span>
+        </span>
+        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-primary">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <select
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="w-full border-2 border-primary bg-background px-2 py-1.5 font-terminal text-xs text-foreground"
+      >
+        <option value="">-- select --</option>
+        {choices.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+
+      <div className="flex gap-2 justify-end">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="border border-muted-foreground/40 px-3 py-1 text-muted-foreground hover:bg-muted-foreground/10"
+        >
+          CANCEL
+        </button>
+        <button
+          type="button"
+          onClick={handleApply}
+          disabled={!value || applying}
+          className="border-2 border-green-400 px-3 py-1 text-green-400 hover:bg-green-400/10 disabled:opacity-50"
+        >
+          {applying ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
+          APPLY
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Components
+// ---------------------------------------------------------------------------
 
 function HealthBadge({ type, count }: { type: string; count: number }) {
   const cfg = ISSUE_CONFIG[type] || { label: type.toUpperCase(), color: "text-muted-foreground", Icon: AlertTriangle };
@@ -57,47 +155,70 @@ function HealthSummaryBar({ data }: { data: JanitorHealthResponse }) {
 function IssueRow({
   issue,
   onFix,
+  onManualFix,
   onEnrich,
   fixing,
   enriching,
+  manualFixOpen,
+  options,
+  onApplyManual,
+  onCancelManual,
 }: {
   issue: JanitorIssue;
   onFix: () => void;
+  onManualFix: () => void;
   onEnrich: () => void;
   fixing: boolean;
   enriching: boolean;
+  manualFixOpen: boolean;
+  options: JanitorOptions | undefined;
+  onApplyManual: (issue: JanitorIssue) => void;
+  onCancelManual: () => void;
 }) {
   const cfg = ISSUE_CONFIG[issue.issue_type] || { color: "text-muted-foreground" };
+  const isFrontmatter = issue.issue_type === "missing_frontmatter";
+
   return (
-    <div className="flex items-center justify-between gap-2 border border-primary/10 px-3 py-2 font-terminal text-xs">
-      <div className="flex-1 min-w-0">
-        <div className={cn("truncate", cfg.color)}>{issue.path}</div>
-        <div className="text-muted-foreground truncate">{issue.detail}</div>
+    <div>
+      <div className="flex items-center justify-between gap-2 border border-primary/10 px-3 py-2 font-terminal text-xs">
+        <div className="flex-1 min-w-0">
+          <div className={cn("truncate", cfg.color)}>{issue.path}</div>
+          <div className="text-muted-foreground truncate">{issue.detail}</div>
+        </div>
+        <div className="flex gap-1.5 shrink-0">
+          {isFrontmatter && (
+            <button
+              type="button"
+              onClick={issue.fixable ? onFix : onManualFix}
+              disabled={fixing}
+              className="flex items-center gap-1 border border-green-400/40 px-2 py-1 text-green-400 hover:bg-green-400/10 disabled:opacity-50"
+            >
+              {fixing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wrench className="w-3 h-3" />}
+              FIX
+            </button>
+          )}
+          {issue.issue_type === "orphan" && (
+            <button
+              type="button"
+              onClick={onEnrich}
+              disabled={enriching}
+              className="flex items-center gap-1 border border-cyan-400/40 px-2 py-1 text-cyan-400 hover:bg-cyan-400/10 disabled:opacity-50"
+            >
+              {enriching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+              ENRICH
+            </button>
+          )}
+        </div>
       </div>
-      <div className="flex gap-1.5 shrink-0">
-        {issue.fixable && (
-          <button
-            type="button"
-            onClick={onFix}
-            disabled={fixing}
-            className="flex items-center gap-1 border border-green-400/40 px-2 py-1 text-green-400 hover:bg-green-400/10 disabled:opacity-50"
-          >
-            {fixing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wrench className="w-3 h-3" />}
-            FIX
-          </button>
-        )}
-        {issue.issue_type === "orphan" && (
-          <button
-            type="button"
-            onClick={onEnrich}
-            disabled={enriching}
-            className="flex items-center gap-1 border border-cyan-400/40 px-2 py-1 text-cyan-400 hover:bg-cyan-400/10 disabled:opacity-50"
-          >
-            {enriching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-            ENRICH
-          </button>
-        )}
-      </div>
+      {manualFixOpen && (
+        <ManualFixModal
+          issue={issue}
+          options={options}
+          onApply={onApplyManual}
+          onCancel={onCancelManual}
+          applying={fixing}
+        />
+      )}
     </div>
   );
 }
@@ -106,16 +227,26 @@ function IssueGroup({
   type,
   issues,
   onFix,
+  onManualFix,
   onEnrich,
   fixingPaths,
   enrichingPaths,
+  manualFixKey,
+  options,
+  onApplyManual,
+  onCancelManual,
 }: {
   type: string;
   issues: JanitorIssue[];
   onFix: (issue: JanitorIssue) => void;
+  onManualFix: (issue: JanitorIssue) => void;
   onEnrich: (path: string) => void;
   fixingPaths: Set<string>;
   enrichingPaths: Set<string>;
+  manualFixKey: string | null;
+  options: JanitorOptions | undefined;
+  onApplyManual: (issue: JanitorIssue) => void;
+  onCancelManual: () => void;
 }) {
   const [open, setOpen] = useState(true);
   const cfg = ISSUE_CONFIG[type] || { label: type.toUpperCase(), color: "text-muted-foreground", Icon: AlertTriangle };
@@ -138,21 +269,33 @@ function IssueGroup({
       </button>
       {open && (
         <div className="space-y-px border-t border-primary/10">
-          {issues.map((issue, i) => (
-            <IssueRow
-              key={`${issue.path}-${issue.field}-${i}`}
-              issue={issue}
-              onFix={() => onFix(issue)}
-              onEnrich={() => onEnrich(issue.path)}
-              fixing={fixingPaths.has(`${issue.path}:${issue.field}`)}
-              enriching={enrichingPaths.has(issue.path)}
-            />
-          ))}
+          {issues.map((issue, i) => {
+            const key = `${issue.path}:${issue.field}`;
+            return (
+              <IssueRow
+                key={`${key}-${i}`}
+                issue={issue}
+                onFix={() => onFix(issue)}
+                onManualFix={() => onManualFix(issue)}
+                onEnrich={() => onEnrich(issue.path)}
+                fixing={fixingPaths.has(key)}
+                enriching={enrichingPaths.has(issue.path)}
+                manualFixOpen={manualFixKey === key}
+                options={options}
+                onApplyManual={onApplyManual}
+                onCancelManual={onCancelManual}
+              />
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default function VaultHealth() {
   const { toast } = useToast();
@@ -160,11 +303,18 @@ export default function VaultHealth() {
   const [scanData, setScanData] = useState<JanitorScanResponse | null>(null);
   const [fixingPaths, setFixingPaths] = useState<Set<string>>(new Set());
   const [enrichingPaths, setEnrichingPaths] = useState<Set<string>>(new Set());
+  const [manualFixKey, setManualFixKey] = useState<string | null>(null);
 
   const healthQuery = useQuery({
     queryKey: ["janitor-health"],
     queryFn: api.janitor.getHealth,
     refetchInterval: 60_000,
+  });
+
+  const optionsQuery = useQuery({
+    queryKey: ["janitor-options"],
+    queryFn: api.janitor.getOptions,
+    staleTime: 5 * 60_000,
   });
 
   const scanMutation = useMutation({
@@ -190,10 +340,10 @@ export default function VaultHealth() {
         next.delete(`${issue.path}:${issue.field}`);
         return next;
       });
+      setManualFixKey(null);
       const r = data.results[0];
       if (r?.success) {
         toast({ title: "Fixed", description: r.detail });
-        // Remove fixed issue from scan data
         setScanData((prev) =>
           prev
             ? { ...prev, issues: prev.issues.filter((i) => !(i.path === issue.path && i.field === issue.field)) }
@@ -238,6 +388,18 @@ export default function VaultHealth() {
       toast({ title: "Enrich failed", description: err.message, variant: "destructive" });
     },
   });
+
+  function handleFix(issue: JanitorIssue) {
+    if (issue.fixable) {
+      fixMutation.mutate(issue);
+    } else {
+      setManualFixKey(`${issue.path}:${issue.field}`);
+    }
+  }
+
+  function handleManualFix(issue: JanitorIssue) {
+    setManualFixKey(`${issue.path}:${issue.field}`);
+  }
 
   // Group issues by type
   const grouped: Record<string, JanitorIssue[]> = {};
@@ -293,10 +455,15 @@ export default function VaultHealth() {
                 key={type}
                 type={type}
                 issues={issues}
-                onFix={(issue) => fixMutation.mutate(issue)}
+                onFix={handleFix}
+                onManualFix={handleManualFix}
                 onEnrich={(path) => enrichMutation.mutate(path)}
                 fixingPaths={fixingPaths}
                 enrichingPaths={enrichingPaths}
+                manualFixKey={manualFixKey}
+                options={optionsQuery.data}
+                onApplyManual={(patched) => fixMutation.mutate(patched)}
+                onCancelManual={() => setManualFixKey(null)}
               />
             ))}
             {scanData.issues.length === 0 && (
