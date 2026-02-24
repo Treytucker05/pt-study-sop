@@ -37,6 +37,12 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [x] B5. Add cross-encoder reranker (`ms-marco-TinyBERT-L-2-v2`) to replace keyword scoring.
 - [x] B6. Wire Gemini CLI as second LLM provider (`call_llm(provider="gemini")`).
 
+### Sprint 2c: TutorChat Speed Tiers (Completed 2026-02-24)
+- [x] TutorChat Speed Tiers — mode toggles (📚 Materials, 🗂️ Obsidian, 🔍 Web, 🧠 Deep Think),
+      parallel RAG via ThreadPoolExecutor, model/reasoning per tier.
+      Chat-only: ~1-2s. Full pipeline: ~5-8s (was 20+s).
+      Plan: docs/plans/2026-02-24-tutor-chat-speed-tiers.md
+
 ### Sprint 3: Video Study Pipeline Finish
 - [ ] C1. Confirm hybrid ingest routing for local vs API path.
 - [ ] C2. Verify normal-session MP4 path in tutor flow (not only admin/test mode).

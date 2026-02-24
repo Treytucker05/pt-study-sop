@@ -10,9 +10,12 @@ Onboarding order:
 1. Start with this `AGENTS.md` for project-specific rules.
 2. Then read `C:\Users\treyt\.claude\CLAUDE.md` for global preferences.
 
-## Current Plan (as of 2026-02-23)
+## Current Plan (as of 2026-02-24)
 
 Active execution plan: `docs/root/TUTOR_TODO.md`
+
+Recently completed:
+- TutorChat Speed Tiers (2026-02-24) — mode toggles, parallel RAG, model/reasoning per tier. Plan: `docs/plans/2026-02-24-tutor-chat-speed-tiers.md`
 
 Primary active workstream:
 - Tutor PRIME hardening and transfer-integrity checks before broader scope expansion.

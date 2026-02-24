@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -41,6 +41,7 @@ import {
   type TutorSSEChunk,
   type TutorVerdict,
 } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface ToolAction {
@@ -532,6 +533,12 @@ export function TutorChat({
     content: "",
     saving: false,
   });
+  // Speed tier toggles — all off = chat-only (codex-spark, no RAG)
+  const [materialsOn, setMaterialsOn] = useState(false);
+  const [obsidianOn,  setObsidianOn]  = useState(false);
+  const [webSearchOn, setWebSearchOn] = useState(false);
+  const [deepThinkOn, setDeepThinkOn] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -893,6 +900,12 @@ export function TutorChat({
             ...(selectedVaultPaths.length > 0 ? { folders: selectedVaultPaths } : {}),
           },
           behavior_override: activeBehavior,
+          mode: {
+            materials:  materialsOn,
+            obsidian:   obsidianOn,
+            web_search: webSearchOn,
+            deep_think: deepThinkOn,
+          },
         }),
         signal: abortController.signal,
       });
@@ -1162,6 +1175,10 @@ export function TutorChat({
     selectedMaterialIds,
     selectedVaultPaths,
     accuracyProfile,
+    materialsOn,
+    obsidianOn,
+    webSearchOn,
+    deepThinkOn,
   ]);
 
 
@@ -1210,6 +1227,13 @@ export function TutorChat({
       </div>
     );
   }
+
+  const speedTiers: { key: string; label: string; on: boolean; set: Dispatch<SetStateAction<boolean>> }[] = [
+    { key: "materials", label: "📚 Materials", on: materialsOn, set: setMaterialsOn },
+    { key: "obsidian",  label: "🗂️ Obsidian",  on: obsidianOn,  set: setObsidianOn  },
+    { key: "web",       label: "🔍 Web",        on: webSearchOn, set: setWebSearchOn },
+    { key: "deep",      label: "🧠 Deep Think", on: deepThinkOn, set: setDeepThinkOn },
+  ];
 
   return (
     <div className="relative flex h-full min-h-0">
@@ -1492,6 +1516,26 @@ export function TutorChat({
               })}
             </div>
           </div>
+          {/* ── Speed Tier Toggles ─────────────────────────────── */}
+          <div className="flex gap-1.5 px-2 pb-1 flex-wrap">
+            {speedTiers.map(({ key, label, on, set }) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={on}
+                onClick={() => set((prev) => !prev)}
+                className={cn(
+                  "rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors",
+                  on
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-transparent text-muted-foreground border-border hover:border-primary"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* ─────────────────────────────────────────────────────── */}
           <div className="flex md:flex-row flex-col items-stretch md:items-center gap-2">
             <input
               ref={inputRef}
