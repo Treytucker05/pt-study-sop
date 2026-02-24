@@ -23,13 +23,19 @@ const FIELD_OPTIONS_KEY: Record<string, keyof JanitorOptions> = {
   note_type: "note_type",
 };
 
-function getOptionsForField(field: string, options: JanitorOptions | undefined): string[] {
+function getOptionsForField(field: string, options: JanitorOptions | undefined): { label: string; value: string }[] {
   if (!options) return [];
+  if (field === "course_code") {
+    // Show course names, resolve to codes on selection
+    return Object.entries(options.course_code).map(([course, code]) => ({
+      label: `${course} (${code})`,
+      value: code,
+    }));
+  }
   const key = FIELD_OPTIONS_KEY[field];
   if (!key) return [];
   const val = options[key];
-  if (Array.isArray(val)) return val;
-  if (typeof val === "object") return Object.values(val);
+  if (Array.isArray(val)) return val.map((v) => ({ label: v, value: v }));
   return [];
 }
 
@@ -83,7 +89,7 @@ function ManualFixModal({
       >
         <option value="">-- select --</option>
         {choices.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
       </select>
 
