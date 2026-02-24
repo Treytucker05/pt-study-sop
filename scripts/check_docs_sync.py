@@ -6,7 +6,29 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+def _resolve_root() -> Path:
+    """Return the working-tree root, handling git worktrees correctly.
+
+    When invoked from a worktree's pre-commit hook, GIT_DIR points to the
+    worktree-specific git dir, so ``git rev-parse --show-toplevel`` returns the
+    correct working-tree path rather than the main-repo path derived from
+    __file__.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        if out:
+            return Path(out).resolve()
+    except Exception:
+        pass
+    return Path(__file__).resolve().parent.parent
+
+
+ROOT = _resolve_root()
 
 
 def _read_text(path: Path) -> str:
