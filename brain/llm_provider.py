@@ -410,10 +410,12 @@ def _call_openrouter(
 
 
 def _call_openrouter_stream(
-    system_prompt: str,
-    user_prompt: str,
+    system_prompt: str = "",
+    user_prompt: str = "",
     timeout: int = OPENAI_API_TIMEOUT,
     model: Optional[str] = None,
+    messages: Optional[list] = None,
+    max_tokens: int = 1200,
 ):
     """Stream OpenRouter API response. Yields dicts: {"type": "delta", "content": "..."} or {"type": "done"} or {"type": "error", "error": "..."}."""
     api_url, api_key, default_model = _resolve_api_config()
@@ -432,14 +434,19 @@ def _call_openrouter_stream(
         headers["HTTP-Referer"] = "https://github.com/pt-study-brain"
         headers["X-Title"] = "PT Study Tutor"
 
-    payload = {
-        "model": use_model,
-        "messages": [
+    if messages is not None:
+        api_messages = messages
+    else:
+        api_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
-        ],
+        ]
+
+    payload = {
+        "model": use_model,
+        "messages": api_messages,
         "temperature": 0.7,
-        "max_tokens": 1200,
+        "max_tokens": max_tokens,
         "stream": True,
     }
 
@@ -481,11 +488,13 @@ def _call_openrouter_stream(
 
 
 def call_llm_stream(
-    system_prompt: str,
-    user_prompt: str,
+    system_prompt: str = "",
+    user_prompt: str = "",
     provider: str = "openrouter",
     model: str = "default",
     timeout: int = OPENAI_API_TIMEOUT,
+    messages: Optional[list] = None,
+    max_tokens: int = 1200,
 ):
     """Stream LLM response. Yields dicts with type: delta/done/error."""
     if _llm_blocked_in_test_mode():
@@ -493,7 +502,10 @@ def call_llm_stream(
         return
 
     or_model = None if model == "default" else model
-    yield from _call_openrouter_stream(system_prompt, user_prompt, timeout=timeout, model=or_model)
+    yield from _call_openrouter_stream(
+        system_prompt, user_prompt, timeout=timeout, model=or_model,
+        messages=messages, max_tokens=max_tokens,
+    )
 
 
 def model_call(
