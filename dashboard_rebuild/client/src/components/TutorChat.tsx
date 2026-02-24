@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, type Dispatch, type SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -1228,6 +1228,13 @@ export function TutorChat({
     );
   }
 
+  const speedTiers: { key: string; label: string; on: boolean; set: Dispatch<SetStateAction<boolean>> }[] = [
+    { key: "materials", label: "📚 Materials", on: materialsOn, set: setMaterialsOn },
+    { key: "obsidian",  label: "🗂️ Obsidian",  on: obsidianOn,  set: setObsidianOn  },
+    { key: "web",       label: "🔍 Web",        on: webSearchOn, set: setWebSearchOn },
+    { key: "deep",      label: "🧠 Deep Think", on: deepThinkOn, set: setDeepThinkOn },
+  ];
+
   return (
     <div className="relative flex h-full min-h-0">
       <div className="flex flex-col h-full min-h-0 flex-1">
@@ -1511,15 +1518,11 @@ export function TutorChat({
           </div>
           {/* ── Speed Tier Toggles ─────────────────────────────── */}
           <div className="flex gap-1.5 px-2 pb-1 flex-wrap">
-            {[
-              { key: "materials", label: "📚 Materials", on: materialsOn, set: setMaterialsOn },
-              { key: "obsidian",  label: "🗂️ Obsidian",  on: obsidianOn,  set: setObsidianOn  },
-              { key: "web",       label: "🔍 Web",        on: webSearchOn, set: setWebSearchOn },
-              { key: "deep",      label: "🧠 Deep Think", on: deepThinkOn, set: setDeepThinkOn },
-            ].map(({ key, label, on, set }) => (
+            {speedTiers.map(({ key, label, on, set }) => (
               <button
                 key={key}
                 type="button"
+                aria-pressed={on}
                 onClick={() => set((prev) => !prev)}
                 className={cn(
                   "rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors",
