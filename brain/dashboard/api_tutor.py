@@ -70,6 +70,8 @@ from tutor_accuracy_profiles import (
     resolve_instruction_retrieval_k as _resolve_instruction_k_for_profile,
     resolve_material_retrieval_k as _resolve_material_k_for_profile,
 )
+import tutor_rag as _tutor_rag
+import llm_provider as _llm_provider
 
 tutor_bp = Blueprint("tutor", __name__, url_prefix="/api/tutor")
 
@@ -3439,6 +3441,20 @@ def send_turn(session_id: str):
     # Read web search preference
     enable_web_search = True
 
+    # --- Mode flags (controls pipeline stages and model tier) ---
+    # When mode is absent, preserve legacy behavior (all pipeline stages on,
+    # full model, web search on, reasoning high). Only when the frontend
+    # explicitly sends the mode object are the flags respected.
+    _mode_provided = "mode" in data
+    _mode = data.get("mode", {})
+    _materials_on = bool(_mode.get("materials", not _mode_provided))
+    _obsidian_on  = bool(_mode.get("obsidian",  not _mode_provided))
+    _web_search_on = bool(_mode.get("web_search", not _mode_provided))
+    _deep_think_on = bool(_mode.get("deep_think", False))
+
+    _model = "gpt-5.3-codex" if (_deep_think_on or not _mode_provided) else "gpt-5.3-codex-spark"
+    _reasoning_effort = "high" if (_deep_think_on or not _mode_provided) else None
+
     turn_number = session["turn_count"] + 1
 
     def generate():
@@ -3450,7 +3466,7 @@ def send_turn(session_id: str):
         full_response = ""
         citations = []
         parsed_verdict = None
-        api_model = codex_model or "gpt-5.3-codex"
+        api_model = codex_model or _model
         latest_response_id = None
         latest_thread_id = None
         used_scope_shortcut = False
@@ -3463,12 +3479,7 @@ def send_turn(session_id: str):
         )
 
         try:
-            from llm_provider import stream_chatgpt_responses, call_codex_json
-            from tutor_rag import (
-                get_dual_context,
-                keyword_search_dual,
-                search_notes_prioritized,
-            )
+            from llm_provider import call_codex_json
             from tutor_prompt_builder import build_prompt_with_contexts
 
             requested_accuracy_profile = accuracy_profile
@@ -3487,7 +3498,7 @@ def send_turn(session_id: str):
             ) -> tuple[dict, dict[str, Any]]:
                 retrieval_debug: dict[str, Any] = {}
                 try:
-                    result = get_dual_context(
+                    result = _tutor_rag.get_dual_context(
                         question,
                         course_id=retrieval_course_id,
                         material_ids=material_ids,
@@ -3496,7 +3507,7 @@ def send_turn(session_id: str):
                         debug=retrieval_debug,
                     )
                 except Exception:
-                    result = keyword_search_dual(
+                    result = _tutor_rag.keyword_search_dual(
                         question,
                         course_id=retrieval_course_id,
                         material_ids=material_ids,
@@ -3506,43 +3517,47 @@ def send_turn(session_id: str):
                     )
                 return result, retrieval_debug
 
-            dual, rag_debug = _run_dual_retrieval(
-                effective_accuracy_profile,
-                material_k_value=effective_material_k,
-                instruction_k_value=effective_instruction_k,
-            )
-
-            material_docs_initial = dual.get("materials") or []
-            initial_signals = _extract_material_retrieval_signals(
-                material_docs=material_docs_initial,
-                rag_debug=rag_debug,
-            )
-
-            should_escalate, escalation_reasons = _should_escalate_to_coverage(
-                selected_material_count=selected_material_count,
-                material_k=effective_material_k,
-                signals=initial_signals,
-            )
-
-            if (
-                selected_material_count > 0
-                and effective_accuracy_profile != "coverage"
-                and should_escalate
-            ):
-                effective_accuracy_profile = "coverage"
-                effective_material_k = _resolve_material_retrieval_k(
-                    material_ids, effective_accuracy_profile
-                )
-                effective_instruction_k = _resolve_instruction_retrieval_k(
-                    effective_accuracy_profile
-                )
+            if _materials_on:
                 dual, rag_debug = _run_dual_retrieval(
                     effective_accuracy_profile,
                     material_k_value=effective_material_k,
                     instruction_k_value=effective_instruction_k,
                 )
-                profile_escalated = True
-                profile_escalation_reasons = escalation_reasons
+
+                material_docs_initial = dual.get("materials") or []
+                initial_signals = _extract_material_retrieval_signals(
+                    material_docs=material_docs_initial,
+                    rag_debug=rag_debug,
+                )
+
+                should_escalate, escalation_reasons = _should_escalate_to_coverage(
+                    selected_material_count=selected_material_count,
+                    material_k=effective_material_k,
+                    signals=initial_signals,
+                )
+
+                if (
+                    selected_material_count > 0
+                    and effective_accuracy_profile != "coverage"
+                    and should_escalate
+                ):
+                    effective_accuracy_profile = "coverage"
+                    effective_material_k = _resolve_material_retrieval_k(
+                        material_ids, effective_accuracy_profile
+                    )
+                    effective_instruction_k = _resolve_instruction_retrieval_k(
+                        effective_accuracy_profile
+                    )
+                    dual, rag_debug = _run_dual_retrieval(
+                        effective_accuracy_profile,
+                        material_k_value=effective_material_k,
+                        instruction_k_value=effective_instruction_k,
+                    )
+                    profile_escalated = True
+                    profile_escalation_reasons = escalation_reasons
+            else:
+                dual = {"materials": [], "instructions": []}
+                rag_debug = {}
 
             material_text, instruction_text = _format_dual_context(dual)
 
@@ -3557,8 +3572,8 @@ def send_turn(session_id: str):
 
             notes_context_text = ""
             try:
-                if not os.environ.get("PYTEST_CURRENT_TEST"):
-                    note_hits = search_notes_prioritized(
+                if _obsidian_on and not os.environ.get("PYTEST_CURRENT_TEST"):
+                    note_hits = _tutor_rag.search_notes_prioritized(
                         question,
                         module_prefix=module_prefix or None,
                         follow_up_targets=follow_up_targets,
@@ -3730,7 +3745,7 @@ def send_turn(session_id: str):
                     f"- Escalation reason(s): {', '.join(profile_escalation_reasons) or 'weak_retrieval_signals'}\n"
                 )
 
-            effective_model = codex_model or "gpt-5.3-codex"
+            effective_model = codex_model or _model
             system_prompt += (
                 "\n\n## Tooling\n"
                 "Do not run shell commands or attempt to read local files.\n"
@@ -3819,7 +3834,7 @@ def send_turn(session_id: str):
 ## Current Question
 {question}"""
 
-            api_model = codex_model or "gpt-5.3-codex"
+            api_model = codex_model or _model
             prev_response_id: str | None = session.get("last_response_id")
             latest_response_id: str | None = prev_response_id
             latest_thread_id: str | None = session.get("codex_thread_id")
@@ -3995,11 +4010,11 @@ def send_turn(session_id: str):
 
                 try:
                     stream_kwargs: dict = {
-                        "model": codex_model or "gpt-5.3-codex",
+                        "model": codex_model or _model,
                         "timeout": 120,
-                        "web_search": True,
+                        "web_search": _web_search_on,
                         "tools": tool_schemas,
-                        "reasoning_effort": "high",
+                        "reasoning_effort": _reasoning_effort,
                     }
                     # Hint the model to call save_learning_objectives when
                     # the missing-LO directive is active and the student has
@@ -4029,7 +4044,7 @@ def send_turn(session_id: str):
                             else:
                                 stream_kwargs.pop("previous_response_id", None)
 
-                        for chunk in stream_chatgpt_responses(
+                        for chunk in _llm_provider.stream_chatgpt_responses(
                             system_prompt,
                             user_prompt,
                             **stream_kwargs,
