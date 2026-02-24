@@ -21,7 +21,12 @@ from vault_janitor import (
     _check_casing,
     _check_duplicates,
     apply_fix,
+    batch_fix,
     scan_vault,
+    ai_infer_frontmatter,
+    ai_resolve,
+    ai_apply,
+    enrich_links,
 )
 
 
@@ -400,3 +405,245 @@ class TestScanVault:
         assert result.api_available is True
         fm_issues = [i for i in result.issues if i.issue_type == "missing_frontmatter"]
         assert len(fm_issues) > 0
+
+
+# ---------------------------------------------------------------------------
+# TestAiInferFrontmatter
+# ---------------------------------------------------------------------------
+
+import json
+
+AI_LLM_RESPONSE_VALID = json.dumps({
+    "suggestions": {
+        "course_code": {"value": "PHYT_6313", "confidence": "high"},
+        "unit_type": {"value": "week", "confidence": "medium"},
+        "note_type": {"value": "concept", "confidence": "low"},
+    },
+    "reasoning": "Content discusses spinal cord motor pathways, consistent with Neuroscience.",
+    "uncertain_fields": ["note_type"],
+})
+
+
+class TestAiInferFrontmatter:
+    @patch("llm_provider.call_llm")
+    def test_success(self, mock_llm):
+        mock_llm.return_value = {"success": True, "content": AI_LLM_RESPONSE_VALID}
+
+        result = ai_infer_frontmatter(
+            "Study Notes/Neuro/spinal.md",
+            MISSING_FM_NOTE,
+            {"course": "Neuroscience"},
+        )
+        assert "course_code" in result["suggestions"]
+        assert result["suggestions"]["course_code"]["value"] == "PHYT_6313"
+        assert result["suggestions"]["course_code"]["confidence"] == "high"
+        assert result["reasoning"]
+        assert "note_type" in result["uncertain_fields"]
+
+    @patch("llm_provider.call_llm")
+    def test_llm_failure(self, mock_llm):
+        mock_llm.return_value = {"success": False, "error": "timeout"}
+
+        result = ai_infer_frontmatter(
+            "orphan_note.md",
+            NO_FM_NOTE,
+            {},
+        )
+        assert result["suggestions"] == {}
+        assert "error" in result
+        assert "timeout" in result["error"]
+
+    @patch("llm_provider.call_llm")
+    def test_invalid_json(self, mock_llm):
+        mock_llm.return_value = {"success": True, "content": "Not valid JSON at all"}
+
+        result = ai_infer_frontmatter("x.md", "content", {})
+        assert result["suggestions"] == {}
+        assert "error" in result
+
+    def test_all_fields_present(self):
+        """When nothing is missing, skip the LLM call entirely."""
+        existing = {"course": "A", "course_code": "B", "unit_type": "C", "note_type": "D"}
+        result = ai_infer_frontmatter("x.md", "content", existing)
+        assert result["suggestions"] == {}
+        assert result["reasoning"] == "All fields present"
+
+
+# ---------------------------------------------------------------------------
+# TestAiResolve
+# ---------------------------------------------------------------------------
+
+class TestAiResolve:
+    @patch("vault_janitor.ai_infer_frontmatter")
+    @patch("dashboard.api_adapter.obsidian_get_file")
+    def test_routes_frontmatter(self, mock_get, mock_infer):
+        mock_get.return_value = {"success": True, "content": MISSING_FM_NOTE}
+        mock_infer.return_value = {
+            "suggestions": {"course_code": {"value": "PHYT_6313", "confidence": "high"}},
+            "reasoning": "Matched from content",
+            "uncertain_fields": [],
+        }
+
+        result = ai_resolve("note.md", "missing_frontmatter")
+        assert result["success"] is True
+        assert result["apply_action"] == "update_frontmatter"
+        assert "course_code" in result["suggestion"]
+
+    def test_routes_orphan(self):
+        result = ai_resolve("orphan.md", "orphan")
+        assert result["success"] is True
+        assert result["apply_action"] == "add_links"
+
+    def test_unsupported_type(self):
+        result = ai_resolve("x.md", "casing_mismatch")
+        assert result["success"] is False
+        assert "Unsupported" in result["error"]
+
+
+# ---------------------------------------------------------------------------
+# TestAiApply
+# ---------------------------------------------------------------------------
+
+class TestAiApply:
+    @patch("dashboard.api_adapter.obsidian_save_file")
+    @patch("dashboard.api_adapter.obsidian_get_file")
+    def test_apply_frontmatter(self, mock_get, mock_save):
+        mock_get.return_value = {"success": True, "content": MISSING_FM_NOTE}
+        mock_save.return_value = {"success": True}
+
+        suggestion = {
+            "course_code": {"value": "PHYT_6313", "confidence": "high"},
+            "unit_type": {"value": "week", "confidence": "medium"},
+        }
+        result = ai_apply("note.md", "update_frontmatter", suggestion)
+        assert result["success"] is True
+        assert "2 field(s)" in result["detail"]
+
+    @patch("vault_janitor.enrich_links")
+    def test_apply_add_links(self, mock_enrich):
+        mock_enrich.return_value = {"success": True, "links_added": 3}
+
+        result = ai_apply("orphan.md", "add_links", {})
+        assert result["success"] is True
+        assert result["links_added"] == 3
+
+    @patch("dashboard.api_adapter.obsidian_save_file")
+    @patch("dashboard.api_adapter.obsidian_get_file")
+    def test_apply_rename_link(self, mock_get, mock_save):
+        mock_get.return_value = {
+            "success": True,
+            "content": "See [[Nonexistent Note]] for details.",
+        }
+        mock_save.return_value = {"success": True}
+
+        suggestion = {"old_target": "Nonexistent Note", "new_target": "Motor Cortex"}
+        result = ai_apply("note.md", "rename_link", suggestion)
+        assert result["success"] is True
+        saved = mock_save.call_args[0][1]
+        assert "[[Motor Cortex]]" in saved
+        assert "[[Nonexistent Note]]" not in saved
+
+
+# ---------------------------------------------------------------------------
+# TestBatchEnrich
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# TestBatchFix
+# ---------------------------------------------------------------------------
+
+class TestBatchFix:
+    @patch("vault_janitor.apply_fix")
+    @patch("vault_janitor.scan_vault")
+    def test_fixes_all_fixable(self, mock_scan, mock_fix):
+        mock_scan.return_value = ScanResult(
+            issues=[
+                JanitorIssue("missing_frontmatter", "a.md", field="course", fixable=True,
+                             fix_data={"course": "Neuro"}),
+                JanitorIssue("missing_frontmatter", "a.md", field="code", fixable=True,
+                             fix_data={"code": "PHYT"}),
+                JanitorIssue("orphan", "b.md", fixable=False),
+            ],
+            notes_scanned=5,
+            scan_time_ms=10.0,
+            api_available=True,
+        )
+        mock_fix.return_value = {"success": True, "path": "a.md", "detail": "fixed"}
+
+        result = batch_fix()
+        assert result["total_scanned"] == 5
+        assert result["total_fixable"] == 2
+        assert result["total_fixed"] == 2
+        assert result["total_failed"] == 0
+        assert len(result["results"]) == 2
+        assert mock_fix.call_count == 2
+
+    @patch("vault_janitor.apply_fix")
+    @patch("vault_janitor.scan_vault")
+    def test_respects_max_batch(self, mock_scan, mock_fix):
+        mock_scan.return_value = ScanResult(
+            issues=[
+                JanitorIssue("missing_frontmatter", "a.md", field="course", fixable=True,
+                             fix_data={"course": "A"}),
+                JanitorIssue("missing_frontmatter", "b.md", field="course", fixable=True,
+                             fix_data={"course": "B"}),
+            ],
+            notes_scanned=2,
+            scan_time_ms=5.0,
+            api_available=True,
+        )
+        mock_fix.return_value = {"success": True, "path": "a.md", "detail": "fixed"}
+
+        result = batch_fix(max_batch=1)
+        assert result["total_fixed"] == 1
+        assert mock_fix.call_count == 1
+
+    @patch("vault_janitor.scan_vault")
+    def test_nothing_fixable(self, mock_scan):
+        mock_scan.return_value = ScanResult(
+            issues=[JanitorIssue("orphan", "b.md", fixable=False)],
+            notes_scanned=3,
+            scan_time_ms=5.0,
+            api_available=True,
+        )
+
+        result = batch_fix()
+        assert result["total_fixable"] == 0
+        assert result["total_fixed"] == 0
+        assert result["results"] == []
+
+
+# ---------------------------------------------------------------------------
+# TestBatchEnrich
+# ---------------------------------------------------------------------------
+
+class TestBatchEnrich:
+    @patch("dashboard.api_adapter.obsidian_save_file")
+    @patch("dashboard.api_adapter.obsidian_get_file")
+    @patch("obsidian_merge.add_concept_links")
+    @patch("obsidian_index.get_vault_index")
+    def test_batch_processes_multiple(self, mock_index, mock_add_links, mock_get, mock_save):
+        """Simulate batch enrichment by calling enrich_links() per note."""
+        mock_index.return_value = {"success": True, "notes": ["NoteA", "NoteB"]}
+        # First call: 2 links added, second: no change, third: 1 link added
+        mock_get.side_effect = [
+            {"success": True, "content": "Body A"},
+            {"success": True, "content": "Body B with [[NoteA]]"},
+            {"success": True, "content": "Body C"},
+        ]
+        mock_add_links.side_effect = [
+            "Body A with [[NoteA]] and [[NoteB]]",  # enriched
+            "Body B with [[NoteA]]",                  # no change
+            "Body C with [[NoteA]]",                  # enriched
+        ]
+        mock_save.return_value = {"success": True}
+
+        results = []
+        for path in ["a.md", "b.md", "c.md"]:
+            results.append(enrich_links(path))
+
+        assert len(results) == 3
+        assert results[0]["success"] is True
+        assert results[0]["links_added"] == 2
+        assert results[1]["links_added"] == 0  # no change
+        assert results[2]["links_added"] == 1

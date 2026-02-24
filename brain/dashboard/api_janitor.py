@@ -9,7 +9,10 @@ from vault_janitor import (
     scan_vault,
     apply_fix,
     apply_fixes,
+    batch_fix,
     enrich_links,
+    ai_resolve,
+    ai_apply,
 )
 
 _LOG = logging.getLogger(__name__)
@@ -119,6 +122,23 @@ def janitor_options():
     })
 
 
+@janitor_bp.route("/batch-fix", methods=["POST"])
+def janitor_batch_fix():
+    """Scan and auto-fix all fixable issues in one pass."""
+    body = request.get_json(silent=True) or {}
+    folder = body.get("folder")
+    checks = body.get("checks")
+    max_batch = min(body.get("max_batch", 50), 200)
+
+    try:
+        result = batch_fix(folder=folder, checks=checks, max_batch=max_batch)
+    except Exception as exc:
+        _LOG.warning("janitor batch-fix failed: %s", exc)
+        return jsonify({"error": str(exc)}), 500
+
+    return jsonify(result)
+
+
 @janitor_bp.route("/enrich", methods=["POST"])
 def janitor_enrich():
     """Add wikilinks to a note via LLM concept linking."""
@@ -134,3 +154,103 @@ def janitor_enrich():
         return jsonify({"success": False, "error": str(exc)}), 500
 
     return jsonify(result)
+
+
+@janitor_bp.route("/ai-resolve", methods=["POST"])
+def janitor_ai_resolve():
+    """AI-powered issue resolution — returns a suggestion for user review."""
+    body = request.get_json(silent=True) or {}
+    path = body.get("path", "")
+    issue_type = body.get("issue_type", "")
+    context = body.get("context")
+
+    if not path:
+        return jsonify({"success": False, "error": "path is required"}), 400
+    if not issue_type:
+        return jsonify({"success": False, "error": "issue_type is required"}), 400
+
+    try:
+        result = ai_resolve(path, issue_type, context)
+    except Exception as exc:
+        _LOG.warning("janitor ai-resolve failed: %s", exc)
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+    return jsonify(result)
+
+
+@janitor_bp.route("/ai-apply", methods=["POST"])
+def janitor_ai_apply():
+    """Apply a confirmed AI suggestion."""
+    body = request.get_json(silent=True) or {}
+    path = body.get("path", "")
+    apply_action = body.get("apply_action", "")
+    suggestion = body.get("suggestion") or {}
+
+    if not path:
+        return jsonify({"success": False, "detail": "path is required"}), 400
+    if not apply_action:
+        return jsonify({"success": False, "detail": "apply_action is required"}), 400
+
+    try:
+        result = ai_apply(path, apply_action, suggestion)
+    except Exception as exc:
+        _LOG.warning("janitor ai-apply failed: %s", exc)
+        return jsonify({"success": False, "detail": str(exc)}), 500
+
+    return jsonify(result)
+
+
+@janitor_bp.route("/batch-enrich", methods=["POST"])
+def janitor_batch_enrich():
+    """Batch-enrich wikilinks across multiple notes."""
+    body = request.get_json(silent=True) or {}
+    paths = body.get("paths") or []
+    folder = body.get("folder")
+    max_batch = min(body.get("max_batch", 20), 50)
+
+    # If no explicit paths, resolve from folder or full vault
+    if not paths:
+        from obsidian_index import get_vault_index, _get_note_content, _parse_wikilinks
+
+        index = get_vault_index()
+        all_paths = index.get("paths") or {}
+
+        if folder:
+            folder_norm = folder.replace("\\", "/").rstrip("/")
+            candidates = [
+                p for p in all_paths.values()
+                if p.replace("\\", "/").startswith(folder_norm)
+            ]
+        else:
+            candidates = list(all_paths.values())
+
+        # Skip notes with 5+ existing wikilinks
+        for cpath in candidates:
+            if len(paths) >= max_batch:
+                break
+            content = _get_note_content(cpath)
+            if content is None:
+                continue
+            links = _parse_wikilinks(content)
+            if len(links) < 5:
+                paths.append(cpath)
+
+    paths = paths[:max_batch]
+    results: list[dict] = []
+    total_added = 0
+
+    for note_path in paths:
+        try:
+            r = enrich_links(note_path)
+            added = r.get("links_added", 0)
+            total_added += added
+            results.append({"path": note_path, "links_added": added})
+        except Exception as exc:
+            _LOG.warning("batch-enrich failed for %s: %s", note_path, exc)
+            results.append({"path": note_path, "links_added": 0, "error": str(exc)})
+
+    return jsonify({
+        "total_processed": len(results),
+        "total_links_added": total_added,
+        "results": results,
+    })

@@ -44,6 +44,7 @@ from vault_janitor import (
     scan_vault,
     apply_fix,
     apply_fixes,
+    batch_fix,
     ai_infer_frontmatter,
     ai_resolve,
     ai_apply,
@@ -533,6 +534,37 @@ def task_11_apply_fixes_batch() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Task 11b: Test batch_fix()
+# ---------------------------------------------------------------------------
+
+def task_11b_batch_fix() -> None:
+    print("\n=== Task 11b: batch_fix() ===")
+
+    # Reset Neuro Concepts to no frontmatter so there's something fixable
+    obsidian_save_file(
+        f"{FIXTURE_PREFIX}/Neuro Concepts.md",
+        FIXTURES[f"{FIXTURE_PREFIX}/Neuro Concepts.md"],
+    )
+    time.sleep(0.5)
+
+    # Scoped to fixture folder, frontmatter only
+    result = batch_fix(folder=FIXTURE_PREFIX, checks=["frontmatter"])
+    _assert("T11b", "total_scanned" in result, "Result has total_scanned")
+    _assert("T11b", "total_fixable" in result, "Result has total_fixable")
+    _assert("T11b", "total_fixed" in result, "Result has total_fixed")
+    _assert("T11b", "total_failed" in result, "Result has total_failed")
+    _assert("T11b", "results" in result, "Result has results list")
+    _assert("T11b", result["total_scanned"] > 0, f"Scanned {result['total_scanned']} notes")
+    print(f"  INFO: fixable={result['total_fixable']}, fixed={result['total_fixed']}, "
+          f"failed={result['total_failed']}")
+
+    # Full vault batch fix with max_batch=0 -> nothing applied
+    empty = batch_fix(max_batch=0)
+    _assert("T11b", empty["total_fixed"] == 0, "max_batch=0: nothing fixed")
+    _assert("T11b", empty["results"] == [], "max_batch=0: empty results")
+
+
+# ---------------------------------------------------------------------------
 # Task 12: Test _build_ai_system_prompt()
 # ---------------------------------------------------------------------------
 
@@ -906,6 +938,36 @@ def task_24_api_batch_enrich() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Task 24b: Test API POST /api/janitor/batch-fix
+# ---------------------------------------------------------------------------
+
+def task_24b_api_batch_fix() -> None:
+    print("\n=== Task 24b: POST /api/janitor/batch-fix ===")
+    client = _get_test_client()
+
+    # Scoped to fixture folder
+    resp = client.post("/api/janitor/batch-fix", json={
+        "folder": FIXTURE_PREFIX,
+        "checks": ["frontmatter"],
+        "max_batch": 10,
+    })
+    _assert("T24b", resp.status_code == 200, f"Status: {resp.status_code}")
+    data = resp.get_json()
+    _assert("T24b", "total_scanned" in data, "Response has 'total_scanned'")
+    _assert("T24b", "total_fixable" in data, "Response has 'total_fixable'")
+    _assert("T24b", "total_fixed" in data, "Response has 'total_fixed'")
+    _assert("T24b", "total_failed" in data, "Response has 'total_failed'")
+    _assert("T24b", "results" in data, "Response has 'results'")
+    print(f"  INFO: scanned={data['total_scanned']}, fixable={data['total_fixable']}, "
+          f"fixed={data['total_fixed']}")
+
+    # No body -> full vault batch fix (capped)
+    resp2 = client.post("/api/janitor/batch-fix", json={"max_batch": 0})
+    data2 = resp2.get_json()
+    _assert("T24b", data2.get("total_fixed") == 0, "max_batch=0: nothing fixed")
+
+
+# ---------------------------------------------------------------------------
 # Task 25: Cleanup
 # ---------------------------------------------------------------------------
 
@@ -983,6 +1045,7 @@ def main() -> None:
         # Phase 5: Fix operations
         task_10_apply_fix()
         task_11_apply_fixes_batch()
+        task_11b_batch_fix()
 
         # Phase 6: AI prompt
         task_12_build_ai_prompt()
@@ -1002,6 +1065,7 @@ def main() -> None:
         task_22_api_ai_resolve()
         task_23_api_ai_apply()
         task_24_api_batch_enrich()
+        task_24b_api_batch_fix()
 
     finally:
         # Phase 9: Cleanup always runs

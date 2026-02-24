@@ -1,11 +1,13 @@
 """Vault Janitor — scan, detect, and fix Obsidian vault health issues.
 
 Reuses obsidian_index for vault scanning, course_map for path resolution,
-and obsidian_merge for wikilink enrichment.
+and obsidian_merge for wikilink enrichment.  AI-powered resolution uses
+llm_provider to infer missing metadata from note content.
 """
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import re
 import time
@@ -388,6 +390,269 @@ def apply_fix(issue: JanitorIssue) -> dict:
 def apply_fixes(issues: list[JanitorIssue]) -> list[dict]:
     """Batch apply fixes."""
     return [apply_fix(issue) for issue in issues]
+
+
+def batch_fix(
+    folder: Optional[str] = None,
+    checks: Optional[list[str]] = None,
+    max_batch: int = 50,
+) -> dict:
+    """Scan the vault and auto-fix all fixable issues in one pass.
+
+    Args:
+        folder: Scope scan to this folder prefix.
+        checks: List of check names to run (defaults to all).
+        max_batch: Cap on how many fixes to apply.
+
+    Returns:
+        {total_scanned, total_fixable, total_fixed, total_failed, results: [...]}
+    """
+    result = scan_vault(folder=folder, checks=checks)
+    fixable = [i for i in result.issues if i.fixable][:max_batch]
+
+    results: list[dict] = []
+    fixed = 0
+    failed = 0
+    for issue in fixable:
+        r = apply_fix(issue)
+        results.append(r)
+        if r.get("success"):
+            fixed += 1
+        else:
+            failed += 1
+
+    return {
+        "total_scanned": result.notes_scanned,
+        "total_fixable": len([i for i in result.issues if i.fixable]),
+        "total_fixed": fixed,
+        "total_failed": failed,
+        "results": results,
+    }
+
+
+# ---------------------------------------------------------------------------
+# AI-powered resolution
+# ---------------------------------------------------------------------------
+
+def _build_ai_system_prompt() -> str:
+    """Build the system prompt for frontmatter inference, including valid options."""
+    import config
+    from course_map import load_course_map
+
+    courses = config.SESSION_SCHEMA.get("course", {}).get("options", [])
+    cmap = load_course_map()
+    course_codes: dict[str, str] = {}
+    unit_types: set[str] = set()
+    for c in cmap.courses:
+        course_codes[c.label] = c.code
+        unit_types.add(c.unit_type)
+
+    note_types = sorted({nt for _, nt in _NOTE_TYPE_PATTERNS})
+
+    return f"""You are a metadata classifier for an Obsidian study vault.
+Given a note's file path, existing frontmatter, and content excerpt, infer the missing frontmatter fields.
+
+VALID VALUES:
+- course: {json.dumps(courses)}
+- course_code: {json.dumps(course_codes)} (must match course)
+- unit_type: {json.dumps(sorted(unit_types))}
+- note_type: {json.dumps(note_types)}
+
+RULES:
+- course and course_code are linked — if you set one, set the other to match.
+- Use the file path as a strong signal (folder names often contain course/unit info).
+- Assign a confidence level to each field: "high", "medium", or "low".
+- If you cannot determine a field at all, omit it from suggestions.
+- Return ONLY valid JSON, no markdown fences, no explanation outside the JSON.
+
+RESPONSE FORMAT (strict JSON):
+{{"suggestions": {{"field_name": {{"value": "...", "confidence": "high|medium|low"}}}}, "reasoning": "one sentence", "uncertain_fields": ["field1"]}}"""
+
+
+def ai_infer_frontmatter(path: str, content: str, existing_fm: dict[str, str]) -> dict:
+    """Use LLM to infer all missing frontmatter fields for a note.
+
+    Returns: {suggestions: {field: {value, confidence}}, reasoning, uncertain_fields}
+    """
+    from llm_provider import call_llm
+
+    missing = [f for f in REQUIRED_FM_FIELDS if f not in existing_fm]
+    if not missing:
+        return {"suggestions": {}, "reasoning": "All fields present", "uncertain_fields": []}
+
+    system_prompt = _build_ai_system_prompt()
+    excerpt = content[:2000]
+    user_prompt = (
+        f"File path: {path}\n"
+        f"Existing frontmatter: {json.dumps(existing_fm)}\n"
+        f"Missing fields: {json.dumps(missing)}\n\n"
+        f"Content excerpt:\n{excerpt}"
+    )
+
+    result = call_llm(system_prompt, user_prompt)
+    if not result.get("success"):
+        return {
+            "suggestions": {},
+            "reasoning": f"LLM error: {result.get('error', 'unknown')}",
+            "uncertain_fields": missing,
+            "error": result.get("error"),
+        }
+
+    raw = result.get("content", "")
+    try:
+        # Strip markdown fences if the LLM wraps them
+        cleaned = re.sub(r"^```(?:json)?\s*", "", raw.strip())
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+        parsed = json.loads(cleaned)
+    except (json.JSONDecodeError, TypeError):
+        _LOG.warning("AI frontmatter inference returned invalid JSON: %s", raw[:200])
+        return {
+            "suggestions": {},
+            "reasoning": "Failed to parse LLM response",
+            "uncertain_fields": missing,
+            "error": "Invalid JSON from LLM",
+        }
+
+    return {
+        "suggestions": parsed.get("suggestions", {}),
+        "reasoning": parsed.get("reasoning", ""),
+        "uncertain_fields": parsed.get("uncertain_fields", []),
+    }
+
+
+def ai_resolve(path: str, issue_type: str, context: dict | None = None) -> dict:
+    """Dispatch AI resolution by issue type.
+
+    Returns: {success, suggestion, reasoning, apply_action, uncertain_fields?, error?}
+    """
+    from dashboard.api_adapter import obsidian_get_file
+
+    if issue_type == "missing_frontmatter":
+        note = obsidian_get_file(path)
+        if not note.get("success"):
+            return {"success": False, "error": f"Cannot read note: {note.get('error')}"}
+
+        content = note.get("content", "")
+        existing_fm = _parse_frontmatter_fields(content)
+        result = ai_infer_frontmatter(path, content, existing_fm)
+
+        if result.get("error"):
+            return {"success": False, "error": result["error"]}
+
+        return {
+            "success": True,
+            "suggestion": result["suggestions"],
+            "reasoning": result["reasoning"],
+            "apply_action": "update_frontmatter",
+            "uncertain_fields": result.get("uncertain_fields", []),
+        }
+
+    if issue_type == "orphan":
+        return {
+            "success": True,
+            "suggestion": {},
+            "reasoning": "Will add wikilinks via LLM concept linking",
+            "apply_action": "add_links",
+        }
+
+    if issue_type == "broken_link":
+        from obsidian_index import get_vault_index
+        from llm_provider import call_llm
+
+        index = get_vault_index()
+        note_names = sorted((index.get("paths") or {}).keys())
+        broken_target = (context or {}).get("broken_target", "")
+        if not broken_target:
+            return {"success": False, "error": "No broken_target in context"}
+
+        system_prompt = (
+            "You fix broken wikilinks in an Obsidian vault. "
+            "Given a broken link target and the list of existing note names, "
+            "suggest the closest matching note name. "
+            "Return ONLY valid JSON: {\"suggested_target\": \"NoteName\", \"confidence\": \"high|medium|low\"}"
+        )
+        user_prompt = (
+            f"Broken link: [[{broken_target}]]\n"
+            f"Existing notes: {json.dumps(note_names[:500])}"
+        )
+        llm_result = call_llm(system_prompt, user_prompt)
+        if not llm_result.get("success"):
+            return {"success": False, "error": llm_result.get("error")}
+
+        raw = llm_result.get("content", "")
+        try:
+            cleaned = re.sub(r"^```(?:json)?\s*", "", raw.strip())
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+            parsed = json.loads(cleaned)
+        except (json.JSONDecodeError, TypeError):
+            return {"success": False, "error": "Invalid JSON from LLM"}
+
+        return {
+            "success": True,
+            "suggestion": {
+                "old_target": broken_target,
+                "new_target": parsed.get("suggested_target", ""),
+                "confidence": parsed.get("confidence", "low"),
+            },
+            "reasoning": f"Closest match for [[{broken_target}]]",
+            "apply_action": "rename_link",
+        }
+
+    return {"success": False, "error": f"Unsupported issue_type: {issue_type}"}
+
+
+def ai_apply(path: str, apply_action: str, suggestion: dict) -> dict:
+    """Apply a confirmed AI suggestion.
+
+    Returns: {success, detail}
+    """
+    from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
+
+    if apply_action == "update_frontmatter":
+        # Build individual fix issues and apply each field
+        results = []
+        for field_name, field_data in suggestion.items():
+            value = field_data.get("value", "") if isinstance(field_data, dict) else str(field_data)
+            if not value:
+                continue
+            issue = JanitorIssue(
+                issue_type="missing_frontmatter",
+                path=path,
+                field=field_name,
+                fixable=True,
+                fix_data={field_name: value},
+            )
+            results.append(apply_fix(issue))
+
+        failures = [r for r in results if not r.get("success")]
+        if failures:
+            return {"success": False, "detail": f"{len(failures)} field(s) failed: {failures[0].get('detail', '')}"}
+        return {"success": True, "detail": f"Updated {len(results)} field(s)"}
+
+    if apply_action == "add_links":
+        return enrich_links(path)
+
+    if apply_action == "rename_link":
+        old_target = suggestion.get("old_target", "")
+        new_target = suggestion.get("new_target", "")
+        if not old_target or not new_target:
+            return {"success": False, "detail": "Missing old_target or new_target"}
+
+        note = obsidian_get_file(path)
+        if not note.get("success"):
+            return {"success": False, "detail": f"Cannot read note: {note.get('error')}"}
+
+        content = note.get("content", "")
+        updated = content.replace(f"[[{old_target}]]", f"[[{new_target}]]")
+        if updated == content:
+            return {"success": True, "detail": "Link not found (already renamed?)"}
+
+        save_result = obsidian_save_file(path, updated)
+        if save_result.get("success"):
+            return {"success": True, "detail": f"Renamed [[{old_target}]] → [[{new_target}]]"}
+        return {"success": False, "detail": f"Save failed: {save_result.get('error', 'unknown')}"}
+
+    return {"success": False, "detail": f"Unknown apply_action: {apply_action}"}
 
 
 def enrich_links(path: str) -> dict:
