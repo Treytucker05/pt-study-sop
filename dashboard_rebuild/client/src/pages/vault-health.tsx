@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shield, AlertTriangle, Link2, Copy, FolderOpen, FileWarning, Wrench, Sparkles, ChevronDown, ChevronRight, Loader2, X } from "lucide-react";
+import { Shield, AlertTriangle, Link2, Copy, FolderOpen, FileWarning, Wrench, Sparkles, ChevronDown, ChevronRight, Loader2, X, Zap } from "lucide-react";
 import Layout from "@/components/layout";
 import { api } from "@/lib/api";
-import type { JanitorIssue, JanitorHealthResponse, JanitorScanResponse, JanitorOptions } from "@/api";
+import type { JanitorIssue, JanitorHealthResponse, JanitorScanResponse, JanitorOptions, AiFieldSuggestion, AiResolveResponse } from "@/api";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/use-toast";
 
@@ -23,10 +23,15 @@ const FIELD_OPTIONS_KEY: Record<string, keyof JanitorOptions> = {
   note_type: "note_type",
 };
 
+const CONFIDENCE_STYLE: Record<string, { border: string; text: string; label: string }> = {
+  high: { border: "border-green-400", text: "text-green-400", label: "HIGH" },
+  medium: { border: "border-yellow-400", text: "text-yellow-400", label: "MED" },
+  low: { border: "border-red-400", text: "text-red-400", label: "LOW" },
+};
+
 function getOptionsForField(field: string, options: JanitorOptions | undefined): { label: string; value: string }[] {
   if (!options) return [];
   if (field === "course_code") {
-    // Show course names, resolve to codes on selection
     return Object.entries(options.course_code).map(([course, code]) => ({
       label: `${course} (${code})`,
       value: code,
@@ -63,7 +68,6 @@ function ManualFixModal({
     if (!value) return;
     const fixData: Record<string, string> = { ...issue.fix_data, [issue.field]: value };
 
-    // Smart course_code auto-fill: when fixing "course", also set course_code
     if (issue.field === "course" && options?.course_code[value]) {
       fixData.course_code = options.course_code[value];
     }
@@ -109,6 +113,113 @@ function ManualFixModal({
         >
           {applying ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
           APPLY
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AiSuggestionModal
+// ---------------------------------------------------------------------------
+
+function AiSuggestionModal({
+  path,
+  data,
+  options,
+  onApply,
+  onCancel,
+  applying,
+}: {
+  path: string;
+  data: AiResolveResponse;
+  options: JanitorOptions | undefined;
+  onApply: (path: string, applyAction: string, suggestion: Record<string, AiFieldSuggestion>) => void;
+  onCancel: () => void;
+  applying: boolean;
+}) {
+  const [edits, setEdits] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const [field, s] of Object.entries(data.suggestion)) {
+      init[field] = s.value;
+    }
+    return init;
+  });
+
+  const uncertain = new Set(data.uncertain_fields || []);
+
+  function handleApply() {
+    const suggestion: Record<string, AiFieldSuggestion> = {};
+    for (const [field, s] of Object.entries(data.suggestion)) {
+      suggestion[field] = { value: edits[field] ?? s.value, confidence: s.confidence };
+    }
+    onApply(path, data.apply_action, suggestion);
+  }
+
+  return (
+    <div className="border-2 border-violet-400 bg-background p-4 space-y-4 font-terminal text-xs">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-violet-400" />
+          <span className="font-arcade text-violet-400 text-xs">AI SUGGESTION</span>
+        </div>
+        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-primary">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {data.reasoning && (
+        <div className="text-muted-foreground italic">{data.reasoning}</div>
+      )}
+
+      <div className="space-y-2">
+        {Object.entries(data.suggestion).map(([field, s]) => {
+          const conf = CONFIDENCE_STYLE[s.confidence] || CONFIDENCE_STYLE.low;
+          const choices = getOptionsForField(field, options);
+          return (
+            <div key={field} className="flex items-center gap-2">
+              <span className="w-24 text-muted-foreground">{field}</span>
+              <select
+                value={edits[field] ?? s.value}
+                onChange={(e) => setEdits((prev) => ({ ...prev, [field]: e.target.value }))}
+                className="flex-1 border border-primary/30 bg-background px-2 py-1 font-terminal text-xs text-foreground"
+              >
+                <option value={edits[field] ?? s.value}>{edits[field] ?? s.value}</option>
+                {choices
+                  .filter((c) => c.value !== (edits[field] ?? s.value))
+                  .map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+              </select>
+              <span className={cn("border px-1.5 py-0.5 text-[10px] font-arcade", conf.border, conf.text)}>
+                {conf.label}
+              </span>
+              {uncertain.has(field) && <span className="text-red-400">*</span>}
+            </div>
+          );
+        })}
+      </div>
+
+      {uncertain.size > 0 && (
+        <div className="text-red-400 text-[10px]">* LOW confidence — please verify</div>
+      )}
+
+      <div className="flex gap-2 justify-end">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="border border-muted-foreground/40 px-3 py-1 text-muted-foreground hover:bg-muted-foreground/10"
+        >
+          REJECT
+        </button>
+        <button
+          type="button"
+          onClick={handleApply}
+          disabled={applying}
+          className="border-2 border-violet-400 px-3 py-1 text-violet-400 hover:bg-violet-400/10 disabled:opacity-50"
+        >
+          {applying ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
+          APPLY ALL
         </button>
       </div>
     </div>
@@ -163,8 +274,10 @@ function IssueRow({
   onFix,
   onManualFix,
   onEnrich,
+  onAiFix,
   fixing,
   enriching,
+  aiFixing,
   manualFixOpen,
   options,
   onApplyManual,
@@ -174,8 +287,10 @@ function IssueRow({
   onFix: () => void;
   onManualFix: () => void;
   onEnrich: () => void;
+  onAiFix: () => void;
   fixing: boolean;
   enriching: boolean;
+  aiFixing: boolean;
   manualFixOpen: boolean;
   options: JanitorOptions | undefined;
   onApplyManual: (issue: JanitorIssue) => void;
@@ -183,6 +298,9 @@ function IssueRow({
 }) {
   const cfg = ISSUE_CONFIG[issue.issue_type] || { color: "text-muted-foreground" };
   const isFrontmatter = issue.issue_type === "missing_frontmatter";
+  const isOrphan = issue.issue_type === "orphan";
+  const isBrokenLink = issue.issue_type === "broken_link";
+  const showAiFix = isFrontmatter || isOrphan || isBrokenLink;
 
   return (
     <div>
@@ -203,7 +321,7 @@ function IssueRow({
               FIX
             </button>
           )}
-          {issue.issue_type === "orphan" && (
+          {isOrphan && !showAiFix && (
             <button
               type="button"
               onClick={onEnrich}
@@ -212,6 +330,17 @@ function IssueRow({
             >
               {enriching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
               ENRICH
+            </button>
+          )}
+          {showAiFix && (
+            <button
+              type="button"
+              onClick={onAiFix}
+              disabled={aiFixing}
+              className="flex items-center gap-1 border border-violet-400/40 px-2 py-1 text-violet-400 hover:bg-violet-400/10 disabled:opacity-50"
+            >
+              {aiFixing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+              AI FIX
             </button>
           )}
         </div>
@@ -235,8 +364,10 @@ function IssueGroup({
   onFix,
   onManualFix,
   onEnrich,
+  onAiFix,
   fixingPaths,
   enrichingPaths,
+  aiFixingPaths,
   manualFixKey,
   options,
   onApplyManual,
@@ -247,8 +378,10 @@ function IssueGroup({
   onFix: (issue: JanitorIssue) => void;
   onManualFix: (issue: JanitorIssue) => void;
   onEnrich: (path: string) => void;
+  onAiFix: (issue: JanitorIssue) => void;
   fixingPaths: Set<string>;
   enrichingPaths: Set<string>;
+  aiFixingPaths: Set<string>;
   manualFixKey: string | null;
   options: JanitorOptions | undefined;
   onApplyManual: (issue: JanitorIssue) => void;
@@ -284,8 +417,10 @@ function IssueGroup({
                 onFix={() => onFix(issue)}
                 onManualFix={() => onManualFix(issue)}
                 onEnrich={() => onEnrich(issue.path)}
+                onAiFix={() => onAiFix(issue)}
                 fixing={fixingPaths.has(key)}
                 enriching={enrichingPaths.has(issue.path)}
+                aiFixing={aiFixingPaths.has(issue.path)}
                 manualFixOpen={manualFixKey === key}
                 options={options}
                 onApplyManual={onApplyManual}
@@ -309,7 +444,11 @@ export default function VaultHealth() {
   const [scanData, setScanData] = useState<JanitorScanResponse | null>(null);
   const [fixingPaths, setFixingPaths] = useState<Set<string>>(new Set());
   const [enrichingPaths, setEnrichingPaths] = useState<Set<string>>(new Set());
+  const [aiFixingPaths, setAiFixingPaths] = useState<Set<string>>(new Set());
   const [manualFixKey, setManualFixKey] = useState<string | null>(null);
+  const [aiModal, setAiModal] = useState<{ path: string; data: AiResolveResponse } | null>(null);
+  const [aiApplying, setAiApplying] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ running: boolean; processed: number; total: number; linksAdded: number } | null>(null);
 
   const healthQuery = useQuery({
     queryKey: ["janitor-health"],
@@ -407,6 +546,83 @@ export default function VaultHealth() {
     setManualFixKey(`${issue.path}:${issue.field}`);
   }
 
+  async function handleAiFix(issue: JanitorIssue) {
+    const path = issue.path;
+    setAiFixingPaths((prev) => new Set([...prev, path]));
+    try {
+      const context = issue.issue_type === "broken_link" ? { broken_target: issue.field } : undefined;
+      const result = await api.janitor.aiResolve(path, issue.issue_type, context);
+      setAiFixingPaths((prev) => {
+        const next = new Set(prev);
+        next.delete(path);
+        return next;
+      });
+
+      if (!result.success) {
+        toast({ title: "AI Fix failed", description: result.error || "Unknown error", variant: "destructive" });
+        return;
+      }
+
+      // Orphan → apply immediately (enrich links)
+      if (result.apply_action === "add_links") {
+        enrichMutation.mutate(path);
+        return;
+      }
+
+      setAiModal({ path, data: result });
+    } catch (err) {
+      setAiFixingPaths((prev) => {
+        const next = new Set(prev);
+        next.delete(path);
+        return next;
+      });
+      toast({ title: "AI Fix failed", description: (err as Error).message, variant: "destructive" });
+    }
+  }
+
+  async function handleAiApply(path: string, applyAction: string, suggestion: Record<string, AiFieldSuggestion>) {
+    setAiApplying(true);
+    try {
+      const result = await api.janitor.aiApply(path, applyAction, suggestion);
+      if (result.success) {
+        toast({ title: "Applied", description: result.detail });
+        // Remove all issues for this path from scan data
+        setScanData((prev) =>
+          prev ? { ...prev, issues: prev.issues.filter((i) => i.path !== path) } : prev,
+        );
+        qc.invalidateQueries({ queryKey: ["janitor-health"] });
+      } else {
+        toast({ title: "Apply failed", description: result.detail, variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Apply failed", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setAiApplying(false);
+      setAiModal(null);
+    }
+  }
+
+  async function handleBatchEnrich() {
+    setBatchProgress({ running: true, processed: 0, total: 0, linksAdded: 0 });
+    try {
+      const result = await api.janitor.batchEnrich({ max_batch: 20 });
+      setBatchProgress({
+        running: false,
+        processed: result.total_processed,
+        total: result.total_processed,
+        linksAdded: result.total_links_added,
+      });
+      toast({
+        title: "Batch enrich complete",
+        description: `${result.total_processed} notes processed, ${result.total_links_added} links added`,
+      });
+      qc.invalidateQueries({ queryKey: ["janitor-health"] });
+    } catch (err) {
+      setBatchProgress(null);
+      toast({ title: "Batch enrich failed", description: (err as Error).message, variant: "destructive" });
+    }
+  }
+
   // Group issues by type
   const grouped: Record<string, JanitorIssue[]> = {};
   if (scanData?.issues) {
@@ -425,20 +641,43 @@ export default function VaultHealth() {
             <Shield className="w-6 h-6 text-primary" />
             <h1 className="font-arcade text-lg text-primary tracking-wider">VAULT HEALTH</h1>
           </div>
-          <button
-            type="button"
-            onClick={() => scanMutation.mutate()}
-            disabled={scanMutation.isPending}
-            className="flex items-center gap-2 border-2 border-primary px-4 py-2 font-arcade text-xs text-primary hover:bg-primary/10 disabled:opacity-50"
-          >
-            {scanMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Shield className="w-4 h-4" />
-            )}
-            FULL SCAN
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleBatchEnrich}
+              disabled={batchProgress?.running}
+              className="flex items-center gap-2 border-2 border-violet-400 px-4 py-2 font-arcade text-xs text-violet-400 hover:bg-violet-400/10 disabled:opacity-50"
+            >
+              {batchProgress?.running ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4" />
+              )}
+              BATCH ENRICH
+            </button>
+            <button
+              type="button"
+              onClick={() => scanMutation.mutate()}
+              disabled={scanMutation.isPending}
+              className="flex items-center gap-2 border-2 border-primary px-4 py-2 font-arcade text-xs text-primary hover:bg-primary/10 disabled:opacity-50"
+            >
+              {scanMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Shield className="w-4 h-4" />
+              )}
+              FULL SCAN
+            </button>
+          </div>
         </div>
+
+        {/* Batch progress */}
+        {batchProgress && !batchProgress.running && (
+          <div className="border-2 border-violet-400/20 bg-violet-400/5 p-3 font-terminal text-xs text-violet-400 flex items-center justify-between">
+            <span>{batchProgress.processed} notes processed</span>
+            <span>{batchProgress.linksAdded} links added</span>
+          </div>
+        )}
 
         {/* Health summary */}
         {healthQuery.data && <HealthSummaryBar data={healthQuery.data} />}
@@ -447,6 +686,18 @@ export default function VaultHealth() {
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
             Loading health status...
           </div>
+        )}
+
+        {/* AI Suggestion Modal */}
+        {aiModal && (
+          <AiSuggestionModal
+            path={aiModal.path}
+            data={aiModal.data}
+            options={optionsQuery.data}
+            onApply={handleAiApply}
+            onCancel={() => setAiModal(null)}
+            applying={aiApplying}
+          />
         )}
 
         {/* Scan results */}
@@ -464,8 +715,10 @@ export default function VaultHealth() {
                 onFix={handleFix}
                 onManualFix={handleManualFix}
                 onEnrich={(path) => enrichMutation.mutate(path)}
+                onAiFix={handleAiFix}
                 fixingPaths={fixingPaths}
                 enrichingPaths={enrichingPaths}
+                aiFixingPaths={aiFixingPaths}
                 manualFixKey={manualFixKey}
                 options={optionsQuery.data}
                 onApplyManual={(patched) => fixMutation.mutate(patched)}

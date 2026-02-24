@@ -85,6 +85,32 @@ export interface JanitorOptions {
   note_type: string[];
 }
 
+export interface AiFieldSuggestion {
+  value: string;
+  confidence: "high" | "medium" | "low";
+}
+
+export interface AiResolveResponse {
+  success: boolean;
+  suggestion: Record<string, AiFieldSuggestion>;
+  reasoning: string;
+  apply_action: string;
+  uncertain_fields?: string[];
+  error?: string;
+}
+
+export interface AiApplyResponse {
+  success: boolean;
+  detail: string;
+  links_added?: number;
+}
+
+export interface BatchEnrichResponse {
+  total_processed: number;
+  total_links_added: number;
+  results: { path: string; links_added: number; error?: string }[];
+}
+
 export interface JanitorHealthResponse {
   available: boolean;
   notes_scanned: number;
@@ -846,6 +872,21 @@ export const api = {
         { method: "POST", body: JSON.stringify({ path }) },
       ),
     getOptions: () => request<JanitorOptions>("/janitor/options"),
+    aiResolve: (path: string, issueType: string, context?: Record<string, string>) =>
+      request<AiResolveResponse>("/janitor/ai-resolve", {
+        method: "POST",
+        body: JSON.stringify({ path, issue_type: issueType, context }),
+      }),
+    aiApply: (path: string, applyAction: string, suggestion: Record<string, unknown>) =>
+      request<AiApplyResponse>("/janitor/ai-apply", {
+        method: "POST",
+        body: JSON.stringify({ path, apply_action: applyAction, suggestion }),
+      }),
+    batchEnrich: (opts?: { paths?: string[]; folder?: string; max_batch?: number }) =>
+      request<BatchEnrichResponse>("/janitor/batch-enrich", {
+        method: "POST",
+        body: JSON.stringify(opts || {}),
+      }),
   },
 };
 
