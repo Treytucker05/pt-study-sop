@@ -4,11 +4,16 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: `Tutor PRIME hardening + transfer integrity` is the current in-progress workstream; board reference is `docs/root/TUTOR_TODO.md`.
+Active status: No active workstream. All tracks complete.
 
-Latest update: 2026-02-23 Fixed RAG chunking (small-doc bypass, two-stage header-aware splitting, cross-encoder reranker) and wired Gemini CLI as second LLM provider. See `conductor/tracks/GENERAL/log.md`.
+Latest update: 2026-02-24 Completed TutorChat Speed Tiers — 4 tasks done (766 tests passing). UI pill toggles, parallel RAG, mode-gated model/reasoning. Default ~1-2s, full pipeline ~5-8s (was 20+s).
 
 ---
+
+- [x] **Track: TutorChat Speed Tiers** (complete — created 2026-02-24; closed 2026-02-24; 4 tasks, 766 tests)
+  UI mode toggles gate expensive pipeline stages. Parallel RAG. Model/reasoning per tier.
+  Chat-only: ~1-2s. Full pipeline: ~5-8s (was 20+s).
+  *Link: [./tracks/tutor_chat_speed_tiers_20260224/](./tracks/tutor_chat_speed_tiers_20260224/)*
 
 - [x] **Track Set: Hybrid Video Study Pipeline** (complete — 2026-02-22 to 2026-02-23; all 3 tracks done)
   Scope doc: `docs/root/TUTOR_VIDEO_INGEST_PLAN.md`
