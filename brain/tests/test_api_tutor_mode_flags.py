@@ -185,3 +185,30 @@ def test_web_search_flag_passes_through(mock_stream, client, seed_session):
 
     call_kwargs = mock_stream.call_args.kwargs
     assert call_kwargs["web_search"] is True
+
+
+@patch("llm_provider.stream_chatgpt_responses")
+@patch("tutor_rag.search_notes_prioritized")
+@patch("tutor_rag.get_dual_context")
+def test_legacy_no_mode_uses_full_model_and_rag(mock_get_dual, mock_search_notes, mock_stream, client, seed_session):
+    """When no mode key is sent, legacy callers get full model + RAG (backward compat)."""
+    mock_get_dual.return_value = {"materials": [], "instructions": []}
+    mock_search_notes.return_value = []
+    mock_stream.return_value = iter([{"type": "done", "usage": {}}])
+
+    # No "mode" key — old-style request
+    body = {
+        "message": "What is the supraspinatus?",
+        "content_filter": {"material_ids": [], "accuracy_profile": "standard"},
+    }
+
+    client.post(
+        f"/api/tutor/session/{seed_session}/turn",
+        data=json.dumps(body),
+        content_type="application/json",
+    )
+
+    call_kwargs = mock_stream.call_args.kwargs
+    assert call_kwargs["model"] == "gpt-5.3-codex"
+    assert call_kwargs.get("reasoning_effort") == "high"
+    mock_get_dual.assert_called()

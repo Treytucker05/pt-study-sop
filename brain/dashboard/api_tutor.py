@@ -3438,9 +3438,6 @@ def send_turn(session_id: str):
         ):
             codex_model = raw_model
 
-    # Read web search preference
-    enable_web_search = True
-
     # --- Mode flags (controls pipeline stages and model tier) ---
     # When mode is absent, preserve legacy behavior (all pipeline stages on,
     # full model, web search on, reasoning high). Only when the frontend
@@ -3452,6 +3449,8 @@ def send_turn(session_id: str):
     _web_search_on = bool(_mode.get("web_search", not _mode_provided))
     _deep_think_on = bool(_mode.get("deep_think", False))
 
+    # Note: codex_model (from content_filter.model) takes full precedence over the
+    # mode-based tier selection. An explicit model override beats the toggle logic.
     _model = "gpt-5.3-codex" if (_deep_think_on or not _mode_provided) else "gpt-5.3-codex-spark"
     _reasoning_effort = "high" if (_deep_think_on or not _mode_provided) else None
 
@@ -3572,7 +3571,7 @@ def send_turn(session_id: str):
 
             notes_context_text = ""
             try:
-                if _obsidian_on and not os.environ.get("PYTEST_CURRENT_TEST"):
+                if _obsidian_on:
                     note_hits = _tutor_rag.search_notes_prioritized(
                         question,
                         module_prefix=module_prefix or None,
