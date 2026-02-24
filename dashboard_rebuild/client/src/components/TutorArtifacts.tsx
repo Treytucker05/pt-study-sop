@@ -68,6 +68,8 @@ interface TutorArtifactsProps {
   /** Delete selected artifact entries by index (persists to session). Called after API success. */
   onDeleteArtifacts?: (sessionId: string, indexes: number[]) => Promise<void>;
   onEndSession?: (sessionId: string) => Promise<void> | void;
+  /** Clear active session UI state without calling the API (for bulk ops that already ended via API). */
+  onClearActiveSession?: () => void;
 }
 
 const ARTIFACT_ICONS: Record<string, typeof FileText> = {
@@ -466,6 +468,7 @@ export function TutorArtifacts({
   onResumeSession,
   onDeleteArtifacts,
   onEndSession,
+  onClearActiveSession,
   isSessionCompleted,
 }: TutorArtifactsProps) {
   const queryClient = useQueryClient();
@@ -585,55 +588,72 @@ export function TutorArtifacts({
     setBulkConfirm(null);
     setDeletingSessions(true);
     let deleted = 0;
-    for (const sid of ids) {
-      try {
-        await api.tutor.deleteSession(sid);
-        deleted++;
-        setSelectedSessionIds((prev) => {
-          const next = new Set(prev);
-          next.delete(sid);
-          return next;
-        });
-      } catch (err) {
-        toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
+    let failed = 0;
+    try {
+      for (const sid of ids) {
+        try {
+          await api.tutor.deleteSession(sid);
+          deleted++;
+          setSelectedSessionIds((prev) => {
+            const next = new Set(prev);
+            next.delete(sid);
+            return next;
+          });
+        } catch (err) {
+          failed++;
+          toast.error(`Delete failed: ${err instanceof Error ? err.message : "Unknown"}`);
+        }
+      }
+      if (deleted > 0) {
+        toast.success(`${deleted} session${deleted > 1 ? "s" : ""} deleted${failed > 0 ? ` (${failed} failed)` : ""}`);
+      }
+    } finally {
+      setDeletingSessions(false);
+      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      if (deleted > 0 && sessionId && ids.includes(sessionId) && onClearActiveSession) {
+        onClearActiveSession();
       }
     }
-    setDeletingSessions(false);
-    if (deleted > 0) {
-      toast.success(`${deleted} session${deleted > 1 ? "s" : ""} deleted`);
-      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
-    }
-  }, [selectedSessionIds, queryClient]);
+  }, [selectedSessionIds, sessionId, onClearActiveSession, queryClient]);
 
   const handleBulkEndSessionsConfirm = useCallback(async () => {
     if (selectedActiveSessionIds.length === 0) return;
     const ids = [...selectedActiveSessionIds];
+    const hadActiveSession = sessionId && ids.includes(sessionId);
     setBulkConfirm(null);
     setEndingSessions(true);
     let ended = 0;
-    for (const sid of ids) {
-      try {
-        if (onEndSession) {
-          await onEndSession(sid);
-        } else {
+    let failed = 0;
+    try {
+      for (const sid of ids) {
+        try {
+          // Call API directly — onEndSession clears active state which
+          // unmounts this component mid-loop, causing the black-screen bug.
           await api.tutor.endSession(sid);
+          ended++;
+          setSelectedSessionIds((prev) => {
+            const next = new Set(prev);
+            next.delete(sid);
+            return next;
+          });
+        } catch (err) {
+          failed++;
+          toast.error(`End failed: ${err instanceof Error ? err.message : "Unknown"}`);
         }
-        ended++;
-        setSelectedSessionIds((prev) => {
-          const next = new Set(prev);
-          next.delete(sid);
-          return next;
-        });
-      } catch (err) {
-        toast.error(`End failed: ${err instanceof Error ? err.message : "Unknown"}`);
+      }
+      if (ended > 0) {
+        toast.success(`${ended} session${ended > 1 ? "s" : ""} ended${failed > 0 ? ` (${failed} failed)` : ""}`);
+      }
+    } finally {
+      setEndingSessions(false);
+      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      // Clear active session UI state ONCE after all API calls complete,
+      // so the component stays mounted throughout the loop.
+      if (hadActiveSession && onClearActiveSession) {
+        onClearActiveSession();
       }
     }
-    setEndingSessions(false);
-    if (ended > 0) {
-      toast.success(`${ended} session${ended > 1 ? "s" : ""} ended`);
-      queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
-    }
-  }, [selectedActiveSessionIds, onEndSession, queryClient]);
+  }, [selectedActiveSessionIds, sessionId, onClearActiveSession, queryClient]);
 
   const handleBulkDeleteArtifactsClick = useCallback(() => {
     if (!sessionId || selectedArtifactIndices.size === 0 || !onDeleteArtifacts) return;

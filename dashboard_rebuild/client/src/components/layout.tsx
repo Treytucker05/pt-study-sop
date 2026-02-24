@@ -6,7 +6,7 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTrigger, SheetT
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import arcadeBg from "@assets/generated_images/arcade_tutor_chat_interface.png";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
 import { cn } from "@/lib/utils";
@@ -595,6 +595,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Bot className="h-5 w-5" />
               AI_STUDY_ASSISTANT
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              AI study assistant powered by your course materials
+            </DialogDescription>
             <Button variant="ghost" size="icon" onClick={() => setShowTutor(false)} className="rounded-none">
               <X className="h-4 w-4" />
             </Button>

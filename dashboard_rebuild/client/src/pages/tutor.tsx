@@ -20,7 +20,7 @@ import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts"
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Bot,
@@ -980,6 +980,7 @@ export default function Tutor() {
                     onResumeSession={resumeSession}
                     onDeleteArtifacts={handleDeleteArtifacts}
                     onEndSession={endSessionById}
+                    onClearActiveSession={clearActiveSessionState}
                   />
                 </div>
               </div>
@@ -993,6 +994,9 @@ export default function Tutor() {
           <DialogTitle className="font-arcade text-primary text-sm tracking-wider">
             TUTOR SETTINGS
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Configure tutor model, speed tier, and custom instructions
+          </DialogDescription>
           <div className="space-y-3 mt-2">
             <label className="font-arcade text-xs text-muted-foreground">
               Custom Instructions
