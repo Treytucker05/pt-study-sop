@@ -268,7 +268,12 @@ def scan_vault(
     from obsidian_index import get_vault_index, get_vault_graph, _get_note_content
 
     t0 = time.time()
-    checks_to_run = set(checks) if checks else set(ALL_CHECKS)
+    if checks:
+        # Accept short names (e.g. "frontmatter" -> "missing_frontmatter")
+        _ALIASES = {"frontmatter": "missing_frontmatter", "casing": "casing_mismatch"}
+        checks_to_run = {_ALIASES.get(c, c) for c in checks}
+    else:
+        checks_to_run = set(ALL_CHECKS)
 
     index = get_vault_index(force_refresh=True)
     if not index.get("success"):
