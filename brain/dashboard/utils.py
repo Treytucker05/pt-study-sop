@@ -22,18 +22,15 @@ def load_api_config():
         except:
             config = {}
 
-    # Defaults for LLM config
+    # Defaults for LLM config — Codex OAuth is the primary provider
     merged = {
         "openai_api_key": "",
-        "openrouter_api_key": "",
-        "api_provider": "openrouter",
-        "model": "openrouter/auto",
+        "api_provider": "codex",
+        "model": "default",
     }
     merged.update(config)
 
     # Env fallback (does not override explicit config values)
-    if not merged.get("openrouter_api_key"):
-        merged["openrouter_api_key"] = os.environ.get("OPENROUTER_API_KEY", "")
     if not merged.get("openai_api_key"):
         merged["openai_api_key"] = os.environ.get("OPENAI_API_KEY", "")
 

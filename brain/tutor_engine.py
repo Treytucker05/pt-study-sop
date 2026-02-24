@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Tutor Engine - OpenRouter-powered conversational tutor for PT Study Brain.
+Tutor Engine - Codex OAuth-powered conversational tutor for PT Study Brain.
 
 This module provides the core Tutor functionality:
-- OpenRouter API integration for LLM responses
+- LLM responses via Codex OAuth (ChatGPT backend)
 - RAG search with source-lock filtering
 - Mode-specific behavior (Core/Sprint/Drill)
 - Session context management
@@ -51,9 +51,8 @@ def load_api_config() -> dict:
             pass
     return {
         "openai_api_key": "",
-        "openrouter_api_key": "",
-        "api_provider": "openrouter",
-        "model": "openrouter/auto"
+        "api_provider": "codex",
+        "model": "default"
     }
 
 
@@ -462,7 +461,7 @@ def get_or_create_session(session_id: str) -> SessionContext:
 
 
 # -----------------------------------------------------------------------------
-# OpenRouter API Integration
+# LLM API Integration
 # -----------------------------------------------------------------------------
 
 # Maximum context size to send to API (approx 12k tokens = ~50k chars)
@@ -476,102 +475,13 @@ def _truncate_for_api(text: str, max_chars: int = MAX_API_CONTEXT_CHARS) -> str:
     """
     if not text or len(text) <= max_chars:
         return text
-    
+
     truncated = text[:max_chars]
-    # Try to cut at a natural boundary (newline or sentence)
     last_newline = truncated.rfind('\n', max_chars - 500, max_chars)
     if last_newline > max_chars - 1000:
         truncated = truncated[:last_newline]
-    
+
     return truncated + "\n\n[... context truncated due to length ...]"
-
-
-def call_openrouter(prompt: str, system_prompt: str, timeout: int = 30) -> tuple[Optional[str], Optional[str]]:
-    """
-    Call OpenRouter API with the given prompt.
-    Uses the same api_config.json as Scholar.
-    Timeout reduced to 30s for faster responses.
-    
-    Returns: (response_text, error_message)
-    """
-    if not REQUESTS_AVAILABLE:
-        return None, "requests library not installed. Install with: pip install requests"
-    
-    config = load_api_config()
-    api_provider = config.get("api_provider", "openrouter")
-    
-    if api_provider == "openrouter":
-        api_key = config.get("openrouter_api_key", "").strip()
-        model = config.get("model", "openrouter/auto")
-        if not model or model == "zai-ai/glm-4.7":
-            model = "openrouter/auto"
-        api_url = "https://openrouter.ai/api/v1/chat/completions"
-    else:
-        # Fallback to OpenAI
-        api_key = config.get("openai_api_key", "").strip()
-        model = config.get("model", "gpt-4o-mini")
-        api_url = "https://api.openai.com/v1/chat/completions"
-    
-    if not api_key:
-        return None, f"API key not configured. Please set your {api_provider} API key in Settings."
-    
-    # Truncate prompt if needed
-    safe_prompt = _truncate_for_api(prompt)
-    
-    try:
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        
-        # Add OpenRouter-specific headers
-        if api_provider == "openrouter":
-            headers["HTTP-Referer"] = "https://github.com/pt-study-brain"
-            headers["X-Title"] = "PT Study Tutor"
-        
-        response = requests.post(
-            api_url,
-            headers=headers,
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": safe_prompt}
-                ],
-                "temperature": 0.7,
-                "max_tokens": 600,  # Reduced for faster responses (was 2000)
-            },
-            timeout=timeout,
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            answer = result["choices"][0]["message"]["content"].strip()
-            return answer, None
-        else:
-            try:
-                error_msg = response.json().get("error", {}).get("message", "Unknown error")
-            except:
-                error_msg = f"HTTP {response.status_code}"
-            return None, f"API error: {error_msg}"
-            
-    except requests.exceptions.Timeout:
-        return None, "Request timed out. Please try again."
-    except requests.exceptions.RequestException as e:
-        return None, f"Network error: {str(e)}"
-    except Exception as e:
-        return None, f"Error: {str(e)}"
-
-
-# Legacy alias for backwards compatibility (if any code references this)
-def find_codex_cli() -> Optional[str]:
-    """Deprecated: Codex CLI is no longer used. Returns None."""
-    return None  # OpenRouter is now used instead
-    
-# Legacy alias for backwards compatibility (if any code references call_codex)
-def call_codex(prompt: str, system_prompt: str, timeout: int = 60) -> tuple[Optional[str], Optional[str]]:
-    """Deprecated: Now uses OpenRouter API instead of Codex CLI."""
-    return call_openrouter(prompt, system_prompt, timeout)
 
 
 # -----------------------------------------------------------------------------
@@ -641,7 +551,7 @@ def process_tutor_turn(query: TutorQueryV1) -> TutorTurnResponse:
     # 4. Call LLM (Codex Default) via Shared Provider
     from brain.llm_provider import call_llm
     
-    llm_result = call_llm(system_prompt, full_user_prompt, provider="openrouter")
+    llm_result = call_llm(system_prompt, full_user_prompt)
     
     if not llm_result["success"]:
         # Return error with fallback info

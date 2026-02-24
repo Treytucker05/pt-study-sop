@@ -42,15 +42,9 @@ def _load_api_config():
             with open(config_path, "r") as f:
                 config = json.load(f)
 
-            # Prefer OpenAI if set
             openai_key = config.get("openai_api_key", "").strip()
             if openai_key:
                 return {"provider": "openai", "api_key": openai_key}
-
-            # Fall back to OpenRouter
-            openrouter_key = config.get("openrouter_api_key", "").strip()
-            if openrouter_key:
-                return {"provider": "openrouter", "api_key": openrouter_key}
 
         except Exception as e:
             print(f"[Calendar Assistant] Error loading config: {e}")
@@ -59,19 +53,14 @@ def _load_api_config():
 
 
 def _get_client():
-    """Get configured OpenAI client."""
+    """Get configured OpenAI client (for tool-calling calendar operations)."""
     api_config = _load_api_config()
     if not api_config:
-        raise ValueError("No API key configured")
+        raise ValueError("No API key configured. Calendar tool-calling requires an OpenAI API key.")
     if not OPENAI_AVAILABLE:
         raise ValueError("openai package not installed. Run: pip install openai")
 
     openai_client = cast(object, OpenAI)
-    if api_config["provider"] == "openrouter":
-        return openai_client(  # type: ignore[call-arg]
-            api_key=api_config["api_key"],
-            base_url="https://openrouter.ai/api/v1",
-        )
     return openai_client(api_key=api_config["api_key"])  # type: ignore[call-arg]
 
 
@@ -1359,8 +1348,6 @@ Return ONLY valid JSON, no explanation."""
     result = call_llm(
         system_prompt=system_prompt,
         user_prompt=nl_input,
-        provider="openrouter",
-        model="google/gemini-2.5-flash-lite",
         timeout=15
     )
     
@@ -1465,7 +1452,7 @@ Be concise. Confirm what was done."""
 
         # First API call
         response = client.chat.completions.create(
-            model="openai/gpt-4o-mini",  # Works with both OpenAI and OpenRouter
+            model="gpt-4o-mini",
             messages=cast(list, messages),
             tools=cast(list, TOOLS),
             tool_choice="auto",
@@ -1503,7 +1490,7 @@ Be concise. Confirm what was done."""
 
             # Get next response
             response = client.chat.completions.create(
-                model="openai/gpt-4o-mini",
+                model="gpt-4o-mini",
                 messages=cast(list, messages),
                 tools=cast(list, TOOLS),
                 tool_choice="auto",

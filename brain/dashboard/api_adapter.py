@@ -3389,7 +3389,7 @@ def update_api_key():
 def chat_message(session_id):
     """
     Mimics: app.post("/api/chat/:sessionId")
-    Connects to the real Tutor Engine (RAG + OpenRouter).
+    Connects to the real Tutor Engine (RAG + Codex OAuth).
     """
     try:
         # Import Tutor Engine components dynamically
@@ -6518,16 +6518,12 @@ def get_brain_metrics():
 
 @adapter_bp.route("/brain/llm-status", methods=["GET"])
 def get_llm_status():
-    """Check whether an LLM API key is configured for chat endpoints."""
+    """Check whether an LLM provider is available for chat endpoints."""
     try:
-        config = load_api_config()
-        api_provider = config.get("api_provider", "openrouter")
-        if api_provider == "openai":
-            api_key = config.get("openai_api_key", "")
-        else:
-            api_key = config.get("openrouter_api_key", "")
-        model = config.get("model", "openrouter/auto")
-        connected = bool(api_key)
+        from llm_provider import _load_codex_auth
+        auth = _load_codex_auth()
+        connected = auth is not None
+        model = "codex (OAuth)"
 
         return jsonify(
             {
@@ -6588,8 +6584,6 @@ Return STRICT JSON only (no code fences, no extra text) with:
         result = call_llm(
             system_prompt=system_prompt,
             user_prompt=f"Organize these notes:\n\n{raw_notes}",
-            provider="openrouter",
-            model="google/gemini-2.5-flash-lite",
             timeout=60,
         )
 
@@ -7188,12 +7182,9 @@ IMPORTANT:
 - Look for patterns in what learning techniques worked or didn't work
 """
 
-            # Call LLM via OpenRouter
             result = call_llm(
                 system_prompt=system_prompt,
                 user_prompt=f"Process this study session data:\n\n{message}",
-                provider="openrouter",
-                model="google/gemini-2.5-flash-lite",
                 timeout=45,
             )
 

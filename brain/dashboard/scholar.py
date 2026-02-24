@@ -366,33 +366,11 @@ def collect_unanswered_questions(run_dir: Path) -> List[str]:
 
 def generate_ai_answer(question, context="", api_key_override=None, api_provider_override=None, model_override=None):
     """
-    Generate an answer to a Scholar question using OpenRouter or OpenAI.
-    Optional overrides allow testing a key/provider without persisting it.
+    Generate an answer to a Scholar question using Codex OAuth.
     """
-    if not REQUESTS_AVAILABLE:
-        return None, "requests library not installed. Install with: pip install requests"
-    
-    config = load_api_config()
-    api_provider = api_provider_override or config.get("api_provider", "openrouter")
-    
-    if api_provider == "openrouter":
-        api_key = (api_key_override or config.get("openrouter_api_key", "")).strip()
-        model = model_override or config.get("model", "openrouter/auto")
-        if not model or model == "zai-ai/glm-4.7":
-            model = "openrouter/auto"
-        api_url = "https://openrouter.ai/api/v1/chat/completions"
-    else:
-        # Fallback to OpenAI
-        api_key = (api_key_override or config.get("openai_api_key", "")).strip()
-        model = model_override or config.get("model", "gpt-4o-mini")
-        api_url = "https://api.openai.com/v1/chat/completions"
-    
-    if not api_key:
-        return None, "API key not configured"
-    
-    try:
-        # Build context from Scholar system
-        system_prompt = """You are a system design consultant helping answer architectural and design questions about a PT Study Tutor system.
+    from llm_provider import call_llm
+
+    system_prompt = """You are a system design consultant helping answer architectural and design questions about a PT Study Tutor system.
 
 Your reasoning should focus on:
 1. **Design/Architecture Analysis**: Understand how system components interact (PEIRRO cycle, KWIK encoding, M6 Wrap, etc.)
@@ -410,53 +388,20 @@ Provide concise, actionable answers (2-4 sentences) that:
 - Make a clear design recommendation
 - Explain the trade-offs considered
 - Reference relevant system constraints or research when applicable"""
-        
-        # Truncate context to avoid API token limits
-        safe_context = _truncate_context(context) if context else ""
-        
-        user_prompt = f"""Question: {question}
+
+    safe_context = _truncate_context(context) if context else ""
+
+    user_prompt = f"""Question: {question}
 
 {safe_context if safe_context else "Answer based on the PEIRRO/KWIK system design and learning science principles."}
 
 Provide a clear, concise answer (2-4 sentences) that addresses the question directly."""
-        
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        
-        # Add OpenRouter-specific headers
-        if api_provider == "openrouter":
-            headers["HTTP-Referer"] = "https://github.com/your-repo"  # Optional but recommended
-            headers["X-Title"] = "PT Study Scholar"  # Optional identifier
-        
-        response = requests.post(
-            api_url,
-            headers=headers,
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "temperature": 0.7,
-                "max_tokens": 300,
-            },
-            timeout=30,
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            answer = result["choices"][0]["message"]["content"].strip()
-            return answer, None
-        else:
-            error_msg = response.json().get("error", {}).get("message", "Unknown error")
-            return None, f"API error: {error_msg}"
-            
-    except requests.exceptions.Timeout:
-        return None, "Request timed out"
-    except requests.exceptions.RequestException as e:
-        return None, f"Network error: {str(e)}"
+
+    try:
+        result = call_llm(system_prompt, user_prompt, timeout=30)
+        if result.get("success"):
+            return (result.get("content") or "").strip(), None
+        return None, result.get("error") or "LLM call failed"
     except Exception as e:
         return None, f"Error: {str(e)}"
 
@@ -2242,23 +2187,20 @@ def generate_weekly_digest(days: int = 7) -> dict:
 
     context_text = "\n".join(context_parts)
     
-    # --- Call OpenRouter API for AI analysis ---
+    # --- Call LLM for AI analysis (Codex OAuth) ---
     ai_analysis = None
     ai_error = None
-    
+
     try:
-        import requests
-        config = load_api_config()
-        api_key = config.get("openrouter_api_key")
-        
-        if api_key:
-            system_prompt = """You are a learning science expert analyzing a PT student's study system improvement tracker.
+        from llm_provider import call_llm
+
+        system_prompt = """You are a learning science expert analyzing a PT student's study system improvement tracker.
 You help optimize study methods, track system health, and prioritize improvement proposals.
 You also analyze the Composable Method Library (method blocks and chains) for effectiveness patterns.
 When method library data is present, consider: which methods score low in which contexts? Which chains are untested? What optimizations could improve learning outcomes?
 Be concise, actionable, and use markdown formatting."""
 
-            user_prompt = f"""Analyze this study system data and provide strategic recommendations:
+        user_prompt = f"""Analyze this study system data and provide strategic recommendations:
 
 {context_text}
 
@@ -2274,36 +2216,11 @@ Based on this data, provide:
 
 5. **System Health Assessment**: Is the system being actively improved? Any staleness?"""
 
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://pt-study-brain.local",
-            }
-            
-            payload = {
-                "model": "anthropic/claude-3.5-sonnet",
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "max_tokens": 1500,
-                "temperature": 0.7
-            }
-            
-            response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=60
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                ai_analysis = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-            else:
-                ai_error = f"API error: {response.status_code}"
+        result = call_llm(system_prompt, user_prompt, timeout=60)
+        if result.get("success"):
+            ai_analysis = (result.get("content") or "").strip()
         else:
-            ai_error = "No OpenRouter API key configured"
+            ai_error = result.get("error") or "LLM call failed"
     except Exception as e:
         ai_error = f"AI analysis failed: {str(e)}"
     

@@ -12,8 +12,6 @@ import uuid as _uuid
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
 
-import requests
-
 # Load .env into environment (no-op if not present)
 from config import load_env
 
@@ -82,12 +80,12 @@ def find_gemini_cli() -> Optional[str]:
 def call_llm(
     system_prompt: str,
     user_prompt: str,
-    provider: str = "openrouter",
+    provider: str = "codex",
     model: str = "default",
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
     isolated: bool = False,
 ) -> Dict[str, Any]:
-    """Centralized LLM caller. Routes to OpenRouter (default), Codex CLI, or Gemini CLI."""
+    """Centralized LLM caller. Routes to Codex CLI (default) or Gemini CLI."""
     if _llm_blocked_in_test_mode():
         return {
             "success": False,
@@ -96,10 +94,6 @@ def call_llm(
             "fallback_available": False,
             "fallback_models": [],
         }
-
-    if provider == "openrouter":
-        or_model = None if model == "default" else model
-        return _call_openrouter(system_prompt, user_prompt, timeout=timeout, model=or_model)
 
     if provider == "gemini":
         gem_model = None if model == "default" else model
@@ -302,210 +296,32 @@ Human: {user_prompt}
         }
 
 
-# ---------------------------------------------------------------------------
-# Direct OpenRouter / OpenAI HTTP API (no subprocess overhead)
-# ---------------------------------------------------------------------------
-
-OPENROUTER_DEFAULT_MODEL = "openrouter/auto"
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
-
-
-def _resolve_api_config() -> tuple[str, str, str]:
-    """Resolve API URL, key, and model from env vars.
-
-    Returns: (api_url, api_key, model)
-    """
-    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-    model = os.environ.get("OPENROUTER_MODEL", "").strip() or OPENROUTER_DEFAULT_MODEL
-    api_url = OPENROUTER_API_URL
-
-    if not api_key:
-        api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-        api_url = OPENAI_API_URL
-        if not model or model == OPENROUTER_DEFAULT_MODEL:
-            model = "gpt-4o-mini"
-
-    return api_url, api_key, model
-
-
-def _call_openrouter(
-    system_prompt: str,
-    user_prompt: str,
-    timeout: int = OPENAI_API_TIMEOUT,
-    model: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Direct HTTP API call to OpenRouter/OpenAI. No subprocess overhead."""
-    api_url, api_key, default_model = _resolve_api_config()
-
-    if not api_key:
-        return {
-            "success": False,
-            "error": "API key not configured. Set OPENROUTER_API_KEY or OPENAI_API_KEY.",
-            "content": None,
-            "fallback_available": True,
-            "fallback_models": ["codex"],
-        }
-
-    use_model = model if model and model != "default" else default_model
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    if "openrouter" in api_url:
-        headers["HTTP-Referer"] = "https://github.com/pt-study-brain"
-        headers["X-Title"] = "PT Study Tutor"
-
-    payload = {
-        "model": use_model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        "temperature": 0.7,
-        "max_tokens": 1200,
-        "stream": False,
-    }
-
-    try:
-        t0 = time.time()
-        resp = requests.post(api_url, headers=headers, json=payload, timeout=timeout)
-        elapsed = time.time() - t0
-        logger.info("OpenRouter API call took %.2fs (model=%s)", elapsed, use_model)
-
-        if resp.status_code == 200:
-            data = resp.json()
-            content = data["choices"][0]["message"]["content"].strip()
-            return {"success": True, "content": content, "error": None}
-        else:
-            try:
-                err_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
-            except Exception:
-                err_msg = f"HTTP {resp.status_code}"
-            return {
-                "success": False,
-                "error": f"API error: {err_msg}",
-                "content": None,
-                "fallback_available": True,
-                "fallback_models": ["codex"],
-            }
-
-    except requests.exceptions.Timeout:
-        return {
-            "success": False,
-            "error": f"Request timed out after {timeout}s.",
-            "content": None,
-            "fallback_available": True,
-            "fallback_models": ["codex"],
-        }
-    except requests.exceptions.RequestException as e:
-        return {
-            "success": False,
-            "error": f"Network error: {e}",
-            "content": None,
-            "fallback_available": True,
-            "fallback_models": ["codex"],
-        }
-
-
-def _call_openrouter_stream(
-    system_prompt: str = "",
-    user_prompt: str = "",
-    timeout: int = OPENAI_API_TIMEOUT,
-    model: Optional[str] = None,
-    messages: Optional[list] = None,
-    max_tokens: int = 1200,
-):
-    """Stream OpenRouter API response. Yields dicts: {"type": "delta", "content": "..."} or {"type": "done"} or {"type": "error", "error": "..."}."""
-    api_url, api_key, default_model = _resolve_api_config()
-
-    if not api_key:
-        yield {"type": "error", "error": "API key not configured."}
-        return
-
-    use_model = model if model and model != "default" else default_model
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    if "openrouter" in api_url:
-        headers["HTTP-Referer"] = "https://github.com/pt-study-brain"
-        headers["X-Title"] = "PT Study Tutor"
-
-    if messages is not None:
-        api_messages = messages
-    else:
-        api_messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
-
-    payload = {
-        "model": use_model,
-        "messages": api_messages,
-        "temperature": 0.7,
-        "max_tokens": max_tokens,
-        "stream": True,
-    }
-
-    try:
-        resp = requests.post(
-            api_url, headers=headers, json=payload, timeout=timeout, stream=True
-        )
-
-        if resp.status_code != 200:
-            try:
-                err_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
-            except Exception:
-                err_msg = f"HTTP {resp.status_code}"
-            yield {"type": "error", "error": err_msg}
-            return
-
-        for line in resp.iter_lines(decode_unicode=True):
-            if not line or not line.startswith("data: "):
-                continue
-            chunk = line[6:]  # strip "data: " prefix
-            if chunk == "[DONE]":
-                yield {"type": "done"}
-                return
-            try:
-                parsed = json.loads(chunk)
-                delta = parsed.get("choices", [{}])[0].get("delta", {})
-                content = delta.get("content", "")
-                if content:
-                    yield {"type": "delta", "content": content}
-            except json.JSONDecodeError:
-                continue
-
-        yield {"type": "done"}
-
-    except requests.exceptions.Timeout:
-        yield {"type": "error", "error": f"Request timed out after {timeout}s."}
-    except requests.exceptions.RequestException as e:
-        yield {"type": "error", "error": f"Network error: {e}"}
-
-
 def call_llm_stream(
     system_prompt: str = "",
     user_prompt: str = "",
-    provider: str = "openrouter",
+    provider: str = "codex",
     model: str = "default",
     timeout: int = OPENAI_API_TIMEOUT,
     messages: Optional[list] = None,
     max_tokens: int = 1200,
 ):
-    """Stream LLM response. Yields dicts with type: delta/done/error."""
+    """Stream LLM response via ChatGPT backend API.
+
+    Yields dicts: {"type": "delta", "content": "..."} | {"type": "done"} | {"type": "error", "error": "..."}.
+    """
     if _llm_blocked_in_test_mode():
         yield {"type": "error", "error": "LLM calls disabled in test mode."}
         return
 
-    or_model = None if model == "default" else model
-    yield from _call_openrouter_stream(
-        system_prompt, user_prompt, timeout=timeout, model=or_model,
-        messages=messages, max_tokens=max_tokens,
-    )
+    for chunk in stream_chatgpt_responses(
+        system_prompt, user_prompt, timeout=timeout,
+    ):
+        if chunk["type"] == "delta":
+            yield {"type": "delta", "content": chunk.get("text", "")}
+        elif chunk["type"] == "done":
+            yield {"type": "done"}
+        elif chunk["type"] == "error":
+            yield chunk
 
 
 def model_call(
@@ -955,6 +771,7 @@ def stream_chatgpt_responses(
     previous_response_id: str | None = None,
     input_override: list[dict] | None = None,
     reasoning_effort: str | None = None,
+    store: bool | None = None,
 ):
     """
     Streaming generator for ChatGPT backend API.
@@ -977,7 +794,7 @@ def stream_chatgpt_responses(
         "model": model,
         "instructions": system_prompt,
         "input": input_override or [{"role": "user", "content": user_prompt}],
-        "store": True,
+        "store": store if store is not None else ("spark" not in model.lower()),
         "stream": True,
         "text": {"verbosity": verbosity},
     }

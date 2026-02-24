@@ -62,8 +62,7 @@ print("Calling LLM...")
 result = call_llm(
     system_prompt=system_prompt,
     user_prompt=f"Process this:\n\n{wrap}",
-    provider="openrouter",
-    model="google/gemini-2.5-flash-lite",
+    provider="codex",
     timeout=45
 )
 

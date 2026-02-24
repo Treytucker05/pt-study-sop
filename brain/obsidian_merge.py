@@ -102,8 +102,6 @@ def add_concept_links(content: str, course: Optional[str] = None, vault_index: O
     result = call_llm(
         system_prompt=system_prompt,
         user_prompt=user_prompt,
-        provider="openrouter",
-        model="google/gemini-2.5-flash-lite",
         timeout=30,
     )
     if not result.get("success"):
@@ -202,8 +200,6 @@ def _semantic_merge(existing_body: str, new_body: str) -> str:
     result = call_llm(
         system_prompt=system_prompt,
         user_prompt=user_prompt,
-        provider="openrouter",
-        model="google/gemini-2.5-flash-lite",
         timeout=45,
     )
     if not result.get("success"):

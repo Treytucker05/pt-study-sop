@@ -14,7 +14,7 @@ def load_env(override_env=True):
     Load key=value pairs from .env into os.environ.
 
     By default override_env=True so the repo-local .env wins over any
-    machine-level env var (prevents stale system OPENROUTER_API_KEY).
+    machine-level env var (prevents stale system env vars).
     """
     env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
     loaded = {}

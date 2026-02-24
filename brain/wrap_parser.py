@@ -247,8 +247,6 @@ def _fallback_parse_sections(raw_text: str) -> Dict[str, str]:
     result = call_llm(
         system_prompt=system_prompt,
         user_prompt=f"WRAP text:\n\n{raw_text}",
-        provider="openrouter",
-        model="deepseek/deepseek-v3",
         timeout=45,
     )
     if not result.get("success"):
@@ -386,8 +384,6 @@ def _classify_issues_with_llm(issues: List[str]) -> List[Dict[str, str]]:
     result = call_llm(
         system_prompt=system_prompt,
         user_prompt=user_prompt,
-        provider="openrouter",
-        model="deepseek/deepseek-v3",
         timeout=30,
     )
     if not result.get("success"):

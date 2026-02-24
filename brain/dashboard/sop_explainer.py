@@ -4,87 +4,19 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-import requests
-
-from dashboard.utils import load_api_config
-
 
 def _sha256(text: str) -> str:
     return hashlib.sha256((text or "").encode("utf-8")).hexdigest()
 
 
-def _get_llm_settings() -> Tuple[str, str, str]:
-    """
-    Returns (provider, api_key, model).
-    Provider is "openrouter" or "openai".
-    """
-    cfg = load_api_config() or {}
-    provider = (cfg.get("api_provider") or "openrouter").strip().lower()
-    model = (cfg.get("model") or "openrouter/auto").strip()
-    if provider == "openai":
-        api_key = (cfg.get("openai_api_key") or "").strip()
-    else:
-        provider = "openrouter"
-        api_key = (cfg.get("openrouter_api_key") or "").strip()
-        if not model or model == "zai-ai/glm-4.7":
-            model = "openrouter/auto"
-    return provider, api_key, model
-
-
 def _chat_completion(system_prompt: str, user_prompt: str, timeout_s: int = 45) -> Tuple[Optional[str], Optional[str]]:
-    provider, api_key, model = _get_llm_settings()
-    if not api_key:
-        return None, "API key not configured (openrouter/openai)"
+    """Route through centralized call_llm (Codex OAuth)."""
+    from llm_provider import call_llm
 
-    if provider == "openrouter":
-        url = "https://openrouter.ai/api/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://127.0.0.1:5000",
-            "X-Title": "PT Study SOP Explainer",
-        }
-    else:
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-
-    try:
-        resp = requests.post(
-            url,
-            headers=headers,
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                "temperature": 0.3,
-                "max_tokens": 1100,
-            },
-            timeout=timeout_s,
-        )
-        if resp.status_code != 200:
-            try:
-                err = resp.json()
-                msg = (
-                    err.get("error", {}).get("message")
-                    or err.get("message")
-                    or f"HTTP {resp.status_code}"
-                )
-            except Exception:
-                msg = f"HTTP {resp.status_code}"
-            return None, f"LLM API error: {msg}"
-
-        data = resp.json()
-        text = data["choices"][0]["message"]["content"]
-        return (text or "").strip(), None
-    except requests.exceptions.Timeout:
-        return None, "LLM request timed out"
-    except Exception as e:
-        return None, f"LLM request failed: {e}"
+    result = call_llm(system_prompt, user_prompt, timeout=timeout_s)
+    if result.get("success"):
+        return (result.get("content") or "").strip(), None
+    return None, result.get("error") or "LLM call failed"
 
 
 def _cache_dir(repo_root: Path) -> Path:

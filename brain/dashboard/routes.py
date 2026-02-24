@@ -1070,20 +1070,17 @@ def api_trends():
 @dashboard_bp.route("/api/scholar/api-key", methods=["GET", "POST"])
 def api_scholar_api_key():
     if request.method == "GET":
+        from llm_provider import _load_codex_auth
+        auth = _load_codex_auth()
         config = load_api_config()
-        api_provider = config.get("api_provider", "openrouter")
-        if api_provider == "openrouter":
-            api_key = config.get("openrouter_api_key", "")
-        else:
-            api_key = config.get("openai_api_key", "")
 
         return jsonify(
             {
                 "ok": True,
-                "has_key": bool(api_key),
-                "key_preview": f"{api_key[:7]}..." if api_key else None,
-                "api_provider": api_provider,
-                "model": config.get("model", "openrouter/auto"),
+                "has_key": auth is not None,
+                "key_preview": "codex-oauth" if auth else None,
+                "api_provider": "codex",
+                "model": config.get("model", "default"),
             }
         )
     else:
@@ -1097,14 +1094,10 @@ def api_scholar_api_key():
                 return jsonify({"ok": False, "message": "API key cannot be empty"}), 400
 
             config = load_api_config()
-            api_provider = data.get("api_provider", "openrouter")
-            model = data.get("model", "openrouter/auto")
+            api_provider = data.get("api_provider", "codex")
+            model = data.get("model", "default")
 
-            if api_provider == "openrouter":
-                config["openrouter_api_key"] = api_key
-            else:
-                config["openai_api_key"] = api_key
-
+            config["openai_api_key"] = api_key
             config["api_provider"] = api_provider
             config["model"] = model
             save_api_config(config)

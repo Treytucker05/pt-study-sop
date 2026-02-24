@@ -52,12 +52,8 @@ def strip_image_refs_for_rag(content: str) -> str:
 
 
 def _get_openai_api_key() -> str:
-    """Resolve OpenAI API key from env (supports OpenRouter-compatible keys)."""
-    return (
-        os.environ.get("OPENAI_API_KEY")
-        or os.environ.get("OPENROUTER_API_KEY")
-        or ""
-    )
+    """Resolve OpenAI API key from env."""
+    return os.environ.get("OPENAI_API_KEY") or ""
 
 
 def init_vectorstore(collection_name: str = COLLECTION_MATERIALS, persist_dir: Optional[str] = None):
