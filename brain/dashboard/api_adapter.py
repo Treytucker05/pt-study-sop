@@ -7675,64 +7675,36 @@ IMPORTANT:
 
 @adapter_bp.route("/brain/quick-chat", methods=["POST"])
 def brain_quick_chat():
-    """Streaming chat endpoint using Kimi k2.5 via OpenRouter. Supports vision."""
+    """Streaming chat via Codex Spark (1000+ tok/s). Supports vision."""
     from flask import Response
+    from llm_provider import stream_chatgpt_responses
 
     data = request.get_json() or {}
     messages = data.get("messages", [])
     if not messages:
         return jsonify({"response": "No messages provided.", "success": False})
 
-    system_msg = {
-        "role": "system",
-        "content": "You are a concise study assistant for a DPT (Doctor of Physical Therapy) student. Keep responses short and direct. Use bullet points for lists. No fluff or unnecessary elaboration.",
-    }
+    system_prompt = (
+        "You are a concise study assistant for a DPT (Doctor of Physical Therapy) "
+        "student. Keep responses short and direct. Use bullet points for lists. "
+        "No fluff or unnecessary elaboration."
+    )
 
     def generate():
-        import urllib.request
-        import urllib.error
-        api_key = os.environ.get("OPENROUTER_API_KEY")
-        if not api_key:
-            yield 'data: {"error": "OPENROUTER_API_KEY not set."}\n\n'
-            return
-
-        url = "https://openrouter.ai/api/v1/chat/completions"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-            "HTTP-Referer": "http://localhost:5000",
-            "X-Title": "PT Study Brain",
-        }
-        payload = {
-            "model": "google/gemini-2.5-flash-lite",
-            "messages": [system_msg] + messages,
-            "temperature": 0.7,
-            "max_tokens": 1500,
-            "stream": True,
-        }
-        try:
-            req_data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(
-                url, data=req_data, headers=headers, method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=120) as response:
-                for line in response:
-                    decoded = line.decode("utf-8").strip()
-                    if decoded.startswith("data: "):
-                        chunk = decoded[6:]
-                        if chunk == "[DONE]":
-                            yield "data: [DONE]\n\n"
-                            return
-                        try:
-                            parsed = json.loads(chunk)
-                            delta = parsed.get("choices", [{}])[0].get("delta", {})
-                            content = delta.get("content", "")
-                            if content:
-                                yield f"data: {json.dumps({'content': content})}\n\n"
-                        except json.JSONDecodeError:
-                            pass
-        except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        for event in stream_chatgpt_responses(
+            system_prompt=system_prompt,
+            user_prompt="",
+            model="gpt-5.3-codex-spark",
+            input_override=messages,
+            timeout=60,
+        ):
+            evt_type = event.get("type", "")
+            if evt_type == "delta":
+                yield f"data: {json.dumps({'content': event.get('text', '')})}\n\n"
+            elif evt_type == "error":
+                yield f"data: {json.dumps({'error': event.get('error', 'Unknown error')})}\n\n"
+            elif evt_type == "done":
+                yield "data: [DONE]\n\n"
 
     return Response(
         generate(),
