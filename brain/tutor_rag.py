@@ -16,6 +16,7 @@ import logging
 import os
 import re
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Optional
 
@@ -923,21 +924,26 @@ def get_dual_context(
     material_debug: dict[str, Any] = {}
     instruction_debug: dict[str, Any] = {}
 
-    materials = search_with_embeddings(
-        query,
-        course_id=course_id,
-        material_ids=material_ids,
-        collection_name=COLLECTION_MATERIALS,
-        k=k_materials,
-        debug=material_debug,
-    )
-
-    instructions = search_with_embeddings(
-        query,
-        collection_name=COLLECTION_INSTRUCTIONS,
-        k=k_instructions,
-        debug=instruction_debug,
-    )
+    # Run both collection searches in parallel instead of sequentially.
+    with ThreadPoolExecutor(max_workers=2) as _pool:
+        _mat_fut = _pool.submit(
+            search_with_embeddings,
+            query,
+            course_id=course_id,
+            material_ids=material_ids,
+            collection_name=COLLECTION_MATERIALS,
+            k=k_materials,
+            debug=material_debug,
+        )
+        _ins_fut = _pool.submit(
+            search_with_embeddings,
+            query,
+            collection_name=COLLECTION_INSTRUCTIONS,
+            k=k_instructions,
+            debug=instruction_debug,
+        )
+    materials = _mat_fut.result()
+    instructions = _ins_fut.result()
 
     if debug is not None:
         debug.clear()
