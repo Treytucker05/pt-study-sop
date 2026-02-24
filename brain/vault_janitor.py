@@ -72,11 +72,24 @@ def _parse_frontmatter_fields(content: str) -> dict[str, str]:
     return fields
 
 
+_NOTE_TYPE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"(?:^|/)concept[_\s-]", re.IGNORECASE), "concept"),
+    (re.compile(r"(?:^|/)session[_\s-]", re.IGNORECASE), "session"),
+    (re.compile(r"(?:^|/)summary[_\s-]", re.IGNORECASE), "summary"),
+    (re.compile(r"(?:^|/)review[_\s-]", re.IGNORECASE), "review"),
+    (re.compile(r"(?:^|/)north[_\s-]?star", re.IGNORECASE), "north_star"),
+    (re.compile(r"learning[_\s-]?objectives?", re.IGNORECASE), "reference"),
+    (re.compile(r"(?:^|/)evidence[_\s-]", re.IGNORECASE), "reference"),
+    (re.compile(r"(?:^|/)research[/\\]", re.IGNORECASE), "reference"),
+    (re.compile(r"(?:^|/)categories[/\\]", re.IGNORECASE), "reference"),
+]
+
+
 def _resolve_frontmatter_from_path(path: str) -> dict[str, str]:
     """Infer frontmatter fields from a vault path via course_map.
 
     Example path: Study Notes/Neuroscience/Week 5/concept_motor_cortex.md
-    Returns: {course: "Neuroscience", course_code: "PHYT_6313", unit_type: "week"}
+    Returns: {course: "Neuroscience", course_code: "PHYT_6313", unit_type: "week", note_type: "concept"}
     """
     try:
         from course_map import load_course_map
@@ -84,7 +97,8 @@ def _resolve_frontmatter_from_path(path: str) -> dict[str, str]:
         return {}
 
     cmap = load_course_map()
-    parts = path.replace("\\", "/").split("/")
+    norm = path.replace("\\", "/")
+    parts = norm.split("/")
 
     resolved: dict[str, str] = {}
 
@@ -95,6 +109,12 @@ def _resolve_frontmatter_from_path(path: str) -> dict[str, str]:
             resolved["course"] = course.label
             resolved["course_code"] = course.code
             resolved["unit_type"] = course.unit_type
+            break
+
+    # Infer note_type from filename/path patterns
+    for pattern, note_type in _NOTE_TYPE_PATTERNS:
+        if pattern.search(norm):
+            resolved["note_type"] = note_type
             break
 
     return resolved
