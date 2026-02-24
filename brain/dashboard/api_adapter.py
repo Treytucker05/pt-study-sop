@@ -3449,6 +3449,100 @@ def chat_message(session_id):
         return jsonify({"error": str(e)}), 500
 
 
+@adapter_bp.route("/chat/<session_id>/stream", methods=["POST"])
+def chat_message_stream(session_id):
+    """
+    SSE streaming version of /chat/<session_id>.
+    Returns text/event-stream with chunks as they arrive from the LLM.
+    """
+    from flask import Response
+
+    try:
+        import sys as _sys
+        from pathlib import Path as _Path
+
+        brain_dir = _Path(__file__).resolve().parent.parent
+        if str(brain_dir) not in _sys.path:
+            _sys.path.append(str(brain_dir))
+
+        from brain.tutor_engine import process_tutor_turn_preamble, log_tutor_turn
+        from brain.tutor_api_types import TutorQueryV1, TutorSourceSelector, TutorTurnResponse
+
+        data = request.json
+        user_message = data.get("content")
+
+        if not user_message:
+            return jsonify({"error": "Message content required"}), 400
+
+        query = TutorQueryV1(
+            user_id="user",
+            session_id=str(session_id),
+            course_id=None,
+            topic_id=None,
+            mode="Core",
+            question=user_message,
+            plan_snapshot_json="{}",
+            sources=TutorSourceSelector(),
+        )
+
+        # Preamble: RAG search + prompt building (non-streaming)
+        preamble = process_tutor_turn_preamble(query)
+        if preamble.get("error"):
+            return jsonify({"error": preamble["error"]}), 500
+
+        system_prompt = preamble["system_prompt"]
+        user_prompt = preamble["user_prompt"]
+        rag_docs = preamble["rag_docs"]
+        session_obj = preamble["session"]
+
+        from brain.llm_provider import call_llm_stream
+
+        def generate():
+            full_answer = []
+            for chunk in call_llm_stream(system_prompt, user_prompt):
+                if chunk["type"] == "delta":
+                    full_answer.append(chunk["content"])
+                    yield f"data: {json.dumps(chunk)}\n\n"
+                elif chunk["type"] == "error":
+                    yield f"data: {json.dumps(chunk)}\n\n"
+                    return
+                elif chunk["type"] == "done":
+                    answer_text = "".join(full_answer)
+                    unverified = len(rag_docs) == 0
+                    if unverified and "[UNVERIFIED" not in answer_text:
+                        answer_text = f"[UNVERIFIED - not backed by your course materials]\n\n{answer_text}"
+
+                    session_obj.add_turn("assistant", answer_text)
+                    try:
+                        resp = TutorTurnResponse(
+                            session_id=str(session_id),
+                            answer=answer_text,
+                            citations=[],
+                            unverified=unverified,
+                            summary_json="{}",
+                        )
+                        log_tutor_turn(query, resp)
+                    except Exception:
+                        pass  # Don't fail stream for logging errors
+
+                    yield f"data: {json.dumps({'type': 'done', 'unverified': unverified})}\n\n"
+
+        return Response(
+            generate(),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    except Exception as e:
+        print(f"Tutor Stream Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 # ==============================================================================
 # GOOGLE CALENDAR
 # ==============================================================================

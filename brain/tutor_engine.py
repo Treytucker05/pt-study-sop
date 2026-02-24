@@ -641,7 +641,7 @@ def process_tutor_turn(query: TutorQueryV1) -> TutorTurnResponse:
     # 4. Call LLM (Codex Default) via Shared Provider
     from brain.llm_provider import call_llm
     
-    llm_result = call_llm(system_prompt, full_user_prompt, provider="codex")
+    llm_result = call_llm(system_prompt, full_user_prompt, provider="openrouter")
     
     if not llm_result["success"]:
         # Return error with fallback info
@@ -657,7 +657,7 @@ def process_tutor_turn(query: TutorQueryV1) -> TutorTurnResponse:
         
         return TutorTurnResponse(
             session_id=session_id,
-            answer=f"**Codex Error**: {error_msg}\n\nPlease select a fallback model.",
+            answer=f"**LLM Error**: {error_msg}\n\nPlease check API key in Settings.",
             citations=[],
             unverified=True,
             summary_json=json.dumps(err_summary)
@@ -730,6 +730,77 @@ def log_tutor_turn(query: TutorQueryV1, response: TutorTurnResponse) -> int:
     if turn_id is None:
         raise RuntimeError("Failed to insert tutor_turns row")
     return int(turn_id)
+
+
+def process_tutor_turn_preamble(query: TutorQueryV1) -> dict:
+    """
+    Run the non-LLM parts of process_tutor_turn: session load, RAG search,
+    prompt building. Returns dict with system_prompt, user_prompt, rag_docs,
+    session, citations for the streaming endpoint to use.
+    """
+    try:
+        session_id = query.session_id or f"adhoc-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        session = get_or_create_session(session_id)
+        session.add_turn("user", query.question)
+
+        # 1. RAG search
+        rag_docs = search_rag_documents(
+            query=query.question,
+            sources=query.sources,
+            course_id=query.course_id,
+            corpuses=["study", "repo", "runtime"],
+            enabled_only=True,
+        )
+
+        rag_context, citations = build_rag_context(rag_docs)
+
+        # 2. Build mode-specific system prompt
+        mode_prompt = MODE_PROMPTS.get(query.mode, MODE_PROMPTS["Core"])
+        system_prompt = BASE_SYSTEM_PROMPT.format(
+            course_id=query.course_id or "Not specified",
+            topic_id=query.topic_id or "Not specified",
+            mode=query.mode,
+            mode_prompt=mode_prompt,
+        )
+
+        runtime_catalog = load_runtime_catalog_context()
+        if runtime_catalog:
+            system_prompt = (
+                system_prompt
+                + "\n\nRuntime Systems/Engines (user-selected):\n"
+                + runtime_catalog
+            )
+
+        # 3. Build user prompt with context
+        history_prompt = session.get_history_prompt()
+        user_prompt_parts: list[str] = []
+
+        if rag_context:
+            user_prompt_parts.append("## Course Materials Context:")
+            user_prompt_parts.append(rag_context)
+            user_prompt_parts.append("")
+        else:
+            user_prompt_parts.append("[No matching course materials found for this query]")
+            user_prompt_parts.append("")
+
+        if history_prompt:
+            user_prompt_parts.append(history_prompt)
+            user_prompt_parts.append("")
+
+        user_prompt_parts.append(f"## Current Question:\n{query.question}")
+        full_user_prompt = "\n".join(user_prompt_parts)
+
+        return {
+            "system_prompt": system_prompt,
+            "user_prompt": full_user_prompt,
+            "rag_docs": rag_docs,
+            "citations": citations,
+            "session": session,
+            "session_id": session_id,
+            "error": None,
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def create_card_draft_from_turn(

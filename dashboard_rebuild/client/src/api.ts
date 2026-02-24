@@ -69,6 +69,30 @@ export interface SyllabusImportResult {
   errors?: string[];
 }
 
+export interface JanitorIssue {
+  issue_type: string;
+  path: string;
+  field: string;
+  detail: string;
+  fixable: boolean;
+  fix_data: Record<string, string>;
+}
+
+export interface JanitorHealthResponse {
+  available: boolean;
+  notes_scanned: number;
+  total_issues: number;
+  counts: Record<string, number>;
+  scan_time_ms: number;
+}
+
+export interface JanitorScanResponse {
+  available: boolean;
+  notes_scanned: number;
+  scan_time_ms: number;
+  issues: JanitorIssue[];
+}
+
 const API_BASE = "/api";
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -795,6 +819,25 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ ids }),
       }),
+  },
+
+  janitor: {
+    getHealth: () => request<JanitorHealthResponse>("/janitor/health"),
+    scan: (opts?: { folder?: string; checks?: string[] }) =>
+      request<JanitorScanResponse>("/janitor/scan", {
+        method: "POST",
+        body: JSON.stringify(opts || {}),
+      }),
+    fix: (issues: JanitorIssue[]) =>
+      request<{ results: { success: boolean; path: string; detail: string }[] }>(
+        "/janitor/fix",
+        { method: "POST", body: JSON.stringify({ issues }) },
+      ),
+    enrich: (path: string) =>
+      request<{ success: boolean; links_added: number }>(
+        "/janitor/enrich",
+        { method: "POST", body: JSON.stringify({ path }) },
+      ),
   },
 };
 

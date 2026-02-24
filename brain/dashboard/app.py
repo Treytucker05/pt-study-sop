@@ -27,6 +27,7 @@ def create_app():
     from dashboard.api_tutor import tutor_bp
     from dashboard.api_data import data_bp
     from dashboard.api_mastery import mastery_bp
+    from dashboard.api_janitor import janitor_bp
 
     app.register_blueprint(adapter_bp)  # /api/* routes - must be first
     app.register_blueprint(methods_bp)  # /api/methods, /api/chains
@@ -34,7 +35,24 @@ def create_app():
     app.register_blueprint(tutor_bp)  # /api/tutor/*
     app.register_blueprint(data_bp)  # /api/data/*
     app.register_blueprint(mastery_bp)  # /api/mastery/*
+    app.register_blueprint(janitor_bp)  # /api/janitor/*
     app.register_blueprint(dashboard_bp)
+
+    # Preload ML models in background thread to avoid cold-start latency
+    import threading
+
+    def _preload_models():
+        try:
+            import sys as _sys
+            brain_dir = os.path.dirname(base_dir)
+            if brain_dir not in _sys.path:
+                _sys.path.append(brain_dir)
+            from brain.tutor_rag import preload_reranker
+            preload_reranker()
+        except Exception:
+            pass  # Non-fatal: model loads lazily on first use as fallback
+
+    threading.Thread(target=_preload_models, daemon=True, name="model-preload").start()
 
     # DEBUG: Print all registered routes
     print("\n=== REGISTERED ROUTES ===")

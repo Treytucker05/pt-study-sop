@@ -13,6 +13,7 @@ const Tutor = lazy(() => import("@/pages/tutor"));
 const Methods = lazy(() => import("@/pages/methods"));
 const Mastery = lazy(() => import("@/pages/mastery"));
 const Library = lazy(() => import("@/pages/library"));
+const VaultHealth = lazy(() => import("@/pages/vault-health"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 const ROUTES = [
@@ -24,6 +25,7 @@ const ROUTES = [
   { path: "/methods", Component: Methods },
   { path: "/mastery", Component: Mastery },
   { path: "/library", Component: Library },
+  { path: "/vault-health", Component: VaultHealth },
 ];
 
 const LoadingFallback = () => (

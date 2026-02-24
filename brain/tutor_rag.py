@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import pydantic_v1_patch  # noqa: F401  — must be first (fixes PEP 649 on Python 3.14)
 
+import logging
 import os
 import re
 import sqlite3
@@ -19,6 +20,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 from config import DB_PATH, load_env
+
+logger = logging.getLogger(__name__)
 
 load_env()
 
@@ -467,6 +470,21 @@ def _get_reranker():
         from sentence_transformers import CrossEncoder
         _RERANKER = CrossEncoder("cross-encoder/ms-marco-TinyBERT-L-2-v2")
     return _RERANKER
+
+
+def preload_reranker() -> None:
+    """Pre-initialize the cross-encoder model to avoid 500ms cold start on first query.
+
+    Safe to call multiple times — only loads once.
+    Call this during app startup (e.g., in Flask app factory or gunicorn post_fork).
+    """
+    if _RERANKER is not None:
+        return
+    try:
+        _get_reranker()
+        logger.info("Cross-encoder reranker preloaded successfully.")
+    except Exception as e:
+        logger.warning("Failed to preload cross-encoder: %s", e)
 
 
 def _keyword_score(query: str, docs: list) -> list[tuple[float, int, object]]:

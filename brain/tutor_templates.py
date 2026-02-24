@@ -56,6 +56,9 @@ def render_session_note_markdown(
     session_id: str,
     topic: str,
     module_name: str,
+    course_label: str = "",
+    course_code: str = "",
+    unit_type: str = "",
 ) -> str:
     metadata = artifact.get("metadata") if isinstance(artifact.get("metadata"), dict) else {}
     session = artifact.get("session") if isinstance(artifact.get("session"), dict) else {}
@@ -74,6 +77,9 @@ control_stage: {control_stage}
 method_id: {method_id}
 session_mode: {session_mode}
 updated_at: {updated_at}
+course: {course_label}
+course_code: {course_code}
+unit_type: {unit_type}
 ---
 
 # Tutor Session - {topic}
@@ -111,18 +117,31 @@ updated_at: {updated_at}
                     list(session.get("follow_up_targets") or [])
                 ),
                 "source_ids": _bullets(list(session.get("source_ids") or [])),
+                "course_label": course_label,
+                "course_code": course_code,
+                "unit_type": unit_type,
             }
         )
     )
     return rendered.rstrip() + "\n"
 
 
-def render_concept_note_markdown(*, concept: dict[str, Any], module_name: str) -> str:
+def render_concept_note_markdown(
+    *,
+    concept: dict[str, Any],
+    module_name: str,
+    course_label: str = "",
+    course_code: str = "",
+    unit_type: str = "",
+) -> str:
     file_name = str(concept.get("file_name") or "").strip() or "Untitled Concept"
     fallback = """---
 note_type: tutor_concept
 module_name: {module_name}
 updated_at: {updated_at}
+course: {course_label}
+course_code: {course_code}
+unit_type: {unit_type}
 ---
 
 # {file_name}
@@ -162,6 +181,9 @@ updated_at: {updated_at}
                     list(concept.get("relationships") or [])
                 ),
                 "next_review_date": str(concept.get("next_review_date") or "unscheduled"),
+                "course_label": course_label,
+                "course_code": course_code,
+                "unit_type": unit_type,
             }
         )
     )

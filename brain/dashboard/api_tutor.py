@@ -308,10 +308,22 @@ def _resolve_class_label(course_id: Optional[int]) -> str:
 
 
 def _study_notes_base_path(*, course_label: str, module_or_week: str, subtopic: str) -> str:
-    safe_course = _sanitize_path_segment(course_label, fallback="General Class")
-    safe_module = _sanitize_path_segment(module_or_week, fallback="General Module")
-    safe_subtopic = _sanitize_path_segment(subtopic, fallback="General Topic")
-    return f"Study notes/{safe_course}/{safe_module}/{safe_subtopic}"
+    from course_map import load_course_map
+
+    course_map = load_course_map()
+    course = course_map.resolve_course(course_label)
+
+    if course is None:
+        safe_course = _sanitize_path_segment(course_label, fallback="General Class")
+        safe_module = _sanitize_path_segment(module_or_week, fallback="General Module")
+        safe_subtopic = _sanitize_path_segment(subtopic, fallback="General Topic")
+        return f"{course_map.vault_root}/{safe_course}/{safe_module}/{safe_subtopic}"
+
+    unit = course.resolve_unit(module_or_week)
+    unit_folder = unit.name if unit else _sanitize_path_segment(module_or_week, fallback="General Module")
+    topic_folder = _sanitize_path_segment(subtopic, fallback="General Topic")
+
+    return f"{course_map.vault_root}/{course.label}/{unit_folder}/{topic_folder}"
 
 
 def _canonical_north_star_path(*, course_label: str, module_or_week: str, subtopic: str) -> str:
@@ -1016,6 +1028,9 @@ def _render_tutor_session_markdown(
     session_id: str,
     topic: str,
     module_name: str,
+    course_label: str = "",
+    course_code: str = "",
+    unit_type: str = "",
 ) -> str:
     from tutor_templates import render_session_note_markdown
 
@@ -1024,6 +1039,9 @@ def _render_tutor_session_markdown(
         session_id=session_id,
         topic=topic,
         module_name=module_name,
+        course_label=course_label,
+        course_code=course_code,
+        unit_type=unit_type,
     )
 
 
@@ -1031,10 +1049,19 @@ def _render_tutor_concept_markdown(
     concept: dict[str, Any],
     *,
     module_name: str,
+    course_label: str = "",
+    course_code: str = "",
+    unit_type: str = "",
 ) -> str:
     from tutor_templates import render_concept_note_markdown
 
-    return render_concept_note_markdown(concept=concept, module_name=module_name)
+    return render_concept_note_markdown(
+        concept=concept,
+        module_name=module_name,
+        course_label=course_label,
+        course_code=course_code,
+        unit_type=unit_type,
+    )
 
 
 def _merge_and_save_obsidian_note(
@@ -1324,6 +1351,14 @@ def _finalize_structured_notes_for_session(
     topic = str(session_row.get("topic") or module_name).strip()
     subtopic = _sanitize_path_segment(topic or module_name, fallback=module_name)
     course_label = _resolve_class_label(session_row.get("course_id"))
+
+    # Resolve course map metadata for frontmatter
+    from course_map import load_course_map as _load_cm
+    _cm = _load_cm()
+    _mapped_course = _cm.resolve_course(course_label)
+    _course_code = _mapped_course.code.replace("_", " ") if _mapped_course else ""
+    _unit_type = _mapped_course.unit_type if _mapped_course else ""
+
     study_base = _study_notes_base_path(
         course_label=course_label,
         module_or_week=module_name,
@@ -1343,6 +1378,9 @@ def _finalize_structured_notes_for_session(
         session_id=session_id,
         topic=topic,
         module_name=module_name,
+        course_label=course_label,
+        course_code=_course_code,
+        unit_type=_unit_type,
     )
     save_session = _merge_and_save_obsidian_note(
         path=session_path,
@@ -1365,6 +1403,9 @@ def _finalize_structured_notes_for_session(
         concept_markdown = _render_tutor_concept_markdown(
             concept,
             module_name=module_name,
+            course_label=course_label,
+            course_code=_course_code,
+            unit_type=_unit_type,
         )
         save_concept = _merge_and_save_obsidian_note(
             path=concept_path,
@@ -4754,6 +4795,20 @@ def end_session(session_id: str):
     except Exception as exc:
         _LOG.warning("end_session auto-capture method_ratings failed: %s", exc)
 
+    # --- Lightweight janitor pass on touched folder ---
+    janitor_result: Optional[dict[str, Any]] = None
+    if vault_folder:
+        try:
+            from vault_janitor import scan_vault
+            scan = scan_vault(folder=vault_folder, checks=["missing_frontmatter"])
+            janitor_result = {
+                "folder": vault_folder,
+                "issues_found": len(scan.issues),
+                "fixable": sum(1 for i in scan.issues if i.fixable),
+            }
+        except Exception as exc:
+            _LOG.warning("end_session janitor pass failed: %s", exc)
+
     conn.close()
 
     return jsonify(
@@ -4772,6 +4827,7 @@ def end_session(session_id: str):
             },
             "graph_sync": graph_sync_result,
             "north_star_refresh": north_star_refresh,
+            "janitor": janitor_result,
         }
     )
 
