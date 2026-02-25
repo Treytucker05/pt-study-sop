@@ -3489,76 +3489,30 @@ def send_turn(session_id: str):
             profile_escalated = False
             profile_escalation_reasons: list[str] = []
 
-            def _run_dual_retrieval(
-                profile_name: str,
-                *,
-                material_k_value: int,
-                instruction_k_value: int,
-            ) -> tuple[dict, dict[str, Any]]:
-                retrieval_debug: dict[str, Any] = {}
-                try:
-                    result = _tutor_rag.get_dual_context(
-                        question,
-                        course_id=retrieval_course_id,
-                        material_ids=material_ids,
-                        k_materials=material_k_value,
-                        k_instructions=instruction_k_value,
-                        debug=retrieval_debug,
-                    )
-                except Exception:
-                    result = _tutor_rag.keyword_search_dual(
-                        question,
-                        course_id=retrieval_course_id,
-                        material_ids=material_ids,
-                        k_materials=material_k_value,
-                        k_instructions=instruction_k_value,
-                        debug=retrieval_debug,
-                    )
-                return result, retrieval_debug
+            # --- Unified context retrieval ---
+            from tutor_context import build_context
 
-            if _materials_on:
-                dual, rag_debug = _run_dual_retrieval(
-                    effective_accuracy_profile,
-                    material_k_value=effective_material_k,
-                    instruction_k_value=effective_instruction_k,
-                )
+            _depth = "none"
+            if _materials_on and _obsidian_on:
+                _depth = "auto"
+            elif _materials_on:
+                _depth = "materials"
+            elif _obsidian_on:
+                _depth = "notes"
 
-                material_docs_initial = dual.get("materials") or []
-                initial_signals = _extract_material_retrieval_signals(
-                    material_docs=material_docs_initial,
-                    rag_debug=rag_debug,
-                )
+            ctx = build_context(
+                question,
+                depth=_depth,
+                course_id=retrieval_course_id,
+                material_ids=material_ids,
+                module_prefix=module_prefix or None,
+                k_materials=effective_material_k,
+            )
+            rag_debug = ctx["debug"]
 
-                should_escalate, escalation_reasons = _should_escalate_to_coverage(
-                    selected_material_count=selected_material_count,
-                    material_k=effective_material_k,
-                    signals=initial_signals,
-                )
-
-                if (
-                    selected_material_count > 0
-                    and effective_accuracy_profile != "coverage"
-                    and should_escalate
-                ):
-                    effective_accuracy_profile = "coverage"
-                    effective_material_k = _resolve_material_retrieval_k(
-                        material_ids, effective_accuracy_profile
-                    )
-                    effective_instruction_k = _resolve_instruction_retrieval_k(
-                        effective_accuracy_profile
-                    )
-                    dual, rag_debug = _run_dual_retrieval(
-                        effective_accuracy_profile,
-                        material_k_value=effective_material_k,
-                        instruction_k_value=effective_instruction_k,
-                    )
-                    profile_escalated = True
-                    profile_escalation_reasons = escalation_reasons
-            else:
-                dual = {"materials": [], "instructions": []}
-                rag_debug = {}
-
-            material_text, instruction_text = _format_dual_context(dual)
+            material_text = ctx["materials"]
+            instruction_text = ctx["instructions"]
+            notes_context_text = ctx["notes"]
 
             # Graceful mode when no materials
             if not material_text:
@@ -3568,21 +3522,6 @@ def send_turn(session_id: str):
                     "Mark such content as [From training knowledge — verify with your textbooks] "
                     "so the student knows to cross-reference."
                 )
-
-            notes_context_text = ""
-            try:
-                if _obsidian_on:
-                    note_hits = _tutor_rag.search_notes_prioritized(
-                        question,
-                        module_prefix=module_prefix or None,
-                        follow_up_targets=follow_up_targets,
-                        k_module=4,
-                        k_linked=3,
-                        k_global=2,
-                    )
-                    notes_context_text = _format_notes_context(note_hits, max_items=8)
-            except Exception:
-                notes_context_text = ""
 
             if notes_context_text:
                 material_text = (
