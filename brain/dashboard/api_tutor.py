@@ -3782,29 +3782,10 @@ def send_turn(session_id: str):
             parsed_concept_map = None
             parsed_teach_back = None
 
-            material_docs = dual.get("materials") or []
-            instruction_docs = dual.get("instructions") or []
-            final_signals = _extract_material_retrieval_signals(
-                material_docs=material_docs,
-                rag_debug=rag_debug,
-            )
-            retrieved_material_sources = _material_sources_from_docs(
-                material_docs,
-                max_items=20,
-            )
-            still_weak, weak_reasons = _should_escalate_to_coverage(
-                selected_material_count=selected_material_count,
-                material_k=effective_material_k,
-                signals=final_signals,
-            )
-
-            force_insufficient_evidence = (
-                selected_material_count > 0
-                and effective_accuracy_profile == "coverage"
-                and still_weak
-                and not _is_material_count_question(question)
-                and not _is_selected_scope_listing_question(question)
-            )
+            # Stub: escalation removed (Task 5 deletes helpers fully)
+            retrieved_material_sources: list[str] = []
+            force_insufficient_evidence = False
+            weak_reasons: list[str] = []
 
             def _attach_profile_debug(payload: dict[str, Any]) -> dict[str, Any]:
                 payload["requested_accuracy_profile"] = requested_accuracy_profile
