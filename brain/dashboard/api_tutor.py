@@ -1899,27 +1899,6 @@ def _active_control_stage_for_session(
     return str(blocks[idx].get("control_stage") or "").upper()
 
 
-def _format_dual_context(dual: dict) -> tuple[str, str]:
-    """
-    Format dual context dicts into (material_context_text, instruction_context_text).
-    """
-    material_parts = []
-    for d in dual.get("materials") or []:
-        source = (d.metadata or {}).get("source", "Unknown")
-        material_parts.append(f"[Source: {source}]\n{d.page_content}")
-    material_text = "\n\n---\n\n".join(material_parts) if material_parts else ""
-
-    instruction_parts = []
-    for d in dual.get("instructions") or []:
-        source = (d.metadata or {}).get("source", "Unknown")
-        instruction_parts.append(f"[SOP: {source}]\n{d.page_content}")
-    instruction_text = (
-        "\n\n---\n\n".join(instruction_parts) if instruction_parts else ""
-    )
-
-    return material_text, instruction_text
-
-
 def _resolve_material_retrieval_k(
     material_ids: Optional[list[int]],
     accuracy_profile: str = DEFAULT_ACCURACY_PROFILE,
@@ -2263,71 +2242,6 @@ def _accuracy_profile_prompt_guidance(accuracy_profile: str) -> str:
         "- Active profile: BALANCED.\n"
         "- Optimize for clear, accurate teaching with concise evidence references."
     )
-
-
-def _extract_material_retrieval_signals(
-    *,
-    material_docs: list[Any],
-    rag_debug: dict[str, Any],
-) -> dict[str, Any]:
-    rag_material = rag_debug.get("materials") if isinstance(rag_debug, dict) else {}
-    if not isinstance(rag_material, dict):
-        rag_material = {}
-
-    top_source, top_share = _source_concentration_stats(material_docs)
-    return {
-        "retrieved_chunks": len(material_docs),
-        "retrieved_unique_sources": len(_material_sources_from_docs(material_docs)),
-        "top_source": top_source,
-        "top_source_share": float(
-            rag_material.get("final_top_doc_share")
-            if rag_material.get("final_top_doc_share") is not None
-            else top_share
-        ),
-        "merged_candidates": int(rag_material.get("candidate_pool_merged") or 0),
-        "dropped_by_cap": int(rag_material.get("candidate_pool_dropped_by_cap") or 0),
-    }
-
-
-def _should_escalate_to_coverage(
-    *,
-    selected_material_count: int,
-    material_k: int,
-    signals: dict[str, Any],
-) -> tuple[bool, list[str]]:
-    """
-    Decide whether to retry retrieval with the coverage profile.
-
-    Trigger logic:
-    - dominant source concentration in selected scope (>=4 files), or
-    - weak breadth in large selected scope, or
-    - low preflight confidence in large selected scope.
-    """
-    reasons: list[str] = []
-    unique_sources = int(signals.get("retrieved_unique_sources") or 0)
-    top_source_share = float(signals.get("top_source_share") or 0.0)
-    dropped_by_cap = int(signals.get("dropped_by_cap") or 0)
-    merged_candidates = int(signals.get("merged_candidates") or 0)
-    large_scope = selected_material_count >= 8
-
-    preflight_confidence = _compute_retrieval_confidence(
-        selected_material_count=selected_material_count,
-        material_k=material_k,
-        retrieved_unique_sources=unique_sources,
-        citations_unique_sources=max(1, unique_sources),
-        top_source_share=top_source_share,
-        dropped_by_cap=dropped_by_cap,
-        merged_candidates=merged_candidates,
-    )
-
-    if selected_material_count >= 4 and top_source_share > 0.45:
-        reasons.append("dominant_source")
-    if large_scope and unique_sources < 4:
-        reasons.append("low_source_breadth")
-    if large_scope and preflight_confidence < 0.50:
-        reasons.append("low_preflight_confidence")
-
-    return bool(reasons), reasons
 
 
 def _build_insufficient_evidence_response(

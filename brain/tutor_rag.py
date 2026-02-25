@@ -395,7 +395,7 @@ def _merge_candidate_pools(*pools: list, max_total: int) -> list:
 
 
 def _cap_candidates_per_doc(docs: list, *, max_per_doc: int, max_total: int) -> list:
-    """Limit candidates per document before reranking to avoid source domination."""
+    """Limit candidates per document before final selection to avoid source domination."""
     if max_total <= 0 or max_per_doc <= 0 or not docs:
         return []
 
@@ -445,7 +445,7 @@ def _doc_distribution_stats(docs: list) -> dict[str, object]:
 
 def _resolve_candidate_pool_size(k: int, material_ids: Optional[list[int]]) -> int:
     """
-    Decide how many vector candidates to fetch before reranking.
+    Decide how many vector candidates to fetch before final selection.
 
     Material-scoped retrieval needs a wider candidate pool so the final top-k can
     include chunks from more than a handful of dominant files.
