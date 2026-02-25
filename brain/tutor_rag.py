@@ -457,126 +457,6 @@ def _resolve_candidate_pool_size(k: int, material_ids: Optional[list[int]]) -> i
     return min(candidate_k, SCOPED_CANDIDATE_MAX)
 
 
-_RERANKER: object | None = None
-
-
-def _get_reranker():
-    """Lazy-load a lightweight cross-encoder for reranking (~17 MB, cached after first call)."""
-    global _RERANKER
-    if _RERANKER is None:
-        from sentence_transformers import CrossEncoder
-        _RERANKER = CrossEncoder("cross-encoder/ms-marco-TinyBERT-L-2-v2")
-    return _RERANKER
-
-
-def preload_reranker() -> None:
-    """Pre-initialize the cross-encoder model to avoid 500ms cold start on first query.
-
-    Safe to call multiple times — only loads once.
-    Call this during app startup (e.g., in Flask app factory or gunicorn post_fork).
-    """
-    if _RERANKER is not None:
-        return
-    try:
-        _get_reranker()
-        logger.info("Cross-encoder reranker preloaded successfully.")
-    except Exception as e:
-        logger.warning("Failed to preload cross-encoder: %s", e)
-
-
-def _keyword_score(query: str, docs: list) -> list[tuple[float, int, object]]:
-    """Fallback keyword scoring when cross-encoder is unavailable."""
-    stop_words = {
-        "the", "a", "an", "is", "are", "was", "were", "in", "on", "at",
-        "to", "for", "of", "and", "or", "it", "this", "that", "with",
-    }
-    keywords = [
-        w.lower()
-        for w in query.split()
-        if w.lower() not in stop_words and len(w) > 2
-    ]
-    scored: list[tuple[float, int, object]] = []
-    for idx, doc in enumerate(docs):
-        if keywords:
-            text_lower = str(getattr(doc, "page_content", "")).lower()
-            score = float(sum(1 for kw in keywords if kw in text_lower))
-        else:
-            score = 0.0
-        scored.append((score, idx, doc))
-    return scored
-
-
-def rerank_results(
-    query: str,
-    docs: list,
-    k_final: int,
-    *,
-    max_chunks_per_doc: int = DEFAULT_MAX_CHUNKS_PER_DOC,
-) -> list:
-    """Re-rank results with cross-encoder scoring plus per-file diversity caps.
-
-    Falls back to keyword scoring if the cross-encoder model fails to load.
-    """
-    if not docs or k_final <= 0:
-        return []
-    if len(docs) <= k_final and max_chunks_per_doc <= 0:
-        return docs
-
-    # Score with cross-encoder (preferred) or keyword counting (fallback)
-    try:
-        reranker = _get_reranker()
-        pairs = [(query, str(getattr(d, "page_content", ""))) for d in docs]
-        scores = reranker.predict(pairs)
-        scored: list[tuple[float, int, object]] = [
-            (float(scores[i]), i, docs[i]) for i in range(len(docs))
-        ]
-    except Exception:
-        scored = _keyword_score(query, docs)
-
-    # Higher score first; preserve original similarity order on ties.
-    scored.sort(key=lambda item: (-item[0], item[1]))
-
-    selected: list[object] = []
-    selected_indexes: set[int] = set()
-    per_doc_counts: dict[str, int] = {}
-
-    # Pass 1: guarantee breadth (at most one chunk per source file).
-    for score, idx, doc in scored:
-        identity = _doc_identity(doc, idx)
-        if per_doc_counts.get(identity, 0) > 0:
-            continue
-        selected.append(doc)
-        selected_indexes.add(idx)
-        per_doc_counts[identity] = 1
-        if len(selected) >= k_final:
-            return selected[:k_final]
-
-    # Pass 2: fill while respecting max chunks per file.
-    cap = max_chunks_per_doc if max_chunks_per_doc > 0 else k_final
-    for score, idx, doc in scored:
-        if idx in selected_indexes:
-            continue
-        identity = _doc_identity(doc, idx)
-        if per_doc_counts.get(identity, 0) >= cap:
-            continue
-        selected.append(doc)
-        selected_indexes.add(idx)
-        per_doc_counts[identity] = per_doc_counts.get(identity, 0) + 1
-        if len(selected) >= k_final:
-            return selected[:k_final]
-
-    # Pass 3: if still short, fill from remaining regardless of cap.
-    for score, idx, doc in scored:
-        if idx in selected_indexes:
-            continue
-        selected.append(doc)
-        selected_indexes.add(idx)
-        if len(selected) >= k_final:
-            return selected[:k_final]
-
-    return selected[:k_final]
-
-
 def search_with_embeddings(
     query: str,
     course_id: Optional[int] = None,
@@ -587,7 +467,7 @@ def search_with_embeddings(
     debug: Optional[dict[str, Any]] = None,
 ):
     """
-    Vector search via ChromaDB with keyword/diversity re-ranking.
+    Vector search via ChromaDB with candidate merging and diversity capping.
     Fetches a widened candidate pool, then returns top k chunks.
     Falls back to keyword search if vectorstore is empty.
     """
@@ -725,7 +605,7 @@ def search_with_embeddings(
             debug["candidate_pool_after_cap"] = len(merged_candidates)
 
         if merged_candidates:
-            final_docs = rerank_results(query, merged_candidates, k)
+            final_docs = merged_candidates[:k]
             if is_video_query(query):
                 final_docs = boost_video_chunks(final_docs, query)
             if debug is not None:
