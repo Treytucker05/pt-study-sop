@@ -1155,6 +1155,8 @@ def test_sync_graph_uses_session_artifact_paths(client, monkeypatch):
 
 
 def test_session_start_tolerates_obsidian_connectivity_errors(client, monkeypatch):
+    monkeypatch.setattr(_api_tutor_mod, "_north_star_io_disabled", lambda: False)
+
     connection_error = (
         "HTTPSConnectionPool(host='host.docker.internal', port=27124): "
         "Max retries exceeded with url: /vault/test.md "
@@ -1183,6 +1185,8 @@ def test_session_start_tolerates_obsidian_connectivity_errors(client, monkeypatc
 
 
 def test_session_start_keeps_hard_failure_for_non_connectivity_errors(client, monkeypatch):
+    monkeypatch.setattr(_api_tutor_mod, "_north_star_io_disabled", lambda: False)
+
     monkeypatch.setattr(
         _api_adapter_mod,
         "obsidian_get_file",
