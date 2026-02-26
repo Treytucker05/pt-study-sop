@@ -1254,3 +1254,15 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 - Added Methods UI knob editing with JSON validation + reset in dashboard_rebuild/client/src/pages/methods.tsx.
 - Removed PRIME guardrail test skip dependency by creating explicit PRIME-first chain in test setup (rain/tests/test_tutor_session_linking.py).
 - Added method API tests for knob contract and knob update round-trip (rain/tests/test_methods_api.py).
+
+## 2026-02-26 - Tutor session startup: North Star Obsidian connectivity fallback hardening
+- Fixed Tutor startup failure path in `brain/dashboard/api_tutor.py` when North Star read/write hits transient Obsidian transport issues (e.g., `host.docker.internal` name resolution).
+- Added `_is_obsidian_connectivity_error(...)` and fallback behavior to continue session creation with `north_star.status = io_unavailable_no_write` instead of returning API 500 for connectivity-only failures.
+- Hardened reconcile-on-load (`_reconcile_obsidian_state`) so connectivity errors no longer mark notes as missing or trigger learning-objective deletion; true-missing files still map to `needs_path`.
+- Updated end-session North Star refresh metadata to be status-aware (`updated` only for built/updated/refreshed) and added `degraded` flag for no-write fallback states.
+- Added regression tests in `brain/tests/test_tutor_session_linking.py`:
+  - `test_session_start_tolerates_obsidian_connectivity_errors`
+  - `test_session_start_keeps_hard_failure_for_non_connectivity_errors`
+- Validation:
+  - `python -m py_compile brain/dashboard/api_tutor.py brain/tests/test_tutor_session_linking.py` -> PASS
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> blocked locally (`ModuleNotFoundError: No module named 'flask'`)

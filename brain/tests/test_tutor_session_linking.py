@@ -1154,6 +1154,55 @@ def test_sync_graph_uses_session_artifact_paths(client, monkeypatch):
     assert sync_data["graph_sync"]["notes_synced"] >= 2
 
 
+def test_session_start_tolerates_obsidian_connectivity_errors(client, monkeypatch):
+    connection_error = (
+        "HTTPSConnectionPool(host='host.docker.internal', port=27124): "
+        "Max retries exceeded with url: /vault/test.md "
+        "(Caused by NameResolutionError(\"... getaddrinfo failed\"))"
+    )
+
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_get_file",
+        lambda _path: {"success": False, "error": connection_error},
+    )
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_save_file",
+        lambda _path, _content: {"success": False, "error": connection_error},
+    )
+
+    resp = client.post(
+        "/api/tutor/session",
+        json={"mode": "Core", "topic": "Connectivity fallback test"},
+    )
+    assert resp.status_code == 201
+    data = resp.get_json()
+    assert data["session_id"]
+    assert data["north_star"]["status"] == "io_unavailable_no_write"
+
+
+def test_session_start_keeps_hard_failure_for_non_connectivity_errors(client, monkeypatch):
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_get_file",
+        lambda _path: {"success": False, "error": "Status 403"},
+    )
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_save_file",
+        lambda _path, _content: {"success": False, "error": "Status 403: forbidden"},
+    )
+
+    resp = client.post(
+        "/api/tutor/session",
+        json={"mode": "Core", "topic": "Non-connectivity error test"},
+    )
+    assert resp.status_code == 500
+    data = resp.get_json()
+    assert "North Star build failed" in str(data.get("error", ""))
+
+
 def test_testing_mode_blocks_north_star_writes(app):
     writes = app.config.get("TEST_NORTH_STAR_WRITES") or []
     normalized = [str(w).replace("\\", "/") for w in writes]

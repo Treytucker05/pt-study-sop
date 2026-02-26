@@ -824,6 +824,27 @@ def _north_star_io_disabled() -> bool:
     return False
 
 
+def _is_obsidian_connectivity_error(error: Any) -> bool:
+    """Best-effort classifier for transient/unavailable Obsidian transport failures."""
+    message = str(error or "").strip().lower()
+    if not message:
+        return False
+    tokens = (
+        "max retries exceeded",
+        "failed to establish a new connection",
+        "connectionerror",
+        "newconnectionerror",
+        "name resolution",
+        "getaddrinfo failed",
+        "connection refused",
+        "read timed out",
+        "connect timeout",
+        "no response from obsidian",
+        "obsidian not running",
+    )
+    return any(token in message for token in tokens)
+
+
 def _ensure_north_star_context(
     *,
     course_id: Optional[int],
@@ -920,19 +941,27 @@ def _ensure_north_star_context(
                 )
                 save_res = obsidian_save_file(north_star_path, new_content)
                 if not save_res.get("success"):
-                    return None, f"North Star update failed: {save_res.get('error', 'unknown error')}"
-                current_content = new_content
-                status = "refreshed" if force_refresh else "updated"
+                    save_error = save_res.get("error", "unknown error")
+                    if _is_obsidian_connectivity_error(save_error):
+                        current_content = new_content
+                        status = "io_unavailable_no_write"
+                    else:
+                        return None, f"North Star update failed: {save_error}"
+                else:
+                    current_content = new_content
+                    status = "refreshed" if force_refresh else "updated"
             else:
                 status = "reviewed"
         else:
+            existing_error = existing.get("error", "unknown error")
+            obsidian_unavailable = _is_obsidian_connectivity_error(existing_error)
             # File missing. If real objectives exist but no path_override was
             # given, the user may have deleted the file intentionally (e.g. to
             # relocate it).  Signal "needs_path" so the turn handler re-asks.
             has_real = any(
                 o["objective_id"] != "OBJ-UNMAPPED" for o in objectives
             )
-            if has_real and not path_override:
+            if has_real and not path_override and not obsidian_unavailable:
                 current_content = _build_north_star_markdown(
                     module_name=derived_module_name,
                     course_name=derived_course,
@@ -949,11 +978,21 @@ def _ensure_north_star_context(
                     objectives=objectives,
                     source_ids=source_ids,
                 )
-                save_res = obsidian_save_file(north_star_path, new_content)
-                if not save_res.get("success"):
-                    return None, f"North Star build failed: {save_res.get('error', 'unknown error')}"
-                current_content = new_content
-                status = "built"
+                if obsidian_unavailable:
+                    current_content = new_content
+                    status = "io_unavailable_no_write"
+                else:
+                    save_res = obsidian_save_file(north_star_path, new_content)
+                    if not save_res.get("success"):
+                        save_error = save_res.get("error", "unknown error")
+                        if _is_obsidian_connectivity_error(save_error):
+                            current_content = new_content
+                            status = "io_unavailable_no_write"
+                        else:
+                            return None, f"North Star build failed: {save_error}"
+                    else:
+                        current_content = new_content
+                        status = "built"
 
     objective_links = [_wikilink(o["objective_id"]) for o in objectives]
     title_links = [_wikilink(o["title"]) for o in objectives if o.get("title")]
@@ -1498,16 +1537,23 @@ def _reconcile_obsidian_state(session: dict) -> None:
             content_filter = None
 
     ns_changed = False
+    north_star_missing = False
     if content_filter and isinstance(content_filter.get("north_star"), dict):
         ns = content_filter["north_star"]
         ns_path = ns.get("path")
         ns_status = ns.get("status")
-        # Only check if there's a path and the status isn't already needs_path
+        # Only check if there's a path and the status isn't already terminal.
         if ns_path and ns_status not in ("needs_path", "test_mode_no_write"):
             result = obsidian_get_file(ns_path)
             if not result.get("success"):
-                ns["status"] = "needs_path"
-                ns_changed = True
+                if _is_obsidian_connectivity_error(result.get("error")):
+                    if ns_status != "io_unavailable_no_write":
+                        ns["status"] = "io_unavailable_no_write"
+                        ns_changed = True
+                else:
+                    ns["status"] = "needs_path"
+                    ns_changed = True
+                    north_star_missing = True
 
     # --- Artifact reconciliation ---
     art_raw = session.get("artifacts_json")
@@ -1529,12 +1575,16 @@ def _reconcile_obsidian_state(session: dict) -> None:
         sp = art.get("session_path")
         if sp:
             res = obsidian_get_file(sp)
-            if not res.get("success"):
+            if not res.get("success") and not _is_obsidian_connectivity_error(
+                res.get("error")
+            ):
                 missing_paths.append(sp)
 
         for cp in art.get("concept_paths") or []:
             res = obsidian_get_file(cp)
-            if not res.get("success"):
+            if not res.get("success") and not _is_obsidian_connectivity_error(
+                res.get("error")
+            ):
                 missing_paths.append(cp)
 
         if missing_paths:
@@ -1550,7 +1600,7 @@ def _reconcile_obsidian_state(session: dict) -> None:
     # If the user deleted the North Star from Obsidian, the objectives that
     # lived inside it should also be removed from the dashboard (SQLite).
     lo_deleted = 0
-    if ns_changed and content_filter is not None:
+    if north_star_missing and content_filter is not None:
         ns = content_filter.get("north_star") or {}
         obj_ids: list[str] = ns.get("objective_ids") or []
         course_id = session.get("course_id")
@@ -4581,7 +4631,13 @@ def end_session(session_id: str):
                 path_override=vault_folder,
             )
             if ns_result:
-                north_star_refresh = {"path": ns_result.get("path"), "updated": True}
+                ns_status = str(ns_result.get("status") or "")
+                north_star_refresh = {
+                    "path": ns_result.get("path"),
+                    "status": ns_status,
+                    "updated": ns_status in {"built", "updated", "refreshed"},
+                    "degraded": ns_status == "io_unavailable_no_write",
+                }
             elif ns_err:
                 _LOG.warning("end_session North Star refresh error: %s", ns_err)
         except Exception as exc:
