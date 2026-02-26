@@ -210,6 +210,10 @@ session_fields:
     type: string
     required: false
 
+  - name: confusion_points
+    type: integer
+    required: false
+
   - name: connection_count
     type: integer
     required: false
@@ -603,6 +607,10 @@ session_fields:
     required: false
 
   - name: verification_status
+    type: string
+    required: false
+
+  - name: verbalization_mode_used
     type: string
     required: false
 

@@ -324,6 +324,14 @@ knobs:
     min: 3
     max: 10
 
+  verbalization_mode:
+    description: Verbalization channel for self-explanation or think-aloud protocols.
+    type: enum
+    allowed_values:
+      - silent
+      - spoken
+      - written
+
   weighting_profile:
     description: Weighting profile for priority scoring.
     type: enum
