@@ -11,7 +11,7 @@ from typing import Any, Literal, Optional
 logger = logging.getLogger(__name__)
 
 _COURSE_MAP_PATH = Path(__file__).parent / "data" / "vault_courses.yaml"
-_course_map_cache: str = ""
+_course_map_cache: Optional[str] = None
 
 ContextDepth = Literal["auto", "none", "notes", "materials"]
 
@@ -19,7 +19,7 @@ ContextDepth = Literal["auto", "none", "notes", "materials"]
 def _load_course_map() -> str:
     """Load vault_courses.yaml once, cache in module."""
     global _course_map_cache
-    if _course_map_cache:
+    if _course_map_cache is not None:
         return _course_map_cache
     try:
         with open(_COURSE_MAP_PATH, "r", encoding="utf-8") as f:

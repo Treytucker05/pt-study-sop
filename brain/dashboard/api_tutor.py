@@ -1000,19 +1000,6 @@ def _question_within_reference_targets(question: str, reference_targets: list[st
     return False
 
 
-def _format_notes_context(note_hits: list[dict[str, Any]], *, max_items: int = 8) -> str:
-    if not note_hits:
-        return ""
-    parts: list[str] = []
-    for idx, hit in enumerate(note_hits[:max_items], start=1):
-        metadata = hit.get("metadata") or {}
-        source = metadata.get("source_path") or metadata.get("source") or "vault-note"
-        content = str(hit.get("content") or "").strip()
-        if len(content) > 600:
-            content = content[:600] + "..."
-        parts.append(f"[{idx}] {source}\n{content}")
-    return "\n\n---\n\n".join(parts)
-
 
 def _sanitize_note_fragment(raw: Any, *, fallback: str) -> str:
     value = str(raw or "").strip()
@@ -3700,6 +3687,10 @@ def send_turn(session_id: str):
             retrieved_material_sources: list[str] = []
             force_insufficient_evidence = False
             weak_reasons: list[str] = []
+
+            # Stubs for telemetry — build_context() no longer returns raw Document lists
+            material_docs: list[Any] = []
+            instruction_docs: list[Any] = []
 
             def _attach_profile_debug(payload: dict[str, Any]) -> dict[str, Any]:
                 payload["requested_accuracy_profile"] = requested_accuracy_profile
