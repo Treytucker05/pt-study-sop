@@ -1266,3 +1266,13 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 - Validation:
   - `python -m py_compile brain/dashboard/api_tutor.py brain/tests/test_tutor_session_linking.py` -> PASS
   - `pytest brain/tests/test_tutor_session_linking.py -q` -> blocked locally (`ModuleNotFoundError: No module named 'flask'`)
+
+## 2026-02-26 - Obsidian notes retrieval fix for Tutor (Local REST API v3.4+)
+- Root cause: `ObsidianClient.search()` posted raw body to `/search/simple/`, but current Local REST API expects `?query=` URL parameter and returned 400, causing Tutor to miss notes even with Obsidian mode enabled.
+- Updated `brain/obsidian_client.py` search flow:
+  - primary call: `POST /search/simple/?query=<encoded>`
+  - compatibility fallback: legacy body POST `/search/simple/`.
+- Added regression test `test_obsidian_client_search_uses_query_parameter` in `brain/tests/test_obsidian_client.py`.
+- Local runtime verification (same path Tutor uses): `ObsidianClient.search('hip')` now returns note hits from vault.
+- Validation:
+  - `py -3 -m pytest brain/tests/test_obsidian_client.py -q` -> 10 passed.

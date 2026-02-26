@@ -114,3 +114,21 @@ def test_obsidian_client_request_builds_correct_url():
     req_obj = call_args[0][0]
     assert req_obj.full_url == "https://127.0.0.1:27124/vault/test.md"
     assert req_obj.get_header("Authorization") == "Bearer test-key"
+
+
+def test_obsidian_client_search_uses_query_parameter():
+    from obsidian_client import ObsidianClient
+
+    client = ObsidianClient(api_key="test-key", base_url="https://127.0.0.1:27124")
+    seen: list[tuple[str, str]] = []
+
+    def _fake_request(method, path, **kwargs):
+        seen.append((method, path))
+        return []
+
+    with patch.object(client, "_request", side_effect=_fake_request):
+        client.search("hip module", max_results=5)
+
+    assert seen
+    assert seen[0][0] == "POST"
+    assert seen[0][1] == "/search/simple/?query=hip%20module"

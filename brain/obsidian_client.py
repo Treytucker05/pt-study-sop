@@ -10,6 +10,7 @@ import logging
 import os
 import ssl
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any, Optional
 
@@ -115,9 +116,19 @@ class ObsidianClient:
         On any error, returns an empty list (never raises).
         """
         try:
-            raw = self._request(
-                "POST", "/search/simple/", data=query, accept="application/json"
-            )
+            # Local REST API v3.4+ expects ?query=... in URL, not request body.
+            # Keep a legacy body fallback for older plugin behavior.
+            encoded_query = urllib.parse.quote(query or "", safe="")
+            try:
+                raw = self._request(
+                    "POST",
+                    f"/search/simple/?query={encoded_query}",
+                    accept="application/json",
+                )
+            except Exception:
+                raw = self._request(
+                    "POST", "/search/simple/", data=query, accept="application/json"
+                )
             if not isinstance(raw, list):
                 return []
             results: list[dict] = []
