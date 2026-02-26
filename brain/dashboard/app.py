@@ -38,22 +38,6 @@ def create_app():
     app.register_blueprint(janitor_bp)  # /api/janitor/*
     app.register_blueprint(dashboard_bp)
 
-    # Preload ML models in background thread to avoid cold-start latency
-    import threading
-
-    def _preload_models():
-        try:
-            import sys as _sys
-            brain_dir = os.path.dirname(base_dir)
-            if brain_dir not in _sys.path:
-                _sys.path.append(brain_dir)
-            from brain.tutor_rag import preload_reranker
-            preload_reranker()
-        except Exception:
-            pass  # Non-fatal: model loads lazily on first use as fallback
-
-    threading.Thread(target=_preload_models, daemon=True, name="model-preload").start()
-
     # DEBUG: Print all registered routes
     print("\n=== REGISTERED ROUTES ===")
     for rule in app.url_map.iter_rules():

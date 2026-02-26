@@ -70,7 +70,6 @@ from tutor_accuracy_profiles import (
     resolve_instruction_retrieval_k as _resolve_instruction_k_for_profile,
     resolve_material_retrieval_k as _resolve_material_k_for_profile,
 )
-import tutor_rag as _tutor_rag
 import llm_provider as _llm_provider
 
 tutor_bp = Blueprint("tutor", __name__, url_prefix="/api/tutor")
@@ -1001,19 +1000,6 @@ def _question_within_reference_targets(question: str, reference_targets: list[st
     return False
 
 
-def _format_notes_context(note_hits: list[dict[str, Any]], *, max_items: int = 8) -> str:
-    if not note_hits:
-        return ""
-    parts: list[str] = []
-    for idx, hit in enumerate(note_hits[:max_items], start=1):
-        metadata = hit.get("metadata") or {}
-        source = metadata.get("source_path") or metadata.get("source") or "vault-note"
-        content = str(hit.get("content") or "").strip()
-        if len(content) > 600:
-            content = content[:600] + "..."
-        parts.append(f"[{idx}] {source}\n{content}")
-    return "\n\n---\n\n".join(parts)
-
 
 def _sanitize_note_fragment(raw: Any, *, fallback: str) -> str:
     value = str(raw or "").strip()
@@ -1899,27 +1885,6 @@ def _active_control_stage_for_session(
     return str(blocks[idx].get("control_stage") or "").upper()
 
 
-def _format_dual_context(dual: dict) -> tuple[str, str]:
-    """
-    Format dual context dicts into (material_context_text, instruction_context_text).
-    """
-    material_parts = []
-    for d in dual.get("materials") or []:
-        source = (d.metadata or {}).get("source", "Unknown")
-        material_parts.append(f"[Source: {source}]\n{d.page_content}")
-    material_text = "\n\n---\n\n".join(material_parts) if material_parts else ""
-
-    instruction_parts = []
-    for d in dual.get("instructions") or []:
-        source = (d.metadata or {}).get("source", "Unknown")
-        instruction_parts.append(f"[SOP: {source}]\n{d.page_content}")
-    instruction_text = (
-        "\n\n---\n\n".join(instruction_parts) if instruction_parts else ""
-    )
-
-    return material_text, instruction_text
-
-
 def _resolve_material_retrieval_k(
     material_ids: Optional[list[int]],
     accuracy_profile: str = DEFAULT_ACCURACY_PROFILE,
@@ -2263,71 +2228,6 @@ def _accuracy_profile_prompt_guidance(accuracy_profile: str) -> str:
         "- Active profile: BALANCED.\n"
         "- Optimize for clear, accurate teaching with concise evidence references."
     )
-
-
-def _extract_material_retrieval_signals(
-    *,
-    material_docs: list[Any],
-    rag_debug: dict[str, Any],
-) -> dict[str, Any]:
-    rag_material = rag_debug.get("materials") if isinstance(rag_debug, dict) else {}
-    if not isinstance(rag_material, dict):
-        rag_material = {}
-
-    top_source, top_share = _source_concentration_stats(material_docs)
-    return {
-        "retrieved_chunks": len(material_docs),
-        "retrieved_unique_sources": len(_material_sources_from_docs(material_docs)),
-        "top_source": top_source,
-        "top_source_share": float(
-            rag_material.get("final_top_doc_share")
-            if rag_material.get("final_top_doc_share") is not None
-            else top_share
-        ),
-        "merged_candidates": int(rag_material.get("candidate_pool_merged") or 0),
-        "dropped_by_cap": int(rag_material.get("candidate_pool_dropped_by_cap") or 0),
-    }
-
-
-def _should_escalate_to_coverage(
-    *,
-    selected_material_count: int,
-    material_k: int,
-    signals: dict[str, Any],
-) -> tuple[bool, list[str]]:
-    """
-    Decide whether to retry retrieval with the coverage profile.
-
-    Trigger logic:
-    - dominant source concentration in selected scope (>=4 files), or
-    - weak breadth in large selected scope, or
-    - low preflight confidence in large selected scope.
-    """
-    reasons: list[str] = []
-    unique_sources = int(signals.get("retrieved_unique_sources") or 0)
-    top_source_share = float(signals.get("top_source_share") or 0.0)
-    dropped_by_cap = int(signals.get("dropped_by_cap") or 0)
-    merged_candidates = int(signals.get("merged_candidates") or 0)
-    large_scope = selected_material_count >= 8
-
-    preflight_confidence = _compute_retrieval_confidence(
-        selected_material_count=selected_material_count,
-        material_k=material_k,
-        retrieved_unique_sources=unique_sources,
-        citations_unique_sources=max(1, unique_sources),
-        top_source_share=top_source_share,
-        dropped_by_cap=dropped_by_cap,
-        merged_candidates=merged_candidates,
-    )
-
-    if selected_material_count >= 4 and top_source_share > 0.45:
-        reasons.append("dominant_source")
-    if large_scope and unique_sources < 4:
-        reasons.append("low_source_breadth")
-    if large_scope and preflight_confidence < 0.50:
-        reasons.append("low_preflight_confidence")
-
-    return bool(reasons), reasons
 
 
 def _build_insufficient_evidence_response(
@@ -3489,76 +3389,30 @@ def send_turn(session_id: str):
             profile_escalated = False
             profile_escalation_reasons: list[str] = []
 
-            def _run_dual_retrieval(
-                profile_name: str,
-                *,
-                material_k_value: int,
-                instruction_k_value: int,
-            ) -> tuple[dict, dict[str, Any]]:
-                retrieval_debug: dict[str, Any] = {}
-                try:
-                    result = _tutor_rag.get_dual_context(
-                        question,
-                        course_id=retrieval_course_id,
-                        material_ids=material_ids,
-                        k_materials=material_k_value,
-                        k_instructions=instruction_k_value,
-                        debug=retrieval_debug,
-                    )
-                except Exception:
-                    result = _tutor_rag.keyword_search_dual(
-                        question,
-                        course_id=retrieval_course_id,
-                        material_ids=material_ids,
-                        k_materials=material_k_value,
-                        k_instructions=instruction_k_value,
-                        debug=retrieval_debug,
-                    )
-                return result, retrieval_debug
+            # --- Unified context retrieval ---
+            from tutor_context import build_context
 
-            if _materials_on:
-                dual, rag_debug = _run_dual_retrieval(
-                    effective_accuracy_profile,
-                    material_k_value=effective_material_k,
-                    instruction_k_value=effective_instruction_k,
-                )
+            _depth = "none"
+            if _materials_on and _obsidian_on:
+                _depth = "auto"
+            elif _materials_on:
+                _depth = "materials"
+            elif _obsidian_on:
+                _depth = "notes"
 
-                material_docs_initial = dual.get("materials") or []
-                initial_signals = _extract_material_retrieval_signals(
-                    material_docs=material_docs_initial,
-                    rag_debug=rag_debug,
-                )
+            ctx = build_context(
+                question,
+                depth=_depth,
+                course_id=retrieval_course_id,
+                material_ids=material_ids,
+                module_prefix=module_prefix or None,
+                k_materials=effective_material_k,
+            )
+            rag_debug = ctx["debug"]
 
-                should_escalate, escalation_reasons = _should_escalate_to_coverage(
-                    selected_material_count=selected_material_count,
-                    material_k=effective_material_k,
-                    signals=initial_signals,
-                )
-
-                if (
-                    selected_material_count > 0
-                    and effective_accuracy_profile != "coverage"
-                    and should_escalate
-                ):
-                    effective_accuracy_profile = "coverage"
-                    effective_material_k = _resolve_material_retrieval_k(
-                        material_ids, effective_accuracy_profile
-                    )
-                    effective_instruction_k = _resolve_instruction_retrieval_k(
-                        effective_accuracy_profile
-                    )
-                    dual, rag_debug = _run_dual_retrieval(
-                        effective_accuracy_profile,
-                        material_k_value=effective_material_k,
-                        instruction_k_value=effective_instruction_k,
-                    )
-                    profile_escalated = True
-                    profile_escalation_reasons = escalation_reasons
-            else:
-                dual = {"materials": [], "instructions": []}
-                rag_debug = {}
-
-            material_text, instruction_text = _format_dual_context(dual)
+            material_text = ctx["materials"]
+            instruction_text = ctx["instructions"]
+            notes_context_text = ctx["notes"]
 
             # Graceful mode when no materials
             if not material_text:
@@ -3568,21 +3422,6 @@ def send_turn(session_id: str):
                     "Mark such content as [From training knowledge — verify with your textbooks] "
                     "so the student knows to cross-reference."
                 )
-
-            notes_context_text = ""
-            try:
-                if _obsidian_on:
-                    note_hits = _tutor_rag.search_notes_prioritized(
-                        question,
-                        module_prefix=module_prefix or None,
-                        follow_up_targets=follow_up_targets,
-                        k_module=4,
-                        k_linked=3,
-                        k_global=2,
-                    )
-                    notes_context_text = _format_notes_context(note_hits, max_items=8)
-            except Exception:
-                notes_context_text = ""
 
             if notes_context_text:
                 material_text = (
@@ -3614,6 +3453,7 @@ def send_turn(session_id: str):
                 instruction_context=instruction_text,
                 material_context=material_text,
                 graph_context=graph_context_text,
+                course_map=ctx.get("course_map", ""),
             )
             system_prompt += (
                 "\n\n## Retrieval Tuning\n"
@@ -3843,29 +3683,14 @@ def send_turn(session_id: str):
             parsed_concept_map = None
             parsed_teach_back = None
 
-            material_docs = dual.get("materials") or []
-            instruction_docs = dual.get("instructions") or []
-            final_signals = _extract_material_retrieval_signals(
-                material_docs=material_docs,
-                rag_debug=rag_debug,
-            )
-            retrieved_material_sources = _material_sources_from_docs(
-                material_docs,
-                max_items=20,
-            )
-            still_weak, weak_reasons = _should_escalate_to_coverage(
-                selected_material_count=selected_material_count,
-                material_k=effective_material_k,
-                signals=final_signals,
-            )
+            # Stub: escalation removed (Task 5 deletes helpers fully)
+            retrieved_material_sources: list[str] = []
+            force_insufficient_evidence = False
+            weak_reasons: list[str] = []
 
-            force_insufficient_evidence = (
-                selected_material_count > 0
-                and effective_accuracy_profile == "coverage"
-                and still_weak
-                and not _is_material_count_question(question)
-                and not _is_selected_scope_listing_question(question)
-            )
+            # Stubs for telemetry — build_context() no longer returns raw Document lists
+            material_docs: list[Any] = []
+            instruction_docs: list[Any] = []
 
             def _attach_profile_debug(payload: dict[str, Any]) -> dict[str, Any]:
                 payload["requested_accuracy_profile"] = requested_accuracy_profile

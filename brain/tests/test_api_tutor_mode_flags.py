@@ -188,12 +188,10 @@ def test_web_search_flag_passes_through(mock_stream, client, seed_session):
 
 
 @patch("llm_provider.stream_chatgpt_responses")
-@patch("tutor_rag.search_notes_prioritized")
-@patch("tutor_rag.get_dual_context")
-def test_legacy_no_mode_uses_full_model_and_rag(mock_get_dual, mock_search_notes, mock_stream, client, seed_session):
+@patch("tutor_context.build_context")
+def test_legacy_no_mode_uses_full_model_and_rag(mock_build_ctx, mock_stream, client, seed_session):
     """When no mode key is sent, legacy callers get full model + RAG (backward compat)."""
-    mock_get_dual.return_value = {"materials": [], "instructions": []}
-    mock_search_notes.return_value = []
+    mock_build_ctx.return_value = {"materials": "", "instructions": "", "notes": "", "debug": {}}
     mock_stream.return_value = iter([{"type": "done", "usage": {}}])
 
     # No "mode" key — old-style request
@@ -211,4 +209,4 @@ def test_legacy_no_mode_uses_full_model_and_rag(mock_get_dual, mock_search_notes
     call_kwargs = mock_stream.call_args.kwargs
     assert call_kwargs["model"] == "gpt-5.3-codex"
     assert call_kwargs.get("reasoning_effort") == "high"
-    mock_get_dual.assert_called()
+    mock_build_ctx.assert_called()

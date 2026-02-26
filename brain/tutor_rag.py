@@ -1,10 +1,7 @@
 """
 Tutor RAG Pipeline — LangChain + ChromaDB vector search for Adaptive Tutor.
 
-Supports two named collections:
-  - "tutor_materials"    — user-uploaded study materials
-  - "tutor_instructions" — SOP library teaching rules/methods/frameworks
-
+Uses the "tutor_materials" collection for user-uploaded study materials.
 Falls back to keyword search when ChromaDB is empty.
 """
 
@@ -16,7 +13,6 @@ import logging
 import os
 import re
 import sqlite3
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Optional
 
@@ -30,8 +26,6 @@ _CHROMA_BASE = Path(__file__).parent / "data" / "chroma_tutor"
 _vectorstores: dict[str, object] = {}
 
 COLLECTION_MATERIALS = "tutor_materials"
-COLLECTION_INSTRUCTIONS = "tutor_instructions"
-COLLECTION_NOTES = "tutor_notes"
 
 DEFAULT_CHROMA_BATCH_SIZE = 1000
 DEFAULT_MAX_CHUNKS_PER_DOC = 4
@@ -303,7 +297,7 @@ def embed_rag_docs(
             continue
 
         doc_corpus = doc["corpus"] or "materials"
-        collection = COLLECTION_INSTRUCTIONS if doc_corpus == "instructions" else COLLECTION_MATERIALS
+        collection = COLLECTION_MATERIALS
 
         chunks = chunk_document(
             content,
@@ -395,7 +389,7 @@ def _merge_candidate_pools(*pools: list, max_total: int) -> list:
 
 
 def _cap_candidates_per_doc(docs: list, *, max_per_doc: int, max_total: int) -> list:
-    """Limit candidates per document before reranking to avoid source domination."""
+    """Limit candidates per document before final selection to avoid source domination."""
     if max_total <= 0 or max_per_doc <= 0 or not docs:
         return []
 
@@ -445,7 +439,7 @@ def _doc_distribution_stats(docs: list) -> dict[str, object]:
 
 def _resolve_candidate_pool_size(k: int, material_ids: Optional[list[int]]) -> int:
     """
-    Decide how many vector candidates to fetch before reranking.
+    Decide how many vector candidates to fetch before final selection.
 
     Material-scoped retrieval needs a wider candidate pool so the final top-k can
     include chunks from more than a handful of dominant files.
@@ -455,126 +449,6 @@ def _resolve_candidate_pool_size(k: int, material_ids: Optional[list[int]]) -> i
     scoped_k = max(int(k), 1)
     candidate_k = max(scoped_k * SCOPED_CANDIDATE_MULTIPLIER, SCOPED_CANDIDATE_MIN)
     return min(candidate_k, SCOPED_CANDIDATE_MAX)
-
-
-_RERANKER: object | None = None
-
-
-def _get_reranker():
-    """Lazy-load a lightweight cross-encoder for reranking (~17 MB, cached after first call)."""
-    global _RERANKER
-    if _RERANKER is None:
-        from sentence_transformers import CrossEncoder
-        _RERANKER = CrossEncoder("cross-encoder/ms-marco-TinyBERT-L-2-v2")
-    return _RERANKER
-
-
-def preload_reranker() -> None:
-    """Pre-initialize the cross-encoder model to avoid 500ms cold start on first query.
-
-    Safe to call multiple times — only loads once.
-    Call this during app startup (e.g., in Flask app factory or gunicorn post_fork).
-    """
-    if _RERANKER is not None:
-        return
-    try:
-        _get_reranker()
-        logger.info("Cross-encoder reranker preloaded successfully.")
-    except Exception as e:
-        logger.warning("Failed to preload cross-encoder: %s", e)
-
-
-def _keyword_score(query: str, docs: list) -> list[tuple[float, int, object]]:
-    """Fallback keyword scoring when cross-encoder is unavailable."""
-    stop_words = {
-        "the", "a", "an", "is", "are", "was", "were", "in", "on", "at",
-        "to", "for", "of", "and", "or", "it", "this", "that", "with",
-    }
-    keywords = [
-        w.lower()
-        for w in query.split()
-        if w.lower() not in stop_words and len(w) > 2
-    ]
-    scored: list[tuple[float, int, object]] = []
-    for idx, doc in enumerate(docs):
-        if keywords:
-            text_lower = str(getattr(doc, "page_content", "")).lower()
-            score = float(sum(1 for kw in keywords if kw in text_lower))
-        else:
-            score = 0.0
-        scored.append((score, idx, doc))
-    return scored
-
-
-def rerank_results(
-    query: str,
-    docs: list,
-    k_final: int,
-    *,
-    max_chunks_per_doc: int = DEFAULT_MAX_CHUNKS_PER_DOC,
-) -> list:
-    """Re-rank results with cross-encoder scoring plus per-file diversity caps.
-
-    Falls back to keyword scoring if the cross-encoder model fails to load.
-    """
-    if not docs or k_final <= 0:
-        return []
-    if len(docs) <= k_final and max_chunks_per_doc <= 0:
-        return docs
-
-    # Score with cross-encoder (preferred) or keyword counting (fallback)
-    try:
-        reranker = _get_reranker()
-        pairs = [(query, str(getattr(d, "page_content", ""))) for d in docs]
-        scores = reranker.predict(pairs)
-        scored: list[tuple[float, int, object]] = [
-            (float(scores[i]), i, docs[i]) for i in range(len(docs))
-        ]
-    except Exception:
-        scored = _keyword_score(query, docs)
-
-    # Higher score first; preserve original similarity order on ties.
-    scored.sort(key=lambda item: (-item[0], item[1]))
-
-    selected: list[object] = []
-    selected_indexes: set[int] = set()
-    per_doc_counts: dict[str, int] = {}
-
-    # Pass 1: guarantee breadth (at most one chunk per source file).
-    for score, idx, doc in scored:
-        identity = _doc_identity(doc, idx)
-        if per_doc_counts.get(identity, 0) > 0:
-            continue
-        selected.append(doc)
-        selected_indexes.add(idx)
-        per_doc_counts[identity] = 1
-        if len(selected) >= k_final:
-            return selected[:k_final]
-
-    # Pass 2: fill while respecting max chunks per file.
-    cap = max_chunks_per_doc if max_chunks_per_doc > 0 else k_final
-    for score, idx, doc in scored:
-        if idx in selected_indexes:
-            continue
-        identity = _doc_identity(doc, idx)
-        if per_doc_counts.get(identity, 0) >= cap:
-            continue
-        selected.append(doc)
-        selected_indexes.add(idx)
-        per_doc_counts[identity] = per_doc_counts.get(identity, 0) + 1
-        if len(selected) >= k_final:
-            return selected[:k_final]
-
-    # Pass 3: if still short, fill from remaining regardless of cap.
-    for score, idx, doc in scored:
-        if idx in selected_indexes:
-            continue
-        selected.append(doc)
-        selected_indexes.add(idx)
-        if len(selected) >= k_final:
-            return selected[:k_final]
-
-    return selected[:k_final]
 
 
 def search_with_embeddings(
@@ -587,7 +461,7 @@ def search_with_embeddings(
     debug: Optional[dict[str, Any]] = None,
 ):
     """
-    Vector search via ChromaDB with keyword/diversity re-ranking.
+    Vector search via ChromaDB with candidate merging and diversity capping.
     Fetches a widened candidate pool, then returns top k chunks.
     Falls back to keyword search if vectorstore is empty.
     """
@@ -612,7 +486,7 @@ def search_with_embeddings(
 
     vs = init_vectorstore(collection_name)
 
-    corpus_fallback = "instructions" if collection_name == COLLECTION_INSTRUCTIONS else None
+    corpus_fallback = None
 
     try:
         collection = vs._collection
@@ -725,7 +599,7 @@ def search_with_embeddings(
             debug["candidate_pool_after_cap"] = len(merged_candidates)
 
         if merged_candidates:
-            final_docs = rerank_results(query, merged_candidates, k)
+            final_docs = merged_candidates[:k]
             if is_video_query(query):
                 final_docs = boost_video_chunks(final_docs, query)
             if debug is not None:
@@ -914,45 +788,33 @@ def get_dual_context(
     debug: Optional[dict[str, Any]] = None,
 ) -> dict:
     """
-    Query both collections and return structured context.
+    Search materials collection and return structured context.
+
+    Note: instructions collection removed — instructions now come from YAML.
+    k_instructions parameter kept for backward compatibility but ignored.
 
     Returns: {
         materials: list[Document],
-        instructions: list[Document],
+        instructions: [],
     }
     """
     material_debug: dict[str, Any] = {}
-    instruction_debug: dict[str, Any] = {}
-
-    # Run both collection searches in parallel instead of sequentially.
-    with ThreadPoolExecutor(max_workers=2) as _pool:
-        _mat_fut = _pool.submit(
-            search_with_embeddings,
-            query,
-            course_id=course_id,
-            material_ids=material_ids,
-            collection_name=COLLECTION_MATERIALS,
-            k=k_materials,
-            debug=material_debug,
-        )
-        _ins_fut = _pool.submit(
-            search_with_embeddings,
-            query,
-            collection_name=COLLECTION_INSTRUCTIONS,
-            k=k_instructions,
-            debug=instruction_debug,
-        )
-    materials = _mat_fut.result()
-    instructions = _ins_fut.result()
+    materials = search_with_embeddings(
+        query,
+        course_id=course_id,
+        material_ids=material_ids,
+        collection_name=COLLECTION_MATERIALS,
+        k=k_materials,
+        debug=material_debug,
+    )
 
     if debug is not None:
         debug.clear()
         debug["materials"] = material_debug
-        debug["instructions"] = instruction_debug
 
     return {
         "materials": materials,
-        "instructions": instructions,
+        "instructions": [],
     }
 
 
@@ -984,29 +846,21 @@ def keyword_search_dual(
     """
     Keyword-only dual search (no embeddings). For Codex/ChatGPT provider.
 
-    Returns: { materials: list[Document], instructions: list[Document] }
+    Note: instructions collection removed — instructions now come from YAML.
     """
     material_debug: dict[str, Any] = {}
-    instruction_debug: dict[str, Any] = {}
-
     materials = _keyword_fallback(
         query, course_id, material_ids=material_ids, k=k_materials,
         debug=material_debug,
     )
 
-    instructions = _keyword_fallback(
-        query, k=k_instructions, corpus="instructions",
-        debug=instruction_debug,
-    )
-
     if debug is not None:
         debug.clear()
         debug["materials"] = material_debug
-        debug["instructions"] = instruction_debug
 
     return {
         "materials": materials,
-        "instructions": instructions,
+        "instructions": [],
     }
 
 
@@ -1058,166 +912,3 @@ def boost_video_chunks(docs: list, query: str) -> list:
         else:
             other.append(doc)
     return video + other
-
-
-# ---------------------------------------------------------------------------
-# Vault notes embedding (for GraphRAG-lite)
-# ---------------------------------------------------------------------------
-
-def embed_vault_notes(conn: sqlite3.Connection) -> dict[str, int]:
-    """Read vault_docs, chunk, and embed into the tutor_notes collection.
-
-    Returns summary with embedded/skipped counts.
-    """
-    cur = conn.execute("SELECT id, path, content FROM vault_docs WHERE content IS NOT NULL")
-    rows = cur.fetchall()
-
-    if not rows:
-        return {"embedded": 0, "skipped": 0}
-
-    vs = init_vectorstore(COLLECTION_NOTES)
-    existing_ids = set(vs._collection.get()["ids"]) if vs._collection.count() > 0 else set()
-
-    from langchain_core.documents import Document
-
-    documents: list = []
-    ids: list[str] = []
-    skipped = 0
-
-    for row in rows:
-        doc_id = row[0]
-        path = row[1]
-        content = row[2]
-        if not content or not content.strip():
-            skipped += 1
-            continue
-
-        chunks = chunk_document(content, path)
-        for i, chunk in enumerate(chunks):
-            chroma_id = f"vault-{doc_id}-{i}"
-            if chroma_id in existing_ids:
-                skipped += 1
-                continue
-            chunk_metadata = {
-                "source_path": path,
-                "doc_id": doc_id,
-                "chunk_index": i,
-                "source": path,
-                "rag_doc_id": doc_id,
-                "chunk_source": "vault",
-            }
-            chunk_metadata.update(getattr(chunk, "metadata", {}))
-            documents.append(
-                Document(
-                    page_content=getattr(chunk, "page_content", str(chunk)),
-                    metadata=chunk_metadata,
-                )
-            )
-            ids.append(chroma_id)
-
-    if documents:
-        _add_documents_batched(vs, documents, ids)
-
-    return {"embedded": len(documents), "skipped": skipped}
-
-
-def search_notes(query: str, k: int = 4) -> list[dict]:
-    """Vector search in the vault notes collection."""
-    try:
-        vs = init_vectorstore(COLLECTION_NOTES)
-        if vs._collection.count() == 0:
-            return []
-        results = vs.similarity_search(query, k=k)
-        return [
-            {"content": doc.page_content, "metadata": doc.metadata}
-            for doc in results
-        ]
-    except Exception:
-        return []
-
-
-def _strip_wikilink(value: str) -> str:
-    s = (value or "").strip()
-    if s.startswith("[[") and s.endswith("]]") and len(s) > 4:
-        return s[2:-2].strip()
-    return s
-
-
-def _normalize_module_prefix(module_prefix: Optional[str]) -> str:
-    return str(module_prefix or "").strip().replace("\\", "/").lower().rstrip("/")
-
-
-def search_notes_prioritized(
-    query: str,
-    *,
-    module_prefix: Optional[str] = None,
-    follow_up_targets: Optional[list[str]] = None,
-    k_module: int = 4,
-    k_linked: int = 3,
-    k_global: int = 2,
-) -> list[dict]:
-    """
-    Prioritized notes retrieval:
-      1) Notes inside the current module folder
-      2) Notes mentioning follow-up targets
-      3) Global semantic notes fallback
-    """
-    try:
-        vs = init_vectorstore(COLLECTION_NOTES)
-        if vs._collection.count() == 0:
-            return []
-
-        requested_total = max(1, k_module + k_linked + k_global)
-        fetch_k = max(12, requested_total * 3)
-        results = vs.similarity_search(query, k=fetch_k)
-
-        module_key = _normalize_module_prefix(module_prefix)
-        target_labels = [
-            _strip_wikilink(t).lower()
-            for t in (follow_up_targets or [])
-            if isinstance(t, str) and _strip_wikilink(t)
-        ]
-
-        module_bucket: list[dict] = []
-        linked_bucket: list[dict] = []
-        global_bucket: list[dict] = []
-        seen: set[tuple[str, int]] = set()
-
-        for doc in results:
-            metadata = dict(getattr(doc, "metadata", {}) or {})
-            content = str(getattr(doc, "page_content", ""))
-            path = str(
-                metadata.get("source_path")
-                or metadata.get("source")
-                or ""
-            ).replace("\\", "/")
-            chunk_idx = int(metadata.get("chunk_index") or 0)
-            key = (path, chunk_idx)
-            if key in seen:
-                continue
-            seen.add(key)
-
-            payload = {"content": content, "metadata": metadata}
-            path_l = path.lower()
-            content_l = content.lower()
-
-            if module_key and (path_l.startswith(module_key) or f"/{module_key}/" in path_l):
-                module_bucket.append(payload)
-                continue
-
-            if target_labels and any(label and label in content_l for label in target_labels):
-                linked_bucket.append(payload)
-                continue
-
-            global_bucket.append(payload)
-
-        selected: list[dict] = []
-        selected.extend(module_bucket[: max(k_module, 0)])
-        selected.extend(linked_bucket[: max(k_linked, 0)])
-        selected.extend(global_bucket[: max(k_global, 0)])
-
-        if not selected:
-            return global_bucket[:requested_total]
-        return selected[:requested_total]
-    except Exception:
-        return []

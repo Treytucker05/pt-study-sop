@@ -121,6 +121,7 @@ def build_prompt_with_contexts(
     instruction_context: Optional[str] = None,
     material_context: Optional[str] = None,
     graph_context: Optional[str] = None,
+    course_map: str = "",
 ) -> str:
     parts: list[str] = [_format_tier1(course_id, topic)]
 
@@ -146,6 +147,13 @@ def build_prompt_with_contexts(
 
     if graph_context and graph_context.strip():
         parts.append(graph_context)
+
+    if course_map and course_map.strip():
+        parts.append(
+            "## Course Structure\n"
+            "Use this to orient the student within their program:\n\n"
+            + course_map
+        )
 
     return "\n\n".join(parts)
 

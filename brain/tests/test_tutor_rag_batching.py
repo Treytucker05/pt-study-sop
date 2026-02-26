@@ -11,7 +11,6 @@ brain_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(brain_dir))
 
 from tutor_rag import (
-    COLLECTION_INSTRUCTIONS,
     COLLECTION_MATERIALS,
     DEFAULT_CHROMA_BATCH_SIZE,
     DEFAULT_MMR_LAMBDA_MULT,
@@ -22,7 +21,6 @@ from tutor_rag import (
     _resolve_chroma_max_batch_size,
     get_dual_context,
     keyword_search_dual,
-    rerank_results,
     search_with_embeddings,
 )
 
@@ -170,24 +168,6 @@ def _fake_doc(doc_id: int, *, text: str = "learning objective", source: str | No
     )
 
 
-def test_rerank_results_limits_chunks_per_document():
-    docs = (
-        [_fake_doc(1, text="alpha objective")]
-        + [_fake_doc(1, text="alpha objective details")]
-        + [_fake_doc(1, text="alpha objective again")]
-        + [_fake_doc(2, text="alpha objective in doc2")]
-        + [_fake_doc(3, text="alpha objective in doc3")]
-        + [_fake_doc(4, text="alpha objective in doc4")]
-    )
-
-    reranked = rerank_results("alpha objective", docs, 4, max_chunks_per_doc=1)
-    ids = [d.metadata["rag_doc_id"] for d in reranked]
-
-    assert len(reranked) == 4
-    assert len(set(ids)) == 4
-    assert ids.count(1) == 1
-
-
 def test_merge_candidate_pools_preserves_priority_and_dedupes():
     sim_0 = _fake_doc(1, text="doc1 chunk0")
     sim_0.metadata["chunk_index"] = 0
@@ -224,7 +204,7 @@ def test_cap_candidates_per_doc_limits_per_doc_and_total():
     assert len(capped) == 3
 
 
-def test_search_with_embeddings_merges_and_caps_before_rerank(monkeypatch):
+def test_search_with_embeddings_merges_and_caps(monkeypatch):
     sim_docs = [_fake_doc(1, text=f"doc1 chunk{i}") for i in range(8)]
     for index, doc in enumerate(sim_docs):
         doc.metadata["chunk_index"] = index
@@ -240,25 +220,16 @@ def test_search_with_embeddings_merges_and_caps_before_rerank(monkeypatch):
     vs = _FakeSearchVectorStore(sim_docs, mmr_docs)
     monkeypatch.setattr("tutor_rag.init_vectorstore", lambda _collection: vs)
 
-    captured = {}
-
-    def _capture_rerank(query, docs, k_final, **kwargs):  # noqa: ANN001
-        captured["query"] = query
-        captured["docs"] = docs
-        captured["k_final"] = k_final
-        captured["kwargs"] = kwargs
-        return docs[:k_final]
-
-    monkeypatch.setattr("tutor_rag.rerank_results", _capture_rerank)
-
     material_ids = [101, 102, 103]
     k = 6
+    debug: dict = {}
     result = search_with_embeddings(
         "alpha objective",
         course_id=7,
         material_ids=material_ids,
         collection_name=COLLECTION_MATERIALS,
         k=k,
+        debug=debug,
     )
 
     candidate_k = _resolve_candidate_pool_size(k, material_ids)
@@ -274,35 +245,9 @@ def test_search_with_embeddings_merges_and_caps_before_rerank(monkeypatch):
     assert vs.mmr_calls[0]["lambda_mult"] == DEFAULT_MMR_LAMBDA_MULT
     assert vs.mmr_calls[0]["filter"] == expected_filter
 
-    # Pre-rerank cap should limit dominant source chunks in materials retrieval.
-    capped_docs = captured["docs"]
-    capped_doc_ids = [doc.metadata["rag_doc_id"] for doc in capped_docs]
-    assert capped_doc_ids.count(1) == 6
-    assert capped_doc_ids.count(2) == 3
-    assert len(capped_docs) == 9
+    # Pre-truncation cap should limit dominant source chunks in materials retrieval.
+    assert debug["candidate_pool_after_cap"] == 9
     assert len(result) == k
-
-
-def test_search_with_embeddings_skips_cap_for_instruction_collection(monkeypatch):
-    sim_docs = [_fake_doc(1, text=f"doc1 chunk{i}") for i in range(8)]
-    for index, doc in enumerate(sim_docs):
-        doc.metadata["chunk_index"] = index
-    vs = _FakeSearchVectorStore(sim_docs, [])
-    monkeypatch.setattr("tutor_rag.init_vectorstore", lambda _collection: vs)
-
-    def _fail_if_called(*args, **kwargs):  # noqa: ANN001
-        raise AssertionError("_cap_candidates_per_doc should not be called for instructions")
-
-    monkeypatch.setattr("tutor_rag._cap_candidates_per_doc", _fail_if_called)
-    monkeypatch.setattr("tutor_rag.rerank_results", lambda _q, docs, _k, **_kw: docs)
-
-    docs = search_with_embeddings(
-        "teaching principles",
-        collection_name=COLLECTION_INSTRUCTIONS,
-        k=4,
-    )
-
-    assert len(docs) == len(sim_docs)
 
 
 def test_search_with_embeddings_high_k_is_not_truncated_by_pre_cap(monkeypatch):
@@ -369,14 +314,12 @@ def test_get_dual_context_queries_materials_without_explicit_material_ids(monkey
     )
 
     assert dual == {"materials": [], "instructions": []}
-    assert len(calls) == 2
-    material_call, instruction_call = calls
+    assert len(calls) == 1
+    material_call = calls[0]
     assert material_call["collection_name"] == COLLECTION_MATERIALS
     assert material_call["course_id"] == 7
     assert material_call["material_ids"] is None
     assert material_call["k"] == 6
-    assert instruction_call["collection_name"] == COLLECTION_INSTRUCTIONS
-    assert instruction_call["k"] == 2
 
 
 def test_keyword_search_dual_queries_materials_without_explicit_material_ids(monkeypatch):
@@ -414,12 +357,9 @@ def test_keyword_search_dual_queries_materials_without_explicit_material_ids(mon
     )
 
     assert dual == {"materials": [], "instructions": []}
-    assert len(calls) == 2
-    material_call, instruction_call = calls
+    assert len(calls) == 1
+    material_call = calls[0]
     assert material_call["course_id"] == 5
     assert material_call["material_ids"] is None
     assert material_call["k"] == 6
     assert material_call["corpus"] is None
-    assert instruction_call["course_id"] is None
-    assert instruction_call["k"] == 2
-    assert instruction_call["corpus"] == "instructions"

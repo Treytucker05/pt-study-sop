@@ -109,11 +109,9 @@ def _delete_from_chroma(chroma_ids: list[str], *, corpus: str) -> None:
         return
 
     try:
-        from tutor_rag import COLLECTION_INSTRUCTIONS, COLLECTION_MATERIALS, init_vectorstore
+        from tutor_rag import COLLECTION_MATERIALS, init_vectorstore
 
-        collection_name = (
-            COLLECTION_INSTRUCTIONS if corpus == "instructions" else COLLECTION_MATERIALS
-        )
+        collection_name = COLLECTION_MATERIALS
         vs = init_vectorstore(collection_name)
         collection = getattr(vs, "_collection", None)
         if collection:
