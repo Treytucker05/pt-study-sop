@@ -3467,6 +3467,7 @@ def send_turn(session_id: str):
                 instruction_context=instruction_text,
                 material_context=material_text,
                 graph_context=graph_context_text,
+                course_map=ctx.get("course_map", ""),
             )
             system_prompt += (
                 "\n\n## Retrieval Tuning\n"
