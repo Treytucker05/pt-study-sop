@@ -1,10 +1,7 @@
 """
 Tutor RAG Pipeline — LangChain + ChromaDB vector search for Adaptive Tutor.
 
-Supports two named collections:
-  - "tutor_materials"    — user-uploaded study materials
-  - "tutor_instructions" — SOP library teaching rules/methods/frameworks
-
+Uses the "tutor_materials" collection for user-uploaded study materials.
 Falls back to keyword search when ChromaDB is empty.
 """
 
@@ -16,7 +13,6 @@ import logging
 import os
 import re
 import sqlite3
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Optional
 
@@ -30,7 +26,6 @@ _CHROMA_BASE = Path(__file__).parent / "data" / "chroma_tutor"
 _vectorstores: dict[str, object] = {}
 
 COLLECTION_MATERIALS = "tutor_materials"
-COLLECTION_INSTRUCTIONS = "tutor_instructions"
 
 DEFAULT_CHROMA_BATCH_SIZE = 1000
 DEFAULT_MAX_CHUNKS_PER_DOC = 4
@@ -302,7 +297,7 @@ def embed_rag_docs(
             continue
 
         doc_corpus = doc["corpus"] or "materials"
-        collection = COLLECTION_INSTRUCTIONS if doc_corpus == "instructions" else COLLECTION_MATERIALS
+        collection = COLLECTION_MATERIALS
 
         chunks = chunk_document(
             content,
@@ -491,7 +486,7 @@ def search_with_embeddings(
 
     vs = init_vectorstore(collection_name)
 
-    corpus_fallback = "instructions" if collection_name == COLLECTION_INSTRUCTIONS else None
+    corpus_fallback = None
 
     try:
         collection = vs._collection
@@ -793,45 +788,33 @@ def get_dual_context(
     debug: Optional[dict[str, Any]] = None,
 ) -> dict:
     """
-    Query both collections and return structured context.
+    Search materials collection and return structured context.
+
+    Note: instructions collection removed — instructions now come from YAML.
+    k_instructions parameter kept for backward compatibility but ignored.
 
     Returns: {
         materials: list[Document],
-        instructions: list[Document],
+        instructions: [],
     }
     """
     material_debug: dict[str, Any] = {}
-    instruction_debug: dict[str, Any] = {}
-
-    # Run both collection searches in parallel instead of sequentially.
-    with ThreadPoolExecutor(max_workers=2) as _pool:
-        _mat_fut = _pool.submit(
-            search_with_embeddings,
-            query,
-            course_id=course_id,
-            material_ids=material_ids,
-            collection_name=COLLECTION_MATERIALS,
-            k=k_materials,
-            debug=material_debug,
-        )
-        _ins_fut = _pool.submit(
-            search_with_embeddings,
-            query,
-            collection_name=COLLECTION_INSTRUCTIONS,
-            k=k_instructions,
-            debug=instruction_debug,
-        )
-    materials = _mat_fut.result()
-    instructions = _ins_fut.result()
+    materials = search_with_embeddings(
+        query,
+        course_id=course_id,
+        material_ids=material_ids,
+        collection_name=COLLECTION_MATERIALS,
+        k=k_materials,
+        debug=material_debug,
+    )
 
     if debug is not None:
         debug.clear()
         debug["materials"] = material_debug
-        debug["instructions"] = instruction_debug
 
     return {
         "materials": materials,
-        "instructions": instructions,
+        "instructions": [],
     }
 
 
@@ -863,29 +846,21 @@ def keyword_search_dual(
     """
     Keyword-only dual search (no embeddings). For Codex/ChatGPT provider.
 
-    Returns: { materials: list[Document], instructions: list[Document] }
+    Note: instructions collection removed — instructions now come from YAML.
     """
     material_debug: dict[str, Any] = {}
-    instruction_debug: dict[str, Any] = {}
-
     materials = _keyword_fallback(
         query, course_id, material_ids=material_ids, k=k_materials,
         debug=material_debug,
     )
 
-    instructions = _keyword_fallback(
-        query, k=k_instructions, corpus="instructions",
-        debug=instruction_debug,
-    )
-
     if debug is not None:
         debug.clear()
         debug["materials"] = material_debug
-        debug["instructions"] = instruction_debug
 
     return {
         "materials": materials,
-        "instructions": instructions,
+        "instructions": [],
     }
 
 

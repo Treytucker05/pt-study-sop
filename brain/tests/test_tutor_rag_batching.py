@@ -11,7 +11,6 @@ brain_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(brain_dir))
 
 from tutor_rag import (
-    COLLECTION_INSTRUCTIONS,
     COLLECTION_MATERIALS,
     DEFAULT_CHROMA_BATCH_SIZE,
     DEFAULT_MMR_LAMBDA_MULT,
@@ -251,27 +250,6 @@ def test_search_with_embeddings_merges_and_caps(monkeypatch):
     assert len(result) == k
 
 
-def test_search_with_embeddings_skips_cap_for_instruction_collection(monkeypatch):
-    sim_docs = [_fake_doc(1, text=f"doc1 chunk{i}") for i in range(8)]
-    for index, doc in enumerate(sim_docs):
-        doc.metadata["chunk_index"] = index
-    vs = _FakeSearchVectorStore(sim_docs, [])
-    monkeypatch.setattr("tutor_rag.init_vectorstore", lambda _collection: vs)
-
-    def _fail_if_called(*args, **kwargs):  # noqa: ANN001
-        raise AssertionError("_cap_candidates_per_doc should not be called for instructions")
-
-    monkeypatch.setattr("tutor_rag._cap_candidates_per_doc", _fail_if_called)
-
-    docs = search_with_embeddings(
-        "teaching principles",
-        collection_name=COLLECTION_INSTRUCTIONS,
-        k=4,
-    )
-
-    assert len(docs) == 4  # truncated to k
-
-
 def test_search_with_embeddings_high_k_is_not_truncated_by_pre_cap(monkeypatch):
     sim_docs = [_fake_doc(1, text=f"doc1 chunk{i}") for i in range(60)]
     for index, doc in enumerate(sim_docs):
@@ -336,14 +314,12 @@ def test_get_dual_context_queries_materials_without_explicit_material_ids(monkey
     )
 
     assert dual == {"materials": [], "instructions": []}
-    assert len(calls) == 2
-    material_call, instruction_call = calls
+    assert len(calls) == 1
+    material_call = calls[0]
     assert material_call["collection_name"] == COLLECTION_MATERIALS
     assert material_call["course_id"] == 7
     assert material_call["material_ids"] is None
     assert material_call["k"] == 6
-    assert instruction_call["collection_name"] == COLLECTION_INSTRUCTIONS
-    assert instruction_call["k"] == 2
 
 
 def test_keyword_search_dual_queries_materials_without_explicit_material_ids(monkeypatch):
@@ -381,12 +357,9 @@ def test_keyword_search_dual_queries_materials_without_explicit_material_ids(mon
     )
 
     assert dual == {"materials": [], "instructions": []}
-    assert len(calls) == 2
-    material_call, instruction_call = calls
+    assert len(calls) == 1
+    material_call = calls[0]
     assert material_call["course_id"] == 5
     assert material_call["material_ids"] is None
     assert material_call["k"] == 6
     assert material_call["corpus"] is None
-    assert instruction_call["course_id"] is None
-    assert instruction_call["k"] == 2
-    assert instruction_call["corpus"] == "instructions"
