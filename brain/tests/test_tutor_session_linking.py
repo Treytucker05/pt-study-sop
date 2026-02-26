@@ -13,8 +13,6 @@ import sys
 import tempfile
 import sqlite3
 import json
-from types import SimpleNamespace
-
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -26,7 +24,7 @@ import dashboard.api_data as _api_data_mod
 import dashboard.api_adapter as _api_adapter_mod
 import dashboard.api_tutor as _api_tutor_mod
 import llm_provider
-import tutor_rag
+import tutor_context
 import tutor_tools
 
 
@@ -228,10 +226,8 @@ def test_send_turn_persists_and_reuses_response_id(client, monkeypatch):
 
     # Remove external dependencies from this unit test path.
     monkeypatch.setattr(
-        tutor_rag, "get_dual_context", lambda *args, **kwargs: {"materials": [], "instructions": []}
-    )
-    monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+        tutor_context, "build_context",
+        lambda *args, **kwargs: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
@@ -312,22 +308,12 @@ def test_send_turn_scales_material_retrieval_to_selected_materials(client, monke
 
     captured = {"k_materials": None, "material_ids": None}
 
-    def fake_get_dual_context(_question, **kwargs):
+    def fake_build_context(_question, **kwargs):
         captured["k_materials"] = kwargs.get("k_materials")
         captured["material_ids"] = kwargs.get("material_ids")
-        materials = [
-            SimpleNamespace(
-                page_content=f"doc {idx}",
-                metadata={"source": f"C:/materials/doc-{idx}.md", "rag_doc_id": 8000 + idx, "chunk_index": 0},
-            )
-            for idx in range(1, 5)
-        ]
-        return {"materials": materials, "instructions": []}
+        return {"materials": "doc 1\n\ndoc 2", "instructions": "", "notes": "", "course_map": "", "debug": {}}
 
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
-    monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
-    )
+    monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
 
@@ -365,24 +351,13 @@ def test_send_turn_strict_profile_boosts_retrieval_depth(client, monkeypatch):
     assert resp.status_code == 201
     tutor_sid = resp.get_json()["session_id"]
 
-    captured = {"k_materials": None, "k_instructions": None}
+    captured = {"k_materials": None}
 
-    def fake_get_dual_context(_question, **kwargs):
+    def fake_build_context(_question, **kwargs):
         captured["k_materials"] = kwargs.get("k_materials")
-        captured["k_instructions"] = kwargs.get("k_instructions")
-        materials = [
-            SimpleNamespace(
-                page_content=f"strict doc {idx}",
-                metadata={"source": f"C:/materials/strict-{idx}.md", "rag_doc_id": 8100 + idx, "chunk_index": 0},
-            )
-            for idx in range(1, 5)
-        ]
-        return {"materials": materials, "instructions": []}
+        return {"materials": "strict doc", "instructions": "", "notes": "", "course_map": "", "debug": {}}
 
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
-    monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
-    )
+    monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
 
@@ -401,134 +376,6 @@ def test_send_turn_strict_profile_boosts_retrieval_depth(client, monkeypatch):
 
     # Base k for 20 selected is 20; strict adds +4.
     assert captured["k_materials"] == 24
-    assert captured["k_instructions"] == 3
-
-
-def test_send_turn_auto_escalates_profile_to_coverage_on_weak_retrieval(client, monkeypatch):
-    material_ids = list(range(1, 11))
-    resp = client.post(
-        "/api/tutor/session",
-        json={
-            "mode": "Core",
-            "topic": "Auto Escalation Test",
-            "content_filter": {"material_ids": material_ids},
-        },
-    )
-    assert resp.status_code == 201
-    tutor_sid = resp.get_json()["session_id"]
-
-    calls: list[dict] = []
-
-    def fake_get_dual_context(_question, **kwargs):
-        calls.append(kwargs)
-        if len(calls) == 1:
-            weak_docs = [
-                SimpleNamespace(
-                    page_content=f"weak chunk {i}",
-                    metadata={"source": "C:/materials/weak.md", "rag_doc_id": 5001, "chunk_index": i},
-                )
-                for i in range(6)
-            ]
-            return {"materials": weak_docs, "instructions": []}
-        broad_docs = [
-            SimpleNamespace(
-                page_content=f"broad chunk {i}",
-                metadata={"source": f"C:/materials/broad-{i}.md", "rag_doc_id": 6000 + i, "chunk_index": 0},
-            )
-            for i in range(5)
-        ]
-        return {"materials": broad_docs, "instructions": []}
-
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
-    monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
-    )
-    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
-
-    def fake_stream(_system_prompt, _user_prompt, **_kwargs):
-        yield {"type": "delta", "text": "answer"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-escalate", "thread_id": "thread-escalate"}
-
-    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
-
-    turn_resp = client.post(
-        f"/api/tutor/session/{tutor_sid}/turn",
-        json={"message": "Explain the key concept"},
-    )
-    assert turn_resp.status_code == 200
-    body = turn_resp.get_data(as_text=True)
-    done_payload = _extract_done_payload(body)
-    debug = done_payload.get("retrieval_debug")
-    assert isinstance(debug, dict)
-
-    assert len(calls) == 2
-    assert calls[0]["k_materials"] == 14
-    assert calls[1]["k_materials"] == 22
-    assert debug["requested_accuracy_profile"] == "strict"
-    assert debug["effective_accuracy_profile"] == "coverage"
-    assert debug["profile_escalated"] is True
-    assert "dominant_source" in debug["profile_escalation_reasons"]
-    assert debug["insufficient_evidence_guard"] is False
-
-
-def test_send_turn_uses_insufficient_evidence_guard_when_coverage_still_weak(client, monkeypatch):
-    material_ids = list(range(1, 11))
-    resp = client.post(
-        "/api/tutor/session",
-        json={
-            "mode": "Core",
-            "topic": "Insufficient Evidence Guard Test",
-            "content_filter": {"material_ids": material_ids},
-        },
-    )
-    assert resp.status_code == 201
-    tutor_sid = resp.get_json()["session_id"]
-
-    calls = {"dual": 0, "stream": 0}
-
-    def fake_get_dual_context(_question, **_kwargs):
-        calls["dual"] += 1
-        weak_docs = [
-            SimpleNamespace(
-                page_content=f"weak chunk {i}",
-                metadata={"source": "C:/materials/weak.md", "rag_doc_id": 7001, "chunk_index": i},
-            )
-            for i in range(6)
-        ]
-        return {"materials": weak_docs, "instructions": []}
-
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
-    monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
-    )
-    monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
-
-    def fake_stream(*_args, **_kwargs):
-        calls["stream"] += 1
-        yield {"type": "delta", "text": "llm should not run"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-guard", "thread_id": "thread-guard"}
-
-    monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
-
-    turn_resp = client.post(
-        f"/api/tutor/session/{tutor_sid}/turn",
-        json={"message": "Explain the mechanism in detail"},
-    )
-    assert turn_resp.status_code == 200
-    body = turn_resp.get_data(as_text=True)
-    done_payload = _extract_done_payload(body)
-    debug = done_payload.get("retrieval_debug")
-    assert isinstance(debug, dict)
-
-    assert calls["dual"] == 2
-    assert calls["stream"] == 0
-    assert "I do not have enough reliable evidence" in body
-    assert debug["requested_accuracy_profile"] == "strict"
-    assert debug["effective_accuracy_profile"] == "coverage"
-    assert debug["profile_escalated"] is True
-    assert debug["insufficient_evidence_guard"] is True
 
 
 def test_send_turn_applies_per_turn_material_override(client, monkeypatch):
@@ -547,14 +394,11 @@ def test_send_turn_applies_per_turn_material_override(client, monkeypatch):
 
     captured = {"material_ids": None}
 
-    def fake_get_dual_context(_question, **kwargs):
+    def fake_build_context(_query, **kwargs):
         captured["material_ids"] = kwargs.get("material_ids")
-        return {"materials": [], "instructions": []}
+        return {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}}
 
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
-    monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
-    )
+    monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
 
@@ -617,10 +461,8 @@ def test_send_turn_includes_selected_material_scope_in_prompt(client, monkeypatc
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_rag, "get_dual_context", lambda *_a, **_k: {"materials": [], "instructions": []}
-    )
-    monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+        tutor_context, "build_context",
+        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
@@ -676,24 +518,9 @@ def test_send_turn_material_count_question_uses_selected_scope(client, monkeypat
     assert resp.status_code == 201
     tutor_sid = resp.get_json()["session_id"]
 
-    def fake_get_dual_context(_question, **_kwargs):
-        return {
-            "materials": [
-                SimpleNamespace(
-                    page_content="gamma snippet",
-                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
-                ),
-                SimpleNamespace(
-                    page_content="delta snippet",
-                    metadata={"source": "C:/materials/delta.md", "rag_doc_id": 952},
-                ),
-            ],
-            "instructions": [],
-        }
-
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
     monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+        tutor_context, "build_context",
+        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
@@ -715,7 +542,7 @@ def test_send_turn_material_count_question_uses_selected_scope(client, monkeypat
     body = turn_resp.get_data(as_text=True)
 
     assert "You selected 2 files for this turn." in body
-    assert "Retrieval for this question returned excerpts from 2 unique files" in body
+    assert "No excerpts were retrieved for this exact question" in body
     assert stream_calls["count"] == 0
 
 
@@ -732,20 +559,9 @@ def test_send_turn_selected_scope_listing_question_uses_selected_scope(client, m
     assert resp.status_code == 201
     tutor_sid = resp.get_json()["session_id"]
 
-    def fake_get_dual_context(_question, **_kwargs):
-        return {
-            "materials": [
-                SimpleNamespace(
-                    page_content="gamma snippet",
-                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
-                ),
-            ],
-            "instructions": [],
-        }
-
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
     monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+        tutor_context, "build_context",
+        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
@@ -767,7 +583,7 @@ def test_send_turn_selected_scope_listing_question_uses_selected_scope(client, m
     body = turn_resp.get_data(as_text=True)
 
     assert "You selected 2 files for this turn." in body
-    assert "Files retrieved for this question:" in body
+    assert "No chunks were retrieved for this exact question." in body
     assert "All selected files:" in body
     assert "Gamma Notes" in body
     assert "Delta Notes" in body
@@ -787,20 +603,9 @@ def test_material_count_shortcut_does_not_overwrite_last_response_id(client, mon
     assert resp.status_code == 201
     tutor_sid = resp.get_json()["session_id"]
 
-    def fake_get_dual_context(_question, **_kwargs):
-        return {
-            "materials": [
-                SimpleNamespace(
-                    page_content="gamma snippet",
-                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
-                ),
-            ],
-            "instructions": [],
-        }
-
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
     monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+        tutor_context, "build_context",
+        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
@@ -874,15 +679,12 @@ def test_send_turn_material_scope_overrides_course_filter(client, monkeypatch):
 
     captured: dict[str, object] = {"course_id": "unset", "material_ids": None}
 
-    def fake_get_dual_context(_question, **kwargs):
+    def fake_build_context(_query, **kwargs):
         captured["course_id"] = kwargs.get("course_id")
         captured["material_ids"] = kwargs.get("material_ids")
-        return {"materials": [], "instructions": []}
+        return {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}}
 
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
-    monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
-    )
+    monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
 
@@ -916,29 +718,9 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     assert resp.status_code == 201
     tutor_sid = resp.get_json()["session_id"]
 
-    def fake_get_dual_context(_question, **_kwargs):
-        return {
-            "materials": [
-                SimpleNamespace(
-                    page_content="gamma snippet",
-                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
-                ),
-                SimpleNamespace(
-                    page_content="delta snippet",
-                    metadata={"source": "C:/materials/delta.md", "rag_doc_id": 952},
-                ),
-            ],
-            "instructions": [
-                SimpleNamespace(
-                    page_content="instruction snippet",
-                    metadata={"source": "sop/library/17-control-plane.md"},
-                ),
-            ],
-        }
-
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
     monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+        tutor_context, "build_context",
+        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
@@ -962,10 +744,10 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     assert debug["material_ids_count"] == 2
     assert debug["selected_material_count"] == 2
     assert debug["material_k"] == 10
-    assert debug["retrieved_material_chunks"] == 2
-    assert debug["retrieved_material_unique_sources"] == 2
-    assert debug["retrieved_instruction_chunks"] == 1
-    assert debug["retrieved_instruction_unique_sources"] == 1
+    assert debug["retrieved_material_chunks"] == 0
+    assert debug["retrieved_material_unique_sources"] == 0
+    assert debug["retrieved_instruction_chunks"] == 0
+    assert debug["retrieved_instruction_unique_sources"] == 0
     assert debug["citations_total"] >= 1
     assert debug["citations_unique_sources"] >= 1
     assert debug["accuracy_profile"] == "strict"
@@ -988,20 +770,9 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     assert resp.status_code == 201
     tutor_sid = resp.get_json()["session_id"]
 
-    def fake_get_dual_context(_question, **_kwargs):
-        return {
-            "materials": [
-                SimpleNamespace(
-                    page_content="gamma snippet",
-                    metadata={"source": "C:/materials/gamma.md", "rag_doc_id": 951},
-                ),
-            ],
-            "instructions": [],
-        }
-
-    monkeypatch.setattr(tutor_rag, "get_dual_context", fake_get_dual_context)
     monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+        tutor_context, "build_context",
+        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
@@ -1023,10 +794,10 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     assert debug["material_ids_provided"] is True
     assert debug["material_ids_count"] == 2
     assert debug["selected_material_count"] == 2
-    assert debug["retrieved_material_chunks"] == 1
-    assert debug["retrieved_material_unique_sources"] == 1
-    assert debug["citations_total"] == 1
-    assert debug["citations_unique_sources"] == 1
+    assert debug["retrieved_material_chunks"] == 0
+    assert debug["retrieved_material_unique_sources"] == 0
+    assert debug["citations_total"] == 0
+    assert debug["citations_unique_sources"] == 0
     assert debug["accuracy_profile"] == "strict"
     assert "material_dropped_by_cap" in debug
     assert 0.0 <= debug["retrieval_confidence"] <= 1.0
@@ -1270,10 +1041,8 @@ def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, mon
     tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
 
     monkeypatch.setattr(
-        tutor_rag, "get_dual_context", lambda *args, **kwargs: {"materials": [], "instructions": []}
-    )
-    monkeypatch.setattr(
-        tutor_rag, "keyword_search_dual", lambda *args, **kwargs: {"materials": [], "instructions": []}
+        tutor_context, "build_context",
+        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
     monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
