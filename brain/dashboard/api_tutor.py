@@ -70,7 +70,6 @@ from tutor_accuracy_profiles import (
     resolve_instruction_retrieval_k as _resolve_instruction_k_for_profile,
     resolve_material_retrieval_k as _resolve_material_k_for_profile,
 )
-import tutor_rag as _tutor_rag
 import llm_provider as _llm_provider
 
 tutor_bp = Blueprint("tutor", __name__, url_prefix="/api/tutor")
