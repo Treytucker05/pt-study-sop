@@ -41,7 +41,7 @@ Each method block represents a single study activity.
 
 1. **PRIME** — Prepare attention, surface prior knowledge, build structure (e.g., brain dump, overarching pre-question set, prior knowledge scan, hierarchical advance organizer, skeleton concept hierarchy, structural skimming + pillar mapping, pre-test, structural extraction, syntopical big-picture synthesis, learning objectives primer, hand-draw map)
 2. **CALIBRATE** — Diagnostic micro-assessments to identify weaknesses before encoding (e.g., micro precheck, confidence tagging, priority set, story confidence tag)
-3. **ENCODE** — Attach meaning to material through active processing (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, think-aloud protocol, self-explanation protocol, mechanism trace, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking, analogy bridge, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder)
+3. **ENCODE** — Attach meaning to material through active processing (e.g., kwik hook, seed-lock generation, draw-label, teach-back, why-chain, self-explanation protocol, mechanism trace, concept map, comparison table, process flowchart, clinical decision tree, memory palace, chain linking, analogy bridge, clinical application, cross-topic link, side-by-side comparison, case walkthrough, illness script builder)
 4. **REFERENCE** — Generate target cues and cheat sheets for retrieval (e.g., error autopsy, mastery loop, one-page anchor, question bank seed)
 5. **RETRIEVE** — Test recall with adversarial near-miss and timed sprints (e.g., free recall blurt, sprint quiz, fill-in-blank, mixed practice, variable retrieval, adversarial drill, timed sprint sets)
 6. **OVERLEARN** — Close loop, capture artifacts, Anki, drill sheets (e.g., exit ticket, anki card draft, drill sheet builder, post-learn brain dump)
@@ -50,7 +50,7 @@ Each method block represents a single study activity.
 
 ---
 
-## §2.1 Block Catalog (50 blocks)
+## §2.1 Block Catalog (49 blocks)
 
 ### PRIME (11 blocks)
 | Block | Duration | Energy | Evidence |
@@ -75,7 +75,7 @@ Each method block represents a single study activity.
 | Priority Set | 3 min | low | Rawson and Dunlosky (2011); Targeted corrective practice outperforms broad untargeted restudy. |
 | Story Confidence Tag | 2 min | low | Metcalfe (2017); Metacognitive monitoring at the schema level identifies high-value encoding targets |
 
-### ENCODE (20 blocks)
+### ENCODE (19 blocks)
 | Block | Duration | Energy | Evidence |
 |-------|----------|--------|----------|
 | KWIK Hook | 3 min | medium | Paivio (1991); Dual-coding theory — combining verbal + visual improves retention by creating multiple retrieval paths |
@@ -83,14 +83,13 @@ Each method block represents a single study activity.
 | Draw-Label | 10 min | high | Wammes et al. (2016); Drawing effect — drawing produces superior memory compared to writing, especially for visual-spatial content |
 | Teach-Back | 5 min | high | Nestojko et al. (2014); Expecting to teach enhances encoding and organization of information |
 | Why-Chain | 5 min | medium | Dunlosky et al. (2013); Elaborative interrogation rated moderate utility for learning; builds causal understanding |
-| Think-Aloud Protocol | 5 min | medium | Chi et al. (1994); Self-explanation leads to deeper understanding and better problem-solving across domains |
 | Self-Explanation Protocol | 7 min | medium | Chi et al. (1994); Self-explanation rated moderate-high utility across domains; works by generating inferences |
 | Mechanism Trace | 10 min | high | Kulasegaram et al. (2013); Causal reasoning with biomedical mechanisms supports diagnostic transfer to novel cases |
 | Concept Map | 10 min | high | Novak & Canas (2008); concept mapping promotes meaningful learning through explicit relationship encoding |
 | Comparison Table | 7 min | medium | Alfieri et al. (2013); Comparison improves discrimination and concept formation by highlighting distinctive features |
 | Process Flowchart | 10 min | high | Winn (1991); Spatial-sequential diagrams improve procedural understanding and memory |
 | Clinical Decision Tree | 10 min | high | Charlin et al. (2000); Decision trees scaffold clinical reasoning and support diagnostic accuracy |
-| Memory Palace | 10 min | high | Yates (1966); Method of Loci has been used for 2500+ years; spatial memory is evolutionarily privileged |
+| Memory Palace | 10 min | high | Dresler et al. (2017); fMRI study showed memory athletes using Method of Loci exhibit distinct patterns of functional brain connectivity; 40 days of loci training significantly improved recall in naive subjects |
 | Chain Linking | 8 min | medium | Bower & Winzenz (1970); Narrative chaining improves serial recall by creating meaningful connections between unrelated items |
 | Analogy Bridge | 3 min | medium | Gentner (1983); Analogical reasoning supports structural mapping and transfer across domains |
 | Clinical Application | 5 min | high | Schmidt & Rikers (2007); Clinical application strengthens illness script formation and diagnostic reasoning |

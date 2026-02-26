@@ -8,8 +8,7 @@ M-ENC-002,Seed-Lock Generation,encode,3,medium,Y,Y,Y,Y,Y,Y,Learner-generated See
 M-ENC-003,Draw-Label,encode,10,high,Y,Y,Y,Y,Y,Y,Completed labeled diagram; Gap list (what was missing); Accuracy percentage,sop/library/methods/M-ENC-003.yaml
 M-ENC-004,Teach-Back,encode,5,high,Y,Y,Y,Y,Y,Y,Verbal explanation (recorded or noted); Breakdown points list; Targeted review areas,sop/library/methods/M-ENC-004.yaml
 M-ENC-005,Why-Chain,encode,5,medium,Y,Y,Y,Y,Y,Y,Why-chain document (3-5 linked explanations); Depth level reached; Verification status,sop/library/methods/M-ENC-005.yaml
-M-ENC-006,Think-Aloud Protocol,encode,5,medium,Y,Y,Y,Y,Y,Y,Think-aloud recording or notes; Confusion points list; Connection map (implicit),sop/library/methods/M-ENC-006.yaml
-M-ENC-007,Self-Explanation Protocol,encode,7,medium,Y,Y,Y,Y,Y,Y,Self-explanation notes (per paragraph); Inference gap list; Comprehension checkpoints,sop/library/methods/M-ENC-007.yaml
+M-ENC-007,Self-Explanation Protocol,encode,7,medium,Y,Y,Y,Y,Y,Y,Self-explanation notes or think-aloud log (per paragraph); Inference gap list; Confusion points flagged; Comprehensio...,sop/library/methods/M-ENC-007.yaml
 M-ENC-008,Mechanism Trace,encode,10,high,Y,Y,Y,Y,Y,Y,Complete mechanism chain (trigger to outcome); Because statements for each step; Branch points identified; Verificati...,sop/library/methods/M-ENC-008.yaml
 M-ENC-009,Concept Map,encode,10,high,Y,Y,Y,Y,Y,Y,Learner-generated explanation or structured encoding artifact,sop/library/methods/M-ENC-009.yaml
 M-ENC-010,Comparison Table,encode,7,medium,Y,Y,Y,Y,Y,Y,Completed comparison table; Discriminating features highlighted; Differential rules (1-2 per comparison); Error list ...,sop/library/methods/M-ENC-010.yaml
