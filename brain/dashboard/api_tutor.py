@@ -3884,22 +3884,25 @@ def send_turn(session_id: str):
                         artifacts=artifact_payload,
                         retrieval_debug=retrieval_debug_payload,
                     )
-                    _persist_tutor_turn(
-                        session=session,
-                        session_id=session_id,
-                        turn_number=turn_number,
-                        question=question,
-                        full_response=full_response,
-                        citations=citations,
-                        latest_response_id=latest_response_id,
-                        latest_thread_id=latest_thread_id,
-                        api_model=api_model,
-                        artifact_cmd=artifact_cmd,
-                        behavior_override=behavior_override,
-                        parsed_verdict=parsed_verdict,
-                        content_filter=content_filter,
-                        used_scope_shortcut=True,
-                    )
+                    try:
+                        _persist_tutor_turn(
+                            session=session,
+                            session_id=session_id,
+                            turn_number=turn_number,
+                            question=question,
+                            full_response=full_response,
+                            citations=citations,
+                            latest_response_id=latest_response_id,
+                            latest_thread_id=latest_thread_id,
+                            api_model=api_model,
+                            artifact_cmd=artifact_cmd,
+                            behavior_override=behavior_override,
+                            parsed_verdict=parsed_verdict,
+                            content_filter=content_filter,
+                            used_scope_shortcut=True,
+                        )
+                    except Exception as exc:
+                        _LOG.warning("Failed to persist deterministic Obsidian listing turn: %s", exc)
                     return
 
                 err = str(list_result.get("error") or "unknown error").strip()
@@ -3922,22 +3925,25 @@ def send_turn(session_id: str):
                     artifacts=artifact_payload,
                     retrieval_debug=retrieval_debug_payload,
                 )
-                _persist_tutor_turn(
-                    session=session,
-                    session_id=session_id,
-                    turn_number=turn_number,
-                    question=question,
-                    full_response=full_response,
-                    citations=[],
-                    latest_response_id=latest_response_id,
-                    latest_thread_id=latest_thread_id,
-                    api_model=api_model,
-                    artifact_cmd=artifact_cmd,
-                    behavior_override=behavior_override,
-                    parsed_verdict=parsed_verdict,
-                    content_filter=content_filter,
-                    used_scope_shortcut=True,
-                )
+                try:
+                    _persist_tutor_turn(
+                        session=session,
+                        session_id=session_id,
+                        turn_number=turn_number,
+                        question=question,
+                        full_response=full_response,
+                        citations=[],
+                        latest_response_id=latest_response_id,
+                        latest_thread_id=latest_thread_id,
+                        api_model=api_model,
+                        artifact_cmd=artifact_cmd,
+                        behavior_override=behavior_override,
+                        parsed_verdict=parsed_verdict,
+                        content_filter=content_filter,
+                        used_scope_shortcut=True,
+                    )
+                except Exception as exc:
+                    _LOG.warning("Failed to persist deterministic Obsidian listing failure turn: %s", exc)
                 return
 
             # --- Unified context retrieval ---
