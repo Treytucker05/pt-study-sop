@@ -1276,3 +1276,20 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 - Local runtime verification (same path Tutor uses): `ObsidianClient.search('hip')` now returns note hits from vault.
 - Validation:
   - `py -3 -m pytest brain/tests/test_obsidian_client.py -q` -> 10 passed.
+
+## 2026-02-27 - Tutor Obsidian capability gap closed (browse/read/search tools)
+- Added new Tutor tools in `brain/tutor_tools.py`:
+  - `list_obsidian_paths` (vault folder listing)
+  - `read_obsidian_note` (read note content)
+  - `search_obsidian_notes` (query search across notes)
+- Updated Tutor prompt tooling section in `brain/dashboard/api_tutor.py` to instruct model to use Obsidian tools when asked about vault visibility/browsing.
+- Added server-side policy gate in `execute_tool(...)`:
+  - Obsidian read/browse tools require `allow_obsidian_read=True`.
+  - Tutor turn runner now passes `allow_obsidian_read=_obsidian_on` so browse/read/search are only available when Obsidian mode toggle is enabled.
+- Hardened Obsidian search error semantics:
+  - `execute_search_obsidian_notes` now checks `obsidian_health_check()` and returns explicit unavailability errors instead of silent empty matches when offline.
+- Added/updated tests:
+  - `brain/tests/test_tutor_obsidian_tools.py` (schema presence, list/read/search behavior, offline behavior, gate behavior)
+  - `brain/tests/test_figma_tools.py` (updated schema count expectation)
+- Validation:
+  - `py -3 -m pytest brain/tests/test_tutor_obsidian_tools.py brain/tests/test_figma_tools.py brain/tests/test_obsidian_client.py -q` -> 35 passed.

@@ -3640,6 +3640,12 @@ def send_turn(session_id: str):
                 "Do not run shell commands or attempt to read local files.\n"
                 "You have access to the following tools. Use them ONLY when the student "
                 "explicitly asks or when it clearly benefits the learning session:\n"
+                "- **list_obsidian_paths**: List files/folders in the student's Obsidian vault. "
+                "Use when they ask what you can see or to browse folder structure.\n"
+                "- **read_obsidian_note**: Read a specific Obsidian note by path. "
+                "Use when they ask to open/summarize a specific note.\n"
+                "- **search_obsidian_notes**: Search notes in Obsidian by query. "
+                "Use when they ask to find where a concept appears in their notes.\n"
                 "- **save_to_obsidian**: Save study notes to the student's Obsidian vault. "
                 "Use when they say 'save this', 'add to Obsidian', 'export notes', etc.\n"
                 "- **create_note**: Create a quick note on the dashboard Notes page. "
@@ -3653,6 +3659,8 @@ def send_turn(session_id: str):
                 "with id/label and edges with from/to. May not be available if "
                 "Figma Desktop is not running.\n"
                 "Do NOT use tools for casual questions or general conversation. "
+                "If a student asks whether you can view/browse Obsidian, call an Obsidian tool first. "
+                "Do not claim you cannot browse if these tools return data.\n"
                 "When you use a tool, briefly confirm what you did.\n\n"
                 f"## Identity\n"
                 f"You are powered by OpenAI model **{effective_model}**. "
@@ -3973,7 +3981,10 @@ def send_turn(session_id: str):
                             )
 
                             tool_result = execute_tool(
-                                tool_name, args, session_id=session_id
+                                tool_name,
+                                args,
+                                session_id=session_id,
+                                allow_obsidian_read=_obsidian_on,
                             )
 
                             yield format_sse_chunk(
