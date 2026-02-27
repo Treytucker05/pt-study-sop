@@ -29,11 +29,12 @@ from dashboard.utils import load_api_config
 # ==============================================================================
 # OBSIDIAN LOCAL REST API CONFIG
 # ==============================================================================
-OBSIDIAN_API_URL = os.environ.get("OBSIDIAN_API_URL", "https://127.0.0.1:27124")
+OBSIDIAN_API_URL = os.environ.get("OBSIDIAN_API_URL", "http://127.0.0.1:27123")
 _OBSIDIAN_FALLBACK_URLS = [
+    "http://127.0.0.1:27123",
+    "http://localhost:27123",
     "https://127.0.0.1:27124",
     "https://localhost:27124",
-    "https://host.docker.internal:27124",
 ]
 
 # Load .env so OBSIDIAN_API_KEY is available if set there
@@ -78,6 +79,16 @@ def _obsidian_api_urls() -> List[str]:
         if candidate not in seen:
             urls.append(candidate)
             seen.add(candidate)
+        # If OBSIDIAN_API_URL is explicitly configured, treat it as authoritative.
+        # Only include additional URLs when the caller sets OBSIDIAN_API_URLS.
+        extra_urls = os.environ.get("OBSIDIAN_API_URLS", "")
+        if extra_urls:
+            for candidate in extra_urls.split(","):
+                candidate = candidate.strip().rstrip("/")
+                if candidate and candidate not in seen:
+                    urls.append(candidate)
+                    seen.add(candidate)
+        return urls
 
     for candidate in [OBSIDIAN_API_URL] + _OBSIDIAN_FALLBACK_URLS:
         candidate = candidate.rstrip("/")

@@ -27,6 +27,7 @@ def test_tool_schemas_include_obsidian_browse_tools():
     from tutor_tools import get_tool_schemas
 
     names = [s.get("name") for s in get_tool_schemas()]
+    assert "apply_obsidian_write_preview" in names
     assert "list_obsidian_paths" in names
     assert "read_obsidian_note" in names
     assert "search_obsidian_notes" in names
@@ -54,6 +55,21 @@ def test_execute_list_obsidian_paths_success(monkeypatch):
     assert result["truncated"] is True
     # Folder entries are sorted first.
     assert result["paths"][0].endswith("/")
+
+
+def test_execute_list_obsidian_paths_supports_legacy_path_argument(monkeypatch):
+    from tutor_tools import execute_list_obsidian_paths
+
+    def _list_impl(folder=""):
+        assert folder == "Study Notes/Movement Science"
+        return {"success": True, "files": ["Study Notes/Movement Science/"]}
+
+    _patch_api_adapter(monkeypatch, list_impl=_list_impl)
+
+    result = execute_list_obsidian_paths({"path": "Study Notes/Movement Science"})
+    assert result["success"] is True
+    assert result["folder"] == "Study Notes/Movement Science"
+    assert result["used_legacy_path_arg"] is True
 
 
 def test_execute_read_obsidian_note_truncates(monkeypatch):
@@ -128,3 +144,31 @@ def test_execute_tool_routes_list_obsidian_paths(monkeypatch):
     result = execute_tool("list_obsidian_paths", {"folder": ""}, allow_obsidian_read=True)
     assert result["success"] is True
     assert "paths" in result
+
+
+def test_execute_tool_routes_apply_obsidian_write_preview(monkeypatch):
+    import tutor_tools
+    from tutor_tools import execute_tool
+
+    monkeypatch.setattr(
+        tutor_tools,
+        "execute_apply_obsidian_write_preview",
+        lambda _args, session_id=None: {
+            "success": True,
+            "preview_id": "owp-123",
+            "session_id": session_id,
+        },
+    )
+    monkeypatch.setitem(
+        tutor_tools.TOOL_REGISTRY,
+        "apply_obsidian_write_preview",
+        tutor_tools.execute_apply_obsidian_write_preview,
+    )
+
+    result = execute_tool(
+        "apply_obsidian_write_preview",
+        {"preview_id": "owp-123"},
+        session_id="s-1",
+    )
+    assert result["success"] is True
+    assert result["preview_id"] == "owp-123"

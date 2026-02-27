@@ -81,6 +81,11 @@ SYNC_JOB_RETENTION = 30
 VIDEO_JOBS: dict[str, dict[str, Any]] = {}
 VIDEO_JOBS_LOCK = Lock()
 VIDEO_JOB_RETENTION = 30
+JANITOR_JOBS: dict[str, dict[str, Any]] = {}
+JANITOR_JOBS_LOCK = Lock()
+JANITOR_JOB_RETENTION = 50
+OBSIDIAN_WRITE_PREVIEWS: dict[str, dict[str, Any]] = {}
+OBSIDIAN_WRITE_PREVIEWS_LOCK = Lock()
 _LOG = logging.getLogger(__name__)
 EXTRACTED_IMAGES_ROOT = Path(__file__).resolve().parents[1] / "data" / "extracted_images"
 _IMAGE_PLACEHOLDER_PATTERN = re.compile(r"<!--\s*image\s*-->", re.IGNORECASE)
@@ -845,6 +850,21 @@ def _is_obsidian_connectivity_error(error: Any) -> bool:
     return any(token in message for token in tokens)
 
 
+def _is_obsidian_missing_error(error: Any) -> bool:
+    """Return True only when Obsidian indicates the target note/path is missing."""
+    message = str(error or "").strip().lower()
+    if not message:
+        return False
+    tokens = (
+        "status 404",
+        "not found",
+        "file not found",
+        "folder not found",
+        "no such file",
+    )
+    return any(token in message for token in tokens)
+
+
 def _ensure_north_star_context(
     *,
     course_id: Optional[int],
@@ -871,17 +891,6 @@ def _ensure_north_star_context(
     derived_subtopic = _sanitize_path_segment(topic or derived_module_name, fallback=derived_module_name)
     derived_course = _resolve_class_label(course_id)
 
-    if path_override:
-        # User-provided vault folder — use directly
-        clean = path_override.strip().rstrip("/").rstrip("\\")
-        north_star_path = f"{clean}/_North_Star.md"
-    else:
-        north_star_path = _canonical_north_star_path(
-            course_label=derived_course,
-            module_or_week=derived_module_name,
-            subtopic=derived_subtopic,
-        )
-
     # Always merge payload objectives with DB objectives so the North Star
     # accumulates across topics (e.g., Hip + Knee in the same construct).
     payload_objectives = _collect_objectives_from_payload(learning_objectives)
@@ -907,6 +916,43 @@ def _ensure_north_star_context(
                 "status": "active",
             }
         ]
+
+    # If the provided module label is generic (often equal to course/topic),
+    # and objectives clearly point to one module group, prefer that group for
+    # North Star routing so we don't probe unrelated folders.
+    objective_groups = sorted(
+        {
+            str(obj.get("group") or "").strip()
+            for obj in objectives
+            if str(obj.get("group") or "").strip()
+        }
+    )
+    module_raw = str(module_name or "").strip()
+    topic_raw = str(topic or "").strip()
+    course_raw = str(derived_course or "").strip()
+    module_norm = module_raw.lower()
+    topic_norm = topic_raw.lower()
+    course_norm = course_raw.lower()
+    module_is_generic = (
+        not module_norm or module_norm == topic_norm or module_norm == course_norm
+    )
+    if module_is_generic and len(objective_groups) == 1:
+        recovered_module = _sanitize_module_name(objective_groups[0])
+        if recovered_module:
+            derived_module_name = recovered_module
+            if not topic_norm or topic_norm in {module_norm, course_norm}:
+                derived_subtopic = recovered_module
+
+    if path_override:
+        # User-provided vault folder — use directly
+        clean = path_override.strip().rstrip("/").rstrip("\\")
+        north_star_path = f"{clean}/_North_Star.md"
+    else:
+        north_star_path = _canonical_north_star_path(
+            course_label=derived_course,
+            module_or_week=derived_module_name,
+            subtopic=derived_subtopic,
+        )
 
     desired_statuses = {o["objective_id"]: o["status"] for o in objectives}
     current_content = ""
@@ -955,13 +1001,14 @@ def _ensure_north_star_context(
         else:
             existing_error = existing.get("error", "unknown error")
             obsidian_unavailable = _is_obsidian_connectivity_error(existing_error)
+            obsidian_missing = _is_obsidian_missing_error(existing_error)
             # File missing. If real objectives exist but no path_override was
             # given, the user may have deleted the file intentionally (e.g. to
             # relocate it).  Signal "needs_path" so the turn handler re-asks.
             has_real = any(
                 o["objective_id"] != "OBJ-UNMAPPED" for o in objectives
             )
-            if has_real and not path_override and not obsidian_unavailable:
+            if has_real and not path_override and obsidian_missing:
                 current_content = _build_north_star_markdown(
                     module_name=derived_module_name,
                     course_name=derived_course,
@@ -1097,7 +1144,34 @@ def _merge_and_save_obsidian_note(
     content: str,
     session_id: Optional[str],
 ) -> dict[str, Any]:
-    from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
+    prepared = _prepare_merged_obsidian_note(
+        path=path,
+        content=content,
+        session_id=session_id,
+    )
+    if not prepared.get("success"):
+        return prepared
+
+    from dashboard.api_adapter import obsidian_save_file
+
+    merged_content = str(prepared.get("content") or "")
+    save_result = obsidian_save_file(path, merged_content)
+    if not save_result.get("success"):
+        return {
+            "success": False,
+            "path": path,
+            "error": save_result.get("error", "failed_to_save_obsidian_note"),
+        }
+    return {"success": True, "path": path, "content": merged_content}
+
+
+def _prepare_merged_obsidian_note(
+    *,
+    path: str,
+    content: str,
+    session_id: Optional[str],
+) -> dict[str, Any]:
+    from dashboard.api_adapter import obsidian_get_file
     from obsidian_index import get_vault_index
     from obsidian_merge import merge_sections
 
@@ -1115,14 +1189,131 @@ def _merge_and_save_obsidian_note(
         session_id=session_id,
         vault_index=vault_notes,
     )
-    save_result = obsidian_save_file(path, merged_content)
-    if not save_result.get("success"):
-        return {
-            "success": False,
-            "path": path,
-            "error": save_result.get("error", "failed_to_save_obsidian_note"),
-        }
     return {"success": True, "path": path, "content": merged_content}
+
+
+def _create_obsidian_write_preview(
+    *,
+    path: str,
+    merged_content: str,
+    session_id: Optional[str],
+    requested_bytes: int,
+) -> dict[str, Any]:
+    preview_id = f"owp-{uuid.uuid4().hex[:12]}"
+    now_iso = datetime.now().isoformat()
+    record = {
+        "preview_id": preview_id,
+        "session_id": str(session_id or "").strip() or None,
+        "path": path,
+        "content": merged_content,
+        "requested_bytes": int(requested_bytes),
+        "created_at": now_iso,
+    }
+    with OBSIDIAN_WRITE_PREVIEWS_LOCK:
+        OBSIDIAN_WRITE_PREVIEWS[preview_id] = record
+        if len(OBSIDIAN_WRITE_PREVIEWS) > 400:
+            ordered = sorted(
+                OBSIDIAN_WRITE_PREVIEWS.values(),
+                key=lambda r: str(r.get("created_at") or ""),
+            )
+            for stale in ordered[: len(OBSIDIAN_WRITE_PREVIEWS) - 400]:
+                OBSIDIAN_WRITE_PREVIEWS.pop(str(stale.get("preview_id") or ""), None)
+    return record
+
+
+def _resolve_obsidian_write_preview(
+    *,
+    preview_id: Optional[str],
+    session_id: Optional[str],
+) -> Optional[dict[str, Any]]:
+    with OBSIDIAN_WRITE_PREVIEWS_LOCK:
+        if preview_id:
+            return OBSIDIAN_WRITE_PREVIEWS.get(preview_id)
+        sid = str(session_id or "").strip()
+        if not sid:
+            return None
+        matches = [
+            rec
+            for rec in OBSIDIAN_WRITE_PREVIEWS.values()
+            if str(rec.get("session_id") or "").strip() == sid
+        ]
+        if not matches:
+            return None
+        matches.sort(key=lambda r: str(r.get("created_at") or ""))
+        return matches[-1]
+
+
+def _remove_obsidian_write_preview(preview_id: str) -> None:
+    with OBSIDIAN_WRITE_PREVIEWS_LOCK:
+        OBSIDIAN_WRITE_PREVIEWS.pop(str(preview_id or ""), None)
+
+
+def _start_vault_wide_janitor_scan(
+    *,
+    trigger: str,
+    session_id: Optional[str] = None,
+) -> dict[str, Any]:
+    job_id = f"janitor-{uuid.uuid4().hex[:12]}"
+    now_iso = datetime.now().isoformat()
+    job = {
+        "job_id": job_id,
+        "trigger": trigger,
+        "session_id": str(session_id or "").strip() or None,
+        "status": "queued",
+        "started_at": None,
+        "completed_at": None,
+        "created_at": now_iso,
+        "issues_found": None,
+        "fixable": None,
+        "error": None,
+    }
+    with JANITOR_JOBS_LOCK:
+        JANITOR_JOBS[job_id] = job
+        if len(JANITOR_JOBS) > JANITOR_JOB_RETENTION:
+            ordered = sorted(
+                JANITOR_JOBS.values(),
+                key=lambda r: str(r.get("created_at") or ""),
+            )
+            for stale in ordered[: len(JANITOR_JOBS) - JANITOR_JOB_RETENTION]:
+                JANITOR_JOBS.pop(str(stale.get("job_id") or ""), None)
+
+    def _worker() -> None:
+        with JANITOR_JOBS_LOCK:
+            current = JANITOR_JOBS.get(job_id)
+            if current is None:
+                return
+            current["status"] = "running"
+            current["started_at"] = datetime.now().isoformat()
+        try:
+            from vault_janitor import scan_vault
+
+            scan = scan_vault(
+                checks=["missing_frontmatter", "orphan", "broken_link", "duplicate"]
+            )
+            issues = list(getattr(scan, "issues", []) or [])
+            fixable = sum(1 for issue in issues if getattr(issue, "fixable", False))
+            with JANITOR_JOBS_LOCK:
+                current = JANITOR_JOBS.get(job_id)
+                if current is not None:
+                    current["status"] = "completed"
+                    current["issues_found"] = len(issues)
+                    current["fixable"] = fixable
+                    current["completed_at"] = datetime.now().isoformat()
+        except Exception as exc:
+            _LOG.warning("vault-wide janitor async scan failed: %s", exc)
+            with JANITOR_JOBS_LOCK:
+                current = JANITOR_JOBS.get(job_id)
+                if current is not None:
+                    current["status"] = "failed"
+                    current["error"] = str(exc)
+                    current["completed_at"] = datetime.now().isoformat()
+
+    Thread(target=_worker, daemon=True).start()
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "trigger": trigger,
+    }
 
 
 def _sync_graph_for_paths(
@@ -1181,29 +1372,95 @@ def save_tool_note_to_obsidian(
     if not path or not content:
         return {"success": False, "error": "path and content are required"}
 
-    save_result = _merge_and_save_obsidian_note(
+    preview_result = _prepare_merged_obsidian_note(
         path=path,
         content=content,
         session_id=session_id,
     )
+    if not preview_result.get("success"):
+        return preview_result
+
+    merged_content = str(preview_result.get("content") or "")
+    preview = _create_obsidian_write_preview(
+        path=path,
+        merged_content=merged_content,
+        session_id=session_id,
+        requested_bytes=len(content),
+    )
+
+    preview_excerpt = merged_content[:500]
+    if len(merged_content) > 500:
+        preview_excerpt += "\n...[truncated]"
+
+    return {
+        "success": True,
+        "message": (
+            f"Prepared Obsidian write preview for {path}. "
+            "Ask for confirmation, then call apply_obsidian_write_preview."
+        ),
+        "path": path,
+        "bytes": len(content),
+        "preview_required": True,
+        "preview_id": preview["preview_id"],
+        "preview_excerpt": preview_excerpt,
+        "preview_content_chars": len(merged_content),
+        "created_at": preview["created_at"],
+    }
+
+
+def apply_tool_obsidian_write_preview(
+    *,
+    preview_id: Optional[str] = None,
+    session_id: Optional[str] = None,
+) -> dict[str, Any]:
+    preview = _resolve_obsidian_write_preview(
+        preview_id=preview_id,
+        session_id=session_id,
+    )
+    if not preview:
+        return {
+            "success": False,
+            "error": "No pending Obsidian write preview found.",
+        }
+
+    path = str(preview.get("path") or "").strip()
+    merged_content = str(preview.get("content") or "")
+    if not path or not merged_content:
+        return {"success": False, "error": "Preview is missing path or content."}
+
+    from dashboard.api_adapter import obsidian_save_file
+
+    save_result = obsidian_save_file(path, merged_content)
     if not save_result.get("success"):
-        return save_result
+        return {
+            "success": False,
+            "error": save_result.get("error", "failed_to_apply_preview"),
+            "preview_id": preview.get("preview_id"),
+            "path": path,
+        }
 
     conn = get_connection()
     try:
         graph_sync = _sync_graph_for_paths(
             conn=conn,
-            notes_by_path={path: str(save_result.get("content") or "")},
+            notes_by_path={path: merged_content},
         )
     finally:
         conn.close()
 
+    janitor_job = _start_vault_wide_janitor_scan(
+        trigger="obsidian_write_apply",
+        session_id=session_id,
+    )
+    _remove_obsidian_write_preview(str(preview.get("preview_id") or ""))
+
     return {
         "success": True,
-        "message": f"Saved to Obsidian: {path}",
+        "message": f"Applied Obsidian write preview: {path}",
+        "preview_id": preview.get("preview_id"),
         "path": path,
-        "bytes": len(content),
         "graph_sync": graph_sync,
+        "janitor_job": janitor_job,
     }
 
 
@@ -1546,14 +1803,20 @@ def _reconcile_obsidian_state(session: dict) -> None:
         if ns_path and ns_status not in ("needs_path", "test_mode_no_write"):
             result = obsidian_get_file(ns_path)
             if not result.get("success"):
-                if _is_obsidian_connectivity_error(result.get("error")):
+                read_error = result.get("error")
+                if _is_obsidian_connectivity_error(read_error):
                     if ns_status != "io_unavailable_no_write":
                         ns["status"] = "io_unavailable_no_write"
                         ns_changed = True
-                else:
+                elif _is_obsidian_missing_error(read_error):
                     ns["status"] = "needs_path"
                     ns_changed = True
                     north_star_missing = True
+                else:
+                    # Auth/permission/server errors are not "file deleted".
+                    if ns_status != "io_unavailable_no_write":
+                        ns["status"] = "io_unavailable_no_write"
+                        ns_changed = True
 
     # --- Artifact reconciliation ---
     art_raw = session.get("artifacts_json")
@@ -1575,16 +1838,12 @@ def _reconcile_obsidian_state(session: dict) -> None:
         sp = art.get("session_path")
         if sp:
             res = obsidian_get_file(sp)
-            if not res.get("success") and not _is_obsidian_connectivity_error(
-                res.get("error")
-            ):
+            if not res.get("success") and _is_obsidian_missing_error(res.get("error")):
                 missing_paths.append(sp)
 
         for cp in art.get("concept_paths") or []:
             res = obsidian_get_file(cp)
-            if not res.get("success") and not _is_obsidian_connectivity_error(
-                res.get("error")
-            ):
+            if not res.get("success") and _is_obsidian_missing_error(res.get("error")):
                 missing_paths.append(cp)
 
         if missing_paths:
@@ -2196,6 +2455,69 @@ def _is_selected_scope_listing_question(question: str) -> bool:
         r"\bwhich\b.{0,80}\b(files?|materials?|sources?)\b.{0,80}\b(access|using|selected|have)\b",
     )
     return any(re.search(pattern, q) for pattern in patterns)
+
+
+def _is_obsidian_vault_listing_question(question: str) -> bool:
+    """Detect direct requests to list/browse live Obsidian vault structure."""
+    q = (question or "").strip().lower()
+    if not q:
+        return False
+    patterns = (
+        r"\b(obsidian|vault)\b.{0,60}\b(folder|folders|tree|structure|directory|directories|paths?)\b",
+        r"\b(show|list|browse|display)\b.{0,60}\b(my )?(obsidian|vault)\b",
+        r"\b(pull|get|fetch)\b.{0,60}\b(entire|full|whole)\b.{0,40}\b(obsidian|vault)\b.{0,40}\b(tree|folder structure|vault structure)\b",
+    )
+    return any(re.search(pattern, q) for pattern in patterns)
+
+
+def _extract_obsidian_folder_hint(question: str) -> str:
+    """Best-effort parse of a vault folder path hint from user question."""
+    q = str(question or "").strip()
+    if not q:
+        return ""
+
+    # Prefer explicitly quoted/backticked path hints.
+    for pattern in (r"`([^`]+)`", r'"([^"]+)"', r"'([^']+)'"):
+        for match in re.findall(pattern, q):
+            candidate = str(match or "").strip().strip("/").strip("\\")
+            if not candidate:
+                continue
+            if candidate.lower().endswith(".md"):
+                continue
+            return candidate.replace("\\", "/")
+
+    # Fallback: parse "in/under/inside <path>" phrases.
+    m = re.search(r"\b(?:in|under|inside)\s+([A-Za-z0-9 _\-/\\]+)", q, re.IGNORECASE)
+    if not m:
+        return ""
+    candidate = str(m.group(1) or "").strip().strip("/").strip("\\")
+    candidate = candidate.rstrip(".,;:!?")
+    if not candidate or candidate.lower().endswith(".md"):
+        return ""
+    return candidate.replace("\\", "/")
+
+
+def _build_obsidian_vault_listing_response(
+    *,
+    folder: str,
+    paths: list[str],
+    total_count: int,
+    truncated: bool,
+) -> str:
+    """Build deterministic response text for live Obsidian folder listing."""
+    lines = [f"Live Obsidian folder listing for `{folder or '/'}`."]
+    lines.append(f"Found {total_count} path(s).")
+    if truncated:
+        lines.append(f"Showing first {len(paths)} path(s).")
+
+    if not paths:
+        lines.append("No files or folders were returned for this location.")
+        return "\n".join(lines)
+
+    lines.append("")
+    lines.append("Paths:")
+    lines.extend(f"- {p}" for p in paths)
+    return "\n".join(lines)
 
 
 def _build_material_count_response(
@@ -3148,6 +3470,79 @@ def get_session(session_id: str):
     return jsonify(session)
 
 
+def _persist_tutor_turn(
+    *,
+    session: dict[str, Any],
+    session_id: str,
+    turn_number: int,
+    question: str,
+    full_response: str,
+    citations: list[Any],
+    latest_response_id: Optional[str],
+    latest_thread_id: Optional[str],
+    api_model: str,
+    artifact_cmd: Optional[dict[str, Any]],
+    behavior_override: Optional[str],
+    parsed_verdict: Optional[dict[str, Any]],
+    content_filter: Optional[dict[str, Any]],
+    used_scope_shortcut: bool,
+) -> None:
+    """Persist completed tutor turn and advance session counters."""
+    db_conn = get_connection()
+    try:
+        cur = db_conn.cursor()
+        now = datetime.now().isoformat()
+
+        cur.execute(
+            """INSERT INTO tutor_turns
+               (session_id, tutor_session_id, course_id, turn_number,
+                question, answer, citations_json, response_id, model_id,
+                phase, artifacts_json, behavior_override, evaluation_json,
+                created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                session_id,
+                session_id,
+                session.get("course_id"),
+                turn_number,
+                question,
+                full_response,
+                json.dumps(citations) if citations else None,
+                None if used_scope_shortcut else latest_response_id,
+                api_model,
+                session.get("phase"),
+                json.dumps({"command": artifact_cmd}) if artifact_cmd else None,
+                behavior_override,
+                json.dumps(parsed_verdict) if parsed_verdict else None,
+                now,
+            ),
+        )
+
+        cur.execute(
+            """UPDATE tutor_sessions
+               SET turn_count = ?, last_response_id = ?, codex_thread_id = COALESCE(?, codex_thread_id), content_filter_json = ?
+               WHERE session_id = ?""",
+            (
+                turn_number,
+                latest_response_id,
+                latest_thread_id,
+                json.dumps(content_filter) if content_filter is not None else None,
+                session_id,
+            ),
+        )
+
+        if session.get("method_chain_id"):
+            cur.execute(
+                """UPDATE tutor_block_transitions
+                   SET turn_count = turn_count + 1
+                   WHERE tutor_session_id = ? AND ended_at IS NULL""",
+                (session_id,),
+            )
+        db_conn.commit()
+    finally:
+        db_conn.close()
+
+
 # ---------------------------------------------------------------------------
 # POST /api/tutor/session/<id>/turn — Send a message, SSE stream response
 # ---------------------------------------------------------------------------
@@ -3439,33 +3834,168 @@ def send_turn(session_id: str):
             profile_escalated = False
             profile_escalation_reasons: list[str] = []
 
+            # Deterministic live-vault listing shortcut (bypasses LLM).
+            if _is_obsidian_vault_listing_question(question):
+                from dashboard.api_adapter import obsidian_list_files
+
+                requested_folder = (
+                    _extract_obsidian_folder_hint(question)
+                    or str(content_filter.get("vault_folder") or "").strip()
+                    or ""
+                )
+                list_result = obsidian_list_files(requested_folder)
+                used_scope_shortcut = True
+                artifact_payload = [artifact_cmd] if artifact_cmd else None
+                if list_result.get("success"):
+                    paths = [
+                        str(p).strip()
+                        for p in (list_result.get("files") or [])
+                        if str(p).strip()
+                    ]
+                    paths.sort(key=lambda v: (0 if v.endswith("/") else 1, v.lower()))
+                    max_paths = 200
+                    shown_paths = paths[:max_paths]
+                    is_truncated = len(paths) > max_paths
+                    full_response = _build_obsidian_vault_listing_response(
+                        folder=requested_folder or "/",
+                        paths=shown_paths,
+                        total_count=len(paths),
+                        truncated=is_truncated,
+                    )
+                    retrieval_debug_payload = {
+                        "deterministic_obsidian_listing": True,
+                        "obsidian_folder": requested_folder or "/",
+                        "obsidian_paths_count": len(paths),
+                        "obsidian_paths_returned": len(shown_paths),
+                        "obsidian_paths_truncated": is_truncated,
+                        "requested_accuracy_profile": requested_accuracy_profile,
+                        "effective_accuracy_profile": effective_accuracy_profile,
+                    }
+                    citations = [
+                        {
+                            "source": f"Obsidian Live API: {requested_folder or '/'}",
+                            "index": 1,
+                        }
+                    ]
+                    yield format_sse_chunk(full_response)
+                    yield format_sse_done(
+                        citations=citations,
+                        model=api_model,
+                        artifacts=artifact_payload,
+                        retrieval_debug=retrieval_debug_payload,
+                    )
+                    _persist_tutor_turn(
+                        session=session,
+                        session_id=session_id,
+                        turn_number=turn_number,
+                        question=question,
+                        full_response=full_response,
+                        citations=citations,
+                        latest_response_id=latest_response_id,
+                        latest_thread_id=latest_thread_id,
+                        api_model=api_model,
+                        artifact_cmd=artifact_cmd,
+                        behavior_override=behavior_override,
+                        parsed_verdict=parsed_verdict,
+                        content_filter=content_filter,
+                        used_scope_shortcut=True,
+                    )
+                    return
+
+                err = str(list_result.get("error") or "unknown error").strip()
+                full_response = (
+                    "I could not load your live Obsidian vault listing right now. "
+                    f"Obsidian API error: {err}. "
+                    "I am not using a cached or inferred folder tree."
+                )
+                retrieval_debug_payload = {
+                    "deterministic_obsidian_listing": True,
+                    "obsidian_folder": requested_folder or "/",
+                    "obsidian_error": err,
+                    "requested_accuracy_profile": requested_accuracy_profile,
+                    "effective_accuracy_profile": effective_accuracy_profile,
+                }
+                yield format_sse_chunk(full_response)
+                yield format_sse_done(
+                    citations=[],
+                    model=api_model,
+                    artifacts=artifact_payload,
+                    retrieval_debug=retrieval_debug_payload,
+                )
+                _persist_tutor_turn(
+                    session=session,
+                    session_id=session_id,
+                    turn_number=turn_number,
+                    question=question,
+                    full_response=full_response,
+                    citations=[],
+                    latest_response_id=latest_response_id,
+                    latest_thread_id=latest_thread_id,
+                    api_model=api_model,
+                    artifact_cmd=artifact_cmd,
+                    behavior_override=behavior_override,
+                    parsed_verdict=parsed_verdict,
+                    content_filter=content_filter,
+                    used_scope_shortcut=True,
+                )
+                return
+
             # --- Unified context retrieval ---
             from tutor_context import build_context
 
-            _depth = "none"
-            if _materials_on and _obsidian_on:
-                _depth = "auto"
-            elif _materials_on:
-                _depth = "materials"
-            elif _obsidian_on:
-                _depth = "notes"
+            material_text = ""
+            instruction_text = ""
+            notes_context_text = ""
+            course_map_text = ""
+            rag_debug = {}
 
-            ctx = build_context(
-                question,
-                depth=_depth,
-                course_id=retrieval_course_id,
-                material_ids=material_ids,
-                module_prefix=module_prefix or None,
-                k_materials=effective_material_k,
-            )
-            rag_debug = ctx["debug"]
+            if _obsidian_on:
+                # Obsidian-first policy: when enabled, notes are queried first.
+                notes_ctx = build_context(
+                    question,
+                    depth="notes",
+                    course_id=retrieval_course_id,
+                    material_ids=material_ids,
+                    module_prefix=module_prefix or None,
+                    k_materials=effective_material_k,
+                )
+                notes_context_text = notes_ctx.get("notes", "")
+                rag_debug = {"obsidian_primary": True, "notes_debug": notes_ctx.get("debug", {})}
 
-            material_text = ctx["materials"]
-            instruction_text = ctx["instructions"]
-            notes_context_text = ctx["notes"]
+                if _materials_on:
+                    materials_ctx = build_context(
+                        question,
+                        depth="materials",
+                        course_id=retrieval_course_id,
+                        material_ids=material_ids,
+                        module_prefix=module_prefix or None,
+                        k_materials=effective_material_k,
+                    )
+                    material_text = materials_ctx.get("materials", "")
+                    instruction_text = materials_ctx.get("instructions", "")
+                    course_map_text = materials_ctx.get("course_map", "")
+                    rag_debug["materials_debug"] = materials_ctx.get("debug", {})
+                else:
+                    # Avoid non-note routing artifacts when operating notes-only.
+                    course_map_text = ""
+            else:
+                depth = "materials" if _materials_on else "none"
+                base_ctx = build_context(
+                    question,
+                    depth=depth,
+                    course_id=retrieval_course_id,
+                    material_ids=material_ids,
+                    module_prefix=module_prefix or None,
+                    k_materials=effective_material_k,
+                )
+                material_text = base_ctx.get("materials", "")
+                instruction_text = base_ctx.get("instructions", "")
+                notes_context_text = base_ctx.get("notes", "")
+                course_map_text = base_ctx.get("course_map", "")
+                rag_debug = base_ctx.get("debug", {})
 
-            # Graceful mode when no materials
-            if not material_text:
+            # Graceful mode when materials are enabled but nothing retrieved.
+            if _materials_on and not material_text:
                 material_text = (
                     "No course-specific materials were retrieved for this topic. "
                     "Teach from your medical/PT training knowledge. "
@@ -3503,7 +4033,7 @@ def send_turn(session_id: str):
                 instruction_context=instruction_text,
                 material_context=material_text,
                 graph_context=graph_context_text,
-                course_map=ctx.get("course_map", ""),
+                course_map=course_map_text,
             )
             system_prompt += (
                 "\n\n## Retrieval Tuning\n"
@@ -3541,12 +4071,15 @@ def send_turn(session_id: str):
                         "The North Star note was deleted from Obsidian but learning objectives "
                         "are still saved in the database. Before continuing, ask the student "
                         "where to re-save the North Star.\n"
-                        '1. Ask: "Your North Star file was removed. '
+                        "1. FIRST call `list_obsidian_paths` (folder=\"\") to fetch a live vault folder list.\n"
+                        "   - Only present folder paths returned by the tool.\n"
+                        "   - Do not invent or reconstruct a folder tree from memory/course docs.\n"
+                        '2. Ask: "Your North Star file was removed. '
                         'Where should I save your learning objectives? '
                         'Example: Study Notes/Movement Science/Construct 2/Hip and Pelvis"\n'
-                        "2. Once the student provides a folder, call `save_learning_objectives` "
+                        "3. Once the student provides a folder, call `save_learning_objectives` "
                         "with the existing objectives and the new `save_folder`.\n"
-                        "3. If the student says skip or default, call `save_learning_objectives` "
+                        "4. If the student says skip or default, call `save_learning_objectives` "
                         "without `save_folder` to use the auto-generated path."
                     )
                 elif _needs_lo_save:
@@ -3633,6 +4166,13 @@ def send_turn(session_id: str):
                     f"- Escalated profile: {effective_accuracy_profile}\n"
                     f"- Escalation reason(s): {', '.join(profile_escalation_reasons) or 'weak_retrieval_signals'}\n"
                 )
+            if _obsidian_on:
+                system_prompt += (
+                    "\n\n## Obsidian-First Mode\n"
+                    "- Obsidian mode is enabled for this turn.\n"
+                    "- Consult Obsidian notes context before other sources whenever possible.\n"
+                    "- If the user asks to browse/list folders, use live Obsidian listing behavior.\n"
+                )
 
             effective_model = codex_model or _model
             system_prompt += (
@@ -3646,8 +4186,10 @@ def send_turn(session_id: str):
                 "Use when they ask to open/summarize a specific note.\n"
                 "- **search_obsidian_notes**: Search notes in Obsidian by query. "
                 "Use when they ask to find where a concept appears in their notes.\n"
-                "- **save_to_obsidian**: Save study notes to the student's Obsidian vault. "
+                "- **save_to_obsidian**: Prepare a write preview for Obsidian notes. "
                 "Use when they say 'save this', 'add to Obsidian', 'export notes', etc.\n"
+                "- **apply_obsidian_write_preview**: Apply a pending Obsidian write preview "
+                "after the student confirms.\n"
                 "- **create_note**: Create a quick note on the dashboard Notes page. "
                 "Use for action items, reminders, or brief observations.\n"
                 "- **create_anki_card**: Draft an Anki flashcard. "
@@ -3661,6 +4203,8 @@ def send_turn(session_id: str):
                 "Do NOT use tools for casual questions or general conversation. "
                 "If a student asks whether you can view/browse Obsidian, call an Obsidian tool first. "
                 "Do not claim you cannot browse if these tools return data.\n"
+                "For Obsidian writes: first create preview with save_to_obsidian, ask for confirmation, "
+                "then call apply_obsidian_write_preview.\n"
                 "When you use a tool, briefly confirm what you did.\n\n"
                 f"## Identity\n"
                 f"You are powered by OpenAI model **{effective_model}**. "
@@ -4304,6 +4848,16 @@ def send_turn(session_id: str):
     )
 
 
+@tutor_bp.route("/janitor/jobs/<job_id>", methods=["GET"])
+def get_janitor_job(job_id: str):
+    """Return status for an async vault-wide janitor job."""
+    with JANITOR_JOBS_LOCK:
+        job = JANITOR_JOBS.get(job_id)
+        if not job:
+            return jsonify({"error": "Janitor job not found"}), 404
+        return jsonify(dict(job)), 200
+
+
 # ---------------------------------------------------------------------------
 # GET /api/tutor/session/<id>/chain-status — Full chain progress for session
 # ---------------------------------------------------------------------------
@@ -4701,19 +5255,15 @@ def end_session(session_id: str):
     except Exception as exc:
         _LOG.warning("end_session auto-capture method_ratings failed: %s", exc)
 
-    # --- Lightweight janitor pass on touched folder ---
+    # --- Async vault-wide janitor orchestration ---
     janitor_result: Optional[dict[str, Any]] = None
-    if vault_folder:
-        try:
-            from vault_janitor import scan_vault
-            scan = scan_vault(folder=vault_folder, checks=["missing_frontmatter"])
-            janitor_result = {
-                "folder": vault_folder,
-                "issues_found": len(scan.issues),
-                "fixable": sum(1 for i in scan.issues if i.fixable),
-            }
-        except Exception as exc:
-            _LOG.warning("end_session janitor pass failed: %s", exc)
+    try:
+        janitor_result = _start_vault_wide_janitor_scan(
+            trigger="end_session",
+            session_id=session_id,
+        )
+    except Exception as exc:
+        _LOG.warning("end_session async janitor enqueue failed: %s", exc)
 
     conn.close()
 

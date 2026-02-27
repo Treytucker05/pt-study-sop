@@ -48,6 +48,12 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [ ] C2. Verify normal-session MP4 path in tutor flow (not only admin/test mode).
 - [ ] C3. Add clear user-visible budget/failover status for API key switching.
 
+### Sprint 4: Obsidian Reliability Hardening (2026-02-27)
+- [x] D1. Fix Obsidian browse tool arg compatibility (`folder` canonical, legacy `path` shim).
+- [x] D2. Add deterministic live vault listing shortcut for folder-structure questions (no inferred tree fallback).
+- [x] D3. Surface nested-folder load errors in Tutor vault browser UI.
+- [x] D4. Add preview/apply write gate wiring and async vault-wide janitor orchestration.
+
 ## Workstream Status Snapshot
 
 ### A1) PRIME Inventory + Stage Fit

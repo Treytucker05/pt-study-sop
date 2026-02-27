@@ -9,11 +9,12 @@ Tools:
   2. list_obsidian_paths        — list files/folders in the Obsidian vault
   3. read_obsidian_note         — read markdown note content from the vault
   4. search_obsidian_notes      — search notes in the vault by query
-  5. create_note                — create a quick note on the dashboard Notes page
-  6. create_anki_card           — draft an Anki flashcard for spaced repetition
-  7. create_figma_diagram       — create a visual diagram in Figma (requires Figma MCP)
-  8. save_learning_objectives   — persist approved LOs to DB and rebuild North Star
-  9. rate_method_block          — record student feedback on a study method block
+  5. apply_obsidian_write_preview — apply a pending Obsidian write preview
+  6. create_note                — create a quick note on the dashboard Notes page
+  7. create_anki_card           — draft an Anki flashcard for spaced repetition
+  8. create_figma_diagram       — create a visual diagram in Figma (requires Figma MCP)
+  9. save_learning_objectives   — persist approved LOs to DB and rebuild North Star
+  10. rate_method_block         — record student feedback on a study method block
 """
 
 from __future__ import annotations
@@ -33,9 +34,10 @@ SAVE_TO_OBSIDIAN_SCHEMA: dict[str, Any] = {
     "type": "function",
     "name": "save_to_obsidian",
     "description": (
-        "Save a study note to the user's Obsidian vault. "
+        "Prepare a study note write preview for the user's Obsidian vault. "
         "Use when the student asks to save, export, or store notes, "
-        "summaries, or key concepts to Obsidian."
+        "summaries, or key concepts to Obsidian. "
+        "After preview approval, call apply_obsidian_write_preview."
     ),
     "parameters": {
         "type": "object",
@@ -53,6 +55,26 @@ SAVE_TO_OBSIDIAN_SCHEMA: dict[str, Any] = {
             },
         },
         "required": ["path", "content"],
+    },
+}
+
+APPLY_OBSIDIAN_WRITE_PREVIEW_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "name": "apply_obsidian_write_preview",
+    "description": (
+        "Apply a pending Obsidian write preview after the student confirms. "
+        "Use preview_id from save_to_obsidian output, or omit to apply the latest "
+        "pending preview for the current session."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "preview_id": {
+                "type": "string",
+                "description": "Optional preview id returned by save_to_obsidian.",
+            }
+        },
+        "required": [],
     },
 }
 
@@ -342,6 +364,7 @@ RATE_METHOD_BLOCK_SCHEMA: dict[str, Any] = {
 # All tool schemas in a single list for passing to the API
 TUTOR_TOOL_SCHEMAS: list[dict[str, Any]] = [
     SAVE_TO_OBSIDIAN_SCHEMA,
+    APPLY_OBSIDIAN_WRITE_PREVIEW_SCHEMA,
     LIST_OBSIDIAN_PATHS_SCHEMA,
     READ_OBSIDIAN_NOTE_SCHEMA,
     SEARCH_OBSIDIAN_NOTES_SCHEMA,
@@ -363,7 +386,7 @@ def execute_save_to_obsidian(
     *,
     session_id: str | int | None = None,
 ) -> dict[str, Any]:
-    """Save/merge content to a file in the Obsidian vault and sync graph."""
+    """Create an Obsidian write preview for later confirmation/apply."""
     path = arguments.get("path", "")
     content = arguments.get("content", "")
 
@@ -379,16 +402,41 @@ def execute_save_to_obsidian(
             session_id=str(session_id) if session_id is not None else None,
         )
         if result.get("success"):
-            log.info("Tutor tool: merged/saved to Obsidian — %s (%d bytes)", path, len(content))
+            log.info("Tutor tool: prepared Obsidian write preview — %s (%d bytes)", path, len(content))
         return result
     except Exception as e:
         log.exception("Tutor tool save_to_obsidian failed")
         return {"success": False, "error": str(e)}
 
 
+def execute_apply_obsidian_write_preview(
+    arguments: dict[str, Any],
+    *,
+    session_id: str | int | None = None,
+) -> dict[str, Any]:
+    """Apply pending Obsidian write preview for the current session."""
+    try:
+        preview_id = str(arguments.get("preview_id") or "").strip() or None
+        from brain.dashboard.api_tutor import apply_tool_obsidian_write_preview
+
+        return apply_tool_obsidian_write_preview(
+            preview_id=preview_id,
+            session_id=str(session_id or "").strip() or None,
+        )
+    except Exception as e:
+        log.exception("Tutor tool apply_obsidian_write_preview failed")
+        return {"success": False, "error": str(e)}
+
+
 def execute_list_obsidian_paths(arguments: dict[str, Any]) -> dict[str, Any]:
     """List files/folders from a vault folder path."""
     folder = str(arguments.get("folder") or "").strip()
+    legacy_path = str(arguments.get("path") or "").strip()
+    used_legacy_path_arg = False
+    if not folder and legacy_path:
+        # Backward compatibility: older prompts may still pass "path".
+        folder = legacy_path
+        used_legacy_path_arg = True
     try:
         limit = int(arguments.get("limit", 100))
     except (TypeError, ValueError):
@@ -411,6 +459,7 @@ def execute_list_obsidian_paths(arguments: dict[str, Any]) -> dict[str, Any]:
             "count": len(files),
             "paths": files[:limit],
             "truncated": len(files) > limit,
+            "used_legacy_path_arg": used_legacy_path_arg,
         }
     except Exception as e:
         log.exception("Tutor tool list_obsidian_paths failed")
@@ -773,6 +822,7 @@ def execute_rate_method_block(
 
 TOOL_REGISTRY: dict[str, Any] = {
     "save_to_obsidian": execute_save_to_obsidian,
+    "apply_obsidian_write_preview": execute_apply_obsidian_write_preview,
     "list_obsidian_paths": execute_list_obsidian_paths,
     "read_obsidian_note": execute_read_obsidian_note,
     "search_obsidian_notes": execute_search_obsidian_notes,
@@ -811,6 +861,7 @@ def execute_tool(
     # Pass session_id for tools that need it
     if tool_name in (
         "save_to_obsidian",
+        "apply_obsidian_write_preview",
         "create_anki_card",
         "create_figma_diagram",
         "save_learning_objectives",

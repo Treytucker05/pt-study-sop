@@ -210,3 +210,112 @@ def test_legacy_no_mode_uses_full_model_and_rag(mock_build_ctx, mock_stream, cli
     assert call_kwargs["model"] == "gpt-5.3-codex"
     assert call_kwargs.get("reasoning_effort") == "high"
     mock_build_ctx.assert_called()
+
+
+@patch("llm_provider.stream_chatgpt_responses")
+def test_obsidian_folder_listing_shortcut_bypasses_llm(mock_stream, client, seed_session, monkeypatch):
+    """Folder-structure questions should use deterministic Obsidian API listing."""
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_list_files",
+        lambda folder="": {
+            "success": True,
+            "files": [
+                "Study Notes/",
+                "Study Notes/Movement Science/",
+                "Study Notes/Movement Science/Hip.md",
+            ],
+        },
+    )
+
+    pre = client.get(f"/api/tutor/session/{seed_session}")
+    assert pre.status_code == 200
+    pre_turns = int(pre.get_json().get("turn_count", 0) or 0)
+
+    body = {
+        "message": "Show me my Obsidian folder structure",
+        "content_filter": {"material_ids": [], "accuracy_profile": "standard"},
+        "mode": {"materials": False, "obsidian": False, "web_search": False, "deep_think": False},
+    }
+    resp = client.post(
+        f"/api/tutor/session/{seed_session}/turn",
+        data=json.dumps(body),
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 200
+    stream_text = b"".join(resp.response).decode("utf-8", errors="ignore")
+    assert "Live Obsidian folder listing" in stream_text
+    assert "Study Notes/" in stream_text
+    mock_stream.assert_not_called()
+
+    post = client.get(f"/api/tutor/session/{seed_session}")
+    assert post.status_code == 200
+    post_turns = int(post.get_json().get("turn_count", 0) or 0)
+    assert post_turns == pre_turns + 1
+
+
+@patch("llm_provider.stream_chatgpt_responses")
+def test_obsidian_folder_listing_shortcut_reports_live_api_failure(
+    mock_stream, client, seed_session, monkeypatch
+):
+    """On listing failure, return explicit live-vault error and do not fabricate tree output."""
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_list_files",
+        lambda folder="": {"success": False, "error": "connection refused"},
+    )
+
+    pre = client.get(f"/api/tutor/session/{seed_session}")
+    assert pre.status_code == 200
+    pre_turns = int(pre.get_json().get("turn_count", 0) or 0)
+
+    body = {
+        "message": "List my vault folders",
+        "content_filter": {"material_ids": [], "accuracy_profile": "standard"},
+        "mode": {"materials": False, "obsidian": False, "web_search": False, "deep_think": False},
+    }
+    resp = client.post(
+        f"/api/tutor/session/{seed_session}/turn",
+        data=json.dumps(body),
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 200
+    stream_text = b"".join(resp.response).decode("utf-8", errors="ignore")
+    assert "could not load your live Obsidian vault listing" in stream_text
+    assert "not using a cached or inferred folder tree" in stream_text
+    mock_stream.assert_not_called()
+
+    post = client.get(f"/api/tutor/session/{seed_session}")
+    assert post.status_code == 200
+    post_turns = int(post.get_json().get("turn_count", 0) or 0)
+    assert post_turns == pre_turns + 1
+
+
+@patch("llm_provider.stream_chatgpt_responses")
+def test_obsidian_folder_listing_shortcut_accepts_single_segment_folder_hint(
+    mock_stream, client, seed_session, monkeypatch
+):
+    seen = {"folder": None}
+
+    def _list(folder=""):
+        seen["folder"] = folder
+        return {"success": True, "files": []}
+
+    monkeypatch.setattr(_api_adapter_mod, "obsidian_list_files", _list)
+
+    body = {
+        "message": "Show me my Obsidian folder tree in Study Notes",
+        "content_filter": {"material_ids": [], "accuracy_profile": "standard"},
+        "mode": {"materials": False, "obsidian": False, "web_search": False, "deep_think": False},
+    }
+    resp = client.post(
+        f"/api/tutor/session/{seed_session}/turn",
+        data=json.dumps(body),
+        content_type="application/json",
+    )
+
+    assert resp.status_code == 200
+    assert seen["folder"] == "Study Notes"
+    mock_stream.assert_not_called()

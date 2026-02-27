@@ -1293,3 +1293,88 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - `brain/tests/test_figma_tools.py` (updated schema count expectation)
 - Validation:
   - `py -3 -m pytest brain/tests/test_tutor_obsidian_tools.py brain/tests/test_figma_tools.py brain/tests/test_obsidian_client.py -q` -> 35 passed.
+## 2026-02-27 - Obsidian API URL authority + fallback noise reduction
+- Updated `brain/dashboard/api_adapter.py` Obsidian transport defaults to align with active Local REST endpoint (`http://127.0.0.1:27123`).
+- Changed `_obsidian_api_urls()` behavior to treat explicit `OBSIDIAN_API_URL` as authoritative:
+  - use configured URL first,
+  - include additional URLs only when `OBSIDIAN_API_URLS` is explicitly set,
+  - avoid automatic probing of legacy fallback hosts when an explicit URL exists.
+- Result: fewer false/noisy connection warnings in logs while keeping manual multi-URL fallback available via env.
+- Validation:
+  - `python -m py_compile brain/dashboard/api_adapter.py` -> PASS
+  - `pytest brain/tests/test_tutor_obsidian_tools.py -q` -> 6 passed
+  - runtime check `GET /api/obsidian/status` -> `{\"connected\":true,\"status\":\"online\"}`
+## 2026-02-27 - Obsidian explicit fallback URLs configured
+- Added `OBSIDIAN_API_URLS` in `brain/.env` to explicitly allow controlled fallback endpoints:
+  - `https://127.0.0.1:27124`
+  - `https://localhost:27124`
+- Effective runtime URL order now:
+  - `http://127.0.0.1:27123` (primary)
+  - `https://127.0.0.1:27124`
+  - `https://localhost:27124`
+- Validation:
+  - `GET /api/obsidian/status` -> `{"connected":true,"status":"online"}`
+## 2026-02-27 - Tutor North Star wrong-path remediation (Obsidian)
+- Root cause: generic module/topic labels (e.g., `Movement science`) could route North Star to an incorrect canonical folder and trigger repeated `needs_path` prompts.
+- Updated `brain/dashboard/api_tutor.py`:
+  - Added `_is_obsidian_missing_error(...)` and now only treat explicit missing-path signals (404/not found) as deletion/missing.
+  - `_reconcile_obsidian_state(...)` now maps non-missing read failures (auth/permission/server) to `io_unavailable_no_write` instead of `needs_path`.
+  - Artifact reconcile now marks `missing_paths` only for true missing errors (404/not found), not all non-connectivity errors.
+  - `_ensure_north_star_context(...)` now prefers objective-group-derived module routing when module label is generic (course/topic-like), preventing wrong-folder checks.
+  - Hardened `North Star File Missing` prompt instructions to require `list_obsidian_paths` tool output before suggesting folders (no invented course-tree fallback).
+- Validation:
+  - `python -m py_compile brain/dashboard/api_tutor.py brain/tests/test_tutor_session_linking.py` -> PASS
+  - Live API smoke test after restart:
+    - `POST /api/tutor/session` with topic `Movement science`, course_id `4`, source_ids `[426,427]`
+    - returned `north_star.path = Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md` and `status = updated`.
+  - Note: local pytest execution remains blocked in this shell due missing `flask` package in interpreter.
+## 2026-02-27 - One-time active session metadata repair (North Star path)
+- Repaired stale active tutor session `tutor-20260227-072121-28f542` content filter metadata that still pointed to an invalid Construct 1 North Star path.
+- Updated North Star fields to:
+  - `path`: `Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md`
+  - `status`: `updated`
+  - `module_name`: `Hip Module 1`
+  - `subtopic_name`: `Hip Module 1`
+- Purpose: prevent current in-progress session from repeatedly asking for wrong-file re-save after backend fix.
+## 2026-02-27 - Obsidian deterministic browse hardening (Tutor turn + tools + UI)
+- Implemented Obsidian browse tool backward compatibility in `brain/tutor_tools.py`:
+  - `list_obsidian_paths` now accepts canonical `folder` and maps legacy `path -> folder` when needed.
+  - returns `used_legacy_path_arg` for telemetry/debug.
+- Implemented deterministic folder-tree shortcut in `brain/dashboard/api_tutor.py`:
+  - detects vault/folder-structure questions and calls `obsidian_list_files(...)` directly.
+  - bypasses LLM/tool loop for these requests.
+  - returns explicit live API failure message and states no cached/inferred tree is used.
+- Fixed prompt mismatch in `api_tutor.py` North Star recovery instructions:
+  - changed `list_obsidian_paths(path="")` -> `list_obsidian_paths(folder="")`.
+- Improved vault browser UX in `dashboard_rebuild/client/src/components/TutorChat.tsx`:
+  - nested folder query errors now render inline instead of silently appearing as empty folders.
+- Added tests:
+  - `brain/tests/test_tutor_obsidian_tools.py`: legacy `path` arg compatibility.
+  - `brain/tests/test_api_tutor_mode_flags.py`: deterministic folder-listing shortcut success + explicit failure message.
+- Validation:
+  - `python -m py_compile brain/tutor_tools.py brain/dashboard/api_tutor.py` -> PASS
+  - `pytest brain/tests/test_tutor_obsidian_tools.py -q` -> 7 passed
+  - `pytest brain/tests/test_tutor_obsidian_tools.py brain/tests/test_api_tutor_mode_flags.py -q` -> blocked in this shell (`ModuleNotFoundError: flask`)
+  - `cd dashboard_rebuild && npm run build` -> PASS
+## 2026-02-27 - Obsidian preview/apply gate + async vault-wide janitor
+- Implemented preview-then-apply write flow for Tutor Obsidian tool saves:
+  - `save_to_obsidian` now prepares and stores a pending preview instead of writing immediately.
+  - Added `apply_obsidian_write_preview` tool to apply pending preview (by `preview_id` or latest for session).
+- Added async vault-wide janitor orchestration:
+  - applying a preview enqueues a full-vault janitor scan job (`missing_frontmatter`, `orphan`, `broken_link`, `duplicate`).
+  - ending a tutor session now also enqueues async vault-wide janitor scan.
+  - added status endpoint: `GET /api/tutor/janitor/jobs/<job_id>`.
+- Obsidian-first retrieval behavior when toggle is ON:
+  - notes retrieval runs first; materials retrieval is optional secondary when materials toggle is also ON.
+  - notes-only mode suppresses course-map routing context to avoid non-note routing artifacts.
+- Deterministic vault listing hardening updates:
+  - tightened vault-listing intent regex to reduce false positives.
+  - folder hint extraction now accepts single-segment folder names (e.g., `Study Notes`).
+  - fixed shortcut turn persistence so deterministic listing turns are logged and increment `turn_count`.
+- Tests:
+  - `brain/tests/test_tutor_obsidian_tools.py` expanded for apply tool routing + legacy arg handling.
+  - `brain/tests/test_api_tutor_mode_flags.py` expanded for deterministic shortcut persistence and single-segment folder hint.
+- Validation:
+  - `python -m py_compile brain/tutor_tools.py brain/dashboard/api_tutor.py` -> PASS
+  - `pytest brain/tests/test_tutor_obsidian_tools.py -q` -> 8 passed
+  - `pytest brain/tests/test_api_tutor_mode_flags.py -q` -> blocked in this shell (`ModuleNotFoundError: flask`)

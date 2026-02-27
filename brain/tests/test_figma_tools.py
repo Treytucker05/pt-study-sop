@@ -266,7 +266,7 @@ class TestToolRegistry:
         schemas = get_tool_schemas()
         names = [s["name"] for s in schemas]
         assert "create_figma_diagram" in names
-        assert len(schemas) == 9  # obsidian save/list/read/search, note, anki, figma, learning_objectives, rate_method_block
+        assert len(schemas) == 10  # plus apply_obsidian_write_preview
 
 
 # ---------------------------------------------------------------------------

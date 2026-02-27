@@ -1207,6 +1207,104 @@ def test_session_start_keeps_hard_failure_for_non_connectivity_errors(client, mo
     assert "North Star build failed" in str(data.get("error", ""))
 
 
+def test_ensure_north_star_context_prefers_objective_group_for_generic_module(monkeypatch):
+    monkeypatch.setattr(_api_tutor_mod, "_north_star_io_disabled", lambda: False)
+    monkeypatch.setattr(_api_tutor_mod, "_resolve_class_label", lambda _cid: "Movement Science")
+    monkeypatch.setattr(_api_tutor_mod, "_collect_objectives_from_payload", lambda _lo: [])
+    monkeypatch.setattr(
+        _api_tutor_mod,
+        "_collect_objectives_from_db",
+        lambda _course_id, _module_id=None, max_items=40: [
+            {
+                "objective_id": "OBJ-1",
+                "title": "Hip objective",
+                "status": "active",
+                "group": "Hip Module 1",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_get_file",
+        lambda _path: {"success": True, "content": "# Existing North Star"},
+    )
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_save_file",
+        lambda _path, _content: {"success": True, "path": _path},
+    )
+
+    ns_ctx, ns_err = _api_tutor_mod._ensure_north_star_context(
+        course_id=4,
+        module_id=None,
+        module_name="Movement science",
+        topic="Movement science",
+        learning_objectives=None,
+        source_ids=[],
+        force_refresh=False,
+        path_override=None,
+    )
+
+    assert ns_err is None
+    assert ns_ctx is not None
+    assert (
+        ns_ctx["path"]
+        == "Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md"
+    )
+
+
+def test_reconcile_obsidian_state_non_missing_error_does_not_set_needs_path(monkeypatch):
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_get_file",
+        lambda _path: {"success": False, "error": "Status 403"},
+    )
+
+    session = {
+        "session_id": "test-session-ns-403",
+        "content_filter_json": json.dumps(
+            {
+                "north_star": {
+                    "path": "Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md",
+                    "status": "reviewed",
+                    "objective_ids": ["OBJ-1", "OBJ-2"],
+                }
+            }
+        ),
+        "artifacts_json": "[]",
+    }
+
+    _api_tutor_mod._reconcile_obsidian_state(session)
+    updated = json.loads(session["content_filter_json"])
+    assert updated["north_star"]["status"] == "io_unavailable_no_write"
+
+
+def test_reconcile_obsidian_state_404_sets_needs_path(monkeypatch):
+    monkeypatch.setattr(
+        _api_adapter_mod,
+        "obsidian_get_file",
+        lambda _path: {"success": False, "error": "Status 404"},
+    )
+
+    session = {
+        "session_id": "test-session-ns-404",
+        "content_filter_json": json.dumps(
+            {
+                "north_star": {
+                    "path": "Study Notes/Movement Science/Hip Module 1/Hip Module 1/_North_Star.md",
+                    "status": "reviewed",
+                    "objective_ids": [],
+                }
+            }
+        ),
+        "artifacts_json": "[]",
+    }
+
+    _api_tutor_mod._reconcile_obsidian_state(session)
+    updated = json.loads(session["content_filter_json"])
+    assert updated["north_star"]["status"] == "needs_path"
+
+
 def test_testing_mode_blocks_north_star_writes(app):
     writes = app.config.get("TEST_NORTH_STAR_WRITES") or []
     normalized = [str(w).replace("\\", "/") for w in writes]

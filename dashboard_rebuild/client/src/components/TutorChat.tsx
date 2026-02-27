@@ -223,7 +223,7 @@ function VaultTreeChildren({
   refreshToken,
   enabled,
 }: VaultTreeChildrenProps) {
-  const { data } = useQuery({
+  const { data, error: childLoadError } = useQuery({
     queryKey: ["tutor", "obsidian", "files", folderPath, refreshToken],
     queryFn: () => api.obsidian.getFiles(folderPath),
     enabled,
@@ -234,6 +234,15 @@ function VaultTreeChildren({
 
   return (
     <>
+      {childLoadError ? (
+        <div
+          className="text-xs font-terminal text-red-400 border border-red-500/40 p-2 mt-1"
+          style={{ marginLeft: `${8 + depth * VAULT_TREE_INDENT}px` }}
+        >
+          Folder load failed for {folderPath}:{" "}
+          {childLoadError instanceof Error ? childLoadError.message : "Unknown error"}
+        </div>
+      ) : null}
       {entries.map((entry) => {
         const trimmed = String(entry || "").trim();
         if (!trimmed) return null;
