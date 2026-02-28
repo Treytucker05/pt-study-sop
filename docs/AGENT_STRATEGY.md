@@ -1,4 +1,4 @@
-# Agent Strategy (Claude + Codex)
+# Agent Strategy (Claude + Codex + OpenCode)
 
 Concrete, cross-tool defaults for terminal setup, subagents, analytics, and learning workflows.
 
@@ -43,7 +43,7 @@ Safety: never paste secrets or credentials into prompts or logs.
 
 ## Learning Mode (Fast Comprehension)
 - Claude Code: set output style to Explanatory/Learning in `/config`.
-- Codex: add "explain why, then change" to the prompt.
+- Codex/OpenCode: add "explain why, then change" to the prompt.
 - When learning new systems:
   - Ask for ASCII diagrams of flows or modules.
   - Request HTML slide decks for unfamiliar concepts.
@@ -60,9 +60,22 @@ Safety: never paste secrets or credentials into prompts or logs.
 
 ### Codex CLI (global)
 - Config: `C:\Users\treyt\.codex\config.toml` includes strategy reminders.
+- Enable voice dictation (Codex 0.105.0+):
+  ```toml
+  [features]
+  voice_transcription = true
+  ```
 - Skill: `C:\Users\treyt\.codex\skills\agent-strategy\SKILL.md`.
+
+### OpenCode (global)
+- Skill: `C:\Users\treyt\.opencode\skills\agent-strategy\SKILL.md`.
 
 ## Repo Integration
 - Prompt patterns: `ai-config/agent-prompts.md`
 - Repo Claude Code commands: `.claude/commands/`
-- Portable global config (vault canonical): `C:\Users\treyt\Desktop\Trey's Vault\agents\config\`
+- Repo Codex subagent skills:
+  - `.codex/skills/planner/`
+  - `.codex/skills/plan-harder/`
+  - `.codex/skills/parallel-task/`
+  - `docs/CODEX_SUBAGENT_IMPLEMENTATION.md`
+- Portable global config (vault canonical): `C:\Users\treyt\Desktop\PT School Semester 2\agents\config\`

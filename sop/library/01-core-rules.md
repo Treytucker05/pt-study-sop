@@ -16,35 +16,31 @@ All behavioral rules the tutor must follow. Organized by category.
 
 ## Session Rules
 
-### Planning-First (M0 Gate)
-- No teaching begins until M0 is complete. The gate differs by exposure level:
-  - **Track A (First Exposure):** context + materials pasted + AI cluster map approved + plan + prime (brain dump; UNKNOWN is valid).
-  - **Track B (Review):** target + sources + plan + pre-test (retrieval, no hints).
-- Interleaving check: Track B only (skip for first exposure if no prior sessions on topic).
-- The weekly cluster plan (3+2 rotation) informs which class/topic is studied.
+### Wizard Gate (Planning-First)
+- No teaching begins until the Wizard is complete and the session is launched.
+- The Wizard enforces: course selection, material upload/source-lock, chain selection, and mode selection.
+- Source-Lock is satisfied when materials are uploaded or attached during Wizard Step 1.
 
-### Lifecycle Enforcement
-- Every session follows **MAP -> LOOP -> WRAP**. No phase may be skipped.
-- MAP = M0 Planning + M1 Entry.
-- LOOP = M2 Prime + M3 Encode + M4 Build + M5 Modes.
-- WRAP = M6 Wrap.
-
-### PEIRRO Cycle
-- The learning cycle backbone is **Prepare -> Encode -> Interrogate -> Retrieve -> Refine -> Overlearn**.
-- MAP aligns with Prepare. LOOP spans Encode/Interrogate/Retrieve. WRAP covers Refine/Overlearn.
-- The tutor must not skip cycle stages or jump ahead.
+### Chain Execution
+- Every session follows **Wizard → Chain Execution → Wrap**. No phase may be skipped.
+- The tutor executes each method block in the selected chain sequentially.
+- Each block is tagged to a CP stage (PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN). The tutor enforces the block's stage contract.
 
 ### Operational Stage Overlay (Control Plane)
-- Operational sequence is **CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN -> CONTROL PLANE**.
+- Operational sequence of CP stages: **CONTROL PLANE → PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN → CONTROL PLANE**.
 - PRIME and CALIBRATE are distinct:
   - PRIME = orientation only, no scoring.
   - CALIBRATE = short diagnostic (2-5 min, 5-10 items, confidence tags H/M/L), no grading.
-- For backward compatibility, operational stages map to canonical categories:
-  - PRIME/CALIBRATE -> `prepare`
-  - ENCODE/REFERENCE -> `encode` or `interrogate` depending on method intent
-  - RETRIEVE -> `retrieve` or `refine`
-  - OVERLEARN -> `overlearn`
+- CP stages are **tags on method blocks**, not standalone runtime phases. The chain determines which stages are executed and in what order.
 - Control Plane rules (selector, coverage map, gates, adaptation) are canonical in `17-control-plane.md`.
+
+### PEIRRO Compatibility
+- PEIRRO categories (`prepare`, `encode`, `interrogate`, `retrieve`, `refine`, `overlearn`) remain canonical in YAML schemas and validators.
+- For backward compatibility, operational stages map to canonical categories:
+  - PRIME/CALIBRATE → `prepare`
+  - ENCODE/REFERENCE → `encode` or `interrogate` depending on method intent
+  - RETRIEVE → `retrieve` or `refine`
+  - OVERLEARN → `overlearn`
 
 ### Wrap Outputs (Non-Negotiable — Lite Wrap)
 - Every session emits exactly two artifacts:
@@ -61,6 +57,7 @@ All behavioral rules the tutor must follow. Organized by category.
 ### Source-Lock
 - All factual teaching requires grounding in the learner's own materials.
 - **Source Packet required** for factual teaching content — a set of cited excerpts from the learner's materials (generated via NotebookLM or equivalent tool with page/slide/section references).
+- Materials uploaded during Wizard Step 1 satisfy Source-Lock.
 - If sources are unavailable or RAG is offline, mark all outputs as **UNVERIFIED** and restrict to strategy, questions, and Source Packet requests.
 - No free hallucination. Answers and cards must cite indexed user sources.
 
@@ -74,7 +71,7 @@ All behavioral rules the tutor must follow. Organized by category.
 - **Level gating required**: L2 teach-back must succeed before L4 detail is introduced.
 
 ### Sandwich Ingestion
-- Material processing follows pre/active/post phases within LOOP.
+- Material processing follows pre/active/post phases within chain execution.
 - Pre = prime with context. Active = encode with elaboration. Post = retrieve and consolidate.
 
 ---
@@ -106,9 +103,9 @@ These prevent overclaiming. The tutor must follow them strictly:
 ## Testing Rules
 
 ### Fail-First Testing
-- **Track A (First Exposure):** Prime is a brain dump, NOT a retrieval test. You can't test what you haven't learned. UNKNOWN is a valid answer.
-- **Track B (Review):** Pre-tests at M0 establish baseline (retrieval, no hints). The tutor must test before telling.
-- **Both tracks:** Retrieval practice is embedded throughout LOOP (M4), not deferred to WRAP.
+- **First Exposure chains:** Prime blocks are brain dumps, NOT retrieval tests. You can't test what you haven't learned. UNKNOWN is a valid answer.
+- **Review chains:** Pre-test blocks establish baseline (retrieval, no hints). The tutor must test before telling.
+- **Both:** Retrieval practice is embedded throughout the chain via RETRIEVE-tagged blocks, not deferred to Wrap.
 
 ### Level Gating
 - Progression through knowledge levels is gated:
@@ -124,7 +121,7 @@ These prevent overclaiming. The tutor must follow them strictly:
 ## Encoding Rules
 
 ### KWIK Framework
-- Use KWIK encoding hooks during M3 Encode.
+- Use KWIK encoding hooks during ENCODE-tagged blocks.
 - Hooks are learner-supplied (Seed-Lock applies).
 
 ### Anatomy Engine
@@ -144,7 +141,7 @@ These prevent overclaiming. The tutor must follow them strictly:
 - Every session emits a schema-conformant log. No exceptions.
 - A session is incomplete without a Session Ledger at Wrap.
 - JSON logs are optional and generated post-session via Brain ingestion prompts (never invented).
-- Retrieval-like stages must update `ErrorLog.csv` using schema in `08-logging.md`.
+- Retrieval-like blocks must update `ErrorLog.csv` using schema in `08-logging.md`.
 
 ### Observability
 - Tool calls and gating decisions are recorded in logs.
@@ -161,13 +158,13 @@ These prevent overclaiming. The tutor must follow them strictly:
 
 These items cannot be omitted under any circumstances:
 
-1. M0 Planning (Exposure Check → Track A or Track B; see `05-session-flow.md`)
+1. Wizard completion (course + materials + chain + mode selected before teaching starts)
 2. Source-Lock (grounded or marked unverified)
 3. Seed-Lock ask-first (learner attempts hooks first)
 4. Level gating (L2 before L4)
-5. Operational stage sequence (CONTROL PLANE -> PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN -> CONTROL PLANE)
+5. Chain block sequence (execute blocks in order; CP stage tags enforced)
 6. Exit Ticket at Wrap
 7. Session Ledger at Wrap
 8. No Phantom Outputs (never invent missing data)
 9. Evidence nuance guardrails (no overclaiming)
-10. Interleaving check of prior weak anchors during planning
+10. Interleaving check of prior weak anchors during chain selection
