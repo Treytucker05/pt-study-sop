@@ -235,3 +235,59 @@ def test_get_tags_returns_json():
         )
         result = vault.get_tags()
         assert result == tags
+
+
+def test_set_property_calls_cli():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.set_property("My Note", "status", "reviewed")
+        args = mock_run.call_args[0][0]
+        assert "property:set" in args
+        assert 'name="status"' in args
+        assert 'value="reviewed"' in args
+
+
+def test_remove_property_calls_cli():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.remove_property("My Note", "old_key")
+        args = mock_run.call_args[0][0]
+        assert "property:remove" in args
+
+
+def test_move_note_calls_cli():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.move_note("old/note.md", new_name="new-note")
+        args = mock_run.call_args[0][0]
+        assert "move" in args
+        assert 'path="old/note.md"' in args
+        assert 'name="new-note"' in args
+
+
+def test_create_folder_uses_eval():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.create_folder("Course/Module/Topic")
+        args = mock_run.call_args[0][0]
+        assert "eval" in args
+        assert any("createFolder" in str(a) for a in args)
+
+
+def test_replace_section_uses_eval_with_process():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.replace_section("My Note", "## Learning Objectives", "- [ ] LO1\n- [ ] LO2")
+        args = mock_run.call_args[0][0]
+        assert "eval" in args
+        assert any("process" in str(a) for a in args)

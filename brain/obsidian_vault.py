@@ -185,3 +185,88 @@ class ObsidianVault:
     def get_tags(self, *, sort: str = "count") -> list[dict]:
         """List all tags in the vault."""
         return self._run(["tags", f"sort={sort}", "counts", "format=json"], parse_json=True)
+
+    # ── Surgical Edit ───────────────────────────────────────
+
+    def set_property(self, file: str, key: str, value: str) -> str:
+        """Set a frontmatter property on a note."""
+        return self._run(["property:set", f'name="{key}"', f'value="{value}"', f'file="{file}"'])
+
+    def remove_property(self, file: str, key: str) -> str:
+        """Remove a frontmatter property from a note."""
+        return self._run(["property:remove", f'name="{key}"', f'file="{file}"'])
+
+    def replace_section(self, file: str, heading: str, content: str) -> str:
+        """Replace content under a heading using vault.process() via eval."""
+        escaped_content = content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        escaped_heading = heading.replace('"', '\\"')
+        level = heading.count("#")
+        heading_text = heading.lstrip("# ").strip()
+        code = (
+            f'const f = app.vault.getFileByPath("{file}");'
+            f'if (!f) throw new Error("File not found: {file}");'
+            f'const cache = app.metadataCache.getFileCache(f);'
+            f'const headings = cache?.headings || [];'
+            f'let startIdx = -1; let endIdx = -1;'
+            f'for (let i = 0; i < headings.length; i++) {{'
+            f'  if (headings[i].heading === "{heading_text}" && headings[i].level === {level}) {{'
+            f'    startIdx = headings[i].position.end.offset + 1;'
+            f'    for (let j = i + 1; j < headings.length; j++) {{'
+            f'      if (headings[j].level <= {level}) {{ endIdx = headings[j].position.start.offset; break; }}'
+            f'    }}'
+            f'    break;'
+            f'  }}'
+            f'}}'
+            f'if (startIdx === -1) throw new Error("Heading not found");'
+            f'await app.vault.process(f, (data) => {{'
+            f'  const before = data.substring(0, startIdx);'
+            f'  const after = endIdx === -1 ? "" : data.substring(endIdx);'
+            f'  return before + "\\n{escaped_content}\\n" + after;'
+            f'}});'
+        )
+        return self._eval(code)
+
+    # ── Organize ────────────────────────────────────────────
+
+    def move_note(self, path: str, *, new_name: str = "", new_folder: str = "") -> str:
+        """Move or rename a note."""
+        args = ["move", f'path="{path}"']
+        if new_name:
+            args.append(f'name="{new_name}"')
+        if new_folder:
+            args.append(f'folder="{new_folder}"')
+        return self._run(args)
+
+    def create_folder(self, path: str) -> str:
+        """Create a folder in the vault via eval."""
+        return self._eval(f'await app.vault.createFolder("{path}")')
+
+    def copy_note(self, file: str, new_path: str) -> str:
+        """Copy a note to a new path via eval."""
+        code = (
+            f'const f = app.vault.getFileByPath("{file}");'
+            f'if (f) await app.vault.copy(f, "{new_path}");'
+        )
+        return self._eval(code)
+
+    # ── Metadata ────────────────────────────────────────────
+
+    def get_headings(self, file: str) -> list[dict]:
+        """Get the heading structure of a file via metadataCache."""
+        code = (
+            f'const f = app.vault.getFileByPath("{file}");'
+            f'const cache = f ? app.metadataCache.getFileCache(f) : null;'
+            f'JSON.stringify(cache?.headings || []);'
+        )
+        result = self._eval(code)
+        try:
+            return json.loads(result) if result else []
+        except json.JSONDecodeError:
+            return []
+
+    def get_tasks(self, *, filter: str = "") -> list[dict]:
+        """List tasks in the vault."""
+        args = ["tasks", "format=json"]
+        if filter:
+            args.append(filter)
+        return self._run(args, parse_json=True)
