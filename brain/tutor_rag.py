@@ -35,14 +35,14 @@ SCOPED_CANDIDATE_MIN = 120
 SCOPED_CANDIDATE_MAX = 800
 SCOPED_MMR_FETCH_MAX = 1600
 
-_IMAGE_MD_PATTERN = re.compile(r'!\[[^\]]*\]\([^)]+\)')
-_IMAGE_PLACEHOLDER = re.compile(r'<!--\s*image\s*-->', re.IGNORECASE)
+_IMAGE_MD_PATTERN = re.compile(r"!\[[^\]]*\]\([^)]+\)")
+_IMAGE_PLACEHOLDER = re.compile(r"<!--\s*image\s*-->", re.IGNORECASE)
 
 
 def strip_image_refs_for_rag(content: str) -> str:
     """Remove markdown image references before RAG chunking."""
-    content = _IMAGE_MD_PATTERN.sub('', content)
-    content = _IMAGE_PLACEHOLDER.sub('', content)
+    content = _IMAGE_MD_PATTERN.sub("", content)
+    content = _IMAGE_PLACEHOLDER.sub("", content)
     return content
 
 
@@ -51,7 +51,9 @@ def _get_openai_api_key() -> str:
     return os.environ.get("OPENAI_API_KEY") or ""
 
 
-def init_vectorstore(collection_name: str = COLLECTION_MATERIALS, persist_dir: Optional[str] = None):
+def init_vectorstore(
+    collection_name: str = COLLECTION_MATERIALS, persist_dir: Optional[str] = None
+):
     """Initialize or return cached ChromaDB vectorstore for a named collection."""
     if collection_name in _vectorstores:
         return _vectorstores[collection_name]
@@ -83,8 +85,13 @@ def init_vectorstore(collection_name: str = COLLECTION_MATERIALS, persist_dir: O
     return vs
 
 
-SMALL_DOC_CHAR_LIMIT = 8_000  # ~2000 tokens — fits in one embedding, no splitting needed
+SMALL_DOC_CHAR_LIMIT = (
+    8_000  # ~2000 tokens — fits in one embedding, no splitting needed
+)
 MIN_CHUNK_CHARS = 50  # filter out header-only fragments
+MAX_CONTENT_CHARS = (
+    500_000  # ~125K tokens — hard cap to prevent regex hang on bloated docs
+)
 
 
 def chunk_document(
@@ -106,6 +113,17 @@ def chunk_document(
         sections intact, then by character count within each section.
     """
     content = strip_image_refs_for_rag(content)
+
+    # Cap document size before chunking to prevent MarkdownHeaderTextSplitter hang
+    if len(content) > MAX_CONTENT_CHARS:
+        logger.warning(
+            "Document content too large (%d chars), truncating to %d: %s",
+            len(content),
+            MAX_CONTENT_CHARS,
+            source_path,
+        )
+        content = content[:MAX_CONTENT_CHARS]
+
     from langchain_core.documents import Document
 
     stripped = content.strip()
@@ -183,9 +201,8 @@ def _resolve_chroma_max_batch_size(vs: object) -> int:
 
 def _is_chroma_batch_limit_error(exc: Exception) -> bool:
     msg = str(exc).lower()
-    return (
-        ("batch size" in msg and ("max" in msg or "maximum" in msg))
-        or ("cannot submit more than" in msg and "embeddings at once" in msg)
+    return ("batch size" in msg and ("max" in msg or "maximum" in msg)) or (
+        "cannot submit more than" in msg and "embeddings at once" in msg
     )
 
 
@@ -321,6 +338,7 @@ def embed_rag_docs(
         for i, chunk in enumerate(chunks):
             try:
                 import tiktoken
+
                 enc = tiktoken.encoding_for_model("text-embedding-3-small")
                 token_count = len(enc.encode(chunk.page_content))
             except Exception:
@@ -423,7 +441,9 @@ def _doc_distribution_stats(docs: list) -> dict[str, object]:
         identity = _doc_identity(doc, idx)
         counts[identity] = counts.get(identity, 0) + 1
         if identity not in top_source_by_identity:
-            source = str((getattr(doc, "metadata", None) or {}).get("source") or "").strip()
+            source = str(
+                (getattr(doc, "metadata", None) or {}).get("source") or ""
+            ).strip()
             top_source_by_identity[identity] = source
 
     top_identity, top_count = max(counts.items(), key=lambda kv: kv[1])
@@ -653,7 +673,24 @@ def _keyword_fallback(
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    stop_words = {"the", "a", "an", "is", "are", "was", "were", "in", "on", "at", "to", "for", "of", "and", "or", "it"}
+    stop_words = {
+        "the",
+        "a",
+        "an",
+        "is",
+        "are",
+        "was",
+        "were",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "and",
+        "or",
+        "it",
+    }
     keywords = [w for w in query.lower().split() if w not in stop_words and len(w) > 2]
 
     conditions = ["COALESCE(enabled, 1) = 1"]
@@ -681,9 +718,7 @@ def _keyword_fallback(
     keyword_clauses = []
     keyword_params: list = []
     for kw in keywords[:5]:
-        keyword_clauses.append(
-            f"(CASE WHEN LOWER(content) LIKE ? THEN 1 ELSE 0 END)"
-        )
+        keyword_clauses.append(f"(CASE WHEN LOWER(content) LIKE ? THEN 1 ELSE 0 END)")
         keyword_params.append(f"%{kw}%")
 
     score_expr = " + ".join(keyword_clauses) if keyword_clauses else "0"
@@ -832,7 +867,9 @@ def keyword_search(
     Use this when you want to avoid embedding API calls (e.g. Codex/ChatGPT-login tutor).
     Returns a list of LangChain `Document` objects (same shape as `search_with_embeddings`).
     """
-    return _keyword_fallback(query, course_id, folder_paths, material_ids, k, corpus=corpus)
+    return _keyword_fallback(
+        query, course_id, folder_paths, material_ids, k, corpus=corpus
+    )
 
 
 def keyword_search_dual(
@@ -850,7 +887,10 @@ def keyword_search_dual(
     """
     material_debug: dict[str, Any] = {}
     materials = _keyword_fallback(
-        query, course_id, material_ids=material_ids, k=k_materials,
+        query,
+        course_id,
+        material_ids=material_ids,
+        k=k_materials,
         debug=material_debug,
     )
 
@@ -869,16 +909,26 @@ def keyword_search_dual(
 # ---------------------------------------------------------------------------
 
 _VIDEO_TIME_PATTERN = re.compile(
-    r'\b\d{1,2}:\d{2}(?::\d{2})?\b'
-    r'|'
-    r'\bat\s+\d+\s*(?:min(?:ute)?s?|sec(?:ond)?s?)\b',
+    r"\b\d{1,2}:\d{2}(?::\d{2})?\b"
+    r"|"
+    r"\bat\s+\d+\s*(?:min(?:ute)?s?|sec(?:ond)?s?)\b",
     re.IGNORECASE,
 )
 
-_VIDEO_KEYWORDS: frozenset[str] = frozenset({
-    "video", "lecture video", "recording", "lecture recording",
-    "timestamp", "slide", "frame", "keyframe", "visual", "screen",
-})
+_VIDEO_KEYWORDS: frozenset[str] = frozenset(
+    {
+        "video",
+        "lecture video",
+        "recording",
+        "lecture recording",
+        "timestamp",
+        "slide",
+        "frame",
+        "keyframe",
+        "visual",
+        "screen",
+    }
+)
 
 
 def is_video_query(query: str) -> bool:
