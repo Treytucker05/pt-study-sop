@@ -2428,11 +2428,18 @@ def _launch_video_process_job(
     return job_id
 
 
-def _build_gemini_vision_context(material_ids: list[int], *, max_materials: int = 2) -> str:
-    """Best-effort Gemini video enrichment context for selected MP4 materials."""
+def _build_gemini_vision_context(
+    material_ids: list[int], *, max_materials: int = 2
+) -> tuple[str, str]:
+    """Best-effort Gemini video enrichment context for selected MP4 materials.
+
+    Returns:
+        (context_text, diagnostic) — context_text is the enrichment markdown
+        for the LLM; diagnostic is a user-facing reason when context is empty.
+    """
     scoped_ids = [int(mid) for mid in material_ids[:max_materials] if isinstance(mid, int)]
     if not scoped_ids:
-        return ""
+        return "", "No material IDs selected."
 
     conn = get_connection()
     conn.row_factory = sqlite3.Row
@@ -2452,14 +2459,15 @@ def _build_gemini_vision_context(material_ids: list[int], *, max_materials: int 
     conn.close()
 
     if not rows:
-        return ""
+        return "", "Selected materials not found in library."
 
     try:
         from video_ingest_local import VIDEO_INGEST_ROOT, _slugify
         from video_enrich_api import enrich_video, emit_enrichment_markdown
     except Exception:
-        return ""
+        return "", "Video enrichment modules not available."
 
+    mp4_found = False
     blocks: list[str] = []
     for row in rows:
         source_path = str(row.get("file_path") or row.get("source_path") or "").strip()
@@ -2468,6 +2476,7 @@ def _build_gemini_vision_context(material_ids: list[int], *, max_materials: int 
             continue
         if file_type != "mp4" and not source_path.lower().endswith(".mp4"):
             continue
+        mp4_found = True
         if not Path(source_path).exists():
             continue
 
@@ -2521,8 +2530,10 @@ def _build_gemini_vision_context(material_ids: list[int], *, max_materials: int 
         blocks.append(f"### {title}\n{excerpt}")
 
     if not blocks:
-        return ""
-    return "\n\n".join(blocks)
+        if not mp4_found:
+            return "", "No MP4 videos in selected materials. Gemini Vision requires video files."
+        return "", "No processed video segments found. Run 'Process Video' on your MP4 materials first."
+    return "\n\n".join(blocks), ""
 
 
 def _auto_link_materials_to_courses(conn: sqlite3.Connection) -> dict:
@@ -3553,13 +3564,25 @@ def send_turn(session_id: str):
                     f"{notes_context_text}"
                 )
 
-            if _gemini_vision_on and material_ids:
-                gemini_video_context = _build_gemini_vision_context(material_ids)
+            if _gemini_vision_on and not material_ids:
+                material_text = (
+                    f"{material_text}\n\n## Gemini Vision (Unavailable)\n"
+                    "No materials selected. Select MP4 lecture videos in the content filter to use Gemini Vision.\n"
+                    "Tell the student: Gemini Vision was requested but isn't available for these materials."
+                )
+            elif _gemini_vision_on and material_ids:
+                gemini_video_context, gemini_diag = _build_gemini_vision_context(material_ids)
                 if gemini_video_context:
                     material_text = (
                         f"{material_text}\n\n## Gemini Video Vision Context\n"
                         "Use this to strengthen chart/image-heavy explanations from lecture videos.\n\n"
                         f"{gemini_video_context}"
+                    )
+                elif gemini_diag:
+                    material_text = (
+                        f"{material_text}\n\n## Gemini Vision (Unavailable)\n"
+                        f"{gemini_diag}\n"
+                        "Tell the student: Gemini Vision was requested but isn't available for these materials."
                     )
 
             # Open a dedicated connection for adaptive features inside the

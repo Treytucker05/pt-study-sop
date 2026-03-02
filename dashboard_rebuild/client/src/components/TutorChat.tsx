@@ -1231,10 +1231,17 @@ export function TutorChat({
     );
   }
 
+  const selectedMp4Count = availableMaterials.filter(
+    (m) => selectedMaterialIds.includes(m.id) && (m.file_type === "mp4" || m.source_path?.toLowerCase().endsWith(".mp4"))
+  ).length;
+  const geminiLabel = geminiVisionOn && selectedMp4Count === 0
+    ? "🎬 Gemini Vision (no MP4)"
+    : `🎬 Gemini Vision${geminiVisionOn && selectedMp4Count > 0 ? ` (${selectedMp4Count})` : ""}`;
+
   const speedTiers: { key: string; label: string; on: boolean; set: Dispatch<SetStateAction<boolean>> }[] = [
     { key: "materials", label: "📚 Materials", on: materialsOn, set: setMaterialsOn },
     { key: "obsidian",  label: "🗂️ Obsidian",  on: obsidianOn,  set: setObsidianOn  },
-    { key: "gemini",    label: "🎬 Gemini Vision", on: geminiVisionOn, set: setGeminiVisionOn },
+    { key: "gemini",    label: geminiLabel, on: geminiVisionOn, set: setGeminiVisionOn },
     { key: "web",       label: "🔍 Web",        on: webSearchOn, set: setWebSearchOn },
     { key: "deep",      label: "🧠 Deep Think", on: deepThinkOn, set: setDeepThinkOn },
   ];
