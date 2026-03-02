@@ -11,6 +11,7 @@ def test_build_context_returns_dict_with_required_keys():
     with (
         patch("tutor_context._fetch_materials", return_value="mocked materials"),
         patch("tutor_context._fetch_notes", return_value="mocked notes"),
+        patch("tutor_context._fetch_vault_state", return_value=""),
     ):
         from tutor_context import build_context
 
@@ -62,6 +63,7 @@ def test_build_context_depth_notes_only():
     with (
         patch("tutor_context._fetch_materials", return_value="should not appear") as mock_mat,
         patch("tutor_context._fetch_notes", return_value="notes only") as mock_notes,
+        patch("tutor_context._fetch_vault_state", return_value=""),
     ):
         from tutor_context import build_context
 
