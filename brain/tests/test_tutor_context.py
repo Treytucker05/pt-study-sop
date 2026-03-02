@@ -88,3 +88,24 @@ def test_load_tutor_instructions_returns_content():
     content = instructions_path.read_text(encoding="utf-8")
     assert "Available Tools" in content
     assert ":::vault:create" in content
+
+
+def test_fetch_notes_uses_obsidian_vault():
+    """Verify _fetch_notes imports ObsidianVault, not ObsidianClient."""
+    import ast
+    from pathlib import Path
+    source = (Path(__file__).parent.parent / "tutor_context.py").read_text()
+    tree = ast.parse(source)
+    imports = [
+        node for node in ast.walk(tree)
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+    ]
+    import_names = []
+    for imp in imports:
+        if isinstance(imp, ast.ImportFrom) and imp.module:
+            import_names.append(imp.module)
+    assert "obsidian_vault" in import_names or any(
+        "ObsidianVault" in source for _ in [1]
+    ), "tutor_context.py should import from obsidian_vault"
+    assert "obsidian_client" not in source.lower().replace("# ", ""), \
+        "tutor_context.py should not reference obsidian_client"

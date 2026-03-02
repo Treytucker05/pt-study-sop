@@ -124,12 +124,12 @@ def _fetch_notes(
     module_prefix: Optional[str] = None,
     debug: dict[str, Any],
 ) -> str:
-    """Search Obsidian vault via REST API /search/ endpoint."""
+    """Search Obsidian vault via CLI wrapper."""
     try:
-        from obsidian_client import ObsidianClient
+        from obsidian_vault import ObsidianVault
 
-        client = ObsidianClient()
-        hits = client.search(query, max_results=5)
+        vault = ObsidianVault()
+        hits = vault.search(query, limit=5)
         debug["notes_hits"] = len(hits)
 
         if module_prefix:
