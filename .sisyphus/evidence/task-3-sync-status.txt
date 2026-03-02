@@ -1,0 +1,3 @@
+embedding_progress in status: True
+phase timeout guard: True
+progress_callback wired: True

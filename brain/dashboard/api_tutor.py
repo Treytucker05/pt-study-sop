@@ -41,7 +41,15 @@ from threading import Lock, Thread
 from typing import Any, Optional
 from urllib.parse import quote
 
-from flask import Blueprint, Response, current_app, has_app_context, jsonify, request, send_file
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    has_app_context,
+    jsonify,
+    request,
+    send_file,
+)
 from jsonschema import Draft202012Validator
 
 from dashboard.utils import load_api_config, save_api_config
@@ -83,7 +91,9 @@ VIDEO_JOBS: dict[str, dict[str, Any]] = {}
 VIDEO_JOBS_LOCK = Lock()
 VIDEO_JOB_RETENTION = 30
 _LOG = logging.getLogger(__name__)
-EXTRACTED_IMAGES_ROOT = Path(__file__).resolve().parents[1] / "data" / "extracted_images"
+EXTRACTED_IMAGES_ROOT = (
+    Path(__file__).resolve().parents[1] / "data" / "extracted_images"
+)
 _IMAGE_PLACEHOLDER_PATTERN = re.compile(r"<!--\s*image\s*-->", re.IGNORECASE)
 
 _SELECTOR_COLS_ENSURED = False
@@ -96,7 +106,10 @@ _NORTH_STAR_OBJECTIVE_PATTERN_NEW = re.compile(
     r"^\s*\d+\.\s+\[\[(OBJ-[^\]]+)\]\]\s+(.+)$",
 )
 _TUTOR_NOTE_SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2] / "docs" / "schemas" / "tutor_note_schema_v1_1.json"
+    Path(__file__).resolve().parents[2]
+    / "docs"
+    / "schemas"
+    / "tutor_note_schema_v1_1.json"
 )
 _TUTOR_NOTE_SCHEMA_DOC: Optional[dict[str, Any]] = None
 _TUTOR_NOTE_SCHEMA_VALIDATOR: Optional[Draft202012Validator] = None
@@ -309,7 +322,9 @@ def _resolve_class_label(course_id: Optional[int]) -> str:
     return _sanitize_path_segment(f"Class {course_id}", fallback="General Class")
 
 
-def _study_notes_base_path(*, course_label: str, module_or_week: str, subtopic: str) -> str:
+def _study_notes_base_path(
+    *, course_label: str, module_or_week: str, subtopic: str
+) -> str:
     from course_map import load_course_map
 
     course_map = load_course_map()
@@ -325,7 +340,11 @@ def _study_notes_base_path(*, course_label: str, module_or_week: str, subtopic: 
         return f"{course_map.vault_root}/{safe_course}/{safe_module}/{safe_subtopic}"
 
     unit = course.resolve_unit(module_or_week)
-    unit_folder = unit.name if unit else _sanitize_path_segment(module_or_week, fallback="General Module")
+    unit_folder = (
+        unit.name
+        if unit
+        else _sanitize_path_segment(module_or_week, fallback="General Module")
+    )
     topic_folder = _sanitize_path_segment(subtopic, fallback="General Topic")
 
     # Skip redundant subfolder when subtopic == unit folder (e.g. both "Week 8")
@@ -335,7 +354,9 @@ def _study_notes_base_path(*, course_label: str, module_or_week: str, subtopic: 
     return f"{course_map.vault_root}/{course.label}/{unit_folder}/{topic_folder}"
 
 
-def _canonical_north_star_path(*, course_label: str, module_or_week: str, subtopic: str) -> str:
+def _canonical_north_star_path(
+    *, course_label: str, module_or_week: str, subtopic: str
+) -> str:
     return f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/North Star.md"
 
 
@@ -617,7 +638,9 @@ def _collect_objectives_from_payload(raw: Any) -> list[dict[str, str]]:
             title = str(item.get("title") or item.get("objective") or "").strip()
             if not title:
                 continue
-            raw_obj_id = item.get("objective_id") or item.get("lo_code") or item.get("id")
+            raw_obj_id = (
+                item.get("objective_id") or item.get("lo_code") or item.get("id")
+            )
             obj: dict[str, str] = {
                 "objective_id": _normalize_objective_id(raw_obj_id, idx),
                 "title": title,
@@ -716,15 +739,16 @@ def _build_north_star_markdown(
         if group_name not in groups_map:
             groups_map[group_name] = []
             group_order.append(group_name)
-        groups_map[group_name].append({
-            "id": obj.get("objective_id", ""),
-            "description": obj.get("title", ""),
-            "status": obj.get("status", "active"),
-        })
+        groups_map[group_name].append(
+            {
+                "id": obj.get("objective_id", ""),
+                "description": obj.get("title", ""),
+                "status": obj.get("status", "active"),
+            }
+        )
 
     objective_groups = [
-        {"name": name, "objectives": groups_map[name]}
-        for name in group_order
+        {"name": name, "objectives": groups_map[name]} for name in group_order
     ]
 
     payload: dict[str, Any] = {
@@ -750,9 +774,7 @@ def _session_has_real_objectives(north_star: Optional[dict]) -> bool:
 _LO_LIST_RE = re.compile(r"^\s*(?:\d+[.)]\s+|[-*]\s+)(.+)$")
 
 
-_GROUP_HEADER_RE = re.compile(
-    r"^(?:\*\*|##?\s+)(?:[IVXLC]+\.\s+)?(.+?)(?:\*\*)?$"
-)
+_GROUP_HEADER_RE = re.compile(r"^(?:\*\*|##?\s+)(?:[IVXLC]+\.\s+)?(.+?)(?:\*\*)?$")
 
 
 def _extract_objectives_from_text(text: str) -> list[dict] | None:
@@ -864,8 +886,12 @@ def _ensure_north_star_context(
     # Local import prevents blueprint import cycles at module import time.
     from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
 
-    derived_module_name = _sanitize_module_name(module_name or topic or f"Module-{course_id or 'General'}")
-    derived_subtopic = _sanitize_path_segment(topic or derived_module_name, fallback=derived_module_name)
+    derived_module_name = _sanitize_module_name(
+        module_name or topic or f"Module-{course_id or 'General'}"
+    )
+    derived_subtopic = _sanitize_path_segment(
+        topic or derived_module_name, fallback=derived_module_name
+    )
     derived_course = _resolve_class_label(course_id)
 
     if path_override:
@@ -938,7 +964,10 @@ def _ensure_north_star_context(
                 )
                 save_res = obsidian_save_file(north_star_path, new_content)
                 if not save_res.get("success"):
-                    return None, f"North Star update failed: {save_res.get('error', 'unknown error')}"
+                    return (
+                        None,
+                        f"North Star update failed: {save_res.get('error', 'unknown error')}",
+                    )
                 current_content = new_content
                 status = "refreshed" if force_refresh else "updated"
             else:
@@ -947,9 +976,7 @@ def _ensure_north_star_context(
             # File missing. If real objectives exist but no path_override was
             # given, the user may have deleted the file intentionally (e.g. to
             # relocate it).  Signal "needs_path" so the turn handler re-asks.
-            has_real = any(
-                o["objective_id"] != "OBJ-UNMAPPED" for o in objectives
-            )
+            has_real = any(o["objective_id"] != "OBJ-UNMAPPED" for o in objectives)
             if has_real and not path_override:
                 current_content = _build_north_star_markdown(
                     module_name=derived_module_name,
@@ -969,7 +996,10 @@ def _ensure_north_star_context(
                 )
                 save_res = obsidian_save_file(north_star_path, new_content)
                 if not save_res.get("success"):
-                    return None, f"North Star build failed: {save_res.get('error', 'unknown error')}"
+                    return (
+                        None,
+                        f"North Star build failed: {save_res.get('error', 'unknown error')}",
+                    )
                 current_content = new_content
                 status = "built"
 
@@ -997,7 +1027,9 @@ def _ensure_north_star_context(
     )
 
 
-def _question_within_reference_targets(question: str, reference_targets: list[str]) -> bool:
+def _question_within_reference_targets(
+    question: str, reference_targets: list[str]
+) -> bool:
     q = re.sub(r"[^a-z0-9\s]", " ", (question or "").lower())
     q = re.sub(r"\s+", " ", q).strip()
     if not q:
@@ -1016,7 +1048,6 @@ def _question_within_reference_targets(question: str, reference_targets: list[st
         if any(tok in q for tok in tokens):
             return True
     return False
-
 
 
 def _sanitize_note_fragment(raw: Any, *, fallback: str) -> str:
@@ -1086,7 +1117,9 @@ def _merge_and_save_obsidian_note(
     )
     vault_result = get_vault_index()
     vault_notes = (
-        vault_result.get("notes", []) if isinstance(vault_result, dict) and vault_result.get("success") else []
+        vault_result.get("notes", [])
+        if isinstance(vault_result, dict) and vault_result.get("success")
+        else []
     )
     merged_content = merge_sections(
         existing_content,
@@ -1250,7 +1283,12 @@ def save_learning_objectives_from_tool(
             if existing:
                 cur.execute(
                     "UPDATE learning_objectives SET title = ?, group_name = COALESCE(?, group_name), updated_at = ? WHERE id = ?",
-                    (title, group_name, now, existing[0] if isinstance(existing, tuple) else existing["id"]),
+                    (
+                        title,
+                        group_name,
+                        now,
+                        existing[0] if isinstance(existing, tuple) else existing["id"],
+                    ),
                 )
             else:
                 cur.execute(
@@ -1291,12 +1329,8 @@ def save_learning_objectives_from_tool(
                 "subtopic_name": ns_ctx.get("subtopic_name"),
                 "objective_ids": ns_ctx.get("objective_ids") or [],
             }
-            content_filter["reference_targets"] = (
-                ns_ctx.get("reference_targets") or []
-            )
-            content_filter["follow_up_targets"] = (
-                ns_ctx.get("follow_up_targets") or []
-            )
+            content_filter["reference_targets"] = ns_ctx.get("reference_targets") or []
+            content_filter["follow_up_targets"] = ns_ctx.get("follow_up_targets") or []
 
         cur.execute(
             "UPDATE tutor_sessions SET content_filter_json = ? WHERE session_id = ?",
@@ -1352,7 +1386,9 @@ def _finalize_structured_notes_for_session(
     session_data = normalized_payload.get("session") or {}
     concepts = normalized_payload.get("concepts") or []
     module_name = _sanitize_module_name(
-        content_filter.get("module_name") or session_row.get("topic") or "General Module"
+        content_filter.get("module_name")
+        or session_row.get("topic")
+        or "General Module"
     )
     topic = str(session_row.get("topic") or module_name).strip()
     subtopic = _sanitize_path_segment(topic or module_name, fallback=module_name)
@@ -1360,6 +1396,7 @@ def _finalize_structured_notes_for_session(
 
     # Resolve course map metadata for frontmatter
     from course_map import load_course_map as _load_cm
+
     _cm = _load_cm()
     _mapped_course = _cm.resolve_course(course_label)
     _course_code = _mapped_course.code.replace("_", " ") if _mapped_course else ""
@@ -1420,7 +1457,9 @@ def _finalize_structured_notes_for_session(
         )
         if not save_concept.get("success"):
             return None, [str(save_concept.get("error") or f"failed_to_save_{name}")]
-        rendered_notes[concept_path] = str(save_concept.get("content") or concept_markdown)
+        rendered_notes[concept_path] = str(
+            save_concept.get("content") or concept_markdown
+        )
         saved_paths.append(concept_path)
         concept_paths.append(concept_path)
 
@@ -1864,9 +1903,11 @@ def _get_chain_status(conn, session_id: str) -> Optional[dict]:
 
     total = len(blocks)
     current_block = _block_summary(blocks[current_pos])
-    next_block = _block_summary(blocks[current_pos + 1]) if current_pos + 1 < total else None
+    next_block = (
+        _block_summary(blocks[current_pos + 1]) if current_pos + 1 < total else None
+    )
     completed = [b["name"] for b in blocks[:current_pos]]
-    remaining = [b["name"] for b in blocks[current_pos + 1:]]
+    remaining = [b["name"] for b in blocks[current_pos + 1 :]]
     progress_pct = int(round(current_pos / total * 100)) if total else 0
 
     return {
@@ -2039,7 +2080,9 @@ def _compute_retrieval_confidence(
     if material_k <= 0:
         return 0.0
 
-    target_scope = selected_material_count if selected_material_count > 0 else material_k
+    target_scope = (
+        selected_material_count if selected_material_count > 0 else material_k
+    )
     scope_denom = max(1, min(material_k, target_scope))
     coverage = min(1.0, retrieved_unique_sources / scope_denom)
     citation_alignment = min(
@@ -2049,11 +2092,18 @@ def _compute_retrieval_confidence(
     diversity = max(0.0, 1.0 - max(0.0, min(1.0, top_source_share)))
     cap_penalty = min(1.0, dropped_by_cap / max(1, merged_candidates))
 
-    score = (0.50 * coverage) + (0.30 * citation_alignment) + (0.20 * diversity) - (0.10 * cap_penalty)
+    score = (
+        (0.50 * coverage)
+        + (0.30 * citation_alignment)
+        + (0.20 * diversity)
+        - (0.10 * cap_penalty)
+    )
     return round(max(0.0, min(1.0, score)), 4)
 
 
-def _citation_sources(citations: list[dict], *, max_items: Optional[int] = None) -> list[str]:
+def _citation_sources(
+    citations: list[dict], *, max_items: Optional[int] = None
+) -> list[str]:
     """Collect ordered unique source labels from citation payloads."""
     seen: set[str] = set()
     ordered: list[str] = []
@@ -2126,13 +2176,21 @@ def _build_retrieval_debug_payload(
         "citations_total": len(citations),
         "citations_unique_sources": len(citation_sources_all),
         "citation_sources": citation_sources_all[:20],
-        "material_candidates_similarity": int(rag_material.get("candidate_pool_similarity") or 0),
+        "material_candidates_similarity": int(
+            rag_material.get("candidate_pool_similarity") or 0
+        ),
         "material_candidates_mmr": int(rag_material.get("candidate_pool_mmr") or 0),
         "material_candidates_merged": merged_candidates,
-        "material_candidates_after_cap": int(rag_material.get("candidate_pool_after_cap") or 0),
+        "material_candidates_after_cap": int(
+            rag_material.get("candidate_pool_after_cap") or 0
+        ),
         "material_dropped_by_cap": dropped_by_cap,
-        "instruction_candidates_similarity": int(rag_instruction.get("candidate_pool_similarity") or 0),
-        "instruction_candidates_mmr": int(rag_instruction.get("candidate_pool_mmr") or 0),
+        "instruction_candidates_similarity": int(
+            rag_instruction.get("candidate_pool_similarity") or 0
+        ),
+        "instruction_candidates_mmr": int(
+            rag_instruction.get("candidate_pool_mmr") or 0
+        ),
         "retrieval_confidence": confidence,
         "retrieval_confidence_tier": _retrieval_confidence_tier(confidence),
     }
@@ -2398,7 +2456,9 @@ def _launch_video_process_job(
             transcript_md_path = str(artifacts.get("transcript_md_path") or "")
             visual_notes_md_path = str(artifacts.get("visual_notes_md_path") or "")
             if not transcript_md_path or not visual_notes_md_path:
-                raise RuntimeError("Video processing did not return markdown artifact paths.")
+                raise RuntimeError(
+                    "Video processing did not return markdown artifact paths."
+                )
 
             ingest_result = ingest_video_artifacts(
                 material_id=material_id,
@@ -2437,7 +2497,9 @@ def _build_gemini_vision_context(
         (context_text, diagnostic) — context_text is the enrichment markdown
         for the LLM; diagnostic is a user-facing reason when context is empty.
     """
-    scoped_ids = [int(mid) for mid in material_ids[:max_materials] if isinstance(mid, int)]
+    scoped_ids = [
+        int(mid) for mid in material_ids[:max_materials] if isinstance(mid, int)
+    ]
     if not scoped_ids:
         return "", "No material IDs selected."
 
@@ -2512,7 +2574,9 @@ def _build_gemini_vision_context(
                     mode="auto",
                 )
                 if result.get("status") == "ok" and result.get("results"):
-                    md_path = emit_enrichment_markdown(slug, result["results"], str(latest_dir))
+                    md_path = emit_enrichment_markdown(
+                        slug, result["results"], str(latest_dir)
+                    )
                     enrichment_md = Path(md_path)
             except Exception:
                 continue
@@ -2531,8 +2595,14 @@ def _build_gemini_vision_context(
 
     if not blocks:
         if not mp4_found:
-            return "", "No MP4 videos in selected materials. Gemini Vision requires video files."
-        return "", "No processed video segments found. Run 'Process Video' on your MP4 materials first."
+            return (
+                "",
+                "No MP4 videos in selected materials. Gemini Vision requires video files.",
+            )
+        return (
+            "",
+            "No processed video segments found. Run 'Process Video' on your MP4 materials first.",
+        )
     return "\n\n".join(blocks), ""
 
 
@@ -2652,9 +2722,43 @@ def _launch_materials_sync_job(root: Path, allowed_exts: Optional[set[str]]) -> 
             )
 
             try:
+                from concurrent.futures import (
+                    ThreadPoolExecutor as _TPE,
+                    TimeoutError as _TETimeout,
+                )
                 from tutor_rag import embed_rag_docs
+                import os as _os
 
-                embed_result = embed_rag_docs(corpus="materials")
+                _EMBED_PHASE_TIMEOUT = 600  # 10-minute overall safety net
+
+                def _embed_progress(
+                    current_idx: int, total_count: int, doc_path: str
+                ) -> None:
+                    _update_sync_job(
+                        job_id,
+                        embedding_progress={
+                            "current": current_idx + 1,
+                            "total": total_count,
+                            "current_file": _os.path.basename(doc_path),
+                        },
+                    )
+
+                def _run_embed() -> dict:
+                    return embed_rag_docs(
+                        corpus="materials", progress_callback=_embed_progress
+                    )
+
+                with _TPE(max_workers=1) as _phase_executor:
+                    _phase_future = _phase_executor.submit(_run_embed)
+                    try:
+                        embed_result = _phase_future.result(
+                            timeout=_EMBED_PHASE_TIMEOUT
+                        )
+                    except _TETimeout:
+                        _phase_future.cancel()
+                        raise RuntimeError(
+                            f"Embedding phase timed out after {_EMBED_PHASE_TIMEOUT}s"
+                        )
                 _update_sync_job(job_id, embed_result=embed_result)
             except Exception as embed_exc:
                 _update_sync_job(
@@ -2725,7 +2829,9 @@ def _compact_embed_result_for_status(embed_result: Any) -> Any:
     }
 
 
-def _material_asset_hash_candidates(source_path: Optional[str], file_path: Optional[str]) -> list[str]:
+def _material_asset_hash_candidates(
+    source_path: Optional[str], file_path: Optional[str]
+) -> list[str]:
     """Build hash candidates that match text_extractor's extracted_images folder naming."""
     raw_candidates: list[str] = []
     for raw in (file_path, source_path):
@@ -2756,7 +2862,9 @@ def _material_asset_hash_candidates(source_path: Optional[str], file_path: Optio
     return hashes
 
 
-def _find_extracted_asset_dir(source_path: Optional[str], file_path: Optional[str]) -> Optional[Path]:
+def _find_extracted_asset_dir(
+    source_path: Optional[str], file_path: Optional[str]
+) -> Optional[Path]:
     if not EXTRACTED_IMAGES_ROOT.exists():
         return None
     for digest in _material_asset_hash_candidates(source_path, file_path):
@@ -2782,7 +2890,9 @@ def _inject_extracted_images(
         [
             path
             for path in asset_dir.iterdir()
-            if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+            if path.is_file()
+            and path.suffix.lower()
+            in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
         ],
         key=lambda path: path.name.lower(),
     )
@@ -2817,7 +2927,8 @@ def _rewrite_extracted_image_links(
     valid_files = {
         path.name.lower()
         for path in asset_dir.iterdir()
-        if path.is_file() and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+        if path.is_file()
+        and path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
     }
     if not valid_files:
         return content
@@ -2830,7 +2941,11 @@ def _rewrite_extracted_image_links(
         if not raw_url:
             return match.group(0)
         lowered = raw_url.lower()
-        if lowered.startswith("http://") or lowered.startswith("https://") or lowered.startswith("/api/tutor/materials/"):
+        if (
+            lowered.startswith("http://")
+            or lowered.startswith("https://")
+            or lowered.startswith("/api/tutor/materials/")
+        ):
             return match.group(0)
 
         normalized = raw_url.replace("\\", "/")
@@ -2896,7 +3011,11 @@ def create_session():
     north_star_refresh = bool(
         data.get(
             "north_star_refresh",
-            (content_filter.get("north_star_refresh") if isinstance(content_filter, dict) else False),
+            (
+                content_filter.get("north_star_refresh")
+                if isinstance(content_filter, dict)
+                else False
+            ),
         )
     )
 
@@ -3003,10 +3122,14 @@ def create_session():
         if focus_objective_id:
             focus_wikilink = _wikilink(_strip_wikilink(focus_objective_id))
             content_filter["focus_objective_id"] = _strip_wikilink(focus_wikilink)
-            refs = _normalize_wikilinks(content_filter.get("reference_targets"), max_items=80)
+            refs = _normalize_wikilinks(
+                content_filter.get("reference_targets"), max_items=80
+            )
             if focus_wikilink and focus_wikilink not in refs:
                 refs = [focus_wikilink, *refs]
-            content_filter["reference_targets"] = _normalize_wikilinks(refs, max_items=80)
+            content_filter["reference_targets"] = _normalize_wikilinks(
+                refs, max_items=80
+            )
 
     session_id = _gen_session_id()
     now = datetime.now().isoformat()
@@ -3121,6 +3244,7 @@ def create_session():
                     )
         except Exception:
             import logging
+
             logging.getLogger(__name__).warning(
                 "Failed to populate session_chains", exc_info=True
             )
@@ -3153,7 +3277,9 @@ def create_session():
             "subtopic_name": north_star_ctx.get("subtopic_name"),
             "objective_ids": north_star_ctx.get("objective_ids") or [],
         }
-        response["objective_scope"] = content_filter.get("objective_scope") or "module_all"
+        response["objective_scope"] = (
+            content_filter.get("objective_scope") or "module_all"
+        )
         response["focus_objective_id"] = content_filter.get("focus_objective_id")
         response["reference_targets_count"] = len(
             north_star_ctx.get("reference_targets") or []
@@ -3168,7 +3294,9 @@ def create_session():
             rec_context["stage"] = content_filter.get("stage")
             rec_context["energy"] = content_filter.get("energy")
             rec_context["class_type"] = content_filter.get("class_type")
-        recs = get_context_recommendations(**{k: v for k, v in rec_context.items() if v})
+        recs = get_context_recommendations(
+            **{k: v for k, v in rec_context.items() if v}
+        )
         if recs:
             response["recommended_chains"] = recs
     except Exception:
@@ -3264,7 +3392,9 @@ def send_turn(session_id: str):
         )
     active_stage = str((block_info or {}).get("category") or "").upper()
     active_method_id = str((block_info or {}).get("method_id") or "").strip()
-    method_contract = _load_method_contracts().get(active_method_id, {}) if active_method_id else {}
+    method_contract = (
+        _load_method_contracts().get(active_method_id, {}) if active_method_id else {}
+    )
     runtime_drift_events: list[dict[str, Any]] = []
     if block_info and active_method_id:
         expected_stage = str(method_contract.get("control_stage") or "").strip().upper()
@@ -3398,8 +3528,8 @@ def send_turn(session_id: str):
     enforce_reference_bounds = bool(content_filter.get("enforce_reference_bounds"))
     objective_scope = _normalize_objective_scope(content_filter.get("objective_scope"))
     focus_objective_id = str(content_filter.get("focus_objective_id") or "").strip()
-    module_prefix = str(content_filter.get("module_prefix") or "").strip().replace(
-        "\\", "/"
+    module_prefix = (
+        str(content_filter.get("module_prefix") or "").strip().replace("\\", "/")
     )
     north_star = content_filter.get("north_star")
     if not isinstance(north_star, dict):
@@ -3440,7 +3570,9 @@ def send_turn(session_id: str):
     if module_prefix:
         content_filter["module_prefix"] = module_prefix
 
-    accuracy_profile = normalize_accuracy_profile(content_filter.get("accuracy_profile"))
+    accuracy_profile = normalize_accuracy_profile(
+        content_filter.get("accuracy_profile")
+    )
     content_filter["accuracy_profile"] = accuracy_profile
 
     # Extract material_ids from content filter (new dual-library approach)
@@ -3452,7 +3584,9 @@ def send_turn(session_id: str):
     instruction_k = _resolve_instruction_retrieval_k(accuracy_profile)
     # Explicit material selection should override course scoping.
     retrieval_course_id = None if material_ids else session.get("course_id")
-    selected_material_count, selected_material_labels = _material_scope_labels(material_ids)
+    selected_material_count, selected_material_labels = _material_scope_labels(
+        material_ids
+    )
 
     # Legacy support: folder_paths
     folder_paths = None
@@ -3477,14 +3611,18 @@ def send_turn(session_id: str):
     _mode_provided = "mode" in data
     _mode = data.get("mode", {})
     _materials_on = bool(_mode.get("materials", not _mode_provided))
-    _obsidian_on  = bool(_mode.get("obsidian",  not _mode_provided))
+    _obsidian_on = bool(_mode.get("obsidian", not _mode_provided))
     _web_search_on = bool(_mode.get("web_search", not _mode_provided))
     _deep_think_on = bool(_mode.get("deep_think", False))
     _gemini_vision_on = bool(_mode.get("gemini_vision", False))
 
     # Note: codex_model (from content_filter.model) takes full precedence over the
     # mode-based tier selection. An explicit model override beats the toggle logic.
-    _model = "gpt-5.3-codex" if (_deep_think_on or not _mode_provided) else "gpt-5.3-codex-spark"
+    _model = (
+        "gpt-5.3-codex"
+        if (_deep_think_on or not _mode_provided)
+        else "gpt-5.3-codex-spark"
+    )
     _reasoning_effort = "high" if (_deep_think_on or not _mode_provided) else None
 
     turn_number = session["turn_count"] + 1
@@ -3571,7 +3709,9 @@ def send_turn(session_id: str):
                     "Tell the student: Gemini Vision was requested but isn't available for these materials."
                 )
             elif _gemini_vision_on and material_ids:
-                gemini_video_context, gemini_diag = _build_gemini_vision_context(material_ids)
+                gemini_video_context, gemini_diag = _build_gemini_vision_context(
+                    material_ids
+                )
                 if gemini_video_context:
                     material_text = (
                         f"{material_text}\n\n## Gemini Video Vision Context\n"
@@ -3593,6 +3733,7 @@ def send_turn(session_id: str):
             graph_context_text = None
             try:
                 from adaptive.knowledge_graph import hybrid_retrieve
+
                 graph_result = hybrid_retrieve(question, adaptive_conn)
                 if graph_result.get("context_text"):
                     graph_context_text = graph_result["context_text"]
@@ -3611,11 +3752,12 @@ def send_turn(session_id: str):
                 course_map=ctx.get("course_map", ""),
                 vault_state=vault_state_text,
             )
-            session_rules = _normalize_session_rules(content_filter.get("session_rules"))
+            session_rules = _normalize_session_rules(
+                content_filter.get("session_rules")
+            )
             if session_rules:
                 system_prompt += (
-                    "\n\n## Session Rules (Current Session Only)\n"
-                    f"{session_rules}"
+                    f"\n\n## Session Rules (Current Session Only)\n{session_rules}"
                 )
             system_prompt += (
                 "\n\n## Retrieval Tuning\n"
@@ -3642,9 +3784,7 @@ def send_turn(session_id: str):
                 )
                 _needs_lo_save = (
                     not _session_has_real_objectives(north_star) and turn_number <= 5
-                ) or (
-                    north_star.get("status") == "needs_path" and turn_number <= 8
-                )
+                ) or (north_star.get("status") == "needs_path" and turn_number <= 8)
                 _is_needs_path = north_star.get("status") == "needs_path"
                 if _needs_lo_save and _is_needs_path:
                     # Objectives exist in DB but North Star file was deleted
@@ -3654,7 +3794,7 @@ def send_turn(session_id: str):
                         "are still saved in the database. Before continuing, ask the student "
                         "where to re-save the North Star.\n"
                         '1. Ask: "Your North Star file was removed. '
-                        'Where should I save your learning objectives? '
+                        "Where should I save your learning objectives? "
                         'Example: Study Notes/Movement Science/Construct 2/Hip and Pelvis"\n'
                         "2. Once the student provides a folder, call `save_learning_objectives` "
                         "with the existing objectives and the new `save_folder`.\n"
@@ -3666,7 +3806,7 @@ def send_turn(session_id: str):
                         "\n\n## Missing Learning Objectives\n"
                         "No learning objectives are set for this module yet. "
                         "You MUST resolve this before teaching content.\n"
-                        '1. Ask the student: "I don\'t have learning objectives for this module yet. '
+                        "1. Ask the student: \"I don't have learning objectives for this module yet. "
                         'Are they in your loaded study materials, or would you like to type them in?"\n'
                         "2. If in materials: scan the Retrieved Study Materials for ALL explicit learning objectives, "
                         "chapter goals, or key competencies. List EVERY objective found — do not summarize, combine, or truncate. "
@@ -3678,7 +3818,7 @@ def send_turn(session_id: str):
                         '"What folder should I save these to? Example: '
                         'Study Notes/Movement Science/Construct 2/Hip and Pelvis"\n'
                         "7. **IMPORTANT**: Once approved AND folder confirmed, call `save_learning_objectives`. "
-                        "Pass `objectives` (array with `id` like \"OBJ-1\" and `description`) "
+                        'Pass `objectives` (array with `id` like "OBJ-1" and `description`) '
                         "and `save_folder` (the vault path the student provided). "
                         "If the student says 'default' or doesn't care, omit save_folder. "
                         "Do NOT skip this step or say you cannot save them."
@@ -3692,7 +3832,10 @@ def send_turn(session_id: str):
                     "Targets:\n"
                     f"{bounded_targets}"
                 )
-            if block_info and str(block_info.get("control_stage") or "").upper() == "PRIME":
+            if (
+                block_info
+                and str(block_info.get("control_stage") or "").upper() == "PRIME"
+            ):
                 system_prompt += (
                     "\n\n## PRIME Stage Guardrails (Hard)\n"
                     "- PRIME is orientation only.\n"
@@ -3709,15 +3852,16 @@ def send_turn(session_id: str):
                         "- Exclude trivia and avoid deep content teaching in this method.\n"
                     )
             system_prompt += (
-                "\n\n## PRIME Objective Scope\n"
-                f"- Active scope: {objective_scope}\n"
+                f"\n\n## PRIME Objective Scope\n- Active scope: {objective_scope}\n"
             )
             if objective_scope == "module_all":
-                system_prompt += (
-                    "- Use module-level big-picture orientation first, then ask learner to choose one focus objective.\n"
-                )
+                system_prompt += "- Use module-level big-picture orientation first, then ask learner to choose one focus objective.\n"
             else:
-                focus_link = _wikilink(_strip_wikilink(focus_objective_id)) if focus_objective_id else ""
+                focus_link = (
+                    _wikilink(_strip_wikilink(focus_objective_id))
+                    if focus_objective_id
+                    else ""
+                )
                 system_prompt += (
                     "- Stay on one focus objective for this turn.\n"
                     f"- Focus objective: {focus_link or '[[OBJ-UNMAPPED]]'}\n"
@@ -3795,7 +3939,9 @@ def send_turn(session_id: str):
 
             # Scholar method recommendations for this context
             try:
-                from dashboard.method_analysis import get_context_recommendations as _get_recs
+                from dashboard.method_analysis import (
+                    get_context_recommendations as _get_recs,
+                )
 
                 rec_kw: dict[str, Any] = {}
                 if isinstance(content_filter, dict):
@@ -3860,7 +4006,9 @@ def send_turn(session_id: str):
                 payload["profile_escalated"] = profile_escalated
                 payload["profile_escalation_reasons"] = profile_escalation_reasons
                 payload["insufficient_evidence_guard"] = force_insufficient_evidence
-                payload["insufficient_evidence_reasons"] = weak_reasons if force_insufficient_evidence else []
+                payload["insufficient_evidence_reasons"] = (
+                    weak_reasons if force_insufficient_evidence else []
+                )
                 payload["active_stage"] = active_stage
                 payload["active_method_id"] = active_method_id
                 if runtime_drift_events:
@@ -3879,17 +4027,19 @@ def send_turn(session_id: str):
                     for idx, src in enumerate(retrieved_material_sources[:12])
                 ]
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
-                retrieval_debug_payload = _attach_profile_debug(_build_retrieval_debug_payload(
-                    accuracy_profile=effective_accuracy_profile,
-                    material_ids=material_ids,
-                    selected_material_count=selected_material_count,
-                    material_k=effective_material_k,
-                    retrieval_course_id=retrieval_course_id,
-                    material_docs=material_docs,
-                    instruction_docs=instruction_docs,
-                    citations=citations,
-                    rag_debug=rag_debug,
-                ))
+                retrieval_debug_payload = _attach_profile_debug(
+                    _build_retrieval_debug_payload(
+                        accuracy_profile=effective_accuracy_profile,
+                        material_ids=material_ids,
+                        selected_material_count=selected_material_count,
+                        material_k=effective_material_k,
+                        retrieval_course_id=retrieval_course_id,
+                        material_docs=material_docs,
+                        instruction_docs=instruction_docs,
+                        citations=citations,
+                        rag_debug=rag_debug,
+                    )
+                )
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",
                     session_id,
@@ -3903,30 +4053,36 @@ def send_turn(session_id: str):
                     artifacts=artifact_payload,
                     retrieval_debug=retrieval_debug_payload,
                 )
-            elif selected_material_count > 0 and _is_selected_scope_listing_question(question):
+            elif selected_material_count > 0 and _is_selected_scope_listing_question(
+                question
+            ):
                 used_scope_shortcut = True
                 full_response = _build_selected_scope_listing_response(
                     selected_count=selected_material_count,
                     selected_labels=selected_material_labels,
                     retrieved_sources=retrieved_material_sources,
                 )
-                citation_sources = retrieved_material_sources or selected_material_labels
+                citation_sources = (
+                    retrieved_material_sources or selected_material_labels
+                )
                 citations = [
                     {"source": src, "index": idx + 1}
                     for idx, src in enumerate(citation_sources[:12])
                 ]
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
-                retrieval_debug_payload = _attach_profile_debug(_build_retrieval_debug_payload(
-                    accuracy_profile=effective_accuracy_profile,
-                    material_ids=material_ids,
-                    selected_material_count=selected_material_count,
-                    material_k=effective_material_k,
-                    retrieval_course_id=retrieval_course_id,
-                    material_docs=material_docs,
-                    instruction_docs=instruction_docs,
-                    citations=citations,
-                    rag_debug=rag_debug,
-                ))
+                retrieval_debug_payload = _attach_profile_debug(
+                    _build_retrieval_debug_payload(
+                        accuracy_profile=effective_accuracy_profile,
+                        material_ids=material_ids,
+                        selected_material_count=selected_material_count,
+                        material_k=effective_material_k,
+                        retrieval_course_id=retrieval_course_id,
+                        material_docs=material_docs,
+                        instruction_docs=instruction_docs,
+                        citations=citations,
+                        rag_debug=rag_debug,
+                    )
+                )
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",
                     session_id,
@@ -3948,23 +4104,27 @@ def send_turn(session_id: str):
                     retrieved_sources=retrieved_material_sources,
                     profile_used=effective_accuracy_profile,
                 )
-                citation_sources = retrieved_material_sources or selected_material_labels
+                citation_sources = (
+                    retrieved_material_sources or selected_material_labels
+                )
                 citations = [
                     {"source": src, "index": idx + 1}
                     for idx, src in enumerate(citation_sources[:12])
                 ]
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
-                retrieval_debug_payload = _attach_profile_debug(_build_retrieval_debug_payload(
-                    accuracy_profile=effective_accuracy_profile,
-                    material_ids=material_ids,
-                    selected_material_count=selected_material_count,
-                    material_k=effective_material_k,
-                    retrieval_course_id=retrieval_course_id,
-                    material_docs=material_docs,
-                    instruction_docs=instruction_docs,
-                    citations=citations,
-                    rag_debug=rag_debug,
-                ))
+                retrieval_debug_payload = _attach_profile_debug(
+                    _build_retrieval_debug_payload(
+                        accuracy_profile=effective_accuracy_profile,
+                        material_ids=material_ids,
+                        selected_material_count=selected_material_count,
+                        material_k=effective_material_k,
+                        retrieval_course_id=retrieval_course_id,
+                        material_docs=material_docs,
+                        instruction_docs=instruction_docs,
+                        citations=citations,
+                        rag_debug=rag_debug,
+                    )
+                )
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",
                     session_id,
@@ -4119,7 +4279,9 @@ def send_turn(session_id: str):
                                     _cf_row = _get_tutor_session(_cf_conn, session_id)
                                     _cf_conn.close()
                                     if _cf_row and _cf_row.get("content_filter_json"):
-                                        _fresh = _json.loads(_cf_row["content_filter_json"])
+                                        _fresh = _json.loads(
+                                            _cf_row["content_filter_json"]
+                                        )
                                         if isinstance(_fresh, dict):
                                             content_filter.update(_fresh)
                                 except Exception:
@@ -4165,28 +4327,20 @@ def send_turn(session_id: str):
                             _lo_save_called = True
                             try:
                                 _cf_conn = get_connection()
-                                _cf_row = _get_tutor_session(
-                                    _cf_conn, session_id
-                                )
+                                _cf_row = _get_tutor_session(_cf_conn, session_id)
                                 _cf_conn.close()
-                                if _cf_row and _cf_row.get(
-                                    "content_filter_json"
-                                ):
-                                    _fresh = json.loads(
-                                        _cf_row["content_filter_json"]
-                                    )
+                                if _cf_row and _cf_row.get("content_filter_json"):
+                                    _fresh = json.loads(_cf_row["content_filter_json"])
                                     if isinstance(_fresh, dict):
                                         content_filter.update(_fresh)
                             except Exception:
                                 pass
                             yield format_sse_chunk(
-                                "\n\n---\n"
-                                "*Learning objectives saved automatically.*\n",
+                                "\n\n---\n*Learning objectives saved automatically.*\n",
                             )
                         else:
                             _LOG.warning(
-                                "Auto-invoke save_learning_objectives "
-                                "failed: %s",
+                                "Auto-invoke save_learning_objectives failed: %s",
                                 tool_result.get("error"),
                             )
 
@@ -4214,14 +4368,19 @@ def send_turn(session_id: str):
                 # Obsidian, and strip the blocks so the user sees clean prose.
                 vault_artifact_results: list[dict] | None = None
                 try:
-                    from vault_artifact_parser import parse_vault_artifacts, strip_vault_artifacts
+                    from vault_artifact_parser import (
+                        parse_vault_artifacts,
+                        strip_vault_artifacts,
+                    )
                     from vault_artifact_router import execute_all_artifacts
                     from obsidian_vault import ObsidianVault
 
                     vault_artifacts = parse_vault_artifacts(full_response)
                     if vault_artifacts:
                         vault = ObsidianVault()
-                        vault_artifact_results = execute_all_artifacts(vault, vault_artifacts)
+                        vault_artifact_results = execute_all_artifacts(
+                            vault, vault_artifacts
+                        )
                         _LOG.info(
                             "Vault artifacts executed session=%s results=%s",
                             session_id,
@@ -4230,21 +4389,25 @@ def send_turn(session_id: str):
                         full_response = strip_vault_artifacts(full_response)
                         if artifact_payload is None:
                             artifact_payload = []
-                        artifact_payload.append({"vault_artifacts": vault_artifact_results})
+                        artifact_payload.append(
+                            {"vault_artifacts": vault_artifact_results}
+                        )
                 except Exception as _vault_exc:
                     _LOG.warning("Vault artifact processing failed: %s", _vault_exc)
 
-                retrieval_debug_payload = _attach_profile_debug(_build_retrieval_debug_payload(
-                    accuracy_profile=effective_accuracy_profile,
-                    material_ids=material_ids,
-                    selected_material_count=selected_material_count,
-                    material_k=effective_material_k,
-                    retrieval_course_id=retrieval_course_id,
-                    material_docs=material_docs,
-                    instruction_docs=instruction_docs,
-                    citations=all_citations,
-                    rag_debug=rag_debug,
-                ))
+                retrieval_debug_payload = _attach_profile_debug(
+                    _build_retrieval_debug_payload(
+                        accuracy_profile=effective_accuracy_profile,
+                        material_ids=material_ids,
+                        selected_material_count=selected_material_count,
+                        material_k=effective_material_k,
+                        retrieval_course_id=retrieval_course_id,
+                        material_docs=material_docs,
+                        instruction_docs=instruction_docs,
+                        citations=all_citations,
+                        rag_debug=rag_debug,
+                    )
+                )
                 _LOG.info(
                     "Tutor retrieval debug session=%s turn=%s payload=%s",
                     session_id,
@@ -4266,7 +4429,10 @@ def send_turn(session_id: str):
                         try:
                             from adaptive.bkt import bkt_update
                             from adaptive.schemas import MasteryConfig
-                            from adaptive.telemetry import emit_evaluate_work, record_error_flag
+                            from adaptive.telemetry import (
+                                emit_evaluate_work,
+                                record_error_flag,
+                            )
 
                             verdict_val = parsed_verdict.get("verdict")
                             error_loc = parsed_verdict.get("error_location") or {}
@@ -4274,8 +4440,20 @@ def send_turn(session_id: str):
 
                             if skill_id and verdict_val in ("pass", "fail", "partial"):
                                 correct = verdict_val == "pass"
-                                new_p = bkt_update(adaptive_conn, "default", skill_id, correct, MasteryConfig())
-                                emit_evaluate_work(adaptive_conn, "default", skill_id, correct, session_id)
+                                new_p = bkt_update(
+                                    adaptive_conn,
+                                    "default",
+                                    skill_id,
+                                    correct,
+                                    MasteryConfig(),
+                                )
+                                emit_evaluate_work(
+                                    adaptive_conn,
+                                    "default",
+                                    skill_id,
+                                    correct,
+                                    session_id,
+                                )
                                 mastery_update_payload = {
                                     "skill_id": skill_id,
                                     "new_mastery": round(new_p, 4),
@@ -4285,8 +4463,12 @@ def send_turn(session_id: str):
                                 # M6: Record error flag on failure
                                 if verdict_val == "fail":
                                     record_error_flag(
-                                        adaptive_conn, "default", skill_id,
-                                        error_type=parsed_verdict.get("error_type", "unknown"),
+                                        adaptive_conn,
+                                        "default",
+                                        skill_id,
+                                        error_type=parsed_verdict.get(
+                                            "error_type", "unknown"
+                                        ),
                                         severity="medium",
                                         edge_id=error_loc.get("prereq_from"),
                                         evidence_ref=parsed_verdict.get("why_wrong"),
@@ -4304,7 +4486,9 @@ def send_turn(session_id: str):
                 if behavior_override == "teach_back" and full_response:
                     parsed_teach_back = parse_teach_back_rubric(full_response)
                     if parsed_teach_back:
-                        is_valid, tb_issues = validate_teach_back_rubric(parsed_teach_back)
+                        is_valid, tb_issues = validate_teach_back_rubric(
+                            parsed_teach_back
+                        )
                         if not is_valid:
                             _LOG.warning("Teach-back rubric issues: %s", tb_issues)
                             parsed_teach_back["_validation_issues"] = tb_issues
@@ -4318,20 +4502,35 @@ def send_turn(session_id: str):
 
                             tb_skill = session.get("topic")
                             if tb_skill and rubric_blocks_mastery(parsed_teach_back):
-                                eff = _get_eff(adaptive_conn, "default", tb_skill, _MC2())
+                                eff = _get_eff(
+                                    adaptive_conn, "default", tb_skill, _MC2()
+                                )
                                 if eff >= _MC2().unlock_threshold:
                                     parsed_teach_back["_mastery_blocked"] = True
                                     _LOG.info(
                                         "Teach-back gate blocking mastery for %s (eff=%.3f)",
-                                        tb_skill, eff,
+                                        tb_skill,
+                                        eff,
                                     )
 
                             # Record BKT event for teach-back outcome
                             tb_rating = parsed_teach_back.get("overall_rating")
                             if tb_skill and tb_rating in ("pass", "fail", "partial"):
                                 tb_correct = tb_rating == "pass"
-                                new_p = _bkt_tb(adaptive_conn, "default", tb_skill, tb_correct, _MC2())
-                                _emit_tb(adaptive_conn, "default", tb_skill, tb_correct, session_id)
+                                new_p = _bkt_tb(
+                                    adaptive_conn,
+                                    "default",
+                                    tb_skill,
+                                    tb_correct,
+                                    _MC2(),
+                                )
+                                _emit_tb(
+                                    adaptive_conn,
+                                    "default",
+                                    tb_skill,
+                                    tb_correct,
+                                    session_id,
+                                )
                                 mastery_update_payload = {
                                     "skill_id": tb_skill,
                                     "new_mastery": round(new_p, 4),
@@ -4627,7 +4826,7 @@ def end_session(session_id: str):
                     now.strftime("%Y-%m-%d"),
                     now.strftime("%H:%M:%S"),
                     title,
-                    title, # study_mode
+                    title,  # study_mode
                     now.isoformat(),
                     session.get("turn_count", 0) * 2,
                     session.get("turn_count", 0) * 2,
@@ -4744,7 +4943,8 @@ def end_session(session_id: str):
 
             if notes_by_path:
                 graph_sync_result = _sync_graph_for_paths(
-                    conn=conn, notes_by_path=notes_by_path,
+                    conn=conn,
+                    notes_by_path=notes_by_path,
                 )
                 _LOG.info(
                     "end_session graph sync: %d notes, %d edges created",
@@ -4788,12 +4988,14 @@ def end_session(session_id: str):
         completed_blocks = cur_rt.fetchall()
 
         method_chain_id = session.get("method_chain_id")
-        rating_context = json.dumps({
-            "course_id": content_filter.get("course_id"),
-            "module_id": content_filter.get("module_id"),
-            "topic": session.get("topic"),
-            "session_mode": content_filter.get("session_mode"),
-        })
+        rating_context = json.dumps(
+            {
+                "course_id": content_filter.get("course_id"),
+                "module_id": content_filter.get("module_id"),
+                "topic": session.get("topic"),
+                "session_mode": content_filter.get("session_mode"),
+            }
+        )
 
         for block_row in completed_blocks:
             slug = block_row["block_slug"]
@@ -4827,6 +5029,7 @@ def end_session(session_id: str):
     if vault_folder:
         try:
             from vault_janitor import scan_vault
+
             scan = scan_vault(folder=vault_folder, checks=["missing_frontmatter"])
             janitor_result = {
                 "folder": vault_folder,
@@ -4928,7 +5131,9 @@ def get_session_summary(session_id: str):
     objective_ids = north_star.get("objective_ids") or []
     chain_name = content_filter.get("chain_name") or None
     vault_folder = str(content_filter.get("vault_folder") or "").strip() or None
-    module_name = north_star.get("module_name") or content_filter.get("module_name") or ""
+    module_name = (
+        north_star.get("module_name") or content_filter.get("module_name") or ""
+    )
     topic = session.get("topic") or module_name or "Session"
     session_mode = content_filter.get("session_mode") or "focused_batch"
 
@@ -4937,15 +5142,19 @@ def get_session_summary(session_id: str):
     if objective_ids:
         course_id = content_filter.get("course_id")
         if course_id:
-            db_objs = _collect_objectives_from_db(course_id, content_filter.get("module_id"))
+            db_objs = _collect_objectives_from_db(
+                course_id, content_filter.get("module_id")
+            )
             obj_map = {o["objective_id"]: o for o in db_objs}
             for oid in objective_ids:
                 obj = obj_map.get(oid, {})
-                objectives_detail.append({
-                    "id": oid,
-                    "description": obj.get("title", oid),
-                    "status": obj.get("status", "active"),
-                })
+                objectives_detail.append(
+                    {
+                        "id": oid,
+                        "description": obj.get("title", oid),
+                        "status": obj.get("status", "active"),
+                    }
+                )
 
     # --- Chain progress ---
     chain_status = None
@@ -4991,9 +5200,7 @@ def get_session_summary(session_id: str):
         "turn_count": turn_count,
         "duration_minutes": duration_minutes,
         "duration_seconds": round(duration_minutes * 60),
-        "artifacts": [
-            {"type": t, "count": c} for t, c in artifact_counts.items()
-        ],
+        "artifacts": [{"type": t, "count": c} for t, c in artifact_counts.items()],
         "artifact_count": total_artifact_count,
         "objectives": objectives_detail,
         "objectives_covered": objectives_covered,
@@ -5014,16 +5221,24 @@ def get_session_summary(session_id: str):
                 from dashboard.api_adapter import obsidian_save_file
 
                 if vault_folder:
-                    wrap_path = f"{vault_folder}/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
+                    wrap_path = (
+                        f"{vault_folder}/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
+                    )
                 else:
-                    wrap_path = f"Study Notes/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
+                    wrap_path = (
+                        f"Study Notes/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
+                    )
 
                 save_res = obsidian_save_file(wrap_path, wrap_result["content"])
                 if save_res.get("success"):
                     wrap_saved = {"path": wrap_path, "saved": True}
                     _LOG.info("Session wrap saved to %s", wrap_path)
                 else:
-                    wrap_saved = {"path": wrap_path, "saved": False, "error": save_res.get("error")}
+                    wrap_saved = {
+                        "path": wrap_path,
+                        "saved": False,
+                        "error": save_res.get("error"),
+                    }
         except Exception as exc:
             _LOG.warning("Session wrap save failed: %s", exc)
             wrap_saved = {"saved": False, "error": str(exc)}
@@ -5212,12 +5427,14 @@ def delete_session(session_id: str):
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "deleted": True,
-        "session_id": session_id,
-        "obsidian_deleted": deleted_paths,
-        "objectives_deleted": lo_deleted,
-    })
+    return jsonify(
+        {
+            "deleted": True,
+            "session_id": session_id,
+            "obsidian_deleted": deleted_paths,
+            "objectives_deleted": lo_deleted,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -5238,7 +5455,11 @@ def create_artifact(session_id: str):
         artifact_type = _ARTIFACT_TYPE_ALIASES[artifact_type]
 
     if artifact_type not in ("note", "card", "map", "structured_notes"):
-        return jsonify({"error": "type must be 'note', 'card', 'map', 'table', 'structured_map', or 'structured_notes'"}), 400
+        return jsonify(
+            {
+                "error": "type must be 'note', 'card', 'map', 'table', 'structured_map', or 'structured_notes'"
+            }
+        ), 400
 
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)
@@ -5256,7 +5477,9 @@ def create_artifact(session_id: str):
                     {
                         "error": "validation_failed",
                         "code": "PRIME_ASSESSMENT_BLOCKED",
-                        "details": [f"prime_guardrail: {msg}" for msg in prime_violations],
+                        "details": [
+                            f"prime_guardrail: {msg}" for msg in prime_violations
+                        ],
                     }
                 ),
                 400,
@@ -5502,9 +5725,7 @@ def delete_artifacts(session_id: str):
         if 0 <= i < len(artifacts):
             art = artifacts[i]
             if isinstance(art, dict):
-                deleted_paths.extend(
-                    _delete_artifact_obsidian_files(art)
-                )
+                deleted_paths.extend(_delete_artifact_obsidian_files(art))
 
     # Remove by index (descending so indices stay valid)
     for i in sorted(set(indexes), reverse=True):
@@ -5519,11 +5740,13 @@ def delete_artifacts(session_id: str):
     conn.commit()
     conn.close()
 
-    return jsonify({
-        "deleted": len(indexes),
-        "session_id": session_id,
-        "obsidian_deleted": deleted_paths,
-    })
+    return jsonify(
+        {
+            "deleted": len(indexes),
+            "session_id": session_id,
+            "obsidian_deleted": deleted_paths,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -5666,7 +5889,9 @@ def upload_material():
 
     file_type = "mp4" if ext == ".mp4" else get_file_type(file.filename)
     if not file_type:
-        return jsonify({"error": f"Could not infer file type from extension: {ext}"}), 400
+        return jsonify(
+            {"error": f"Could not infer file type from extension: {ext}"}
+        ), 400
     title = request.form.get("title", Path(file.filename).stem)
     course_id = request.form.get("course_id", type=int)
     tags = request.form.get("tags", "")
@@ -5853,7 +6078,8 @@ def list_materials():
                         p
                         for p in asset_dir.iterdir()
                         if p.is_file()
-                        and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+                        and p.suffix.lower()
+                        in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
                     ]
                 )
             except Exception:
@@ -5958,7 +6184,9 @@ def reextract_material(material_id: int):
 
     source_path = str(row["file_path"] or row["source_path"] or "").strip()
     if not source_path or not Path(source_path).exists():
-        return jsonify({"error": f"Source file not found: {source_path or '(empty)'}"}), 400
+        return jsonify(
+            {"error": f"Source file not found: {source_path or '(empty)'}"}
+        ), 400
 
     doc_type = str(row["doc_type"] or row["file_type"] or "").strip().lower()
     if doc_type in {"ppt", "pptx"}:
@@ -5971,7 +6199,9 @@ def reextract_material(material_id: int):
             doc_type = file_type or doc_type
 
     if doc_type not in {"pdf", "docx", "powerpoint"}:
-        return jsonify({"error": "Re-extract is supported for PDF, DOCX, and PPTX materials only"}), 400
+        return jsonify(
+            {"error": "Re-extract is supported for PDF, DOCX, and PPTX materials only"}
+        ), 400
 
     tags = [t.strip() for t in str(row["topic_tags"] or "").split(",") if t.strip()]
 
@@ -5999,7 +6229,8 @@ def reextract_material(material_id: int):
                     p
                     for p in asset_dir.iterdir()
                     if p.is_file()
-                    and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+                    and p.suffix.lower()
+                    in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
                 ]
             )
         except Exception:
@@ -6106,19 +6337,25 @@ def get_material_content(material_id: int):
     # Strip replacement characters so the viewer gets clean text
     content = raw_content.replace("\ufffd", "") if replacement_count else raw_content
     asset_dir = _find_extracted_asset_dir(row["source_path"], row["file_path"])
-    content = _inject_extracted_images(content, material_id=row["id"], asset_dir=asset_dir)
-    content = _rewrite_extracted_image_links(content, material_id=row["id"], asset_dir=asset_dir)
+    content = _inject_extracted_images(
+        content, material_id=row["id"], asset_dir=asset_dir
+    )
+    content = _rewrite_extracted_image_links(
+        content, material_id=row["id"], asset_dir=asset_dir
+    )
 
-    return jsonify({
-        "id": row["id"],
-        "title": row["title"] or "",
-        "source_path": row["source_path"],
-        "file_type": row["file_type"],
-        "content": content,
-        "char_count": len(content),
-        "extraction_lossy": ratio > 0.1,
-        "replacement_ratio": round(ratio, 3),
-    })
+    return jsonify(
+        {
+            "id": row["id"],
+            "title": row["title"] or "",
+            "source_path": row["source_path"],
+            "file_type": row["file_type"],
+            "content": content,
+            "char_count": len(content),
+            "extraction_lossy": ratio > 0.1,
+            "replacement_ratio": round(ratio, 3),
+        }
+    )
 
 
 @tutor_bp.route("/materials/<int:material_id>/asset/<path:asset_path>", methods=["GET"])
@@ -6137,7 +6374,13 @@ def get_material_asset(material_id: int, asset_path: str):
     if not row:
         return jsonify({"error": "Material not found"}), 404
 
-    normalized = str(asset_path or "").replace("\\", "/").split("?", 1)[0].split("#", 1)[0].strip("/")
+    normalized = (
+        str(asset_path or "")
+        .replace("\\", "/")
+        .split("?", 1)[0]
+        .split("#", 1)[0]
+        .strip("/")
+    )
     if not normalized:
         return jsonify({"error": "Invalid asset path"}), 400
 
@@ -6496,7 +6739,9 @@ def process_video_material():
     if file_type != "mp4" and not source_path.lower().endswith(".mp4"):
         return jsonify({"error": "Material is not an mp4 video"}), 400
     if not Path(source_path).exists():
-        return jsonify({"error": f"Material file not found on disk: {source_path}"}), 400
+        return jsonify(
+            {"error": f"Material file not found on disk: {source_path}"}
+        ), 400
 
     job_id = _launch_video_process_job(
         material_id=material_id_int,
@@ -6567,12 +6812,17 @@ def enrich_video_material():
 
     # Find the most recent segments.json for this video
     from video_ingest_local import VIDEO_INGEST_ROOT, _slugify
+
     slug = _slugify(Path(source_path).stem)
-    matching_dirs = sorted(
-        VIDEO_INGEST_ROOT.glob(f"{slug}_*"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    ) if VIDEO_INGEST_ROOT.exists() else []
+    matching_dirs = (
+        sorted(
+            VIDEO_INGEST_ROOT.glob(f"{slug}_*"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        if VIDEO_INGEST_ROOT.exists()
+        else []
+    )
 
     segments: list[dict] = []
     segments_path = None
@@ -6581,14 +6831,18 @@ def enrich_video_material():
         if sp.exists():
             segments_path = sp
             import json as _json
+
             segments = _json.loads(sp.read_text(encoding="utf-8"))
             break
 
     if not segments:
-        return jsonify({"error": "No processed segments found. Run video/process first."}), 400
+        return jsonify(
+            {"error": "No processed segments found. Run video/process first."}
+        ), 400
 
     try:
         from video_enrich_api import enrich_video, emit_enrichment_markdown
+
         result = enrich_video(
             video_path=source_path,
             segments=segments,
@@ -6598,7 +6852,9 @@ def enrich_video_material():
 
         # If enrichment produced results, emit markdown and ingest via RAG bridge
         if result.get("status") == "ok" and result.get("results"):
-            output_dir = str(segments_path.parent) if segments_path else str(VIDEO_INGEST_ROOT)
+            output_dir = (
+                str(segments_path.parent) if segments_path else str(VIDEO_INGEST_ROOT)
+            )
             md_path = emit_enrichment_markdown(slug, result["results"], output_dir)
             result["enrichment_md_path"] = md_path
 
@@ -6616,9 +6872,11 @@ _DEFAULT_CUSTOM_INSTRUCTIONS = _PROMPT_BUILDER_DEFAULT_RULES
 def get_tutor_settings():
     cfg = load_api_config()
     value = (cfg.get("tutor_custom_instructions") or "").strip()
-    return jsonify({
-        "custom_instructions": value if value else _DEFAULT_CUSTOM_INSTRUCTIONS,
-    })
+    return jsonify(
+        {
+            "custom_instructions": value if value else _DEFAULT_CUSTOM_INSTRUCTIONS,
+        }
+    )
 
 
 @tutor_bp.route("/settings", methods=["PUT"])
@@ -6633,6 +6891,8 @@ def put_tutor_settings():
     cfg = load_api_config()
     cfg["tutor_custom_instructions"] = custom.strip()
     save_api_config(cfg)
-    return jsonify({
-        "custom_instructions": cfg["tutor_custom_instructions"],
-    })
+    return jsonify(
+        {
+            "custom_instructions": cfg["tutor_custom_instructions"],
+        }
+    )
