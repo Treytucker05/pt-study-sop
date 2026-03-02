@@ -37,6 +37,11 @@ from tutor_api_types import (
 )
 from db_setup import DB_PATH, init_database
 
+_TUTOR_INSTRUCTIONS_PATH = Path(__file__).parent / "tutor_instructions.md"
+_TUTOR_INSTRUCTIONS: str = ""
+if _TUTOR_INSTRUCTIONS_PATH.exists():
+    _TUTOR_INSTRUCTIONS = _TUTOR_INSTRUCTIONS_PATH.read_text(encoding="utf-8")
+
 # API config path (same as used by dashboard.utils)
 API_CONFIG_PATH = Path(__file__).parent / "data" / "api_config.json"
 
@@ -526,7 +531,10 @@ def process_tutor_turn(query: TutorQueryV1) -> TutorTurnResponse:
             + "\n\nRuntime Systems/Engines (user-selected):\n"
             + runtime_catalog
         )
-    
+
+    if _TUTOR_INSTRUCTIONS:
+        system_prompt += "\n\n" + _TUTOR_INSTRUCTIONS
+
     # 3. Build user prompt with context
     history_prompt = session.get_history_prompt()
     
@@ -680,6 +688,9 @@ def process_tutor_turn_preamble(query: TutorQueryV1) -> dict:
                 + "\n\nRuntime Systems/Engines (user-selected):\n"
                 + runtime_catalog
             )
+
+        if _TUTOR_INSTRUCTIONS:
+            system_prompt += "\n\n" + _TUTOR_INSTRUCTIONS
 
         # 3. Build user prompt with context
         history_prompt = session.get_history_prompt()

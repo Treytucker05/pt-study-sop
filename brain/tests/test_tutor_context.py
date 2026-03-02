@@ -79,3 +79,12 @@ def test_build_context_debug_records_depth():
 
     result = build_context("Hello", depth="none")
     assert result["debug"]["depth"] == "none"
+
+
+def test_load_tutor_instructions_returns_content():
+    from pathlib import Path
+    instructions_path = Path(__file__).parent.parent / "tutor_instructions.md"
+    assert instructions_path.exists(), "tutor_instructions.md must exist"
+    content = instructions_path.read_text(encoding="utf-8")
+    assert "Available Tools" in content
+    assert ":::vault:create" in content
