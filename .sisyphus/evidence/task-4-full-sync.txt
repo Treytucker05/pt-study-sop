@@ -1,0 +1,9 @@
+Task 4 Status:
+- Code changes: COMPLETE (Tasks 1-3 committed)
+- DB cleanup: BLOCKED by stuck sync job thread holding DB lock
+- Resolution: Restart Flask via Start_Dashboard.bat to kill stuck thread
+- After restart, run:
+  1. DELETE FROM rag_docs WHERE id = 445
+  2. POST /api/tutor/materials/sync/start with folder path
+  3. Poll /api/tutor/materials/sync/status until completed
+  4. Verify all 5 docs have embed_count > 0

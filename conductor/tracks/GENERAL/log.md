@@ -4,6 +4,23 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-03-01 - Tutor smoothness + notes organization audit
+
+- Completed full end-to-end tutor audit per plan `tutor-audit-smoothness`.
+- Added Sprint 4 item to `docs/root/TUTOR_TODO.md`: Tutor smoothness + notes organization audit.
+- Created `docs/root/TUTOR_AUDIT_REPORT.md`:
+  - API↔UI contract verification: summary (duration_minutes vs duration_seconds, artifacts vs artifact_count, objectives vs objectives_covered), save-wrap URL bug, artifact type mismatch (table/smap rejected).
+  - Notes persistence trace: quick_notes, card_drafts, artifacts_json, Obsidian; folder_paths extracted but not passed to retrieval; table/smap never persist.
+  - Runtime smoothness: turn payload integrity, retrieval telemetry, SSE error handling verified.
+- Created `docs/root/TUTOR_AUDIT_REMEDIATION.md`:
+  - P0: Fix save-wrap URL, align summary response, chain progress shape.
+  - P1: Accept table/structured_map in create_artifact (map to note/map).
+  - P2: Wire folder_paths into retrieval, session wrap path uniqueness.
+  - P3: Optional telemetry and latency audit.
+  - Implementation checklist and regression tests to add.
+
+---
+
 ## 2026-02-23 - RAG chunking fix + Gemini CLI provider wiring
 
 - Fixed RAG chunking in `brain/tutor_rag.py`:
@@ -1254,3 +1271,29 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 - Added Methods UI knob editing with JSON validation + reset in dashboard_rebuild/client/src/pages/methods.tsx.
 - Removed PRIME guardrail test skip dependency by creating explicit PRIME-first chain in test setup (rain/tests/test_tutor_session_linking.py).
 - Added method API tests for knob contract and knob update round-trip (rain/tests/test_methods_api.py).
+
+## 2026-03-02 — Embedding Sync Fix (embedding-sync-fix plan)
+
+**Problem**: Material sync hung indefinitely on embedding phase. Root cause: Doc 445 (`spine mobilization lab handout.docx`) had 15.5M chars from Docling table extraction bloat. `embed_rag_docs()` had no timeout, no progress reporting, and a partial-embed bug that permanently skipped failed docs on retry.
+
+**Changes committed**:
+- `fix(rag): cap document content before chunking to prevent hang` (54cc152a)
+  - Added `MAX_CONTENT_CHARS = 500_000` constant
+  - Guard clause in `chunk_document()`: strip → cap → split (prevents MarkdownHeaderTextSplitter regex hang)
+- `fix(rag): add per-doc timeout and partial-embed cleanup` (78002c7b)
+  - Added `DOC_EMBED_TIMEOUT_SEC = 120` constant
+  - `embed_rag_docs()` now accepts `progress_callback: Optional[Callable[[int, int, str], None]]`
+  - Per-doc ThreadPoolExecutor timeout (120s)
+  - On timeout/error: DELETE rag_embeddings for that doc (fixes permanent-skip bug)
+  - Return dict now includes `timed_out` count
+- `fix(sync): wire embedding progress into sync job status` (2e48ebe8)
+  - Progress callback wired into `_launch_materials_sync_job()`
+  - `embedding_progress` dict added to sync job state (current, total, current_file)
+  - 10-minute overall phase timeout safety net
+
+**Pending (requires Flask restart)**:
+- DB cleanup: stuck sync job thread holds write lock on pt_study.db
+- After `Start_Dashboard.bat` restart:
+  1. `DELETE FROM rag_docs WHERE id = 445` (re-sync will re-extract with cap)
+  2. POST `/api/tutor/materials/sync/start` with Joint Mobility folder
+  3. Verify all 5 docs embed successfully
