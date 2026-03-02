@@ -1157,4 +1157,4 @@ def test_sync_graph_uses_session_artifact_paths(client, monkeypatch):
 def test_testing_mode_blocks_north_star_writes(app):
     writes = app.config.get("TEST_NORTH_STAR_WRITES") or []
     normalized = [str(w).replace("\\", "/") for w in writes]
-    assert all(not w.endswith("/_North_Star.md") for w in normalized)
+    assert all(not w.endswith("/North Star.md") for w in normalized)

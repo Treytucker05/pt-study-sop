@@ -336,7 +336,7 @@ def _study_notes_base_path(*, course_label: str, module_or_week: str, subtopic: 
 
 
 def _canonical_north_star_path(*, course_label: str, module_or_week: str, subtopic: str) -> str:
-    return f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/_North_Star.md"
+    return f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/North Star.md"
 
 
 def _wikilink(label: str) -> str:
@@ -871,7 +871,7 @@ def _ensure_north_star_context(
     if path_override:
         # User-provided vault folder — use directly
         clean = path_override.strip().rstrip("/").rstrip("\\")
-        north_star_path = f"{clean}/_North_Star.md"
+        north_star_path = f"{clean}/North Star.md"
     else:
         north_star_path = _canonical_north_star_path(
             course_label=derived_course,
