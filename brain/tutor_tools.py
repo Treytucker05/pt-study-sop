@@ -9,7 +9,7 @@ Tools:
   2. create_note                — create a quick note on the dashboard Notes page
   3. create_anki_card           — draft an Anki flashcard for spaced repetition
   4. create_figma_diagram       — create a visual diagram in Figma (requires Figma MCP)
-  5. save_learning_objectives   — persist approved LOs to DB and rebuild North Star
+  5. save_learning_objectives   — persist approved LOs to DB and rebuild Map of Contents
   6. rate_method_block          — record student feedback on a study method block
 """
 
@@ -183,7 +183,7 @@ SAVE_LEARNING_OBJECTIVES_SCHEMA: dict[str, Any] = {
     "type": "function",
     "name": "save_learning_objectives",
     "description": (
-        "Save learning objectives to the database and rebuild the North Star note. "
+        "Save learning objectives to the database and rebuild the Map of Contents note. "
         "You MUST call this tool when the student approves learning objectives. "
         "This persists them so future turns have real objective IDs instead of OBJ-UNMAPPED. "
         "Do not tell the student you cannot save — use this tool."
@@ -212,7 +212,7 @@ SAVE_LEARNING_OBJECTIVES_SCHEMA: dict[str, Any] = {
             "save_folder": {
                 "type": "string",
                 "description": (
-                    "Obsidian vault-relative folder path where the North Star and "
+                    "Obsidian vault-relative folder path where the Map of Contents and "
                     "study notes should be saved. Ask the student for this before "
                     "calling. Example: 'Study Notes/Movement Science/Construct 2/Hip and Pelvis'"
                 ),
@@ -295,7 +295,11 @@ def execute_save_to_obsidian(
             session_id=str(session_id) if session_id is not None else None,
         )
         if result.get("success"):
-            log.info("Tutor tool: merged/saved to Obsidian — %s (%d bytes)", path, len(content))
+            log.info(
+                "Tutor tool: merged/saved to Obsidian — %s (%d bytes)",
+                path,
+                len(content),
+            )
         return result
     except Exception as e:
         log.exception("Tutor tool save_to_obsidian failed")
@@ -460,7 +464,7 @@ def execute_save_learning_objectives(
     *,
     session_id: str | int | None = None,
 ) -> dict[str, Any]:
-    """Persist approved learning objectives to DB and rebuild the North Star note."""
+    """Persist approved learning objectives to DB and rebuild the Map of Contents note."""
     objectives = arguments.get("objectives")
     if not objectives or not isinstance(objectives, list):
         return {"success": False, "error": "Missing required field: objectives (array)"}
@@ -553,7 +557,9 @@ def execute_rate_method_block(
                 effectiveness,
                 engagement,
                 notes,
-                json.dumps({"source": "tutor_tool", "tutor_session_id": str(session_id)}),
+                json.dumps(
+                    {"source": "tutor_tool", "tutor_session_id": str(session_id)}
+                ),
                 now,
             ),
         )
@@ -561,7 +567,12 @@ def execute_rate_method_block(
         conn.commit()
         conn.close()
 
-        log.info("Tutor tool: rated method block %s — eff=%d eng=%d", block_name, effectiveness, engagement)
+        log.info(
+            "Tutor tool: rated method block %s — eff=%d eng=%d",
+            block_name,
+            effectiveness,
+            engagement,
+        )
         return {
             "success": True,
             "message": f"Recorded feedback for {block_name}: effectiveness={effectiveness}, engagement={engagement}",

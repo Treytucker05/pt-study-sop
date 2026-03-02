@@ -157,3 +157,51 @@ const [state, setState] = useState<T>(() => {
 - `from brain.course_map import load_course_map` → `load_course_map()` returns 5 courses, vault_root="Study Notes"
 - `pytest brain/tests/test_obsidian_vault.py -q` → 32/32 passed
 
+## [2026-03-02] Task 7: MOC rename + Obsidian CLI migration
+
+### api_tutor.py transport migration
+- Replaced all `obsidian_get_file` / `obsidian_save_file` / `obsidian_delete_file` usage in `brain/dashboard/api_tutor.py` with local vault helpers backed by `ObsidianVault` CLI methods.
+- Added lazy singleton helper (`_get_obsidian_vault`) plus wrapper methods (`_vault_read_note`, `_vault_save_note`, `_vault_delete_note`) to preserve dict-style success/error call patterns used by existing code paths.
+- Write paths now log failures and continue in `_ensure_moc_context` (`update_failed` / `build_failed`) instead of hard-failing session creation.
+
+### Naming migration in scope
+- Renamed `_canonical_north_star_path` → `_canonical_moc_path` and `_ensure_north_star_context` → `_ensure_moc_context`, with callsites updated.
+- Canonical note file path now writes `_Map of Contents.md`.
+- Renamed template renderer `_render_north_star_markdown` → `_render_moc_markdown` and dispatch key `north_star` → `map_of_contents`.
+- Template file renamed to `sop/templates/notes/map_of_contents.md.tmpl`; `north_star.md.tmpl` removed.
+- Updated tutor tool wording from "North Star" to "Map of Contents" for `save_learning_objectives` descriptions/docstrings.
+
+
+## [2026-03-02] Task 9 — 5 CLI wrapper methods added to obsidian_vault.py
+
+### Methods added
+| Method | CLI command | Return type |
+|--------|-------------|-------------|
+| `daily_read()` | `daily:read format=json` | `dict` (empty dict on error, not `[]`) |
+| `daily_append(content)` | `daily:append content="..."` | `str` |
+| `insert_template(file, template)` | `template:insert file="..." template="..."` | `str` |
+| `get_outline(file)` | `outline file="..." format=json` | `list[dict]` |
+| `read_property(file, name)` | `property:read name="..." file="..."` | `str` |
+
+### Key pattern: dict return for daily_read
+- `_run(..., parse_json=True)` returns `[]` on empty/error, not `{}`
+- For methods expecting a dict, wrap: `result = self._run(..., parse_json=True); return result if isinstance(result, dict) else {}`
+- Same pattern as existing `get_file_info()`
+
+### Tests
+- Added 7 new tests (2 for daily_read, 1 each for daily_append/insert_template/get_outline error/get_outline success/read_property)
+- Total: 39 tests (was 32)
+- All 39 pass — `pytest brain/tests/test_obsidian_vault.py -v`
+
+### Evidence
+- `.sisyphus/evidence/task-9-cli-methods-test.txt`
+
+### Files modified
+- `brain/obsidian_vault.py` (+36 lines)
+- `brain/tests/test_obsidian_vault.py` (+7 tests, +75 lines)
+
+- 2026-03-02: Completed North Star -> Map of Contents migration in tutor backend paths.
+- Replaced legacy north_star identifiers/keys in api_tutor.py with map_of_contents equivalents and kept vault writes fire-and-forget (logged, no raises).
+- Verified template is now sop/templates/notes/map_of_contents.md.tmpl and north_star template removed.
+- Verified no remaining north_star/NorthStar/north.star matches under brain/ and sop/templates/ for *.py/*.tmpl.
+- Regression check: pytest brain/tests/test_obsidian_vault.py -q passed (39/39).

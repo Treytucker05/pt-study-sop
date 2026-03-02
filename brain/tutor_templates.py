@@ -50,6 +50,12 @@ def _relationship_bullets(values: list[Any]) -> str:
     return "\n".join(rows)
 
 
+def _as_list(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return [item for item in value]
+    return []
+
+
 def render_session_note_markdown(
     *,
     artifact: dict[str, Any],
@@ -60,13 +66,26 @@ def render_session_note_markdown(
     course_code: str = "",
     unit_type: str = "",
 ) -> str:
-    metadata = artifact.get("metadata") if isinstance(artifact.get("metadata"), dict) else {}
-    session = artifact.get("session") if isinstance(artifact.get("session"), dict) else {}
-    concepts = artifact.get("concepts") if isinstance(artifact.get("concepts"), list) else []
+    raw_metadata = artifact.get("metadata")
+    metadata: dict[str, Any] = {}
+    if isinstance(raw_metadata, dict):
+        metadata = raw_metadata
+    raw_session = artifact.get("session")
+    session: dict[str, Any] = {}
+    if isinstance(raw_session, dict):
+        session = raw_session
+    concepts: list[dict[str, Any]] = []
+    raw_concepts = artifact.get("concepts")
+    if isinstance(raw_concepts, list):
+        concepts = [c for c in raw_concepts if isinstance(c, dict)]
+    stage_flow = _as_list(session.get("stage_flow"))
+    unknowns = _as_list(session.get("unknowns"))
+    follow_up_targets = _as_list(session.get("follow_up_targets"))
+    source_ids = _as_list(session.get("source_ids"))
     concept_links = [
         _wikilink(str(c.get("file_name") or "").strip())
         for c in concepts
-        if isinstance(c, dict) and str(c.get("file_name") or "").strip()
+        if str(c.get("file_name") or "").strip()
     ]
     fallback = """---
 note_type: tutor_session
@@ -110,13 +129,11 @@ unit_type: {unit_type}
                 "method_id": str(metadata.get("method_id") or "UNKNOWN"),
                 "session_mode": str(metadata.get("session_mode") or "focused_batch"),
                 "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "stage_flow": _bullets(list(session.get("stage_flow") or [])),
+                "stage_flow": _bullets(stage_flow),
                 "concepts_covered": _bullets(concept_links),
-                "unknowns": _bullets(list(session.get("unknowns") or [])),
-                "follow_up_targets": _bullets(
-                    list(session.get("follow_up_targets") or [])
-                ),
-                "source_ids": _bullets(list(session.get("source_ids") or [])),
+                "unknowns": _bullets(unknowns),
+                "follow_up_targets": _bullets(follow_up_targets),
+                "source_ids": _bullets(source_ids),
                 "course_label": course_label,
                 "course_code": course_code,
                 "unit_type": unit_type,
@@ -180,7 +197,9 @@ unit_type: {unit_type}
                 "relationships": _relationship_bullets(
                     list(concept.get("relationships") or [])
                 ),
-                "next_review_date": str(concept.get("next_review_date") or "unscheduled"),
+                "next_review_date": str(
+                    concept.get("next_review_date") or "unscheduled"
+                ),
                 "course_label": course_label,
                 "course_code": course_code,
                 "unit_type": unit_type,
@@ -190,11 +209,31 @@ unit_type: {unit_type}
     return rendered.rstrip() + "\n"
 
 
-_ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
-          "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"]
+_ROMAN = [
+    "I",
+    "II",
+    "III",
+    "IV",
+    "V",
+    "VI",
+    "VII",
+    "VIII",
+    "IX",
+    "X",
+    "XI",
+    "XII",
+    "XIII",
+    "XIV",
+    "XV",
+    "XVI",
+    "XVII",
+    "XVIII",
+    "XIX",
+    "XX",
+]
 
 
-def _render_north_star_markdown(payload: dict[str, Any]) -> str:
+def _render_moc_markdown(payload: dict[str, Any]) -> str:
     module_name = str(payload.get("module_name") or "Module")
     course_name = str(payload.get("course_name") or "")
 
@@ -203,11 +242,17 @@ def _render_north_star_markdown(payload: dict[str, Any]) -> str:
         # Flat-list fallback: wrap all objectives in a single group
         flat_objs = list(payload.get("objectives") or [])
         if flat_objs:
-            groups = [{"name": module_name, "objectives": [
-                {"id": str(o), "description": str(o), "status": "active"}
-                if not isinstance(o, dict) else o
-                for o in flat_objs
-            ]}]
+            groups = [
+                {
+                    "name": module_name,
+                    "objectives": [
+                        {"id": str(o), "description": str(o), "status": "active"}
+                        if not isinstance(o, dict)
+                        else o
+                        for o in flat_objs
+                    ],
+                }
+            ]
 
     # Count totals
     total = 0
@@ -220,16 +265,18 @@ def _render_north_star_markdown(payload: dict[str, Any]) -> str:
 
     # Build YAML frontmatter
     fm_lines = [
-        "note_type: north_star",
+        "note_type: map_of_contents",
         f"module_name: {module_name}",
     ]
     if course_name:
         fm_lines.append(f"course_name: {course_name}")
-    fm_lines.extend([
-        f"updated_at: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        f"objective_count: {total}",
-        f"mastered_count: {mastered}",
-    ])
+    fm_lines.extend(
+        [
+            f"updated_at: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            f"objective_count: {total}",
+            f"mastered_count: {mastered}",
+        ]
+    )
     frontmatter = "\n".join(fm_lines)
 
     title = f"{module_name} \u2014 Learning Objectives"
@@ -247,7 +294,9 @@ def _render_north_star_markdown(payload: dict[str, Any]) -> str:
         lines: list[str] = []
         if not single_group:
             numeral = _ROMAN[idx] if idx < len(_ROMAN) else str(idx + 1)
-            header = f"## {numeral}. {group_name} ({group_mastered}/{len(objs)} mastered)"
+            header = (
+                f"## {numeral}. {group_name} ({group_mastered}/{len(objs)} mastered)"
+            )
             lines.extend([header, ""])
         for i, obj in enumerate(objs, 1):
             obj_id = str(obj.get("id") or obj.get("objective_id") or f"OBJ-{i}")
@@ -258,7 +307,11 @@ def _render_north_star_markdown(payload: dict[str, Any]) -> str:
     objective_sections = "\n\n".join(sections) if sections else "(no objectives yet)"
 
     follow_up_items = list(payload.get("follow_up_targets") or [])
-    follow_up_targets = "\n".join(f"- {t}" for t in follow_up_items) if follow_up_items else "- (auto-filled after tutor sessions)"
+    follow_up_targets = (
+        "\n".join(f"- {t}" for t in follow_up_items)
+        if follow_up_items
+        else "- (auto-filled after tutor sessions)"
+    )
 
     fallback = """---
 {frontmatter}
@@ -274,7 +327,7 @@ def _render_north_star_markdown(payload: dict[str, Any]) -> str:
 
 {follow_up_targets}
 """
-    template = _read_template("north_star.md.tmpl", fallback=fallback)
+    template = _read_template("map_of_contents.md.tmpl", fallback=fallback)
     rendered = template.format_map(
         _SafeFormatDict(
             {
@@ -383,9 +436,9 @@ updated_at: {updated_at}
                 "follow_up_targets": _bullets(
                     list(payload.get("follow_up_targets") or [])
                 ),
-                "key_takeaways": _bullets(
-                    list(payload.get("key_takeaways") or [])
-                ) if payload.get("key_takeaways") else "- (to be filled after reflection)",
+                "key_takeaways": _bullets(list(payload.get("key_takeaways") or []))
+                if payload.get("key_takeaways")
+                else "- (to be filled after reflection)",
             }
         )
     )
@@ -416,7 +469,9 @@ updated_at: {updated_at}
     return rendered.rstrip() + "\n"
 
 
-def render_template_artifact(template_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+def render_template_artifact(
+    template_id: str, payload: dict[str, Any]
+) -> dict[str, Any]:
     template = str(template_id or "").strip().lower()
 
     if template == "session_note":
@@ -450,7 +505,7 @@ def render_template_artifact(template_id: str, payload: dict[str, Any]) -> dict[
         return {"success": True, "template_id": "concept_note", "content": content}
 
     renderers: dict[str, Callable[[dict[str, Any]], str]] = {
-        "north_star": _render_north_star_markdown,
+        "map_of_contents": _render_moc_markdown,
         "reference_targets": _render_reference_targets_markdown,
         "session_wrap": _render_session_wrap_markdown,
     }
@@ -460,5 +515,5 @@ def render_template_artifact(template_id: str, payload: dict[str, Any]) -> dict[
 
     return {
         "success": False,
-        "error": "Unsupported template_id. Use session_note, concept_note, north_star, reference_targets, or session_wrap.",
+        "error": "Unsupported template_id. Use session_note, concept_note, map_of_contents, reference_targets, or session_wrap.",
     }

@@ -13,6 +13,7 @@ import sys
 import tempfile
 import sqlite3
 import json
+from typing import Any
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -42,18 +43,18 @@ def app():
     _orig_obsidian_get = _api_adapter_mod.obsidian_get_file
     _orig_obsidian_save = _api_adapter_mod.obsidian_save_file
 
-    north_star_store: dict[str, str] = {}
-    north_star_write_calls: list[str] = []
+    map_of_contents_store: dict[str, str] = {}
+    map_of_contents_write_calls: list[str] = []
 
     def _fake_obsidian_get_file(path: str):
-        content = north_star_store.get(path)
+        content = map_of_contents_store.get(path)
         if content is None:
             return {"success": False, "error": "not found"}
         return {"success": True, "content": content, "path": path}
 
     def _fake_obsidian_save_file(path: str, content: str):
-        north_star_write_calls.append(path)
-        north_star_store[path] = content
+        map_of_contents_write_calls.append(path)
+        map_of_contents_store[path] = content
         return {"success": True, "path": path}
 
     # Patch module-cached DB paths
@@ -67,8 +68,8 @@ def app():
     db_setup.init_database()
     app_obj = create_app()
     app_obj.config["TESTING"] = True
-    app_obj.config["TEST_NORTH_STAR_WRITES"] = north_star_write_calls
-    app_obj.config["TEST_OBSIDIAN_STORE"] = north_star_store
+    app_obj.config["TEST_MAP_OF_CONTENTS_WRITES"] = map_of_contents_write_calls
+    app_obj.config["TEST_OBSIDIAN_STORE"] = map_of_contents_store
     yield app_obj
 
     # Restore environment/module state
@@ -114,7 +115,7 @@ def _create_tutor_session(
     brain_session_id: int | None = None,
     method_chain_id: int | None = None,
 ) -> str:
-    payload = {"mode": "Core", "topic": "Tutor Link Test"}
+    payload: dict[str, Any] = {"mode": "Core", "topic": "Tutor Link Test"}
     if brain_session_id is not None:
         payload["brain_session_id"] = brain_session_id
     if method_chain_id is not None:
@@ -163,7 +164,9 @@ def _insert_method_block(
             knob_overrides_json,
         ),
     )
-    block_id = int(cur.lastrowid)
+    last_row_id = cur.lastrowid
+    assert last_row_id is not None
+    block_id = int(last_row_id)
     conn.commit()
     conn.close()
     return block_id
@@ -226,11 +229,20 @@ def test_send_turn_persists_and_reuses_response_id(client, monkeypatch):
 
     # Remove external dependencies from this unit test path.
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *args, **kwargs: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *args, **kwargs: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     calls: list[str | None] = []
     counter = {"n": 0}
@@ -311,15 +323,28 @@ def test_send_turn_scales_material_retrieval_to_selected_materials(client, monke
     def fake_build_context(_question, **kwargs):
         captured["k_materials"] = kwargs.get("k_materials")
         captured["material_ids"] = kwargs.get("material_ids")
-        return {"materials": "doc 1\n\ndoc 2", "instructions": "", "notes": "", "course_map": "", "debug": {}}
+        return {
+            "materials": "doc 1\n\ndoc 2",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        }
 
     monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-k", "thread_id": "thread-k"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-k",
+            "thread_id": "thread-k",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -355,15 +380,28 @@ def test_send_turn_strict_profile_boosts_retrieval_depth(client, monkeypatch):
 
     def fake_build_context(_question, **kwargs):
         captured["k_materials"] = kwargs.get("k_materials")
-        return {"materials": "strict doc", "instructions": "", "notes": "", "course_map": "", "debug": {}}
+        return {
+            "materials": "strict doc",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        }
 
     monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-strict", "thread_id": "thread-strict"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-strict",
+            "thread_id": "thread-strict",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -396,15 +434,28 @@ def test_send_turn_applies_per_turn_material_override(client, monkeypatch):
 
     def fake_build_context(_query, **kwargs):
         captured["material_ids"] = kwargs.get("material_ids")
-        return {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}}
+        return {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        }
 
     monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-ovr", "thread_id": "thread-ovr"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-ovr",
+            "thread_id": "thread-ovr",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -461,18 +512,32 @@ def test_send_turn_includes_selected_material_scope_in_prompt(client, monkeypatc
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     captured: dict[str, str] = {"system_prompt": ""}
 
     def fake_stream(system_prompt, _user_prompt, **_kwargs):
         captured["system_prompt"] = system_prompt
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-scope", "thread_id": "thread-scope"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-scope",
+            "thread_id": "thread-scope",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -519,18 +584,32 @@ def test_send_turn_material_count_question_uses_selected_scope(client, monkeypat
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     stream_calls = {"count": 0}
 
     def fake_stream(*_args, **_kwargs):
         stream_calls["count"] += 1
         yield {"type": "delta", "text": "llm-stream-should-not-run"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-count", "thread_id": "thread-count"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-count",
+            "thread_id": "thread-count",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -546,7 +625,9 @@ def test_send_turn_material_count_question_uses_selected_scope(client, monkeypat
     assert stream_calls["count"] == 0
 
 
-def test_send_turn_selected_scope_listing_question_uses_selected_scope(client, monkeypatch):
+def test_send_turn_selected_scope_listing_question_uses_selected_scope(
+    client, monkeypatch
+):
     selected_ids = [951, 952]
     resp = client.post(
         "/api/tutor/session",
@@ -560,24 +641,40 @@ def test_send_turn_selected_scope_listing_question_uses_selected_scope(client, m
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     stream_calls = {"count": 0}
 
     def fake_stream(*_args, **_kwargs):
         stream_calls["count"] += 1
         yield {"type": "delta", "text": "llm-stream-should-not-run"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-list", "thread_id": "thread-list"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-list",
+            "thread_id": "thread-list",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
     turn_resp = client.post(
         f"/api/tutor/session/{tutor_sid}/turn",
-        json={"message": "List every selected file you can currently access for this turn."},
+        json={
+            "message": "List every selected file you can currently access for this turn."
+        },
     )
     assert turn_resp.status_code == 200
     body = turn_resp.get_data(as_text=True)
@@ -590,7 +687,9 @@ def test_send_turn_selected_scope_listing_question_uses_selected_scope(client, m
     assert stream_calls["count"] == 0
 
 
-def test_material_count_shortcut_does_not_overwrite_last_response_id(client, monkeypatch):
+def test_material_count_shortcut_does_not_overwrite_last_response_id(
+    client, monkeypatch
+):
     selected_ids = [951, 952]
     resp = client.post(
         "/api/tutor/session",
@@ -604,18 +703,32 @@ def test_material_count_shortcut_does_not_overwrite_last_response_id(client, mon
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     stream_calls = {"count": 0}
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         stream_calls["count"] += 1
         yield {"type": "delta", "text": "normal reply"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-1", "thread_id": "thread-1"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-1",
+            "thread_id": "thread-1",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -682,15 +795,28 @@ def test_send_turn_material_scope_overrides_course_filter(client, monkeypatch):
     def fake_build_context(_query, **kwargs):
         captured["course_id"] = kwargs.get("course_id")
         captured["material_ids"] = kwargs.get("material_ids")
-        return {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}}
+        return {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        }
 
     monkeypatch.setattr(tutor_context, "build_context", fake_build_context)
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-cross", "thread_id": "thread-cross"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-cross",
+            "thread_id": "thread-cross",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -719,15 +845,29 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "[Source: C:/materials/gamma.md]"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-debug", "thread_id": "thread-debug"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-debug",
+            "thread_id": "thread-debug",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -757,7 +897,9 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     assert debug["retrieval_confidence_tier"] in ("low", "medium", "high")
 
 
-def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, monkeypatch):
+def test_material_count_shortcut_done_payload_includes_retrieval_debug(
+    client, monkeypatch
+):
     selected_ids = [951, 952]
     resp = client.post(
         "/api/tutor/session",
@@ -771,11 +913,20 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     tutor_sid = resp.get_json()["session_id"]
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
     monkeypatch.setattr(
         llm_provider,
         "stream_chatgpt_responses",
@@ -803,7 +954,9 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(client, m
     assert 0.0 <= debug["retrieval_confidence"] <= 1.0
 
 
-def test_finalize_structured_notes_writes_obsidian_and_artifact_index(client, app, monkeypatch):
+def test_finalize_structured_notes_writes_obsidian_and_artifact_index(
+    client, app, monkeypatch
+):
     tutor_sid = _create_tutor_session(client)
 
     monkeypatch.setattr(
@@ -858,7 +1011,9 @@ def test_finalize_structured_notes_writes_obsidian_and_artifact_index(client, ap
     data = resp.get_json()
     assert data["type"] == "structured_notes"
     assert isinstance(data.get("session_path"), str) and data["session_path"]
-    assert isinstance(data.get("concept_paths"), list) and len(data["concept_paths"]) == 1
+    assert (
+        isinstance(data.get("concept_paths"), list) and len(data["concept_paths"]) == 1
+    )
     assert data["graph_sync"]["notes_synced"] == 2
 
     store = app.config.get("TEST_OBSIDIAN_STORE") or {}
@@ -872,7 +1027,9 @@ def test_finalize_structured_notes_writes_obsidian_and_artifact_index(client, ap
     if isinstance(artifacts, str):
         artifacts = json.loads(artifacts)
     assert isinstance(artifacts, list)
-    assert any(a.get("type") == "structured_notes" for a in artifacts if isinstance(a, dict))
+    assert any(
+        a.get("type") == "structured_notes" for a in artifacts if isinstance(a, dict)
+    )
 
 
 def test_finalize_rejects_invalid_single_focus_concept_count(client):
@@ -918,7 +1075,9 @@ def test_finalize_rejects_invalid_single_focus_concept_count(client):
     assert resp.status_code == 400
     body = resp.get_json()
     assert body["error"] == "validation_failed"
-    assert any("session_mode 'single_focus'" in detail for detail in body.get("details", []))
+    assert any(
+        "session_mode 'single_focus'" in detail for detail in body.get("details", [])
+    )
 
 
 def test_finalize_rejects_prime_confidence_fields(client):
@@ -1028,7 +1187,9 @@ def test_create_session_rejects_stage_method_mismatch(client):
     assert body["details"][0]["method_id"] == "M-CAL-001"
 
 
-def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, monkeypatch):
+def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(
+    client, monkeypatch
+):
     block_id = _insert_method_block(
         name="Prime Drift Autofill",
         control_stage="PRIME",
@@ -1037,19 +1198,35 @@ def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, mon
         artifact_type="notes",
         knob_overrides_json="{}",
     )
-    chain_id = _create_chain(client, name="Prime Drift Autofill Chain", block_ids=[block_id])
+    chain_id = _create_chain(
+        client, name="Prime Drift Autofill Chain", block_ids=[block_id]
+    )
     tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
 
     monkeypatch.setattr(
-        tutor_context, "build_context",
-        lambda *_a, **_k: {"materials": "", "instructions": "", "notes": "", "course_map": "", "debug": {}},
+        tutor_context,
+        "build_context",
+        lambda *_a, **_k: {
+            "materials": "",
+            "instructions": "",
+            "notes": "",
+            "course_map": "",
+            "debug": {},
+        },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
-    monkeypatch.setattr(tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True})
+    monkeypatch.setattr(
+        tutor_tools, "execute_tool", lambda *_a, **_k: {"success": True}
+    )
 
     def fake_stream(_system_prompt, _user_prompt, **_kwargs):
         yield {"type": "delta", "text": "ok"}
-        yield {"type": "done", "model": "gpt-5.3-codex", "response_id": "resp-1", "thread_id": "thread-1"}
+        yield {
+            "type": "done",
+            "model": "gpt-5.3-codex",
+            "response_id": "resp-1",
+            "thread_id": "thread-1",
+        }
 
     monkeypatch.setattr(llm_provider, "stream_chatgpt_responses", fake_stream)
 
@@ -1061,13 +1238,18 @@ def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, mon
     done = _extract_done_payload(resp.get_data(as_text=True))
     retrieval_debug = done.get("retrieval_debug") or {}
     drift_events = retrieval_debug.get("runtime_drift_events") or []
-    assert any(event.get("code") == "MISSING_KNOB_SNAPSHOT_FILLED" for event in drift_events)
+    assert any(
+        event.get("code") == "MISSING_KNOB_SNAPSHOT_FILLED" for event in drift_events
+    )
     assert retrieval_debug.get("active_method_id") == "M-PRE-010"
 
     conn = sqlite3.connect(config.DB_PATH)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
-    cur.execute("SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?", (tutor_sid,))
+    cur.execute(
+        "SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?",
+        (tutor_sid,),
+    )
     row = cur.fetchone()
     conn.close()
     assert row is not None
@@ -1075,7 +1257,9 @@ def test_send_turn_autofills_missing_knob_snapshot_and_reports_drift(client, mon
     assert isinstance(content_filter.get("knob_snapshot"), dict)
 
 
-def test_send_turn_blocks_when_prompt_and_artifact_contract_missing(client, monkeypatch):
+def test_send_turn_blocks_when_prompt_and_artifact_contract_missing(
+    client, monkeypatch
+):
     block_id = _insert_method_block(
         name="Prime Contract Missing",
         control_stage="PRIME",
@@ -1083,7 +1267,9 @@ def test_send_turn_blocks_when_prompt_and_artifact_contract_missing(client, monk
         facilitation_prompt="",
         artifact_type="",
     )
-    chain_id = _create_chain(client, name="Prime Contract Missing Chain", block_ids=[block_id])
+    chain_id = _create_chain(
+        client, name="Prime Contract Missing Chain", block_ids=[block_id]
+    )
     tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
 
     monkeypatch.setattr(_api_tutor_mod, "_load_method_contracts", lambda: {})
@@ -1154,7 +1340,7 @@ def test_sync_graph_uses_session_artifact_paths(client, monkeypatch):
     assert sync_data["graph_sync"]["notes_synced"] >= 2
 
 
-def test_testing_mode_blocks_north_star_writes(app):
-    writes = app.config.get("TEST_NORTH_STAR_WRITES") or []
+def test_testing_mode_blocks_map_of_contents_writes(app):
+    writes = app.config.get("TEST_MAP_OF_CONTENTS_WRITES") or []
     normalized = [str(w).replace("\\", "/") for w in writes]
-    assert all(not w.endswith("/North Star.md") for w in normalized)
+    assert all(not w.endswith("/Map of Contents.md") for w in normalized)

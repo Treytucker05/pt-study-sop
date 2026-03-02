@@ -91,6 +91,7 @@ VIDEO_JOBS: dict[str, dict[str, Any]] = {}
 VIDEO_JOBS_LOCK = Lock()
 VIDEO_JOB_RETENTION = 30
 _LOG = logging.getLogger(__name__)
+_OBSIDIAN_VAULT = None
 EXTRACTED_IMAGES_ROOT = (
     Path(__file__).resolve().parents[1] / "data" / "extracted_images"
 )
@@ -98,11 +99,11 @@ _IMAGE_PLACEHOLDER_PATTERN = re.compile(r"<!--\s*image\s*-->", re.IGNORECASE)
 
 _SELECTOR_COLS_ENSURED = False
 _WIKILINK_PATTERN = re.compile(r"\[\[([^\]]+)\]\]")
-_NORTH_STAR_OBJECTIVE_PATTERN_OLD = re.compile(
+_MAP_OF_CONTENTS_OBJECTIVE_PATTERN_OLD = re.compile(
     r"\[\[(OBJ-[^\]]+)\]\].*status:\s*([a-z_]+)",
     re.IGNORECASE,
 )
-_NORTH_STAR_OBJECTIVE_PATTERN_NEW = re.compile(
+_MAP_OF_CONTENTS_OBJECTIVE_PATTERN_NEW = re.compile(
     r"^\s*\d+\.\s+\[\[(OBJ-[^\]]+)\]\]\s+(.+)$",
 )
 _TUTOR_NOTE_SCHEMA_PATH = (
@@ -354,10 +355,10 @@ def _study_notes_base_path(
     return f"{course_map.vault_root}/{course.label}/{unit_folder}/{topic_folder}"
 
 
-def _canonical_north_star_path(
+def _canonical_moc_path(
     *, course_label: str, module_or_week: str, subtopic: str
 ) -> str:
-    return f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/North Star.md"
+    return f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/_Map of Contents.md"
 
 
 def _wikilink(label: str) -> str:
@@ -706,22 +707,22 @@ def _collect_objectives_from_db(
     return items
 
 
-def _parse_existing_north_star_objectives(content: str) -> dict[str, str]:
+def _parse_existing_map_of_contents_objectives(content: str) -> dict[str, str]:
     parsed: dict[str, str] = {}
     for line in (content or "").splitlines():
         # Old format: [[OBJ-ID]] ... status: active
-        m = _NORTH_STAR_OBJECTIVE_PATTERN_OLD.search(line)
+        m = _MAP_OF_CONTENTS_OBJECTIVE_PATTERN_OLD.search(line)
         if m:
             parsed[m.group(1).strip()] = _normalize_objective_status(m.group(2))
             continue
         # New format: 1. [[OBJ-ID]] Description text
-        m2 = _NORTH_STAR_OBJECTIVE_PATTERN_NEW.match(line)
+        m2 = _MAP_OF_CONTENTS_OBJECTIVE_PATTERN_NEW.match(line)
         if m2:
             parsed[m2.group(1).strip()] = "active"
     return parsed
 
 
-def _build_north_star_markdown(
+def _build_map_of_contents_markdown(
     *,
     module_name: str,
     course_name: str = "",
@@ -729,7 +730,7 @@ def _build_north_star_markdown(
     objectives: list[dict[str, str]],
     source_ids: list[int],
 ) -> str:
-    from tutor_templates import _render_north_star_markdown
+    from tutor_templates import _render_moc_markdown
 
     # Group objectives by their 'group' field (or single flat group)
     groups_map: dict[str, list[dict[str, str]]] = {}
@@ -757,14 +758,14 @@ def _build_north_star_markdown(
         "objective_groups": objective_groups,
         "follow_up_targets": ["[[OBJ-UNMAPPED]]"],
     }
-    return _render_north_star_markdown(payload)
+    return _render_moc_markdown(payload)
 
 
-def _session_has_real_objectives(north_star: Optional[dict]) -> bool:
-    """Return True if the north star has at least one real (non-UNMAPPED) objective."""
-    if not north_star:
+def _session_has_real_objectives(map_of_contents: Optional[dict]) -> bool:
+    """Return True if the map of contents has at least one real (non-UNMAPPED) objective."""
+    if not map_of_contents:
         return False
-    objective_ids = north_star.get("objective_ids") or []
+    objective_ids = map_of_contents.get("objective_ids") or []
     return any(
         str(oid or "").strip() and str(oid).strip() != "OBJ-UNMAPPED"
         for oid in objective_ids
@@ -846,8 +847,8 @@ def _objective_slug(description: str) -> str:
     return f"OBJ-{slug}"
 
 
-def _north_star_io_disabled() -> bool:
-    """Disable Obsidian North Star I/O for tests/safety guard contexts."""
+def _map_of_contents_io_disabled() -> bool:
+    """Disable Obsidian Map of Contents I/O for tests/safety guard contexts."""
     if os.environ.get("PYTEST_CURRENT_TEST"):
         return True
 
@@ -864,7 +865,80 @@ def _north_star_io_disabled() -> bool:
     return False
 
 
-def _ensure_north_star_context(
+def _get_obsidian_vault():
+    global _OBSIDIAN_VAULT
+    if _OBSIDIAN_VAULT is None:
+        from obsidian_vault import ObsidianVault
+
+        _OBSIDIAN_VAULT = ObsidianVault()
+    return _OBSIDIAN_VAULT
+
+
+def _vault_read_note(path: str) -> dict[str, Any]:
+    rel_path = str(path or "").replace("\\", "/").strip().lstrip("/")
+    if not rel_path:
+        return {"success": False, "error": "path is required"}
+    try:
+        vault = _get_obsidian_vault()
+        content = vault.read_note(file=rel_path)
+        if content:
+            return {"success": True, "content": content, "path": rel_path}
+        file_info = vault.get_file_info(file=rel_path)
+        if isinstance(file_info, dict) and file_info:
+            return {"success": True, "content": content or "", "path": rel_path}
+        return {"success": False, "error": "file not found", "path": rel_path}
+    except Exception as exc:
+        return {"success": False, "error": str(exc), "path": rel_path}
+
+
+def _vault_save_note(path: str, content: str) -> dict[str, Any]:
+    rel_path = str(path or "").replace("\\", "/").strip().lstrip("/")
+    if not rel_path:
+        return {"success": False, "error": "path is required"}
+    try:
+        vault = _get_obsidian_vault()
+        name = rel_path.rsplit("/", 1)[-1]
+        folder = rel_path.rsplit("/", 1)[0] if "/" in rel_path else ""
+        note_name = name[:-3] if name.lower().endswith(".md") else name
+
+        existing = _vault_read_note(rel_path)
+        if existing.get("success"):
+            vault.replace_content(file=rel_path, new_content=content)
+        else:
+            vault.create_note(name=note_name, folder=folder, content=content)
+
+        verify = _vault_read_note(rel_path)
+        if verify.get("success"):
+            return {"success": True, "path": rel_path}
+        return {
+            "success": False,
+            "error": verify.get("error") or "failed to verify note write",
+            "path": rel_path,
+        }
+    except Exception as exc:
+        return {"success": False, "error": str(exc), "path": rel_path}
+
+
+def _vault_delete_note(path: str) -> dict[str, Any]:
+    rel_path = str(path or "").replace("\\", "/").strip().lstrip("/")
+    if not rel_path:
+        return {"success": False, "error": "path is required"}
+    try:
+        vault = _get_obsidian_vault()
+        result = vault.delete_note(path=rel_path)
+        verify = _vault_read_note(rel_path)
+        if verify.get("success"):
+            return {
+                "success": False,
+                "error": result or "failed to delete note",
+                "path": rel_path,
+            }
+        return {"success": True, "path": rel_path}
+    except Exception as exc:
+        return {"success": False, "error": str(exc), "path": rel_path}
+
+
+def _ensure_moc_context(
     *,
     course_id: Optional[int],
     module_id: Optional[int],
@@ -876,16 +950,13 @@ def _ensure_north_star_context(
     path_override: Optional[str] = None,
 ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
     """
-    Hard-gate North Star flow:
+    Hard-gate Map of Contents flow:
     - If exists: review and update only on detected objective changes.
     - If missing: build before planning.
 
-    If *path_override* is a vault-relative folder path, the North Star file
+    If *path_override* is a vault-relative folder path, the Map of Contents file
     is saved there instead of the auto-generated location.
     """
-    # Local import prevents blueprint import cycles at module import time.
-    from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
-
     derived_module_name = _sanitize_module_name(
         module_name or topic or f"Module-{course_id or 'General'}"
     )
@@ -897,15 +968,15 @@ def _ensure_north_star_context(
     if path_override:
         # User-provided vault folder — use directly
         clean = path_override.strip().rstrip("/").rstrip("\\")
-        north_star_path = f"{clean}/North Star.md"
+        map_of_contents_path = f"{clean}/_Map of Contents.md"
     else:
-        north_star_path = _canonical_north_star_path(
+        map_of_contents_path = _canonical_moc_path(
             course_label=derived_course,
             module_or_week=derived_module_name,
             subtopic=derived_subtopic,
         )
 
-    # Always merge payload objectives with DB objectives so the North Star
+    # Always merge payload objectives with DB objectives so the Map of Contents
     # accumulates across topics (e.g., Hip + Knee in the same construct).
     payload_objectives = _collect_objectives_from_payload(learning_objectives)
     db_objectives = _collect_objectives_from_db(course_id, module_id)
@@ -935,8 +1006,8 @@ def _ensure_north_star_context(
     current_content = ""
     status = "built"
 
-    if _north_star_io_disabled():
-        current_content = _build_north_star_markdown(
+    if _map_of_contents_io_disabled():
+        current_content = _build_map_of_contents_markdown(
             module_name=derived_module_name,
             course_name=derived_course,
             topic=topic,
@@ -945,31 +1016,35 @@ def _ensure_north_star_context(
         )
         status = "test_mode_no_write"
     else:
-        existing = obsidian_get_file(north_star_path)
+        existing = _vault_read_note(map_of_contents_path)
         if existing.get("success"):
             current_content = str(existing.get("content") or "")
-            current_statuses = _parse_existing_north_star_objectives(current_content)
+            current_statuses = _parse_existing_map_of_contents_objectives(current_content)
             needs_update = bool(force_refresh)
             for oid, st in desired_statuses.items():
                 if current_statuses.get(oid) != st:
                     needs_update = True
                     break
             if needs_update:
-                new_content = _build_north_star_markdown(
+                new_content = _build_map_of_contents_markdown(
                     module_name=derived_module_name,
                     course_name=derived_course,
                     topic=topic,
                     objectives=objectives,
                     source_ids=source_ids,
                 )
-                save_res = obsidian_save_file(north_star_path, new_content)
+                save_res = _vault_save_note(map_of_contents_path, new_content)
                 if not save_res.get("success"):
-                    return (
-                        None,
-                        f"North Star update failed: {save_res.get('error', 'unknown error')}",
+                    _LOG.warning(
+                        "Map of Contents update failed for %s: %s",
+                        map_of_contents_path,
+                        save_res.get("error", "unknown error"),
                     )
-                current_content = new_content
-                status = "refreshed" if force_refresh else "updated"
+                    current_content = new_content
+                    status = "update_failed"
+                else:
+                    current_content = new_content
+                    status = "refreshed" if force_refresh else "updated"
             else:
                 status = "reviewed"
         else:
@@ -978,7 +1053,7 @@ def _ensure_north_star_context(
             # relocate it).  Signal "needs_path" so the turn handler re-asks.
             has_real = any(o["objective_id"] != "OBJ-UNMAPPED" for o in objectives)
             if has_real and not path_override:
-                current_content = _build_north_star_markdown(
+                current_content = _build_map_of_contents_markdown(
                     module_name=derived_module_name,
                     course_name=derived_course,
                     topic=topic,
@@ -987,21 +1062,25 @@ def _ensure_north_star_context(
                 )
                 status = "needs_path"
             else:
-                new_content = _build_north_star_markdown(
+                new_content = _build_map_of_contents_markdown(
                     module_name=derived_module_name,
                     course_name=derived_course,
                     topic=topic,
                     objectives=objectives,
                     source_ids=source_ids,
                 )
-                save_res = obsidian_save_file(north_star_path, new_content)
+                save_res = _vault_save_note(map_of_contents_path, new_content)
                 if not save_res.get("success"):
-                    return (
-                        None,
-                        f"North Star build failed: {save_res.get('error', 'unknown error')}",
+                    _LOG.warning(
+                        "Map of Contents build failed for %s: %s",
+                        map_of_contents_path,
+                        save_res.get("error", "unknown error"),
                     )
-                current_content = new_content
-                status = "built"
+                    current_content = new_content
+                    status = "build_failed"
+                else:
+                    current_content = new_content
+                    status = "built"
 
     objective_links = [_wikilink(o["objective_id"]) for o in objectives]
     title_links = [_wikilink(o["title"]) for o in objectives if o.get("title")]
@@ -1014,7 +1093,7 @@ def _ensure_north_star_context(
 
     return (
         {
-            "path": north_star_path,
+            "path": map_of_contents_path,
             "module_name": derived_module_name,
             "course_name": derived_course,
             "subtopic_name": derived_subtopic,
@@ -1035,7 +1114,7 @@ def _question_within_reference_targets(
     if not q:
         return False
     # Allow broad planning/overview prompts without forcing concept-name matches.
-    if any(token in q for token in ("overview", "big picture", "north star", "plan")):
+    if any(token in q for token in ("overview", "big picture", "map of contents", "plan")):
         return True
 
     labels = [_strip_wikilink(t).lower() for t in reference_targets if t]
@@ -1107,11 +1186,10 @@ def _merge_and_save_obsidian_note(
     content: str,
     session_id: Optional[str],
 ) -> dict[str, Any]:
-    from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
     from obsidian_index import get_vault_index
     from obsidian_merge import merge_sections
 
-    existing_resp = obsidian_get_file(path)
+    existing_resp = _vault_read_note(path)
     existing_content = (
         str(existing_resp.get("content") or "") if existing_resp.get("success") else ""
     )
@@ -1127,7 +1205,7 @@ def _merge_and_save_obsidian_note(
         session_id=session_id,
         vault_index=vault_notes,
     )
-    save_result = obsidian_save_file(path, merged_content)
+    save_result = _vault_save_note(path, merged_content)
     if not save_result.get("success"):
         return {
             "success": False,
@@ -1225,15 +1303,15 @@ def save_learning_objectives_from_tool(
     objectives: list[dict[str, str]],
     save_folder: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Persist approved learning objectives and rebuild the North Star note.
+    """Persist approved learning objectives and rebuild the Map of Contents note.
 
     Called by the ``save_learning_objectives`` tutor tool.  Steps:
       1. Read the tutor session to get ``course_id`` and ``content_filter_json``.
       2. INSERT each objective into ``learning_objectives`` (upsert on lo_code+course_id).
-      3. Rebuild the North Star note via ``_ensure_north_star_context(force_refresh=True)``.
+      3. Rebuild the Map of Contents note via ``_ensure_moc_context(force_refresh=True)``.
       4. Update ``content_filter_json`` so ``_session_has_real_objectives()`` returns True.
 
-    If *save_folder* is provided (vault-relative path), the North Star and future
+    If *save_folder* is provided (vault-relative path), the Map of Contents and future
     notes are saved there instead of the auto-generated path.
     """
     conn = get_connection()
@@ -1257,14 +1335,14 @@ def save_learning_objectives_from_tool(
             except (json.JSONDecodeError, TypeError):
                 pass
 
-        north_star = content_filter.get("north_star") or {}
+        map_of_contents = content_filter.get("map_of_contents") or {}
         module_id = content_filter.get("module_id")
-        module_name = north_star.get("module_name") or content_filter.get("module_name")
+        module_name = map_of_contents.get("module_name") or content_filter.get("module_name")
         topic = session_row.get("topic") or module_name or ""
         source_ids = content_filter.get("source_ids") or []
 
         # --- 2. INSERT into learning_objectives (upsert by course_id+lo_code) ---
-        # group_name = session topic so objectives are grouped by topic in North Star
+        # group_name = session topic so objectives are grouped by topic in Map of Contents
         group_name = str(topic or "").strip() or None
         now = datetime.now().isoformat()
         inserted_codes: list[str] = []
@@ -1300,10 +1378,10 @@ def save_learning_objectives_from_tool(
             inserted_codes.append(lo_code)
         conn.commit()
 
-        # --- 3. Rebuild North Star from ALL objectives in DB (not just this batch) ---
-        # Pass learning_objectives=None so _ensure_north_star_context merges from DB,
+        # --- 3. Rebuild Map of Contents from ALL objectives in DB (not just this batch) ---
+        # Pass learning_objectives=None so _ensure_moc_context merges from DB,
         # picking up objectives from previous sessions (e.g., Hip + Knee).
-        ns_ctx, ns_err = _ensure_north_star_context(
+        ns_ctx, ns_err = _ensure_moc_context(
             course_id=course_id,
             module_id=module_id,
             module_name=module_name,
@@ -1314,14 +1392,14 @@ def save_learning_objectives_from_tool(
             path_override=save_folder,
         )
         if ns_err:
-            _LOG.warning("North Star rebuild warning: %s", ns_err)
+            _LOG.warning("Map of Contents rebuild warning: %s", ns_err)
 
         # --- 4. Update session content_filter_json ---
         if ns_ctx:
             module_prefix = str(Path(str(ns_ctx["path"])).parent).replace("\\", "/")
             content_filter["module_name"] = ns_ctx.get("module_name")
             content_filter["module_prefix"] = module_prefix
-            content_filter["north_star"] = {
+            content_filter["map_of_contents"] = {
                 "path": ns_ctx.get("path"),
                 "status": ns_ctx.get("status"),
                 "module_name": ns_ctx.get("module_name"),
@@ -1534,18 +1612,16 @@ def _reconcile_obsidian_state(session: dict) -> None:
     Called on GET /session/<id> (reconcile-on-load).  Mutates *session* dict
     in place so the response reflects the current vault state.
 
-    - North Star: if the file is missing, sets ``north_star.status`` to
+    - Map of Contents: if the file is missing, sets ``map_of_contents.status`` to
       ``"needs_path"`` and persists the change to SQLite.
     - Artifacts: flags each artifact entry with ``"missing": True`` if its
       ``session_path`` or any of its ``concept_paths`` no longer exist.
     """
-    from dashboard.api_adapter import obsidian_get_file
-
     session_id = session.get("session_id")
     if not session_id:
         return
 
-    # --- North Star reconciliation ---
+    # --- Map of Contents reconciliation ---
     cf_raw = session.get("content_filter_json")
     content_filter: Optional[dict] = None
     if cf_raw:
@@ -1555,13 +1631,13 @@ def _reconcile_obsidian_state(session: dict) -> None:
             content_filter = None
 
     ns_changed = False
-    if content_filter and isinstance(content_filter.get("north_star"), dict):
-        ns = content_filter["north_star"]
+    if content_filter and isinstance(content_filter.get("map_of_contents"), dict):
+        ns = content_filter["map_of_contents"]
         ns_path = ns.get("path")
         ns_status = ns.get("status")
         # Only check if there's a path and the status isn't already needs_path
         if ns_path and ns_status not in ("needs_path", "test_mode_no_write"):
-            result = obsidian_get_file(ns_path)
+            result = _vault_read_note(ns_path)
             if not result.get("success"):
                 ns["status"] = "needs_path"
                 ns_changed = True
@@ -1585,12 +1661,12 @@ def _reconcile_obsidian_state(session: dict) -> None:
 
         sp = art.get("session_path")
         if sp:
-            res = obsidian_get_file(sp)
+            res = _vault_read_note(sp)
             if not res.get("success"):
                 missing_paths.append(sp)
 
         for cp in art.get("concept_paths") or []:
-            res = obsidian_get_file(cp)
+            res = _vault_read_note(cp)
             if not res.get("success"):
                 missing_paths.append(cp)
 
@@ -1603,12 +1679,12 @@ def _reconcile_obsidian_state(session: dict) -> None:
             art.pop("missing", None)
             art.pop("missing_paths", None)
 
-    # --- Learning-objective cleanup when North Star is gone ---
-    # If the user deleted the North Star from Obsidian, the objectives that
+    # --- Learning-objective cleanup when Map of Contents is gone ---
+    # If the user deleted the Map of Contents from Obsidian, the objectives that
     # lived inside it should also be removed from the dashboard (SQLite).
     lo_deleted = 0
     if ns_changed and content_filter is not None:
-        ns = content_filter.get("north_star") or {}
+        ns = content_filter.get("map_of_contents") or {}
         obj_ids: list[str] = ns.get("objective_ids") or []
         course_id = session.get("course_id")
         if obj_ids and course_id:
@@ -1673,17 +1749,15 @@ def _delete_artifact_obsidian_files(artifact: dict) -> list[str]:
 
     Returns a list of paths that were successfully deleted.
     """
-    from dashboard.api_adapter import obsidian_delete_file
-
     deleted: list[str] = []
     sp = artifact.get("session_path")
     if sp:
-        res = obsidian_delete_file(sp)
+        res = _vault_delete_note(sp)
         if res.get("success"):
             deleted.append(sp)
 
     for cp in artifact.get("concept_paths") or []:
-        res = obsidian_delete_file(cp)
+        res = _vault_delete_note(cp)
         if res.get("success"):
             deleted.append(cp)
 
@@ -1691,17 +1765,15 @@ def _delete_artifact_obsidian_files(artifact: dict) -> list[str]:
 
 
 def _cascade_delete_obsidian_files(session: dict) -> list[str]:
-    """Delete all Obsidian files owned by a session (North Star + artifacts).
+    """Delete all Obsidian files owned by a session (Map of Contents + artifacts).
 
     Called from ``delete_session`` before the DB rows are removed.
     Returns a list of vault-relative paths that were successfully deleted.
     """
-    from dashboard.api_adapter import obsidian_delete_file
-
     log = logging.getLogger(__name__)
     deleted: list[str] = []
 
-    # 1. North Star file
+    # 1. Map of Contents file
     cf_raw = session.get("content_filter_json")
     if cf_raw:
         try:
@@ -1709,14 +1781,14 @@ def _cascade_delete_obsidian_files(session: dict) -> list[str]:
         except (json.JSONDecodeError, TypeError):
             cf = None
         if isinstance(cf, dict):
-            ns = cf.get("north_star") or {}
+            ns = cf.get("map_of_contents") or {}
             ns_path = ns.get("path")
             if ns_path:
-                res = obsidian_delete_file(ns_path)
+                res = _vault_delete_note(ns_path)
                 if res.get("success"):
                     deleted.append(ns_path)
                 else:
-                    log.debug("cascade_delete: North Star not found at %s", ns_path)
+                    log.debug("cascade_delete: Map of Contents not found at %s", ns_path)
 
     # 2. Artifact files (session notes + concept notes)
     art_raw = session.get("artifacts_json")
@@ -3008,11 +3080,11 @@ def create_session():
         focus_objective_id = str(
             content_filter.get("focus_objective_id") or focus_objective_id
         ).strip()
-    north_star_refresh = bool(
+    map_of_contents_refresh = bool(
         data.get(
-            "north_star_refresh",
+            "map_of_contents_refresh",
             (
-                content_filter.get("north_star_refresh")
+                content_filter.get("map_of_contents_refresh")
                 if isinstance(content_filter, dict)
                 else False
             ),
@@ -3053,18 +3125,18 @@ def create_session():
             )
 
     vault_folder = str((content_filter or {}).get("vault_folder") or "").strip() or None
-    north_star_ctx, north_star_error = _ensure_north_star_context(
+    map_of_contents_ctx, map_of_contents_error = _ensure_moc_context(
         course_id=int(course_id) if course_id is not None else None,
         module_id=module_id,
         module_name=module_name,
         topic=topic,
         learning_objectives=learning_objectives,
         source_ids=source_ids,
-        force_refresh=north_star_refresh,
+        force_refresh=map_of_contents_refresh,
         path_override=vault_folder,
     )
-    if north_star_error:
-        return jsonify({"error": north_star_error}), 500
+    if map_of_contents_error:
+        return jsonify({"error": map_of_contents_error}), 500
 
     if not isinstance(content_filter, dict):
         content_filter = {}
@@ -3084,26 +3156,26 @@ def create_session():
         )
     if source_ids:
         content_filter["source_ids"] = source_ids
-    if north_star_refresh:
-        content_filter["north_star_refresh"] = True
+    if map_of_contents_refresh:
+        content_filter["map_of_contents_refresh"] = True
 
-    if north_star_ctx:
-        module_prefix = str(Path(str(north_star_ctx["path"])).parent).replace("\\", "/")
-        content_filter["module_name"] = north_star_ctx.get("module_name")
+    if map_of_contents_ctx:
+        module_prefix = str(Path(str(map_of_contents_ctx["path"])).parent).replace("\\", "/")
+        content_filter["module_name"] = map_of_contents_ctx.get("module_name")
         content_filter["module_prefix"] = module_prefix
-        content_filter["north_star"] = {
-            "path": north_star_ctx.get("path"),
-            "status": north_star_ctx.get("status"),
-            "module_name": north_star_ctx.get("module_name"),
-            "course_name": north_star_ctx.get("course_name"),
-            "subtopic_name": north_star_ctx.get("subtopic_name"),
-            "objective_ids": north_star_ctx.get("objective_ids") or [],
+        content_filter["map_of_contents"] = {
+            "path": map_of_contents_ctx.get("path"),
+            "status": map_of_contents_ctx.get("status"),
+            "module_name": map_of_contents_ctx.get("module_name"),
+            "course_name": map_of_contents_ctx.get("course_name"),
+            "subtopic_name": map_of_contents_ctx.get("subtopic_name"),
+            "objective_ids": map_of_contents_ctx.get("objective_ids") or [],
         }
         content_filter["reference_targets"] = (
-            north_star_ctx.get("reference_targets") or []
+            map_of_contents_ctx.get("reference_targets") or []
         )
         content_filter["follow_up_targets"] = (
-            north_star_ctx.get("follow_up_targets") or []
+            map_of_contents_ctx.get("follow_up_targets") or []
         )
         requested_enforce = content_filter.get("enforce_reference_bounds")
         if requested_enforce is None:
@@ -3115,9 +3187,9 @@ def create_session():
         if (
             content_filter.get("objective_scope") == "single_focus"
             and not focus_objective_id
-            and north_star_ctx.get("objective_ids")
+            and map_of_contents_ctx.get("objective_ids")
         ):
-            focus_objective_id = str(north_star_ctx["objective_ids"][0] or "").strip()
+            focus_objective_id = str(map_of_contents_ctx["objective_ids"][0] or "").strip()
 
         if focus_objective_id:
             focus_wikilink = _wikilink(_strip_wikilink(focus_objective_id))
@@ -3280,21 +3352,21 @@ def create_session():
     }
     if selector_meta:
         response["selector"] = selector_meta
-    if north_star_ctx:
-        response["north_star"] = {
-            "path": north_star_ctx.get("path"),
-            "status": north_star_ctx.get("status"),
-            "module_name": north_star_ctx.get("module_name"),
-            "course_name": north_star_ctx.get("course_name"),
-            "subtopic_name": north_star_ctx.get("subtopic_name"),
-            "objective_ids": north_star_ctx.get("objective_ids") or [],
+    if map_of_contents_ctx:
+        response["map_of_contents"] = {
+            "path": map_of_contents_ctx.get("path"),
+            "status": map_of_contents_ctx.get("status"),
+            "module_name": map_of_contents_ctx.get("module_name"),
+            "course_name": map_of_contents_ctx.get("course_name"),
+            "subtopic_name": map_of_contents_ctx.get("subtopic_name"),
+            "objective_ids": map_of_contents_ctx.get("objective_ids") or [],
         }
         response["objective_scope"] = (
             content_filter.get("objective_scope") or "module_all"
         )
         response["focus_objective_id"] = content_filter.get("focus_objective_id")
         response["reference_targets_count"] = len(
-            north_star_ctx.get("reference_targets") or []
+            map_of_contents_ctx.get("reference_targets") or []
         )
 
     # --- Method recommendations from Scholar data ---
@@ -3543,9 +3615,9 @@ def send_turn(session_id: str):
     module_prefix = (
         str(content_filter.get("module_prefix") or "").strip().replace("\\", "/")
     )
-    north_star = content_filter.get("north_star")
-    if not isinstance(north_star, dict):
-        north_star = None
+    map_of_contents = content_filter.get("map_of_contents")
+    if not isinstance(map_of_contents, dict):
+        map_of_contents = None
 
     if enforce_reference_bounds:
         if not reference_targets:
@@ -3777,8 +3849,8 @@ def send_turn(session_id: str):
             )
             _needs_lo_save = False
             _lo_save_called = False
-            if north_star:
-                objective_ids = north_star.get("objective_ids") or []
+            if map_of_contents:
+                objective_ids = map_of_contents.get("objective_ids") or []
                 objective_lines = "\n".join(
                     f"- {_wikilink(str(oid))}"
                     for oid in objective_ids
@@ -3787,25 +3859,25 @@ def send_turn(session_id: str):
                 if not objective_lines:
                     objective_lines = "- [[OBJ-UNMAPPED]]"
                 system_prompt += (
-                    "\n\n## North Star Context\n"
-                    f"- Module: {north_star.get('module_name') or 'General Module'}\n"
-                    f"- File: {north_star.get('path') or '(missing)'}\n"
-                    f"- Status: {north_star.get('status') or 'unknown'}\n"
+                    "\n\n## Map of Contents Context\n"
+                    f"- Module: {map_of_contents.get('module_name') or 'General Module'}\n"
+                    f"- File: {map_of_contents.get('path') or '(missing)'}\n"
+                    f"- Status: {map_of_contents.get('status') or 'unknown'}\n"
                     "- Objectives in scope:\n"
                     f"{objective_lines}"
                 )
                 _needs_lo_save = (
-                    not _session_has_real_objectives(north_star) and turn_number <= 5
-                ) or (north_star.get("status") == "needs_path" and turn_number <= 8)
-                _is_needs_path = north_star.get("status") == "needs_path"
+                    not _session_has_real_objectives(map_of_contents) and turn_number <= 5
+                ) or (map_of_contents.get("status") == "needs_path" and turn_number <= 8)
+                _is_needs_path = map_of_contents.get("status") == "needs_path"
                 if _needs_lo_save and _is_needs_path:
-                    # Objectives exist in DB but North Star file was deleted
+                    # Objectives exist in DB but Map of Contents file was deleted
                     system_prompt += (
-                        "\n\n## North Star File Missing\n"
-                        "The North Star note was deleted from Obsidian but learning objectives "
+                        "\n\n## Map of Contents File Missing\n"
+                        "The Map of Contents note was deleted from Obsidian but learning objectives "
                         "are still saved in the database. Before continuing, ask the student "
-                        "where to re-save the North Star.\n"
-                        '1. Ask: "Your North Star file was removed. '
+                        "where to re-save the Map of Contents.\n"
+                        '1. Ask: "Your Map of Contents file was removed. '
                         "Where should I save your learning objectives? "
                         'Example: Study Notes/Movement Science/Construct 2/Hip and Pelvis"\n'
                         "2. Once the student provides a folder, call `save_learning_objectives` "
@@ -4912,8 +4984,8 @@ def end_session(session_id: str):
         except (json.JSONDecodeError, TypeError):
             pass
 
-    north_star = content_filter.get("north_star") or {}
-    objective_ids = north_star.get("objective_ids") or []
+    map_of_contents = content_filter.get("map_of_contents") or {}
+    objective_ids = map_of_contents.get("objective_ids") or []
     chain_name = content_filter.get("chain_name") or None
     vault_folder = content_filter.get("vault_folder") or None
 
@@ -4945,11 +5017,9 @@ def end_session(session_id: str):
                 dedup_paths.append(p)
 
         if dedup_paths:
-            from dashboard.api_adapter import obsidian_get_file
-
             notes_by_path: dict[str, str] = {}
             for path in dedup_paths:
-                note_res = obsidian_get_file(path)
+                note_res = _vault_read_note(path)
                 if note_res.get("success"):
                     notes_by_path[path] = str(note_res.get("content") or "")
 
@@ -4966,26 +5036,26 @@ def end_session(session_id: str):
     except Exception as exc:
         _LOG.warning("end_session graph sync failed: %s", exc)
 
-    # --- Refresh North Star if objectives exist ---
-    north_star_refresh: Optional[dict[str, Any]] = None
+    # --- Refresh Map of Contents if objectives exist ---
+    map_of_contents_refresh: Optional[dict[str, Any]] = None
     if objective_ids:
         try:
-            ns_result, ns_err = _ensure_north_star_context(
+            ns_result, ns_err = _ensure_moc_context(
                 course_id=content_filter.get("course_id"),
                 module_id=content_filter.get("module_id"),
                 module_name=content_filter.get("module_name"),
                 topic=session.get("topic") or "",
-                learning_objectives=north_star.get("objectives") or objective_ids,
+                learning_objectives=map_of_contents.get("objectives") or objective_ids,
                 source_ids=content_filter.get("source_ids") or [],
                 force_refresh=True,
                 path_override=vault_folder,
             )
             if ns_result:
-                north_star_refresh = {"path": ns_result.get("path"), "updated": True}
+                map_of_contents_refresh = {"path": ns_result.get("path"), "updated": True}
             elif ns_err:
-                _LOG.warning("end_session North Star refresh error: %s", ns_err)
+                _LOG.warning("end_session Map of Contents refresh error: %s", ns_err)
         except Exception as exc:
-            _LOG.warning("end_session North Star refresh failed: %s", exc)
+            _LOG.warning("end_session Map of Contents refresh failed: %s", exc)
 
     # --- Auto-capture method_ratings for completed blocks ---
     ratings_captured = 0
@@ -5068,7 +5138,7 @@ def end_session(session_id: str):
                 "ratings_captured": ratings_captured,
             },
             "graph_sync": graph_sync_result,
-            "north_star_refresh": north_star_refresh,
+            "map_of_contents_refresh": map_of_contents_refresh,
             "janitor": janitor_result,
         }
     )
@@ -5139,12 +5209,12 @@ def get_session_summary(session_id: str):
         except (json.JSONDecodeError, TypeError):
             pass
 
-    north_star = content_filter.get("north_star") or {}
-    objective_ids = north_star.get("objective_ids") or []
+    map_of_contents = content_filter.get("map_of_contents") or {}
+    objective_ids = map_of_contents.get("objective_ids") or []
     chain_name = content_filter.get("chain_name") or None
     vault_folder = str(content_filter.get("vault_folder") or "").strip() or None
     module_name = (
-        north_star.get("module_name") or content_filter.get("module_name") or ""
+        map_of_contents.get("module_name") or content_filter.get("module_name") or ""
     )
     topic = session.get("topic") or module_name or "Session"
     session_mode = content_filter.get("session_mode") or "focused_batch"
@@ -5230,8 +5300,6 @@ def get_session_summary(session_id: str):
 
             wrap_result = render_template_artifact("session_wrap", summary)
             if wrap_result.get("success"):
-                from dashboard.api_adapter import obsidian_save_file
-
                 if vault_folder:
                     wrap_path = (
                         f"{vault_folder}/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
@@ -5241,7 +5309,7 @@ def get_session_summary(session_id: str):
                         f"Study Notes/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
                     )
 
-                save_res = obsidian_save_file(wrap_path, wrap_result["content"])
+                save_res = _vault_save_note(wrap_path, wrap_result["content"])
                 if save_res.get("success"):
                     wrap_saved = {"path": wrap_path, "saved": True}
                     _LOG.info("Session wrap saved to %s", wrap_path)
@@ -5409,7 +5477,7 @@ def delete_session(session_id: str):
     # --- Delete cascade: remove Obsidian files before deleting DB rows ---
     deleted_paths = _cascade_delete_obsidian_files(session)
 
-    # --- Delete learning objectives linked to this session's North Star ---
+    # --- Delete learning objectives linked to this session's Map of Contents ---
     lo_deleted = 0
     cf_raw = session.get("content_filter_json")
     if cf_raw:
@@ -5418,7 +5486,7 @@ def delete_session(session_id: str):
         except (json.JSONDecodeError, TypeError):
             cf = None
         if isinstance(cf, dict):
-            ns = cf.get("north_star") or {}
+            ns = cf.get("map_of_contents") or {}
             obj_ids: list[str] = ns.get("objective_ids") or []
             course_id = session.get("course_id")
             if obj_ids and course_id:
@@ -5679,11 +5747,9 @@ def sync_session_graph(session_id: str):
         conn.close()
         return jsonify({"error": "No note paths available for graph sync"}), 400
 
-    from dashboard.api_adapter import obsidian_get_file
-
     notes_by_path: dict[str, str] = {}
     for path in dedup_paths:
-        note_res = obsidian_get_file(path)
+        note_res = _vault_read_note(path)
         if note_res.get("success"):
             notes_by_path[path] = str(note_res.get("content") or "")
 

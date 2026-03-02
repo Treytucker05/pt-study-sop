@@ -79,7 +79,7 @@ _NOTE_TYPE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"(?:^|/)session[_\s-]", re.IGNORECASE), "session"),
     (re.compile(r"(?:^|/)summary[_\s-]", re.IGNORECASE), "summary"),
     (re.compile(r"(?:^|/)review[_\s-]", re.IGNORECASE), "review"),
-    (re.compile(r"(?:^|/)north[_\s-]?star", re.IGNORECASE), "north_star"),
+    (re.compile(r"(?:^|/)north[_\s-]?star", re.IGNORECASE), "map_of_contents"),
     (re.compile(r"learning[_\s-]?objectives?", re.IGNORECASE), "reference"),
     (re.compile(r"(?:^|/)evidence[_\s-]", re.IGNORECASE), "reference"),
     (re.compile(r"(?:^|/)research[/\\]", re.IGNORECASE), "reference"),
