@@ -67,6 +67,8 @@ export function MaterialSelector({
   const [processingVideos, setProcessingVideos] = useState(false);
   const [enrichingVideos, setEnrichingVideos] = useState(false);
   const [videoJobsByMaterial, setVideoJobsByMaterial] = useState<Record<number, MaterialVideoJobState>>({});
+  const [videoPollingPaused, setVideoPollingPaused] = useState(false);
+  const consecutiveVideoPollErrorsRef = useRef(0);
 
   const { data: courses = [] } = useQuery<Course[]>({
     queryKey: ["courses-active"],
@@ -191,6 +193,8 @@ export function MaterialSelector({
     }
 
     setProcessingVideos(true);
+    setVideoPollingPaused(false);
+    consecutiveVideoPollErrorsRef.current = 0;
     let started = 0;
     for (const materialId of selectedVideoIds) {
       try {
@@ -248,6 +252,8 @@ export function MaterialSelector({
   }, [enrichableVideoIds, queryClient]);
 
   useEffect(() => {
+    if (videoPollingPaused) return;
+
     const activeEntries = Object.entries(videoJobsByMaterial).filter(
       ([, job]) => job.status === "pending" || job.status === "running",
     );
@@ -272,6 +278,7 @@ export function MaterialSelector({
         );
 
         if (cancelled) return;
+        consecutiveVideoPollErrorsRef.current = 0;
 
         setVideoJobsByMaterial((prev) => {
           const next = { ...prev };
@@ -309,7 +316,12 @@ export function MaterialSelector({
           return next;
         });
       } catch {
-        // ignore transient polling errors
+        // Back off when localhost socket binding fails repeatedly (e.g. ERR_ADDRESS_IN_USE).
+        consecutiveVideoPollErrorsRef.current += 1;
+        if (consecutiveVideoPollErrorsRef.current >= 5) {
+          setVideoPollingPaused(true);
+          toast.error("Video status polling paused (network/socket conflict). Restart Dashboard and refresh this page.");
+        }
       } finally {
         polling = false;
       }
@@ -321,7 +333,7 @@ export function MaterialSelector({
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [videoJobsByMaterial, queryClient]);
+  }, [videoJobsByMaterial, queryClient, videoPollingPaused]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
