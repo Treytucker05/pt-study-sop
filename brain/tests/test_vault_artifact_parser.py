@@ -130,3 +130,25 @@ folder: New/Folder
     assert len(artifacts) == 1
     assert artifacts[0]["operation"] == "move"
     assert artifacts[0]["params"]["path"] == "Old/Path/Note.md"
+
+
+def test_parse_value_with_colon():
+    from vault_artifact_parser import parse_vault_artifacts
+    text = ''':::vault:replace-section
+file: _Index
+heading: ## Learning Objectives: Part 1
+:::'''
+
+    artifacts = parse_vault_artifacts(text)
+    assert len(artifacts) == 1
+    assert artifacts[0]["params"]["heading"] == "## Learning Objectives: Part 1"
+
+
+def test_unknown_operation_is_dropped():
+    from vault_artifact_parser import parse_vault_artifacts
+    text = ''':::vault:delete-all
+path: /
+:::'''
+
+    artifacts = parse_vault_artifacts(text)
+    assert artifacts == []
