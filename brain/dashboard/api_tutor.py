@@ -3528,6 +3528,7 @@ def send_turn(session_id: str):
             material_text = ctx["materials"]
             instruction_text = ctx["instructions"]
             notes_context_text = ctx["notes"]
+            vault_state_text = ctx.get("vault_state", "")
 
             # Graceful mode when no materials
             if not material_text:
@@ -3578,6 +3579,7 @@ def send_turn(session_id: str):
                 material_context=material_text,
                 graph_context=graph_context_text,
                 course_map=ctx.get("course_map", ""),
+                vault_state=vault_state_text,
             )
             session_rules = _normalize_session_rules(content_filter.get("session_rules"))
             if session_rules:

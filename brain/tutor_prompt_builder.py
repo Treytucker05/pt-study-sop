@@ -11,9 +11,12 @@ Architecture:
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Optional
 
 _LOG = logging.getLogger(__name__)
+
+_TUTOR_INSTRUCTIONS_PATH = Path(__file__).parent / "tutor_instructions.md"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -52,7 +55,7 @@ TIER1_BASE_PROMPT = _BASE_TEMPLATE.replace("{rules}", DEFAULT_RULES)
 # ---------------------------------------------------------------------------
 
 def _load_custom_instructions() -> str:
-    """Read custom instructions from api_config.json, falling back to defaults."""
+    """Read custom instructions from api_config.json, then tutor_instructions.md, then defaults."""
     try:
         from dashboard.utils import load_api_config
         cfg = load_api_config()
@@ -60,7 +63,17 @@ def _load_custom_instructions() -> str:
         if isinstance(custom, str) and custom.strip():
             return custom.strip()
     except Exception:
-        _LOG.debug("Could not load custom instructions from config, using defaults")
+        _LOG.debug("Could not load custom instructions from config")
+
+    # Fall back to tutor_instructions.md (artifact commands, learning style, etc.)
+    try:
+        if _TUTOR_INSTRUCTIONS_PATH.exists():
+            content = _TUTOR_INSTRUCTIONS_PATH.read_text(encoding="utf-8").strip()
+            if content:
+                return f"{DEFAULT_RULES}\n\n{content}"
+    except Exception:
+        _LOG.debug("Could not load tutor_instructions.md")
+
     return DEFAULT_RULES
 
 
@@ -122,6 +135,7 @@ def build_prompt_with_contexts(
     material_context: Optional[str] = None,
     graph_context: Optional[str] = None,
     course_map: str = "",
+    vault_state: str = "",
 ) -> str:
     parts: list[str] = [_format_tier1(course_id, topic)]
 
@@ -153,6 +167,14 @@ def build_prompt_with_contexts(
             "## Course Structure\n"
             "Use this to orient the student within their program:\n\n"
             + course_map
+        )
+
+    if vault_state and vault_state.strip():
+        parts.append(
+            "## Vault State (Existing Notes for This Topic)\n"
+            "Use this to avoid re-creating notes that already exist. "
+            "Build on or reference these when creating new study materials.\n\n"
+            + vault_state
         )
 
     return "\n\n".join(parts)

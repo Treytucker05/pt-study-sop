@@ -159,8 +159,44 @@ def _fetch_notes(
         return ""
 
 
+def _resolve_course_folder(course_id: Optional[int]) -> str:
+    """Map a DB course_id to its vault folder path (e.g. 'Study Notes/Neuroscience').
+
+    Looks up the course name from the DB, then fuzzy-matches it against
+    vault_courses.yaml to get the canonical label. Returns empty string
+    if resolution fails at any step.
+    """
+    if not course_id:
+        return ""
+    try:
+        from db_setup import DB_PATH
+        import sqlite3
+
+        conn = sqlite3.connect(DB_PATH)
+        row = conn.execute(
+            "SELECT name FROM courses WHERE id = ?", (int(course_id),)
+        ).fetchone()
+        conn.close()
+        if not row or not row[0]:
+            return ""
+
+        from course_map import load_course_map
+        cmap = load_course_map()
+        course = cmap.resolve_course(row[0])
+        if not course:
+            return ""
+        return f"{cmap.vault_root}/{course.label}"
+    except Exception as e:
+        logger.warning("Course folder resolution failed: %s", e)
+        return ""
+
+
 def _fetch_vault_state(course_id: Optional[int] = None, topic: str = "") -> str:
-    """Read the _Index.md and folder tree for the current construct."""
+    """List existing notes and read _Index.md for the current study folder.
+
+    Gives the LLM awareness of what already exists in the vault so it can
+    avoid re-creating notes and build on prior work.
+    """
     try:
         from obsidian_vault import ObsidianVault
 
@@ -168,22 +204,46 @@ def _fetch_vault_state(course_id: Optional[int] = None, topic: str = "") -> str:
         if not vault.is_available():
             return ""
 
-        # Try to find _Index.md for this topic
-        index_content = ""
-        if topic:
-            index_content = vault.read_note(f"{topic}/_Index")
-        if not index_content and course_id:
-            # Search for any _Index in this course
-            results = vault.search(f"_Index {course_id}", limit=1)
-            if results:
-                path = results[0].get("path", "")
-                if path:
-                    index_content = vault.read_note(path)
-
-        if not index_content:
+        # Determine which folder to scan — prefer topic (module_prefix),
+        # fall back to course-level folder from DB + course map
+        scan_folder = topic or _resolve_course_folder(course_id)
+        if not scan_folder:
             return ""
 
-        return f"## Current Vault State\n\n{index_content}"
+        # List existing notes in the folder (cap at 20)
+        file_list: list[str] = []
+        try:
+            files = vault.list_files(scan_folder)
+            if isinstance(files, list):
+                for f in files[:20]:
+                    name = f.get("path", "") if isinstance(f, dict) else str(f)
+                    if name:
+                        file_list.append(name)
+        except Exception:
+            logger.debug("list_files failed for %s", scan_folder)
+
+        # Read _Index.md if it exists (cap at 2000 chars)
+        index_content = ""
+        try:
+            raw = vault.read_note(f"{scan_folder}/_Index")
+            if raw and "\ufffd" not in raw[:100]:
+                index_content = raw[:2000]
+        except Exception:
+            logger.debug("_Index.md not found in %s", scan_folder)
+
+        if not file_list and not index_content:
+            return ""
+
+        parts: list[str] = []
+        if file_list:
+            listing = "\n".join(f"  - {name}" for name in file_list)
+            parts.append(
+                f"Existing notes in `{scan_folder}`:\n{listing}"
+            )
+        if index_content:
+            parts.append(f"### _Index.md\n{index_content}")
+
+        return "\n\n".join(parts)
     except Exception as e:
         logger.warning("Vault state retrieval failed: %s", e)
         return ""
