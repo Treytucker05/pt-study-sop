@@ -260,6 +260,7 @@ function getFolderAncestorPaths(path: string): string[] {
 
 function renderMaterialRow(
   mat: Material,
+  isDuplicate: boolean,
   selectedForTutor: number[],
   editingId: number | null,
   editTitle: string,
@@ -337,6 +338,11 @@ function renderMaterialRow(
 
       {/* Type */}
       <div className="flex items-center gap-1">
+        {isDuplicate ? (
+          <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 w-fit border-yellow-500/50 text-yellow-400`}>
+            DUPE
+          </Badge>
+        ) : null}
         <Badge variant="outline" className={`${TEXT_BADGE} h-4 px-1 w-fit`}>
           {getFileTypeLabel(mat.file_type)}
         </Badge>
@@ -532,6 +538,18 @@ export default function Library() {
   };
 
   const selectedForTutorSet = useMemo(() => new Set(selectedForTutor), [selectedForTutor]);
+  const dupeChecksums = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const m of materials) {
+      const cs = m.checksum;
+      if (cs) counts.set(cs, (counts.get(cs) || 0) + 1);
+    }
+    const dupes = new Set<string>();
+    for (const [cs, count] of counts) {
+      if (count > 1) dupes.add(cs);
+    }
+    return dupes;
+  }, [materials]);
   const selectableVisibleMaterialIds = useMemo(
     () => visibleMaterials.filter((m) => m.enabled).map((m) => m.id),
     [visibleMaterials],
@@ -1267,6 +1285,7 @@ export default function Library() {
                         {visibleMaterials.map((mat) => (
                           renderMaterialRow(
                             mat,
+                            Boolean(mat.checksum && dupeChecksums.has(mat.checksum)),
                             selectedForTutor,
                             editingId,
                             editTitle,
