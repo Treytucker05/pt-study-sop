@@ -351,7 +351,7 @@ function SessionWrapPanel({
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.tutor.getSessionSummary(`${sessionId}?save=true`);
+      await api.tutor.getSessionSummary(sessionId, { save: true });
       toast.success("Summary saved to Obsidian");
     } catch (err) {
       toast.error(`Save failed: ${err instanceof Error ? err.message : "Unknown"}`);

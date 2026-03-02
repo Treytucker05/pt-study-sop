@@ -4955,12 +4955,16 @@ def get_session_summary(session_id: str):
         except Exception:
             pass
 
-    chain_progress = ""
+    chain_progress: dict[str, object] | None = None
     blocks_completed: list[str] = []
     if chain_status:
         total = chain_status.get("total_blocks", 0)
         pos = chain_status.get("current_position", 0)
-        chain_progress = f"{pos}/{total} blocks"
+        chain_progress = {
+            "current_block": pos,
+            "total_blocks": total,
+            "chain_name": chain_name or "",
+        }
         blocks_completed = chain_status.get("completed_blocks") or []
 
     # --- Follow-up targets ---
@@ -4969,6 +4973,16 @@ def get_session_summary(session_id: str):
     conn.close()
 
     # --- Build summary response ---
+    total_artifact_count = sum(artifact_counts.values())
+    objectives_covered = [
+        {
+            "id": o["id"],
+            "name": o.get("description", o["id"]),
+            "status": o.get("status", "active"),
+        }
+        for o in objectives_detail
+    ]
+
     summary = {
         "session_id": session_id,
         "topic": topic,
@@ -4976,10 +4990,13 @@ def get_session_summary(session_id: str):
         "session_mode": session_mode,
         "turn_count": turn_count,
         "duration_minutes": duration_minutes,
+        "duration_seconds": round(duration_minutes * 60),
         "artifacts": [
             {"type": t, "count": c} for t, c in artifact_counts.items()
         ],
+        "artifact_count": total_artifact_count,
         "objectives": objectives_detail,
+        "objectives_covered": objectives_covered,
         "chain_name": chain_name,
         "chain_progress": chain_progress,
         "blocks_completed": blocks_completed,
@@ -5215,8 +5232,13 @@ def create_artifact(session_id: str):
     content = data.get("content", "")
     title = data.get("title", "")
 
+    # Map alias types to canonical storage types
+    _ARTIFACT_TYPE_ALIASES = {"table": "note", "structured_map": "map"}
+    if artifact_type in _ARTIFACT_TYPE_ALIASES:
+        artifact_type = _ARTIFACT_TYPE_ALIASES[artifact_type]
+
     if artifact_type not in ("note", "card", "map", "structured_notes"):
-        return jsonify({"error": "type must be 'note', 'card', 'map', or 'structured_notes'"}), 400
+        return jsonify({"error": "type must be 'note', 'card', 'map', 'table', 'structured_map', or 'structured_notes'"}), 400
 
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)

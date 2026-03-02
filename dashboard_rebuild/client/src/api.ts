@@ -811,8 +811,10 @@ export const api = {
           context_tags: {},
         }),
       }),
-    getSessionSummary: (sessionId: string) =>
-      request<TutorSessionWrapSummary>(`/tutor/session/${sessionId}/summary`),
+    getSessionSummary: (sessionId: string, opts?: { save?: boolean }) =>
+      request<TutorSessionWrapSummary>(
+        `/tutor/session/${sessionId}/summary${opts?.save ? "?save=true" : ""}`,
+      ),
     getChainStatus: (sessionId: string) =>
       request<TutorChainStatusResponse>(`/tutor/session/${sessionId}/chain-status`),
     getSettings: () =>

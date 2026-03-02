@@ -4,11 +4,15 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: No active workstream. All tracks complete.
+Active status: **tutor-audit-remediation_20260302** — P0/P1 bug fixes from tutor audit.
 
-Latest update: 2026-02-24 Completed TutorChat Speed Tiers — 4 tasks done (766 tests passing). UI pill toggles, parallel RAG, mode-gated model/reasoning. Default ~1-2s, full pipeline ~5-8s (was 20+s).
+Latest update: 2026-03-02 New track opened for P0/P1 remediation (save-wrap URL, summary contract, artifact type mapping).
 
 ---
+
+- [ ] **Track: Tutor Audit Remediation (P0/P1)** (pending — created 2026-03-02)
+  Fix save-wrap URL, session summary contract, chain progress shape, artifact type mapping.
+  *Link: [./tracks/tutor-audit-remediation_20260302/](./tracks/tutor-audit-remediation_20260302/)*
 
 - [x] **Track: TutorChat Speed Tiers** (complete — created 2026-02-24; closed 2026-02-24; 4 tasks, 766 tests)
   UI mode toggles gate expensive pipeline stages. Parallel RAG. Model/reasoning per tier.
