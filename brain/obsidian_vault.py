@@ -330,3 +330,34 @@ class ObsidianVault:
         if filter:
             args.append(filter)
         return self._run(args, parse_json=True)
+
+    # ── Daily Note ──────────────────────────────────────────
+
+    def daily_read(self) -> dict:
+        """Read today's daily note. Returns parsed JSON dict."""
+        result = self._run(["daily:read", "format=json"], parse_json=True)
+        return result if isinstance(result, dict) else {}
+
+    def daily_append(self, content: str) -> str:
+        """Append content to today's daily note."""
+        return self._run(["daily:append", f'content="{content}"'])
+
+    # ── Templates ───────────────────────────────────────────
+
+    def insert_template(self, file: str, template: str) -> str:
+        """Insert a template into a file."""
+        return self._run(
+            ["template:insert", f'file="{file}"', f'template="{template}"']
+        )
+
+    # ── Outline ─────────────────────────────────────────────
+
+    def get_outline(self, file: str) -> list[dict]:
+        """Return the outline (headings) of a file as JSON."""
+        return self._run(["outline", f'file="{file}"', "format=json"], parse_json=True)
+
+    # ── Property Read ────────────────────────────────────────
+
+    def read_property(self, file: str, name: str) -> str:
+        """Read a frontmatter property from a file."""
+        return self._run(["property:read", f'name="{name}"', f'file="{file}"'])

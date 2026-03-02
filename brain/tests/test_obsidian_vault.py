@@ -428,3 +428,95 @@ def test_is_available_cache_expires_after_ttl():
             result2 = vault.is_available()
             assert result2 is True
             assert mock_run.call_count == 2
+
+
+def test_daily_read_returns_dict():
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    payload = {"date": "2026-03-02", "content": "# Daily Note"}
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=json.dumps(payload), stderr=""
+        )
+        result = vault.daily_read()
+        assert result == payload
+        args = mock_run.call_args[0][0]
+        assert "daily:read" in args
+        assert "format=json" in args
+
+
+def test_daily_read_returns_empty_dict_on_error():
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error")
+        result = vault.daily_read()
+        assert result == {}
+
+
+def test_daily_append_calls_cli():
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.daily_append("New log entry")
+        args = mock_run.call_args[0][0]
+        assert "daily:append" in args
+        assert 'content="New log entry"' in args
+
+
+def test_insert_template_calls_cli():
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.insert_template("notes/session.md", "Study Session")
+        args = mock_run.call_args[0][0]
+        assert "template:insert" in args
+        assert 'file="notes/session.md"' in args
+        assert 'template="Study Session"' in args
+
+
+def test_get_outline_returns_list():
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    headings = [{"heading": "Overview", "level": 2}, {"heading": "Details", "level": 3}]
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=json.dumps(headings), stderr=""
+        )
+        result = vault.get_outline("My Note")
+        assert result == headings
+        args = mock_run.call_args[0][0]
+        assert "outline" in args
+        assert 'file="My Note"' in args
+        assert "format=json" in args
+
+
+def test_get_outline_returns_empty_on_error():
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error")
+        result = vault.get_outline("Missing Note")
+        assert result == []
+
+
+def test_read_property_calls_cli():
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="reviewed", stderr="")
+        result = vault.read_property("My Note", "status")
+        assert result == "reviewed"
+        args = mock_run.call_args[0][0]
+        assert "property:read" in args
+        assert 'name="status"' in args
+        assert 'file="My Note"' in args
