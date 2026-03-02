@@ -81,7 +81,7 @@ function normalizeObjectiveScope(value: unknown): TutorObjectiveScope {
 
 export default function Tutor() {
   const queryClient = useQueryClient();
-  const tutorMaterialStorageKey = "tutor.selected_material_ids.v1";
+  const tutorMaterialStorageKey = "tutor.selected_material_ids.v2";
   const tutorAccuracyProfileKey = "tutor.accuracy_profile.v1";
   const tutorObjectiveScopeKey = "tutor.objective_scope.v1";
   const tutorWizardStorageKey = "tutor.wizard.state.v1";
@@ -100,9 +100,12 @@ export default function Tutor() {
       const saved = localStorage.getItem(tutorMaterialStorageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed.filter((v) => typeof v === "number");
+        // Validate: must be an array of numbers only
+        if (Array.isArray(parsed) && parsed.every((v) => typeof v === "number")) {
+          return parsed;
+        }
       }
-    } catch { /* corrupted */ }
+    } catch { /* corrupted — fall through */ }
     return [];
   });
   const [accuracyProfile, setAccuracyProfile] = useState<TutorAccuracyProfile>(() => {
@@ -238,6 +241,20 @@ export default function Tutor() {
       setSelectedMaterials([]);
     }
   }, [courseId]);
+
+  // Filter out stale/deleted material IDs from localStorage
+  useEffect(() => {
+    if (chatMaterials.length === 0) return;
+    const validIds = new Set(chatMaterials.map((m) => m.id));
+    setSelectedMaterials((prev) => {
+      const filtered = prev.filter((id) => validIds.has(id));
+      // Only update if something was filtered out
+      if (filtered.length < prev.length) {
+        return filtered;
+      }
+      return prev;
+    });
+  }, [chatMaterials]);
 
   // Recent sessions
   const { data: recentSessions = [] } = useQuery<TutorSessionSummary[]>({

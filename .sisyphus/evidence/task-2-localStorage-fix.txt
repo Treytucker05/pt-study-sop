@@ -1,0 +1,86 @@
+TASK 2: Fix Stale localStorage Material References in Tutor Wizard
+================================================================
+
+PROBLEM STATEMENT:
+- Tutor wizard stored selected material IDs in localStorage
+- When materials were deleted from DB, frontend still had stale IDs → 500 errors
+- When users switched courses, old course's materials persisted
+- localStorage could contain corrupted JSON
+
+SOLUTION IMPLEMENTED:
+File: dashboard_rebuild/client/src/pages/tutor.tsx
+
+1. VERSIONED STORAGE KEY (Line 84)
+   OLD: const tutorMaterialStorageKey = "tutor.selected_material_ids.v1";
+   NEW: const tutorMaterialStorageKey = "tutor.selected_material_ids.v2";
+   
+   Effect: Auto-clears stale data from old v1 key on first load
+
+2. IMPROVED VALIDATION IN useState INITIALIZER (Lines 98-107)
+   OLD: 
+     if (Array.isArray(parsed)) return parsed.filter((v) => typeof v === "number");
+   
+   NEW:
+     if (Array.isArray(parsed) && parsed.every((v) => typeof v === "number")) {
+       return parsed;
+     }
+   
+   Effect: Validates entire array is numbers before using; discards corrupted data
+
+3. ADDED STALE ID FILTERING EFFECT (Lines 245-257)
+   NEW useEffect that:
+   - Runs whenever chatMaterials changes (fetched from API)
+   - Creates Set of valid material IDs from API response
+   - Filters selectedMaterials to only include valid IDs
+   - Silently discards stale/deleted material IDs
+   - Only updates state if something was filtered (prevents unnecessary re-renders)
+   
+   Code:
+   ```typescript
+   useEffect(() => {
+     if (chatMaterials.length === 0) return;
+     const validIds = new Set(chatMaterials.map((m) => m.id));
+     setSelectedMaterials((prev) => {
+       const filtered = prev.filter((id) => validIds.has(id));
+       if (filtered.length < prev.length) {
+         return filtered;
+       }
+       return prev;
+     });
+   }, [chatMaterials]);
+   ```
+
+4. COURSE CHANGE CLEARS MATERIALS (Lines 236-243)
+   VERIFIED: Already implemented
+   - When courseId changes, selectedMaterials is cleared
+   - Prevents old course materials from persisting
+
+VALIDATION CHECKLIST:
+✓ localStorage key versioned (v1 → v2)
+✓ JSON parsing wrapped in try/catch
+✓ Array validation checks every element is a number
+✓ Stale IDs filtered against API response
+✓ Course change clears materials
+✓ No backend API calls needed
+✓ No TypeScript errors introduced
+✓ TutorWizard component checked (no localStorage usage there)
+
+BEHAVIOR AFTER FIX:
+1. User loads tutor page with stale material IDs in old v1 key
+   → v2 key is empty, starts fresh
+   
+2. User loads tutor page with corrupted JSON in v2 key
+   → try/catch catches error, returns empty array
+   
+3. User has valid material IDs but some were deleted from DB
+   → Stale IDs filtered out when chatMaterials loads from API
+   
+4. User switches courses
+   → selectedMaterials cleared immediately
+   → No cross-course material contamination
+
+FILES MODIFIED:
+- dashboard_rebuild/client/src/pages/tutor.tsx (3 changes)
+
+NO BACKEND CHANGES REQUIRED
+NO BUILD STEP REQUIRED (code changes only)

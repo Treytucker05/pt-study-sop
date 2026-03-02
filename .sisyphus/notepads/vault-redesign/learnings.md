@@ -56,3 +56,104 @@
 - Build: `cd dashboard_rebuild && npm run build`
 - Tests: `pytest brain/tests/` (56 existing tests)
 - START SERVER: Start_Dashboard.bat (NEVER npm run dev)
+
+## [2026-03-02] Task 2: localStorage Material ID Validation
+
+### Problem
+- Tutor wizard stored selected material IDs in localStorage
+- Stale IDs (from deleted materials) caused 500 errors when loading
+- Cross-course material contamination when switching courses
+- Corrupted JSON in localStorage could crash the component
+
+### Solution (3-part fix in tutor.tsx)
+
+1. **Versioned Storage Key** (line 84)
+   - Changed from `v1` to `v2` to auto-clear stale data
+   - Old v1 key is ignored on first load
+
+2. **Improved Validation** (lines 103-106)
+   - Added `parsed.every((v) => typeof v === "number")` check
+   - Validates entire array before using
+   - Follows AGENTS.md pattern for localStorage validation
+
+3. **Stale ID Filtering** (lines 245-257)
+   - New useEffect filters selectedMaterials against chatMaterials API response
+   - Creates Set of valid IDs from API
+   - Silently discards deleted material IDs
+   - Only updates state if something was filtered (prevents re-renders)
+
+4. **Course Change** (lines 236-243)
+   - Already implemented: clears selectedMaterials when courseId changes
+   - Prevents cross-course material contamination
+
+### Key Pattern: localStorage Validation
+```typescript
+const [state, setState] = useState<T>(() => {
+  try {
+    const saved = localStorage.getItem("key");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.every((v) => typeof v === "number")) {
+        return parsed;
+      }
+    }
+  } catch { /* corrupted — fall through */ }
+  return defaultValue;
+});
+```
+
+### Behavior After Fix
+- Stale v1 key ignored → fresh start
+- Corrupted JSON caught by try/catch → empty array
+- Deleted materials filtered out → no 500 errors
+- Course switch clears materials → no cross-course leakage
+
+### Files Modified
+- `dashboard_rebuild/client/src/pages/tutor.tsx` (3 changes)
+
+### No Backend Changes Required
+- Pure frontend validation
+- No API calls needed
+- No database changes
+
+## 2026-03-02 — T1/T3/T5 api_tutor.py pass
+
+### T1 — GET /materials/<id>
+- Pattern: add a separate `@tutor_bp.route(..., methods=["GET"])` + new function — Flask supports multiple decorators per URL but separate functions is cleaner
+- Reuse same `COALESCE(corpus, 'materials') = 'materials'` WHERE clause from the list and PUT endpoints
+- Return 404 (not 405) by doing a real SELECT — Flask's 405 only fires when the method doesn't match any registered handler
+- Pop `file_path` from response dict (same convention as list endpoint) to avoid exposing internal disk paths
+
+### T3 — greeting in create_session
+- Initialize `greeting = None` alongside `first_block_name = None` (before the `if method_chain_id:` block) — this keeps scoping clean for the response dict
+- `_resolve_chain_blocks` already returns `facilitation_prompt` — no extra DB query needed
+- First sentence: `fp.split(". ")[0][:200]` — splits on period+space, truncates at 200 chars; wrap in try/except returning None on failure
+- `greeting = None` when no chain selected (UI-only field, not a DB turn)
+
+### T5 — GET /api/tutor/course-map
+- `dataclasses.asdict()` handles nested frozen dataclasses (CourseMap → Course → Unit) cleanly in one call
+- `load_course_map()` already handles YAML-missing / parse-error gracefully — outer try/except catches only import or unexpected failures
+- Lazy import inside the route function: `from course_map import load_course_map` — avoids top-level import side effects
+- Serialize with `dataclasses.asdict(cm)` then `jsonify(...)` — produces the exact JSON shape the spec requires
+
+### Baseline LSP errors
+- api_tutor.py has 9 pre-existing LSP errors — do not attempt to fix them; verify count stays at 9 after edits
+
+## [2026-03-02] api_tutor.py backend changes (T1/T3/T5)
+
+### What was already implemented (no code change needed)
+- T1 (`GET /api/tutor/materials/<int:material_id>`): Fully implemented at line 6123-6160. Uses `get_connection()` with `sqlite3.Row` factory, strips `file_path` before returning, returns 404 if not found.
+- T3 (greeting in session creation): Fully implemented. `greeting = None` at line 3177, extraction from `first_block.facilitation_prompt` at lines 3214-3223, included in response at line 3278. Greeting format: `"Let's begin with {name} ({stage}). {first_sentence}"`.
+
+### What required a fix (T5)
+- T5 (`GET /api/tutor/course-map`): Existed at end of file (line 6958) but had two bugs:
+  1. **Wrong import**: `from course_map import load_course_map` → fails at runtime (Flask runs from project root, not brain/ dir). Fixed to `from brain.course_map import load_course_map`.
+  2. **Wrong error handler**: `except Exception: return jsonify({"vault_root": ..., "courses": []}), 200` → masked real errors. Fixed to `except Exception as e: return jsonify({"error": str(e)}), 500`.
+
+### LSP false positives accepted in this codebase
+- Lazy imports of `from brain.*` inside route functions show as LSP errors (can't resolve `brain.*` statically). This is the same pattern as the pre-existing error at line 3026 (`from brain.selector_bridge import run_selector`). Runtime works correctly because Flask runs from project root with `brain/` as a package.
+
+### Verification
+- `from brain.course_map import load_course_map` → `load_course_map()` returns 5 courses, vault_root="Study Notes"
+- `pytest brain/tests/test_obsidian_vault.py -q` → 32/32 passed
+

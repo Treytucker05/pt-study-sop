@@ -3174,6 +3174,7 @@ def create_session():
     )
 
     first_block_name = None
+    greeting = None
     if method_chain_id:
         blocks = _resolve_chain_blocks(conn, method_chain_id)
         if not blocks:
@@ -3210,6 +3211,16 @@ def create_session():
                 }
             ), 400
         first_block_name = first_block["name"]
+        try:
+            fp = str(first_block.get("facilitation_prompt") or "").strip()
+            stage = first_block.get("control_stage") or ""
+            if fp:
+                first_sentence = fp.split(". ")[0][:200].strip()
+                greeting = f"Let's begin with {first_block['name']} ({stage}). {first_sentence}"
+            else:
+                greeting = f"Let's begin with {first_block['name']} ({stage})."
+        except Exception:
+            greeting = None
         cur.execute(
             """INSERT INTO tutor_block_transitions
                (tutor_session_id, block_id, block_index, started_at)
@@ -3264,6 +3275,7 @@ def create_session():
         "method_chain_id": method_chain_id,
         "current_block_index": 0,
         "current_block_name": first_block_name,
+        "greeting": greeting,
         "started_at": now,
     }
     if selector_meta:
@@ -6109,6 +6121,46 @@ def list_materials():
 
 
 # ---------------------------------------------------------------------------
+# GET /api/tutor/materials/<id> — Get single material metadata
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/materials/<int:material_id>", methods=["GET"])
+def get_material(material_id: int):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute(
+        """SELECT id,
+                   COALESCE(NULLIF(TRIM(title), ''), source_path, 'Material ' || id) as title,
+                   source_path,
+                   file_path,
+                   COALESCE(folder_path, '') as folder_path,
+                   COALESCE(file_type, 'FILE') as file_type,
+                   COALESCE(file_size, 0) as file_size,
+                   course_id, topic_tags,
+                   COALESCE(corpus, 'materials') as corpus,
+                   COALESCE(enabled, 1) as enabled,
+                   extraction_error,
+                   COALESCE(checksum, '') as checksum,
+                   created_at, updated_at
+            FROM rag_docs
+            WHERE id = ? AND COALESCE(corpus, 'materials') = 'materials'""",
+        (material_id,),
+    )
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"error": "Material not found"}), 404
+
+    material = dict(row)
+    material.pop("file_path", None)
+    return jsonify(material), 200
+
+
+# ---------------------------------------------------------------------------
 # PUT /api/tutor/materials/<id> — Update material metadata
 # ---------------------------------------------------------------------------
 
@@ -6896,3 +6948,20 @@ def put_tutor_settings():
             "custom_instructions": cfg["tutor_custom_instructions"],
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/tutor/course-map — Return serialized CourseMap from vault_courses.yaml
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/course-map", methods=["GET"])
+def get_course_map():
+    try:
+        import dataclasses
+        from brain.course_map import load_course_map
+
+        cm = load_course_map()
+        return jsonify(dataclasses.asdict(cm)), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
