@@ -65,8 +65,6 @@ interface TutorWizardProps {
   setCustomBlockIds: (ids: number[]) => void;
   objectiveScope: TutorObjectiveScope;
   setObjectiveScope: (scope: TutorObjectiveScope) => void;
-  vaultFolder: string;
-  setVaultFolder: (folder: string) => void;
   onStartSession: () => void;
   isStarting: boolean;
   recentSessions: TutorSessionSummary[];
@@ -89,8 +87,6 @@ export function TutorWizard({
   setCustomBlockIds,
   objectiveScope,
   setObjectiveScope,
-  vaultFolder,
-  setVaultFolder,
   onStartSession,
   isStarting,
   recentSessions,
@@ -209,8 +205,6 @@ export function TutorWizard({
               setObjectiveScope={setObjectiveScope}
               selectedMaterials={selectedMaterials}
               setSelectedMaterials={setSelectedMaterials}
-              vaultFolder={vaultFolder}
-              setVaultFolder={setVaultFolder}
             />
           )}
 
@@ -317,8 +311,6 @@ function StepCourseAndMaterials({
   setObjectiveScope,
   selectedMaterials,
   setSelectedMaterials,
-  vaultFolder,
-  setVaultFolder,
 }: {
   courses: TutorContentSources["courses"];
   courseId: number | undefined;
@@ -329,8 +321,6 @@ function StepCourseAndMaterials({
   setObjectiveScope: (scope: TutorObjectiveScope) => void;
   selectedMaterials: number[];
   setSelectedMaterials: (ids: number[]) => void;
-  vaultFolder: string;
-  setVaultFolder: (folder: string) => void;
 }) {
   return (
     <div className={`${SECTION_GAP} w-full max-w-full min-w-0`}>
@@ -426,24 +416,6 @@ function StepCourseAndMaterials({
         </ScrollArea>
       </Card>
 
-      {/* Vault save folder */}
-      <Card className="bg-black/40 border-2 border-primary rounded-none">
-        <div className="px-3 py-2 border-b border-primary/30">
-          <span className={TEXT_SECTION_LABEL}>OBSIDIAN SAVE FOLDER</span>
-        </div>
-        <div className="p-3">
-          <input
-            type="text"
-            value={vaultFolder}
-            onChange={(e) => setVaultFolder(e.target.value)}
-            placeholder="e.g., Study Notes/Movement Science/Construct 2/Hip and Pelvis"
-            className={`${INPUT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
-          />
-          <div className={`${TEXT_MUTED} mt-2 text-xs`}>
-            Vault-relative folder for North Star and study notes. Leave blank for auto-generated path.
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

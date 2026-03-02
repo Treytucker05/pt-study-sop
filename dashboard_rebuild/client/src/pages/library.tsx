@@ -1021,7 +1021,7 @@ export default function Library() {
                             type="button"
                           >
                             <GraduationCap className={ICON_SM} />
-                            <span className="truncate flex-1">{course.code || course.name}</span>
+                            <span className="truncate flex-1">{course.name || course.code}</span>
                             <span className="text-[11px]">{course.doc_count}</span>
                           </button>
                         );

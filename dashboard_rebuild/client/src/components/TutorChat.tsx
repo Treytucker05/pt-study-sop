@@ -538,6 +538,7 @@ export function TutorChat({
   const [obsidianOn,  setObsidianOn]  = useState(false);
   const [webSearchOn, setWebSearchOn] = useState(false);
   const [deepThinkOn, setDeepThinkOn] = useState(false);
+  const [geminiVisionOn, setGeminiVisionOn] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -905,6 +906,7 @@ export function TutorChat({
             obsidian:   obsidianOn,
             web_search: webSearchOn,
             deep_think: deepThinkOn,
+            gemini_vision: geminiVisionOn,
           },
         }),
         signal: abortController.signal,
@@ -1179,6 +1181,7 @@ export function TutorChat({
     obsidianOn,
     webSearchOn,
     deepThinkOn,
+    geminiVisionOn,
   ]);
 
 
@@ -1231,6 +1234,7 @@ export function TutorChat({
   const speedTiers: { key: string; label: string; on: boolean; set: Dispatch<SetStateAction<boolean>> }[] = [
     { key: "materials", label: "📚 Materials", on: materialsOn, set: setMaterialsOn },
     { key: "obsidian",  label: "🗂️ Obsidian",  on: obsidianOn,  set: setObsidianOn  },
+    { key: "gemini",    label: "🎬 Gemini Vision", on: geminiVisionOn, set: setGeminiVisionOn },
     { key: "web",       label: "🔍 Web",        on: webSearchOn, set: setWebSearchOn },
     { key: "deep",      label: "🧠 Deep Think", on: deepThinkOn, set: setDeepThinkOn },
   ];

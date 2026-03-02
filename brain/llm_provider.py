@@ -20,7 +20,7 @@ load_env()
 # Configuration
 DEFAULT_TIMEOUT_SECONDS = 60
 OPENAI_API_TIMEOUT = 30
-GEMINI_DEFAULT_MODEL = "gemini-3-pro"
+GEMINI_DEFAULT_MODEL = "gemini-3.1-pro-preview"
 
 logger = logging.getLogger(__name__)
 

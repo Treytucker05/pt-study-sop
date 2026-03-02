@@ -2421,6 +2421,103 @@ def _launch_video_process_job(
     return job_id
 
 
+def _build_gemini_vision_context(material_ids: list[int], *, max_materials: int = 2) -> str:
+    """Best-effort Gemini video enrichment context for selected MP4 materials."""
+    scoped_ids = [int(mid) for mid in material_ids[:max_materials] if isinstance(mid, int)]
+    if not scoped_ids:
+        return ""
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    placeholders = ",".join("?" * len(scoped_ids))
+    cur.execute(
+        f"""
+        SELECT id, title, source_path, file_path, file_type
+        FROM rag_docs
+        WHERE id IN ({placeholders})
+          AND COALESCE(corpus, 'materials') = 'materials'
+          AND COALESCE(enabled, 1) = 1
+        """,
+        scoped_ids,
+    )
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+
+    if not rows:
+        return ""
+
+    try:
+        from video_ingest_local import VIDEO_INGEST_ROOT, _slugify
+        from video_enrich_api import enrich_video, emit_enrichment_markdown
+    except Exception:
+        return ""
+
+    blocks: list[str] = []
+    for row in rows:
+        source_path = str(row.get("file_path") or row.get("source_path") or "").strip()
+        file_type = str(row.get("file_type") or "").strip().lower()
+        if not source_path:
+            continue
+        if file_type != "mp4" and not source_path.lower().endswith(".mp4"):
+            continue
+        if not Path(source_path).exists():
+            continue
+
+        slug = _slugify(Path(source_path).stem)
+        matching_dirs = (
+            sorted(
+                VIDEO_INGEST_ROOT.glob(f"{slug}_*"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
+            if VIDEO_INGEST_ROOT.exists()
+            else []
+        )
+        if not matching_dirs:
+            continue
+
+        latest_dir = matching_dirs[0]
+        segments_path = latest_dir / "segments.json"
+        if not segments_path.exists():
+            continue
+
+        enrichment_md = latest_dir / f"{slug}_enrichment.md"
+        if not enrichment_md.exists():
+            try:
+                segments = json.loads(segments_path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            try:
+                result = enrich_video(
+                    video_path=source_path,
+                    segments=segments,
+                    material_id=int(row.get("id") or 0),
+                    mode="auto",
+                )
+                if result.get("status") == "ok" and result.get("results"):
+                    md_path = emit_enrichment_markdown(slug, result["results"], str(latest_dir))
+                    enrichment_md = Path(md_path)
+            except Exception:
+                continue
+
+        if not enrichment_md.exists():
+            continue
+
+        try:
+            excerpt = enrichment_md.read_text(encoding="utf-8")[:5000].strip()
+        except Exception:
+            continue
+        if not excerpt:
+            continue
+        title = str(row.get("title") or f"Material {row.get('id')}")
+        blocks.append(f"### {title}\n{excerpt}")
+
+    if not blocks:
+        return ""
+    return "\n\n".join(blocks)
+
+
 def _auto_link_materials_to_courses(conn: sqlite3.Connection) -> dict:
     """Match unlinked rag_docs materials to courses by folder_path → course name."""
     conn.row_factory = sqlite3.Row
@@ -3365,6 +3462,7 @@ def send_turn(session_id: str):
     _obsidian_on  = bool(_mode.get("obsidian",  not _mode_provided))
     _web_search_on = bool(_mode.get("web_search", not _mode_provided))
     _deep_think_on = bool(_mode.get("deep_think", False))
+    _gemini_vision_on = bool(_mode.get("gemini_vision", False))
 
     # Note: codex_model (from content_filter.model) takes full precedence over the
     # mode-based tier selection. An explicit model override beats the toggle logic.
@@ -3446,6 +3544,15 @@ def send_turn(session_id: str):
                     "Use this prior-session context for continuity and objective alignment.\n\n"
                     f"{notes_context_text}"
                 )
+
+            if _gemini_vision_on and material_ids:
+                gemini_video_context = _build_gemini_vision_context(material_ids)
+                if gemini_video_context:
+                    material_text = (
+                        f"{material_text}\n\n## Gemini Video Vision Context\n"
+                        "Use this to strengthen chart/image-heavy explanations from lecture videos.\n\n"
+                        f"{gemini_video_context}"
+                    )
 
             # Open a dedicated connection for adaptive features inside the
             # generator — the outer `conn` was closed before generate() runs.

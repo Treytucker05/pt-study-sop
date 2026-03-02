@@ -250,7 +250,7 @@ def enrich_video(
         model_pref = str(cfg.get("model_preference") or "flash")
         models = cfg.get("models") or {}
         model_cfg = models.get(model_pref) or models.get("flash") or {}
-        model_name = str(model_cfg.get("name") or "gemini-2.5-flash")
+        model_name = str(model_cfg.get("name") or "gemini-3-flash-preview")
         cost_per_1m = float(model_cfg.get("input_cost_per_1m_tokens", 0.10))
 
         # Upload video once

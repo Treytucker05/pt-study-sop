@@ -860,8 +860,6 @@ export default function Tutor() {
                       setCustomBlockIds={setCustomBlockIds}
                       objectiveScope={objectiveScope}
                       setObjectiveScope={setObjectiveScope}
-                      vaultFolder={vaultFolder}
-                      setVaultFolder={setVaultFolder}
                       onStartSession={startSession}
                       isStarting={isStarting}
                       recentSessions={recentSessions}

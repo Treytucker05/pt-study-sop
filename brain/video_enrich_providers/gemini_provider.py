@@ -75,7 +75,7 @@ def query_timestamp_range(
     end_ts: str,
     prompt: str,
     *,
-    model: str = "gemini-2.5-flash",
+    model: str = "gemini-3-flash-preview",
 ) -> dict[str, Any]:
     """Query a specific timestamp range of an uploaded video.
 
@@ -117,7 +117,7 @@ def enrich_segments(
     video_file: Any,
     flagged_segments: list[dict[str, Any]],
     *,
-    model: str = "gemini-2.5-flash",
+    model: str = "gemini-3-flash-preview",
     base_prompt: str = "Describe the content shown in this section of the lecture.",
 ) -> list[dict[str, Any]]:
     """Enrich a batch of flagged segments via Gemini.
