@@ -5,17 +5,22 @@ Requires:
 - Obsidian running (CLI uses IPC)
 - ``obsidian`` command on PATH
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import subprocess
+import time
 from typing import Any
 
 log = logging.getLogger(__name__)
 
 _DEFAULT_TIMEOUT = 10
 _EVAL_TIMEOUT = 15
+_RETRY_MAX_ATTEMPTS = 3
+_RETRY_BACKOFF_DELAYS = [1, 2]  # seconds between retries
+_AVAILABILITY_CACHE_TTL = 30  # seconds
 
 
 class ObsidianVault:
@@ -23,6 +28,8 @@ class ObsidianVault:
 
     def __init__(self, vault_name: str = "Treys School") -> None:
         self.vault_name = vault_name
+        self._available_cached: bool | None = None
+        self._available_at: float = 0
 
     # -- Internal ---------------------------------------------------------
 
@@ -33,39 +40,68 @@ class ObsidianVault:
         timeout: int = _DEFAULT_TIMEOUT,
         parse_json: bool = False,
     ) -> Any:
-        """Execute an obsidian CLI command and return stdout."""
+        """Execute an obsidian CLI command and return stdout.
+
+        Retries up to 3 times total on TimeoutExpired or non-zero exit code,
+        with backoff delays of 1s and 2s between retries.
+        """
         cmd = ["obsidian", f'vault="{self.vault_name}"'] + args
-        try:
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-            )
-            if proc.returncode != 0:
+
+        for attempt in range(_RETRY_MAX_ATTEMPTS):
+            try:
+                proc = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                )
+                if proc.returncode != 0:
+                    if attempt < _RETRY_MAX_ATTEMPTS - 1:
+                        delay = _RETRY_BACKOFF_DELAYS[attempt]
+                        log.debug(
+                            "obsidian CLI error (exit %d), retrying in %ds: %s",
+                            proc.returncode,
+                            delay,
+                            proc.stderr.strip(),
+                        )
+                        time.sleep(delay)
+                        continue
+                    log.warning(
+                        "obsidian CLI error (exit %d) after %d attempts: %s",
+                        proc.returncode,
+                        _RETRY_MAX_ATTEMPTS,
+                        proc.stderr.strip(),
+                    )
+                    return [] if parse_json else ""
+                output = proc.stdout.strip()
+                if parse_json:
+                    return json.loads(output) if output else []
+                return output
+            except subprocess.TimeoutExpired:
+                if attempt < _RETRY_MAX_ATTEMPTS - 1:
+                    delay = _RETRY_BACKOFF_DELAYS[attempt]
+                    log.debug(
+                        "obsidian CLI timed out, retrying in %ds: %s",
+                        delay,
+                        " ".join(args[:2]),
+                    )
+                    time.sleep(delay)
+                    continue
                 log.warning(
-                    "obsidian CLI error (exit %d): %s",
-                    proc.returncode,
-                    proc.stderr.strip(),
+                    "obsidian CLI timed out after %d attempts (timeout=%ds): %s",
+                    _RETRY_MAX_ATTEMPTS,
+                    timeout,
+                    " ".join(args[:2]),
                 )
                 return [] if parse_json else ""
-            output = proc.stdout.strip()
-            if parse_json:
-                return json.loads(output) if output else []
-            return output
-        except subprocess.TimeoutExpired:
-            log.warning(
-                "obsidian CLI timed out after %ds: %s",
-                timeout,
-                " ".join(args[:2]),
-            )
-            return [] if parse_json else ""
-        except FileNotFoundError:
-            log.warning("obsidian CLI not found on PATH")
-            return [] if parse_json else ""
-        except json.JSONDecodeError as exc:
-            log.warning("obsidian CLI JSON parse error: %s", exc)
-            return [] if parse_json else ""
+            except FileNotFoundError:
+                log.warning("obsidian CLI not found on PATH")
+                return [] if parse_json else ""
+            except json.JSONDecodeError as exc:
+                log.warning("obsidian CLI JSON parse error: %s", exc)
+                return [] if parse_json else ""
+
+        return [] if parse_json else ""
 
     def _eval(self, code: str, *, timeout: int = _EVAL_TIMEOUT) -> str:
         """Execute JavaScript in the Obsidian app context via ``obsidian eval``."""
@@ -74,7 +110,17 @@ class ObsidianVault:
     # -- Health -----------------------------------------------------------
 
     def is_available(self) -> bool:
-        """Check if Obsidian CLI is reachable."""
+        """Check if Obsidian CLI is reachable.
+
+        Result is cached for 30 seconds to avoid repeated subprocess calls.
+        """
+        now = time.time()
+        if (
+            self._available_cached is not None
+            and (now - self._available_at) < _AVAILABILITY_CACHE_TTL
+        ):
+            return self._available_cached
+
         try:
             proc = subprocess.run(
                 ["obsidian", "version"],
@@ -82,9 +128,13 @@ class ObsidianVault:
                 text=True,
                 timeout=5,
             )
-            return proc.returncode == 0
+            result = proc.returncode == 0
         except (FileNotFoundError, subprocess.TimeoutExpired):
-            return False
+            result = False
+
+        self._available_cached = result
+        self._available_at = now
+        return result
 
     def get_version(self) -> str:
         """Return Obsidian version string."""
@@ -127,7 +177,9 @@ class ObsidianVault:
 
     def replace_content(self, file: str, new_content: str) -> str:
         """Replace entire file content via eval."""
-        escaped = new_content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        escaped = (
+            new_content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        )
         code = (
             f'const f = app.vault.getAbstractFileByPath("{file}");'
             f'if (f) await app.vault.modify(f, "{escaped}");'
@@ -168,7 +220,9 @@ class ObsidianVault:
 
     def get_backlinks(self, file: str) -> list[dict]:
         """Get files that link to this note."""
-        return self._run(["backlinks", f'file="{file}"', "format=json"], parse_json=True)
+        return self._run(
+            ["backlinks", f'file="{file}"', "format=json"], parse_json=True
+        )
 
     def get_links(self, file: str) -> list[dict]:
         """Get outgoing links from this note."""
@@ -184,13 +238,17 @@ class ObsidianVault:
 
     def get_tags(self, *, sort: str = "count") -> list[dict]:
         """List all tags in the vault."""
-        return self._run(["tags", f"sort={sort}", "counts", "format=json"], parse_json=True)
+        return self._run(
+            ["tags", f"sort={sort}", "counts", "format=json"], parse_json=True
+        )
 
     # ── Surgical Edit ───────────────────────────────────────
 
     def set_property(self, file: str, key: str, value: str) -> str:
         """Set a frontmatter property on a note."""
-        return self._run(["property:set", f'name="{key}"', f'value="{value}"', f'file="{file}"'])
+        return self._run(
+            ["property:set", f'name="{key}"', f'value="{value}"', f'file="{file}"']
+        )
 
     def remove_property(self, file: str, key: str) -> str:
         """Remove a frontmatter property from a note."""
@@ -198,31 +256,33 @@ class ObsidianVault:
 
     def replace_section(self, file: str, heading: str, content: str) -> str:
         """Replace content under a heading using vault.process() via eval."""
-        escaped_content = content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        escaped_content = (
+            content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        )
         escaped_heading = heading.replace('"', '\\"')
         level = heading.count("#")
         heading_text = heading.lstrip("# ").strip()
         code = (
             f'const f = app.vault.getFileByPath("{file}");'
             f'if (!f) throw new Error("File not found: {file}");'
-            f'const cache = app.metadataCache.getFileCache(f);'
-            f'const headings = cache?.headings || [];'
-            f'let startIdx = -1; let endIdx = -1;'
-            f'for (let i = 0; i < headings.length; i++) {{'
+            f"const cache = app.metadataCache.getFileCache(f);"
+            f"const headings = cache?.headings || [];"
+            f"let startIdx = -1; let endIdx = -1;"
+            f"for (let i = 0; i < headings.length; i++) {{"
             f'  if (headings[i].heading === "{heading_text}" && headings[i].level === {level}) {{'
-            f'    startIdx = headings[i].position.end.offset + 1;'
-            f'    for (let j = i + 1; j < headings.length; j++) {{'
-            f'      if (headings[j].level <= {level}) {{ endIdx = headings[j].position.start.offset; break; }}'
-            f'    }}'
-            f'    break;'
-            f'  }}'
-            f'}}'
+            f"    startIdx = headings[i].position.end.offset + 1;"
+            f"    for (let j = i + 1; j < headings.length; j++) {{"
+            f"      if (headings[j].level <= {level}) {{ endIdx = headings[j].position.start.offset; break; }}"
+            f"    }}"
+            f"    break;"
+            f"  }}"
+            f"}}"
             f'if (startIdx === -1) throw new Error("Heading not found");'
-            f'await app.vault.process(f, (data) => {{'
-            f'  const before = data.substring(0, startIdx);'
+            f"await app.vault.process(f, (data) => {{"
+            f"  const before = data.substring(0, startIdx);"
             f'  const after = endIdx === -1 ? "" : data.substring(endIdx);'
             f'  return before + "\\n{escaped_content}\\n" + after;'
-            f'}});'
+            f"}});"
         )
         return self._eval(code)
 
@@ -255,8 +315,8 @@ class ObsidianVault:
         """Get the heading structure of a file via metadataCache."""
         code = (
             f'const f = app.vault.getFileByPath("{file}");'
-            f'const cache = f ? app.metadataCache.getFileCache(f) : null;'
-            f'JSON.stringify(cache?.headings || []);'
+            f"const cache = f ? app.metadataCache.getFileCache(f) : null;"
+            f"JSON.stringify(cache?.headings || []);"
         )
         result = self._eval(code)
         try:

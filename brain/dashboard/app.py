@@ -102,4 +102,16 @@ def create_app():
     def inject_cache_buster():
         return dict(cache_bust=int(time.time()))
 
+    # Check Obsidian CLI availability on startup (warning only, don't block)
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault()
+    if not vault.is_available():
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "Obsidian CLI not available on startup. "
+            "Vault operations will fail. Ensure Obsidian is running and 'obsidian' is on PATH."
+        )
+
     return app

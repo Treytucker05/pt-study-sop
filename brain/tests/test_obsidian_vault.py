@@ -1,4 +1,5 @@
 """Tests for ObsidianVault CLI wrapper."""
+
 from unittest.mock import patch, MagicMock
 import subprocess
 import json
@@ -6,11 +7,10 @@ import json
 
 def test_run_calls_subprocess_with_correct_args():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(
-            returncode=0, stdout="output", stderr=""
-        )
+        mock_run.return_value = MagicMock(returncode=0, stdout="output", stderr="")
         result = vault._run(["search", 'query="test"'])
         args = mock_run.call_args[0][0]
         assert args[0] == "obsidian"
@@ -20,17 +20,17 @@ def test_run_calls_subprocess_with_correct_args():
 
 def test_run_returns_empty_string_on_nonzero_exit():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(
-            returncode=1, stdout="", stderr="error"
-        )
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error")
         result = vault._run(["read", 'file="Missing"'])
         assert result == ""
 
 
 def test_run_returns_empty_string_on_timeout():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.side_effect = subprocess.TimeoutExpired(cmd="obsidian", timeout=10)
@@ -40,6 +40,7 @@ def test_run_returns_empty_string_on_timeout():
 
 def test_run_json_parses_when_requested():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     payload = [{"path": "note.md", "name": "note"}]
     with patch("obsidian_vault.subprocess.run") as mock_run:
@@ -52,11 +53,10 @@ def test_run_json_parses_when_requested():
 
 def test_eval_wraps_code_in_obsidian_eval():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(
-            returncode=0, stdout="42", stderr=""
-        )
+        mock_run.return_value = MagicMock(returncode=0, stdout="42", stderr="")
         result = vault._eval("app.vault.getFiles().length")
         args = mock_run.call_args[0][0]
         assert "eval" in args
@@ -65,6 +65,7 @@ def test_eval_wraps_code_in_obsidian_eval():
 
 def test_is_available_returns_true_on_success():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="1.12.4", stderr="")
@@ -73,6 +74,7 @@ def test_is_available_returns_true_on_success():
 
 def test_is_available_returns_false_on_failure():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.side_effect = FileNotFoundError("obsidian not found")
@@ -81,10 +83,13 @@ def test_is_available_returns_false_on_failure():
 
 def test_create_note_calls_cli_with_correct_args():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
-        vault.create_note(name="Test Note", folder="Course/Module", template="Study Session")
+        vault.create_note(
+            name="Test Note", folder="Course/Module", template="Study Session"
+        )
         args = mock_run.call_args[0][0]
         assert "create" in args
         assert 'name="Test Note"' in args
@@ -94,6 +99,7 @@ def test_create_note_calls_cli_with_correct_args():
 
 def test_create_note_with_content():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -104,15 +110,19 @@ def test_create_note_with_content():
 
 def test_read_note_returns_content():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0, stdout="# Note\nContent here", stderr="")
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout="# Note\nContent here", stderr=""
+        )
         result = vault.read_note("My Note")
         assert "Content here" in result
 
 
 def test_read_note_returns_empty_on_missing():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="not found")
@@ -122,6 +132,7 @@ def test_read_note_returns_empty_on_missing():
 
 def test_append_note_calls_cli():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -133,6 +144,7 @@ def test_append_note_calls_cli():
 
 def test_prepend_note_calls_cli():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -143,6 +155,7 @@ def test_prepend_note_calls_cli():
 
 def test_delete_note_calls_cli():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -154,6 +167,7 @@ def test_delete_note_calls_cli():
 
 def test_delete_note_permanent_flag():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -164,6 +178,7 @@ def test_delete_note_permanent_flag():
 
 def test_search_returns_list():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     results = [{"path": "note.md", "score": 0.9}]
     with patch("obsidian_vault.subprocess.run") as mock_run:
@@ -175,11 +190,12 @@ def test_search_returns_list():
         args = mock_run.call_args[0][0]
         assert "search" in args
         assert 'query="test query"' in args
-        assert 'limit=5' in args
+        assert "limit=5" in args
 
 
 def test_search_returns_empty_on_error():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error")
@@ -189,6 +205,7 @@ def test_search_returns_empty_on_error():
 
 def test_list_files_returns_json():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     files = [{"path": "a.md"}, {"path": "b.md"}]
     with patch("obsidian_vault.subprocess.run") as mock_run:
@@ -201,6 +218,7 @@ def test_list_files_returns_json():
 
 def test_list_folders_returns_json():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     folders = [{"path": "Course A"}, {"path": "Course B"}]
     with patch("obsidian_vault.subprocess.run") as mock_run:
@@ -213,6 +231,7 @@ def test_list_folders_returns_json():
 
 def test_get_backlinks_returns_json():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     links = [{"path": "other.md"}]
     with patch("obsidian_vault.subprocess.run") as mock_run:
@@ -227,6 +246,7 @@ def test_get_backlinks_returns_json():
 
 def test_get_tags_returns_json():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     tags = [{"tag": "#study", "count": 5}]
     with patch("obsidian_vault.subprocess.run") as mock_run:
@@ -239,6 +259,7 @@ def test_get_tags_returns_json():
 
 def test_set_property_calls_cli():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -251,6 +272,7 @@ def test_set_property_calls_cli():
 
 def test_remove_property_calls_cli():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -261,6 +283,7 @@ def test_remove_property_calls_cli():
 
 def test_move_note_calls_cli():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -273,6 +296,7 @@ def test_move_note_calls_cli():
 
 def test_create_folder_uses_eval():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
@@ -284,10 +308,123 @@ def test_create_folder_uses_eval():
 
 def test_replace_section_uses_eval_with_process():
     from obsidian_vault import ObsidianVault
+
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
-        vault.replace_section("My Note", "## Learning Objectives", "- [ ] LO1\n- [ ] LO2")
+        vault.replace_section(
+            "My Note", "## Learning Objectives", "- [ ] LO1\n- [ ] LO2"
+        )
         args = mock_run.call_args[0][0]
         assert "eval" in args
         assert any("process" in str(a) for a in args)
+
+
+def test_run_retries_on_timeout():
+    """Test that _run() retries on TimeoutExpired."""
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        with patch("obsidian_vault.time.sleep") as mock_sleep:
+            mock_run.side_effect = [
+                subprocess.TimeoutExpired(cmd="obsidian", timeout=10),
+                subprocess.TimeoutExpired(cmd="obsidian", timeout=10),
+                MagicMock(returncode=0, stdout="success", stderr=""),
+            ]
+            result = vault._run(["search", 'query="test"'])
+            assert result == "success"
+            assert mock_run.call_count == 3
+            assert mock_sleep.call_count == 2
+            mock_sleep.assert_any_call(1)
+            mock_sleep.assert_any_call(2)
+
+
+def test_run_retries_on_nonzero_exit():
+    """Test that _run() retries on non-zero exit code."""
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        with patch("obsidian_vault.time.sleep") as mock_sleep:
+            mock_run.side_effect = [
+                MagicMock(returncode=1, stdout="", stderr="error 1"),
+                MagicMock(returncode=1, stdout="", stderr="error 2"),
+                MagicMock(returncode=0, stdout="success", stderr=""),
+            ]
+            result = vault._run(["read", 'file="test"'])
+            assert result == "success"
+            assert mock_run.call_count == 3
+            assert mock_sleep.call_count == 2
+
+
+def test_run_exhausts_retries_and_returns_empty():
+    """Test that _run() returns empty after all retries exhausted."""
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        with patch("obsidian_vault.time.sleep") as mock_sleep:
+            mock_run.side_effect = subprocess.TimeoutExpired(cmd="obsidian", timeout=10)
+            result = vault._run(["search", 'query="test"'])
+            assert result == ""
+            assert mock_run.call_count == 3
+            assert mock_sleep.call_count == 2
+
+
+def test_run_exhausts_retries_json_returns_empty_list():
+    """Test that _run() returns empty list after retries when parse_json=True."""
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        with patch("obsidian_vault.time.sleep"):
+            mock_run.side_effect = subprocess.TimeoutExpired(cmd="obsidian", timeout=10)
+            result = vault._run(["files"], parse_json=True)
+            assert result == []
+            assert mock_run.call_count == 3
+
+
+def test_is_available_caches_result():
+    """Test that is_available() caches result for 30 seconds."""
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        with patch("obsidian_vault.time.time") as mock_time:
+            mock_time.return_value = 1000.0
+            mock_run.return_value = MagicMock(returncode=0, stdout="1.12.4", stderr="")
+
+            result1 = vault.is_available()
+            assert result1 is True
+            assert mock_run.call_count == 1
+
+            mock_time.return_value = 1010.0
+            result2 = vault.is_available()
+            assert result2 is True
+            assert mock_run.call_count == 1
+
+            mock_time.return_value = 1031.0
+            result3 = vault.is_available()
+            assert result3 is True
+            assert mock_run.call_count == 2
+
+
+def test_is_available_cache_expires_after_ttl():
+    """Test that is_available() cache expires after 30 seconds."""
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        with patch("obsidian_vault.time.time") as mock_time:
+            mock_time.return_value = 1000.0
+            mock_run.return_value = MagicMock(returncode=0, stdout="1.12.4", stderr="")
+
+            result1 = vault.is_available()
+            assert result1 is True
+            assert mock_run.call_count == 1
+
+            mock_time.return_value = 1030.5
+            result2 = vault.is_available()
+            assert result2 is True
+            assert mock_run.call_count == 2
