@@ -140,3 +140,48 @@ class ObsidianVault:
         if permanent:
             args.append("permanent")
         return self._run(args)
+
+    # ── Search & Discovery ──────────────────────────────────
+
+    def search(self, query: str, *, limit: int = 10) -> list[dict]:
+        """Full-text search via Obsidian's index."""
+        return self._run(
+            ["search", f'query="{query}"', f"limit={limit}", "format=json"],
+            parse_json=True,
+        )
+
+    def list_files(self, folder: str = "", *, format: str = "json") -> list[dict]:
+        """List files in the vault or a specific folder."""
+        args = ["files", f"format={format}"]
+        if folder:
+            args.append(f'path="{folder}"')
+        return self._run(args, parse_json=True)
+
+    def list_folders(self) -> list[dict]:
+        """List all folders in the vault."""
+        return self._run(["folders", "format=json"], parse_json=True)
+
+    def get_file_info(self, file: str) -> dict:
+        """Get metadata for a single file."""
+        result = self._run(["file", f'file="{file}"', "format=json"], parse_json=True)
+        return result if isinstance(result, dict) else {}
+
+    def get_backlinks(self, file: str) -> list[dict]:
+        """Get files that link to this note."""
+        return self._run(["backlinks", f'file="{file}"', "format=json"], parse_json=True)
+
+    def get_links(self, file: str) -> list[dict]:
+        """Get outgoing links from this note."""
+        return self._run(["links", f'file="{file}"', "format=json"], parse_json=True)
+
+    def get_orphans(self) -> list[dict]:
+        """Find notes with no incoming links."""
+        return self._run(["orphans", "format=json"], parse_json=True)
+
+    def get_unresolved(self) -> list[dict]:
+        """Find broken/unresolved links."""
+        return self._run(["unresolved", "format=json"], parse_json=True)
+
+    def get_tags(self, *, sort: str = "count") -> list[dict]:
+        """List all tags in the vault."""
+        return self._run(["tags", f"sort={sort}", "counts", "format=json"], parse_json=True)

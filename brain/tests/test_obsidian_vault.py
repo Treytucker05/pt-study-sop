@@ -160,3 +160,78 @@ def test_delete_note_permanent_flag():
         vault.delete_note("old/note.md", permanent=True)
         args = mock_run.call_args[0][0]
         assert "permanent" in args
+
+
+def test_search_returns_list():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    results = [{"path": "note.md", "score": 0.9}]
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=json.dumps(results), stderr=""
+        )
+        result = vault.search("test query", limit=5)
+        assert result == results
+        args = mock_run.call_args[0][0]
+        assert "search" in args
+        assert 'query="test query"' in args
+        assert 'limit=5' in args
+
+
+def test_search_returns_empty_on_error():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error")
+        result = vault.search("test")
+        assert result == []
+
+
+def test_list_files_returns_json():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    files = [{"path": "a.md"}, {"path": "b.md"}]
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=json.dumps(files), stderr=""
+        )
+        result = vault.list_files()
+        assert len(result) == 2
+
+
+def test_list_folders_returns_json():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    folders = [{"path": "Course A"}, {"path": "Course B"}]
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=json.dumps(folders), stderr=""
+        )
+        result = vault.list_folders()
+        assert len(result) == 2
+
+
+def test_get_backlinks_returns_json():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    links = [{"path": "other.md"}]
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=json.dumps(links), stderr=""
+        )
+        result = vault.get_backlinks("My Note")
+        assert result == links
+        args = mock_run.call_args[0][0]
+        assert "backlinks" in args
+
+
+def test_get_tags_returns_json():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    tags = [{"tag": "#study", "count": 5}]
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout=json.dumps(tags), stderr=""
+        )
+        result = vault.get_tags()
+        assert result == tags
