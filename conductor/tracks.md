@@ -4,13 +4,13 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: **tutor-audit-remediation_20260302** — P0/P1 bug fixes from tutor audit.
+Active status: No active workstream. All tracks complete.
 
-Latest update: 2026-03-02 New track opened for P0/P1 remediation (save-wrap URL, summary contract, artifact type mapping).
+Latest update: 2026-03-02 Tutor audit remediation (P0/P1) complete — save-wrap URL, summary contract, chain progress shape, artifact type mapping. Commit 93bcfef5.
 
 ---
 
-- [ ] **Track: Tutor Audit Remediation (P0/P1)** (pending — created 2026-03-02)
+- [x] **Track: Tutor Audit Remediation (P0/P1)** (complete — created 2026-03-02; closed 2026-03-02; 10 tasks, 10 tests)
   Fix save-wrap URL, session summary contract, chain progress shape, artifact type mapping.
   *Link: [./tracks/tutor-audit-remediation_20260302/](./tracks/tutor-audit-remediation_20260302/)*
 
