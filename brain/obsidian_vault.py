@@ -89,3 +89,54 @@ class ObsidianVault:
     def get_version(self) -> str:
         """Return Obsidian version string."""
         return self._run(["version"], timeout=5)
+
+    # ── CRUD ────────────────────────────────────────────────
+
+    def create_note(
+        self,
+        name: str,
+        *,
+        content: str = "",
+        folder: str = "",
+        template: str = "",
+        silent: bool = True,
+    ) -> str:
+        """Create a new note. Returns CLI output."""
+        args = ["create", f'name="{name}"']
+        if content:
+            args.append(f'content="{content}"')
+        if folder:
+            args.append(f'path="{folder}/{name}.md"')
+        if template:
+            args.append(f'template="{template}"')
+        if silent:
+            args.append("silent")
+        return self._run(args)
+
+    def read_note(self, file: str) -> str:
+        """Read a note's content. Resolves like a wikilink."""
+        return self._run(["read", f'file="{file}"'])
+
+    def append_note(self, file: str, content: str) -> str:
+        """Append content to end of a note."""
+        return self._run(["append", f'file="{file}"', f'content="{content}"'])
+
+    def prepend_note(self, file: str, content: str) -> str:
+        """Prepend content after frontmatter."""
+        return self._run(["prepend", f'file="{file}"', f'content="{content}"'])
+
+    def replace_content(self, file: str, new_content: str) -> str:
+        """Replace entire file content via eval."""
+        escaped = new_content.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        code = (
+            f'const f = app.vault.getAbstractFileByPath("{file}");'
+            f'if (f) await app.vault.modify(f, "{escaped}");'
+        )
+        return self._eval(code)
+
+    def delete_note(self, path: str, *, permanent: bool = False) -> str:
+        """Delete a note. Uses trash unless permanent=True."""
+        args = ["delete", f'path="{path}"']
+        if permanent:
+            args.append("permanent")
+        return self._run(args)

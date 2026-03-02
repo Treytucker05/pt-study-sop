@@ -77,3 +77,86 @@ def test_is_available_returns_false_on_failure():
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.side_effect = FileNotFoundError("obsidian not found")
         assert vault.is_available() is False
+
+
+def test_create_note_calls_cli_with_correct_args():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.create_note(name="Test Note", folder="Course/Module", template="Study Session")
+        args = mock_run.call_args[0][0]
+        assert "create" in args
+        assert 'name="Test Note"' in args
+        assert 'template="Study Session"' in args
+        assert "silent" in args
+
+
+def test_create_note_with_content():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.create_note(name="Test", content="# Hello")
+        args = mock_run.call_args[0][0]
+        assert any("# Hello" in str(a) for a in args)
+
+
+def test_read_note_returns_content():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="# Note\nContent here", stderr="")
+        result = vault.read_note("My Note")
+        assert "Content here" in result
+
+
+def test_read_note_returns_empty_on_missing():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="not found")
+        result = vault.read_note("Missing")
+        assert result == ""
+
+
+def test_append_note_calls_cli():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.append_note("My Note", "New content")
+        args = mock_run.call_args[0][0]
+        assert "append" in args
+        assert 'file="My Note"' in args
+
+
+def test_prepend_note_calls_cli():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.prepend_note("My Note", "Top content")
+        args = mock_run.call_args[0][0]
+        assert "prepend" in args
+
+
+def test_delete_note_calls_cli():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.delete_note("old/note.md")
+        args = mock_run.call_args[0][0]
+        assert "delete" in args
+        assert 'path="old/note.md"' in args
+
+
+def test_delete_note_permanent_flag():
+    from obsidian_vault import ObsidianVault
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        vault.delete_note("old/note.md", permanent=True)
+        args = mock_run.call_args[0][0]
+        assert "permanent" in args
