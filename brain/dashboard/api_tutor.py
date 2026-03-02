@@ -70,6 +70,7 @@ from tutor_accuracy_profiles import (
     resolve_instruction_retrieval_k as _resolve_instruction_k_for_profile,
     resolve_material_retrieval_k as _resolve_material_k_for_profile,
 )
+from tutor_prompt_builder import DEFAULT_RULES as _PROMPT_BUILDER_DEFAULT_RULES
 import llm_provider as _llm_provider
 
 tutor_bp = Blueprint("tutor", __name__, url_prefix="/api/tutor")
@@ -411,6 +412,16 @@ def _normalize_objective_scope(raw_scope: Any) -> str:
     if scope in {"module_all", "single_focus"}:
         return scope
     return "module_all"
+
+
+def _normalize_session_rules(raw_rules: Any, *, max_chars: int = 4000) -> str:
+    """Normalize per-session instruction overrides and cap prompt bloat."""
+    if raw_rules is None:
+        return ""
+    text = str(raw_rules).strip()
+    if len(text) > max_chars:
+        text = text[:max_chars].rstrip()
+    return text
 
 
 def _normalize_session_mode(raw_mode: Any) -> str:
@@ -2830,6 +2841,9 @@ def create_session():
     content_filter["objective_scope"] = _normalize_objective_scope(
         content_filter.get("objective_scope") or objective_scope
     )
+    content_filter["session_rules"] = _normalize_session_rules(
+        content_filter.get("session_rules")
+    )
     if "material_ids" in content_filter:
         content_filter["material_ids"] = (
             _normalize_material_ids(content_filter.get("material_ids")) or []
@@ -3303,6 +3317,9 @@ def send_turn(session_id: str):
     content_filter["follow_up_targets"] = follow_up_targets
     content_filter["enforce_reference_bounds"] = enforce_reference_bounds
     content_filter["objective_scope"] = objective_scope
+    content_filter["session_rules"] = _normalize_session_rules(
+        content_filter.get("session_rules")
+    )
     if focus_objective_id:
         content_filter["focus_objective_id"] = _strip_wikilink(focus_objective_id)
     if module_prefix:
@@ -3455,6 +3472,12 @@ def send_turn(session_id: str):
                 graph_context=graph_context_text,
                 course_map=ctx.get("course_map", ""),
             )
+            session_rules = _normalize_session_rules(content_filter.get("session_rules"))
+            if session_rules:
+                system_prompt += (
+                    "\n\n## Session Rules (Current Session Only)\n"
+                    f"{session_rules}"
+                )
             system_prompt += (
                 "\n\n## Retrieval Tuning\n"
                 f"{_accuracy_profile_prompt_guidance(effective_accuracy_profile)}"
@@ -4046,6 +4069,32 @@ def send_turn(session_id: str):
                             }
                         )
                 artifact_payload = [artifact_cmd] if artifact_cmd else None
+
+                # --- Vault artifact processing ---
+                # Parse :::vault:*::: blocks from LLM output, execute against
+                # Obsidian, and strip the blocks so the user sees clean prose.
+                vault_artifact_results: list[dict] | None = None
+                try:
+                    from vault_artifact_parser import parse_vault_artifacts, strip_vault_artifacts
+                    from vault_artifact_router import execute_all_artifacts
+                    from obsidian_vault import ObsidianVault
+
+                    vault_artifacts = parse_vault_artifacts(full_response)
+                    if vault_artifacts:
+                        vault = ObsidianVault()
+                        vault_artifact_results = execute_all_artifacts(vault, vault_artifacts)
+                        _LOG.info(
+                            "Vault artifacts executed session=%s results=%s",
+                            session_id,
+                            json.dumps(vault_artifact_results, default=str),
+                        )
+                        full_response = strip_vault_artifacts(full_response)
+                        if artifact_payload is None:
+                            artifact_payload = []
+                        artifact_payload.append({"vault_artifacts": vault_artifact_results})
+                except Exception as _vault_exc:
+                    _LOG.warning("Vault artifact processing failed: %s", _vault_exc)
+
                 retrieval_debug_payload = _attach_profile_debug(_build_retrieval_debug_payload(
                     accuracy_profile=effective_accuracy_profile,
                     material_ids=material_ids,
@@ -6399,17 +6448,7 @@ def enrich_video_material():
 
 # ── Tutor Settings (custom instructions) ─────────────────────────────────
 
-_DEFAULT_CUSTOM_INSTRUCTIONS = (
-    '1. **Source-Lock**: Always check Retrieved Study Materials first. '
-    'If you answer from training knowledge instead, mark it as '
-    '[From training knowledge — verify with your textbooks]. '
-    'Cite materials using [Source: filename].\n'
-    '2. **Define Abbreviations**: On first use of any abbreviation, '
-    'spell it out — e.g., ACL (Anterior Cruciate Ligament), BP (Blood Pressure).\n'
-    '3. **Be Interactive**: Keep replies short (≤2 paragraphs or ≤6 bullets). '
-    'Work through ONE small step at a time. Always end with a question or '
-    'next action for the student.'
-)
+_DEFAULT_CUSTOM_INSTRUCTIONS = _PROMPT_BUILDER_DEFAULT_RULES
 
 
 @tutor_bp.route("/settings", methods=["GET"])
