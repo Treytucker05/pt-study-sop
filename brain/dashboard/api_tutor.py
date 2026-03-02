@@ -319,11 +319,18 @@ def _study_notes_base_path(*, course_label: str, module_or_week: str, subtopic: 
         safe_course = _sanitize_path_segment(course_label, fallback="General Class")
         safe_module = _sanitize_path_segment(module_or_week, fallback="General Module")
         safe_subtopic = _sanitize_path_segment(subtopic, fallback="General Topic")
+        # Skip redundant subfolder when subtopic == module (e.g. both "Week 8")
+        if safe_subtopic.lower() == safe_module.lower():
+            return f"{course_map.vault_root}/{safe_course}/{safe_module}"
         return f"{course_map.vault_root}/{safe_course}/{safe_module}/{safe_subtopic}"
 
     unit = course.resolve_unit(module_or_week)
     unit_folder = unit.name if unit else _sanitize_path_segment(module_or_week, fallback="General Module")
     topic_folder = _sanitize_path_segment(subtopic, fallback="General Topic")
+
+    # Skip redundant subfolder when subtopic == unit folder (e.g. both "Week 8")
+    if topic_folder.lower() == unit_folder.lower():
+        return f"{course_map.vault_root}/{course.label}/{unit_folder}"
 
     return f"{course_map.vault_root}/{course.label}/{unit_folder}/{topic_folder}"
 
