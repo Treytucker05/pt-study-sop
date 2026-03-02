@@ -54,13 +54,14 @@ def build_context(
         k_materials: Number of material chunks to retrieve.
 
     Returns:
-        dict with keys: materials, instructions, notes, course_map, debug
+        dict with keys: materials, instructions, notes, vault_state, course_map, debug
     """
     debug: dict[str, Any] = {"depth": depth}
     result: dict[str, Any] = {
         "materials": "",
         "instructions": "",
         "notes": "",
+        "vault_state": "",
         "course_map": _load_course_map(),
         "debug": debug,
     }
@@ -82,6 +83,10 @@ def build_context(
             query,
             module_prefix=module_prefix,
             debug=debug,
+        )
+        result["vault_state"] = _fetch_vault_state(
+            course_id=course_id,
+            topic=module_prefix or "",
         )
 
     return result
@@ -151,4 +156,34 @@ def _fetch_notes(
     except Exception as e:
         logger.warning("Notes retrieval failed: %s", e)
         debug["notes_error"] = str(e)
+        return ""
+
+
+def _fetch_vault_state(course_id: Optional[int] = None, topic: str = "") -> str:
+    """Read the _Index.md and folder tree for the current construct."""
+    try:
+        from obsidian_vault import ObsidianVault
+
+        vault = ObsidianVault()
+        if not vault.is_available():
+            return ""
+
+        # Try to find _Index.md for this topic
+        index_content = ""
+        if topic:
+            index_content = vault.read_note(f"{topic}/_Index")
+        if not index_content and course_id:
+            # Search for any _Index in this course
+            results = vault.search(f"_Index {course_id}", limit=1)
+            if results:
+                path = results[0].get("path", "")
+                if path:
+                    index_content = vault.read_note(path)
+
+        if not index_content:
+            return ""
+
+        return f"## Current Vault State\n\n{index_content}"
+    except Exception as e:
+        logger.warning("Vault state retrieval failed: %s", e)
         return ""

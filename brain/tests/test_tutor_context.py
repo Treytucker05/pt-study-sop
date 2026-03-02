@@ -109,3 +109,13 @@ def test_fetch_notes_uses_obsidian_vault():
     ), "tutor_context.py should import from obsidian_vault"
     assert "obsidian_client" not in source.lower().replace("# ", ""), \
         "tutor_context.py should not reference obsidian_client"
+
+
+def test_build_context_includes_vault_state():
+    from unittest.mock import patch
+    with patch("tutor_context._fetch_materials", return_value="materials"):
+        with patch("tutor_context._fetch_notes", return_value="notes"):
+            with patch("tutor_context._fetch_vault_state", return_value="vault state"):
+                from tutor_context import build_context
+                result = build_context("test", depth="auto", course_id=1)
+                assert "vault_state" in result
