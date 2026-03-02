@@ -13,8 +13,9 @@ import logging
 import os
 import re
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from config import DB_PATH, load_env
 
@@ -92,6 +93,7 @@ MIN_CHUNK_CHARS = 50  # filter out header-only fragments
 MAX_CONTENT_CHARS = (
     500_000  # ~125K tokens — hard cap to prevent regex hang on bloated docs
 )
+DOC_EMBED_TIMEOUT_SEC = 120  # per-doc embedding timeout in seconds
 
 
 def chunk_document(
@@ -264,11 +266,12 @@ def embed_rag_docs(
     course_id: Optional[int] = None,
     folder_path: Optional[str] = None,
     corpus: Optional[str] = None,
+    progress_callback: Optional[Callable[[int, int, str], None]] = None,
 ) -> dict:
     """
     Embed rag_docs from SQLite into ChromaDB. Tracks chunks in rag_embeddings table.
     Routes to correct collection based on corpus.
-    Returns {embedded: int, skipped: int, total_chunks: int}.
+    Returns {embedded: int, skipped: int, total_chunks: int, timed_out: int}.
     """
     conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
@@ -296,10 +299,13 @@ def embed_rag_docs(
 
     embedded = 0
     skipped = 0
+    timed_out = 0
     total_chunks = 0
 
-    for doc in docs:
-        # Skip if already embedded (check rag_embeddings)
+    for idx, doc in enumerate(docs):
+        if progress_callback:
+            progress_callback(idx, len(docs), doc["source_path"] or "unknown")
+
         cur.execute(
             "SELECT COUNT(*) FROM rag_embeddings WHERE rag_doc_id = ?",
             (doc["id"],),
@@ -315,48 +321,74 @@ def embed_rag_docs(
 
         doc_corpus = doc["corpus"] or "materials"
         collection = COLLECTION_MATERIALS
+        doc_id = doc["id"]
+        doc_source = doc["source_path"] or ""
+        doc_course_id = doc["course_id"]
+        doc_folder_path = doc["folder_path"]
 
-        chunks = chunk_document(
-            content,
-            doc["source_path"] or "",
-            course_id=doc["course_id"],
-            folder_path=doc["folder_path"],
-            rag_doc_id=doc["id"],
-            corpus=doc_corpus,
-        )
-
-        if not chunks:
-            skipped += 1
-            continue
-
-        # Add to correct ChromaDB collection
-        vs = init_vectorstore(collection)
-        ids = [f"rag-{doc['id']}-{i}" for i in range(len(chunks))]
-        _add_documents_batched(vs, chunks, ids)
-
-        # Record in rag_embeddings
-        for i, chunk in enumerate(chunks):
-            try:
-                import tiktoken
-
-                enc = tiktoken.encoding_for_model("text-embedding-3-small")
-                token_count = len(enc.encode(chunk.page_content))
-            except Exception:
-                token_count = len(chunk.page_content) // 4
-
-            cur.execute(
-                """INSERT OR IGNORE INTO rag_embeddings
-                   (rag_doc_id, chunk_index, chunk_text, chroma_id, token_count, created_at)
-                   VALUES (?, ?, ?, ?, ?, datetime('now'))""",
-                (doc["id"], i, chunk.page_content, ids[i], token_count),
+        def _embed_one(doc_row: object) -> int:
+            _chunks = chunk_document(
+                content,
+                doc_source,
+                course_id=doc_course_id,
+                folder_path=doc_folder_path,
+                rag_doc_id=doc_id,
+                corpus=doc_corpus,
             )
+            if not _chunks:
+                return 0
+            _vs = init_vectorstore(collection)
+            _ids = [f"rag-{doc_id}-{i}" for i in range(len(_chunks))]
+            _add_documents_batched(_vs, _chunks, _ids)
+            for i, chunk in enumerate(_chunks):
+                try:
+                    import tiktoken
 
-        embedded += 1
-        total_chunks += len(chunks)
+                    enc = tiktoken.encoding_for_model("text-embedding-3-small")
+                    token_count = len(enc.encode(chunk.page_content))
+                except Exception:
+                    token_count = len(chunk.page_content) // 4
+                cur.execute(
+                    """INSERT OR IGNORE INTO rag_embeddings
+                       (rag_doc_id, chunk_index, chunk_text, chroma_id, token_count, created_at)
+                       VALUES (?, ?, ?, ?, ?, datetime('now'))""",
+                    (doc_id, i, chunk.page_content, _ids[i], token_count),
+                )
+            return len(_chunks)
+
+        try:
+            with ThreadPoolExecutor(max_workers=1) as _executor:
+                _future = _executor.submit(_embed_one, doc)
+                chunk_count = _future.result(timeout=DOC_EMBED_TIMEOUT_SEC)
+            if chunk_count == 0:
+                skipped += 1
+            else:
+                total_chunks += chunk_count
+                embedded += 1
+        except FuturesTimeout:
+            logger.error(
+                "Embedding timed out after %ds for doc %d: %s",
+                DOC_EMBED_TIMEOUT_SEC,
+                doc_id,
+                doc_source,
+            )
+            cur.execute("DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,))
+            conn.commit()
+            timed_out += 1
+        except Exception as exc:
+            logger.error("Embedding failed for doc %d: %s", doc_id, str(exc))
+            cur.execute("DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,))
+            conn.commit()
+            skipped += 1
 
     conn.commit()
     conn.close()
-    return {"embedded": embedded, "skipped": skipped, "total_chunks": total_chunks}
+    return {
+        "embedded": embedded,
+        "skipped": skipped,
+        "total_chunks": total_chunks,
+        "timed_out": timed_out,
+    }
 
 
 def _doc_identity(doc: object, fallback_index: int) -> str:
