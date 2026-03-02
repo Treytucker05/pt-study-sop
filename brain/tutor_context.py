@@ -15,6 +15,59 @@ _course_map_cache: Optional[str] = None
 
 ContextDepth = Literal["auto", "none", "notes", "materials"]
 
+FULL_CONTENT_BUDGET = 200_000  # ~50K tokens — safe for 128K+ context models
+
+
+def _load_full_materials(
+    material_ids: list[int],
+    budget: int = FULL_CONTENT_BUDGET,
+    debug: dict[str, Any] | None = None,
+) -> str:
+    """Load complete content of selected materials from rag_docs.
+
+    When students select a small number of files, we bypass vector search
+    and give the LLM the full text of every file.  If total content exceeds
+    the budget, each doc is truncated proportionally so every file still
+    gets fair representation.
+    """
+    import sqlite3
+    from db_setup import DB_PATH
+
+    conn = sqlite3.connect(DB_PATH)
+    placeholders = ",".join("?" * len(material_ids))
+    rows = conn.execute(
+        f"SELECT id, source_path, content FROM rag_docs WHERE id IN ({placeholders})",
+        list(material_ids),
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        return ""
+
+    total_chars = sum(len(r[2] or "") for r in rows)
+
+    sections: list[str] = []
+    for doc_id, source_path, content in rows:
+        if not content:
+            continue
+        filename = Path(source_path).name if source_path else f"Document {doc_id}"
+        if total_chars <= budget:
+            text = content
+        else:
+            doc_budget = max(int(budget * len(content) / total_chars), 500)
+            text = content[:doc_budget] + (
+                f"\n\n[... truncated — {len(content) - doc_budget:,} chars remaining ...]"
+            )
+        sections.append(f"### {filename}\n\n{text}")
+
+    if debug is not None:
+        debug["materials_mode"] = "full_content"
+        debug["materials_count"] = len(rows)
+        debug["materials_total_chars"] = total_chars
+        debug["materials_truncated"] = total_chars > budget
+
+    return "\n\n---\n\n".join(sections)
+
 
 def _load_course_map() -> str:
     """Load vault_courses.yaml once, cache in module."""
@@ -100,7 +153,19 @@ def _fetch_materials(
     k: int = 6,
     debug: dict[str, Any],
 ) -> str:
-    """Search ChromaDB materials collection."""
+    """Retrieve study materials — full content when few files, vector search otherwise."""
+    # When explicit materials selected and count is manageable, load full content
+    if material_ids and len(material_ids) <= 10:
+        try:
+            full = _load_full_materials(
+                material_ids, debug=debug.setdefault("materials_debug", {})
+            )
+            if full:
+                return full
+        except Exception as e:
+            logger.warning("Full material load failed, falling back to vector search: %s", e)
+
+    # Fall back to vector search for large selections or when full load fails
     try:
         from tutor_rag import search_with_embeddings, COLLECTION_MATERIALS
 
