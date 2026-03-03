@@ -520,3 +520,60 @@ def test_read_property_calls_cli():
         assert "property:read" in args
         assert 'name="status"' in args
         assert 'file="My Note"' in args
+
+
+def test_run_retry_on_transient_timeout():
+    """Test that _run() retries on TimeoutExpired and succeeds on second attempt."""
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        with patch("obsidian_vault.time.sleep") as mock_sleep:
+            # First call times out, second call succeeds
+            mock_run.side_effect = [
+                subprocess.TimeoutExpired(cmd="obsidian", timeout=10),
+                MagicMock(returncode=0, stdout="success", stderr=""),
+            ]
+            result = vault._run(["search", 'query="test"'])
+            assert result == "success"
+            assert mock_run.call_count == 2
+            assert mock_sleep.call_count == 1
+            mock_sleep.assert_called_with(1)
+
+
+def test_run_retry_exhaustion_all_fail():
+    """Test that _run() returns empty string after all 3 retries fail."""
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        with patch("obsidian_vault.time.sleep") as mock_sleep:
+            # All 3 attempts fail with TimeoutExpired
+            mock_run.side_effect = subprocess.TimeoutExpired(cmd="obsidian", timeout=10)
+            result = vault._run(["search", 'query="test"'])
+            assert result == ""
+            assert mock_run.call_count == 3
+            assert mock_sleep.call_count == 2
+
+
+def test_is_available_caches_result_single_call():
+    """Test that is_available() caches result and calls subprocess only once within TTL."""
+    from obsidian_vault import ObsidianVault
+
+    vault = ObsidianVault(vault_name="Test Vault")
+    with patch("obsidian_vault.subprocess.run") as mock_run:
+        with patch("obsidian_vault.time.time") as mock_time:
+            mock_time.return_value = 1000.0
+            mock_run.return_value = MagicMock(returncode=0, stdout="1.12.4", stderr="")
+
+            # First call
+            result1 = vault.is_available()
+            assert result1 is True
+            assert mock_run.call_count == 1
+
+            # Second call within TTL (10 seconds later)
+            mock_time.return_value = 1010.0
+            result2 = vault.is_available()
+            assert result2 is True
+            # subprocess.run should still be called only once (cached)
+            assert mock_run.call_count == 1

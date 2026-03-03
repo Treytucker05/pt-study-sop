@@ -372,3 +372,59 @@ def test_something(self, MockVault):
 - `pytest brain/tests/test_path_generation.py -v` → 18 passed in 6.18s
 - No LSP errors in test file
 - No changes to production code (tests only)
+
+## [2026-03-03] T22 — LO extraction pipeline tests
+
+### Test file created
+- `brain/tests/test_lo_extraction.py` — 9 tests covering LO extraction pipeline
+- Tests verify: error handling, valid input processing, table schema validation
+
+### Test coverage
+1. **Error handling** (4 tests):
+   - Missing session_id → error
+   - Missing objectives field → error
+   - Empty objectives list → error
+   - Invalid objectives type (string instead of list) → error
+
+2. **Valid input processing** (3 tests):
+   - Valid input with 2 objectives → success
+   - Multiple objectives (5) in single call → success
+   - Missing description field → handled gracefully
+
+3. **Schema validation** (2 tests):
+   - `learning_objectives` table exists with required columns
+   - `lo_sessions` junction table exists with required columns
+
+### Key patterns
+- Use `tutor_sessions` table (not `sessions`) for tutor session creation
+- Session ID is string identifier (e.g., "test-session-1")
+- `started_at` column required (not `created_at`)
+- Function returns `{"success": True/False, "error": "..."}` dict
+
+### Test execution
+- All 9 tests pass: `pytest brain/tests/test_lo_extraction.py -v`
+- Evidence saved to `.sisyphus/evidence/task-22-lo-tests.txt`
+
+### Files modified
+- Created: `brain/tests/test_lo_extraction.py` (9 tests, 200+ lines)
+
+## [2026-03-03] T23 — Vault write status display in tutor UI
+
+### Changes
+- `api.ts`: Added `vault_write_status?: "success" | "skipped" | "failed" | "unavailable"` to `TutorBlockProgress` interface
+- `tutor.tsx`: Added vault_write_status handling in `advanceBlock` useCallback:
+  - `"success"` → `toast.success("Note saved", { duration: 2000 })`
+  - `"failed"` / `"unavailable"` → `toast.warning("Vault note failed — Obsidian may not be running", { duration: 5000 })`
+  - `"skipped"` → silent (intentional — no noise for normal skips)
+
+### Toast system
+- Library: sonner ^2.0.7 (already installed)
+- Import already present in tutor.tsx: `import { toast } from "sonner";`
+- `toast.warning()` available in sonner v2.x
+
+### Build
+- `cd dashboard_rebuild && npm run build` exits 0
+- No TypeScript errors
+- Pre-existing chunk size warnings only
+- Evidence: `.sisyphus/evidence/task-23-vault-status.txt`
+

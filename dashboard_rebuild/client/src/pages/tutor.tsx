@@ -580,6 +580,12 @@ export default function Tutor() {
       } else {
         toast.success(`Advanced to: ${result.block_name}`);
       }
+      if (result.vault_write_status === "success") {
+        toast.success("Note saved", { duration: 2000 });
+      } else if (result.vault_write_status === "failed" || result.vault_write_status === "unavailable") {
+        toast.warning("Vault note failed — Obsidian may not be running", { duration: 5000 });
+      }
+      // "skipped" → silent (no toast)
     } catch (err) {
       toast.error(`Failed to advance block: ${err instanceof Error ? err.message : "Unknown"}`);
     }

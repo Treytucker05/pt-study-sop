@@ -1372,6 +1372,7 @@ export interface TutorBlockProgress {
   facilitation_prompt?: string;
   is_last: boolean;
   complete?: boolean;
+  vault_write_status?: "success" | "skipped" | "failed" | "unavailable";
 }
 
 export interface TutorSession {
