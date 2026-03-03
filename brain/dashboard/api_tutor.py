@@ -1019,7 +1019,9 @@ def _ensure_moc_context(
         existing = _vault_read_note(map_of_contents_path)
         if existing.get("success"):
             current_content = str(existing.get("content") or "")
-            current_statuses = _parse_existing_map_of_contents_objectives(current_content)
+            current_statuses = _parse_existing_map_of_contents_objectives(
+                current_content
+            )
             needs_update = bool(force_refresh)
             for oid, st in desired_statuses.items():
                 if current_statuses.get(oid) != st:
@@ -1114,7 +1116,9 @@ def _question_within_reference_targets(
     if not q:
         return False
     # Allow broad planning/overview prompts without forcing concept-name matches.
-    if any(token in q for token in ("overview", "big picture", "map of contents", "plan")):
+    if any(
+        token in q for token in ("overview", "big picture", "map of contents", "plan")
+    ):
         return True
 
     labels = [_strip_wikilink(t).lower() for t in reference_targets if t]
@@ -1337,7 +1341,9 @@ def save_learning_objectives_from_tool(
 
         map_of_contents = content_filter.get("map_of_contents") or {}
         module_id = content_filter.get("module_id")
-        module_name = map_of_contents.get("module_name") or content_filter.get("module_name")
+        module_name = map_of_contents.get("module_name") or content_filter.get(
+            "module_name"
+        )
         topic = session_row.get("topic") or module_name or ""
         source_ids = content_filter.get("source_ids") or []
 
@@ -1788,7 +1794,9 @@ def _cascade_delete_obsidian_files(session: dict) -> list[str]:
                 if res.get("success"):
                     deleted.append(ns_path)
                 else:
-                    log.debug("cascade_delete: Map of Contents not found at %s", ns_path)
+                    log.debug(
+                        "cascade_delete: Map of Contents not found at %s", ns_path
+                    )
 
     # 2. Artifact files (session notes + concept notes)
     art_raw = session.get("artifacts_json")
@@ -3160,7 +3168,9 @@ def create_session():
         content_filter["map_of_contents_refresh"] = True
 
     if map_of_contents_ctx:
-        module_prefix = str(Path(str(map_of_contents_ctx["path"])).parent).replace("\\", "/")
+        module_prefix = str(Path(str(map_of_contents_ctx["path"])).parent).replace(
+            "\\", "/"
+        )
         content_filter["module_name"] = map_of_contents_ctx.get("module_name")
         content_filter["module_prefix"] = module_prefix
         content_filter["map_of_contents"] = {
@@ -3189,7 +3199,9 @@ def create_session():
             and not focus_objective_id
             and map_of_contents_ctx.get("objective_ids")
         ):
-            focus_objective_id = str(map_of_contents_ctx["objective_ids"][0] or "").strip()
+            focus_objective_id = str(
+                map_of_contents_ctx["objective_ids"][0] or ""
+            ).strip()
 
         if focus_objective_id:
             focus_wikilink = _wikilink(_strip_wikilink(focus_objective_id))
@@ -3867,8 +3879,11 @@ def send_turn(session_id: str):
                     f"{objective_lines}"
                 )
                 _needs_lo_save = (
-                    not _session_has_real_objectives(map_of_contents) and turn_number <= 5
-                ) or (map_of_contents.get("status") == "needs_path" and turn_number <= 8)
+                    not _session_has_real_objectives(map_of_contents)
+                    and turn_number <= 5
+                ) or (
+                    map_of_contents.get("status") == "needs_path" and turn_number <= 8
+                )
                 _is_needs_path = map_of_contents.get("status") == "needs_path"
                 if _needs_lo_save and _is_needs_path:
                     # Objectives exist in DB but Map of Contents file was deleted
@@ -4760,6 +4775,8 @@ def advance_block(session_id: str):
         # Already at last block — return current chain status
         status = _get_chain_status(conn, session_id)
         conn.close()
+        if status:
+            status["vault_write_status"] = "skipped"
         return jsonify(status or {"error": "Chain status unavailable"})
 
     now = datetime.now().isoformat()
@@ -4801,6 +4818,9 @@ def advance_block(session_id: str):
 
     status = _get_chain_status(conn, session_id)
     conn.close()
+
+    if status:
+        status["vault_write_status"] = "skipped"
 
     return jsonify(status or {"error": "Chain status unavailable"})
 
@@ -5051,7 +5071,10 @@ def end_session(session_id: str):
                 path_override=vault_folder,
             )
             if ns_result:
-                map_of_contents_refresh = {"path": ns_result.get("path"), "updated": True}
+                map_of_contents_refresh = {
+                    "path": ns_result.get("path"),
+                    "updated": True,
+                }
             elif ns_err:
                 _LOG.warning("end_session Map of Contents refresh error: %s", ns_err)
         except Exception as exc:
