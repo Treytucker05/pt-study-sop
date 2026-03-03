@@ -299,3 +299,76 @@ def test_something(self, MockVault):
 - Add PRIME-first-turn prompt directive to extract 3-7 measurable objectives and call `save_learning_objectives`.
 - Keep tool execution path unchanged: Responses API tool call → `execute_tool()` → `execute_save_learning_objectives()` → `save_learning_objectives_from_tool()`.
 - Add defensive fallback to include `save_learning_objectives` schema in PRIME-first-turn tool list if missing.
+
+## [2026-03-03] T18 — advance_block vault auto-write hook
+
+### Hook placement and fault tolerance
+- Insert vault auto-write immediately after `conn.commit()` in `advance_block()` and before `_get_chain_status(...)`.
+- Keep the last-block early return unchanged (`vault_write_status = "skipped"`).
+- Wrap the full write path in try/except so vault failures never block block advancement.
+
+### tutor_turns compatibility strategy
+- `tutor_turns` base schema uses `question`/`answer`; `role`/`content` may not exist.
+- `block_index` may be absent; `phase` is migration-based.
+- Reliable approach: inspect `PRAGMA table_info(tutor_turns)` and choose query scope in this order: `block_index` → `phase` candidates → session-level recent-turn fallback.
+
+### Vault write result contract
+- `execute_vault_artifact(...)` can return an error string without raising; treat results starting with `Error:` or `Unknown` as `failed`.
+- Expose only `success` / `skipped` / `failed` in `status["vault_write_status"]`.
+
+### Environment verification caveat
+- In this workspace state, `pytest brain/tests/ -q` is currently blocked by 5 collection-time import errors (`brain.adaptive` and `brain.selector_bridge` module resolution), so the suite does not reach the previously known single failing test.
+
+## [2026-03-03] T21 — Path generation tests
+
+### Test file created
+- `brain/tests/test_path_generation.py` — 18 tests, all passing
+- Tests cover `_study_notes_base_path()`, `_canonical_moc_path()`, and `GET /api/tutor/course-map` endpoint
+
+### Test coverage breakdown
+1. **_study_notes_base_path() — 6 tests**
+   - topic unit_type (Exercise Physiology / Topic 1 / Intro)
+   - week unit_type (Evidence-Based Practice / Week 03 / Clinical Questions)
+   - construct unit_type (Movement Science / Construct 2 / Knee Complex)
+   - module unit_type (Therapeutic Interventions / Module 2 / Exercise Types)
+   - deduplication when subtopic == unit name (Week 1 / Week 1 → single folder)
+   - unmapped course fallback (Unknown Course → sanitized path)
+
+2. **_canonical_moc_path() — 3 tests**
+   - ends with `_Map of Contents.md`
+   - includes full base path + MOC filename
+   - respects deduplication in base path
+
+3. **GET /api/tutor/course-map endpoint — 9 tests**
+   - returns 200 OK
+   - returns valid JSON
+   - includes vault_root field
+   - includes courses list
+   - returns exactly 5 courses
+   - all courses have unit_type field
+   - unit_types match expected values (topic, week, week, construct, module)
+   - courses have required fields (code, label, term, units)
+   - units have required fields (id, name, topics)
+
+### Test patterns used
+- **Fixture**: `sample_yaml(tmp_path)` writes minimal YAML with all 5 unit types
+- **Monkeypatch**: `monkeypatch.setattr(cm_module, "_DEFAULT_CONFIG", sample_yaml)` to inject test YAML
+- **Flask test client**: `flask_app.test_client()` for endpoint testing
+- **Lazy import**: `from dashboard.api_tutor import _study_notes_base_path` inside test functions (matches codebase pattern)
+
+### Key insight: Flask test client setup
+- Create app via `create_app()` from `dashboard.app`
+- Set `app.config["TESTING"] = True`
+- Call `app.test_client()` to get client
+- No need to start server; routes are tested in-process
+
+### Evidence
+- `.sisyphus/evidence/task-21-path-tests.txt` — full pytest output (18 passed)
+
+### Files modified
+- `brain/tests/test_path_generation.py` — NEW (18 tests, 280 lines)
+
+### Verification
+- `pytest brain/tests/test_path_generation.py -v` → 18 passed in 6.18s
+- No LSP errors in test file
+- No changes to production code (tests only)
