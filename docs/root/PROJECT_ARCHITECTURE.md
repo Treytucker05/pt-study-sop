@@ -1,7 +1,7 @@
 # PT Study System — Comprehensive Project Architecture
 
-**Version:** 4.0
-**Last Updated:** 2026-02-05
+**Version:** 4.1
+**Last Updated:** 2026-03-03
 **Scope:** Entire repository (SOP, Brain, Scholar, Scripts)
 **Purpose:** Canonical technical documentation for system architecture, dependencies, and integration.
 
@@ -12,10 +12,10 @@
 
 ## 1. Executive Summary
 
-The **PT Study System** is a personal AI operating system for DPT coursework, integrating four main pillars. Canonical dashboard behavior and flows are documented in `docs/dashboard_audit.md`.
+The **PT Study System** is a personal AI operating system for DPT coursework, integrating four main pillars. Canonical dashboard behavior and flows are documented in `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`.
 
 Core pillars:
-1.  **SOP System (`sop/`)**: A rigorous learning methodology (CP-MSS v1.0) and runtime protocol for "Structured Architect" (Custom GPT).
+1.  **SOP System (`sop/`)**: A rigorous learning methodology (CP-MSS v1.0) consumed by the native Flask tutor engine.
 2.  **Scholar System (`scholar/`)**: A meta-system that audits study logs, detects friction, and proposes optimizations.
 3.  **Brain System (`brain/`)**: The central database, ingestion engine, and Flask-based analytics dashboard.
 4.  **Scripts & Automation (`scripts/`)**: Release validation, external integrations, and agent workflows.

@@ -92,7 +92,7 @@ Just follow the tutor's prompts. It handles progression, retrieval, and artifact
 ### Step 4: Wrap
 
 At the end, the tutor runs:
-1. **Exit Ticket** — free recall blurt, muddiest point, next action hook.
+1. **Exit Ticket** — free recall, muddiest point, next action hook.
 2. **Session Ledger** — what was covered, weak anchors, artifacts created.
 3. **Anki cards** — auto-generated for misses/weak anchors (if applicable).
 

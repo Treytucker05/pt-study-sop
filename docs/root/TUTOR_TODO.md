@@ -9,7 +9,6 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - Canonical execution order: `PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
 - Source-of-truth order: 
   - `docs/root/TUTOR_TODO.md` (active workboard)
-  - `docs/root/TUTOR_TRUTH_PATH.md` (document read order)
   - `conductor/tracks.md` (completed tracks / archival)
 
 ## Active Sprint 2026-02-23
@@ -48,14 +47,12 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - 9 blocks, 3 tiered exit points (20/35/50 min), evidence-backed.
 - [x] E2. Rename M-RET-001 from "Free Recall Blurt" to "Timed Brain Dump". `4d05d019`
   - Updated YAML, rebuilt 15-method-library.md, updated GUIDE_USER.md.
-- [ ] E3. Add visible block timer to Tutor chat UI.
-  - `blockTimerSeconds` state exists in tutor.tsx (lines 576-584) but no UI.
-  - Show elapsed vs recommended duration per block, start/stop controls.
-  - Log actual `time_spent_minutes` to session tables.
-- [ ] E4. Implement first-session skip logic for M-CAL-001 in C-TRY-002.
-  - `calibrate_skip_if_first_session` gate defined in C-TRY-002.yaml.
-  - Runtime in api_tutor.py needs to check if course has previous tutor sessions.
-  - If first session: silently skip M-CAL-001 block, advance to next.
+- [x] E3. Add visible block timer to Tutor chat UI. `fc0e449e`
+  - Countdown timer widget in toolbar with pause/resume, color warnings (<2min yellow, <1min red, 0=pulse).
+  - Stage badge (color-coded via CONTROL_PLANE_COLORS) + block name + progress fraction + skip-forward.
+- [x] E4. Implement first-session skip logic for M-CAL-001 in C-TRY-002. `fc0e449e`
+  - `_is_first_session_for_course()` + `_should_skip_block()` helpers in api_tutor.py.
+  - Silently skips M-CAL-001 when course has <= 1 prior sessions.
 - [x] E5. Tutor delete telemetry persistence + best-effort Obsidian cleanup. `b42c9e8f`
   - `tutor_delete_telemetry` table, in-panel confirm, bulk-delete report.
 
@@ -149,8 +146,8 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [ ] Add clear user-facing controls for failover and quota indicators.
 
 ## Immediate Next 3 Tasks (Use in this order)
-1. [ ] Add visible block timer component to tutor chat UI (E3).
-2. [ ] Implement first-session skip logic for M-CAL-001 (E4).
+1. [x] Add visible block timer component to tutor chat UI (E3). `fc0e449e`
+2. [x] Implement first-session skip logic for M-CAL-001 (E4). `fc0e449e`
 3. [ ] Test C-TRY-002 end-to-end: upload materials → start session → walk 9 blocks → verify tier exits.
 
 ## Granular Close-Out Queue (last-mile items from last tasks)

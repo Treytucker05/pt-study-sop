@@ -1,34 +1,28 @@
-# CustomGPT Setup (v9.5)
+# SOP Runtime Bundle (Legacy)
 
-Three things to paste/upload into your Custom GPT. All files are in this directory.
+> **The Custom GPT tutor is deprecated.** The tutor is now a native Flask application
+> built into `brain/dashboard/api_tutor.py`. These runtime files are historical artifacts
+> from when the tutor was a ChatGPT Custom GPT.
+
 Canonical runtime stage model is CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 
-## 1. Custom Instructions
-**File:** `custom_instructions.md`
-**Where:** CustomGPT → Configure → Instructions field
-**What:** All behavioral rules, gates, pacing, phases.
+## Current Tutor
 
-## 2. Runtime Prompt
-**File:** `runtime_prompt.md`
-**Where:** Paste as the **first user message** when starting a session.
-**What:** Session-level config — planning phase, entry questions, commands, wrap format.
+The native tutor consumes method blocks and chains directly from the database
+(seeded from `sop/library/methods/*.yaml` and `sop/library/chains/*.yaml`).
+No Custom GPT upload step is needed.
 
-## 3. Knowledge Files
-**Folder:** `knowledge_upload/`
-**Where:** CustomGPT → Configure → Knowledge → Upload (in order)
+## Legacy Files (Historical Reference Only)
 
-| # | File | Content |
-|---|------|---------|
-| 1 | `00_INDEX_AND_RULES.md` | Core rules + NotebookLM bridge |
-| 2 | `01_MODULES_M0-M6.md` | Session flow (M0-M6) + modes |
-| 3 | `02_FRAMEWORKS.md` | Control-plane stage framework + KWIK + H/M/Y/Levels (legacy term mapping included where needed) |
-| 4 | `03_ENGINES.md` | Anatomy Engine + Concept Engine |
-| 5 | `04_LOGGING_AND_TEMPLATES.md` | Logging schema + templates |
-| 6 | `05_EXAMPLES_MINI.md` | Command reference + examples |
+| File | Original Purpose |
+|------|-----------------|
+| `custom_instructions.md` | Custom GPT system instructions field |
+| `runtime_prompt.md` | First-message session prompt |
+| `knowledge_upload/` | Knowledge files uploaded to Custom GPT |
 
 ## Rebuild
 
-If you edit any `sop/library/` file, regenerate everything:
+If you edit any `sop/library/` file, regenerate the method library markdown:
 
 ```bash
 python sop/tools/build_runtime_bundle.py

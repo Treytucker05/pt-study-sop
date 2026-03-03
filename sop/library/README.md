@@ -16,7 +16,7 @@ Legacy PEIRRO wording is kept only where explicitly marked for compatibility.
 - **New to the system?** Start with `00-overview.md` for the big picture, then `05-session-flow.md` for execution.
 - **Need stage contracts and adaptation rules?** Use `17-control-plane.md`.
 - **Running a session?** Follow `05-session-flow.md` (M0-M6). Pick your engine from `04-engines.md` or `14-lo-engine.md`.
-- **Deploying the Custom GPT?** Use `10-deployment.md` + `13-custom-gpt-system-instructions.md`.
+- **Legacy Custom GPT reference?** See `13-custom-gpt-system-instructions.md` (historical; tutor is now native Flask).
 - **Looking for templates?** `09-templates.md` has every fillable form.
 - **Checking evidence?** `12-evidence.md` for citations and research backlog.
 

@@ -326,7 +326,7 @@ Chain engine steps through method blocks:
     |                                                    |
     |  Each block turn:                                  |
     |  1. RAG retrieval (ChromaDB, scoped to materials) |
-    |  2. LLM generation (GPT-4o / speed tier model)     |
+    |  2. LLM generation (Codex API / speed tier model)   |
     |  3. SSE streaming to frontend                      |
     |  4. Fire-and-forget vault write (if artifact)      |
     |                                                    |
@@ -340,9 +340,9 @@ The tutor supports configurable speed/quality tradeoffs per turn:
 
 | Tier | Model | Reasoning | RAG | Use Case |
 |------|-------|-----------|-----|----------|
-| Fast | gpt-4o-mini | None | Parallel | Quick responses, simple queries |
-| Balanced | gpt-4o | Standard | Standard | Default teaching mode |
-| Deep | gpt-4o | Extended | Full | Complex explanations, procedures |
+| Fast | gpt-5.3-codex-spark | None | Parallel | Quick responses, simple queries |
+| Balanced | gpt-5.3-codex | Standard | Standard | Default teaching mode |
+| Deep | gpt-5.3-codex | Extended | Full | Complex explanations, procedures |
 
 ---
 
@@ -393,12 +393,12 @@ Session Logs + DB
 +------------------+       +------------------+       +------------------+
 
 +------------------+
-|  OpenAI API      |
-|  (GPT-4o +       |
-|   embeddings)    |
+|  Codex API       |
+|  (gpt-5.3-codex  |
+|   + embeddings)  |
 +--------+---------+
          |
-    API key auth
+    Codex CLI auth
          |
 +--------v---------+
 |  Tutor LLM +     |
@@ -412,7 +412,7 @@ Session Logs + DB
 | **Google Calendar/Tasks** | Two-way sync of study events + tasks | OAuth 2.0 via `brain/gcal.py` |
 | **Anki** | Sync card drafts to Anki Desktop | AnkiConnect on port 8765 |
 | **Obsidian** | Vault reads/writes + template rendering | CLI wrapper (`brain/obsidian_vault.py`) |
-| **OpenAI API** | Tutor LLM (GPT-4o) + embeddings (text-embedding-3-small) | API key via environment |
+| **Codex API** | Tutor LLM (gpt-5.3-codex) + embeddings (text-embedding-3-small) | Codex CLI auth + OpenAI API key |
 
 ---
 
@@ -476,7 +476,8 @@ The `error_logs` table enables deterministic routing by tracking granular item-l
 - Python 3.10+
 - Node.js 18+
 - SQLite 3
-- OpenAI API key (for tutor LLM + embeddings)
+- Codex CLI authenticated (`codex login`) for tutor LLM
+- OpenAI API key (for embeddings)
 
 ### Commands
 

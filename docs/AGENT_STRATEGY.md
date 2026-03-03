@@ -78,4 +78,4 @@ Safety: never paste secrets or credentials into prompts or logs.
   - `.codex/skills/plan-harder/`
   - `.codex/skills/parallel-task/`
   - `docs/CODEX_SUBAGENT_IMPLEMENTATION.md`
-- Portable global config (vault canonical): `C:\Users\treyt\Desktop\PT School Semester 2\agents\config\`
+- Portable global config (vault canonical): `C:\Users\treyt\Desktop\Treys School\agents\config\`
