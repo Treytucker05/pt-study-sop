@@ -517,3 +517,229 @@ def render_template_artifact(
         "success": False,
         "error": "Unsupported template_id. Use session_note, concept_note, map_of_contents, reference_targets, or session_wrap.",
     }
+
+
+def _render_block_notes_markdown(payload: dict[str, Any]) -> str:
+    """Render a free-form notes block artifact (``artifact_type = "notes"``)."""
+    fallback = """---
+note_type: block_notes
+block_id: {block_id}
+block_name: {block_name}
+control_stage: {control_stage}
+session_id: {session_id}
+course: {course}
+module: {module}
+topic: {topic}
+started_at: {started_at}
+ended_at: {ended_at}
+artifact_type: {artifact_type}
+---
+
+# {block_name}
+
+**Stage**: `{control_stage}` | **Time**: {started_at} → {ended_at}
+
+## Notes
+
+{content}
+
+---
+
+[[{moc_path}|Map of Contents]] | [[{session_note_path}|Session Note]]
+"""
+    template = _read_template("block_notes.md.tmpl", fallback=fallback)
+    return template.format_map(_SafeFormatDict(payload)).rstrip() + "\n"
+
+
+def _render_block_diagram_markdown(payload: dict[str, Any]) -> str:
+    """Render a concept-map / diagram block artifact (``artifact_type = "concept-map"``)."""
+    fallback = """---
+note_type: block_diagram
+block_id: {block_id}
+block_name: {block_name}
+control_stage: {control_stage}
+session_id: {session_id}
+course: {course}
+module: {module}
+topic: {topic}
+started_at: {started_at}
+ended_at: {ended_at}
+artifact_type: {artifact_type}
+---
+
+# {block_name}
+
+**Stage**: `{control_stage}` | **Time**: {started_at} → {ended_at}
+
+## Concept Diagram
+
+```mermaid
+{diagram_content}
+```
+
+---
+
+[[{moc_path}|Map of Contents]] | [[{session_note_path}|Session Note]]
+"""
+    template = _read_template("block_diagram.md.tmpl", fallback=fallback)
+    return template.format_map(_SafeFormatDict(payload)).rstrip() + "\n"
+
+
+def _render_block_comparison_markdown(payload: dict[str, Any]) -> str:
+    """Render a comparison-table block artifact (``artifact_type = "comparison-table"``)."""
+    fallback = """---
+note_type: block_comparison
+block_id: {block_id}
+block_name: {block_name}
+control_stage: {control_stage}
+session_id: {session_id}
+course: {course}
+module: {module}
+topic: {topic}
+started_at: {started_at}
+ended_at: {ended_at}
+artifact_type: {artifact_type}
+---
+
+# {block_name}
+
+**Stage**: `{control_stage}` | **Time**: {started_at} → {ended_at}
+
+## Comparison Table
+
+{table_content}
+
+---
+
+[[{moc_path}|Map of Contents]] | [[{session_note_path}|Session Note]]
+"""
+    template = _read_template("block_comparison.md.tmpl", fallback=fallback)
+    return template.format_map(_SafeFormatDict(payload)).rstrip() + "\n"
+
+
+def _render_block_recall_markdown(payload: dict[str, Any]) -> str:
+    """Render a recall-output block artifact (``artifact_type = "recall"``)."""
+    fallback = """---
+note_type: block_recall
+block_id: {block_id}
+block_name: {block_name}
+control_stage: {control_stage}
+session_id: {session_id}
+course: {course}
+module: {module}
+topic: {topic}
+started_at: {started_at}
+ended_at: {ended_at}
+artifact_type: {artifact_type}
+---
+
+# {block_name}
+
+**Stage**: `{control_stage}` | **Time**: {started_at} → {ended_at}
+
+## Recall Output
+
+{recall_content}
+
+---
+
+[[{moc_path}|Map of Contents]] | [[{session_note_path}|Session Note]]
+"""
+    template = _read_template("block_recall.md.tmpl", fallback=fallback)
+    return template.format_map(_SafeFormatDict(payload)).rstrip() + "\n"
+
+
+def _render_block_cards_markdown(payload: dict[str, Any]) -> str:
+    """Render an Anki card-drafts block artifact (``artifact_type = "cards"``)."""
+    fallback = """---
+note_type: block_cards
+block_id: {block_id}
+block_name: {block_name}
+control_stage: {control_stage}
+session_id: {session_id}
+course: {course}
+module: {module}
+topic: {topic}
+started_at: {started_at}
+ended_at: {ended_at}
+artifact_type: {artifact_type}
+---
+
+# {block_name}
+
+**Stage**: `{control_stage}` | **Time**: {started_at} → {ended_at}
+
+## Anki Card Drafts
+
+{cards_content}
+
+---
+
+[[{moc_path}|Map of Contents]] | [[{session_note_path}|Session Note]]
+"""
+    template = _read_template("block_cards.md.tmpl", fallback=fallback)
+    return template.format_map(_SafeFormatDict(payload)).rstrip() + "\n"
+
+
+def render_block_artifact(
+    *,
+    block_id: str,
+    block_name: str,
+    control_stage: str,
+    artifact_type: str,
+    session_id: str,
+    course: str,
+    module: str,
+    topic: str,
+    started_at: str,
+    ended_at: str,
+    content: str,
+    moc_path: str = "",
+    session_note_path: str = "",
+) -> str:
+    """Render a block-level artifact note from one of the 5 block templates.
+
+    Maps *artifact_type* to the correct template and renderer:
+
+    * ``"notes"``             → ``block_notes.md.tmpl``
+    * ``"concept-map"``       → ``block_diagram.md.tmpl``
+    * ``"comparison-table"``  → ``block_comparison.md.tmpl``
+    * ``"recall"``            → ``block_recall.md.tmpl``
+    * ``"cards"``             → ``block_cards.md.tmpl``
+
+    Unknown types fall back to the *notes* renderer.
+    """
+    base_payload: dict[str, Any] = {
+        "block_id": block_id,
+        "block_name": block_name,
+        "control_stage": control_stage,
+        "artifact_type": artifact_type,
+        "session_id": session_id,
+        "course": course,
+        "module": module,
+        "topic": topic,
+        "started_at": started_at,
+        "ended_at": ended_at,
+        "moc_path": moc_path,
+        "session_note_path": session_note_path,
+    }
+
+    if artifact_type == "concept-map":
+        return _render_block_diagram_markdown(
+            {**base_payload, "diagram_content": content}
+        )
+
+    if artifact_type == "comparison-table":
+        return _render_block_comparison_markdown(
+            {**base_payload, "table_content": content}
+        )
+
+    if artifact_type == "recall":
+        return _render_block_recall_markdown(
+            {**base_payload, "recall_content": content}
+        )
+
+    if artifact_type == "cards":
+        return _render_block_cards_markdown({**base_payload, "cards_content": content})
+
+    return _render_block_notes_markdown({**base_payload, "content": content})
