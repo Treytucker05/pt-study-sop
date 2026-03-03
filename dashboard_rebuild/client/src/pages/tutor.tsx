@@ -58,6 +58,7 @@ import {
   TEXT_BADGE,
   ICON_SM,
 } from "@/lib/theme";
+import { CONTROL_PLANE_COLORS } from "@/lib/colors";
 
 function parseFacilitationSteps(prompt: string | undefined | null): string[] {
   if (!prompt) return [];
@@ -170,6 +171,7 @@ export default function Tutor() {
   // Block timer
   const [blockTimerSeconds, setBlockTimerSeconds] = useState<number | null>(null);
   const [timerWarningShown, setTimerWarningShown] = useState(false);
+  const [timerPaused, setTimerPaused] = useState(false);
 
   // Settings dialog
   const [showSettings, setShowSettings] = useState(false);
@@ -574,6 +576,7 @@ export default function Tutor() {
       const result = await api.tutor.advanceBlock(activeSessionId);
       setCurrentBlockIndex(result.block_index);
       setTimerWarningShown(false);
+      setTimerPaused(false);
       // Reset timer for new block
       if (result.block_duration) {
         setBlockTimerSeconds(result.block_duration * 60);
@@ -599,7 +602,7 @@ export default function Tutor() {
 
   // Block timer countdown
   useEffect(() => {
-    if (blockTimerSeconds === null || blockTimerSeconds <= 0) return;
+    if (blockTimerSeconds === null || blockTimerSeconds <= 0 || timerPaused) return;
     const interval = setInterval(() => {
       setBlockTimerSeconds((prev) => {
         if (prev === null) return null;
@@ -612,7 +615,7 @@ export default function Tutor() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [blockTimerSeconds, timerWarningShown]);
+  }, [blockTimerSeconds, timerWarningShown, timerPaused]);
 
   // Start timer when session begins with a chain
   useEffect(() => {
@@ -811,6 +814,62 @@ export default function Tutor() {
                     )}
                   </div>
                 </>
+              )}
+
+              {/* ─── Block Timer Widget ─── */}
+              {activeSessionId && hasChain && currentBlock && !isChainComplete && (
+                <div className="flex items-center gap-2 px-2 shrink-0 border-l border-r border-primary/20">
+                  <Badge
+                    variant="outline"
+                    className={`h-6 px-1.5 text-[10px] rounded-none font-arcade uppercase ${
+                      CONTROL_PLANE_COLORS[currentBlock.control_stage?.toUpperCase?.() || currentBlock.category?.toUpperCase?.() || ""]?.badge
+                      || "bg-secondary/20 text-muted-foreground"
+                    }`}
+                  >
+                    {currentBlock.control_stage || currentBlock.category || "BLOCK"}
+                  </Badge>
+                  <span className="text-xs font-terminal text-foreground truncate max-w-[120px]" title={currentBlock.name}>
+                    {currentBlock.name}
+                  </span>
+                  {blockTimerSeconds !== null && (
+                    <span
+                      className={`text-sm font-arcade tabular-nums ${
+                        blockTimerSeconds <= 0
+                          ? "text-red-400 animate-pulse"
+                          : blockTimerSeconds <= 60
+                            ? "text-red-400"
+                            : blockTimerSeconds <= 120
+                              ? "text-yellow-400"
+                              : "text-foreground"
+                      }`}
+                    >
+                      {formatTimer(Math.max(0, blockTimerSeconds))}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-muted-foreground font-terminal">
+                    {progressCount}/{chainBlocks.length}
+                  </span>
+                  {blockTimerSeconds !== null && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTimerPaused((p) => !p)}
+                      className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-primary"
+                      title={timerPaused ? "Resume timer" : "Pause timer"}
+                    >
+                      {timerPaused ? <Timer className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={advanceBlock}
+                    className="h-6 px-1.5 rounded-none text-muted-foreground hover:text-primary font-arcade text-[10px]"
+                    title="Skip to next block"
+                  >
+                    <SkipForward className="w-3 h-3" />
+                  </Button>
+                </div>
               )}
 
               <div className="flex items-center gap-1 shrink-0 ml-auto">

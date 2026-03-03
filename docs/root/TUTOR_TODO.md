@@ -43,6 +43,22 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
       Chat-only: ~1-2s. Full pipeline: ~5-8s (was 20+s).
       Plan: docs/plans/2026-02-24-tutor-chat-speed-tiers.md
 
+### Sprint 2d: Custom Chain + Tutor UX (2026-03-03)
+- [x] E1. Create C-TRY-002 ("Top-Down Forward Progress") personalized chain. `4d05d019`
+  - 9 blocks, 3 tiered exit points (20/35/50 min), evidence-backed.
+- [x] E2. Rename M-RET-001 from "Free Recall Blurt" to "Timed Brain Dump". `4d05d019`
+  - Updated YAML, rebuilt 15-method-library.md, updated GUIDE_USER.md.
+- [ ] E3. Add visible block timer to Tutor chat UI.
+  - `blockTimerSeconds` state exists in tutor.tsx (lines 576-584) but no UI.
+  - Show elapsed vs recommended duration per block, start/stop controls.
+  - Log actual `time_spent_minutes` to session tables.
+- [ ] E4. Implement first-session skip logic for M-CAL-001 in C-TRY-002.
+  - `calibrate_skip_if_first_session` gate defined in C-TRY-002.yaml.
+  - Runtime in api_tutor.py needs to check if course has previous tutor sessions.
+  - If first session: silently skip M-CAL-001 block, advance to next.
+- [x] E5. Tutor delete telemetry persistence + best-effort Obsidian cleanup. `b42c9e8f`
+  - `tutor_delete_telemetry` table, in-panel confirm, bulk-delete report.
+
 ### Sprint 3: Video Study Pipeline Finish
 - [ ] C1. Confirm hybrid ingest routing for local vs API path.
 - [ ] C2. Verify normal-session MP4 path in tutor flow (not only admin/test mode).
@@ -133,9 +149,9 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [ ] Add clear user-facing controls for failover and quota indicators.
 
 ## Immediate Next 3 Tasks (Use in this order)
-1. [x] Close PRIME non-assessment enforcement in runtime (A1.4).
-2. [x] Verify PRIME control knobs are fully wired end-to-end (A1.5).
-3. [ ] Validate prime method routing + stage transitions in one end-to-end dry session.
+1. [ ] Add visible block timer component to tutor chat UI (E3).
+2. [ ] Implement first-session skip logic for M-CAL-001 (E4).
+3. [ ] Test C-TRY-002 end-to-end: upload materials → start session → walk 9 blocks → verify tier exits.
 
 ## Granular Close-Out Queue (last-mile items from last tasks)
 

@@ -1733,7 +1733,12 @@ def _reconcile_obsidian_state(
     # If the user deleted the Map of Contents from Obsidian, the objectives that
     # lived inside it should also be removed from the dashboard (SQLite).
     lo_deleted = 0
-    if persist and prune_learning_objectives and ns_changed and content_filter is not None:
+    if (
+        persist
+        and prune_learning_objectives
+        and ns_changed
+        and content_filter is not None
+    ):
         ns = content_filter.get("map_of_contents") or {}
         obj_ids: list[str] = ns.get("objective_ids") or []
         course_id = session.get("course_id")
@@ -1926,6 +1931,27 @@ def _get_session_turns(conn, session_id: str, limit: int = 50) -> list[dict]:
         (session_id, limit),
     )
     return [dict(r) for r in cur.fetchall()]
+
+
+def _is_first_session_for_course(conn, course_id) -> bool:
+    """Return True if no previous tutor sessions exist for this course."""
+    if course_id is None:
+        return True
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT COUNT(*) as cnt FROM tutor_sessions WHERE course_id = ? AND status IN ('active', 'ended')",
+        (int(course_id),),
+    )
+    row = cur.fetchone()
+    return (row["cnt"] if row else 0) <= 1
+
+
+def _should_skip_block(conn, block: dict, session: dict) -> bool:
+    """Evaluate gate: calibrate_skip_if_first_session for M-CAL-001."""
+    method_id = str(block.get("method_id") or "").strip()
+    if method_id == "M-CAL-001":
+        return _is_first_session_for_course(conn, session.get("course_id"))
+    return False
 
 
 def _resolve_chain_blocks(conn, chain_id: int) -> list[dict]:
@@ -4925,6 +4951,11 @@ def advance_block(session_id: str):
     next_idx = current_idx + 1
     next_block = blocks[next_idx]
 
+    # Gate: calibrate_skip_if_first_session — skip M-CAL-001 on first course session
+    if _should_skip_block(conn, next_block, session) and next_idx < len(blocks) - 1:
+        next_idx += 1
+        next_block = blocks[next_idx]
+
     data = request.get_json(silent=True) or {}
     block_notes = str(data.get("block_notes") or "").strip()
     if block_notes:
@@ -5844,7 +5875,8 @@ def delete_session(session_id: str):
         cur = conn.cursor()
         cur.execute("DELETE FROM tutor_turns WHERE tutor_session_id = ?", (session_id,))
         cur.execute(
-            "DELETE FROM tutor_block_transitions WHERE tutor_session_id = ?", (session_id,)
+            "DELETE FROM tutor_block_transitions WHERE tutor_session_id = ?",
+            (session_id,),
         )
         cur.execute("DELETE FROM tutor_sessions WHERE session_id = ?", (session_id,))
         conn.commit()
@@ -5921,9 +5953,9 @@ def delete_session(session_id: str):
         "objectives_deleted": lo_deleted,
     }
     if obsidian_cleanup_has_missing:
-        response_payload[
-            "warning"
-        ] = "Session deleted, but some Obsidian files could not be removed"
+        response_payload["warning"] = (
+            "Session deleted, but some Obsidian files could not be removed"
+        )
     _record_tutor_delete_telemetry(
         request_id=request_id,
         route=route_name,
