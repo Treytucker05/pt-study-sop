@@ -83,7 +83,7 @@ What the system does automatically:
 ### Step 3: Follow the Chain
 
 The tutor walks you through each block in order. Each block has:
-- A **name** (e.g., "Learning Objectives Primer", "Free Recall Blurt")
+- A **name** (e.g., "Learning Objectives Primer", "Timed Brain Dump")
 - A **CP stage** badge (PRIME, CALIBRATE, ENCODE, REFERENCE, RETRIEVE, OVERLEARN)
 - A **duration** estimate
 
@@ -110,7 +110,7 @@ C-FE-MIN  ~20 min  |  Low energy
   1. M-PRE-010  Learning Objectives Primer     PRIME
   2. M-PRE-008  Structural Extraction           PRIME
   3. M-REF-003  One-Page Anchor (Cheat Sheet)   REFERENCE
-  4. M-RET-001  Free Recall Blurt               RETRIEVE
+  4. M-RET-001  Timed Brain Dump                 RETRIEVE
   5. M-OVR-001  Exit Ticket                     OVERLEARN
 ```
 
@@ -222,6 +222,10 @@ Fewer toggles = faster responses (~1-2s). All toggles on = full pipeline (~5-8s)
 ### Tutor issues
 - **Black screen with `Cannot access 'ze' before initialization`:** Stale JS chunks. Rebuild UI (`cd dashboard_rebuild && npm run build`), restart dashboard, hard refresh (Ctrl+F5).
 - **Translucent overlay stuck after bulk delete:** Reload the Tutor tab, rebuild UI, restart. Retry — should show themed in-panel confirm.
+- **Bulk delete reports partial results:** Tutor now shows `Requested / Deleted / Already gone / Failed` and a short failure details panel when any session delete fails.
+- **Session delete returns warning instead of full failure:** `status: deleted_with_warnings` means the Tutor session row was deleted, but one or more Obsidian files were missing/unremovable. Inspect `obsidian_cleanup.missing_paths` and `request_id`.
+- **Deleting selected sessions includes your active chat:** Confirm modal now warns that active chat will be cleared and UI returns to WIZARD after delete.
+- **Need root cause for recurring delete failures:** Check DB table `tutor_delete_telemetry` using the response `request_id` from delete calls. Each row persists route, status, counts, and structured details for post-mortem.
 - **Tutor only uses ~6 files when 30+ selected:** Check browser Network tab on the `turn` request — `content_filter.material_ids` must include all selected files. Check `retrieval_debug` in the response for `material_ids_count`.
 - **Slow responses:** Disable toggles you don't need (Web, Obsidian, Deep Think). Materials-only is fastest.
 

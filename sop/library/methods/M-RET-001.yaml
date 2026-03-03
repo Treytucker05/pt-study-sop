@@ -1,7 +1,7 @@
 id: M-RET-001
-name: Free Recall Blurt
+name: Timed Brain Dump
 category: retrieve
-description: Close materials. Write everything you remember about the topic. No peeking. Compare after.
+description: Close materials. Set timer. Write everything you remember about the topic. No peeking. Compare after. Timed constraint adds desirable difficulty.
 default_duration_min: 5
 energy_cost: medium
 best_stage: review
@@ -72,7 +72,7 @@ evidence:
   finding: testing effect — retrieval practice > re-reading for long-term retention
   source: seed_methods.py
 evidence_raw: Roediger & Karpicke (2006); testing effect — retrieval practice > re-reading for long-term retention
-facilitation_prompt: 'You are running M-RET-001 (Free Recall Blurt) in RETRIEVE stage.
+facilitation_prompt: 'You are running M-RET-001 (Timed Brain Dump) in RETRIEVE stage.
 
   Execute this method card exactly and keep outputs deterministic.
 

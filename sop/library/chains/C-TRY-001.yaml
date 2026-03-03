@@ -8,7 +8,7 @@ blocks:
 - M-ENC-001      # KWIK Hook (sound-story mnemonics — 3 min per term)
 - M-INT-001      # Analogy Bridge (cross-domain connections — 5 min)
 - M-REF-003      # One-Page Anchor (hand-draw reference sheet — 5 min)
-- M-RET-001      # Free Recall Blurt (gentle story recall — 5 min)
+- M-RET-001      # Timed Brain Dump (timed topic recall — 5 min)
 - M-ENC-004      # Teach-Back (explain it back — 5 min)
 - M-OVR-004      # Post-Learn Brain Dump (full recall + gap fill — 7 min)
 allowed_modes:
