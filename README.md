@@ -165,6 +165,9 @@ The `brain/selector.py` router automatically selects the optimal chain based on 
 
 ## SOP Library
 
+> **Not to be confused with the `/library` page** which manages study materials (PDFs, notes, slides).
+> `sop/library/` defines the **methodology** — *how* the tutor teaches. Study materials are stored in `brain/data/`.
+
 The **SOP** (Standard Operating Procedure) defines the learning methodology. Source of truth: `sop/library/`.
 
 | # | File | Description |
@@ -274,6 +277,7 @@ localhost:5000/
   +-- /calendar   Calendar (Google Calendar/Tasks, local events)
   +-- /scholar    Scholar (runs, proposals, lifecycle panel)
   +-- /tutor      Tutor (chat, sources drawer, Map of Contents, vault authoring)
+  +-- /library    Library (study material upload, course organization, tutor source selection)
   +-- /methods    Methods (block library, chains, analytics)
 ```
 

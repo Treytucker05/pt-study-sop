@@ -94,9 +94,11 @@ cd C:\pt-study-sop\dashboard_rebuild
 - Database: brain/data/pt_study.db
 - Session logs: brain/session_logs/
 - API: brain/dashboard/api_adapter.py
+- Tutor API: brain/dashboard/api_tutor.py (40+ endpoints, ~7200 lines)
 - Frontend source: dashboard_rebuild/
 - Frontend build output: brain/static/dist/
-- SOP canon: sop/library/
+- SOP methodology: sop/library/ (**NOT study materials** — see disambiguation below)
+- Study materials (uploads): brain/data/uploads/ + brain/data/chroma_tutor/ (ChromaDB vectors)
 - Scholar outputs: scholar/outputs/
 - Docs index (canonical): docs/README.md
 - Architecture doc: docs/root/PROJECT_ARCHITECTURE.md
@@ -104,23 +106,45 @@ cd C:\pt-study-sop\dashboard_rebuild
 - Google Calendar credentials: docs/GoogleCalendarTasksAPI.json (handle as sensitive; do not modify unless asked).
 - Conductor: conductor/ (product def, tech stack, tracks, workflow)
 
+## ⚠ "Library" Disambiguation (READ THIS FIRST)
+
+Two things in this repo are called "Library." They are **completely different**:
+
+| | SOP Library (`sop/library/`) | Library Page (`/library` route) |
+|---|---|---|
+| **What it is** | Study **methodology** definitions | User's **study materials** manager |
+| **Contains** | 17 markdown files + 46 YAML method blocks + 15 chains defining *how the tutor teaches* | PDFs, DOCX, PPTX, slides, notes — the actual *course content* the user studies |
+| **Storage** | `sop/library/` (checked into git) | `brain/data/uploads/` (disk) + `brain/data/chroma_tutor/` (ChromaDB vectors) + `rag_docs` table (SQLite) |
+| **Frontend** | No dedicated page (referenced by tutor internals) | `dashboard_rebuild/client/src/pages/library.tsx` → route `/library` |
+| **Who edits it** | Developers (method block YAML, chain YAML) | End user (uploads via UI, syncs from `C:\Users\treyt\OneDrive\Desktop\PT School`) |
+| **Used by RAG** | No (defines tutor behavior, not retrieval content) | **Yes** — ChromaDB vectors are what the tutor retrieves during chat |
+
+**Rule:** When someone says "library" in this repo, determine from context whether they mean:
+- **SOP methodology** → `sop/library/` (how the tutor works)
+- **Study materials** → `/library` page + `brain/data/` (what the user studies)
+
 ## Project Structure
 
 ```
 C:\pt-study-sop\
 ├── dashboard_rebuild\          # React frontend source
 │   ├── client\src\             # All React components
+│   │   ├── pages\tutor.tsx     # Tutor chat UI
+│   │   └── pages\library.tsx   # ★ Material upload/management UI (user's study files)
 │   ├── build-and-sync.ps1      # Build script (outputs to brain/)
 │   ├── build-and-sync.bat      # Double-click version
 │   └── BUILD.md                # Build instructions
 ├── brain\                       # Python Flask server
 │   ├── static\dist\            # ★ BUILD OUTPUT GOES HERE
+│   ├── data\uploads\           # ★ Uploaded study materials (PDFs, DOCX, etc.)
+│   ├── data\chroma_tutor\      # ★ ChromaDB vector store (RAG embeddings)
 │   ├── dashboard_web.py        # Flask server entry
+│   ├── llm_provider.py         # Codex API (ChatGPT backend) for tutor LLM
 │   └── ...
 ├── conductor\                   # Product def, tech stack, tracks
 │   ├── tracks.md               # ★ CHECK BEFORE MAJOR WORK
 │   └── workflow.md
-├── sop\library\                 # SOP source of truth
+├── sop\library\                 # ★ SOP METHODOLOGY (not study materials!)
 ├── scholar\                     # Scholar research
 ├── Start_Dashboard.bat          # ★ USE THIS TO START SERVER
 └── AGENTS.md                    # ★ THIS FILE — single source of truth
@@ -130,13 +154,17 @@ C:\pt-study-sop\
 - Dashboard, Brain, Calendar (Flask): brain/
 - Frontend UI: dashboard_rebuild/
 - Scholar research: scholar/
-- SOP definitions: sop/
+- SOP definitions (methodology): sop/
 - Adaptive Tutor (Built-in Native):
   - `dashboard_rebuild/client/src/pages/tutor.tsx` (Frontend UI Chat & Controls)
+  - `dashboard_rebuild/client/src/pages/library.tsx` (Material upload/management UI)
   - `brain/dashboard/api_tutor.py` (Flask endpoints & streaming orchestration)
   - `brain/tutor_rag.py` (Document retrieval, dual-context search)
   - `brain/tutor_chains.py` (Method chain block progression)
   - `brain/tutor_streaming.py` (SSE response formatting & citations)
+  - `brain/obsidian_vault.py` (Obsidian CLI wrapper for vault writes)
+  - `brain/llm_provider.py` (Codex API / ChatGPT backend for LLM calls)
+- Study material storage: brain/data/uploads/ (files) + brain/data/chroma_tutor/ (vectors)
 - Tutor logs: brain/session_logs/
 
 ## Control Plane Architecture (CP-MSS v1.0) - CURRENT
@@ -192,6 +220,7 @@ PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN
 | Brain Page | `dashboard_rebuild/client/src/pages/brain.tsx` |
 | Brain Components | `dashboard_rebuild/client/src/components/brain/` |
 | BrainChat | `dashboard_rebuild/client/src/components/BrainChat/` |
+| Library Page | `dashboard_rebuild/client/src/pages/library.tsx` |
 | Layout/Footer | `dashboard_rebuild/client/src/components/layout.tsx` |
 | Course Config | `dashboard_rebuild/client/src/config/courses.ts` |
 | Error Boundaries | `dashboard_rebuild/client/src/components/ErrorBoundary.tsx` |
@@ -294,8 +323,8 @@ const [state, setState] = useState<T>(() => {
 ### Persist Actions Need Visual Feedback
 Any button that saves state without navigating or closing a modal MUST have visual feedback: (1) a toast notification confirming the action, and (2) a status indicator (green dot = saved, red dot = unsaved changes) using a dirty state flag.
 
-### SOP Library Is Source of Truth
-The 75 original SOP files were consolidated into library files at `sop/library/` (00-14). Originals were archived to `sop/archive/`. The library is the sole source of truth for SOP content. `sop/runtime/` exists but is generated output (do not edit it directly). Do not reference `sop/src/` or `sop/examples/` (archived Jan 2026).
+### SOP Library Is Source of Truth (Methodology, Not Materials)
+The 75 original SOP files were consolidated into library files at `sop/library/` (00-14). Originals were archived to `sop/archive/`. The library is the sole source of truth for SOP **methodology** content. `sop/runtime/` exists but is generated output (do not edit it directly). Do not reference `sop/src/` or `sop/examples/` (archived Jan 2026). **Do NOT confuse `sop/library/` with the `/library` page** — see "Library Disambiguation" section above.
 
 ### Codex MCP Cannot Review Inline Diffs
 Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks for a repo path instead. When the repo isn't reachable by Codex, do the code review manually using the standard checklist (bugs, edge cases, security, performance, type correctness).

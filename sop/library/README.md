@@ -1,8 +1,13 @@
-# SOP Library — Navigation Guide
+# SOP Library — Study Methodology Definitions
+
+> **This folder defines HOW the tutor teaches. It does NOT contain study materials.**
+> Study materials (PDFs, notes, slides) are managed via the `/library` page in the
+> dashboard and stored in `brain/data/uploads/` + `brain/data/chroma_tutor/`.
+> See `AGENTS.md` → "Library Disambiguation" for full details.
 
 **Version:** v9.5 | **Owner:** Trey Tucker
 
-This is the canonical source of truth for the PT Study OS. Runtime bundles in `sop/runtime/` are generated artifacts — if anything conflicts, these library files win.
+This is the canonical source of truth for the PT Study OS methodology. Runtime bundles in `sop/runtime/` are generated artifacts — if anything conflicts, these library files win.
 Canonical stage model is CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
 Legacy PEIRRO wording is kept only where explicitly marked for compatibility.
 
