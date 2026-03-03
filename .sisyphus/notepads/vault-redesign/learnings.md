@@ -205,3 +205,53 @@ const [state, setState] = useState<T>(() => {
 - Verified template is now sop/templates/notes/map_of_contents.md.tmpl and north_star template removed.
 - Verified no remaining north_star/NorthStar/north.star matches under brain/ and sop/templates/ for *.py/*.tmpl.
 - Regression check: pytest brain/tests/test_obsidian_vault.py -q passed (39/39).
+
+## [2026-03-02] Task 11 — Tutor frontend reads courses from course-map API
+
+### What changed
+- `api.ts`: Added `CourseMapCourse`, `CourseMapResponse` interfaces + standalone `fetchCourseMap()` at end of file. Uses `fetch("/api/tutor/course-map")` directly (not via `api.*` namespace).
+- `tutor.tsx`: Imports `fetchCourseMap` and `COURSE_FOLDERS`. Adds `useCourseMap` query (queryKey: `["course-map"]`, staleTime 5 min). Derives `apiCourses` → `courseFolders` with COURSE_FOLDERS as fallback when API returns empty.
+- `VaultPicker.tsx`: Added internal `useQuery` for `course-map` using same queryKey (shares TanStack Query cache with tutor.tsx). Derives `activeCourses` with COURSE_FOLDERS fallback. Replaced both `COURSE_FOLDERS` chip usages (summary + render) with `activeCourses`.
+
+### Key findings
+- VaultPicker is defined but orphaned (not rendered in tutor.tsx as of this task). The chip selector UI is self-contained in VaultPicker.
+- tutor.tsx manages `vaultFolder` and `selectedPaths` state but has no UI wired to `setVaultFolder`. The state is used only in turn payloads.
+- Course mapping: API `c.code` → `id` (lowercase, strip "phyt_"), `c.label` → both `name` and `path`.
+- Build: `npm run build` passes clean with no TypeScript errors. Only pre-existing chunk size warnings remain.
+- TanStack Query deduplicates the `["course-map"]` fetch across tutor.tsx and VaultPicker.tsx — single network request.
+
+## [2026-03-02] Task 8 — Migrate remaining REST API callers to ObsidianVault CLI
+
+### Files migrated
+- `brain/chain_runner.py` (unexpected — not tutor_tools.py):
+  - `obsidian_append(path, content)` → `ObsidianVault().append_note(file=path, content=content)` (fire-and-forget, try/except)
+- `brain/vault_janitor.py` (4 locations):
+  - Module-level `from obsidian_vault import ObsidianVault` added (required for @patch to work in tests)
+  - `apply_fix()`: read_note() for get, replace_content() for save
+  - `ai_resolve()`: read_note() for get
+  - `ai_apply()` rename_link branch: read_note() for get, replace_content() for save
+  - `enrich_links()`: read_note() for get, replace_content() for save
+
+### Key patterns
+
+**Read failure detection**: `vault.read_note()` returns `""` on error OR empty file. In vault_janitor context, real notes have content, so `if not content:` is acceptable failure gate.
+
+**Write always-succeeds**: `vault.replace_content()` (uses `_eval()`) returns `""` on both success AND failure — no way to distinguish. Write path now reports success unconditionally. Same for `vault.append_note()` in chain_runner.
+
+**Lazy vs module-level import**: Using `from obsidian_vault import ObsidianVault` inside each function prevents `@patch("vault_janitor.ObsidianVault")` from working (attribute not on module at patch time). Fix: add module-level import to vault_janitor.py. Then `@patch("vault_janitor.ObsidianVault")` works correctly.
+
+**Mock pattern for tests**:
+```python
+@patch("vault_janitor.ObsidianVault")
+def test_something(self, MockVault):
+    mock_vault = MockVault.return_value
+    mock_vault.read_note.return_value = "content"
+    # Check what was saved:
+    saved = mock_vault.replace_content.call_args[1]["new_content"]
+```
+
+### Verification
+- `grep -rn "from dashboard.api_adapter import.*obsidian" brain/ | grep -v "api_adapter.py"` → 0 matches
+- `pytest brain/tests/test_obsidian_vault.py` → 39/39
+- `pytest brain/tests/test_vault_janitor.py` → 42/42
+- Evidence: `.sisyphus/evidence/task-8-no-rest-imports.txt`

@@ -1,4 +1,5 @@
 """Tests for vault_janitor — scan, detect, and fix vault health issues."""
+
 from __future__ import annotations
 
 import sys
@@ -75,6 +76,7 @@ Also links to [[Nonexistent Note]].
 # TestParseFrontmatter
 # ---------------------------------------------------------------------------
 
+
 class TestParseFrontmatter:
     def test_extracts_all_fields(self):
         fm = _parse_frontmatter_fields(COMPLETE_NOTE)
@@ -107,6 +109,7 @@ class TestParseFrontmatter:
 # TestCheckFrontmatter
 # ---------------------------------------------------------------------------
 
+
 class TestCheckFrontmatter:
     def test_detects_missing_fields(self):
         paths = ["Study Notes/Neuroscience/Week 1/spinal.md"]
@@ -133,6 +136,7 @@ class TestCheckFrontmatter:
 # ---------------------------------------------------------------------------
 # TestCheckOrphans
 # ---------------------------------------------------------------------------
+
 
 class TestCheckOrphans:
     def test_identifies_orphans(self):
@@ -177,6 +181,7 @@ class TestCheckOrphans:
 # TestCheckBrokenLinks
 # ---------------------------------------------------------------------------
 
+
 class TestCheckBrokenLinks:
     def test_detects_broken_links(self):
         paths = ["note.md"]
@@ -207,6 +212,7 @@ class TestCheckBrokenLinks:
 # TestCheckCasing
 # ---------------------------------------------------------------------------
 
+
 class TestCheckCasing:
     def test_detects_casing_conflicts(self):
         paths = [
@@ -230,6 +236,7 @@ class TestCheckCasing:
 # ---------------------------------------------------------------------------
 # TestCheckDuplicates
 # ---------------------------------------------------------------------------
+
 
 class TestCheckDuplicates:
     def test_flags_identical_body(self):
@@ -262,12 +269,12 @@ class TestCheckDuplicates:
 # TestApplyFix
 # ---------------------------------------------------------------------------
 
+
 class TestApplyFix:
-    @patch("dashboard.api_adapter.obsidian_save_file")
-    @patch("dashboard.api_adapter.obsidian_get_file")
-    def test_adds_missing_field(self, mock_get, mock_save):
-        mock_get.return_value = {"success": True, "content": MISSING_FM_NOTE}
-        mock_save.return_value = {"success": True}
+    @patch("vault_janitor.ObsidianVault")
+    def test_adds_missing_field(self, MockVault):
+        mock_vault = MockVault.return_value
+        mock_vault.read_note.return_value = MISSING_FM_NOTE
 
         issue = JanitorIssue(
             issue_type="missing_frontmatter",
@@ -279,13 +286,13 @@ class TestApplyFix:
         result = apply_fix(issue)
         assert result["success"] is True
 
-        saved_content = mock_save.call_args[0][1]
+        saved_content = mock_vault.replace_content.call_args[1]["new_content"]
         assert "course_code: PHYT_6313" in saved_content
 
-    @patch("dashboard.api_adapter.obsidian_save_file")
-    @patch("dashboard.api_adapter.obsidian_get_file")
-    def test_idempotent(self, mock_get, mock_save):
-        mock_get.return_value = {"success": True, "content": COMPLETE_NOTE}
+    @patch("vault_janitor.ObsidianVault")
+    def test_idempotent(self, MockVault):
+        mock_vault = MockVault.return_value
+        mock_vault.read_note.return_value = COMPLETE_NOTE
 
         issue = JanitorIssue(
             issue_type="missing_frontmatter",
@@ -297,7 +304,7 @@ class TestApplyFix:
         result = apply_fix(issue)
         assert result["success"] is True
         assert result["detail"] == "Already present"
-        mock_save.assert_not_called()
+        mock_vault.replace_content.assert_not_called()
 
     def test_not_fixable(self):
         issue = JanitorIssue(
@@ -308,12 +315,11 @@ class TestApplyFix:
         result = apply_fix(issue)
         assert result["success"] is False
 
-    @patch("dashboard.api_adapter.obsidian_save_file")
-    @patch("dashboard.api_adapter.obsidian_get_file")
-    def test_manual_fix_with_fix_data(self, mock_get, mock_save):
+    @patch("vault_janitor.ObsidianVault")
+    def test_manual_fix_with_fix_data(self, MockVault):
         """Manual fix: fixable=False but fix_data has a value → succeeds."""
-        mock_get.return_value = {"success": True, "content": MISSING_FM_NOTE}
-        mock_save.return_value = {"success": True}
+        mock_vault = MockVault.return_value
+        mock_vault.read_note.return_value = MISSING_FM_NOTE
 
         issue = JanitorIssue(
             issue_type="missing_frontmatter",
@@ -325,7 +331,7 @@ class TestApplyFix:
         result = apply_fix(issue)
         assert result["success"] is True
 
-        saved_content = mock_save.call_args[0][1]
+        saved_content = mock_vault.replace_content.call_args[1]["new_content"]
         assert "course_code: PHYT_6313" in saved_content
 
     def test_manual_fix_without_fix_data(self):
@@ -341,11 +347,10 @@ class TestApplyFix:
         assert result["success"] is False
         assert "No value for 'course_code'" in result["detail"]
 
-    @patch("dashboard.api_adapter.obsidian_save_file")
-    @patch("dashboard.api_adapter.obsidian_get_file")
-    def test_adds_frontmatter_when_none_exists(self, mock_get, mock_save):
-        mock_get.return_value = {"success": True, "content": NO_FM_NOTE}
-        mock_save.return_value = {"success": True}
+    @patch("vault_janitor.ObsidianVault")
+    def test_adds_frontmatter_when_none_exists(self, MockVault):
+        mock_vault = MockVault.return_value
+        mock_vault.read_note.return_value = NO_FM_NOTE
 
         issue = JanitorIssue(
             issue_type="missing_frontmatter",
@@ -357,13 +362,14 @@ class TestApplyFix:
         result = apply_fix(issue)
         assert result["success"] is True
 
-        saved = mock_save.call_args[0][1]
+        saved = MockVault.return_value.replace_content.call_args[1]["new_content"]
         assert saved.startswith("---\ncourse: Neuroscience\n---\n")
 
 
 # ---------------------------------------------------------------------------
 # TestScanVault
 # ---------------------------------------------------------------------------
+
 
 class TestScanVault:
     @patch("obsidian_index.get_vault_index")
@@ -413,15 +419,17 @@ class TestScanVault:
 
 import json
 
-AI_LLM_RESPONSE_VALID = json.dumps({
-    "suggestions": {
-        "course_code": {"value": "PHYT_6313", "confidence": "high"},
-        "unit_type": {"value": "week", "confidence": "medium"},
-        "note_type": {"value": "concept", "confidence": "low"},
-    },
-    "reasoning": "Content discusses spinal cord motor pathways, consistent with Neuroscience.",
-    "uncertain_fields": ["note_type"],
-})
+AI_LLM_RESPONSE_VALID = json.dumps(
+    {
+        "suggestions": {
+            "course_code": {"value": "PHYT_6313", "confidence": "high"},
+            "unit_type": {"value": "week", "confidence": "medium"},
+            "note_type": {"value": "concept", "confidence": "low"},
+        },
+        "reasoning": "Content discusses spinal cord motor pathways, consistent with Neuroscience.",
+        "uncertain_fields": ["note_type"],
+    }
+)
 
 
 class TestAiInferFrontmatter:
@@ -463,7 +471,12 @@ class TestAiInferFrontmatter:
 
     def test_all_fields_present(self):
         """When nothing is missing, skip the LLM call entirely."""
-        existing = {"course": "A", "course_code": "B", "unit_type": "C", "note_type": "D"}
+        existing = {
+            "course": "A",
+            "course_code": "B",
+            "unit_type": "C",
+            "note_type": "D",
+        }
         result = ai_infer_frontmatter("x.md", "content", existing)
         assert result["suggestions"] == {}
         assert result["reasoning"] == "All fields present"
@@ -473,13 +486,16 @@ class TestAiInferFrontmatter:
 # TestAiResolve
 # ---------------------------------------------------------------------------
 
+
 class TestAiResolve:
     @patch("vault_janitor.ai_infer_frontmatter")
-    @patch("dashboard.api_adapter.obsidian_get_file")
-    def test_routes_frontmatter(self, mock_get, mock_infer):
-        mock_get.return_value = {"success": True, "content": MISSING_FM_NOTE}
+    @patch("vault_janitor.ObsidianVault")
+    def test_routes_frontmatter(self, MockVault, mock_infer):
+        MockVault.return_value.read_note.return_value = MISSING_FM_NOTE
         mock_infer.return_value = {
-            "suggestions": {"course_code": {"value": "PHYT_6313", "confidence": "high"}},
+            "suggestions": {
+                "course_code": {"value": "PHYT_6313", "confidence": "high"}
+            },
             "reasoning": "Matched from content",
             "uncertain_fields": [],
         }
@@ -504,12 +520,11 @@ class TestAiResolve:
 # TestAiApply
 # ---------------------------------------------------------------------------
 
+
 class TestAiApply:
-    @patch("dashboard.api_adapter.obsidian_save_file")
-    @patch("dashboard.api_adapter.obsidian_get_file")
-    def test_apply_frontmatter(self, mock_get, mock_save):
-        mock_get.return_value = {"success": True, "content": MISSING_FM_NOTE}
-        mock_save.return_value = {"success": True}
+    @patch("vault_janitor.ObsidianVault")
+    def test_apply_frontmatter(self, MockVault):
+        MockVault.return_value.read_note.return_value = MISSING_FM_NOTE
 
         suggestion = {
             "course_code": {"value": "PHYT_6313", "confidence": "high"},
@@ -527,19 +542,15 @@ class TestAiApply:
         assert result["success"] is True
         assert result["links_added"] == 3
 
-    @patch("dashboard.api_adapter.obsidian_save_file")
-    @patch("dashboard.api_adapter.obsidian_get_file")
-    def test_apply_rename_link(self, mock_get, mock_save):
-        mock_get.return_value = {
-            "success": True,
-            "content": "See [[Nonexistent Note]] for details.",
-        }
-        mock_save.return_value = {"success": True}
+    @patch("vault_janitor.ObsidianVault")
+    def test_apply_rename_link(self, MockVault):
+        mock_vault = MockVault.return_value
+        mock_vault.read_note.return_value = "See [[Nonexistent Note]] for details."
 
         suggestion = {"old_target": "Nonexistent Note", "new_target": "Motor Cortex"}
         result = ai_apply("note.md", "rename_link", suggestion)
         assert result["success"] is True
-        saved = mock_save.call_args[0][1]
+        saved = mock_vault.replace_content.call_args[1]["new_content"]
         assert "[[Motor Cortex]]" in saved
         assert "[[Nonexistent Note]]" not in saved
 
@@ -552,16 +563,27 @@ class TestAiApply:
 # TestBatchFix
 # ---------------------------------------------------------------------------
 
+
 class TestBatchFix:
     @patch("vault_janitor.apply_fix")
     @patch("vault_janitor.scan_vault")
     def test_fixes_all_fixable(self, mock_scan, mock_fix):
         mock_scan.return_value = ScanResult(
             issues=[
-                JanitorIssue("missing_frontmatter", "a.md", field="course", fixable=True,
-                             fix_data={"course": "Neuro"}),
-                JanitorIssue("missing_frontmatter", "a.md", field="code", fixable=True,
-                             fix_data={"code": "PHYT"}),
+                JanitorIssue(
+                    "missing_frontmatter",
+                    "a.md",
+                    field="course",
+                    fixable=True,
+                    fix_data={"course": "Neuro"},
+                ),
+                JanitorIssue(
+                    "missing_frontmatter",
+                    "a.md",
+                    field="code",
+                    fixable=True,
+                    fix_data={"code": "PHYT"},
+                ),
                 JanitorIssue("orphan", "b.md", fixable=False),
             ],
             notes_scanned=5,
@@ -583,10 +605,20 @@ class TestBatchFix:
     def test_respects_max_batch(self, mock_scan, mock_fix):
         mock_scan.return_value = ScanResult(
             issues=[
-                JanitorIssue("missing_frontmatter", "a.md", field="course", fixable=True,
-                             fix_data={"course": "A"}),
-                JanitorIssue("missing_frontmatter", "b.md", field="course", fixable=True,
-                             fix_data={"course": "B"}),
+                JanitorIssue(
+                    "missing_frontmatter",
+                    "a.md",
+                    field="course",
+                    fixable=True,
+                    fix_data={"course": "A"},
+                ),
+                JanitorIssue(
+                    "missing_frontmatter",
+                    "b.md",
+                    field="course",
+                    fixable=True,
+                    fix_data={"course": "B"},
+                ),
             ],
             notes_scanned=2,
             scan_time_ms=5.0,
@@ -617,26 +649,25 @@ class TestBatchFix:
 # TestBatchEnrich
 # ---------------------------------------------------------------------------
 
+
 class TestBatchEnrich:
-    @patch("dashboard.api_adapter.obsidian_save_file")
-    @patch("dashboard.api_adapter.obsidian_get_file")
+    @patch("vault_janitor.ObsidianVault")
     @patch("obsidian_merge.add_concept_links")
     @patch("obsidian_index.get_vault_index")
-    def test_batch_processes_multiple(self, mock_index, mock_add_links, mock_get, mock_save):
+    def test_batch_processes_multiple(self, mock_index, mock_add_links, MockVault):
         """Simulate batch enrichment by calling enrich_links() per note."""
         mock_index.return_value = {"success": True, "notes": ["NoteA", "NoteB"]}
         # First call: 2 links added, second: no change, third: 1 link added
-        mock_get.side_effect = [
-            {"success": True, "content": "Body A"},
-            {"success": True, "content": "Body B with [[NoteA]]"},
-            {"success": True, "content": "Body C"},
+        MockVault.return_value.read_note.side_effect = [
+            "Body A",
+            "Body B with [[NoteA]]",
+            "Body C",
         ]
         mock_add_links.side_effect = [
             "Body A with [[NoteA]] and [[NoteB]]",  # enriched
-            "Body B with [[NoteA]]",                  # no change
-            "Body C with [[NoteA]]",                  # enriched
+            "Body B with [[NoteA]]",  # no change
+            "Body C with [[NoteA]]",  # enriched
         ]
-        mock_save.return_value = {"success": True}
 
         results = []
         for path in ["a.md", "b.md", "c.md"]:

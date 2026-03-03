@@ -4,6 +4,7 @@ Reuses obsidian_index for vault scanning, course_map for path resolution,
 and obsidian_merge for wikilink enrichment.  AI-powered resolution uses
 llm_provider to infer missing metadata from note content.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -14,19 +15,23 @@ import time
 from dataclasses import dataclass, field as dc_field
 from typing import Optional
 
+from obsidian_vault import ObsidianVault
+
 _LOG = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
 
-ISSUE_TYPES = frozenset({
-    "missing_frontmatter",
-    "orphan",
-    "broken_link",
-    "casing_mismatch",
-    "duplicate",
-})
+ISSUE_TYPES = frozenset(
+    {
+        "missing_frontmatter",
+        "orphan",
+        "broken_link",
+        "casing_mismatch",
+        "duplicate",
+    }
+)
 
 ALL_CHECKS = list(ISSUE_TYPES)
 
@@ -126,6 +131,7 @@ def _resolve_frontmatter_from_path(path: str) -> dict[str, str]:
 # Individual checkers
 # ---------------------------------------------------------------------------
 
+
 def _check_frontmatter(
     paths: list[str],
     contents: dict[str, str],
@@ -140,14 +146,16 @@ def _check_frontmatter(
         for req in REQUIRED_FM_FIELDS:
             if req not in fm:
                 fix = _resolve_frontmatter_from_path(path)
-                issues.append(JanitorIssue(
-                    issue_type="missing_frontmatter",
-                    path=path,
-                    field=req,
-                    detail=f"Missing '{req}' in frontmatter",
-                    fixable=bool(fix.get(req)),
-                    fix_data=fix if fix.get(req) else {},
-                ))
+                issues.append(
+                    JanitorIssue(
+                        issue_type="missing_frontmatter",
+                        path=path,
+                        field=req,
+                        detail=f"Missing '{req}' in frontmatter",
+                        fixable=bool(fix.get(req)),
+                        fix_data=fix if fix.get(req) else {},
+                    )
+                )
     return issues
 
 
@@ -170,11 +178,13 @@ def _check_orphans(graph: dict) -> list[JanitorIssue]:
         folder = node.get("folder", "")
         if name and name not in targets:
             path = f"{folder}/{name}.md" if folder else f"{name}.md"
-            issues.append(JanitorIssue(
-                issue_type="orphan",
-                path=path,
-                detail=f"No incoming links to '{name}'",
-            ))
+            issues.append(
+                JanitorIssue(
+                    issue_type="orphan",
+                    path=path,
+                    detail=f"No incoming links to '{name}'",
+                )
+            )
     return issues
 
 
@@ -196,12 +206,14 @@ def _check_broken_links(
         targets = _parse_wikilinks(content)
         for target in targets:
             if target.lower() not in note_names_lower:
-                issues.append(JanitorIssue(
-                    issue_type="broken_link",
-                    path=path,
-                    field=target,
-                    detail=f"Link [[{target}]] points to non-existent note",
-                ))
+                issues.append(
+                    JanitorIssue(
+                        issue_type="broken_link",
+                        path=path,
+                        field=target,
+                        detail=f"Link [[{target}]] points to non-existent note",
+                    )
+                )
     return issues
 
 
@@ -220,11 +232,13 @@ def _check_casing(paths: list[str]) -> list[JanitorIssue]:
     issues: list[JanitorIssue] = []
     for key, variants in folder_map.items():
         if len(variants) > 1:
-            issues.append(JanitorIssue(
-                issue_type="casing_mismatch",
-                path=variants[0],
-                detail=f"Folder casing conflict: {', '.join(sorted(variants))}",
-            ))
+            issues.append(
+                JanitorIssue(
+                    issue_type="casing_mismatch",
+                    path=variants[0],
+                    detail=f"Folder casing conflict: {', '.join(sorted(variants))}",
+                )
+            )
     return issues
 
 
@@ -245,17 +259,20 @@ def _check_duplicates(contents: dict[str, str]) -> list[JanitorIssue]:
     for h, dupe_paths in hash_map.items():
         if len(dupe_paths) > 1:
             for p in dupe_paths[1:]:
-                issues.append(JanitorIssue(
-                    issue_type="duplicate",
-                    path=p,
-                    detail=f"Duplicate content with {dupe_paths[0]}",
-                ))
+                issues.append(
+                    JanitorIssue(
+                        issue_type="duplicate",
+                        path=p,
+                        detail=f"Duplicate content with {dupe_paths[0]}",
+                    )
+                )
     return issues
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def scan_vault(
     folder: Optional[str] = None,
@@ -293,7 +310,8 @@ def scan_vault(
     if folder:
         folder_norm = folder.replace("\\", "/").rstrip("/")
         filtered_paths = {
-            name: path for name, path in all_paths.items()
+            name: path
+            for name, path in all_paths.items()
             if path.replace("\\", "/").startswith(folder_norm)
         }
     else:
@@ -341,19 +359,21 @@ def apply_fix(issue: JanitorIssue) -> dict:
     if issue.issue_type != "missing_frontmatter":
         return {"success": False, "path": issue.path, "detail": "Not fixable"}
     if not issue.fix_data.get(issue.field):
-        return {"success": False, "path": issue.path, "detail": f"No value for '{issue.field}'"}
-
-    from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
-
-    note = obsidian_get_file(issue.path)
-    if not note.get("success"):
         return {
             "success": False,
             "path": issue.path,
-            "detail": f"Cannot read note: {note.get('error', 'unknown')}",
+            "detail": f"No value for '{issue.field}'",
         }
 
-    content = note.get("content", "")
+    _vault = ObsidianVault()
+    content = _vault.read_note(file=issue.path)
+    if not content:
+        return {
+            "success": False,
+            "path": issue.path,
+            "detail": "Cannot read note",
+        }
+
     fm = _parse_frontmatter_fields(content)
 
     # Check if the field was already added (idempotent)
@@ -362,7 +382,11 @@ def apply_fix(issue: JanitorIssue) -> dict:
 
     fix_val = issue.fix_data.get(issue.field, "")
     if not fix_val:
-        return {"success": False, "path": issue.path, "detail": "No fix value available"}
+        return {
+            "success": False,
+            "path": issue.path,
+            "detail": "No fix value available",
+        }
 
     new_line = f"{issue.field}: {fix_val}"
 
@@ -377,13 +401,11 @@ def apply_fix(issue: JanitorIssue) -> dict:
         # No frontmatter exists — prepend one
         updated = f"---\n{new_line}\n---\n{content}"
 
-    save_result = obsidian_save_file(issue.path, updated)
-    if save_result.get("success"):
-        return {"success": True, "path": issue.path, "detail": f"Added {issue.field}={fix_val}"}
+    _vault.replace_content(file=issue.path, new_content=updated)
     return {
-        "success": False,
+        "success": True,
         "path": issue.path,
-        "detail": f"Save failed: {save_result.get('error', 'unknown')}",
+        "detail": f"Added {issue.field}={fix_val}",
     }
 
 
@@ -434,6 +456,7 @@ def batch_fix(
 # AI-powered resolution
 # ---------------------------------------------------------------------------
 
+
 def _build_ai_system_prompt() -> str:
     """Build the system prompt for frontmatter inference, including valid options."""
     import config
@@ -478,7 +501,11 @@ def ai_infer_frontmatter(path: str, content: str, existing_fm: dict[str, str]) -
 
     missing = [f for f in REQUIRED_FM_FIELDS if f not in existing_fm]
     if not missing:
-        return {"suggestions": {}, "reasoning": "All fields present", "uncertain_fields": []}
+        return {
+            "suggestions": {},
+            "reasoning": "All fields present",
+            "uncertain_fields": [],
+        }
 
     system_prompt = _build_ai_system_prompt()
     excerpt = content[:2000]
@@ -525,14 +552,11 @@ def ai_resolve(path: str, issue_type: str, context: dict | None = None) -> dict:
 
     Returns: {success, suggestion, reasoning, apply_action, uncertain_fields?, error?}
     """
-    from dashboard.api_adapter import obsidian_get_file
-
     if issue_type == "missing_frontmatter":
-        note = obsidian_get_file(path)
-        if not note.get("success"):
-            return {"success": False, "error": f"Cannot read note: {note.get('error')}"}
-
-        content = note.get("content", "")
+        _vault = ObsidianVault()
+        content = _vault.read_note(file=path)
+        if not content:
+            return {"success": False, "error": "Cannot read note"}
         existing_fm = _parse_frontmatter_fields(content)
         result = ai_infer_frontmatter(path, content, existing_fm)
 
@@ -569,7 +593,7 @@ def ai_resolve(path: str, issue_type: str, context: dict | None = None) -> dict:
             "You fix broken wikilinks in an Obsidian vault. "
             "Given a broken link target and the list of existing note names, "
             "suggest the closest matching note name. "
-            "Return ONLY valid JSON: {\"suggested_target\": \"NoteName\", \"confidence\": \"high|medium|low\"}"
+            'Return ONLY valid JSON: {"suggested_target": "NoteName", "confidence": "high|medium|low"}'
         )
         user_prompt = (
             f"Broken link: [[{broken_target}]]\n"
@@ -606,13 +630,15 @@ def ai_apply(path: str, apply_action: str, suggestion: dict) -> dict:
 
     Returns: {success, detail}
     """
-    from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
-
     if apply_action == "update_frontmatter":
         # Build individual fix issues and apply each field
         results = []
         for field_name, field_data in suggestion.items():
-            value = field_data.get("value", "") if isinstance(field_data, dict) else str(field_data)
+            value = (
+                field_data.get("value", "")
+                if isinstance(field_data, dict)
+                else str(field_data)
+            )
             if not value:
                 continue
             issue = JanitorIssue(
@@ -626,7 +652,10 @@ def ai_apply(path: str, apply_action: str, suggestion: dict) -> dict:
 
         failures = [r for r in results if not r.get("success")]
         if failures:
-            return {"success": False, "detail": f"{len(failures)} field(s) failed: {failures[0].get('detail', '')}"}
+            return {
+                "success": False,
+                "detail": f"{len(failures)} field(s) failed: {failures[0].get('detail', '')}",
+            }
         return {"success": True, "detail": f"Updated {len(results)} field(s)"}
 
     if apply_action == "add_links":
@@ -638,34 +667,34 @@ def ai_apply(path: str, apply_action: str, suggestion: dict) -> dict:
         if not old_target or not new_target:
             return {"success": False, "detail": "Missing old_target or new_target"}
 
-        note = obsidian_get_file(path)
-        if not note.get("success"):
-            return {"success": False, "detail": f"Cannot read note: {note.get('error')}"}
+        _vault = ObsidianVault()
+        content = _vault.read_note(file=path)
+        if not content:
+            return {"success": False, "detail": "Cannot read note"}
 
-        content = note.get("content", "")
         updated = content.replace(f"[[{old_target}]]", f"[[{new_target}]]")
         if updated == content:
             return {"success": True, "detail": "Link not found (already renamed?)"}
 
-        save_result = obsidian_save_file(path, updated)
-        if save_result.get("success"):
-            return {"success": True, "detail": f"Renamed [[{old_target}]] → [[{new_target}]]"}
-        return {"success": False, "detail": f"Save failed: {save_result.get('error', 'unknown')}"}
+        _vault.replace_content(file=path, new_content=updated)
+        return {
+            "success": True,
+            "detail": f"Renamed [[{old_target}]] → [[{new_target}]]",
+        }
 
     return {"success": False, "detail": f"Unknown apply_action: {apply_action}"}
 
 
 def enrich_links(path: str) -> dict:
     """Add wikilinks to a note via LLM-powered concept linking."""
-    from dashboard.api_adapter import obsidian_get_file, obsidian_save_file
     from obsidian_merge import add_concept_links
     from obsidian_index import get_vault_index
 
-    note = obsidian_get_file(path)
-    if not note.get("success"):
-        return {"success": False, "links_added": 0, "error": note.get("error")}
+    _vault = ObsidianVault()
+    content = _vault.read_note(file=path)
+    if not content:
+        return {"success": False, "links_added": 0, "error": "Cannot read note"}
 
-    content = note.get("content", "")
     index = get_vault_index()
     vault_notes = index.get("notes") or []
 
@@ -675,11 +704,10 @@ def enrich_links(path: str) -> dict:
 
     # Count new links
     from obsidian_index import _parse_wikilinks
+
     old_links = set(_parse_wikilinks(content))
     new_links = set(_parse_wikilinks(enriched))
     added = len(new_links - old_links)
 
-    save_result = obsidian_save_file(path, enriched)
-    if save_result.get("success"):
-        return {"success": True, "links_added": added}
-    return {"success": False, "links_added": 0, "error": save_result.get("error")}
+    _vault.replace_content(file=path, new_content=enriched)
+    return {"success": True, "links_added": added}
