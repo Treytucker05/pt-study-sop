@@ -255,3 +255,47 @@ def test_something(self, MockVault):
 - `pytest brain/tests/test_obsidian_vault.py` → 39/39
 - `pytest brain/tests/test_vault_janitor.py` → 42/42
 - Evidence: `.sisyphus/evidence/task-8-no-rest-imports.txt`
+
+## [2026-03-02] Task 13 — 5 block artifact note templates
+
+### Files created
+- `sop/templates/notes/block_notes.md.tmpl` — covers `notes` artifact type (30+ blocks)
+- `sop/templates/notes/block_diagram.md.tmpl` — covers `concept-map` artifact type
+- `sop/templates/notes/block_comparison.md.tmpl` — covers `comparison-table` artifact type
+- `sop/templates/notes/block_recall.md.tmpl` — covers `recall` artifact type
+- `sop/templates/notes/block_cards.md.tmpl` — covers `cards` artifact type
+
+### Template structure (shared)
+- YAML frontmatter: `note_type`, `block_id`, `block_name`, `control_stage`, `session_id`, `course`, `module`, `topic`, `started_at`, `ended_at`, `artifact_type`
+- Header: `# {block_name}` + `**Stage**: \`{control_stage}\` | **Time**: {started_at} → {ended_at}`
+- Artifact-specific body: `{content}` / `{diagram_content}` (in ```mermaid block) / `{table_content}` / `{recall_content}` / `{cards_content}`
+- Footer: `[[{moc_path}|Map of Contents]] | [[{session_note_path}|Session Note]]`
+
+### Verification approach
+- `_read_template()` requires `fallback=` kwarg and prepends `_TEMPLATE_DIR`. Read files directly via `Path` for standalone tests.
+- `_SafeFormatDict` makes all `{variable}` placeholders safe (missing → empty string, no KeyError)
+- Triple backticks in mermaid block don't conflict with `str.format_map` — safe to use in templates
+
+### Commit
+`66526a97` — feat(vault): T13 — add 5 block artifact note templates
+
+## [2026-03-02] T14 — Block artifact template renderers
+
+### Pattern: `render_block_artifact()` dispatcher
+- Public function with keyword-only args; maps `artifact_type` → private renderer.
+- 5 private `_render_block_*_markdown(payload: dict)` functions; each handles one template.
+- Content key varies per type: `content`, `diagram_content`, `table_content`, `recall_content`, `cards_content`.
+- `_SafeFormatDict` makes missing keys safe — no KeyError on incomplete payloads.
+- `_read_template(filename, fallback=...)` takes filename only (prepends `_TEMPLATE_DIR`).
+- Fallback string in each renderer mirrors the actual template — safe when template file is absent.
+- Triple backticks inside Python triple-quoted strings are fine (different delimiter).
+- Unknown `artifact_type` silently falls back to `"notes"` renderer.
+
+## [2026-03-03] T16 — PRIME LO extraction wiring
+
+### Wiring points in `api_tutor.py`
+- Use `control_stage` as primary active-stage source (fallback to `category`) so PRIME checks are reliable.
+- Detect first turn of active block via `tutor_block_transitions.turn_count` on the open transition row (`ended_at IS NULL`).
+- Add PRIME-first-turn prompt directive to extract 3-7 measurable objectives and call `save_learning_objectives`.
+- Keep tool execution path unchanged: Responses API tool call → `execute_tool()` → `execute_save_learning_objectives()` → `save_learning_objectives_from_tool()`.
+- Add defensive fallback to include `save_learning_objectives` schema in PRIME-first-turn tool list if missing.

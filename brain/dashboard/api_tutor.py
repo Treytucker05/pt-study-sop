@@ -3486,7 +3486,37 @@ def send_turn(session_id: str):
         block_info, chain_info = _build_chain_info(
             conn, session["method_chain_id"], current_idx
         )
-    active_stage = str((block_info or {}).get("category") or "").upper()
+    active_stage = str(
+        (block_info or {}).get("control_stage")
+        or (block_info or {}).get("category")
+        or ""
+    ).upper()
+    is_first_turn_in_active_block = False
+    if session.get("method_chain_id"):
+        try:
+            transition_row = conn.execute(
+                """SELECT turn_count
+                   FROM tutor_block_transitions
+                   WHERE tutor_session_id = ? AND ended_at IS NULL
+                   ORDER BY id DESC
+                   LIMIT 1""",
+                (session_id,),
+            ).fetchone()
+            if transition_row is not None:
+                raw_turn_count = transition_row["turn_count"]
+                try:
+                    active_block_turn_count = (
+                        int(raw_turn_count) if raw_turn_count is not None else 0
+                    )
+                except (TypeError, ValueError):
+                    active_block_turn_count = 0
+                is_first_turn_in_active_block = active_block_turn_count <= 0
+        except Exception as exc:
+            _LOG.debug(
+                "Could not read active block turn_count for session %s: %s",
+                session_id,
+                exc,
+            )
     active_method_id = str((block_info or {}).get("method_id") or "").strip()
     method_contract = (
         _load_method_contracts().get(active_method_id, {}) if active_method_id else {}
@@ -3722,6 +3752,9 @@ def send_turn(session_id: str):
     _reasoning_effort = "high" if (_deep_think_on or not _mode_provided) else None
 
     turn_number = session["turn_count"] + 1
+    is_prime_first_block_turn = active_stage == "PRIME" and (
+        is_first_turn_in_active_block or turn_number == 1
+    )
 
     def generate():
         _LOG.debug(
@@ -3949,6 +3982,12 @@ def send_turn(session_id: str):
                         "- Link every node to at least one objective.\n"
                         "- Include UnknownNodeList and PriorityNodes.\n"
                         "- Exclude trivia and avoid deep content teaching in this method.\n"
+                    )
+                if is_prime_first_block_turn:
+                    system_prompt += (
+                        "\n## PRIME Learning Objective Extraction\n"
+                        "This is a PRIME block. As you engage with the student, identify and extract the key learning objectives from the loaded materials. "
+                        "Use the save_learning_objectives tool to save them. Extract 3-7 specific, measurable learning objectives.\n"
                     )
             system_prompt += (
                 f"\n\n## PRIME Objective Scope\n- Active scope: {objective_scope}\n"
@@ -4238,10 +4277,19 @@ def send_turn(session_id: str):
                     retrieval_debug=retrieval_debug_payload,
                 )
             else:
-                from tutor_tools import get_tool_schemas, execute_tool
+                from tutor_tools import (
+                    SAVE_LEARNING_OBJECTIVES_SCHEMA,
+                    execute_tool,
+                    get_tool_schemas,
+                )
                 import json as _json
 
                 tool_schemas = get_tool_schemas()
+                if is_prime_first_block_turn and not any(
+                    schema.get("name") == "save_learning_objectives"
+                    for schema in tool_schemas
+                ):
+                    tool_schemas.append(dict(SAVE_LEARNING_OBJECTIVES_SCHEMA))
                 _LOG.info(
                     "Tutor tools: %d schemas loaded — %s | needs_lo_save=%s turn=%d",
                     len(tool_schemas),
