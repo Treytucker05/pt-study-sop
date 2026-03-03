@@ -13,6 +13,8 @@ import type {
   TutorSessionWithTurns,
   TutorConfigCheck,
 } from "@/lib/api";
+import { fetchCourseMap } from "@/lib/api";
+import { COURSE_FOLDERS } from "@/config/courses";
 import { ContentFilter } from "@/components/ContentFilter";
 import { TutorWizard } from "@/components/TutorWizard";
 import { TutorChat } from "@/components/TutorChat";
@@ -274,6 +276,20 @@ export default function Tutor() {
     queryFn: () => api.tutor.getMaterials({ enabled: true }),
     staleTime: 60 * 1000,
   });
+
+  const { data: courseMapData } = useQuery({
+    queryKey: ["course-map"],
+    queryFn: fetchCourseMap,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const apiCourses = courseMapData?.courses.map((c) => ({
+    id: c.code.toLowerCase().replace("phyt_", ""),
+    name: c.label,
+    path: c.label,
+  })) ?? [];
+
+  const courseFolders = apiCourses.length > 0 ? apiCourses : COURSE_FOLDERS;
 
   const refreshChatMaterials = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });

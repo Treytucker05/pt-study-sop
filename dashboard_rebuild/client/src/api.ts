@@ -1819,3 +1819,24 @@ export interface WhyLockedResponse {
   recent_error_flags: { error_type: string; severity: string; edge_id: string | null; evidence_ref: string | null; created_at: string }[];
   remediation_path: string[];
 }
+
+// ── Course Map ──────────────────────────────────────────────────────────────
+
+export interface CourseMapCourse {
+  code: string;
+  label: string;
+  term: string;
+  unit_type: string;
+  units: Array<{ id: string; name: string; topics: string[] }>;
+}
+
+export interface CourseMapResponse {
+  vault_root: string;
+  courses: CourseMapCourse[];
+}
+
+export async function fetchCourseMap(): Promise<CourseMapResponse> {
+  const res = await fetch("/api/tutor/course-map");
+  if (!res.ok) throw new Error("course-map fetch failed");
+  return res.json();
+}
