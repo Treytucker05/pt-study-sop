@@ -54,7 +54,12 @@ from jsonschema import Draft202012Validator
 
 from dashboard.utils import load_api_config, save_api_config
 
-from db_setup import DB_PATH, get_connection, ensure_method_library_seeded
+from db_setup import (
+    DB_PATH,
+    get_connection,
+    ensure_method_library_seeded,
+    log_tutor_delete_telemetry,
+)
 from course_wheel_sync import ensure_course_in_wheel
 from tutor_behavior_directives import get_directive
 from tutor_verdict import (
@@ -134,6 +139,40 @@ def _safe_json_dict(value: Any) -> dict[str, Any]:
         except (json.JSONDecodeError, TypeError):
             return {}
     return {}
+
+
+def _record_tutor_delete_telemetry(
+    *,
+    request_id: str,
+    route: str,
+    session_id: str,
+    status: str,
+    requested_count: int,
+    deleted_count: int,
+    skipped_count: int,
+    failed_count: int,
+    details: Optional[dict[str, Any]] = None,
+) -> None:
+    try:
+        log_tutor_delete_telemetry(
+            request_id=request_id,
+            route=route,
+            session_id=session_id,
+            status=status,
+            requested_count=requested_count,
+            deleted_count=deleted_count,
+            skipped_count=skipped_count,
+            failed_count=failed_count,
+            details=details,
+        )
+    except Exception:
+        _LOG.exception(
+            "tutor_delete_telemetry_failed request_id=%s route=%s session_id=%s status=%s",
+            request_id,
+            route,
+            session_id,
+            status,
+        )
 
 
 def _extract_knob_defaults(knobs_payload: Any) -> dict[str, Any]:
@@ -1612,14 +1651,19 @@ def _finalize_structured_notes_for_session(
     )
 
 
-def _reconcile_obsidian_state(session: dict) -> None:
+def _reconcile_obsidian_state(
+    session: dict,
+    *,
+    persist: bool = True,
+    prune_learning_objectives: bool = True,
+) -> None:
     """Check whether Obsidian files referenced by a session still exist.
 
-    Called on GET /session/<id> (reconcile-on-load).  Mutates *session* dict
+    Called on GET /session/<id> (reconcile-on-load). Mutates *session* dict
     in place so the response reflects the current vault state.
 
     - Map of Contents: if the file is missing, sets ``map_of_contents.status`` to
-      ``"needs_path"`` and persists the change to SQLite.
+      ``"needs_path"`` and persists the change to SQLite when ``persist=True``.
     - Artifacts: flags each artifact entry with ``"missing": True`` if its
       ``session_path`` or any of its ``concept_paths`` no longer exist.
     """
@@ -1689,7 +1733,7 @@ def _reconcile_obsidian_state(session: dict) -> None:
     # If the user deleted the Map of Contents from Obsidian, the objectives that
     # lived inside it should also be removed from the dashboard (SQLite).
     lo_deleted = 0
-    if ns_changed and content_filter is not None:
+    if persist and prune_learning_objectives and ns_changed and content_filter is not None:
         ns = content_filter.get("map_of_contents") or {}
         obj_ids: list[str] = ns.get("objective_ids") or []
         course_id = session.get("course_id")
@@ -1719,7 +1763,7 @@ def _reconcile_obsidian_state(session: dict) -> None:
             )
 
     # Persist changes to SQLite if anything was updated
-    if ns_changed or art_changed:
+    if persist and (ns_changed or art_changed):
         try:
             conn = get_connection()
             cur = conn.cursor()
@@ -1818,6 +1862,45 @@ def _cascade_delete_obsidian_files(session: dict) -> list[str]:
         )
 
     return deleted
+
+
+def _expected_obsidian_paths_for_session(session: dict) -> list[str]:
+    """Return the set of Obsidian note paths we expect to own for this session."""
+    expected: set[str] = set()
+
+    cf_raw = session.get("content_filter_json")
+    if cf_raw:
+        try:
+            cf = json.loads(cf_raw) if isinstance(cf_raw, str) else cf_raw
+        except (json.JSONDecodeError, TypeError):
+            cf = None
+        if isinstance(cf, dict):
+            ns = cf.get("map_of_contents") or {}
+            ns_path = str(ns.get("path") or "").strip()
+            if ns_path:
+                expected.add(ns_path)
+
+    art_raw = session.get("artifacts_json")
+    if art_raw:
+        try:
+            artifacts = json.loads(art_raw) if isinstance(art_raw, str) else art_raw
+        except (json.JSONDecodeError, TypeError):
+            artifacts = []
+        if isinstance(artifacts, list):
+            for art in artifacts:
+                if not isinstance(art, dict):
+                    continue
+                session_path = str(art.get("session_path") or "").strip()
+                if session_path:
+                    expected.add(session_path)
+                concept_paths = art.get("concept_paths") or []
+                if isinstance(concept_paths, list):
+                    for cp in concept_paths:
+                        cp_str = str(cp or "").strip()
+                        if cp_str:
+                            expected.add(cp_str)
+
+    return sorted(expected)
 
 
 def _get_tutor_session(conn, session_id: str) -> Optional[dict]:
@@ -3444,7 +3527,9 @@ def get_session(session_id: str):
             session["current_block_name"] = blocks[idx]["name"]
 
     # --- Reconcile-on-load: verify Obsidian files still exist ---
-    _reconcile_obsidian_state(session)
+    # Read endpoint is side-effect-free: expose reconciled state in response
+    # without mutating persistence.
+    _reconcile_obsidian_state(session, persist=False, prune_learning_objectives=False)
 
     conn.close()
 
@@ -5682,14 +5767,57 @@ def get_linked_chat(brain_session_id: int):
 
 @tutor_bp.route("/session/<session_id>", methods=["DELETE"])
 def delete_session(session_id: str):
+    route_name = "DELETE /api/tutor/session/<id>"
+    request_id = str(uuid.uuid4())
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)
     if not session:
         conn.close()
-        return jsonify({"error": "Session not found"}), 404
+        _LOG.info(
+            "tutor_delete_session request_id=%s session_id=%s status=already_missing",
+            request_id,
+            session_id,
+        )
+        response_payload = {
+            "deleted": False,
+            "session_id": session_id,
+            "status": "already_missing",
+            "request_id": request_id,
+            "requested_count": 1,
+            "deleted_count": 0,
+            "skipped_count": 1,
+            "failed_count": 0,
+            "obsidian_deleted": [],
+            "objectives_deleted": 0,
+        }
+        _record_tutor_delete_telemetry(
+            request_id=request_id,
+            route=route_name,
+            session_id=session_id,
+            status="already_missing",
+            requested_count=1,
+            deleted_count=0,
+            skipped_count=1,
+            failed_count=0,
+            details={"obsidian_deleted_count": 0, "objectives_deleted": 0},
+        )
+        return jsonify(response_payload)
 
     # --- Delete cascade: remove Obsidian files before deleting DB rows ---
+    expected_paths = _expected_obsidian_paths_for_session(session)
     deleted_paths = _cascade_delete_obsidian_files(session)
+    deleted_set = set(deleted_paths)
+    missing_paths = [p for p in expected_paths if p not in deleted_set]
+    obsidian_cleanup_has_missing = bool(missing_paths)
+    if obsidian_cleanup_has_missing:
+        _LOG.warning(
+            "tutor_delete_session request_id=%s session_id=%s status=obsidian_cleanup_partial expected=%d deleted=%d missing=%d",
+            request_id,
+            session_id,
+            len(expected_paths),
+            len(deleted_paths),
+            len(missing_paths),
+        )
 
     # --- Delete learning objectives linked to this session's Map of Contents ---
     lo_deleted = 0
@@ -5712,23 +5840,108 @@ def delete_session(session_id: str):
                 )
                 lo_deleted = cur_lo.rowcount
 
-    cur = conn.cursor()
-    cur.execute("DELETE FROM tutor_turns WHERE tutor_session_id = ?", (session_id,))
-    cur.execute(
-        "DELETE FROM tutor_block_transitions WHERE tutor_session_id = ?", (session_id,)
-    )
-    cur.execute("DELETE FROM tutor_sessions WHERE session_id = ?", (session_id,))
-    conn.commit()
-    conn.close()
-
-    return jsonify(
-        {
-            "deleted": True,
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM tutor_turns WHERE tutor_session_id = ?", (session_id,))
+        cur.execute(
+            "DELETE FROM tutor_block_transitions WHERE tutor_session_id = ?", (session_id,)
+        )
+        cur.execute("DELETE FROM tutor_sessions WHERE session_id = ?", (session_id,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        conn.close()
+        _LOG.exception(
+            "tutor_delete_session request_id=%s session_id=%s status=db_delete_failed",
+            request_id,
+            session_id,
+        )
+        response_payload = {
+            "error": "Database delete failed",
+            "deleted": False,
             "session_id": session_id,
+            "status": "db_delete_failed",
+            "request_id": request_id,
+            "requested_count": 1,
+            "deleted_count": 0,
+            "skipped_count": 0,
+            "failed_count": 1,
             "obsidian_deleted": deleted_paths,
             "objectives_deleted": lo_deleted,
         }
+        _record_tutor_delete_telemetry(
+            request_id=request_id,
+            route=route_name,
+            session_id=session_id,
+            status="db_delete_failed",
+            requested_count=1,
+            deleted_count=0,
+            skipped_count=0,
+            failed_count=1,
+            details={
+                "expected_obsidian_count": len(expected_paths),
+                "obsidian_deleted_count": len(deleted_paths),
+                "missing_obsidian_count": len(missing_paths),
+                "missing_paths": missing_paths,
+                "objectives_deleted": lo_deleted,
+            },
+        )
+        return jsonify(response_payload), 500
+    conn.close()
+
+    final_status = (
+        "deleted_with_warnings" if obsidian_cleanup_has_missing else "deleted"
     )
+    _LOG.info(
+        "tutor_delete_session request_id=%s session_id=%s status=%s objectives_deleted=%d obsidian_deleted=%d missing=%d",
+        request_id,
+        session_id,
+        final_status,
+        lo_deleted,
+        len(deleted_paths),
+        len(missing_paths),
+    )
+
+    response_payload = {
+        "deleted": True,
+        "session_id": session_id,
+        "status": final_status,
+        "request_id": request_id,
+        "requested_count": 1,
+        "deleted_count": 1,
+        "skipped_count": 0,
+        "failed_count": 0,
+        "obsidian_cleanup": {
+            "success": not obsidian_cleanup_has_missing,
+            "expected_count": len(expected_paths),
+            "deleted_count": len(deleted_paths),
+            "missing_paths": missing_paths,
+        },
+        "obsidian_deleted": deleted_paths,
+        "objectives_deleted": lo_deleted,
+    }
+    if obsidian_cleanup_has_missing:
+        response_payload[
+            "warning"
+        ] = "Session deleted, but some Obsidian files could not be removed"
+    _record_tutor_delete_telemetry(
+        request_id=request_id,
+        route=route_name,
+        session_id=session_id,
+        status=final_status,
+        requested_count=1,
+        deleted_count=1,
+        skipped_count=0,
+        failed_count=0,
+        details={
+            "expected_obsidian_count": len(expected_paths),
+            "deleted_obsidian_count": len(deleted_paths),
+            "missing_obsidian_count": len(missing_paths),
+            "missing_paths": missing_paths,
+            "objectives_deleted": lo_deleted,
+        },
+    )
+    return jsonify(response_payload)
 
 
 # ---------------------------------------------------------------------------
@@ -5990,15 +6203,41 @@ def sync_session_graph(session_id: str):
 
 @tutor_bp.route("/session/<session_id>/artifacts", methods=["DELETE"])
 def delete_artifacts(session_id: str):
+    route_name = "DELETE /api/tutor/session/<id>/artifacts"
+    request_id = str(uuid.uuid4())
     data = request.get_json(silent=True) or {}
     indexes = data.get("indexes")
     if not isinstance(indexes, list) or not all(isinstance(i, int) for i in indexes):
+        requested_count = len(indexes) if isinstance(indexes, list) else 0
+        _record_tutor_delete_telemetry(
+            request_id=request_id,
+            route=route_name,
+            session_id=session_id,
+            status="invalid_request",
+            requested_count=requested_count,
+            deleted_count=0,
+            skipped_count=requested_count,
+            failed_count=1,
+            details={"reason": "indexes must be a list of integers"},
+        )
         return jsonify({"error": "indexes must be a list of integers"}), 400
 
     conn = get_connection()
     session = _get_tutor_session(conn, session_id)
     if not session:
         conn.close()
+        requested_count = len(indexes)
+        _record_tutor_delete_telemetry(
+            request_id=request_id,
+            route=route_name,
+            session_id=session_id,
+            status="session_not_found",
+            requested_count=requested_count,
+            deleted_count=0,
+            skipped_count=requested_count,
+            failed_count=1,
+            details={"reason": "session_not_found"},
+        )
         return jsonify({"error": "Session not found"}), 404
 
     existing = session.get("artifacts_json")
@@ -6011,16 +6250,24 @@ def delete_artifacts(session_id: str):
     if not isinstance(artifacts, list):
         artifacts = []
 
+    requested_indexes = list(indexes)
+    normalized_indexes = sorted(set(indexes))
+    valid_indexes: list[int] = []
+    skipped_indexes: list[int] = []
+
     # Collect Obsidian paths from artifacts being removed, then delete
     deleted_paths: list[str] = []
-    for i in sorted(set(indexes)):
+    for i in normalized_indexes:
         if 0 <= i < len(artifacts):
+            valid_indexes.append(i)
             art = artifacts[i]
             if isinstance(art, dict):
                 deleted_paths.extend(_delete_artifact_obsidian_files(art))
+        else:
+            skipped_indexes.append(i)
 
     # Remove by index (descending so indices stay valid)
-    for i in sorted(set(indexes), reverse=True):
+    for i in sorted(valid_indexes, reverse=True):
         if 0 <= i < len(artifacts):
             artifacts.pop(i)
 
@@ -6032,13 +6279,40 @@ def delete_artifacts(session_id: str):
     conn.commit()
     conn.close()
 
-    return jsonify(
-        {
-            "deleted": len(indexes),
-            "session_id": session_id,
-            "obsidian_deleted": deleted_paths,
-        }
+    applied_count = len(valid_indexes)
+    _LOG.info(
+        "tutor_delete_artifacts request_id=%s session_id=%s requested=%d applied=%d skipped=%d",
+        request_id,
+        session_id,
+        len(requested_indexes),
+        applied_count,
+        len(skipped_indexes),
     )
+
+    response_payload = {
+        "deleted": applied_count,
+        "session_id": session_id,
+        "request_id": request_id,
+        "requested_count": len(requested_indexes),
+        "applied_count": applied_count,
+        "skipped_indexes": skipped_indexes,
+        "obsidian_deleted": deleted_paths,
+    }
+    _record_tutor_delete_telemetry(
+        request_id=request_id,
+        route=route_name,
+        session_id=session_id,
+        status="partial_success" if skipped_indexes else "deleted",
+        requested_count=len(requested_indexes),
+        deleted_count=applied_count,
+        skipped_count=len(skipped_indexes),
+        failed_count=0,
+        details={
+            "skipped_indexes": skipped_indexes,
+            "obsidian_deleted_count": len(deleted_paths),
+        },
+    )
+    return jsonify(response_payload)
 
 
 # ---------------------------------------------------------------------------

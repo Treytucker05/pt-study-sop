@@ -408,6 +408,54 @@ def test_something(self, MockVault):
 ### Files modified
 - Created: `brain/tests/test_lo_extraction.py` (9 tests, 200+ lines)
 
+## [2026-03-03] Code Quality Review — vault-redesign (7 files)
+
+### Verdict: NEEDS FIXES
+1 critical, 14 warnings, 5 info. The critical double-`.md` bug corrupts all vault block notes on every write. Must fix before shipping.
+
+### Issues Found
+
+| # | File | Issue | Severity | Line |
+|---|------|-------|----------|------|
+| 1 | `vault_artifact_router.py` | **Double `.md` bug**: caller passes `name=f"{block_name}.md"` to `create_note()`, which appends another `.md` → file created at `{block_name}.md.md`. The read path uses `.md`, so the "already exists" check always misses and a new corrupt file is created on every advance. | critical | 68 + `obsidian_vault.py:159` |
+| 2 | `obsidian_vault.py` | `_RETRY_BACKOFF_DELAYS = [1, 2]` — spec says 1s/2s/4s backoff; only 2 delays for 3 attempts. 4s delay is missing. | warning | 22 |
+| 3 | `obsidian_vault.py` | `_available_cached` / `_available_at` not thread-safe; Flask multi-thread can race on cache read/write. | warning | 31–32 |
+| 4 | `obsidian_vault.py` | `replace_content()` escapes `\`, `"`, `\n` but NOT `\r`, `\t`, or backticks — JS injection risk if content contains those characters. | warning | 180–182 |
+| 5 | `obsidian_vault.py` | `replace_section()` injects `file` and `heading_text` into JS via f-string without sanitizing `"` or `;` — JS injection if either contains those chars. | warning | 260–286 |
+| 6 | `obsidian_vault.py` | `_eval()` wraps code as `code="{code}"` — if `code` itself contains `"`, the CLI argument breaks. | warning | 108 |
+| 7 | `vault_artifact_router.py` | `block_name` not sanitized before path construction — path traversal possible if it contains `../` or `\`. | warning | 56–58 |
+| 8 | `vault_artifact_router.py` | Success detection `not result.startswith("Error:")` — empty string `""` (returned on timeout/fallback) incorrectly counts as success. | warning | 88 |
+| 9 | `tutor_templates.py` | `_render_block_diagram_markdown()` puts content inside mermaid fence — triple-backticks in content break the fence. | warning | 576–578 |
+| 10 | `tutor_tools.py` | `execute_create_note()` — no `try/finally` for `conn.close()`; connection leaks on any exception between open and close. | warning | 321–338 |
+| 11 | `tutor_tools.py` | Same connection leak pattern in `execute_create_anki_card()`. | warning | 366–401 |
+| 12 | `tutor_tools.py` | Same connection leak pattern in `execute_rate_method_block()`. | warning | 510–582 |
+| 13 | `tutor_tools.py` | `SAVE_LEARNING_OBJECTIVES_SCHEMA`: `save_folder` described as required in the description string but absent from the `"required"` array — schema inconsistency. | warning | 212–222 |
+| 14 | `tutor_tools.py` | `execute_rate_method_block()` inserts with `block_id=None` if block not found — silently records a rating with no block association. | warning | 533 |
+| 15 | `api_tutor.py` | `"unavailable"` status typed in `api.ts` but never emitted — no `is_available()` pre-check before vault write; Obsidian-down returns `"failed"` not `"unavailable"`. | warning | 4868 |
+| 16 | `api_tutor.py` | `from course_map import load_course_map` — bare import without `brain.` prefix; may fail if working directory differs. | warning | 329 |
+| 17 | `obsidian_vault.py` | Line 104 `return [] if parse_json else ""` is dead code — all exit paths on the last retry attempt already `return` before reaching this line. | info | 104 |
+| 18 | `tutor_templates.py` | `_as_list()` uses unnecessary list comprehension `[item for item in value]` — equivalent to `list(value)`. | info | 54–56 |
+| 19 | `api_tutor.py` | `started_at=now, ended_at=now` — both timestamps set to the moment `advance_block` is called; actual block start time not tracked. | info | 4977–4978 |
+| 20 | `api_tutor.py` | Deferred imports inside `advance_block()` body — small per-request import overhead on every block advance. | info | 4965, 4981, 4982 |
+
+### Priority fix order
+1. **#1 (critical)** — Fix double `.md` in `vault_artifact_router.py:68`: pass `name=block_name` (no `.md`), let `create_note()` append it.
+2. **#10–12 (warnings)** — Wrap DB connections in `try/finally` in `tutor_tools.py`.
+3. **#4–6 (warnings)** — Harden JS injection escaping in `obsidian_vault.py`.
+4. **#15 (warning)** — Add `is_available()` pre-check in `advance_block()` and emit `"unavailable"` when False.
+5. **#2 (warning)** — Add 4s to `_RETRY_BACKOFF_DELAYS` and bump `_RETRY_MAX_ATTEMPTS` to 4.
+
+### Files reviewed
+- `brain/obsidian_vault.py`
+- `brain/tutor_templates.py`
+- `brain/vault_artifact_router.py`
+- `brain/tutor_tools.py`
+- `brain/dashboard/api_tutor.py` (advance_block + _study_notes_base_path)
+- `dashboard_rebuild/client/src/pages/tutor.tsx` (toast logic)
+- `dashboard_rebuild/client/src/api.ts` (TutorBlockProgress type)
+
+---
+
 ## [2026-03-03] T23 — Vault write status display in tutor UI
 
 ### Changes

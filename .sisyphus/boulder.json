@@ -1,9 +1,8 @@
 {
-  "active_plan": "C:\\pt-study-sop\\.sisyphus\\plans\\embedding-sync-fix.md",
-  "started_at": "2026-03-02T17:28:12.657Z",
-  "session_ids": [
-    "ses_350a36e79ffe3cXlYXvoWEQR3K"
-  ],
-  "plan_name": "embedding-sync-fix",
+  "active_plan": "C:\\pt-study-sop\\.sisyphus\\plans\\vault-redesign.md",
+  "started_at": "2026-03-02T23:02:40.646Z",
+  "session_ids": ["ses_350a36e79ffe3cXlYXvoWEQR3K"],
+  "plan_name": "vault-redesign",
+  "worktree_path": "C:\\pt-study-sop",
   "agent": "atlas"
 }

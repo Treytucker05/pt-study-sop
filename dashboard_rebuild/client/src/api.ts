@@ -693,7 +693,24 @@ export const api = {
         method: "POST",
       }),
     deleteSession: (sessionId: string) =>
-      request<{ deleted: boolean; session_id: string }>(`/tutor/session/${sessionId}`, {
+      request<{
+        deleted: boolean;
+        session_id: string;
+        status?: string;
+        request_id?: string;
+        requested_count?: number;
+        deleted_count?: number;
+        skipped_count?: number;
+        failed_count?: number;
+        objectives_deleted?: number;
+        obsidian_deleted?: string[];
+        obsidian_cleanup?: {
+          success: boolean;
+          expected_count?: number;
+          deleted_count?: number;
+          missing_paths?: string[];
+        };
+      }>(`/tutor/session/${sessionId}`, {
         method: "DELETE",
       }),
     listSessions: (params?: { course_id?: number; status?: string; limit?: number }) => {
@@ -710,7 +727,15 @@ export const api = {
         body: JSON.stringify(data),
       }),
     deleteArtifacts: (sessionId: string, indexes: number[]) =>
-      request<{ deleted: number; session_id: string }>(`/tutor/session/${sessionId}/artifacts`, {
+      request<{
+        deleted: number;
+        session_id: string;
+        request_id?: string;
+        requested_count?: number;
+        applied_count?: number;
+        skipped_indexes?: number[];
+        obsidian_deleted?: string[];
+      }>(`/tutor/session/${sessionId}/artifacts`, {
         method: "DELETE",
         body: JSON.stringify({ indexes }),
       }),

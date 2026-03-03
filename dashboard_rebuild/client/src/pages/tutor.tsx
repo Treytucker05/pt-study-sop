@@ -244,6 +244,12 @@ export default function Tutor() {
     }
   }, [courseId]);
 
+  const { data: chatMaterials = [] } = useQuery<Material[]>({
+    queryKey: ["tutor-chat-materials-all-enabled"],
+    queryFn: () => api.tutor.getMaterials({ enabled: true }),
+    staleTime: 60 * 1000,
+  });
+
   // Filter out stale/deleted material IDs from localStorage
   useEffect(() => {
     if (chatMaterials.length === 0) return;
@@ -269,12 +275,6 @@ export default function Tutor() {
     queryKey: ["tutor-config-check"],
     queryFn: () => api.tutor.configCheck(),
     staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: chatMaterials = [] } = useQuery<Material[]>({
-    queryKey: ["tutor-chat-materials-all-enabled"],
-    queryFn: () => api.tutor.getMaterials({ enabled: true }),
-    staleTime: 60 * 1000,
   });
 
   const { data: courseMapData } = useQuery({
@@ -469,7 +469,13 @@ export default function Tutor() {
     setChainBlocks([]);
     setShowSetup(true);
     setShowArtifacts(false);
-  }, []);
+    setShowEndConfirm(false);
+    try {
+      localStorage.removeItem(tutorActiveSessionKey);
+    } catch (error) {
+      void error;
+    }
+  }, [tutorActiveSessionKey]);
 
   const endSessionById = useCallback(async (sessionId: string) => {
     await api.tutor.endSession(sessionId);

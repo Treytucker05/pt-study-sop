@@ -29,6 +29,21 @@ Execution rule:
 - Do not begin major work until the task is listed in the `Current Sprint` section of `docs/root/TUTOR_TODO.md`.
 - If work is not listed there, add it to `docs/root/TUTOR_TODO.md` first, then execute.
 
+## Immediate Next Steps (Tutor delete hardening, 2026-03-03)
+
+Recommended next step:
+1. Add persistent delete telemetry end-to-end:
+   - store structured delete events (`request_id`, outcome counts, failure reason) for recurring incident analysis.
+
+Other next steps:
+1. Run a post-restart Tutor UI smoke with a throwaway session:
+   - `Artifacts -> Select all -> Delete -> Confirm`
+   - verify active-session warning, no overlay deadlock, and clean return to Wizard.
+2. Run a forced partial-failure scenario for bulk delete:
+   - confirm the in-panel delete report shows `Requested / Deleted / Already gone / Failed` and concrete failure reasons.
+3. Add an automated regression check for Tutor delete behavior:
+   - verify idempotent delete response shape and active-session warning path do not regress.
+
 ---
 
 ## How To Run The Server (DO NOT SKIP)
@@ -334,6 +349,26 @@ Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks f
 **Problem:** Tutor appeared to pull only ~6 files even when ~30 files were selected.
 **Cause:** Usually not preloading. This is typically turn-level scope loss or relevance narrowing. If a turn payload misses `content_filter.material_ids`, retrieval falls back to low default depth and appears constrained.
 **Solution:** Ensure every turn sends `content_filter.material_ids` plus `accuracy_profile`. Validate in browser Network on the `turn` request and in `retrieval_debug` (`material_ids_count`, `material_k`, `retrieved_material_unique_sources`).
+
+### Tutor Bulk Delete Overlay Deadlock
+
+**Problem:** In Tutor chat, opening `ARTIFACTS` and running `Recent Sessions -> Select all -> Delete` could dim the screen with a translucent black overlay and leave UI interaction stuck; sessions often remained undeleted.
+**Cause:** Bulk confirm in `dashboard_rebuild/client/src/components/TutorArtifacts.tsx` used a custom `AlertDialog` path that could deadlock in this panel context.
+**Solution:** Use a themed in-panel confirm modal (non-portal) for bulk session/artifact actions and keep existing async handlers for deletion/end logic.
+
+### Tutor Delete Telemetry Persistence
+
+**Problem:** Recurrent delete failures were hard to diagnose after the fact because results lived only in transient UI state and logs.
+**Cause:** No persistent audit trail tied to delete `request_id` and outcome.
+**Solution:** Persist each tutor delete call to `tutor_delete_telemetry` (route, status, requested/deleted/skipped/failed counts, details JSON). Use the returned `request_id` from delete responses to correlate UI issues with DB-backed telemetry.
+
+### Tutor Delete Best-Effort Rule
+
+**Problem:** Strict failure on partial Obsidian cleanup blocked full session deletion and left stale sessions.
+**Cause:** Session delete previously returned hard failure when expected Obsidian files were missing.
+**Solution:** Treat Obsidian cleanup as best-effort for session delete:
+- If DB deletion succeeds but some Obsidian files are missing, return `status=deleted_with_warnings` with `obsidian_cleanup.missing_paths`.
+- Keep telemetry row in `tutor_delete_telemetry` for each delete request.
 
 ### Scoped Retrieval Tuning Rule (Latency vs Breadth)
 

@@ -1683,6 +1683,41 @@ def init_database():
     """)
 
     # ------------------------------------------------------------------
+    # Adaptive Tutor: tutor_delete_telemetry (persistent delete diagnostics)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_delete_telemetry (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            request_id TEXT NOT NULL,
+            route TEXT NOT NULL,
+            session_id TEXT,
+            status TEXT NOT NULL,
+            requested_count INTEGER NOT NULL DEFAULT 0,
+            deleted_count INTEGER NOT NULL DEFAULT 0,
+            skipped_count INTEGER NOT NULL DEFAULT 0,
+            failed_count INTEGER NOT NULL DEFAULT 0,
+            details_json TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(session_id) REFERENCES tutor_sessions(session_id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_delete_telemetry_request
+        ON tutor_delete_telemetry(request_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_delete_telemetry_session
+        ON tutor_delete_telemetry(session_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_delete_telemetry_created_at
+        ON tutor_delete_telemetry(created_at)
+    """)
+
+    # ------------------------------------------------------------------
     # Adaptive Tutor: rag_embeddings (vector chunks for ChromaDB)
     # ------------------------------------------------------------------
     cursor.execute("""
@@ -2080,6 +2115,63 @@ def log_error(session_id: str, item_id: str = None, error_type: str = None,
         fix_applied
     ))
     
+    conn.commit()
+    row_id = cursor.lastrowid
+    conn.close()
+    return row_id
+
+
+def log_tutor_delete_telemetry(
+    request_id: str,
+    route: str,
+    status: str,
+    session_id: str = None,
+    requested_count: int = 0,
+    deleted_count: int = 0,
+    skipped_count: int = 0,
+    failed_count: int = 0,
+    details: Optional[dict] = None,
+) -> int:
+    """
+    Persist tutor delete telemetry for post-mortem debugging.
+
+    Args:
+        request_id: Correlation ID returned by delete endpoints.
+        route: Endpoint route name.
+        status: Delete outcome status.
+        session_id: Tutor session ID.
+        requested_count: Number of items requested for deletion.
+        deleted_count: Number of items deleted.
+        skipped_count: Number of items skipped/already missing.
+        failed_count: Number of failed delete attempts.
+        details: Additional structured details.
+
+    Returns:
+        Inserted row ID.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        INSERT INTO tutor_delete_telemetry
+        (
+            request_id, route, session_id, status,
+            requested_count, deleted_count, skipped_count, failed_count, details_json
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            request_id,
+            route,
+            session_id,
+            status,
+            int(requested_count or 0),
+            int(deleted_count or 0),
+            int(skipped_count or 0),
+            int(failed_count or 0),
+            json.dumps(details) if details else None,
+        ),
+    )
     conn.commit()
     row_id = cursor.lastrowid
     conn.close()

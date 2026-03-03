@@ -48,6 +48,14 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [ ] C2. Verify normal-session MP4 path in tutor flow (not only admin/test mode).
 - [ ] C3. Add clear user-visible budget/failover status for API key switching.
 
+### Sprint 4: Tutor Smoothness + Notes Organization Audit
+- [x] D1. Tutor smoothness + notes organization audit — full end-to-end audit per plan.
+  - API↔UI contract verification (summary, artifact types, save path).
+  - Notes persistence trace across tutor_sessions, quick_notes, card_drafts, Obsidian.
+  - Runtime smoothness checks (latency, failure-path behavior).
+  - Prioritized remediation blueprint with ranked fixes.
+  - Deliverables: docs/root/TUTOR_AUDIT_REPORT.md, docs/root/TUTOR_AUDIT_REMEDIATION.md
+
 ## Workstream Status Snapshot
 
 ### A1) PRIME Inventory + Stage Fit

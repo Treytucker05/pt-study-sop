@@ -4,6 +4,52 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-03-03 - Tutor Runtime Error Documentation
+
+- Added `tutor-ZmKF4bYl.js` ReferenceError troubleshooting guidance in `docs/root/GUIDE_USER.md`.
+- Included recovery playbook for Tutor black-screen recurrence after Recent Sessions bulk-delete flow:
+  restart from `Start_Dashboard.bat`, hard refresh, rebuild UI assets, and capture console/network artifacts when reproducible.
+
+## 2026-03-03 - Tutor delete telemetry persistence
+
+- Added persistent delete telemetry storage in `brain/db_setup.py`:
+  - New table: `tutor_delete_telemetry` with request correlation (`request_id`), route, status, counts, details JSON, timestamp.
+  - Added indexes for `request_id`, `session_id`, and `created_at`.
+- Added helper `log_tutor_delete_telemetry(...)` in `brain/db_setup.py`.
+- Wired delete telemetry in `brain/dashboard/api_tutor.py`:
+  - `DELETE /api/tutor/session/<id>` logs `already_missing`, `obsidian_cleanup_failed`, `db_delete_failed`, `deleted`.
+  - `DELETE /api/tutor/session/<id>/artifacts` logs `invalid_request`, `session_not_found`, `deleted`/`partial_success`.
+- Updated user troubleshooting docs in `docs/root/GUIDE_USER.md` with where to inspect persistent delete diagnostics.
+
+## 2026-03-03 - Tutor session delete best-effort warning mode
+
+- Changed `DELETE /api/tutor/session/<id>` behavior in `brain/dashboard/api_tutor.py`:
+  - No longer hard-fails the whole delete when Obsidian cleanup is partial.
+  - If DB delete succeeds but some expected Obsidian files are missing/unremovable, response now returns:
+    - `deleted: true`
+    - `status: "deleted_with_warnings"`
+    - `warning` message
+    - `obsidian_cleanup.success: false` + `obsidian_cleanup.missing_paths`
+- Telemetry now records warning-mode outcomes in `tutor_delete_telemetry` using `status=deleted_with_warnings`.
+
+## 2026-03-03 - Tutor TDZ crash fix
+
+- Fixed a frontend `ReferenceError` source in `dashboard_rebuild/client/src/pages/tutor.tsx`:
+  - Moved `tutor-chat-materials-all-enabled` query initialization ahead of the effect that uses it in its dependency array.
+  - Prevents `Cannot access '... before initialization` / TDZ crashes during Tutor session list interactions.
+
+## 2026-03-03 - Tutor bulk delete overlay deadlock fix
+
+- Fixed recurring Tutor UI lock in `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`:
+  - Replaced bulk action `AlertDialog` path with a themed in-panel confirm modal (non-portal) for:
+    - Recent sessions bulk delete
+    - Recent active sessions bulk end
+    - Artifact bulk delete
+  - Removed deadlock-prone overlay flow that produced translucent black screen and blocked interaction.
+- Added recurrence notes and recovery guidance:
+  - `docs/root/GUIDE_USER.md` troubleshooting entry for overlay-stuck symptom.
+  - `AGENTS.md` Learnings entry documenting cause and fix pattern.
+
 ## 2026-03-01 - Tutor smoothness + notes organization audit
 
 - Completed full end-to-end tutor audit per plan `tutor-audit-smoothness`.
@@ -1297,3 +1343,22 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   1. `DELETE FROM rag_docs WHERE id = 445` (re-sync will re-extract with cap)
   2. POST `/api/tutor/materials/sync/start` with Joint Mobility folder
   3. Verify all 5 docs embed successfully
+
+## 2026-03-03 — Tutor delete hardening (session + artifacts)
+
+- Hardened Tutor delete semantics in `brain/dashboard/api_tutor.py`:
+  - `DELETE /api/tutor/session/<id>` is now idempotent for already-missing sessions (`deleted:false`, HTTP 200).
+  - Added structured delete response fields (`status`, `request_id`, requested/deleted/skipped/failed counts).
+  - Enforced Obsidian cleanup gate: if expected session-owned Obsidian paths are not deleted, endpoint returns failure (`obsidian_cleanup_failed`) and does not delete DB rows.
+  - Added structured server logs for session/artifact delete operations with request id and counts.
+  - `GET /api/tutor/session/<id>` reconciliation is now side-effect-free (`persist=False`) so reads do not mutate DB state.
+  - `DELETE /api/tutor/session/<id>/artifacts` now returns `requested_count`, `applied_count`, and `skipped_indexes` for partial-success transparency.
+
+- Hardened Tutor artifacts UI in `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`:
+  - Bulk session delete now reports deleted/already-gone/failed counts and renders an in-panel failure details report.
+  - Added active-session warning in bulk delete confirm modal.
+  - Added operation locks for single-row delete actions to prevent duplicate requests while deletes/ends are in-flight.
+  - Ensures session list is invalidated before user-facing completion status is shown.
+
+- Updated API typing contracts in `dashboard_rebuild/client/src/api.ts` for richer delete responses.
+- Updated user troubleshooting guide in `docs/root/GUIDE_USER.md` for new delete report semantics.
