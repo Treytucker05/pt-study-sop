@@ -6,9 +6,13 @@ Update policy: after every significant change, update this file (and the active 
 
 Active status: No active workstream. All tracks complete.
 
-Latest update: 2026-03-02 Tutor audit remediation (P0/P1) complete — save-wrap URL, summary contract, chain progress shape, artifact type mapping. Commit 93bcfef5.
+Latest update: 2026-03-03 Vault Redesign complete — CLI migration, 5 block templates, Map of Contents, LO extraction, vault_write_status. 27 tasks, 141 targeted tests. Commit 748854dd.
 
 ---
+
+- [x] **Track: Vault Redesign (Obsidian CLI Migration)** (complete — created 2026-03-01; closed 2026-03-03; 27 tasks across 5 waves, 141 targeted tests)
+  Full CLI migration (REST -> CLI), 5 block artifact templates, Map of Contents renderer, LO extraction pipeline, vault_write_status toasts, fire-and-forget block writes. 916 tests passing.
+  *Plan: `.sisyphus/plans/vault-redesign.md`*
 
 - [x] **Track: Tutor Audit Remediation (P0/P1)** (complete — created 2026-03-02; closed 2026-03-02; 10 tasks, 10 tests)
   Fix save-wrap URL, session summary contract, chain progress shape, artifact type mapping.
