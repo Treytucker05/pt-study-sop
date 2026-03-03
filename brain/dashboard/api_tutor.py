@@ -4864,11 +4864,154 @@ def advance_block(session_id: str):
 
     conn.commit()
 
+    # --- Vault auto-write (fire-and-forget) ---
+    vault_write_status = "skipped"
+    try:
+        completing_block = blocks[current_idx]
+        artifact_type = str(completing_block.get("artifact_type") or "").strip()
+
+        if artifact_type:
+            turns_cur = conn.cursor()
+            turns_cur.execute("PRAGMA table_info(tutor_turns)")
+            turn_cols = {row[1] for row in turns_cur.fetchall()}
+
+            where_clauses = ["tutor_session_id = ?"]
+            params: list[Any] = [session_id]
+            used_phase_scope = False
+
+            if "block_index" in turn_cols:
+                where_clauses.append("block_index = ?")
+                params.append(current_idx)
+            elif "phase" in turn_cols:
+                phase_candidates = [
+                    str(completing_block.get("name") or "").strip(),
+                    str(completing_block.get("control_stage") or "").strip(),
+                    str(completing_block.get("id") or "").strip(),
+                ]
+                phase_candidates = [p for p in phase_candidates if p]
+                if phase_candidates:
+                    placeholders = ",".join("?" * len(phase_candidates))
+                    where_clauses.append(f"phase IN ({placeholders})")
+                    params.extend(phase_candidates)
+                    used_phase_scope = True
+
+            if "role" in turn_cols and "content" in turn_cols:
+                select_cols = "role, content"
+                role_content_mode = True
+            else:
+                select_cols = "question, answer"
+                role_content_mode = False
+
+            where_sql = " AND ".join(where_clauses)
+            turns_cur.execute(
+                f"""SELECT {select_cols}
+                    FROM tutor_turns
+                    WHERE {where_sql}
+                    ORDER BY created_at ASC""",
+                tuple(params),
+            )
+            turns = turns_cur.fetchall()
+
+            # If phase matching misses, fall back to recent turns for the session.
+            if not turns and used_phase_scope:
+                turns_cur.execute(
+                    f"""SELECT {select_cols}
+                        FROM (
+                            SELECT {select_cols}, created_at
+                            FROM tutor_turns
+                            WHERE tutor_session_id = ?
+                            ORDER BY created_at DESC
+                            LIMIT 12
+                        )
+                        ORDER BY created_at ASC""",
+                    (session_id,),
+                )
+                turns = turns_cur.fetchall()
+
+            if role_content_mode:
+                content_parts = [
+                    row[1]
+                    for row in turns
+                    if row[0] == "assistant"
+                    and isinstance(row[1], str)
+                    and row[1].strip()
+                ]
+            else:
+                content_parts = [
+                    row[1]
+                    for row in turns
+                    if isinstance(row[1], str) and row[1].strip()
+                ]
+
+            content = "\n\n".join(content_parts) or "(no content)"
+
+            content_filter = _safe_json_dict(session.get("content_filter_json"))
+            map_of_contents = content_filter.get("map_of_contents") or {}
+            course_label = (
+                session.get("course_label")
+                or session.get("course")
+                or _resolve_class_label(session.get("course_id"))
+                or "General Class"
+            )
+            module_name = (
+                session.get("module_name")
+                or session.get("module")
+                or map_of_contents.get("module_name")
+                or content_filter.get("module_name")
+                or "General"
+            )
+            topic = session.get("topic") or module_name or "Session"
+
+            from brain.tutor_templates import render_block_artifact
+
+            rendered = render_block_artifact(
+                block_id=str(completing_block.get("id", "")),
+                block_name=str(completing_block.get("name") or "Block"),
+                control_stage=str(completing_block.get("control_stage") or ""),
+                artifact_type=artifact_type,
+                session_id=session_id,
+                course=str(course_label),
+                module=str(module_name),
+                topic=str(topic),
+                started_at=now,
+                ended_at=now,
+                content=content,
+            )
+
+            from brain.obsidian_vault import ObsidianVault
+            from brain.vault_artifact_router import execute_vault_artifact
+
+            vault = ObsidianVault()
+            course_folder = f"Study Notes/{course_label}/{module_name}"
+            result = execute_vault_artifact(
+                vault,
+                {
+                    "operation": "write-block-note",
+                    "params": {
+                        "course_folder": course_folder,
+                        "block_name": str(completing_block.get("name") or "Block"),
+                        "content": rendered,
+                    },
+                },
+            )
+            if isinstance(result, str) and (
+                result.startswith("Error:") or result.startswith("Unknown")
+            ):
+                vault_write_status = "failed"
+            else:
+                vault_write_status = "success"
+    except Exception as _vault_exc:
+        import logging as _log
+
+        _log.getLogger(__name__).warning("Vault auto-write failed: %s", _vault_exc)
+        vault_write_status = "failed"
+    # --- End vault auto-write ---
+
     status = _get_chain_status(conn, session_id)
     conn.close()
 
     if status:
-        status["vault_write_status"] = "skipped"
+        status["vault_write_status"] = vault_write_status
 
     return jsonify(status or {"error": "Chain status unavailable"})
 
