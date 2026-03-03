@@ -7,6 +7,7 @@ import logging
 import re
 import shutil
 import requests
+import warnings
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 from urllib.parse import quote
@@ -320,6 +321,9 @@ def obsidian_list_files(folder: str = "") -> dict:
 
 def obsidian_get_file(path: str) -> dict:
     """Get content of a file from Obsidian vault."""
+    warnings.warn(
+        "Use ObsidianVault.read_note() instead", DeprecationWarning, stacklevel=2
+    )
     try:
         rel_path = _normalize_obsidian_rel_path(path)
         encoded = _encode_vault_rel_path(rel_path)
@@ -343,6 +347,11 @@ def obsidian_get_file(path: str) -> dict:
 
 def obsidian_save_file(path: str, content: str) -> dict:
     """Save/overwrite a file in Obsidian vault."""
+    warnings.warn(
+        "Use ObsidianVault.create_note() or replace_content() instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     try:
         rel_path = _normalize_obsidian_rel_path(path)
         encoded = _encode_vault_rel_path(rel_path)
@@ -367,6 +376,9 @@ def obsidian_save_file(path: str, content: str) -> dict:
 
 def obsidian_create_folder(path: str) -> dict:
     """Create a folder in Obsidian vault via local filesystem path."""
+    warnings.warn(
+        "Use ObsidianVault.create_folder() instead", DeprecationWarning, stacklevel=2
+    )
     try:
         rel_path = _normalize_obsidian_rel_path(path, expect_folder=True)
         target = _resolve_vault_fs_path(rel_path)
@@ -378,6 +390,9 @@ def obsidian_create_folder(path: str) -> dict:
 
 def obsidian_delete_file(path: str) -> dict:
     """Delete a file in Obsidian vault."""
+    warnings.warn(
+        "Use ObsidianVault.delete_note() instead", DeprecationWarning, stacklevel=2
+    )
     try:
         rel_path = _normalize_obsidian_rel_path(path)
         encoded = _encode_vault_rel_path(rel_path)
@@ -3255,9 +3270,7 @@ def _scholar_status_payload() -> dict:
             latest_final = max(final_files, key=lambda f: f.stat().st_mtime)
             try:
                 last_run = (
-                    datetime.fromtimestamp(
-                        latest_final.stat().st_mtime, timezone.utc
-                    )
+                    datetime.fromtimestamp(latest_final.stat().st_mtime, timezone.utc)
                     .isoformat()
                     .replace("+00:00", "Z")
                 )
@@ -3466,7 +3479,11 @@ def chat_message_stream(session_id):
             _sys.path.append(str(brain_dir))
 
         from brain.tutor_engine import process_tutor_turn_preamble, log_tutor_turn
-        from brain.tutor_api_types import TutorQueryV1, TutorSourceSelector, TutorTurnResponse
+        from brain.tutor_api_types import (
+            TutorQueryV1,
+            TutorSourceSelector,
+            TutorTurnResponse,
+        )
 
         data = request.json
         user_message = data.get("content")
@@ -3539,6 +3556,7 @@ def chat_message_stream(session_id):
     except Exception as e:
         print(f"Tutor Stream Error: {e}")
         import traceback
+
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
@@ -4474,7 +4492,11 @@ def undo_calendar_action_endpoint():
         elif action == "create_task":
             # Inverse: Delete the created task
             post_state = json.loads(post_json) if post_json else None
-            if post_state and post_state.get("tasklist_id") and post_state.get("task_id"):
+            if (
+                post_state
+                and post_state.get("tasklist_id")
+                and post_state.get("task_id")
+            ):
                 service = gcal.get_tasks_service()
                 if service:
                     service.tasks().delete(
@@ -4487,7 +4509,10 @@ def undo_calendar_action_endpoint():
             if pre_state and pre_state.get("tasklist_id"):
                 service = gcal.get_tasks_service()
                 if service:
-                    body = {"title": pre_state.get("title", ""), "status": "needsAction"}
+                    body = {
+                        "title": pre_state.get("title", ""),
+                        "status": "needsAction",
+                    }
                     if pre_state.get("notes"):
                         body["notes"] = pre_state["notes"]
                     if pre_state.get("due"):
@@ -6521,6 +6546,7 @@ def get_llm_status():
     """Check whether an LLM provider is available for chat endpoints."""
     try:
         from llm_provider import _load_codex_auth
+
         auth = _load_codex_auth()
         connected = auth is not None
         model = "codex (OAuth)"
