@@ -554,9 +554,18 @@ export const api = {
     getTutorAudit: () => request<TutorAuditItem[]>("/scholar/tutor-audit"),
     getClusters: () => request<ScholarClustersResponse>("/scholar/clusters"),
     runClustering: () => request<ScholarClustersResponse>("/scholar/clusters", { method: "POST" }),
-    run: () => request<ScholarRunResult>("/scholar/run", { method: "POST" }),
-    runStatus: () => request<ScholarRunStatus>("/scholar/run/status"),
-    runHistory: (limit = 10) => request<ScholarRunHistoryItem[]>(`/scholar/run/history?limit=${limit}`),
+    run: (payload?: { triggered_by?: string; mode?: "brain" | "tutor" }) =>
+      request<ScholarRunResult>("/scholar/run", {
+        method: "POST",
+        body: JSON.stringify(payload || {}),
+      }),
+    runStatus: () => request<ScholarRunStatus>("/scholar/status"),
+    runHistory: async (limit = 10) => {
+      const payload = await request<{ ok?: boolean; runs?: ScholarRunHistoryItem[] } | ScholarRunHistoryItem[]>(
+        `/scholar/run/history?limit=${limit}`
+      );
+      return Array.isArray(payload) ? payload : payload.runs || [];
+    },
   },
 
   anki: {
@@ -775,6 +784,13 @@ export const api = {
       }),
     getVideoProcessStatus: (jobId: string) =>
       request<TutorVideoJobStatus>(`/tutor/materials/video/status/${encodeURIComponent(jobId)}`),
+    getVideoEnrichmentStatus: (materialId?: number) => {
+      const query =
+        materialId !== undefined && materialId !== null
+          ? `?material_id=${encodeURIComponent(String(materialId))}`
+          : "";
+      return request<TutorVideoEnrichmentStatus>(`/tutor/materials/video/enrich/status${query}`);
+    },
     enrichVideoMaterial: (materialId: number, opts?: { mode?: string }) =>
       request<TutorVideoEnrichResult>("/tutor/materials/video/enrich", {
         method: "POST",
@@ -980,9 +996,14 @@ export interface ScholarRunStatus {
   running: boolean;
   run_id?: string;
   phase?: string;
+  status?: "running" | "complete" | "error" | "idle" | string;
   progress?: number;
+  current_step?: string;
+  last_run?: string;
+  errors?: string[];
   error?: string;
   started_at?: string;
+  ended_at?: string;
   finished_at?: string;
 }
 
@@ -1621,6 +1642,28 @@ export interface TutorVideoEnrichResult {
   status?: string;
   results?: Record<string, unknown>[];
   enrichment_md_path?: string;
+  error?: string;
+}
+
+export interface TutorVideoEnrichmentStatus {
+  ok: boolean;
+  provider: string;
+  mode: "off" | "auto" | "manual" | string;
+  model_preference: string;
+  model_name: string;
+  api_key_configured: boolean;
+  local_only_fallback: boolean;
+  allowed: boolean;
+  reason: string | null;
+  material_id: number | null;
+  budget: {
+    monthly_spend: number;
+    monthly_cap: number;
+    per_video_cap: number;
+    video_spend?: number;
+    allowed?: boolean;
+    reason?: string | null;
+  };
   error?: string;
 }
 

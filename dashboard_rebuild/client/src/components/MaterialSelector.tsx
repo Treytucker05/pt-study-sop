@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material } from "@/lib/api";
+import type { Material, TutorVideoEnrichmentStatus } from "@/lib/api";
 import {
   TEXT_BODY,
   TEXT_MUTED,
@@ -111,6 +111,18 @@ export function MaterialSelector({
       (id) => videoJobsByMaterial[id]?.status === "completed",
     );
   }, [selectedVideoIds, videoJobsByMaterial]);
+
+  const enrichmentStatusMaterialId = useMemo(
+    () => (selectedVideoIds.length > 0 ? selectedVideoIds[0] : undefined),
+    [selectedVideoIds],
+  );
+
+  const { data: videoEnrichmentStatus } = useQuery<TutorVideoEnrichmentStatus>({
+    queryKey: ["tutor-video-enrichment-status", enrichmentStatusMaterialId],
+    queryFn: () => api.tutor.getVideoEnrichmentStatus(enrichmentStatusMaterialId),
+    enabled: selectedVideoIds.length > 0,
+    refetchInterval: 15000,
+  });
 
   const handleUpload = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
@@ -562,6 +574,42 @@ export function MaterialSelector({
           </div>
         )}
       </div>
+
+      {selectedVideoIds.length > 0 && videoEnrichmentStatus && (
+        <div className="px-1 py-1 border-b border-muted-foreground/10">
+          <div className="flex flex-wrap items-center gap-2 font-terminal text-xs">
+            <Badge
+              variant="outline"
+              className={`${TEXT_BADGE} h-4 px-1 ${
+                videoEnrichmentStatus.mode === "off"
+                  ? "border-muted-foreground/40 text-muted-foreground"
+                  : videoEnrichmentStatus.allowed
+                    ? "border-green-500/60 text-green-400"
+                    : "border-yellow-500/60 text-yellow-300"
+              }`}
+            >
+              Enrich {videoEnrichmentStatus.mode.toUpperCase()}
+            </Badge>
+            <span className={TEXT_MUTED}>
+              Monthly ${videoEnrichmentStatus.budget.monthly_spend.toFixed(2)} / ${videoEnrichmentStatus.budget.monthly_cap.toFixed(2)}
+            </span>
+            {typeof videoEnrichmentStatus.budget.video_spend === "number" && (
+              <span className={TEXT_MUTED}>
+                Video ${videoEnrichmentStatus.budget.video_spend.toFixed(2)} / ${videoEnrichmentStatus.budget.per_video_cap.toFixed(2)}
+              </span>
+            )}
+            {!videoEnrichmentStatus.api_key_configured && (
+              <span className="text-red-300">Gemini key missing</span>
+            )}
+            {!videoEnrichmentStatus.allowed && videoEnrichmentStatus.reason && (
+              <span className="text-yellow-200">{videoEnrichmentStatus.reason}</span>
+            )}
+            {videoEnrichmentStatus.local_only_fallback && (
+              <span className={TEXT_MUTED}>Fallback: local-only</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Course-matched materials */}
       {courseMaterials.length > 0 ? (

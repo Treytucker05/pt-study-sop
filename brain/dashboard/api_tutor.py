@@ -7410,6 +7410,49 @@ def get_video_process_status(job_id: str):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/tutor/materials/video/enrich/status — Enrichment budget/key status
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/materials/video/enrich/status", methods=["GET"])
+def get_video_enrichment_status():
+    material_id = request.args.get("material_id")
+    material_id_int: Optional[int] = None
+    source_path: Optional[str] = None
+
+    if material_id is not None:
+        try:
+            material_id_int = int(material_id)
+        except (TypeError, ValueError):
+            return jsonify({"error": "material_id must be an integer"}), 400
+
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, source_path, file_path, file_type FROM rag_docs WHERE id = ?",
+            (material_id_int,),
+        )
+        row = cur.fetchone()
+        conn.close()
+        if not row:
+            return jsonify({"error": "Material not found"}), 404
+
+        source_path = str(row["file_path"] or row["source_path"] or "").strip()
+        file_type = str(row["file_type"] or "").strip().lower()
+        if file_type != "mp4" and not source_path.lower().endswith(".mp4"):
+            return jsonify({"error": "Material is not an mp4 video"}), 400
+
+    try:
+        from video_enrich_api import get_enrichment_status
+
+        payload = get_enrichment_status(video_path=source_path or None)
+        payload["material_id"] = material_id_int
+        return jsonify({"ok": True, **payload}), 200
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+# ---------------------------------------------------------------------------
 # POST /api/tutor/materials/video/enrich — Enrich processed video via API
 # ---------------------------------------------------------------------------
 
@@ -7428,7 +7471,7 @@ def enrich_video_material():
 
     mode = data.get("mode")
 
-    conn = db_setup.get_connection()
+    conn = get_connection()
     cur = conn.cursor()
     cur.execute(
         "SELECT id, source_path, file_path, file_type, title FROM rag_docs WHERE id = ?",

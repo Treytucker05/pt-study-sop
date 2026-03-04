@@ -7,6 +7,10 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 ## Current Board (In-Progress)
 
 - Canonical execution order: `PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
+- [x] Scholar/Tutor contract alignment hardening (2026-03-04):
+  - Added deterministic Scholar question lifecycle persistence + answer endpoint.
+  - Added explicit Scholar proposal approve/reject endpoints.
+  - Aligned Scholar status/history API compatibility and frontend API usage.
 - Source-of-truth order: 
   - `docs/root/TUTOR_TODO.md` (active workboard)
   - `conductor/tracks.md` (completed tracks / archival)
@@ -57,9 +61,12 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - `tutor_delete_telemetry` table, in-panel confirm, bulk-delete report.
 
 ### Sprint 3: Video Study Pipeline Finish
-- [ ] C1. Confirm hybrid ingest routing for local vs API path.
-- [ ] C2. Verify normal-session MP4 path in tutor flow (not only admin/test mode).
-- [ ] C3. Add clear user-visible budget/failover status for API key switching.
+- [x] C1. Confirm hybrid ingest routing for local vs API path. (2026-03-04)
+  - Verified backend split: `/api/tutor/materials/video/process` runs local ingest pipeline (faster-whisper + keyframes/OCR + `ingest_video_artifacts`), while `/api/tutor/materials/video/enrich` runs optional API enrichment over processed segments with budget caps.
+- [x] C2. Verify normal-session MP4 path in tutor flow (not only admin/test mode). (2026-03-04)
+  - Verified Tutor Wizard Step 1 uses `MaterialSelector` with visible `Process MP4` and `Enrich` actions for selected MP4 materials (no admin-only gate).
+- [x] C3. Add clear user-visible budget/failover status for API key switching. (2026-03-04)
+  - Added `GET /api/tutor/materials/video/enrich/status` and frontend status row in `MaterialSelector` showing mode, monthly/video budget usage, key availability, reason, and local-only fallback state.
 
 ### Sprint 4: Tutor Smoothness + Notes Organization Audit
 - [x] D1. Tutor smoothness + notes organization audit — full end-to-end audit per plan.
@@ -148,7 +155,9 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 ## Immediate Next 3 Tasks (Use in this order)
 1. [x] Add visible block timer component to tutor chat UI (E3). `fc0e449e`
 2. [x] Implement first-session skip logic for M-CAL-001 (E4). `fc0e449e`
-3. [ ] Test C-TRY-002 end-to-end: upload materials → start session → walk 9 blocks → verify tier exits.
+3. [x] Test C-TRY-002 end-to-end: upload materials -> start session -> walk 9 blocks -> verify tier exits. (2026-03-04)
+   - API smoke verified on chain `Top-Down Forward Progress` (id 137): completed in 7 advances due to first-session silent skip of `M-CAL-001`.
+   - Verified block trace: `M-PRE-004 -> M-PRE-011 -> M-REF-003 -> M-ENC-001 -> M-INT-001 -> M-ENC-009 -> M-ENC-004 -> M-OVR-004`.
 
 ## Granular Close-Out Queue (last-mile items from last tasks)
 
