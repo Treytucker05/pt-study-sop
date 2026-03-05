@@ -1,5 +1,12 @@
 """Integration test: build_context with real ChromaDB (materials only)."""
 
+import pytest
+
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.timeout(180),
+]
+
 
 def test_build_context_auto_returns_materials_from_chroma():
     """Materials collection has 14,583 vectors — this should return content."""

@@ -163,8 +163,6 @@ export default function Tutor() {
       return "module_all";
     }
   });
-  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
-  const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [isShipping, setIsShipping] = useState(false);
 
@@ -315,13 +313,12 @@ export default function Tutor() {
         facilitation_prompt: block.facilitation_prompt || "",
       }))
     );
-    if (session.content_filter?.material_ids) {
-      setSelectedMaterials(session.content_filter.material_ids);
-    }
+    const materialIds = session.content_filter?.material_ids || [];
+    setSelectedMaterials(materialIds);
     try {
       localStorage.setItem(
         tutorMaterialStorageKey,
-        JSON.stringify(session.content_filter?.material_ids || []),
+        JSON.stringify(materialIds),
       );
     } catch { /* ignore */ }
     setAccuracyProfile(normalizeAccuracyProfile(session.content_filter?.accuracy_profile));
@@ -413,7 +410,7 @@ export default function Tutor() {
         objective_scope: objectiveScope,
         content_filter: {
           ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
-          ...(selectedMaterials.length > 0 ? { material_ids: selectedMaterials } : {}),
+          material_ids: selectedMaterials,
           ...(vaultFolder.trim() ? { vault_folder: vaultFolder.trim() } : {}),
           accuracy_profile: accuracyProfile,
           objective_scope: objectiveScope,
@@ -535,13 +532,13 @@ export default function Tutor() {
       setTimeout(() => {
         toast.success("Session shipped to Brain");
       }, 100);
+      await endSession();
     } catch (err) {
       toast.error(`Ship failed: ${err instanceof Error ? err.message : "Unknown"}`);
     } finally {
       setIsShipping(false);
+      setShowEndConfirm(false);
     }
-    await endSession();
-    setShowEndConfirm(false);
   }, [activeSessionId, topic, startedAt, turnCount, artifacts.length, endSession]);
 
   const handleArtifactCreated = useCallback(
@@ -1058,7 +1055,7 @@ export default function Tutor() {
 
             {/* Right side panels overlaid when toggle is ON */}
             {activeSessionId && !showSetup && showArtifacts && (
-              <div className="w-[320px] shrink-0 border-l-2 border-primary/30 bg-black/90 absolute right-0 inset-y-0 z-30 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.5)]">
+              <div className="absolute lg:static right-0 inset-y-0 z-30 w-[320px] shrink-0 border-l-2 border-primary/30 bg-black/90 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.5)] lg:shadow-none">
                 <div className="flex items-center justify-between p-2 border-b-2 border-primary/20 bg-primary/5">
                   <span className="font-arcade text-xs text-primary px-2">ARTIFACTS</span>
                   <Button

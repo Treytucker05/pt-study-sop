@@ -2,7 +2,14 @@ import Layout from "@/components/layout";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Material, MaterialContent, TutorSyncJobStatus, TutorContentSources } from "@/lib/api";
+import type {
+  Material,
+  MaterialContent,
+  TutorSyncJobStatus,
+  TutorContentSources,
+  TutorSyncPreviewNode,
+  TutorSyncPreviewResult,
+} from "@/lib/api";
 import type { Course } from "@shared/schema";
 import { Link } from "wouter";
 import {
@@ -258,6 +265,23 @@ function getFolderAncestorPaths(path: string): string[] {
   return ancestors;
 }
 
+function normalizePathForCompare(path: string): string {
+  return path.replace(/\\/g, "/").replace(/\/+$/g, "").toLowerCase();
+}
+
+function collectSyncPreviewFilePaths(
+  node: TutorSyncPreviewNode | null | undefined,
+): string[] {
+  if (!node) return [];
+  if (node.type === "file") return [node.path];
+  const children = Array.isArray(node.children) ? node.children : [];
+  const files: string[] = [];
+  for (const child of children) {
+    files.push(...collectSyncPreviewFilePaths(child));
+  }
+  return files;
+}
+
 function renderMaterialRow(
   mat: Material,
   isDuplicate: boolean,
@@ -442,9 +466,16 @@ export default function Library() {
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [materialsFolder, setMaterialsFolder] = useState("C:\\Users\\treyt\\OneDrive\\Desktop\\PT School");
+  const [uploadCourseTarget, setUploadCourseTarget] = useState<string>("");
+  const [syncCourseTarget, setSyncCourseTarget] = useState<string>("");
   const [syncJobId, setSyncJobId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<TutorSyncJobStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [syncPreview, setSyncPreview] = useState<TutorSyncPreviewResult | null>(null);
+  const [syncPreviewLoading, setSyncPreviewLoading] = useState(false);
+  const [syncPreviewError, setSyncPreviewError] = useState<string | null>(null);
+  const [selectedSyncFiles, setSelectedSyncFiles] = useState<Set<string>>(new Set());
+  const [expandedSyncFolders, setExpandedSyncFolders] = useState<Set<string>>(new Set([""]));
   const [reextractingMaterialIds, setReextractingMaterialIds] = useState<number[]>([]);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string>(ALL_FOLDERS_KEY);
   const [expandedFolderPaths, setExpandedFolderPaths] = useState<Set<string>>(new Set());
@@ -555,11 +586,18 @@ export default function Library() {
     [visibleMaterials],
   );
   const selectedVisibleMaterialIds = useMemo(
-    () => visibleMaterials.filter((m) => selectedForTutorSet.has(m.id)).map((m) => m.id),
+    () => visibleMaterials.filter((m) => m.enabled && selectedForTutorSet.has(m.id)).map((m) => m.id),
     [visibleMaterials, selectedForTutorSet],
   );
   const allTutorMaterialsSelected = selectableVisibleMaterialIds.length > 0 &&
     selectableVisibleMaterialIds.every((id) => selectedForTutorSet.has(id));
+  const syncPreviewFiles = useMemo(
+    () => collectSyncPreviewFilePaths(syncPreview?.tree),
+    [syncPreview],
+  );
+  const selectedSyncCount = selectedSyncFiles.size;
+  const allSyncFilesSelected = syncPreviewFiles.length > 0 &&
+    syncPreviewFiles.every((path) => selectedSyncFiles.has(path));
 
   useEffect(() => {
     try {
@@ -598,6 +636,17 @@ export default function Library() {
       return next;
     });
   }, [selectedFolderPath]);
+
+  useEffect(() => {
+    if (!syncPreview) return;
+    const normalizedPreview = normalizePathForCompare(syncPreview.folder || "");
+    const normalizedCurrent = normalizePathForCompare(materialsFolder.trim());
+    if (!normalizedCurrent || normalizedPreview === normalizedCurrent) return;
+    setSyncPreview(null);
+    setSelectedSyncFiles(new Set());
+    setExpandedSyncFolders(new Set([""]));
+    setSyncPreviewError("Folder path changed. Scan the folder again.");
+  }, [materialsFolder, syncPreview]);
 
   useEffect(() => {
     if (!syncJobId) return;
@@ -824,9 +873,174 @@ export default function Library() {
     updateMutation.mutate({ id: mat.id, data: { enabled: !mat.enabled } });
   };
 
+  const toggleSyncFolderExpanded = (path: string) => {
+    if (!path) return;
+    setExpandedSyncFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        for (const expandedPath of Array.from(next)) {
+          if (expandedPath === path || expandedPath.startsWith(`${path}/`)) {
+            next.delete(expandedPath);
+          }
+        }
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  };
+
+  const toggleSyncFile = (path: string) => {
+    setSelectedSyncFiles((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  };
+
+  const selectAllSyncFiles = (selectAll: boolean) => {
+    setSelectedSyncFiles(selectAll ? new Set(syncPreviewFiles) : new Set());
+  };
+
+  const scanSyncFolder = async () => {
+    const trimmedFolder = materialsFolder.trim();
+    if (!trimmedFolder || syncPreviewLoading || syncing) return;
+
+    setSyncPreviewLoading(true);
+    setSyncPreviewError(null);
+
+    try {
+      const preview = await api.tutor.previewSyncMaterialsFolder({
+        folder_path: trimmedFolder,
+      });
+      const discoveredFiles = collectSyncPreviewFilePaths(preview.tree);
+      const topLevelFolderPaths = (preview.tree.children || [])
+        .filter((child) => child.type === "folder")
+        .map((child) => child.path);
+      setSyncPreview(preview);
+      setSelectedSyncFiles(new Set(discoveredFiles));
+      setExpandedSyncFolders(new Set(["", ...topLevelFolderPaths]));
+      if (!discoveredFiles.length) {
+        setSyncPreviewError("No supported files found in this folder.");
+        toast.warning("Folder scanned: no supported files found.");
+      } else if (preview.truncated) {
+        setSyncPreviewError(
+          `Preview limited to first ${preview.max_files || 5000} files. Select from displayed files.`,
+        );
+        toast.warning(
+          `Preview loaded with ${discoveredFiles.length} files (truncated).`,
+        );
+      } else {
+        setSyncPreviewError(null);
+        toast.success(`Scanned ${discoveredFiles.length} files.`);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown";
+      setSyncPreview(null);
+      setSelectedSyncFiles(new Set());
+      setExpandedSyncFolders(new Set([""]));
+      setSyncPreviewError(message);
+      toast.error(`Folder scan failed: ${message}`);
+    } finally {
+      setSyncPreviewLoading(false);
+    }
+  };
+
+  const renderSyncPreviewNode = (
+    node: TutorSyncPreviewNode,
+    depth = 0,
+  ): JSX.Element | null => {
+    if (node.type === "file") {
+      const isChecked = selectedSyncFiles.has(node.path);
+      return (
+        <div
+          key={node.path}
+          className="w-full rounded-none border border-primary/10 px-2 py-1 text-left text-xs font-terminal flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          style={{ paddingLeft: `${0.6 + depth * 0.8}rem` }}
+          title={node.path}
+        >
+          <Checkbox
+            checked={isChecked}
+            onCheckedChange={() => toggleSyncFile(node.path)}
+          />
+          <FileText className={`${ICON_SM} shrink-0`} />
+          <span className="truncate flex-1">{node.name}</span>
+          <span className="text-[11px]">{formatSize(node.size)}</span>
+        </div>
+      );
+    }
+
+    const children = Array.isArray(node.children) ? node.children : [];
+    const isRoot = node.path === "";
+    const isExpanded = isRoot || expandedSyncFolders.has(node.path);
+
+    return (
+      <div key={isRoot ? "__sync-root" : node.path}>
+        {!isRoot && (
+          <div
+            className="w-full rounded-none border border-primary/15 pr-2 py-1 text-left text-xs font-terminal flex items-center gap-1 text-muted-foreground hover:text-foreground"
+            style={{ paddingLeft: `${0.45 + depth * 0.8}rem` }}
+            title={node.path}
+          >
+            {children.length > 0 ? (
+              <button
+                type="button"
+                className="p-0.5 hover:text-primary transition-colors"
+                onClick={() => toggleSyncFolderExpanded(node.path)}
+                aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
+              >
+                <ChevronRight
+                  className={`${ICON_SM} transition-transform ${isExpanded ? "rotate-90" : "rotate-0"}`}
+                />
+              </button>
+            ) : (
+              <span className="w-4" />
+            )}
+            {isExpanded ? (
+              <FolderOpen className={`${ICON_SM} shrink-0`} />
+            ) : (
+              <Folder className={`${ICON_SM} shrink-0`} />
+            )}
+            <span className="truncate flex-1">{node.name}</span>
+            <span className="text-[11px]">{children.length}</span>
+          </div>
+        )}
+        {isExpanded &&
+          children.map((child) =>
+            renderSyncPreviewNode(child, isRoot ? depth : depth + 1),
+          )}
+      </div>
+    );
+  };
+
   const startSync = async () => {
     const trimmedFolder = materialsFolder.trim();
-    if (!trimmedFolder || syncing) return;
+    if (!trimmedFolder || syncing || syncPreviewLoading) return;
+    if (!syncPreview) {
+      toast.error("Scan the folder first so you can choose files.");
+      return;
+    }
+    if (
+      normalizePathForCompare(syncPreview.folder) !==
+      normalizePathForCompare(trimmedFolder)
+    ) {
+      toast.error("Folder path changed. Re-scan before syncing.");
+      return;
+    }
+    const selectedFiles = syncPreviewFiles.filter((path) =>
+      selectedSyncFiles.has(path),
+    );
+    if (!selectedFiles.length) {
+      toast.error("Choose at least one file to sync.");
+      return;
+    }
+    const parsedCourseId = syncCourseTarget ? Number(syncCourseTarget) : null;
+    const courseId =
+      parsedCourseId && Number.isFinite(parsedCourseId) ? parsedCourseId : null;
 
     setSyncing(true);
     setSyncStatus({
@@ -842,10 +1056,14 @@ export default function Library() {
     });
 
     try {
-      const started = await api.tutor.startSyncMaterialsFolder({ folder_path: trimmedFolder });
+      const started = await api.tutor.startSyncMaterialsFolder({
+        folder_path: trimmedFolder,
+        selected_files: selectedFiles,
+        course_id: courseId,
+      });
       setSyncJobId(started.job_id);
       setSyncStatus((prev) => (prev ? { ...prev, job_id: started.job_id, folder: started.folder } : prev));
-      toast.success("Sync started");
+      toast.success(`Sync started for ${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"}`);
     } catch (err) {
       setSyncing(false);
       setSyncJobId(null);
@@ -1067,7 +1285,24 @@ export default function Library() {
                 <div className={`${PANEL_PADDING} grid gap-3 lg:grid-cols-[minmax(340px,1fr)_minmax(380px,1.2fr)]`}>
                   <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
                     <div className={TEXT_PANEL_TITLE}>UPLOAD MATERIALS</div>
-                    <MaterialUploader />
+                    <div className="flex items-center gap-2">
+                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Class</label>
+                      <select
+                        value={uploadCourseTarget}
+                        onChange={(e) => setUploadCourseTarget(e.target.value)}
+                        className="h-8 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary flex-1"
+                      >
+                        <option value="">No class</option>
+                        {courses.map((course) => (
+                          <option key={course.id} value={String(course.id)}>
+                            {course.name}{course.code ? ` (${course.code})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <MaterialUploader
+                      courseId={uploadCourseTarget ? Number(uploadCourseTarget) : undefined}
+                    />
                   </div>
 
                   <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
@@ -1078,18 +1313,81 @@ export default function Library() {
                       className={INPUT_BASE}
                       placeholder="C:\\Users\\...\\PT School"
                     />
-                    <Button
-                      onClick={startSync}
-                      disabled={syncing || !materialsFolder.trim()}
-                      className={`w-fit ${BTN_PRIMARY} !text-white`}
-                    >
-                      {syncing ? (
-                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                      ) : (
-                        <RefreshCw className={`${ICON_SM} mr-1`} />
-                      )}
-                      SYNC FOLDER TO TUTOR
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        onClick={scanSyncFolder}
+                        disabled={syncPreviewLoading || syncing || !materialsFolder.trim()}
+                        variant="outline"
+                        className="rounded-none h-8 px-3 font-terminal text-xs"
+                      >
+                        {syncPreviewLoading ? (
+                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                        ) : (
+                          <RefreshCw className={`${ICON_SM} mr-1`} />
+                        )}
+                        {syncPreviewLoading ? "SCANNING..." : "SCAN FOLDER TREE"}
+                      </Button>
+                      <Button
+                        onClick={startSync}
+                        disabled={syncing || syncPreviewLoading || !materialsFolder.trim() || selectedSyncCount === 0}
+                        className={`w-fit ${BTN_PRIMARY} !text-white`}
+                      >
+                        {syncing ? (
+                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                        ) : (
+                          <RefreshCw className={`${ICON_SM} mr-1`} />
+                        )}
+                        SYNC SELECTED FILES
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Class</label>
+                      <select
+                        value={syncCourseTarget}
+                        onChange={(e) => setSyncCourseTarget(e.target.value)}
+                        className="h-8 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary flex-1"
+                      >
+                        <option value="">No class</option>
+                        {courses.map((course) => (
+                          <option key={course.id} value={String(course.id)}>
+                            {course.name}{course.code ? ` (${course.code})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {syncPreview ? (
+                      <div className="border border-primary/20 bg-black/40 p-2 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className={TEXT_MUTED}>
+                            {syncPreview.counts.files} file{syncPreview.counts.files === 1 ? "" : "s"} found • {selectedSyncCount} selected
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-none h-7 px-2 font-terminal text-[11px]"
+                              disabled={!syncPreviewFiles.length}
+                              onClick={() => selectAllSyncFiles(!allSyncFilesSelected)}
+                            >
+                              {allSyncFilesSelected ? "CLEAR ALL" : "SELECT ALL"}
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="max-h-48 overflow-auto border border-primary/15 bg-black/30 p-1 space-y-1">
+                          {renderSyncPreviewNode(syncPreview.tree)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`${TEXT_MUTED} text-xs border border-primary/20 bg-black/30 p-2`}>
+                        Scan the folder to browse your structure and choose files.
+                      </div>
+                    )}
+                    {syncPreviewError ? (
+                      <div className="text-xs text-yellow-300 break-all">
+                        <AlertTriangle className={`${ICON_SM} inline mr-1`} />
+                        {syncPreviewError}
+                      </div>
+                    ) : null}
                     {(syncing || syncStatus) && (
                       <div className="mt-1 border border-primary/20 bg-black/30 p-2 space-y-1 text-xs">
                         <div className="flex items-center justify-between">

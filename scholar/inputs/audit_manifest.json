@@ -1,13 +1,14 @@
 {
-  "safe_mode": false,
+  "safe_mode": true,
   "deep_agent": {
-    "enabled": true,
+    "enabled": false,
     "model": "google/gemini-2.5-flash-lite",
     "max_iterations": 15
   },
   "multi_agent": {
     "enabled": true,
-    "max_concurrency": 4
+    "max_concurrency": 4,
+    "model": "gpt-5.3-codex"
   },
   "telemetry_snapshot": {
     "enabled": true,
@@ -27,6 +28,26 @@
     "sop/runtime/knowledge_upload/03_ENGINES.md",
     "sop/runtime/knowledge_upload/04_LOGGING_AND_TEMPLATES.md",
     "sop/runtime/knowledge_upload/05_EXAMPLES_MINI.md"
+  ],
+  "instruction_paths": [
+    "sop/runtime/runtime_prompt.md",
+    "sop/runtime/knowledge_upload/00_INDEX_AND_RULES.md",
+    "sop/runtime/knowledge_upload/01_MODULES_M0-M6.md",
+    "sop/runtime/knowledge_upload/02_FRAMEWORKS.md",
+    "sop/runtime/knowledge_upload/03_ENGINES.md",
+    "sop/runtime/knowledge_upload/04_LOGGING_AND_TEMPLATES.md",
+    "sop/runtime/knowledge_upload/05_EXAMPLES_MINI.md",
+    "docs/root/TUTOR_TODO.md",
+    "docs/root/TUTOR_CONTROL_PLANE_CANON.md",
+    "docs/root/TUTOR_CATEGORY_DEFINITIONS.md"
+  ],
+  "chain_paths": [
+    "sop/library/17-control-plane.md",
+    "sop/library/chains/C-FE-STD.yaml",
+    "sop/library/chains/C-FE-MIN.yaml",
+    "sop/library/chains/C-FE-PRO.yaml",
+    "brain/tutor_chains.py",
+    "brain/dashboard/api_tutor.py"
   ],
 
   "brain_paths": [

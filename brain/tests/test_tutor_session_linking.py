@@ -42,20 +42,46 @@ def app():
     _orig_api_data = _api_data_mod.DB_PATH
     _orig_obsidian_get = _api_adapter_mod.obsidian_get_file
     _orig_obsidian_save = _api_adapter_mod.obsidian_save_file
+    _orig_tutor_vault_read = _api_tutor_mod._vault_read_note
+    _orig_tutor_vault_save = _api_tutor_mod._vault_save_note
+    _orig_tutor_vault_delete = _api_tutor_mod._vault_delete_note
 
     map_of_contents_store: dict[str, str] = {}
     map_of_contents_write_calls: list[str] = []
 
     def _fake_obsidian_get_file(path: str):
-        content = map_of_contents_store.get(path)
+        rel_path = _normalize_path(path)
+        content = map_of_contents_store.get(rel_path)
         if content is None:
             return {"success": False, "error": "not found"}
-        return {"success": True, "content": content, "path": path}
+        return {"success": True, "content": content, "path": rel_path}
 
     def _fake_obsidian_save_file(path: str, content: str):
-        map_of_contents_write_calls.append(path)
-        map_of_contents_store[path] = content
-        return {"success": True, "path": path}
+        rel_path = _normalize_path(path)
+        map_of_contents_write_calls.append(rel_path)
+        map_of_contents_store[rel_path] = content
+        return {"success": True, "path": rel_path}
+
+    def _normalize_path(path: str) -> str:
+        return str(path or "").replace("\\", "/").strip().lstrip("/")
+
+    def _fake_tutor_vault_read(path: str):
+        rel_path = _normalize_path(path)
+        content = map_of_contents_store.get(rel_path)
+        if content is None:
+            return {"success": False, "error": "file not found", "path": rel_path}
+        return {"success": True, "content": content, "path": rel_path}
+
+    def _fake_tutor_vault_save(path: str, content: str):
+        rel_path = _normalize_path(path)
+        map_of_contents_write_calls.append(rel_path)
+        map_of_contents_store[rel_path] = content
+        return {"success": True, "path": rel_path}
+
+    def _fake_tutor_vault_delete(path: str):
+        rel_path = _normalize_path(path)
+        map_of_contents_store.pop(rel_path, None)
+        return {"success": True, "path": rel_path}
 
     # Patch module-cached DB paths
     os.environ["PT_STUDY_DB"] = tmp_path
@@ -64,6 +90,9 @@ def app():
     _api_data_mod.DB_PATH = tmp_path
     _api_adapter_mod.obsidian_get_file = _fake_obsidian_get_file
     _api_adapter_mod.obsidian_save_file = _fake_obsidian_save_file
+    _api_tutor_mod._vault_read_note = _fake_tutor_vault_read
+    _api_tutor_mod._vault_save_note = _fake_tutor_vault_save
+    _api_tutor_mod._vault_delete_note = _fake_tutor_vault_delete
 
     db_setup.init_database()
     app_obj = create_app()
@@ -78,6 +107,9 @@ def app():
     _api_data_mod.DB_PATH = _orig_api_data
     _api_adapter_mod.obsidian_get_file = _orig_obsidian_get
     _api_adapter_mod.obsidian_save_file = _orig_obsidian_save
+    _api_tutor_mod._vault_read_note = _orig_tutor_vault_read
+    _api_tutor_mod._vault_save_note = _orig_tutor_vault_save
+    _api_tutor_mod._vault_delete_note = _orig_tutor_vault_delete
     if _orig_env is None:
         os.environ.pop("PT_STUDY_DB", None)
     else:

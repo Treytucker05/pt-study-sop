@@ -4,6 +4,40 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-03-05 - Library Sync folder tree selection + class assignment
+
+- Added backend Sync Study Folder preview endpoint in [api_tutor.py](/C:/pt-study-sop/brain/dashboard/api_tutor.py):
+  - `POST /api/tutor/materials/sync/preview` returns nested folder/file tree for allowed material types.
+  - Added selected-file path normalization and traversal guards for `selected_files`.
+  - Extended sync payload to accept `selected_files` + optional `course_id`.
+- Updated sync ingest pipeline:
+  - [api_tutor.py](/C:/pt-study-sop/brain/dashboard/api_tutor.py) passes selected files and `course_id` into sync worker.
+  - [rag_notes.py](/C:/pt-study-sop/brain/rag_notes.py) now supports `include_paths` filtering and per-sync `course_id` assignment.
+- Updated frontend Library page and tutor API client:
+  - [api.ts](/C:/pt-study-sop/dashboard_rebuild/client/src/api.ts) adds preview endpoint/client types and extended sync payload types.
+  - [library.tsx](/C:/pt-study-sop/dashboard_rebuild/client/src/pages/library.tsx) adds:
+    - folder-tree scan UI with file checkboxes,
+    - select all/clear all for discovered files,
+    - class picker for Sync Study Folder,
+    - class picker for Upload Materials (passes `courseId` into uploader),
+    - stale-selection guard so disabled materials are excluded from bulk in-view actions.
+- Validation:
+  - `cd dashboard_rebuild && npm run build` -> PASS
+  - `pytest brain/tests -k "tutor and (sync or material or materials)"` -> PASS (`16 passed`, `905 deselected`)
+
+## 2026-03-05 - Tutor chat timeout hardening
+
+- Updated tutor turn runtime timeout selection in [api_tutor.py](/C:/pt-study-sop/brain/dashboard/api_tutor.py):
+  - Base timeout `120s`.
+  - `300s` when Deep Think is enabled.
+  - `180s` when Web Search or Gemini Vision is enabled.
+  - High reasoning effort enforces minimum `240s`.
+  - Applied same timeout to both streaming and fallback (`call_codex_json`) paths.
+- Updated user-facing timeout guidance in [tutor_streaming.py](/C:/pt-study-sop/brain/tutor_streaming.py) to include mode-toggle recovery steps.
+- Validation:
+  - `python -m py_compile brain/dashboard/api_tutor.py brain/tutor_streaming.py` -> PASS
+  - `pytest brain/tests -k "tutor and (session or context or stream)"` -> PASS (`44 passed`, `877 deselected`)
+
 ## 2026-03-03 - Tutor Runtime Error Documentation
 
 - Added `tutor-ZmKF4bYl.js` ReferenceError troubleshooting guidance in `docs/root/GUIDE_USER.md`.
@@ -31,6 +65,18 @@ Changes not tied to a specific conductor track. Append dated entries below.
     - `warning` message
     - `obsidian_cleanup.success: false` + `obsidian_cleanup.missing_paths`
 - Telemetry now records warning-mode outcomes in `tutor_delete_telemetry` using `status=deleted_with_warnings`.
+
+## 2026-03-03 - Dialog centering hardening (Calendar + Brain modals)
+
+- Removed inline modal positioning overrides that were forcing dialogs off-center:
+  - `dashboard_rebuild/client/src/pages/calendar.tsx` (`calendar-manage`, `calendar-create`)
+  - `dashboard_rebuild/client/src/components/EventEditModal.tsx`
+  - `dashboard_rebuild/client/src/components/LocalEventEditModal.tsx`
+  - `dashboard_rebuild/client/src/components/DataTablesSection.tsx`
+  - `dashboard_rebuild/client/src/components/SessionEvidence.tsx`
+  - `dashboard_rebuild/client/src/components/AnkiIntegration.tsx`
+- Standardized on shared dialog centering (`.dialog-center`) in `dashboard_rebuild/client/src/index.css`.
+- Added guardrail note to `AGENTS.md` Learnings: avoid per-dialog `top/left/transform` overrides on `DialogContent`/`AlertDialogContent`.
 
 ## 2026-03-03 - Tutor TDZ crash fix
 
@@ -1362,3 +1408,82 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 
 - Updated API typing contracts in `dashboard_rebuild/client/src/api.ts` for richer delete responses.
 - Updated user troubleshooting guide in `docs/root/GUIDE_USER.md` for new delete report semantics.
+
+## 2026-03-04 — Scholar/Tutor contract alignment + lifecycle hardening
+
+- Added deterministic Scholar question persistence in `brain/db_setup.py`:
+  - New `scholar_questions` table (stable `question_id`, `question_hash`, lifecycle status/timestamps, answer fields).
+  - Added supporting indexes and migration-safe missing-column backfill pattern.
+
+- Reworked Scholar question APIs in `brain/dashboard/api_adapter.py`:
+  - `GET /api/scholar/questions` now ingests question files into DB and returns stable IDs + lifecycle fields.
+  - Added `POST /api/scholar/questions/<id>/answer` for persisted answer/status transitions.
+
+- Added explicit proposal action routes in `brain/dashboard/api_adapter.py`:
+  - `POST /api/scholar/proposals/<id>/approve`
+  - `POST /api/scholar/proposals/<id>/reject`
+
+- Hardened run status/history contract surfaces:
+  - Extended `_scholar_status_payload()` with compatibility fields (`run_id`, `phase`, `started_at`, `finished_at`, `error`).
+  - Added `/api/scholar/status` alias in `brain/dashboard/routes.py`.
+  - Added best-effort fallback in `/api/scholar/run/history` when DB history path fails.
+
+- Frontend contract cleanup:
+  - `dashboard_rebuild/client/src/api.ts`: Scholar `run()` now accepts payload; `runStatus()` now targets `/api/scholar/status`; `runHistory()` now tolerates wrapped or bare history payload shapes.
+  - `dashboard_rebuild/client/src/components/ScholarRunStatus.tsx`: switched to centralized API client (`api.scholar.runStatus`, `api.scholar.run`) and shared status typing.
+
+- Added implementation notes:
+  - `docs/root/SCHOLAR_TUTOR_ALIGNMENT_AUDIT_2026-03-04.md`
+
+## 2026-03-04 — Scholar open-question answer flow wired in active UI
+
+- Updated active Scholar page (`dashboard_rebuild/client/src/pages/scholar.tsx`) to support end-to-end question resolution:
+  - Pending open questions now include inline answer input + submit button.
+  - Submit action calls Scholar API answer endpoint and refreshes `scholar-questions`.
+  - Answered questions now display persisted answer content/status.
+- Updated Scholar API client (`dashboard_rebuild/client/src/api.ts`):
+  - Added `api.scholar.answerQuestion(questionId, answer, source)`.
+  - Extended `ScholarQuestion` type with lifecycle/status fields used by the active page.
+- Updated implementation notes in:
+  - `docs/root/SCHOLAR_TUTOR_ALIGNMENT_AUDIT_2026-03-04.md`
+
+## 2026-03-04 — Scholar answer-submit lock + regression test guardrail
+
+- Hardened Scholar answer submissions in `dashboard_rebuild/client/src/pages/scholar.tsx`:
+  - Added per-question in-flight lock to prevent duplicate submit races.
+  - Added explicit button disabled/loading states during answer mutation.
+  - Added stable test ids for answer assertions (`button-submit-answer-*`, `saved-answer-*`).
+- Added page-level regression test in `dashboard_rebuild/client/src/pages/__tests__/scholar.test.tsx`:
+  - Verifies answered questions render `ANSWERED`.
+  - Verifies a single `Saved Answer` block is shown with persisted answer text.
+- Prevention note:
+  - For mutation-backed inline actions, always add an in-flight guard + UI disabled state + deterministic test id before shipping.
+
+## 2026-03-05 — Start_Dashboard startup deadlock guard (step [0/6])
+
+- Fixed startup hang in `Start_Dashboard.bat` where process cleanup could block at:
+  - `[0/6] Closing any existing dashboard server processes...`
+- Replaced expensive PowerShell process scans with fast/non-blocking cleanup:
+  - `taskkill /FI "WINDOWTITLE eq PT Study Brain Dashboard*" /T /F`
+  - `netstat -ano -p tcp | findstr ":5000"` + numeric PID guard + `taskkill /PID ... /F`
+- Validation:
+  - `Start_Dashboard.bat` progresses past step `[0/6]`.
+  - Dashboard server listens on `127.0.0.1:5000`.
+  - Tutor runtime smoke passed (`/api/tutor/chains/templates`, session create, chain-status, advance-block, delete).
+
+## 2026-03-05 — Tutor backend test unblock + reliability hardening
+
+- Fixed test import bootstrap in `brain/tests/conftest.py`:
+  - Added both repo root and `brain/` paths to support mixed import styles (`brain.*` and legacy top-level imports).
+  - Added integration-aware timeout defaults (`180s` for `@integration`, `30s` baseline otherwise) to reduce false hangs while preserving guardrails.
+- Hardened tutor context integration test stability:
+  - Marked `brain/tests/test_tutor_context_integration.py` as `integration` and added explicit `timeout(180)`.
+  - Added `pytest.ini` marker registration for `integration`.
+- Updated `brain/tests/test_tutor_session_linking.py` fixture stubs:
+  - Added explicit stubs for `dashboard.api_tutor` vault helpers (`_vault_read_note`, `_vault_save_note`, `_vault_delete_note`) to match current runtime write path.
+  - Normalized fake Obsidian paths consistently to avoid store-key mismatch.
+- Verification:
+  - `pytest brain/tests/test_selector_bridge.py brain/tests/test_tutor_context_integration.py brain/tests/test_chain_validator.py brain/tests/test_api_tutor_mode_flags.py -q` → all pass.
+  - Broader tutor/chain/rules bundle:
+    `pytest brain/tests/test_seed_methods.py brain/tests/test_method_cards_hardening.py brain/tests/test_selector_bridge.py brain/tests/test_chain_runner.py brain/tests/test_chain_validator.py brain/tests/test_api_tutor_mode_flags.py brain/tests/test_tutor_context_wiring.py brain/tests/test_tutor_context_integration.py brain/tests/test_tutor_session_linking.py -q`
+    → `95 passed` (warnings only from upstream Chroma/LangChain deprecations).

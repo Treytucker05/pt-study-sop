@@ -548,7 +548,11 @@ export function TutorChat({
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+      const isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 150;
+      if (isScrolledToBottom) {
+        scrollRef.current.scrollTop = scrollHeight;
+      }
     }
   }, [messages]);
 
@@ -1547,7 +1551,7 @@ export function TutorChat({
             ))}
           </div>
           {/* ─────────────────────────────────────────────────────── */}
-          <div className="flex md:flex-row flex-col items-stretch md:items-center gap-2">
+          <div className="flex flex-row items-center gap-2">
             <input
               ref={inputRef}
               value={input}
@@ -1561,7 +1565,7 @@ export function TutorChat({
               onClick={sendMessage}
               disabled={!input.trim() || isStreaming}
               aria-label="Send message"
-              className="rounded-none border-[3px] border-double border-primary h-11 w-full md:w-11 p-0 shrink-0"
+              className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0 shrink-0"
             >
               {isStreaming ? (
                 <Loader2 className="w-5 h-5 animate-spin mx-auto" />

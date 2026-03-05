@@ -2543,7 +2543,50 @@ def _normalize_allowed_exts(raw_value: object) -> Optional[set[str]]:
     return normalized or None
 
 
-def _parse_sync_folder_payload(data: dict[str, Any]) -> tuple[Path, Optional[set[str]]]:
+_DEFAULT_MATERIAL_SYNC_EXTS: set[str] = {
+    ".md",
+    ".markdown",
+    ".txt",
+    ".pdf",
+    ".docx",
+    ".ppt",
+    ".pptx",
+    ".mp4",
+}
+_DEFAULT_SYNC_EXCLUDE_DIR_NAMES: set[str] = {".git", ".venv", "__pycache__"}
+_MAX_SYNC_PREVIEW_FILES = 5000
+
+
+def _resolve_sync_allowed_exts(allowed_exts: Optional[set[str]]) -> set[str]:
+    return set(allowed_exts) if allowed_exts else set(_DEFAULT_MATERIAL_SYNC_EXTS)
+
+
+def _normalize_sync_relative_path(raw_path: object) -> str:
+    raw = str(raw_path or "").strip()
+    if not raw:
+        raise ValueError("Path is empty.")
+    normalized = raw.replace("\\", "/")
+    if normalized.startswith("/") or re.match(r"^[a-zA-Z]:", normalized):
+        raise ValueError("Absolute file paths are not allowed in selected_files.")
+
+    parts: list[str] = []
+    for part in normalized.split("/"):
+        token = part.strip()
+        if not token or token == ".":
+            continue
+        if token == "..":
+            raise ValueError("Parent directory traversal (..) is not allowed.")
+        parts.append(token)
+
+    if not parts:
+        raise ValueError("Path is empty after normalization.")
+
+    return "/".join(parts)
+
+
+def _parse_sync_folder_root_and_exts(
+    data: dict[str, Any]
+) -> tuple[Path, Optional[set[str]]]:
     folder_path_raw = (
         data.get("folder_path")
         or os.environ.get("TUTOR_MATERIALS_DIR")
@@ -2560,6 +2603,175 @@ def _parse_sync_folder_payload(data: dict[str, Any]) -> tuple[Path, Optional[set
         raise FileNotFoundError(f"Folder not found: {folder_path}")
 
     return root, _normalize_allowed_exts(data.get("allowed_exts"))
+
+
+def _parse_sync_course_id(raw_value: object) -> Optional[int]:
+    if raw_value in (None, ""):
+        return None
+    try:
+        course_id = int(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("course_id must be a valid integer") from exc
+    if course_id <= 0:
+        raise ValueError("course_id must be a positive integer")
+
+    conn = get_connection()
+    try:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT 1 FROM courses WHERE id = ? LIMIT 1", (course_id,))
+        if not cur.fetchone():
+            raise ValueError(f"course_id not found: {course_id}")
+    finally:
+        conn.close()
+
+    return course_id
+
+
+def _normalize_selected_sync_files(
+    raw_value: object,
+    *,
+    root: Path,
+    allowed_exts: Optional[set[str]],
+) -> Optional[set[str]]:
+    if raw_value is None:
+        return None
+    if not isinstance(raw_value, list):
+        raise ValueError("selected_files must be an array of relative file paths.")
+
+    effective_exts = _resolve_sync_allowed_exts(allowed_exts)
+    root_resolved = root.resolve()
+    selected_files: set[str] = set()
+
+    for item in raw_value:
+        rel_path = _normalize_sync_relative_path(item)
+        abs_path = (root_resolved / Path(rel_path)).resolve()
+        try:
+            abs_path.relative_to(root_resolved)
+        except ValueError as exc:
+            raise ValueError(f"Selected file is outside the chosen folder: {rel_path}") from exc
+
+        if not abs_path.exists() or not abs_path.is_file():
+            raise FileNotFoundError(f"Selected file not found: {rel_path}")
+        if abs_path.suffix.lower() not in effective_exts:
+            raise ValueError(f"Unsupported file type selected: {rel_path}")
+        selected_files.add(rel_path.replace("\\", "/"))
+
+    return selected_files
+
+
+def _parse_sync_folder_payload(
+    data: dict[str, Any]
+) -> tuple[Path, Optional[set[str]], Optional[set[str]], Optional[int]]:
+    root, allowed_exts = _parse_sync_folder_root_and_exts(data)
+    selected_files = _normalize_selected_sync_files(
+        data.get("selected_files"),
+        root=root,
+        allowed_exts=allowed_exts,
+    )
+    if data.get("selected_files") is not None and not selected_files:
+        raise ValueError("selected_files is empty. Choose at least one file.")
+    course_id = _parse_sync_course_id(data.get("course_id"))
+    return root, allowed_exts, selected_files, course_id
+
+
+def _build_sync_folder_preview(
+    root: Path,
+    *,
+    allowed_exts: Optional[set[str]],
+    max_files: int = _MAX_SYNC_PREVIEW_FILES,
+) -> dict[str, Any]:
+    root_resolved = root.resolve()
+    effective_exts = _resolve_sync_allowed_exts(allowed_exts)
+    tree: dict[str, Any] = {
+        "type": "folder",
+        "name": root_resolved.name or str(root_resolved),
+        "path": "",
+        "children": [],
+    }
+    folder_nodes: dict[str, dict[str, Any]] = {"": tree}
+    folder_count = 0
+    file_count = 0
+    truncated = False
+
+    def _ensure_folder_node(rel_path: str) -> dict[str, Any]:
+        nonlocal folder_count
+        normalized = rel_path.strip("/")
+        if normalized in folder_nodes:
+            return folder_nodes[normalized]
+
+        parent_path, _, name = normalized.rpartition("/")
+        parent_node = _ensure_folder_node(parent_path)
+        node = {"type": "folder", "name": name, "path": normalized, "children": []}
+        parent_node["children"].append(node)
+        folder_nodes[normalized] = node
+        folder_count += 1
+        return node
+
+    for dirpath, dirnames, filenames in os.walk(str(root_resolved)):
+        dirnames[:] = sorted(
+            [d for d in dirnames if d not in _DEFAULT_SYNC_EXCLUDE_DIR_NAMES],
+            key=str.lower,
+        )
+        rel_dir = os.path.relpath(dirpath, str(root_resolved)).replace("\\", "/")
+        if rel_dir == ".":
+            rel_dir = ""
+        node = _ensure_folder_node(rel_dir)
+
+        for filename in sorted(filenames, key=str.lower):
+            file_path = Path(dirpath) / filename
+            if file_path.suffix.lower() not in effective_exts:
+                continue
+            if file_count >= max_files:
+                truncated = True
+                break
+            rel_file = os.path.relpath(str(file_path), str(root_resolved)).replace(
+                "\\", "/"
+            )
+            try:
+                stat = file_path.stat()
+                file_size = int(stat.st_size)
+                modified_at = datetime.fromtimestamp(stat.st_mtime).isoformat()
+            except OSError:
+                file_size = 0
+                modified_at = None
+            node["children"].append(
+                {
+                    "type": "file",
+                    "name": filename,
+                    "path": rel_file,
+                    "size": file_size,
+                    "modified_at": modified_at,
+                }
+            )
+            file_count += 1
+
+        if truncated:
+            break
+
+    def _sort_tree(node: dict[str, Any]) -> None:
+        children = node.get("children")
+        if not isinstance(children, list):
+            return
+        for child in children:
+            if isinstance(child, dict) and child.get("type") == "folder":
+                _sort_tree(child)
+        children.sort(
+            key=lambda item: (
+                0 if str(item.get("type")) == "folder" else 1,
+                str(item.get("name") or "").lower(),
+            )
+        )
+
+    _sort_tree(tree)
+    return {
+        "folder": str(root_resolved),
+        "tree": tree,
+        "counts": {"folders": folder_count, "files": file_count},
+        "allowed_exts": sorted(effective_exts),
+        "truncated": truncated,
+        "max_files": max_files,
+    }
 
 
 def _update_sync_job(job_id: str, **payload: Any) -> None:
@@ -2855,13 +3067,21 @@ def _auto_link_materials_to_courses(conn: sqlite3.Connection) -> dict:
     return {"linked": linked, "unlinked": still_unlinked, "mappings": mappings}
 
 
-def _launch_materials_sync_job(root: Path, allowed_exts: Optional[set[str]]) -> str:
+def _launch_materials_sync_job(
+    root: Path,
+    allowed_exts: Optional[set[str]],
+    *,
+    selected_files: Optional[set[str]] = None,
+    course_id: Optional[int] = None,
+) -> str:
     job_id = uuid.uuid4().hex
     _update_sync_job(
         job_id,
         status="pending",
         phase="pending",
         folder=str(root),
+        selected_count=len(selected_files) if selected_files is not None else None,
+        course_id=course_id,
         processed=0,
         total=0,
         index=0,
@@ -2896,6 +3116,8 @@ def _launch_materials_sync_job(root: Path, allowed_exts: Optional[set[str]]) -> 
                 str(root),
                 corpus="materials",
                 allowed_exts=allowed_exts,
+                include_paths=selected_files,
+                course_id=course_id,
                 progress_callback=_progress,
             )
             sync_errors = sync_result.get("errors") or []
@@ -2956,13 +3178,14 @@ def _launch_materials_sync_job(root: Path, allowed_exts: Optional[set[str]]) -> 
                     last_error=str(embed_exc),
                 )
 
-            # Auto-link materials to courses by folder_path
-            try:
-                link_conn = get_connection()
-                _auto_link_materials_to_courses(link_conn)
-                link_conn.close()
-            except Exception:
-                pass
+            # Auto-link materials to courses by folder_path only for unassigned syncs.
+            if course_id is None:
+                try:
+                    link_conn = get_connection()
+                    _auto_link_materials_to_courses(link_conn)
+                    link_conn.close()
+                except Exception:
+                    pass
 
             _update_sync_job(job_id, status="completed", phase="completed")
         except Exception as exc:
@@ -4411,11 +4634,18 @@ def send_turn(session_id: str):
                 max_tool_rounds = 5
                 tool_round = 0
                 pending_tool_results: list[dict] = []
+                llm_timeout_seconds = 120
+                if _deep_think_on:
+                    llm_timeout_seconds = 300
+                elif _web_search_on or _gemini_vision_on:
+                    llm_timeout_seconds = 180
+                if _reasoning_effort == "high":
+                    llm_timeout_seconds = max(llm_timeout_seconds, 240)
 
                 try:
                     stream_kwargs: dict = {
                         "model": codex_model or _model,
-                        "timeout": 120,
+                        "timeout": llm_timeout_seconds,
                         "web_search": _web_search_on,
                         "tools": tool_schemas,
                         "reasoning_effort": _reasoning_effort,
@@ -4551,7 +4781,7 @@ def send_turn(session_id: str):
                             system_prompt,
                             user_prompt,
                             model=codex_model,
-                            timeout=120,
+                            timeout=llm_timeout_seconds,
                             isolated=True,
                         )
                         if not result.get("success"):
@@ -7293,19 +7523,52 @@ def auto_link_materials():
 # ---------------------------------------------------------------------------
 
 
-@tutor_bp.route("/materials/sync", methods=["POST"])
-def sync_materials_folder():
+@tutor_bp.route("/materials/sync/preview", methods=["POST"])
+def preview_materials_sync_folder():
     data = request.get_json(silent=True) or {}
 
     try:
-        root, allowed_exts = _parse_sync_folder_payload(data)
+        root, allowed_exts = _parse_sync_folder_root_and_exts(data)
+        preview = _build_sync_folder_preview(root, allowed_exts=allowed_exts)
     except (ValueError, FileNotFoundError) as exc:
         return jsonify({"error": str(exc)}), 400
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
 
-    job_id = _launch_materials_sync_job(root, allowed_exts)
-    return jsonify({"ok": True, "job_id": job_id, "folder": str(root)}), 202
+    return jsonify({"ok": True, **preview}), 200
+
+
+@tutor_bp.route("/materials/sync", methods=["POST"])
+def sync_materials_folder():
+    data = request.get_json(silent=True) or {}
+
+    try:
+        root, allowed_exts, selected_files, course_id = _parse_sync_folder_payload(data)
+    except (ValueError, FileNotFoundError) as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+    job_id = _launch_materials_sync_job(
+        root,
+        allowed_exts,
+        selected_files=selected_files,
+        course_id=course_id,
+    )
+    return (
+        jsonify(
+            {
+                "ok": True,
+                "job_id": job_id,
+                "folder": str(root),
+                "selected_count": (
+                    len(selected_files) if selected_files is not None else None
+                ),
+                "course_id": course_id,
+            }
+        ),
+        202,
+    )
 
 
 @tutor_bp.route("/materials/sync/start", methods=["POST"])

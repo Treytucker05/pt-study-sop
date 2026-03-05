@@ -546,6 +546,11 @@ export const api = {
 
   scholar: {
     getQuestions: () => request<ScholarQuestion[]>("/scholar/questions"),
+    answerQuestion: (questionId: string, answer: string, source = "ui") =>
+      request<ScholarQuestion>(`/scholar/questions/${encodeURIComponent(questionId)}/answer`, {
+        method: "POST",
+        body: JSON.stringify({ answer, source }),
+      }),
     chat: (message: string) => request<ScholarChatResponse>("/scholar/chat", {
       method: "POST",
       body: JSON.stringify({ message }),
@@ -762,12 +767,17 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data || {}),
       }),
-    syncMaterialsFolder: (payload: { folder_path: string; allowed_exts?: string[] }) =>
+    previewSyncMaterialsFolder: (payload: TutorSyncPreviewPayload) =>
+      request<TutorSyncPreviewResult>("/tutor/materials/sync/preview", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    syncMaterialsFolder: (payload: TutorSyncStartPayload) =>
       request<TutorSyncStartResult>("/tutor/materials/sync", {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    startSyncMaterialsFolder: (payload: { folder_path: string; allowed_exts?: string[] }) =>
+    startSyncMaterialsFolder: (payload: TutorSyncStartPayload) =>
       request<TutorSyncStartResult>("/tutor/materials/sync/start", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -936,11 +946,19 @@ export const api = {
 // Scholar types
 export interface ScholarQuestion {
   id: number;
+  question_id?: string;
+  question_hash?: string;
   question: string;
+  question_text?: string;
   context: string;
   dataInsufficient: string;
   researchAttempted: string;
   source: string;
+  status?: string;
+  answer_text?: string | null;
+  answered_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ScholarChatResponse {
@@ -1581,10 +1599,44 @@ export interface TutorEmbedResult {
   total_chunks: number;
 }
 
+export interface TutorSyncPreviewPayload {
+  folder_path: string;
+  allowed_exts?: string[];
+}
+
+export interface TutorSyncStartPayload extends TutorSyncPreviewPayload {
+  selected_files?: string[];
+  course_id?: number | null;
+}
+
+export interface TutorSyncPreviewNode {
+  type: "folder" | "file";
+  name: string;
+  path: string;
+  size?: number;
+  modified_at?: string | null;
+  children?: TutorSyncPreviewNode[];
+}
+
+export interface TutorSyncPreviewResult {
+  ok?: boolean;
+  folder: string;
+  tree: TutorSyncPreviewNode;
+  counts: {
+    folders: number;
+    files: number;
+  };
+  allowed_exts?: string[];
+  truncated?: boolean;
+  max_files?: number;
+}
+
 export interface TutorSyncStartResult {
   ok?: boolean;
   job_id: string;
   folder?: string;
+  selected_count?: number | null;
+  course_id?: number | null;
 }
 
 export interface TutorSyncJobStatus {
@@ -1652,6 +1704,8 @@ export interface TutorVideoEnrichmentStatus {
   model_preference: string;
   model_name: string;
   api_key_configured: boolean;
+  key_sources_configured?: string[];
+  key_failover_strategy?: string;
   local_only_fallback: boolean;
   allowed: boolean;
   reason: string | null;

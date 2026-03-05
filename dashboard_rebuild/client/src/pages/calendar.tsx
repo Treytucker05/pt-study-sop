@@ -1596,8 +1596,7 @@ export default function CalendarPage() {
             >
               <DialogContent
                 data-modal="calendar-manage"
-                className="bg-black border-[3px] border-double border-primary rounded-none max-w-md pointer-events-auto translate-y-0 data-[state=open]:animate-none data-[state=closed]:animate-none"
-                style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+                className="bg-black border-[3px] border-double border-primary rounded-none max-w-md pointer-events-auto data-[state=open]:animate-none data-[state=closed]:animate-none"
               >
                 <DialogHeader>
                   <DialogTitle className="font-arcade text-primary">MANAGE CALENDARS</DialogTitle>
@@ -1821,8 +1820,7 @@ export default function CalendarPage() {
       <Dialog open={showEventModal} onOpenChange={setShowEventModal}>
         <DialogContent
           data-modal="calendar-create"
-          className="bg-black border-[3px] border-double border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto translate-y-0"
-          style={{ zIndex: 100005, top: "6rem", left: "50%", transform: "translate(-50%, 0)" }}
+          className="bg-black border-[3px] border-double border-primary rounded-none max-w-lg max-h-[90vh] overflow-y-auto"
         >
           <DialogHeader>
             <DialogTitle className="font-arcade text-primary">CREATE_EVENT</DialogTitle>

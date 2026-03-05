@@ -600,6 +600,8 @@ def sync_folder_to_rag(
     *,
     corpus: str = "study",
     allowed_exts: Optional[set[str]] = None,
+    include_paths: Optional[set[str]] = None,
+    course_id: Optional[int] = None,
     exclude_dir_names: Optional[set[str]] = None,
     progress_callback: Optional[Callable[[dict[str, Any]], None]] = None,
 ) -> dict:
@@ -628,6 +630,17 @@ def sync_folder_to_rag(
             (ext.lower() if ext.startswith(".") else f".{ext.lower()}")
             for ext in allowed_exts
         }
+    normalized_include_paths: Optional[set[str]] = None
+    if include_paths is not None:
+        normalized_include_paths = set()
+        for raw_path in include_paths:
+            rel = str(raw_path or "").replace("\\", "/").strip()
+            if not rel:
+                continue
+            parts = [part for part in rel.split("/") if part and part != "."]
+            if not parts or any(part == ".." for part in parts):
+                continue
+            normalized_include_paths.add("/".join(parts))
     if exclude_dir_names is None:
         exclude_dir_names = {".git", ".venv", "__pycache__"}
 
@@ -646,6 +659,9 @@ def sync_folder_to_rag(
         for filename in filenames:
             file_path = Path(dirpath) / filename
             if file_path.suffix.lower() not in allowed_exts:
+                continue
+            rel_file = os.path.relpath(str(file_path), str(root)).replace("\\", "/")
+            if normalized_include_paths is not None and rel_file not in normalized_include_paths:
                 continue
             candidate_files.append(file_path)
 
@@ -690,7 +706,7 @@ def sync_folder_to_rag(
                     ingest_document,
                     path=str(file_path),
                     doc_type=doc_type,
-                    course_id=None,
+                    course_id=course_id,
                     topic_tags=["study-folder"],
                     corpus=corpus,
                     folder_path=rel_folder,

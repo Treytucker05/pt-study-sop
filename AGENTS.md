@@ -370,6 +370,30 @@ Codex MCP's `ask-codex` ignores full diff/code embedded in the prompt and asks f
 - If DB deletion succeeds but some Obsidian files are missing, return `status=deleted_with_warnings` with `obsidian_cleanup.missing_paths`.
 - Keep telemetry row in `tutor_delete_telemetry` for each delete request.
 
+### Stale Dashboard Process Can Mask Backend Fixes
+
+**Problem:** API behavior may appear unchanged (for example still returning `obsidian_cleanup_failed`/`409`) even after backend code updates.
+**Cause:** An older `dashboard_web.py` process can remain bound to port `5000`, so the new code is not actually serving requests.
+**Solution:** Before validating backend fixes, confirm the listening PID on `5000` and its recent start time. If stale, hard-stop it and relaunch via `Start_Dashboard.bat` before re-testing.
+
+### Destructive Async UI State Rule (Tutor/Brain)
+
+**Problem:** Repeated UI regressions around delete/edit flows caused stuck overlays, overlapping modals, and duplicate destructive actions.
+**Cause:** Shared UI state across session restore + modal ownership + async delete flows without unified pending guards/reset paths.
+**Solution:** Standardize destructive flow safety:
+- Normalize optional payload fields (for example `material_ids`) to explicit defaults instead of conditional omission.
+- Disable and guard destructive actions while mutations are pending.
+- Keep modal close/reset logic in a single `finally`/`onSettled` path so partial failures do not leave dead UI state.
+
+### Dialog Positioning Rule (Centering)
+
+**Problem:** Modals drifted to the top/left or appeared clipped when individual screens overrode dialog position with inline `top/left/transform`.
+**Cause:** Per-dialog inline positioning conflicted with shared dialog centering utility (`.dialog-center` in `dashboard_rebuild/client/src/index.css`).
+**Solution:** Do not hardcode modal position on `DialogContent`/`AlertDialogContent`.
+- Remove inline style overrides like `style={{ zIndex: 100005, top: \"...\", left: \"50%\", transform: \"translate(-50%, 0)\" }}`.
+- Avoid ad-hoc `translate-y-0` on modal content unless intentionally offsetting.
+- Let shared dialog primitives handle centering/z-index globally; only size/overflow should be customized per modal.
+
 ### Scoped Retrieval Tuning Rule (Latency vs Breadth)
 
 **Problem:** High per-turn latency in large selected-file scope.

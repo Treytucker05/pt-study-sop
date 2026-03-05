@@ -76,7 +76,7 @@ def _map_error_to_actionable(error: str) -> str:
         )
     if "timeout" in low or "timed out" in low:
         return (
-            "Response timed out. Try a shorter question, "
+            "Response timed out. Try a shorter question, disable Deep Think/Web Search for this turn, "
             "or switch to a faster model in settings."
         )
     if "rate limit" in low or "429" in low:

@@ -601,6 +601,11 @@ export function MaterialSelector({
             {!videoEnrichmentStatus.api_key_configured && (
               <span className="text-red-300">Gemini key missing</span>
             )}
+            {videoEnrichmentStatus.key_sources_configured && videoEnrichmentStatus.key_sources_configured.length > 0 && (
+              <span className={TEXT_MUTED}>
+                Keys: {videoEnrichmentStatus.key_sources_configured.join(" -> ")}
+              </span>
+            )}
             {!videoEnrichmentStatus.allowed && videoEnrichmentStatus.reason && (
               <span className="text-yellow-200">{videoEnrichmentStatus.reason}</span>
             )}

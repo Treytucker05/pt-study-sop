@@ -182,6 +182,11 @@ def get_enrichment_status(
     api_key_configured = bool(
         os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     )
+    key_sources_configured = [
+        source
+        for source in ("GEMINI_API_KEY", "GEMINI_API_KEY_BUSINESS", "GOOGLE_API_KEY")
+        if (os.environ.get(source) or "").strip()
+    ]
 
     status: dict[str, Any] = {
         "provider": "gemini-file-api",
@@ -189,6 +194,8 @@ def get_enrichment_status(
         "model_preference": model_pref,
         "model_name": str(selected_model.get("name") or "gemini-3-flash-preview"),
         "api_key_configured": api_key_configured,
+        "key_sources_configured": key_sources_configured,
+        "key_failover_strategy": "GEMINI_API_KEY -> GEMINI_API_KEY_BUSINESS -> GOOGLE_API_KEY",
         "local_only_fallback": local_only_fallback,
         "budget": {
             "monthly_spend": monthly_spend,
@@ -333,10 +340,16 @@ def enrich_video(
         model_name = str(model_cfg.get("name") or "gemini-3-flash-preview")
         cost_per_1m = float(model_cfg.get("input_cost_per_1m_tokens", 0.10))
 
-        # Upload video once
-        video_file = upload_video(video_path)
+        upload_result = upload_video(video_path)
+        video_file = upload_result.get("video_file")
+        video_client = upload_result.get("client")
 
-        results = gemini_enrich(video_file, uncached, model=model_name)
+        results = gemini_enrich(
+            video_file,
+            uncached,
+            model=model_name,
+            client=video_client,
+        )
 
         for res in results:
             usage = res.get("usage") or {}

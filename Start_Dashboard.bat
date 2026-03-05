@@ -7,15 +7,29 @@ cd /d "%~dp0"
 rem Stop any existing dashboard server processes so code changes take effect.
 rem This prevents multiple dashboard_web.py instances (stale routes, port conflicts).
 echo [0/6] Closing any existing dashboard server processes...
-for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; Get-NetTCPConnection -LocalPort 5000 -State Listen | Select-Object -ExpandProperty OwningProcess -Unique"`) do (
-    if not "%%P"=="" (
+rem Close prior dashboard cmd window (if any) without blocking startup.
+taskkill /FI "WINDOWTITLE eq PT Study Brain Dashboard*" /T /F >nul 2>nul
+
+rem Kill any process still bound to port 5000 (locale-safe: no LISTENING text match).
+set "PORT5000_PID="
+for /f "tokens=5" %%P in ('netstat -ano -p tcp ^| findstr /R /C:":5000 "') do (
+    echo %%P | findstr /R "^[0-9][0-9]*$" >nul
+    if not errorlevel 1 (
+        set "PORT5000_PID=%%P"
         echo [INFO] Hard-stopping PID %%P bound to port 5000
         taskkill /PID %%P /F >nul 2>nul
     )
 )
-for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq 'C:\\Python314\\python.exe' -and $_.CommandLine -and $_.CommandLine.Trim().EndsWith('dashboard_web.py') } | Select-Object -ExpandProperty ProcessId"`) do (
-    echo [INFO] Stopping PID %%P
-    taskkill /PID %%P /F >nul 2>nul
+
+rem Quick post-cleanup signal for stale port ownership.
+if defined PORT5000_PID (
+    timeout /t 1 /nobreak >nul
+    for /f "tokens=5" %%P in ('netstat -ano -p tcp ^| findstr /R /C:":5000 "') do (
+        echo %%P | findstr /R "^[0-9][0-9]*$" >nul
+        if not errorlevel 1 (
+            echo [WARN] Port 5000 still reports PID %%P after cleanup; startup will continue.
+        )
+    )
 )
 
 rem Configure Study RAG drop-folder (used by Tutor -> Study sync)

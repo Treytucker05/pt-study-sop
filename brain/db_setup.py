@@ -1187,6 +1187,60 @@ def init_database():
     )
 
     # ------------------------------------------------------------------
+    # Scholar Questions table (deterministic question lifecycle tracking)
+    # ------------------------------------------------------------------
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            question_id TEXT NOT NULL UNIQUE,
+            question_hash TEXT NOT NULL UNIQUE,
+            question_text TEXT NOT NULL,
+            source TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            answered_at TEXT,
+            answer_text TEXT,
+            answer_source TEXT,
+            status_updated_at TEXT,
+            status_reason TEXT
+        )
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_question_id
+        ON scholar_questions(question_id)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_hash
+        ON scholar_questions(question_hash)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_status
+        ON scholar_questions(status)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_source
+        ON scholar_questions(source)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_questions_updated
+        ON scholar_questions(updated_at DESC)
+    """
+    )
+
+    # ------------------------------------------------------------------
     # Scholar Run tracking (v9.4.2 - for UI run button + history)
     # ------------------------------------------------------------------
     cursor.execute("""
@@ -1219,6 +1273,23 @@ def init_database():
     for table, cols in [
         ("scholar_digests", [("content", "TEXT"), ("cluster_id", "TEXT")]),
         ("scholar_proposals", [("content", "TEXT"), ("cluster_id", "TEXT")]),
+        (
+            "scholar_questions",
+            [
+                ("question_id", "TEXT"),
+                ("question_hash", "TEXT"),
+                ("question_text", "TEXT"),
+                ("source", "TEXT"),
+                ("status", "TEXT"),
+                ("created_at", "TEXT"),
+                ("updated_at", "TEXT"),
+                ("answered_at", "TEXT"),
+                ("answer_text", "TEXT"),
+                ("answer_source", "TEXT"),
+                ("status_updated_at", "TEXT"),
+                ("status_reason", "TEXT"),
+            ],
+        ),
     ]:
         cursor.execute(f"PRAGMA table_info({table})")
         existing = {c[1] for c in cursor.fetchall()}

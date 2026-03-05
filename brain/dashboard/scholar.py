@@ -1090,7 +1090,7 @@ def _compose_agent_prompt(template_path: Path, header_lines: List[str], context_
 def run_scholar_orchestrator_multi(manifest: Dict[str, Any], mode: str = "brain") -> Dict[str, Any]:
     """
     Trigger a multi-agent Scholar orchestrator run (supervisor + specialists).
-    mode: "brain" (default) = Brain Study; "tutor" = Tutor Study (SOP library only, no telemetry).
+    mode: "brain" (default) = Brain Study; "tutor" = Tutor Study (instruction/chain-focused, no telemetry).
     Returns result dict (not jsonify).
     """
     repo_root = Path(__file__).parent.parent.parent.resolve()
@@ -1153,8 +1153,10 @@ def run_scholar_orchestrator_multi(manifest: Dict[str, Any], mode: str = "brain"
             return {"ok": False, "message": f"Agent template missing: {path}"}
 
     safe_mode = bool((manifest or {}).get("safe_mode", False))
-    max_conc = int((manifest or {}).get("multi_agent", {}).get("max_concurrency", 4))
+    multi_cfg = (manifest or {}).get("multi_agent", {})
+    max_conc = int(multi_cfg.get("max_concurrency", 4))
     max_conc = max(1, min(max_conc, 6))
+    codex_model = str(multi_cfg.get("model", "gpt-5.3-codex")).strip()
 
     def _run_multi_agent_thread():
         running_marker.write_text("running", encoding="utf-8")
@@ -1165,16 +1167,47 @@ def run_scholar_orchestrator_multi(manifest: Dict[str, Any], mode: str = "brain"
                 log_file.write(f"Mode: {mode}\n")
                 log_file.write(f"Safe mode: {safe_mode}\n")
                 log_file.write(f"Max concurrency: {max_conc}\n\n")
+                log_file.write(f"Codex model: {codex_model or '(default)'}\n\n")
 
                 if mode == "tutor":
                     telemetry_path = None
                     telemetry_content = "(Tutor Study: no telemetry used)"
-                    sop_allowlist = (manifest or {}).get("tutor_study_paths", []) or (manifest or {}).get("tutor_paths", [])
                 else:
                     telemetry_path = build_telemetry_snapshot(timestamp, manifest, log_file=log_file)
                     telemetry_content = _read_text_safe(telemetry_path, limit=24000) if telemetry_path else ""
-                    sop_allowlist = (manifest or {}).get("tutor_paths", [])
-                sop_list = "\n".join([f"- {p}" for p in sop_allowlist]) if sop_allowlist else "(none)"
+
+                cfg = manifest or {}
+                instruction_paths = cfg.get("instruction_paths", []) or []
+                chain_paths = cfg.get("chain_paths", []) or []
+                legacy_tutor_paths = cfg.get("tutor_paths", []) or []
+                legacy_tutor_study_paths = cfg.get("tutor_study_paths", []) or []
+
+                if mode == "tutor":
+                    allowlist_raw = (
+                        instruction_paths
+                        + chain_paths
+                        + legacy_tutor_study_paths
+                        + legacy_tutor_paths
+                    )
+                else:
+                    allowlist_raw = instruction_paths + chain_paths + legacy_tutor_paths
+
+                audit_allowlist: List[str] = []
+                seen_allowlist = set()
+                for item in allowlist_raw:
+                    if not isinstance(item, str):
+                        continue
+                    trimmed = item.strip()
+                    if not trimmed or trimmed in seen_allowlist:
+                        continue
+                    seen_allowlist.add(trimmed)
+                    audit_allowlist.append(trimmed)
+
+                allowlist_text = (
+                    "\n".join([f"- {p}" for p in audit_allowlist])
+                    if audit_allowlist
+                    else "(none)"
+                )
 
                 header_common = [
                     f"Run ID: {timestamp}",
@@ -1203,12 +1236,12 @@ def run_scholar_orchestrator_multi(manifest: Dict[str, Any], mode: str = "brain"
                     "output": run_dir / f"agent_sop_{timestamp}.md",
                     "log": run_dir / f"agent_sop_{timestamp}.log",
                     "context": [
-                        "## SOP Allowlist",
-                        sop_list,
-                        "## SOP Overview",
-                        "sop/library/00-overview.md",
+                        "## Instruction + Chain Allowlist",
+                        allowlist_text,
+                        "## Control-Plane Canon",
+                        "sop/library/17-control-plane.md",
                     ],
-                    "header": header_common + [f"Agent: SOP Auditor"],
+                    "header": header_common + [f"Agent: Instruction/Chain Auditor"],
                 })
                 # Pedagogy Questioner
                 jobs.append({
@@ -1246,14 +1279,16 @@ def run_scholar_orchestrator_multi(manifest: Dict[str, Any], mode: str = "brain"
                     log_file.flush()
                     prompt = _compose_agent_prompt(job["template"], job["header"], job["context"])
                     agent_log = open(job["log"], "w", encoding="utf-8")
+                    cmd = [
+                        codex_cmd, "exec",
+                        "--dangerously-bypass-approvals-and-sandbox",
+                        "-C", str(repo_root),
+                    ]
+                    if codex_model:
+                        cmd.extend(["--model", codex_model])
+                    cmd.extend(["--output-last-message", str(job["output"]), "-"])
                     proc = subprocess.Popen(
-                        [
-                            codex_cmd, "exec",
-                            "--dangerously-bypass-approvals-and-sandbox",
-                            "-C", str(repo_root),
-                            "--output-last-message", str(job["output"]),
-                            "-",
-                        ],
+                        cmd,
                         stdin=subprocess.PIPE,
                         stdout=agent_log,
                         stderr=subprocess.STDOUT,
@@ -1320,14 +1355,16 @@ def run_scholar_orchestrator_multi(manifest: Dict[str, Any], mode: str = "brain"
 
                 log_file.write("[agent] start supervisor -> unattended_final\n")
                 log_file.flush()
+                supervisor_cmd = [
+                    codex_cmd, "exec",
+                    "--dangerously-bypass-approvals-and-sandbox",
+                    "-C", str(repo_root),
+                ]
+                if codex_model:
+                    supervisor_cmd.extend(["--model", codex_model])
+                supervisor_cmd.extend(["--output-last-message", str(final_path), "-"])
                 proc = subprocess.Popen(
-                    [
-                        codex_cmd, "exec",
-                        "--dangerously-bypass-approvals-and-sandbox",
-                        "-C", str(repo_root),
-                        "--output-last-message", str(final_path),
-                        "-",
-                    ],
+                    supervisor_cmd,
                     stdin=subprocess.PIPE,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
@@ -1538,7 +1575,7 @@ def run_scholar_orchestrator_deep(manifest: Dict[str, Any], mode: str = "brain")
 def run_scholar_orchestrator(mode: str = "brain"):
     """
     Trigger a Scholar orchestrator run.
-    mode: "brain" (default) = Brain Study (session logs + SOP); "tutor" = Tutor Study (SOP library only, no telemetry).
+    mode: "brain" (default) = Brain Study (session logs + instruction/chain canon); "tutor" = Tutor Study (instruction/chain only, no telemetry).
     Returns result dict (not jsonify).
     """
     manifest = load_audit_manifest()
@@ -1546,6 +1583,7 @@ def run_scholar_orchestrator(mode: str = "brain"):
         return run_scholar_orchestrator_deep(manifest, mode=mode)
     if manifest.get("multi_agent", {}).get("enabled"):
         return run_scholar_orchestrator_multi(manifest, mode=mode)
+    codex_model = str(((manifest or {}).get("multi_agent", {}) or {}).get("model", "gpt-5.3-codex")).strip()
     repo_root = Path(__file__).parent.parent.parent.resolve()
     if mode == "tutor":
         prompt_file = repo_root / "scholar" / "workflows" / "tutor_study_prompt.md"
@@ -1680,6 +1718,7 @@ def run_scholar_orchestrator(mode: str = "brain"):
                 log_file.write(f"Scholar Run Started: {datetime.now().isoformat()}\n")
                 log_file.write(f"Mode: {mode}\n")
                 log_file.write(f"Using Codex: {codex_cmd}\n")
+                log_file.write(f"Codex model: {codex_model or '(default)'}\n")
                 log_file.write(f"Prompt file: {prompt_file}\n\n")
                 log_file.flush()
                 
@@ -1700,14 +1739,16 @@ def run_scholar_orchestrator(mode: str = "brain"):
                 try:
                     # Use codex exec with stdin (the '-' argument means read from stdin)
                     # This matches the batch script: codex exec ... - < prompt_file
+                    cmd = [
+                        codex_cmd, "exec",
+                        "--dangerously-bypass-approvals-and-sandbox",
+                        "-C", str(repo_root),
+                    ]
+                    if codex_model:
+                        cmd.extend(["--model", codex_model])
+                    cmd.extend(["--output-last-message", str(final_path), "-"])
                     process = subprocess.Popen(
-                        [
-                            codex_cmd, "exec",
-                            "--dangerously-bypass-approvals-and-sandbox",
-                            "-C", str(repo_root),
-                            "--output-last-message", str(final_path),
-                            "-"  # Read prompt from stdin
-                        ],
+                        cmd,
                         stdin=subprocess.PIPE,
                         stdout=log_file,
                         stderr=subprocess.STDOUT,

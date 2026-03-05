@@ -13,11 +13,14 @@ Canonical tutor/runtime stage model: `PRIME -> CALIBRATE -> ENCODE -> REFERENCE 
 ## Required Inputs
 
 - **Telemetry:** Brain session logs (`brain/session_logs/*.md`).
-- **Source (Canonical):** SOP library files in `sop/library/` plus `sop/sop_index.v1.json` (file map).
-- **Source (Exports):** `sop/runtime/knowledge_upload/*.md` and `sop/runtime/runtime_prompt.md` as generated copies.
+- **Instruction Canon (Primary):** `sop/runtime/runtime_prompt.md` + `sop/runtime/knowledge_upload/*.md`.
+- **Chain/Control Canon (Primary):** `sop/library/17-control-plane.md` + `sop/library/chains/*.yaml`.
+- **Runtime Enforcement (Primary):** Tutor runtime files (for example `brain/tutor_chains.py`, `brain/dashboard/api_tutor.py`).
+- **Planning Canon (Primary):** `docs/root/TUTOR_TODO.md` and related Tutor root docs.
+- **Reference Corpus (Secondary):** broader `sop/library/` + `sop/sop_index.v1.json` as supporting context.
 - **AI Artifacts Manifest:** `scholar/inputs/ai_artifacts_manifest.json` (output lanes + file patterns for summaries, questions, recommendations).
 
-*Note: All paths must be explicitly listed in [audit_manifest.json](inputs/audit_manifest.json).*
+*Note: All paths must be explicitly listed in [audit_manifest.json](inputs/audit_manifest.json). Scholar should prioritize instruction/chain/control paths over legacy SOP prose when conflicts appear.*
 
 ## Running the Scholar
 
@@ -40,7 +43,7 @@ Safe mode is controlled by `scholar/inputs/audit_manifest.json`:
 ## Standard Workflows
 
 1. **[Brain Telemetry Review](workflows/audit_session.md):** Analyze session logs for learning effectiveness and friction.
-2. **[System Review](workflows/audit_module.md):** Evaluate SOP files for operational clarity and pedagogical alignment.
+2. **[System Review](workflows/audit_module.md):** Evaluate instruction packs, chain contracts, and runtime enforcement for operational clarity and pedagogical alignment.
 3. **[Orchestrator Run](workflows/orchestrator_loop.md):** Full pipeline from review → plan → research → proposals → review summary → digest.
 
 

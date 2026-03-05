@@ -76,6 +76,25 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Prioritized remediation blueprint with ranked fixes.
   - Deliverables: docs/root/TUTOR_AUDIT_REPORT.md, docs/root/TUTOR_AUDIT_REMEDIATION.md
 
+### Sprint 5: Library Sync Folder Selective Upload + Class Assignment (2026-03-05)
+- [x] L1. Add backend folder preview endpoint for Sync Study Folder.
+  - Return nested folder/file tree from selected root path.
+  - Include only allowed tutor material file types.
+- [x] L2. Extend sync payload for selected file paths and optional class selection.
+  - Allow syncing only checked files from tree (not whole folder by default).
+  - Support assigning chosen class/course during sync ingest.
+- [x] L3. Update Library Sync Study Folder UI.
+  - Render full folder structure with checkboxes for file-level selection.
+  - Add class picker in sync flow before upload starts.
+- [x] L4. Validate end-to-end behavior. (2026-03-05)
+  - Manual smoke: preview tree -> select subset -> choose class -> sync -> confirm class assignment in Your Materials.
+  - Run required build/tests for touched areas.
+  - Validation: `npm run build` (PASS), `pytest brain/tests -k "tutor and (sync or material or materials)"` (16 passed).
+- [x] L5. Harden tutor chat timeout handling for long-response modes. (2026-03-05)
+  - Raise model call timeout dynamically for Deep Think / Web Search / Gemini Vision turns.
+  - Keep fallback Codex call timeout aligned with streaming timeout.
+  - Update timeout error copy to include mode-toggle recovery guidance.
+
 ## Workstream Status Snapshot
 
 ### A1) PRIME Inventory + Stage Fit

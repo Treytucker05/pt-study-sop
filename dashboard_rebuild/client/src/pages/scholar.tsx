@@ -77,6 +77,9 @@ export default function Scholar() {
   const [chatMessages, setChatMessages] = useState<ScholarMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
+  const pendingAnswerSubmissionsRef = useRef<Set<string>>(new Set());
+  const [submittingQuestionIds, setSubmittingQuestionIds] = useState<Record<string, boolean>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch Brain data for analysis (read-only)
@@ -147,6 +150,38 @@ export default function Scholar() {
     },
   });
 
+  const answerQuestionMutation = useMutation({
+    mutationFn: ({ questionId, answer }: { questionId: string; answer: string }) =>
+      api.scholar.answerQuestion(questionId, answer, "ui"),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["scholar-questions"] });
+      setQuestionAnswers(prev => ({ ...prev, [variables.questionId]: "" }));
+      toast({ title: "Question Answered", description: "Scholar question updated." });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Answer Failed",
+        description: error.message || "Could not submit answer.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const submitQuestionAnswer = async (questionId: string) => {
+    const answer = (questionAnswers[questionId] || "").trim();
+    if (!answer) return;
+    if (pendingAnswerSubmissionsRef.current.has(questionId)) return;
+
+    pendingAnswerSubmissionsRef.current.add(questionId);
+    setSubmittingQuestionIds((prev) => ({ ...prev, [questionId]: true }));
+    try {
+      await answerQuestionMutation.mutateAsync({ questionId, answer });
+    } finally {
+      pendingAnswerSubmissionsRef.current.delete(questionId);
+      setSubmittingQuestionIds((prev) => ({ ...prev, [questionId]: false }));
+    }
+  };
+
   // Auto-scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -203,7 +238,12 @@ export default function Scholar() {
   };
 
   // Use real data from Scholar API (openQuestions, tutorAuditItems, researchFindings)
-  const openQuestions: ScholarQuestion[] = scholarQuestions;
+  const openQuestions: ScholarQuestion[] = useMemo(() => {
+    return scholarQuestions.filter((q) => {
+      const text = (q.question_text ?? q.question ?? "").trim().toLowerCase();
+      return text.length > 0 && text !== "none yet.";
+    });
+  }, [scholarQuestions]);
   const tutorAuditItems: TutorAuditItem[] = tutorAuditData;
   const researchFindings: ScholarFinding[] = scholarFindings;
 
@@ -684,8 +724,21 @@ export default function Scholar() {
                         <CardContent className="p-4">
                           <div className="space-y-4">
                             {openQuestions.map((q) => (
-                              <div key={q.id} className="p-3 bg-primary/5 border border-primary/30">
-                                <p className="font-terminal text-sm mb-3">{q.question}</p>
+                              <div key={q.question_id ?? q.id} className="p-3 bg-primary/5 border border-primary/30">
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                  <p className="font-terminal text-sm">{q.question_text ?? q.question}</p>
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "rounded-none text-[10px]",
+                                      (q.status || "pending").toLowerCase() === "answered"
+                                        ? "border-success text-success"
+                                        : "border-primary text-primary"
+                                    )}
+                                  >
+                                    {(q.status || "pending").toUpperCase()}
+                                  </Badge>
+                                </div>
                                 <div className="space-y-2 text-xs">
                                   <div className="flex gap-2">
                                     <span className="text-muted-foreground shrink-0">Context:</span>
@@ -696,6 +749,40 @@ export default function Scholar() {
                                     <span>{q.dataInsufficient}</span>
                                   </div>
                                 </div>
+                                {(q.status || "pending").toLowerCase() !== "answered" ? (
+                                  <div className="mt-3 space-y-2">
+                                    <Textarea
+                                      value={questionAnswers[q.question_id ?? String(q.id)] || ""}
+                                      onChange={(e) =>
+                                        setQuestionAnswers(prev => ({
+                                          ...prev,
+                                          [q.question_id ?? String(q.id)]: e.target.value,
+                                        }))
+                                      }
+                                      placeholder="Write answer for this question..."
+                                      className="rounded-none border-primary font-terminal text-xs bg-black h-24"
+                                    />
+                                    <Button
+                                      className="rounded-none font-terminal text-xs"
+                                      onClick={() => submitQuestionAnswer(q.question_id ?? String(q.id))}
+                                      disabled={
+                                        answerQuestionMutation.isPending ||
+                                        !!submittingQuestionIds[q.question_id ?? String(q.id)] ||
+                                        !(questionAnswers[q.question_id ?? String(q.id)] || "").trim()
+                                      }
+                                      data-testid={`button-submit-answer-${q.question_id ?? String(q.id)}`}
+                                    >
+                                      {submittingQuestionIds[q.question_id ?? String(q.id)] ? "SUBMITTING..." : "SUBMIT ANSWER"}
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="mt-3 p-2 bg-black/40 border border-primary/20">
+                                    <div className="text-[10px] text-muted-foreground mb-1">Saved Answer</div>
+                                    <p className="font-terminal text-xs" data-testid={`saved-answer-${q.question_id ?? String(q.id)}`}>
+                                      {q.answer_text || "Answered."}
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

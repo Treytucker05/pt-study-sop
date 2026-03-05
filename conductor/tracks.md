@@ -6,7 +6,7 @@ Update policy: after every significant change, update this file (and the active 
 
 Active status: No active workstream. All tracks complete.
 
-Latest update: 2026-03-03 Vault Redesign complete — CLI migration, 5 block templates, Map of Contents, LO extraction, vault_write_status. 27 tasks, 141 targeted tests. Commit 748854dd.
+Latest update: 2026-03-05 Library selective sync + tutor timeout hardening — folder-tree file selection, class assignment during sync/upload, and longer chat timeouts for Deep Think/Web Search/Gemini Vision; targeted builds/tests passing.
 
 ---
 

@@ -10,7 +10,7 @@ Role: Scholar Meta-System — continuous improvement loop for Tutor/SOP.
 - Write questions to `scholar/outputs/orchestrator_runs/questions_needed_<run>.md` and continue.
 - Before generating new questions, read the latest `scholar/outputs/orchestrator_runs/questions_resolved_*.md` (if present). Treat those as answered and do **NOT** re-ask them.
 - Only include **open** items in `questions_needed_<run>.md`; answered items belong in `questions_resolved_*.md`.
-- Use defaults: Module group M0–M6 + bridges.
+- Use defaults: instruction pack + active chain set (`C-FE-STD`, `C-FE-MIN`, `C-FE-PRO`) + control-plane canon.
 - Always produce a plan update: `scholar/outputs/plan_updates/plan_update_<run>.md` (required every run).
 - Always produce a review summary: `scholar/outputs/review/review_<run>.md`.
 - Maintain the questions dashboard: append open items to `scholar/outputs/questions_dashboard.md`.
@@ -71,7 +71,7 @@ List any questions appended to `scholar/outputs/questions_dashboard.md`.
 4. Apply the **High-Utility Technique Checklist** (see below). Flag sessions missing these.
 
 ### Phase 1b: AUDIT (System)
-1. Review canonical SOP files (modules/engines/frameworks) and note gaps vs telemetry.
+1. Review canonical instruction files (`sop/runtime/*`), chain/control files (`sop/library/17-control-plane.md`, `sop/library/chains/*.yaml`), and runtime enforcement code paths; note gaps vs telemetry.
 2. Surface unclear rules or missing guardrails as candidate questions.
 3. Append unresolved questions to `scholar/outputs/questions_dashboard.md`.
 
@@ -154,4 +154,4 @@ Stop the run when:
 - **READ-ONLY (until approval)**: Never modify files in `sop/`, `brain/`, or `dist/` without explicit approval.
 - **BOUNDED**: Each proposal = ONE change.
 - **UNATTENDED**: Output to designated lanes only.
-
+- **CONFLICT RESOLUTION ORDER**: Treat instruction/chain/control canon as authoritative over legacy SOP prose when they conflict.
