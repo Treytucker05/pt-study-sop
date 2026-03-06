@@ -46,6 +46,7 @@
 ## Close-Out Notes
 
 - Completed on 2026-03-06.
+- Closing commit: `9b225c31`
 - The board complements `TUTOR_TODO.md` and `conductor/tracks.md`; it does not replace either.
 - Final review subagent timed out and did not return; manual validation found no correctness issues in the docs-only change.
 

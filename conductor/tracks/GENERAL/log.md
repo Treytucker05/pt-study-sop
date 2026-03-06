@@ -26,6 +26,8 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Review:
   - final review subagent timed out and did not return
   - manual review found no correctness issues in the docs-only change
+- Closing commit:
+  - `9b225c31` — `docs(agents): add repo-native handoff board`
 
 ---
 

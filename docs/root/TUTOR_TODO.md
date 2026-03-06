@@ -34,6 +34,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - `docs/root/AGENT_BOARD.md` created and linked from `AGENTS.md` and `docs/root/AGENT_SETUP.md`
     - board role kept distinct from `docs/root/TUTOR_TODO.md` and `conductor/tracks.md`
     - related docs verified to exist
+  - Closing commit: `9b225c31`
 
 ### Sprint 10: Root AGENTS Canon Trim (2026-03-06)
 - [x] Claim scope: docs/process
