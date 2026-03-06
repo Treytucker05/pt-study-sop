@@ -6,7 +6,12 @@ Update policy: after every significant change, update this file (and the active 
 
 Active status: no active tracks on 2026-03-06.
 
-Latest update: 2026-03-06 closed Root AGENTS Canon Trim after reducing root `AGENTS.md` to startup canon and moving detailed guardrails into `docs/root/AGENT_GUARDRAILS.md`.
+Latest update: 2026-03-06 closed Repo-Native Agent Board after adding `docs/root/AGENT_BOARD.md` as the shared handoff surface for parallel agents.
+
+- [x] **Track: Repo-Native Agent Board** (complete — created 2026-03-06; closed 2026-03-06; scope: shared handoff board, canon/setup wiring, multi-agent coordination rules)
+  *Link: [./tracks/agent-board_20260306/](./tracks/agent-board_20260306/)*
+
+---
 
 - [x] **Track: Root AGENTS Canon Trim** (complete — created 2026-03-06; closed 2026-03-06; scope: root canon trim, guardrails extraction, linked-doc cleanup)
   *Link: [./tracks/agents-root-trim_20260306/](./tracks/agents-root-trim_20260306/)*

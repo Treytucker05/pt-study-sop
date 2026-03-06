@@ -1,0 +1,118 @@
+# Agent Board
+
+Purpose: one shared repo-native coordination surface for multiple agents working in parallel.
+
+Use this file when 2+ agents are active on separate tasks or file scopes.
+
+## What This Board Is For
+
+This board answers:
+
+- who owns which active task
+- what file scope they are allowed to touch
+- whether they are blocked
+- where their artifacts/results live
+- what the next agent should do at handoff
+
+## What This Board Is Not
+
+- It does **not** replace `docs/root/TUTOR_TODO.md`.
+  - `TUTOR_TODO.md` is the active sprint/work board.
+- It does **not** replace `conductor/tracks.md`.
+  - `conductor/tracks.md` is the portfolio/track registry.
+- It does **not** replace git history.
+  - Commits remain the source of truth for actual code/document changes.
+
+## Use Order
+
+When multiple agents are involved:
+
+1. Track-level work and scope claims live in `docs/root/TUTOR_TODO.md`.
+2. This file is used for live coordination and handoffs.
+3. Track completion and audit history live in `conductor/tracks/GENERAL/log.md`.
+
+## Status Vocabulary
+
+Use only these values in the live table:
+
+- `todo`
+- `in_progress`
+- `blocked`
+- `review`
+- `done`
+
+## Live Board
+
+| Agent | Task ID / Goal | File Scope | Status | Blocked On | Artifacts / Results | Next Handoff |
+|---|---|---|---|---|---|---|
+| _example-main_ | `A-001` tighten Tutor delete UX | `dashboard_rebuild/client/src/components/TutorArtifacts.tsx` | `in_progress` | none | branch diff + local test results | hand off to reviewer after UI tests |
+| _example-review_ | `A-001-review` review Tutor delete UX | read-only on same scope | `todo` | waits for `A-001` | findings markdown | return file:line findings only |
+
+Delete example rows when using the board for real work.
+
+## Row Rules
+
+- `Agent`: stable nickname or tool/role label
+  - examples: `codex-main`, `claude-review`, `gemini-research`
+- `Task ID / Goal`: one short stable identifier plus the task summary
+- `File Scope`: explicit write scope, not vague domain labels
+- `Status`: must use the allowed vocabulary above
+- `Blocked On`: use `none` if not blocked
+- `Artifacts / Results`: path, branch, diff summary, log file, or commit SHA
+- `Next Handoff`: one sentence telling the next agent what to do
+
+## Handoff Rules
+
+When an agent finishes a pass:
+
+1. Update its board row.
+2. Add the artifact path, result path, or commit SHA.
+3. Set `Next Handoff` to the exact next action.
+4. If the work changed behavior, also append a dated note to `conductor/tracks/GENERAL/log.md`.
+
+## Handoff Template
+
+Use this block when the table row is not enough:
+
+```md
+### Handoff
+- Agent: `agent-name`
+- Task: `A-### short-name`
+- Scope: `path/or/paths`
+- Status: `done|blocked|review`
+- What changed:
+  - short bullet
+  - short bullet
+- Validation:
+  - command -> result
+- Next handoff:
+  - exact next step
+```
+
+## Ownership Rules
+
+- One writable file scope should have one active owner at a time.
+- If two agents need the same file, one must be `review`/read-only until ownership is handed off.
+- Review agents should prefer findings and validation artifacts over direct overlapping edits.
+
+## Recommended Workflow
+
+```text
+TUTOR_TODO claim
+   ->
+AGENT_BOARD live ownership row
+   ->
+agent work / artifact output
+   ->
+GENERAL log entry if behavior changed
+   ->
+commit SHA / final handoff
+```
+
+## Related Docs
+
+- Root canon: `AGENTS.md`
+- Agent setup and precedence: `docs/root/AGENT_SETUP.md`
+- Active sprint board: `docs/root/TUTOR_TODO.md`
+- Track registry: `conductor/tracks.md`
+- Change log: `conductor/tracks/GENERAL/log.md`

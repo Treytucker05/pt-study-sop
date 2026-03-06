@@ -2,6 +2,33 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-06 - Repo-Native Agent Board kickoff
+
+- Created new docs track `agent-board_20260306`.
+- Added `Repo-Native Agent Board` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - create one shared handoff/status surface for multiple agents
+  - keep `TUTOR_TODO.md` as the active sprint board and `conductor/tracks.md` as the portfolio registry
+  - wire the board into root `AGENTS.md` and `docs/root/AGENT_SETUP.md`
+
+---
+
+## 2026-03-06 - Repo-Native Agent Board completion
+
+- Closed track `agent-board_20260306` after:
+  - creating `docs/root/AGENT_BOARD.md` as the shared multi-agent handoff board
+  - linking it from root `AGENTS.md`
+  - linking it from `docs/root/AGENT_SETUP.md`
+  - documenting a minimal row schema, ownership rules, status vocabulary, and handoff template
+- Validation:
+  - `git diff --check` passed for the touched docs
+  - related docs and links verified to exist
+- Review:
+  - final review subagent timed out and did not return
+  - manual review found no correctness issues in the docs-only change
+
+---
+
 ## 2026-03-06 - Root AGENTS Canon Trim kickoff
 
 - Created new docs track `agents-root-trim_20260306`.

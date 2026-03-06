@@ -10,6 +10,14 @@ This repo uses one project canon plus thin compatibility layers.
 - Repo-local Claude commands: `.claude/commands/*`
 - Global Claude defaults: `C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.claude\agents\*`
 - Global Codex defaults: `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.codex\agents\*.toml`, `C:\Users\treyt\.codex\rules\default.rules`
+- Multi-agent coordination board: `docs/root/AGENT_BOARD.md`
+
+## Coordination Surfaces
+
+- `docs/root/TUTOR_TODO.md`: active sprint and scope-claim board
+- `docs/root/AGENT_BOARD.md`: live multi-agent ownership and handoff surface
+- `conductor/tracks.md`: active/completed track registry
+- `conductor/tracks/GENERAL/log.md`: chronological audit trail
 
 ## Resolution Order
 
@@ -152,6 +160,14 @@ After any agent-config change:
 4. Verify `.claude/permissions.json` still matches root `permissions.json` if that compatibility file is present
 5. Spawn one Codex subagent and one Claude role path if the change touched those systems
 6. Update `docs/root/TUTOR_TODO.md`, `conductor/tracks/GENERAL/log.md`, and `conductor/tracks.md`
+
+## Multi-Agent Rule
+
+If two or more agents are running at the same time:
+
+1. claim the work in `docs/root/TUTOR_TODO.md`
+2. record live ownership in `docs/root/AGENT_BOARD.md`
+3. use `conductor/tracks/GENERAL/log.md` for dated behavior-changing notes
 
 ## Best-Practice Basis
 

@@ -18,6 +18,23 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-03-06
 
+### Sprint 11: Repo-Native Agent Board (2026-03-06)
+- [x] Claim scope: docs/process
+  - `docs/root/AGENT_BOARD.md`
+  - `AGENTS.md`
+  - `docs/root/AGENT_SETUP.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `conductor/tracks/agent-board_20260306/`
+- [x] Phase 0: create `conductor/tracks/agent-board_20260306` with spec/plan/metadata/index.
+- [x] Phase 1: define the board structure, update rules, and handoff schema.
+- [x] Phase 2: create and link `docs/root/AGENT_BOARD.md`.
+- [x] Phase 3: validate, review, and close the track.
+  - Validation:
+    - `docs/root/AGENT_BOARD.md` created and linked from `AGENTS.md` and `docs/root/AGENT_SETUP.md`
+    - board role kept distinct from `docs/root/TUTOR_TODO.md` and `conductor/tracks.md`
+    - related docs verified to exist
+
 ### Sprint 10: Root AGENTS Canon Trim (2026-03-06)
 - [x] Claim scope: docs/process
   - `AGENTS.md`

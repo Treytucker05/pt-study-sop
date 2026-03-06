@@ -29,6 +29,7 @@ Response style: straight to the point, no fluff.
 
 - Product/system contract: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
 - Active execution board: `docs/root/TUTOR_TODO.md`
+- Multi-agent live handoff board: `docs/root/AGENT_BOARD.md`
 - Agent precedence and machine setup: `docs/root/AGENT_SETUP.md`
 - Developer commands and build/test workflow: `docs/root/GUIDE_DEV.md`
 - Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
@@ -124,4 +125,5 @@ For the full incident log, troubleshooting snippets, and detailed guardrails, us
 - Technical architecture: `docs/root/PROJECT_ARCHITECTURE.md`
 - Product canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
 - Active workboard: `docs/root/TUTOR_TODO.md`
+- Multi-agent handoff board: `docs/root/AGENT_BOARD.md`
 - Guardrails and troubleshooting: `docs/root/AGENT_GUARDRAILS.md`
