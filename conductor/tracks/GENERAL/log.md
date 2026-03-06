@@ -25,6 +25,8 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `scripts/sync_agent_config.ps1 -Mode DryRun` -> `RESULT  PASS`
   - `scripts/sync_agent_config.ps1 -Mode Apply` -> `RESULT  PASS`
   - spot checks passed for optimized global Claude agents
+- Closing commit:
+  - `e5092411` — `docs(agents): optimize follow-up canon tooling`
 
 ---
 

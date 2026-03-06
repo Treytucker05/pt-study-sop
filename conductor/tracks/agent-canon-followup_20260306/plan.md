@@ -44,6 +44,7 @@
 ## Close-Out Notes
 
 - Completed on 2026-03-06.
+- Closing commit: `e5092411`
 - The follow-up optimization keeps the original precedence model while reducing repeated global-agent boilerplate.
 - Setup walkthrough is delivered from the current `docs/root/AGENT_SETUP.md` plus the optimized global Claude shared rule file.
 

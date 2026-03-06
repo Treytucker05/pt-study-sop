@@ -38,6 +38,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - `scripts/sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
     - `scripts/sync_agent_config.ps1 -Mode DryRun` -> `RESULT PASS`
     - `scripts/sync_agent_config.ps1 -Mode Apply` -> `RESULT PASS`
+  - Closing commit: `e5092411`
 
 ### Sprint 8: Study Buddy Canon Audit (2026-03-06)
 - [x] Claim scope: docs/process
