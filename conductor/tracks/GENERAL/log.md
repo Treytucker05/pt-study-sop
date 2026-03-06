@@ -25,6 +25,11 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - broken Cursor junction count reduced to `0`
   - no shared `.agents` skills were deleted
   - repo-side inventory and setup docs updated
+- Review:
+  - final review subagent timed out and did not return
+  - manual validation found the first cleanup wave safe because it only removed broken Cursor links
+- Closing commit:
+  - `49225778` — `docs(skills): group skills and clean broken links`
 
 ---
 

@@ -40,6 +40,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - backup manifest written for broken Cursor links
     - broken Cursor junction count reduced to `0`
     - no shared `.agents` skills were deleted in the first wave
+  - Closing commit: `49225778`
 
 ### Sprint 11: Repo-Native Agent Board (2026-03-06)
 - [x] Claim scope: docs/process

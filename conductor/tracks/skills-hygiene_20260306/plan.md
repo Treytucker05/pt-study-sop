@@ -48,6 +48,7 @@
 ## Close-Out Notes
 
 - Completed on 2026-03-06.
+- Closing commit: `49225778`
 - First cleanup wave removed only broken Cursor links and did not delete shared `.agents` skills.
 - Shared-skill deletion should be a second-pass archive review, not a blind prune.
 
