@@ -4,6 +4,25 @@ Purpose: one shared repo-native coordination surface for multiple agents working
 
 Use this file when 2+ agents are active on separate tasks or file scopes.
 
+## Default 3-Agent Setup
+
+Use this default split when running Claude, Gemini, and Codex in parallel:
+
+- `codex-implement`
+  - primary writer
+  - owns code/doc edits for the claimed file scope
+- `claude-review`
+  - read-only reviewer
+  - returns findings, risks, and validation gaps
+- `gemini-research`
+  - read-only researcher
+  - gathers external patterns, docs, and broad-context comparisons
+
+Default rule:
+
+- one writable scope has one active owner
+- `claude-review` and `gemini-research` stay read-only unless ownership is explicitly handed off
+
 ## What This Board Is For
 
 This board answers:
@@ -45,15 +64,17 @@ Use only these values in the live table:
 
 | Agent | Task ID / Goal | File Scope | Status | Blocked On | Artifacts / Results | Next Handoff |
 |---|---|---|---|---|---|---|
-| _example-main_ | `A-001` tighten Tutor delete UX | `dashboard_rebuild/client/src/components/TutorArtifacts.tsx` | `in_progress` | none | branch diff + local test results | hand off to reviewer after UI tests |
-| _example-review_ | `A-001-review` review Tutor delete UX | read-only on same scope | `todo` | waits for `A-001` | findings markdown | return file:line findings only |
+| `codex-implement` | `A-001` tighten Tutor delete UX | `dashboard_rebuild/client/src/components/TutorArtifacts.tsx` | `in_progress` | none | branch diff + local test results | hand off to `claude-review` after UI tests |
+| `claude-review` | `A-001-review` review Tutor delete UX | read-only on same scope | `review` | waits for `codex-implement` | findings markdown | return file:line findings only |
+| `gemini-research` | `A-001-research` compare delete UX/API patterns | docs-only / no repo writes | `todo` | none | research summary | hand recommendations back to `codex-implement` |
 
 Delete example rows when using the board for real work.
 
 ## Row Rules
 
 - `Agent`: stable nickname or tool/role label
-  - examples: `codex-main`, `claude-review`, `gemini-research`
+  - recommended format: `tool-role`
+  - examples: `codex-implement`, `claude-review`, `gemini-research`
 - `Task ID / Goal`: one short stable identifier plus the task summary
 - `File Scope`: explicit write scope, not vague domain labels
 - `Status`: must use the allowed vocabulary above
@@ -95,6 +116,18 @@ Use this block when the table row is not enough:
 - If two agents need the same file, one must be `review`/read-only until ownership is handed off.
 - Review agents should prefer findings and validation artifacts over direct overlapping edits.
 
+## Default Role Split
+
+- `codex-implement`
+  - writes code/docs
+  - runs implementation-side validation
+- `claude-review`
+  - reviews the current diff or artifact output
+  - reports findings with file/line references when possible
+- `gemini-research`
+  - gathers external references, comparisons, or broad-context synthesis
+  - should not own the same writable scope as `codex-implement`
+
 ## Recommended Workflow
 
 ```text
@@ -102,7 +135,7 @@ TUTOR_TODO claim
    ->
 AGENT_BOARD live ownership row
    ->
-agent work / artifact output
+codex implementation + claude review + gemini research
    ->
 GENERAL log entry if behavior changed
    ->

@@ -169,6 +169,12 @@ If two or more agents are running at the same time:
 2. record live ownership in `docs/root/AGENT_BOARD.md`
 3. use `conductor/tracks/GENERAL/log.md` for dated behavior-changing notes
 
+Default triad for this repo:
+
+- `codex-implement` owns writable implementation scope
+- `claude-review` stays read-only and returns findings/review notes
+- `gemini-research` stays read-only and returns research/comparison artifacts
+
 ## Best-Practice Basis
 
 - Claude Code project memory and imports: prefer a small project canon plus reusable supporting files when tool support is verified.

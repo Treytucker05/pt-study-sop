@@ -31,6 +31,16 @@ Changes not tied to a specific conductor track. Append dated entries below.
 
 ---
 
+## 2026-03-06 - Repo-Native Agent Board addendum
+
+- Updated `docs/root/AGENT_BOARD.md` to default explicitly to the working triad:
+  - `codex-implement`
+  - `claude-review`
+  - `gemini-research`
+- Updated `docs/root/AGENT_SETUP.md` so the same triad is documented in the multi-agent rule section.
+
+---
+
 ## 2026-03-06 - Root AGENTS Canon Trim kickoff
 
 - Created new docs track `agents-root-trim_20260306`.
