@@ -103,13 +103,17 @@ foreach ($path in $requiredRepoFiles) {
 $allOk = (Ensure-StubFile -path (Join-Path $repoRoot ".claude/AGENTS.md") -expectedContent @"
 # Agent Rules
 
-See root `AGENTS.md` for all agent instructions. This copy exists for Claude Code tool compatibility.
+Compatibility stub for repo-local Claude tooling.
+
+Read root `AGENTS.md` first and treat it as canonical.
 "@) -and $allOk
 
 $allOk = (Ensure-StubFile -path (Join-Path $repoRoot ".claude/CLAUDE.md") -expectedContent @"
 # PT Study System
 
-See root `CLAUDE.md` for all project instructions. This copy exists for Claude Code tool compatibility.
+Compatibility stub for repo-local Claude tooling.
+
+Read root `CLAUDE.md`, which defers to root `AGENTS.md` as canonical.
 "@) -and $allOk
 
 # JSON validity checks (do not enforce equality between different tool configs).

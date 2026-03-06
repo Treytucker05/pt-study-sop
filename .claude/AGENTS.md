@@ -1,3 +1,5 @@
 # Agent Rules
 
-All project instructions live in root `AGENTS.md` — the single source of truth.
+Compatibility stub for repo-local Claude tooling.
+
+Read root `AGENTS.md` first and treat it as canonical.

@@ -1,3 +1,3 @@
 **Trigger:** `/review`
 **Instructions:**
-1. Run Architect + Critic + Writer on changes.
+1. Run `architect`, `critic`, and `writer` on changes.

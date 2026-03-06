@@ -1,3 +1,5 @@
 # PT Study System
 
-All project instructions live in root `AGENTS.md` — the single source of truth.
+Compatibility stub for repo-local Claude tooling.
+
+Read root `CLAUDE.md`, which defers to root `AGENTS.md` as canonical.

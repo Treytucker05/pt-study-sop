@@ -8,7 +8,18 @@ Response style: straight to the point, no fluff.
 
 Onboarding order:
 1. Start with this `AGENTS.md` for project-specific rules.
-2. Then read `C:\Users\treyt\.claude\CLAUDE.md` for global preferences.
+2. Then read `C:\Users\treyt\.claude\CLAUDE.md` for global Claude defaults.
+3. When using Codex, apply `C:\Users\treyt\.codex\AGENTS.md` as Codex-specific global defaults.
+
+## Instruction Canon
+
+- This file is the only project-specific policy source for `C:\pt-study-sop`.
+- Repo compatibility entrypoints (`CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`) must defer to this file and must not carry independent project policy.
+- Repo-local Claude agents (`.claude/agents/*`) and command shims (`.claude/commands/*`) must read this file first, then apply only their role-specific delta.
+- Global home-directory defaults (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.claude\agents\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\agents\*.toml`, `C:\Users\treyt\.codex\rules\default.rules`) stay cross-project only and must defer to repo canon when this repo is active.
+- If a repo-local agent name overlaps with a home-directory agent name, the repo-local agent wins for this project.
+- If nested/module `AGENTS.md` files are added later, they override this root file only for their own subtree and still stay above home-directory defaults because they are repo-local canon.
+- Exact setup, precedence, and maintenance workflow live in `docs/root/AGENT_SETUP.md`.
 
 ## Current Plan (as of 2026-02-24)
 

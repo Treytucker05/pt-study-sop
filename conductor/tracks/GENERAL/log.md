@@ -2,6 +2,43 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-06 - Agent Canon Alignment kickoff
+
+- Created new Conductor infra track `agent-canon-alignment_20260306` with:
+  - `spec.md`
+  - `plan.md`
+  - `metadata.json`
+  - `index.md`
+- Registered the track as the active workstream in `conductor/tracks.md`.
+- Added `Agent Canon Alignment + Codex Subagent Reliability` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Claimed docs/process, repo/local agent canon, global agent defaults, and integration/review scopes.
+- Set the first execution gate to repairing the failing Codex subagent model/settings mismatch before broader AGENTS cleanup.
+
+---
+
+## 2026-03-06 - Agent Canon Alignment completion
+
+- Closed track `agent-canon-alignment_20260306` after:
+  - repairing the broken Codex subagent role startup path
+  - defining explicit repo/global precedence in `AGENTS.md`
+  - normalizing repo-local Claude compatibility shims and repo-local agents
+  - normalizing global Claude defaults/agents to defer cleanly to repo canon
+  - expanding `C:\Users\treyt\.codex\AGENTS.md` into explicit global Codex defaults
+  - writing `docs/root/AGENT_SETUP.md` as the operator-facing setup and maintenance guide
+  - restoring `.claude/permissions.json` as a local compatibility copy of root `permissions.json`
+- Validation:
+  - spawned Codex `explorer` role -> `explorer-ok`
+  - spawned Codex `worker` role -> `worker-ok`
+  - outside-repo `codex exec --skip-git-repo-check` -> `codex-outside-ok`
+  - outside-repo `claude -p --output-format text --permission-mode bypassPermissions` -> `claude-outside-ok`
+  - `scripts/sync_agent_config.ps1 -Mode Check` -> exit `0`
+  - repo/global inheritance headers verified across normalized agent files
+- Review:
+  - final review subagent attempts hung and were interrupted
+  - manual review of the touched config/doc surfaces found no correctness issues after validation
+
+---
+
 ## 2026-03-05 - Tutor Audit Hardening kickoff
 
 - Created new Conductor bug track `tutor-audit-hardening_20260305` with:
@@ -1539,3 +1576,18 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - Broader tutor/chain/rules bundle:
     `pytest brain/tests/test_seed_methods.py brain/tests/test_method_cards_hardening.py brain/tests/test_selector_bridge.py brain/tests/test_chain_runner.py brain/tests/test_chain_validator.py brain/tests/test_api_tutor_mode_flags.py brain/tests/test_tutor_context_wiring.py brain/tests/test_tutor_context_integration.py brain/tests/test_tutor_session_linking.py -q`
     → `95 passed` (warnings only from upstream Chroma/LangChain deprecations).
+
+## 2026-03-06 — Study Buddy canon audit kickoff
+
+- Opened new Conductor track: `study-buddy-canon-audit_20260306`.
+- Scope:
+  - create one master product canon for Tutor / Study Buddy behavior
+  - publish an evidence audit with source classification matrix + evolution timeline
+  - rewire active docs away from overlapping overall source-of-truth claims
+- Deliverables:
+  - `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+  - `docs/root/TUTOR_STUDY_BUDDY_AUDIT_2026-03-06.md`
+- Guardrails:
+  - keep `sop/library/` as pedagogy canon
+  - keep archive files read-only and use them as historical evidence only
+  - do not make runtime/API/schema changes in this pass

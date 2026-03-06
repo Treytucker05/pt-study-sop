@@ -1,6 +1,6 @@
 # Tutor TODO (Execution Tracker)
 
-Date: 2026-02-23  
+Date: 2026-03-06
 Owner: Trey  
 Purpose: keep implementation work ordered, visible, and tied to canonical tutor rules.
 
@@ -12,10 +12,31 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Added explicit Scholar proposal approve/reject endpoints.
   - Aligned Scholar status/history API compatibility and frontend API usage.
 - Source-of-truth order: 
+  - `docs/root/TUTOR_STUDY_BUDDY_CANON.md` (master product canon)
   - `docs/root/TUTOR_TODO.md` (active workboard)
-  - `conductor/tracks.md` (completed tracks / archival)
+  - `conductor/tracks.md` (track registry / archival)
 
-## Active Sprint 2026-02-23
+## Active Sprint 2026-03-06
+
+### Sprint 8: Study Buddy Canon Audit (2026-03-06)
+- [x] Claim scope: docs/process
+  - `conductor/tracks/study-buddy-canon-audit_20260306/`
+  - `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+  - `docs/root/TUTOR_STUDY_BUDDY_AUDIT_2026-03-06.md`
+- [x] Claim scope: integration/review
+  - `docs/README.md`
+  - `README.md`
+  - `docs/root/PROJECT_ARCHITECTURE.md`
+  - `docs/root/TUTOR_OWNER_INTENT.md`
+  - `docs/root/GUIDE_TUTOR_FLOW.md`
+  - `conductor/product.md`
+  - `conductor/tracks.md`
+  - `conductor/tracks/GENERAL/log.md`
+- [ ] Phase 0: create `conductor/tracks/study-buddy-canon-audit_20260306` with spec/plan/metadata/index.
+- [ ] Phase 1: inventory active canon, support docs, runtime truth samples, and archive evidence.
+- [ ] Phase 2: write the master Study Buddy canon and evidence audit.
+- [ ] Phase 3: rewire active docs to point to the new canon and remove overlapping overall-canon claims.
+- [ ] Phase 4: validate the truth path, capture follow-up contradictions, and close the track.
 
 ### Sprint 6: Tutor Audit Hardening (2026-03-05)
 - [x] Claim scope: docs/process
@@ -57,6 +78,45 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - Real artifact bulk delete removed two persisted artifacts and showed the completion report with request id.
   - Review:
     - final code-review subagent pass returned `No findings`.
+
+### Sprint 7: Agent Canon Alignment + Codex Subagent Reliability (2026-03-06)
+- [x] Claim scope: docs/process
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/AGENT_SETUP.md`
+  - `conductor/tracks.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `conductor/tracks/agent-canon-alignment_20260306/`
+- [x] Claim scope: repo/local agent canon
+  - `AGENTS.md`
+  - `CLAUDE.md`
+  - `.claude/AGENTS.md`
+  - `.claude/CLAUDE.md`
+  - `.claude/agents/`
+  - `.claude/commands/`
+- [x] Claim scope: global agent defaults
+  - `C:\Users\treyt\.claude\CLAUDE.md`
+  - `C:\Users\treyt\.claude\rules\`
+  - `C:\Users\treyt\.claude\agents\`
+  - `C:\Users\treyt\.codex\AGENTS.md`
+  - `C:\Users\treyt\.codex\config.toml`
+  - `C:\Users\treyt\.codex\agents\`
+  - `C:\Users\treyt\.codex\rules\default.rules`
+- [x] Claim scope: integration/review
+  - `scripts/sync_agent_config.ps1`
+  - spawned Codex subagents
+- [x] Phase 0: create `conductor/tracks/agent-canon-alignment_20260306` with spec/plan/metadata/index.
+- [x] Phase 1: audit live instruction surfaces and lock the precedence contract.
+- [x] Phase 2: repair Codex subagent startup mismatch and validate spawned worker startup.
+- [x] Phase 3: normalize repo canon, repo shims, repo Claude agents, and repo commands.
+- [x] Phase 4: normalize global Claude/Codex defaults and write `docs/root/AGENT_SETUP.md`.
+- [x] Phase 5: run smoke/drift validation and close out conductor logs/status.
+  - Validation:
+    - spawned Codex `explorer` -> `explorer-ok`
+    - spawned Codex `worker` -> `worker-ok`
+    - outside-repo `codex exec` -> `codex-outside-ok`
+    - outside-repo `claude -p` -> `claude-outside-ok`
+    - `scripts/sync_agent_config.ps1 -Mode Check` -> exit `0`
+    - repo/global inheritance headers verified across normalized agent files
 
 ### Sprint 1: Finish PRIME Hardening (Priority)
 - [x] A1. Build PRIME policy table for all 9 methods.

@@ -1,7 +1,9 @@
 # PT Study System
 
-All project instructions live in `AGENTS.md` — the single source of truth.
+Project compatibility entrypoint for tools that look for `CLAUDE.md`.
 
-Read `AGENTS.md` for all rules, paths, workflow, and learnings.
+Root `AGENTS.md` is canonical for project instructions, workflow, paths, and learnings.
 
-Canonical run/build/test commands: `docs/root/GUIDE_DEV.md`
+This file exists only to redirect those tools to root `AGENTS.md`.
+
+Canonical run/build/test commands live in `docs/root/GUIDE_DEV.md`.
