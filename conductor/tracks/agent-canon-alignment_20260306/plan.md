@@ -108,6 +108,7 @@
 ## Close-Out Notes
 
 - Completed on 2026-03-06.
+- Closing commit: `5c7c81d4`
 - `C:\Users\treyt\.codex\rules\default.rules` was classified as an active global permissions surface, not a project policy file.
 - Root `AGENTS.md` now defines precedence, nested/module override behavior, and repo-local-vs-global collision handling explicitly.
 

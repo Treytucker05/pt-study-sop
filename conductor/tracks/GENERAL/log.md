@@ -36,6 +36,8 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Review:
   - final review subagent attempts hung and were interrupted
   - manual review of the touched config/doc surfaces found no correctness issues after validation
+- Closing commit:
+  - `5c7c81d4` — `docs(agents): align canon and repair codex subagents`
 
 ---
 
@@ -1591,3 +1593,22 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - keep `sop/library/` as pedagogy canon
   - keep archive files read-only and use them as historical evidence only
   - do not make runtime/API/schema changes in this pass
+
+## 2026-03-06 — Study Buddy canon audit close-out
+
+- Published the new master canon:
+  - `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Published the supporting evidence audit:
+  - `docs/root/TUTOR_STUDY_BUDDY_AUDIT_2026-03-06.md`
+- Rewired active docs to point to the new canon and removed overlapping top-level source-of-truth claims across:
+  - `README.md`
+  - `docs/README.md`
+  - `docs/root/PROJECT_ARCHITECTURE.md`
+  - `docs/root/TUTOR_OWNER_INTENT.md`
+  - `docs/root/GUIDE_TUTOR_FLOW.md`
+  - `conductor/product.md`
+- Validation:
+  - `git diff --check -- [canon audit doc set]`
+  - stale-string grep sweep for deprecated Tutor endpoints and legacy dashboard architecture markers
+- Review:
+  - fresh doc-code consistency subagent pass returned `No findings`

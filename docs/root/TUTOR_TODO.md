@@ -32,11 +32,16 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - `conductor/product.md`
   - `conductor/tracks.md`
   - `conductor/tracks/GENERAL/log.md`
-- [ ] Phase 0: create `conductor/tracks/study-buddy-canon-audit_20260306` with spec/plan/metadata/index.
-- [ ] Phase 1: inventory active canon, support docs, runtime truth samples, and archive evidence.
-- [ ] Phase 2: write the master Study Buddy canon and evidence audit.
-- [ ] Phase 3: rewire active docs to point to the new canon and remove overlapping overall-canon claims.
-- [ ] Phase 4: validate the truth path, capture follow-up contradictions, and close the track.
+- [x] Phase 0: create `conductor/tracks/study-buddy-canon-audit_20260306` with spec/plan/metadata/index.
+- [x] Phase 1: inventory active canon, support docs, runtime truth samples, and archive evidence.
+- [x] Phase 2: write the master Study Buddy canon and evidence audit.
+- [x] Phase 3: rewire active docs to point to the new canon and remove overlapping overall-canon claims.
+- [x] Phase 4: validate the truth path, capture follow-up contradictions, and close the track. (2026-03-06)
+  - Validation:
+    - `git diff --check -- [canon audit doc set]`
+    - stale-string grep sweep over `README.md`, `docs/root/PROJECT_ARCHITECTURE.md`, `docs/root/GUIDE_TUTOR_FLOW.md`, and `docs/root/TUTOR_TODO.md`
+  - Review:
+    - fresh doc-code consistency subagent pass returned `No findings`
 
 ### Sprint 6: Tutor Audit Hardening (2026-03-05)
 - [x] Claim scope: docs/process
@@ -117,6 +122,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - outside-repo `claude -p` -> `claude-outside-ok`
     - `scripts/sync_agent_config.ps1 -Mode Check` -> exit `0`
     - repo/global inheritance headers verified across normalized agent files
+  - Closing commit: `5c7c81d4`
 
 ### Sprint 1: Finish PRIME Hardening (Priority)
 - [x] A1. Build PRIME policy table for all 9 methods.
