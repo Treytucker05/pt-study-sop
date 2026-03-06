@@ -2,6 +2,32 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-06 - Skills Hygiene kickoff
+
+- Created new infra track `skills-hygiene_20260306`.
+- Added `Skills Hygiene` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - document the shared `.agents` skill architecture and tool-local exceptions
+  - group skills into keep/optional/tool-specific/broken/likely-unused buckets
+  - perform a safe first cleanup pass focused on clearly broken surfaces before considering shared-skill deletion
+
+---
+
+## 2026-03-06 - Skills Hygiene completion
+
+- Closed track `skills-hygiene_20260306` after:
+  - documenting the shared skill architecture in `docs/root/SKILLS_INVENTORY.md`
+  - grouping skills into core, optional, tool-specific, low-confidence, and broken-surface buckets
+  - adding usage-evidence caveats so shared-skill deletion is not guessed from weak telemetry
+  - writing a backup manifest for broken Cursor links to `C:\\Users\\treyt\\.cursor\\backups\\skills-hygiene_20260306\\broken-junctions.json`
+  - removing the broken Cursor junction set as the safe first cleanup wave
+- Validation:
+  - broken Cursor junction count reduced to `0`
+  - no shared `.agents` skills were deleted
+  - repo-side inventory and setup docs updated
+
+---
+
 ## 2026-03-06 - Repo-Native Agent Board kickoff
 
 - Created new docs track `agent-board_20260306`.

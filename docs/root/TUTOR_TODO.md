@@ -18,6 +18,29 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-03-06
 
+### Sprint 12: Skills Hygiene (2026-03-06)
+- [x] Claim scope: docs/process
+  - `docs/root/SKILLS_INVENTORY.md`
+  - `docs/root/AGENT_SETUP.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `conductor/tracks/skills-hygiene_20260306/`
+- [x] Claim scope: local skill surfaces
+  - `C:\Users\treyt\.agents\skills\`
+  - `C:\Users\treyt\.codex\skills\`
+  - `C:\Users\treyt\.claude\skills\`
+  - `C:\Users\treyt\.opencode\skills\`
+  - `C:\Users\treyt\.cursor\skills\`
+- [x] Phase 0: create `conductor/tracks/skills-hygiene_20260306` with spec/plan/metadata/index.
+- [x] Phase 1: inventory shared vs tool-local skill surfaces and group them into cleanup buckets.
+- [x] Phase 2: perform a safe first cleanup pass on clearly broken/bad surfaces.
+- [x] Phase 3: validate, review, and close the track.
+  - Validation:
+    - `docs/root/SKILLS_INVENTORY.md` created with grouped buckets and usage-evidence caveats
+    - backup manifest written for broken Cursor links
+    - broken Cursor junction count reduced to `0`
+    - no shared `.agents` skills were deleted in the first wave
+
 ### Sprint 11: Repo-Native Agent Board (2026-03-06)
 - [x] Claim scope: docs/process
   - `docs/root/AGENT_BOARD.md`

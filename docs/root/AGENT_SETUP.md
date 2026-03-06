@@ -16,6 +16,7 @@ This repo uses one project canon plus thin compatibility layers.
 
 - `docs/root/TUTOR_TODO.md`: active sprint and scope-claim board
 - `docs/root/AGENT_BOARD.md`: live multi-agent ownership and handoff surface
+- `docs/root/SKILLS_INVENTORY.md`: grouped view of the shared skill ecosystem and cleanup buckets
 - `conductor/tracks.md`: active/completed track registry
 - `conductor/tracks/GENERAL/log.md`: chronological audit trail
 

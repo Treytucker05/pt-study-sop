@@ -6,7 +6,12 @@ Update policy: after every significant change, update this file (and the active 
 
 Active status: no active tracks on 2026-03-06.
 
-Latest update: 2026-03-06 closed Repo-Native Agent Board after adding `docs/root/AGENT_BOARD.md` as the shared handoff surface for parallel agents.
+Latest update: 2026-03-06 closed Skills Hygiene after documenting the shared skill architecture, grouping the skill library, and removing broken Cursor junctions.
+
+- [x] **Track: Skills Hygiene** (complete — created 2026-03-06; closed 2026-03-06; scope: shared skill inventory, grouping, safe first cleanup of broken skill links)
+  *Link: [./tracks/skills-hygiene_20260306/](./tracks/skills-hygiene_20260306/)*
+
+---
 
 - [x] **Track: Repo-Native Agent Board** (complete — created 2026-03-06; closed 2026-03-06; scope: shared handoff board, canon/setup wiring, multi-agent coordination rules)
   *Link: [./tracks/agent-board_20260306/](./tracks/agent-board_20260306/)*
