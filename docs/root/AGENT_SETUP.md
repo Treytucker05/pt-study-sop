@@ -121,6 +121,27 @@ Current fix:
 
 This keeps subagents stable without moving project policy into TOML.
 
+## Outside-Claude Home-Directory Systems
+
+Inventory result on this machine:
+
+- `C:\Users\treyt\.codex`
+  - Has one global defaults file: `AGENTS.md`
+  - Has runtime role configs in `agents\*.toml`
+  - Does **not** have a repeated markdown agent catalog like Claude, so there was no equivalent compression pass to apply there
+- `C:\Users\treyt\.cursor`
+  - Exposes skills, plugins, plans, and worktrees
+  - No comparable home-directory agent-role markdown catalog was found for this cleanup
+- `C:\Users\treyt\.opencode`
+  - Exposes skills, not a reusable markdown agent-role catalog
+- `C:\Users\treyt\.conduit`
+  - Uses `config.toml`, not an agent-role markdown catalog
+
+Practical rule:
+
+- Apply the shared-rule compression pattern to systems that have many per-agent markdown files with duplicated inheritance boilerplate.
+- Keep Codex policy in `AGENTS.md` and runtime behavior in `agents\*.toml`; do not force a Claude-style shared-rule file into Codex unless a real duplicated markdown agent catalog appears later.
+
 ## Validation Checklist
 
 After any agent-config change:

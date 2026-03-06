@@ -47,6 +47,9 @@
 - Closing commit: `e5092411`
 - The follow-up optimization keeps the original precedence model while reducing repeated global-agent boilerplate.
 - Setup walkthrough is delivered from the current `docs/root/AGENT_SETUP.md` plus the optimized global Claude shared rule file.
+- Outside-Claude inventory result:
+  - Codex uses one global `AGENTS.md` plus runtime TOMLs, so there was no repeated markdown agent catalog to compress.
+  - Cursor/OpenCode/Conduit did not expose a comparable home-directory agent-role markdown surface on this machine.
 
 ---
 
