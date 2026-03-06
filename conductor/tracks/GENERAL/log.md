@@ -2,6 +2,32 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-06 - Agent Canon Follow-Up kickoff
+
+- Created new Conductor infra track `agent-canon-followup_20260306`.
+- Added `Agent Canon Follow-Up` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - reduce repeated inheritance boilerplate in global Claude agents
+  - improve `scripts/sync_agent_config.ps1` summary output
+  - keep the final walkthrough aligned with the optimized setup
+
+---
+
+## 2026-03-06 - Agent Canon Follow-Up completion
+
+- Closed track `agent-canon-followup_20260306` after:
+  - reducing repeated inheritance boilerplate across global Claude agents
+  - moving the shared inheritance explanation into `C:\Users\treyt\.claude\rules\agents.md`
+  - tightening `scripts/sync_agent_config.ps1` to print mode, summary counts, and final result lines
+  - making `.claude/permissions.json` an explicit mirror target in the sync script
+- Validation:
+  - `scripts/sync_agent_config.ps1 -Mode Check` -> `RESULT  PASS`
+  - `scripts/sync_agent_config.ps1 -Mode DryRun` -> `RESULT  PASS`
+  - `scripts/sync_agent_config.ps1 -Mode Apply` -> `RESULT  PASS`
+  - spot checks passed for optimized global Claude agents
+
+---
+
 ## 2026-03-06 - Agent Canon Alignment kickoff
 
 - Created new Conductor infra track `agent-canon-alignment_20260306` with:

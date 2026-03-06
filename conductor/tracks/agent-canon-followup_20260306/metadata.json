@@ -1,0 +1,16 @@
+{
+  "id": "agent-canon-followup_20260306",
+  "title": "Agent Canon Follow-Up",
+  "type": "infra",
+  "status": "complete",
+  "created": "2026-03-06T00:00:00Z",
+  "updated": "2026-03-06T00:00:00Z",
+  "phases": {
+    "total": 3,
+    "completed": 3
+  },
+  "tasks": {
+    "total": 8,
+    "completed": 8
+  }
+}

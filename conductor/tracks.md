@@ -6,7 +6,12 @@ Update policy: after every significant change, update this file (and the active 
 
 Active status: no active tracks on 2026-03-06.
 
-Latest update: 2026-03-06 closed Study Buddy Canon Audit after publishing the master canon, evidence audit, and active-doc truth-path rewiring.
+Latest update: 2026-03-06 closed Agent Canon Follow-Up after reducing global Claude agent redundancy and improving sync-agent-config validation output.
+
+- [x] **Track: Agent Canon Follow-Up** (complete — created 2026-03-06; closed 2026-03-06; scope: global Claude redundancy cleanup, sync-agent-config summary output, setup optimization)
+  *Link: [./tracks/agent-canon-followup_20260306/](./tracks/agent-canon-followup_20260306/)*
+
+---
 
 - [x] **Track: Agent Canon Alignment and Subagent Reliability** (complete — created 2026-03-06; closed 2026-03-06; scope: Codex subagent mismatch repair, repo/global agent canon alignment, operator walkthrough)
   *Link: [./tracks/agent-canon-alignment_20260306/](./tracks/agent-canon-alignment_20260306/)*

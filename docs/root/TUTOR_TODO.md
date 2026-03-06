@@ -18,6 +18,27 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-03-06
 
+### Sprint 9: Agent Canon Follow-Up (2026-03-06)
+- [x] Claim scope: global Claude agent cleanup
+  - `C:\Users\treyt\.claude\agents\`
+  - `C:\Users\treyt\.claude\rules\agents.md`
+  - `C:\Users\treyt\.claude\CLAUDE.md`
+- [x] Claim scope: repo validation + walkthrough
+  - `scripts/sync_agent_config.ps1`
+  - `docs/root/AGENT_SETUP.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `conductor/tracks/agent-canon-followup_20260306/`
+- [x] Phase 0: create `conductor/tracks/agent-canon-followup_20260306` with spec/plan/metadata/index.
+- [x] Phase 1: reduce repeated inheritance boilerplate in global Claude agents.
+- [x] Phase 2: improve `scripts/sync_agent_config.ps1` summary output and validate it.
+- [x] Phase 3: run review, close the track, and deliver the setup walkthrough.
+  - Validation:
+    - global Claude agents compressed to short shared-rule note format
+    - `scripts/sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
+    - `scripts/sync_agent_config.ps1 -Mode DryRun` -> `RESULT PASS`
+    - `scripts/sync_agent_config.ps1 -Mode Apply` -> `RESULT PASS`
+
 ### Sprint 8: Study Buddy Canon Audit (2026-03-06)
 - [x] Claim scope: docs/process
   - `conductor/tracks/study-buddy-canon-audit_20260306/`

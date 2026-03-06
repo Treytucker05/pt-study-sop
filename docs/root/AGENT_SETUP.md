@@ -85,9 +85,23 @@ Edit `AGENTS.md` first. Then update compatibility files only if their pointer te
 ### Add a global reusable Claude role
 
 1. Add the file under `C:\Users\treyt\.claude\agents\`.
-2. Use the same inheritance header.
-3. Keep it cross-project and reusable.
-4. Do not add PT Study-specific rules there.
+2. Keep the shared precedence contract in `C:\Users\treyt\.claude\rules\agents.md`.
+3. Use a short note in the agent file that points to the repo canon first and treats the file as role delta only.
+4. Keep it cross-project and reusable.
+5. Do not add PT Study-specific rules there.
+
+Recommended pattern:
+
+```md
+Apply the active repo's `AGENTS.md` and shared inheritance rules in `~/.claude/rules/agents.md` first.
+Use this file only as the role-specific delta; if a repo-local same-role agent exists, that local agent wins.
+```
+
+### Optimize global Claude rule reuse
+
+- Put the full shared precedence explanation in `C:\Users\treyt\.claude\rules\agents.md`.
+- Keep global agent files short and role-specific.
+- If you notice the same policy paragraph repeated across multiple global agents, move it back into the shared rule file instead of copying it again.
 
 ### Change Codex role behavior
 
