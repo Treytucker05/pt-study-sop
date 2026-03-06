@@ -6,7 +6,12 @@ Update policy: after every significant change, update this file (and the active 
 
 Active status: no active tracks on 2026-03-06.
 
-Latest update: 2026-03-06 closed Agent Canon Follow-Up after reducing global Claude agent redundancy and improving sync-agent-config validation output.
+Latest update: 2026-03-06 closed Root AGENTS Canon Trim after reducing root `AGENTS.md` to startup canon and moving detailed guardrails into `docs/root/AGENT_GUARDRAILS.md`.
+
+- [x] **Track: Root AGENTS Canon Trim** (complete — created 2026-03-06; closed 2026-03-06; scope: root canon trim, guardrails extraction, linked-doc cleanup)
+  *Link: [./tracks/agents-root-trim_20260306/](./tracks/agents-root-trim_20260306/)*
+
+---
 
 - [x] **Track: Agent Canon Follow-Up** (complete — created 2026-03-06; closed 2026-03-06; scope: global Claude redundancy cleanup, sync-agent-config summary output, setup optimization)
   *Link: [./tracks/agent-canon-followup_20260306/](./tracks/agent-canon-followup_20260306/)*

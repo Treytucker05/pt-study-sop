@@ -18,6 +18,22 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-03-06
 
+### Sprint 10: Root AGENTS Canon Trim (2026-03-06)
+- [x] Claim scope: docs/process
+  - `AGENTS.md`
+  - `docs/root/AGENT_GUARDRAILS.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `conductor/tracks/agents-root-trim_20260306/`
+- [x] Phase 0: create `conductor/tracks/agents-root-trim_20260306` with spec/plan/metadata/index.
+- [x] Phase 1: trim root `AGENTS.md` to the approved keep-only canon.
+- [x] Phase 2: move detailed learnings and troubleshooting into `docs/root/AGENT_GUARDRAILS.md`.
+- [x] Phase 3: validate links, review, and close out the track.
+  - Validation:
+    - root `AGENTS.md` trimmed from 442 lines to 127 lines
+    - `docs/root/AGENT_GUARDRAILS.md` created to preserve moved learnings and troubleshooting detail
+    - linked canonical docs verified to exist
+
 ### Sprint 9: Agent Canon Follow-Up (2026-03-06)
 - [x] Claim scope: global Claude agent cleanup
   - `C:\Users\treyt\.claude\agents\`

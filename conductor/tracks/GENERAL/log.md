@@ -2,6 +2,32 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-06 - Root AGENTS Canon Trim kickoff
+
+- Created new docs track `agents-root-trim_20260306`.
+- Added `Root AGENTS Canon Trim` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - trim root `AGENTS.md` to the agreed keep-only sections
+  - move detailed learnings/troubleshooting into a linked guardrails doc
+  - keep existing canonical links for setup, architecture, developer guide, and active work
+
+---
+
+## 2026-03-06 - Root AGENTS Canon Trim completion
+
+- Closed track `agents-root-trim_20260306` after:
+  - trimming root `AGENTS.md` from mixed status/reference/history content down to startup canon only
+  - removing dated plan/state sections from root `AGENTS.md`
+  - replacing bulky structure/architecture reference sections with links to canonical docs already in the repo
+  - moving detailed learnings and troubleshooting into `docs/root/AGENT_GUARDRAILS.md`
+- Validation:
+  - root `AGENTS.md` reduced from `442` lines to `127`
+  - `docs/root/AGENT_GUARDRAILS.md` created to preserve moved detail
+  - linked canonical docs verified to exist
+  - `git diff --check` passed for the touched docs
+
+---
+
 ## 2026-03-06 - Agent Canon Follow-Up kickoff
 
 - Created new Conductor infra track `agent-canon-followup_20260306`.
