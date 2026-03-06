@@ -5,6 +5,7 @@ Canonical learning/runtime system: **CP-MSS v1.0** (`PRIME -> CALIBRATE -> ENCOD
 If a doc conflicts with CP-MSS definitions, follow `sop/library/17-control-plane.md`.
 
 ## Docs Sync Policy (Single Source Of Truth)
+- Master product canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
 - Dev/run/build/test workflow: `docs/root/GUIDE_DEV.md`
 - SOP quick start: `README.md`
 - Agent instructions: `AGENTS.md`, `CLAUDE.md` (repo) and `C:\Users\treyt\.claude\CLAUDE.md` (global)
@@ -14,6 +15,7 @@ If a doc conflicts with CP-MSS definitions, follow `sop/library/17-control-plane
 
 | Feature | Doc(s) |
 |---------|--------|
+| Study Buddy Canon (top-level product truth) | `docs/root/TUTOR_STUDY_BUDDY_CANON.md` |
 | Tutor Architecture (comprehensive) | `docs/TUTOR_ARCHITECTURE.md` |
 | Control Plane (CP-MSS v1.0) | `sop/library/17-control-plane.md` |
 | Calendar/Tasks | `docs/calendar_tasks.md` |
@@ -56,8 +58,10 @@ If a doc conflicts with CP-MSS definitions, follow `sop/library/17-control-plane
 
 | Doc | Status | Purpose |
 |-----|--------|---------|
+| `TUTOR_STUDY_BUDDY_CANON.md` | Canonical | Overall Study Buddy system contract and precedence order |
+| `TUTOR_STUDY_BUDDY_AUDIT_2026-03-06.md` | Reference | Evidence audit, source classification matrix, and evolution timeline |
 | `TUTOR_TODO.md` | Active | Execution tracker with sprint backlog |
-| `TUTOR_OWNER_INTENT.md` | Reference | Owner design intent for tutor system |
+| `TUTOR_OWNER_INTENT.md` | Reference | Owner lock-ins that support, but do not replace, the master canon |
 | `TUTOR_CATEGORY_DEFINITIONS.md` | Reference | Block category definitions |
 | `TUTOR_METHOD_SELECTION_RULES.md` | Reference | Chain/method selection logic |
 | `TUTOR_CONTROL_PLANE_CANON.md` | Reference | CP-MSS rationale and evidence |
@@ -85,3 +89,5 @@ Stale or superseded docs are in `docs/archive/`. Includes:
 - `TUTOR_METHOD_INTEGRITY_SMOKE.md` (one-off audit)
 - `ROLE.md` (stale vault paths)
 - `ARCHITECTURE_V2.md` (legacy V2 terminology)
+
+Use `docs/root/TUTOR_STUDY_BUDDY_AUDIT_2026-03-06.md` when you need the historical evidence trail that explains how these older layers fit into the current canon.

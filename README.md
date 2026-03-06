@@ -2,6 +2,9 @@
 
 A local-first, AI-powered study operating system for DPT coursework. Sessions run through a **native adaptive tutor** built on Flask + ChromaDB RAG, following the **Control Plane** learning pipeline (CP-MSS v1.0) with citation-first teaching, deterministic logging, and continuous improvement via Scholar meta-audits.
 
+Top-level system canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+This README is the repo overview. It is not the master product truth path.
+
 ## Table of Contents
 
 - [System Overview](#system-overview)
@@ -40,11 +43,12 @@ Five pillars work in a continuous loop:
 
 | Pillar | What It Does | Location |
 |--------|-------------|----------|
-| **SOP** | Defines *how* learning happens (17 library files) | `sop/library/` |
-| **Brain** | Stores sessions, serves API, runs tutor engine, hosts dashboard | `brain/` |
-| **Tutor** | Native adaptive chat tutor with RAG, streaming, and vault authoring | `brain/dashboard/api_tutor.py` |
+| **SOP** | Defines *how* learning happens (rules, methods, chains, control-plane contracts) | `sop/library/` |
+| **Study Materials Library** | Defines *what* Tutor teaches by managing the learner's class materials | `/library` route + `brain/data/` |
+| **Brain** | Stores sessions, telemetry, artifact metadata, indexes, and operational state | `brain/` |
+| **Tutor** | Protocol-led study operator that executes the active chain against the learner's selected scope | `brain/dashboard/api_tutor.py` |
 | **Dashboard** | Surfaces metrics, manages ingestion, calendar, Anki, tutor UI | `dashboard_rebuild/` |
-| **Scholar** | Audits session logs, proposes evidence-based improvements | `scholar/` |
+| **Scholar** | Reads Brain outputs, researches patterns, and proposes evidence-based improvements | `scholar/` |
 
 ---
 
@@ -102,15 +106,9 @@ Flask (brain/dashboard/app.py)
 ```bash
 # One-click (recommended)
 Start_Dashboard.bat
-
-# Or manually:
-pip install -r requirements.txt
-cd dashboard_rebuild && npm install && npm run build
-python brain/dashboard_web.py
-# Open http://localhost:5000
 ```
 
-> **Note:** Vite outputs directly to `brain/static/dist/` — no copy step needed. Never use `npm run dev`.
+> **Note:** Vite outputs directly to `brain/static/dist/` — no copy step needed. Never use `npm run dev`, and do not start the dashboard through a direct Flask command. Use `Start_Dashboard.bat`.
 
 ---
 
@@ -169,6 +167,8 @@ The `brain/selector.py` router automatically selects the optimal chain based on 
 > `sop/library/` defines the **methodology** — *how* the tutor teaches. Study materials are stored in `brain/data/`.
 
 The **SOP** (Standard Operating Procedure) defines the learning methodology. Source of truth: `sop/library/`.
+
+For the overall Study Buddy contract and subsystem precedence order, use `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
 
 | # | File | Description |
 |---|------|-------------|
@@ -234,21 +234,23 @@ brain/
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/db_health` | DB connection check |
+| GET | `/api/db/health` | DB connection check |
 | GET | `/api/sessions` | All sessions (with filters) |
 | GET | `/api/sessions/<id>` | Single session |
-| GET | `/api/session_stats` | Aggregate stats |
+| GET | `/api/sessions/stats` | Aggregate stats |
 | POST | `/api/tutor/session` | Start tutor session |
-| POST | `/api/tutor/turn` | Send a tutor turn (SSE streaming response) |
+| GET | `/api/tutor/session/<id>` | Load tutor session state |
+| POST | `/api/tutor/session/<id>/turn` | Send a tutor turn (SSE streaming response) |
 | GET | `/api/tutor/sessions` | List tutor sessions |
-| POST | `/api/tutor/ingest` | Ingest documents for RAG |
+| GET | `/api/tutor/materials` | List Library-backed study materials |
+| POST | `/api/tutor/materials/sync` | Sync configured material roots into Library |
 | GET | `/api/obsidian/status` | Obsidian vault status |
 | GET | `/api/obsidian/files` | List vault files |
 | PUT | `/api/obsidian/file` | Save/overwrite vault file |
 | GET | `/api/gcal/status` | Google Calendar auth status |
 | POST | `/api/gcal/sync` | Two-way calendar sync |
-| GET | `/api/methods/blocks` | Method block library |
-| GET | `/api/methods/chains` | Method chains |
+| GET | `/api/methods` | Method block library |
+| GET | `/api/chains` | Method chains |
 | POST | `/api/scholar/run` | Run Scholar workflow |
 
 ---

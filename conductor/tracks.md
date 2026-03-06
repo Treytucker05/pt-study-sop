@@ -4,9 +4,19 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: Tutor Audit Hardening completed on 2026-03-06; no replacement implementation track has been opened yet.
+Active status: no active tracks on 2026-03-06.
 
-Latest update: 2026-03-06 Tutor Audit Hardening closed after objective ownership/delete safeguards, truthful retrieval debug, Library -> Tutor handoff repair, artifact restore/delete UX fixes, SSE hardening, frontend build success, and full backend test pass (`925 passed, 1 skipped`).
+Latest update: 2026-03-06 closed Study Buddy Canon Audit after publishing the master canon, evidence audit, and active-doc truth-path rewiring.
+
+- [x] **Track: Agent Canon Alignment and Subagent Reliability** (complete — created 2026-03-06; closed 2026-03-06; scope: Codex subagent mismatch repair, repo/global agent canon alignment, operator walkthrough)
+  *Link: [./tracks/agent-canon-alignment_20260306/](./tracks/agent-canon-alignment_20260306/)*
+
+---
+
+- [x] **Track: Tutor / Study Buddy Canon Audit** (complete — created 2026-03-06; closed 2026-03-06; scope: master canon, evidence audit, active-doc truth-path rewiring, archive-as-history boundary)
+  *Link: [./tracks/study-buddy-canon-audit_20260306/](./tracks/study-buddy-canon-audit_20260306/)*
+
+---
 
 - [x] **Track: Tutor Audit Hardening** (complete — created 2026-03-05; closed 2026-03-06; scope: objective lifecycle, retrieval debug, materials handoff, artifact restore/delete telemetry, SSE hardening)
   *Link: [./tracks/tutor-audit-hardening_20260305/](./tracks/tutor-audit-hardening_20260305/)*

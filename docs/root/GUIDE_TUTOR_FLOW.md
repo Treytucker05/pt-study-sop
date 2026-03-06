@@ -1,12 +1,13 @@
 # Tutor Flow Guide (Architecture + Runtime Wiring)
 
-Last updated: 2026-03-01
+Last updated: 2026-03-06
 
 This guide documents how the Tutor subsystem works end-to-end in the current codebase.
 
-Provisional status:
-- The instruction/rules model is in active stabilization and is **not final**.
-- Current priority is successful completion of one full study session before adding broader archived rule complexity.
+Scope note:
+- This is a runtime wiring guide.
+- Product canon lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Pedagogy canon lives in `sop/library/`.
 
 ## 1) Entry Points and Major Components
 
@@ -52,11 +53,12 @@ Execution flow:
 1. Validate active session and request payload (`message`, `content_filter`, behavior/mode flags).
 2. Load session turns and chain/block context.
 3. Build retrieval context:
-   - Materials via `tutor_rag` retrieval.
-   - Notes via `ObsidianClient.search(...)`.
+   - Materials via the learner's selected class-material scope and `tutor_rag` retrieval.
+   - Supporting notes via vault helpers backed by the Obsidian CLI wrapper.
 4. Build prompt via `build_prompt_with_contexts(...)`.
    - Global rules: saved Tutor settings (`tutor_custom_instructions`) or fallback defaults.
    - Session-only rules: optional `content_filter.session_rules` appended for current session runtime.
+   - Teaching behavior is constrained by the active chain/block contract rather than a generic chat style.
 5. Start streaming model call with tool schemas (`get_tool_schemas()`).
 6. Emit SSE events continuously to frontend:
    - token deltas
@@ -100,8 +102,9 @@ Primary DB tables touched in Tutor runtime:
 - `error_logs` (diagnostics/failure paths)
 
 External/adjacent stores:
-- RAG retrieval indexes (materials + dual-context paths).
-- Obsidian vault files through Obsidian API adapter.
+- RAG retrieval indexes (selected study materials + supporting note context).
+- Obsidian vault files through CLI-backed vault helpers.
+- Anki draft staging through Brain/card-draft persistence when chain methods call for it.
 
 ## 5) Frontend Startup -> Session -> Turn -> Artifact
 
@@ -159,11 +162,13 @@ Obsidian (used by Tutor flows/components):
 ## 7) Frontend State Keys That Matter
 
 LocalStorage keys:
-- `tutor.selected_material_ids.v1`
+- `tutor.selected_material_ids.v2`
+- `tutor.selected_material_ids.v1` (legacy migration read only)
 - `tutor.accuracy_profile.v1`
 - `tutor.objective_scope.v1`
 - `tutor.wizard.state.v1`
 - `tutor.active_session.v1`
+- `tutor.open_from_library.v1`
 - `tutor.vault_folder.v1`
 - `tutor.vault_selected.v1`
 - `tutor.wizard.progress.v1`

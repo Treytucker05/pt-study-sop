@@ -1,8 +1,11 @@
-# Tutor Owner Intent (Session-Persistent Notes)
+# Tutor Owner Intent (Supporting Reference)
 
 Date: 2026-02-22  
 Owner: Trey  
-Purpose: keep non-negotiable product intent in one place so sessions do not drift.
+Purpose: keep owner-specific Tutor lock-ins in one place so sessions do not drift.
+
+Overall system canon now lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+This file is a supporting owner-intent reference, not the top-level Study Buddy truth path.
 
 ## Core Intent
 - Build a tutor that teaches any learner at any level and makes learning stick long-term.
@@ -12,6 +15,10 @@ Purpose: keep non-negotiable product intent in one place so sessions do not drif
 - The control plane remains category-first:
   - `PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
 - Model is `Category -> Method -> Knob -> Chain`.
+- Library controls what Tutor teaches.
+- Brain stores telemetry and fit signals, but Scholar is the layer that turns Brain outputs into system-improvement proposals.
+- Obsidian is the main note home.
+- Anki output is chain-conditional, not always-on.
 - Tutor-generated Obsidian notes must include wiki links at creation time (not deferred cleanup).
 - For Mind Map:
   - Method = `Mind Map`
@@ -28,12 +35,17 @@ Purpose: keep non-negotiable product intent in one place so sessions do not drif
 - CALIBRATE should identify gaps without punitive framing.
 
 ## Anti-Drift Rules
-- Keep category definitions and owner intent as canonical references.
+- Keep the master canon, category definitions, and owner intent aligned.
 - Do not reinterpret method/knob terms per session.
 - Any new product preference from owner must be appended here with date and rationale.
-- If a recommendation conflicts with this file, this file wins unless owner explicitly changes it.
+- If a recommendation conflicts with the master canon on overall subsystem roles, the master canon wins.
+- If a recommendation conflicts with this file on owner-specific Tutor lock-ins, this file wins unless owner explicitly changes it.
 
 ## Change Log
+- 2026-03-06:
+  - Clarified that Library controls content scope while SOP controls teaching behavior.
+  - Clarified that Brain feeds Scholar for system improvement rather than directly steering Tutor pedagogy.
+  - Clarified that Obsidian is the primary note home and Anki output is chain-conditional.
 - 2026-02-22:
   - Added first-exposure-first requirement.
   - Locked behavior: PRIME teaches and structures before calibration pressure.
