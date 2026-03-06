@@ -23,6 +23,8 @@ Changes not tied to a specific conductor track. Append dated entries below.
 - Validation:
   - catalog and track docs passed markdown hygiene checks
   - planning rows were reviewed and annotated with initial recommendations
+- Closing commit:
+  - `d6e9e8f3` — `docs(skills): add full catalog and seed planning review`
 
 ---
 

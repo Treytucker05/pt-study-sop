@@ -42,6 +42,7 @@
 ## Close-Out Notes
 
 - Completed on 2026-03-06.
+- Closing commit: `d6e9e8f3`
 - The catalog is now the per-skill review surface.
 - `docs/root/SKILLS_INVENTORY.md` remains the grouped summary / cleanup strategy surface.
 

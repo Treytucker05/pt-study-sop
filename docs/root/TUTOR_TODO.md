@@ -33,6 +33,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - `docs/root/SKILLS_CATALOG.md` created with per-skill rows and decision fields
     - planning category seeded with first-pass recommendations
     - catalog and track docs passed markdown hygiene checks
+  - Closing commit: `d6e9e8f3`
 
 ### Sprint 12: Skills Hygiene (2026-03-06)
 - [x] Claim scope: docs/process
