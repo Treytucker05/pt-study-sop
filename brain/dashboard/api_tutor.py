@@ -80,7 +80,6 @@ from tutor_accuracy_profiles import (
     DEFAULT_ACCURACY_PROFILE,
     accuracy_profile_config,
     normalize_accuracy_profile,
-    resolve_instruction_retrieval_k as _resolve_instruction_k_for_profile,
     resolve_material_retrieval_k as _resolve_material_k_for_profile,
 )
 from tutor_prompt_builder import DEFAULT_RULES as _PROMPT_BUILDER_DEFAULT_RULES
@@ -473,6 +472,55 @@ def _normalize_objective_id(raw_id: Any, index: int) -> str:
     if not candidate.startswith("OBJ-"):
         candidate = f"OBJ-{candidate}"
     return candidate
+
+
+def _row_value(row: Any, key: str, index: int) -> Any:
+    if isinstance(row, sqlite3.Row):
+        return row[key]
+    return row[index]
+
+
+def _delete_orphaned_tutor_managed_objectives(
+    conn: sqlite3.Connection, lo_ids: list[int]
+) -> int:
+    if not lo_ids:
+        return 0
+    cur = conn.cursor()
+    placeholders = ",".join("?" for _ in lo_ids)
+    cur.execute(
+        f"""
+        DELETE FROM learning_objectives
+        WHERE id IN ({placeholders})
+          AND managed_by_tutor = 1
+          AND NOT EXISTS (
+              SELECT 1
+              FROM tutor_session_learning_objectives tso
+              WHERE tso.lo_id = learning_objectives.id
+          )
+        """,
+        lo_ids,
+    )
+    return int(cur.rowcount or 0)
+
+
+def _unlink_all_tutor_session_learning_objectives(
+    conn: sqlite3.Connection, session_id: str
+) -> int:
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT DISTINCT lo_id FROM tutor_session_learning_objectives WHERE tutor_session_id = ?",
+        (session_id,),
+    )
+    lo_ids = [
+        int(_row_value(row, "lo_id", 0))
+        for row in cur.fetchall()
+        if _row_value(row, "lo_id", 0) is not None
+    ]
+    cur.execute(
+        "DELETE FROM tutor_session_learning_objectives WHERE tutor_session_id = ?",
+        (session_id,),
+    )
+    return _delete_orphaned_tutor_managed_objectives(conn, lo_ids)
 
 
 def _normalize_objective_scope(raw_scope: Any) -> str:
@@ -1399,27 +1447,41 @@ def save_learning_objectives_from_tool(
                 title = lo_code
 
             cur.execute(
-                "SELECT id FROM learning_objectives WHERE course_id = ? AND lo_code = ?",
+                """
+                SELECT id, managed_by_tutor
+                FROM learning_objectives
+                WHERE course_id = ? AND lo_code = ?
+                """,
                 (course_id, lo_code),
             )
             existing = cur.fetchone()
             if existing:
+                lo_id = int(_row_value(existing, "id", 0))
                 cur.execute(
                     "UPDATE learning_objectives SET title = ?, group_name = COALESCE(?, group_name), updated_at = ? WHERE id = ?",
                     (
                         title,
                         group_name,
                         now,
-                        existing[0] if isinstance(existing, tuple) else existing["id"],
+                        lo_id,
                     ),
                 )
             else:
                 cur.execute(
                     """INSERT INTO learning_objectives
-                       (course_id, module_id, lo_code, title, status, group_name, created_at, updated_at)
-                       VALUES (?, ?, ?, ?, 'active', ?, ?, ?)""",
+                       (course_id, module_id, lo_code, title, status, group_name, managed_by_tutor, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, 'active', ?, 1, ?, ?)""",
                     (course_id, module_id, lo_code, title, group_name, now, now),
                 )
+                lo_id = int(cur.lastrowid)
+            cur.execute(
+                """
+                INSERT OR IGNORE INTO tutor_session_learning_objectives
+                    (tutor_session_id, lo_id, created_at)
+                VALUES (?, ?, ?)
+                """,
+                (session_id, lo_id, now),
+            )
             inserted_codes.append(lo_code)
         conn.commit()
 
@@ -1730,8 +1792,9 @@ def _reconcile_obsidian_state(
             art.pop("missing_paths", None)
 
     # --- Learning-objective cleanup when Map of Contents is gone ---
-    # If the user deleted the Map of Contents from Obsidian, the objectives that
-    # lived inside it should also be removed from the dashboard (SQLite).
+    # If the user deleted the Map of Contents from Obsidian, unlink the tutor
+    # session from its objectives and only garbage-collect tutor-managed rows
+    # that are now orphaned.
     lo_deleted = 0
     if (
         persist
@@ -1739,30 +1802,22 @@ def _reconcile_obsidian_state(
         and ns_changed
         and content_filter is not None
     ):
-        ns = content_filter.get("map_of_contents") or {}
-        obj_ids: list[str] = ns.get("objective_ids") or []
-        course_id = session.get("course_id")
-        if obj_ids and course_id:
-            try:
-                conn_lo = get_connection()
-                cur_lo = conn_lo.cursor()
-                placeholders = ",".join("?" for _ in obj_ids)
-                cur_lo.execute(
-                    f"DELETE FROM learning_objectives WHERE course_id = ? AND lo_code IN ({placeholders})",
-                    [course_id] + obj_ids,
-                )
-                lo_deleted = cur_lo.rowcount
-                conn_lo.commit()
-                conn_lo.close()
-            except Exception:
-                logging.getLogger(__name__).warning(
-                    "reconcile_obsidian_state: failed to delete LOs for %s",
-                    session_id,
-                    exc_info=True,
-                )
+        try:
+            conn_lo = get_connection()
+            lo_deleted = _unlink_all_tutor_session_learning_objectives(
+                conn_lo, str(session_id)
+            )
+            conn_lo.commit()
+            conn_lo.close()
+        except Exception:
+            logging.getLogger(__name__).warning(
+                "reconcile_obsidian_state: failed to unlink LOs for %s",
+                session_id,
+                exc_info=True,
+            )
         if lo_deleted:
             logging.getLogger(__name__).info(
-                "reconcile_obsidian_state: deleted %d orphaned LO(s) for session %s",
+                "reconcile_obsidian_state: deleted %d orphaned tutor-managed LO(s) for session %s",
                 lo_deleted,
                 session_id,
             )
@@ -1822,7 +1877,7 @@ def _delete_artifact_obsidian_files(artifact: dict) -> list[str]:
 def _cascade_delete_obsidian_files(session: dict) -> list[str]:
     """Delete all Obsidian files owned by a session (Map of Contents + artifacts).
 
-    Called from ``delete_session`` before the DB rows are removed.
+    Called from ``delete_session`` using a pre-delete session snapshot.
     Returns a list of vault-relative paths that were successfully deleted.
     """
     log = logging.getLogger(__name__)
@@ -2146,12 +2201,6 @@ def _resolve_material_retrieval_k(
     return _resolve_material_k_for_profile(material_ids, accuracy_profile)
 
 
-def _resolve_instruction_retrieval_k(
-    accuracy_profile: str = DEFAULT_ACCURACY_PROFILE,
-) -> int:
-    return _resolve_instruction_k_for_profile(accuracy_profile)
-
-
 def _normalize_material_ids(value: Any) -> Optional[list[int]]:
     """Best-effort parse of material IDs from payload/session filter."""
     if not isinstance(value, list):
@@ -2316,29 +2365,32 @@ def _build_retrieval_debug_payload(
     selected_material_count: int,
     material_k: int,
     retrieval_course_id: Optional[int],
-    material_docs: list[Any],
-    instruction_docs: list[Any],
     citations: list[dict],
     rag_debug: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     """Build compact retrieval telemetry attached to SSE done events."""
-    material_sources_all = _material_sources_from_docs(material_docs)
-    instruction_sources_all = _material_sources_from_docs(instruction_docs)
     citation_sources_all = _citation_sources(citations)
-    top_source, top_share = _source_concentration_stats(material_docs)
 
     rag_material = {}
-    rag_instruction = {}
     if isinstance(rag_debug, dict):
         rag_material = rag_debug.get("materials") or {}
-        rag_instruction = rag_debug.get("instructions") or {}
+
+    material_sources_all = list(rag_material.get("sources") or [])
+    retrieved_material_chunks = int(rag_material.get("retrieved_chunks") or 0)
+    retrieved_material_unique_sources = int(
+        rag_material.get("retrieved_unique_sources") or len(material_sources_all)
+    )
+    top_source = rag_material.get("top_source")
+    if top_source is None and material_sources_all:
+        top_source = material_sources_all[0]
+    top_share = float(rag_material.get("top_source_share") or 0.0)
 
     merged_candidates = int(rag_material.get("candidate_pool_merged") or 0)
     dropped_by_cap = int(rag_material.get("candidate_pool_dropped_by_cap") or 0)
     confidence = _compute_retrieval_confidence(
         selected_material_count=selected_material_count,
         material_k=material_k,
-        retrieved_unique_sources=len(material_sources_all),
+        retrieved_unique_sources=retrieved_material_unique_sources,
         citations_unique_sources=len(citation_sources_all),
         top_source_share=top_share,
         dropped_by_cap=dropped_by_cap,
@@ -2354,14 +2406,12 @@ def _build_retrieval_debug_payload(
         "selected_material_count": selected_material_count,
         "material_k": material_k,
         "retrieval_course_id": retrieval_course_id,
-        "retrieved_material_chunks": len(material_docs),
-        "retrieved_material_unique_sources": len(material_sources_all),
+        "material_retrieval_mode": rag_material.get("mode"),
+        "retrieved_material_chunks": retrieved_material_chunks,
+        "retrieved_material_unique_sources": retrieved_material_unique_sources,
         "retrieved_material_sources": material_sources_all[:20],
         "material_top_source": top_source,
         "material_top_source_share": round(top_share, 4),
-        "retrieved_instruction_chunks": len(instruction_docs),
-        "retrieved_instruction_unique_sources": len(instruction_sources_all),
-        "retrieved_instruction_sources": instruction_sources_all[:10],
         "citations_total": len(citations),
         "citations_unique_sources": len(citation_sources_all),
         "citation_sources": citation_sources_all[:20],
@@ -2374,12 +2424,6 @@ def _build_retrieval_debug_payload(
             rag_material.get("candidate_pool_after_cap") or 0
         ),
         "material_dropped_by_cap": dropped_by_cap,
-        "instruction_candidates_similarity": int(
-            rag_instruction.get("candidate_pool_similarity") or 0
-        ),
-        "instruction_candidates_mmr": int(
-            rag_instruction.get("candidate_pool_mmr") or 0
-        ),
         "retrieval_confidence": confidence,
         "retrieval_confidence_tier": _retrieval_confidence_tier(confidence),
     }
@@ -4041,7 +4085,6 @@ def send_turn(session_id: str):
         material_ids = _normalize_material_ids(content_filter.get("material_ids"))
         content_filter["material_ids"] = material_ids or []
     material_k = _resolve_material_retrieval_k(material_ids, accuracy_profile)
-    instruction_k = _resolve_instruction_retrieval_k(accuracy_profile)
     # Explicit material selection should override course scoping.
     retrieval_course_id = None if material_ids else session.get("course_id")
     selected_material_count, selected_material_labels = _material_scope_labels(
@@ -4118,7 +4161,6 @@ def send_turn(session_id: str):
             requested_accuracy_profile = accuracy_profile
             effective_accuracy_profile = requested_accuracy_profile
             effective_material_k = material_k
-            effective_instruction_k = instruction_k
             rag_debug: dict[str, Any] = {}
             profile_escalated = False
             profile_escalation_reasons: list[str] = []
@@ -4145,7 +4187,6 @@ def send_turn(session_id: str):
             rag_debug = ctx["debug"]
 
             material_text = ctx["materials"]
-            instruction_text = ctx["instructions"]
             notes_context_text = ctx["notes"]
             vault_state_text = ctx.get("vault_state", "")
 
@@ -4209,7 +4250,6 @@ def send_turn(session_id: str):
                 chain_info=chain_info,
                 course_id=session.get("course_id"),
                 topic=session.get("topic"),
-                instruction_context=instruction_text,
                 material_context=material_text,
                 graph_context=graph_context_text,
                 course_map=ctx.get("course_map", ""),
@@ -4346,7 +4386,6 @@ def send_turn(session_id: str):
                     "\n\n## Selected Material Scope\n"
                     f"- Student selected materials for this turn: {selected_material_count}\n"
                     f"- Retrieval target depth this turn: {effective_material_k}\n"
-                    f"- Instruction retrieval depth this turn: {effective_instruction_k}\n"
                     "- Retrieved excerpts can be fewer than selected files because retrieval is relevance-based.\n"
                     "- If the student asks 'how many files are you using/seeing/have', answer with the selected count above first.\n"
                     "- Only mention retrieved/cited file count if they explicitly ask for retrieved/cited count.\n"
@@ -4468,10 +4507,6 @@ def send_turn(session_id: str):
             force_insufficient_evidence = False
             weak_reasons: list[str] = []
 
-            # Stubs for telemetry — build_context() no longer returns raw Document lists
-            material_docs: list[Any] = []
-            instruction_docs: list[Any] = []
-
             def _attach_profile_debug(payload: dict[str, Any]) -> dict[str, Any]:
                 payload["requested_accuracy_profile"] = requested_accuracy_profile
                 payload["effective_accuracy_profile"] = effective_accuracy_profile
@@ -4506,8 +4541,6 @@ def send_turn(session_id: str):
                         selected_material_count=selected_material_count,
                         material_k=effective_material_k,
                         retrieval_course_id=retrieval_course_id,
-                        material_docs=material_docs,
-                        instruction_docs=instruction_docs,
                         citations=citations,
                         rag_debug=rag_debug,
                     )
@@ -4549,8 +4582,6 @@ def send_turn(session_id: str):
                         selected_material_count=selected_material_count,
                         material_k=effective_material_k,
                         retrieval_course_id=retrieval_course_id,
-                        material_docs=material_docs,
-                        instruction_docs=instruction_docs,
                         citations=citations,
                         rag_debug=rag_debug,
                     )
@@ -4591,8 +4622,6 @@ def send_turn(session_id: str):
                         selected_material_count=selected_material_count,
                         material_k=effective_material_k,
                         retrieval_course_id=retrieval_course_id,
-                        material_docs=material_docs,
-                        instruction_docs=instruction_docs,
                         citations=citations,
                         rag_debug=rag_debug,
                     )
@@ -4890,8 +4919,6 @@ def send_turn(session_id: str):
                         selected_material_count=selected_material_count,
                         material_k=effective_material_k,
                         retrieval_course_id=retrieval_course_id,
-                        material_docs=material_docs,
-                        instruction_docs=instruction_docs,
                         citations=all_citations,
                         rag_debug=rag_debug,
                     )
@@ -6064,42 +6091,49 @@ def delete_session(session_id: str):
         )
         return jsonify(response_payload)
 
-    # --- Delete cascade: remove Obsidian files before deleting DB rows ---
     expected_paths = _expected_obsidian_paths_for_session(session)
-    deleted_paths = _cascade_delete_obsidian_files(session)
-    deleted_set = set(deleted_paths)
-    missing_paths = [p for p in expected_paths if p not in deleted_set]
-    obsidian_cleanup_has_missing = bool(missing_paths)
-    if obsidian_cleanup_has_missing:
-        _LOG.warning(
-            "tutor_delete_session request_id=%s session_id=%s status=obsidian_cleanup_partial expected=%d deleted=%d missing=%d",
+    lo_deleted = 0
+    try:
+        lo_deleted = _unlink_all_tutor_session_learning_objectives(conn, session_id)
+    except Exception:
+        conn.rollback()
+        conn.close()
+        _LOG.exception(
+            "tutor_delete_session request_id=%s session_id=%s status=objective_unlink_failed",
             request_id,
             session_id,
-            len(expected_paths),
-            len(deleted_paths),
-            len(missing_paths),
         )
-
-    # --- Delete learning objectives linked to this session's Map of Contents ---
-    lo_deleted = 0
-    cf_raw = session.get("content_filter_json")
-    if cf_raw:
-        try:
-            cf = json.loads(cf_raw) if isinstance(cf_raw, str) else cf_raw
-        except (json.JSONDecodeError, TypeError):
-            cf = None
-        if isinstance(cf, dict):
-            ns = cf.get("map_of_contents") or {}
-            obj_ids: list[str] = ns.get("objective_ids") or []
-            course_id = session.get("course_id")
-            if obj_ids and course_id:
-                cur_lo = conn.cursor()
-                placeholders = ",".join("?" for _ in obj_ids)
-                cur_lo.execute(
-                    f"DELETE FROM learning_objectives WHERE course_id = ? AND lo_code IN ({placeholders})",
-                    [course_id] + obj_ids,
-                )
-                lo_deleted = cur_lo.rowcount
+        response_payload = {
+            "error": "Learning objective cleanup failed",
+            "deleted": False,
+            "session_id": session_id,
+            "status": "objective_unlink_failed",
+            "request_id": request_id,
+            "requested_count": 1,
+            "deleted_count": 0,
+            "skipped_count": 0,
+            "failed_count": 1,
+            "obsidian_deleted": [],
+            "objectives_deleted": 0,
+        }
+        _record_tutor_delete_telemetry(
+            request_id=request_id,
+            route=route_name,
+            session_id=session_id,
+            status="objective_unlink_failed",
+            requested_count=1,
+            deleted_count=0,
+            skipped_count=0,
+            failed_count=1,
+            details={
+                "expected_obsidian_count": len(expected_paths),
+                "obsidian_deleted_count": 0,
+                "missing_obsidian_count": 0,
+                "missing_paths": [],
+                "obsidian_delete_attempted": False,
+            },
+        )
+        return jsonify(response_payload), 500
 
     try:
         cur = conn.cursor()
@@ -6128,7 +6162,7 @@ def delete_session(session_id: str):
             "deleted_count": 0,
             "skipped_count": 0,
             "failed_count": 1,
-            "obsidian_deleted": deleted_paths,
+            "obsidian_deleted": [],
             "objectives_deleted": lo_deleted,
         }
         _record_tutor_delete_telemetry(
@@ -6142,14 +6176,39 @@ def delete_session(session_id: str):
             failed_count=1,
             details={
                 "expected_obsidian_count": len(expected_paths),
-                "obsidian_deleted_count": len(deleted_paths),
-                "missing_obsidian_count": len(missing_paths),
-                "missing_paths": missing_paths,
+                "obsidian_deleted_count": 0,
+                "missing_obsidian_count": 0,
+                "missing_paths": [],
                 "objectives_deleted": lo_deleted,
+                "obsidian_delete_attempted": False,
             },
         )
         return jsonify(response_payload), 500
     conn.close()
+
+    deleted_paths: list[str] = []
+    try:
+        deleted_paths = _cascade_delete_obsidian_files(session)
+    except Exception:
+        _LOG.exception(
+            "tutor_delete_session request_id=%s session_id=%s status=obsidian_cleanup_exception",
+            request_id,
+            session_id,
+        )
+        deleted_paths = []
+
+    deleted_set = set(deleted_paths)
+    missing_paths = [p for p in expected_paths if p not in deleted_set]
+    obsidian_cleanup_has_missing = bool(missing_paths)
+    if obsidian_cleanup_has_missing:
+        _LOG.warning(
+            "tutor_delete_session request_id=%s session_id=%s status=obsidian_cleanup_partial expected=%d deleted=%d missing=%d",
+            request_id,
+            session_id,
+            len(expected_paths),
+            len(deleted_paths),
+            len(missing_paths),
+        )
 
     final_status = (
         "deleted_with_warnings" if obsidian_cleanup_has_missing else "deleted"
@@ -7851,7 +7910,7 @@ def put_tutor_settings():
 def get_course_map():
     try:
         import dataclasses
-        from brain.course_map import load_course_map
+        from course_map import load_course_map
 
         cm = load_course_map()
         return jsonify(dataclasses.asdict(cm)), 200

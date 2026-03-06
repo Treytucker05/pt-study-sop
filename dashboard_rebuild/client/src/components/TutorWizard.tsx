@@ -334,7 +334,12 @@ function StepCourseAndMaterials({
             value={courseId ?? ""}
             onChange={(e) => {
               const v = e.target.value;
-              setCourseId(v ? Number(v) : undefined);
+              const nextCourseId = v ? Number(v) : undefined;
+              const courseChanged = nextCourseId !== courseId;
+              setCourseId(nextCourseId);
+              if (courseChanged) {
+                setSelectedMaterials([]);
+              }
               toast.success("Course selection saved");
             }}
             className={`${SELECT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}

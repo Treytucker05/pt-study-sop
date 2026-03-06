@@ -5,7 +5,7 @@ Architecture:
   - Base prompt: 3 universal rules (always-on, every session)
   - Block-level: facilitation_prompt from method blocks (injected per chain step)
   - Chain-level: progress context showing current position in study chain
-  - Context layers: instruction_context (SOP/RAG) + material_context (study materials)
+  - Context layers: tutor instructions/config + material_context (study materials)
 """
 
 from __future__ import annotations
@@ -131,19 +131,12 @@ def build_prompt_with_contexts(
     chain_info: Optional[dict] = None,
     course_id: Optional[int] = None,
     topic: Optional[str] = None,
-    instruction_context: Optional[str] = None,
     material_context: Optional[str] = None,
     graph_context: Optional[str] = None,
     course_map: str = "",
     vault_state: str = "",
 ) -> str:
     parts: list[str] = [_format_tier1(course_id, topic)]
-
-    if instruction_context and instruction_context.strip():
-        parts.append(
-            "## Additional Teaching Context (from SOP Library)\n"
-            + instruction_context
-        )
 
     block_section = _build_block_section(current_block)
     if block_section:

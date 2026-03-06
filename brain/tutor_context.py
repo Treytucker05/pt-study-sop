@@ -10,6 +10,24 @@ from typing import Any, Literal, Optional
 
 logger = logging.getLogger(__name__)
 
+
+def _material_source_label(source_path: Any) -> str:
+    raw = str(source_path or "").strip()
+    if not raw:
+        return ""
+    return Path(raw).name or raw
+
+
+def _ordered_unique_sources(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for item in items:
+        if not item or item in seen:
+            continue
+        seen.add(item)
+        ordered.append(item)
+    return ordered
+
 _COURSE_MAP_PATH = Path(__file__).parent / "data" / "vault_courses.yaml"
 _course_map_cache: Optional[str] = None
 
@@ -47,10 +65,12 @@ def _load_full_materials(
     total_chars = sum(len(r[2] or "") for r in rows)
 
     sections: list[str] = []
+    source_labels: list[str] = []
     for doc_id, source_path, content in rows:
         if not content:
             continue
-        filename = Path(source_path).name if source_path else f"Document {doc_id}"
+        filename = _material_source_label(source_path) or f"Document {doc_id}"
+        source_labels.append(filename)
         if total_chars <= budget:
             text = content
         else:
@@ -61,10 +81,16 @@ def _load_full_materials(
         sections.append(f"### {filename}\n\n{text}")
 
     if debug is not None:
-        debug["materials_mode"] = "full_content"
+        ordered_sources = _ordered_unique_sources(source_labels)
+        debug["mode"] = "full_content"
         debug["materials_count"] = len(rows)
         debug["materials_total_chars"] = total_chars
         debug["materials_truncated"] = total_chars > budget
+        debug["retrieved_chunks"] = len(rows)
+        debug["retrieved_unique_sources"] = len(ordered_sources)
+        debug["sources"] = ordered_sources[:20]
+        debug["top_source"] = ordered_sources[0] if ordered_sources else None
+        debug["top_source_share"] = round(1 / len(rows), 4) if rows else 0.0
 
     return "\n\n---\n\n".join(sections)
 
@@ -107,12 +133,11 @@ def build_context(
         k_materials: Number of material chunks to retrieve.
 
     Returns:
-        dict with keys: materials, instructions, notes, vault_state, course_map, debug
+        dict with keys: materials, notes, vault_state, course_map, debug
     """
     debug: dict[str, Any] = {"depth": depth}
     result: dict[str, Any] = {
         "materials": "",
-        "instructions": "",
         "notes": "",
         "vault_state": "",
         "course_map": _load_course_map(),
@@ -158,7 +183,7 @@ def _fetch_materials(
     if material_ids and len(material_ids) <= 10:
         try:
             full = _load_full_materials(
-                material_ids, debug=debug.setdefault("materials_debug", {})
+                material_ids, debug=debug.setdefault("materials", {})
             )
             if full:
                 return full
@@ -175,10 +200,36 @@ def _fetch_materials(
             material_ids=material_ids,
             collection_name=COLLECTION_MATERIALS,
             k=k,
-            debug=debug.setdefault("materials_debug", {}),
+            debug=debug.setdefault("materials", {}),
         )
         if not docs:
             return ""
+        material_debug = debug.setdefault("materials", {})
+        sources = _ordered_unique_sources(
+            [
+                _material_source_label(
+                    (
+                        getattr(d, "metadata", {}) or {}
+                    ).get("source")
+                    or (
+                        getattr(d, "metadata", {}) or {}
+                    ).get("source_path")
+                )
+                for d in docs
+            ]
+        )
+        material_debug.setdefault("mode", "vector_search")
+        material_debug["retrieved_chunks"] = int(
+            material_debug.get("final_chunks") or len(docs)
+        )
+        material_debug["retrieved_unique_sources"] = int(
+            material_debug.get("final_unique_docs") or len(sources)
+        )
+        material_debug["sources"] = sources[:20]
+        material_debug["top_source"] = material_debug.get("final_top_doc_source")
+        material_debug["top_source_share"] = float(
+            material_debug.get("final_top_doc_share") or 0.0
+        )
         return "\n\n---\n\n".join(
             getattr(d, "page_content", str(d)) for d in docs
         )

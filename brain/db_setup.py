@@ -515,6 +515,8 @@ def init_database():
             last_session_id INTEGER,
             last_session_date TEXT,
             next_action TEXT,
+            group_name TEXT,
+            managed_by_tutor INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT,
             FOREIGN KEY(course_id) REFERENCES courses(id),
@@ -738,6 +740,16 @@ def init_database():
         try:
             cursor.execute("ALTER TABLE learning_objectives ADD COLUMN group_name TEXT")
             print("[INFO] Added 'group_name' column to learning_objectives table")
+        except sqlite3.OperationalError:
+            pass
+    if "managed_by_tutor" not in lo_cols:
+        try:
+            cursor.execute(
+                "ALTER TABLE learning_objectives ADD COLUMN managed_by_tutor INTEGER NOT NULL DEFAULT 0"
+            )
+            print(
+                "[INFO] Added 'managed_by_tutor' column to learning_objectives table"
+            )
         except sqlite3.OperationalError:
             pass
 
@@ -1685,6 +1697,28 @@ def init_database():
     cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_tutor_sessions_status
         ON tutor_sessions(status)
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_session_learning_objectives (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tutor_session_id TEXT NOT NULL,
+            lo_id INTEGER NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(tutor_session_id, lo_id),
+            FOREIGN KEY(tutor_session_id) REFERENCES tutor_sessions(session_id),
+            FOREIGN KEY(lo_id) REFERENCES learning_objectives(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_session_lo_session
+        ON tutor_session_learning_objectives(tutor_session_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_session_lo_lo_id
+        ON tutor_session_learning_objectives(lo_id)
     """)
 
     # --- Migration to drop mode column if it still exists ---

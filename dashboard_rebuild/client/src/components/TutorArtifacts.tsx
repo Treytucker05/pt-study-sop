@@ -29,7 +29,6 @@ import {
   Check,
   X,
   Loader2,
-  Table2,
   Network,
   ExternalLink,
   BarChart3,
@@ -38,7 +37,7 @@ import { toast } from "sonner";
 import type { TutorSessionSummary, TutorSessionWrapSummary } from "@/lib/api";
 
 export interface TutorArtifact {
-  type: "note" | "card" | "map" | "table" | "structured_map";
+  type: "note" | "card" | "map" | "structured_notes";
   title: string;
   content: string;
   createdAt: string;
@@ -51,12 +50,15 @@ interface TutorArtifactsProps {
   turnCount: number;
   topic: string;
   startedAt: string | null;
-  onCreateArtifact: (artifact: { type: "note" | "card" | "map" | "table" | "structured_map"; content: string; title: string }) => void;
+  onCreateArtifact: (artifact: { type: "note" | "card" | "map" | "structured_notes"; content: string; title: string }) => void;
   isSessionCompleted?: boolean;
   recentSessions: TutorSessionSummary[];
   onResumeSession: (sessionId: string) => void;
   /** Delete selected artifact entries by index (persists to session). Called after API success. */
-  onDeleteArtifacts?: (sessionId: string, indexes: number[]) => Promise<void>;
+  onDeleteArtifacts?: (
+    sessionId: string,
+    indexes: number[]
+  ) => Promise<ArtifactDeleteResult | void>;
   onEndSession?: (sessionId: string) => Promise<void> | void;
   /** Clear active session UI state without calling the API (for bulk ops that already ended via API). */
   onClearActiveSession?: () => void;
@@ -72,23 +74,30 @@ interface BulkActionReport {
   requested: number;
   deleted: number;
   skipped: number;
+  requestId?: string;
+  skippedIndexes?: number[];
   failures: BulkDeleteFailureDetail[];
+}
+
+interface ArtifactDeleteResult {
+  request_id?: string;
+  requested_count?: number;
+  applied_count?: number;
+  skipped_indexes?: number[];
 }
 
 const ARTIFACT_ICONS: Record<string, typeof FileText> = {
   note: FileText,
   card: CreditCard,
   map: Map,
-  table: Table2,
-  structured_map: Network,
+  structured_notes: FileText,
 };
 
 const ARTIFACT_COLORS: Record<string, string> = {
   note: "text-blue-400",
   card: "text-yellow-400",
   map: "text-green-400",
-  table: "text-cyan-400",
-  structured_map: "text-purple-400",
+  structured_notes: "text-cyan-400",
 };
 
 const VISIBLE_SESSIONS_LIMIT = 8;
@@ -162,6 +171,10 @@ function ArtifactTable({ content }: { content: string }) {
       </table>
     </div>
   );
+}
+
+function isMarkdownTable(content: string): boolean {
+  return Boolean(parseMarkdownTable(content));
 }
 
 // ---------------------------------------------------------------------------
@@ -668,7 +681,23 @@ export function TutorArtifacts({
     const indexes = Array.from(selectedArtifactIndices).sort((a, b) => a - b);
     setDeletingArtifacts(true);
     try {
-      await onDeleteArtifacts(sessionId, indexes);
+      const result = await onDeleteArtifacts(sessionId, indexes);
+      if (result) {
+        const requested = result.requested_count ?? indexes.length;
+        const deleted = result.applied_count ?? indexes.length;
+        const skipped = Math.max(requested - deleted, 0);
+        if (result.request_id || skipped > 0) {
+          setBulkActionReport({
+            title: "Artifact delete completed",
+            requested,
+            deleted,
+            skipped,
+            requestId: result.request_id,
+            skippedIndexes: result.skipped_indexes,
+            failures: [],
+          });
+        }
+      }
       setSelectedArtifactIndices(new Set());
       toast.success(`${indexes.length} artifact${indexes.length > 1 ? "s" : ""} deleted`);
     } catch (err) {
@@ -908,6 +937,10 @@ export function TutorArtifacts({
             </div>
             <div className="font-terminal text-xs text-muted-foreground">
               Requested {bulkActionReport.requested} · Deleted {bulkActionReport.deleted} · Already gone {bulkActionReport.skipped} · Failed {bulkActionReport.failures.length}
+              {bulkActionReport.requestId ? ` · request_id ${bulkActionReport.requestId}` : ""}
+              {bulkActionReport.skippedIndexes && bulkActionReport.skippedIndexes.length > 0
+                ? ` · skipped indexes ${bulkActionReport.skippedIndexes.join(",")}`
+                : ""}
             </div>
             {bulkActionReport.failures.length > 0 && (
               <div className="font-terminal text-xs text-red-300 space-y-0.5 max-h-20 overflow-auto">
@@ -1018,7 +1051,22 @@ export function TutorArtifacts({
                           onClick={async (e) => {
                             e.stopPropagation();
                             try {
-                              await onDeleteArtifacts(sessionId, [i]);
+                              const result = await onDeleteArtifacts(sessionId, [i]);
+                              if (result) {
+                                const requested = result.requested_count ?? 1;
+                                const deleted = result.applied_count ?? 1;
+                                if (result.request_id || deleted < requested) {
+                                  setBulkActionReport({
+                                    title: "Artifact delete completed",
+                                    requested,
+                                    deleted,
+                                    skipped: Math.max(requested - deleted, 0),
+                                    requestId: result.request_id,
+                                    skippedIndexes: result.skipped_indexes,
+                                    failures: [],
+                                  });
+                                }
+                              }
                               toast.success("Artifact deleted");
                             } catch {
                               toast.error("Delete failed");
@@ -1029,9 +1077,9 @@ export function TutorArtifacts({
                         </Button>
                       )}
                     </div>
-                    {a.type === "table" && a.content ? (
+                    {a.type === "note" && a.content && isMarkdownTable(a.content) ? (
                       <ArtifactTable content={a.content} />
-                    ) : a.type === "structured_map" && a.content ? (
+                    ) : a.type === "map" && a.content && a.content.trimStart().startsWith("```mermaid") ? (
                       <ArtifactStructuredMap content={a.content} title={a.title || ""} />
                     ) : a.content ? (
                       <div className={`${TEXT_MUTED} mt-1 line-clamp-2`}>
@@ -1039,19 +1087,6 @@ export function TutorArtifacts({
                       </div>
                     ) : null}
                     {a.type === "map" && a.content && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className={`${BTN_OUTLINE} mt-1`}
-                        onClick={() => {
-                          localStorage.setItem("tutor-mermaid-import", a.content);
-                          window.location.href = "/brain";
-                        }}
-                      >
-                        <Map className={ICON_SM} /> Send to Brain
-                      </Button>
-                    )}
-                    {a.type === "structured_map" && a.content && a.content.trimStart().startsWith("```mermaid") && (
                       <Button
                         variant="outline"
                         size="sm"

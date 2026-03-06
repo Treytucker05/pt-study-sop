@@ -1,12 +1,11 @@
 import Layout from "@/components/layout";
 import { Card } from "@/components/ui/card";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
   Material,
   TutorAccuracyProfile,
-  TutorMode,
   TutorObjectiveScope,
   TutorSessionSummary,
   TutorTemplateChain,
@@ -14,6 +13,12 @@ import type {
   TutorConfigCheck,
 } from "@/lib/api";
 import { fetchCourseMap } from "@/lib/api";
+import {
+  normalizeTutorAccuracyProfile,
+  readTutorSelectedMaterialIds,
+  TUTOR_SELECTED_MATERIAL_IDS_KEY,
+  writeTutorSelectedMaterialIds,
+} from "@/lib/tutorClientState";
 import { COURSE_FOLDERS } from "@/config/courses";
 import { ContentFilter } from "@/components/ContentFilter";
 import { TutorWizard } from "@/components/TutorWizard";
@@ -68,11 +73,20 @@ function parseFacilitationSteps(prompt: string | undefined | null): string[] {
     .filter(Boolean);
 }
 
-function normalizeAccuracyProfile(value: unknown): TutorAccuracyProfile {
-  if (value === "strict" || value === "coverage" || value === "balanced") {
+function normalizeArtifactType(
+  value: unknown,
+): "note" | "card" | "map" | "structured_notes" | null {
+  if (value === "table") return "note";
+  if (value === "structured_map") return "map";
+  if (
+    value === "note" ||
+    value === "card" ||
+    value === "map" ||
+    value === "structured_notes"
+  ) {
     return value;
   }
-  return "strict";
+  return null;
 }
 
 function normalizeObjectiveScope(value: unknown): TutorObjectiveScope {
@@ -84,11 +98,12 @@ function normalizeObjectiveScope(value: unknown): TutorObjectiveScope {
 
 export default function Tutor() {
   const queryClient = useQueryClient();
-  const tutorMaterialStorageKey = "tutor.selected_material_ids.v2";
+  const tutorMaterialStorageKey = TUTOR_SELECTED_MATERIAL_IDS_KEY;
   const tutorAccuracyProfileKey = "tutor.accuracy_profile.v1";
   const tutorObjectiveScopeKey = "tutor.objective_scope.v1";
   const tutorWizardStorageKey = "tutor.wizard.state.v1";
   const tutorActiveSessionKey = "tutor.active_session.v1";
+  const tutorLibraryHandoffKey = "tutor.open_from_library.v1";
 
   // Session state
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -98,22 +113,14 @@ export default function Tutor() {
 
   // Filter state
   const [courseId, setCourseId] = useState<number | undefined>();
-  const [selectedMaterials, setSelectedMaterials] = useState<number[]>(() => {
-    try {
-      const saved = localStorage.getItem(tutorMaterialStorageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Validate: must be an array of numbers only
-        if (Array.isArray(parsed) && parsed.every((v) => typeof v === "number")) {
-          return parsed;
-        }
-      }
-    } catch { /* corrupted — fall through */ }
-    return [];
-  });
+  const [selectedMaterials, setSelectedMaterials] = useState<number[]>(() =>
+    readTutorSelectedMaterialIds()
+  );
   const [accuracyProfile, setAccuracyProfile] = useState<TutorAccuracyProfile>(() => {
     try {
-      return normalizeAccuracyProfile(localStorage.getItem(tutorAccuracyProfileKey));
+      return normalizeTutorAccuracyProfile(
+        localStorage.getItem(tutorAccuracyProfileKey)
+      );
     } catch {
       return "strict";
     }
@@ -178,9 +185,7 @@ export default function Tutor() {
   const [settingsSaving, setSettingsSaving] = useState(false);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(selectedMaterials));
-    } catch { /* ignore */ }
+    writeTutorSelectedMaterialIds(selectedMaterials);
   }, [tutorMaterialStorageKey, selectedMaterials]);
 
   useEffect(() => {
@@ -234,15 +239,6 @@ export default function Tutor() {
     objectiveScope,
     selectedPaths,
   ]);
-
-  // Clear material selection when course changes (skip initial mount)
-  const prevCourseRef = useRef(courseId);
-  useEffect(() => {
-    if (prevCourseRef.current !== courseId) {
-      prevCourseRef.current = courseId;
-      setSelectedMaterials([]);
-    }
-  }, [courseId]);
 
   const { data: chatMaterials = [] } = useQuery<Material[]>({
     queryKey: ["tutor-chat-materials-all-enabled"],
@@ -315,30 +311,37 @@ export default function Tutor() {
     );
     const materialIds = session.content_filter?.material_ids || [];
     setSelectedMaterials(materialIds);
-    try {
-      localStorage.setItem(
-        tutorMaterialStorageKey,
-        JSON.stringify(materialIds),
-      );
-    } catch { /* ignore */ }
-    setAccuracyProfile(normalizeAccuracyProfile(session.content_filter?.accuracy_profile));
+    writeTutorSelectedMaterialIds(materialIds);
+    setAccuracyProfile(
+      normalizeTutorAccuracyProfile(session.content_filter?.accuracy_profile)
+    );
     setObjectiveScope(normalizeObjectiveScope(session.content_filter?.objective_scope));
     if (session.artifacts_json) {
       try {
         const parsed = JSON.parse(session.artifacts_json);
         if (Array.isArray(parsed)) {
           setArtifacts(
-            parsed.map((a: { type: string; title: string; content?: string; created_at: string }) => ({
-              type: a.type as "note" | "card" | "map",
-              title: a.title,
-              content: a.content || "",
-              createdAt: a.created_at,
-            }))
+            parsed
+              .map((a: { type?: string; title?: string; content?: string; created_at?: string }) => {
+                const type = normalizeArtifactType(a.type);
+                if (!type) return null;
+                return {
+                  type,
+                  title: a.title || "",
+                  content: a.content || "",
+                  createdAt: a.created_at || new Date().toISOString(),
+                };
+              })
+              .filter((artifact): artifact is TutorArtifact => artifact !== null)
           );
+        } else {
+          setArtifacts([]);
         }
       } catch {
         setArtifacts([]);
       }
+    } else {
+      setArtifacts([]);
     }
     // Hydrate chat messages from server turns so navigation doesn't lose history
     if (session.turns && session.turns.length > 0) {
@@ -544,22 +547,29 @@ export default function Tutor() {
   const handleArtifactCreated = useCallback(
     async (artifact: { type: string; content: string; title?: string }) => {
       if (!activeSessionId) return;
+      const artifactType = normalizeArtifactType(artifact.type);
+      if (!artifactType) {
+        toast.error(`Unsupported artifact type: ${artifact.type}`);
+        return;
+      }
       try {
         const result = await api.tutor.createArtifact(activeSessionId, {
-          type: artifact.type as "note" | "card" | "map",
+          type: artifactType,
           content: artifact.content,
           title: artifact.title,
         });
         const newArtifact: TutorArtifact = {
-          type: artifact.type as "note" | "card" | "map",
-          title: artifact.title || `${artifact.type} #${artifacts.length + 1}`,
+          type: artifactType,
+          title: artifact.title || `${artifactType} #${artifacts.length + 1}`,
           content: artifact.content,
           createdAt: new Date().toISOString(),
           cardId: result.card_id,
         };
         setArtifacts((prev) => [...prev, newArtifact]);
         setShowArtifacts(true);
-        toast.success(`${artifact.type.charAt(0).toUpperCase() + artifact.type.slice(1)} created`);
+        toast.success(
+          `${artifactType.charAt(0).toUpperCase() + artifactType.slice(1)} created`
+        );
       } catch (err) {
         toast.error(`Failed to create artifact: ${err instanceof Error ? err.message : "Unknown"}`);
       }
@@ -626,11 +636,13 @@ export default function Tutor() {
 
   const handleDeleteArtifacts = useCallback(
     async (sid: string, indexes: number[]) => {
-      await api.tutor.deleteArtifacts(sid, indexes);
+      const result = await api.tutor.deleteArtifacts(sid, indexes);
+      const skippedIndexes = new Set(result.skipped_indexes || []);
+      const deletedIndexes = indexes.filter((index) => !skippedIndexes.has(index));
       // Only update local artifacts state if deleting from the active session
       if (sid === activeSessionId) {
         setArtifacts((prev) => {
-          const sorted = [...indexes].sort((a, b) => b - a);
+          const sorted = [...deletedIndexes].sort((a, b) => b - a);
           const next = [...prev];
           for (const i of sorted) {
             if (i >= 0 && i < next.length) next.splice(i, 1);
@@ -640,6 +652,7 @@ export default function Tutor() {
       }
       // Refresh session list so old session artifact counts update
       queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
+      return result;
     },
     [activeSessionId, queryClient]
   );
@@ -664,6 +677,15 @@ export default function Tutor() {
     const restore = async () => {
       let resumed = false;
       let restoredCourseId = false;
+      let fromLibraryHandoff = false;
+      try {
+        fromLibraryHandoff = sessionStorage.getItem(tutorLibraryHandoffKey) === "1";
+        if (fromLibraryHandoff) {
+          sessionStorage.removeItem(tutorLibraryHandoffKey);
+        }
+      } catch {
+        /* sessionStorage unavailable — ignore */
+      }
       try {
         const savedSessionId = localStorage.getItem(tutorActiveSessionKey);
         if (savedSessionId) {
@@ -690,23 +712,39 @@ export default function Tutor() {
       }
       setShowSetup(true);
 
+      if (fromLibraryHandoff) {
+        const canonicalMaterialSelection = readTutorSelectedMaterialIds();
+        if (canonicalMaterialSelection.length > 0) {
+          setSelectedMaterials(canonicalMaterialSelection);
+        }
+        return;
+      }
+
       try {
         const saved = localStorage.getItem(tutorWizardStorageKey);
         if (saved) {
           const parsed = JSON.parse(saved);
+          const hasCanonicalMaterialSelection =
+            localStorage.getItem(tutorMaterialStorageKey) !== null;
+          const canonicalMaterialSelection = readTutorSelectedMaterialIds();
+          const wizardSelectedMaterials = Array.isArray(parsed?.selectedMaterials)
+            ? parsed.selectedMaterials.filter((v: unknown) => typeof v === "number")
+            : null;
           if (typeof parsed?.courseId === "number") {
             setCourseId(parsed.courseId);
             restoredCourseId = true;
           }
           if (typeof parsed?.topic === "string") setTopic(parsed.topic);
-          if (Array.isArray(parsed?.selectedMaterials)) {
-            setSelectedMaterials(parsed.selectedMaterials.filter((v: unknown) => typeof v === "number"));
+          if (hasCanonicalMaterialSelection) {
+            setSelectedMaterials(canonicalMaterialSelection);
+          } else if (wizardSelectedMaterials) {
+            setSelectedMaterials(wizardSelectedMaterials);
           }
           if (typeof parsed?.chainId === "number") setChainId(parsed.chainId);
           if (Array.isArray(parsed?.customBlockIds)) {
             setCustomBlockIds(parsed.customBlockIds.filter((v: unknown) => typeof v === "number"));
           }
-          setAccuracyProfile(normalizeAccuracyProfile(parsed?.accuracyProfile));
+          setAccuracyProfile(normalizeTutorAccuracyProfile(parsed?.accuracyProfile));
           setObjectiveScope(normalizeObjectiveScope(parsed?.objectiveScope));
           if (Array.isArray(parsed?.selectedPaths)) {
             setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
@@ -735,32 +773,25 @@ export default function Tutor() {
     tutorAccuracyProfileKey,
     tutorObjectiveScopeKey,
     tutorActiveSessionKey,
+    tutorLibraryHandoffKey,
     tutorWizardStorageKey,
   ]);
 
   const toggleMaterial = useCallback((id: number) => {
     setSelectedMaterials((prev) => {
       const next = prev.includes(id) ? prev.filter((mid) => mid !== id) : [...prev, id];
-      try {
-        localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(next));
-      } catch { /* ignore */ }
-      return next;
+      return writeTutorSelectedMaterialIds(next);
     });
   }, [tutorMaterialStorageKey]);
 
   const selectAllMaterials = useCallback(() => {
     const allIds = chatMaterials.map((m) => m.id);
-    setSelectedMaterials(allIds);
-    try {
-      localStorage.setItem(tutorMaterialStorageKey, JSON.stringify(allIds));
-    } catch { /* ignore */ }
+    setSelectedMaterials(writeTutorSelectedMaterialIds(allIds));
   }, [chatMaterials, tutorMaterialStorageKey]);
 
   const clearMaterialSelection = useCallback(() => {
     setSelectedMaterials([]);
-    try {
-      localStorage.setItem(tutorMaterialStorageKey, JSON.stringify([]));
-    } catch { /* ignore */ }
+    writeTutorSelectedMaterialIds([]);
   }, [tutorMaterialStorageKey]);
 
   const getFileName = (path: string) => {

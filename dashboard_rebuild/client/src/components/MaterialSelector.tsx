@@ -82,8 +82,6 @@ export function MaterialSelector({
 
   // Server returns filtered materials when courseId is provided
   const courseMaterials = useMemo(() => materials, [materials]);
-  const otherMaterials = useMemo(() => [], [materials]);
-  const [showOther, setShowOther] = useState(false);
 
   // Checksums that appear on more than one material
   const dupeChecksums = useMemo(() => {
@@ -428,7 +426,7 @@ export function MaterialSelector({
     );
   }
 
-  if (courseMaterials.length === 0 && otherMaterials.length === 0) {
+  if (courseMaterials.length === 0) {
     return (
       <div className="space-y-2">
         {uploadZone}
@@ -625,19 +623,6 @@ export function MaterialSelector({
         </div>
       ) : null}
 
-      {/* Other materials (collapsed by default) */}
-      {otherMaterials.length > 0 && (
-        <details open={showOther} onToggle={(e) => setShowOther((e.target as HTMLDetailsElement).open)}>
-          <summary className={`${TEXT_BODY} px-1 py-0.5 text-muted-foreground hover:text-foreground cursor-pointer border-t border-muted-foreground/10 mt-1 pt-1`}>
-            <span className="font-terminal text-xs">
-              Other materials ({otherMaterials.length})
-            </span>
-          </summary>
-          <div className="mt-0.5">
-            {otherMaterials.map(renderRow)}
-          </div>
-        </details>
-      )}
     </div>
   );
 }

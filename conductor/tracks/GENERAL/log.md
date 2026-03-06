@@ -2,6 +2,46 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-05 - Tutor Audit Hardening kickoff
+
+- Created new Conductor bug track `tutor-audit-hardening_20260305` with:
+  - `spec.md`
+  - `plan.md`
+  - `metadata.json`
+  - `index.md`
+- Registered track as the active workstream in `conductor/tracks.md`.
+- Added `Tutor Audit Hardening` subsection to `docs/root/TUTOR_TODO.md` `Current Sprint` and claimed docs/process, backend/runtime, frontend/UI, and integration/review scopes.
+
+---
+
+## 2026-03-06 - Tutor Audit Hardening completion
+
+- Closed track `tutor-audit-hardening_20260305` after shipping the full remediation set:
+  - safe tutor-owned learning-objective ownership/link tracking and delete garbage-collection
+  - dead instruction-retrieval plumbing removal
+  - truthful retrieval-debug/runtime telemetry
+  - Library -> Tutor material handoff unification on `tutor.selected_material_ids.v2`
+  - `structured_notes` restore support
+  - partial artifact-delete reporting in Tutor UI
+  - malformed Tutor SSE chunk hardening with visible retry guidance
+  - dead `otherMaterials` removal and legacy `"standard"` accuracy-profile alias normalization
+- Added/updated regression coverage across backend and frontend tutor flows, including:
+  - shared/manual learning-objective survival
+  - Tutor material-key migration and Library handoff
+  - `structured_notes` hydration
+  - malformed SSE with and without `[DONE]`
+- Verification:
+  - `npx vitest run client/src/pages/__tests__/library.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorArtifacts.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/lib/__tests__/tutorClientState.test.ts` -> PASS (`19 passed`)
+  - `npm run build` -> PASS
+  - `pytest -q brain/tests/test_tutor_audit_remediation.py brain/tests/test_tutor_context.py brain/tests/test_tutor_context_wiring.py brain/tests/test_tutor_session_linking.py` -> PASS (`50 passed`)
+  - `pytest -q brain/tests/` -> PASS (`925 passed, 1 skipped`)
+  - Live smoke:
+    - Library selected materials persisted into Tutor and Tutor opened on step `1. COURSE`
+    - Bulk session delete showed the active-session warning and returned cleanly to Wizard without overlay deadlock
+    - Forced partial bulk delete rendered the in-panel report with `Requested 2 · Deleted 1 · Already gone 1 · Failed 0`
+    - Real artifact bulk delete removed two persisted artifacts and rendered `Artifact delete completed` with request id and zero skips/failures
+  - Final code-review subagent pass: `No findings`
+
 ---
 
 ## 2026-03-05 - Library Sync folder tree selection + class assignment
@@ -1408,6 +1448,18 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 
 - Updated API typing contracts in `dashboard_rebuild/client/src/api.ts` for richer delete responses.
 - Updated user troubleshooting guide in `docs/root/GUIDE_USER.md` for new delete report semantics.
+
+## 2026-03-06 — Obsidian CLI argv quoting hotfix
+
+- Fixed `brain/obsidian_vault.py` so `subprocess.run([...])` passes raw argv values like `vault=Treys School` and `path=...` instead of shell-quoted strings like `vault="Treys School"`.
+- This specifically hardens Windows Obsidian delete/read/save flows that were spawning `obsidian.exe` with literal quote characters in argv and surfacing repeated main-process `EPIPE: broken pipe, write` popups.
+- Updated `brain/tests/test_obsidian_vault.py` to lock in the new argv shape and prevent regression.
+- Verification:
+  - `pytest brain/tests/test_obsidian_vault.py -q` -> `42 passed`
+  - `pytest brain/tests/` -> `918 passed, 2 failed, 1 skipped`
+    - unrelated existing failures:
+      - `brain/tests/test_path_generation.py::test_get_course_map_has_vault_root`
+      - `brain/tests/test_tutor_session_linking.py::test_send_turn_done_payload_includes_retrieval_debug`
 
 ## 2026-03-04 — Scholar/Tutor contract alignment + lifecycle hardening
 

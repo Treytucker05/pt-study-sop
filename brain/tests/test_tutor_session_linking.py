@@ -548,10 +548,23 @@ def test_send_turn_includes_selected_material_scope_in_prompt(client, monkeypatc
         "build_context",
         lambda *_a, **_k: {
             "materials": "",
-            "instructions": "",
             "notes": "",
             "course_map": "",
-            "debug": {},
+            "debug": {
+                "materials": {
+                    "mode": "vector_search",
+                    "retrieved_chunks": 4,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["gamma.md", "delta.md"],
+                    "top_source": "gamma.md",
+                    "top_source_share": 0.5,
+                    "candidate_pool_similarity": 12,
+                    "candidate_pool_mmr": 6,
+                    "candidate_pool_merged": 14,
+                    "candidate_pool_after_cap": 10,
+                    "candidate_pool_dropped_by_cap": 4,
+                }
+            },
         },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
@@ -620,10 +633,23 @@ def test_send_turn_material_count_question_uses_selected_scope(client, monkeypat
         "build_context",
         lambda *_a, **_k: {
             "materials": "",
-            "instructions": "",
             "notes": "",
             "course_map": "",
-            "debug": {},
+            "debug": {
+                "materials": {
+                    "mode": "vector_search",
+                    "retrieved_chunks": 4,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["gamma.md", "delta.md"],
+                    "top_source": "gamma.md",
+                    "top_source_share": 0.5,
+                    "candidate_pool_similarity": 12,
+                    "candidate_pool_mmr": 6,
+                    "candidate_pool_merged": 14,
+                    "candidate_pool_after_cap": 10,
+                    "candidate_pool_dropped_by_cap": 4,
+                }
+            },
         },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
@@ -660,7 +686,21 @@ def test_send_turn_material_count_question_uses_selected_scope(client, monkeypat
 def test_send_turn_selected_scope_listing_question_uses_selected_scope(
     client, monkeypatch
 ):
-    selected_ids = [951, 952]
+    selected_ids = [953, 954]
+    conn = sqlite3.connect(config.DB_PATH)
+    cur = conn.cursor()
+    cur.executemany(
+        """INSERT INTO rag_docs
+           (id, title, source_path, content, corpus, enabled, created_at, updated_at)
+           VALUES (?, ?, ?, ?, 'materials', 1, datetime('now'), datetime('now'))""",
+        [
+            (selected_ids[0], "Gamma Notes", "C:/materials/gamma.md", "gamma content"),
+            (selected_ids[1], "Delta Notes", "C:/materials/delta.md", "delta content"),
+        ],
+    )
+    conn.commit()
+    conn.close()
+
     resp = client.post(
         "/api/tutor/session",
         json={
@@ -677,10 +717,23 @@ def test_send_turn_selected_scope_listing_question_uses_selected_scope(
         "build_context",
         lambda *_a, **_k: {
             "materials": "",
-            "instructions": "",
             "notes": "",
             "course_map": "",
-            "debug": {},
+            "debug": {
+                "materials": {
+                    "mode": "vector_search",
+                    "retrieved_chunks": 4,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["gamma.md", "delta.md"],
+                    "top_source": "gamma.md",
+                    "top_source_share": 0.5,
+                    "candidate_pool_similarity": 12,
+                    "candidate_pool_mmr": 6,
+                    "candidate_pool_merged": 14,
+                    "candidate_pool_after_cap": 10,
+                    "candidate_pool_dropped_by_cap": 4,
+                }
+            },
         },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
@@ -881,10 +934,23 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
         "build_context",
         lambda *_a, **_k: {
             "materials": "",
-            "instructions": "",
             "notes": "",
             "course_map": "",
-            "debug": {},
+            "debug": {
+                "materials": {
+                    "mode": "vector_search",
+                    "retrieved_chunks": 4,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["gamma.md", "delta.md"],
+                    "top_source": "gamma.md",
+                    "top_source_share": 0.5,
+                    "candidate_pool_similarity": 12,
+                    "candidate_pool_mmr": 6,
+                    "candidate_pool_merged": 14,
+                    "candidate_pool_after_cap": 10,
+                    "candidate_pool_dropped_by_cap": 4,
+                }
+            },
         },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
@@ -916,10 +982,10 @@ def test_send_turn_done_payload_includes_retrieval_debug(client, monkeypatch):
     assert debug["material_ids_count"] == 2
     assert debug["selected_material_count"] == 2
     assert debug["material_k"] == 10
-    assert debug["retrieved_material_chunks"] == 0
-    assert debug["retrieved_material_unique_sources"] == 0
-    assert debug["retrieved_instruction_chunks"] == 0
-    assert debug["retrieved_instruction_unique_sources"] == 0
+    assert debug["material_retrieval_mode"] == "vector_search"
+    assert debug["retrieved_material_chunks"] == 4
+    assert debug["retrieved_material_unique_sources"] == 2
+    assert debug["retrieved_material_sources"] == ["gamma.md", "delta.md"]
     assert debug["citations_total"] >= 1
     assert debug["citations_unique_sources"] >= 1
     assert debug["accuracy_profile"] == "strict"
@@ -949,10 +1015,18 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(
         "build_context",
         lambda *_a, **_k: {
             "materials": "",
-            "instructions": "",
             "notes": "",
             "course_map": "",
-            "debug": {},
+            "debug": {
+                "materials": {
+                    "mode": "full_content",
+                    "retrieved_chunks": 2,
+                    "retrieved_unique_sources": 2,
+                    "sources": ["alpha.pdf", "beta.pdf"],
+                    "top_source": "alpha.pdf",
+                    "top_source_share": 0.5,
+                }
+            },
         },
     )
     monkeypatch.setattr(tutor_tools, "get_tool_schemas", lambda: [])
@@ -977,8 +1051,9 @@ def test_material_count_shortcut_done_payload_includes_retrieval_debug(
     assert debug["material_ids_provided"] is True
     assert debug["material_ids_count"] == 2
     assert debug["selected_material_count"] == 2
-    assert debug["retrieved_material_chunks"] == 0
-    assert debug["retrieved_material_unique_sources"] == 0
+    assert debug["material_retrieval_mode"] == "full_content"
+    assert debug["retrieved_material_chunks"] == 2
+    assert debug["retrieved_material_unique_sources"] == 2
     assert debug["citations_total"] == 0
     assert debug["citations_unique_sources"] == 0
     assert debug["accuracy_profile"] == "strict"

@@ -1535,7 +1535,7 @@ export interface TutorSessionEndResult {
 }
 
 export interface TutorArtifactRequest {
-  type: "note" | "card" | "map";
+  type: "note" | "card" | "map" | "structured_notes";
   content: string;
   title?: string;
   front?: string;
@@ -1847,14 +1847,12 @@ export interface TutorRetrievalDebug {
   selected_material_count?: number;
   material_k?: number;
   retrieval_course_id?: number | null;
+  material_retrieval_mode?: "full_content" | "vector_search" | string;
   retrieved_material_chunks?: number;
   retrieved_material_unique_sources?: number;
   retrieved_material_sources?: string[];
   material_top_source?: string | null;
   material_top_source_share?: number;
-  retrieved_instruction_chunks?: number;
-  retrieved_instruction_unique_sources?: number;
-  retrieved_instruction_sources?: string[];
   citations_total?: number;
   citations_unique_sources?: number;
   citation_sources?: string[];

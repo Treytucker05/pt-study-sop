@@ -19,7 +19,6 @@ def test_build_context_returns_dict_with_required_keys():
 
     assert isinstance(result, dict)
     assert "materials" in result
-    assert "instructions" in result
     assert "notes" in result
     assert "course_map" in result
     assert "debug" in result
@@ -36,7 +35,6 @@ def test_build_context_depth_none_skips_all_retrieval():
 
     assert result["materials"] == ""
     assert result["notes"] == ""
-    assert result["instructions"] == ""
     # course_map is always-on even with depth=none
     assert isinstance(result["course_map"], str)
     assert result["course_map"] != ""

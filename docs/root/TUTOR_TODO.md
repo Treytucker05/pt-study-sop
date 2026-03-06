@@ -17,6 +17,47 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-02-23
 
+### Sprint 6: Tutor Audit Hardening (2026-03-05)
+- [x] Claim scope: docs/process
+  - Track planning artifacts and status/log updates.
+- [x] Claim scope: backend/runtime
+  - `brain/db_setup.py`
+  - `brain/dashboard/api_tutor.py`
+  - `brain/tutor_context.py`
+  - `brain/tests/`
+- [x] Claim scope: frontend/UI
+  - `dashboard_rebuild/client/src/pages/library.tsx`
+  - `dashboard_rebuild/client/src/pages/tutor.tsx`
+  - `dashboard_rebuild/client/src/components/TutorWizard.tsx`
+  - `dashboard_rebuild/client/src/components/TutorArtifacts.tsx`
+  - `dashboard_rebuild/client/src/components/TutorChat.tsx`
+  - `dashboard_rebuild/client/src/components/MaterialSelector.tsx`
+  - `dashboard_rebuild/client/src/api.ts`
+  - `dashboard_rebuild/client/src/lib/tutorClientState.ts`
+- [x] Claim scope: integration/review
+  - `conductor/tracks.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `docs/root/TUTOR_TODO.md`
+- [x] Phase 0: create `conductor/tracks/tutor-audit-hardening_20260305` with spec/plan/metadata/index.
+- [x] Phase 1: add objective ownership/linking safe-delete safeguards.
+- [x] Phase 2: remove dead instruction retrieval plumbing and align runtime/debug telemetry.
+- [x] Phase 3: fix Tutor/Library material key migration (`v1` -> `v2`) and `structured_notes` restore behavior.
+- [x] Phase 4: harden Tutor SSE parsing and partial delete reporting UX.
+- [x] Phase 4a: harden Obsidian CLI argv encoding for vault/file/path args to prevent Windows `EPIPE` popup loops during tutor delete/read/save flows. (2026-03-06, `pytest brain/tests/test_obsidian_vault.py -q`)
+- [x] Phase 5: integration/review close-out complete. (2026-03-06)
+  - Validation:
+    - `npx vitest run client/src/pages/__tests__/library.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorArtifacts.test.tsx client/src/components/__tests__/TutorChat.test.tsx client/src/lib/__tests__/tutorClientState.test.ts`
+    - `npm run build`
+    - `pytest -q brain/tests/test_tutor_audit_remediation.py brain/tests/test_tutor_context.py brain/tests/test_tutor_context_wiring.py brain/tests/test_tutor_session_linking.py`
+    - `pytest -q brain/tests/` -> `925 passed, 1 skipped`
+  - Live smoke:
+    - Library -> Tutor handoff preserved selected materials and opened on step `1. COURSE`.
+    - Bulk session delete warned on active-session selection, returned cleanly to Wizard, and did not deadlock the overlay.
+    - Forced partial bulk delete showed the in-panel report with `Requested 2 · Deleted 1 · Already gone 1 · Failed 0`.
+    - Real artifact bulk delete removed two persisted artifacts and showed the completion report with request id.
+  - Review:
+    - final code-review subagent pass returned `No findings`.
+
 ### Sprint 1: Finish PRIME Hardening (Priority)
 - [x] A1. Build PRIME policy table for all 9 methods.
   - For each method: intent, allowed outputs, blocked behaviors, allowed transitions

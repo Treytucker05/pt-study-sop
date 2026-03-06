@@ -33,6 +33,21 @@ function makeSseResponse(chunks: Array<Record<string, unknown>>): Response {
   });
 }
 
+function makeRawSseResponse(payload: string): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(payload));
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: { "Content-Type": "text/event-stream" },
+  });
+}
+
 /**
  * Mock fetch so every call gets a FRESH Response:
  *  - /turn  → SSE stream
@@ -179,5 +194,102 @@ describe("TutorChat", () => {
       expect(body.content_filter.accuracy_profile).toBe("strict");
       expect(body.content_filter.material_ids).toEqual([11, 12]);
     });
+  });
+
+  it("surfaces a retryable error when the stream ends with malformed chunks", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : (input as Request).url;
+
+      if (url.includes("/turn")) {
+        return makeRawSseResponse(
+          'data: {"type":"token","content":"Partial"}\n' +
+            "data: {bad json}\n",
+        );
+      }
+
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    render(
+      <TutorChat
+        sessionId="sess-4"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Explain the gait cycle" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    expect(
+      await screen.findByText(/Some stream chunks were malformed/i),
+    ).toBeInTheDocument();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("surfaces a retryable error when malformed chunks are followed by DONE", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : (input as Request).url;
+
+      if (url.includes("/turn")) {
+        return makeRawSseResponse(
+          'data: {"type":"token","content":"Partial"}\n' +
+            "data: {bad json}\n" +
+            "data: [DONE]\n",
+        );
+      }
+
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    render(
+      <TutorChat
+        sessionId="sess-5"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Explain the gait cycle" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    expect(
+      await screen.findByText(/Some stream chunks were malformed/i),
+    ).toBeInTheDocument();
+    expect(warnSpy).toHaveBeenCalled();
   });
 });

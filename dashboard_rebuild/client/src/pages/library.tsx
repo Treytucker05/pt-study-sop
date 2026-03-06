@@ -2,6 +2,10 @@ import Layout from "@/components/layout";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import {
+  readTutorSelectedMaterialIds,
+  writeTutorSelectedMaterialIds,
+} from "@/lib/tutorClientState";
 import type {
   Material,
   MaterialContent,
@@ -11,7 +15,7 @@ import type {
   TutorSyncPreviewResult,
 } from "@/lib/api";
 import type { Course } from "@shared/schema";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import {
   TEXT_PAGE_TITLE,
   TEXT_PANEL_TITLE,
@@ -461,6 +465,7 @@ function renderMaterialRow(
 }
 
 export default function Library() {
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -484,16 +489,9 @@ export default function Library() {
   const [sidebarMode, setSidebarMode] = useState<"folders" | "courses">("folders");
   const [selectedCourseId, setSelectedCourseId] = useState<number | "unlinked" | null>(null);
   const [viewingMaterialId, setViewingMaterialId] = useState<number | null>(null);
-  const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() => {
-    try {
-      const saved = localStorage.getItem("tutor.selected_material_ids.v1");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed.filter((v) => typeof v === "number");
-      }
-    } catch { /* ignore */ }
-    return [];
-  });
+  const [selectedForTutor, setSelectedForTutor] = useState<number[]>(() =>
+    readTutorSelectedMaterialIds()
+  );
 
   const { data: materials = [], isLoading } = useQuery<Material[]>({
     queryKey: ["tutor-materials"],
@@ -600,10 +598,23 @@ export default function Library() {
     syncPreviewFiles.every((path) => selectedSyncFiles.has(path));
 
   useEffect(() => {
-    try {
-      localStorage.setItem("tutor.selected_material_ids.v1", JSON.stringify(selectedForTutor));
-    } catch { /* ignore */ }
+    writeTutorSelectedMaterialIds(selectedForTutor);
   }, [selectedForTutor]);
+
+  const handleOpenTutor = () => {
+    writeTutorSelectedMaterialIds(selectedForTutor);
+    try {
+      localStorage.removeItem("tutor.wizard.progress.v1");
+    } catch {
+      /* localStorage unavailable — ignore */
+    }
+    try {
+      sessionStorage.setItem("tutor.open_from_library.v1", "1");
+    } catch {
+      /* sessionStorage unavailable — ignore */
+    }
+    setLocation("/tutor");
+  };
 
   useEffect(() => {
     if (isLoading) return;
@@ -1523,15 +1534,14 @@ export default function Library() {
                         LINK IN VIEW
                       </Button>
                     </div>
-                    <Link href="/tutor">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-none h-7 px-3 font-terminal text-xs"
-                      >
-                        OPEN TUTOR
-                      </Button>
-                    </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-none h-7 px-3 font-terminal text-xs"
+                      onClick={handleOpenTutor}
+                    >
+                      OPEN TUTOR
+                    </Button>
                   </div>
                 </div>
 

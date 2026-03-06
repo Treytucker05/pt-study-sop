@@ -85,7 +85,7 @@ interface TutorChatProps {
   initialTurns?: { question: string; answer: string | null }[];
 }
 
-type ArtifactType = "note" | "card" | "map" | "table" | "structured_map";
+type ArtifactType = "note" | "card" | "map";
 type SourceTab = "materials" | "vault" | "north_star";
 
 interface NorthStarSummary {
@@ -96,6 +96,15 @@ interface NorthStarSummary {
   subtopic_name?: string;
   objective_ids?: string[];
   reference_targets?: string[];
+}
+
+function normalizeArtifactType(rawType: string | undefined): ArtifactType | null {
+  if (rawType === "table") return "note";
+  if (rawType === "structured_map") return "map";
+  if (rawType === "note" || rawType === "card" || rawType === "map") {
+    return rawType;
+  }
+  return null;
 }
 
 interface VaultEditorState {
@@ -298,13 +307,13 @@ function parseArtifactCommand(message: string): { type: ArtifactType | null; tit
   }
   if (/^\/table\b/i.test(trimmed)) {
     return {
-      type: "table",
+      type: "note",
       title: trimmed.replace(/^\/table\s*/i, "").trim(),
     };
   }
   if (/^\/(structured[_-]?map|smap)\b/i.test(trimmed)) {
     return {
-      type: "structured_map",
+      type: "map",
       title: trimmed.replace(/^\/(structured[_-]?map|smap)\s*/i, "").trim(),
     };
   }
@@ -947,8 +956,10 @@ export function TutorChat({
       let verdictData: TutorVerdict | undefined;
       let teachBackData: TeachBackRubric | undefined;
       let masteryUpdateData: { skill_id: string; new_mastery: number; correct: boolean } | undefined;
+      let parseErrorCount = 0;
       let streamErrored = false;
       let doneSignal = false;
+      let sawDoneChunk = false;
       const toolActions: ToolAction[] = [];
 
       while (!doneSignal) {
@@ -972,6 +983,7 @@ export function TutorChat({
           const data = line.slice(6);
           if (data === "[DONE]") {
             doneSignal = true;
+            sawDoneChunk = true;
             break;
           }
 
@@ -1078,15 +1090,48 @@ export function TutorChat({
               // Backend detected natural language artifact command
               if (parsed.artifacts?.length) {
                 const cmd = parsed.artifacts[0] as { type?: string; raw?: string };
-                if (cmd.type && !command.type) {
-                  serverArtifactCmd = cmd;
+                const normalizedType = normalizeArtifactType(cmd.type);
+                if (normalizedType && !command.type) {
+                  serverArtifactCmd = {
+                    ...cmd,
+                    type: normalizedType,
+                  };
                 }
               }
             }
           } catch {
-            /* skip malformed */
+            parseErrorCount += 1;
+            console.warn("Tutor SSE parse failed", { data });
           }
         }
+      }
+
+      if (!streamErrored && parseErrorCount > 0) {
+        streamErrored = true;
+        setMessages((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (!last || last.role !== "assistant") return prev;
+          updated[updated.length - 1] = {
+            ...last,
+            content: `${last.content}\n\nSome stream chunks were malformed and could not be parsed. Retry this request if the answer is incomplete.`,
+            isStreaming: false,
+          };
+          return updated;
+        });
+      } else if (!streamErrored && !sawDoneChunk) {
+        streamErrored = true;
+        setMessages((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (!last || last.role !== "assistant") return prev;
+          updated[updated.length - 1] = {
+            ...last,
+            content: `${last.content}\n\nThe response stream ended before completion. Retry this request.`,
+            isStreaming: false,
+          };
+          return updated;
+        });
       }
 
       if (streamErrored) {
@@ -1122,10 +1167,7 @@ export function TutorChat({
           content: fullText,
           title: command.title || fallbackTitle,
         });
-      } else if (
-        serverArtifactCmd?.type &&
-        ["note", "card", "map", "table", "structured_map"].includes(serverArtifactCmd.type)
-      ) {
+      } else if (serverArtifactCmd?.type) {
         // Backend detected natural language artifact command
         onArtifactCreated({
           type: serverArtifactCmd.type,
@@ -1133,11 +1175,11 @@ export function TutorChat({
           title: userMessage.slice(0, 80).trim(),
         });
       } else {
-        // Auto-detect tables and structured maps in the response
+        // Auto-detect tables and mermaid maps in the response
         const detectedTable = detectMarkdownTable(fullText);
         if (detectedTable) {
           onArtifactCreated({
-            type: "table",
+            type: "note",
             content: detectedTable,
             title: `Table from turn`,
           });
@@ -1145,7 +1187,7 @@ export function TutorChat({
         const detectedMermaid = detectMermaidBlock(fullText);
         if (detectedMermaid) {
           onArtifactCreated({
-            type: "structured_map",
+            type: "map",
             content: "```mermaid\n" + detectedMermaid + "\n```",
             title: `Structured map from turn`,
           });
@@ -1381,7 +1423,7 @@ export function TutorChat({
                           const table = detectMarkdownTable(msg.content);
                           if (table) {
                             onArtifactCreated({
-                              type: "table",
+                              type: "note",
                               content: table,
                               title: `Table ${i}`,
                             });
@@ -1398,7 +1440,7 @@ export function TutorChat({
                           const mermaid = detectMermaidBlock(msg.content);
                           if (mermaid) {
                             onArtifactCreated({
-                              type: "structured_map",
+                              type: "map",
                               content: "```mermaid\n" + mermaid + "\n```",
                               title: `Structured map ${i}`,
                             });
