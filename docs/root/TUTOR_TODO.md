@@ -33,6 +33,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - root `AGENTS.md` trimmed from 442 lines to 127 lines
     - `docs/root/AGENT_GUARDRAILS.md` created to preserve moved learnings and troubleshooting detail
     - linked canonical docs verified to exist
+  - Closing commit: `f4c63ded`
 
 ### Sprint 9: Agent Canon Follow-Up (2026-03-06)
 - [x] Claim scope: global Claude agent cleanup

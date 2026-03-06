@@ -45,6 +45,7 @@
 ## Close-Out Notes
 
 - Completed on 2026-03-06.
+- Closing commit: `f4c63ded`
 - Root `AGENTS.md` now acts as startup canon only.
 - Incident history, troubleshooting, and detailed implementation guardrails live in `docs/root/AGENT_GUARDRAILS.md`.
 

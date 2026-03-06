@@ -25,6 +25,11 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - `docs/root/AGENT_GUARDRAILS.md` created to preserve moved detail
   - linked canonical docs verified to exist
   - `git diff --check` passed for the touched docs
+- Review:
+  - final review subagent timed out and was interrupted
+  - manual validation and doc-link review found no correctness issues in the trimmed canon
+- Closing commit:
+  - `f4c63ded` — `docs(agents): trim root canon and extract guardrails`
 
 ---
 
