@@ -6,7 +6,12 @@ Update policy: after every significant change, update this file (and the active 
 
 Active status: no active tracks on 2026-03-06.
 
-Latest update: 2026-03-06 closed Skills Hygiene after documenting the shared skill architecture, grouping the skill library, and removing broken Cursor junctions.
+Latest update: 2026-03-06 closed Skills Catalog Review after creating `docs/root/SKILLS_CATALOG.md` and seeding the planning category for one-by-one review.
+
+- [x] **Track: Skills Catalog Review** (complete — created 2026-03-06; closed 2026-03-06; scope: full skill catalog, decision fields, seeded planning review)
+  *Link: [./tracks/skills-catalog-review_20260306/](./tracks/skills-catalog-review_20260306/)*
+
+---
 
 - [x] **Track: Skills Hygiene** (complete — created 2026-03-06; closed 2026-03-06; scope: shared skill inventory, grouping, safe first cleanup of broken skill links)
   *Link: [./tracks/skills-hygiene_20260306/](./tracks/skills-hygiene_20260306/)*

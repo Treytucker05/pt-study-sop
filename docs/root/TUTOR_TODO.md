@@ -18,6 +18,22 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-03-06
 
+### Sprint 13: Skills Catalog Review (2026-03-06)
+- [x] Claim scope: docs/process
+  - `docs/root/SKILLS_CATALOG.md`
+  - `docs/root/SKILLS_INVENTORY.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `conductor/tracks/skills-catalog-review_20260306/`
+- [x] Phase 0: create `conductor/tracks/skills-catalog-review_20260306` with spec/plan/metadata/index.
+- [x] Phase 1: generate the full per-skill catalog with descriptions and decision fields.
+- [x] Phase 2: wire in the one-by-one review workflow and seed the planning pass.
+- [x] Phase 3: validate and close the track.
+  - Validation:
+    - `docs/root/SKILLS_CATALOG.md` created with per-skill rows and decision fields
+    - planning category seeded with first-pass recommendations
+    - catalog and track docs passed markdown hygiene checks
+
 ### Sprint 12: Skills Hygiene (2026-03-06)
 - [x] Claim scope: docs/process
   - `docs/root/SKILLS_INVENTORY.md`

@@ -2,6 +2,30 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-06 - Skills Catalog Review kickoff
+
+- Created new docs track `skills-catalog-review_20260306`.
+- Added `Skills Catalog Review` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - create a full per-skill catalog with descriptions
+  - add decision fields so skills can be reviewed one by one
+  - seed the review workflow starting with the planning category
+
+---
+
+## 2026-03-06 - Skills Catalog Review completion
+
+- Closed track `skills-catalog-review_20260306` after:
+  - creating `docs/root/SKILLS_CATALOG.md` as the per-skill review surface
+  - adding one row per shared skill and tool-local exception
+  - adding review decision fields for iterative cleanup/customization
+  - seeding the planning category with first-pass recommendations
+- Validation:
+  - catalog and track docs passed markdown hygiene checks
+  - planning rows were reviewed and annotated with initial recommendations
+
+---
+
 ## 2026-03-06 - Skills Hygiene kickoff
 
 - Created new infra track `skills-hygiene_20260306`.
