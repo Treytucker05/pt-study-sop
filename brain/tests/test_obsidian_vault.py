@@ -11,10 +11,11 @@ def test_run_calls_subprocess_with_correct_args():
     vault = ObsidianVault(vault_name="Test Vault")
     with patch("obsidian_vault.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0, stdout="output", stderr="")
-        result = vault._run(["search", 'query="test"'])
+        result = vault._run(["search", "query=test"])
         args = mock_run.call_args[0][0]
         assert args[0] == "obsidian"
-        assert 'vault="Test Vault"' in args
+        assert "vault=Test Vault" in args
+        assert 'vault="Test Vault"' not in args
         assert "search" in args
 
 
@@ -92,8 +93,9 @@ def test_create_note_calls_cli_with_correct_args():
         )
         args = mock_run.call_args[0][0]
         assert "create" in args
-        assert 'name="Test Note"' in args
-        assert 'template="Study Session"' in args
+        assert "name=Test Note" in args
+        assert "path=Course/Module/Test Note.md" in args
+        assert "template=Study Session" in args
         assert "silent" in args
 
 
@@ -139,7 +141,8 @@ def test_append_note_calls_cli():
         vault.append_note("My Note", "New content")
         args = mock_run.call_args[0][0]
         assert "append" in args
-        assert 'file="My Note"' in args
+        assert "file=My Note" in args
+        assert "content=New content" in args
 
 
 def test_prepend_note_calls_cli():
@@ -162,7 +165,8 @@ def test_delete_note_calls_cli():
         vault.delete_note("old/note.md")
         args = mock_run.call_args[0][0]
         assert "delete" in args
-        assert 'path="old/note.md"' in args
+        assert "path=old/note.md" in args
+        assert 'path="old/note.md"' not in args
 
 
 def test_delete_note_permanent_flag():
@@ -189,7 +193,7 @@ def test_search_returns_list():
         assert result == results
         args = mock_run.call_args[0][0]
         assert "search" in args
-        assert 'query="test query"' in args
+        assert "query=test query" in args
         assert "limit=5" in args
 
 
@@ -266,8 +270,9 @@ def test_set_property_calls_cli():
         vault.set_property("My Note", "status", "reviewed")
         args = mock_run.call_args[0][0]
         assert "property:set" in args
-        assert 'name="status"' in args
-        assert 'value="reviewed"' in args
+        assert "name=status" in args
+        assert "value=reviewed" in args
+        assert "file=My Note" in args
 
 
 def test_remove_property_calls_cli():
@@ -290,8 +295,8 @@ def test_move_note_calls_cli():
         vault.move_note("old/note.md", new_name="new-note")
         args = mock_run.call_args[0][0]
         assert "move" in args
-        assert 'path="old/note.md"' in args
-        assert 'name="new-note"' in args
+        assert "path=old/note.md" in args
+        assert "name=new-note" in args
 
 
 def test_create_folder_uses_eval():
@@ -465,7 +470,7 @@ def test_daily_append_calls_cli():
         vault.daily_append("New log entry")
         args = mock_run.call_args[0][0]
         assert "daily:append" in args
-        assert 'content="New log entry"' in args
+        assert "content=New log entry" in args
 
 
 def test_insert_template_calls_cli():
@@ -477,8 +482,8 @@ def test_insert_template_calls_cli():
         vault.insert_template("notes/session.md", "Study Session")
         args = mock_run.call_args[0][0]
         assert "template:insert" in args
-        assert 'file="notes/session.md"' in args
-        assert 'template="Study Session"' in args
+        assert "file=notes/session.md" in args
+        assert "template=Study Session" in args
 
 
 def test_get_outline_returns_list():
@@ -494,7 +499,7 @@ def test_get_outline_returns_list():
         assert result == headings
         args = mock_run.call_args[0][0]
         assert "outline" in args
-        assert 'file="My Note"' in args
+        assert "file=My Note" in args
         assert "format=json" in args
 
 
@@ -518,8 +523,8 @@ def test_read_property_calls_cli():
         assert result == "reviewed"
         args = mock_run.call_args[0][0]
         assert "property:read" in args
-        assert 'name="status"' in args
-        assert 'file="My Note"' in args
+        assert "name=status" in args
+        assert "file=My Note" in args
 
 
 def test_run_retry_on_transient_timeout():

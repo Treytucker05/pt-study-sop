@@ -33,6 +33,11 @@ class ObsidianVault:
 
     # -- Internal ---------------------------------------------------------
 
+    @staticmethod
+    def _kv_arg(name: str, value: str) -> str:
+        """Build a CLI key/value arg without shell-style quoting."""
+        return f"{name}={value}"
+
     def _run(
         self,
         args: list[str],
@@ -45,7 +50,7 @@ class ObsidianVault:
         Retries up to 3 times total on TimeoutExpired or non-zero exit code,
         with backoff delays of 1s and 2s between retries.
         """
-        cmd = ["obsidian", f'vault="{self.vault_name}"'] + args
+        cmd = ["obsidian", self._kv_arg("vault", self.vault_name)] + args
 
         for attempt in range(_RETRY_MAX_ATTEMPTS):
             try:
@@ -105,7 +110,7 @@ class ObsidianVault:
 
     def _eval(self, code: str, *, timeout: int = _EVAL_TIMEOUT) -> str:
         """Execute JavaScript in the Obsidian app context via ``obsidian eval``."""
-        return self._run(["eval", f'code="{code}"'], timeout=timeout)
+        return self._run(["eval", self._kv_arg("code", code)], timeout=timeout)
 
     # -- Health -----------------------------------------------------------
 
@@ -152,28 +157,32 @@ class ObsidianVault:
         silent: bool = True,
     ) -> str:
         """Create a new note. Returns CLI output."""
-        args = ["create", f'name="{name}"']
+        args = ["create", self._kv_arg("name", name)]
         if content:
-            args.append(f'content="{content}"')
+            args.append(self._kv_arg("content", content))
         if folder:
-            args.append(f'path="{folder}/{name}.md"')
+            args.append(self._kv_arg("path", f"{folder}/{name}.md"))
         if template:
-            args.append(f'template="{template}"')
+            args.append(self._kv_arg("template", template))
         if silent:
             args.append("silent")
         return self._run(args)
 
     def read_note(self, file: str) -> str:
         """Read a note's content. Resolves like a wikilink."""
-        return self._run(["read", f'file="{file}"'])
+        return self._run(["read", self._kv_arg("file", file)])
 
     def append_note(self, file: str, content: str) -> str:
         """Append content to end of a note."""
-        return self._run(["append", f'file="{file}"', f'content="{content}"'])
+        return self._run(
+            ["append", self._kv_arg("file", file), self._kv_arg("content", content)]
+        )
 
     def prepend_note(self, file: str, content: str) -> str:
         """Prepend content after frontmatter."""
-        return self._run(["prepend", f'file="{file}"', f'content="{content}"'])
+        return self._run(
+            ["prepend", self._kv_arg("file", file), self._kv_arg("content", content)]
+        )
 
     def replace_content(self, file: str, new_content: str) -> str:
         """Replace entire file content via eval."""
@@ -188,7 +197,7 @@ class ObsidianVault:
 
     def delete_note(self, path: str, *, permanent: bool = False) -> str:
         """Delete a note. Uses trash unless permanent=True."""
-        args = ["delete", f'path="{path}"']
+        args = ["delete", self._kv_arg("path", path)]
         if permanent:
             args.append("permanent")
         return self._run(args)
@@ -198,7 +207,7 @@ class ObsidianVault:
     def search(self, query: str, *, limit: int = 10) -> list[dict]:
         """Full-text search via Obsidian's index."""
         return self._run(
-            ["search", f'query="{query}"', f"limit={limit}", "format=json"],
+            ["search", self._kv_arg("query", query), f"limit={limit}", "format=json"],
             parse_json=True,
         )
 
@@ -206,7 +215,7 @@ class ObsidianVault:
         """List files in the vault or a specific folder."""
         args = ["files", f"format={format}"]
         if folder:
-            args.append(f'path="{folder}"')
+            args.append(self._kv_arg("path", folder))
         return self._run(args, parse_json=True)
 
     def list_folders(self) -> list[dict]:
@@ -215,18 +224,25 @@ class ObsidianVault:
 
     def get_file_info(self, file: str) -> dict:
         """Get metadata for a single file."""
-        result = self._run(["file", f'file="{file}"', "format=json"], parse_json=True)
+        result = self._run(
+            ["file", self._kv_arg("file", file), "format=json"],
+            parse_json=True,
+        )
         return result if isinstance(result, dict) else {}
 
     def get_backlinks(self, file: str) -> list[dict]:
         """Get files that link to this note."""
         return self._run(
-            ["backlinks", f'file="{file}"', "format=json"], parse_json=True
+            ["backlinks", self._kv_arg("file", file), "format=json"],
+            parse_json=True,
         )
 
     def get_links(self, file: str) -> list[dict]:
         """Get outgoing links from this note."""
-        return self._run(["links", f'file="{file}"', "format=json"], parse_json=True)
+        return self._run(
+            ["links", self._kv_arg("file", file), "format=json"],
+            parse_json=True,
+        )
 
     def get_orphans(self) -> list[dict]:
         """Find notes with no incoming links."""
@@ -247,12 +263,19 @@ class ObsidianVault:
     def set_property(self, file: str, key: str, value: str) -> str:
         """Set a frontmatter property on a note."""
         return self._run(
-            ["property:set", f'name="{key}"', f'value="{value}"', f'file="{file}"']
+            [
+                "property:set",
+                self._kv_arg("name", key),
+                self._kv_arg("value", value),
+                self._kv_arg("file", file),
+            ]
         )
 
     def remove_property(self, file: str, key: str) -> str:
         """Remove a frontmatter property from a note."""
-        return self._run(["property:remove", f'name="{key}"', f'file="{file}"'])
+        return self._run(
+            ["property:remove", self._kv_arg("name", key), self._kv_arg("file", file)]
+        )
 
     def replace_section(self, file: str, heading: str, content: str) -> str:
         """Replace content under a heading using vault.process() via eval."""
@@ -290,11 +313,11 @@ class ObsidianVault:
 
     def move_note(self, path: str, *, new_name: str = "", new_folder: str = "") -> str:
         """Move or rename a note."""
-        args = ["move", f'path="{path}"']
+        args = ["move", self._kv_arg("path", path)]
         if new_name:
-            args.append(f'name="{new_name}"')
+            args.append(self._kv_arg("name", new_name))
         if new_folder:
-            args.append(f'folder="{new_folder}"')
+            args.append(self._kv_arg("folder", new_folder))
         return self._run(args)
 
     def create_folder(self, path: str) -> str:
@@ -340,24 +363,33 @@ class ObsidianVault:
 
     def daily_append(self, content: str) -> str:
         """Append content to today's daily note."""
-        return self._run(["daily:append", f'content="{content}"'])
+        return self._run(["daily:append", self._kv_arg("content", content)])
 
     # ── Templates ───────────────────────────────────────────
 
     def insert_template(self, file: str, template: str) -> str:
         """Insert a template into a file."""
         return self._run(
-            ["template:insert", f'file="{file}"', f'template="{template}"']
+            [
+                "template:insert",
+                self._kv_arg("file", file),
+                self._kv_arg("template", template),
+            ]
         )
 
     # ── Outline ─────────────────────────────────────────────
 
     def get_outline(self, file: str) -> list[dict]:
         """Return the outline (headings) of a file as JSON."""
-        return self._run(["outline", f'file="{file}"', "format=json"], parse_json=True)
+        return self._run(
+            ["outline", self._kv_arg("file", file), "format=json"],
+            parse_json=True,
+        )
 
     # ── Property Read ────────────────────────────────────────
 
     def read_property(self, file: str, name: str) -> str:
         """Read a frontmatter property from a file."""
-        return self._run(["property:read", f'name="{name}"', f'file="{file}"'])
+        return self._run(
+            ["property:read", self._kv_arg("name", name), self._kv_arg("file", file)]
+        )
