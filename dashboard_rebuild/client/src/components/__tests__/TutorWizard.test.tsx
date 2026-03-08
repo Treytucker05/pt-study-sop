@@ -63,6 +63,13 @@ function setupQueryMocks() {
         isError: false,
       };
     }
+    if (key === "learning-objectives") {
+      return {
+        data: [],
+        isLoading: false,
+        isError: false,
+      };
+    }
     return { data: undefined, isLoading: false, isError: false };
   });
 }
@@ -79,6 +86,17 @@ function renderWizard(overrides?: Partial<ComponentProps<typeof TutorWizard>>) {
     setChainId: vi.fn(),
     customBlockIds: [],
     setCustomBlockIds: vi.fn(),
+    objectiveScope: "module_all",
+    setObjectiveScope: vi.fn(),
+    selectedObjectiveId: "",
+    setSelectedObjectiveId: vi.fn(),
+    selectedObjectiveGroup: "",
+    setSelectedObjectiveGroup: vi.fn(),
+    availableObjectives: [],
+    vaultFolderPreview: "",
+    preflight: undefined,
+    preflightLoading: false,
+    preflightError: null,
     onStartSession: vi.fn(),
     isStarting: false,
     recentSessions: [],
@@ -190,5 +208,74 @@ describe("TutorWizard", () => {
     fireEvent.click(screen.getByRole("button", { name: /Start Session/i }));
 
     expect(onStartSession).toHaveBeenCalled();
+  });
+
+  it("disables Start Session when single-focus has no explicit objective", async () => {
+    renderWizard({ objectiveScope: "single_focus" });
+
+    fireEvent.click(screen.getByRole("button", { name: /NEXT/i }));
+    await waitFor(() => {
+      const preBuiltButtons = screen.getAllByText("PRE-BUILT");
+      expect(preBuiltButtons.length).toBeGreaterThan(0);
+    });
+
+    const nextButtons = screen.getAllByRole("button", { name: /NEXT/i });
+    fireEvent.click(nextButtons[nextButtons.length - 1]);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Start Session/i })).toBeDisabled();
+    });
+  });
+
+  it("shows preflight blockers on the start step", async () => {
+    renderWizard({
+      selectedObjectiveGroup: "Week 7 - Development of Nervous System",
+      selectedObjectiveId: "OBJ-6",
+      preflight: {
+        ok: false,
+        preflight_id: "preflight-123",
+        course_id: 1,
+        module_name: "Week 7 - Development of Nervous System",
+        topic: "Week 7",
+        objective_scope: "single_focus",
+        focus_objective_id: "OBJ-6",
+        material_ids: [11, 12],
+        resolved_learning_objectives: [],
+        map_of_contents: {
+          path: "Courses/Neuroscience/Week 7/_Map of Contents.md",
+          status: "updated",
+          module_name: "Week 7 - Development of Nervous System",
+          objective_ids: ["OBJ-1", "OBJ-6"],
+        },
+        vault_ready: true,
+        recommended_mode_flags: {
+          materials: true,
+          obsidian: true,
+          gemini_vision: false,
+          web_search: false,
+          deep_think: false,
+        },
+        blockers: [
+          {
+            code: "MATERIALS_REQUIRED",
+            message: "Select one or more study materials before starting a Tutor session.",
+          },
+        ],
+      },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /NEXT/i }));
+    await waitFor(() => {
+      expect(screen.getAllByText("PRE-BUILT").length).toBeGreaterThan(0);
+    });
+    const nextButtons = screen.getAllByRole("button", { name: /NEXT/i });
+    fireEvent.click(nextButtons[nextButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getByText("PREFLIGHT")).toBeInTheDocument();
+      expect(
+        screen.getByText("Select one or more study materials before starting a Tutor session."),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Start Session/i })).toBeDisabled();
+    });
   });
 });

@@ -58,11 +58,81 @@ context_tags:
   stage: first_exposure
   energy: medium
   time_available: 50
+  learner_style: top_down_structured
+runtime_profile:
+  teaching_style: explanation-first but more structured and target-oriented
+  analogy_policy: analogies allowed as support, not as the dominant teaching mechanism
+  retrieval_timing: use earlier calibration only when prior exposure or learner readiness exists; otherwise stay explanation-first and skip retrieval-style calibration
+  provenance_policy: materials and notes first for factual claims; general knowledge allowed for conceptual teaching with explicit disclosure
+  confidence_policy: qualitative grounding labels preferred over raw numeric confidence for normal tutoring
+  output_policy: notes and cards must be dependable session outputs
 default_knobs:
   energy: medium
   near_miss_intensity: low
   time_available_min: 50
   timed: soft
+block_overrides:
+  M-CAL-001:
+    allowed_moves:
+      - Keep calibration brief and tightly scoped to the active objective.
+      - Skip or downgrade to a non-retrieval readiness check on true first exposure.
+      - Use the result to steer later encoding depth.
+    forbidden_moves:
+      - Do not drift into explanation-heavy teaching during calibration.
+      - Do not turn a short calibrate block into a full quiz.
+      - Do not force recall before prior exposure or learner consent.
+    required_outputs:
+      - readiness snapshot
+      - calibration gap
+      - dominant error seed
+  M-REF-003:
+    allowed_moves:
+      - Produce retrieval-ready targets before later retrieval-like behavior.
+      - Keep the anchor highly discriminative and objective-scoped.
+    forbidden_moves:
+      - Do not proceed as though retrieval targets exist if the anchor is vague.
+    required_outputs:
+      - One-page anchor with explicit retrieval-ready cues
+  M-ENC-001:
+    allowed_moves:
+      - Add hooks only after the concept has been structurally framed.
+    forbidden_moves:
+      - Do not let hook creation dominate the session.
+    required_outputs:
+      - concise hook tied to the structured concept
+  M-INT-001:
+    allowed_moves:
+      - Use analogies to clarify difficult mechanism relationships.
+    forbidden_moves:
+      - Do not let analogies replace the structured progression of the chain.
+    required_outputs:
+      - analogy with explicit limits
+  M-ENC-009:
+    allowed_moves:
+      - Build a learner-usable concept map that supports later explanation.
+    forbidden_moves:
+      - Do not generate a decorative or tutor-only map.
+      - Do not skip the learner-facing explanation of the map.
+    required_outputs:
+      - concept map
+      - learner explanation
+  M-ENC-004:
+    allowed_moves:
+      - Use teach-back as retrieval-aware synthesis near the end of the chain.
+    forbidden_moves:
+      - Do not spring surprise evaluation or harsh grading.
+    required_outputs:
+      - teach-back explanation
+      - breakdown list
+  M-OVR-004:
+    allowed_moves:
+      - Use the dump to consolidate the whole session and respect tier exits.
+    forbidden_moves:
+      - Do not reopen the whole chain after closure unless a major breakdown requires it.
+    required_outputs:
+      - closure dump
+      - gap list
+      - next-step signal
 is_template: true
 status: draft
 evidence:

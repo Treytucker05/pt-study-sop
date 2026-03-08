@@ -30,6 +30,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _METHODS_DIR = _ROOT / "sop" / "library" / "methods"
 _CHAINS_DIR = _ROOT / "sop" / "library" / "chains"
 _VERSION_PATH = _ROOT / "sop" / "library" / "meta" / "version.yaml"
+_CHAIN_CERTIFICATION_REGISTRY_PATH = _CHAINS_DIR / "certification_registry.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -1314,6 +1315,17 @@ def load_from_yaml() -> dict | None:
     _artifact_type_lookup = {
         b["name"]: b.get("artifact_type", "") for b in METHOD_BLOCKS
     }
+    certification_registry: dict[str, dict] = {}
+    if _CHAIN_CERTIFICATION_REGISTRY_PATH.exists():
+        registry_raw = yaml.safe_load(
+            _CHAIN_CERTIFICATION_REGISTRY_PATH.read_text(encoding="utf-8")
+        )
+        if isinstance(registry_raw, dict):
+            registry_obj = registry_raw.get("chains", registry_raw)
+            if isinstance(registry_obj, dict):
+                certification_registry = {
+                    str(k): v for k, v in registry_obj.items() if isinstance(v, dict)
+                }
 
     methods = []
     for path in sorted(_METHODS_DIR.glob("*.yaml")):
@@ -1355,16 +1367,44 @@ def load_from_yaml() -> dict | None:
             id_to_name[data["id"]] = data["name"]
 
     for path in sorted(_CHAINS_DIR.glob("*.yaml")):
+        if path.name == _CHAIN_CERTIFICATION_REGISTRY_PATH.name:
+            continue
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         if data:
             # Resolve YAML method IDs (M-PRE-001) to names (Brain Dump) for DB
             block_names = [id_to_name.get(bid, bid) for bid in data.get("blocks", [])]
+            context_tags = dict(data.get("context_tags", {}) or {})
+            template_id = str(data.get("id", "") or "").strip()
+            if template_id:
+                context_tags["template_id"] = template_id
+                certification = certification_registry.get(template_id)
+                if data.get("is_template", False) and not isinstance(certification, dict):
+                    raise ValueError(
+                        f"Template chain {template_id} is missing certification metadata in "
+                        f"{_CHAIN_CERTIFICATION_REGISTRY_PATH}"
+                    )
+                if isinstance(certification, dict):
+                    context_tags["certification"] = certification
+            if isinstance(data.get("runtime_profile"), dict):
+                context_tags["runtime_profile"] = data["runtime_profile"]
+            if isinstance(data.get("block_overrides"), dict):
+                context_tags["block_overrides"] = data["block_overrides"]
+            if isinstance(data.get("allowed_modes"), list):
+                context_tags["allowed_modes"] = data["allowed_modes"]
+            if isinstance(data.get("gates"), list):
+                context_tags["gates"] = data["gates"]
+            if isinstance(data.get("failure_actions"), list):
+                context_tags["failure_actions"] = data["failure_actions"]
+            if isinstance(data.get("tier_exits"), dict):
+                context_tags["tier_exits"] = data["tier_exits"]
+            if isinstance(data.get("requires_reference_targets"), bool):
+                context_tags["requires_reference_targets"] = data["requires_reference_targets"]
             chains.append(
                 {
                     "name": data["name"],
                     "description": data.get("description", ""),
                     "blocks": block_names,
-                    "context_tags": data.get("context_tags", {}),
+                    "context_tags": context_tags,
                     "is_template": 1 if data.get("is_template", False) else 0,
                 }
             )

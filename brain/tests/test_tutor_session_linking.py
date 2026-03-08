@@ -95,6 +95,7 @@ def app():
     _api_tutor_mod._vault_delete_note = _fake_tutor_vault_delete
 
     db_setup.init_database()
+    db_setup._METHOD_LIBRARY_ENSURED = False
     app_obj = create_app()
     app_obj.config["TESTING"] = True
     app_obj.config["TEST_MAP_OF_CONTENTS_WRITES"] = map_of_contents_write_calls
@@ -335,6 +336,228 @@ def test_send_turn_persists_and_reuses_response_id(client, monkeypatch):
     assert turns[0]["response_id"] == "resp-1"
     assert turns[1]["response_id"] == "resp-2"
     assert turns[0]["model_id"] == "gpt-5.3-codex"
+
+
+def test_single_focus_session_requires_explicit_focus_objective(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (3, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "course_id": 3,
+            "mode": "Core",
+            "topic": "Week 7 - Development of Nervous System",
+            "module_name": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation."},
+                {
+                    "lo_code": "OBJ-6",
+                    "title": "Differentiate neural tube and neural crest derivatives.",
+                },
+            ],
+            "content_filter": {
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "objective_scope": "single_focus",
+            },
+        },
+    )
+
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["code"] == "FOCUS_OBJECTIVE_REQUIRED"
+    assert "OBJ-1" in body["objective_ids"]
+    assert "OBJ-6" in body["objective_ids"]
+
+
+def test_reference_bounds_allows_continuation_style_followups():
+    allowed = _api_tutor_mod._question_within_reference_targets(
+        "Yes. Give me chunk 3 and make the derivative map explicit.",
+        ["[[OBJ-6]]", "[[Differentiate embryologic origins of the CNS and PNS]]"],
+    )
+
+    assert allowed is True
+
+
+def test_reference_bounds_rejects_generic_continue_without_target():
+    allowed = _api_tutor_mod._question_within_reference_targets(
+        "Continue.",
+        ["[[OBJ-6]]", "[[Differentiate embryologic origins of the CNS and PNS]]"],
+    )
+
+    assert allowed is False
+
+
+def test_preflight_reports_focus_objective_blocker(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (7, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 7,
+            "study_unit": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation."},
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives."},
+            ],
+            "content_filter": {
+                "material_ids": [1, 2],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+            },
+        },
+    )
+
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["ok"] is False
+    assert any(blocker["code"] == "FOCUS_OBJECTIVE_REQUIRED" for blocker in body["blockers"])
+    assert body["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+
+
+def test_create_session_requires_preflight_for_objective_scoped_setup(client):
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Week 7 without preflight",
+            "focus_objective_id": "OBJ-6",
+            "objective_scope": "single_focus",
+            "learning_objectives": [
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives."}
+            ],
+            "content_filter": {
+                "material_ids": [11, 12],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "objective_scope": "single_focus",
+                "focus_objective_id": "OBJ-6",
+            },
+        },
+    )
+
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["code"] == "PREFLIGHT_REQUIRED"
+
+
+def test_preflight_requires_study_unit(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (9, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 9,
+            "objective_scope": "module_all",
+            "content_filter": {"material_ids": [1]},
+        },
+    )
+
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body["ok"] is False
+    assert any(blocker["code"] == "STUDY_UNIT_REQUIRED" for blocker in body["blockers"])
+
+
+def test_template_chains_endpoint_exposes_certification_metadata(client):
+    resp = client.get("/api/tutor/chains/templates")
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert isinstance(body, list) and body
+
+    top_down = next(
+        (item for item in body if item.get("name") == "Top-Down Narrative Mastery"),
+        None,
+    )
+    assert top_down is not None
+    assert top_down["template_id"] == "C-TRY-001"
+    assert top_down["certification"]["disposition"] == "strict-certification"
+    assert top_down["certification"]["gold_standard"] is True
+
+
+def test_create_session_uses_preflight_bundle(client):
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.execute(
+        """
+        INSERT INTO courses (id, name, code, color, created_at)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        """,
+        (8, "Neuroscience", "PHYT 6313", "#ff0000"),
+    )
+    conn.commit()
+    conn.close()
+
+    preflight_resp = client.post(
+        "/api/tutor/session/preflight",
+        json={
+            "course_id": 8,
+            "study_unit": "Week 7 - Development of Nervous System",
+            "topic": "Week 7 - Development of Nervous System",
+            "objective_scope": "single_focus",
+            "focus_objective_id": "OBJ-6",
+            "learning_objectives": [
+                {"lo_code": "OBJ-1", "title": "Describe neurulation.", "group": "Week 7 - Development of Nervous System"},
+                {"lo_code": "OBJ-6", "title": "Differentiate neural tube and neural crest derivatives.", "group": "Week 7 - Development of Nervous System"},
+            ],
+            "content_filter": {
+                "material_ids": [11, 12],
+                "vault_folder": "Courses/Neuroscience/Week 7",
+                "accuracy_profile": "strict",
+            },
+        },
+    )
+    assert preflight_resp.status_code == 200
+    preflight = preflight_resp.get_json()
+    assert preflight["ok"] is True
+
+    session_resp = client.post(
+        "/api/tutor/session",
+        json={
+            "preflight_id": preflight["preflight_id"],
+            "mode": "Core",
+        },
+    )
+    assert session_resp.status_code == 201
+    body = session_resp.get_json()
+    assert body["focus_objective_id"] == "OBJ-6"
+    assert body["map_of_contents"]["path"] == "Courses/Neuroscience/Week 7/_Map of Contents.md"
+
+    conn = sqlite3.connect(config.DB_PATH)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT content_filter_json FROM tutor_sessions WHERE session_id = ?",
+        (body["session_id"],),
+    ).fetchone()
+    conn.close()
+    saved_filter = json.loads(row["content_filter_json"] or "{}")
+    assert saved_filter["focus_objective_id"] == "OBJ-6"
+    assert saved_filter["vault_folder"] == "Courses/Neuroscience/Week 7"
 
 
 def test_send_turn_scales_material_retrieval_to_selected_materials(client, monkeypatch):
@@ -770,6 +993,49 @@ def test_send_turn_selected_scope_listing_question_uses_selected_scope(
     assert "Gamma Notes" in body
     assert "Delta Notes" in body
     assert stream_calls["count"] == 0
+
+
+def test_material_context_expands_selected_mp4_to_linked_processed_docs():
+    conn = sqlite3.connect(config.DB_PATH)
+    cur = conn.cursor()
+    mp4_id = 3001
+    transcript_id = 3002
+    cur.executemany(
+        """INSERT INTO rag_docs
+           (id, title, source_path, content, checksum, metadata_json, corpus, file_type, enabled, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'materials', ?, 1, datetime('now'), datetime('now'))""",
+        [
+            (
+                mp4_id,
+                "Lecture Video",
+                "C:/materials/lecture.mp4",
+                "",
+                "checksum-mp4",
+                json.dumps({}),
+                "mp4",
+            ),
+            (
+                transcript_id,
+                "Lecture Transcript",
+                "C:/materials/lecture_transcript.md",
+                "Transcribed pathway explanation from the processed video.",
+                "checksum-transcript",
+                json.dumps({"video_material_id": mp4_id, "video_doc_role": "transcript"}),
+                "md",
+            ),
+        ],
+    )
+    conn.commit()
+    conn.close()
+    ctx = tutor_context.build_context(
+        "Teach me from the selected video only.",
+        depth="materials",
+        material_ids=[mp4_id],
+        k_materials=4,
+    )
+
+    assert "lecture_transcript.md" in ctx["materials"]
+    assert "Transcribed pathway explanation from the processed video." in ctx["materials"]
 
 
 def test_material_count_shortcut_does_not_overwrite_last_response_id(

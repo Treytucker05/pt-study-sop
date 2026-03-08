@@ -91,6 +91,9 @@ UPLOADS_DIR = Path(__file__).parent.parent / "data" / "uploads"
 SYNC_JOBS: dict[str, dict[str, Any]] = {}
 SYNC_JOBS_LOCK = Lock()
 SYNC_JOB_RETENTION = 30
+PREFLIGHT_CACHE: dict[str, dict[str, Any]] = {}
+PREFLIGHT_CACHE_LOCK = Lock()
+PREFLIGHT_CACHE_RETENTION = 50
 VIDEO_JOBS: dict[str, dict[str, Any]] = {}
 VIDEO_JOBS_LOCK = Lock()
 VIDEO_JOB_RETENTION = 30
@@ -138,6 +141,29 @@ def _safe_json_dict(value: Any) -> dict[str, Any]:
         except (json.JSONDecodeError, TypeError):
             return {}
     return {}
+
+
+def _store_preflight_bundle(bundle: dict[str, Any]) -> str:
+    preflight_id = f"preflight-{uuid.uuid4().hex[:12]}"
+    payload = dict(bundle)
+    payload["preflight_id"] = preflight_id
+    payload["created_at"] = datetime.now().isoformat()
+    with PREFLIGHT_CACHE_LOCK:
+        PREFLIGHT_CACHE[preflight_id] = payload
+        if len(PREFLIGHT_CACHE) > PREFLIGHT_CACHE_RETENTION:
+            ordered = sorted(
+                PREFLIGHT_CACHE.items(),
+                key=lambda item: item[1].get("created_at", ""),
+            )
+            for stale_id, _ in ordered[: len(PREFLIGHT_CACHE) - PREFLIGHT_CACHE_RETENTION]:
+                PREFLIGHT_CACHE.pop(stale_id, None)
+    return preflight_id
+
+
+def _get_preflight_bundle(preflight_id: str) -> Optional[dict[str, Any]]:
+    with PREFLIGHT_CACHE_LOCK:
+        cached = PREFLIGHT_CACHE.get(preflight_id)
+        return dict(cached) if isinstance(cached, dict) else None
 
 
 def _record_tutor_delete_telemetry(
@@ -745,6 +771,7 @@ def _collect_objectives_from_db(
     course_id: Optional[int],
     module_id: Optional[int] = None,
     *,
+    group_name: Optional[str] = None,
     max_items: int = 40,
 ) -> list[dict[str, str]]:
     if not course_id:
@@ -762,6 +789,17 @@ def _collect_objectives_from_db(
             LIMIT ?
             """,
             (course_id, module_id, max_items),
+        )
+    elif group_name:
+        cur.execute(
+            """
+            SELECT lo_code, title, status, group_name
+            FROM learning_objectives
+            WHERE course_id = ? AND COALESCE(group_name, '') = ?
+            ORDER BY id ASC
+            LIMIT ?
+            """,
+            (course_id, str(group_name).strip(), max_items),
         )
     else:
         cur.execute(
@@ -792,6 +830,58 @@ def _collect_objectives_from_db(
             obj["group"] = group
         items.append(obj)
     return items
+
+
+def _resolve_learning_objectives_for_scope(
+    *,
+    course_id: Optional[int],
+    module_id: Optional[int],
+    module_name: Optional[str],
+    learning_objectives: Any,
+    max_items: int = 40,
+) -> list[dict[str, str]]:
+    payload_objectives = _collect_objectives_from_payload(learning_objectives)
+    if payload_objectives:
+        return payload_objectives
+    return _collect_objectives_from_db(
+        course_id,
+        module_id,
+        group_name=str(module_name or "").strip() or None,
+        max_items=max_items,
+    )
+
+
+def _materials_include_mp4(material_ids: list[int]) -> bool:
+    if not material_ids:
+        return False
+    conn = get_connection()
+    try:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        placeholders = ",".join("?" * len(material_ids))
+        row = cur.execute(
+            f"""
+            SELECT 1
+            FROM rag_docs
+            WHERE id IN ({placeholders})
+              AND LOWER(COALESCE(file_type, '')) = 'mp4'
+            LIMIT 1
+            """,
+            list(material_ids),
+        ).fetchone()
+        return bool(row)
+    finally:
+        conn.close()
+
+
+def _recommended_mode_flags(material_ids: list[int]) -> dict[str, bool]:
+    return {
+        "materials": bool(material_ids),
+        "obsidian": True,
+        "gemini_vision": _materials_include_mp4(material_ids),
+        "web_search": False,
+        "deep_think": False,
+    }
 
 
 def _parse_existing_map_of_contents_objectives(content: str) -> dict[str, str]:
@@ -1063,21 +1153,12 @@ def _ensure_moc_context(
             subtopic=derived_subtopic,
         )
 
-    # Always merge payload objectives with DB objectives so the Map of Contents
-    # accumulates across topics (e.g., Hip + Knee in the same construct).
-    payload_objectives = _collect_objectives_from_payload(learning_objectives)
-    db_objectives = _collect_objectives_from_db(course_id, module_id)
-
-    # Merge: DB provides the base, payload overrides matching IDs
-    seen_ids: set[str] = set()
-    objectives: list[dict[str, str]] = []
-    for obj in payload_objectives:
-        oid = obj["objective_id"]
-        seen_ids.add(oid)
-        objectives.append(obj)
-    for obj in db_objectives:
-        if obj["objective_id"] not in seen_ids:
-            objectives.append(obj)
+    objectives = _resolve_learning_objectives_for_scope(
+        course_id=course_id,
+        module_id=module_id,
+        module_name=derived_module_name,
+        learning_objectives=learning_objectives,
+    )
 
     if not objectives:
         fallback_title = topic.strip() or derived_module_name
@@ -1195,6 +1276,136 @@ def _ensure_moc_context(
     )
 
 
+def _resolve_tutor_preflight(
+    data: dict[str, Any]
+) -> tuple[Optional[dict[str, Any]], Optional[tuple[dict[str, Any], int]]]:
+    course_id = data.get("course_id")
+    if course_id is None:
+        return None, ({"error": "course_id is required"}, 400)
+    try:
+        course_id_int = int(course_id)
+    except (TypeError, ValueError):
+        return None, ({"error": "course_id must be an integer"}, 400)
+
+    module_name = str(data.get("study_unit") or data.get("module_name") or "").strip()
+    topic = str(data.get("topic") or module_name or "").strip()
+    objective_scope = _normalize_objective_scope(data.get("objective_scope"))
+    focus_objective_id = str(data.get("focus_objective_id") or "").strip()
+    learning_objectives = data.get("learning_objectives")
+    content_filter = data.get("content_filter")
+    if not isinstance(content_filter, dict):
+        content_filter = {}
+    normalized_filter = dict(content_filter)
+    normalized_filter["accuracy_profile"] = normalize_accuracy_profile(
+        normalized_filter.get("accuracy_profile")
+    )
+    material_ids = _normalize_material_ids(normalized_filter.get("material_ids")) or []
+    normalized_filter["material_ids"] = material_ids
+    source_ids = _normalize_material_ids(data.get("source_ids")) or material_ids
+    if source_ids:
+        normalized_filter["source_ids"] = source_ids
+    normalized_filter["objective_scope"] = objective_scope
+    if focus_objective_id:
+        normalized_filter["focus_objective_id"] = focus_objective_id
+    normalized_filter["session_rules"] = _normalize_session_rules(
+        normalized_filter.get("session_rules")
+    )
+    vault_folder = str(normalized_filter.get("vault_folder") or "").strip() or None
+
+    module_id: Optional[int] = None
+    if data.get("module_id") is not None:
+        try:
+            module_id = int(data.get("module_id"))
+        except (TypeError, ValueError):
+            return None, ({"error": "module_id must be an integer"}, 400)
+
+    map_of_contents_ctx, map_of_contents_error = _ensure_moc_context(
+        course_id=course_id_int,
+        module_id=module_id,
+        module_name=module_name or topic or None,
+        topic=topic,
+        learning_objectives=learning_objectives,
+        source_ids=source_ids,
+        force_refresh=bool(data.get("map_of_contents_refresh")),
+        path_override=vault_folder,
+    )
+    if map_of_contents_error:
+        return None, ({"error": map_of_contents_error}, 500)
+
+    resolved_objectives = _resolve_learning_objectives_for_scope(
+        course_id=course_id_int,
+        module_id=module_id,
+        module_name=module_name or topic or None,
+        learning_objectives=learning_objectives,
+    )
+    blockers: list[dict[str, str]] = []
+    if not module_name:
+        blockers.append(
+            {
+                "code": "STUDY_UNIT_REQUIRED",
+                "message": "Choose a study unit before starting the Tutor session.",
+            }
+        )
+    if not material_ids:
+        blockers.append(
+            {
+                "code": "MATERIALS_REQUIRED",
+                "message": "Select one or more study materials before starting a Tutor session.",
+            }
+        )
+    if objective_scope == "single_focus" and not focus_objective_id:
+        blockers.append(
+            {
+                "code": "FOCUS_OBJECTIVE_REQUIRED",
+                "message": "Choose a focus objective before starting a single-focus Tutor session.",
+            }
+        )
+    if map_of_contents_ctx:
+        module_prefix = str(Path(str(map_of_contents_ctx["path"])).parent).replace(
+            "\\", "/"
+        )
+        normalized_filter["module_name"] = map_of_contents_ctx.get("module_name")
+        normalized_filter["module_prefix"] = module_prefix
+        normalized_filter["map_of_contents"] = {
+            "path": map_of_contents_ctx.get("path"),
+            "status": map_of_contents_ctx.get("status"),
+            "module_name": map_of_contents_ctx.get("module_name"),
+            "course_name": map_of_contents_ctx.get("course_name"),
+            "subtopic_name": map_of_contents_ctx.get("subtopic_name"),
+            "objective_ids": map_of_contents_ctx.get("objective_ids") or [],
+        }
+        normalized_filter["reference_targets"] = (
+            map_of_contents_ctx.get("reference_targets") or []
+        )
+        normalized_filter["follow_up_targets"] = (
+            map_of_contents_ctx.get("follow_up_targets") or []
+        )
+        normalized_filter["enforce_reference_bounds"] = bool(
+            normalized_filter.get("enforce_reference_bounds")
+            if normalized_filter.get("enforce_reference_bounds") is not None
+            else objective_scope == "single_focus"
+        )
+
+    bundle = {
+        "course_id": course_id_int,
+        "module_id": module_id,
+        "module_name": normalized_filter.get("module_name") or module_name or topic,
+        "topic": topic or normalized_filter.get("module_name") or module_name,
+        "objective_scope": objective_scope,
+        "focus_objective_id": focus_objective_id or None,
+        "material_ids": material_ids,
+        "source_ids": source_ids,
+        "vault_folder": vault_folder,
+        "content_filter": normalized_filter,
+        "resolved_learning_objectives": resolved_objectives,
+        "map_of_contents": map_of_contents_ctx,
+        "recommended_mode_flags": _recommended_mode_flags(material_ids),
+        "blockers": blockers,
+        "ok": len(blockers) == 0,
+    }
+    return bundle, None
+
+
 def _question_within_reference_targets(
     question: str, reference_targets: list[str]
 ) -> bool:
@@ -1202,9 +1413,32 @@ def _question_within_reference_targets(
     q = re.sub(r"\s+", " ", q).strip()
     if not q:
         return False
-    # Allow broad planning/overview prompts without forcing concept-name matches.
+
+    # Allow scoped planning/continuation prompts without requiring literal concept
+    # names, but keep the patterns narrow enough to avoid obvious scope drift.
     if any(
-        token in q for token in ("overview", "big picture", "map of contents", "plan")
+        phrase in q
+        for phrase in (
+            "overview",
+            "big picture",
+            "map of contents",
+            "derivative map",
+            "make it explicit",
+            "does this click",
+        )
+    ):
+        return True
+
+    if any(
+        re.search(pattern, q)
+        for pattern in (
+            r"\bchunk\s+\d+\b",
+            r"\bnext chunk\b",
+            r"\bgo to chunk\b",
+            r"\bcontinue with chunk\b",
+            r"\bcontinue with the derivative map\b",
+            r"\bcontinue the same objective\b",
+        )
     ):
         return True
 
@@ -2048,6 +2282,19 @@ def _resolve_chain_blocks(conn, chain_id: int) -> list[dict]:
     return ordered
 
 
+def _parse_chain_context_tags(raw: Any) -> dict[str, Any]:
+    if isinstance(raw, dict):
+        return dict(raw)
+    if isinstance(raw, str) and raw.strip():
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                return parsed
+        except (json.JSONDecodeError, TypeError):
+            return {}
+    return {}
+
+
 def _build_chain_info(
     conn, chain_id: int, current_index: int
 ) -> tuple[Optional[dict], Optional[dict]]:
@@ -2059,7 +2306,8 @@ def _build_chain_info(
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, name, description FROM method_chains WHERE id = ?", (chain_id,)
+        "SELECT id, name, description, context_tags FROM method_chains WHERE id = ?",
+        (chain_id,),
     )
     chain_row = cur.fetchone()
     if not chain_row:
@@ -2068,14 +2316,31 @@ def _build_chain_info(
     blocks = _resolve_chain_blocks(conn, chain_id)
     if not blocks:
         return None, None
+    context_tags = _parse_chain_context_tags(chain_row["context_tags"])
+    runtime_profile = (
+        context_tags.get("runtime_profile")
+        if isinstance(context_tags.get("runtime_profile"), dict)
+        else {}
+    )
+    block_overrides = (
+        context_tags.get("block_overrides")
+        if isinstance(context_tags.get("block_overrides"), dict)
+        else {}
+    )
 
     # Current block info
     block_info = None
     if 0 <= current_index < len(blocks):
         b = blocks[current_index]
+        method_id = b.get("method_id", "")
+        chain_override = (
+            block_overrides.get(method_id)
+            if isinstance(block_overrides.get(method_id), dict)
+            else {}
+        )
         block_info = {
             "name": b["name"],
-            "method_id": b.get("method_id", ""),
+            "method_id": method_id,
             "description": b.get("description", ""),
             "category": b.get("control_stage", ""),
             "control_stage": b.get("control_stage", ""),
@@ -2084,6 +2349,7 @@ def _build_chain_info(
             "facilitation_prompt": b.get("facilitation_prompt", ""),
             "artifact_type": b.get("artifact_type", ""),
             "knob_overrides_json": b.get("knob_overrides_json", {}),
+            "chain_override": chain_override,
         }
 
     # Chain overview
@@ -2092,9 +2358,22 @@ def _build_chain_info(
         "blocks": [b["name"] for b in blocks],
         "current_index": current_index,
         "total": len(blocks),
+        "runtime_profile": runtime_profile,
+        "allowed_modes": context_tags.get("allowed_modes") if isinstance(context_tags.get("allowed_modes"), list) else [],
+        "gates": context_tags.get("gates") if isinstance(context_tags.get("gates"), list) else [],
+        "failure_actions": context_tags.get("failure_actions") if isinstance(context_tags.get("failure_actions"), list) else [],
+        "tier_exits": context_tags.get("tier_exits") if isinstance(context_tags.get("tier_exits"), dict) else {},
+        "requires_reference_targets": bool(context_tags.get("requires_reference_targets")),
     }
 
     return block_info, chain_info
+
+
+def _chain_requires_prime_launch(context_tags: dict[str, Any]) -> bool:
+    stage = str(context_tags.get("stage") or "").strip().lower()
+    if stage in {"review", "consolidation"}:
+        return False
+    return True
 
 
 def _get_chain_status(conn, session_id: str) -> Optional[dict]:
@@ -3415,6 +3694,39 @@ def _rewrite_extracted_image_links(
 
 
 # ---------------------------------------------------------------------------
+# POST /api/tutor/session/preflight — Resolve scope before session creation
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/preflight", methods=["POST"])
+def preflight_session():
+    data = request.get_json(silent=True) or {}
+    bundle, error = _resolve_tutor_preflight(data)
+    if error:
+        payload, status = error
+        return jsonify(payload), status
+    assert bundle is not None
+    preflight_id = _store_preflight_bundle(bundle)
+    response = {
+        "ok": bundle["ok"],
+        "preflight_id": preflight_id,
+        "course_id": bundle["course_id"],
+        "module_name": bundle["module_name"],
+        "topic": bundle["topic"],
+        "objective_scope": bundle["objective_scope"],
+        "focus_objective_id": bundle["focus_objective_id"],
+        "material_ids": bundle["material_ids"],
+        "resolved_learning_objectives": bundle["resolved_learning_objectives"],
+        "map_of_contents": bundle["map_of_contents"],
+        "vault_ready": bool(bundle.get("map_of_contents")),
+        "recommended_mode_flags": bundle["recommended_mode_flags"],
+        "blockers": bundle["blockers"],
+    }
+    response["north_star"] = response["map_of_contents"]
+    return jsonify(response), 200
+
+
+# ---------------------------------------------------------------------------
 # POST /api/tutor/session — Create a new tutor session
 # ---------------------------------------------------------------------------
 
@@ -3422,14 +3734,44 @@ def _rewrite_extracted_image_links(
 @tutor_bp.route("/session", methods=["POST"])
 def create_session():
     data = request.get_json(silent=True) or {}
+    preflight_id = str(data.get("preflight_id") or "").strip()
 
-    course_id = data.get("course_id")
+    preflight_bundle: Optional[dict[str, Any]] = None
+    if preflight_id:
+        preflight_bundle = _get_preflight_bundle(preflight_id)
+        if not preflight_bundle:
+            return jsonify({"error": "preflight_id not found", "code": "PREFLIGHT_NOT_FOUND"}), 404
+        if preflight_bundle.get("blockers"):
+            return (
+                jsonify(
+                    {
+                        "error": "Resolve preflight blockers before starting the Tutor session.",
+                        "code": "PREFLIGHT_BLOCKED",
+                        "blockers": preflight_bundle.get("blockers") or [],
+                    }
+                ),
+                400,
+            )
+
+    course_id = (
+        preflight_bundle.get("course_id")
+        if preflight_bundle is not None
+        else data.get("course_id")
+    )
     if course_id is not None:
         ensure_course_in_wheel(int(course_id), active=True)
     phase = data.get("phase", "first_pass")
-    topic = data.get("topic", "")
+    topic = (
+        str(preflight_bundle.get("topic") or "")
+        if preflight_bundle is not None
+        else data.get("topic", "")
+    )
     mode = data.get("mode", "Core") or "Core"
-    content_filter = data.get("content_filter")
+    content_filter = (
+        dict(preflight_bundle.get("content_filter") or {})
+        if preflight_bundle is not None
+        else data.get("content_filter")
+    )
     if isinstance(content_filter, dict):
         normalized_filter = dict(content_filter)
         normalized_filter["accuracy_profile"] = normalize_accuracy_profile(
@@ -3444,13 +3786,36 @@ def create_session():
         content_filter = None
     method_chain_id = data.get("method_chain_id")
     brain_session_id = data.get("brain_session_id")
-    module_name = data.get("module_name")
-    learning_objectives = data.get("learning_objectives")
-    objective_scope = _normalize_objective_scope(data.get("objective_scope"))
-    focus_objective_id = str(data.get("focus_objective_id") or "").strip()
-    source_ids = _normalize_material_ids(data.get("source_ids")) or []
+    module_name = (
+        preflight_bundle.get("module_name")
+        if preflight_bundle is not None
+        else data.get("module_name")
+    )
+    learning_objectives = (
+        preflight_bundle.get("resolved_learning_objectives")
+        if preflight_bundle is not None
+        else data.get("learning_objectives")
+    )
+    objective_scope = _normalize_objective_scope(
+        preflight_bundle.get("objective_scope")
+        if preflight_bundle is not None
+        else data.get("objective_scope")
+    )
+    focus_objective_id = str(
+        preflight_bundle.get("focus_objective_id")
+        if preflight_bundle is not None
+        else data.get("focus_objective_id")
+        or ""
+    ).strip()
+    source_ids = (
+        list(preflight_bundle.get("source_ids") or [])
+        if preflight_bundle is not None
+        else _normalize_material_ids(data.get("source_ids")) or []
+    )
     module_id: Optional[int] = None
-    if data.get("module_id") is not None:
+    if preflight_bundle is not None:
+        module_id = preflight_bundle.get("module_id")
+    elif data.get("module_id") is not None:
         try:
             module_id = int(data.get("module_id"))
         except (TypeError, ValueError):
@@ -3464,6 +3829,25 @@ def create_session():
         focus_objective_id = str(
             content_filter.get("focus_objective_id") or focus_objective_id
         ).strip()
+
+    requires_certified_preflight = preflight_bundle is None and (
+        bool(focus_objective_id)
+        or bool(data.get("study_unit"))
+        or (
+            isinstance(data.get("learning_objectives"), list)
+            and objective_scope != "single_focus"
+        )
+    )
+    if requires_certified_preflight:
+        return (
+            jsonify(
+                {
+                    "error": "Objective-scoped certified Tutor sessions must start from preflight.",
+                    "code": "PREFLIGHT_REQUIRED",
+                }
+            ),
+            400,
+        )
     map_of_contents_refresh = bool(
         data.get(
             "map_of_contents_refresh",
@@ -3509,18 +3893,22 @@ def create_session():
             )
 
     vault_folder = str((content_filter or {}).get("vault_folder") or "").strip() or None
-    map_of_contents_ctx, map_of_contents_error = _ensure_moc_context(
-        course_id=int(course_id) if course_id is not None else None,
-        module_id=module_id,
-        module_name=module_name,
-        topic=topic,
-        learning_objectives=learning_objectives,
-        source_ids=source_ids,
-        force_refresh=map_of_contents_refresh,
-        path_override=vault_folder,
-    )
-    if map_of_contents_error:
-        return jsonify({"error": map_of_contents_error}), 500
+    if preflight_bundle is not None:
+        map_of_contents_ctx = preflight_bundle.get("map_of_contents")
+        map_of_contents_error = None
+    else:
+        map_of_contents_ctx, map_of_contents_error = _ensure_moc_context(
+            course_id=int(course_id) if course_id is not None else None,
+            module_id=module_id,
+            module_name=module_name,
+            topic=topic,
+            learning_objectives=learning_objectives,
+            source_ids=source_ids,
+            force_refresh=map_of_contents_refresh,
+            path_override=vault_folder,
+        )
+        if map_of_contents_error:
+            return jsonify({"error": map_of_contents_error}), 500
 
     if not isinstance(content_filter, dict):
         content_filter = {}
@@ -3575,9 +3963,16 @@ def create_session():
             and not focus_objective_id
             and map_of_contents_ctx.get("objective_ids")
         ):
-            focus_objective_id = str(
-                map_of_contents_ctx["objective_ids"][0] or ""
-            ).strip()
+            return (
+                jsonify(
+                    {
+                        "error": "focus_objective_id is required for single-focus Tutor sessions.",
+                        "code": "FOCUS_OBJECTIVE_REQUIRED",
+                        "objective_ids": map_of_contents_ctx.get("objective_ids") or [],
+                    }
+                ),
+                400,
+            )
 
         if focus_objective_id:
             focus_wikilink = _wikilink(_strip_wikilink(focus_objective_id))
@@ -3636,6 +4031,21 @@ def create_session():
     first_block_name = None
     greeting = None
     if method_chain_id:
+        chain_meta_cur = conn.cursor()
+        chain_meta_cur.execute(
+            "SELECT context_tags FROM method_chains WHERE id = ?",
+            (method_chain_id,),
+        )
+        chain_meta_row = chain_meta_cur.fetchone()
+        if isinstance(chain_meta_row, sqlite3.Row):
+            chain_context_tags_raw = chain_meta_row["context_tags"]
+        elif chain_meta_row:
+            chain_context_tags_raw = chain_meta_row[0]
+        else:
+            chain_context_tags_raw = None
+        chain_context_tags = _parse_chain_context_tags(
+            chain_context_tags_raw
+        )
         blocks = _resolve_chain_blocks(conn, method_chain_id)
         if not blocks:
             conn.close()
@@ -3648,7 +4058,7 @@ def create_session():
             ), 400
         first_block = blocks[0]
         first_stage = str(first_block.get("control_stage") or "").upper()
-        if first_stage != "PRIME":
+        if _chain_requires_prime_launch(chain_context_tags) and first_stage != "PRIME":
             conn.close()
             return jsonify(
                 {
@@ -3749,6 +4159,7 @@ def create_session():
             "subtopic_name": map_of_contents_ctx.get("subtopic_name"),
             "objective_ids": map_of_contents_ctx.get("objective_ids") or [],
         }
+        response["north_star"] = response["map_of_contents"]
         response["objective_scope"] = (
             content_filter.get("objective_scope") or "module_all"
         )
@@ -5420,10 +5831,19 @@ def get_template_chains():
     for chain in chains:
         blocks = _resolve_chain_blocks(conn, chain["id"])
         context_tags = ""
+        runtime_profile = None
+        template_id = None
+        certification = None
         if chain.get("context_tags"):
             try:
                 tags_obj = json.loads(chain["context_tags"])
                 if isinstance(tags_obj, dict):
+                    if isinstance(tags_obj.get("runtime_profile"), dict):
+                        runtime_profile = tags_obj.get("runtime_profile")
+                    if isinstance(tags_obj.get("template_id"), str):
+                        template_id = tags_obj.get("template_id")
+                    if isinstance(tags_obj.get("certification"), dict):
+                        certification = tags_obj.get("certification")
                     context_tags = ", ".join(f"{k}:{v}" for k, v in tags_obj.items())
                 elif isinstance(tags_obj, str):
                     context_tags = tags_obj
@@ -5448,6 +5868,9 @@ def get_template_chains():
                     for b in blocks
                 ],
                 "context_tags": context_tags,
+                "template_id": template_id,
+                "certification": certification,
+                "runtime_profile": runtime_profile,
             }
         )
 
@@ -6830,7 +7253,10 @@ def upload_material():
         )
         existing = cur.fetchone()
         if existing:
-            duplicate_of = {"id": existing["id"], "title": existing["title"]}
+            if isinstance(existing, sqlite3.Row):
+                duplicate_of = {"id": existing["id"], "title": existing["title"]}
+            else:
+                duplicate_of = {"id": existing[0], "title": existing[1]}
 
     cur.execute(
         """INSERT INTO rag_docs

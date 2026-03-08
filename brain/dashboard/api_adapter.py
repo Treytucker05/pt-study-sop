@@ -5778,6 +5778,8 @@ def serialize_learning_objective_row(row):
         "lastSessionId": row["last_session_id"],
         "lastSessionDate": row["last_session_date"],
         "nextAction": row["next_action"],
+        "groupName": row["group_name"] if "group_name" in row.keys() else None,
+        "managedByTutor": bool(row["managed_by_tutor"]) if "managed_by_tutor" in row.keys() else False,
         "createdAt": row["created_at"],
         "updatedAt": row["updated_at"] or row["created_at"],
     }
@@ -5796,7 +5798,7 @@ def get_learning_objectives():
         if course_id:
             cur.execute(
                 """
-                SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+                SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
                 FROM learning_objectives WHERE course_id = ?
                 ORDER BY lo_code ASC
             """,
@@ -5805,7 +5807,7 @@ def get_learning_objectives():
         else:
             cur.execute(
                 """
-                SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+                SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
                 FROM learning_objectives WHERE module_id = ?
                 ORDER BY lo_code ASC
             """,
@@ -5826,7 +5828,7 @@ def get_learning_objective(lo_id):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
             FROM learning_objectives WHERE id = ?
         """,
             (lo_id,),
@@ -5884,7 +5886,7 @@ def create_learning_objective():
         lo_id = cur.lastrowid
         cur.execute(
             """
-            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
             FROM learning_objectives WHERE id = ?
         """,
             (lo_id,),
@@ -5997,7 +5999,7 @@ def update_learning_objective(lo_id):
         conn.commit()
         cur.execute(
             """
-            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, created_at, updated_at
+            SELECT id, course_id, module_id, lo_code, title, status, last_session_id, last_session_date, next_action, group_name, managed_by_tutor, created_at, updated_at
             FROM learning_objectives WHERE id = ?
         """,
             (lo_id,),

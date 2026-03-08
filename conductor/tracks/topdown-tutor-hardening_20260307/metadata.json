@@ -1,0 +1,16 @@
+{
+  "id": "topdown-tutor-hardening_20260307",
+  "title": "Top-Down Tutor Hardening",
+  "type": "feature",
+  "status": "active",
+  "created": "2026-03-07T00:00:00Z",
+  "updated": "2026-03-07T00:00:00Z",
+  "phases": {
+    "total": 4,
+    "completed": 1
+  },
+  "tasks": {
+    "total": 14,
+    "completed": 4
+  }
+}

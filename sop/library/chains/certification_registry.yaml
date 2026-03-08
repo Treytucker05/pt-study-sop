@@ -1,0 +1,104 @@
+version: 1
+chains:
+  C-AD-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable anatomy-focused template chain; must pass end-to-end runtime certification.
+  C-CI-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable clinical intake template chain; must pass end-to-end runtime certification.
+  C-CR-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable clinical reasoning template chain; must pass end-to-end runtime certification.
+  C-DA-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable dense-anatomy template chain; must pass end-to-end runtime certification.
+  C-DP-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable DEPTH template chain; must pass end-to-end runtime certification.
+  C-EP-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable exam-prep template chain; must pass end-to-end runtime certification.
+  C-FE-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable core first-exposure chain; must pass end-to-end runtime certification.
+  C-FE-MIN:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable minimal first-exposure chain; must pass end-to-end runtime certification.
+  C-FE-PRO:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable procedure-focused first-exposure chain; must pass end-to-end runtime certification.
+  C-FE-STD:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable standard first-exposure chain; must pass end-to-end runtime certification.
+  C-LE-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable low-energy chain; must pass end-to-end runtime certification.
+  C-MR-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable mastery-review chain; must pass end-to-end runtime certification.
+  C-PI-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable pathophysiology intake chain; must pass end-to-end runtime certification.
+  C-QD-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable quick-drill chain; must pass end-to-end runtime certification.
+  C-QF-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable quick first-exposure chain; must pass end-to-end runtime certification.
+  C-RS-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable review sprint chain; must pass end-to-end runtime certification.
+  C-SW-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable SWEEP chain; must pass end-to-end runtime certification.
+  C-TRY-001:
+    disposition: strict-certification
+    bar: strict
+    selectable: true
+    gold_standard: true
+    rationale: Primary top-down gold-standard chain; must pass the stricter teaching-quality bar.
+  C-TRY-002:
+    disposition: strict-certification
+    bar: strict
+    selectable: true
+    gold_standard: true
+    rationale: Structured top-down comparison chain; must pass the stricter teaching-quality bar.
+  C-VE-001:
+    disposition: baseline-certification
+    bar: baseline
+    selectable: true
+    rationale: Selectable visual-encoding chain; must pass end-to-end runtime certification.

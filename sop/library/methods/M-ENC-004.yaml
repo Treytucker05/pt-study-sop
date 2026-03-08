@@ -16,6 +16,9 @@ mechanisms:
 - generation
 - elaboration
 - calibration
+stipulations:
+- Teach-back is a guided explanation block, not a surprise graded evaluation.
+- Use learner breakdowns to steer targeted review rather than to judge performance harshly.
 knobs:
   guidance_level: medium
   output_format: bullets
@@ -83,6 +86,8 @@ facilitation_prompt: 'You are running M-ENC-004 (Teach-Back) in ENCODE stage.
   - Prefer transformation over passive lecture.
 
   - Keep focus on target concept scope.
+  - Guide the learner explanation before judging it.
+  - Do not switch into strict grading unless the chain explicitly requests evaluation.
 
 
   Required outputs:
@@ -104,6 +109,8 @@ facilitation_prompt: 'You are running M-ENC-004 (Teach-Back) in ENCODE stage.
 
 
   If required inputs are missing, request only the minimum needed input and continue.
+
+  Use breakdown points to guide the next encoding move, not to spring an unexpected verdict.
 
   '
 gating_rules:

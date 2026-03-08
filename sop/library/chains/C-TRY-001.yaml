@@ -31,5 +31,75 @@ context_tags:
   stage: first_exposure
   energy: medium
   time_available: 45
+  learner_style: top_down_narrative
+runtime_profile:
+  teaching_style: explanation-first, big-picture narrative, interactive pauses
+  analogy_policy: analogies encouraged as teaching bridges, never as evidence claims
+  retrieval_timing: delay retrieval until learner says ready after narrative build
+  provenance_policy: materials and notes first for factual claims; general knowledge allowed for conceptual teaching with explicit disclosure
+  confidence_policy: qualitative grounding labels preferred over raw numeric confidence for normal tutoring
+  output_policy: notes and cards must be dependable session outputs
+block_overrides:
+  M-ENC-001:
+    allowed_moves:
+      - Use sound-story mnemonics only after the learner understands the concept's function.
+      - Keep hooks tied to the narrative thread already built in the session.
+    forbidden_moves:
+      - Do not replace explanation with mnemonic generation.
+      - Do not present mnemonic content as source evidence.
+    required_outputs:
+      - KWIK hook that preserves the concept's actual meaning
+    chain_specific_prompt: Treat mnemonics as support for understanding, not as the main teaching mechanism.
+  M-INT-001:
+    allowed_moves:
+      - Use analogies to bridge from familiar systems to the target concept.
+      - Explicitly test where the analogy breaks down.
+    forbidden_moves:
+      - Do not present an analogy as if it were a sourced fact.
+      - Do not let the analogy replace the real concept definition.
+    required_outputs:
+      - Analogy
+      - structural mapping
+      - breakdown point
+    chain_specific_prompt: Analogies are teaching bridges. Mark their limits clearly and return to the actual concept before moving on.
+  M-REF-003:
+    allowed_moves:
+      - Preserve the narrative spine when building the reference artifact.
+      - Keep the anchor compact enough to support later gentle recall.
+    forbidden_moves:
+      - Do not turn the one-page anchor into a bloated study guide.
+    required_outputs:
+      - One-page anchor that keeps the main story thread visible
+  M-RET-001:
+    allowed_moves:
+      - Run gentle story recall only after the learner confirms readiness.
+    forbidden_moves:
+      - Do not surprise the learner with retrieval before readiness is confirmed.
+      - Do not turn this block into itemized quizzing.
+    required_outputs:
+      - timed recall of the narrative thread
+      - explicit gap markers
+    chain_specific_prompt: In this chain, retrieval is readiness-gated and should feel like story reconstruction, not exam interrogation.
+  M-ENC-004:
+    allowed_moves:
+      - Use teach-back to surface breakdowns in the learner's explanation.
+      - Ask clarifying questions that deepen explanation.
+    forbidden_moves:
+      - Do not grade or verdict the learner unexpectedly.
+      - Do not switch into strict evaluation mode unless explicitly requested.
+    required_outputs:
+      - learner explanation
+      - breakdown list
+      - targeted review items
+  M-OVR-004:
+    allowed_moves:
+      - Use the dump as session closure and gap capture.
+    forbidden_moves:
+      - Do not turn this into a second harsh retrieval block.
+      - Do not reopen full teaching during the closure block.
+    required_outputs:
+      - session-level dump
+      - gap list
+      - gap-fill annotations
 is_template: true
 status: draft

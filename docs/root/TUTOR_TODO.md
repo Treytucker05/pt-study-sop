@@ -18,6 +18,87 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-03-06
 
+### Sprint 17: Tutor 10/10 Certification (2026-03-07)
+- [ ] Claim scope: certification program + release-gate artifacts
+  - `conductor/tracks/tutor-10-certification_20260307/`
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/AGENT_BOARD.md`
+  - `conductor/tracks.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `sop/library/chains/certification_registry.yaml`
+  - `brain/data/seed_methods.py`
+  - `brain/dashboard/api_tutor.py`
+  - `dashboard_rebuild/client/src/api.ts`
+  - `brain/tests/test_seed_methods.py`
+  - `brain/tests/test_tutor_session_linking.py`
+- [x] Phase 0: open the certification track, define the 10/10 scorecard, freeze initial chain dispositions, and publish the deterministic fixture plan.
+- [x] Phase 0a: expose template-chain certification metadata through the seeded chain registry and template-chain API.
+- [x] Phase 1: build the material intake matrix and freeze pass criteria for supported formats.
+  - Added upload coverage for PDF/PPTX/DOCX/TXT/MD/MP4, sync preview/start coverage, stale-row pruning, sync update/dedupe coverage, and selected MP4 -> linked transcript material-context coverage.
+- [ ] Phase 2: certify session authority, preflight, restore, and resume.
+  - Added restore coverage for stale active-session keys, completed-session cleanup, corrupted wizard state, and library handoff precedence.
+  - Added backend safeguard: objective-scoped certified sessions now require preflight instead of direct start.
+- [ ] Phase 3: certify all selectable template chains at baseline/strict bars.
+- [ ] Phase 4: certify artifact reliability for notes and card drafts.
+- [ ] Phase 5: certify trust, provenance, and requested-reference behavior.
+- [ ] Phase 6: certify neuro golden paths and wire the final release gate.
+
+### Sprint 16: Strategic Architect Skill (2026-03-07)
+- [x] Claim scope: repo-local skill authoring
+  - `.codex/skills/personal-strategic-architect/`
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/AGENT_BOARD.md`
+  - `conductor/tracks/GENERAL/log.md`
+- [x] Phase 0: convert the provided strategic architect spec into a concise, discoverable skill contract.
+- [x] Phase 1: create the repo-local skill and verify agent-config hygiene.
+  - Created `.codex/skills/personal-strategic-architect/SKILL.md` with the 5-round diagnosis flow, constraint taxonomy, final report structure, and post-report accountability rules.
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
+- [x] Phase 2: log the change and close the scope.
+  - Review subagent returned no material findings; one low-severity note flagged that the activation payload treats the outer single quotes in the source spec as delimiters rather than literal output characters.
+
+### Sprint 15: Top-Down Tutor Hardening (2026-03-07)
+- [ ] Claim scope: runtime pedagogy + trust behavior
+  - `brain/tutor_prompt_builder.py`
+  - `brain/dashboard/api_tutor.py`
+  - `brain/data/seed_methods.py`
+  - `sop/library/chains/C-TRY-001.yaml`
+  - `sop/library/chains/C-TRY-002.yaml`
+  - `sop/library/methods/`
+  - `dashboard_rebuild/client/src/components/TutorChat.tsx`
+  - `dashboard_rebuild/client/src/api.ts`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `conductor/tracks/topdown-tutor-hardening_20260307/`
+- [ ] Phase 0: lock the top-down chains as the runtime proving ground and record the exact weak method cards.
+- [ ] Phase 1: rewrite global runtime tutor rules for hybrid teaching + honest provenance.
+- [ ] Phase 2: add chain runtime profiles and block overrides for `C-TRY-001` and `C-TRY-002`.
+- [ ] Phase 3: improve qualitative confidence/provenance signaling in Tutor replies.
+- [ ] Phase 4: compare live Week 7 Tutor behavior on `C-TRY-001` vs `C-TRY-002`.
+
+### Sprint 14: Neuroscience Exam Intake + First Tutor Run (2026-03-07)
+- [ ] Claim scope: live neuroscience exam prep
+  - `brain/data/pt_study.db`
+  - `brain/dashboard/api_tutor.py`
+  - `brain/rag_notes.py`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `conductor/tracks/neuroscience-exam-intake_20260307/`
+- [ ] Claim scope: live vault scaffold
+  - `C:\Users\treyt\Desktop\Treys School\Courses\Neuroscience\Week 7\`
+- [x] Phase 0: derive Exam 2 scope from schedule + Blackboard and draft the Week 7 Obsidian scaffold.
+- [x] Phase 1: load Week 7 neuroscience source files into the live Library with Neuroscience course linkage.
+  - Loaded `rag_docs` ids `518-522` for Week 7 (`Class wk 7`, lecture PDF, transcript, developmental disorders PDF, Week 7 To Do).
+- [x] Phase 2: run the first exam-scoped Tutor session against a single Week 7 objective.
+  - Locked `OBJ-1` through `OBJ-8` into `learning_objectives` for Neuroscience and validated the first live Week 7 teaching run against `OBJ-6`.
+  - Patched Wizard/session wiring so `single_focus` requires explicit objective choice and no longer auto-picks the first objective.
+- [x] Phase 2b: add preflight-first Tutor setup for neuro week sessions.
+  - Added backend `session/preflight` flow and frontend preflight state so the Wizard can show blockers before chat starts.
+  - Updated the Tutor source sidebar to use `map_of_contents` as the canonical session structure.
+- [x] Phase 3: capture remaining one-stop-shop system gaps from the live workflow.
+  - Current gaps: objective lock still split across Tutor tool flow vs adapter CRUD; Obsidian transport still split across CLI and Local REST; Week 8 Brain Structure materials still missing locally.
+
 ### Sprint 13: Skills Catalog Review (2026-03-06)
 - [x] Claim scope: docs/process
   - `docs/root/SKILLS_CATALOG.md`

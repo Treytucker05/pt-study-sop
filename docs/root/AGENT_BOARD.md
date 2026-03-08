@@ -64,11 +64,10 @@ Use only these values in the live table:
 
 | Agent | Task ID / Goal | File Scope | Status | Blocked On | Artifacts / Results | Next Handoff |
 |---|---|---|---|---|---|---|
-| `codex-implement` | `A-001` tighten Tutor delete UX | `dashboard_rebuild/client/src/components/TutorArtifacts.tsx` | `in_progress` | none | branch diff + local test results | hand off to `claude-review` after UI tests |
-| `claude-review` | `A-001-review` review Tutor delete UX | read-only on same scope | `review` | waits for `codex-implement` | findings markdown | return file:line findings only |
-| `gemini-research` | `A-001-research` compare delete UX/API patterns | docs-only / no repo writes | `todo` | none | research summary | hand recommendations back to `codex-implement` |
-
-Delete example rows when using the board for real work.
+| `codex-implement` | `CERT-000` launch Tutor 10/10 certification program | `conductor/tracks/tutor-10-certification_20260307/`, `docs/root/TUTOR_TODO.md`, `docs/root/AGENT_BOARD.md`, `conductor/tracks.md`, `conductor/tracks/GENERAL/log.md`, `sop/library/chains/certification_registry.yaml`, `brain/data/seed_methods.py`, `brain/dashboard/api_tutor.py`, `dashboard_rebuild/client/src/api.ts`, `brain/tests/test_seed_methods.py`, `brain/tests/test_tutor_session_linking.py` | `in_progress` | none | certification track/docs opened; template-chain certification registry wired into Tutor API surface | next handoff should extend certification harness from registry into material/session matrices |
+| `codex-implement` | `SK-001` create repo-local strategic architect skill | `.codex/skills/personal-strategic-architect/`, `docs/root/TUTOR_TODO.md`, `docs/root/AGENT_BOARD.md`, `conductor/tracks/GENERAL/log.md` | `done` | none | skill created + `sync_agent_config.ps1 -Mode Check` PASS | none - skill is ready for activation |
+| `halley-explorer` | `SK-001-research` inspect local skill conventions and placement | read-only on `.codex/skills/` and docs | `done` | none | recommended repo-local `.codex/skills/personal-strategic-architect` + single-file start | codex writes skill and validates |
+| `parfit-review` | `SK-001-review` review new skill for fidelity and conventions | read-only on `.codex/skills/personal-strategic-architect/` and docs | `done` | none | no material findings; one low-severity note on literal quote-mark fidelity in the activation payload | none |
 
 ## Row Rules
 

@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, CATEGORY_COLORS } from "@/lib/api";
 import type {
-  TutorMode,
+  AppLearningObjective,
   TutorObjectiveScope,
+  TutorSessionPreflightResponse,
   TutorSessionSummary,
   TutorTemplateChain,
   TutorContentSources,
@@ -65,6 +66,15 @@ interface TutorWizardProps {
   setCustomBlockIds: (ids: number[]) => void;
   objectiveScope: TutorObjectiveScope;
   setObjectiveScope: (scope: TutorObjectiveScope) => void;
+  selectedObjectiveId: string;
+  setSelectedObjectiveId: (value: string) => void;
+  selectedObjectiveGroup: string;
+  setSelectedObjectiveGroup: (value: string) => void;
+  availableObjectives: AppLearningObjective[];
+  vaultFolderPreview: string;
+  preflight?: TutorSessionPreflightResponse;
+  preflightLoading?: boolean;
+  preflightError?: string | null;
   onStartSession: () => void;
   isStarting: boolean;
   recentSessions: TutorSessionSummary[];
@@ -87,6 +97,15 @@ export function TutorWizard({
   setCustomBlockIds,
   objectiveScope,
   setObjectiveScope,
+  selectedObjectiveId,
+  setSelectedObjectiveId,
+  selectedObjectiveGroup,
+  setSelectedObjectiveGroup,
+  availableObjectives,
+  vaultFolderPreview,
+  preflight,
+  preflightLoading,
+  preflightError,
   onStartSession,
   isStarting,
   recentSessions,
@@ -203,6 +222,12 @@ export function TutorWizard({
               setTopic={setTopic}
               objectiveScope={objectiveScope}
               setObjectiveScope={setObjectiveScope}
+              selectedObjectiveId={selectedObjectiveId}
+              setSelectedObjectiveId={setSelectedObjectiveId}
+              selectedObjectiveGroup={selectedObjectiveGroup}
+              setSelectedObjectiveGroup={setSelectedObjectiveGroup}
+              availableObjectives={availableObjectives}
+              vaultFolderPreview={vaultFolderPreview}
               selectedMaterials={selectedMaterials}
               setSelectedMaterials={setSelectedMaterials}
             />
@@ -226,8 +251,14 @@ export function TutorWizard({
               courses={courses}
               topic={topic}
               objectiveScope={objectiveScope}
+              selectedObjectiveId={selectedObjectiveId}
+              selectedObjectiveGroup={selectedObjectiveGroup}
               selectedMaterials={selectedMaterials}
               selectedChainName={selectedChainName}
+              vaultFolderPreview={vaultFolderPreview}
+              preflight={preflight}
+              preflightLoading={preflightLoading}
+              preflightError={preflightError}
               onStartSession={onStartSession}
               isStarting={isStarting}
             />
@@ -309,6 +340,12 @@ function StepCourseAndMaterials({
   setTopic,
   objectiveScope,
   setObjectiveScope,
+  selectedObjectiveId,
+  setSelectedObjectiveId,
+  selectedObjectiveGroup,
+  setSelectedObjectiveGroup,
+  availableObjectives,
+  vaultFolderPreview,
   selectedMaterials,
   setSelectedMaterials,
 }: {
@@ -319,9 +356,37 @@ function StepCourseAndMaterials({
   setTopic: (topic: string) => void;
   objectiveScope: TutorObjectiveScope;
   setObjectiveScope: (scope: TutorObjectiveScope) => void;
+  selectedObjectiveId: string;
+  setSelectedObjectiveId: (value: string) => void;
+  selectedObjectiveGroup: string;
+  setSelectedObjectiveGroup: (value: string) => void;
+  availableObjectives: AppLearningObjective[];
+  vaultFolderPreview: string;
   selectedMaterials: number[];
   setSelectedMaterials: (ids: number[]) => void;
 }) {
+  const groupedObjectives = useMemo(() => {
+    const groups = new Map<string, AppLearningObjective[]>();
+    for (const objective of availableObjectives) {
+      const key = String(objective.groupName || "").trim() || "Ungrouped";
+      const bucket = groups.get(key) || [];
+      bucket.push(objective);
+      groups.set(key, bucket);
+    }
+    return Array.from(groups.entries()).map(([group, objectives]) => ({
+      group,
+      objectives,
+    }));
+  }, [availableObjectives]);
+
+  const activeGroupObjectives = useMemo(() => {
+    if (!selectedObjectiveGroup) return [];
+    return (
+      groupedObjectives.find(({ group }) => group === selectedObjectiveGroup)?.objectives ||
+      []
+    );
+  }, [groupedObjectives, selectedObjectiveGroup]);
+
   return (
     <div className={`${SECTION_GAP} w-full max-w-full min-w-0`}>
       {/* Course selector */}
@@ -339,6 +404,8 @@ function StepCourseAndMaterials({
               setCourseId(nextCourseId);
               if (courseChanged) {
                 setSelectedMaterials([]);
+                setSelectedObjectiveId("");
+                setSelectedObjectiveGroup("");
               }
               toast.success("Course selection saved");
             }}
@@ -354,6 +421,72 @@ function StepCourseAndMaterials({
           </select>
         </div>
       </Card>
+
+      {(typeof courseId === "number" || availableObjectives.length > 0) && (
+        <Card className="bg-black/40 border-2 border-primary rounded-none">
+          <div className="px-3 py-2 border-b border-primary/30">
+            <span className={TEXT_SECTION_LABEL}>OBJECTIVES</span>
+          </div>
+          <div className="p-3 space-y-3">
+            <div>
+              <label className={`${TEXT_MUTED} block mb-1 text-xs`}>STUDY UNIT</label>
+              <select
+                value={selectedObjectiveGroup}
+                onChange={(e) => {
+                  const nextGroup = e.target.value;
+                  setSelectedObjectiveGroup(nextGroup);
+                  const stillValid = groupedObjectives
+                    .find(({ group }) => group === nextGroup)
+                    ?.objectives.some(
+                      (objective) => String(objective.loCode || "") === selectedObjectiveId,
+                    );
+                  if (!stillValid) {
+                    setSelectedObjectiveId("");
+                  }
+                }}
+                className={`${SELECT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
+              >
+                <option value="">Select study unit</option>
+                {groupedObjectives.map(({ group, objectives }) => (
+                  <option key={group} value={group}>
+                    {group} ({objectives.length} objectives)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {objectiveScope === "single_focus" && (
+              <div>
+                <label className={`${TEXT_MUTED} block mb-1 text-xs`}>FOCUS OBJECTIVE</label>
+                <select
+                  value={selectedObjectiveId}
+                  onChange={(e) => setSelectedObjectiveId(e.target.value)}
+                  disabled={!selectedObjectiveGroup || activeGroupObjectives.length === 0}
+                  className={`${SELECT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
+                >
+                  <option value="">Select one objective</option>
+                  {activeGroupObjectives.map((objective) => (
+                    <option key={`${objective.id}-${objective.loCode}`} value={String(objective.loCode || "")}>
+                      {objective.loCode ? `${objective.loCode} — ` : ""}
+                      {objective.title}
+                    </option>
+                  ))}
+                </select>
+                <div className={`${TEXT_MUTED} mt-2 text-xs`}>
+                  Single-focus sessions require an explicit objective so the Tutor does not auto-pick the wrong one.
+                </div>
+              </div>
+            )}
+
+            <div className="border border-primary/20 p-2">
+              <div className="font-arcade text-[10px] text-primary mb-1">TUTOR VAULT FOLDER</div>
+              <div className="font-terminal text-xs text-foreground/80 break-all">
+                {vaultFolderPreview || "Will derive after you choose a study unit."}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Topic */}
       <Card className="bg-black/40 border-2 border-primary rounded-none">
@@ -655,8 +788,14 @@ function StepConfirm({
   courses,
   topic,
   objectiveScope,
+  selectedObjectiveId,
+  selectedObjectiveGroup,
   selectedMaterials,
   selectedChainName,
+  vaultFolderPreview,
+  preflight,
+  preflightLoading,
+  preflightError,
   onStartSession,
   isStarting,
 }: {
@@ -664,8 +803,14 @@ function StepConfirm({
   courses: TutorContentSources["courses"];
   topic: string;
   objectiveScope: TutorObjectiveScope;
+  selectedObjectiveId: string;
+  selectedObjectiveGroup: string;
   selectedMaterials: number[];
   selectedChainName: string;
+  vaultFolderPreview: string;
+  preflight?: TutorSessionPreflightResponse;
+  preflightLoading?: boolean;
+  preflightError?: string | null;
   onStartSession: () => void;
   isStarting: boolean;
 }) {
@@ -698,7 +843,73 @@ function StepConfirm({
             label="PRIME SCOPE"
             value={objectiveScope === "module_all" ? "Whole module first" : "Single objective first"}
           />
+          <SummaryRow
+            label="STUDY UNIT"
+            value={selectedObjectiveGroup || "None selected"}
+            muted={!selectedObjectiveGroup}
+          />
+          {objectiveScope === "single_focus" && (
+            <SummaryRow
+              label="FOCUS OBJECTIVE"
+              value={selectedObjectiveId || "None selected"}
+              muted={!selectedObjectiveId}
+            />
+          )}
+          <SummaryRow
+            label="VAULT FOLDER"
+            value={vaultFolderPreview || "Auto-derive pending"}
+            muted={!vaultFolderPreview}
+          />
           <SummaryRow label="CHAIN" value={selectedChainName} />
+        </div>
+      </Card>
+
+      <Card className="bg-black/40 border-2 border-primary/60 rounded-none">
+        <div className="px-3 py-2 border-b border-primary/30">
+          <span className={TEXT_SECTION_LABEL}>PREFLIGHT</span>
+        </div>
+        <div className="p-3 space-y-2">
+          {preflightLoading ? (
+            <div className={`${TEXT_MUTED} flex items-center gap-2`}>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Checking study scope, objectives, and vault readiness...
+            </div>
+          ) : preflightError ? (
+            <div className="text-xs font-terminal text-red-300 border border-red-500/40 p-2">
+              Preflight failed: {preflightError}
+            </div>
+          ) : preflight ? (
+            <>
+              <SummaryRow
+                label="STATUS"
+                value={preflight.ok ? "Ready" : "Blocked"}
+                muted={!preflight.ok}
+              />
+              <SummaryRow
+                label="MAP"
+                value={preflight.map_of_contents?.path || "Not resolved"}
+                muted={!preflight.map_of_contents?.path}
+              />
+              <SummaryRow
+                label="MODES"
+                value={`Materials ${preflight.recommended_mode_flags.materials ? "on" : "off"} · Obsidian ${preflight.recommended_mode_flags.obsidian ? "on" : "off"} · Gemini Vision ${preflight.recommended_mode_flags.gemini_vision ? "on" : "off"} · Web ${preflight.recommended_mode_flags.web_search ? "on" : "off"} · Deep Think ${preflight.recommended_mode_flags.deep_think ? "on" : "off"}`}
+              />
+              {preflight.blockers.length > 0 && (
+                <div className="border border-red-500/40 p-2 space-y-1">
+                  <div className="font-arcade text-[10px] text-red-300">BLOCKERS</div>
+                  {preflight.blockers.map((blocker) => (
+                    <div key={blocker.code} className="text-xs font-terminal text-red-200">
+                      {blocker.message}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className={`${TEXT_MUTED} text-xs`}>
+              Choose a study unit, focus objective, and material set to build a session preflight.
+            </div>
+          )}
         </div>
       </Card>
 
@@ -706,7 +917,12 @@ function StepConfirm({
       {/* Start button */}
       <Button
         onClick={onStartSession}
-        disabled={isStarting}
+        disabled={
+          isStarting ||
+          preflightLoading ||
+          (objectiveScope === "single_focus" && !selectedObjectiveId) ||
+          Boolean(preflight && preflight.blockers.length > 0)
+        }
         className={`${BTN_PRIMARY} h-12 text-base gap-2`}
       >
         {isStarting ? (

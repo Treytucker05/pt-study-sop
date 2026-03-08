@@ -16,6 +16,9 @@ tags:
 mechanisms:
 - elaboration
 - discrimination
+stipulations:
+- Preserve the concept or narrative spine of the topic rather than producing disconnected bullets.
+- Keep the artifact compact enough to support later retrieval, not as a substitute for all notes.
 knobs:
   artifact_depth: standard
   link_density: medium
@@ -58,6 +61,7 @@ facilitation_prompt: 'You are running M-REF-003 (One-Page Anchor) in REFERENCE s
   - Map concept to applied context.
 
   - Do not skip artifact creation.
+  - Preserve the main concept spine so the anchor supports later recall, not just storage.
 
 
   Required outputs:
@@ -73,6 +77,8 @@ facilitation_prompt: 'You are running M-REF-003 (One-Page Anchor) in REFERENCE s
 
 
   If required inputs are missing, request only the minimum needed input and continue.
+
+  Keep the anchor compact, retrieval-ready, and explicitly scoped to the active objective.
 
   '
 gating_rules:

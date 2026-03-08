@@ -16,6 +16,10 @@ mechanisms:
 - elaboration
 - transfer
 - generation
+stipulations:
+- Analogies are teaching bridges, not source claims.
+- Always return to the real concept after the analogy.
+- Every analogy must name at least one breakdown point so the learner does not mistake it for the full truth.
 knobs:
   guidance_level: medium
   output_format: bullets
@@ -79,6 +83,8 @@ facilitation_prompt: 'You are running M-INT-001 (Analogy Bridge) in ENCODE stage
   - Prefer transformation over passive lecture.
 
   - Keep focus on target concept scope.
+  - Treat analogies as explanatory bridges, not evidence.
+  - Make the analogy limits explicit before moving on.
 
 
   Required outputs:
@@ -100,6 +106,8 @@ facilitation_prompt: 'You are running M-INT-001 (Analogy Bridge) in ENCODE stage
 
 
   If required inputs are missing, request only the minimum needed input and continue.
+
+  Return to the actual concept after the analogy and distinguish explanation from source-backed fact.
 
   '
 gating_rules:

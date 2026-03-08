@@ -5,6 +5,8 @@ Single entry point replacing scattered retrieval logic in api_tutor.py.
 from __future__ import annotations
 
 import logging
+import json
+import sqlite3
 from pathlib import Path
 from typing import Any, Literal, Optional
 
@@ -34,6 +36,65 @@ _course_map_cache: Optional[str] = None
 ContextDepth = Literal["auto", "none", "notes", "materials"]
 
 FULL_CONTENT_BUDGET = 200_000  # ~50K tokens — safe for 128K+ context models
+
+
+def _expand_linked_material_ids(material_ids: Optional[list[int]]) -> Optional[list[int]]:
+    """Expand explicit material selection to include processed docs linked to a selected MP4."""
+    if not material_ids:
+        return material_ids
+
+    try:
+        from db_setup import DB_PATH
+
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, metadata_json
+            FROM rag_docs
+            WHERE COALESCE(corpus, 'materials') = 'materials'
+            """
+        )
+        rows = cur.fetchall()
+        conn.close()
+    except Exception as exc:
+        logger.warning("Linked material expansion failed: %s", exc)
+        return material_ids
+
+    selected = {int(mid) for mid in material_ids}
+    expanded: list[int] = []
+    seen: set[int] = set()
+
+    for mid in material_ids:
+        value = int(mid)
+        if value not in seen:
+            seen.add(value)
+            expanded.append(value)
+
+    for row in rows:
+        doc_id = int(row["id"])
+        if doc_id in seen:
+            continue
+        raw_meta = row["metadata_json"]
+        if not raw_meta:
+            continue
+        try:
+            meta = json.loads(raw_meta)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if not isinstance(meta, dict):
+            continue
+        linked_material_id = meta.get("video_material_id")
+        try:
+            linked_value = int(linked_material_id)
+        except (TypeError, ValueError):
+            continue
+        if linked_value in selected:
+            seen.add(doc_id)
+            expanded.append(doc_id)
+
+    return expanded
 
 
 def _load_full_materials(
@@ -179,11 +240,18 @@ def _fetch_materials(
     debug: dict[str, Any],
 ) -> str:
     """Retrieve study materials — full content when few files, vector search otherwise."""
+    resolved_material_ids = _expand_linked_material_ids(material_ids)
+    material_debug = debug.setdefault("materials", {})
+    if material_ids:
+        material_debug["selected_material_ids"] = list(material_ids)
+    if resolved_material_ids:
+        material_debug["expanded_material_ids"] = list(resolved_material_ids)
+
     # When explicit materials selected and count is manageable, load full content
-    if material_ids and len(material_ids) <= 10:
+    if resolved_material_ids and len(resolved_material_ids) <= 10:
         try:
             full = _load_full_materials(
-                material_ids, debug=debug.setdefault("materials", {})
+                resolved_material_ids, debug=material_debug
             )
             if full:
                 return full
@@ -197,14 +265,13 @@ def _fetch_materials(
         docs = search_with_embeddings(
             query,
             course_id=course_id,
-            material_ids=material_ids,
+            material_ids=resolved_material_ids,
             collection_name=COLLECTION_MATERIALS,
             k=k,
-            debug=debug.setdefault("materials", {}),
+            debug=material_debug,
         )
         if not docs:
             return ""
-        material_debug = debug.setdefault("materials", {})
         sources = _ordered_unique_sources(
             [
                 _material_source_label(

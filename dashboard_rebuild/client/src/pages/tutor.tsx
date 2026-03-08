@@ -1,9 +1,10 @@
 import Layout from "@/components/layout";
 import { Card } from "@/components/ui/card";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
+  AppLearningObjective,
   Material,
   TutorAccuracyProfile,
   TutorObjectiveScope,
@@ -11,6 +12,7 @@ import type {
   TutorTemplateChain,
   TutorSessionWithTurns,
   TutorConfigCheck,
+  TutorSessionPreflightResponse,
 } from "@/lib/api";
 import { fetchCourseMap } from "@/lib/api";
 import {
@@ -96,6 +98,25 @@ function normalizeObjectiveScope(value: unknown): TutorObjectiveScope {
   return "module_all";
 }
 
+function sanitizeVaultSegment(value: string): string {
+  return value.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function deriveVaultFolder(courseName: string, objectiveGroup: string): string {
+  const safeCourse = sanitizeVaultSegment(courseName || "General");
+  const safeGroup = sanitizeVaultSegment(objectiveGroup || "");
+  const weekMatch = safeGroup.match(/^Week\s+0*([0-9]+)/i);
+  if (weekMatch) {
+    return `Courses/${safeCourse}/Week ${Number(weekMatch[1])}`;
+  }
+  const moduleMatch = safeGroup.match(/^(Module|Construct|Topic)\s+0*([0-9]+)/i);
+  if (moduleMatch) {
+    return `Courses/${safeCourse}/${moduleMatch[1]} ${Number(moduleMatch[2])}`;
+  }
+  if (!safeGroup) return `Courses/${safeCourse}`;
+  return `Courses/${safeCourse}/${safeGroup}`;
+}
+
 export default function Tutor() {
   const queryClient = useQueryClient();
   const tutorMaterialStorageKey = TUTOR_SELECTED_MATERIAL_IDS_KEY;
@@ -170,6 +191,8 @@ export default function Tutor() {
       return "module_all";
     }
   });
+  const [selectedObjectiveId, setSelectedObjectiveId] = useState("");
+  const [selectedObjectiveGroup, setSelectedObjectiveGroup] = useState("");
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [isShipping, setIsShipping] = useState(false);
 
@@ -222,6 +245,8 @@ export default function Tutor() {
           customBlockIds,
           accuracyProfile,
           objectiveScope,
+          selectedObjectiveId,
+          selectedObjectiveGroup,
           selectedPaths,
         }),
       );
@@ -237,6 +262,8 @@ export default function Tutor() {
     customBlockIds,
     accuracyProfile,
     objectiveScope,
+    selectedObjectiveId,
+    selectedObjectiveGroup,
     selectedPaths,
   ]);
 
@@ -244,6 +271,126 @@ export default function Tutor() {
     queryKey: ["tutor-chat-materials-all-enabled"],
     queryFn: () => api.tutor.getMaterials({ enabled: true }),
     staleTime: 60 * 1000,
+  });
+
+  const { data: availableObjectives = [] } = useQuery<AppLearningObjective[]>({
+    queryKey: ["learning-objectives", courseId],
+    queryFn: () =>
+      typeof courseId === "number"
+        ? api.learningObjectives.getByCourse(courseId)
+        : Promise.resolve([]),
+    enabled: typeof courseId === "number",
+    staleTime: 60 * 1000,
+  });
+
+  const { data: tutorContentSources } = useQuery({
+    queryKey: ["tutor-content-sources"],
+    queryFn: () => api.tutor.getContentSources(),
+    staleTime: 60 * 1000,
+  });
+
+  const courseLabel = useMemo(
+    () =>
+      typeof courseId === "number"
+        ? tutorContentSources?.courses.find((course) => course.id === courseId)?.name || ""
+        : "",
+    [courseId, tutorContentSources],
+  );
+
+  const scopedObjectives = useMemo(
+    () =>
+      selectedObjectiveGroup
+        ? availableObjectives.filter(
+            (objective) =>
+              String(objective.groupName || "").trim() === selectedObjectiveGroup,
+          )
+        : availableObjectives,
+    [availableObjectives, selectedObjectiveGroup],
+  );
+
+  const selectedObjectiveRecord = useMemo(
+    () =>
+      availableObjectives.find(
+        (objective) => String(objective.loCode || "") === selectedObjectiveId,
+      ),
+    [availableObjectives, selectedObjectiveId],
+  );
+
+  const derivedVaultFolder = useMemo(
+    () =>
+      vaultFolder.trim() ||
+      (courseLabel && selectedObjectiveGroup
+        ? deriveVaultFolder(courseLabel, selectedObjectiveGroup)
+        : ""),
+    [vaultFolder, courseLabel, selectedObjectiveGroup],
+  );
+
+  const effectiveTopic = useMemo(
+    () =>
+      topic.trim() ||
+      selectedObjectiveRecord?.title ||
+      selectedObjectiveGroup ||
+      "",
+    [topic, selectedObjectiveRecord, selectedObjectiveGroup],
+  );
+
+  const preflightPayload = useMemo(() => {
+    if (typeof courseId !== "number") return null;
+    return {
+      course_id: courseId,
+      topic: effectiveTopic || undefined,
+      study_unit: selectedObjectiveGroup || undefined,
+      module_name: selectedObjectiveGroup || undefined,
+      objective_scope: objectiveScope,
+      focus_objective_id: selectedObjectiveId || undefined,
+      learning_objectives:
+        scopedObjectives.length > 0
+          ? scopedObjectives.map((objective) => ({
+              lo_code: objective.loCode,
+              title: objective.title,
+              status: objective.status,
+              group: objective.groupName || undefined,
+            }))
+          : undefined,
+      content_filter: {
+        ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
+        material_ids: selectedMaterials,
+        ...(derivedVaultFolder ? { vault_folder: derivedVaultFolder } : {}),
+        accuracy_profile: accuracyProfile,
+        objective_scope: objectiveScope,
+        ...(selectedObjectiveId ? { focus_objective_id: selectedObjectiveId } : {}),
+        web_search: false,
+      },
+    };
+  }, [
+    accuracyProfile,
+    courseId,
+    derivedVaultFolder,
+    effectiveTopic,
+    objectiveScope,
+    scopedObjectives,
+    selectedMaterials,
+    selectedObjectiveGroup,
+    selectedObjectiveId,
+    selectedPaths,
+  ]);
+
+  const {
+    data: preflight,
+    isFetching: preflightLoading,
+    error: preflightError,
+  } = useQuery<TutorSessionPreflightResponse>({
+    queryKey: [
+      "tutor-session-preflight",
+      JSON.stringify(preflightPayload || {}),
+    ],
+    queryFn: () => api.tutor.preflightSession(preflightPayload!),
+    enabled:
+      showSetup &&
+      !!preflightPayload &&
+      selectedMaterials.length > 0 &&
+      (!!selectedObjectiveGroup || objectiveScope === "module_all"),
+    staleTime: 30 * 1000,
   });
 
   // Filter out stale/deleted material IDs from localStorage
@@ -316,6 +463,17 @@ export default function Tutor() {
       normalizeTutorAccuracyProfile(session.content_filter?.accuracy_profile)
     );
     setObjectiveScope(normalizeObjectiveScope(session.content_filter?.objective_scope));
+    setSelectedObjectiveId(String(session.content_filter?.focus_objective_id || ""));
+    setSelectedObjectiveGroup(
+      String(
+        session.content_filter?.map_of_contents?.module_name ||
+          session.content_filter?.module_name ||
+          ""
+      )
+    );
+    if (typeof session.content_filter?.vault_folder === "string") {
+      setVaultFolder(session.content_filter.vault_folder);
+    }
     if (session.artifacts_json) {
       try {
         const parsed = JSON.parse(session.artifacts_json);
@@ -399,26 +557,29 @@ export default function Tutor() {
   const startSession = useCallback(async () => {
     setIsStarting(true);
     try {
+      if (objectiveScope === "single_focus" && !selectedObjectiveId) {
+        toast.error("Choose a focus objective before starting a single-focus Tutor session.");
+        return;
+      }
+      if (!preflightPayload) {
+        toast.error("Select a course, objective scope, and materials before starting the Tutor.");
+        return;
+      }
       let resolvedChainId = chainId;
       if (!resolvedChainId && customBlockIds.length > 0) {
         const customChain = await api.tutor.createCustomChain(customBlockIds, `Custom ${topic || "Chain"}`);
         resolvedChainId = customChain.id;
       }
+      const preflightResult = await api.tutor.preflightSession(preflightPayload);
+      if (preflightResult.blockers.length > 0) {
+        toast.error(preflightResult.blockers[0].message);
+        return;
+      }
 
       const session = await api.tutor.createSession({
-        course_id: courseId,
+        preflight_id: preflightResult.preflight_id,
         phase: "first_pass",
         mode: "Core",
-        topic: topic || undefined,
-        objective_scope: objectiveScope,
-        content_filter: {
-          ...(selectedPaths.length > 0 ? { folders: selectedPaths } : {}),
-          material_ids: selectedMaterials,
-          ...(vaultFolder.trim() ? { vault_folder: vaultFolder.trim() } : {}),
-          accuracy_profile: accuracyProfile,
-          objective_scope: objectiveScope,
-          web_search: true,
-        },
         method_chain_id: resolvedChainId,
       });
       setActiveSessionId(session.session_id);
@@ -459,7 +620,7 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [courseId, topic, selectedPaths, selectedMaterials, vaultFolder, accuracyProfile, objectiveScope, chainId, customBlockIds, queryClient]);
+  }, [preflightPayload, objectiveScope, selectedObjectiveId, chainId, customBlockIds, topic, preflight, queryClient]);
 
   const clearActiveSessionState = useCallback(() => {
     setActiveSessionId(null);
@@ -746,6 +907,12 @@ export default function Tutor() {
           }
           setAccuracyProfile(normalizeTutorAccuracyProfile(parsed?.accuracyProfile));
           setObjectiveScope(normalizeObjectiveScope(parsed?.objectiveScope));
+          if (typeof parsed?.selectedObjectiveId === "string") {
+            setSelectedObjectiveId(parsed.selectedObjectiveId);
+          }
+          if (typeof parsed?.selectedObjectiveGroup === "string") {
+            setSelectedObjectiveGroup(parsed.selectedObjectiveGroup);
+          }
           if (Array.isArray(parsed?.selectedPaths)) {
             setSelectedPaths(parsed.selectedPaths.filter((v: unknown) => typeof v === "string"));
           }
@@ -992,6 +1159,15 @@ export default function Tutor() {
                       setCustomBlockIds={setCustomBlockIds}
                       objectiveScope={objectiveScope}
                       setObjectiveScope={setObjectiveScope}
+                      selectedObjectiveId={selectedObjectiveId}
+                      setSelectedObjectiveId={setSelectedObjectiveId}
+                      selectedObjectiveGroup={selectedObjectiveGroup}
+                      setSelectedObjectiveGroup={setSelectedObjectiveGroup}
+                      availableObjectives={availableObjectives}
+                      vaultFolderPreview={derivedVaultFolder}
+                      preflight={preflight}
+                      preflightLoading={preflightLoading}
+                      preflightError={preflightError instanceof Error ? preflightError.message : null}
                       onStartSession={startSession}
                       isStarting={isStarting}
                       recentSessions={recentSessions}

@@ -21,6 +21,10 @@ mechanisms:
 - elaboration
 - generation
 - emotional_encoding
+stipulations:
+- Confirm the learner understands the concept's function before building the hook.
+- Hooks support understanding; they do not replace explanation.
+- If a hook uses broader teaching knowledge or analogy, do not present it as if it came directly from source material.
 knobs:
   guidance_level: medium
   output_format: bullets
@@ -90,6 +94,8 @@ facilitation_prompt: 'You are running M-ENC-001 (KWIK Hook) in ENCODE stage.
   - Prefer transformation over passive lecture.
 
   - Keep focus on target concept scope.
+  - Confirm concept function before mnemonic elaboration begins.
+  - Treat hooks as memory supports, not as evidence claims.
 
 
   Required outputs:
@@ -111,6 +117,8 @@ facilitation_prompt: 'You are running M-ENC-001 (KWIK Hook) in ENCODE stage.
 
 
   If required inputs are missing, request only the minimum needed input and continue.
+
+  If you use analogy or broader teaching knowledge to make a hook vivid, label it as a teaching support rather than as sourced fact.
 
   '
 gating_rules:

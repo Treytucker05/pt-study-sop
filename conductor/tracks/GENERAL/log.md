@@ -2,6 +2,74 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-07 - Top-Down Tutor Hardening kickoff
+
+- Created new feature track `topdown-tutor-hardening_20260307`.
+- Added `Top-Down Tutor Hardening` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Scope:
+  - rewrite generic runtime tutor rules into a hybrid top-down-friendly policy
+  - add explicit runtime profiles for `Top-Down Narrative Mastery` and `Top-Down Forward Progress`
+  - tighten weak method prompts used by the top-down chains
+  - improve user-facing confidence/provenance behavior without killing natural teaching
+
+---
+
+## 2026-03-07 - Neuroscience Exam Intake kickoff
+
+- Created new feature track `neuroscience-exam-intake_20260307`.
+- Added `Neuroscience Exam Intake + First Tutor Run` to the active sprint in `docs/root/TUTOR_TODO.md`.
+- Locked the live exam window from schedule + Blackboard:
+  - `EXAM 2` on `2026-03-10`
+  - covered course window `2026-02-17` through `2026-03-03`
+- Drafted the initial Week 7 Obsidian scaffold under:
+  - `C:\Users\treyt\Desktop\Treys School\Courses\Neuroscience\Week 7\`
+- Planned next live implementation step:
+  - ingest the Week 7 source set into the live Library DB
+  - keep the first Tutor target fixed to Week 7 objective `W7-OBJ-6`
+
+---
+
+## 2026-03-07 - Neuroscience Week 7 live Library intake
+
+- Loaded the first real neuroscience exam-week source set into `rag_docs` for course id `3` (`Neuroscience`).
+- Week 7 rows created:
+  - `518` — `Class wk 7` (`mp4`)
+  - `519` — `Development of nervous system updated` (`pdf`)
+  - `520` — `Lecture transcript` (`txt`)
+  - `521` — `PHYT 6313 Developmental_Disorders1_week 7` (`pdf`)
+  - `522` — `Week 7 To Do Neuro` (`txt`)
+- Follow-up: keep the first Tutor run scoped to Week 7 and objective `W7-OBJ-6` before loading more of Exam 2.
+
+---
+
+## 2026-03-07 - Week 7 Wizard/session wiring fix
+
+- Patched the Tutor Wizard + backend session path so `single_focus` sessions require an explicit objective instead of silently auto-picking the first objective row.
+- Added grouped learning-objective data to the adapter response so the Wizard can drive study-unit selection and focus-objective selection from live system state.
+- Added `POST /api/tutor/session/preflight` and preflight bundle caching so the Wizard can resolve scope, blockers, and `map_of_contents` before creating a live session.
+- Added `map_of_contents` to the client session contract and updated the Tutor source sidebar to read the live `map_of_contents` data instead of depending on the stale `north_star` field.
+- Relaxed reference-bounds gating for continuation-style prompts (`continue`, `chunk 3`, `make the derivative map explicit`) so normal follow-up questions do not throw `Concept outside current reference bounds`.
+- Validation:
+  - `pytest -q brain/tests/test_tutor_session_linking.py brain/tests/test_api_tutor_mode_flags.py` -> `29 passed`
+  - `cd dashboard_rebuild && npx vitest run client/src/components/__tests__/TutorWizard.test.tsx client/src/pages/__tests__/tutor.test.tsx` -> `10 passed`
+  - `cd dashboard_rebuild && npm run build` -> PASS
+
+---
+
+## 2026-03-07 - Week 7 live Tutor findings
+
+- The live Tutor can teach Week 7 correctly once the scope is narrowed, the objectives are in `learning_objectives`, and the session is pointed at the real Week 7 vault folder.
+- The answer quality improved materially:
+  - chunked teaching
+  - explicit pause/check-in
+  - stayed on the Week 7 objective
+- Remaining one-stop-shop gaps still visible after the live run:
+  - objective confirmation still happens too late in the flow
+  - Obsidian write/read ownership is still split across CLI and Local REST paths
+  - Week 8 Brain Structure is still missing from the local PT School folder
+
+---
+
 ## 2026-03-06 - Skills Catalog Review kickoff
 
 - Created new docs track `skills-catalog-review_20260306`.
@@ -1767,3 +1835,121 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - stale-string grep sweep for deprecated Tutor endpoints and legacy dashboard architecture markers
 - Review:
   - fresh doc-code consistency subagent pass returned `No findings`
+
+## 2026-03-07 — Top-down tutor hardening follow-through
+
+- Tightened runtime trust behavior for the Tutor:
+  - generic custom instructions no longer replace the core hybrid-teaching / provenance / objective-lock rules
+  - chain prompt assembly now includes runtime profile plus chain guardrails (gates, recovery routes, tier exits, reference-target requirement)
+  - continuation bounds were narrowed so generic `continue` prompts do not bypass objective scoping
+- Hardened top-down chain behavior:
+  - `C-TRY-002` now makes earlier calibration explicitly conditional on prior exposure/readiness
+  - `M-ENC-009` now requires a short top-down verbal frame and marks generated structure as teaching support unless specifically sourced
+- Tightened the Tutor UI trust surface:
+  - assistant replies now show qualitative provenance and qualitative confidence labels above the existing citation/debug footer
+  - `WHERE FROM?` now expands both provenance details and confidence guidance
+- Validation:
+  - `pytest -q brain/tests/test_chain_runner.py brain/tests/test_tutor_session_linking.py` -> `50 passed`
+  - `npx vitest run client/src/components/__tests__/TutorChat.test.tsx` -> `6 passed`
+  - `npm run build` in `dashboard_rebuild/` -> PASS
+  - `python brain/data/seed_methods.py --strict-sync` -> PASS
+
+## 2026-03-07 — Repo-local strategic architect skill
+
+- Added a new repo-local Codex skill:
+  - `.codex/skills/personal-strategic-architect/SKILL.md`
+- Captured the supplied strategic architect spec as an operational skill contract:
+  - exact first-response payload
+  - 5-round diagnostic sequence
+  - constraint classification (`C1`-`C6`)
+  - required strategic report sections
+  - post-report accountability behavior
+- Updated live coordination surfaces for the scoped work:
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/AGENT_BOARD.md`
+- Validation:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
+- Review:
+  - read-only review subagent returned no material findings
+  - one low-severity note flagged that the outer single quotes in the source activation payload are treated as delimiters rather than literal output characters
+
+## 2026-03-07 — Tutor 10/10 certification kickoff
+
+- Opened a new certification track:
+  - `conductor/tracks/tutor-10-certification_20260307/`
+- Published initial certification artifacts:
+  - `scorecard.md`
+  - `chain-dispositions.md`
+  - `fixtures.md`
+- Added machine-readable template-chain certification metadata source:
+  - `sop/library/chains/certification_registry.yaml`
+- Began surfacing certification metadata through Tutor template-chain responses so later harness work can consume a stable disposition contract instead of ad hoc chain-name checks.
+
+## 2026-03-07 — Tutor 10/10 material pipeline hardening
+
+- Added first Milestone 1 certification artifact:
+  - `conductor/tracks/tutor-10-certification_20260307/material-matrix.md`
+- Added explicit material pipeline certification coverage:
+  - upload coverage for PDF, PPTX, DOCX, TXT/MD, and MP4
+  - folder sync preview/start coverage
+  - full-sync stale-row pruning
+  - sync update/dedupe behavior
+  - duplicate-upload detection
+  - selected MP4 -> linked transcript material-context expansion
+- Fixed a real backend defect found by the new certification tests:
+  - duplicate upload detection in `upload_material()` assumed dict-like cursor rows and crashed on tuple rows
+- Validation:
+  - `pytest -q brain/tests/test_tutor_material_pipeline_certification.py brain/tests/test_rag_notes_reembed.py` -> `14 passed`
+  - `pytest -q brain/tests/test_seed_methods.py brain/tests/test_template_chain_certification.py brain/tests/test_tutor_session_linking.py` -> `34 passed`
+  - `python brain/data/seed_methods.py --strict-sync` -> PASS
+  - `npm run build` in `dashboard_rebuild/` -> PASS
+
+## 2026-03-07 — Tutor 10/10 session-authority hardening
+
+- Froze the canonical certified setup ownership map:
+  - `conductor/tracks/tutor-10-certification_20260307/session-authority.md`
+- Tightened the certified setup path:
+  - objective-scoped sessions now require preflight instead of direct create-session starts
+- Expanded restore/resume certification coverage:
+  - stale active-session key cleanup
+  - completed-session cleanup
+  - corrupted wizard-state fallback
+  - library handoff precedence
+- Validation:
+  - `pytest -q brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_material_pipeline_certification.py brain/tests/test_seed_methods.py brain/tests/test_template_chain_certification.py` -> `48 passed`
+  - `python brain/data/seed_methods.py --strict-sync` -> PASS
+
+## 2026-03-07 — Tutor 10/10 chain-certification kickoff
+
+- Marked template-chain inventory/disposition work as active certification truth rather than planning-only.
+- Added strict-chain runtime-contract guardrails so certified top-down chains cannot silently lose:
+  - runtime profiles
+  - gates
+  - recovery routes
+  - reference-target discipline
+- Validation:
+  - `pytest -q brain/tests/test_template_chain_runtime_contract.py brain/tests/test_template_chain_certification.py` -> `3 passed`
+
+## 2026-03-07 — Tutor 10/10 certification runner
+
+- Added executable release-gate script:
+  - `scripts/run_tutor_certification.py`
+- Runner now emits:
+  - `conductor/tracks/tutor-10-certification_20260307/latest-certification-report.json`
+  - `conductor/tracks/tutor-10-certification_20260307/latest-certification-report.md`
+- Current runner status:
+  - `overall_status=not_ready`
+  - this is expected because artifact reliability, trust, full chain certification, and neuro golden-path signoff are not complete yet
+
+## 2026-03-07 — Tutor 10/10 release gate reached
+
+- Completed live signoff artifacts:
+  - `conductor/tracks/tutor-10-certification_20260307/live-signoff.json`
+  - `conductor/tracks/tutor-10-certification_20260307/live-signoff.md`
+- Live evidence now includes:
+  - Week 7 top-down compare on `C-TRY-001` vs `C-TRY-002`
+  - Week 8 first-exposure live session
+  - Basal Ganglia review live session
+  - live note/card/structured-notes persistence check
+- Full certification runner status:
+  - `python scripts/run_tutor_certification.py` -> `overall_status=ready`

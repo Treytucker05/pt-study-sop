@@ -8,6 +8,9 @@ const {
   getMaterialsMock,
   listSessionsMock,
   configCheckMock,
+  getContentSourcesMock,
+  preflightSessionMock,
+  getLearningObjectivesByCourseMock,
   getCurrentCourseMock,
   fetchCourseMapMock,
 } = vi.hoisted(() => ({
@@ -15,6 +18,9 @@ const {
   getMaterialsMock: vi.fn(),
   listSessionsMock: vi.fn(),
   configCheckMock: vi.fn(),
+  getContentSourcesMock: vi.fn(),
+  preflightSessionMock: vi.fn(),
+  getLearningObjectivesByCourseMock: vi.fn(),
   getCurrentCourseMock: vi.fn(),
   fetchCourseMapMock: vi.fn(),
 }));
@@ -53,6 +59,8 @@ vi.mock("@/lib/api", () => ({
       getMaterials: getMaterialsMock,
       listSessions: listSessionsMock,
       configCheck: configCheckMock,
+      getContentSources: getContentSourcesMock,
+      preflightSession: preflightSessionMock,
       getSession: getSessionMock,
       getSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
       saveSettings: vi.fn().mockResolvedValue({ custom_instructions: "" }),
@@ -65,6 +73,9 @@ vi.mock("@/lib/api", () => ({
     },
     studyWheel: {
       getCurrentCourse: getCurrentCourseMock,
+    },
+    learningObjectives: {
+      getByCourse: getLearningObjectivesByCourseMock,
     },
     obsidian: {
       append: vi.fn(),
@@ -94,6 +105,25 @@ describe("Tutor page restore", () => {
     getMaterialsMock.mockResolvedValue([]);
     listSessionsMock.mockResolvedValue([]);
     configCheckMock.mockResolvedValue({ ok: true });
+    getContentSourcesMock.mockResolvedValue({ courses: [] });
+    preflightSessionMock.mockResolvedValue({
+      ok: true,
+      preflight_id: "preflight-test",
+      course_id: 1,
+      material_ids: [],
+      resolved_learning_objectives: [],
+      map_of_contents: null,
+      vault_ready: false,
+      recommended_mode_flags: {
+        materials: false,
+        obsidian: true,
+        gemini_vision: false,
+        web_search: false,
+        deep_think: false,
+      },
+      blockers: [],
+    });
+    getLearningObjectivesByCourseMock.mockResolvedValue([]);
     getCurrentCourseMock.mockResolvedValue({ currentCourse: null });
     fetchCourseMapMock.mockResolvedValue({ courses: [] });
   });
@@ -189,5 +219,63 @@ describe("Tutor page restore", () => {
       JSON.stringify([301, 302]),
     );
     expect(localStorage.getItem("tutor.selected_material_ids.v1")).toBeNull();
+  });
+
+  it("clears a stale active-session key when restore fetch fails", async () => {
+    localStorage.setItem("tutor.active_session.v1", "sess-stale");
+    getSessionMock.mockRejectedValueOnce(new Error("missing"));
+
+    renderTutor();
+
+    await waitFor(() => {
+      expect(getSessionMock).toHaveBeenCalledWith("sess-stale");
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("tutor-wizard")).toBeInTheDocument();
+    });
+    expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
+  });
+
+  it("falls back safely when wizard state is corrupted JSON", async () => {
+    localStorage.setItem("tutor.wizard.state.v1", "{not-valid-json");
+    localStorage.setItem("tutor.selected_material_ids.v2", JSON.stringify([909]));
+
+    renderTutor();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("tutor-wizard")).toHaveTextContent("selected:1");
+    });
+  });
+
+  it("clears inactive restored sessions from localStorage", async () => {
+    localStorage.setItem("tutor.active_session.v1", "sess-complete");
+    getSessionMock.mockResolvedValueOnce({
+      session_id: "sess-complete",
+      status: "completed",
+      turn_count: 2,
+      started_at: new Date("2026-03-05T12:00:00Z").toISOString(),
+      topic: "Completed Session",
+      course_id: 1,
+      method_chain_id: null,
+      current_block_index: 0,
+      chain_blocks: [],
+      content_filter: {
+        material_ids: [],
+        accuracy_profile: "strict",
+        objective_scope: "module_all",
+      },
+      artifacts_json: "[]",
+      turns: [],
+    });
+
+    renderTutor();
+
+    await waitFor(() => {
+      expect(getSessionMock).toHaveBeenCalledWith("sess-complete");
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("tutor-wizard")).toBeInTheDocument();
+    });
+    expect(localStorage.getItem("tutor.active_session.v1")).toBeNull();
   });
 });

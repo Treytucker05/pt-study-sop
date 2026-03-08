@@ -4,9 +4,24 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: no active tracks on 2026-03-06.
+Active status: `tutor-10-certification_20260307` is active on 2026-03-07.
 
-Latest update: 2026-03-06 closed Skills Catalog Review after creating `docs/root/SKILLS_CATALOG.md` and seeding the planning category for one-by-one review.
+Latest update: 2026-03-07 opened `Tutor 10/10 Certification` to define the release gate, freeze initial chain dispositions and fixture plans, and expose certification metadata through the template-chain API.
+
+- [ ] **Track: Tutor 10/10 Certification** (active — created 2026-03-07; scope: scorecard, fixtures, chain dispositions, certification harness, release gate)
+  *Link: [./tracks/tutor-10-certification_20260307/](./tracks/tutor-10-certification_20260307/)*
+
+---
+
+- [ ] **Track: Top-Down Tutor Hardening** (active — created 2026-03-07; scope: runtime rule stack, top-down chains, confidence/provenance UX)
+  *Link: [./tracks/topdown-tutor-hardening_20260307/](./tracks/topdown-tutor-hardening_20260307/)*
+
+---
+
+- [ ] **Track: Neuroscience Exam Intake + First Tutor Run** (active — created 2026-03-07; scope: Week 7 live intake, Obsidian scaffold bridge, first exam-scoped Tutor run)
+  *Link: [./tracks/neuroscience-exam-intake_20260307/](./tracks/neuroscience-exam-intake_20260307/)*
+
+---
 
 - [x] **Track: Skills Catalog Review** (complete — created 2026-03-06; closed 2026-03-06; scope: full skill catalog, decision fields, seeded planning review)
   *Link: [./tracks/skills-catalog-review_20260306/](./tracks/skills-catalog-review_20260306/)*

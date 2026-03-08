@@ -292,4 +292,44 @@ describe("TutorChat", () => {
     ).toBeInTheDocument();
     expect(warnSpy).toHaveBeenCalled();
   });
+
+  it("shows a qualitative provenance label for mixed-source teaching replies", async () => {
+    mockFetchForTutor([
+      { type: "token", content: "This explanation uses both sources and [From training knowledge — verify with your textbooks]." },
+      {
+        type: "done",
+        model: "codex",
+        citations: [{ source: "Lecture transcript.txt", index: 1 }],
+      },
+    ]);
+
+    render(
+      <TutorChat
+        sessionId="sess-6"
+        availableMaterials={[]}
+        selectedMaterialIds={[]}
+        accuracyProfile="balanced"
+        onAccuracyProfileChange={vi.fn()}
+        onSelectedMaterialIdsChange={vi.fn()}
+        onArtifactCreated={vi.fn()}
+        onTurnComplete={vi.fn()}
+      />,
+      { wrapper: createWrapper() },
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Ask a question..."), {
+      target: { value: "Teach me with an analogy" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    expect(
+      await screen.findByText(/partly grounded, partly general knowledge/i),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/mixed confidence - verify specifics/i),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /where from/i }));
+    expect(await screen.findByText(/^Confidence$/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Cited source: Lecture transcript.txt/i)).toBeInTheDocument();
+  });
 });

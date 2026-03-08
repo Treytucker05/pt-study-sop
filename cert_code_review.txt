@@ -1,0 +1,5 @@
+MEDIUM: brain/dashboard/api_tutor.py:5775 - `/api/tutor/chains/templates` returns every `is_template=1` chain and only forwards `certification` metadata; it never enforces `certification.selectable` or excludes admin-only dispositions. That makes the certification registry advisory instead of authoritative, so a future `selectable: false` or `admin-only/non-user path` chain would still be exposed in the Tutor kickoff flow.
+
+MEDIUM: brain/data/seed_methods.py:1701 - Template-chain upserts are keyed only by chain `name`, even though the seeded certification identity is the YAML `template_id` stored in `context_tags` during load. If a certified template is renamed, seeding inserts a second `method_chains` row instead of updating the original one, which can leave stale and renamed kickoff chains side by side in `/api/tutor/chains/templates`.
+
+LOW: brain/tests/test_tutor_session_linking.py:462 - The targeted template-chain regression only asserts that one strict-certified chain is present; it does not cover non-selectable/admin-only exclusion or rename/idempotency by `template_id`. Both certification-kickoff regressions above could ship without any failing test.

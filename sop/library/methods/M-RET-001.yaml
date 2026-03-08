@@ -15,6 +15,8 @@ mechanisms:
 - retrieval
 - generation
 - calibration
+stipulations:
+- If a chain or learner-ready gate is active, do not start retrieval until that gate is satisfied.
 knobs:
   difficulty: medium
   feedback_timing: after_attempt
@@ -84,6 +86,7 @@ facilitation_prompt: 'You are running M-RET-001 (Timed Brain Dump) in RETRIEVE s
   - Do not reveal full answer before attempt.
 
   - Capture errors and route signals.
+  - If the chain requires learner readiness before retrieval, confirm readiness first.
 
 
   Required outputs:
@@ -107,6 +110,8 @@ facilitation_prompt: 'You are running M-RET-001 (Timed Brain Dump) in RETRIEVE s
 
 
   If required inputs are missing, request only the minimum needed input and continue.
+
+  This is retrieval, not surprise evaluation. If a learner-ready gate is active, honor it explicitly before the dump begins.
 
   '
 gating_rules:

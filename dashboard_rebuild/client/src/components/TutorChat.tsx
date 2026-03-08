@@ -86,7 +86,7 @@ interface TutorChatProps {
 }
 
 type ArtifactType = "note" | "card" | "map";
-type SourceTab = "materials" | "vault" | "north_star";
+type SourceTab = "materials" | "vault" | "map_of_contents";
 
 interface NorthStarSummary {
   path?: string;
@@ -112,6 +112,21 @@ interface VaultEditorState {
   path: string;
   content: string;
   saving: boolean;
+}
+
+type ProvenanceTone = "source" | "notes" | "mixed" | "general";
+type ConfidenceTone = "high" | "medium" | "low";
+
+interface ProvenanceSummary {
+  label: string;
+  tone: ProvenanceTone;
+  details: string[];
+}
+
+interface ConfidenceSummary {
+  label: string;
+  tone: ConfidenceTone;
+  details: string[];
 }
 
 function _basename(path: string): string {
@@ -359,6 +374,144 @@ function detectMermaidBlock(text: string): string | null {
   return match ? match[1].trim() : null;
 }
 
+function isNoteLikeSource(source: string): boolean {
+  const value = String(source || "").toLowerCase();
+  return value.endsWith(".md") || value.includes("map of contents") || value.includes("learning objectives");
+}
+
+function summarizeProvenance(msg: ChatMessage): ProvenanceSummary {
+  const sources = (msg.citations || []).map((citation) => String(citation.source || "").trim()).filter(Boolean);
+  const hasTrainingKnowledge = /\[From training knowledge/i.test(msg.content);
+  const noteSources = sources.filter(isNoteLikeSource);
+  const nonNoteSources = sources.filter((source) => !isNoteLikeSource(source));
+
+  if (hasTrainingKnowledge && sources.length > 0) {
+    return {
+      label: "partly grounded, partly general knowledge",
+      tone: "mixed",
+      details: [
+        "The answer mixes cited session sources with broader teaching knowledge.",
+        ...sources.slice(0, 6).map((source) => `Cited source: ${source}`),
+      ],
+    };
+  }
+  if (hasTrainingKnowledge) {
+    return {
+      label: "mostly general teaching knowledge",
+      tone: "general",
+      details: [
+        "The tutor explicitly marked part of this answer as training knowledge.",
+        "Treat the explanation as useful teaching support, not as a source citation.",
+      ],
+    };
+  }
+  if (sources.length === 0) {
+    return {
+      label: "general teaching knowledge",
+      tone: "general",
+      details: ["No direct citations were attached to this reply."],
+    };
+  }
+  if (noteSources.length > 0 && nonNoteSources.length === 0) {
+    return {
+      label: "grounded in notes",
+      tone: "notes",
+      details: noteSources.slice(0, 6).map((source) => `Note-backed: ${source}`),
+    };
+  }
+  if (noteSources.length > 0 && nonNoteSources.length > 0) {
+    return {
+      label: "mixed note and material grounding",
+      tone: "mixed",
+      details: [
+        ...noteSources.slice(0, 3).map((source) => `Note-backed: ${source}`),
+        ...nonNoteSources.slice(0, 3).map((source) => `Source-backed: ${source}`),
+      ],
+    };
+  }
+  return {
+    label: "well-grounded in selected materials",
+    tone: "source",
+    details: nonNoteSources.slice(0, 6).map((source) => `Source-backed: ${source}`),
+  };
+}
+
+function summarizeConfidence(msg: ChatMessage): ConfidenceSummary {
+  const retrieval = msg.retrievalDebug;
+  const sources = (msg.citations || []).map((citation) => String(citation.source || "").trim()).filter(Boolean);
+  const hasTrainingKnowledge = /\[From training knowledge/i.test(msg.content);
+  const uniqueSources =
+    retrieval?.retrieved_material_unique_sources ?? new Set(sources).size;
+  const topSourceShare = Math.round((retrieval?.material_top_source_share ?? 0) * 100);
+  const profile =
+    retrieval?.effective_accuracy_profile ?? retrieval?.accuracy_profile ?? "balanced";
+
+  if (hasTrainingKnowledge && sources.length === 0) {
+    return {
+      label: "teaching support only - verify specifics",
+      tone: "low",
+      details: [
+        "This reply leans on broader teaching knowledge instead of direct course citations.",
+        "Use it for explanation and intuition, then verify specific medical claims against your materials.",
+      ],
+    };
+  }
+
+  if (hasTrainingKnowledge && sources.length > 0) {
+    return {
+      label: "mixed confidence - verify specifics",
+      tone: "medium",
+      details: [
+        "This reply mixes grounded course material with broader teaching knowledge.",
+        `Cited sources attached: ${sources.length}.`,
+        "Good for study flow, but verify the most specific claims before memorizing them.",
+      ],
+    };
+  }
+
+  if (sources.length === 0 && !retrieval) {
+    return {
+      label: "unverified reply - ask for a reference",
+      tone: "low",
+      details: [
+        "No retrieval or citation metadata was attached to this reply.",
+        "Ask 'Where did that come from?' if you want explicit grounding before trusting the details.",
+      ],
+    };
+  }
+
+  if (retrieval?.retrieval_confidence_tier === "high" && uniqueSources > 0) {
+    return {
+      label: "high confidence in grounding",
+      tone: "high",
+      details: [
+        `Grounded in ${uniqueSources} selected source${uniqueSources === 1 ? "" : "s"} using the ${profile} retrieval profile.`,
+        topSourceShare > 0 ? `Top source concentration: ${topSourceShare}%.` : "Evidence is distributed across retrieved sources.",
+      ],
+    };
+  }
+
+  if ((retrieval?.retrieval_confidence_tier === "medium" || sources.length > 0) && uniqueSources > 0) {
+    return {
+      label: "moderate confidence - grounded but check specifics",
+      tone: "medium",
+      details: [
+        `Grounded in ${uniqueSources} selected source${uniqueSources === 1 ? "" : "s"} with partial evidence coverage.`,
+        "Good for study flow, but double-check the most detailed claims if they matter for recall or cards.",
+      ],
+    };
+  }
+
+  return {
+    label: "limited confidence - inspect sources",
+    tone: "low",
+    details: [
+      "The system did not find enough stable retrieval evidence to rate this reply highly.",
+      "Use the attached citations or ask for a tighter source-backed answer before relying on specifics.",
+    ],
+  };
+}
+
 const TOOL_LABELS: Record<string, string> = {
   save_to_obsidian: "Obsidian",
   create_note: "Notes",
@@ -500,6 +653,58 @@ function TeachBackBadge({ rubric }: { rubric: TeachBackRubric }) {
   );
 }
 
+function ProvenanceBadge({ msg }: { msg: ChatMessage }) {
+  const [expanded, setExpanded] = useState(false);
+  const summary = summarizeProvenance(msg);
+  const confidence = summarizeConfidence(msg);
+  const colorClass =
+    summary.tone === "source"
+      ? "border-green-600 text-green-400 bg-green-950/30"
+      : summary.tone === "notes"
+        ? "border-blue-600 text-blue-300 bg-blue-950/30"
+        : summary.tone === "mixed"
+          ? "border-yellow-600 text-yellow-300 bg-yellow-950/30"
+          : "border-zinc-600 text-zinc-300 bg-zinc-950/30";
+  const confidenceClass =
+    confidence.tone === "high"
+      ? "border-green-600 text-green-400 bg-green-950/30"
+      : confidence.tone === "medium"
+        ? "border-yellow-600 text-yellow-300 bg-yellow-950/30"
+        : "border-red-600 text-red-300 bg-red-950/30";
+
+  return (
+    <div className="mt-2 pt-2 border-t border-primary/20">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`inline-flex items-center gap-2 px-3 py-1.5 font-arcade text-xs border-2 ${colorClass}`}>
+          {summary.label}
+        </span>
+        <span className={`inline-flex items-center gap-2 px-3 py-1.5 font-arcade text-xs border-2 ${confidenceClass}`}>
+          {confidence.label}
+        </span>
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="px-2 py-1 text-xs font-arcade border-2 border-primary/20 text-muted-foreground hover:text-primary hover:border-primary/50"
+        >
+          WHERE FROM?
+        </button>
+      </div>
+      {expanded && (
+        <div className="mt-2 space-y-1 font-terminal text-xs text-zinc-300">
+          <p className="text-primary">Confidence</p>
+          {confidence.details.map((detail) => (
+            <p key={`confidence-${detail}`}>{detail}</p>
+          ))}
+          <p className="pt-1 text-primary">Provenance</p>
+          {summary.details.map((detail) => (
+            <p key={`provenance-${detail}`}>{detail}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TutorChat({
   sessionId,
   courseId,
@@ -622,7 +827,7 @@ export function TutorChat({
         if (alive && folders.length > 0) {
           setSelectedVaultPaths((prev) => (prev.length > 0 ? prev : folders));
         }
-        const northStar = filter.north_star;
+        const northStar = filter.map_of_contents || filter.north_star;
         const refs = Array.isArray(filter.reference_targets)
           ? filter.reference_targets.filter((v): v is string => typeof v === "string")
           : [];
@@ -1380,6 +1585,10 @@ export function TutorChat({
                 )}
 
                 {msg.role === "assistant" && msg.content && !msg.isStreaming && (
+                  <ProvenanceBadge msg={msg} />
+                )}
+
+                {msg.role === "assistant" && msg.content && !msg.isStreaming && (
                   <div className="flex items-center gap-1 mt-2 pt-2 border-t border-primary/20">
                     <button
                       onClick={() =>
@@ -1459,7 +1668,7 @@ export function TutorChat({
                   <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
                     {msg.retrievalDebug ? (
                       <Badge variant="outline" className="text-[11px] rounded-none text-muted-foreground/80">
-                        RAG {msg.retrievalDebug.effective_accuracy_profile ?? msg.retrievalDebug.accuracy_profile ?? "strict"}{msg.retrievalDebug.profile_escalated ? " (escalated)" : ""} | conf {(msg.retrievalDebug.retrieval_confidence ?? 0).toFixed(2)} ({msg.retrievalDebug.retrieval_confidence_tier ?? "low"}) | uniq {msg.retrievalDebug.retrieved_material_unique_sources ?? 0} | top {Math.round((msg.retrievalDebug.material_top_source_share ?? 0) * 100)}% | dropped {msg.retrievalDebug.material_dropped_by_cap ?? 0}
+                        RAG debug | {msg.retrievalDebug.effective_accuracy_profile ?? msg.retrievalDebug.accuracy_profile ?? "strict"}{msg.retrievalDebug.profile_escalated ? " (escalated)" : ""} | conf {(msg.retrievalDebug.retrieval_confidence ?? 0).toFixed(2)} ({msg.retrievalDebug.retrieval_confidence_tier ?? "low"}) | uniq {msg.retrievalDebug.retrieved_material_unique_sources ?? 0} | top {Math.round((msg.retrievalDebug.material_top_source_share ?? 0) * 100)}% | dropped {msg.retrievalDebug.material_dropped_by_cap ?? 0}
                       </Badge>
                     ) : null}
                     {msg.citations?.map((c) =>
@@ -1662,14 +1871,14 @@ export function TutorChat({
               </button>
               <button
                 type="button"
-                onClick={() => setSourcesTab("north_star")}
+                onClick={() => setSourcesTab("map_of_contents")}
                 className={`h-8 px-2 font-arcade text-[10px] border-2 ${
-                  sourcesTab === "north_star"
+                  sourcesTab === "map_of_contents"
                     ? "border-primary text-primary bg-primary/10"
                     : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
                 }`}
               >
-                NORTH STAR
+                MAP
               </button>
             </div>
 
@@ -1923,10 +2132,10 @@ export function TutorChat({
                 </>
               )}
 
-              {sourcesTab === "north_star" && (
+              {sourcesTab === "map_of_contents" && (
                 <div className="space-y-2">
                   <div className="border border-primary/30 p-2">
-                    <div className="font-arcade text-[10px] text-primary mb-2">NORTH STAR CONTEXT</div>
+                    <div className="font-arcade text-[10px] text-primary mb-2">MAP OF CONTENTS</div>
                     <div className="text-xs font-terminal text-muted-foreground space-y-1">
                       <div><span className="text-foreground">Course:</span> {northStarSummary?.course_name || "N/A"}</div>
                       <div><span className="text-foreground">Module:</span> {northStarSummary?.module_name || "N/A"}</div>

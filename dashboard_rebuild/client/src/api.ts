@@ -12,6 +12,11 @@ import type {
   LoSession, InsertLoSession
 } from "@shared/schema";
 
+export type AppLearningObjective = LearningObjective & {
+  groupName?: string | null;
+  managedByTutor?: boolean;
+};
+
 export interface GoogleTask {
   id: string;
   title: string;
@@ -266,20 +271,20 @@ export const api = {
 
   learningObjectives: {
     getByCourse: (courseId: number) =>
-      request<LearningObjective[]>(`/learning-objectives?courseId=${courseId}`),
+      request<AppLearningObjective[]>(`/learning-objectives?courseId=${courseId}`),
     getByModule: (moduleId: number) =>
-      request<LearningObjective[]>(`/learning-objectives?moduleId=${moduleId}`),
-    getOne: (id: number) => request<LearningObjective>(`/learning-objectives/${id}`),
-    create: (data: InsertLearningObjective) => request<LearningObjective>("/learning-objectives", {
+      request<AppLearningObjective[]>(`/learning-objectives?moduleId=${moduleId}`),
+    getOne: (id: number) => request<AppLearningObjective>(`/learning-objectives/${id}`),
+    create: (data: InsertLearningObjective) => request<AppLearningObjective>("/learning-objectives", {
       method: "POST",
       body: JSON.stringify(data),
     }),
     createBulk: (courseId: number, moduleId: number | null, los: Omit<InsertLearningObjective, "courseId" | "moduleId">[]) =>
-      request<LearningObjective[]>("/learning-objectives/bulk", {
+      request<AppLearningObjective[]>("/learning-objectives/bulk", {
         method: "POST",
         body: JSON.stringify({ courseId, moduleId, los }),
       }),
-    update: (id: number, data: Partial<InsertLearningObjective>) => request<LearningObjective>(`/learning-objectives/${id}`, {
+    update: (id: number, data: Partial<InsertLearningObjective>) => request<AppLearningObjective>(`/learning-objectives/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
@@ -695,6 +700,11 @@ export const api = {
   },
 
   tutor: {
+    preflightSession: (data: TutorSessionPreflightRequest) =>
+      request<TutorSessionPreflightResponse>("/tutor/session/preflight", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
     createSession: (data: TutorCreateSessionRequest) =>
       request<TutorSession>("/tutor/session", {
         method: "POST",
@@ -1388,13 +1398,98 @@ export type TutorObjectiveScope = "module_all" | "single_focus";
 export type BehaviorOverride = "socratic" | "evaluate" | "concept_map" | "teach_back";
 export type TutorSessionStatus = "active" | "completed" | "abandoned";
 
+export interface TutorSessionPreflightRequest {
+  course_id: number;
+  topic?: string;
+  study_unit?: string;
+  module_name?: string;
+  module_id?: number;
+  objective_scope?: TutorObjectiveScope;
+  focus_objective_id?: string;
+  learning_objectives?: Array<
+    string | {
+      id?: string;
+      objective_id?: string;
+      lo_code?: string;
+      title?: string;
+      objective?: string;
+      status?: string;
+      group?: string;
+    }
+  >;
+  content_filter?: {
+    material_ids?: number[];
+    folders?: string[];
+    web_search?: boolean;
+    accuracy_profile?: TutorAccuracyProfile;
+    objective_scope?: TutorObjectiveScope;
+    focus_objective_id?: string;
+    vault_folder?: string;
+  };
+}
+
+export interface TutorSessionPreflightResponse {
+  ok: boolean;
+  preflight_id: string;
+  course_id: number;
+  module_name?: string;
+  topic?: string;
+  objective_scope?: TutorObjectiveScope;
+  focus_objective_id?: string | null;
+  material_ids: number[];
+  resolved_learning_objectives: Array<{
+    objective_id: string;
+    title: string;
+    status: string;
+    group?: string;
+  }>;
+  map_of_contents?: {
+    path: string;
+    status: string;
+    module_name: string;
+    course_name?: string;
+    subtopic_name?: string;
+    objective_ids: string[];
+  } | null;
+  north_star?: {
+    path: string;
+    status: string;
+    module_name: string;
+    course_name?: string;
+    subtopic_name?: string;
+    objective_ids: string[];
+  } | null;
+  vault_ready: boolean;
+  recommended_mode_flags: {
+    materials: boolean;
+    obsidian: boolean;
+    gemini_vision: boolean;
+    web_search: boolean;
+    deep_think: boolean;
+  };
+  blockers: Array<{ code: string; message: string }>;
+}
+
 export interface TutorCreateSessionRequest {
+  preflight_id?: string;
   course_id?: number;
   phase?: TutorPhase;
   mode?: TutorMode;
   topic?: string;
+  module_name?: string;
   objective_scope?: TutorObjectiveScope;
   focus_objective_id?: string;
+  learning_objectives?: Array<
+    string | {
+      id?: string;
+      objective_id?: string;
+      lo_code?: string;
+      title?: string;
+      objective?: string;
+      status?: string;
+      group?: string;
+    }
+  >;
   north_star_refresh?: boolean;
   content_filter?: {
     material_ids?: number[];
@@ -1404,6 +1499,7 @@ export interface TutorCreateSessionRequest {
     accuracy_profile?: TutorAccuracyProfile;
     objective_scope?: TutorObjectiveScope;
     focus_objective_id?: string;
+    vault_folder?: string;
     north_star_refresh?: boolean;
   };
   method_chain_id?: number;
@@ -1415,6 +1511,15 @@ export interface TutorTemplateChain {
   description: string;
   blocks: { id: number; name: string; control_stage?: string; category: string; description?: string; duration: number; facilitation_prompt?: string }[];
   context_tags: string;
+  template_id?: string | null;
+  certification?: {
+    disposition: "strict-certification" | "baseline-certification" | "legacy/deferred" | "admin-only/non-user path";
+    bar?: "strict" | "baseline" | string;
+    selectable?: boolean;
+    gold_standard?: boolean;
+    rationale?: string;
+  } | null;
+  runtime_profile?: Record<string, unknown> | null;
 }
 
 export interface TutorMethodBlock {
@@ -1451,6 +1556,14 @@ export interface TutorSession {
   current_block_name?: string | null;
   objective_scope?: TutorObjectiveScope;
   focus_objective_id?: string | null;
+  map_of_contents?: {
+    path: string;
+    status: string;
+    module_name: string;
+    course_name?: string;
+    subtopic_name?: string;
+    objective_ids: string[];
+  };
   north_star?: {
     path: string;
     status: string;
@@ -1495,7 +1608,16 @@ export interface TutorSessionWithTurns extends TutorSession {
     follow_up_targets?: string[];
     module_name?: string;
     module_prefix?: string;
+    vault_folder?: string;
     enforce_reference_bounds?: boolean;
+    map_of_contents?: {
+      path: string;
+      status: string;
+      module_name: string;
+      course_name?: string;
+      subtopic_name?: string;
+      objective_ids: string[];
+    };
     north_star?: {
       path: string;
       status: string;
