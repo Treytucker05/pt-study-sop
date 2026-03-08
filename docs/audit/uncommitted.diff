@@ -1,0 +1,4273 @@
+warning: in the working copy of '.mcp.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'dashboard_rebuild/client/src/components/TutorWizard.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'dashboard_rebuild/client/src/pages/library.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/root/TUTOR_TODO.md', LF will be replaced by CRLF the next time Git touches it
+diff --git a/.mcp.json b/.mcp.json
+index 8cc2207e..a4366df0 100644
+--- a/.mcp.json
++++ b/.mcp.json
+@@ -3,44 +3,6 @@
+     "filesystem": {
+       "command": "cmd",
+       "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "."]
+-    },
+-    "github": {
+-      "command": "cmd",
+-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-github"]
+-    },
+-    "memory": {
+-      "command": "cmd",
+-      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-memory"]
+-    },
+-    "codex-cli": {
+-      "command": "codex-mcp",
+-      "args": [],
+-      "env": {
+-        "MCP_TOOL_TIMEOUT": "36000000"
+-      }
+-    },
+-    "stitch": {
+-      "command": "cmd",
+-      "args": ["/c", "npx", "-y", "@_davideast/stitch-mcp", "proxy"],
+-      "env": {
+-        "STITCH_API_KEY": "AQ.Ab8RN6KbQ9kwkEBoB99ilag-pk1Gt-uCHIBf3uoMpSziCaT4PQ"
+-      }
+-    },
+-    "shadcn": {
+-      "command": "cmd",
+-      "args": ["/c", "npx", "shadcn@latest", "mcp"]
+-    },
+-    "context7": {
+-      "command": "cmd",
+-      "args": ["/c", "npx", "-y", "@upstash/context7-mcp"]
+-    },
+-    "gemini": {
+-      "command": "cmd",
+-      "args": ["/c", "npx", "-y", "gemini-mcp-tool"]
+-    },
+-    "claude": {
+-      "command": "cmd",
+-      "args": ["/c", "npx", "-y", "claude-mcp"]
+     }
+   }
+ }
+diff --git a/conductor/tracks/GENERAL/log.md b/conductor/tracks/GENERAL/log.md
+index 43a0527f..93874cce 100644
+--- a/conductor/tracks/GENERAL/log.md
++++ b/conductor/tracks/GENERAL/log.md
+@@ -1991,3 +1991,17 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
+ - Validation:
+   - `pytest brain/tests/test_tutor_session_linking.py -q` -> `31 passed`
+   - live Week 8 preflight after clean dashboard restart -> `follow_up_targets` resolved to real objective links instead of `[[OBJ-UNMAPPED]]`
++
++## 2026-03-08 — Week 9 Wizard hardening and Library UX cleanup
++
++- Fixed Tutor study-unit inference so descriptive week folders outrank vague or misleading filenames when materials are used to seed study-unit options.
++- Changed Tutor Wizard topic precedence so the selected study unit or focus objective drives note naming and preflight context ahead of any stale typed topic text.
++- Tightened Wizard preflight readiness so it only runs after a study unit is selected, and clarified the topic field as an optional session label rather than the source of truth for week naming.
++- Reworked the Library header actions to separate:
++  - ingest (`Upload Materials`, `Sync Study Folder`)
++  - organization (`Link View`)
++  - Tutor handoff (`Replace With View`, `Add View`, `Clear Queue`, `Open Tutor`)
++- Added explicit Tutor queue visibility messaging so hidden selections from other views are surfaced before opening Tutor.
++- Validation:
++  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `32 passed`
++  - `npm run build` in `dashboard_rebuild/` -> success
+diff --git a/dashboard_rebuild/client/src/api.ts b/dashboard_rebuild/client/src/api.ts
+index 9da26d36..5cddc01b 100644
+--- a/dashboard_rebuild/client/src/api.ts
++++ b/dashboard_rebuild/client/src/api.ts
+@@ -1,6 +1,9 @@
+-import type {
+-  Session, InsertSession,
+-  CalendarEvent, InsertCalendarEvent,
++// Re-export all types so existing imports from "@/api" continue to work
++export * from "./api.types";
++
++import type {
++  Session, InsertSession,
++  CalendarEvent, InsertCalendarEvent,
+   Task, InsertTask,
+   Proposal, InsertProposal,
+   ChatMessage, InsertChatMessage,
+@@ -8,128 +11,46 @@ import type {
+   Course, InsertCourse,
+   ScheduleEvent, InsertScheduleEvent,
+   Module, InsertModule,
+-  LearningObjective, InsertLearningObjective,
+-  LoSession, InsertLoSession
+-} from "@shared/schema";
+-
+-export type AppLearningObjective = LearningObjective & {
+-  groupName?: string | null;
+-  managedByTutor?: boolean;
+-};
+-
+-export interface GoogleTask {
+-  id: string;
+-  title: string;
+-  notes?: string;
+-  status: 'needsAction' | 'completed';
+-  due?: string;
+-  completed?: string;
+-  position?: string;
+-  listId: string;
+-  listTitle?: string;
+-}
+-
+-export interface PlannerTask {
+-  id: number;
+-  course_id?: number | null;
+-  topic_id?: number | null;
+-  course_event_id?: number | null;
+-  scheduled_date?: string | null;
+-  planned_minutes?: number | null;
+-  status: "pending" | "in_progress" | "completed" | "deferred" | string;
+-  actual_session_id?: number | null;
+-  notes?: string | null;
+-  created_at?: string | null;
+-  updated_at?: string | null;
+-  source?: string | null;
+-  priority?: number | null;
+-  review_number?: number | null;
+-  anchor_text?: string | null;
+-  course_name?: string | null;
+-}
+-
+-export interface PlannerTaskCreate {
+-  course_id?: number | null;
+-  topic_id?: number | null;
+-  course_event_id?: number | null;
+-  scheduled_date?: string | null;
+-  planned_minutes?: number | null;
+-  status?: "pending" | "in_progress" | "completed" | "deferred";
+-  actual_session_id?: number | null;
+-  notes?: string | null;
+-  source?: string | null;
+-  priority?: number | null;
+-  review_number?: number | null;
+-  anchor_text?: string | null;
+-}
+-
+-export type PlannerTaskUpdate = Partial<
+-  Pick<PlannerTask, "status" | "scheduled_date" | "planned_minutes" | "notes" | "actual_session_id">
+->;
+-
+-export interface SyllabusImportResult {
+-  modulesCreated: number;
+-  eventsCreated: number;
+-  classMeetingsExpanded: number;
+-  errors?: string[];
+-}
+-
+-export interface JanitorIssue {
+-  issue_type: string;
+-  path: string;
+-  field: string;
+-  detail: string;
+-  fixable: boolean;
+-  fix_data: Record<string, string>;
+-}
+-
+-export interface JanitorOptions {
+-  course: string[];
+-  course_code: Record<string, string>;
+-  unit_type: string[];
+-  note_type: string[];
+-}
+-
+-export interface AiFieldSuggestion {
+-  value: string;
+-  confidence: "high" | "medium" | "low";
+-}
+-
+-export interface AiResolveResponse {
+-  success: boolean;
+-  suggestion: Record<string, AiFieldSuggestion>;
+-  reasoning: string;
+-  apply_action: string;
+-  uncertain_fields?: string[];
+-  error?: string;
+-}
+-
+-export interface AiApplyResponse {
+-  success: boolean;
+-  detail: string;
+-  links_added?: number;
+-}
+-
+-export interface BatchEnrichResponse {
+-  total_processed: number;
+-  total_links_added: number;
+-  results: { path: string; links_added: number; error?: string }[];
+-}
+-
+-export interface JanitorHealthResponse {
+-  available: boolean;
+-  notes_scanned: number;
+-  total_issues: number;
+-  counts: Record<string, number>;
+-  scan_time_ms: number;
+-}
+-
+-export interface JanitorScanResponse {
+-  available: boolean;
+-  notes_scanned: number;
+-  scan_time_ms: number;
+-  issues: JanitorIssue[];
+-}
++  LearningObjective, InsertLearningObjective,
++  LoSession, InsertLoSession,
++} from "@shared/schema";
++
++import type {
++  AppLearningObjective,
++  GoogleTask,
++  PlannerTask, PlannerTaskCreate, PlannerTaskUpdate,
++  SyllabusImportResult,
++  JanitorIssue, JanitorOptions, JanitorHealthResponse, JanitorScanResponse,
++  AiResolveResponse, AiApplyResponse, BatchEnrichResponse,
++  ScholarQuestion, ScholarChatResponse, ScholarFinding,
++  TutorAuditItem, ScholarClustersResponse, ScholarRunResult, ScholarRunStatus,
++  ScholarRunHistoryItem,
++  AcademicDeadline, InsertAcademicDeadline,
++  AnkiStatus, AnkiDeck, AnkiDueInfo, CardDraft, AnkiSyncResult,
++  ObsidianStatus, ObsidianConfig, ObsidianVaultIndexResult, ObsidianGraphResult,
++  ObsidianAppendResult, ObsidianFilesResult, ObsidianFileResult,
++  ObsidianCrudResult, ObsidianMoveResult, ObsidianTemplateRenderResult,
++  MethodBlock, MethodChain, MethodChainExpanded, MethodAnalyticsResponse,
++  ChainRunRequest, ChainRunResult, ChainRunSummary,
++  TutorSessionPreflightRequest, TutorSessionPreflightResponse,
++  TutorCreateSessionRequest,
++  TutorSession, TutorSessionWithTurns, TutorSessionEndResult, TutorSessionSummary,
++  TutorArtifactRequest, TutorArtifactResult,
++  TutorContentSources,
++  TutorChainRequest, TutorChain, TutorChainWithSessions,
++  TutorEmbedResult,
++  TutorSyncPreviewPayload, TutorSyncStartPayload,
++  TutorSyncPreviewResult, TutorSyncStartResult, TutorSyncJobStatus,
++  TutorVideoProcessStartResult, TutorVideoJobStatus,
++  TutorVideoEnrichmentStatus, TutorVideoEnrichResult,
++  Material, MaterialContent, AutoLinkResult, MaterialUploadResponse,
++  TutorTemplateChain, TutorBlockProgress, TutorConfigCheck, TutorEmbedStatus,
++  TutorSessionWrapSummary, TutorChainStatusResponse,
++  MasteryDashboardResponse, MasteryDetailResponse, WhyLockedResponse,
++  DataTableSchema, DataRowsResponse,
++  BrainChatPayload, BrainOrganizePreviewResponse,
++  CourseMapResponse,
++} from "./api.types";
+ 
+ const API_BASE = "/api";
+ 
+@@ -269,25 +190,25 @@ export const api = {
+     }),
+   },
+ 
+-  learningObjectives: {
+-    getByCourse: (courseId: number) =>
+-      request<AppLearningObjective[]>(`/learning-objectives?courseId=${courseId}`),
+-    getByModule: (moduleId: number) =>
+-      request<AppLearningObjective[]>(`/learning-objectives?moduleId=${moduleId}`),
+-    getOne: (id: number) => request<AppLearningObjective>(`/learning-objectives/${id}`),
+-    create: (data: InsertLearningObjective) => request<AppLearningObjective>("/learning-objectives", {
+-      method: "POST",
+-      body: JSON.stringify(data),
+-    }),
+-    createBulk: (courseId: number, moduleId: number | null, los: Omit<InsertLearningObjective, "courseId" | "moduleId">[]) =>
+-      request<AppLearningObjective[]>("/learning-objectives/bulk", {
+-        method: "POST",
+-        body: JSON.stringify({ courseId, moduleId, los }),
+-      }),
+-    update: (id: number, data: Partial<InsertLearningObjective>) => request<AppLearningObjective>(`/learning-objectives/${id}`, {
+-      method: "PATCH",
+-      body: JSON.stringify(data),
+-    }),
++  learningObjectives: {
++    getByCourse: (courseId: number) =>
++      request<AppLearningObjective[]>(`/learning-objectives?courseId=${courseId}`),
++    getByModule: (moduleId: number) =>
++      request<AppLearningObjective[]>(`/learning-objectives?moduleId=${moduleId}`),
++    getOne: (id: number) => request<AppLearningObjective>(`/learning-objectives/${id}`),
++    create: (data: InsertLearningObjective) => request<AppLearningObjective>("/learning-objectives", {
++      method: "POST",
++      body: JSON.stringify(data),
++    }),
++    createBulk: (courseId: number, moduleId: number | null, los: Omit<InsertLearningObjective, "courseId" | "moduleId">[]) =>
++      request<AppLearningObjective[]>("/learning-objectives/bulk", {
++        method: "POST",
++        body: JSON.stringify({ courseId, moduleId, los }),
++      }),
++    update: (id: number, data: Partial<InsertLearningObjective>) => request<AppLearningObjective>(`/learning-objectives/${id}`, {
++      method: "PATCH",
++      body: JSON.stringify(data),
++    }),
+     delete: (id: number) => request<void>(`/learning-objectives/${id}`, {
+       method: "DELETE",
+     }),
+@@ -549,34 +470,34 @@ export const api = {
+     }),
+   },
+ 
+-  scholar: {
+-    getQuestions: () => request<ScholarQuestion[]>("/scholar/questions"),
+-    answerQuestion: (questionId: string, answer: string, source = "ui") =>
+-      request<ScholarQuestion>(`/scholar/questions/${encodeURIComponent(questionId)}/answer`, {
+-        method: "POST",
+-        body: JSON.stringify({ answer, source }),
+-      }),
+-    chat: (message: string) => request<ScholarChatResponse>("/scholar/chat", {
+-      method: "POST",
+-      body: JSON.stringify({ message }),
++  scholar: {
++    getQuestions: () => request<ScholarQuestion[]>("/scholar/questions"),
++    answerQuestion: (questionId: string, answer: string, source = "ui") =>
++      request<ScholarQuestion>(`/scholar/questions/${encodeURIComponent(questionId)}/answer`, {
++        method: "POST",
++        body: JSON.stringify({ answer, source }),
++      }),
++    chat: (message: string) => request<ScholarChatResponse>("/scholar/chat", {
++      method: "POST",
++      body: JSON.stringify({ message }),
+     }),
+     getFindings: () => request<ScholarFinding[]>("/scholar/findings"),
+     getTutorAudit: () => request<TutorAuditItem[]>("/scholar/tutor-audit"),
+     getClusters: () => request<ScholarClustersResponse>("/scholar/clusters"),
+     runClustering: () => request<ScholarClustersResponse>("/scholar/clusters", { method: "POST" }),
+-    run: (payload?: { triggered_by?: string; mode?: "brain" | "tutor" }) =>
+-      request<ScholarRunResult>("/scholar/run", {
+-        method: "POST",
+-        body: JSON.stringify(payload || {}),
+-      }),
+-    runStatus: () => request<ScholarRunStatus>("/scholar/status"),
+-    runHistory: async (limit = 10) => {
+-      const payload = await request<{ ok?: boolean; runs?: ScholarRunHistoryItem[] } | ScholarRunHistoryItem[]>(
+-        `/scholar/run/history?limit=${limit}`
+-      );
+-      return Array.isArray(payload) ? payload : payload.runs || [];
+-    },
+-  },
++    run: (payload?: { triggered_by?: string; mode?: "brain" | "tutor" }) =>
++      request<ScholarRunResult>("/scholar/run", {
++        method: "POST",
++        body: JSON.stringify(payload || {}),
++      }),
++    runStatus: () => request<ScholarRunStatus>("/scholar/status"),
++    runHistory: async (limit = 10) => {
++      const payload = await request<{ ok?: boolean; runs?: ScholarRunHistoryItem[] } | ScholarRunHistoryItem[]>(
++        `/scholar/run/history?limit=${limit}`
++      );
++      return Array.isArray(payload) ? payload : payload.runs || [];
++    },
++  },
+ 
+   anki: {
+     getStatus: () => request<AnkiStatus>("/anki/status"),
+@@ -699,44 +620,44 @@ export const api = {
+     getHistory: () => request<ChainRunSummary[]>("/chain-run/history"),
+   },
+ 
+-  tutor: {
+-    preflightSession: (data: TutorSessionPreflightRequest) =>
+-      request<TutorSessionPreflightResponse>("/tutor/session/preflight", {
+-        method: "POST",
+-        body: JSON.stringify(data),
+-      }),
+-    createSession: (data: TutorCreateSessionRequest) =>
+-      request<TutorSession>("/tutor/session", {
+-        method: "POST",
+-        body: JSON.stringify(data),
+-      }),
++  tutor: {
++    preflightSession: (data: TutorSessionPreflightRequest) =>
++      request<TutorSessionPreflightResponse>("/tutor/session/preflight", {
++        method: "POST",
++        body: JSON.stringify(data),
++      }),
++    createSession: (data: TutorCreateSessionRequest) =>
++      request<TutorSession>("/tutor/session", {
++        method: "POST",
++        body: JSON.stringify(data),
++      }),
+     getSession: (sessionId: string) =>
+       request<TutorSessionWithTurns>(`/tutor/session/${sessionId}`),
+     endSession: (sessionId: string) =>
+       request<TutorSessionEndResult>(`/tutor/session/${sessionId}/end`, {
+         method: "POST",
+       }),
+-    deleteSession: (sessionId: string) =>
+-      request<{
+-        deleted: boolean;
+-        session_id: string;
+-        status?: string;
+-        request_id?: string;
+-        requested_count?: number;
+-        deleted_count?: number;
+-        skipped_count?: number;
+-        failed_count?: number;
+-        objectives_deleted?: number;
+-        obsidian_deleted?: string[];
+-        obsidian_cleanup?: {
+-          success: boolean;
+-          expected_count?: number;
+-          deleted_count?: number;
+-          missing_paths?: string[];
+-        };
+-      }>(`/tutor/session/${sessionId}`, {
+-        method: "DELETE",
+-      }),
++    deleteSession: (sessionId: string) =>
++      request<{
++        deleted: boolean;
++        session_id: string;
++        status?: string;
++        request_id?: string;
++        requested_count?: number;
++        deleted_count?: number;
++        skipped_count?: number;
++        failed_count?: number;
++        objectives_deleted?: number;
++        obsidian_deleted?: string[];
++        obsidian_cleanup?: {
++          success: boolean;
++          expected_count?: number;
++          deleted_count?: number;
++          missing_paths?: string[];
++        };
++      }>(`/tutor/session/${sessionId}`, {
++        method: "DELETE",
++      }),
+     listSessions: (params?: { course_id?: number; status?: string; limit?: number }) => {
+       const qs = new URLSearchParams();
+       if (params?.course_id) qs.set("course_id", String(params.course_id));
+@@ -750,19 +671,19 @@ export const api = {
+         method: "POST",
+         body: JSON.stringify(data),
+       }),
+-    deleteArtifacts: (sessionId: string, indexes: number[]) =>
+-      request<{
+-        deleted: number;
+-        session_id: string;
+-        request_id?: string;
+-        requested_count?: number;
+-        applied_count?: number;
+-        skipped_indexes?: number[];
+-        obsidian_deleted?: string[];
+-      }>(`/tutor/session/${sessionId}/artifacts`, {
+-        method: "DELETE",
+-        body: JSON.stringify({ indexes }),
+-      }),
++    deleteArtifacts: (sessionId: string, indexes: number[]) =>
++      request<{
++        deleted: number;
++        session_id: string;
++        request_id?: string;
++        requested_count?: number;
++        applied_count?: number;
++        skipped_indexes?: number[];
++        obsidian_deleted?: string[];
++      }>(`/tutor/session/${sessionId}/artifacts`, {
++        method: "DELETE",
++        body: JSON.stringify({ indexes }),
++      }),
+     getContentSources: () =>
+       request<TutorContentSources>("/tutor/content-sources"),
+     createChain: (data: TutorChainRequest) =>
+@@ -777,21 +698,21 @@ export const api = {
+         method: "POST",
+         body: JSON.stringify(data || {}),
+       }),
+-    previewSyncMaterialsFolder: (payload: TutorSyncPreviewPayload) =>
+-      request<TutorSyncPreviewResult>("/tutor/materials/sync/preview", {
+-        method: "POST",
+-        body: JSON.stringify(payload),
+-      }),
+-    syncMaterialsFolder: (payload: TutorSyncStartPayload) =>
+-      request<TutorSyncStartResult>("/tutor/materials/sync", {
+-        method: "POST",
+-        body: JSON.stringify(payload),
+-      }),
+-    startSyncMaterialsFolder: (payload: TutorSyncStartPayload) =>
+-      request<TutorSyncStartResult>("/tutor/materials/sync/start", {
+-        method: "POST",
+-        body: JSON.stringify(payload),
+-      }),
++    previewSyncMaterialsFolder: (payload: TutorSyncPreviewPayload) =>
++      request<TutorSyncPreviewResult>("/tutor/materials/sync/preview", {
++        method: "POST",
++        body: JSON.stringify(payload),
++      }),
++    syncMaterialsFolder: (payload: TutorSyncStartPayload) =>
++      request<TutorSyncStartResult>("/tutor/materials/sync", {
++        method: "POST",
++        body: JSON.stringify(payload),
++      }),
++    startSyncMaterialsFolder: (payload: TutorSyncStartPayload) =>
++      request<TutorSyncStartResult>("/tutor/materials/sync/start", {
++        method: "POST",
++        body: JSON.stringify(payload),
++      }),
+     getSyncMaterialsStatus: (jobId: string) =>
+       request<TutorSyncJobStatus>(`/tutor/materials/sync/status/${encodeURIComponent(jobId)}`),
+     processVideoMaterial: (
+@@ -802,20 +723,20 @@ export const api = {
+         method: "POST",
+         body: JSON.stringify({ material_id: materialId, ...(opts || {}) }),
+       }),
+-    getVideoProcessStatus: (jobId: string) =>
+-      request<TutorVideoJobStatus>(`/tutor/materials/video/status/${encodeURIComponent(jobId)}`),
+-    getVideoEnrichmentStatus: (materialId?: number) => {
+-      const query =
+-        materialId !== undefined && materialId !== null
+-          ? `?material_id=${encodeURIComponent(String(materialId))}`
+-          : "";
+-      return request<TutorVideoEnrichmentStatus>(`/tutor/materials/video/enrich/status${query}`);
+-    },
+-    enrichVideoMaterial: (materialId: number, opts?: { mode?: string }) =>
+-      request<TutorVideoEnrichResult>("/tutor/materials/video/enrich", {
+-        method: "POST",
+-        body: JSON.stringify({ material_id: materialId, ...(opts || {}) }),
+-      }),
++    getVideoProcessStatus: (jobId: string) =>
++      request<TutorVideoJobStatus>(`/tutor/materials/video/status/${encodeURIComponent(jobId)}`),
++    getVideoEnrichmentStatus: (materialId?: number) => {
++      const query =
++        materialId !== undefined && materialId !== null
++          ? `?material_id=${encodeURIComponent(String(materialId))}`
++          : "";
++      return request<TutorVideoEnrichmentStatus>(`/tutor/materials/video/enrich/status${query}`);
++    },
++    enrichVideoMaterial: (materialId: number, opts?: { mode?: string }) =>
++      request<TutorVideoEnrichResult>("/tutor/materials/video/enrich", {
++        method: "POST",
++        body: JSON.stringify({ material_id: materialId, ...(opts || {}) }),
++      }),
+     uploadMaterial: async (file: File, opts?: { course_id?: number; title?: string; tags?: string }) => {
+       const form = new FormData();
+       form.append("file", file);
+@@ -953,1155 +874,8 @@ export const api = {
+   },
+ };
+ 
+-// Scholar types
+-export interface ScholarQuestion {
+-  id: number;
+-  question_id?: string;
+-  question_hash?: string;
+-  question: string;
+-  question_text?: string;
+-  context: string;
+-  dataInsufficient: string;
+-  researchAttempted: string;
+-  source: string;
+-  status?: string;
+-  answer_text?: string | null;
+-  answered_at?: string | null;
+-  created_at?: string;
+-  updated_at?: string;
+-}
+-
+-export interface ScholarChatResponse {
+-  response: string;
+-  sessionCount: number;
+-  isStub: boolean;
+-}
+-
+-export interface ScholarFinding {
+-  id: number;
+-  title: string;
+-  source: string;
+-  content: string;
+-  topic?: string;
+-  summary?: string;
+-  relevance?: string;
+-}
+-
+-export interface TutorAuditItem {
+-  id: number;
+-  sessionId: string;
+-  date: string;
+-  userMessages: number;
+-  assistantMessages: number;
+-  status: string;
+-  issue?: string;
+-  frequency?: number;
+-  courses?: string[];
+-}
+-
+-export interface ScholarClusterItem {
+-  title: string;
+-  source: string;
+-}
+-
+-export interface ScholarCluster {
+-  cluster_id: number;
+-  count: number;
+-  items: ScholarClusterItem[];
+-}
+-
+-export interface ScholarClustersResponse {
+-  clusters: ScholarCluster[];
+-}
+-
+-export interface ScholarRunResult {
+-  ok: boolean;
+-  run_id?: string;
+-  error?: string;
+-}
+-
+-export interface ScholarRunStatus {
+-  running: boolean;
+-  run_id?: string;
+-  phase?: string;
+-  status?: "running" | "complete" | "error" | "idle" | string;
+-  progress?: number;
+-  current_step?: string;
+-  last_run?: string;
+-  errors?: string[];
+-  error?: string;
+-  started_at?: string;
+-  ended_at?: string;
+-  finished_at?: string;
+-}
+-
+-export interface ScholarRunHistoryItem {
+-  id: number;
+-  run_id: string;
+-  status: string;
+-  started_at: string;
+-  finished_at?: string;
+-  duration_seconds?: number;
+-  summary?: string;
+-}
+-
+-export interface InsertAcademicDeadline {
+-  title: string;
+-  course: string;
+-  type: 'assignment' | 'quiz' | 'exam' | 'project';
+-  dueDate: string;
+-  notes?: string;
+-}
+-
+-export interface AcademicDeadline extends InsertAcademicDeadline {
+-  id: number;
+-  completed?: boolean;
+-  createdAt?: string;
+-  updatedAt?: string;
+-}
+-
+-// Anki types
+-export interface AnkiStatus {
+-  connected: boolean;
+-  version?: number;
+-  decks?: string[];
+-  reviewedToday?: number;
+-  error?: string;
+-}
+-
+-export interface AnkiDeck {
+-  id: number;
+-  name: string;
+-  cardCount: number;
+-}
+-
+-export interface AnkiDueInfo {
+-  dueCount: number;
+-  cardIds: number[];
+-}
+-
+-export interface CardDraft {
+-  id: number;
+-  sessionId: string;
+-  deckName: string;
+-  cardType: string;
+-  front: string;
+-  back: string;
+-  tags: string;
+-  status: string;
+-  createdAt: string;
+-}
+-
+-export interface AnkiSyncResult {
+-  success: boolean;
+-  output?: string;
+-  error?: string;
+-}
+-
+-// Obsidian types
+-export interface ObsidianStatus {
+-  connected: boolean;
+-  status: 'online' | 'offline' | 'error';
+-  error?: string;
+-}
+-
+-export interface ObsidianConfig {
+-  vaultName: string;
+-  apiUrl: string;
+-}
+-
+-export interface ObsidianAppendResult {
+-  success: boolean;
+-  path?: string;
+-  bytes?: number;
+-  error?: string;
+-}
+-
+-export interface ObsidianFile {
+-  path: string;
+-  name: string;
+-  type: 'file' | 'folder';
+-}
+-
+-export interface ObsidianFilesResult {
+-  success: boolean;
+-  files?: string[];
+-  error?: string;
+-}
+-
+-export interface ObsidianFileResult {
+-  success: boolean;
+-  content?: string;
+-  path?: string;
+-  error?: string;
+-}
+-
+-export interface ObsidianCrudResult {
+-  success: boolean;
+-  path?: string;
+-  created?: boolean;
+-  deleted?: boolean;
+-  error?: string;
+-}
+-
+-export interface ObsidianMoveResult {
+-  success: boolean;
+-  from_path?: string;
+-  to_path?: string;
+-  moved?: boolean;
+-  error?: string;
+-}
+-
+-export interface ObsidianTemplateRenderResult {
+-  success: boolean;
+-  template_id?: string;
+-  content?: string;
+-  error?: string;
+-}
+-
+-export interface ObsidianVaultIndexResult {
+-  success: boolean;
+-  notes: string[];
+-  paths: Record<string, string>;
+-  count: number;
+-  cached?: boolean;
+-  timestamp?: string;
+-  error?: string;
+-}
+-
+-export interface ObsidianGraphNode {
+-  id: string;
+-  name: string;
+-  folder: string;
+-}
+-
+-export interface ObsidianGraphLink {
+-  source: string;
+-  target: string;
+-}
+-
+-export interface ObsidianGraphResult {
+-  success: boolean;
+-  nodes: ObsidianGraphNode[];
+-  links: ObsidianGraphLink[];
+-  cached?: boolean;
+-  error?: string;
+-}
+-
+-// Brain ingest types
+-export interface BrainChatPayload {
+-  message: string;
+-  syncToObsidian?: boolean;
+-  mode?: string;
+-  destinationPath?: string;
+-  organizedMarkdown?: string;
+-  organizedTitle?: string;
+-  confirmWrite?: boolean;
+-}
+-
+-export interface BrainDestinationOption {
+-  id: string;
+-  label: string;
+-  path: string;
+-  kind: "recommended" | "session" | "new" | "existing" | "custom";
+-  exists: boolean;
+-}
+-
+-export interface BrainOrganizePreviewResponse {
+-  success: boolean;
+-  error?: string;
+-  organized?: {
+-    title: string;
+-    markdown: string;
+-    checklist: string[];
+-    suggested_links: string[];
+-  };
+-  destination?: {
+-    recommended_path: string;
+-    recommended_label: string;
+-    session_path?: string;
+-    module_path?: string | null;
+-    options: BrainDestinationOption[];
+-  };
+-  course?: string;
+-  courseFolder?: string | null;
+-}
+-
+-// Method Library types
+-// Control Plane (CP-MSS v1.0) categories + Legacy PEIRRO for backward compatibility
+-export type MethodCategory =
+-  // Control Plane Stages (New)
+-  | "PRIME" | "CALIBRATE" | "ENCODE" | "REFERENCE" | "RETRIEVE" | "OVERLEARN"
+-  // Legacy PEIRRO (Backward compatibility)
+-  | "prepare" | "encode" | "interrogate" | "retrieve" | "refine" | "overlearn";
+-
+-export const CATEGORY_LABELS: Record<MethodCategory, string> = {
+-  // Control Plane
+-  PRIME: "PRIME",
+-  CALIBRATE: "CALIBRATE",
+-  ENCODE: "ENCODE",
+-  REFERENCE: "REFERENCE",
+-  RETRIEVE: "RETRIEVE",
+-  OVERLEARN: "OVERLEARN",
+-  // Legacy
+-  prepare: "Prepare",
+-  encode: "Encode",
+-  interrogate: "Interrogate",
+-  retrieve: "Retrieve",
+-  refine: "Refine",
+-  overlearn: "Overlearn",
+-};
+-
+-export const CATEGORY_COLORS: Record<MethodCategory, string> = {
+-  // Control Plane Colors
+-  PRIME: "#3b82f6",        // Blue - Structure
+-  CALIBRATE: "#f59e0b",    // Yellow - Diagnostic
+-  ENCODE: "#10b981",       // Green - Growth
+-  REFERENCE: "#8b5cf6",    // Purple - Indexing
+-  RETRIEVE: "#ef4444",     // Red - Active
+-  OVERLEARN: "#ec4899",    // Pink - Mastery
+-  // Legacy Colors (mapped to similar CP colors)
+-  prepare: "#3b82f6",
+-  encode: "#10b981",
+-  interrogate: "#8b5cf6",
+-  retrieve: "#ef4444",
+-  refine: "#ec4899",
+-  overlearn: "#ec4899",
+-};
+-
+-export interface MethodBlock {
+-  id: number;
+-  name: string;
+-  control_stage?: string | null;      // Control Plane stage (PRIME, CALIBRATE, etc.)
+-  category: MethodCategory | string;   // Legacy category (for backward compatibility)
+-  description: string | null;
+-  default_duration_min: number;
+-  energy_cost: string;
+-  best_stage: string | null;
+-  tags: string[];
+-  evidence: string | null;
+-  facilitation_prompt?: string | null;
+-  knobs?: Record<string, unknown>;
+-  constraints?: Record<string, unknown>;
+-  has_active_knobs?: boolean;
+-  created_at: string;
+-}
+-
+-export interface MethodChain {
+-  id: number;
+-  name: string;
+-  description: string | null;
+-  block_ids: number[];
+-  context_tags: Record<string, unknown>;
+-  created_at: string;
+-  is_template: number;
+-}
+-
+-export interface MethodChainExpanded extends MethodChain {
+-  blocks: MethodBlock[];
+-}
+-
+-export interface MethodAnalyticsResponse {
+-  block_stats: {
+-    id: number;
+-    name: string;
+-    control_stage?: string | null;
+-    category: string;
+-    usage_count: number;
+-    avg_effectiveness: number | null;
+-    avg_engagement: number | null;
+-  }[];
+-  chain_stats: {
+-    id: number;
+-    name: string;
+-    is_template: number;
+-    usage_count: number;
+-    avg_effectiveness: number | null;
+-    avg_engagement: number | null;
+-  }[];
+-  recent_ratings: {
+-    id: number;
+-    method_block_id: number | null;
+-    chain_id: number | null;
+-    effectiveness: number;
+-    engagement: number;
+-    notes: string | null;
+-    context: Record<string, unknown>;
+-    rated_at: string;
+-    method_name: string | null;
+-    chain_name: string | null;
+-  }[];
+-}
+-
+-// Chain Runner types
+-export interface ChainRunRequest {
+-  chain_id: number;
+-  topic: string;
+-  course_id?: number;
+-  source_doc_ids?: number[];
+-  options?: {
+-    write_obsidian?: boolean;
+-    draft_cards?: boolean;
+-  };
++export async function fetchCourseMap(): Promise<CourseMapResponse> {
++  const res = await fetch("/api/tutor/course-map");
++  if (!res.ok) throw new Error("course-map fetch failed");
++  return res.json();
+ }
+-
+-export interface ChainRunStep {
+-  step: number;
+-  method_name: string;
+-  category: string;
+-  output: string;
+-  duration_ms: number;
+-}
+-
+-export interface ChainRunResult {
+-  run_id: number;
+-  chain_name: string;
+-  status: "completed" | "failed" | "running";
+-  steps: ChainRunStep[];
+-  artifacts: {
+-    session_id: number;
+-    obsidian_path?: string | null;
+-    card_draft_ids?: number[];
+-    metrics: {
+-      total_duration_ms: number;
+-      steps_completed: number;
+-      cards_drafted: number;
+-    };
+-  } | null;
+-  error?: string;
+-}
+-
+-export interface ChainRunSummary {
+-  id: number;
+-  chain_id: number;
+-  chain_name: string;
+-  topic: string;
+-  status: string;
+-  current_step: number;
+-  total_steps: number;
+-  started_at: string;
+-  completed_at: string | null;
+-}
+-
+-// Adaptive Tutor types
+-export type TutorPhase = "first_pass" | "understanding" | "testing";
+-export type TutorMode =
+-  | "Core"
+-  | "Sprint"
+-  | "Quick Sprint"
+-  | "Light"
+-  | "Drill"
+-  | "Diagnostic Sprint"
+-  | "Teaching Sprint";
+-export type TutorAccuracyProfile = "balanced" | "strict" | "coverage";
+-export type TutorObjectiveScope = "module_all" | "single_focus";
+-export type BehaviorOverride = "socratic" | "evaluate" | "concept_map" | "teach_back";
+-export type TutorSessionStatus = "active" | "completed" | "abandoned";
+-
+-export interface TutorSyncedPageStatus {
+-  path: string;
+-  status: string;
+-  error?: string | null;
+-  module_name?: string;
+-  course_name?: string;
+-  subtopic_name?: string;
+-  objective_ids?: string[];
+-}
+-
+-export interface TutorPageSyncResult {
+-  ok: boolean;
+-  map_of_contents: TutorSyncedPageStatus;
+-  learning_objectives_todo: TutorSyncedPageStatus;
+-  errors?: string[];
+-  synced_at?: string;
+-}
+-
+-export interface TutorSessionPreflightRequest {
+-  course_id: number;
+-  topic?: string;
+-  study_unit?: string;
+-  module_name?: string;
+-  module_id?: number;
+-  objective_scope?: TutorObjectiveScope;
+-  focus_objective_id?: string;
+-  learning_objectives?: Array<
+-    string | {
+-      id?: string;
+-      objective_id?: string;
+-      lo_code?: string;
+-      title?: string;
+-      objective?: string;
+-      status?: string;
+-      group?: string;
+-    }
+-  >;
+-  content_filter?: {
+-    material_ids?: number[];
+-    folders?: string[];
+-    web_search?: boolean;
+-    accuracy_profile?: TutorAccuracyProfile;
+-    objective_scope?: TutorObjectiveScope;
+-    focus_objective_id?: string;
+-    vault_folder?: string;
+-  };
+-}
+-
+-export interface TutorSessionPreflightResponse {
+-  ok: boolean;
+-  preflight_id: string;
+-  course_id: number;
+-  module_name?: string;
+-  topic?: string;
+-  objective_scope?: TutorObjectiveScope;
+-  focus_objective_id?: string | null;
+-  material_ids: number[];
+-  resolved_learning_objectives: Array<{
+-    objective_id: string;
+-    title: string;
+-    status: string;
+-    group?: string;
+-  }>;
+-  map_of_contents?: {
+-    path: string;
+-    status: string;
+-    module_name: string;
+-    course_name?: string;
+-    subtopic_name?: string;
+-    objective_ids: string[];
+-  } | null;
+-  learning_objectives_page?: TutorSyncedPageStatus | null;
+-  page_sync_result?: TutorPageSyncResult | null;
+-  north_star?: {
+-    path: string;
+-    status: string;
+-    module_name: string;
+-    course_name?: string;
+-    subtopic_name?: string;
+-    objective_ids: string[];
+-  } | null;
+-  vault_ready: boolean;
+-  recommended_mode_flags: {
+-    materials: boolean;
+-    obsidian: boolean;
+-    gemini_vision: boolean;
+-    web_search: boolean;
+-    deep_think: boolean;
+-  };
+-  blockers: Array<{ code: string; message: string }>;
+-}
+-
+-export interface TutorCreateSessionRequest {
+-  preflight_id?: string;
+-  course_id?: number;
+-  phase?: TutorPhase;
+-  mode?: TutorMode;
+-  topic?: string;
+-  module_name?: string;
+-  objective_scope?: TutorObjectiveScope;
+-  focus_objective_id?: string;
+-  learning_objectives?: Array<
+-    string | {
+-      id?: string;
+-      objective_id?: string;
+-      lo_code?: string;
+-      title?: string;
+-      objective?: string;
+-      status?: string;
+-      group?: string;
+-    }
+-  >;
+-  north_star_refresh?: boolean;
+-  content_filter?: {
+-    material_ids?: number[];
+-    model?: string;
+-    folders?: string[];
+-    web_search?: boolean;
+-    accuracy_profile?: TutorAccuracyProfile;
+-    objective_scope?: TutorObjectiveScope;
+-    focus_objective_id?: string;
+-    vault_folder?: string;
+-    north_star_refresh?: boolean;
+-  };
+-  method_chain_id?: number;
+-}
+-
+-export interface TutorTemplateChain {
+-  id: number;
+-  name: string;
+-  description: string;
+-  blocks: { id: number; name: string; control_stage?: string; category: string; description?: string; duration: number; facilitation_prompt?: string }[];
+-  context_tags: string;
+-  template_id?: string | null;
+-  certification?: {
+-    disposition: "strict-certification" | "baseline-certification" | "legacy/deferred" | "admin-only/non-user path";
+-    bar?: "strict" | "baseline" | string;
+-    selectable?: boolean;
+-    gold_standard?: boolean;
+-    rationale?: string;
+-  } | null;
+-  runtime_profile?: Record<string, unknown> | null;
+-}
+-
+-export interface TutorMethodBlock {
+-  id: number;
+-  name: string;
+-  category: string;
+-  description: string | null;
+-  default_duration_min: number;
+-  energy_cost: string;
+-  facilitation_prompt?: string | null;
+-}
+-
+-export interface TutorBlockProgress {
+-  block_index: number;
+-  block_name: string;
+-  block_description: string;
+-  block_category?: string;
+-  block_duration?: number;
+-  facilitation_prompt?: string;
+-  is_last: boolean;
+-  complete?: boolean;
+-  vault_write_status?: "success" | "skipped" | "failed" | "unavailable";
+-}
+-
+-export interface TutorSession {
+-  session_id: string;
+-  phase: TutorPhase;
+-  mode?: TutorMode;
+-  topic: string;
+-  status: TutorSessionStatus;
+-  started_at: string;
+-  method_chain_id?: number | null;
+-  current_block_index?: number;
+-  current_block_name?: string | null;
+-  objective_scope?: TutorObjectiveScope;
+-  focus_objective_id?: string | null;
+-  map_of_contents?: {
+-    path: string;
+-    status: string;
+-    module_name: string;
+-    course_name?: string;
+-    subtopic_name?: string;
+-    objective_ids: string[];
+-  };
+-  learning_objectives_page?: TutorSyncedPageStatus;
+-  page_sync_result?: TutorPageSyncResult;
+-  north_star?: {
+-    path: string;
+-    status: string;
+-    module_name: string;
+-    course_name?: string;
+-    subtopic_name?: string;
+-    objective_ids: string[];
+-  };
+-  reference_targets_count?: number;
+-}
+-
+-export interface TutorTurn {
+-  id: number;
+-  turn_number: number;
+-  question: string;
+-  answer: string | null;
+-  citations_json: TutorCitation[] | string | null;
+-  phase: string | null;
+-  artifacts_json: unknown;
+-  created_at: string;
+-}
+-
+-export interface TutorCitation {
+-  source: string;
+-  url?: string;
+-  index: number;
+-}
+-
+-export interface TutorSessionWithTurns extends TutorSession {
+-  id: number;
+-  brain_session_id: number | null;
+-  course_id: number | null;
+-  content_filter_json: string | null;
+-  content_filter: {
+-    material_ids?: number[];
+-    model?: string;
+-    web_search?: boolean;
+-    accuracy_profile?: TutorAccuracyProfile;
+-    objective_scope?: TutorObjectiveScope;
+-    focus_objective_id?: string;
+-    reference_targets?: string[];
+-    follow_up_targets?: string[];
+-    module_name?: string;
+-    module_prefix?: string;
+-    vault_folder?: string;
+-    enforce_reference_bounds?: boolean;
+-    map_of_contents?: {
+-      path: string;
+-      status: string;
+-      module_name: string;
+-      course_name?: string;
+-      subtopic_name?: string;
+-      objective_ids: string[];
+-    };
+-    north_star?: {
+-      path: string;
+-      status: string;
+-      module_name: string;
+-      course_name?: string;
+-      subtopic_name?: string;
+-      objective_ids: string[];
+-    };
+-  } | null;
+-  turn_count: number;
+-  artifacts_json: string | null;
+-  lo_ids_json: string | null;
+-  summary_text: string | null;
+-  ended_at: string | null;
+-  turns: TutorTurn[];
+-  chain_blocks?: { id: number; name: string; category: string; description: string; default_duration_min: number; facilitation_prompt?: string; evidence?: string }[];
+-}
+-
+-export interface TutorSessionSummary {
+-  id: number;
+-  session_id: string;
+-  course_id: number | null;
+-  phase: TutorPhase;
+-  mode?: TutorMode;
+-  topic: string;
+-  status: TutorSessionStatus;
+-  turn_count: number;
+-  started_at: string;
+-  ended_at: string | null;
+-}
+-
+-export interface TutorSessionEndResult {
+-  session_id: string;
+-  status: "completed";
+-  brain_session_id: number | null;
+-  ended_at: string;
+-}
+-
+-export interface TutorArtifactRequest {
+-  type: "note" | "card" | "map" | "structured_notes";
+-  content: string;
+-  title?: string;
+-  front?: string;
+-  back?: string;
+-  tags?: string;
+-}
+-
+-export interface TutorArtifactResult {
+-  type: string;
+-  session_id: string;
+-  card_id?: number;
+-  content?: string;
+-  title?: string;
+-  mermaid?: string;
+-  status?: string;
+-}
+-
+-export interface TutorContentSources {
+-  courses: {
+-    id: number | null;
+-    name: string;
+-    code: string | null;
+-    doc_count: number;
+-    wheel_linked?: boolean;
+-    wheel_active?: boolean;
+-    wheel_position?: number | null;
+-  }[];
+-  total_materials: number;
+-  total_instructions: number;
+-  total_docs: number;
+-  openrouter_enabled: boolean;
+-  buster_enabled?: boolean;
+-}
+-
+-export interface TutorChainRequest {
+-  chain_name?: string;
+-  course_id?: number;
+-  topic: string;
+-  session_ids?: string[];
+-}
+-
+-export interface TutorChain {
+-  id: number;
+-  chain_name: string | null;
+-  topic: string;
+-  session_ids: string[];
+-}
+-
+-export interface TutorChainWithSessions extends TutorChain {
+-  course_id: number | null;
+-  session_ids_json: string;
+-  status: string;
+-  created_at: string;
+-  updated_at: string | null;
+-  sessions: TutorSession[];
+-}
+-
+-export interface TutorEmbedResult {
+-  embedded: number;
+-  skipped: number;
+-  total_chunks: number;
+-}
+-
+-export interface TutorSyncPreviewPayload {
+-  folder_path: string;
+-  allowed_exts?: string[];
+-}
+-
+-export interface TutorSyncStartPayload extends TutorSyncPreviewPayload {
+-  selected_files?: string[];
+-  course_id?: number | null;
+-}
+-
+-export interface TutorSyncPreviewNode {
+-  type: "folder" | "file";
+-  name: string;
+-  path: string;
+-  size?: number;
+-  modified_at?: string | null;
+-  children?: TutorSyncPreviewNode[];
+-}
+-
+-export interface TutorSyncPreviewResult {
+-  ok?: boolean;
+-  folder: string;
+-  tree: TutorSyncPreviewNode;
+-  counts: {
+-    folders: number;
+-    files: number;
+-  };
+-  allowed_exts?: string[];
+-  truncated?: boolean;
+-  max_files?: number;
+-}
+-
+-export interface TutorSyncStartResult {
+-  ok?: boolean;
+-  job_id: string;
+-  folder?: string;
+-  selected_count?: number | null;
+-  course_id?: number | null;
+-}
+-
+-export interface TutorSyncJobStatus {
+-  job_id: string;
+-  status: "pending" | "running" | "completed" | "failed";
+-  phase?: string;
+-  folder?: string;
+-  processed: number;
+-  total: number;
+-  index?: number;
+-  current_file: string | null;
+-  errors: number;
+-  last_error?: string | null;
+-  sync_result?: {
+-    ok?: boolean;
+-    total?: number;
+-    processed?: number;
+-    failed?: number;
+-    errors?: string[];
+-    doc_ids?: number[];
+-    [key: string]: unknown;
+-  } | null;
+-  embed_result?: TutorEmbedResult | { error: string } | null;
+-  started_at: string;
+-  finished_at?: string | null;
+-}
+-
+-export interface TutorVideoProcessStartResult {
+-  ok: boolean;
+-  job_id: string;
+-  material_id: number;
+-  source_path: string;
+-}
+-
+-export interface TutorVideoJobStatus {
+-  job_id: string;
+-  status: "pending" | "running" | "completed" | "failed";
+-  phase?: string;
+-  material_id: number;
+-  source_path?: string;
+-  title?: string;
+-  model_size?: string;
+-  language?: string | null;
+-  keyframe_interval_sec?: number;
+-  started_at?: string;
+-  finished_at?: string | null;
+-  last_error?: string | null;
+-  manifest?: Record<string, unknown> | null;
+-  ingest_result?: Record<string, unknown> | null;
+-}
+-
+-export interface TutorVideoEnrichResult {
+-  ok: boolean;
+-  material_id: number;
+-  status?: string;
+-  results?: Record<string, unknown>[];
+-  enrichment_md_path?: string;
+-  error?: string;
+-}
+-
+-export interface TutorVideoEnrichmentStatus {
+-  ok: boolean;
+-  provider: string;
+-  mode: "off" | "auto" | "manual" | string;
+-  model_preference: string;
+-  model_name: string;
+-  api_key_configured: boolean;
+-  key_sources_configured?: string[];
+-  key_failover_strategy?: string;
+-  local_only_fallback: boolean;
+-  allowed: boolean;
+-  reason: string | null;
+-  material_id: number | null;
+-  budget: {
+-    monthly_spend: number;
+-    monthly_cap: number;
+-    per_video_cap: number;
+-    video_spend?: number;
+-    allowed?: boolean;
+-    reason?: string | null;
+-  };
+-  error?: string;
+-}
+-
+-export interface Material {
+-  id: number;
+-  title: string | null;
+-  source_path: string | null;
+-  folder_path: string | null;
+-  file_type: string | null;
+-  file_size: number | null;
+-  course_id: number | null;
+-  enabled: boolean;
+-  extraction_error: string | null;
+-  checksum: string | null;
+-  created_at: string;
+-  updated_at: string | null;
+-  has_docling_assets?: boolean;
+-  docling_asset_count?: number;
+-}
+-
+-export interface MaterialContent {
+-  id: number;
+-  title: string;
+-  source_path: string | null;
+-  file_type: string | null;
+-  content: string;
+-  char_count: number;
+-  extraction_lossy: boolean;
+-  replacement_ratio: number;
+-}
+-
+-export interface AutoLinkResult {
+-  linked: number;
+-  unlinked: number;
+-  mappings: Record<string, string>;
+-}
+-
+-export interface MaterialUploadResponse {
+-  id: number;
+-  title: string;
+-  file_type: string;
+-  file_size: number;
+-  char_count: number;
+-  embedded: boolean;
+-  duplicate_of: { id: number; title: string } | null;
+-}
+-
+-// Data Editor types
+-export interface DataTableSchema {
+-  table: string;
+-  columns: { cid: number; name: string; type: string; notnull: number; default: unknown; pk: number }[];
+-  row_count: number;
+-}
+-
+-export interface DataRowsResponse {
+-  rows: Record<string, unknown>[];
+-  total: number;
+-  limit: number;
+-  offset: number;
+-}
+-
+-export interface TutorVerdictErrorLocation {
+-  type: "concept" | "prerequisite" | "reasoning" | "recall";
+-  node: string | null;
+-  prereq_from: string | null;
+-  prereq_to: string | null;
+-}
+-
+-export interface TutorVerdict {
+-  verdict: "pass" | "fail" | "partial";
+-  error_location?: TutorVerdictErrorLocation | null;
+-  error_type?: string | null;
+-  why_wrong?: string | null;
+-  next_hint?: string | null;
+-  next_question?: string | null;
+-  confidence?: number;
+-  citations?: string[];
+-  _validation_issues?: string[];
+-}
+-
+-export interface TeachBackRubricGap {
+-  skill_id: string;
+-  edge_id?: string | null;
+-}
+-
+-export interface TeachBackRubric {
+-  overall_rating: "pass" | "partial" | "fail";
+-  accuracy_score: number;
+-  breadth_score: number;
+-  synthesis_score: number;
+-  misconceptions?: string[];
+-  gaps?: TeachBackRubricGap[];
+-  strengths?: string[];
+-  next_focus?: string;
+-  confidence?: number;
+-  _validation_issues?: string[];
+-  _mastery_blocked?: boolean;
+-}
+-
+-// SSE streaming helper for Tutor chat
+-export interface TutorSSEChunk {
+-  type: "token" | "done" | "error" | "web_search_searching" | "web_search_completed" | "tool_call" | "tool_result" | "tool_limit_reached";
+-  content?: string;
+-  citations?: TutorCitation[];
+-  artifacts?: unknown[];
+-  summary?: string;
+-  model?: string;
+-  retrieval_debug?: TutorRetrievalDebug;
+-  behavior_override?: BehaviorOverride;
+-  verdict?: TutorVerdict;
+-  concept_map?: unknown;
+-  teach_back_rubric?: TeachBackRubric;
+-  mastery_update?: { skill_id: string; new_mastery: number; correct: boolean };
+-}
+-
+-export interface TutorRetrievalDebug {
+-  accuracy_profile?: TutorAccuracyProfile;
+-  accuracy_profile_label?: string;
+-  requested_accuracy_profile?: TutorAccuracyProfile;
+-  effective_accuracy_profile?: TutorAccuracyProfile;
+-  profile_escalated?: boolean;
+-  profile_escalation_reasons?: string[];
+-  insufficient_evidence_guard?: boolean;
+-  insufficient_evidence_reasons?: string[];
+-  material_ids_provided?: boolean;
+-  material_ids_count?: number;
+-  selected_material_count?: number;
+-  material_k?: number;
+-  retrieval_course_id?: number | null;
+-  material_retrieval_mode?: "full_content" | "vector_search" | string;
+-  retrieved_material_chunks?: number;
+-  retrieved_material_unique_sources?: number;
+-  retrieved_material_sources?: string[];
+-  material_top_source?: string | null;
+-  material_top_source_share?: number;
+-  citations_total?: number;
+-  citations_unique_sources?: number;
+-  citation_sources?: string[];
+-  material_candidates_similarity?: number;
+-  material_candidates_mmr?: number;
+-  material_candidates_merged?: number;
+-  material_candidates_after_cap?: number;
+-  material_dropped_by_cap?: number;
+-  retrieval_confidence?: number;
+-  retrieval_confidence_tier?: "low" | "medium" | "high";
+-}
+-
+-export interface TutorSessionWrapSummary {
+-  session_id: string;
+-  topic: string;
+-  mode?: string;
+-  duration_seconds: number;
+-  turn_count: number;
+-  artifact_count: number;
+-  objectives_covered: { id: string; name: string; status: "covered" | "partial" | "missed" }[];
+-  chain_progress?: { current_block: number; total_blocks: number; chain_name: string };
+-}
+-
+-export interface TutorChainStatusResponse {
+-  chain_id: number | null;
+-  chain_name: string | null;
+-  current_block: number;
+-  total_blocks: number;
+-  blocks: { index: number; name: string; category: string; completed: boolean }[];
+-}
+-
+-export interface TutorConfigCheck {
+-  ok: boolean;
+-  codex_available: boolean;
+-  openrouter_configured: boolean;
+-  chatgpt_streaming: boolean;
+-  issues: string[];
+-}
+-
+-export interface TutorEmbedStatus {
+-  materials: { id: number; title: string; source_path: string; chunk_count: number; embedded: number }[];
+-  total: number;
+-  embedded: number;
+-  pending: number;
+-}
+-
+-// Mastery Dashboard types
+-export interface MasterySkill {
+-  skill_id: string;
+-  name: string;
+-  effective_mastery: number;
+-  status: "locked" | "available" | "mastered";
+-}
+-
+-export interface MasteryDashboardResponse {
+-  skills: MasterySkill[];
+-  count: number;
+-}
+-
+-export interface MasteryDetailResponse {
+-  skill_id: string;
+-  effective_mastery: number;
+-  status: string;
+-  p_mastery_latent: number;
+-  last_practiced_at: number | null;
+-}
+-
+-export interface WhyLockedPrereq {
+-  skill_id: string;
+-  effective_mastery: number;
+-  status: string;
+-  needed: number;
+-}
+-
+-export interface WhyLockedFlag {
+-  skill_id: string;
+-  flags: { error_type: string; severity: string; evidence_ref: string | null; created_at: string }[];
+-}
+-
+-export interface WhyLockedResponse {
+-  skill_id: string;
+-  status: string;
+-  missing_prereqs: WhyLockedPrereq[];
+-  flagged_prereqs: WhyLockedFlag[];
+-  recent_error_flags: { error_type: string; severity: string; edge_id: string | null; evidence_ref: string | null; created_at: string }[];
+-  remediation_path: string[];
+-}
+-
+-// ── Course Map ──────────────────────────────────────────────────────────────
+-
+-export interface CourseMapCourse {
+-  code: string;
+-  label: string;
+-  term: string;
+-  unit_type: string;
+-  units: Array<{ id: string; name: string; topics: string[] }>;
+-}
+-
+-export interface CourseMapResponse {
+-  vault_root: string;
+-  courses: CourseMapCourse[];
+-}
+-
+-export async function fetchCourseMap(): Promise<CourseMapResponse> {
+-  const res = await fetch("/api/tutor/course-map");
+-  if (!res.ok) throw new Error("course-map fetch failed");
+-  return res.json();
+-}
+diff --git a/dashboard_rebuild/client/src/components/TutorChat.tsx b/dashboard_rebuild/client/src/components/TutorChat.tsx
+index 367a6537..ec5355f0 100644
+--- a/dashboard_rebuild/client/src/components/TutorChat.tsx
++++ b/dashboard_rebuild/client/src/components/TutorChat.tsx
+@@ -1,709 +1,24 @@
+ import { useState, useRef, useEffect, useCallback, useMemo, type Dispatch, type SetStateAction } from "react";
+ import { Button } from "@/components/ui/button";
+-import { Badge } from "@/components/ui/badge";
+ import {
+   Send,
+   Loader2,
+-  FileText,
+-  CreditCard,
+-  Map,
+-  Table2,
+-  Network,
+-  CheckCircle2,
+-  XCircle,
+-  BookOpen,
+-  StickyNote,
+-  Upload,
+-  FolderPlus,
+-  RefreshCw,
+-  RotateCcw,
+-  Target,
+-  Pencil,
+-  Trash2,
+-  X,
+-  ChevronRight,
+-  ChevronDown,
+-  FileText as FileTextIcon,
+-  Folder as FolderIcon,
+   SlidersHorizontal,
+ } from "lucide-react";
+-import ReactMarkdown from "react-markdown";
+-import remarkGfm from "remark-gfm";
+ import { useQuery } from "@tanstack/react-query";
+ import {
+   api,
+   type BehaviorOverride,
+-  type Material,
+-  type TeachBackRubric,
+   type TutorAccuracyProfile,
+-  type TutorCitation,
+-  type TutorRetrievalDebug,
+-  type TutorSSEChunk,
+-  type TutorVerdict,
+ } from "@/lib/api";
+ import { cn } from "@/lib/utils";
+ import { toast } from "sonner";
+ 
+-interface ToolAction {
+-  tool: string;
+-  success: boolean;
+-  message: string;
+-}
+-
+-interface ChatMessage {
+-  role: "user" | "assistant";
+-  content: string;
+-  citations?: TutorCitation[];
+-  model?: string;
+-  retrievalDebug?: TutorRetrievalDebug;
+-  isStreaming?: boolean;
+-  toolActions?: ToolAction[];
+-  verdict?: TutorVerdict;
+-  teachBackRubric?: TeachBackRubric;
+-}
+-
+-export interface ChainBlock {
+-  id: number;
+-  name: string;
+-  category: string;
+-  description?: string;
+-  duration: number;
+-  facilitation_prompt?: string;
+-}
+-
+-interface TutorChatProps {
+-  sessionId: string | null;
+-  courseId?: number;
+-  availableMaterials: Material[];
+-  selectedMaterialIds: number[];
+-  accuracyProfile: TutorAccuracyProfile;
+-  onAccuracyProfileChange: (profile: TutorAccuracyProfile) => void;
+-  onSelectedMaterialIdsChange: (ids: number[]) => void;
+-  onMaterialsChanged?: () => Promise<void> | void;
+-  onArtifactCreated: (artifact: { type: string; content: string; title?: string }) => void;
+-  onTurnComplete?: (masteryUpdate?: { skill_id: string; new_mastery: number; correct: boolean }) => void;
+-  initialTurns?: { question: string; answer: string | null }[];
+-}
+-
+-type ArtifactType = "note" | "card" | "map";
+-type SourceTab = "materials" | "vault" | "map_of_contents";
+-
+-interface NorthStarSummary {
+-  path?: string;
+-  status?: string;
+-  module_name?: string;
+-  course_name?: string;
+-  subtopic_name?: string;
+-  objective_ids?: string[];
+-  reference_targets?: string[];
+-}
+-
+-function normalizeArtifactType(rawType: string | undefined): ArtifactType | null {
+-  if (rawType === "table") return "note";
+-  if (rawType === "structured_map") return "map";
+-  if (rawType === "note" || rawType === "card" || rawType === "map") {
+-    return rawType;
+-  }
+-  return null;
+-}
+-
+-interface VaultEditorState {
+-  open: boolean;
+-  path: string;
+-  content: string;
+-  saving: boolean;
+-}
+-
+-type ProvenanceTone = "source" | "notes" | "mixed" | "general";
+-type ConfidenceTone = "high" | "medium" | "low";
+-
+-interface ProvenanceSummary {
+-  label: string;
+-  tone: ProvenanceTone;
+-  details: string[];
+-}
+-
+-interface ConfidenceSummary {
+-  label: string;
+-  tone: ConfidenceTone;
+-  details: string[];
+-}
+-
+-function _basename(path: string): string {
+-  return String(path || "").split(/[\\/]/).pop() || path;
+-}
+-
+-function _parentPath(path: string): string {
+-  const normalized = String(path || "").replace(/\\/g, "/").replace(/\/+$/, "");
+-  const idx = normalized.lastIndexOf("/");
+-  if (idx <= 0) return "";
+-  return normalized.slice(0, idx);
+-}
+-
+-function _defaultNoteContent(notePath: string): string {
+-  const title = _basename(notePath).replace(/\.md$/i, "") || "New Note";
+-  const timestamp = new Date().toISOString();
+-  return `---
+-note_type: study_note
+-created_at: ${timestamp}
+-updated_at: ${timestamp}
+----
+-
+-# ${title}
+-
+-## Summary
+-
+-## Key Points
+-- 
+-
+-## Questions
+-- 
+-`;
+-}
+-
+-const VAULT_TREE_INDENT = 16;
+-
+-interface VaultTreeRowProps {
+-  fullPath: string;
+-  name: string;
+-  isFolder: boolean;
+-  depth: number;
+-  checked: boolean;
+-  expanded: boolean;
+-  onTogglePath: (path: string) => void;
+-  onToggleFolder: (path: string) => void;
+-}
+-
+-function VaultTreeRow({
+-  fullPath,
+-  name,
+-  isFolder,
+-  depth,
+-  checked,
+-  expanded,
+-  onTogglePath,
+-  onToggleFolder,
+-}: VaultTreeRowProps) {
+-  return (
+-    <div
+-      className={`flex items-center gap-2 py-1 pr-2 border text-xs font-terminal ${
+-        checked
+-          ? "border-primary/60 bg-primary/10 text-foreground"
+-          : "border-secondary/30 text-muted-foreground hover:border-secondary/60 hover:text-foreground"
+-      }`}
+-      style={{ paddingLeft: `${8 + depth * VAULT_TREE_INDENT}px` }}
+-    >
+-      <input
+-        type="checkbox"
+-        checked={checked}
+-        onChange={() => onTogglePath(fullPath)}
+-        className="h-3.5 w-3.5 accent-red-500 shrink-0"
+-      />
+-      {isFolder ? (
+-        <button
+-          type="button"
+-          onClick={() => onToggleFolder(fullPath)}
+-          className="flex items-center gap-1 min-w-0 flex-1"
+-        >
+-          {expanded ? (
+-            <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
+-          ) : (
+-            <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+-          )}
+-          <FolderIcon className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+-          <span className="truncate">{name}</span>
+-        </button>
+-      ) : (
+-        <>
+-          <span className="w-3 shrink-0" />
+-          <FileTextIcon className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+-          <span className="truncate">{name}</span>
+-        </>
+-      )}
+-    </div>
+-  );
+-}
+-
+-interface VaultTreeChildrenProps {
+-  folderPath: string;
+-  depth: number;
+-  selectedPaths: string[];
+-  expandedFolders: Set<string>;
+-  onTogglePath: (path: string) => void;
+-  onToggleFolder: (path: string) => void;
+-  searchQuery: string;
+-  refreshToken: number;
+-  enabled: boolean;
+-}
+-
+-function VaultTreeChildren({
+-  folderPath,
+-  depth,
+-  selectedPaths,
+-  expandedFolders,
+-  onTogglePath,
+-  onToggleFolder,
+-  searchQuery,
+-  refreshToken,
+-  enabled,
+-}: VaultTreeChildrenProps) {
+-  const { data } = useQuery({
+-    queryKey: ["tutor", "obsidian", "files", folderPath, refreshToken],
+-    queryFn: () => api.obsidian.getFiles(folderPath),
+-    enabled,
+-  });
+-
+-  const entries = Array.isArray(data?.files) ? data.files : [];
+-  const q = searchQuery.trim().toLowerCase();
+-
+-  return (
+-    <>
+-      {entries.map((entry) => {
+-        const trimmed = String(entry || "").trim();
+-        if (!trimmed) return null;
+-        const isFolder = trimmed.endsWith("/");
+-        const cleaned = trimmed.replace(/\/$/, "");
+-        const name = _basename(cleaned);
+-        const fullPath = folderPath ? `${folderPath}/${name}` : name;
+-        if (q && !fullPath.toLowerCase().includes(q)) return null;
+-        const expanded = isFolder ? expandedFolders.has(fullPath) : false;
+-
+-        return (
+-          <div key={fullPath}>
+-            <VaultTreeRow
+-              fullPath={fullPath}
+-              name={name}
+-              isFolder={isFolder}
+-              depth={depth}
+-              checked={selectedPaths.includes(fullPath)}
+-              expanded={expanded}
+-              onTogglePath={onTogglePath}
+-              onToggleFolder={onToggleFolder}
+-            />
+-            {isFolder && expanded && (
+-              <VaultTreeChildren
+-                folderPath={fullPath}
+-                depth={depth + 1}
+-                selectedPaths={selectedPaths}
+-                expandedFolders={expandedFolders}
+-                onTogglePath={onTogglePath}
+-                onToggleFolder={onToggleFolder}
+-                searchQuery={searchQuery}
+-                refreshToken={refreshToken}
+-                enabled={enabled}
+-              />
+-            )}
+-          </div>
+-        );
+-      })}
+-    </>
+-  );
+-}
+-
+-function parseArtifactCommand(message: string): { type: ArtifactType | null; title: string } {
+-  const trimmed = message.trim();
+-  if (/^\/(note|save)\b/i.test(trimmed)) {
+-    return {
+-      type: "note",
+-      title: trimmed.replace(/^\/(note|save)\s*/i, "").trim(),
+-    };
+-  }
+-  if (/^\/(card|flashcard)\b/i.test(trimmed)) {
+-    return {
+-      type: "card",
+-      title: trimmed.replace(/^\/(card|flashcard)\s*/i, "").trim(),
+-    };
+-  }
+-  if (/^\/(map|diagram)\b/i.test(trimmed)) {
+-    return {
+-      type: "map",
+-      title: trimmed.replace(/^\/(map|diagram)\s*/i, "").trim(),
+-    };
+-  }
+-  if (/^\/table\b/i.test(trimmed)) {
+-    return {
+-      type: "note",
+-      title: trimmed.replace(/^\/table\s*/i, "").trim(),
+-    };
+-  }
+-  if (/^\/(structured[_-]?map|smap)\b/i.test(trimmed)) {
+-    return {
+-      type: "map",
+-      title: trimmed.replace(/^\/(structured[_-]?map|smap)\s*/i, "").trim(),
+-    };
+-  }
+-  return { type: null, title: "" };
+-}
+-
+-/**
+- * Detect markdown tables in LLM response text.
+- * Returns the first table found (pipe-delimited with separator row).
+- */
+-function detectMarkdownTable(text: string): string | null {
+-  const lines = text.split("\n");
+-  for (let i = 0; i < lines.length - 2; i++) {
+-    const headerLine = lines[i].trim();
+-    const sepLine = lines[i + 1].trim();
+-    // Header must have pipes, separator must be pipes + dashes
+-    if (
+-      headerLine.includes("|") &&
+-      /^[\s|:-]+$/.test(sepLine) &&
+-      sepLine.includes("-")
+-    ) {
+-      // Collect the full table
+-      const tableLines = [lines[i], lines[i + 1]];
+-      for (let j = i + 2; j < lines.length; j++) {
+-        if (lines[j].trim().includes("|")) {
+-          tableLines.push(lines[j]);
+-        } else {
+-          break;
+-        }
+-      }
+-      if (tableLines.length >= 3) return tableLines.join("\n");
+-    }
+-  }
+-  return null;
+-}
+-
+-/**
+- * Detect mermaid code blocks in LLM response text.
+- * Returns the mermaid content (without fences) if found.
+- */
+-function detectMermaidBlock(text: string): string | null {
+-  const match = text.match(/```mermaid\s*\n([\s\S]*?)```/);
+-  return match ? match[1].trim() : null;
+-}
+-
+-function isNoteLikeSource(source: string): boolean {
+-  const value = String(source || "").toLowerCase();
+-  return value.endsWith(".md") || value.includes("map of contents") || value.includes("learning objectives");
+-}
+-
+-function summarizeProvenance(msg: ChatMessage): ProvenanceSummary {
+-  const sources = (msg.citations || []).map((citation) => String(citation.source || "").trim()).filter(Boolean);
+-  const hasTrainingKnowledge = /\[From training knowledge/i.test(msg.content);
+-  const noteSources = sources.filter(isNoteLikeSource);
+-  const nonNoteSources = sources.filter((source) => !isNoteLikeSource(source));
+-
+-  if (hasTrainingKnowledge && sources.length > 0) {
+-    return {
+-      label: "partly grounded, partly general knowledge",
+-      tone: "mixed",
+-      details: [
+-        "The answer mixes cited session sources with broader teaching knowledge.",
+-        ...sources.slice(0, 6).map((source) => `Cited source: ${source}`),
+-      ],
+-    };
+-  }
+-  if (hasTrainingKnowledge) {
+-    return {
+-      label: "mostly general teaching knowledge",
+-      tone: "general",
+-      details: [
+-        "The tutor explicitly marked part of this answer as training knowledge.",
+-        "Treat the explanation as useful teaching support, not as a source citation.",
+-      ],
+-    };
+-  }
+-  if (sources.length === 0) {
+-    return {
+-      label: "general teaching knowledge",
+-      tone: "general",
+-      details: ["No direct citations were attached to this reply."],
+-    };
+-  }
+-  if (noteSources.length > 0 && nonNoteSources.length === 0) {
+-    return {
+-      label: "grounded in notes",
+-      tone: "notes",
+-      details: noteSources.slice(0, 6).map((source) => `Note-backed: ${source}`),
+-    };
+-  }
+-  if (noteSources.length > 0 && nonNoteSources.length > 0) {
+-    return {
+-      label: "mixed note and material grounding",
+-      tone: "mixed",
+-      details: [
+-        ...noteSources.slice(0, 3).map((source) => `Note-backed: ${source}`),
+-        ...nonNoteSources.slice(0, 3).map((source) => `Source-backed: ${source}`),
+-      ],
+-    };
+-  }
+-  return {
+-    label: "well-grounded in selected materials",
+-    tone: "source",
+-    details: nonNoteSources.slice(0, 6).map((source) => `Source-backed: ${source}`),
+-  };
+-}
+-
+-function summarizeConfidence(msg: ChatMessage): ConfidenceSummary {
+-  const retrieval = msg.retrievalDebug;
+-  const sources = (msg.citations || []).map((citation) => String(citation.source || "").trim()).filter(Boolean);
+-  const hasTrainingKnowledge = /\[From training knowledge/i.test(msg.content);
+-  const uniqueSources =
+-    retrieval?.retrieved_material_unique_sources ?? new Set(sources).size;
+-  const topSourceShare = Math.round((retrieval?.material_top_source_share ?? 0) * 100);
+-  const profile =
+-    retrieval?.effective_accuracy_profile ?? retrieval?.accuracy_profile ?? "balanced";
+-
+-  if (hasTrainingKnowledge && sources.length === 0) {
+-    return {
+-      label: "teaching support only - verify specifics",
+-      tone: "low",
+-      details: [
+-        "This reply leans on broader teaching knowledge instead of direct course citations.",
+-        "Use it for explanation and intuition, then verify specific medical claims against your materials.",
+-      ],
+-    };
+-  }
+-
+-  if (hasTrainingKnowledge && sources.length > 0) {
+-    return {
+-      label: "mixed confidence - verify specifics",
+-      tone: "medium",
+-      details: [
+-        "This reply mixes grounded course material with broader teaching knowledge.",
+-        `Cited sources attached: ${sources.length}.`,
+-        "Good for study flow, but verify the most specific claims before memorizing them.",
+-      ],
+-    };
+-  }
+-
+-  if (sources.length === 0 && !retrieval) {
+-    return {
+-      label: "unverified reply - ask for a reference",
+-      tone: "low",
+-      details: [
+-        "No retrieval or citation metadata was attached to this reply.",
+-        "Ask 'Where did that come from?' if you want explicit grounding before trusting the details.",
+-      ],
+-    };
+-  }
+-
+-  if (retrieval?.retrieval_confidence_tier === "high" && uniqueSources > 0) {
+-    return {
+-      label: "high confidence in grounding",
+-      tone: "high",
+-      details: [
+-        `Grounded in ${uniqueSources} selected source${uniqueSources === 1 ? "" : "s"} using the ${profile} retrieval profile.`,
+-        topSourceShare > 0 ? `Top source concentration: ${topSourceShare}%.` : "Evidence is distributed across retrieved sources.",
+-      ],
+-    };
+-  }
+-
+-  if ((retrieval?.retrieval_confidence_tier === "medium" || sources.length > 0) && uniqueSources > 0) {
+-    return {
+-      label: "moderate confidence - grounded but check specifics",
+-      tone: "medium",
+-      details: [
+-        `Grounded in ${uniqueSources} selected source${uniqueSources === 1 ? "" : "s"} with partial evidence coverage.`,
+-        "Good for study flow, but double-check the most detailed claims if they matter for recall or cards.",
+-      ],
+-    };
+-  }
+-
+-  return {
+-    label: "limited confidence - inspect sources",
+-    tone: "low",
+-    details: [
+-      "The system did not find enough stable retrieval evidence to rate this reply highly.",
+-      "Use the attached citations or ask for a tighter source-backed answer before relying on specifics.",
+-    ],
+-  };
+-}
+-
+-const TOOL_LABELS: Record<string, string> = {
+-  save_to_obsidian: "Obsidian",
+-  create_note: "Notes",
+-  create_anki_card: "Anki",
+-};
+-
+-const TOOL_ICONS: Record<string, typeof FileText> = {
+-  save_to_obsidian: BookOpen,
+-  create_note: StickyNote,
+-  create_anki_card: CreditCard,
+-};
+-
+-function VerdictBadge({ verdict }: { verdict: TutorVerdict }) {
+-  const [expanded, setExpanded] = useState(false);
+-  const color =
+-    verdict.verdict === "pass"
+-      ? "border-green-600 text-green-400 bg-green-950/30"
+-      : verdict.verdict === "fail"
+-        ? "border-red-600 text-red-400 bg-red-950/30"
+-        : "border-yellow-600 text-yellow-400 bg-yellow-950/30";
+-  const label =
+-    verdict.verdict === "pass"
+-      ? "PASS"
+-      : verdict.verdict === "fail"
+-        ? "FAIL"
+-        : "PARTIAL";
+-
+-  return (
+-    <div className={`mt-2 pt-2 border-t border-primary/20`}>
+-      <button
+-        type="button"
+-        onClick={() => setExpanded(!expanded)}
+-        className={`inline-flex items-center gap-2 px-3 py-1.5 font-arcade text-xs border-2 ${color}`}
+-      >
+-        {verdict.verdict === "pass" ? (
+-          <CheckCircle2 className="w-4 h-4" />
+-        ) : (
+-          <XCircle className="w-4 h-4" />
+-        )}
+-        {label}
+-        {verdict.confidence != null && (
+-          <span className="font-terminal text-[10px] opacity-70">
+-            ({Math.round(verdict.confidence * 100)}%)
+-          </span>
+-        )}
+-      </button>
+-      {expanded && (
+-        <div className="mt-2 space-y-1 font-terminal text-xs text-zinc-300">
+-          {verdict.why_wrong && (
+-            <p>
+-              <span className="text-red-400">Why wrong:</span> {verdict.why_wrong}
+-            </p>
+-          )}
+-          {verdict.error_location?.node && (
+-            <p>
+-              <span className="text-yellow-400">Error at:</span>{" "}
+-              {verdict.error_location.node}
+-              {verdict.error_location.prereq_from &&
+-                ` (prereq: ${verdict.error_location.prereq_from} → ${verdict.error_location.prereq_to})`}
+-            </p>
+-          )}
+-          {verdict.next_hint && (
+-            <p>
+-              <span className="text-blue-400">Hint:</span> {verdict.next_hint}
+-            </p>
+-          )}
+-          {verdict.next_question && (
+-            <p>
+-              <span className="text-primary">Next Q:</span> {verdict.next_question}
+-            </p>
+-          )}
+-        </div>
+-      )}
+-    </div>
+-  );
+-}
+-
+-function TeachBackBadge({ rubric }: { rubric: TeachBackRubric }) {
+-  const [expanded, setExpanded] = useState(false);
+-  const color =
+-    rubric.overall_rating === "pass"
+-      ? "border-green-600 text-green-400 bg-green-950/30"
+-      : rubric.overall_rating === "fail"
+-        ? "border-red-600 text-red-400 bg-red-950/30"
+-        : "border-yellow-600 text-yellow-400 bg-yellow-950/30";
+-  const label =
+-    rubric.overall_rating === "pass"
+-      ? "TEACH-BACK PASS"
+-      : rubric.overall_rating === "fail"
+-        ? "TEACH-BACK FAIL"
+-        : "TEACH-BACK PARTIAL";
+-
+-  return (
+-    <div className="mt-2 pt-2 border-t border-primary/20">
+-      <button
+-        type="button"
+-        onClick={() => setExpanded(!expanded)}
+-        className={`inline-flex items-center gap-2 px-3 py-1.5 font-arcade text-xs border-2 ${color}`}
+-      >
+-        {rubric.overall_rating === "pass" ? (
+-          <CheckCircle2 className="w-4 h-4" />
+-        ) : (
+-          <XCircle className="w-4 h-4" />
+-        )}
+-        {label}
+-        <span className="font-terminal text-[10px] opacity-70">
+-          A:{rubric.accuracy_score} B:{rubric.breadth_score} S:{rubric.synthesis_score}
+-        </span>
+-      </button>
+-      {expanded && (
+-        <div className="mt-2 space-y-1 font-terminal text-xs text-zinc-300">
+-          {rubric._mastery_blocked && (
+-            <p className="text-red-400">Mastery blocked — improve teach-back to unlock</p>
+-          )}
+-          {rubric.strengths && rubric.strengths.length > 0 && (
+-            <p>
+-              <span className="text-green-400">Strengths:</span> {rubric.strengths.join(", ")}
+-            </p>
+-          )}
+-          {rubric.misconceptions && rubric.misconceptions.length > 0 && (
+-            <p>
+-              <span className="text-red-400">Misconceptions:</span> {rubric.misconceptions.join(", ")}
+-            </p>
+-          )}
+-          {rubric.gaps && rubric.gaps.length > 0 && (
+-            <p>
+-              <span className="text-yellow-400">Gaps:</span>{" "}
+-              {rubric.gaps.map((g) => g.skill_id).join(", ")}
+-            </p>
+-          )}
+-          {rubric.next_focus && (
+-            <p>
+-              <span className="text-primary">Next focus:</span> {rubric.next_focus}
+-            </p>
+-          )}
+-        </div>
+-      )}
+-    </div>
+-  );
+-}
+-
+-function ProvenanceBadge({ msg }: { msg: ChatMessage }) {
+-  const [expanded, setExpanded] = useState(false);
+-  const summary = summarizeProvenance(msg);
+-  const confidence = summarizeConfidence(msg);
+-  const colorClass =
+-    summary.tone === "source"
+-      ? "border-green-600 text-green-400 bg-green-950/30"
+-      : summary.tone === "notes"
+-        ? "border-blue-600 text-blue-300 bg-blue-950/30"
+-        : summary.tone === "mixed"
+-          ? "border-yellow-600 text-yellow-300 bg-yellow-950/30"
+-          : "border-zinc-600 text-zinc-300 bg-zinc-950/30";
+-  const confidenceClass =
+-    confidence.tone === "high"
+-      ? "border-green-600 text-green-400 bg-green-950/30"
+-      : confidence.tone === "medium"
+-        ? "border-yellow-600 text-yellow-300 bg-yellow-950/30"
+-        : "border-red-600 text-red-300 bg-red-950/30";
+-
+-  return (
+-    <div className="mt-2 pt-2 border-t border-primary/20">
+-      <div className="flex flex-wrap items-center gap-2">
+-        <span className={`inline-flex items-center gap-2 px-3 py-1.5 font-arcade text-xs border-2 ${colorClass}`}>
+-          {summary.label}
+-        </span>
+-        <span className={`inline-flex items-center gap-2 px-3 py-1.5 font-arcade text-xs border-2 ${confidenceClass}`}>
+-          {confidence.label}
+-        </span>
+-        <button
+-          type="button"
+-          onClick={() => setExpanded((prev) => !prev)}
+-          className="px-2 py-1 text-xs font-arcade border-2 border-primary/20 text-muted-foreground hover:text-primary hover:border-primary/50"
+-        >
+-          WHERE FROM?
+-        </button>
+-      </div>
+-      {expanded && (
+-        <div className="mt-2 space-y-1 font-terminal text-xs text-zinc-300">
+-          <p className="text-primary">Confidence</p>
+-          {confidence.details.map((detail) => (
+-            <p key={`confidence-${detail}`}>{detail}</p>
+-          ))}
+-          <p className="pt-1 text-primary">Provenance</p>
+-          {summary.details.map((detail) => (
+-            <p key={`provenance-${detail}`}>{detail}</p>
+-          ))}
+-        </div>
+-      )}
+-    </div>
+-  );
+-}
++import type { TutorChatProps, NorthStarSummary } from "./TutorChat.types";
++export type { ChainBlock } from "./TutorChat.types";
++import { useSSEStream } from "./useSSEStream";
++import { MessageList } from "./MessageList";
++import { SourcesPanel } from "./SourcesPanel";
+ 
+ export function TutorChat({
+   sessionId,
+@@ -719,17 +34,10 @@ export function TutorChat({
+   initialTurns,
+ }: TutorChatProps) {
+   const vaultSelectionKey = "tutor.chat.selected_vault_paths.v1";
+-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+-  const [input, setInput] = useState("");
+-  const [isStreaming, setIsStreaming] = useState(false);
+-  const [behaviorOverride, setBehaviorOverride] = useState<BehaviorOverride | null>(null);
++
++  // ── Sources panel state ───────────────────────────────────────────────────
+   const [isSourcesOpen, setIsSourcesOpen] = useState(false);
+-  const [sourcesTab, setSourcesTab] = useState<SourceTab>("materials");
+   const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
+-  const [isDragActive, setIsDragActive] = useState(false);
+-  const [vaultSearch, setVaultSearch] = useState("");
+-  const [vaultRefreshToken, setVaultRefreshToken] = useState(0);
+-  const [expandedVaultFolders, setExpandedVaultFolders] = useState<Set<string>>(new Set());
+   const [selectedVaultPaths, setSelectedVaultPaths] = useState<string[]>(() => {
+     try {
+       const raw = localStorage.getItem(vaultSelectionKey);
+@@ -741,25 +49,47 @@ export function TutorChat({
+     }
+   });
+   const [northStarSummary, setNorthStarSummary] = useState<NorthStarSummary | null>(null);
+-  const [vaultEditor, setVaultEditor] = useState<VaultEditorState>({
+-    open: false,
+-    path: "",
+-    content: "",
+-    saving: false,
+-  });
+-  // Speed tier toggles — all off = chat-only (codex-spark, no RAG)
++
++  // ── Speed tier toggles — all off = chat-only (codex-spark, no RAG) ────────
+   const [materialsOn, setMaterialsOn] = useState(false);
+-  const [obsidianOn,  setObsidianOn]  = useState(false);
++  const [obsidianOn, setObsidianOn] = useState(false);
+   const [webSearchOn, setWebSearchOn] = useState(false);
+   const [deepThinkOn, setDeepThinkOn] = useState(false);
+   const [geminiVisionOn, setGeminiVisionOn] = useState(false);
+ 
++  // ── Behavior override ─────────────────────────────────────────────────────
++  const [behaviorOverride, setBehaviorOverride] = useState<BehaviorOverride | null>(null);
++
++  // ── Refs ───────────────────────────────────────────────────────────────────
+   const scrollRef = useRef<HTMLDivElement>(null);
+   const inputRef = useRef<HTMLInputElement>(null);
+   const fileInputRef = useRef<HTMLInputElement>(null);
+-  const streamAbortRef = useRef<AbortController | null>(null);
+ 
+-  // Auto-scroll to bottom
++  // ── SSE stream hook ───────────────────────────────────────────────────────
++  const {
++    messages,
++    input,
++    setInput,
++    isStreaming,
++    sendMessage,
++  } = useSSEStream({
++    sessionId,
++    selectedMaterialIds,
++    selectedVaultPaths,
++    accuracyProfile,
++    behaviorOverride,
++    onBehaviorOverrideReset: useCallback(() => setBehaviorOverride(null), []),
++    onArtifactCreated,
++    onTurnComplete,
++    initialTurns,
++    materialsOn,
++    obsidianOn,
++    webSearchOn,
++    deepThinkOn,
++    geminiVisionOn,
++  });
++
++  // ── Auto-scroll to bottom ─────────────────────────────────────────────────
+   useEffect(() => {
+     if (scrollRef.current) {
+       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+@@ -770,32 +100,12 @@ export function TutorChat({
+     }
+   }, [messages]);
+ 
+-  // Focus input on mount
++  // ── Focus input on mount ──────────────────────────────────────────────────
+   useEffect(() => {
+     inputRef.current?.focus();
+   }, [sessionId]);
+ 
+-  // Reset transient chat state when session context changes.
+-  // If initialTurns are provided (session restore), hydrate messages from them.
+-  useEffect(() => {
+-    streamAbortRef.current?.abort();
+-    streamAbortRef.current = null;
+-    setInput("");
+-    setIsStreaming(false);
+-    if (initialTurns && initialTurns.length > 0) {
+-      const restored: ChatMessage[] = [];
+-      for (const turn of initialTurns) {
+-        restored.push({ role: "user", content: turn.question });
+-        if (turn.answer) {
+-          restored.push({ role: "assistant", content: turn.answer });
+-        }
+-      }
+-      setMessages(restored);
+-    } else {
+-      setMessages([]);
+-    }
+-  }, [sessionId, initialTurns]);
+-
++  // ── Persist vault paths ───────────────────────────────────────────────────
+   useEffect(() => {
+     try {
+       localStorage.setItem(vaultSelectionKey, JSON.stringify(selectedVaultPaths));
+@@ -804,16 +114,7 @@ export function TutorChat({
+     }
+   }, [selectedVaultPaths]);
+ 
+-  const {
+-    data: vaultRootData,
+-    isFetching: isLoadingVault,
+-    error: vaultLoadError,
+-  } = useQuery({
+-    queryKey: ["tutor", "obsidian", "files", "root", vaultRefreshToken],
+-    queryFn: () => api.obsidian.getFiles(""),
+-    enabled: isSourcesOpen && sourcesTab === "vault",
+-  });
+-
++  // ── Load session context (north star, vault folders) ──────────────────────
+   useEffect(() => {
+     if (!sessionId) return;
+     let alive = true;
+@@ -857,207 +158,7 @@ export function TutorChat({
+     };
+   }, [sessionId]);
+ 
+-  const toggleVaultPath = useCallback((path: string) => {
+-    setSelectedVaultPaths((prev) =>
+-      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path],
+-    );
+-  }, []);
+-
+-  const toggleVaultFolder = useCallback((path: string) => {
+-    setExpandedVaultFolders((prev) => {
+-      const next = new Set(prev);
+-      if (next.has(path)) {
+-        next.delete(path);
+-      } else {
+-        next.add(path);
+-      }
+-      return next;
+-    });
+-  }, []);
+-
+-  const refreshVaultTree = useCallback(() => {
+-    setExpandedVaultFolders(new Set());
+-    setVaultRefreshToken((prev) => prev + 1);
+-  }, []);
+-
+-  const openVaultEditor = useCallback(async (path: string, initialContent?: string) => {
+-    const normalized = String(path || "").trim();
+-    if (!normalized) return;
+-    if (typeof initialContent === "string") {
+-      setVaultEditor({ open: true, path: normalized, content: initialContent, saving: false });
+-      return;
+-    }
+-    try {
+-      const res = await api.obsidian.getFile(normalized);
+-      if (!res.success) {
+-        toast.error(res.error || "Failed to load file");
+-        return;
+-      }
+-      setVaultEditor({
+-        open: true,
+-        path: normalized,
+-        content: String(res.content || ""),
+-        saving: false,
+-      });
+-    } catch (err) {
+-      toast.error(`Failed to load note: ${err instanceof Error ? err.message : "Unknown error"}`);
+-    }
+-  }, []);
+-
+-  const handleCreateVaultFolder = useCallback(async () => {
+-    const base =
+-      selectedVaultPaths.length === 1 && !selectedVaultPaths[0].toLowerCase().endsWith(".md")
+-        ? selectedVaultPaths[0]
+-        : "";
+-    const suggestion = base ? `${base}/New Folder` : "Study notes/New Folder";
+-    const inputPath = window.prompt("Create folder path:", suggestion);
+-    if (!inputPath) return;
+-    try {
+-      const res = await api.obsidian.createFolder(inputPath);
+-      if (!res.success) {
+-        toast.error(res.error || "Failed to create folder");
+-        return;
+-      }
+-      toast.success(`Folder created: ${res.path || inputPath}`);
+-      refreshVaultTree();
+-    } catch (err) {
+-      toast.error(`Create folder failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+-    }
+-  }, [refreshVaultTree, selectedVaultPaths]);
+-
+-  const handleCreateVaultNote = useCallback(async () => {
+-    const base =
+-      selectedVaultPaths.length === 1 && !selectedVaultPaths[0].toLowerCase().endsWith(".md")
+-        ? selectedVaultPaths[0]
+-        : selectedVaultPaths.length === 1
+-          ? _parentPath(selectedVaultPaths[0])
+-          : "";
+-    const suggestion = base ? `${base}/New_Note.md` : "Study notes/New_Note.md";
+-    const inputPath = window.prompt("Create note path (.md):", suggestion);
+-    if (!inputPath) return;
+-    const normalized = inputPath.trim().endsWith(".md") ? inputPath.trim() : `${inputPath.trim()}.md`;
+-    const content = _defaultNoteContent(normalized);
+-    try {
+-      const res = await api.obsidian.saveFile(normalized, content);
+-      if (!res.success) {
+-        toast.error(res.error || "Failed to create note");
+-        return;
+-      }
+-      setSelectedVaultPaths([normalized]);
+-      toast.success(`Note created: ${normalized}`);
+-      refreshVaultTree();
+-      await openVaultEditor(normalized, content);
+-    } catch (err) {
+-      toast.error(`Create note failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+-    }
+-  }, [openVaultEditor, refreshVaultTree, selectedVaultPaths]);
+-
+-  const handleEditSelectedVaultNote = useCallback(async () => {
+-    if (selectedVaultPaths.length !== 1) {
+-      toast.error("Select exactly one note to edit.");
+-      return;
+-    }
+-    const path = selectedVaultPaths[0];
+-    if (!path.toLowerCase().endsWith(".md")) {
+-      toast.error("Only markdown notes can be edited.");
+-      return;
+-    }
+-    await openVaultEditor(path);
+-  }, [openVaultEditor, selectedVaultPaths]);
+-
+-  const handleRenameSelectedVaultPath = useCallback(async () => {
+-    if (selectedVaultPaths.length !== 1) {
+-      toast.error("Select exactly one file or folder to rename.");
+-      return;
+-    }
+-    const currentPath = selectedVaultPaths[0];
+-    const nextPath = window.prompt("Rename/move to:", currentPath);
+-    if (!nextPath || nextPath.trim() === currentPath) return;
+-    try {
+-      const res = await api.obsidian.movePath(currentPath, nextPath.trim());
+-      if (!res.success) {
+-        toast.error(res.error || "Move failed");
+-        return;
+-      }
+-      setSelectedVaultPaths([nextPath.trim()]);
+-      toast.success("Path updated.");
+-      refreshVaultTree();
+-    } catch (err) {
+-      toast.error(`Move failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+-    }
+-  }, [refreshVaultTree, selectedVaultPaths]);
+-
+-  const handleDeleteSelectedVaultPaths = useCallback(async () => {
+-    if (selectedVaultPaths.length === 0) {
+-      toast.error("Select at least one path to delete.");
+-      return;
+-    }
+-    const confirmDelete = window.confirm(
+-      `Delete ${selectedVaultPaths.length} selected path(s)? This cannot be undone.`,
+-    );
+-    if (!confirmDelete) return;
+-
+-    const failures: string[] = [];
+-    for (const path of selectedVaultPaths) {
+-      try {
+-        const isNote = path.toLowerCase().endsWith(".md");
+-        const res = isNote
+-          ? await api.obsidian.deleteFile(path)
+-          : await api.obsidian.deleteFolder(path, true);
+-        if (!res.success) failures.push(`${path}: ${res.error || "delete failed"}`);
+-      } catch (err) {
+-        failures.push(`${path}: ${err instanceof Error ? err.message : "delete failed"}`);
+-      }
+-    }
+-
+-    if (failures.length > 0) {
+-      toast.error(`Some deletes failed (${failures.length}).`);
+-    } else {
+-      toast.success("Selected paths deleted.");
+-    }
+-    setSelectedVaultPaths([]);
+-    refreshVaultTree();
+-  }, [refreshVaultTree, selectedVaultPaths]);
+-
+-  const handleSaveVaultEditor = useCallback(async () => {
+-    if (!vaultEditor.path.trim()) return;
+-    setVaultEditor((prev) => ({ ...prev, saving: true }));
+-    try {
+-      const res = await api.obsidian.saveFile(vaultEditor.path, vaultEditor.content);
+-      if (!res.success) {
+-        toast.error(res.error || "Failed to save note");
+-        setVaultEditor((prev) => ({ ...prev, saving: false }));
+-        return;
+-      }
+-      toast.success("Note saved.");
+-      setSelectedVaultPaths([vaultEditor.path]);
+-      setVaultEditor((prev) => ({ ...prev, saving: false, open: false }));
+-      refreshVaultTree();
+-    } catch (err) {
+-      toast.error(`Save failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+-      setVaultEditor((prev) => ({ ...prev, saving: false }));
+-    }
+-  }, [refreshVaultTree, vaultEditor.content, vaultEditor.path]);
+-
+-  const toggleMaterial = useCallback(
+-    (materialId: number) => {
+-      if (selectedMaterialIds.includes(materialId)) {
+-        onSelectedMaterialIdsChange(selectedMaterialIds.filter((id) => id !== materialId));
+-        return;
+-      }
+-      onSelectedMaterialIdsChange([...selectedMaterialIds, materialId]);
+-    },
+-    [onSelectedMaterialIdsChange, selectedMaterialIds],
+-  );
+-
+-  const selectAllMaterials = useCallback(() => {
+-    onSelectedMaterialIdsChange(availableMaterials.map((m) => m.id));
+-  }, [availableMaterials, onSelectedMaterialIdsChange]);
+-
+-  const clearSelectedMaterials = useCallback(() => {
+-    onSelectedMaterialIdsChange([]);
+-  }, [onSelectedMaterialIdsChange]);
+-
++  // ── Upload handler ────────────────────────────────────────────────────────
+   const handleUploadFiles = useCallback(
+     async (files: FileList | null) => {
+       if (!files || files.length === 0) return;
+@@ -1088,355 +189,7 @@ export function TutorChat({
+     [courseId, onMaterialsChanged, onSelectedMaterialIdsChange, selectedMaterialIds],
+   );
+ 
+-  const sendMessage = useCallback(async () => {
+-    if (!input.trim() || !sessionId || isStreaming) return;
+-
+-    const userMessage = input.trim();
+-    const command = parseArtifactCommand(userMessage);
+-    setInput("");
+-    const abortController = new AbortController();
+-    streamAbortRef.current = abortController;
+-
+-    // Add user message and placeholder assistant message in one atomic update.
+-    setMessages((prev) => [
+-      ...prev,
+-      { role: "user", content: userMessage },
+-      { role: "assistant", content: "", isStreaming: true },
+-    ]);
+-    setIsStreaming(true);
+-    const activeBehavior = behaviorOverride;
+-    setBehaviorOverride(null);
+-
+-    try {
+-      const response = await fetch(`/api/tutor/session/${sessionId}/turn`, {
+-        method: "POST",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({
+-          message: userMessage,
+-          content_filter: {
+-            material_ids: selectedMaterialIds,
+-            accuracy_profile: accuracyProfile,
+-            ...(selectedVaultPaths.length > 0 ? { folders: selectedVaultPaths } : {}),
+-          },
+-          behavior_override: activeBehavior,
+-          mode: {
+-            materials:  materialsOn,
+-            obsidian:   obsidianOn,
+-            web_search: webSearchOn,
+-            deep_think: deepThinkOn,
+-            gemini_vision: geminiVisionOn,
+-          },
+-        }),
+-        signal: abortController.signal,
+-      });
+-
+-      if (!response.ok) {
+-        let message = `HTTP ${response.status} ${response.statusText}`;
+-        try {
+-          const text = await response.text();
+-          if (text) {
+-            try {
+-              const parsed = JSON.parse(text) as { error?: string };
+-              message = parsed.error || text;
+-            } catch {
+-              message = text;
+-            }
+-          }
+-        } catch {
+-          // ignore parse failures and keep status text
+-        }
+-        throw new Error(message);
+-      }
+-
+-      const reader = response.body?.getReader();
+-      const decoder = new TextDecoder();
+-      if (!reader) throw new Error("No response body from tutor stream");
+-
+-      let buffer = "";
+-      let fullText = "";
+-      let citations: TutorCitation[] = [];
+-      let modelId: string | undefined;
+-      let retrievalDebug: TutorRetrievalDebug | undefined;
+-      let serverArtifactCmd: { type?: string; raw?: string } | null = null;
+-      let verdictData: TutorVerdict | undefined;
+-      let teachBackData: TeachBackRubric | undefined;
+-      let masteryUpdateData: { skill_id: string; new_mastery: number; correct: boolean } | undefined;
+-      let parseErrorCount = 0;
+-      let streamErrored = false;
+-      let doneSignal = false;
+-      let sawDoneChunk = false;
+-      const toolActions: ToolAction[] = [];
+-
+-      while (!doneSignal) {
+-        const { done, value } = await reader.read();
+-        if (done) {
+-          buffer += decoder.decode();
+-          doneSignal = true;
+-        } else {
+-          buffer += decoder.decode(value, { stream: true });
+-        }
+-
+-        const lines = buffer.split("\n");
+-        if (!doneSignal) {
+-          buffer = lines.pop() ?? "";
+-        } else {
+-          buffer = "";
+-        }
+-
+-        for (const line of lines) {
+-          if (!line.startsWith("data: ")) continue;
+-          const data = line.slice(6);
+-          if (data === "[DONE]") {
+-            doneSignal = true;
+-            sawDoneChunk = true;
+-            break;
+-          }
+-
+-          try {
+-            const parsed: TutorSSEChunk = JSON.parse(data);
+-
+-            if (parsed.type === "error") {
+-              setMessages((prev) => {
+-                const updated = [...prev];
+-                const last = updated[updated.length - 1];
+-                if (!last || last.role !== "assistant") return prev;
+-                updated[updated.length - 1] = {
+-                  role: "assistant",
+-                  content: `Error: ${parsed.content}`,
+-                };
+-                return updated;
+-              });
+-              streamErrored = true;
+-              setIsStreaming(false);
+-              doneSignal = true;
+-              break;
+-            }
+-
+-            if (parsed.type === "web_search_searching") {
+-              setMessages((prev) => {
+-                const updated = [...prev];
+-                const last = updated[updated.length - 1];
+-                if (!last || last.role !== "assistant") return prev;
+-                updated[updated.length - 1] = {
+-                  ...last,
+-                  content: "Searching the web...\n\n",
+-                  isStreaming: true,
+-                };
+-                return updated;
+-              });
+-            }
+-
+-            if (parsed.type === "web_search_completed") {
+-              fullText = "";
+-              setMessages((prev) => {
+-                const updated = [...prev];
+-                const last = updated[updated.length - 1];
+-                if (!last || last.role !== "assistant") return prev;
+-                updated[updated.length - 1] = {
+-                  ...last,
+-                  content: "",
+-                  isStreaming: true,
+-                };
+-                return updated;
+-              });
+-            }
+-
+-            if (parsed.type === "tool_call" && parsed.content) {
+-              try {
+-                const tc = JSON.parse(parsed.content) as { tool?: string };
+-                const toolLabel = TOOL_LABELS[tc.tool ?? ""] ?? tc.tool ?? "tool";
+-                setMessages((prev) => {
+-                  const updated = [...prev];
+-                  const last = updated[updated.length - 1];
+-                  if (!last || last.role !== "assistant") return prev;
+-                  updated[updated.length - 1] = {
+-                    ...last,
+-                    content: last.content + `\n\n> *Using ${toolLabel}...*\n\n`,
+-                    isStreaming: true,
+-                  };
+-                  return updated;
+-                });
+-              } catch { /* ignore malformed */ }
+-            }
+-
+-            if (parsed.type === "tool_result" && parsed.content) {
+-              try {
+-                const tr = JSON.parse(parsed.content) as { tool?: string; success?: boolean; message?: string };
+-                toolActions.push({
+-                  tool: tr.tool ?? "unknown",
+-                  success: tr.success ?? false,
+-                  message: tr.message ?? "",
+-                });
+-              } catch { /* ignore malformed */ }
+-            }
+-
+-            if (parsed.type === "token" && parsed.content) {
+-              fullText += parsed.content;
+-              setMessages((prev) => {
+-                const updated = [...prev];
+-                const last = updated[updated.length - 1];
+-                if (!last || last.role !== "assistant") return prev;
+-                updated[updated.length - 1] = {
+-                  ...last,
+-                  content: last.content + parsed.content!,
+-                  isStreaming: true,
+-                };
+-                return updated;
+-              });
+-            }
+-
+-            if (parsed.type === "done") {
+-              citations = parsed.citations ?? [];
+-              modelId = parsed.model;
+-              retrievalDebug = parsed.retrieval_debug;
+-              verdictData = parsed.verdict;
+-              teachBackData = parsed.teach_back_rubric;
+-              masteryUpdateData = parsed.mastery_update;
+-              // Backend detected natural language artifact command
+-              if (parsed.artifacts?.length) {
+-                const cmd = parsed.artifacts[0] as { type?: string; raw?: string };
+-                const normalizedType = normalizeArtifactType(cmd.type);
+-                if (normalizedType && !command.type) {
+-                  serverArtifactCmd = {
+-                    ...cmd,
+-                    type: normalizedType,
+-                  };
+-                }
+-              }
+-            }
+-          } catch {
+-            parseErrorCount += 1;
+-            console.warn("Tutor SSE parse failed", { data });
+-          }
+-        }
+-      }
+-
+-      if (!streamErrored && parseErrorCount > 0) {
+-        streamErrored = true;
+-        setMessages((prev) => {
+-          const updated = [...prev];
+-          const last = updated[updated.length - 1];
+-          if (!last || last.role !== "assistant") return prev;
+-          updated[updated.length - 1] = {
+-            ...last,
+-            content: `${last.content}\n\nSome stream chunks were malformed and could not be parsed. Retry this request if the answer is incomplete.`,
+-            isStreaming: false,
+-          };
+-          return updated;
+-        });
+-      } else if (!streamErrored && !sawDoneChunk) {
+-        streamErrored = true;
+-        setMessages((prev) => {
+-          const updated = [...prev];
+-          const last = updated[updated.length - 1];
+-          if (!last || last.role !== "assistant") return prev;
+-          updated[updated.length - 1] = {
+-            ...last,
+-            content: `${last.content}\n\nThe response stream ended before completion. Retry this request.`,
+-            isStreaming: false,
+-          };
+-          return updated;
+-        });
+-      }
+-
+-      if (streamErrored) {
+-        return;
+-      }
+-
+-      setMessages((prev) => {
+-        const updated = [...prev];
+-        const last = updated[updated.length - 1];
+-        if (!last || last.role !== "assistant") return prev;
+-        updated[updated.length - 1] = {
+-          role: "assistant",
+-          content: fullText,
+-          citations,
+-          model: modelId,
+-          retrievalDebug,
+-          isStreaming: false,
+-          toolActions: toolActions.length > 0 ? toolActions : undefined,
+-          verdict: verdictData,
+-          teachBackRubric: teachBackData,
+-        };
+-        return updated;
+-      });
+-
+-      // Notify turn completion (with mastery update if present)
+-      onTurnComplete?.(masteryUpdateData);
+-
+-      // Handle artifact slash commands after response
+-      if (command.type) {
+-        const fallbackTitle = `Tutor ${command.type}`;
+-        onArtifactCreated({
+-          type: command.type,
+-          content: fullText,
+-          title: command.title || fallbackTitle,
+-        });
+-      } else if (serverArtifactCmd?.type) {
+-        // Backend detected natural language artifact command
+-        onArtifactCreated({
+-          type: serverArtifactCmd.type,
+-          content: fullText,
+-          title: userMessage.slice(0, 80).trim(),
+-        });
+-      } else {
+-        // Auto-detect tables and mermaid maps in the response
+-        const detectedTable = detectMarkdownTable(fullText);
+-        if (detectedTable) {
+-          onArtifactCreated({
+-            type: "note",
+-            content: detectedTable,
+-            title: `Table from turn`,
+-          });
+-        }
+-        const detectedMermaid = detectMermaidBlock(fullText);
+-        if (detectedMermaid) {
+-          onArtifactCreated({
+-            type: "map",
+-            content: "```mermaid\n" + detectedMermaid + "\n```",
+-            title: `Structured map from turn`,
+-          });
+-        }
+-      }
+-    } catch (err) {
+-      if (err instanceof DOMException && err.name === "AbortError") {
+-        return;
+-      }
+-      setMessages((prev) => {
+-        const updated = [...prev];
+-        const last = updated[updated.length - 1];
+-        if (!last || last.role !== "assistant") return prev;
+-        updated[updated.length - 1] = {
+-          role: "assistant",
+-          content: `Connection error: ${err instanceof Error ? err.message : "Unknown"}`,
+-        };
+-        return updated;
+-      });
+-    } finally {
+-      if (streamAbortRef.current === abortController) {
+-        streamAbortRef.current = null;
+-      }
+-      setIsStreaming(false);
+-    }
+-  }, [
+-    input,
+-    sessionId,
+-    isStreaming,
+-    behaviorOverride,
+-    onArtifactCreated,
+-    onTurnComplete,
+-    selectedMaterialIds,
+-    selectedVaultPaths,
+-    accuracyProfile,
+-    materialsOn,
+-    obsidianOn,
+-    webSearchOn,
+-    deepThinkOn,
+-    geminiVisionOn,
+-  ]);
+-
+-
+-
++  // ── Input handlers ────────────────────────────────────────────────────────
+   const handleKeyDown = (e: React.KeyboardEvent) => {
+     if (e.key === "Enter" && !e.shiftKey) {
+       e.preventDefault();
+@@ -1444,29 +197,7 @@ export function TutorChat({
+     }
+   };
+ 
+-  const selectedMaterialLabels = useMemo(
+-    () =>
+-      availableMaterials
+-        .filter((m) => selectedMaterialIds.includes(m.id))
+-        .map((m) => m.title || `Material ${m.id}`),
+-    [availableMaterials, selectedMaterialIds],
+-  );
+-
+-  const vaultRootEntries = useMemo(() => {
+-    return Array.isArray(vaultRootData?.files) ? vaultRootData.files : [];
+-  }, [vaultRootData]);
+-
+-  const filteredVaultRootEntries = useMemo(() => {
+-    const q = vaultSearch.trim().toLowerCase();
+-    if (!q) return vaultRootEntries;
+-    return vaultRootEntries.filter((entry) => {
+-      const raw = String(entry || "").trim();
+-      if (!raw) return false;
+-      if (raw.endsWith("/")) return true;
+-      return raw.toLowerCase().includes(q);
+-    });
+-  }, [vaultRootEntries, vaultSearch]);
+-
++  // ── No session guard ──────────────────────────────────────────────────────
+   if (!sessionId) {
+     return (
+       <div className="flex items-center justify-center h-full">
+@@ -1482,6 +213,7 @@ export function TutorChat({
+     );
+   }
+ 
++  // ── Speed tier config ─────────────────────────────────────────────────────
+   const selectedMp4Count = availableMaterials.filter(
+     (m) => selectedMaterialIds.includes(m.id) && (m.file_type === "mp4" || m.source_path?.toLowerCase().endsWith(".mp4"))
+   ).length;
+@@ -1491,222 +223,21 @@ export function TutorChat({
+ 
+   const speedTiers: { key: string; label: string; on: boolean; set: Dispatch<SetStateAction<boolean>> }[] = [
+     { key: "materials", label: "📚 Materials", on: materialsOn, set: setMaterialsOn },
+-    { key: "obsidian",  label: "🗂️ Obsidian",  on: obsidianOn,  set: setObsidianOn  },
+-    { key: "gemini",    label: geminiLabel, on: geminiVisionOn, set: setGeminiVisionOn },
+-    { key: "web",       label: "🔍 Web",        on: webSearchOn, set: setWebSearchOn },
+-    { key: "deep",      label: "🧠 Deep Think", on: deepThinkOn, set: setDeepThinkOn },
++    { key: "obsidian", label: "🗂️ Obsidian", on: obsidianOn, set: setObsidianOn },
++    { key: "gemini", label: geminiLabel, on: geminiVisionOn, set: setGeminiVisionOn },
++    { key: "web", label: "🔍 Web", on: webSearchOn, set: setWebSearchOn },
++    { key: "deep", label: "🧠 Deep Think", on: deepThinkOn, set: setDeepThinkOn },
+   ];
+ 
+   return (
+     <div className="relative flex h-full min-h-0">
+       <div className="flex flex-col h-full min-h-0 flex-1">
+         {/* Messages */}
+-        <div
++        <MessageList
+           ref={scrollRef}
+-          className="flex-1 overflow-y-auto space-y-4 bg-black/40 p-4 lg:p-6"
+-        >
+-          {messages.length === 0 && (
+-            <div className="text-center py-8 space-y-2">
+-              <div className="font-arcade text-sm text-primary">
+-                SESSION STARTED
+-              </div>
+-              <div className="font-terminal text-lg text-muted-foreground leading-7">
+-                Ask a question to begin learning. Use /note, /card, /map, /table, or /smap for artifacts.
+-              </div>
+-            </div>
+-          )}
+-
+-          {messages.map((msg, i) => (
+-            <div
+-              key={i}
+-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+-            >
+-              <div
+-                className={`px-3 py-2 text-[17px] leading-7 font-terminal overflow-hidden ${msg.role === "user"
+-                  ? "max-w-[72%]"
+-                  : "max-w-[96%]"
+-                  } ${msg.role === "user"
+-                    ? "bg-primary/15 border-2 border-primary/40 text-foreground"
+-                    : "bg-black/40 border-2 border-secondary text-foreground"
+-                  }`}
+-              >
+-                {msg.role === "assistant" ? (
+-                  <div className="prose prose-invert prose-lg max-w-none font-terminal [&_p]:my-2 [&_li]:my-1 [&_p]:leading-7 [&_li]:leading-7 [&_code]:text-base [&_pre]:text-base [&_pre]:overflow-x-auto [&_code]:break-words [&_a]:break-all">
+-                    {msg.content ? (
+-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+-                        {msg.content}
+-                      </ReactMarkdown>
+-                    ) : msg.isStreaming ? (
+-                      <div className="flex items-center gap-1.5 py-1">
+-                        <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+-                        <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+-                        <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+-                      </div>
+-                    ) : null}
+-                    {msg.isStreaming && msg.content && (
+-                      <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
+-                    )}
+-                  </div>
+-                ) : (
+-                  <div>{msg.content}</div>
+-                )}
+-
+-                {msg.role === "assistant" && msg.toolActions?.length ? (
+-                  <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-primary/20">
+-                    {msg.toolActions.map((ta, j) => {
+-                      const Icon = TOOL_ICONS[ta.tool] ?? FileText;
+-                      return (
+-                        <div
+-                          key={j}
+-                          className={`flex items-center gap-1.5 px-2 py-1 text-xs font-terminal border ${ta.success
+-                            ? "border-green-600/50 text-green-400 bg-green-950/30"
+-                            : "border-red-600/50 text-red-400 bg-red-950/30"
+-                            }`}
+-                        >
+-                          {ta.success ? (
+-                            <CheckCircle2 className="w-3 h-3 shrink-0" />
+-                          ) : (
+-                            <XCircle className="w-3 h-3 shrink-0" />
+-                          )}
+-                          <Icon className="w-3 h-3 shrink-0" />
+-                          <span className="truncate max-w-[200px]">{ta.message}</span>
+-                        </div>
+-                      );
+-                    })}
+-                  </div>
+-                ) : null}
+-
+-                {msg.verdict && !msg.isStreaming && (
+-                  <VerdictBadge verdict={msg.verdict} />
+-                )}
+-
+-                {msg.teachBackRubric && !msg.isStreaming && (
+-                  <TeachBackBadge rubric={msg.teachBackRubric} />
+-                )}
+-
+-                {msg.role === "assistant" && msg.content && !msg.isStreaming && (
+-                  <ProvenanceBadge msg={msg} />
+-                )}
+-
+-                {msg.role === "assistant" && msg.content && !msg.isStreaming && (
+-                  <div className="flex items-center gap-1 mt-2 pt-2 border-t border-primary/20">
+-                    <button
+-                      onClick={() =>
+-                        onArtifactCreated({
+-                          type: "note",
+-                          content: msg.content,
+-                          title: `Tutor note ${i}`,
+-                        })
+-                      }
+-                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+-                    >
+-                      <FileText className="w-3 h-3 text-primary/60" /> Save Note
+-                    </button>
+-                    <button
+-                      onClick={() =>
+-                        onArtifactCreated({
+-                          type: "card",
+-                          content: msg.content,
+-                          title: `Tutor card ${i}`,
+-                        })
+-                      }
+-                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+-                    >
+-                      <CreditCard className="w-3 h-3 text-primary/60" /> Create Card
+-                    </button>
+-                    <button
+-                      onClick={() => {
+-                        onArtifactCreated({
+-                          type: "map",
+-                          content: msg.content,
+-                          title: `Tutor map ${i}`,
+-                        });
+-                      }}
+-                      className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+-                    >
+-                      <Map className="w-3 h-3 text-primary/60" /> Create Map
+-                    </button>
+-                    {detectMarkdownTable(msg.content) && (
+-                      <button
+-                        onClick={() => {
+-                          const table = detectMarkdownTable(msg.content);
+-                          if (table) {
+-                            onArtifactCreated({
+-                              type: "note",
+-                              content: table,
+-                              title: `Table ${i}`,
+-                            });
+-                          }
+-                        }}
+-                        className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+-                      >
+-                        <Table2 className="w-3 h-3 text-primary/60" /> Save Table
+-                      </button>
+-                    )}
+-                    {detectMermaidBlock(msg.content) && (
+-                      <button
+-                        onClick={() => {
+-                          const mermaid = detectMermaidBlock(msg.content);
+-                          if (mermaid) {
+-                            onArtifactCreated({
+-                              type: "map",
+-                              content: "```mermaid\n" + mermaid + "\n```",
+-                              title: `Structured map ${i}`,
+-                            });
+-                          }
+-                        }}
+-                        className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
+-                      >
+-                        <Network className="w-3 h-3 text-primary/60" /> Save Map
+-                      </button>
+-                    )}
+-                  </div>
+-                )}
+-
+-                {/* Citations + Model */}
+-                {(msg.citations?.length || msg.model || msg.retrievalDebug) && !msg.isStreaming ? (
+-                  <div className="flex flex-wrap items-center gap-1 mt-2 pt-2 border-t border-primary/20">
+-                    {msg.retrievalDebug ? (
+-                      <Badge variant="outline" className="text-[11px] rounded-none text-muted-foreground/80">
+-                        RAG debug | {msg.retrievalDebug.effective_accuracy_profile ?? msg.retrievalDebug.accuracy_profile ?? "strict"}{msg.retrievalDebug.profile_escalated ? " (escalated)" : ""} | conf {(msg.retrievalDebug.retrieval_confidence ?? 0).toFixed(2)} ({msg.retrievalDebug.retrieval_confidence_tier ?? "low"}) | uniq {msg.retrievalDebug.retrieved_material_unique_sources ?? 0} | top {Math.round((msg.retrievalDebug.material_top_source_share ?? 0) * 100)}% | dropped {msg.retrievalDebug.material_dropped_by_cap ?? 0}
+-                      </Badge>
+-                    ) : null}
+-                    {msg.citations?.map((c) =>
+-                      c.url ? (
+-                        <a
+-                          key={c.index}
+-                          href={c.url}
+-                          target="_blank"
+-                          rel="noopener noreferrer"
+-                        >
+-                          <Badge
+-                            variant="outline"
+-                            className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
+-                          >
+-                            [{c.index}] {c.source}
+-                          </Badge>
+-                        </a>
+-                      ) : (
+-                        <Badge
+-                          key={c.index}
+-                          variant="outline"
+-                          className="text-sm rounded-none"
+-                        >
+-                          [{c.index}] {c.source}
+-                        </Badge>
+-                      )
+-                    )}
+-                    {msg.model && (
+-                      <Badge variant="outline" className="text-sm rounded-none text-muted-foreground/60 ml-auto">
+-                        {msg.model}
+-                      </Badge>
+-                    )}
+-                  </div>
+-                ) : null}
+-              </div>
+-            </div>
+-          ))}
+-        </div>
++          messages={messages}
++          onArtifactCreated={onArtifactCreated}
++        />
+ 
+         <div className="flex flex-col gap-3 p-4 lg:p-5 border-t-2 border-primary/20 bg-black/50">
+           <input
+@@ -1828,356 +359,20 @@ export function TutorChat({
+         </div>
+       </div>
+ 
+-      {isSourcesOpen && (
+-        <div className="absolute inset-0 z-40 bg-black/50">
+-          <aside className="absolute left-0 top-0 h-full w-full max-w-md border-r-2 border-primary bg-black/95 flex flex-col">
+-            <div className="flex items-center gap-2 p-3 border-b border-primary/30">
+-              <div className="font-arcade text-xs text-primary tracking-wider">SOURCES</div>
+-              <Badge variant="outline" className="rounded-none h-5 px-1.5 text-[10px] border-primary/40">
+-                {sourcesTab.toUpperCase()}
+-              </Badge>
+-              <Button
+-                type="button"
+-                variant="ghost"
+-                onClick={() => setIsSourcesOpen(false)}
+-                className="ml-auto h-8 w-8 p-0 rounded-none border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-              >
+-                <X className="w-4 h-4" />
+-              </Button>
+-            </div>
+-
+-            <div className="grid grid-cols-3 gap-1 p-2 border-b border-primary/20">
+-              <button
+-                type="button"
+-                onClick={() => setSourcesTab("materials")}
+-                className={`h-8 px-2 font-arcade text-[10px] border-2 ${
+-                  sourcesTab === "materials"
+-                    ? "border-primary text-primary bg-primary/10"
+-                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                }`}
+-              >
+-                MATERIALS
+-              </button>
+-              <button
+-                type="button"
+-                onClick={() => setSourcesTab("vault")}
+-                className={`h-8 px-2 font-arcade text-[10px] border-2 ${
+-                  sourcesTab === "vault"
+-                    ? "border-primary text-primary bg-primary/10"
+-                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                }`}
+-              >
+-                VAULT
+-              </button>
+-              <button
+-                type="button"
+-                onClick={() => setSourcesTab("map_of_contents")}
+-                className={`h-8 px-2 font-arcade text-[10px] border-2 ${
+-                  sourcesTab === "map_of_contents"
+-                    ? "border-primary text-primary bg-primary/10"
+-                    : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                }`}
+-              >
+-                MAP
+-              </button>
+-            </div>
+-
+-            <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+-              {sourcesTab === "materials" && (
+-                <>
+-                  <div
+-                    onDragOver={(e) => {
+-                      e.preventDefault();
+-                      setIsDragActive(true);
+-                    }}
+-                    onDragLeave={() => setIsDragActive(false)}
+-                    onDrop={(e) => {
+-                      e.preventDefault();
+-                      setIsDragActive(false);
+-                      void handleUploadFiles(e.dataTransfer.files);
+-                    }}
+-                    className={`border-2 border-dashed px-3 py-2 text-xs font-terminal ${
+-                      isDragActive ? "border-primary text-primary bg-primary/10" : "border-secondary/40 text-muted-foreground"
+-                    }`}
+-                  >
+-                    <Upload className="w-3.5 h-3.5 inline mr-1.5" />
+-                    Drag file here to add to chat + library.
+-                  </div>
+-                  <div className="flex flex-wrap gap-2">
+-                    <Button
+-                      type="button"
+-                      onClick={() => fileInputRef.current?.click()}
+-                      disabled={isUploadingMaterial}
+-                      className="h-8 rounded-none px-3 font-arcade text-[10px] gap-1.5 border-2 border-primary/60 bg-primary/10 hover:bg-primary/20"
+-                    >
+-                      {isUploadingMaterial ? (
+-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+-                      ) : (
+-                        <FolderPlus className="w-3.5 h-3.5" />
+-                      )}
+-                      ADD FILE
+-                    </Button>
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      onClick={selectAllMaterials}
+-                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                    >
+-                      <RefreshCw className="w-3.5 h-3.5 mr-1" />
+-                      ALL
+-                    </Button>
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      onClick={clearSelectedMaterials}
+-                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                    >
+-                      <RotateCcw className="w-3.5 h-3.5 mr-1" />
+-                      NONE
+-                    </Button>
+-                  </div>
+-                  <div className="max-h-[48vh] overflow-y-auto space-y-1 pr-1">
+-                    {availableMaterials.map((material) => {
+-                      const checked = selectedMaterialIds.includes(material.id);
+-                      return (
+-                        <label
+-                          key={material.id}
+-                          className={`flex items-center gap-2 px-2 py-1 border text-xs font-terminal cursor-pointer ${
+-                            checked
+-                              ? "border-primary/60 bg-primary/10 text-foreground"
+-                              : "border-secondary/30 text-muted-foreground hover:border-secondary/60 hover:text-foreground"
+-                          }`}
+-                        >
+-                          <input
+-                            type="checkbox"
+-                            checked={checked}
+-                            onChange={() => toggleMaterial(material.id)}
+-                            className="h-3.5 w-3.5 accent-red-500"
+-                          />
+-                          <span className="truncate">
+-                            {material.title || `Material ${material.id}`}{" "}
+-                            <span className="opacity-60">({material.file_type || "file"})</span>
+-                          </span>
+-                        </label>
+-                      );
+-                    })}
+-                  </div>
+-                </>
+-              )}
+-
+-              {sourcesTab === "vault" && (
+-                <>
+-                  <div className="flex gap-2">
+-                    <input
+-                      value={vaultSearch}
+-                      onChange={(e) => setVaultSearch(e.target.value)}
+-                      placeholder="Search vault paths..."
+-                      className="flex-1 h-9 bg-black border-2 border-secondary px-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none"
+-                    />
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      onClick={refreshVaultTree}
+-                      disabled={isLoadingVault}
+-                      className="h-9 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                    >
+-                      {isLoadingVault ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+-                    </Button>
+-                  </div>
+-                  <div className="flex flex-wrap gap-2">
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      onClick={() => void handleCreateVaultFolder()}
+-                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                    >
+-                      <FolderPlus className="w-3.5 h-3.5 mr-1" />
+-                      NEW FOLDER
+-                    </Button>
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      onClick={() => void handleCreateVaultNote()}
+-                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                    >
+-                      <FileTextIcon className="w-3.5 h-3.5 mr-1" />
+-                      NEW NOTE
+-                    </Button>
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      onClick={() => void handleEditSelectedVaultNote()}
+-                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                    >
+-                      <Pencil className="w-3.5 h-3.5 mr-1" />
+-                      EDIT
+-                    </Button>
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      onClick={() => void handleRenameSelectedVaultPath()}
+-                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                    >
+-                      RENAME
+-                    </Button>
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      onClick={() => setSelectedVaultPaths([])}
+-                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                    >
+-                      CLEAR SELECTED
+-                    </Button>
+-                    <Button
+-                      type="button"
+-                      variant="ghost"
+-                      onClick={() => void handleDeleteSelectedVaultPaths()}
+-                      className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-red-500/50 text-red-300 hover:border-red-400 hover:text-red-200"
+-                    >
+-                      <Trash2 className="w-3.5 h-3.5 mr-1" />
+-                      DELETE
+-                    </Button>
+-                  </div>
+-                  {vaultEditor.open ? (
+-                    <div className="border border-primary/30 p-2 space-y-2">
+-                      <div className="font-arcade text-[10px] text-primary">EDIT NOTE</div>
+-                      <input
+-                        value={vaultEditor.path}
+-                        onChange={(e) =>
+-                          setVaultEditor((prev) => ({ ...prev, path: e.target.value }))
+-                        }
+-                        className="w-full h-8 bg-black border border-secondary px-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none"
+-                      />
+-                      <textarea
+-                        value={vaultEditor.content}
+-                        onChange={(e) =>
+-                          setVaultEditor((prev) => ({ ...prev, content: e.target.value }))
+-                        }
+-                        className="w-full min-h-[220px] bg-black border border-secondary px-2 py-2 text-xs font-terminal text-foreground focus:border-primary focus:outline-none resize-y"
+-                      />
+-                      <div className="flex gap-2">
+-                        <Button
+-                          type="button"
+-                          onClick={() => void handleSaveVaultEditor()}
+-                          disabled={vaultEditor.saving}
+-                          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-primary/70 bg-primary/10 hover:bg-primary/20"
+-                        >
+-                          {vaultEditor.saving ? (
+-                            <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+-                          ) : null}
+-                          SAVE
+-                        </Button>
+-                        <Button
+-                          type="button"
+-                          variant="ghost"
+-                          onClick={() =>
+-                            setVaultEditor((prev) => ({ ...prev, open: false, saving: false }))
+-                          }
+-                          className="h-8 rounded-none px-3 font-arcade text-[10px] border-2 border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+-                        >
+-                          CANCEL
+-                        </Button>
+-                      </div>
+-                    </div>
+-                  ) : null}
+-                  <div className="max-h-[52vh] overflow-y-auto space-y-1 pr-1">
+-                    {filteredVaultRootEntries.map((entry) => {
+-                      const trimmed = String(entry || "").trim();
+-                      if (!trimmed) return null;
+-                      const isFolder = trimmed.endsWith("/");
+-                      const cleaned = trimmed.replace(/\/$/, "");
+-                      const name = _basename(cleaned);
+-                      const fullPath = cleaned;
+-                      const expanded = isFolder ? expandedVaultFolders.has(fullPath) : false;
+-
+-                      return (
+-                        <div key={fullPath}>
+-                          <VaultTreeRow
+-                            fullPath={fullPath}
+-                            name={name}
+-                            isFolder={isFolder}
+-                            depth={0}
+-                            checked={selectedVaultPaths.includes(fullPath)}
+-                            expanded={expanded}
+-                            onTogglePath={toggleVaultPath}
+-                            onToggleFolder={toggleVaultFolder}
+-                          />
+-                          {isFolder && expanded && (
+-                            <VaultTreeChildren
+-                              folderPath={fullPath}
+-                              depth={1}
+-                              selectedPaths={selectedVaultPaths}
+-                              expandedFolders={expandedVaultFolders}
+-                              onTogglePath={toggleVaultPath}
+-                              onToggleFolder={toggleVaultFolder}
+-                              searchQuery={vaultSearch}
+-                              refreshToken={vaultRefreshToken}
+-                              enabled={isSourcesOpen && sourcesTab === "vault"}
+-                            />
+-                          )}
+-                        </div>
+-                      );
+-                    })}
+-                    {vaultLoadError ? (
+-                      <div className="text-xs font-terminal text-red-400 border border-red-500/40 p-2">
+-                        Vault load failed: {vaultLoadError instanceof Error ? vaultLoadError.message : "Unknown error"}
+-                      </div>
+-                    ) : null}
+-                    {!isLoadingVault && filteredVaultRootEntries.length === 0 && (
+-                      <div className="text-xs font-terminal text-muted-foreground border border-secondary/30 p-2">
+-                        No vault items found.
+-                      </div>
+-                    )}
+-                  </div>
+-                </>
+-              )}
+-
+-              {sourcesTab === "map_of_contents" && (
+-                <div className="space-y-2">
+-                  <div className="border border-primary/30 p-2">
+-                    <div className="font-arcade text-[10px] text-primary mb-2">MAP OF CONTENTS</div>
+-                    <div className="text-xs font-terminal text-muted-foreground space-y-1">
+-                      <div><span className="text-foreground">Course:</span> {northStarSummary?.course_name || "N/A"}</div>
+-                      <div><span className="text-foreground">Module:</span> {northStarSummary?.module_name || "N/A"}</div>
+-                      <div><span className="text-foreground">Subtopic:</span> {northStarSummary?.subtopic_name || "N/A"}</div>
+-                      <div><span className="text-foreground">Status:</span> {northStarSummary?.status || "unknown"}</div>
+-                      <div><span className="text-foreground">Path:</span> {northStarSummary?.path || "N/A"}</div>
+-                    </div>
+-                  </div>
+-                  <div className="border border-primary/20 p-2">
+-                    <div className="font-arcade text-[10px] text-primary mb-2">OBJECTIVES</div>
+-                    <div className="max-h-32 overflow-y-auto space-y-1">
+-                      {(northStarSummary?.objective_ids || []).slice(0, 80).map((oid) => (
+-                        <div key={oid} className="text-xs font-terminal text-muted-foreground border border-secondary/30 px-2 py-1">
+-                          {oid}
+-                        </div>
+-                      ))}
+-                      {(!northStarSummary?.objective_ids || northStarSummary.objective_ids.length === 0) && (
+-                        <div className="text-xs font-terminal text-muted-foreground">No objective IDs loaded.</div>
+-                      )}
+-                    </div>
+-                  </div>
+-                  <div className="border border-primary/20 p-2">
+-                    <div className="font-arcade text-[10px] text-primary mb-2 flex items-center gap-1">
+-                      <Target className="w-3.5 h-3.5" /> REFERENCE TARGETS
+-                    </div>
+-                    <div className="max-h-56 overflow-y-auto space-y-1">
+-                      {(northStarSummary?.reference_targets || []).slice(0, 80).map((ref) => (
+-                        <div key={ref} className="text-xs font-terminal text-muted-foreground border border-secondary/30 px-2 py-1">
+-                          {ref}
+-                        </div>
+-                      ))}
+-                      {(!northStarSummary?.reference_targets || northStarSummary.reference_targets.length === 0) && (
+-                        <div className="text-xs font-terminal text-muted-foreground">No active reference targets.</div>
+-                      )}
+-                    </div>
+-                  </div>
+-                </div>
+-              )}
+-            </div>
+-          </aside>
+-        </div>
+-      )}
++      <SourcesPanel
++        isOpen={isSourcesOpen}
++        onClose={() => setIsSourcesOpen(false)}
++        availableMaterials={availableMaterials}
++        selectedMaterialIds={selectedMaterialIds}
++        onSelectedMaterialIdsChange={onSelectedMaterialIdsChange}
++        onUploadFiles={handleUploadFiles}
++        isUploadingMaterial={isUploadingMaterial}
++        fileInputRef={fileInputRef}
++        selectedVaultPaths={selectedVaultPaths}
++        onSelectedVaultPathsChange={setSelectedVaultPaths}
++        northStarSummary={northStarSummary}
++        isStreaming={isStreaming}
++      />
+     </div>
+   );
+ }
+diff --git a/dashboard_rebuild/client/src/components/TutorWizard.tsx b/dashboard_rebuild/client/src/components/TutorWizard.tsx
+index af24225f..54275807 100644
+--- a/dashboard_rebuild/client/src/components/TutorWizard.tsx
++++ b/dashboard_rebuild/client/src/components/TutorWizard.tsx
+@@ -476,6 +476,15 @@ function StepCourseAndMaterials({
+                   </option>
+                 ))}
+               </select>
++              <div className={`${TEXT_MUTED} mt-2 text-xs`}>
++                The study unit controls week-page sync and note naming. The topic field below is only an optional session label.
++              </div>
++              {selectedObjectiveGroup &&
++                !studyUnitOptions.find((option) => option.value === selectedObjectiveGroup)?.objectiveCount && (
++                  <div className="mt-2 border border-yellow-500/30 bg-yellow-500/10 px-2 py-2 text-xs font-terminal text-yellow-200">
++                    This study unit has materials, but no approved objectives saved yet. Preflight will block until objectives exist in the DB.
++                  </div>
++                )}
+             </div>
+ 
+             {objectiveScope === "single_focus" && (
+@@ -514,7 +523,7 @@ function StepCourseAndMaterials({
+       {/* Topic */}
+       <Card className="bg-black/40 border-2 border-primary rounded-none">
+         <div className="px-3 py-2 border-b border-primary/30">
+-          <span className={TEXT_SECTION_LABEL}>TOPIC</span>
++          <span className={TEXT_SECTION_LABEL}>SESSION LABEL</span>
+         </div>
+         <div className="p-3">
+           <input
+@@ -526,9 +535,12 @@ function StepCourseAndMaterials({
+             onBlur={(e) => {
+               if (e.target.value) toast.success("Topic saved");
+             }}
+-            placeholder="e.g., Hip joint anatomy, Gait cycle..."
++            placeholder="Optional: narrow the session inside this study unit"
+             className={`${INPUT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
+           />
++          <div className={`${TEXT_MUTED} mt-2 text-xs`}>
++            This does not rename the week or choose the study unit. Leave it blank if you want the Tutor to use the selected week/module name directly.
++          </div>
+         </div>
+       </Card>
+ 
+diff --git a/dashboard_rebuild/client/src/pages/library.tsx b/dashboard_rebuild/client/src/pages/library.tsx
+index 66d8b901..0be6045b 100644
+--- a/dashboard_rebuild/client/src/pages/library.tsx
++++ b/dashboard_rebuild/client/src/pages/library.tsx
+@@ -49,6 +49,7 @@ import {
+   GraduationCap,
+   Eye,
+   AlertTriangle,
++  Upload,
+ } from "lucide-react";
+ import { Checkbox } from "@/components/ui/checkbox";
+ import {
+@@ -587,6 +588,10 @@ export default function Library() {
+     () => visibleMaterials.filter((m) => m.enabled && selectedForTutorSet.has(m.id)).map((m) => m.id),
+     [visibleMaterials, selectedForTutorSet],
+   );
++  const hiddenTutorSelectionCount = Math.max(
++    0,
++    selectedForTutor.length - selectedVisibleMaterialIds.length,
++  );
+   const allTutorMaterialsSelected = selectableVisibleMaterialIds.length > 0 &&
+     selectableVisibleMaterialIds.every((id) => selectedForTutorSet.has(id));
+   const syncPreviewFiles = useMemo(
+@@ -602,6 +607,10 @@ export default function Library() {
+   }, [selectedForTutor]);
+ 
+   const handleOpenTutor = () => {
++    if (!selectedForTutor.length) {
++      toast.error("Choose files for the Tutor queue before opening Tutor.");
++      return;
++    }
+     writeTutorSelectedMaterialIds(selectedForTutor);
+     try {
+       localStorage.removeItem("tutor.wizard.progress.v1");
+@@ -616,6 +625,34 @@ export default function Library() {
+     setLocation("/tutor");
+   };
+ 
++  const replaceTutorQueueWithVisible = () => {
++    if (!selectableVisibleMaterialIds.length) {
++      toast.error("No enabled files are visible in this view.");
++      return;
++    }
++    setSelectedForTutor([...selectableVisibleMaterialIds]);
++    toast.success(`Tutor queue replaced with ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"}.`);
++  };
++
++  const addVisibleToTutorQueue = () => {
++    if (!selectableVisibleMaterialIds.length) {
++      toast.error("No enabled files are visible in this view.");
++      return;
++    }
++    setSelectedForTutor((prev) => {
++      const next = new Set(prev);
++      for (const id of selectableVisibleMaterialIds) next.add(id);
++      return [...next];
++    });
++    toast.success(`Added ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"} to the Tutor queue.`);
++  };
++
++  const clearTutorQueue = () => {
++    if (!selectedForTutor.length) return;
++    setSelectedForTutor([]);
++    toast.success("Tutor queue cleared.");
++  };
++
+   useEffect(() => {
+     if (isLoading) return;
+     setSelectedForTutor((ids) => ids.filter((id) => materials.some((m) => m.id === id)));
+@@ -1295,9 +1332,15 @@ export default function Library() {
+               <div className="border-b border-primary/20 bg-black/30">
+                 <div className={`${PANEL_PADDING} grid gap-3 lg:grid-cols-[minmax(340px,1fr)_minmax(380px,1.2fr)]`}>
+                   <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
+-                    <div className={TEXT_PANEL_TITLE}>UPLOAD MATERIALS</div>
+                     <div className="flex items-center gap-2">
+-                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Class</label>
++                      <Upload className={ICON_SM} />
++                      <div className={TEXT_PANEL_TITLE}>UPLOAD MATERIALS</div>
++                    </div>
++                    <div className={`${TEXT_MUTED} text-xs`}>
++                      Use this for one-off files from Downloads, email, or Blackboard. Upload puts the file into the Tutor library immediately.
++                    </div>
++                    <div className="flex items-center gap-2">
++                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Link uploads to course</label>
+                       <select
+                         value={uploadCourseTarget}
+                         onChange={(e) => setUploadCourseTarget(e.target.value)}
+@@ -1317,7 +1360,13 @@ export default function Library() {
+                   </div>
+ 
+                   <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
+-                    <div className={TEXT_PANEL_TITLE}>SYNC STUDY FOLDER</div>
++                    <div className="flex items-center gap-2">
++                      <FolderOpen className={ICON_SM} />
++                      <div className={TEXT_PANEL_TITLE}>SYNC STUDY FOLDER</div>
++                    </div>
++                    <div className={`${TEXT_MUTED} text-xs`}>
++                      Use this for a whole course or week folder. Scan first, choose files, then sync only the files you want in the Tutor library.
++                    </div>
+                     <input
+                       value={materialsFolder}
+                       onChange={(e) => setMaterialsFolder(e.target.value)}
+@@ -1352,7 +1401,7 @@ export default function Library() {
+                       </Button>
+                     </div>
+                     <div className="flex items-center gap-2">
+-                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Class</label>
++                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Link synced files to course</label>
+                       <select
+                         value={syncCourseTarget}
+                         onChange={(e) => setSyncCourseTarget(e.target.value)}
+@@ -1450,6 +1499,27 @@ export default function Library() {
+               </div>
+ 
+               <div className={`${PANEL_PADDING} flex-1 min-h-0 flex flex-col gap-3`}>
++                <div className="grid gap-3 lg:grid-cols-3">
++                  <div className="border border-primary/20 bg-black/20 p-3">
++                    <div className={TEXT_PANEL_TITLE}>1. INGEST</div>
++                    <div className={`${TEXT_MUTED} mt-1 text-xs`}>
++                      Upload for one-off files. Sync for a folder tree you want to browse before import.
++                    </div>
++                  </div>
++                  <div className="border border-primary/20 bg-black/20 p-3">
++                    <div className={TEXT_PANEL_TITLE}>2. ORGANIZE</div>
++                    <div className={`${TEXT_MUTED} mt-1 text-xs`}>
++                      Use the course link control on the current view when files need to be assigned or reassigned.
++                    </div>
++                  </div>
++                  <div className="border border-primary/20 bg-black/20 p-3">
++                    <div className={TEXT_PANEL_TITLE}>3. SEND TO TUTOR</div>
++                    <div className={`${TEXT_MUTED} mt-1 text-xs`}>
++                      The Tutor queue persists across views. Replace it with the current view, add this view to it, or clear it before opening Tutor.
++                    </div>
++                  </div>
++                </div>
++
+                 <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                   <div className="space-y-1">
+                     <div className={TEXT_PANEL_TITLE}>YOUR MATERIALS</div>
+@@ -1457,94 +1527,141 @@ export default function Library() {
+                       {sidebarMode === "courses" ? "Course" : "Folder"}: <span className="!text-white font-terminal">{selectedFolderLabel}</span> • showing {visibleMaterials.length} file{visibleMaterials.length === 1 ? "" : "s"}
+                     </div>
+                     <div className={TEXT_MUTED}>
+-                      Tutor selected in view: {selectedVisibleMaterialIds.length} file{selectedVisibleMaterialIds.length === 1 ? "" : "s"}
+-                      {selectedForTutor.length > selectedVisibleMaterialIds.length
+-                        ? ` • total selected ${selectedForTutor.length}`
+-                        : ""}
++                      Tutor queue: {selectedForTutor.length} file{selectedForTutor.length === 1 ? "" : "s"} total • {selectedVisibleMaterialIds.length} in this view
++                      {hiddenTutorSelectionCount > 0 ? ` • ${hiddenTutorSelectionCount} from other views` : ""}
+                     </div>
+                   </div>
+-                  <div className="flex items-center flex-wrap gap-2">
+-                    <Button
+-                      variant="destructive"
+-                      size="sm"
+-                      className="rounded-none h-7 px-3 font-terminal text-xs"
+-                      disabled={selectedVisibleMaterialIds.length === 0 || clearMaterialsMutation.isPending}
+-                      onClick={() => {
+-                        if (!selectedVisibleMaterialIds.length) return;
+-                        if (!window.confirm(`Delete ${selectedVisibleMaterialIds.length} selected materials from the current folder view? This will not delete your local PT School files.`)) return;
+-                        clearMaterialsMutation.mutate([...selectedVisibleMaterialIds]);
+-                      }}
+-                    >
+-                      {clearMaterialsMutation.isPending ? (
+-                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+-                      ) : (
+-                        <Trash2 className={`${ICON_SM} mr-1`} />
+-                      )}
+-                      CLEAR SELECTED
+-                    </Button>
+-                    <Button
+-                      variant="destructive"
+-                      size="sm"
+-                      className="rounded-none h-7 px-3 font-terminal text-xs"
+-                      disabled={materials.length === 0 || clearMaterialsMutation.isPending}
+-                      onClick={() => {
+-                        const safeCount = materials.length;
+-                        if (!safeCount) return;
+-                        if (!window.confirm(`Delete all ${safeCount} materials from tutor library? This will not delete your local PT School files.`)) return;
+-                        clearMaterialsMutation.mutate(materials.map((m) => m.id));
+-                      }}
+-                    >
+-                      {clearMaterialsMutation.isPending ? (
+-                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+-                      ) : (
+-                        <Trash2 className={`${ICON_SM} mr-1`} />
+-                      )}
+-                      CLEAR ALL MATERIALS
+-                    </Button>
+-                    <div className="flex items-center gap-1">
+-                      <select
+-                        value={courseLinkTarget}
+-                        onChange={(e) => setCourseLinkTarget(e.target.value)}
+-                        className="h-7 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary"
+-                        disabled={courses.length === 0 || courseLinkMutation.isPending}
+-                      >
+-                        <option value="">Select course</option>
+-                        {courses.map((course) => (
+-                          <option key={course.id} value={String(course.id)}>
+-                            {course.name}{course.code ? ` (${course.code})` : ""}
+-                          </option>
+-                        ))}
+-                      </select>
+-                      <Button
+-                        variant="outline"
+-                        size="sm"
+-                        className="rounded-none h-7 px-3 font-terminal text-xs"
+-                        disabled={
+-                          courseLinkMutation.isPending
+-                          || !selectedVisibleMaterialIds.length
+-                          || !courseLinkTarget
+-                        }
+-                        onClick={handleLinkSelectedToCourse}
+-                      >
+-                        {courseLinkMutation.isPending ? (
+-                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+-                        ) : (
+-                          <Link2 className={`${ICON_SM} mr-1`} />
+-                        )}
+-                        LINK IN VIEW
+-                      </Button>
++                  <div className="grid gap-2 lg:grid-cols-[auto_auto_auto]">
++                    <div className="border border-primary/20 bg-black/20 p-2 space-y-2">
++                      <div className={`${TEXT_MUTED} text-[11px] uppercase tracking-wide`}>Course Linking</div>
++                      <div className="flex items-center gap-1">
++                        <select
++                          value={courseLinkTarget}
++                          onChange={(e) => setCourseLinkTarget(e.target.value)}
++                          className="h-7 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary"
++                          disabled={courses.length === 0 || courseLinkMutation.isPending}
++                        >
++                          <option value="">Select course</option>
++                          {courses.map((course) => (
++                            <option key={course.id} value={String(course.id)}>
++                              {course.name}{course.code ? ` (${course.code})` : ""}
++                            </option>
++                          ))}
++                        </select>
++                        <Button
++                          variant="outline"
++                          size="sm"
++                          className="rounded-none h-7 px-3 font-terminal text-xs"
++                          disabled={
++                            courseLinkMutation.isPending
++                            || !selectedVisibleMaterialIds.length
++                            || !courseLinkTarget
++                          }
++                          onClick={handleLinkSelectedToCourse}
++                        >
++                          {courseLinkMutation.isPending ? (
++                            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
++                          ) : (
++                            <Link2 className={`${ICON_SM} mr-1`} />
++                          )}
++                          LINK VIEW
++                        </Button>
++                      </div>
++                    </div>
++
++                    <div className="border border-primary/20 bg-black/20 p-2 space-y-2">
++                      <div className={`${TEXT_MUTED} text-[11px] uppercase tracking-wide`}>Tutor Queue</div>
++                      <div className="flex items-center flex-wrap gap-2">
++                        <Button
++                          variant="outline"
++                          size="sm"
++                          className="rounded-none h-7 px-3 font-terminal text-xs"
++                          disabled={!selectableVisibleMaterialIds.length}
++                          onClick={replaceTutorQueueWithVisible}
++                        >
++                          REPLACE WITH VIEW
++                        </Button>
++                        <Button
++                          variant="outline"
++                          size="sm"
++                          className="rounded-none h-7 px-3 font-terminal text-xs"
++                          disabled={!selectableVisibleMaterialIds.length}
++                          onClick={addVisibleToTutorQueue}
++                        >
++                          ADD VIEW
++                        </Button>
++                        <Button
++                          variant="outline"
++                          size="sm"
++                          className="rounded-none h-7 px-3 font-terminal text-xs"
++                          disabled={!selectedForTutor.length}
++                          onClick={clearTutorQueue}
++                        >
++                          CLEAR QUEUE
++                        </Button>
++                        <Button
++                          variant="outline"
++                          size="sm"
++                          className="rounded-none h-7 px-3 font-terminal text-xs"
++                          disabled={!selectedForTutor.length}
++                          onClick={handleOpenTutor}
++                        >
++                          OPEN TUTOR ({selectedForTutor.length})
++                        </Button>
++                      </div>
++                    </div>
++
++                    <div className="border border-red-500/20 bg-red-500/5 p-2 space-y-2">
++                      <div className="text-[11px] uppercase tracking-wide text-red-200">Library Cleanup</div>
++                      <div className="flex items-center flex-wrap gap-2">
++                        <Button
++                          variant="destructive"
++                          size="sm"
++                          className="rounded-none h-7 px-3 font-terminal text-xs"
++                          disabled={selectedVisibleMaterialIds.length === 0 || clearMaterialsMutation.isPending}
++                          onClick={() => {
++                            if (!selectedVisibleMaterialIds.length) return;
++                            if (!window.confirm(`Delete ${selectedVisibleMaterialIds.length} selected materials from the current folder view? This will not delete your local PT School files.`)) return;
++                            clearMaterialsMutation.mutate([...selectedVisibleMaterialIds]);
++                          }}
++                        >
++                          {clearMaterialsMutation.isPending ? (
++                            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
++                          ) : (
++                            <Trash2 className={`${ICON_SM} mr-1`} />
++                          )}
++                          DELETE VIEW SELECTION
++                        </Button>
++                        <Button
++                          variant="destructive"
++                          size="sm"
++                          className="rounded-none h-7 px-3 font-terminal text-xs"
++                          disabled={materials.length === 0 || clearMaterialsMutation.isPending}
++                          onClick={() => {
++                            const safeCount = materials.length;
++                            if (!safeCount) return;
++                            if (!window.confirm(`Delete all ${safeCount} materials from tutor library? This will not delete your local PT School files.`)) return;
++                            clearMaterialsMutation.mutate(materials.map((m) => m.id));
++                          }}
++                        >
++                          {clearMaterialsMutation.isPending ? (
++                            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
++                          ) : (
++                            <Trash2 className={`${ICON_SM} mr-1`} />
++                          )}
++                          DELETE ALL LIBRARY FILES
++                        </Button>
++                      </div>
+                     </div>
+-                    <Button
+-                      variant="outline"
+-                      size="sm"
+-                      className="rounded-none h-7 px-3 font-terminal text-xs"
+-                      onClick={handleOpenTutor}
+-                    >
+-                      OPEN TUTOR
+-                    </Button>
+                   </div>
+                 </div>
+ 
++                {hiddenTutorSelectionCount > 0 ? (
++                  <div className="border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs font-terminal text-yellow-100">
++                    The Tutor queue still includes {hiddenTutorSelectionCount} file{hiddenTutorSelectionCount === 1 ? "" : "s"} from other views. Use <span className="text-white">REPLACE WITH VIEW</span> if you want Tutor to use only what is visible right now.
++                  </div>
++                ) : null}
++
+                 <div className="flex-1 min-h-0 border border-primary/25 bg-black/30 overflow-hidden">
+                   {isLoading ? (
+                     <div className="flex items-center justify-center py-8">
+diff --git a/dashboard_rebuild/client/src/pages/tutor.tsx b/dashboard_rebuild/client/src/pages/tutor.tsx
+index 495c2c80..0f7aa36f 100644
+--- a/dashboard_rebuild/client/src/pages/tutor.tsx
++++ b/dashboard_rebuild/client/src/pages/tutor.tsx
+@@ -127,7 +127,25 @@ function normalizeStudyUnitLabel(value: string): string {
+   );
+ }
+ 
++function scoreStudyUnitCandidate(rawSegment: string): number {
++  const segment = normalizeStudyUnitLabel(rawSegment);
++  if (!segment || !/^(Week|Module|Construct|Topic)\s*0*\d+/i.test(segment)) {
++    return Number.NEGATIVE_INFINITY;
++  }
++  let score = 1;
++  if (/\s-\s.+/.test(segment)) score += 6;
++  if (/\b(lecture|slides?|transcript|practice|todo|to do|notes?|objectives?|lo)\b/i.test(rawSegment)) {
++    score -= 5;
++  }
++  if (/^(Week|Module|Construct|Topic)\s+\d+$/i.test(segment)) {
++    score += 1;
++  }
++  return score;
++}
++
+ function inferStudyUnitFromMaterial(material: Material): string {
++  let bestUnit = "";
++  let bestScore = Number.NEGATIVE_INFINITY;
+   const folderSegments: string[] = [];
+   if (material.folder_path) {
+     folderSegments.push(...String(material.folder_path).split(/[\\/]/));
+@@ -147,8 +165,10 @@ function inferStudyUnitFromMaterial(material: Material): string {
+ 
+     for (let index = cleaned.length - 1; index >= 0; index -= 1) {
+       const segment = cleaned[index];
+-      if (/^(Week|Module|Construct|Topic)\s*0*\d+/i.test(segment)) {
+-        return normalizeStudyUnitLabel(segment);
++      const score = scoreStudyUnitCandidate(segment);
++      if (score > bestScore) {
++        bestUnit = normalizeStudyUnitLabel(segment);
++        bestScore = score;
+       }
+     }
+   }
+@@ -159,11 +179,13 @@ function inferStudyUnitFromMaterial(material: Material): string {
+     .map((segment) => String(segment).split(/[\\/]/).pop() || "")
+     .map((segment) => segment.replace(/\.[A-Za-z0-9]+$/, ""));
+   for (const segment of fileNameCandidates) {
+-    if (/^(Week|Module|Construct|Topic)\s*0*\d+/i.test(segment)) {
+-      return normalizeStudyUnitLabel(segment);
++    const score = scoreStudyUnitCandidate(segment);
++    if (score > bestScore) {
++      bestUnit = normalizeStudyUnitLabel(segment);
++      bestScore = score;
+     }
+   }
+-  return "";
++  return bestUnit;
+ }
+ 
+ export default function Tutor() {
+@@ -415,9 +437,9 @@ export default function Tutor() {
+ 
+   const effectiveTopic = useMemo(
+     () =>
+-      topic.trim() ||
+       selectedObjectiveRecord?.title ||
+       selectedObjectiveGroup ||
++      topic.trim() ||
+       "",
+     [topic, selectedObjectiveRecord, selectedObjectiveGroup],
+   );
+@@ -477,7 +499,7 @@ export default function Tutor() {
+       showSetup &&
+       !!preflightPayload &&
+       selectedMaterials.length > 0 &&
+-      (!!selectedObjectiveGroup || objectiveScope === "module_all"),
++      !!selectedObjectiveGroup,
+     staleTime: 30 * 1000,
+   });
+ 
+@@ -655,7 +677,10 @@ export default function Tutor() {
+       }
+       let resolvedChainId = chainId;
+       if (!resolvedChainId && customBlockIds.length > 0) {
+-        const customChain = await api.tutor.createCustomChain(customBlockIds, `Custom ${topic || "Chain"}`);
++        const customChain = await api.tutor.createCustomChain(
++          customBlockIds,
++          `Custom ${effectiveTopic || "Chain"}`,
++        );
+         resolvedChainId = customChain.id;
+       }
+       const preflightResult = await api.tutor.preflightSession(preflightPayload);
+diff --git a/docs/root/TUTOR_TODO.md b/docs/root/TUTOR_TODO.md
+index f45a086e..106b8ff7 100644
+--- a/docs/root/TUTOR_TODO.md
++++ b/docs/root/TUTOR_TODO.md
+@@ -40,6 +40,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor
+   - Added backend safeguard: objective-scoped certified sessions now require preflight instead of direct start.
+   - In progress: Obsidian-backed week-page preflight sync for `Learning Objectives & To Do.md` plus `_Map of Contents.md` patching, `page_sync_result`, and Wizard readiness surfacing for the Week 8 proof.
+   - Week 8 follow-up hardening: duplicate note creation is now blocked on bridge/read failures, the live Week 8 numbered duplicates were cleaned, and the synced page layout now tracks the Week 7 study-note shape more closely.
++  - Week 9 follow-up hardening: fix study-unit inference/title leakage in the Tutor Wizard and simplify the Library ingest vs Tutor-handoff UX so the selected path is obvious.
+ - [ ] Phase 3: certify all selectable template chains at baseline/strict bars.
+ - [ ] Phase 4: certify artifact reliability for notes and card drafts.
+ - [ ] Phase 5: certify trust, provenance, and requested-reference behavior.

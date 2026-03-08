@@ -1,0 +1,20 @@
+ M .mcp.json
+ M conductor/tracks/GENERAL/log.md
+ M dashboard_rebuild/client/src/api.ts
+ M dashboard_rebuild/client/src/components/TutorChat.tsx
+ M dashboard_rebuild/client/src/components/TutorWizard.tsx
+ M dashboard_rebuild/client/src/pages/library.tsx
+ M dashboard_rebuild/client/src/pages/tutor.tsx
+ M docs/root/TUTOR_TODO.md
+?? dashboard_rebuild/client/src/api.types.ts
+?? dashboard_rebuild/client/src/components/MessageList.tsx
+?? dashboard_rebuild/client/src/components/SourcesPanel.tsx
+?? dashboard_rebuild/client/src/components/TutorChat.types.ts
+?? dashboard_rebuild/client/src/components/useSSEStream.ts
+?? docs/EXECUTION_PLAN_30D.md
+?? docs/IMPLEMENTATION_REPORT.md
+?? docs/IMPLEMENTATION_REPORT_2.md
+?? docs/LOCAL_AGENT_SETUP_REPORT.md
+?? docs/PAINPOINT_TRIAGE.md
+?? docs/REPO_ORIENTATION.md
+?? docs/audit/
