@@ -1953,3 +1953,41 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - live note/card/structured-notes persistence check
 - Full certification runner status:
   - `python scripts/run_tutor_certification.py` -> `overall_status=ready`
+
+## 2026-03-07 — Tutor week-page preflight sync
+
+- Added deterministic preflight page sync for both:
+  - `Learning Objectives & To Do.md`
+  - `_Map of Contents.md`
+- Sync now patches managed sections instead of overwriting whole files, preserves existing frontmatter keys, and carries structured `page_sync_result` through the Tutor preflight/session contract and Wizard step 3.
+- Added Week 8 proof data in the live DB for Neuroscience (`course_id=3`) with parent/child `lo_code` hierarchy so the new sync can generate the ASCII chapter map from approved objectives plus selected materials.
+- Hardened Obsidian verification so CLI error text no longer counts as a successful note read/write; preflight now blocks with `PAGE_SYNC_FAILED` when the local Obsidian transport is unhealthy.
+- Validation:
+  - `pytest brain/tests/test_tutor_session_linking.py brain/tests/test_frontmatter.py brain/tests/test_tutor_obsidian_io.py -q` -> `37 passed`
+  - `npm run build` in `dashboard_rebuild/` -> success
+  - Live Week 8 preflight against the real DB now returns `200` with `PAGE_SYNC_FAILED`, `page_sync_result.ok=false`, and both page statuses `build_failed` because the local Obsidian CLI reports `Your Obsidian installer is out of date`
+
+## 2026-03-08 — Week 8 Obsidian sync cleanup and layout alignment
+
+- Fixed the week-page save guard so Obsidian bridge/read failures no longer fall through to `create_note()`, which had been producing numbered duplicates like `Learning Objectives & To Do 1.md`.
+- Updated the Week-page renderer to better match the Week 7 study-note shape:
+  - cleaner parent/child objective checklists
+  - deduped source materials
+  - one shared ASCII source-material branch instead of repeating materials under every parent objective
+  - extracted Week 8 to-do bullets from the source text file
+- Cleaned the live Week 8 vault folder so only the canonical files remain:
+  - `Learning Objectives & To Do.md`
+  - `_Map of Contents.md`
+- Validation:
+  - `pytest brain/tests/test_frontmatter.py brain/tests/test_tutor_obsidian_io.py -q` -> `10 passed`
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `31 passed`
+  - live Week 8 preflight -> `ok=true`, `vault_ready=true`, `page_sync_result.ok=true`
+  - live Week 8 Tutor start from certified preflight -> `session_id=tutor-20260308-002644-53589f`
+
+## 2026-03-08 — Tutor follow-up target cleanup
+
+- Fixed the preflight/session follow-up target derivation so real objective-scoped weeks no longer leak the placeholder `[[OBJ-UNMAPPED]]` when valid objectives exist.
+- Follow-up targets now derive from approved objective IDs, preferring child objectives first and honoring the focused objective when one is selected.
+- Validation:
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `31 passed`
+  - live Week 8 preflight after clean dashboard restart -> `follow_up_targets` resolved to real objective links instead of `[[OBJ-UNMAPPED]]`

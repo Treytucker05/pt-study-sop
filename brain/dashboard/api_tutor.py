@@ -29,6 +29,7 @@ Endpoints:
 from __future__ import annotations
 
 import json
+import ast
 import os
 import re
 import hashlib
@@ -128,6 +129,7 @@ _TUTOR_SESSION_MODE_LIMITS: dict[str, tuple[int, int]] = {
 }
 _METHODS_YAML_DIR = Path(__file__).resolve().parents[2] / "sop" / "library" / "methods"
 _METHOD_CONTRACT_CACHE: dict[str, Any] = {"stamp": None, "by_id": {}}
+_DEFAULT_OBSIDIAN_VAULT_ROOT = Path(r"C:\Users\treyt\Desktop\Treys School")
 
 
 def _safe_json_dict(value: Any) -> dict[str, Any]:
@@ -425,6 +427,15 @@ def _canonical_moc_path(
     return f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/_Map of Contents.md"
 
 
+def _canonical_learning_objectives_page_path(
+    *, course_label: str, module_or_week: str, subtopic: str
+) -> str:
+    return (
+        f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/"
+        "Learning Objectives & To Do.md"
+    )
+
+
 def _wikilink(label: str) -> str:
     clean = str(label or "").strip()
     return f"[[{clean}]]" if clean else ""
@@ -498,6 +509,67 @@ def _normalize_objective_id(raw_id: Any, index: int) -> str:
     if not candidate.startswith("OBJ-"):
         candidate = f"OBJ-{candidate}"
     return candidate
+
+
+_OBJECTIVE_PARENT_CODE_RE = re.compile(r"^(OBJ-\d+)([A-Z]+)?$")
+
+
+def _objective_parent_code(code: Any) -> str:
+    clean = _normalize_objective_id(code, 1)
+    match = _OBJECTIVE_PARENT_CODE_RE.match(clean)
+    if not match:
+        return clean
+    return match.group(1)
+
+
+def _objective_has_child_suffix(code: Any) -> bool:
+    clean = _normalize_objective_id(code, 1)
+    match = _OBJECTIVE_PARENT_CODE_RE.match(clean)
+    return bool(match and match.group(2))
+
+
+def _derive_follow_up_targets_from_objectives(
+    objectives: list[dict[str, Any]],
+    *,
+    focus_objective_id: Optional[str] = None,
+    max_items: int = 6,
+) -> list[str]:
+    ordered_ids: list[str] = []
+    seen: set[str] = set()
+
+    def add(obj_id: Any) -> None:
+        clean = str(obj_id or "").strip()
+        if not clean or clean == "OBJ-UNMAPPED" or clean in seen:
+            return
+        seen.add(clean)
+        ordered_ids.append(clean)
+
+    focus_clean = str(focus_objective_id or "").strip().upper()
+    add(focus_clean)
+
+    normalized_objectives = [
+        {
+            "objective_id": _normalize_objective_id(
+                item.get("objective_id") or item.get("id"), index
+            )
+        }
+        for index, item in enumerate(objectives or [], start=1)
+        if isinstance(item, dict)
+    ]
+
+    for item in normalized_objectives:
+        obj_id = item["objective_id"]
+        if _objective_has_child_suffix(obj_id):
+            add(obj_id)
+
+    for item in normalized_objectives:
+        obj_id = item["objective_id"]
+        if not _objective_has_child_suffix(obj_id):
+            add(obj_id)
+
+    if not ordered_ids:
+        return ["[[OBJ-UNMAPPED]]"]
+    return [f"[[{obj_id}]]" for obj_id in ordered_ids[:max_items]]
 
 
 def _row_value(row: Any, key: str, index: int) -> Any:
@@ -899,6 +971,334 @@ def _parse_existing_map_of_contents_objectives(content: str) -> dict[str, str]:
     return parsed
 
 
+_FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n?", re.DOTALL)
+
+
+def _slugify_section_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", str(value or "").lower()).strip("-") or "section"
+
+
+def _parse_frontmatter_keys(content: str) -> set[str]:
+    match = _FRONTMATTER_RE.match(content or "")
+    if not match:
+        return set()
+    keys: set[str] = set()
+    for line in match.group(1).splitlines():
+        if ":" not in line:
+            continue
+        key = line.split(":", 1)[0].strip()
+        if key:
+            keys.add(key)
+    return keys
+
+
+def _parse_frontmatter_dict(content: str) -> dict[str, Any]:
+    match = _FRONTMATTER_RE.match(content or "")
+    if not match:
+        return {}
+    raw = (match.group(1) or "").splitlines()
+    parsed: dict[str, Any] = {}
+    active_list_key: Optional[str] = None
+    for line in raw:
+        if not line.strip():
+            continue
+        if active_list_key and line.lstrip().startswith("- "):
+            parsed.setdefault(active_list_key, []).append(
+                line.split("- ", 1)[1].strip().strip('"').strip("'")
+            )
+            continue
+        active_list_key = None
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        clean_key = key.strip()
+        clean_value = value.strip()
+        if not clean_key:
+            continue
+        if clean_value == "":
+            parsed[clean_key] = []
+            active_list_key = clean_key
+            continue
+        parsed[clean_key] = clean_value.strip('"').strip("'")
+    return parsed
+
+
+def _frontmatter_line(key: str, value: Any) -> str:
+    text = str(value or "").replace("\n", " ").strip()
+    return f"{key}: {text}"
+
+
+def _merge_frontmatter_preserving_existing(
+    content: str,
+    *,
+    canonical_fields: dict[str, Any],
+) -> str:
+    filtered_fields = {
+        str(key): value
+        for key, value in canonical_fields.items()
+        if str(key).strip() and str(value or "").strip()
+    }
+    if not filtered_fields:
+        return content
+
+    match = _FRONTMATTER_RE.match(content or "")
+    if not match:
+        frontmatter_body = "\n".join(
+            _frontmatter_line(key, value) for key, value in filtered_fields.items()
+        )
+        if content.strip():
+            return f"---\n{frontmatter_body}\n---\n\n{content.strip()}\n"
+        return f"---\n{frontmatter_body}\n---\n"
+
+    existing_body = match.group(1)
+    existing_keys = _parse_frontmatter_keys(content)
+    missing_lines = [
+        _frontmatter_line(key, value)
+        for key, value in filtered_fields.items()
+        if key not in existing_keys
+    ]
+    if not missing_lines:
+        return content
+
+    new_frontmatter = f"---\n{existing_body.rstrip()}\n" + "\n".join(missing_lines) + "\n---"
+    remainder = (content[match.end() :] or "").lstrip("\r\n")
+    if remainder:
+        return f"{new_frontmatter}\n\n{remainder}"
+    return f"{new_frontmatter}\n"
+
+
+def _section_markers(page_key: str, section_title: str) -> tuple[str, str]:
+    slug = _slugify_section_key(section_title)
+    token = f"TUTOR_PAGE_SYNC:{page_key}:{slug}"
+    return f"<!-- {token} START -->", f"<!-- {token} END -->"
+
+
+def _replace_or_insert_managed_section(
+    content: str,
+    *,
+    page_key: str,
+    section_title: str,
+    body: str,
+) -> str:
+    start_marker, end_marker = _section_markers(page_key, section_title)
+    managed_block = f"{start_marker}\n{(body or '- (none)').strip()}\n{end_marker}"
+    marker_pattern = re.compile(
+        rf"{re.escape(start_marker)}.*?{re.escape(end_marker)}",
+        re.DOTALL,
+    )
+    if marker_pattern.search(content):
+        return marker_pattern.sub(managed_block, content, count=1)
+
+    heading_pattern = re.compile(
+        rf"(?mi)^(##\s+{re.escape(section_title)}\s*)$"
+    )
+    heading_match = heading_pattern.search(content)
+    if heading_match:
+        insert_at = heading_match.end()
+        return (
+            content[:insert_at]
+            + f"\n\n{managed_block}"
+            + content[insert_at:]
+        )
+
+    suffix = "" if not content.strip() else "\n\n"
+    return f"{content.rstrip()}{suffix}## {section_title}\n\n{managed_block}\n"
+
+
+def _parse_metadata_json(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    text = str(value or "").strip()
+    if not text:
+        return {}
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+    try:
+        parsed = ast.literal_eval(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+    return {}
+
+
+def _strip_internal_sync_artifacts(content: str) -> str:
+    text = str(content or "")
+    text = re.sub(
+        r"^(---\r?\n.*?\r?\n---\s*\r?\n\r?\n)# patched\s*(?:\r?\n){1,2}",
+        r"\1",
+        text,
+        count=1,
+        flags=re.DOTALL,
+    )
+    return re.sub(r"^\s*# patched\s*(?:\r?\n){1,2}", "", text, count=1)
+
+
+def _load_selected_materials(material_ids: list[int]) -> list[dict[str, Any]]:
+    if not material_ids:
+        return []
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        placeholders = ",".join("?" * len(material_ids))
+        rows = conn.execute(
+            f"""
+            SELECT id, title, doc_type, file_type, source_path, file_path, folder_path, metadata_json
+            FROM rag_docs
+            WHERE id IN ({placeholders})
+            ORDER BY id ASC
+            """,
+            material_ids,
+        ).fetchall()
+    finally:
+        conn.close()
+
+    by_id: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        metadata = _parse_metadata_json(row["metadata_json"])
+        source_path = str(row["source_path"] or row["file_path"] or "").strip()
+        title = str(row["title"] or "").strip()
+        if not title and source_path:
+            title = Path(source_path).name
+        content_text = ""
+        source_suffix = Path(source_path).suffix.lower()
+        if source_path and source_suffix in {".txt", ".md", ".markdown"}:
+            try:
+                source_file = Path(source_path)
+                if source_file.exists() and source_file.stat().st_size <= 250_000:
+                    content_text = source_file.read_text(
+                        encoding="utf-8", errors="ignore"
+                    )
+            except Exception:
+                content_text = ""
+        by_id[int(row["id"])] = {
+            "id": int(row["id"]),
+            "title": title,
+            "doc_type": str(row["doc_type"] or "").strip(),
+            "file_type": str(row["file_type"] or "").strip(),
+            "source_path": source_path,
+            "folder_path": str(row["folder_path"] or "").strip(),
+            "metadata": metadata,
+            "content_text": content_text,
+        }
+
+    return [by_id[mid] for mid in material_ids if mid in by_id]
+
+
+def _vault_error_is_missing_file(error: Any) -> bool:
+    text = str(error or "").strip().lower()
+    if not text:
+        return False
+    if _looks_like_obsidian_cli_error(text):
+        return False
+    return "file not found" in text or "not found" in text
+
+
+def _sync_week_page(
+    *,
+    path: str,
+    page_key: str,
+    section_order: list[str],
+    section_content: dict[str, str],
+    canonical_frontmatter: dict[str, Any],
+) -> tuple[dict[str, Any], Optional[str]]:
+    existing = _vault_read_note(path)
+    raw_existing_content = (
+        str(existing.get("content") or "") if existing.get("success") else ""
+    )
+    existing_content = _strip_internal_sync_artifacts(raw_existing_content)
+    content = _merge_frontmatter_preserving_existing(
+        existing_content,
+        canonical_fields=canonical_frontmatter,
+    )
+    for section_title in section_order:
+        content = _replace_or_insert_managed_section(
+            content,
+            page_key=page_key,
+            section_title=section_title,
+            body=section_content.get(section_title, "- (none)"),
+        )
+    content = content.rstrip() + "\n"
+
+    if _map_of_contents_io_disabled():
+        status = "test_mode_no_write"
+    elif existing.get("success"):
+        if content == raw_existing_content:
+            status = "reviewed"
+        else:
+            save_result = _vault_save_note(path, content)
+            if not save_result.get("success"):
+                return (
+                    {"path": path, "status": "update_failed"},
+                    str(save_result.get("error") or "failed_to_patch_page"),
+                )
+            status = "patched"
+    else:
+        save_result = _vault_save_note(path, content)
+        if not save_result.get("success"):
+            return (
+                {"path": path, "status": "build_failed"},
+                str(save_result.get("error") or "failed_to_create_page"),
+            )
+        status = "created"
+
+    return (
+        {
+            "path": path,
+            "status": status,
+            "sections": list(section_order),
+        },
+        None,
+    )
+
+
+def _build_page_sync_payload(
+    *,
+    module_name: str,
+    course_name: str,
+    topic: str,
+    objectives: list[dict[str, str]],
+    source_ids: list[int],
+    objective_scope: str = "module_all",
+    focus_objective_id: Optional[str] = None,
+    existing_frontmatter: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    from tutor_templates import (
+        LEARNING_OBJECTIVES_TODO_SECTIONS,
+        MAP_OF_CONTENTS_SECTIONS,
+        render_learning_objectives_todo_sections,
+        render_map_of_contents_sections,
+    )
+
+    materials = _load_selected_materials(source_ids)
+    shared_payload = {
+        "module_name": module_name,
+        "course_name": course_name,
+        "topic": topic,
+        "objectives": objectives,
+        "materials": materials,
+        "objective_scope": objective_scope,
+        "focus_objective_id": focus_objective_id or "",
+        "existing_frontmatter": existing_frontmatter or {},
+        "learning_objectives_page_name": "Learning Objectives & To Do",
+        "sessions_folder": "Sessions/",
+        "concepts_folder": "Concepts/",
+    }
+    return {
+        "materials": materials,
+        "learning_objectives_sections": render_learning_objectives_todo_sections(
+            shared_payload
+        ),
+        "learning_objectives_section_order": list(LEARNING_OBJECTIVES_TODO_SECTIONS),
+        "map_of_contents_sections": render_map_of_contents_sections(shared_payload),
+        "map_of_contents_section_order": list(MAP_OF_CONTENTS_SECTIONS),
+    }
+
+
 def _build_map_of_contents_markdown(
     *,
     module_name: str,
@@ -933,7 +1333,7 @@ def _build_map_of_contents_markdown(
         "module_name": module_name,
         "course_name": course_name,
         "objective_groups": objective_groups,
-        "follow_up_targets": ["[[OBJ-UNMAPPED]]"],
+        "follow_up_targets": _derive_follow_up_targets_from_objectives(objectives),
     }
     return _render_moc_markdown(payload)
 
@@ -1042,6 +1442,37 @@ def _map_of_contents_io_disabled() -> bool:
     return False
 
 
+def _obsidian_vault_root_path() -> Optional[Path]:
+    candidates = [
+        os.environ.get("OBSIDIAN_VAULT_FS_PATH"),
+        os.environ.get("PT_OBSIDIAN_VAULT_PATH"),
+        os.environ.get("TREYS_SCHOOL_VAULT_PATH"),
+        str(_DEFAULT_OBSIDIAN_VAULT_ROOT),
+    ]
+    for candidate in candidates:
+        text = str(candidate or "").strip()
+        if not text:
+            continue
+        root = Path(text).expanduser()
+        if root.exists() and root.is_dir():
+            return root.resolve()
+    return None
+
+
+def _resolve_vault_fs_path(rel_path: str) -> Path:
+    root = _obsidian_vault_root_path()
+    if root is None:
+        raise FileNotFoundError(
+            "Obsidian vault path is not configured. Set OBSIDIAN_VAULT_FS_PATH."
+        )
+    target = (root / rel_path).resolve()
+    try:
+        target.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("path is outside configured Obsidian vault") from exc
+    return target
+
+
 def _get_obsidian_vault():
     global _OBSIDIAN_VAULT
     if _OBSIDIAN_VAULT is None:
@@ -1051,13 +1482,38 @@ def _get_obsidian_vault():
     return _OBSIDIAN_VAULT
 
 
+def _looks_like_obsidian_cli_error(content: Any) -> bool:
+    text = str(content or "").strip()
+    if not text:
+        return False
+    lowered = text.lower()
+    return (
+        "your obsidian installer is out of date" in lowered
+        or re.search(r'error:\s*file\s+".+?"\s+not\s+found', lowered) is not None
+    )
+
+
 def _vault_read_note(path: str) -> dict[str, Any]:
     rel_path = str(path or "").replace("\\", "/").strip().lstrip("/")
     if not rel_path:
         return {"success": False, "error": "path is required"}
     try:
+        fs_path = _resolve_vault_fs_path(rel_path)
+        if fs_path.exists() and fs_path.is_file():
+            return {
+                "success": True,
+                "content": fs_path.read_text(encoding="utf-8", errors="ignore"),
+                "path": rel_path,
+            }
+        if _obsidian_vault_root_path() is not None:
+            return {"success": False, "error": "file not found", "path": rel_path}
+    except (FileNotFoundError, ValueError):
+        pass
+    try:
         vault = _get_obsidian_vault()
         content = vault.read_note(file=rel_path)
+        if _looks_like_obsidian_cli_error(content):
+            return {"success": False, "error": str(content).strip(), "path": rel_path}
         if content:
             return {"success": True, "content": content, "path": rel_path}
         file_info = vault.get_file_info(file=rel_path)
@@ -1073,6 +1529,13 @@ def _vault_save_note(path: str, content: str) -> dict[str, Any]:
     if not rel_path:
         return {"success": False, "error": "path is required"}
     try:
+        fs_path = _resolve_vault_fs_path(rel_path)
+        fs_path.parent.mkdir(parents=True, exist_ok=True)
+        fs_path.write_text(content, encoding="utf-8")
+        return {"success": True, "path": rel_path}
+    except (FileNotFoundError, ValueError):
+        pass
+    try:
         vault = _get_obsidian_vault()
         name = rel_path.rsplit("/", 1)[-1]
         folder = rel_path.rsplit("/", 1)[0] if "/" in rel_path else ""
@@ -1081,6 +1544,12 @@ def _vault_save_note(path: str, content: str) -> dict[str, Any]:
         existing = _vault_read_note(rel_path)
         if existing.get("success"):
             vault.replace_content(file=rel_path, new_content=content)
+        elif not _vault_error_is_missing_file(existing.get("error")):
+            return {
+                "success": False,
+                "error": existing.get("error") or "failed_to_read_existing_note",
+                "path": rel_path,
+            }
         else:
             vault.create_note(name=note_name, folder=folder, content=content)
 
@@ -1100,6 +1569,13 @@ def _vault_delete_note(path: str) -> dict[str, Any]:
     rel_path = str(path or "").replace("\\", "/").strip().lstrip("/")
     if not rel_path:
         return {"success": False, "error": "path is required"}
+    try:
+        fs_path = _resolve_vault_fs_path(rel_path)
+        if fs_path.exists():
+            fs_path.unlink()
+        return {"success": True, "path": rel_path}
+    except (FileNotFoundError, ValueError):
+        pass
     try:
         vault = _get_obsidian_vault()
         result = vault.delete_note(path=rel_path)
@@ -1123,16 +1599,19 @@ def _ensure_moc_context(
     topic: str,
     learning_objectives: Any,
     source_ids: list[int],
+    objective_scope: str = "module_all",
+    focus_objective_id: Optional[str] = None,
     force_refresh: bool = False,
     path_override: Optional[str] = None,
 ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
     """
-    Hard-gate Map of Contents flow:
-    - If exists: review and update only on detected objective changes.
-    - If missing: build before planning.
+    Sync the Tutor week pages before session launch.
 
-    If *path_override* is a vault-relative folder path, the Map of Contents file
-    is saved there instead of the auto-generated location.
+    This patches managed sections inside:
+    - `_Map of Contents.md`
+    - `Learning Objectives & To Do.md`
+
+    Existing learner content outside managed sections is preserved.
     """
     derived_module_name = _sanitize_module_name(
         module_name or topic or f"Module-{course_id or 'General'}"
@@ -1143,11 +1622,16 @@ def _ensure_moc_context(
     derived_course = _resolve_class_label(course_id)
 
     if path_override:
-        # User-provided vault folder — use directly
         clean = path_override.strip().rstrip("/").rstrip("\\")
         map_of_contents_path = f"{clean}/_Map of Contents.md"
+        learning_objectives_path = f"{clean}/Learning Objectives & To Do.md"
     else:
         map_of_contents_path = _canonical_moc_path(
+            course_label=derived_course,
+            module_or_week=derived_module_name,
+            subtopic=derived_subtopic,
+        )
+        learning_objectives_path = _canonical_learning_objectives_page_path(
             course_label=derived_course,
             module_or_week=derived_module_name,
             subtopic=derived_subtopic,
@@ -1161,7 +1645,7 @@ def _ensure_moc_context(
     )
 
     if not objectives:
-        fallback_title = topic.strip() or derived_module_name
+        fallback_title = derived_module_name or topic.strip()
         objectives = [
             {
                 "objective_id": "OBJ-UNMAPPED",
@@ -1170,96 +1654,69 @@ def _ensure_moc_context(
             }
         ]
 
-    desired_statuses = {o["objective_id"]: o["status"] for o in objectives}
-    current_content = ""
-    status = "built"
+    existing_lo = _vault_read_note(learning_objectives_path)
+    existing_lo_frontmatter = _parse_frontmatter_dict(
+        str(existing_lo.get("content") or "") if existing_lo.get("success") else ""
+    )
 
-    if _map_of_contents_io_disabled():
-        current_content = _build_map_of_contents_markdown(
-            module_name=derived_module_name,
-            course_name=derived_course,
-            topic=topic,
-            objectives=objectives,
-            source_ids=source_ids,
-        )
-        status = "test_mode_no_write"
-    else:
-        existing = _vault_read_note(map_of_contents_path)
-        if existing.get("success"):
-            current_content = str(existing.get("content") or "")
-            current_statuses = _parse_existing_map_of_contents_objectives(
-                current_content
-            )
-            needs_update = bool(force_refresh)
-            for oid, st in desired_statuses.items():
-                if current_statuses.get(oid) != st:
-                    needs_update = True
-                    break
-            if needs_update:
-                new_content = _build_map_of_contents_markdown(
-                    module_name=derived_module_name,
-                    course_name=derived_course,
-                    topic=topic,
-                    objectives=objectives,
-                    source_ids=source_ids,
-                )
-                save_res = _vault_save_note(map_of_contents_path, new_content)
-                if not save_res.get("success"):
-                    _LOG.warning(
-                        "Map of Contents update failed for %s: %s",
-                        map_of_contents_path,
-                        save_res.get("error", "unknown error"),
-                    )
-                    current_content = new_content
-                    status = "update_failed"
-                else:
-                    current_content = new_content
-                    status = "refreshed" if force_refresh else "updated"
-            else:
-                status = "reviewed"
-        else:
-            # File missing. If real objectives exist but no path_override was
-            # given, the user may have deleted the file intentionally (e.g. to
-            # relocate it).  Signal "needs_path" so the turn handler re-asks.
-            has_real = any(o["objective_id"] != "OBJ-UNMAPPED" for o in objectives)
-            if has_real and not path_override:
-                current_content = _build_map_of_contents_markdown(
-                    module_name=derived_module_name,
-                    course_name=derived_course,
-                    topic=topic,
-                    objectives=objectives,
-                    source_ids=source_ids,
-                )
-                status = "needs_path"
-            else:
-                new_content = _build_map_of_contents_markdown(
-                    module_name=derived_module_name,
-                    course_name=derived_course,
-                    topic=topic,
-                    objectives=objectives,
-                    source_ids=source_ids,
-                )
-                save_res = _vault_save_note(map_of_contents_path, new_content)
-                if not save_res.get("success"):
-                    _LOG.warning(
-                        "Map of Contents build failed for %s: %s",
-                        map_of_contents_path,
-                        save_res.get("error", "unknown error"),
-                    )
-                    current_content = new_content
-                    status = "build_failed"
-                else:
-                    current_content = new_content
-                    status = "built"
+    page_payload = _build_page_sync_payload(
+        module_name=derived_module_name,
+        course_name=derived_course,
+        topic=topic,
+        objectives=objectives,
+        source_ids=source_ids,
+        objective_scope=objective_scope,
+        focus_objective_id=focus_objective_id,
+        existing_frontmatter=existing_lo_frontmatter,
+    )
+    canonical_frontmatter_base = {
+        "module_name": derived_module_name,
+        "course_name": derived_course,
+        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+    }
+    moc_ctx, moc_error = _sync_week_page(
+        path=map_of_contents_path,
+        page_key="map-of-contents",
+        section_order=page_payload["map_of_contents_section_order"],
+        section_content=page_payload["map_of_contents_sections"],
+        canonical_frontmatter={
+            "note_type": "map_of_contents",
+            **canonical_frontmatter_base,
+        },
+    )
+    lo_ctx, lo_error = _sync_week_page(
+        path=learning_objectives_path,
+        page_key="learning-objectives-and-to-do",
+        section_order=page_payload["learning_objectives_section_order"],
+        section_content=page_payload["learning_objectives_sections"],
+        canonical_frontmatter={
+            "note_type": "learning_objectives_todo",
+            **canonical_frontmatter_base,
+        },
+    )
+    sync_errors = [err for err in (moc_error, lo_error) if err]
+    moc_status = str(moc_ctx.get("status") or "unknown")
+    lo_status = str(lo_ctx.get("status") or "unknown")
+    sync_ok_statuses = {"reviewed", "patched", "created", "test_mode_no_write"}
+    page_sync_ok = moc_status in sync_ok_statuses and lo_status in sync_ok_statuses
 
     objective_links = [_wikilink(o["objective_id"]) for o in objectives]
     title_links = [_wikilink(o["title"]) for o in objectives if o.get("title")]
+    material_links = [
+        _wikilink(str(material.get("title") or Path(str(material.get("source_path") or "")).stem))
+        for material in page_payload.get("materials", [])
+        if str(material.get("title") or material.get("source_path") or "").strip()
+    ]
     reference_targets = _normalize_wikilinks(
-        _extract_wikilinks(current_content) + objective_links + title_links,
+        objective_links + title_links + material_links,
         max_items=80,
     )
     if not reference_targets:
         reference_targets = ["[[OBJ-UNMAPPED]]"]
+    follow_up_targets = _derive_follow_up_targets_from_objectives(
+        objectives,
+        focus_objective_id=focus_objective_id,
+    )
 
     return (
         {
@@ -1267,10 +1724,33 @@ def _ensure_moc_context(
             "module_name": derived_module_name,
             "course_name": derived_course,
             "subtopic_name": derived_subtopic,
-            "status": status,
+            "status": moc_status,
             "reference_targets": reference_targets,
-            "follow_up_targets": ["[[OBJ-UNMAPPED]]"],
+            "follow_up_targets": follow_up_targets,
             "objective_ids": [o["objective_id"] for o in objectives],
+            "learning_objectives_page": {
+                "path": learning_objectives_path,
+                "status": lo_status,
+                "module_name": derived_module_name,
+                "course_name": derived_course,
+                "subtopic_name": derived_subtopic,
+                "objective_ids": [o["objective_id"] for o in objectives],
+            },
+            "page_sync_result": {
+                "ok": page_sync_ok,
+                "map_of_contents": {
+                    "path": map_of_contents_path,
+                    "status": moc_status,
+                    "error": moc_error,
+                },
+                "learning_objectives_todo": {
+                    "path": learning_objectives_path,
+                    "status": lo_status,
+                    "error": lo_error,
+                },
+                "errors": sync_errors,
+                "synced_at": datetime.now().isoformat(),
+            },
         },
         None,
     )
@@ -1319,25 +1799,29 @@ def _resolve_tutor_preflight(
         except (TypeError, ValueError):
             return None, ({"error": "module_id must be an integer"}, 400)
 
-    map_of_contents_ctx, map_of_contents_error = _ensure_moc_context(
-        course_id=course_id_int,
-        module_id=module_id,
-        module_name=module_name or topic or None,
-        topic=topic,
-        learning_objectives=learning_objectives,
-        source_ids=source_ids,
-        force_refresh=bool(data.get("map_of_contents_refresh")),
-        path_override=vault_folder,
-    )
-    if map_of_contents_error:
-        return None, ({"error": map_of_contents_error}, 500)
-
     resolved_objectives = _resolve_learning_objectives_for_scope(
         course_id=course_id_int,
         module_id=module_id,
         module_name=module_name or topic or None,
         learning_objectives=learning_objectives,
     )
+    map_of_contents_ctx: Optional[dict[str, Any]] = None
+    map_of_contents_error: Optional[str] = None
+    if resolved_objectives:
+        map_of_contents_ctx, map_of_contents_error = _ensure_moc_context(
+            course_id=course_id_int,
+            module_id=module_id,
+            module_name=module_name or topic or None,
+            topic=topic,
+            learning_objectives=learning_objectives,
+            source_ids=source_ids,
+            objective_scope=objective_scope,
+            focus_objective_id=focus_objective_id or None,
+            force_refresh=bool(data.get("map_of_contents_refresh")),
+            path_override=vault_folder,
+        )
+        if map_of_contents_error:
+            return None, ({"error": map_of_contents_error}, 500)
     blockers: list[dict[str, str]] = []
     if not module_name:
         blockers.append(
@@ -1360,6 +1844,13 @@ def _resolve_tutor_preflight(
                 "message": "Choose a focus objective before starting a single-focus Tutor session.",
             }
         )
+    if module_name and not resolved_objectives:
+        blockers.append(
+            {
+                "code": "APPROVED_OBJECTIVES_REQUIRED",
+                "message": "Save approved objectives for this study unit before running Tutor preflight.",
+            }
+        )
     if map_of_contents_ctx:
         module_prefix = str(Path(str(map_of_contents_ctx["path"])).parent).replace(
             "\\", "/"
@@ -1380,11 +1871,47 @@ def _resolve_tutor_preflight(
         normalized_filter["follow_up_targets"] = (
             map_of_contents_ctx.get("follow_up_targets") or []
         )
+        normalized_filter["learning_objectives_page"] = (
+            map_of_contents_ctx.get("learning_objectives_page") or {}
+        )
+        normalized_filter["page_sync_result"] = (
+            map_of_contents_ctx.get("page_sync_result") or {}
+        )
         normalized_filter["enforce_reference_bounds"] = bool(
             normalized_filter.get("enforce_reference_bounds")
             if normalized_filter.get("enforce_reference_bounds") is not None
             else objective_scope == "single_focus"
         )
+        if not bool((map_of_contents_ctx.get("page_sync_result") or {}).get("ok")):
+            blockers.append(
+                {
+                    "code": "PAGE_SYNC_FAILED",
+                    "message": "Tutor could not patch the required Obsidian week pages. Resolve page sync before starting the session.",
+                }
+            )
+    elif module_name and not resolved_objectives:
+        normalized_filter["page_sync_result"] = {
+            "ok": False,
+            "map_of_contents": {
+                "path": (
+                    f"{vault_folder.strip().rstrip('/').rstrip('\\')}/_Map of Contents.md"
+                    if vault_folder
+                    else ""
+                ),
+                "status": "skipped_missing_objectives",
+                "error": "approved_objectives_required",
+            },
+            "learning_objectives_todo": {
+                "path": (
+                    f"{vault_folder.strip().rstrip('/').rstrip('\\')}/Learning Objectives & To Do.md"
+                    if vault_folder
+                    else ""
+                ),
+                "status": "skipped_missing_objectives",
+                "error": "approved_objectives_required",
+            },
+            "errors": ["approved_objectives_required"],
+        }
 
     bundle = {
         "course_id": course_id_int,
@@ -1399,6 +1926,20 @@ def _resolve_tutor_preflight(
         "content_filter": normalized_filter,
         "resolved_learning_objectives": resolved_objectives,
         "map_of_contents": map_of_contents_ctx,
+        "learning_objectives_page": (
+            map_of_contents_ctx.get("learning_objectives_page")
+            if isinstance(map_of_contents_ctx, dict)
+            else (
+                normalized_filter.get("learning_objectives_page")
+                if isinstance(normalized_filter.get("learning_objectives_page"), dict)
+                else None
+            )
+        ),
+        "page_sync_result": (
+            map_of_contents_ctx.get("page_sync_result")
+            if isinstance(map_of_contents_ctx, dict)
+            else normalized_filter.get("page_sync_result")
+        ),
         "recommended_mode_flags": _recommended_mode_flags(material_ids),
         "blockers": blockers,
         "ok": len(blockers) == 0,
@@ -1729,11 +2270,16 @@ def save_learning_objectives_from_tool(
             topic=topic,
             learning_objectives=None,
             source_ids=source_ids,
+            objective_scope=_normalize_objective_scope(
+                content_filter.get("objective_scope")
+            ),
+            focus_objective_id=str(content_filter.get("focus_objective_id") or "").strip()
+            or None,
             force_refresh=True,
             path_override=save_folder,
         )
         if ns_err:
-            _LOG.warning("Map of Contents rebuild warning: %s", ns_err)
+            _LOG.warning("Week-page rebuild warning: %s", ns_err)
 
         # --- 4. Update session content_filter_json ---
         if ns_ctx:
@@ -1750,6 +2296,10 @@ def save_learning_objectives_from_tool(
             }
             content_filter["reference_targets"] = ns_ctx.get("reference_targets") or []
             content_filter["follow_up_targets"] = ns_ctx.get("follow_up_targets") or []
+            content_filter["learning_objectives_page"] = (
+                ns_ctx.get("learning_objectives_page") or {}
+            )
+            content_filter["page_sync_result"] = ns_ctx.get("page_sync_result") or {}
 
         cur.execute(
             "UPDATE tutor_sessions SET content_filter_json = ? WHERE session_id = ?",
@@ -3718,7 +4268,9 @@ def preflight_session():
         "material_ids": bundle["material_ids"],
         "resolved_learning_objectives": bundle["resolved_learning_objectives"],
         "map_of_contents": bundle["map_of_contents"],
-        "vault_ready": bool(bundle.get("map_of_contents")),
+        "learning_objectives_page": bundle.get("learning_objectives_page"),
+        "page_sync_result": bundle.get("page_sync_result"),
+        "vault_ready": bool((bundle.get("page_sync_result") or {}).get("ok")),
         "recommended_mode_flags": bundle["recommended_mode_flags"],
         "blockers": bundle["blockers"],
     }
@@ -3904,11 +4456,26 @@ def create_session():
             topic=topic,
             learning_objectives=learning_objectives,
             source_ids=source_ids,
+            objective_scope=objective_scope,
+            focus_objective_id=focus_objective_id or None,
             force_refresh=map_of_contents_refresh,
             path_override=vault_folder,
         )
         if map_of_contents_error:
             return jsonify({"error": map_of_contents_error}), 500
+    if map_of_contents_ctx and not bool(
+        (map_of_contents_ctx.get("page_sync_result") or {}).get("ok")
+    ):
+        return (
+            jsonify(
+                {
+                    "error": "Tutor could not patch the required Obsidian week pages.",
+                    "code": "PAGE_SYNC_FAILED",
+                    "page_sync_result": map_of_contents_ctx.get("page_sync_result") or {},
+                }
+            ),
+            400,
+        )
 
     if not isinstance(content_filter, dict):
         content_filter = {}
@@ -3950,6 +4517,12 @@ def create_session():
         )
         content_filter["follow_up_targets"] = (
             map_of_contents_ctx.get("follow_up_targets") or []
+        )
+        content_filter["learning_objectives_page"] = (
+            map_of_contents_ctx.get("learning_objectives_page") or {}
+        )
+        content_filter["page_sync_result"] = (
+            map_of_contents_ctx.get("page_sync_result") or {}
         )
         requested_enforce = content_filter.get("enforce_reference_bounds")
         if requested_enforce is None:
@@ -4167,6 +4740,10 @@ def create_session():
         response["reference_targets_count"] = len(
             map_of_contents_ctx.get("reference_targets") or []
         )
+        response["learning_objectives_page"] = (
+            map_of_contents_ctx.get("learning_objectives_page") or {}
+        )
+        response["page_sync_result"] = map_of_contents_ctx.get("page_sync_result") or {}
 
     # --- Method recommendations from Scholar data ---
     try:
@@ -4679,6 +5256,7 @@ def send_turn(session_id: str):
             )
             _needs_lo_save = False
             _lo_save_called = False
+            learning_objectives_page = content_filter.get("learning_objectives_page")
             if map_of_contents:
                 objective_ids = map_of_contents.get("objective_ids") or []
                 objective_lines = "\n".join(
@@ -4696,6 +5274,12 @@ def send_turn(session_id: str):
                     "- Objectives in scope:\n"
                     f"{objective_lines}"
                 )
+                if isinstance(learning_objectives_page, dict):
+                    system_prompt += (
+                        "\n- Learning Objectives Page: "
+                        f"{learning_objectives_page.get('path') or '(missing)'} "
+                        f"({learning_objectives_page.get('status') or 'unknown'})"
+                    )
                 _needs_lo_save = (
                     not _session_has_real_objectives(map_of_contents)
                     and turn_number <= 5
@@ -6054,6 +6638,11 @@ def end_session(session_id: str):
                 topic=session.get("topic") or "",
                 learning_objectives=map_of_contents.get("objectives") or objective_ids,
                 source_ids=content_filter.get("source_ids") or [],
+                objective_scope=_normalize_objective_scope(
+                    content_filter.get("objective_scope")
+                ),
+                focus_objective_id=str(content_filter.get("focus_objective_id") or "").strip()
+                or None,
                 force_refresh=True,
                 path_override=vault_folder,
             )

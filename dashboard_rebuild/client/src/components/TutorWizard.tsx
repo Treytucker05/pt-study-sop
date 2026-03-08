@@ -71,6 +71,11 @@ interface TutorWizardProps {
   selectedObjectiveGroup: string;
   setSelectedObjectiveGroup: (value: string) => void;
   availableObjectives: AppLearningObjective[];
+  studyUnitOptions: {
+    value: string;
+    objectiveCount: number;
+    materialCount: number;
+  }[];
   vaultFolderPreview: string;
   preflight?: TutorSessionPreflightResponse;
   preflightLoading?: boolean;
@@ -102,6 +107,7 @@ export function TutorWizard({
   selectedObjectiveGroup,
   setSelectedObjectiveGroup,
   availableObjectives,
+  studyUnitOptions,
   vaultFolderPreview,
   preflight,
   preflightLoading,
@@ -227,6 +233,7 @@ export function TutorWizard({
               selectedObjectiveGroup={selectedObjectiveGroup}
               setSelectedObjectiveGroup={setSelectedObjectiveGroup}
               availableObjectives={availableObjectives}
+              studyUnitOptions={studyUnitOptions}
               vaultFolderPreview={vaultFolderPreview}
               selectedMaterials={selectedMaterials}
               setSelectedMaterials={setSelectedMaterials}
@@ -345,6 +352,7 @@ function StepCourseAndMaterials({
   selectedObjectiveGroup,
   setSelectedObjectiveGroup,
   availableObjectives,
+  studyUnitOptions,
   vaultFolderPreview,
   selectedMaterials,
   setSelectedMaterials,
@@ -361,6 +369,11 @@ function StepCourseAndMaterials({
   selectedObjectiveGroup: string;
   setSelectedObjectiveGroup: (value: string) => void;
   availableObjectives: AppLearningObjective[];
+  studyUnitOptions: {
+    value: string;
+    objectiveCount: number;
+    materialCount: number;
+  }[];
   vaultFolderPreview: string;
   selectedMaterials: number[];
   setSelectedMaterials: (ids: number[]) => void;
@@ -406,6 +419,7 @@ function StepCourseAndMaterials({
                 setSelectedMaterials([]);
                 setSelectedObjectiveId("");
                 setSelectedObjectiveGroup("");
+                setTopic("");
               }
               toast.success("Course selection saved");
             }}
@@ -434,6 +448,7 @@ function StepCourseAndMaterials({
                 value={selectedObjectiveGroup}
                 onChange={(e) => {
                   const nextGroup = e.target.value;
+                  const groupChanged = nextGroup !== selectedObjectiveGroup;
                   setSelectedObjectiveGroup(nextGroup);
                   const stillValid = groupedObjectives
                     .find(({ group }) => group === nextGroup)
@@ -443,13 +458,21 @@ function StepCourseAndMaterials({
                   if (!stillValid) {
                     setSelectedObjectiveId("");
                   }
+                  if (groupChanged) {
+                    setTopic("");
+                  }
                 }}
                 className={`${SELECT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
               >
                 <option value="">Select study unit</option>
-                {groupedObjectives.map(({ group, objectives }) => (
-                  <option key={group} value={group}>
-                    {group} ({objectives.length} objectives)
+                {studyUnitOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.value}
+                    {option.objectiveCount > 0
+                      ? ` (${option.objectiveCount} objectives)`
+                      : option.materialCount > 0
+                        ? ` (${option.materialCount} materials, objectives not saved yet)`
+                        : ""}
                   </option>
                 ))}
               </select>
@@ -886,9 +909,29 @@ function StepConfirm({
                 muted={!preflight.ok}
               />
               <SummaryRow
+                label="PAGE SYNC"
+                value={preflight.page_sync_result?.ok ? "Ready" : "Blocked"}
+                muted={!preflight.page_sync_result?.ok}
+              />
+              <SummaryRow
+                label="LO PAGE"
+                value={preflight.learning_objectives_page?.path || "Not resolved"}
+                muted={!preflight.learning_objectives_page?.path}
+              />
+              <SummaryRow
+                label="LO PAGE STATUS"
+                value={preflight.page_sync_result?.learning_objectives_todo?.status || "Unknown"}
+                muted={!preflight.page_sync_result?.learning_objectives_todo?.status}
+              />
+              <SummaryRow
                 label="MAP"
                 value={preflight.map_of_contents?.path || "Not resolved"}
                 muted={!preflight.map_of_contents?.path}
+              />
+              <SummaryRow
+                label="MAP STATUS"
+                value={preflight.page_sync_result?.map_of_contents?.status || "Unknown"}
+                muted={!preflight.page_sync_result?.map_of_contents?.status}
               />
               <SummaryRow
                 label="MODES"

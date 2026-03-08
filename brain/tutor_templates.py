@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+import re
 from typing import Any, Callable
 
 
@@ -231,6 +232,501 @@ _ROMAN = [
     "XIX",
     "XX",
 ]
+
+_OBJECTIVE_PARENT_RE = re.compile(r"^(OBJ-\d+)([A-Z]+)?$", re.IGNORECASE)
+_TEXTBOOK_LINE_RE = re.compile(
+    r"\b(?:lundy(?:-ekmark)?|textbook|chapter|chap\.?|ch\.)\b", re.IGNORECASE
+)
+
+LEARNING_OBJECTIVES_TODO_SECTIONS = [
+    "Learning Objectives",
+    "Parent Objectives",
+    "Child Objectives / Atomic Targets",
+    "Hierarchical ASCII Chapter Map",
+    "To Do",
+    "Practice Questions",
+    "Tutor Session Targets",
+    "Source Materials",
+    "Assigned Chapters / Reading",
+    "Schedule Context",
+]
+
+MAP_OF_CONTENTS_SECTIONS = [
+    "Module Spine",
+    "Objective Index",
+    "Hierarchical ASCII Chapter Map",
+    "Session Notes",
+    "Concept Notes",
+    "Schedule Context",
+]
+
+
+def _safe_literal(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _objective_parent_code(code: str) -> str:
+    clean = _safe_literal(code).upper()
+    match = _OBJECTIVE_PARENT_RE.match(clean)
+    if not match:
+        return clean
+    return match.group(1)
+
+
+def _objective_suffix(code: str) -> str:
+    clean = _safe_literal(code).upper()
+    match = _OBJECTIVE_PARENT_RE.match(clean)
+    if not match:
+        return ""
+    return match.group(2) or ""
+
+
+def _objective_tree(
+    objectives: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, list[dict[str, Any]]]]:
+    parents: list[dict[str, Any]] = []
+    children_by_parent: dict[str, list[dict[str, Any]]] = {}
+    parent_map: dict[str, dict[str, Any]] = {}
+
+    for index, objective in enumerate(objectives, start=1):
+        code = _safe_literal(
+            objective.get("objective_id") or objective.get("id") or f"OBJ-{index}"
+        ).upper()
+        title = _safe_literal(
+            objective.get("title") or objective.get("description") or code
+        )
+        status = _safe_literal(objective.get("status") or "active").lower() or "active"
+        item = {
+            "objective_id": code,
+            "title": title,
+            "status": status,
+        }
+        parent_code = _objective_parent_code(code)
+        suffix = _objective_suffix(code)
+        if suffix:
+            children_by_parent.setdefault(parent_code, []).append(item)
+            continue
+        parent_map[parent_code] = item
+        parents.append(item)
+
+    for parent_code, children in children_by_parent.items():
+        if parent_code not in parent_map:
+            synthetic = {
+                "objective_id": parent_code,
+                "title": f"{parent_code} (parent objective not separately approved)",
+                "status": "active",
+            }
+            parent_map[parent_code] = synthetic
+            parents.append(synthetic)
+        children.sort(key=lambda item: item["objective_id"])
+
+    parents.sort(key=lambda item: item["objective_id"])
+    return parents, children_by_parent
+
+
+def _material_label(material: dict[str, Any], index: int) -> str:
+    title = _safe_literal(material.get("title"))
+    source_path = _safe_literal(material.get("source_path") or material.get("file_path"))
+    if not title and source_path:
+        title = Path(source_path).name
+    if not title:
+        title = f"Source Material {index}"
+    file_type = _safe_literal(material.get("file_type"))
+    material_id = material.get("id")
+    suffix = []
+    if material_id is not None:
+        suffix.append(f"#{material_id}")
+    if file_type:
+        suffix.append(file_type.upper())
+    if suffix:
+        title = f"{title} ({', '.join(suffix)})"
+    return title
+
+
+def _material_stem(material: dict[str, Any], index: int) -> str:
+    title = _safe_literal(material.get("title"))
+    if title:
+        return Path(title).stem.lower()
+    source_path = _safe_literal(material.get("source_path") or material.get("file_path"))
+    if source_path:
+        return Path(source_path).stem.lower()
+    return f"material-{index}"
+
+
+def _dedupe_materials(materials: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    for index, material in enumerate(materials, start=1):
+        key = re.sub(r"[^a-z0-9]+", " ", _material_stem(material, index)).strip()
+        if not key:
+            key = f"material-{index}"
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(material)
+    return deduped
+
+
+def _material_location(material: dict[str, Any]) -> str:
+    folder_path = _safe_literal(material.get("folder_path"))
+    if folder_path:
+        return folder_path.replace("\\", "/")
+    source_path = _safe_literal(material.get("source_path") or material.get("file_path"))
+    if source_path:
+        parent = Path(source_path).parent.name
+        if parent:
+            return parent
+    return "--"
+
+
+def _material_type_label(material: dict[str, Any]) -> str:
+    doc_type = _safe_literal(material.get("doc_type")).lower()
+    if doc_type == "textbook":
+        return "textbook"
+    if doc_type:
+        return doc_type
+    file_type = _safe_literal(material.get("file_type")).lower()
+    if file_type == "pptx":
+        return "lecture slides"
+    if file_type in {"txt", "md", "markdown"}:
+        return "objective/to-do"
+    if file_type == "pdf":
+        return "handout/pdf"
+    if file_type == "mp4":
+        return "lecture video"
+    if file_type:
+        return file_type
+    return "resource"
+
+
+def _material_content_lines(materials: list[dict[str, Any]]) -> list[str]:
+    lines: list[str] = []
+    for material in materials:
+        text = str(material.get("content_text") or "")
+        if not text.strip():
+            continue
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
+            if line:
+                lines.append(line)
+    return lines
+
+
+def _dedupe_preserve_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for value in values:
+        clean = _safe_literal(value)
+        if not clean:
+            continue
+        key = clean.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append(clean)
+    return ordered
+
+
+def _extract_reading_lines(
+    materials: list[dict[str, Any]],
+    frontmatter: dict[str, Any] | None = None,
+) -> list[str]:
+    readings: list[str] = []
+    extra_frontmatter = frontmatter or {}
+    for key in ("reading", "assigned_reading", "textbook", "chapters"):
+        value = extra_frontmatter.get(key)
+        if isinstance(value, list):
+            readings.extend(_safe_literal(item) for item in value)
+        else:
+            readings.append(_safe_literal(value))
+    for line in _material_content_lines(materials):
+        if not _TEXTBOOK_LINE_RE.search(line):
+            continue
+        clean = line.lstrip("-*• ").strip()
+        readings.append(clean)
+    return _dedupe_preserve_order(readings)
+
+
+def _extract_todo_lines(materials: list[dict[str, Any]]) -> list[str]:
+    todo_lines: list[str] = []
+    in_todo_block = False
+    for line in _material_content_lines(materials):
+        lowered = line.lower()
+        if lowered in {"to-do list", "todo list", "to do list", "to-do", "todo"}:
+            in_todo_block = True
+            continue
+        if in_todo_block and not line.startswith(("•", "-", "*", "✔", "[ ]", "[x]")):
+            break
+        if not in_todo_block:
+            continue
+        clean = re.sub(r"^[\-\*\u2022\u2714\[\]xX\s]+", "", line).strip()
+        if clean:
+            todo_lines.append(clean)
+    return _dedupe_preserve_order(todo_lines)
+
+
+def _format_source_material_table(materials: list[dict[str, Any]]) -> str:
+    if not materials:
+        return "| Resource | Type | Location |\n|----------|------|----------|\n| (none selected) | -- | -- |"
+    rows = [
+        "| Resource | Type | Location |",
+        "|----------|------|----------|",
+    ]
+    for index, material in enumerate(materials, start=1):
+        rows.append(
+            f"| {_material_label(material, index)} | {_material_type_label(material)} | {_material_location(material)} |"
+        )
+    return "\n".join(rows)
+
+
+def _build_ascii_chapter_map(
+    *,
+    module_name: str,
+    objectives: list[dict[str, Any]],
+    materials: list[dict[str, Any]],
+    reading_lines: list[str] | None = None,
+) -> str:
+    parents, children_by_parent = _objective_tree(objectives)
+    material_list = _dedupe_materials(materials)
+    reading_list = _dedupe_preserve_order(list(reading_lines or []))
+    lines: list[str] = [module_name or "Study Unit"]
+    if parents:
+        lines.append("|-- Parent Objectives")
+        for parent_index, parent in enumerate(parents):
+            is_last_parent = parent_index == len(parents) - 1
+            branch = "`--" if is_last_parent else "|--"
+            parent_code = parent["objective_id"]
+            lines.append(f"|   {branch} {parent_code} {parent['title']}")
+            children = children_by_parent.get(parent_code) or []
+            if children:
+                for child_index, child in enumerate(children):
+                    is_last_child = child_index == len(children) - 1
+                    child_branch = "`--" if is_last_child else "|--"
+                    indent = "    " if is_last_parent else "|   "
+                    lines.append(
+                        f"|   {indent}{child_branch} {child['objective_id']} {child['title']}"
+                    )
+        if material_list:
+            lines.append("|-- Source Materials")
+            for material_index, material in enumerate(material_list, start=1):
+                leaf = "`--" if material_index == len(material_list) else "|--"
+                lines.append(f"|   {leaf} {_material_label(material, material_index)}")
+        if reading_list:
+            lines.append("`-- Assigned Reading")
+            for reading_index, reading in enumerate(reading_list, start=1):
+                leaf = "`--" if reading_index == len(reading_list) else "|--"
+                lines.append(f"    {leaf} {reading}")
+        elif not material_list:
+            lines.append("`-- (no source materials selected)")
+    elif material_list:
+        for material_index, material in enumerate(material_list, start=1):
+            leaf = "`--" if material_index == len(material_list) else "|--"
+            lines.append(f"{leaf} {_material_label(material, material_index)}")
+    else:
+        lines.append("`-- (no approved objectives or source materials)")
+    return "\n".join(lines)
+
+
+def render_learning_objectives_todo_sections(
+    payload: dict[str, Any],
+) -> dict[str, str]:
+    module_name = _safe_literal(payload.get("module_name") or "Module")
+    objectives = list(payload.get("objectives") or [])
+    materials = _dedupe_materials(list(payload.get("materials") or []))
+    existing_frontmatter = payload.get("existing_frontmatter") or {}
+    parents, children_by_parent = _objective_tree(objectives)
+    all_children = [
+        child
+        for parent_code in sorted(children_by_parent)
+        for child in children_by_parent[parent_code]
+    ]
+    reading_lines = _extract_reading_lines(materials, existing_frontmatter)
+    ascii_map = _build_ascii_chapter_map(
+        module_name=module_name,
+        objectives=objectives,
+        materials=materials,
+        reading_lines=reading_lines,
+    )
+
+    emphasis = _safe_literal(existing_frontmatter.get("emphasis"))
+    if not emphasis:
+        emphasis = "; ".join(parent["title"] for parent in parents[:3])
+    reading_summary = ", ".join(reading_lines) if reading_lines else "Not captured yet"
+
+    learning_objectives = (
+        "\n".join(
+            [
+                f"# {module_name}",
+                "",
+                "> [!important] Study Context",
+                f"> **Course:** {_safe_literal(payload.get('course_name') or 'Unknown Course')}",
+                f"> **Assigned Reading:** {reading_summary}",
+                f"> **Primary Emphasis:** {emphasis or 'Approved objectives and selected materials'}",
+                f"> **Selected Source Materials:** {len(materials)}",
+                "",
+                f"**{len(objectives)} objectives** across **{len(parents)} parent objectives** and **{len(all_children)} child objectives**.",
+                "",
+            ]
+            + [
+                f"- **{item['objective_id']} -- {item['title']}**"
+                for item in (parents or objectives)
+            ]
+        )
+        if (parents or objectives)
+        else "- (no approved objectives yet)"
+    )
+
+    parent_lines: list[str] = []
+    for item in parents:
+        child_count = len(children_by_parent.get(item["objective_id"]) or [])
+        parent_lines.append(f"- [ ] **{item['objective_id']} -- {item['title']}**")
+        if child_count:
+            parent_lines.append(
+                f"      Parent objective for {child_count} atomic target{'s' if child_count != 1 else ''}."
+            )
+        parent_lines.append("")
+    parent_objectives = (
+        "\n".join(parent_lines).strip() or "- (no parent objectives inferred yet)"
+    )
+
+    child_objectives = (
+        "\n".join(
+            f"- [ ] **{child['objective_id']} -- {child['title']}**"
+            for child in all_children
+        )
+        or "- (no child objectives inferred yet)"
+    )
+
+    extracted_todos = _extract_todo_lines(materials)
+    todo_lines = ["> [!todo] Week Study Tasks", ""]
+    if extracted_todos:
+        todo_lines.extend(f"- [ ] {line}" for line in extracted_todos)
+    else:
+        todo_lines.extend(
+            f"- [ ] Review **{parent['objective_id']}** before session start"
+            for parent in parents
+        )
+    if len(todo_lines) == 2:
+        todo_lines.append("- [ ] Add or approve learning objectives")
+
+    practice_lines = [
+        f"- What is the clean explanation for **{item['objective_id']} -- {item['title']}**?"
+        for item in objectives[:8]
+    ] or ["- Draft practice questions from the approved objectives"]
+
+    focus_candidates = all_children or parents or objectives
+    session_target_lines: list[str] = []
+    if focus_candidates:
+        session_target_lines.append(
+            f"**Recommended first live Tutor target:** `{focus_candidates[0]['objective_id']}`"
+        )
+        session_target_lines.append("")
+    session_target_lines.extend(
+        f"- Start with **{item['objective_id']} -- {item['title']}**"
+        for item in focus_candidates[:6]
+    )
+    if not session_target_lines:
+        session_target_lines.append("- Resolve approved Tutor targets before session start")
+
+    source_material_lines = _format_source_material_table(materials)
+    assigned_reading_lines = reading_lines or [
+        "- Textbook chapter/reading not captured in selected materials yet."
+    ]
+    schedule_context_lines = [
+        f"- Course: {_safe_literal(payload.get('course_name') or 'Unknown Course')}",
+        f"- Study Unit: {module_name}",
+        f"- Topic: {_safe_literal(payload.get('topic') or module_name)}",
+        f"- Objective Scope: {_safe_literal(payload.get('objective_scope') or 'module_all')}",
+        f"- Focus Objective: {_safe_literal(payload.get('focus_objective_id') or 'None selected')}",
+        f"- Selected Materials: {len(materials)}",
+    ]
+
+    return {
+        "Learning Objectives": learning_objectives,
+        "Parent Objectives": parent_objectives,
+        "Child Objectives / Atomic Targets": child_objectives,
+        "Hierarchical ASCII Chapter Map": f"```text\n{ascii_map}\n```",
+        "To Do": "\n".join(todo_lines),
+        "Practice Questions": "\n".join(practice_lines),
+        "Tutor Session Targets": "\n".join(session_target_lines),
+        "Source Materials": source_material_lines,
+        "Assigned Chapters / Reading": "\n".join(assigned_reading_lines),
+        "Schedule Context": "\n".join(schedule_context_lines),
+    }
+
+
+def render_map_of_contents_sections(payload: dict[str, Any]) -> dict[str, str]:
+    module_name = _safe_literal(payload.get("module_name") or "Module")
+    objectives = list(payload.get("objectives") or [])
+    materials = _dedupe_materials(list(payload.get("materials") or []))
+    existing_frontmatter = payload.get("existing_frontmatter") or {}
+    parents, children_by_parent = _objective_tree(objectives)
+    reading_lines = _extract_reading_lines(materials, existing_frontmatter)
+    ascii_map = _build_ascii_chapter_map(
+        module_name=module_name,
+        objectives=objectives,
+        materials=materials,
+        reading_lines=reading_lines,
+    )
+    lo_page_name = _safe_literal(
+        payload.get("learning_objectives_page_name") or "Learning Objectives & To Do"
+    )
+
+    focus_candidates = [
+        child
+        for parent_code in sorted(children_by_parent)
+        for child in children_by_parent[parent_code]
+    ] or parents or objectives
+
+    module_spine_lines = [
+        f"- [[{lo_page_name}]]",
+        f"- {_safe_literal(payload.get('topic') or module_name)}",
+    ]
+    if focus_candidates:
+        module_spine_lines.append(
+            f"- Tutor First Objective: [[{focus_candidates[0]['objective_id']}]]"
+        )
+
+    objective_index_lines: list[str] = []
+    for index, parent in enumerate(parents, start=1):
+        objective_index_lines.append(
+            f"{index}. [[{parent['objective_id']}]] {parent['title']}"
+        )
+        for child in children_by_parent.get(parent["objective_id"]) or []:
+            objective_index_lines.append(
+                f"   - [[{child['objective_id']}]] {child['title']}"
+            )
+    if not objective_index_lines:
+        objective_index_lines.append("- (no approved objectives yet)")
+
+    follow_up_links = ", ".join(
+        f"[[{item['objective_id']}]]" for item in focus_candidates[:5]
+    ) if focus_candidates else "(none yet)"
+    session_notes_lines = [
+        f"- Sessions folder: `{_safe_literal(payload.get('sessions_folder') or 'Sessions/')}`",
+        "- Session notes link back to this navigation page.",
+        f"- Follow-up targets: {follow_up_links}",
+    ]
+    concept_notes_lines = [
+        f"- Concepts folder: `{_safe_literal(payload.get('concepts_folder') or 'Concepts/')}`",
+        "- Concept notes should stay atomic and link back to the objectives page.",
+    ]
+    schedule_context_lines = [
+        f"- Course: {_safe_literal(payload.get('course_name') or 'Unknown Course')}",
+        f"- Study Unit: {module_name}",
+        f"- Selected Materials: {len(materials)}",
+    ]
+    if reading_lines:
+        schedule_context_lines.extend(f"- Reading: {line}" for line in reading_lines)
+
+    return {
+        "Module Spine": "\n".join(module_spine_lines),
+        "Objective Index": "\n".join(objective_index_lines),
+        "Hierarchical ASCII Chapter Map": f"```text\n{ascii_map}\n```",
+        "Session Notes": "\n".join(session_notes_lines),
+        "Concept Notes": "\n".join(concept_notes_lines),
+        "Schedule Context": "\n".join(schedule_context_lines),
+    }
 
 
 def _render_moc_markdown(payload: dict[str, Any]) -> str:

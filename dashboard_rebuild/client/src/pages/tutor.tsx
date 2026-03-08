@@ -43,7 +43,6 @@ import {
   ListChecks,
   FileText,
   CreditCard,
-  Map,
   FolderOpen,
   Check,
   X,
@@ -115,6 +114,56 @@ function deriveVaultFolder(courseName: string, objectiveGroup: string): string {
   }
   if (!safeGroup) return `Courses/${safeCourse}`;
   return `Courses/${safeCourse}/${safeGroup}`;
+}
+
+function normalizeStudyUnitLabel(value: string): string {
+  const clean = sanitizeVaultSegment(value)
+    .replace(/\s*-\s*/g, " - ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return clean.replace(
+    /^(Week|Module|Construct|Topic)\s+0*([0-9]+)\b/i,
+    (_match, prefix: string, num: string) => `${prefix} ${Number(num)}`,
+  );
+}
+
+function inferStudyUnitFromMaterial(material: Material): string {
+  const folderSegments: string[] = [];
+  if (material.folder_path) {
+    folderSegments.push(...String(material.folder_path).split(/[\\/]/));
+  }
+  const sourceParentSegments: string[] = [];
+  if (material.source_path) {
+    const parts = String(material.source_path).split(/[\\/]/);
+    sourceParentSegments.push(...parts.slice(0, -1));
+  }
+
+  const candidateGroups = [folderSegments, sourceParentSegments];
+  for (const segments of candidateGroups) {
+    const cleaned = segments
+      .map((segment) => segment.trim())
+      .filter(Boolean)
+      .map((segment) => segment.replace(/\.[A-Za-z0-9]+$/, ""));
+
+    for (let index = cleaned.length - 1; index >= 0; index -= 1) {
+      const segment = cleaned[index];
+      if (/^(Week|Module|Construct|Topic)\s*0*\d+/i.test(segment)) {
+        return normalizeStudyUnitLabel(segment);
+      }
+    }
+  }
+
+  const fileNameCandidates = [material.title || "", material.source_path || ""]
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .map((segment) => String(segment).split(/[\\/]/).pop() || "")
+    .map((segment) => segment.replace(/\.[A-Za-z0-9]+$/, ""));
+  for (const segment of fileNameCandidates) {
+    if (/^(Week|Module|Construct|Topic)\s*0*\d+/i.test(segment)) {
+      return normalizeStudyUnitLabel(segment);
+    }
+  }
+  return "";
 }
 
 export default function Tutor() {
@@ -307,6 +356,45 @@ export default function Tutor() {
         : availableObjectives,
     [availableObjectives, selectedObjectiveGroup],
   );
+
+  const studyUnitOptions = useMemo(() => {
+    const unitMap = new Map<
+      string,
+      { value: string; objectiveCount: number; materialCount: number }
+    >();
+
+    for (const objective of availableObjectives) {
+      const group = normalizeStudyUnitLabel(String(objective.groupName || ""));
+      if (!group) continue;
+      const entry = unitMap.get(group) || {
+        value: group,
+        objectiveCount: 0,
+        materialCount: 0,
+      };
+      entry.objectiveCount += 1;
+      unitMap.set(group, entry);
+    }
+
+    for (const material of chatMaterials) {
+      if (typeof courseId !== "number" || material.course_id !== courseId) continue;
+      const unit = inferStudyUnitFromMaterial(material);
+      if (!unit) continue;
+      const entry = unitMap.get(unit) || {
+        value: unit,
+        objectiveCount: 0,
+        materialCount: 0,
+      };
+      entry.materialCount += 1;
+      unitMap.set(unit, entry);
+    }
+
+    return Array.from(unitMap.values()).sort((a, b) =>
+      a.value.localeCompare(b.value, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    );
+  }, [availableObjectives, chatMaterials, courseId]);
 
   const selectedObjectiveRecord = useMemo(
     () =>
@@ -1164,6 +1252,7 @@ export default function Tutor() {
                       selectedObjectiveGroup={selectedObjectiveGroup}
                       setSelectedObjectiveGroup={setSelectedObjectiveGroup}
                       availableObjectives={availableObjectives}
+                      studyUnitOptions={studyUnitOptions}
                       vaultFolderPreview={derivedVaultFolder}
                       preflight={preflight}
                       preflightLoading={preflightLoading}
