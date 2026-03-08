@@ -476,6 +476,15 @@ function StepCourseAndMaterials({
                   </option>
                 ))}
               </select>
+              <div className={`${TEXT_MUTED} mt-2 text-xs`}>
+                The study unit controls week-page sync and note naming. The topic field below is only an optional session label.
+              </div>
+              {selectedObjectiveGroup &&
+                !studyUnitOptions.find((option) => option.value === selectedObjectiveGroup)?.objectiveCount && (
+                  <div className="mt-2 border border-yellow-500/30 bg-yellow-500/10 px-2 py-2 text-xs font-terminal text-yellow-200">
+                    This study unit has materials, but no approved objectives saved yet. Preflight will block until objectives exist in the DB.
+                  </div>
+                )}
             </div>
 
             {objectiveScope === "single_focus" && (
@@ -514,7 +523,7 @@ function StepCourseAndMaterials({
       {/* Topic */}
       <Card className="bg-black/40 border-2 border-primary rounded-none">
         <div className="px-3 py-2 border-b border-primary/30">
-          <span className={TEXT_SECTION_LABEL}>TOPIC</span>
+          <span className={TEXT_SECTION_LABEL}>SESSION LABEL</span>
         </div>
         <div className="p-3">
           <input
@@ -526,9 +535,12 @@ function StepCourseAndMaterials({
             onBlur={(e) => {
               if (e.target.value) toast.success("Topic saved");
             }}
-            placeholder="e.g., Hip joint anatomy, Gait cycle..."
+            placeholder="Optional: narrow the session inside this study unit"
             className={`${INPUT_BASE} bg-black/40 border-2 border-primary font-terminal shadow-none`}
           />
+          <div className={`${TEXT_MUTED} mt-2 text-xs`}>
+            This does not rename the week or choose the study unit. Leave it blank if you want the Tutor to use the selected week/module name directly.
+          </div>
         </div>
       </Card>
 

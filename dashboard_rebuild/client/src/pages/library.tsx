@@ -49,6 +49,7 @@ import {
   GraduationCap,
   Eye,
   AlertTriangle,
+  Upload,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -587,6 +588,10 @@ export default function Library() {
     () => visibleMaterials.filter((m) => m.enabled && selectedForTutorSet.has(m.id)).map((m) => m.id),
     [visibleMaterials, selectedForTutorSet],
   );
+  const hiddenTutorSelectionCount = Math.max(
+    0,
+    selectedForTutor.length - selectedVisibleMaterialIds.length,
+  );
   const allTutorMaterialsSelected = selectableVisibleMaterialIds.length > 0 &&
     selectableVisibleMaterialIds.every((id) => selectedForTutorSet.has(id));
   const syncPreviewFiles = useMemo(
@@ -602,6 +607,10 @@ export default function Library() {
   }, [selectedForTutor]);
 
   const handleOpenTutor = () => {
+    if (!selectedForTutor.length) {
+      toast.error("Choose files for the Tutor queue before opening Tutor.");
+      return;
+    }
     writeTutorSelectedMaterialIds(selectedForTutor);
     try {
       localStorage.removeItem("tutor.wizard.progress.v1");
@@ -614,6 +623,34 @@ export default function Library() {
       /* sessionStorage unavailable — ignore */
     }
     setLocation("/tutor");
+  };
+
+  const replaceTutorQueueWithVisible = () => {
+    if (!selectableVisibleMaterialIds.length) {
+      toast.error("No enabled files are visible in this view.");
+      return;
+    }
+    setSelectedForTutor([...selectableVisibleMaterialIds]);
+    toast.success(`Tutor queue replaced with ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"}.`);
+  };
+
+  const addVisibleToTutorQueue = () => {
+    if (!selectableVisibleMaterialIds.length) {
+      toast.error("No enabled files are visible in this view.");
+      return;
+    }
+    setSelectedForTutor((prev) => {
+      const next = new Set(prev);
+      for (const id of selectableVisibleMaterialIds) next.add(id);
+      return [...next];
+    });
+    toast.success(`Added ${selectableVisibleMaterialIds.length} visible file${selectableVisibleMaterialIds.length === 1 ? "" : "s"} to the Tutor queue.`);
+  };
+
+  const clearTutorQueue = () => {
+    if (!selectedForTutor.length) return;
+    setSelectedForTutor([]);
+    toast.success("Tutor queue cleared.");
   };
 
   useEffect(() => {
@@ -1295,9 +1332,15 @@ export default function Library() {
               <div className="border-b border-primary/20 bg-black/30">
                 <div className={`${PANEL_PADDING} grid gap-3 lg:grid-cols-[minmax(340px,1fr)_minmax(380px,1.2fr)]`}>
                   <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
-                    <div className={TEXT_PANEL_TITLE}>UPLOAD MATERIALS</div>
                     <div className="flex items-center gap-2">
-                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Class</label>
+                      <Upload className={ICON_SM} />
+                      <div className={TEXT_PANEL_TITLE}>UPLOAD MATERIALS</div>
+                    </div>
+                    <div className={`${TEXT_MUTED} text-xs`}>
+                      Use this for one-off files from Downloads, email, or Blackboard. Upload puts the file into the Tutor library immediately.
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Link uploads to course</label>
                       <select
                         value={uploadCourseTarget}
                         onChange={(e) => setUploadCourseTarget(e.target.value)}
@@ -1317,7 +1360,13 @@ export default function Library() {
                   </div>
 
                   <div className="border border-primary/25 bg-black/30 p-3 space-y-2">
-                    <div className={TEXT_PANEL_TITLE}>SYNC STUDY FOLDER</div>
+                    <div className="flex items-center gap-2">
+                      <FolderOpen className={ICON_SM} />
+                      <div className={TEXT_PANEL_TITLE}>SYNC STUDY FOLDER</div>
+                    </div>
+                    <div className={`${TEXT_MUTED} text-xs`}>
+                      Use this for a whole course or week folder. Scan first, choose files, then sync only the files you want in the Tutor library.
+                    </div>
                     <input
                       value={materialsFolder}
                       onChange={(e) => setMaterialsFolder(e.target.value)}
@@ -1352,7 +1401,7 @@ export default function Library() {
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Class</label>
+                      <label className={`${TEXT_MUTED} text-xs whitespace-nowrap`}>Link synced files to course</label>
                       <select
                         value={syncCourseTarget}
                         onChange={(e) => setSyncCourseTarget(e.target.value)}
@@ -1450,6 +1499,27 @@ export default function Library() {
               </div>
 
               <div className={`${PANEL_PADDING} flex-1 min-h-0 flex flex-col gap-3`}>
+                <div className="grid gap-3 lg:grid-cols-3">
+                  <div className="border border-primary/20 bg-black/20 p-3">
+                    <div className={TEXT_PANEL_TITLE}>1. INGEST</div>
+                    <div className={`${TEXT_MUTED} mt-1 text-xs`}>
+                      Upload for one-off files. Sync for a folder tree you want to browse before import.
+                    </div>
+                  </div>
+                  <div className="border border-primary/20 bg-black/20 p-3">
+                    <div className={TEXT_PANEL_TITLE}>2. ORGANIZE</div>
+                    <div className={`${TEXT_MUTED} mt-1 text-xs`}>
+                      Use the course link control on the current view when files need to be assigned or reassigned.
+                    </div>
+                  </div>
+                  <div className="border border-primary/20 bg-black/20 p-3">
+                    <div className={TEXT_PANEL_TITLE}>3. SEND TO TUTOR</div>
+                    <div className={`${TEXT_MUTED} mt-1 text-xs`}>
+                      The Tutor queue persists across views. Replace it with the current view, add this view to it, or clear it before opening Tutor.
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                   <div className="space-y-1">
                     <div className={TEXT_PANEL_TITLE}>YOUR MATERIALS</div>
@@ -1457,93 +1527,140 @@ export default function Library() {
                       {sidebarMode === "courses" ? "Course" : "Folder"}: <span className="!text-white font-terminal">{selectedFolderLabel}</span> • showing {visibleMaterials.length} file{visibleMaterials.length === 1 ? "" : "s"}
                     </div>
                     <div className={TEXT_MUTED}>
-                      Tutor selected in view: {selectedVisibleMaterialIds.length} file{selectedVisibleMaterialIds.length === 1 ? "" : "s"}
-                      {selectedForTutor.length > selectedVisibleMaterialIds.length
-                        ? ` • total selected ${selectedForTutor.length}`
-                        : ""}
+                      Tutor queue: {selectedForTutor.length} file{selectedForTutor.length === 1 ? "" : "s"} total • {selectedVisibleMaterialIds.length} in this view
+                      {hiddenTutorSelectionCount > 0 ? ` • ${hiddenTutorSelectionCount} from other views` : ""}
                     </div>
                   </div>
-                  <div className="flex items-center flex-wrap gap-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="rounded-none h-7 px-3 font-terminal text-xs"
-                      disabled={selectedVisibleMaterialIds.length === 0 || clearMaterialsMutation.isPending}
-                      onClick={() => {
-                        if (!selectedVisibleMaterialIds.length) return;
-                        if (!window.confirm(`Delete ${selectedVisibleMaterialIds.length} selected materials from the current folder view? This will not delete your local PT School files.`)) return;
-                        clearMaterialsMutation.mutate([...selectedVisibleMaterialIds]);
-                      }}
-                    >
-                      {clearMaterialsMutation.isPending ? (
-                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                      ) : (
-                        <Trash2 className={`${ICON_SM} mr-1`} />
-                      )}
-                      CLEAR SELECTED
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="rounded-none h-7 px-3 font-terminal text-xs"
-                      disabled={materials.length === 0 || clearMaterialsMutation.isPending}
-                      onClick={() => {
-                        const safeCount = materials.length;
-                        if (!safeCount) return;
-                        if (!window.confirm(`Delete all ${safeCount} materials from tutor library? This will not delete your local PT School files.`)) return;
-                        clearMaterialsMutation.mutate(materials.map((m) => m.id));
-                      }}
-                    >
-                      {clearMaterialsMutation.isPending ? (
-                        <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                      ) : (
-                        <Trash2 className={`${ICON_SM} mr-1`} />
-                      )}
-                      CLEAR ALL MATERIALS
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      <select
-                        value={courseLinkTarget}
-                        onChange={(e) => setCourseLinkTarget(e.target.value)}
-                        className="h-7 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary"
-                        disabled={courses.length === 0 || courseLinkMutation.isPending}
-                      >
-                        <option value="">Select course</option>
-                        {courses.map((course) => (
-                          <option key={course.id} value={String(course.id)}>
-                            {course.name}{course.code ? ` (${course.code})` : ""}
-                          </option>
-                        ))}
-                      </select>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-none h-7 px-3 font-terminal text-xs"
-                        disabled={
-                          courseLinkMutation.isPending
-                          || !selectedVisibleMaterialIds.length
-                          || !courseLinkTarget
-                        }
-                        onClick={handleLinkSelectedToCourse}
-                      >
-                        {courseLinkMutation.isPending ? (
-                          <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
-                        ) : (
-                          <Link2 className={`${ICON_SM} mr-1`} />
-                        )}
-                        LINK IN VIEW
-                      </Button>
+                  <div className="grid gap-2 lg:grid-cols-[auto_auto_auto]">
+                    <div className="border border-primary/20 bg-black/20 p-2 space-y-2">
+                      <div className={`${TEXT_MUTED} text-[11px] uppercase tracking-wide`}>Course Linking</div>
+                      <div className="flex items-center gap-1">
+                        <select
+                          value={courseLinkTarget}
+                          onChange={(e) => setCourseLinkTarget(e.target.value)}
+                          className="h-7 rounded-none bg-black border border-primary/30 text-xs font-terminal px-2 text-white focus:outline-none focus:border-primary"
+                          disabled={courses.length === 0 || courseLinkMutation.isPending}
+                        >
+                          <option value="">Select course</option>
+                          {courses.map((course) => (
+                            <option key={course.id} value={String(course.id)}>
+                              {course.name}{course.code ? ` (${course.code})` : ""}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          disabled={
+                            courseLinkMutation.isPending
+                            || !selectedVisibleMaterialIds.length
+                            || !courseLinkTarget
+                          }
+                          onClick={handleLinkSelectedToCourse}
+                        >
+                          {courseLinkMutation.isPending ? (
+                            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                          ) : (
+                            <Link2 className={`${ICON_SM} mr-1`} />
+                          )}
+                          LINK VIEW
+                        </Button>
+                      </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-none h-7 px-3 font-terminal text-xs"
-                      onClick={handleOpenTutor}
-                    >
-                      OPEN TUTOR
-                    </Button>
+
+                    <div className="border border-primary/20 bg-black/20 p-2 space-y-2">
+                      <div className={`${TEXT_MUTED} text-[11px] uppercase tracking-wide`}>Tutor Queue</div>
+                      <div className="flex items-center flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          disabled={!selectableVisibleMaterialIds.length}
+                          onClick={replaceTutorQueueWithVisible}
+                        >
+                          REPLACE WITH VIEW
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          disabled={!selectableVisibleMaterialIds.length}
+                          onClick={addVisibleToTutorQueue}
+                        >
+                          ADD VIEW
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          disabled={!selectedForTutor.length}
+                          onClick={clearTutorQueue}
+                        >
+                          CLEAR QUEUE
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          disabled={!selectedForTutor.length}
+                          onClick={handleOpenTutor}
+                        >
+                          OPEN TUTOR ({selectedForTutor.length})
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="border border-red-500/20 bg-red-500/5 p-2 space-y-2">
+                      <div className="text-[11px] uppercase tracking-wide text-red-200">Library Cleanup</div>
+                      <div className="flex items-center flex-wrap gap-2">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          disabled={selectedVisibleMaterialIds.length === 0 || clearMaterialsMutation.isPending}
+                          onClick={() => {
+                            if (!selectedVisibleMaterialIds.length) return;
+                            if (!window.confirm(`Delete ${selectedVisibleMaterialIds.length} selected materials from the current folder view? This will not delete your local PT School files.`)) return;
+                            clearMaterialsMutation.mutate([...selectedVisibleMaterialIds]);
+                          }}
+                        >
+                          {clearMaterialsMutation.isPending ? (
+                            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                          ) : (
+                            <Trash2 className={`${ICON_SM} mr-1`} />
+                          )}
+                          DELETE VIEW SELECTION
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="rounded-none h-7 px-3 font-terminal text-xs"
+                          disabled={materials.length === 0 || clearMaterialsMutation.isPending}
+                          onClick={() => {
+                            const safeCount = materials.length;
+                            if (!safeCount) return;
+                            if (!window.confirm(`Delete all ${safeCount} materials from tutor library? This will not delete your local PT School files.`)) return;
+                            clearMaterialsMutation.mutate(materials.map((m) => m.id));
+                          }}
+                        >
+                          {clearMaterialsMutation.isPending ? (
+                            <Loader2 className={`${ICON_SM} animate-spin mr-1`} />
+                          ) : (
+                            <Trash2 className={`${ICON_SM} mr-1`} />
+                          )}
+                          DELETE ALL LIBRARY FILES
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {hiddenTutorSelectionCount > 0 ? (
+                  <div className="border border-yellow-500/30 bg-yellow-500/10 px-3 py-2 text-xs font-terminal text-yellow-100">
+                    The Tutor queue still includes {hiddenTutorSelectionCount} file{hiddenTutorSelectionCount === 1 ? "" : "s"} from other views. Use <span className="text-white">REPLACE WITH VIEW</span> if you want Tutor to use only what is visible right now.
+                  </div>
+                ) : null}
 
                 <div className="flex-1 min-h-0 border border-primary/25 bg-black/30 overflow-hidden">
                   {isLoading ? (

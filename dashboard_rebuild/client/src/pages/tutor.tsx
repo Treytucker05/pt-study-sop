@@ -127,7 +127,25 @@ function normalizeStudyUnitLabel(value: string): string {
   );
 }
 
+function scoreStudyUnitCandidate(rawSegment: string): number {
+  const segment = normalizeStudyUnitLabel(rawSegment);
+  if (!segment || !/^(Week|Module|Construct|Topic)\s*0*\d+/i.test(segment)) {
+    return Number.NEGATIVE_INFINITY;
+  }
+  let score = 1;
+  if (/\s-\s.+/.test(segment)) score += 6;
+  if (/\b(lecture|slides?|transcript|practice|todo|to do|notes?|objectives?|lo)\b/i.test(rawSegment)) {
+    score -= 5;
+  }
+  if (/^(Week|Module|Construct|Topic)\s+\d+$/i.test(segment)) {
+    score += 1;
+  }
+  return score;
+}
+
 function inferStudyUnitFromMaterial(material: Material): string {
+  let bestUnit = "";
+  let bestScore = Number.NEGATIVE_INFINITY;
   const folderSegments: string[] = [];
   if (material.folder_path) {
     folderSegments.push(...String(material.folder_path).split(/[\\/]/));
@@ -147,8 +165,10 @@ function inferStudyUnitFromMaterial(material: Material): string {
 
     for (let index = cleaned.length - 1; index >= 0; index -= 1) {
       const segment = cleaned[index];
-      if (/^(Week|Module|Construct|Topic)\s*0*\d+/i.test(segment)) {
-        return normalizeStudyUnitLabel(segment);
+      const score = scoreStudyUnitCandidate(segment);
+      if (score > bestScore) {
+        bestUnit = normalizeStudyUnitLabel(segment);
+        bestScore = score;
       }
     }
   }
@@ -159,11 +179,13 @@ function inferStudyUnitFromMaterial(material: Material): string {
     .map((segment) => String(segment).split(/[\\/]/).pop() || "")
     .map((segment) => segment.replace(/\.[A-Za-z0-9]+$/, ""));
   for (const segment of fileNameCandidates) {
-    if (/^(Week|Module|Construct|Topic)\s*0*\d+/i.test(segment)) {
-      return normalizeStudyUnitLabel(segment);
+    const score = scoreStudyUnitCandidate(segment);
+    if (score > bestScore) {
+      bestUnit = normalizeStudyUnitLabel(segment);
+      bestScore = score;
     }
   }
-  return "";
+  return bestUnit;
 }
 
 export default function Tutor() {
@@ -415,9 +437,9 @@ export default function Tutor() {
 
   const effectiveTopic = useMemo(
     () =>
-      topic.trim() ||
       selectedObjectiveRecord?.title ||
       selectedObjectiveGroup ||
+      topic.trim() ||
       "",
     [topic, selectedObjectiveRecord, selectedObjectiveGroup],
   );
@@ -477,7 +499,7 @@ export default function Tutor() {
       showSetup &&
       !!preflightPayload &&
       selectedMaterials.length > 0 &&
-      (!!selectedObjectiveGroup || objectiveScope === "module_all"),
+      !!selectedObjectiveGroup,
     staleTime: 30 * 1000,
   });
 
@@ -655,7 +677,10 @@ export default function Tutor() {
       }
       let resolvedChainId = chainId;
       if (!resolvedChainId && customBlockIds.length > 0) {
-        const customChain = await api.tutor.createCustomChain(customBlockIds, `Custom ${topic || "Chain"}`);
+        const customChain = await api.tutor.createCustomChain(
+          customBlockIds,
+          `Custom ${effectiveTopic || "Chain"}`,
+        );
         resolvedChainId = customChain.id;
       }
       const preflightResult = await api.tutor.preflightSession(preflightPayload);

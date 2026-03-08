@@ -40,6 +40,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Added backend safeguard: objective-scoped certified sessions now require preflight instead of direct start.
   - In progress: Obsidian-backed week-page preflight sync for `Learning Objectives & To Do.md` plus `_Map of Contents.md` patching, `page_sync_result`, and Wizard readiness surfacing for the Week 8 proof.
   - Week 8 follow-up hardening: duplicate note creation is now blocked on bridge/read failures, the live Week 8 numbered duplicates were cleaned, and the synced page layout now tracks the Week 7 study-note shape more closely.
+  - Week 9 follow-up hardening: fix study-unit inference/title leakage in the Tutor Wizard and simplify the Library ingest vs Tutor-handoff UX so the selected path is obvious.
 - [ ] Phase 3: certify all selectable template chains at baseline/strict bars.
 - [ ] Phase 4: certify artifact reliability for notes and card drafts.
 - [ ] Phase 5: certify trust, provenance, and requested-reference behavior.

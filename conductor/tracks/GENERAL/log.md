@@ -1991,3 +1991,17 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 - Validation:
   - `pytest brain/tests/test_tutor_session_linking.py -q` -> `31 passed`
   - live Week 8 preflight after clean dashboard restart -> `follow_up_targets` resolved to real objective links instead of `[[OBJ-UNMAPPED]]`
+
+## 2026-03-08 — Week 9 Wizard hardening and Library UX cleanup
+
+- Fixed Tutor study-unit inference so descriptive week folders outrank vague or misleading filenames when materials are used to seed study-unit options.
+- Changed Tutor Wizard topic precedence so the selected study unit or focus objective drives note naming and preflight context ahead of any stale typed topic text.
+- Tightened Wizard preflight readiness so it only runs after a study unit is selected, and clarified the topic field as an optional session label rather than the source of truth for week naming.
+- Reworked the Library header actions to separate:
+  - ingest (`Upload Materials`, `Sync Study Folder`)
+  - organization (`Link View`)
+  - Tutor handoff (`Replace With View`, `Add View`, `Clear Queue`, `Open Tutor`)
+- Added explicit Tutor queue visibility messaging so hidden selections from other views are surfaced before opening Tutor.
+- Validation:
+  - `pytest brain/tests/test_tutor_session_linking.py -q` -> `32 passed`
+  - `npm run build` in `dashboard_rebuild/` -> success
