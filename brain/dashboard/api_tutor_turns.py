@@ -83,7 +83,8 @@ def _get_session_turns(conn, session_id: str, limit: int = 50) -> list[dict]:
     cur = conn.cursor()
     cur.execute(
         """SELECT id, turn_number, question, answer, citations_json,
-                  phase, artifacts_json, response_id, model_id, created_at
+                  phase, artifacts_json, response_id, model_id,
+                  behavior_override, evaluation_json, created_at
            FROM tutor_turns
            WHERE tutor_session_id = ?
            ORDER BY turn_number ASC
@@ -1628,6 +1629,27 @@ def send_turn(session_id: str):
             cur = db_conn.cursor()
             now = datetime.now().isoformat()
 
+            # Build rich artifacts payload for session restore (Gap 4).
+            # Stores citations, verdict, toolActions, and retrieval_debug
+            # so the frontend can fully reconstruct the turn on restore.
+            _rich_artifacts: dict[str, Any] = {}
+            if artifact_cmd:
+                _rich_artifacts["command"] = artifact_cmd
+            if citations:
+                _rich_artifacts["citations"] = citations
+            if parsed_verdict:
+                _rich_artifacts["verdict"] = parsed_verdict
+            try:
+                if retrieval_debug_payload:
+                    _rich_artifacts["retrieval_debug"] = retrieval_debug_payload
+            except NameError:
+                pass
+            try:
+                if parsed_teach_back:
+                    _rich_artifacts["teach_back_rubric"] = parsed_teach_back
+            except NameError:
+                pass
+
             cur.execute(
                 """INSERT INTO tutor_turns
                    (session_id, tutor_session_id, course_id, turn_number,
@@ -1646,7 +1668,7 @@ def send_turn(session_id: str):
                     None if used_scope_shortcut else latest_response_id,
                     api_model,
                     session.get("phase"),
-                    json.dumps({"command": artifact_cmd}) if artifact_cmd else None,
+                    json.dumps(_rich_artifacts) if _rich_artifacts else None,
                     behavior_override,
                     json.dumps(parsed_verdict) if parsed_verdict else None,
                     now,
