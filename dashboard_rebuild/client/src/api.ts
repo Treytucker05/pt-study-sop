@@ -797,6 +797,22 @@ export const api = {
       request<TutorSessionWrapSummary>(
         `/tutor/session/${sessionId}/summary${opts?.save ? "?save=true" : ""}`,
       ),
+    exportSession: async (sessionId: string) => {
+      const res = await fetch(`${API_BASE}/tutor/session/${sessionId}/export`);
+      if (!res.ok) throw new Error(`Export failed: ${res.statusText}`);
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+      const filename = filenameMatch?.[1] || `tutor-export-${sessionId}.md`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
     getChainStatus: (sessionId: string) =>
       request<TutorChainStatusResponse>(`/tutor/session/${sessionId}/chain-status`),
     getSettings: () =>

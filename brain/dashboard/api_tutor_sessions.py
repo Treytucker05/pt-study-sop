@@ -672,14 +672,28 @@ def get_session(session_id: str):
 
     turns = _get_session_turns(conn, session_id)
 
-    # Parse JSON fields
+    # Parse JSON fields and restore rich structured data for session restore
     for turn in turns:
-        for field in ("citations_json", "artifacts_json"):
+        for field in ("citations_json", "artifacts_json", "evaluation_json"):
             if turn.get(field):
                 try:
                     turn[field] = json.loads(turn[field])
                 except (json.JSONDecodeError, TypeError):
                     pass
+
+        # Rich session restore (Gap 4): extract citations, verdict,
+        # toolActions, retrieval_debug, teach_back_rubric from artifacts_json
+        # so the frontend can fully reconstruct the turn on restore.
+        arts = turn.get("artifacts_json")
+        if isinstance(arts, dict):
+            if arts.get("citations") and not turn.get("citations_json"):
+                turn["citations_json"] = arts["citations"]
+            if arts.get("verdict"):
+                turn["verdict"] = arts["verdict"]
+            if arts.get("retrieval_debug"):
+                turn["retrieval_debug"] = arts["retrieval_debug"]
+            if arts.get("teach_back_rubric"):
+                turn["teach_back_rubric"] = arts["teach_back_rubric"]
 
     session["turns"] = turns
     if not session.get("mode"):
@@ -735,6 +749,21 @@ def end_session(session_id: str):
     )
 
     _ensure_selector_columns(conn)
+
+    # Compute duration: prefer wall-clock capped by a turn-based estimate.
+    turn_count = session.get("turn_count", 0) or 0
+    started_at_raw = session.get("created_at")
+    try:
+        if started_at_raw:
+            started_at_dt = datetime.fromisoformat(started_at_raw)
+            wall_clock = (now - started_at_dt).total_seconds() / 60.0
+            estimated = turn_count * 5
+            duration_minutes = round(min(wall_clock, estimated), 1)
+        else:
+            duration_minutes = turn_count * 2
+    except (ValueError, TypeError):
+        duration_minutes = turn_count * 2
+
     brain_session_id = session.get("brain_session_id")
     if not brain_session_id:
         try:
@@ -752,8 +781,8 @@ def end_session(session_id: str):
                     title,
                     title,  # study_mode
                     now.isoformat(),
-                    session.get("turn_count", 0) * 2,
-                    session.get("turn_count", 0) * 2,
+                    duration_minutes,
+                    duration_minutes,
                     session.get("selector_chain_id"),
                     session.get("selector_policy_version"),
                 ),
@@ -1184,6 +1213,102 @@ def get_session_summary(session_id: str):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/tutor/session/<id>/export — Export conversation as Markdown
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/export", methods=["GET"])
+def export_session(session_id: str):
+    """Export all turns of a tutor session as a downloadable Markdown file."""
+    from flask import Response
+    from dashboard.api_tutor_turns import _get_tutor_session
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    # Load turns
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT question, answer, created_at
+           FROM tutor_turns
+           WHERE tutor_session_id = ?
+           ORDER BY created_at ASC""",
+        (session_id,),
+    )
+    turns = cur.fetchall()
+
+    # Parse session metadata
+    topic = session.get("topic") or "Untitled"
+    created_at_str = session.get("created_at") or ""
+    ended_at_str = session.get("ended_at") or ""
+    chain_name = None
+    content_filter_raw = session.get("content_filter_json")
+    if content_filter_raw:
+        try:
+            cf = json.loads(content_filter_raw)
+            if isinstance(cf, dict):
+                chain_name = cf.get("chain_name")
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    # Compute duration
+    duration_str = ""
+    try:
+        if created_at_str and ended_at_str:
+            started = datetime.fromisoformat(created_at_str)
+            ended = datetime.fromisoformat(ended_at_str)
+            mins = round((ended - started).total_seconds() / 60, 1)
+            duration_str = f"{mins} min"
+    except (ValueError, TypeError):
+        pass
+
+    # Build Markdown
+    lines: list[str] = []
+    lines.append(f"# Tutor Session: {topic}")
+    lines.append("")
+    lines.append(f"- **Date:** {created_at_str[:10] if len(created_at_str) >= 10 else 'N/A'}")
+    lines.append(f"- **Topic:** {topic}")
+    if chain_name:
+        lines.append(f"- **Chain:** {chain_name}")
+    if duration_str:
+        lines.append(f"- **Duration:** {duration_str}")
+    lines.append(f"- **Turns:** {len(turns)}")
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+
+    for turn in turns:
+        q = turn["question"] or ""
+        a = turn["answer"] or ""
+        lines.append("### You")
+        lines.append("")
+        lines.append(q)
+        lines.append("")
+        lines.append("### Tutor")
+        lines.append("")
+        lines.append(a)
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+
+    conn.close()
+
+    md_content = "\n".join(lines)
+    safe_topic = "".join(c if c.isalnum() or c in " _-" else "_" for c in topic)[:60].strip()
+    filename = f"tutor-{safe_topic}-{session_id[:12]}.md"
+
+    return Response(
+        md_content,
+        mimetype="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ---------------------------------------------------------------------------
 # POST /api/tutor/session/<id>/link-archive — Link tutor session to Brain archive row
 # ---------------------------------------------------------------------------
 
@@ -1585,3 +1710,31 @@ def list_sessions():
     conn.close()
 
     return jsonify(sessions)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/tutor/vault/health — Vault janitor report
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/vault/health", methods=["GET"])
+def vault_health():
+    """Return a janitor report with broken wikilinks, orphans, and stale objectives."""
+    from dashboard.api_tutor_vault import (
+        _detect_broken_wikilinks,
+        _detect_orphaned_files,
+        _detect_stale_objectives,
+    )
+
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    try:
+        report = {
+            "broken_wikilinks": _detect_broken_wikilinks(conn),
+            "orphaned_files": _detect_orphaned_files(conn),
+            "stale_objectives": _detect_stale_objectives(conn),
+        }
+    finally:
+        conn.close()
+
+    return jsonify(report)

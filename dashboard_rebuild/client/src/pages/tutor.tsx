@@ -49,6 +49,7 @@ import {
   Square,
   Send,
   Loader2,
+  Download,
   AlertTriangle,
   Timer,
   SkipForward,
@@ -1233,7 +1234,23 @@ export default function Tutor() {
                       </Badge>
                     )}
                   </Button>
-                  <div className="ml-auto">
+                  <div className="ml-auto flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (activeSessionId) {
+                          api.tutor.exportSession(activeSessionId).catch(() => {
+                            toast.error("Failed to export session");
+                          });
+                        }
+                      }}
+                      className={BTN_TOOLBAR}
+                      title="Export conversation as Markdown"
+                    >
+                      <Download className={`${ICON_MD} mr-1`} />
+                      EXPORT
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
