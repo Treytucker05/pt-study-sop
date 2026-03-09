@@ -188,6 +188,11 @@ def get_enrichment_status(
         if (os.environ.get(source) or "").strip()
     ]
 
+    remaining_budget_pct = round(
+        max(0.0, (1.0 - monthly_spend / monthly_cap) * 100) if monthly_cap > 0 else 0.0,
+        1,
+    )
+
     status: dict[str, Any] = {
         "provider": "gemini-file-api",
         "mode": active_mode,
@@ -197,10 +202,12 @@ def get_enrichment_status(
         "key_sources_configured": key_sources_configured,
         "key_failover_strategy": "GEMINI_API_KEY -> GEMINI_API_KEY_BUSINESS -> GOOGLE_API_KEY",
         "local_only_fallback": local_only_fallback,
+        "remaining_budget_pct": remaining_budget_pct,
         "budget": {
             "monthly_spend": monthly_spend,
             "monthly_cap": monthly_cap,
             "per_video_cap": per_video_cap,
+            "remaining_budget_pct": remaining_budget_pct,
         },
         "allowed": False,
         "reason": None,

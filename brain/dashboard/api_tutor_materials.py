@@ -2426,6 +2426,15 @@ def get_video_process_status(job_id: str):
         job = dict(VIDEO_JOBS.get(job_id) or {})
     if not job:
         return jsonify({"error": "Video job not found"}), 404
+    # Inject provider + budget snapshot for frontend visibility
+    try:
+        from video_enrich_api import get_enrichment_status as _enrich_status
+        budget_info = _enrich_status()
+        job["provider"] = budget_info.get("provider", "gemini-file-api")
+        job["remaining_budget_pct"] = budget_info.get("remaining_budget_pct", 0.0)
+    except Exception:
+        job.setdefault("provider", "gemini-file-api")
+        job.setdefault("remaining_budget_pct", None)
     return jsonify(job), 200
 
 
