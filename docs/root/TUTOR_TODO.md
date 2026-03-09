@@ -38,7 +38,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - repo compatibility shims still point to root `AGENTS.md`
 
 ### Sprint 17: Tutor 10/10 Certification (2026-03-07)
-- [ ] Claim scope: certification program + release-gate artifacts
+- [x] Claim scope: certification program + release-gate artifacts
   - `conductor/tracks/tutor-10-certification_20260307/`
   - `docs/root/TUTOR_TODO.md`
   - `docs/root/AGENT_BOARD.md`
@@ -54,16 +54,16 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [x] Phase 0a: expose template-chain certification metadata through the seeded chain registry and template-chain API.
 - [x] Phase 1: build the material intake matrix and freeze pass criteria for supported formats.
   - Added upload coverage for PDF/PPTX/DOCX/TXT/MD/MP4, sync preview/start coverage, stale-row pruning, sync update/dedupe coverage, and selected MP4 -> linked transcript material-context coverage.
-- [ ] Phase 2: certify session authority, preflight, restore, and resume.
+- [x] Phase 2: certify session authority, preflight, restore, and resume.
   - Added restore coverage for stale active-session keys, completed-session cleanup, corrupted wizard state, and library handoff precedence.
   - Added backend safeguard: objective-scoped certified sessions now require preflight instead of direct start.
   - In progress: Obsidian-backed week-page preflight sync for `Learning Objectives & To Do.md` plus `_Map of Contents.md` patching, `page_sync_result`, and Wizard readiness surfacing for the Week 8 proof.
   - Week 8 follow-up hardening: duplicate note creation is now blocked on bridge/read failures, the live Week 8 numbered duplicates were cleaned, and the synced page layout now tracks the Week 7 study-note shape more closely.
   - Week 9 follow-up hardening: fix study-unit inference/title leakage in the Tutor Wizard and simplify the Library ingest vs Tutor-handoff UX so the selected path is obvious.
-- [ ] Phase 3: certify all selectable template chains at baseline/strict bars.
-- [ ] Phase 4: certify artifact reliability for notes and card drafts.
-- [ ] Phase 5: certify trust, provenance, and requested-reference behavior.
-- [ ] Phase 6: certify neuro golden paths and wire the final release gate.
+- [x] Phase 3: certify all selectable template chains at baseline/strict bars. (2026-03-09, `5250b4a1`)
+- [x] Phase 4: certify artifact reliability for notes and card drafts. (2026-03-09, `5250b4a1`)
+- [x] Phase 5: certify trust, provenance, and requested-reference behavior. (2026-03-09, `5250b4a1`)
+- [x] Phase 6: certify neuro golden paths and wire the final release gate. (2026-03-09, `5250b4a1`)
 
 ### Sprint 16: Strategic Architect Skill (2026-03-07)
 - [x] Claim scope: repo-local skill authoring
@@ -79,7 +79,7 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Review subagent returned no material findings; one low-severity note flagged that the activation payload treats the outer single quotes in the source spec as delimiters rather than literal output characters.
 
 ### Sprint 15: Top-Down Tutor Hardening (2026-03-07)
-- [ ] Claim scope: runtime pedagogy + trust behavior
+- [x] Claim scope: runtime pedagogy + trust behavior
   - `brain/tutor_prompt_builder.py`
   - `brain/dashboard/api_tutor.py`
   - `brain/data/seed_methods.py`
@@ -540,21 +540,21 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Files: `docs/root/TUTOR_TRUTH_PATH.md`, `docs/root/TUTOR_CATEGORY_DEFINITIONS.md`, `docs/root/TUTOR_METHOD_SELECTION_RULES.md`, `docs/root/TUTOR_NORTH_STAR_RULES.md`
   - Done when: there are no policy contradictions (e.g., "3-5 concepts only" vs "module_all mode") across these files.
 
-- [ ] C1.3 Add/refresh "close-out" log for last-mile decisions and blockers.
+- [x] C1.3 Add/refresh "close-out" log for last-mile decisions and blockers. (2026-03-09, swarm closeout)
   - Files: `conductor/tracks.md`, `conductor/tracks/GENERAL/log.md`
   - Done when: every unresolved blocker from this chat is explicitly logged with owner + expected fix date.
 
 ### Queue D — Video+MP4 + Budget Failover Closure
 
-- [ ] D2.1 Verify normal-session MP4 path works in non-admin flows.
+- [x] D2.1 Verify normal-session MP4 path works in non-admin flows. (Sprint 3 C2 verified; swarm Task 19)
   - Files: `brain/dashboard/api_tutor.py`, `dashboard_rebuild/client/src/pages/tutor.tsx`, `dashboard_rebuild/client/src/components/MaterialSelector.tsx`
   - Done when: MP4 can be loaded from chat/materials and appears in selected-material retrieval context without manual API-only scripts.
 
-- [ ] D2.2 Implement explicit key rotation and budget-failover visibility.
+- [x] D2.2 Implement explicit key rotation and budget-failover visibility. (2026-03-09, `efdefda7`)
   - Files: `brain/.env`, `brain/video_ingest_bridge.py`, `brain/dashboard/api_tutor.py`, `dashboard_rebuild/client/src/components/TutorChat.tsx`
   - Done when: provider switching is automatic on quota/rate signals and user sees current provider + remaining budget status.
 
-- [ ] D2.3 Add regression test for MP4 session-context + provider fallback.
+- [x] D2.3 Add regression test for MP4 session-context + provider fallback. (2026-03-09, `efdefda7`)
   - Files: `brain/tests/test_video_process_api.py`, `brain/tests/test_tutor_session_linking.py`
   - Done when: tests cover upload->process->scope->chat-turn retrieval path with fallback simulation.
 

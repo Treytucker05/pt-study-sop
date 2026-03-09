@@ -2,6 +2,38 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-09 - Tutor Gaps Swarm Closeout
+
+26-task swarm completed. All 12 audit gaps (except Gap 6), Queues C/D/E, and Sprints 15/17 closed.
+
+**Commits (24 swarm + 2 followup):**
+- `e63d62ed` → `69bcd7af`: Monolith split (Gap 1) — `api_tutor.py` (9,128→431 lines) into 6 modules
+- `fe233207`: Stop-generating button (Gap 2)
+- `ded50c88`: Conversation export + session duration fix (Gaps 3, 5)
+- `bc0020db`: Rich session restore (Gap 4)
+- `ac2885c5`: Accuracy feedback loop (Gap 9)
+- `ad773ff5`: ChromaDB request-level locking (Gap 7)
+- `85b4212e`: Vault janitor expansion (Gap 10)
+- `bcf7950a`: Behavioral contracts for all 49 methods (Gap 11)
+- `2f78f6f3`: Gemini Vision refinement (Gap 12)
+- `d390b1b2`: Mock infrastructure for LLM/Vault/ChromaDB (Gap 8)
+- `0bbbade2`: Top-down hardening phases 0-3 + provenance (Sprint 15)
+- `cd8e0592`: Category reference pages (Queue C)
+- `efdefda7`: MP4 budget visibility + regression tests (Queue D)
+- `bbbf2f5c`: UI method controls polish (Queue E)
+- `5250b4a1`: Sprint 17 certification report (all 6 phases)
+- `8cdc258c`: TUTOR_TODO closeout
+- `b34fa0e1`: Objectives auto-import from vault
+- `f2061bd8`: Session restore 50-turn cap fix
+
+**Remaining blockers (not in swarm scope):**
+- Sprint 15 Phase 4 (live Week 7 C-TRY-001 vs C-TRY-002 comparison) — requires user live testing
+- Workstream F (Video Ingest remaining items) — deferred
+- Sprint 1 items A4, A5 (PRIME→CALIBRATE transition criteria, runtime chain validation) — deferred
+- Sprint 2 items B1-B3 (transfer integrity) — partially covered by swarm, remaining items deferred
+
+---
+
 ## 2026-03-07 - Top-Down Tutor Hardening kickoff
 
 - Created new feature track `topdown-tutor-hardening_20260307`.
