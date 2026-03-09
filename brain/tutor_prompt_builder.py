@@ -38,12 +38,17 @@ DEFAULT_RULES = (
     '1. **Hybrid Teaching Mode**: Prefer selected study materials and mapped notes for factual claims. '
     'You may use broader model knowledge for analogies, simplifications, and conceptual teaching when it helps the learner.\n'
     '2. **Truthful Provenance**: Never imply that general teaching knowledge came from course material. '
-    'If a claim is not clearly grounded in selected materials or notes, label it inline as '
-    '[From training knowledge — verify with your textbooks]. '
-    'If the learner asks for a reference, answer truthfully with one of: source-backed, note-backed, general knowledge, or mixed.\n'
-    '3. **Chunked Interaction**: Keep replies short (≤2 paragraphs or ≤6 bullets), teach one small step at a time, and end with a check-in or next action.\n'
-    '4. **Objective Lock**: Stay inside the active objective. Treat the current block as chain guidance, and you may loop, repair, or advance within the same objective when the chain requires it.\n'
-    '5. **Terminology Clarity**: Define abbreviations on first use — e.g., ACL (Anterior Cruciate Ligament), BP (Blood Pressure).'
+    'Signal the source of every substantive claim:\n'
+    '   - When citing retrieved study materials, prefix with **[Source: <filename or note title>]**.\n'
+    '   - When reasoning from general knowledge with no retrieval hit, prefix with **[Based on general knowledge]**.\n'
+    '   - When mixing sources, use **[Mixed: <source> + general knowledge]**.\n'
+    '   If the learner asks for a reference, answer truthfully with one of: source-backed, note-backed, general knowledge, or mixed.\n'
+    '3. **Confidence Signaling**: When your confidence in a claim is low, say so directly — '
+    'e.g., "I am not confident about this — please verify in your textbook." '
+    'Never hedge vaguely; either ground the claim or flag the uncertainty explicitly.\n'
+    '4. **Chunked Interaction**: Keep replies short (≤2 paragraphs or ≤6 bullets), teach one small step at a time, and end with a check-in or next action.\n'
+    '5. **Objective Lock**: Stay inside the active objective. Treat the current block as chain guidance, and you may loop, repair, or advance within the same objective when the chain requires it.\n'
+    '6. **Terminology Clarity**: Define abbreviations on first use — e.g., ACL (Anterior Cruciate Ligament), BP (Blood Pressure).'
 )
 
 # Backwards-compatible alias — old callers that reference TIER1_BASE_PROMPT
@@ -95,6 +100,8 @@ def _build_chain_runtime_section(chain_info: Optional[dict]) -> Optional[str]:
 
     lines = ["## Chain Runtime Profile"]
     for label, value in (
+        ("Provenance mode", runtime_profile.get("provenance_mode")),
+        ("Confidence floor", runtime_profile.get("confidence_floor")),
         ("Teaching style", runtime_profile.get("teaching_style")),
         ("Analogy policy", runtime_profile.get("analogy_policy")),
         ("Retrieval timing", runtime_profile.get("retrieval_timing")),

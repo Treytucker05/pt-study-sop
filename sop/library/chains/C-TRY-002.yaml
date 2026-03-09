@@ -60,6 +60,9 @@ context_tags:
   time_available: 50
   learner_style: top_down_structured
 runtime_profile:
+  provenance_mode: strict       # always cite sources inline; flag general-knowledge claims
+  confidence_floor: medium      # do not proceed if confidence is below this threshold
+  block_overrides: {}           # per-block knob overrides (empty for now)
   teaching_style: explanation-first but more structured and target-oriented
   analogy_policy: analogies allowed as support, not as the dominant teaching mechanism
   retrieval_timing: use earlier calibration only when prior exposure or learner readiness exists; otherwise stay explanation-first and skip retrieval-style calibration
@@ -133,6 +136,8 @@ block_overrides:
       - closure dump
       - gap list
       - next-step signal
+proving_ground: true
+weak_cards_log: []
 is_template: true
 status: draft
 evidence:

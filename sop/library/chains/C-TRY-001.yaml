@@ -33,6 +33,9 @@ context_tags:
   time_available: 45
   learner_style: top_down_narrative
 runtime_profile:
+  provenance_mode: strict       # always cite sources inline; flag general-knowledge claims
+  confidence_floor: medium      # do not proceed if confidence is below this threshold
+  block_overrides: {}           # per-block knob overrides (empty for now)
   teaching_style: explanation-first, big-picture narrative, interactive pauses
   analogy_policy: analogies encouraged as teaching bridges, never as evidence claims
   retrieval_timing: delay retrieval until learner says ready after narrative build
@@ -101,5 +104,7 @@ block_overrides:
       - session-level dump
       - gap list
       - gap-fill annotations
+proving_ground: true
+weak_cards_log: []
 is_template: true
 status: draft
