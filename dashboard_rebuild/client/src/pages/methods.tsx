@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Blocks, Link2, BarChart3, Plus, Star, Play, Loader2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
+import { Blocks, Link2, BarChart3, Plus, Star, Play, Loader2, ChevronDown, ChevronRight, Pencil, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -833,6 +833,7 @@ function EditBlockDialog({
   const [knobsJson, setKnobsJson] = useState("{}");
   const [knobError, setKnobError] = useState<string | null>(null);
   const [fullScreenText, setFullScreenText] = useState(false);
+  const [templateLoading, setTemplateLoading] = useState(false);
   const [duration, setDuration] = useState(5);
   const [energyCost, setEnergyCost] = useState("medium");
   const [bestStage, setBestStage] = useState("");
@@ -953,15 +954,40 @@ function EditBlockDialog({
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="font-arcade text-xs text-muted-foreground">TUTOR PROMPT</label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
-                onClick={() => setFacilitationPrompt(block?.facilitation_prompt ?? "")}
-              >
-                RESET PROMPT
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 rounded-none border-[3px] border-double font-arcade text-[10px]"
+                  onClick={() => setFacilitationPrompt(block?.facilitation_prompt ?? "")}
+                >
+                  UNDO EDITS
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 rounded-none border-[3px] border-double border-warning/50 text-warning font-arcade text-[10px]"
+                  disabled={templateLoading || !block}
+                  onClick={async () => {
+                    if (!block) return;
+                    setTemplateLoading(true);
+                    try {
+                      const res = await api.methods.getTemplatePrompt(block.id);
+                      setFacilitationPrompt(res.facilitation_prompt);
+                    } catch {
+                      // Silently fall back to current DB value if API unavailable
+                      setFacilitationPrompt(block.facilitation_prompt ?? "");
+                    } finally {
+                      setTemplateLoading(false);
+                    }
+                  }}
+                >
+                  {templateLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3 mr-0.5" />}
+                  RESET TO TEMPLATE
+                </Button>
+              </div>
             </div>
             <Textarea
               placeholder="Facilitation prompt used by the tutor for this method..."
@@ -1098,7 +1124,7 @@ function ChainRunDialog({
       const result = await api.chainRun.start({
         chain_id: chainId,
         topic: topic.trim(),
-        course_id: courseId ? Number(courseId) : undefined,
+        course_id: courseId && courseId !== "__none__" ? Number(courseId) : undefined,
         options: { write_obsidian: writeObsidian, draft_cards: draftCards },
       });
       onComplete(result);
@@ -1133,6 +1159,9 @@ function ChainRunDialog({
                 <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent className="bg-black border-2 border-primary rounded-none">
+                <SelectItem value="__none__" className="font-terminal text-sm text-muted-foreground">
+                  None
+                </SelectItem>
                 {courses.map((c) => (
                   <SelectItem key={c.id} value={String(c.id)} className="font-terminal text-sm">
                     {c.name}

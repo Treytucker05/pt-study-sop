@@ -588,6 +588,8 @@ export const api = {
         body: JSON.stringify(data),
       }),
     analytics: () => request<MethodAnalyticsResponse>("/methods/analytics"),
+    getTemplatePrompt: (id: number) =>
+      request<{ facilitation_prompt: string }>(`/methods/${id}/template-prompt`),
   },
 
   chains: {
