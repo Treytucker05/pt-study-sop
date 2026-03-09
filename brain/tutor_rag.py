@@ -13,6 +13,7 @@ import logging
 import os
 import re
 import sqlite3
+import threading
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -25,6 +26,7 @@ load_env()
 
 _CHROMA_BASE = Path(__file__).parent / "data" / "chroma_tutor"
 _vectorstores: dict[str, object] = {}
+_chroma_lock = threading.RLock()  # serialises all ChromaDB operations per-process
 
 COLLECTION_MATERIALS = "tutor_materials"
 
@@ -56,34 +58,37 @@ def init_vectorstore(
     collection_name: str = COLLECTION_MATERIALS, persist_dir: Optional[str] = None
 ):
     """Initialize or return cached ChromaDB vectorstore for a named collection."""
-    if collection_name in _vectorstores:
-        return _vectorstores[collection_name]
+    with _chroma_lock:
+        if collection_name in _vectorstores:
+            return _vectorstores[collection_name]
 
-    from langchain_openai import OpenAIEmbeddings
-    from langchain_community.vectorstores import Chroma
+        from langchain_openai import OpenAIEmbeddings
+        from langchain_community.vectorstores import Chroma
 
-    persist = persist_dir or str(_CHROMA_BASE / collection_name.replace("tutor_", ""))
-    os.makedirs(persist, exist_ok=True)
+        persist = persist_dir or str(
+            _CHROMA_BASE / collection_name.replace("tutor_", "")
+        )
+        os.makedirs(persist, exist_ok=True)
 
-    api_key = _get_openai_api_key()
-    base_url = os.environ.get("OPENAI_BASE_URL")
+        api_key = _get_openai_api_key()
+        base_url = os.environ.get("OPENAI_BASE_URL")
 
-    embed_kwargs: dict = {
-        "model": "text-embedding-3-small",
-        "api_key": api_key,
-    }
-    if base_url:
-        embed_kwargs["base_url"] = base_url
+        embed_kwargs: dict = {
+            "model": "text-embedding-3-small",
+            "api_key": api_key,
+        }
+        if base_url:
+            embed_kwargs["base_url"] = base_url
 
-    embeddings = OpenAIEmbeddings(**embed_kwargs)
+        embeddings = OpenAIEmbeddings(**embed_kwargs)
 
-    vs = Chroma(
-        collection_name=collection_name,
-        embedding_function=embeddings,
-        persist_directory=persist,
-    )
-    _vectorstores[collection_name] = vs
-    return vs
+        vs = Chroma(
+            collection_name=collection_name,
+            embedding_function=embeddings,
+            persist_directory=persist,
+        )
+        _vectorstores[collection_name] = vs
+        return vs
 
 
 SMALL_DOC_CHAR_LIMIT = (
@@ -273,122 +278,127 @@ def embed_rag_docs(
     Routes to correct collection based on corpus.
     Returns {embedded: int, skipped: int, total_chunks: int, timed_out: int}.
     """
-    conn = sqlite3.connect(DB_PATH, timeout=30)
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
+    with _chroma_lock:
+        conn = sqlite3.connect(DB_PATH, timeout=30)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
 
-    conditions = ["COALESCE(enabled, 1) = 1"]
-    params: list = []
+        conditions = ["COALESCE(enabled, 1) = 1"]
+        params: list = []
 
-    if corpus:
-        conditions.append("corpus = ?")
-        params.append(corpus)
-    if course_id is not None:
-        conditions.append("(course_id = ? OR course_id IS NULL)")
-        params.append(course_id)
-    if folder_path:
-        conditions.append("folder_path LIKE ?")
-        params.append(f"%{folder_path}%")
+        if corpus:
+            conditions.append("corpus = ?")
+            params.append(corpus)
+        if course_id is not None:
+            conditions.append("(course_id = ? OR course_id IS NULL)")
+            params.append(course_id)
+        if folder_path:
+            conditions.append("folder_path LIKE ?")
+            params.append(f"%{folder_path}%")
 
-    where = " AND ".join(conditions)
-    cur.execute(
-        f"SELECT id, source_path, content, course_id, folder_path, corpus FROM rag_docs WHERE {where}",
-        params,
-    )
-    docs = cur.fetchall()
-
-    embedded = 0
-    skipped = 0
-    timed_out = 0
-    total_chunks = 0
-
-    for idx, doc in enumerate(docs):
-        if progress_callback:
-            progress_callback(idx, len(docs), doc["source_path"] or "unknown")
-
+        where = " AND ".join(conditions)
         cur.execute(
-            "SELECT COUNT(*) FROM rag_embeddings WHERE rag_doc_id = ?",
-            (doc["id"],),
+            f"SELECT id, source_path, content, course_id, folder_path, corpus FROM rag_docs WHERE {where}",
+            params,
         )
-        if cur.fetchone()[0] > 0:
-            skipped += 1
-            continue
+        docs = cur.fetchall()
 
-        content = doc["content"] or ""
-        if not content.strip():
-            skipped += 1
-            continue
+        embedded = 0
+        skipped = 0
+        timed_out = 0
+        total_chunks = 0
 
-        doc_corpus = doc["corpus"] or "materials"
-        collection = COLLECTION_MATERIALS
-        doc_id = doc["id"]
-        doc_source = doc["source_path"] or ""
-        doc_course_id = doc["course_id"]
-        doc_folder_path = doc["folder_path"]
+        for idx, doc in enumerate(docs):
+            if progress_callback:
+                progress_callback(idx, len(docs), doc["source_path"] or "unknown")
 
-        def _embed_one(doc_row: object) -> int:
-            _chunks = chunk_document(
-                content,
-                doc_source,
-                course_id=doc_course_id,
-                folder_path=doc_folder_path,
-                rag_doc_id=doc_id,
-                corpus=doc_corpus,
+            cur.execute(
+                "SELECT COUNT(*) FROM rag_embeddings WHERE rag_doc_id = ?",
+                (doc["id"],),
             )
-            if not _chunks:
-                return 0
-            _vs = init_vectorstore(collection)
-            _ids = [f"rag-{doc_id}-{i}" for i in range(len(_chunks))]
-            _add_documents_batched(_vs, _chunks, _ids)
-            for i, chunk in enumerate(_chunks):
-                try:
-                    import tiktoken
-
-                    enc = tiktoken.encoding_for_model("text-embedding-3-small")
-                    token_count = len(enc.encode(chunk.page_content))
-                except Exception:
-                    token_count = len(chunk.page_content) // 4
-                cur.execute(
-                    """INSERT OR IGNORE INTO rag_embeddings
-                       (rag_doc_id, chunk_index, chunk_text, chroma_id, token_count, created_at)
-                       VALUES (?, ?, ?, ?, ?, datetime('now'))""",
-                    (doc_id, i, chunk.page_content, _ids[i], token_count),
-                )
-            return len(_chunks)
-
-        try:
-            with ThreadPoolExecutor(max_workers=1) as _executor:
-                _future = _executor.submit(_embed_one, doc)
-                chunk_count = _future.result(timeout=DOC_EMBED_TIMEOUT_SEC)
-            if chunk_count == 0:
+            if cur.fetchone()[0] > 0:
                 skipped += 1
-            else:
-                total_chunks += chunk_count
-                embedded += 1
-        except FuturesTimeout:
-            logger.error(
-                "Embedding timed out after %ds for doc %d: %s",
-                DOC_EMBED_TIMEOUT_SEC,
-                doc_id,
-                doc_source,
-            )
-            cur.execute("DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,))
-            conn.commit()
-            timed_out += 1
-        except Exception as exc:
-            logger.error("Embedding failed for doc %d: %s", doc_id, str(exc))
-            cur.execute("DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,))
-            conn.commit()
-            skipped += 1
+                continue
 
-    conn.commit()
-    conn.close()
-    return {
-        "embedded": embedded,
-        "skipped": skipped,
-        "total_chunks": total_chunks,
-        "timed_out": timed_out,
-    }
+            content = doc["content"] or ""
+            if not content.strip():
+                skipped += 1
+                continue
+
+            doc_corpus = doc["corpus"] or "materials"
+            collection = COLLECTION_MATERIALS
+            doc_id = doc["id"]
+            doc_source = doc["source_path"] or ""
+            doc_course_id = doc["course_id"]
+            doc_folder_path = doc["folder_path"]
+
+            def _embed_one(doc_row: object) -> int:
+                _chunks = chunk_document(
+                    content,
+                    doc_source,
+                    course_id=doc_course_id,
+                    folder_path=doc_folder_path,
+                    rag_doc_id=doc_id,
+                    corpus=doc_corpus,
+                )
+                if not _chunks:
+                    return 0
+                _vs = init_vectorstore(collection)
+                _ids = [f"rag-{doc_id}-{i}" for i in range(len(_chunks))]
+                _add_documents_batched(_vs, _chunks, _ids)
+                for i, chunk in enumerate(_chunks):
+                    try:
+                        import tiktoken
+
+                        enc = tiktoken.encoding_for_model("text-embedding-3-small")
+                        token_count = len(enc.encode(chunk.page_content))
+                    except Exception:
+                        token_count = len(chunk.page_content) // 4
+                    cur.execute(
+                        """INSERT OR IGNORE INTO rag_embeddings
+                           (rag_doc_id, chunk_index, chunk_text, chroma_id, token_count, created_at)
+                           VALUES (?, ?, ?, ?, ?, datetime('now'))""",
+                        (doc_id, i, chunk.page_content, _ids[i], token_count),
+                    )
+                return len(_chunks)
+
+            try:
+                with ThreadPoolExecutor(max_workers=1) as _executor:
+                    _future = _executor.submit(_embed_one, doc)
+                    chunk_count = _future.result(timeout=DOC_EMBED_TIMEOUT_SEC)
+                if chunk_count == 0:
+                    skipped += 1
+                else:
+                    total_chunks += chunk_count
+                    embedded += 1
+            except FuturesTimeout:
+                logger.error(
+                    "Embedding timed out after %ds for doc %d: %s",
+                    DOC_EMBED_TIMEOUT_SEC,
+                    doc_id,
+                    doc_source,
+                )
+                cur.execute(
+                    "DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,)
+                )
+                conn.commit()
+                timed_out += 1
+            except Exception as exc:
+                logger.error("Embedding failed for doc %d: %s", doc_id, str(exc))
+                cur.execute(
+                    "DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,)
+                )
+                conn.commit()
+                skipped += 1
+
+        conn.commit()
+        conn.close()
+        return {
+            "embedded": embedded,
+            "skipped": skipped,
+            "total_chunks": total_chunks,
+            "timed_out": timed_out,
+        }
 
 
 def _doc_identity(doc: object, fallback_index: int) -> str:
@@ -517,35 +527,49 @@ def search_with_embeddings(
     Fetches a widened candidate pool, then returns top k chunks.
     Falls back to keyword search if vectorstore is empty.
     """
-    if debug is not None:
-        debug.clear()
-        debug.update(
-            {
-                "collection": collection_name,
-                "k_requested": k,
-                "used_keyword_fallback": False,
-                "candidate_pool_similarity": 0,
-                "candidate_pool_mmr": 0,
-                "candidate_pool_merged": 0,
-                "candidate_pool_after_cap": 0,
-                "candidate_pool_dropped_by_cap": 0,
-                "final_chunks": 0,
-                "final_unique_docs": 0,
-                "final_top_doc_share": 0.0,
-                "final_top_doc_source": None,
-            }
-        )
+    with _chroma_lock:
+        if debug is not None:
+            debug.clear()
+            debug.update(
+                {
+                    "collection": collection_name,
+                    "k_requested": k,
+                    "used_keyword_fallback": False,
+                    "candidate_pool_similarity": 0,
+                    "candidate_pool_mmr": 0,
+                    "candidate_pool_merged": 0,
+                    "candidate_pool_after_cap": 0,
+                    "candidate_pool_dropped_by_cap": 0,
+                    "final_chunks": 0,
+                    "final_unique_docs": 0,
+                    "final_top_doc_share": 0.0,
+                    "final_top_doc_source": None,
+                }
+            )
 
-    vs = init_vectorstore(collection_name)
+        vs = init_vectorstore(collection_name)
 
-    corpus_fallback = None
+        corpus_fallback = None
 
-    try:
-        collection = vs._collection
-        if collection.count() == 0:
+        try:
+            collection = vs._collection
+            if collection.count() == 0:
+                if debug is not None:
+                    debug["used_keyword_fallback"] = True
+                    debug["fallback_reason"] = "empty_collection"
+                return _keyword_fallback(
+                    query,
+                    course_id,
+                    folder_paths,
+                    material_ids,
+                    k,
+                    corpus=corpus_fallback,
+                    debug=debug,
+                )
+        except Exception:
             if debug is not None:
                 debug["used_keyword_fallback"] = True
-                debug["fallback_reason"] = "empty_collection"
+                debug["fallback_reason"] = "collection_probe_failed"
             return _keyword_fallback(
                 query,
                 course_id,
@@ -555,116 +579,122 @@ def search_with_embeddings(
                 corpus=corpus_fallback,
                 debug=debug,
             )
-    except Exception:
-        if debug is not None:
-            debug["used_keyword_fallback"] = True
-            debug["fallback_reason"] = "collection_probe_failed"
-        return _keyword_fallback(
-            query,
-            course_id,
-            folder_paths,
-            material_ids,
-            k,
-            corpus=corpus_fallback,
-            debug=debug,
-        )
 
-    # Build metadata filter
-    where_filter = None
-    conditions = []
-    # When explicit material IDs are provided, they define the scope and should
-    # not be additionally constrained by course_id.
-    if course_id is not None and not material_ids:
-        conditions.append({"course_id": course_id})
-    if folder_paths:
-        conditions.append({"folder_path": {"$in": folder_paths}})
-    if material_ids:
-        conditions.append({"rag_doc_id": {"$in": material_ids}})
+        # Build metadata filter
+        where_filter = None
+        conditions = []
+        # When explicit material IDs are provided, they define the scope and
+        # should not be additionally constrained by course_id.
+        if course_id is not None and not material_ids:
+            conditions.append({"course_id": course_id})
+        if folder_paths:
+            conditions.append({"folder_path": {"$in": folder_paths}})
+        if material_ids:
+            conditions.append({"rag_doc_id": {"$in": material_ids}})
 
-    if len(conditions) == 1:
-        where_filter = conditions[0]
-    elif len(conditions) > 1:
-        where_filter = {"$and": conditions}
+        if len(conditions) == 1:
+            where_filter = conditions[0]
+        elif len(conditions) > 1:
+            where_filter = {"$and": conditions}
 
-    try:
-        candidate_k = _resolve_candidate_pool_size(k, material_ids)
-        if debug is not None:
-            debug["candidate_k"] = candidate_k
-        similarity_candidates = vs.similarity_search(
-            query,
-            k=candidate_k,
-            filter=where_filter,
-        )
-        if debug is not None:
-            debug["candidate_pool_similarity"] = len(similarity_candidates)
-        mmr_candidates: list = []
-        mmr_k = 0
-        mmr_search = getattr(vs, "max_marginal_relevance_search", None)
-        if callable(mmr_search):
-            try:
-                mmr_k = candidate_k
-                mmr_fetch_k = min(max(mmr_k * 3, mmr_k + 40), SCOPED_MMR_FETCH_MAX)
-                if debug is not None:
-                    debug["mmr_k"] = mmr_k
-                    debug["mmr_fetch_k"] = mmr_fetch_k
-                mmr_candidates = mmr_search(
-                    query,
-                    k=mmr_k,
-                    fetch_k=mmr_fetch_k,
-                    lambda_mult=DEFAULT_MMR_LAMBDA_MULT,
-                    filter=where_filter,
-                )
-            except Exception:
-                mmr_candidates = []
-                if debug is not None:
-                    debug["mmr_error"] = True
-        if debug is not None:
-            debug["candidate_pool_mmr"] = len(mmr_candidates)
-
-        merged_candidates_uncapped = _merge_candidate_pools(
-            similarity_candidates,
-            mmr_candidates,
-            max_total=max(candidate_k * 2, k * 8),
-        )
-        if debug is not None:
-            debug["candidate_pool_merged"] = len(merged_candidates_uncapped)
-
-        merged_candidates = merged_candidates_uncapped
-
-        if collection_name == COLLECTION_MATERIALS and merged_candidates:
-            # Keep enough per-doc candidates to satisfy high-k requests while
-            # still preventing any single source from flooding the rerank pool.
-            pre_cap = max(k, 6)
+        try:
+            candidate_k = _resolve_candidate_pool_size(k, material_ids)
             if debug is not None:
-                debug["pre_cap_per_doc"] = pre_cap
-            merged_candidates = _cap_candidates_per_doc(
-                merged_candidates,
-                max_per_doc=pre_cap,
-                max_total=max(candidate_k, k),
+                debug["candidate_k"] = candidate_k
+            similarity_candidates = vs.similarity_search(
+                query,
+                k=candidate_k,
+                filter=where_filter,
             )
             if debug is not None:
-                debug["candidate_pool_after_cap"] = len(merged_candidates)
-                debug["candidate_pool_dropped_by_cap"] = max(
-                    0, len(merged_candidates_uncapped) - len(merged_candidates)
-                )
-        elif debug is not None:
-            debug["candidate_pool_after_cap"] = len(merged_candidates)
-
-        if merged_candidates:
-            final_docs = merged_candidates[:k]
-            if is_video_query(query):
-                final_docs = boost_video_chunks(final_docs, query)
+                debug["candidate_pool_similarity"] = len(similarity_candidates)
+            mmr_candidates: list = []
+            mmr_k = 0
+            mmr_search = getattr(vs, "max_marginal_relevance_search", None)
+            if callable(mmr_search):
+                try:
+                    mmr_k = candidate_k
+                    mmr_fetch_k = min(
+                        max(mmr_k * 3, mmr_k + 40), SCOPED_MMR_FETCH_MAX
+                    )
+                    if debug is not None:
+                        debug["mmr_k"] = mmr_k
+                        debug["mmr_fetch_k"] = mmr_fetch_k
+                    mmr_candidates = mmr_search(
+                        query,
+                        k=mmr_k,
+                        fetch_k=mmr_fetch_k,
+                        lambda_mult=DEFAULT_MMR_LAMBDA_MULT,
+                        filter=where_filter,
+                    )
+                except Exception:
+                    mmr_candidates = []
+                    if debug is not None:
+                        debug["mmr_error"] = True
             if debug is not None:
-                dist = _doc_distribution_stats(final_docs)
-                debug["final_chunks"] = len(final_docs)
-                debug["final_unique_docs"] = dist["unique_docs"]
-                debug["final_top_doc_share"] = round(float(dist["top_doc_share"]), 4)
-                debug["final_top_doc_source"] = dist["top_doc_source"]
-            return final_docs
-    except Exception:
+                debug["candidate_pool_mmr"] = len(mmr_candidates)
+
+            merged_candidates_uncapped = _merge_candidate_pools(
+                similarity_candidates,
+                mmr_candidates,
+                max_total=max(candidate_k * 2, k * 8),
+            )
+            if debug is not None:
+                debug["candidate_pool_merged"] = len(merged_candidates_uncapped)
+
+            merged_candidates = merged_candidates_uncapped
+
+            if collection_name == COLLECTION_MATERIALS and merged_candidates:
+                # Keep enough per-doc candidates to satisfy high-k requests
+                # while still preventing any single source from flooding the
+                # rerank pool.
+                pre_cap = max(k, 6)
+                if debug is not None:
+                    debug["pre_cap_per_doc"] = pre_cap
+                merged_candidates = _cap_candidates_per_doc(
+                    merged_candidates,
+                    max_per_doc=pre_cap,
+                    max_total=max(candidate_k, k),
+                )
+                if debug is not None:
+                    debug["candidate_pool_after_cap"] = len(merged_candidates)
+                    debug["candidate_pool_dropped_by_cap"] = max(
+                        0,
+                        len(merged_candidates_uncapped) - len(merged_candidates),
+                    )
+            elif debug is not None:
+                debug["candidate_pool_after_cap"] = len(merged_candidates)
+
+            if merged_candidates:
+                final_docs = merged_candidates[:k]
+                if is_video_query(query):
+                    final_docs = boost_video_chunks(final_docs, query)
+                if debug is not None:
+                    dist = _doc_distribution_stats(final_docs)
+                    debug["final_chunks"] = len(final_docs)
+                    debug["final_unique_docs"] = dist["unique_docs"]
+                    debug["final_top_doc_share"] = round(
+                        float(dist["top_doc_share"]), 4
+                    )
+                    debug["final_top_doc_source"] = dist["top_doc_source"]
+                return final_docs
+        except Exception:
+            if debug is not None:
+                debug["used_keyword_fallback"] = True
+                debug["fallback_reason"] = "search_exception"
+            return _keyword_fallback(
+                query,
+                course_id,
+                folder_paths,
+                material_ids,
+                k,
+                corpus=corpus_fallback,
+                debug=debug,
+            )
+
         if debug is not None:
             debug["used_keyword_fallback"] = True
-            debug["fallback_reason"] = "search_exception"
+            debug["fallback_reason"] = "no_candidates"
         return _keyword_fallback(
             query,
             course_id,
@@ -674,19 +704,6 @@ def search_with_embeddings(
             corpus=corpus_fallback,
             debug=debug,
         )
-
-    if debug is not None:
-        debug["used_keyword_fallback"] = True
-        debug["fallback_reason"] = "no_candidates"
-    return _keyword_fallback(
-        query,
-        course_id,
-        folder_paths,
-        material_ids,
-        k,
-        corpus=corpus_fallback,
-        debug=debug,
-    )
 
 
 def _keyword_fallback(
