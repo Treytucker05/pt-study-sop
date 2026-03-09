@@ -266,6 +266,12 @@ import dashboard.api_tutor_sessions  # noqa: E402,F401 — registers routes on t
 # ---------------------------------------------------------------------------
 import dashboard.api_tutor_artifacts  # noqa: E402,F401 — registers routes on tutor_bp
 
+# ---------------------------------------------------------------------------
+# Accuracy feedback loop  (extracted to api_tutor_accuracy.py)
+# ---------------------------------------------------------------------------
+from dashboard.api_tutor_accuracy import _init as _init_accuracy  # noqa: E402
+_init_accuracy(tutor_bp)
+
 
 # ===========================================================================
 # Config & utility routes  (kept in this module)

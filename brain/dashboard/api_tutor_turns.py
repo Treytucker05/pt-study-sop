@@ -1696,6 +1696,45 @@ def send_turn(session_id: str):
                     (session_id,),
                 )
 
+            # Gap 9: Log retrieval accuracy data for feedback loop
+            try:
+                _acc_confidence = None
+                _acc_source_count = 0
+                _acc_chunk_count = 0
+                try:
+                    _rd = retrieval_debug_payload
+                    if isinstance(_rd, dict):
+                        _acc_confidence = _rd.get(
+                            "retrieval_confidence_tier"
+                        )
+                        _acc_source_count = int(
+                            _rd.get("retrieved_material_unique_sources", 0)
+                        )
+                        _acc_chunk_count = int(
+                            _rd.get("retrieved_material_chunks", 0)
+                        )
+                except NameError:
+                    pass
+
+                cur.execute(
+                    """INSERT INTO tutor_accuracy_log
+                       (session_id, turn_number, topic,
+                        retrieval_confidence, source_count,
+                        chunk_count, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        session_id,
+                        turn_number,
+                        session.get("topic"),
+                        _acc_confidence,
+                        _acc_source_count,
+                        _acc_chunk_count,
+                        now,
+                    ),
+                )
+            except Exception as _acc_exc:
+                _LOG.debug("Accuracy log insert failed: %s", _acc_exc)
+
             db_conn.commit()
             db_conn.close()
         except Exception:

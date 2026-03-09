@@ -2090,11 +2090,37 @@ def init_database():
     cursor.execute("DROP TABLE IF EXISTS topics")
     cursor.execute("DROP INDEX IF EXISTS idx_topics_course")
 
+    # ------------------------------------------------------------------
+    # Tutor Accuracy Feedback Loop (Gap 9)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_accuracy_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            turn_number INTEGER,
+            topic TEXT,
+            retrieval_confidence TEXT,
+            source_count INTEGER,
+            chunk_count INTEGER,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_accuracy_log_session
+        ON tutor_accuracy_log(session_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_tutor_accuracy_log_topic
+        ON tutor_accuracy_log(topic)
+    """)
+
     conn.commit()
     conn.close()
 
     print(f"[OK] Database initialized at: {DB_PATH}")
-    print("[OK] Schema version: 9.5 + video enrichment API usage")
+    print("[OK] Schema version: 9.6 + tutor accuracy feedback loop")
 
 
 def migrate_method_categories():
