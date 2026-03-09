@@ -4,6 +4,7 @@ import {
   Send,
   Loader2,
   SlidersHorizontal,
+  Square,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -82,6 +83,7 @@ export function TutorChat({
     setInput,
     isStreaming,
     sendMessage,
+    streamAbortRef,
   } = useSSEStream({
     sessionId,
     selectedMaterialIds,
@@ -98,6 +100,12 @@ export function TutorChat({
     deepThinkOn,
     geminiVisionOn,
   });
+
+  // ── Abort streaming ──────────────────────────────────────────────────────
+  const abortStream = useCallback(() => {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
+  }, [streamAbortRef]);
 
   // ── Auto-scroll to bottom ─────────────────────────────────────────────────
   useEffect(() => {
@@ -373,18 +381,25 @@ export function TutorChat({
               disabled={isStreaming}
               className={`flex-1 min-w-[180px] ${INPUT_BASE} disabled:opacity-50 shadow-none`}
             />
-            <Button
-              onClick={sendMessage}
-              disabled={!input.trim() || isStreaming}
-              aria-label="Send message"
-              className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0 shrink-0"
-            >
-              {isStreaming ? (
-                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-              ) : (
+            {isStreaming ? (
+              <Button
+                onClick={abortStream}
+                aria-label="Stop generating"
+                title="Stop generating"
+                className="rounded-none border-[3px] border-double border-destructive h-11 w-11 p-0 shrink-0 hover:bg-destructive/20"
+              >
+                <Square className="w-5 h-5 mx-auto text-destructive" />
+              </Button>
+            ) : (
+              <Button
+                onClick={sendMessage}
+                disabled={!input.trim()}
+                aria-label="Send message"
+                className="rounded-none border-[3px] border-double border-primary h-11 w-11 p-0 shrink-0"
+              >
                 <Send className="w-5 h-5 mx-auto" />
-              )}
-            </Button>
+              </Button>
+            )}
           </div>
         </div>
       </div>

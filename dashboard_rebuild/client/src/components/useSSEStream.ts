@@ -386,6 +386,17 @@ export function useSSEStream(options: UseSSEStreamOptions): UseSSEStreamReturn {
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
+        setMessages((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (!last || last.role !== "assistant") return prev;
+          updated[updated.length - 1] = {
+            ...last,
+            content: last.content || "(stopped)",
+            isStreaming: false,
+          };
+          return updated;
+        });
         return;
       }
       setMessages((prev) => {
