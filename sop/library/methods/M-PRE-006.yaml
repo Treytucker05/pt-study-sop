@@ -100,3 +100,22 @@ gating_rules:
 - Do not assess or score the learner in PRIME.
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: notes
+allowed_moves:
+- Scan structural cues only (headings, subheadings, bold terms, diagrams)
+- Extract 3-5 top pillars representing conceptual buckets
+- Map one-line structural descriptors under each pillar
+- Link pillars to module objective IDs when available
+- Flag unlinked pillars for follow-up
+- Orient the learner to material structure before detail reading
+forbidden_moves:
+- Score, grade, or assess the learner
+- Summarize full paragraphs or detailed content
+- Teach new detailed content beyond structural signals
+- Exceed pillar_count cap
+- Run quizzes, retrieval prompts, or correctness judgments
+- Provide explanatory text instead of structural descriptors
+- Drift into content analysis rather than structural skimming
+required_outputs:
+- PillarMap (3-5 pillars with structural descriptors)
+- ObjectiveLinks (pillar-to-objective mapping)
+- FollowUpTargets list

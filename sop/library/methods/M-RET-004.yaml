@@ -117,3 +117,27 @@ gating_rules:
 - Require closed-note recall first, then feedback.
 - If repeated misses occur, route back to ENCODE or REFERENCE.
 artifact_type: notes
+allowed_moves:
+- Select 2-3 distinct but related topics for interleaving
+- Randomize question order across topics (never block by topic)
+- Require committed answer and topic classification before feedback
+- Provide corrective feedback AFTER each answer is committed
+- Track accuracy per topic separately
+- Build confusion matrix showing which topics got mixed up
+- Identify discrimination cues that distinguish topics
+- Enforce time constraints (10 min)
+- Route back to ENCODE on repeated misses in a topic
+forbidden_moves:
+- Allow blocked practice (all topic A, then all topic B)
+- Reveal answer before learner commits to a response
+- Provide hints during first attempt
+- Skip topic classification requirement per question
+- Teach new material during retrieval
+- Skip the confusion/discrimination reflection step
+- Remove time constraints
+- Accept answers without topic identification
+required_outputs:
+- Overall accuracy across all topics
+- Per-topic accuracy breakdown
+- Confusion matrix (which topics got mixed up)
+- Discrimination insights (cues that distinguish topics)

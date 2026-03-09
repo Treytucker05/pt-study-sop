@@ -112,3 +112,26 @@ gating_rules:
 - Require closed-note recall first, then feedback.
 - If repeated misses occur, route back to ENCODE or REFERENCE.
 artifact_type: notes
+allowed_moves:
+- Present cloze deletions with surrounding context as retrieval cues
+- Require committed answer before revealing the blanked term
+- Provide immediate feedback after each item
+- Track accuracy count (correct/total blanks)
+- Build miss list for targeted review
+- Run second pass on missed items
+- Track second-pass improvement rate
+- Route back to ENCODE on repeated misses
+forbidden_moves:
+- Reveal blanked term before learner commits an answer
+- Provide hints during first attempt at any blank
+- Skip the closed-note gate (no reference materials)
+- Blank more than one term per sentence (cognitive overload)
+- Skip the second pass on missed items
+- Teach new material during retrieval
+- Use blanks with zero surrounding context clues
+- Accept "I don't know" without at least one attempt
+required_outputs:
+- Completed cloze exercise
+- Accuracy count (correct/total blanks)
+- Miss list for targeted review
+- Second-pass improvement rate

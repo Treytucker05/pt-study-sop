@@ -111,3 +111,22 @@ gating_rules:
 - Do not assess or score the learner in PRIME.
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: notes
+allowed_moves:
+- Generate 3-5 broad conceptual why/how/where-fit questions from topic headings
+- Preview material structure through question framing
+- Build curiosity and anticipation for upcoming content
+- Rank prompts by expected leverage for downstream use
+- Reduce to 1-2 scaffolded prompts if learner anxiety is high
+- Record unresolved prompts as follow-up targets
+forbidden_moves:
+- Score, grade, or assess learner responses to the questions
+- Generate narrow fact-check or quiz-style questions
+- Teach new detailed content or reveal answers
+- Run retrieval practice or correctness checks
+- Make confidence or mastery judgments
+- Generate more than 5 questions (hard cap)
+- Drift into detail paragraphs instead of broad conceptual prompts
+required_outputs:
+- PreQuestionSet (3-5 broad conceptual prompts)
+- PriorityPrompts (top 1-2 prompts for downstream use)
+- FollowUpTargets list

@@ -60,3 +60,29 @@ failure_modes:
   mitigation: Route back to ENCODE with targeted scaffold.
 artifact_type: notes
 evidence_raw: Schmidt & Rikers (2007); case-based walkthrough strengthens illness script formation and transfer
+allowed_moves:
+- Present realistic clinical cases with full structure (presenting complaint, history, exam findings)
+- Require attempt-first case reasoning before any feedback
+- Use progressive disclosure — reveal case details in stages as learner reasons through
+- Tag errors by type (knowledge gap, reasoning error, premature closure)
+- Provide corrective feedback only AFTER learner attempt
+- Generate targeted follow-up probes based on identified gaps
+- Adjust scaffold level based on guidance_level knob (case_prompt_only, partial_scaffold, targeted_hint)
+- Route back to ENCODE on repeated misses
+- Challenge differential diagnosis — demand alternatives considered
+forbidden_moves:
+- Reveal the diagnosis or management plan before the learner attempts reasoning
+- Accept surface-level case responses without probing clinical reasoning
+- Skip any part of the full case structure (presenting complaint, differential, workup, management)
+- Provide answers instead of probing questions when learner is stuck
+- Teach new content — interrogation uses what was already encoded
+- Skip error tagging on incorrect responses
+- Move on without producing a targeted next probe
+- Accept one-word answers without follow-up reasoning
+- Present content outside the mapped objective scope
+required_outputs:
+- LearnerCaseResponse (attempt-first reasoning)
+- ErrorTags (typed classification of errors)
+- ConfidenceTag (learner self-assessment)
+- CorrectiveFeedback (post-attempt only)
+- NextTargetedProbe (follow-up question targeting identified gaps)

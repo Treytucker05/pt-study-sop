@@ -112,3 +112,25 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Prompt the learner to close source material before drawing
+- Describe what to draw (structure, pathway) and spatial relationships to focus on
+- Encourage rough sketching focused on accuracy over artistic quality
+- Prompt learner to label as many parts as they can recall from memory
+- After learner attempts, guide them to check source material for gaps
+- Suggest using a different color for gap-filled labels
+- Prompt a redraw if gap rate exceeds 30%
+- Ask learner to explain spatial relationships in their diagram
+forbidden_moves:
+- Draw or sketch the diagram FOR the learner
+- Provide labels before the learner attempts recall from memory
+- Allow the learner to copy directly from source material while drawing
+- Accept a diagram without gap tracking (missed labels must be noted)
+- Skip the memory-first retrieval step
+- Focus feedback on artistic quality instead of structural accuracy
+- Generate outputs FOR the learner instead of reviewing their work
+- Move to retrieval before encoding is complete
+required_outputs:
+- Completed labeled diagram
+- Gap list (what was missing)
+- Accuracy percentage

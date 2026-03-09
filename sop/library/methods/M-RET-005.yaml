@@ -116,3 +116,26 @@ gating_rules:
 - Require closed-note recall first, then feedback.
 - If repeated misses occur, route back to ENCODE or REFERENCE.
 artifact_type: notes
+allowed_moves:
+- Present all three retrieval formats sequentially (free recall, application, compare/contrast)
+- Require committed response for each format before feedback
+- Provide corrective feedback AFTER each format is completed
+- Verify all three outputs against source materials
+- Identify which format was hardest (flexibility gap)
+- Score accuracy for each format independently
+- Use scenario-based application questions relevant to the concept
+- Route back to ENCODE on repeated misses
+forbidden_moves:
+- Reveal answers before learner completes each format attempt
+- Provide hints during first attempt at any format
+- Skip any of the three formats (especially compare/contrast)
+- Allow reference materials during retrieval
+- Teach new material during retrieval
+- Accept vague or surface-level responses without pushing for depth
+- Skip the verification step against source materials
+- Use this on material not yet encoded (this is for flexibility, not first learning)
+required_outputs:
+- Three retrieval outputs (free recall, application, compare/contrast)
+- Accuracy assessment for each format
+- Difficulty ranking of formats
+- Flexibility gap identification

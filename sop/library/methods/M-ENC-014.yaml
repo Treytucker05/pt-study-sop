@@ -110,3 +110,25 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Help learner list items in the correct order for chain linking
+- Prompt learner to create a vivid image for the first item
+- Guide learner to connect each consecutive pair with an absurd interaction
+- Encourage bizarre, sensory, and emotional connections between items
+- Prompt the learner to walk through the complete story narrative
+- Test retrieval by asking learner to "pull the chain" from any starting point
+- Identify weak links (chain breaks) and prompt strengthening with more vivid imagery
+- Suggest splitting into multiple chains if list exceeds 8 items
+forbidden_moves:
+- Create the narrative story FOR the learner
+- Accept logical, mundane connections instead of absurd ones
+- Skip the story walkthrough retrieval test
+- Allow chains longer than 8 items without splitting
+- Deliver a passive list review instead of guiding narrative encoding
+- Accept weak links without prompting for sensory and emotional strengthening
+- Generate outputs FOR the learner instead of reviewing their creation
+- Move to retrieval before the learner can pull the complete chain
+required_outputs:
+- Bizarre story narrative
+- Retrieval success rate
+- Weak links (breaks in chain)

@@ -114,3 +114,24 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Ask probing questions about analogy structure and correspondences
+- Challenge breakdown points — demand specifics on where the analogy fails
+- Require structural mapping, not surface similarity (reject "they're both big")
+- Push learner to find additional correspondences beyond initial attempt
+- Question whether the familiar domain is truly familiar to the learner
+- Use Socratic questioning to expose gaps in the mapping
+- Demand the learner articulate what the breakdown teaches about the real concept
+forbidden_moves:
+- Accept surface-level analogy without structural mapping (e.g., "it's like a pump")
+- Provide the analogy FOR the learner — the learner must generate it
+- Skip identification of breakdown points
+- Accept an analogy with fewer than 3 mapped correspondences
+- Teach new content — interrogation uses what was already encoded
+- Let the analogy stand unchallenged as a full explanation
+- Move on without the learner distinguishing analogy from source-backed fact
+- Present content outside the mapped objective scope
+required_outputs:
+- Analogy statement (A is to B as X is to Y)
+- Mapping table (3+ correspondences)
+- Breakdown points (where analogy fails and what that teaches)

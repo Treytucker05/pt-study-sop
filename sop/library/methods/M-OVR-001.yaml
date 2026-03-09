@@ -117,3 +117,25 @@ gating_rules:
 - Run only after stable retrieval performance.
 - Stop after cap is met to avoid burnout loops.
 artifact_type: notes
+allowed_moves:
+- Prompt all three exit ticket questions in sequence
+- Require specific, concrete answers (not generic responses)
+- Push for specificity on muddy points (transform into actionable questions)
+- Verify next action passes the "could I do this in 15 min?" test
+- Review blurt against session materials for completeness
+- Convert muddy points into specific questions for next session
+- Log exit ticket to session record
+forbidden_moves:
+- Accept generic answers ("I learned a lot", "study more")
+- Skip any of the three mandatory questions
+- Accept a vague next action that fails the 15-minute test
+- Skip the muddy point question (something is always muddy)
+- Introduce new material not covered in the session
+- Generate the exit ticket FOR the learner without their input
+- Accept "nothing is muddy" without brief verification
+required_outputs:
+- Exit ticket (all 3 questions answered)
+- Key takeaways list (3-5 specific items)
+- Muddy points or weak anchors identified
+- Next action commitment (specific and actionable)
+- Questions for next session

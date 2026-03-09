@@ -88,3 +88,25 @@ failure_modes:
 - mode: Repeated misses
   mitigation: Route back to ENCODE with targeted scaffold.
 artifact_type: notes
+allowed_moves:
+- Run short timed sets with strict per-item clocks
+- Record time_to_answer for each item
+- Mark misses at >45 seconds and move on
+- Capture accuracy and confidence together per item
+- Provide corrective feedback AFTER each attempt
+- Push misses to ErrorLog with Speed tag when latency is limiting factor
+- Track latency patterns across items
+- Route back to ENCODE on repeated misses
+forbidden_moves:
+- Reveal answer before learner commits a response
+- Provide hints during first attempt
+- Remove or extend per-item time constraints
+- Skip latency recording for any item
+- Teach new material during retrieval
+- Accept "I don't know" without at least one timed attempt
+- Skip ErrorLog updates for misses and speed failures
+- Sacrifice accuracy tracking for speed-only metrics
+required_outputs:
+- Timed sprint result set with per-item accuracy
+- Latency log (time_to_answer per item)
+- ErrorLog updates (misses and speed failures tagged)

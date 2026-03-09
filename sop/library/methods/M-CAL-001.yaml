@@ -89,6 +89,29 @@ primary_citations:
 - Kornell et al. (2009)
 - Roediger and Karpicke (2006)
 evidence_raw: Pretesting and retrieval attempts improve downstream encoding and retention.
+allowed_moves:
+- Run 2-5 scored items within hard 5-minute cap
+- Require one best-attempt response per item before hints or answer reveal
+- Capture per-item correctness, latency, and confidence
+- Provide minimal hint only after failed first attempt
+- Compute quick readiness snapshot (accuracy, calibration gap, dominant error class)
+- Keep all items constrained to active objective scope
+- Mark miss and move on if single item stalls the block
+- Replace out-of-scope items with objective-linked items
+forbidden_moves:
+- Reveal full answer before learner attempt
+- Provide hints before first attempt on any item
+- Exceed 5-minute hard time cap
+- Present items outside active objective scope
+- Switch into teaching mode during calibration
+- Skip confidence capture for any item
+- Teach or explain content deeply (this is diagnostic only)
+- Run more than 5 items (scope is 2-5)
+required_outputs:
+- CalibrateItemResults (per-item correctness, latency, confidence)
+- ReadinessSnapshot (accuracy summary)
+- CalibrationGapSummary (predicted vs actual gap)
+- DominantErrorSeed (highest-frequency error class)
 facilitation_prompt: 'You are running M-CAL-001 (Micro Precheck) in CALIBRATE stage.
 
   This is a scored baseline, but still brief and low-friction.

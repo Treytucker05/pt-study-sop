@@ -109,3 +109,25 @@ gating_rules:
 - Require closed-note recall first, then feedback.
 - If repeated misses occur, route back to ENCODE or REFERENCE.
 artifact_type: notes
+allowed_moves:
+- Present realistic clinical scenarios with specific patient characteristics
+- Ask probing questions about presentation, testing, and intervention
+- Demand clinical reasoning rationale — WHY this treatment for THIS patient
+- Challenge incomplete assessments (require at least 2 tests/assessments)
+- Push for differential diagnosis consideration
+- Require closed-note attempt before providing any feedback
+- Route back to ENCODE or REFERENCE on repeated misses
+- Test edge cases (comorbidities, contraindications, atypical presentations)
+forbidden_moves:
+- Accept generic or abstract application without specific patient context
+- Provide answers before the learner attempts clinical reasoning
+- Skip the assessment/testing phase of the clinical walkthrough
+- Accept treatment plans without explicit rationale
+- Use abstract theory instead of realistic clinical context
+- Move on when any of the three questions (present, test, treat) is unanswered
+- Accept one-word or surface-level clinical answers without probing deeper
+- Present content outside the mapped objective scope
+required_outputs:
+- Clinical application narrative with specific patient characteristics
+- Presentation, testing, and intervention summary (all three addressed)
+- Verification notes (errors flagged against source material)

@@ -115,3 +115,25 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: flowchart
+allowed_moves:
+- Help learner identify the start point (input/trigger) of the process
+- Prompt learner to list steps in sequential order including decision points
+- Guide use of standard flowchart conventions (boxes for steps, diamonds for decisions)
+- Prompt learner to label decision branches (Yes/No, High/Low)
+- Ask learner to identify loops and feedback points in the process
+- Prompt source verification of the completed flowchart
+- Suggest splitting into sub-processes if diagram exceeds 12 steps
+- Provide Mermaid syntax guidance if using dashboard editor
+forbidden_moves:
+- Sequence the flowchart steps FOR the learner
+- Draw the flowchart without learner involvement in step ordering
+- Accept decision diamonds without labeled branch paths
+- Skip loop and feedback point identification
+- Allow linear-only thinking without exploring branching paths
+- Skip source material verification of the completed flowchart
+- Deliver a passive process description instead of guiding chart construction
+- Move to retrieval before the flowchart is verified
+required_outputs:
+- Completed flowchart
+- Decision point list
+- Loop/feedback points identified

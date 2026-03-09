@@ -86,3 +86,25 @@ failure_modes:
   mitigation: Rewrite targets into explicit prompts/answers.
 - mode: Reference bloat
   mitigation: Trim to objective-critical content only.
+allowed_moves:
+- Generate 10-20 retrieval questions tied to specific objective IDs
+- Tag each question with assessment mode and objective_id
+- Include application and analysis level questions, not just factual recall
+- Mark high-risk confusable items for adversarial drills
+- Ensure coverage across all mapped objectives
+- Build questions that test discrimination between confusable concepts
+- Create questions that feed directly into RETRIEVE stage
+- Consolidate from anchor artifacts and objectives
+forbidden_moves:
+- Accept fewer than 10 or more than 20 questions in the seed bank
+- Generate only factual recall questions — must include application/analysis level
+- Skip mode-tagging or objective-tagging on any question
+- Generate the question bank FOR the learner without their input on content focus
+- Skip artifact creation — the question bank seed IS the output
+- Accept vague questions that cannot be objectively scored
+- Introduce entirely new content not yet encoded
+- Skip coverage check across objectives
+- Accept questions outside the mapped objective scope
+required_outputs:
+- Question Bank Seed (10-20 items, each mode-tagged and objective-tagged)
+- Coverage check draft (confirming all objectives have at least one question)

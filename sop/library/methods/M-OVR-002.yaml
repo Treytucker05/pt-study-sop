@@ -121,3 +121,27 @@ facilitation_prompt: 'You are running M-OVR-002 (Anki Card Draft) in OVERLEARN s
 
   '
 artifact_type: cards
+allowed_moves:
+- Guide learner to identify 3-5 highest-value concepts from session
+- Help choose card format per concept (cloze for facts/vocab, basic for why/process)
+- Enforce single-fact-per-card rule
+- Require exact label format (CARD N, TYPE, FRONT, BACK, TAGS)
+- Add context tags (topic, source, date) to each card
+- Split double-barreled cards into separate cards
+- Simplify overly complex cards (if answer takes >10s to recall)
+- Stage cards for Anki sync via Brain
+forbidden_moves:
+- Accept double-barreled cards (multiple facts per card)
+- Accept cards for material not yet understood (cards are for retention, not learning)
+- Output anything other than canonical CARD blocks (no prose, no markdown tables, no JSON)
+- Accept fewer than 3 cards
+- Accept more than 5 cards
+- Skip TYPE, FRONT, BACK, or TAGS labels on any card
+- Create cards with essay-length answers
+- Teach or explain new content during card drafting
+- Skip the final format check before submit
+required_outputs:
+- 3-5 drafted Anki cards in canonical CARD block format
+- Each card tagged by topic and source
+- Cards staged in Brain for Anki sync
+- Card count logged to session record

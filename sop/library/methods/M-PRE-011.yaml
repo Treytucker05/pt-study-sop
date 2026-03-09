@@ -115,3 +115,24 @@ facilitation_prompt: |
 
   This is a non-assessment activity. Do not quiz or score the learner.
   This is orientation-level encoding, not retrieval.
+allowed_moves:
+- Prompt the learner to hand-draw a spatial mind map on paper
+- Guide central concept placement and branch structure
+- Encourage use of own words, simple pictures, colors, and spatial positioning
+- Prompt eyes-closed spatial recall of the map layout
+- Confirm map structure (central concept + branch count)
+- Enforce the 5-minute time cap and speed-over-beauty principle
+- Suggest broader categories if learner is stuck on branches
+forbidden_moves:
+- Generate or draw the map for the learner (learner must draw it themselves)
+- Score, grade, or assess the learner's map quality
+- Allow verbatim copying from source material
+- Exceed 5-minute time cap per block
+- Allow more than 2 hand-draw blocks per session
+- Skip the eyes-closed spatial recall step
+- Turn the activity into detailed note-taking or full rewriting
+- Provide artistic feedback on drawing quality
+required_outputs:
+- Hand-drawn spatial mind map (physical artifact, confirmed by learner)
+- Spatial recall confidence (can learner see layout with eyes closed?)
+- Time spent confirmation (within 5-minute cap)

@@ -125,3 +125,24 @@ gating_rules:
 - Force active processing (explain, transform, or map), not passive reading.
 - Keep output scoped to mapped objectives only.
 artifact_type: notes
+allowed_moves:
+- Explain concept function in one clear sentence before hook building begins
+- Guide learner through each of the 6 gated steps in order
+- Suggest phonetic cues or rhymes if learner is stuck on Sound step
+- Prompt learner to create their own vivid image (do not create it for them)
+- Use Socratic questioning to deepen personal connection at Entwine step
+- Provide scaffold hints at any step if learner is stuck for >30 seconds
+- Confirm resonance by asking learner to articulate why the hook clicks
+- Connect hook to prior knowledge or related concepts
+forbidden_moves:
+- Skip any of the 6 gated steps or allow out-of-order execution
+- Create the hook image or mnemonic FOR the learner
+- Accept "I understand" without the learner demonstrating resonance
+- Move to Lock step without explicit resonance confirmation
+- Present hook-derived associations as source-material facts
+- Deliver a passive lecture about the term instead of guiding hook creation
+- Present information outside the objective scope
+- Proceed to retrieval practice before encoding is complete
+required_outputs:
+- KWIK hook (sound-function-image triplet)
+- Session log entry

@@ -92,3 +92,22 @@ gating_rules:
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: notes
 evidence_raw: Ausubel (1968); Bjork & Bjork (2011); prior knowledge activation strengthens subsequent encoding
+allowed_moves:
+- Activate prior knowledge through free recall of existing notes
+- Ask learner to write what they already remember (60-120 seconds)
+- Extract anchor nodes that align with objective targets
+- Flag missing nodes as follow-up anchors non-judgmentally
+- Connect recalled concepts to upcoming learning objectives
+- Use supportive synthesis tone throughout
+forbidden_moves:
+- Score, grade, or make mastery/confidence judgments
+- Teach new detailed content or provide explanations
+- Reveal full answers or solutions
+- Run on first-contact content with no prior notes or North Star context
+- Run quizzes or retrieval tests
+- Correct the learner's recall as right or wrong
+- Lecture or provide extended explanations
+required_outputs:
+- StrongConnections list
+- MissingNodes list
+- FollowUpTargets list

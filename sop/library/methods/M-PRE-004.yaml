@@ -106,3 +106,22 @@ gating_rules:
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: notes
 evidence_raw: Ausubel (1960); Luiten et al. (1980); advance organizers facilitate subsumption of new material
+allowed_moves:
+- Present a top-down framework from most inclusive concept downward
+- Extract 3-5 pillar concepts that subsume upcoming details
+- Add one sub-branch per pillar (max depth 2)
+- Add one comparative link to prior knowledge per pillar
+- Orient the learner to upcoming content structure
+- Use concise bridge statements to connect pillars to known material
+forbidden_moves:
+- Score, grade, or assess the learner
+- Include leaf-level memorization details or trivia
+- Teach new detailed content beyond structural framing
+- Exceed depth of 2 levels in the hierarchy
+- Run quizzes, retrieval prompts, or correctness checks
+- Lecture at length or provide paragraph explanations
+- Exceed 5 pillars
+required_outputs:
+- PillarTree (3-5 pillars, max depth 2)
+- PriorKnowledgeLinks (one bridge per pillar)
+- StructuralHypotheses

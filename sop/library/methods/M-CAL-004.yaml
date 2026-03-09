@@ -81,6 +81,25 @@ gating_rules:
 - Diagnostic only — do not teach or explain content.
 - Stay at narrative/story level, not item level.
 artifact_type: notes
+allowed_moves:
+- Ask learner to rate story-level confidence on configured scale (1-3 or HML)
+- Ask where the narrative breaks down or gets fuzzy
+- Tag fuzzy areas as priority targets for deeper encoding
+- Use brief retell prompt (2 sentences) to verify confidence accuracy
+- Recalibrate if learner claims full understanding but cannot retell story arc
+- Keep interaction under 2-minute hard cap
+forbidden_moves:
+- Present item-level quiz questions (story-level confidence only)
+- Teach or explain content during calibration (diagnostic only)
+- Break narrative immersion with detail-level assessment
+- Skip confidence capture before any corrective feedback
+- Exceed 2-minute hard cap
+- Turn this into a quiz or pretest
+- Provide corrective feedback on story content (capture only)
+required_outputs:
+- Story confidence rating (1-3 scale)
+- Fuzzy zones list (narrative breakdown points)
+- Priority encoding targets (focus areas for ENCODE phase)
 facilitation_prompt: |
   You are running M-CAL-004 (Story Confidence Tag) in CALIBRATE stage.
   Capture narrative-level confidence after the big-picture overview.

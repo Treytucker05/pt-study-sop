@@ -135,3 +135,24 @@ failure_modes:
 - mode: Drift into testing
   mitigation: Return to orientation-only behavior.
 artifact_type: notes
+allowed_moves:
+- Extract structural spine nodes from source material (high-signal nodes only)
+- Link every node to at least one learning objective
+- Mark unknown or low-confidence nodes as orientation markers
+- Resolve objective scope (module_all or single_focus)
+- Remove unlinked nodes when objective_link_required is true
+- Exclude trivia nodes in favor of mechanism/decision nodes
+- Organize structure using configured output_format (ascii_tree default)
+forbidden_moves:
+- Score, grade, or run retrieval checks on the learner
+- Teach detailed content or provide in-depth explanations
+- Reveal full answers or solutions
+- Exceed node_cap (10 default)
+- Emit scored probes or retrieval grading
+- Run without objective context (must have M-PRE-010 or North Star first)
+- Include trivia or leaf-level memorization nodes
+required_outputs:
+- StructuralSpine (node count within node_cap, high-signal nodes only)
+- Objective linkage map (every node linked to at least one objective)
+- UnknownNodeList (orientation gaps, not scores)
+- PriorityNodes list

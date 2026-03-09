@@ -114,3 +114,23 @@ gating_rules:
 - Do not assess or score the learner in PRIME.
 - Stay at orientation level and avoid full solution reveal.
 artifact_type: notes
+allowed_moves:
+- Map known concepts to the new topic via connection mapping
+- Ask learner to list 3-5 related concepts they already know
+- Draw arrows showing relationships between concepts (causes, part of, similar to)
+- Identify the strongest connection as primary anchoring schema
+- Note prerequisite gaps non-judgmentally
+- Connect to previously learned material from any course
+- Prompt with broader categories if no connections found
+forbidden_moves:
+- Score, grade, or assess connection quality
+- Run on first-contact content with no prior notes or North Star context
+- Teach new detailed content or explain the topic
+- Reveal full answers or solutions
+- Run retrieval grading or correctness checks
+- Make confidence or mastery judgments
+- Spend excessive time perfecting the visual map (text list is acceptable)
+required_outputs:
+- Connection map (topic + related concepts with labeled links)
+- Primary anchoring schema identified
+- Prerequisite gap list
