@@ -1068,6 +1068,28 @@ def _recommended_mode_flags(material_ids: list[int]) -> dict[str, bool]:
     }
 
 
+def _normalize_default_mode(raw_mode: Any, *, material_ids: Optional[list[int]] = None) -> dict[str, bool]:
+    normalized: dict[str, bool] = {}
+    if isinstance(raw_mode, dict):
+        for key in ("materials", "obsidian", "web_search", "deep_think", "gemini_vision"):
+            if key in raw_mode:
+                normalized[key] = bool(raw_mode.get(key))
+    if material_ids and "materials" not in normalized:
+        normalized["materials"] = True
+    return normalized
+
+
+def _normalize_force_full_docs(
+    raw_flag: Any,
+    *,
+    material_ids: Optional[list[int]] = None,
+) -> bool:
+    count = len(material_ids or [])
+    if count > 0:
+        return count <= 2
+    return bool(raw_flag) if isinstance(raw_flag, bool) else False
+
+
 def _parse_existing_map_of_contents_objectives(content: str) -> dict[str, str]:
     parsed: dict[str, str] = {}
     for line in (content or "").splitlines():
@@ -1893,6 +1915,15 @@ def _resolve_tutor_preflight(
     )
     material_ids = _normalize_material_ids(normalized_filter.get("material_ids")) or []
     normalized_filter["material_ids"] = material_ids
+    default_mode = _normalize_default_mode(
+        normalized_filter.get("default_mode"), material_ids=material_ids
+    )
+    if default_mode:
+        normalized_filter["default_mode"] = default_mode
+    normalized_filter["force_full_docs"] = _normalize_force_full_docs(
+        normalized_filter.get("force_full_docs"),
+        material_ids=material_ids,
+    )
     source_ids = _normalize_material_ids(data.get("source_ids")) or material_ids
     if source_ids:
         normalized_filter["source_ids"] = source_ids
@@ -4471,6 +4502,16 @@ def create_session():
             normalized_filter["material_ids"] = (
                 _normalize_material_ids(normalized_filter.get("material_ids")) or []
             )
+        default_mode = _normalize_default_mode(
+            normalized_filter.get("default_mode"),
+            material_ids=normalized_filter.get("material_ids"),
+        )
+        if default_mode:
+            normalized_filter["default_mode"] = default_mode
+        normalized_filter["force_full_docs"] = _normalize_force_full_docs(
+            normalized_filter.get("force_full_docs"),
+            material_ids=normalized_filter.get("material_ids"),
+        )
         content_filter = normalized_filter
     else:
         content_filter = None
@@ -4631,6 +4672,16 @@ def create_session():
         content_filter["material_ids"] = (
             _normalize_material_ids(content_filter.get("material_ids")) or []
         )
+    default_mode = _normalize_default_mode(
+        content_filter.get("default_mode"),
+        material_ids=content_filter.get("material_ids"),
+    )
+    if default_mode:
+        content_filter["default_mode"] = default_mode
+    content_filter["force_full_docs"] = _normalize_force_full_docs(
+        content_filter.get("force_full_docs"),
+        material_ids=content_filter.get("material_ids"),
+    )
     if source_ids:
         content_filter["source_ids"] = source_ids
     if map_of_contents_refresh:
@@ -5210,6 +5261,11 @@ def send_turn(session_id: str):
     if "material_ids" in content_filter:
         material_ids = _normalize_material_ids(content_filter.get("material_ids"))
         content_filter["material_ids"] = material_ids or []
+    force_full_docs = _normalize_force_full_docs(
+        content_filter.get("force_full_docs"),
+        material_ids=material_ids,
+    )
+    content_filter["force_full_docs"] = force_full_docs
     material_k = _resolve_material_retrieval_k(material_ids, accuracy_profile)
     # Explicit material selection should override course scoping.
     retrieval_course_id = None if material_ids else session.get("course_id")
@@ -5309,6 +5365,7 @@ def send_turn(session_id: str):
                 material_ids=material_ids,
                 module_prefix=module_prefix or None,
                 k_materials=effective_material_k,
+                force_full_docs=force_full_docs,
             )
             rag_debug = ctx["debug"]
 

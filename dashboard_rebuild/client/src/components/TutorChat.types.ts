@@ -41,6 +41,7 @@ export interface TutorChatProps {
   courseId?: number;
   availableMaterials: Material[];
   selectedMaterialIds: number[];
+  defaultMaterialsOn?: boolean;
   accuracyProfile: TutorAccuracyProfile;
   onAccuracyProfileChange: (profile: TutorAccuracyProfile) => void;
   onSelectedMaterialIdsChange: (ids: number[]) => void;

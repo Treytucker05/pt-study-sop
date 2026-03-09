@@ -33,6 +33,7 @@ export function TutorChat({
   courseId,
   availableMaterials,
   selectedMaterialIds,
+  defaultMaterialsOn = false,
   accuracyProfile,
   onAccuracyProfileChange,
   onSelectedMaterialIdsChange,
@@ -59,11 +60,12 @@ export function TutorChat({
   const [northStarSummary, setNorthStarSummary] = useState<NorthStarSummary | null>(null);
 
   // ── Speed tier toggles — all off = chat-only (codex-spark, no RAG) ────────
-  const [materialsOn, setMaterialsOn] = useState(false);
+  const [materialsOn, setMaterialsOn] = useState(defaultMaterialsOn);
   const [obsidianOn, setObsidianOn] = useState(false);
   const [webSearchOn, setWebSearchOn] = useState(false);
   const [deepThinkOn, setDeepThinkOn] = useState(false);
   const [geminiVisionOn, setGeminiVisionOn] = useState(false);
+  const [materialsOverrideActive, setMaterialsOverrideActive] = useState(false);
 
   // ── Behavior override ─────────────────────────────────────────────────────
   const [behaviorOverride, setBehaviorOverride] = useState<BehaviorOverride | null>(null);
@@ -113,6 +115,16 @@ export function TutorChat({
     inputRef.current?.focus();
   }, [sessionId]);
 
+  useEffect(() => {
+    setMaterialsOverrideActive(false);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!materialsOverrideActive) {
+      setMaterialsOn(defaultMaterialsOn);
+    }
+  }, [defaultMaterialsOn, materialsOverrideActive]);
+
   // ── Persist vault paths ───────────────────────────────────────────────────
   useEffect(() => {
     try {
@@ -130,11 +142,20 @@ export function TutorChat({
       try {
         const session = await api.tutor.getSession(sessionId);
         const filter = (session.content_filter || {}) as Record<string, unknown>;
+        const defaultMode = (
+          filter.default_mode && typeof filter.default_mode === "object"
+            ? filter.default_mode
+            : null
+        ) as Record<string, unknown> | null;
         const folders = Array.isArray(filter.folders)
           ? filter.folders.filter((v): v is string => typeof v === "string")
           : [];
         if (alive && folders.length > 0) {
           setSelectedVaultPaths((prev) => (prev.length > 0 ? prev : folders));
+        }
+        if (alive && !materialsOverrideActive) {
+          // Wizard-selected materials default the Materials pill on until the learner changes it.
+          setMaterialsOn(defaultMaterialsOn || Boolean(defaultMode?.materials));
         }
         const northStar = filter.map_of_contents || filter.north_star;
         const refs = Array.isArray(filter.reference_targets)
@@ -164,7 +185,7 @@ export function TutorChat({
     return () => {
       alive = false;
     };
-  }, [sessionId]);
+  }, [defaultMaterialsOn, isSourcesOpen, materialsOverrideActive, sessionId]);
 
   // ── Upload handler ────────────────────────────────────────────────────────
   const handleUploadFiles = useCallback(
@@ -324,7 +345,12 @@ export function TutorChat({
                 key={key}
                 type="button"
                 aria-pressed={on}
-                onClick={() => set((prev) => !prev)}
+                onClick={() => {
+                  if (key === "materials") {
+                    setMaterialsOverrideActive(true);
+                  }
+                  set((prev) => !prev);
+                }}
                 className={cn(
                   "rounded-none px-2.5 py-0.5 text-xs font-terminal border transition-colors",
                   on

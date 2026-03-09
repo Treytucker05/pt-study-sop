@@ -657,6 +657,14 @@ export interface TutorSessionPreflightRequest {
     objective_scope?: TutorObjectiveScope;
     focus_objective_id?: string;
     vault_folder?: string;
+    force_full_docs?: boolean;
+    default_mode?: {
+      materials?: boolean;
+      obsidian?: boolean;
+      web_search?: boolean;
+      deep_think?: boolean;
+      gemini_vision?: boolean;
+    };
   };
 }
 
@@ -735,6 +743,14 @@ export interface TutorCreateSessionRequest {
     focus_objective_id?: string;
     vault_folder?: string;
     north_star_refresh?: boolean;
+    force_full_docs?: boolean;
+    default_mode?: {
+      materials?: boolean;
+      obsidian?: boolean;
+      web_search?: boolean;
+      deep_think?: boolean;
+      gemini_vision?: boolean;
+    };
   };
   method_chain_id?: number;
 }
@@ -840,6 +856,14 @@ export interface TutorSessionWithTurns extends TutorSession {
     accuracy_profile?: TutorAccuracyProfile;
     objective_scope?: TutorObjectiveScope;
     focus_objective_id?: string;
+    force_full_docs?: boolean;
+    default_mode?: {
+      materials?: boolean;
+      obsidian?: boolean;
+      web_search?: boolean;
+      deep_think?: boolean;
+      gemini_vision?: boolean;
+    };
     reference_targets?: string[];
     follow_up_targets?: string[];
     module_name?: string;

@@ -3,6 +3,7 @@
 ## Purpose
 
 This repo uses one project canon plus thin compatibility layers.
+All LLM tools should treat `C:\pt-study-sop\AGENTS.md` as the master project instruction file when this repo is active.
 
 - Project canon: `C:\pt-study-sop\AGENTS.md`
 - Repo compatibility files: `CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`
@@ -52,8 +53,13 @@ If a repo-local agent name overlaps with a global agent name, the repo-local one
 2. Nearest nested/module `AGENTS.md` that applies to the current file or task scope
 3. Repo compatibility files only when a tool requires them (`CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`)
 4. Explicitly invoked repo-local agents under `.claude/agents/*`
-5. Global defaults (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.codex\AGENTS.md`)
+5. Tool-specific global defaults only as fallback/runtime surfaces (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`)
 6. Global reusable agents (`C:\Users\treyt\.claude\agents\*`)
+
+Rule:
+
+- If root `AGENTS.md` exists, do not treat home-directory Claude/Codex instruction files as additional project canon.
+- Global tool files may still supply fallback or runtime defaults, but project instruction authority stays at repo root.
 
 Collision rule:
 
@@ -114,9 +120,10 @@ Use this file only as the role-specific delta; if a repo-local same-role agent e
 
 ### Change Codex role behavior
 
-1. Put project policy in repo `AGENTS.md`, not in TOML.
-2. Use `C:\Users\treyt\.codex\agents\*.toml` only for model/runtime settings.
-3. If a runtime change is only needed for this repo, prefer fixing the repo canon or global defer-to-project behavior before expanding Codex TOML complexity.
+1. Put project policy in repo `AGENTS.md`, not in TOML or global markdown.
+2. Use `C:\Users\treyt\.codex\config.toml` only for runtime/model/tool settings.
+3. Use `C:\Users\treyt\.codex\agents\*.toml` only for role-specific runtime settings.
+4. Keep `C:\Users\treyt\.codex\AGENTS.md` thin and precedence-focused so it does not become a second behavior surface.
 
 ## Bootstrap Fix Applied On 2026-03-06
 
@@ -149,7 +156,9 @@ Inventory result on this machine:
 Practical rule:
 
 - Apply the shared-rule compression pattern to systems that have many per-agent markdown files with duplicated inheritance boilerplate.
-- Keep Codex policy in `AGENTS.md` and runtime behavior in `agents\*.toml`; do not force a Claude-style shared-rule file into Codex unless a real duplicated markdown agent catalog appears later.
+- Keep project policy in repo `AGENTS.md`.
+- Keep Codex runtime/model/tool settings in `C:\Users\treyt\.codex\config.toml` and role TOMLs.
+- Keep global markdown files thin and precedence-oriented so they do not compete with repo canon.
 
 ## Validation Checklist
 

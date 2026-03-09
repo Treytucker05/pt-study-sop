@@ -12,6 +12,7 @@ import type { Material } from "@/lib/api";
 import { toast } from "sonner";
 import type { SourceTab, NorthStarSummary, VaultEditorState } from "./TutorChat.types";
 import { _basename, _parentPath, _defaultNoteContent } from "./TutorChat.types";
+import { AnkiIntegration } from "./AnkiIntegration";
 
 const VAULT_TREE_INDENT = 16;
 
@@ -168,11 +169,12 @@ interface SourcesPanelProps {
 }
 
 export function SourcesPanel(props: SourcesPanelProps) {
-  const [sourcesTab, setSourcesTab] = useState<SourceTab>("materials");
+  const [sourcesTab, setSourcesTab] = useState<SourceTab | "objectives" | "flashcards">("materials");
   const [isDragActive, setIsDragActive] = useState(false);
   const [vaultSearch, setVaultSearch] = useState("");
   const [vaultRefreshToken, setVaultRefreshToken] = useState(0);
   const [expandedVaultFolders, setExpandedVaultFolders] = useState<Set<string>>(new Set());
+  const [checkedObjectives, setCheckedObjectives] = useState<Set<string>>(new Set());
   const [vaultEditor, setVaultEditor] = useState<VaultEditorState>({
     open: false,
     path: "",
@@ -205,6 +207,12 @@ export function SourcesPanel(props: SourcesPanelProps) {
     });
   }, [vaultRootEntries, vaultSearch]);
 
+  const { data: ankiDrafts = [] } = useQuery({
+    queryKey: ["anki", "drafts"],
+    queryFn: api.anki.getDrafts,
+    enabled: props.isOpen && sourcesTab === "flashcards",
+  });
+
   const toggleMaterial = useCallback(
     (materialId: number) => {
       if (props.selectedMaterialIds.includes(materialId)) {
@@ -223,6 +231,18 @@ export function SourcesPanel(props: SourcesPanelProps) {
   const clearSelectedMaterials = useCallback(() => {
     props.onSelectedMaterialIdsChange([]);
   }, [props.onSelectedMaterialIdsChange]);
+
+  const toggleObjectiveCheck = useCallback((objectiveId: string) => {
+    setCheckedObjectives((prev) => {
+      const next = new Set(prev);
+      if (next.has(objectiveId)) {
+        next.delete(objectiveId);
+      } else {
+        next.add(objectiveId);
+      }
+      return next;
+    });
+  }, []);
 
   const toggleVaultPath = useCallback((path: string) => {
     const prev = props.selectedVaultPaths;
@@ -427,7 +447,7 @@ export function SourcesPanel(props: SourcesPanelProps) {
           </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-1 p-2 border-b border-primary/20">
+        <div className="grid grid-cols-5 gap-1 p-2 border-b border-primary/20">
           <button
             type="button"
             onClick={() => setSourcesTab("materials")}
@@ -449,6 +469,28 @@ export function SourcesPanel(props: SourcesPanelProps) {
             }`}
           >
             VAULT
+          </button>
+          <button
+            type="button"
+            onClick={() => setSourcesTab("objectives")}
+            className={`h-8 px-1 font-arcade text-[9px] border-2 ${
+              sourcesTab === "objectives"
+                ? "border-primary text-primary bg-primary/10"
+                : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+            }`}
+          >
+            OBJECTIVES
+          </button>
+          <button
+            type="button"
+            onClick={() => setSourcesTab("flashcards")}
+            className={`h-8 px-1 font-arcade text-[9px] border-2 ${
+              sourcesTab === "flashcards"
+                ? "border-primary text-primary bg-primary/10"
+                : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
+            }`}
+          >
+            FLASHCARDS
           </button>
           <button
             type="button"
@@ -711,6 +753,60 @@ export function SourcesPanel(props: SourcesPanelProps) {
                 )}
               </div>
             </>
+          )}
+
+          {sourcesTab === "objectives" && (
+            <div className="space-y-3">
+              <div className="border border-primary/30 p-2">
+                <div className="font-arcade text-[10px] text-primary mb-2">LEARNING OBJECTIVES</div>
+                <div className="text-xs font-terminal text-muted-foreground space-y-1">
+                  <div><span className="text-foreground">Course:</span> {props.northStarSummary?.course_name || "N/A"}</div>
+                  <div><span className="text-foreground">Module:</span> {props.northStarSummary?.module_name || "N/A"}</div>
+                  <div><span className="text-foreground">Checked:</span> {checkedObjectives.size}/{props.northStarSummary?.objective_ids?.length || 0}</div>
+                </div>
+              </div>
+              <div className="space-y-1 max-h-[52vh] overflow-y-auto pr-1">
+                {(props.northStarSummary?.objective_ids || []).map((objectiveId) => {
+                  const checked = checkedObjectives.has(objectiveId);
+                  return (
+                    <button
+                      key={objectiveId}
+                      type="button"
+                      onClick={() => toggleObjectiveCheck(objectiveId)}
+                      className={`w-full flex items-center gap-2 px-2 py-2 border text-left text-xs font-terminal ${
+                        checked
+                          ? "border-primary/60 bg-primary/10 text-foreground"
+                          : "border-secondary/30 text-muted-foreground hover:border-secondary/60 hover:text-foreground"
+                      }`}
+                    >
+                      <span className={`inline-flex h-4 w-4 items-center justify-center border text-[10px] ${checked ? "border-primary text-primary" : "border-secondary/50 text-muted-foreground"}`}>
+                        {checked ? "✓" : ""}
+                      </span>
+                      <span className="truncate">{objectiveId}</span>
+                    </button>
+                  );
+                })}
+                {(!props.northStarSummary?.objective_ids || props.northStarSummary.objective_ids.length === 0) && (
+                  <div className="text-xs font-terminal text-muted-foreground border border-secondary/30 px-2 py-2">
+                    No learning objectives loaded.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {sourcesTab === "flashcards" && (
+            <div className="space-y-3">
+              <div className="border border-primary/30 p-2">
+                <div className="font-arcade text-[10px] text-primary mb-2">FLASHCARDS</div>
+                <div className="text-xs font-terminal text-muted-foreground">
+                  Review, approve, and sync card drafts without leaving Tutor.
+                </div>
+              </div>
+              <div className="border border-primary/20 min-h-[320px]">
+                <AnkiIntegration totalCards={ankiDrafts.length} compact />
+              </div>
+            </div>
           )}
 
           {sourcesTab === "map_of_contents" && (

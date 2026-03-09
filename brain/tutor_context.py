@@ -100,6 +100,7 @@ def _expand_linked_material_ids(material_ids: Optional[list[int]]) -> Optional[l
 def _load_full_materials(
     material_ids: list[int],
     budget: int = FULL_CONTENT_BUDGET,
+    force_full_docs: bool = False,
     debug: dict[str, Any] | None = None,
 ) -> str:
     """Load complete content of selected materials from rag_docs.
@@ -143,7 +144,8 @@ def _load_full_materials(
 
     if debug is not None:
         ordered_sources = _ordered_unique_sources(source_labels)
-        debug["mode"] = "full_content"
+        debug["mode"] = "forced_full_content" if force_full_docs else "full_content"
+        debug["force_full_docs"] = bool(force_full_docs)
         debug["materials_count"] = len(rows)
         debug["materials_total_chars"] = total_chars
         debug["materials_truncated"] = total_chars > budget
@@ -178,6 +180,7 @@ def build_context(
     material_ids: Optional[list[int]] = None,
     module_prefix: Optional[str] = None,
     k_materials: int = 6,
+    force_full_docs: bool = False,
 ) -> dict[str, Any]:
     """Build all context for a tutor turn in one call.
 
@@ -192,6 +195,7 @@ def build_context(
         material_ids: Explicit material selection (overrides course_id).
         module_prefix: Obsidian folder prefix for note scoping.
         k_materials: Number of material chunks to retrieve.
+        force_full_docs: Force selected materials to inject as full documents.
 
     Returns:
         dict with keys: materials, notes, vault_state, course_map, debug
@@ -214,6 +218,7 @@ def build_context(
             course_id=course_id,
             material_ids=material_ids,
             k=k_materials,
+            force_full_docs=force_full_docs,
             debug=debug,
         )
 
@@ -237,6 +242,7 @@ def _fetch_materials(
     course_id: Optional[int] = None,
     material_ids: Optional[list[int]] = None,
     k: int = 6,
+    force_full_docs: bool = False,
     debug: dict[str, Any],
 ) -> str:
     """Retrieve study materials — full content when few files, vector search otherwise."""
@@ -246,6 +252,19 @@ def _fetch_materials(
         material_debug["selected_material_ids"] = list(material_ids)
     if resolved_material_ids:
         material_debug["expanded_material_ids"] = list(resolved_material_ids)
+    material_debug["force_full_docs_requested"] = bool(force_full_docs)
+
+    if force_full_docs and resolved_material_ids:
+        try:
+            full = _load_full_materials(
+                resolved_material_ids,
+                force_full_docs=True,
+                debug=material_debug,
+            )
+            if full:
+                return full
+        except Exception as e:
+            logger.warning("Forced full material load failed, falling back: %s", e)
 
     # When explicit materials selected and count is manageable, load full content
     if resolved_material_ids and len(resolved_material_ids) <= 10:

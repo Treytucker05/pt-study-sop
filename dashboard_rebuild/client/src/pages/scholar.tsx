@@ -246,6 +246,27 @@ export default function Scholar() {
   }, [scholarQuestions]);
   const tutorAuditItems: TutorAuditItem[] = tutorAuditData;
   const researchFindings: ScholarFinding[] = scholarFindings;
+  const latestArtifacts = useMemo(() => {
+    const findingItems = researchFindings.slice(0, 3).map((finding, index) => ({
+      id: `finding-${index}`,
+      kind: "Finding",
+      title: finding.title || finding.topic || "Scholar finding",
+      meta: finding.source || "scholar/outputs/review",
+    }));
+    const proposalItems = proposals.slice(0, 3).map((proposal) => ({
+      id: `proposal-${proposal.id}`,
+      kind: "Proposal",
+      title: proposal.summary,
+      meta: proposal.proposalId || proposal.status || "proposal",
+    }));
+    const questionItems = openQuestions.slice(0, 2).map((question) => ({
+      id: `question-${question.question_id ?? question.id}`,
+      kind: "Question",
+      title: question.question_text ?? question.question ?? "Open question",
+      meta: question.context || question.source || "question pipeline",
+    }));
+    return [...findingItems, ...proposalItems, ...questionItems].slice(0, 6);
+  }, [openQuestions, proposals, researchFindings]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -340,7 +361,7 @@ export default function Scholar() {
                       disabled={runScholarMutation.isPending}
                     >
                       <RefreshCw className={`w-3 h-3 ${runScholarMutation.isPending ? "animate-spin" : ""}`} />
-                      {runScholarMutation.isPending ? "STARTING..." : "RUN SCHOLAR"}
+                      {runScholarMutation.isPending ? "STARTING..." : "RUN FULL AUDIT"}
                     </Button>
                   </div>
                   <div className="grid md:grid-cols-3 gap-3 font-terminal text-sm text-muted-foreground">
@@ -357,6 +378,35 @@ export default function Scholar() {
                       <p>Decide which changes to adopt and track over time.</p>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY} mb-4`}>
+                <CardHeader className="border-b border-primary/30">
+                  <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> LATEST ARTIFACTS
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  {latestArtifacts.length === 0 ? (
+                    <p className="font-terminal text-xs text-muted-foreground">
+                      No recent Scholar artifacts surfaced yet. Run a full audit to refresh findings, questions, and proposals.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {latestArtifacts.map((artifact) => (
+                        <div key={artifact.id} className="flex items-start gap-3 border border-secondary/40 bg-black/30 px-3 py-2">
+                          <Badge variant="outline" className="rounded-none text-[10px] border-primary/40 shrink-0">
+                            {artifact.kind.toUpperCase()}
+                          </Badge>
+                          <div className="min-w-0">
+                            <div className="font-terminal text-sm text-foreground truncate">{artifact.title}</div>
+                            <div className="font-terminal text-[11px] text-muted-foreground truncate">{artifact.meta}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

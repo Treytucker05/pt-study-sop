@@ -12,16 +12,17 @@ Response style: straight to the point, no fluff.
 2. Read `docs/root/AGENT_SETUP.md` for exact agent precedence, repo/global boundaries, and maintenance rules.
 3. Read `docs/root/TUTOR_STUDY_BUDDY_CANON.md` for the overall product contract.
 4. Use `docs/root/GUIDE_DEV.md` for canonical run/build/test commands.
-5. Then apply home-directory defaults from:
-   - `C:\Users\treyt\.claude\CLAUDE.md`
-   - `C:\Users\treyt\.codex\AGENTS.md`
+5. Do not load home-directory Claude/Codex instruction files as extra project canon for this repo.
+   - Root `AGENTS.md` is the master instruction file for all LLM tools here.
+   - Home-directory tool files may still provide fallback/runtime defaults, but they must not be treated as additional project policy when this repo is active.
 
 ## Instruction Canon
 
 - This file is the only project-specific policy source for `C:\pt-study-sop`.
 - Repo compatibility entrypoints (`CLAUDE.md`, `.claude/AGENTS.md`, `.claude/CLAUDE.md`) must defer to this file and must not carry independent project policy.
 - Repo-local Claude agents (`.claude/agents/*`) and command shims (`.claude/commands/*`) must read this file first, then apply only their role-specific delta.
-- Global home-directory defaults (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.claude\agents\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\agents\*.toml`, `C:\Users\treyt\.codex\rules\default.rules`) stay cross-project only and must defer to repo canon when this repo is active.
+- Global home-directory tool files (`C:\Users\treyt\.claude\CLAUDE.md`, `C:\Users\treyt\.claude\rules\*`, `C:\Users\treyt\.claude\agents\*`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.codex\agents\*.toml`, `C:\Users\treyt\.codex\rules\default.rules`) stay cross-project only and must defer to repo canon when this repo is active.
+- Tool/runtime settings may still live in tool-specific config files, but instruction authority for this repo stays in root `AGENTS.md`.
 - If a repo-local agent name overlaps with a home-directory agent name, the repo-local agent wins for this project.
 - If nested/module `AGENTS.md` files are added later, they override this root file only for their own subtree and still stay above home-directory defaults because they are repo-local canon.
 
@@ -106,6 +107,7 @@ Rule: when someone says "library" in this repo, determine which of those two the
 6. Clean up scratch files, temp scripts, and one-off extraction outputs.
 7. For multi-step work, keep a task list and complete one step at a time.
 8. Use subagents for exploration, testing, and review when that reduces drift or keeps write scopes separate.
+9. After completing any task, recommend 2-3 concrete next steps as actionable options, not obligations.
 
 ## Critical Guardrails
 

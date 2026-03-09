@@ -70,6 +70,8 @@ Use only these values in the live table:
 | `codex-implement` | `SK-001` create repo-local strategic architect skill | `.codex/skills/personal-strategic-architect/`, `docs/root/TUTOR_TODO.md`, `docs/root/AGENT_BOARD.md`, `conductor/tracks/GENERAL/log.md` | `done` | none | skill created + `sync_agent_config.ps1 -Mode Check` PASS | none - skill is ready for activation |
 | `halley-explorer` | `SK-001-research` inspect local skill conventions and placement | read-only on `.codex/skills/` and docs | `done` | none | recommended repo-local `.codex/skills/personal-strategic-architect` + single-file start | codex writes skill and validates |
 | `parfit-review` | `SK-001-review` review new skill for fidelity and conventions | read-only on `.codex/skills/personal-strategic-architect/` and docs | `done` | none | no material findings; one low-severity note on literal quote-mark fidelity in the activation payload | none |
+| `codex-implement` | `AGENT-003` simplify instruction hierarchy so root `AGENTS.md` is master across tools | `AGENTS.md`, `docs/root/AGENT_SETUP.md`, `docs/root/TUTOR_TODO.md`, `docs/root/AGENT_BOARD.md`, `conductor/tracks/GENERAL/log.md`, `C:\Users\treyt\.codex\config.toml`, `C:\Users\treyt\.codex\AGENTS.md`, `C:\Users\treyt\.claude\CLAUDE.md` | `done` | none | repo canon now explicitly owns project instructions; global Codex `developer_instructions` removed; global Codex/Claude markdown files trimmed to fallback-only notes | none |
+| `parfit-explorer` | `AGENT-003-research` inventory instruction surfaces and redundancy | read-only on repo/global instruction files | `done` | none | returned minimal hierarchy recommendation: repo `AGENTS.md` master, thin global fallbacks, runtime settings separated from policy | none |
 
 ## Row Rules
 

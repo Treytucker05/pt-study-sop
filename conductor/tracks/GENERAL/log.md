@@ -2005,3 +2005,24 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
 - Validation:
   - `pytest brain/tests/test_tutor_session_linking.py -q` -> `32 passed`
   - `npm run build` in `dashboard_rebuild/` -> success
+
+## 2026-03-09 — MCP config cleanup
+
+- Fixed both Claude MCP configs to point `obsidian-mcp` at the live vault path `C:\Users\treyt\Desktop\Treys School` instead of the stale non-existent `C:\Users\treyt\Desktop\PT School Semester 2`.
+- Removed the stale Codex `paper` MCP entry from `C:\Users\treyt\.codex\config.toml` because `http://127.0.0.1:29979/mcp` was refusing connections during validation.
+- Review findings left intentionally unchanged for a follow-up pass:
+  - Claude Desktop GitHub MCP still has an empty `GITHUB_PERSONAL_ACCESS_TOKEN`
+  - Claude Code and Claude Desktop still duplicate some MCP server definitions by design
+
+## 2026-03-09 — Instruction hierarchy cleanup
+
+- Made repo `AGENTS.md` the explicit master instruction file for this repo across tools instead of telling sessions to load home-directory Claude/Codex instruction files as extra project canon.
+- Added the "recommend 2-3 concrete next steps" behavior to repo `AGENTS.md` so it now lives in the project master file instead of global Codex prompt text.
+- Removed the large global Codex `developer_instructions` block from `C:\Users\treyt\.codex\config.toml`.
+- Trimmed `C:\Users\treyt\.codex\AGENTS.md` to a thin precedence-only fallback note.
+- Trimmed `C:\Users\treyt\.claude\CLAUDE.md` to a thin fallback note so Claude does not act like a second cross-tool control plane when a repo root `AGENTS.md` exists.
+- Updated `docs/root/AGENT_SETUP.md`, `docs/root/TUTOR_TODO.md`, and `docs/root/AGENT_BOARD.md` to reflect the simplified hierarchy and validation trail.
+- Validation:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
+  - `codex mcp list` -> config loaded successfully after removing global `developer_instructions`
+  - `git diff --check -- AGENTS.md docs/root/AGENT_SETUP.md docs/root/TUTOR_TODO.md docs/root/AGENT_BOARD.md conductor/tracks/GENERAL/log.md` -> no whitespace errors; only CRLF normalization warnings on existing markdown files

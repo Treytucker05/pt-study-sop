@@ -1,0 +1,6 @@
+Hello. I’m in `C:\pt-study-sop` and ready to work.
+
+Options:
+1. Point me at a bug or failing behavior and I’ll trace and fix it.
+2. Name a feature or file area and I’ll implement the change end to end.
+3. Ask for a repo check and I’ll inspect the current state, relevant docs, and active work items before making edits.

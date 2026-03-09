@@ -18,6 +18,25 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-03-06
 
+### Sprint 18: Agent Instruction Hierarchy Cleanup (2026-03-09)
+- [x] Claim scope: instruction authority simplification
+  - `AGENTS.md`
+  - `docs/root/AGENT_SETUP.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/AGENT_BOARD.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - `C:\Users\treyt\.codex\config.toml`
+  - `C:\Users\treyt\.codex\AGENTS.md`
+  - `C:\Users\treyt\.claude\CLAUDE.md`
+- [x] Phase 0: make root `AGENTS.md` the explicit master instruction file for this repo across tools.
+- [x] Phase 1: strip overlapping global prompt policy from home-directory Codex/Claude files so they stop competing with repo canon.
+- [x] Phase 2: validate repo shims, runtime config, and document the cleanup.
+  - Validation:
+    - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check`
+    - `codex mcp list`
+    - global Codex/Claude markdown files reduced to thin fallback/preference notes
+    - repo compatibility shims still point to root `AGENTS.md`
+
 ### Sprint 17: Tutor 10/10 Certification (2026-03-07)
 - [ ] Claim scope: certification program + release-gate artifacts
   - `conductor/tracks/tutor-10-certification_20260307/`
