@@ -923,6 +923,118 @@ def _resolve_learning_objectives_for_scope(
     )
 
 
+# ---------------------------------------------------------------------------
+# Vault → DB auto-import: parse objectives from Obsidian vault file
+# ---------------------------------------------------------------------------
+
+_VAULT_OBJ_BOLD_RE = re.compile(
+    r"^\s*[-*]\s+\*\*\s*(OBJ-\S+)\s*(?:--|—|-)\s*(.+?)\*\*\s*$"
+)
+
+
+def _try_import_objectives_from_vault(
+    *,
+    course_id: int,
+    module_id: Optional[int],
+    module_name: str,
+    vault_folder: Optional[str],
+) -> list[dict[str, str]]:
+    """Try to auto-import objectives from the Obsidian vault ``Learning
+    Objectives & To Do.md`` file into the DB.
+
+    Called during preflight when the DB has zero objectives for a study unit
+    but the vault file may already contain them (e.g. from a prior session
+    whose DB rows were lost).
+
+    Returns a list of objective dicts compatible with
+    ``_collect_objectives_from_db`` output, or an empty list if the vault
+    file is missing / unparseable.
+    """
+    if _map_of_contents_io_disabled():
+        return []
+
+    # --- 1. Determine vault path to the Learning Objectives file ---
+    if not vault_folder:
+        return []
+    lo_rel_path = (
+        f"{vault_folder.strip().rstrip('/').rstrip('\\')}"
+        "/Learning Objectives & To Do.md"
+    )
+
+    # --- 2. Read the file ---
+    result = _vault_read_note(lo_rel_path)
+    if not result.get("success") or not result.get("content"):
+        return []
+    content: str = result["content"]
+
+    # --- 3. Parse objectives from two formats ---
+    parsed: list[tuple[str, str]] = []  # (lo_code, title)
+
+    for line in content.splitlines():
+        # Format A: - **OBJ-1 -- Description text.**
+        m = _VAULT_OBJ_BOLD_RE.match(line)
+        if m:
+            parsed.append((m.group(1).strip(), m.group(2).strip().rstrip(".")))
+            continue
+        # Format B: 1. [[OBJ-1]] Description text (TUTOR_PAGE_SYNC block)
+        m2 = _MAP_OF_CONTENTS_OBJECTIVE_PATTERN_NEW.match(line)
+        if m2:
+            parsed.append((m2.group(1).strip(), m2.group(2).strip()))
+
+    if not parsed:
+        return []
+
+    # --- 4. Upsert into learning_objectives table ---
+    group_name = str(module_name or "").strip() or None
+    now = datetime.now().isoformat()
+    conn = get_connection()
+    imported: list[dict[str, str]] = []
+    try:
+        cur = conn.cursor()
+        for idx, (raw_code, title) in enumerate(parsed, start=1):
+            lo_code = _normalize_objective_id(raw_code, idx)
+            if not title:
+                title = lo_code
+
+            cur.execute(
+                "SELECT id FROM learning_objectives WHERE course_id = ? AND lo_code = ?",
+                (course_id, lo_code),
+            )
+            existing = cur.fetchone()
+            if existing:
+                lo_id = int(existing[0] if isinstance(existing, (tuple, list)) else existing["id"])
+                cur.execute(
+                    "UPDATE learning_objectives SET title = ?, group_name = COALESCE(?, group_name), managed_by_tutor = 1, updated_at = ? WHERE id = ?",
+                    (title, group_name, now, lo_id),
+                )
+            else:
+                cur.execute(
+                    """INSERT INTO learning_objectives
+                       (course_id, module_id, lo_code, title, status, group_name, managed_by_tutor, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, 'active', ?, 1, ?, ?)""",
+                    (course_id, module_id, lo_code, title, group_name, now, now),
+                )
+
+            imported.append({
+                "objective_id": lo_code,
+                "title": title,
+                "status": "active",
+                **({"group": group_name} if group_name else {}),
+            })
+        conn.commit()
+        _LOG.info(
+            "Auto-imported %d objectives from vault for '%s' (course_id=%s)",
+            len(imported), module_name, course_id,
+        )
+    except Exception:
+        _LOG.exception("_try_import_objectives_from_vault failed")
+        imported = []
+    finally:
+        conn.close()
+
+    return imported
+
+
 def _materials_include_mp4(material_ids: list[int]) -> bool:
     if not material_ids:
         return False
@@ -1845,12 +1957,38 @@ def _resolve_tutor_preflight(
             }
         )
     if module_name and not resolved_objectives:
-        blockers.append(
-            {
-                "code": "APPROVED_OBJECTIVES_REQUIRED",
-                "message": "Save approved objectives for this study unit before running Tutor preflight.",
-            }
+        # --- Auto-import from Obsidian vault before blocking ---
+        vault_imported = _try_import_objectives_from_vault(
+            course_id=course_id_int,
+            module_id=module_id,
+            module_name=module_name,
+            vault_folder=vault_folder,
         )
+        if vault_imported:
+            resolved_objectives = vault_imported
+            # Now that objectives are in the DB, build MoC context
+            # (the earlier _ensure_moc_context call was skipped)
+            map_of_contents_ctx, map_of_contents_error = _ensure_moc_context(
+                course_id=course_id_int,
+                module_id=module_id,
+                module_name=module_name or topic or None,
+                topic=topic,
+                learning_objectives=None,  # read from DB
+                source_ids=source_ids,
+                objective_scope=objective_scope,
+                focus_objective_id=focus_objective_id or None,
+                force_refresh=True,
+                path_override=vault_folder,
+            )
+            if map_of_contents_error:
+                _LOG.warning("MoC rebuild after vault import: %s", map_of_contents_error)
+        else:
+            blockers.append(
+                {
+                    "code": "APPROVED_OBJECTIVES_REQUIRED",
+                    "message": "Save approved objectives for this study unit before running Tutor preflight.",
+                }
+            )
     if map_of_contents_ctx:
         module_prefix = str(Path(str(map_of_contents_ctx["path"])).parent).replace(
             "\\", "/"
