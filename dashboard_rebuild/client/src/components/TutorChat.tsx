@@ -13,6 +13,14 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  TEXT_SECTION_LABEL,
+  TEXT_MUTED,
+  INPUT_BASE,
+  BTN_TOOLBAR,
+  BTN_TOOLBAR_ACTIVE,
+  ICON_MD,
+} from "@/lib/theme";
 
 import type { TutorChatProps, NorthStarSummary } from "./TutorChat.types";
 export type { ChainBlock } from "./TutorChat.types";
@@ -202,10 +210,10 @@ export function TutorChat({
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center space-y-2">
-          <div className="font-arcade text-sm text-muted-foreground">
+          <div className={TEXT_SECTION_LABEL}>
             NO ACTIVE SESSION
           </div>
-          <div className="font-terminal text-lg text-muted-foreground/70">
+          <div className={TEXT_MUTED}>
             Configure content filter and start a session
           </div>
         </div>
@@ -252,19 +260,15 @@ export function TutorChat({
               type="button"
               variant="ghost"
               onClick={() => setIsSourcesOpen((prev) => !prev)}
-              className={`h-9 rounded-none px-3 font-arcade text-[10px] border-2 ${
-                isSourcesOpen
-                  ? "border-primary text-primary bg-primary/15"
-                  : "border-secondary/40 text-muted-foreground hover:border-secondary hover:text-foreground"
-              }`}
+              className={isSourcesOpen ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
             >
-              <SlidersHorizontal className="w-3.5 h-3.5 mr-1.5" />
+              <SlidersHorizontal className={`${ICON_MD} mr-1.5`} />
               SOURCES
             </Button>
             <div className="flex items-center gap-2 min-w-0">
               <label
                 htmlFor="accuracy-profile-select"
-                className="font-terminal text-xs text-muted-foreground whitespace-nowrap"
+                className={`${TEXT_MUTED} text-xs whitespace-nowrap`}
               >
                 Profile
               </label>
@@ -322,7 +326,7 @@ export function TutorChat({
                 aria-pressed={on}
                 onClick={() => set((prev) => !prev)}
                 className={cn(
-                  "rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors",
+                  "rounded-none px-2.5 py-0.5 text-xs font-terminal border transition-colors",
                   on
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-transparent text-muted-foreground border-border hover:border-primary"
@@ -341,7 +345,7 @@ export function TutorChat({
               onKeyDown={handleKeyDown}
               placeholder="Ask a question..."
               disabled={isStreaming}
-              className="flex-1 min-w-[180px] bg-black/40 border-2 border-primary rounded-none px-3 py-2 text-[17px] leading-7 font-terminal text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none disabled:opacity-50 shadow-none"
+              className={`flex-1 min-w-[180px] ${INPUT_BASE} disabled:opacity-50 shadow-none`}
             />
             <Button
               onClick={sendMessage}

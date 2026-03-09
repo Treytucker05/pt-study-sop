@@ -63,6 +63,14 @@ export const BTN_PRIMARY =
 export const BTN_OUTLINE =
   "rounded-none border border-muted-foreground/30 font-arcade text-sm h-9 hover:border-muted-foreground/50";
 
+/** Toolbar toggle button (inactive) */
+export const BTN_TOOLBAR =
+  "h-8 rounded-none font-arcade text-xs px-3 text-muted-foreground hover:text-primary border-2 border-transparent";
+
+/** Toolbar toggle button (active) */
+export const BTN_TOOLBAR_ACTIVE =
+  "h-8 rounded-none font-arcade text-xs px-3 text-primary bg-primary/15 border-2 border-primary/40";
+
 // ---------------------------------------------------------------------------
 // Layout
 // ---------------------------------------------------------------------------

@@ -299,7 +299,7 @@ function ArtifactStructuredMap({ content, title }: { content: string; title: str
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 font-terminal text-sm text-purple-400 hover:text-purple-300 border border-purple-400/40 px-2 py-0.5"
           >
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className={ICON_SM} />
             Open in Figma
           </a>
         )}
@@ -311,7 +311,7 @@ function ArtifactStructuredMap({ content, title }: { content: string; title: str
             disabled={saving}
             onClick={handleSaveCanvas}
           >
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <FolderOpen className="w-3 h-3" />}
+            {saving ? <Loader2 className={`${ICON_SM} animate-spin`} /> : <FolderOpen className={ICON_SM} />}
             {saving ? "Saving..." : "Save as Canvas"}
           </Button>
         )}
@@ -465,7 +465,7 @@ function SessionWrapPanel({
             disabled={saving}
             onClick={handleSave}
           >
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <FolderOpen className="w-3 h-3" />}
+            {saving ? <Loader2 className={`${ICON_SM} animate-spin`} /> : <FolderOpen className={ICON_SM} />}
             {saving ? "Saving..." : "Save to Obsidian"}
           </Button>
         </>
@@ -932,7 +932,7 @@ export function TutorArtifacts({
                 className="h-5 w-5 p-0 rounded-none text-muted-foreground hover:text-foreground"
                 onClick={() => setBulkActionReport(null)}
               >
-                <X className="w-3 h-3" />
+                <X className={ICON_SM} />
               </Button>
             </div>
             <div className="font-terminal text-xs text-muted-foreground">
@@ -1073,7 +1073,7 @@ export function TutorArtifacts({
                             }
                           }}
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className={ICON_SM} />
                         </Button>
                       )}
                     </div>

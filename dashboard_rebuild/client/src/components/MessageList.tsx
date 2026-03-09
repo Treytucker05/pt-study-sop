@@ -9,6 +9,7 @@ import remarkGfm from "remark-gfm";
 import type { TutorVerdict, TeachBackRubric } from "@/lib/api";
 import type { ChatMessage, ToolAction } from "./TutorChat.types";
 import { detectMarkdownTable, detectMermaidBlock, summarizeProvenance, summarizeConfidence, TOOL_LABELS, TOOL_ICONS } from "./TutorChat.types";
+import { ICON_SM, TEXT_BADGE } from "@/lib/theme";
 
 function VerdictBadge({ verdict }: { verdict: TutorVerdict }) {
   const [expanded, setExpanded] = useState(false);
@@ -259,11 +260,11 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                           }`}
                       >
                         {ta.success ? (
-                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          <CheckCircle2 className={`${ICON_SM} shrink-0`} />
                         ) : (
-                          <XCircle className="w-3 h-3 shrink-0" />
+                          <XCircle className={`${ICON_SM} shrink-0`} />
                         )}
-                        <Icon className="w-3 h-3 shrink-0" />
+                        <Icon className={`${ICON_SM} shrink-0`} />
                         <span className="truncate max-w-[200px]">{ta.message}</span>
                       </div>
                     );
@@ -295,7 +296,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                     }
                     className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
                   >
-                    <FileText className="w-3 h-3 text-primary/60" /> Save Note
+                    <FileText className={`${ICON_SM} text-primary/60`} /> Save Note
                   </button>
                   <button
                     onClick={() =>
@@ -307,7 +308,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                     }
                     className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
                   >
-                    <CreditCard className="w-3 h-3 text-primary/60" /> Create Card
+                    <CreditCard className={`${ICON_SM} text-primary/60`} /> Create Card
                   </button>
                   <button
                     onClick={() => {
@@ -319,7 +320,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                     }}
                     className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
                   >
-                    <Map className="w-3 h-3 text-primary/60" /> Create Map
+                    <Map className={`${ICON_SM} text-primary/60`} /> Create Map
                   </button>
                   {detectMarkdownTable(msg.content) && (
                     <button
@@ -335,7 +336,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                       }}
                       className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
                     >
-                      <Table2 className="w-3 h-3 text-primary/60" /> Save Table
+                      <Table2 className={`${ICON_SM} text-primary/60`} /> Save Table
                     </button>
                   )}
                   {detectMermaidBlock(msg.content) && (
@@ -352,7 +353,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                       }}
                       className="flex items-center gap-1 px-2 py-1 text-xs font-arcade text-muted-foreground hover:text-primary hover:bg-primary/10 border-2 border-primary/20 hover:border-primary/50 transition-colors shadow-none"
                     >
-                      <Network className="w-3 h-3 text-primary/60" /> Save Map
+                      <Network className={`${ICON_SM} text-primary/60`} /> Save Map
                     </button>
                   )}
                 </div>
@@ -376,7 +377,7 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                       >
                         <Badge
                           variant="outline"
-                          className="text-sm rounded-none cursor-pointer hover:bg-primary/10"
+                          className={`${TEXT_BADGE} cursor-pointer hover:bg-primary/10`}
                         >
                           [{c.index}] {c.source}
                         </Badge>
@@ -385,14 +386,14 @@ export const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                       <Badge
                         key={c.index}
                         variant="outline"
-                        className="text-sm rounded-none"
+                        className={TEXT_BADGE}
                       >
                         [{c.index}] {c.source}
                       </Badge>
                     )
                   )}
                   {msg.model && (
-                    <Badge variant="outline" className="text-sm rounded-none text-muted-foreground/60 ml-auto">
+                    <Badge variant="outline" className={`${TEXT_BADGE} text-muted-foreground/60 ml-auto`}>
                       {msg.model}
                     </Badge>
                   )}

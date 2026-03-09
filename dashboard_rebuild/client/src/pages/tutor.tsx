@@ -22,7 +22,6 @@ import {
   writeTutorSelectedMaterialIds,
 } from "@/lib/tutorClientState";
 import { COURSE_FOLDERS } from "@/config/courses";
-import { ContentFilter } from "@/components/ContentFilter";
 import { TutorWizard } from "@/components/TutorWizard";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts";
@@ -63,6 +62,11 @@ import {
   TEXT_MUTED,
   TEXT_BADGE,
   ICON_SM,
+  ICON_MD,
+  BTN_TOOLBAR,
+  BTN_TOOLBAR_ACTIVE,
+  BTN_PRIMARY,
+  CARD_BORDER,
 } from "@/lib/theme";
 import { CONTROL_PLANE_COLORS } from "@/lib/colors";
 
@@ -1100,164 +1104,156 @@ export default function Tutor() {
       <div className="flex flex-col h-full min-h-0">
         {/* ─── Main Content Area ─── */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-none bg-black/40 border-b-2 border-primary/20 p-2">
-            {/* Top Toolbar Area */}
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-              {activeSessionId && (
-                <>
-                  <Badge variant="outline" className={`${TEXT_BADGE} h-7 px-2 shrink-0 border-primary/30`}>
-                    <span className="text-muted-foreground mr-1">TOPIC:</span>
-                    <span className="text-foreground">{topic || "Freeform"}</span>
-                  </Badge>
-                  <div className={`flex items-center gap-3 px-2 ${TEXT_MUTED} text-xs border-r border-primary/20 shrink-0`}>
-                    <span className="flex items-center gap-1" title="Turns">
-                      <MessageSquare className={ICON_SM} />
-                      {turnCount}
-                    </span>
-                    {startedAt && (
-                      <span className="flex items-center gap-1" title="Started At">
-                        <Clock className={ICON_SM} />
-                        {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* ─── Block Timer Widget ─── */}
-              {activeSessionId && hasChain && currentBlock && !isChainComplete && (
-                <div className="flex items-center gap-2 px-2 shrink-0 border-l border-r border-primary/20">
-                  <Badge
-                    variant="outline"
-                    className={`h-6 px-1.5 text-[10px] rounded-none font-arcade uppercase ${
-                      CONTROL_PLANE_COLORS[currentBlock.control_stage?.toUpperCase?.() || currentBlock.category?.toUpperCase?.() || ""]?.badge
-                      || "bg-secondary/20 text-muted-foreground"
-                    }`}
-                  >
-                    {currentBlock.control_stage || currentBlock.category || "BLOCK"}
-                  </Badge>
-                  <span className="text-xs font-terminal text-foreground truncate max-w-[120px]" title={currentBlock.name}>
-                    {currentBlock.name}
+          <div className="flex-none bg-black/40 border-b-2 border-primary/20 px-2 py-1.5">
+            {/* ─── Row 1: Session Context ─── */}
+            {activeSessionId && (
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar mb-1.5">
+                <Badge variant="outline" className={`${TEXT_BADGE} h-7 px-2 shrink-0 border-primary/30`}>
+                  <span className="text-muted-foreground mr-1">TOPIC:</span>
+                  <span className="text-foreground">{topic || "Freeform"}</span>
+                </Badge>
+                <div className={`flex items-center gap-3 px-2 ${TEXT_MUTED} text-xs shrink-0`}>
+                  <span className="flex items-center gap-1" title="Turns">
+                    <MessageSquare className={ICON_SM} />
+                    {turnCount}
                   </span>
-                  {blockTimerSeconds !== null && (
-                    <span
-                      className={`text-sm font-arcade tabular-nums ${
-                        blockTimerSeconds <= 0
-                          ? "text-red-400 animate-pulse"
-                          : blockTimerSeconds <= 60
-                            ? "text-red-400"
-                            : blockTimerSeconds <= 120
-                              ? "text-yellow-400"
-                              : "text-foreground"
-                      }`}
-                    >
-                      {formatTimer(Math.max(0, blockTimerSeconds))}
+                  {startedAt && (
+                    <span className="flex items-center gap-1" title="Started At">
+                      <Clock className={ICON_SM} />
+                      {new Date(startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   )}
-                  <span className="text-[10px] text-muted-foreground font-terminal">
-                    {progressCount}/{chainBlocks.length}
-                  </span>
-                  {blockTimerSeconds !== null && (
+                </div>
+
+                {/* ─── Block Timer Widget ─── */}
+                {hasChain && currentBlock && !isChainComplete && (
+                  <div className="flex items-center gap-2 px-2 shrink-0 border-l border-primary/20">
+                    <Badge
+                      variant="outline"
+                      className={`h-6 px-1.5 text-[10px] rounded-none font-arcade uppercase ${
+                        CONTROL_PLANE_COLORS[currentBlock.control_stage?.toUpperCase?.() || currentBlock.category?.toUpperCase?.() || ""]?.badge
+                        || "bg-secondary/20 text-muted-foreground"
+                      }`}
+                    >
+                      {currentBlock.control_stage || currentBlock.category || "BLOCK"}
+                    </Badge>
+                    <span className="text-xs font-terminal text-foreground truncate max-w-[120px]" title={currentBlock.name}>
+                      {currentBlock.name}
+                    </span>
+                    {blockTimerSeconds !== null && (
+                      <span
+                        className={`text-sm font-arcade tabular-nums ${
+                          blockTimerSeconds <= 0
+                            ? "text-destructive animate-pulse"
+                            : blockTimerSeconds <= 60
+                              ? "text-destructive"
+                              : blockTimerSeconds <= 120
+                                ? "text-warning"
+                                : "text-foreground"
+                        }`}
+                      >
+                        {formatTimer(Math.max(0, blockTimerSeconds))}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground font-terminal">
+                      {progressCount}/{chainBlocks.length}
+                    </span>
+                    {blockTimerSeconds !== null && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setTimerPaused((p) => !p)}
+                        className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-primary"
+                        title={timerPaused ? "Resume timer" : "Pause timer"}
+                      >
+                        {timerPaused ? <Timer className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setTimerPaused((p) => !p)}
-                      className="h-6 w-6 p-0 rounded-none text-muted-foreground hover:text-primary"
-                      title={timerPaused ? "Resume timer" : "Pause timer"}
+                      onClick={advanceBlock}
+                      className="h-6 px-1.5 rounded-none text-muted-foreground hover:text-primary font-arcade text-[10px]"
+                      title="Skip to next block"
                     >
-                      {timerPaused ? <Timer className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                      <SkipForward className="w-3 h-3" />
                     </Button>
-                  )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ─── Row 2: Navigation Actions ─── */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSetup(true)}
+                className={showSetup ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+              >
+                <Settings2 className={`${ICON_MD} mr-1`} />
+                WIZARD
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={openSettings}
+                className={BTN_TOOLBAR}
+              >
+                <SlidersHorizontal className={`${ICON_MD} mr-1`} />
+                SETTINGS
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSetup(false)}
+                className={!showSetup ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+              >
+                <MessageSquare className={`${ICON_MD} mr-1`} />
+                CHAT
+              </Button>
+
+              {activeSessionId && (
+                <>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={advanceBlock}
-                    className="h-6 px-1.5 rounded-none text-muted-foreground hover:text-primary font-arcade text-[10px]"
-                    title="Skip to next block"
+                    onClick={() => setShowArtifacts((prev) => !prev)}
+                    className={`ml-1 ${showArtifacts ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}`}
                   >
-                    <SkipForward className="w-3 h-3" />
+                    {showArtifacts ? (
+                      <PanelRightClose className={`${ICON_MD} mr-1`} />
+                    ) : (
+                      <PanelRightOpen className={`${ICON_MD} mr-1`} />
+                    )}
+                    ARTIFACTS
+                    {artifacts.length > 0 && (
+                      <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
+                        {artifacts.length}
+                      </Badge>
+                    )}
                   </Button>
-                </div>
-              )}
-
-              <div className="flex items-center gap-1 shrink-0 ml-auto">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSetup(true)}
-                  className={`h-8 rounded-none font-arcade text-xs px-3 ${showSetup
-                    ? "text-primary bg-primary/15 border-2 border-primary/40"
-                    : "text-muted-foreground hover:text-primary border-2 border-transparent"
-                    }`}
-                >
-                  <Settings2 className="w-3.5 h-3.5 mr-1" />
-                  WIZARD
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={openSettings}
-                  className="h-8 rounded-none font-arcade text-xs px-3 text-muted-foreground hover:text-primary border-2 border-transparent"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5 mr-1" />
-                  SETTINGS
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowSetup(false)}
-                  className={`h-8 rounded-none font-arcade text-xs px-3 ${!showSetup
-                    ? "text-primary bg-primary/15 border-2 border-primary/40"
-                    : "text-muted-foreground hover:text-primary border-2 border-transparent"
-                    }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                  CHAT
-                </Button>
-
-                {activeSessionId && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowArtifacts((prev) => !prev)}
-                      className={`h-8 rounded-none font-arcade text-xs px-3 ml-1 ${showArtifacts
-                        ? "text-primary bg-primary/10 border-2 border-primary/40"
-                        : "text-muted-foreground hover:text-primary border-2 border-transparent"
-                        }`}
-                    >
-                      {showArtifacts ? (
-                        <PanelRightClose className="w-3.5 h-3.5 mr-1" />
-                      ) : (
-                        <PanelRightOpen className="w-3.5 h-3.5 mr-1" />
-                      )}
-                      ARTIFACTS
-                      {artifacts.length > 0 && (
-                        <Badge variant="outline" className="h-4 px-1 ml-1 text-[10px] rounded-none border-primary/40">
-                          {artifacts.length}
-                        </Badge>
-                      )}
-                    </Button>
+                  <div className="ml-auto">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowEndConfirm(true)}
-                      className="h-8 rounded-none font-arcade text-xs px-3 text-red-400/70 hover:text-red-400 hover:bg-red-400/10 border-2 border-transparent"
+                      className="h-8 rounded-none font-arcade text-xs px-3 text-destructive/70 hover:text-destructive hover:bg-destructive/10 border-2 border-transparent"
                       title="End session"
                     >
-                      <Square className="w-3.5 h-3.5 mr-1" />
+                      <Square className={`${ICON_MD} mr-1`} />
                       END
                     </Button>
-                  </>
-                )}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
           <div className="flex-1 flex min-h-0 relative">
             <div className="flex-1 bg-black/40 flex flex-col min-w-0">
               {showSetup ? (
-                <div className="flex-1 min-h-0 overflow-y-auto w-full p-4">
+                <div key="wizard" className="flex-1 min-h-0 overflow-y-auto w-full p-4 animate-fade-slide-in">
                   <div className="w-full max-w-4xl mx-auto">
                     <TutorWizard
                       courseId={courseId}
@@ -1299,7 +1295,7 @@ export default function Tutor() {
                   </div>
                 </div>
               ) : (
-                <>
+                <div key="chat" className="flex-1 flex flex-col min-h-0 animate-fade-slide-in">
                   {activeSessionId ? (
                     <TutorChat
                       sessionId={activeSessionId}
@@ -1333,28 +1329,33 @@ export default function Tutor() {
                   )}
 
                   {showEndConfirm && (
-                    <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+                    <div className="absolute inset-x-0 bottom-0 z-50 bg-black/95 border-t-2 border-primary/50 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] animate-fade-slide-in">
                       <div className="max-w-md mx-auto space-y-3">
-                        <div className="font-arcade text-sm text-primary tracking-wider">SESSION COMPLETE</div>
-                        <div className="flex items-center gap-4 font-terminal text-xs text-muted-foreground">
+                        <div className="section-header">SESSION COMPLETE</div>
+                        <div className={`flex items-center gap-4 ${TEXT_MUTED} text-xs`}>
                           <span className="text-foreground">{topic || "No topic"}</span>
                           <span>{turnCount} turns</span>
+                          {startedAt && (
+                            <span>
+                              {Math.round((Date.now() - new Date(startedAt).getTime()) / 60000)} min
+                            </span>
+                          )}
                           {artifacts.length > 0 && <span>{artifacts.length} artifacts</span>}
                         </div>
                         <div className="flex items-center gap-2 pt-1">
                           <Button
                             onClick={shipToBrainAndEnd}
                             disabled={isShipping}
-                            className="rounded-none font-arcade text-xs bg-primary/10 hover:bg-primary/20 border-2 border-primary text-primary gap-1.5 h-9 px-4"
+                            className={`${BTN_PRIMARY} w-auto gap-1.5 h-9 px-4`}
                           >
-                            {isShipping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                            {isShipping ? <Loader2 className={`${ICON_MD} animate-spin`} /> : <Send className={ICON_MD} />}
                             {isShipping ? "SHIPPING..." : "SHIP TO BRAIN"}
                           </Button>
                           <Button
                             variant="ghost"
                             onClick={() => { endSession(); setShowEndConfirm(false); }}
                             disabled={isShipping}
-                            className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 border-2 border-transparent hover:border-primary/40 shadow-none"
+                            className={BTN_TOOLBAR}
                           >
                             END WITHOUT SAVING
                           </Button>
@@ -1362,7 +1363,7 @@ export default function Tutor() {
                             variant="ghost"
                             onClick={() => setShowEndConfirm(false)}
                             disabled={isShipping}
-                            className="rounded-none font-arcade text-xs text-muted-foreground hover:text-foreground h-9 px-3 ml-auto border-2 border-transparent hover:border-primary/40 shadow-none"
+                            className={`${BTN_TOOLBAR} ml-auto`}
                           >
                             CANCEL
                           </Button>
@@ -1370,55 +1371,63 @@ export default function Tutor() {
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
 
             {/* Right side panels overlaid when toggle is ON */}
             {activeSessionId && !showSetup && showArtifacts && (
-              <div className="absolute lg:static right-0 inset-y-0 z-30 w-[320px] shrink-0 border-l-2 border-primary/30 bg-black/90 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.5)] lg:shadow-none">
-                <div className="flex items-center justify-between p-2 border-b-2 border-primary/20 bg-primary/5">
-                  <span className="font-arcade text-xs text-primary px-2">ARTIFACTS</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-primary rounded-none"
-                    onClick={() => setShowArtifacts(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+              <>
+                {/* Mobile backdrop — click to close */}
+                <div
+                  className="fixed inset-0 z-20 bg-black/60 lg:hidden"
+                  onClick={() => setShowArtifacts(false)}
+                  aria-hidden="true"
+                />
+                <div className="absolute lg:static right-0 inset-y-0 z-30 w-[320px] shrink-0 border-l-2 border-primary/30 bg-black/90 flex flex-col shadow-[-10px_0_20px_rgba(0,0,0,0.5)] lg:shadow-none animate-fade-slide-in">
+                  <div className="flex items-center justify-between p-2 border-b-2 border-primary/20 bg-primary/5">
+                    <span className="section-header px-2">ARTIFACTS</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-primary rounded-none"
+                      onClick={() => setShowArtifacts(false)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto">
+                    <TutorArtifacts
+                      sessionId={activeSessionId}
+                      artifacts={artifacts}
+                      turnCount={turnCount}
+                      topic={topic}
+                      startedAt={startedAt}
+                      onCreateArtifact={handleArtifactCreated}
+                      recentSessions={recentSessions}
+                      onResumeSession={resumeSession}
+                      onDeleteArtifacts={handleDeleteArtifacts}
+                      onEndSession={endSessionById}
+                      onClearActiveSession={clearActiveSessionState}
+                    />
+                  </div>
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                  <TutorArtifacts
-                    sessionId={activeSessionId}
-                    artifacts={artifacts}
-                    turnCount={turnCount}
-                    topic={topic}
-                    startedAt={startedAt}
-                    onCreateArtifact={handleArtifactCreated}
-                    recentSessions={recentSessions}
-                    onResumeSession={resumeSession}
-                    onDeleteArtifacts={handleDeleteArtifacts}
-                    onEndSession={endSessionById}
-                    onClearActiveSession={clearActiveSessionState}
-                  />
-                </div>
-              </div>
+              </>
             )}
           </div>
         </div>
       </div>
       {/* ── Settings Dialog ── */}
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-lg">
-          <DialogTitle className="font-arcade text-primary text-sm tracking-wider">
+        <DialogContent className={`bg-black ${CARD_BORDER} max-w-lg`}>
+          <DialogTitle className="section-header">
             TUTOR SETTINGS
           </DialogTitle>
           <DialogDescription className="sr-only">
             Configure tutor model, speed tier, and custom instructions
           </DialogDescription>
           <div className="space-y-3 mt-2">
-            <label className="font-arcade text-xs text-muted-foreground">
+            <label className="section-header text-muted-foreground">
               Custom Instructions
             </label>
             {settingsLoading ? (
@@ -1441,7 +1450,7 @@ export default function Tutor() {
                 size="sm"
                 onClick={restoreDefaultInstructions}
                 disabled={settingsLoading || settingsSaving}
-                className="h-8 rounded-none font-arcade text-xs text-muted-foreground hover:text-primary border-2 border-transparent"
+                className={BTN_TOOLBAR}
               >
                 RESTORE DEFAULTS
               </Button>
@@ -1450,7 +1459,7 @@ export default function Tutor() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowSettings(false)}
-                  className="h-8 rounded-none font-arcade text-xs text-muted-foreground hover:text-primary border-2 border-transparent"
+                  className={BTN_TOOLBAR}
                 >
                   CANCEL
                 </Button>
