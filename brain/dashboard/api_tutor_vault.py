@@ -2104,3 +2104,146 @@ def _expected_obsidian_paths_for_session(session: dict) -> list[str]:
                             expected.add(cp_str)
 
     return sorted(expected)
+
+
+# ---------------------------------------------------------------------------
+# Vault janitor helpers — detect broken wikilinks, orphaned files, stale
+# objectives.  Called by the ``GET /api/tutor/vault/health`` endpoint.
+# ---------------------------------------------------------------------------
+
+_WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
+
+
+def _detect_broken_wikilinks(conn: sqlite3.Connection) -> list[dict[str, str]]:
+    """Scan tutor-managed vault notes for ``[[Target]]`` where target is missing.
+
+    Only inspects notes whose paths are associated with active (non-ended)
+    tutor sessions.  Returns a list of
+    ``{"source": "<note path>", "target": "<missing link target>"}``.
+    """
+    vault_root = _obsidian_vault_root_path()
+    if vault_root is None:
+        return []
+
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT session_id, content_filter_json, artifacts_json
+           FROM tutor_sessions
+           WHERE status != 'ended'""",
+    )
+    rows = cur.fetchall()
+
+    # Collect all note paths we manage
+    managed_paths: set[str] = set()
+    for row in rows:
+        session = dict(row)
+        managed_paths.update(_expected_obsidian_paths_for_session(session))
+
+    broken: list[dict[str, str]] = []
+    for rel_path in sorted(managed_paths):
+        abs_path = vault_root / rel_path
+        if not abs_path.exists():
+            continue
+        try:
+            content = abs_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for match in _WIKILINK_RE.finditer(content):
+            target = match.group(1).strip()
+            if not target:
+                continue
+            # Obsidian resolves wikilinks relative to vault root (shortest
+            # match), so we check both with and without ``.md`` extension.
+            candidates = [
+                vault_root / f"{target}.md",
+                vault_root / target,
+            ]
+            if not any(c.exists() for c in candidates):
+                broken.append({"source": rel_path, "target": target})
+
+    return broken
+
+
+def _detect_orphaned_files(conn: sqlite3.Connection) -> list[str]:
+    """Find tutor-managed files on disk not referenced by any active session.
+
+    Compares the set of vault notes *owned* by active sessions (via
+    ``_expected_obsidian_paths_for_session``) against the Study Notes
+    directory tree on disk.  Files that exist on disk but are not claimed
+    by any active session are considered orphaned.
+
+    Returns a sorted list of vault-relative paths.
+    """
+    vault_root = _obsidian_vault_root_path()
+    if vault_root is None:
+        return []
+
+    study_notes_root = vault_root / _study_notes_base_path()
+    if not study_notes_root.exists():
+        return []
+
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT session_id, content_filter_json, artifacts_json
+           FROM tutor_sessions
+           WHERE status != 'ended'""",
+    )
+    rows = cur.fetchall()
+
+    active_paths: set[str] = set()
+    for row in rows:
+        session = dict(row)
+        active_paths.update(_expected_obsidian_paths_for_session(session))
+
+    # Normalise to forward-slash for comparison
+    active_paths_normalised = {p.replace("\\", "/") for p in active_paths}
+
+    orphaned: list[str] = []
+    for md_file in study_notes_root.rglob("*.md"):
+        try:
+            rel = md_file.relative_to(vault_root).as_posix()
+        except ValueError:
+            continue
+        if rel not in active_paths_normalised:
+            orphaned.append(rel)
+
+    return sorted(orphaned)
+
+
+def _detect_stale_objectives(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    """Find objectives with status='active' but no session activity in 30+ days.
+
+    An objective is stale when its ``last_session_date`` is either NULL or
+    older than 30 days and its ``status`` is still ``'active'``.
+
+    Returns a list of dicts with ``id``, ``title``, ``status``,
+    ``last_session_date``, and ``days_inactive``.
+    """
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT id, title, status, last_session_date
+           FROM learning_objectives
+           WHERE status = 'active'
+             AND managed_by_tutor = 1
+             AND (
+               last_session_date IS NULL
+               OR julianday('now') - julianday(last_session_date) >= 30
+             )
+           ORDER BY last_session_date ASC""",
+    )
+    results: list[dict[str, Any]] = []
+    for row in cur.fetchall():
+        r = dict(row)
+        lsd = r.get("last_session_date")
+        if lsd:
+            try:
+                from datetime import datetime as _dt
+
+                delta = _dt.utcnow() - _dt.fromisoformat(lsd)
+                r["days_inactive"] = delta.days
+            except (ValueError, TypeError):
+                r["days_inactive"] = None
+        else:
+            r["days_inactive"] = None
+        results.append(r)
+    return results
