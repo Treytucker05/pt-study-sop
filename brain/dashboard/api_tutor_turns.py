@@ -762,7 +762,7 @@ def send_turn(session_id: str):
                 )
             elif _gemini_vision_on and material_ids:
                 gemini_video_context, gemini_diag = _build_gemini_vision_context(
-                    material_ids
+                    material_ids, topic=question
                 )
                 if gemini_video_context:
                     material_text = (

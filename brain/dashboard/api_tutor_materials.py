@@ -937,13 +937,185 @@ def _launch_video_process_job(
     return job_id
 
 
+def _tokenize_for_relevance(text: str) -> set[str]:
+    """Extract lowercase word tokens for relevance scoring.
+
+    Strips very short tokens (< 3 chars) and common stop words to
+    produce a set suitable for keyword-overlap comparisons.
+    """
+    _STOP_WORDS = frozenset({
+        "the", "and", "for", "are", "but", "not", "you", "all",
+        "can", "had", "her", "was", "one", "our", "out", "has",
+        "his", "how", "its", "may", "new", "now", "old", "see",
+        "way", "who", "did", "get", "let", "say", "she", "too",
+        "use", "this", "that", "with", "have", "from", "they",
+        "been", "said", "each", "which", "their", "will", "what",
+        "there", "when", "make", "like", "than", "into", "just",
+        "over", "such", "take", "also", "them", "some", "about",
+    })
+    words = set(re.findall(r"[a-z]{3,}", text.lower()))
+    return words - _STOP_WORDS
+
+
+def _score_segment_relevance(
+    segment_text: str,
+    topic_tokens: set[str],
+) -> float:
+    """Score a transcript/visual segment against topic keywords.
+
+    Returns a 0.0-1.0 relevance score based on keyword overlap ratio.
+    """
+    if not topic_tokens:
+        return 1.0  # No topic filter -- everything is relevant
+    seg_tokens = _tokenize_for_relevance(segment_text)
+    if not seg_tokens:
+        return 0.0
+    overlap = seg_tokens & topic_tokens
+    return len(overlap) / len(topic_tokens)
+
+
+_MIN_RELEVANCE_SCORE = 0.10  # Skip segments below 10% keyword overlap
+
+
+def _load_transcript_segments(latest_dir: Path) -> list[dict[str, Any]]:
+    """Load transcript segments from a video ingest output directory."""
+    segments_path = latest_dir / "segments.json"
+    if not segments_path.exists():
+        return []
+    try:
+        data = json.loads(segments_path.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            return data
+    except Exception:
+        pass
+    return []
+
+
+def _load_visual_notes(latest_dir: Path, slug: str) -> str:
+    """Load visual notes markdown from a video ingest output directory."""
+    visual_path = latest_dir / f"{slug}_visual_notes.md"
+    if not visual_path.exists():
+        return ""
+    try:
+        return visual_path.read_text(encoding="utf-8").strip()
+    except Exception:
+        return ""
+
+
+def _load_ocr_data(latest_dir: Path) -> dict[str, str]:
+    """Load OCR data keyed by frame filename."""
+    ocr_path = latest_dir / "ocr.json"
+    if not ocr_path.exists():
+        return {}
+    try:
+        data = json.loads(ocr_path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _filter_segments_by_topic(
+    segments: list[dict[str, Any]],
+    topic: str,
+    *,
+    min_score: float = _MIN_RELEVANCE_SCORE,
+) -> list[dict[str, Any]]:
+    """Filter and rank transcript segments by topic relevance.
+
+    Returns segments with score >= min_score, sorted by relevance descending.
+    When no topic is provided, returns all segments (unfiltered).
+    """
+    topic_tokens = _tokenize_for_relevance(topic)
+    if not topic_tokens:
+        return segments  # No filtering when topic is empty
+
+    scored: list[tuple[float, dict[str, Any]]] = []
+    for seg in segments:
+        text = str(seg.get("text", ""))
+        score = _score_segment_relevance(text, topic_tokens)
+        if score >= min_score:
+            scored.append((score, {**seg, "_relevance": round(score, 3)}))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [item[1] for item in scored]
+
+
+def _merge_video_contexts(
+    title: str,
+    relevant_segments: list[dict[str, Any]],
+    enrichment_text: str,
+    ocr_data: dict[str, str],
+    *,
+    max_segments: int = 30,
+    max_chars: int = 5000,
+) -> str:
+    """Merge transcript, visual/OCR, and enrichment into a single context block.
+
+    Structure:
+    1. Relevant transcript segments (timestamped)
+    2. OCR visual context from keyframes (if available)
+    3. Enrichment notes (Gemini analysis of flagged segments)
+    """
+    parts: list[str] = []
+
+    # --- Transcript segments (filtered by relevance) ---
+    if relevant_segments:
+        transcript_lines = [f"#### {title} -- Relevant Transcript Segments\n"]
+        for seg in relevant_segments[:max_segments]:
+            start_ts = seg.get("start_ts", "?")
+            end_ts = seg.get("end_ts", "?")
+            text = str(seg.get("text", "")).strip()
+            relevance = seg.get("_relevance")
+            label = f"[{start_ts} -> {end_ts}]"
+            if relevance is not None:
+                label += f" (relevance: {relevance})"
+            transcript_lines.append(f"- {label} {text}")
+        parts.append("\n".join(transcript_lines))
+
+    # --- OCR / Visual context ---
+    if ocr_data:
+        ocr_lines = [f"#### {title} -- Visual/OCR from Keyframes\n"]
+        for frame_name, ocr_text in list(ocr_data.items())[:15]:
+            short_text = ocr_text.replace("\n", " ").strip()[:300]
+            if short_text:
+                ocr_lines.append(f"- `{frame_name}`: {short_text}")
+        if len(ocr_lines) > 1:  # Has actual entries beyond header
+            parts.append("\n".join(ocr_lines))
+
+    # --- Enrichment (Gemini analysis of flagged segments) ---
+    if enrichment_text:
+        parts.append(
+            f"#### {title} -- Gemini Enrichment Notes\n\n{enrichment_text}"
+        )
+
+    merged = "\n\n".join(parts)
+    # Enforce character budget
+    if len(merged) > max_chars:
+        merged = merged[:max_chars] + "\n\n[... context truncated ...]"
+    return merged
+
+
 def _build_gemini_vision_context(
-    material_ids: list[int], *, max_materials: int = 2
+    material_ids: list[int],
+    *,
+    topic: str = "",
+    max_materials: int = 2,
 ) -> tuple[str, str]:
     """Best-effort Gemini video enrichment context for selected MP4 materials.
 
+    When a topic (student question) is provided, transcript segments are
+    filtered by keyword-overlap relevance (>= 10% overlap) so the LLM
+    receives only the most pertinent video context.  Visual OCR data and
+    enrichment notes are merged into a single structured block.
+
+    Args:
+        material_ids: rag_doc IDs to search for MP4 materials.
+        topic: The student's current question / session topic for
+            relevance filtering.  Empty string disables filtering.
+        max_materials: Cap on how many MP4 files to process.
+
     Returns:
-        (context_text, diagnostic) -- context_text is the enrichment markdown
+        (context_text, diagnostic) -- context_text is the merged context
         for the LLM; diagnostic is a user-facing reason when context is empty.
     """
     scoped_ids = [
@@ -1005,20 +1177,25 @@ def _build_gemini_vision_context(
             continue
 
         latest_dir = matching_dirs[0]
-        segments_path = latest_dir / "segments.json"
-        if not segments_path.exists():
+
+        # --- Load transcript segments and filter by topic relevance ---
+        raw_segments = _load_transcript_segments(latest_dir)
+        if not raw_segments:
             continue
 
+        relevant_segments = _filter_segments_by_topic(raw_segments, topic)
+
+        # --- Load visual/OCR data ---
+        ocr_data = _load_ocr_data(latest_dir)
+
+        # --- Load or generate enrichment markdown ---
+        enrichment_text = ""
         enrichment_md = latest_dir / f"{slug}_enrichment.md"
         if not enrichment_md.exists():
             try:
-                segments = json.loads(segments_path.read_text(encoding="utf-8"))
-            except Exception:
-                continue
-            try:
                 result = enrich_video(
                     video_path=source_path,
-                    segments=segments,
+                    segments=raw_segments,
                     material_id=int(row.get("id") or 0),
                     mode="auto",
                 )
@@ -1028,19 +1205,24 @@ def _build_gemini_vision_context(
                     )
                     enrichment_md = Path(md_path)
             except Exception:
-                continue
+                pass  # Enrichment is best-effort
 
-        if not enrichment_md.exists():
-            continue
+        if enrichment_md.exists():
+            try:
+                enrichment_text = enrichment_md.read_text(encoding="utf-8")[:3000].strip()
+            except Exception:
+                pass
 
-        try:
-            excerpt = enrichment_md.read_text(encoding="utf-8")[:5000].strip()
-        except Exception:
-            continue
-        if not excerpt:
-            continue
+        # --- Merge all video contexts ---
         title = str(row.get("title") or f"Material {row.get('id')}")
-        blocks.append(f"### {title}\n{excerpt}")
+        merged = _merge_video_contexts(
+            title,
+            relevant_segments,
+            enrichment_text,
+            ocr_data,
+        )
+        if merged.strip():
+            blocks.append(merged)
 
     if not blocks:
         if not mp4_found:
