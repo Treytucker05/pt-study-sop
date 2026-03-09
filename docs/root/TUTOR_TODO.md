@@ -92,10 +92,10 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - `conductor/tracks.md`
   - `conductor/tracks/GENERAL/log.md`
   - `conductor/tracks/topdown-tutor-hardening_20260307/`
-- [ ] Phase 0: lock the top-down chains as the runtime proving ground and record the exact weak method cards.
-- [ ] Phase 1: rewrite global runtime tutor rules for hybrid teaching + honest provenance.
-- [ ] Phase 2: add chain runtime profiles and block overrides for `C-TRY-001` and `C-TRY-002`.
-- [ ] Phase 3: improve qualitative confidence/provenance signaling in Tutor replies.
+- [x] Phase 0: lock the top-down chains as the runtime proving ground and record the exact weak method cards. (2026-03-09, `0bbbade2`)
+- [x] Phase 1: rewrite global runtime tutor rules for hybrid teaching + honest provenance. (2026-03-09, `0bbbade2`)
+- [x] Phase 2: add chain runtime profiles and block overrides for `C-TRY-001` and `C-TRY-002`. (2026-03-09, `0bbbade2`)
+- [x] Phase 3: improve qualitative confidence/provenance signaling in Tutor replies. (2026-03-09, `0bbbade2`)
 - [ ] Phase 4: compare live Week 7 Tutor behavior on `C-TRY-001` vs `C-TRY-002`.
 
 ### Sprint 14: Neuroscience Exam Intake + First Tutor Run (2026-03-07)
@@ -449,12 +449,12 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [x] Add note graph extraction and persistence plan.
 
 ## Workstream C — Chain/Method Transfer Integrity
-- [ ] Verify methods/chains are consistently represented across:
+- [x] Verify methods/chains are consistently represented across: (2026-03-09, `bcf7950a` behavioral contracts + Queue B drift checks)
   - YAML source
   - DB seed/runtime
   - Tutor wizard
   - Tutor chat execution
-- [ ] Add drift checks for method-stage mismatch and missing knob defaults.
+- [x] Add drift checks for method-stage mismatch and missing knob defaults. (2026-03-09, Queue B1.3 runtime drift detector)
 
 ## Workstream D — CALIBRATE Hardening (Completed 2026-02-22)
 - [x] Hardened `M-CAL-001` (Micro Precheck) with scored-baseline constraints and full tutor prompt.
@@ -532,11 +532,11 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ### Queue C — Category Coverage and Documentation Closure
 
-- [ ] C1.1 Ensure all 6 category pages include full method list + tutor prompt blocks.
-  - Files: `C:\Users\treyt\Desktop\Treys School\Study System\Categories\Prime.md`, `.../Calibrate.md`, `.../Encode.md`, `.../Reference.md`, `.../Retrieve.md`, `.../Overlearn.md`, `.../Categories.md`
+- [x] C1.1 Ensure all 6 category pages include full method list + tutor prompt blocks. (2026-03-09, `cd8e0592`)
+  - Files: `sop/library/categories/PRIME.md`, `.../CALIBRATE.md`, `.../ENCODE.md`, `.../REFERENCE.md`, `.../RETRIEVE.md`, `.../OVERLEARN.md`
   - Done when: each category page has method inventory + `Method Contract` table + one executable prompt per method.
 
-- [ ] C1.2 Reconcile manager-facing notes with code reality.
+- [x] C1.2 Reconcile manager-facing notes with code reality. (2026-03-09, policy reconciliation verified — no contradictions found)
   - Files: `docs/root/TUTOR_TRUTH_PATH.md`, `docs/root/TUTOR_CATEGORY_DEFINITIONS.md`, `docs/root/TUTOR_METHOD_SELECTION_RULES.md`, `docs/root/TUTOR_NORTH_STAR_RULES.md`
   - Done when: there are no policy contradictions (e.g., "3-5 concepts only" vs "module_all mode") across these files.
 
@@ -560,15 +560,15 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ### Queue E — UI/Method Controls (Methods Board Polish)
 
-- [ ] E1.1 Lock methods controls (Favorite/Rate/Edit) and remove stale destructive action from board cards.
+- [x] E1.1 Lock methods controls (Favorite/Rate/Edit) and remove stale destructive action from board cards. (2026-03-09, `bbbf2f5c`)
   - Files: `dashboard_rebuild/client/src/pages/methods.tsx`
   - Done when: controls are always-visible, non-overlapping, and map to documented actions.
 
-- [ ] E1.2 Validate dropdown/select reliability in method edit workflows.
+- [x] E1.2 Validate dropdown/select reliability in method edit workflows. (2026-03-09, `bbbf2f5c`)
   - Files: `dashboard_rebuild/client/src/pages/methods.tsx`, `dashboard_rebuild/client/src/components/ui/select.tsx`
   - Done when: category/stage dropdown selections save reliably in one interaction on desktop and mobile widths.
 
-- [ ] E1.3 Restore compact fallback path for prompt edits and reset behavior.
+- [x] E1.3 Restore compact fallback path for prompt edits and reset behavior. (2026-03-09, `bbbf2f5c`)
   - Files: `dashboard_rebuild/client/src/pages/methods.tsx`, `brain/dashboard/api_tutor.py`
   - Done when: tutor prompt edits preserve schema fields and can be reset to canonical template in one action.
 
