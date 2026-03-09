@@ -1423,7 +1423,7 @@ def get_linked_chat(brain_session_id: int):
 
     if include_turns:
         for sess in linked_sessions:
-            turns = _get_session_turns(conn, sess["session_id"], limit=200)
+            turns = _get_session_turns(conn, sess["session_id"])
             for turn in turns:
                 for field in ("citations_json", "artifacts_json"):
                     if turn.get(field):

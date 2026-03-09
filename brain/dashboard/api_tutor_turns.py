@@ -77,20 +77,25 @@ def _get_tutor_session(conn, session_id: str) -> Optional[dict]:
     return dict(row) if row else None
 
 
-def _get_session_turns(conn, session_id: str, limit: int = 50) -> list[dict]:
-    """Fetch recent tutor_turns for a session."""
+def _get_session_turns(conn, session_id: str, limit: int | None = None) -> list[dict]:
+    """Fetch tutor_turns for a session, ordered by turn_number ASC.
+
+    Args:
+        limit: Max rows to return.  ``None`` (default) returns all turns.
+    """
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
-    cur.execute(
-        """SELECT id, turn_number, question, answer, citations_json,
-                  phase, artifacts_json, response_id, model_id,
-                  behavior_override, evaluation_json, created_at
-           FROM tutor_turns
-           WHERE tutor_session_id = ?
-           ORDER BY turn_number ASC
-           LIMIT ?""",
-        (session_id, limit),
-    )
+    sql = """SELECT id, turn_number, question, answer, citations_json,
+                    phase, artifacts_json, response_id, model_id,
+                    behavior_override, evaluation_json, created_at
+             FROM tutor_turns
+             WHERE tutor_session_id = ?
+             ORDER BY turn_number ASC"""
+    params: list = [session_id]
+    if limit is not None:
+        sql += " LIMIT ?"
+        params.append(limit)
+    cur.execute(sql, params)
     return [dict(r) for r in cur.fetchall()]
 
 
