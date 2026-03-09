@@ -24,6 +24,7 @@ from dashboard.app import create_app
 import dashboard.api_data as _api_data_mod
 import dashboard.api_adapter as _api_adapter_mod
 import dashboard.api_tutor as _api_tutor_mod
+import dashboard.api_tutor_turns as _api_tutor_turns_mod
 import llm_provider
 import tutor_context
 import tutor_tools
@@ -1715,7 +1716,7 @@ def test_send_turn_blocks_when_prompt_and_artifact_contract_missing(
     )
     tutor_sid = _create_tutor_session(client, method_chain_id=chain_id)
 
-    monkeypatch.setattr(_api_tutor_mod, "_load_method_contracts", lambda: {})
+    monkeypatch.setattr(_api_tutor_turns_mod, "_load_method_contracts", lambda: {})
 
     resp = client.post(
         f"/api/tutor/session/{tutor_sid}/turn",
