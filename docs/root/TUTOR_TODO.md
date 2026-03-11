@@ -16,7 +16,28 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - `docs/root/TUTOR_TODO.md` (active workboard)
   - `conductor/tracks.md` (track registry / archival)
 
-## Active Sprint 2026-03-06
+## Active Sprint 2026-03-11
+
+### Sprint 21: Brain / Scholar / Tutor Realignment + Premium Individual Foundation (2026-03-11)
+- [ ] Claim scope: product contract freeze + conductor roadmap
+  - `conductor/tracks/brain-scholar-tutor-realignment_20260311/`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks.md`
+  - `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+  - `docs/root/TUTOR_OWNER_INTENT.md`
+  - `docs/root/PROJECT_ARCHITECTURE.md`
+  - `conductor/product.md`
+  - `scholar/CHARTER.md`
+  - `scholar/README.md`
+  - `docs/root/GUIDE_USER.md`
+- [x] Phase 0: clean the worktree, open the conductor track, publish the decision record, and freeze the roadmap/gap matrix.
+- [x] Phase 1: align active canon and product docs to the frozen Brain / Scholar / Tutor contract.
+  - Updated the master canon, owner intent, project architecture, conductor product definition, Scholar charter/quickstart, and user guide so they now describe the same Brain / Scholar / Tutor contract.
+- [ ] Phase 2: freeze Brain learner-model ontology, evidence ownership, and migration rules.
+- [ ] Phase 3: ship Brain learner-profile MVP.
+- [ ] Phase 4: ship Scholar learner-facing research MVP with cited web research.
+- [ ] Phase 5: define and validate the bounded Scholar-to-Tutor strategy envelope.
+- [ ] Phase 6: redesign the premium shell, onboarding, trust surfaces, and commercial hardening artifacts.
 
 ### Sprint 20: Vault Stabilization + Health Truthfulness (2026-03-10)
 - [x] Claim scope: live Obsidian vault contract + truthful Vault Health diagnostics

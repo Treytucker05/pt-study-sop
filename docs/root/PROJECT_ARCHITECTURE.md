@@ -1,7 +1,7 @@
 # PT Study System — Comprehensive Project Architecture
 
-**Version:** 4.1
-**Last Updated:** 2026-03-06
+**Version:** 4.2
+**Last Updated:** 2026-03-11
 **Scope:** Entire repository (SOP, Brain, Scholar, Scripts)
 **Purpose:** Canonical technical documentation for system architecture, dependencies, and integration. This is a technical architecture document, not the top-level product vision source of truth.
 
@@ -13,13 +13,16 @@
 
 ## 1. Executive Summary
 
-The **PT Study System** is a personal AI operating system for DPT coursework, integrating four main pillars. Canonical dashboard behavior and flows are documented in `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`.
+The **PT Study System** is a personal AI operating system for DPT coursework organized around three product systems and several supporting systems. Canonical dashboard behavior and flows are documented in `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`.
 
-Core pillars:
-1.  **SOP System (`sop/`)**: A rigorous learning methodology (CP-MSS v1.0) consumed by the native Flask tutor engine.
-2.  **Scholar System (`scholar/`)**: A meta-system that audits study logs, detects friction, and proposes optimizations.
-3.  **Brain System (`brain/`)**: The central operational database, ingestion engine, telemetry store, and Flask-based analytics dashboard.
-4.  **Scripts & Automation (`scripts/`)**: Release validation, external integrations, and agent workflows.
+Core product systems:
+1.  **Brain System (`brain/`)**: The learner-model engine and operational source of truth for telemetry, evidence, mastery, and profile claims.
+2.  **Scholar System (`scholar/`)**: The direct research partner that interprets Brain evidence, asks focused questions, and proposes bounded improvements.
+3.  **Tutor System (`brain/dashboard/api_tutor.py` + `dashboard_rebuild/`)**: The live protocol-led teaching engine.
+
+Supporting systems:
+1.  **SOP System (`sop/`)**: The rigorous learning methodology (CP-MSS v1.0) consumed by the Tutor runtime.
+2.  **Scripts & Automation (`scripts/`)**: Release validation, external integrations, and agent workflows.
 
 This document serves as the "Project Map," superseding previous architecture docs.
 
@@ -27,8 +30,10 @@ The Study Buddy contract is:
 
 - Library determines what Tutor teaches.
 - SOP determines how Tutor teaches.
-- Brain stores operational truth and telemetry.
-- Scholar interprets Brain outputs and proposes approved changes.
+- Brain captures telemetry, builds learner evidence, and maintains visible learner-model outputs.
+- Scholar interprets Brain outputs, can ask focused questions, and proposes approved changes through cited research and bounded findings.
+- Tutor is the only live course-content teaching engine.
+- Brain does not directly steer Tutor; any live adaptation must pass through Scholar in a bounded envelope.
 - Obsidian is the primary notes home.
 - Anki output is chain-conditional.
 
@@ -168,10 +173,10 @@ See `sop/library/10-deployment.md` for the canonical checklist. Summary:
 
 ## 3. Scholar System (scholar/)
 
-Scholar is the "auditor" meta-system. It reads Brain data and can emit proposals or metadata-backed actions, but it is not the live teaching system and it does not directly set Tutor pedagogy.
+Scholar is the research and strategy layer. It reads Brain data, can ask focused learner questions when needed, performs cited research, and emits findings or metadata-backed proposals. It is not the live teaching system and it does not directly set Tutor pedagogy.
 
-**Mission:** Observe study patterns, detect friction, and propose system upgrades.
-**Constraint:** Scholar never teaches content. It only optimizes the *process*.
+**Mission:** Observe study patterns, investigate learner fit and system friction, and propose bounded upgrades.
+**Constraint:** Scholar never teaches course content. It only researches and optimizes the *process*.
 
 ### 3.1 Core Scripts
 
@@ -183,7 +188,7 @@ Scholar is the "auditor" meta-system. It reads Brain data and can emit proposals
 
 ### 3.2 Workflow Architecture (`scholar/workflows/`)
 
-Scholar operates on a **Review → Plan → Research → Draft → Wait** cycle.
+Scholar operates on a **Review → Question → Research → Draft → Wait** cycle.
 
 **Key Workflows:**
 - `01_CONTINUOUS_IMPROVEMENT.md`: The main loop (Audit → Propose → Wait).
@@ -207,15 +212,16 @@ Scholar organizes its artifacts into strict folders ("lanes"):
 
 ### 3.4 Integration Points
 
-- **Reads:** `brain/session_logs/` (via DB), `sop/library/` (for compliance checks).
+- **Reads:** `brain/session_logs/` (via DB), Brain learner-evidence surfaces, `sop/library/` (for compliance checks).
 - **Writes:** `scholar/outputs/` (reports), `brain/data/scholar_proposals` (metadata).
+- **External Research:** uses approved citation-preserving web research flows.
 - **Triggers:** Run via `scripts/run_scholar.bat` (Codex CLI agent).
 
 ---
 
 ## 4. Brain System (brain/)
 
-The **Brain** is the single source of truth for operational study data, containing the database, ingestion pipelines, helper engines, and telemetry needed by Dashboard and Scholar.
+The **Brain** is the learner-model engine and single source of truth for operational study data. It contains the database, ingestion pipelines, helper engines, telemetry, mastery evidence, and learner-profile signals needed by Dashboard, Scholar, and Tutor.
 
 ### 4.1 Database Schema (`data/pt_study.db`)
 

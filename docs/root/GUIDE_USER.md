@@ -6,13 +6,20 @@ Learners using the system to run study sessions, track progress, and improve per
 
 ## System Overview (At a Glance)
 
+Trey’s Study System is built around three systems:
+
+- **Brain** = tracks how you learn, what is sticking, and where you struggle
+- **Scholar** = researches how to improve the system and can ask you focused questions
+- **Tutor** = teaches you live from your selected materials
+
 The study lifecycle is:
 1. Upload study materials (slides, PDFs, notes) via the **Library** page (`/library`).
 2. Start a **Tutor** session (`/tutor`) — pick course, attach materials, select a chain.
 3. Tutor walks you through the chain block-by-block with RAG-powered retrieval over your materials.
 4. At wrap: Exit Ticket + Session Ledger → saved to DB + Obsidian vault.
-5. Scholar audits session data → proposes evidence-based improvements.
-6. Dashboard/Calendar surface priorities → next Tutor targets.
+5. **Brain** stores telemetry, updates learner evidence, and tracks progress patterns.
+6. **Scholar** audits that evidence, asks focused research questions when needed, and produces findings/proposals.
+7. Dashboard/Calendar surface priorities → next Tutor targets.
 
 ```
 Library (upload materials)
@@ -24,10 +31,10 @@ Tutor Wizard (course + chain + mode)
 Chain Execution (PRIME → CALIBRATE → ENCODE → REFERENCE → RETRIEVE → OVERLEARN)
     |
     v
-Wrap (Exit Ticket + Session Ledger + Anki cards)
+Wrap (Exit Ticket + Session Ledger + Anki cards when applicable)
     |
     v
-Dashboard + Scholar (metrics, audits, next targets)
+Brain (telemetry + learner evidence) -> Scholar (research + findings) -> next Tutor target
 ```
 
 ---
@@ -49,6 +56,7 @@ What the system does automatically:
 - Ingests uploaded files → extracts text → embeds into ChromaDB for RAG retrieval.
 - Creates missing entities (Course, Topic) from session metadata.
 - Writes session artifacts to the Obsidian vault (fire-and-forget).
+- Stores study telemetry in Brain so the system can learn what helps you most over time.
 
 ### Optional later
 - Add assessments (date optional) via the Dashboard.
@@ -203,9 +211,9 @@ Fewer toggles = faster responses (~1-2s). All toggles on = full pipeline (~5-8s)
 | Page | Route | Purpose |
 |------|-------|---------|
 | Dashboard | `/` | Overview, quick stats |
-| Brain | `/brain` | Session ingestion, logs, Anki sync |
+| Brain | `/brain` | Learner evidence, telemetry, mastery signals, vault-linked study artifacts |
 | Calendar | `/calendar` | Google Calendar/Tasks, local events |
-| Scholar | `/scholar` | Audit runs, proposals, lifecycle panel |
+| Scholar | `/scholar` | Investigations, questions, findings, proposals, research status |
 | **Tutor** | `/tutor` | **Chat, sources drawer, Map of Contents, vault authoring** |
 | **Library** | `/library` | **Study material upload, course organization, source selection** |
 | Methods | `/methods` | Block library, chains, analytics |

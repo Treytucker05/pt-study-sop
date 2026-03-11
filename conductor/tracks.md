@@ -4,9 +4,14 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: `tutor-10-certification_20260307` is active on 2026-03-07.
+Active status: `brain-scholar-tutor-realignment_20260311` is active on 2026-03-11.
 
-Latest update: 2026-03-07 opened `Tutor 10/10 Certification` to define the release gate, freeze initial chain dispositions and fixture plans, and expose certification metadata through the template-chain API.
+Latest update: 2026-03-11 completed Wave 0 contract freeze for `Brain / Scholar / Tutor Realignment`, aligned the active canon/docs, and moved the track to Brain ontology work.
+
+- [ ] **Track: Brain / Scholar / Tutor Realignment** (active — created 2026-03-11; scope: contract freeze, Brain learner model, Scholar research partner, bounded Tutor mediation, premium-individual shell)
+  *Link: [./tracks/brain-scholar-tutor-realignment_20260311/](./tracks/brain-scholar-tutor-realignment_20260311/)*
+
+---
 
 - [ ] **Track: Tutor 10/10 Certification** (active — created 2026-03-07; scope: scorecard, fixtures, chain dispositions, certification harness, release gate)
   *Link: [./tracks/tutor-10-certification_20260307/](./tracks/tutor-10-certification_20260307/)*

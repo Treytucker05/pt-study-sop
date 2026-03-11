@@ -8,6 +8,9 @@ Overall system canon now lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
 This file is a supporting owner-intent reference, not the top-level Study Buddy truth path.
 
 ## Core Intent
+- Keep Trey’s Study System visibly organized around **Brain / Scholar / Tutor** rather than around a pile of pages.
+- Make **Brain** identify how the learner learns best using evidence-backed profile claims and visible hybrid learner archetypes.
+- Make **Scholar** a direct research partner that can ask the learner focused questions, research the web, and improve the system without becoming the teaching engine.
 - Build a tutor that teaches any learner at any level and makes learning stick long-term.
 - Prioritize durable learning and transfer, not short-term performance optics.
 
@@ -16,7 +19,10 @@ This file is a supporting owner-intent reference, not the top-level Study Buddy 
   - `PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`
 - Model is `Category -> Method -> Knob -> Chain`.
 - Library controls what Tutor teaches.
-- Brain stores telemetry and fit signals, but Scholar is the layer that turns Brain outputs into system-improvement proposals.
+- Brain stores telemetry and fit signals, builds learner-profile claims, and exposes challengeable archetype summaries.
+- Scholar is the layer that turns Brain outputs into research, learner questions, strategy recommendations, and system-improvement proposals.
+- Brain must not directly steer Tutor. Any live adaptation must pass through Scholar in a bounded envelope.
+- Scholar may ask the learner focused research/calibration questions and perform cited web research, but it must not teach course content.
 - Obsidian is the main note home.
 - Anki output is chain-conditional, not always-on.
 - Tutor-generated Obsidian notes must include wiki links at creation time (not deferred cleanup).
@@ -42,6 +48,11 @@ This file is a supporting owner-intent reference, not the top-level Study Buddy 
 - If a recommendation conflicts with this file on owner-specific Tutor lock-ins, this file wins unless owner explicitly changes it.
 
 ## Change Log
+- 2026-03-11:
+  - Locked the 3-part system identity: Brain = learner-model engine, Scholar = research partner, Tutor = live teacher.
+  - Locked Brain learner archetypes as visible, challengeable, evidence-backed summaries rather than hidden labels.
+  - Locked Scholar as learner-facing first with focused questions + cited web research, while keeping Tutor as the only live teaching engine.
+  - Locked the no-direct-Brain-to-Tutor rule; live adaptation must pass through Scholar.
 - 2026-03-06:
   - Clarified that Library controls content scope while SOP controls teaching behavior.
   - Clarified that Brain feeds Scholar for system improvement rather than directly steering Tutor pedagogy.
