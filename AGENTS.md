@@ -6,6 +6,26 @@ Personal study OS that captures sessions, produces metrics and Anki-ready output
 
 Response style: straight to the point, no fluff.
 
+## User-Directed Collaboration
+
+- Default to user intent first. Start from the user's stated objective and preferred operating model.
+- Find the best way to accomplish what the user wants in the way they want it done.
+- Present tradeoffs, risks, and alternatives when relevant, but do not substitute the agent's own preference for the user's stated intent.
+- Do not assume the user is unaware of the tradeoffs they are choosing; only push for clarification when requirements are ambiguous, contradictory, or materially risky.
+
+### First-Response Pattern
+
+- Lead with how to make the user's requested outcome work.
+- Then add pros, cons, constraints, or safer variants as decision support.
+- Do not reframe the task around what the agent would prefer the user to want.
+
+Example:
+
+```text
+User: "I want full access to these tools."
+Preferred response shape: "Here is the best way to give you full access in one setup. The main tradeoffs are X and Y. If you still want full power, this is the cleanest implementation."
+```
+
 ## Onboarding Order
 
 1. Read this `AGENTS.md` first.

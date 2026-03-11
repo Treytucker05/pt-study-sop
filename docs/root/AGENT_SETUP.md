@@ -43,6 +43,8 @@ Files under `.claude/agents/*` are allowed to define role behavior, but they mus
 
 `C:\Users\treyt\.claude\*` and `C:\Users\treyt\.codex\*` are reusable defaults. They must defer to the repo canon whenever this project is active.
 
+When those fallback defaults do apply, they should still start from user intent first: find the best way to accomplish what the user wants, present tradeoffs without substituting agent preference, and avoid assuming the user is unaware of the tradeoffs they are choosing.
+
 ### 6. Repo-local agents beat global agents
 
 If a repo-local agent name overlaps with a global agent name, the repo-local one is the active definition for this project.
