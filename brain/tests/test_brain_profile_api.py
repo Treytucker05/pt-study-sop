@@ -258,6 +258,15 @@ def test_get_brain_profile_summary_contract(client):
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["snapshotId"] > 0
+
+
+def test_export_brain_profile_contract(client):
+    resp = client.get("/api/brain/profile/export")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["userId"] == DEFAULT_USER_ID
+    assert data["summary"]["snapshotId"] > 0
+    assert isinstance(data["claims"], list)
     assert "hybridArchetype" in data
     assert "profileSummary" in data
     assert "claimsOverview" in data

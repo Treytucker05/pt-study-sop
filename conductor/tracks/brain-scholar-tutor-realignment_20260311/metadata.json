@@ -2,15 +2,15 @@
   "id": "brain-scholar-tutor-realignment_20260311",
   "title": "Brain / Scholar / Tutor Realignment",
   "type": "roadmap",
-  "status": "active",
+  "status": "complete",
   "created": "2026-03-11T00:00:00Z",
-  "updated": "2026-03-11T18:30:00Z",
+  "updated": "2026-03-11T23:30:00Z",
   "phases": {
     "total": 6,
-    "completed": 1
+    "completed": 6
   },
   "tasks": {
     "total": 63,
-    "completed": 20
+    "completed": 63
   }
 }

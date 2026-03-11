@@ -128,6 +128,74 @@ def _create_learner_profile_tables(cursor) -> None:
     )
 
 
+def _create_product_shell_tables(cursor) -> None:
+    """Create premium product shell tables for events, privacy, and feature flags."""
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS product_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL UNIQUE,
+            user_id TEXT NOT NULL DEFAULT 'default',
+            workspace_id TEXT NOT NULL DEFAULT 'default',
+            event_type TEXT NOT NULL,
+            source TEXT NOT NULL DEFAULT 'system',
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_product_events_scope_created
+        ON product_events(user_id, workspace_id, created_at DESC)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_product_events_type_created
+        ON product_events(event_type, created_at DESC)
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS product_privacy_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL DEFAULT 'default',
+            workspace_id TEXT NOT NULL DEFAULT 'default',
+            retention_days INTEGER NOT NULL DEFAULT 180,
+            allow_tier2_signals INTEGER NOT NULL DEFAULT 1,
+            allow_vault_signals INTEGER NOT NULL DEFAULT 1,
+            allow_calendar_signals INTEGER NOT NULL DEFAULT 1,
+            allow_scholar_personalization INTEGER NOT NULL DEFAULT 1,
+            allow_outcome_reports INTEGER NOT NULL DEFAULT 1,
+            updated_at TEXT NOT NULL,
+            UNIQUE(user_id, workspace_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS product_feature_flags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            flag_key TEXT NOT NULL UNIQUE,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            variant TEXT NOT NULL DEFAULT 'on',
+            description TEXT,
+            scope TEXT NOT NULL DEFAULT 'global',
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_product_feature_flags_scope
+        ON product_feature_flags(scope, enabled)
+        """
+    )
+
+
 def _migrate_academic_deadlines(cursor) -> None:
     """Merge academic_deadlines into course_events, then drop the table.
 
@@ -1251,6 +1319,21 @@ def init_database():
     _create_learner_profile_tables(cursor)
 
     # ------------------------------------------------------------------
+    # Premium product shell tables
+    # ------------------------------------------------------------------
+    _create_product_shell_tables(cursor)
+
+    # ------------------------------------------------------------------
+    # Scholar research tables
+    # ------------------------------------------------------------------
+    try:
+        from scholar_research import ensure_scholar_research_schema
+
+        ensure_scholar_research_schema(conn)
+    except Exception as exc:
+        print(f"[WARN] Scholar research tables skipped: {exc}")
+
+    # ------------------------------------------------------------------
     # Scholar Digests table (strategic analysis documents)
     # ------------------------------------------------------------------
     cursor.execute(
@@ -1370,6 +1453,106 @@ def init_database():
     """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_investigations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            investigation_id TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            query_text TEXT NOT NULL,
+            rationale TEXT NOT NULL,
+            audience_type TEXT NOT NULL DEFAULT 'learner',
+            mode TEXT NOT NULL DEFAULT 'brain',
+            status TEXT NOT NULL DEFAULT 'queued',
+            source_policy TEXT NOT NULL DEFAULT 'trusted-first',
+            confidence TEXT NOT NULL DEFAULT 'low',
+            uncertainty_summary TEXT,
+            linked_profile_snapshot_id TEXT,
+            requested_by TEXT NOT NULL DEFAULT 'ui',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            started_at TEXT,
+            completed_at TEXT,
+            run_notes TEXT,
+            output_markdown TEXT,
+            error_message TEXT
+        )
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_investigations_status
+        ON scholar_investigations(status)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_investigations_updated
+        ON scholar_investigations(updated_at DESC)
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_sources (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_id TEXT NOT NULL UNIQUE,
+            investigation_id TEXT NOT NULL,
+            url TEXT NOT NULL,
+            normalized_url TEXT NOT NULL,
+            domain TEXT NOT NULL,
+            title TEXT,
+            publisher TEXT,
+            published_at TEXT,
+            snippet TEXT,
+            source_type TEXT NOT NULL DEFAULT 'web',
+            trust_tier TEXT NOT NULL DEFAULT 'general',
+            rank_order INTEGER NOT NULL DEFAULT 0,
+            fetched_at TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(investigation_id) REFERENCES scholar_investigations(investigation_id)
+        )
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_sources_investigation
+        ON scholar_sources(investigation_id)
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_sources_domain
+        ON scholar_sources(domain)
+    """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS scholar_findings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            finding_id TEXT NOT NULL UNIQUE,
+            investigation_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            relevance TEXT,
+            confidence TEXT NOT NULL DEFAULT 'low',
+            uncertainty TEXT,
+            learner_visible INTEGER NOT NULL DEFAULT 1,
+            source_ids_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(investigation_id) REFERENCES scholar_investigations(investigation_id)
+        )
+    """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_scholar_findings_investigation
+        ON scholar_findings(investigation_id)
+    """
+    )
+
     # ------------------------------------------------------------------
     # Scholar Run tracking (v9.4.2 - for UI run button + history)
     # ------------------------------------------------------------------
@@ -1418,6 +1601,72 @@ def init_database():
                 ("answer_source", "TEXT"),
                 ("status_updated_at", "TEXT"),
                 ("status_reason", "TEXT"),
+                ("audience_type", "TEXT"),
+                ("rationale", "TEXT"),
+                ("is_blocking", "INTEGER DEFAULT 0"),
+                ("linked_investigation_id", "TEXT"),
+                ("evidence_needed", "TEXT"),
+                ("answer_incorporation_status", "TEXT"),
+                ("answer_incorporated_at", "TEXT"),
+            ],
+        ),
+        (
+            "scholar_investigations",
+            [
+                ("investigation_id", "TEXT"),
+                ("title", "TEXT"),
+                ("query_text", "TEXT"),
+                ("rationale", "TEXT"),
+                ("audience_type", "TEXT"),
+                ("mode", "TEXT"),
+                ("status", "TEXT"),
+                ("source_policy", "TEXT"),
+                ("confidence", "TEXT"),
+                ("uncertainty_summary", "TEXT"),
+                ("linked_profile_snapshot_id", "TEXT"),
+                ("requested_by", "TEXT"),
+                ("created_at", "TEXT"),
+                ("updated_at", "TEXT"),
+                ("started_at", "TEXT"),
+                ("completed_at", "TEXT"),
+                ("run_notes", "TEXT"),
+                ("output_markdown", "TEXT"),
+                ("error_message", "TEXT"),
+            ],
+        ),
+        (
+            "scholar_sources",
+            [
+                ("source_id", "TEXT"),
+                ("investigation_id", "TEXT"),
+                ("url", "TEXT"),
+                ("normalized_url", "TEXT"),
+                ("domain", "TEXT"),
+                ("title", "TEXT"),
+                ("publisher", "TEXT"),
+                ("published_at", "TEXT"),
+                ("snippet", "TEXT"),
+                ("source_type", "TEXT"),
+                ("trust_tier", "TEXT"),
+                ("rank_order", "INTEGER"),
+                ("fetched_at", "TEXT"),
+                ("created_at", "TEXT"),
+            ],
+        ),
+        (
+            "scholar_findings",
+            [
+                ("finding_id", "TEXT"),
+                ("investigation_id", "TEXT"),
+                ("title", "TEXT"),
+                ("summary", "TEXT"),
+                ("relevance", "TEXT"),
+                ("confidence", "TEXT"),
+                ("uncertainty", "TEXT"),
+                ("learner_visible", "INTEGER"),
+                ("source_ids_json", "TEXT"),
+                ("created_at", "TEXT"),
+                ("updated_at", "TEXT"),
             ],
         ),
     ]:
@@ -1789,12 +2038,15 @@ def init_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id TEXT NOT NULL UNIQUE,
             brain_session_id INTEGER,
+            brain_profile_snapshot_id INTEGER,
             codex_thread_id TEXT,
             last_response_id TEXT,
             course_id INTEGER,
             phase TEXT NOT NULL DEFAULT 'first_pass',
             topic TEXT,
             content_filter_json TEXT,
+            scholar_strategy_json TEXT,
+            strategy_feedback_json TEXT,
             status TEXT DEFAULT 'active',
             turn_count INTEGER DEFAULT 0,
             artifacts_json TEXT,
@@ -2163,10 +2415,27 @@ def init_database():
     except ImportError as exc:
         print(f"[WARN] Adaptive tables skipped (import failed): {exc}")
 
-    # tutor_turns: add evaluation_json + behavior_override columns
+    # tutor_sessions: add strategy/profile columns
+    cursor.execute("PRAGMA table_info(tutor_sessions)")
+    ts_cols_strategy = {col[1] for col in cursor.fetchall()}
+    for col_name, col_type in [
+        ("brain_profile_snapshot_id", "INTEGER"),
+        ("scholar_strategy_json", "TEXT"),
+        ("strategy_feedback_json", "TEXT"),
+    ]:
+        if col_name not in ts_cols_strategy:
+            try:
+                cursor.execute(
+                    f"ALTER TABLE tutor_sessions ADD COLUMN {col_name} {col_type}"
+                )
+                print(f"[INFO] Added '{col_name}' column to tutor_sessions table")
+            except sqlite3.OperationalError:
+                pass
+
+    # tutor_turns: add evaluation_json + behavior_override + strategy_snapshot_json columns
     cursor.execute("PRAGMA table_info(tutor_turns)")
     tt_cols_eval = {col[1] for col in cursor.fetchall()}
-    for col_name in ["evaluation_json", "behavior_override"]:
+    for col_name in ["evaluation_json", "behavior_override", "strategy_snapshot_json"]:
         if col_name not in tt_cols_eval:
             try:
                 cursor.execute(
@@ -2238,7 +2507,7 @@ def init_database():
     conn.close()
 
     print(f"[OK] Database initialized at: {DB_PATH}")
-    print("[OK] Schema version: 9.6 + tutor accuracy feedback loop")
+    print("[OK] Schema version: 9.7 + premium product shell")
 
 
 def migrate_method_categories():

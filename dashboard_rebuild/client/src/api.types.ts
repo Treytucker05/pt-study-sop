@@ -215,6 +215,13 @@ export interface ScholarQuestion {
   answered_at?: string | null;
   created_at?: string;
   updated_at?: string;
+  audience_type?: "learner" | "operator" | "system" | string;
+  rationale?: string;
+  is_blocking?: boolean;
+  linked_investigation_id?: string;
+  evidence_needed?: string;
+  answer_incorporation_status?: string;
+  answer_incorporated_at?: string | null;
 }
 
 export interface ScholarChatResponse {
@@ -224,13 +231,79 @@ export interface ScholarChatResponse {
 }
 
 export interface ScholarFinding {
-  id: number;
+  id?: number;
+  finding_id?: string;
+  investigation_id?: string;
   title: string;
-  source: string;
-  content: string;
+  source?: string;
+  content?: string;
   topic?: string;
   summary?: string;
   relevance?: string;
+  confidence?: "low" | "medium" | "high" | string;
+  uncertainty?: string;
+  source_ids?: string[];
+  sources?: ScholarSource[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ScholarSource {
+  id?: number;
+  source_id: string;
+  investigation_id: string;
+  url: string;
+  normalized_url?: string;
+  domain: string;
+  title?: string;
+  publisher?: string;
+  published_at?: string;
+  snippet?: string;
+  source_type?: string;
+  trust_tier?: "high" | "medium" | "general" | string;
+  rank_order?: number;
+  fetched_at?: string;
+  created_at?: string;
+}
+
+export interface ScholarInvestigation {
+  id?: number;
+  investigation_id: string;
+  title: string;
+  query_text: string;
+  rationale: string;
+  audience_type: "learner" | "operator" | "system" | string;
+  mode: "brain" | "tutor" | string;
+  status: "queued" | "running" | "blocked" | "completed" | "failed" | string;
+  source_policy?: string;
+  confidence?: "low" | "medium" | "high" | string;
+  uncertainty_summary?: string;
+  linked_profile_snapshot_id?: string | null;
+  requested_by?: string;
+  findings_count?: number;
+  open_question_count?: number;
+  created_at?: string;
+  updated_at?: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  run_notes?: string | null;
+  output_markdown?: string | null;
+  error_message?: string | null;
+}
+
+export interface ScholarInvestigationDetail extends ScholarInvestigation {
+  findings: ScholarFinding[];
+  questions: ScholarQuestion[];
+  sources: ScholarSource[];
+}
+
+export interface ScholarInvestigationCreatePayload {
+  title?: string;
+  query_text: string;
+  rationale: string;
+  audience_type?: "learner" | "operator" | "system" | string;
+  mode?: "brain" | "tutor" | string;
+  requested_by?: string;
 }
 
 export interface TutorAuditItem {
@@ -614,6 +687,100 @@ export interface BrainProfileFeedbackResponse {
   question?: BrainProfileQuestion | null;
 }
 
+export interface ProductEventPayload {
+  eventType: string;
+  source?: string;
+  metadata?: Record<string, unknown>;
+  userId?: string;
+  workspaceId?: string;
+}
+
+export interface ProductPrivacySettings {
+  userId: string;
+  workspaceId: string;
+  retentionDays: number;
+  allowTier2Signals: boolean;
+  allowVaultSignals: boolean;
+  allowCalendarSignals: boolean;
+  allowScholarPersonalization: boolean;
+  allowOutcomeReports: boolean;
+  updatedAt: string;
+}
+
+export interface ProductFeatureFlag {
+  flagKey: string;
+  enabled: boolean;
+  variant: string;
+  description: string;
+  scope: string;
+  updatedAt: string;
+}
+
+export interface ProductAnalyticsResponse {
+  generatedAt: string;
+  userId: string;
+  workspaceId: string;
+  activation: {
+    onboardingCompleted: boolean;
+    onboardingCompletedAt: string | null;
+    brainProfileReady: boolean;
+    firstArchetypeLabel?: string | null;
+  };
+  engagement: {
+    brainTrustInteractions30d: number;
+    scholarInvestigations: number;
+    scholarPendingQuestions: number;
+    scholarAnsweredQuestions: number;
+    scholarQuestionResponseRate: number;
+    tutorSessionsStarted30d: number;
+    tutorSessionsCompleted30d: number;
+    tutorCompletionRate30d: number;
+    strategyFeedbackCount: number;
+    exportsTriggered: number;
+  };
+  valueProof: {
+    clearerDiagnosis: boolean;
+    betterFollowThrough: number;
+    strongerRetrieval: number | null;
+    betterSelfUnderstanding: number;
+  };
+  nextBestActions: string[];
+}
+
+export interface ProductOutcomeReport {
+  generatedAt: string;
+  userId: string;
+  workspaceId: string;
+  headline: string;
+  narrative: string;
+  brain: {
+    snapshotId: number | null;
+    hybridArchetype: BrainHybridArchetype;
+    profileSummary: BrainProfileSummaryCard;
+    claimsOverview: {
+      count?: number;
+      highConfidence?: number;
+      needsCalibration?: number;
+      watchouts?: number;
+    };
+  };
+  scholar: {
+    investigationCount: number;
+    answeredQuestions: number;
+    pendingQuestions: number;
+    responseRate: number;
+  };
+  tutor: {
+    sessionsStarted30d: number;
+    sessionsCompleted30d: number;
+    completionRate30d: number;
+    strategyFeedbackCount: number;
+  };
+  proof: ProductAnalyticsResponse["valueProof"];
+  highlights: string[];
+  recommendedNextActions: string[];
+}
+
 // ── Method Library ──────────────────────────────────────────────────────────
 
 export type MethodCategory =
@@ -963,6 +1130,57 @@ export interface TutorBlockProgress {
   vault_write_status?: "success" | "skipped" | "failed" | "unavailable";
 }
 
+export interface TutorScholarStrategyField {
+  field: string;
+  value: string;
+  rationale: string;
+  sourceClaimKeys: string[];
+  evidence: Record<string, unknown>[];
+}
+
+export interface TutorScholarStrategy {
+  strategyId: string;
+  generatedAt: string;
+  profileSnapshotId: number | null;
+  hybridArchetype?: {
+    slug?: string;
+    label?: string;
+    summary?: string;
+    supportingTraits?: string[];
+  } | null;
+  profileSummary?: {
+    headline?: string;
+    strengths?: string[];
+    watchouts?: string[];
+    nextBestActions?: string[];
+  } | null;
+  boundedBy: {
+    allowedFields: string[];
+    forbiddenFields: string[];
+    note: string;
+  };
+  activeInvestigation?: {
+    investigationId?: string;
+    title?: string;
+    status?: string;
+    confidence?: string;
+    uncertaintySummary?: string | null;
+    openQuestionCount?: number;
+    topFinding?: string | null;
+  } | null;
+  fields: Record<string, TutorScholarStrategyField>;
+  summary: string;
+}
+
+export interface TutorStrategyFeedback {
+  pacing?: string | null;
+  scaffolds?: string | null;
+  retrievalPressure?: string | null;
+  explanationDensity?: string | null;
+  notes?: string | null;
+  updatedAt?: string | null;
+}
+
 export interface TutorSession {
   session_id: string;
   phase: TutorPhase;
@@ -994,6 +1212,9 @@ export interface TutorSession {
     objective_ids: string[];
   };
   reference_targets_count?: number;
+  brain_profile_snapshot_id?: number | null;
+  scholar_strategy?: TutorScholarStrategy | null;
+  strategy_feedback?: TutorStrategyFeedback | null;
 }
 
 export interface TutorTurn {
@@ -1004,6 +1225,7 @@ export interface TutorTurn {
   citations_json: TutorCitation[] | string | null;
   phase: string | null;
   artifacts_json: unknown;
+  strategy_snapshot_json?: TutorScholarStrategy | string | null;
   created_at: string;
 }
 

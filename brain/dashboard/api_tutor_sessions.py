@@ -35,6 +35,8 @@ from flask import jsonify, request
 
 from db_setup import get_connection
 from course_wheel_sync import ensure_course_in_wheel
+from product_ops import DEFAULT_WORKSPACE_ID, log_product_event
+from scholar_strategy import build_tutor_strategy_snapshot
 from tutor_accuracy_profiles import normalize_accuracy_profile
 
 from dashboard.api_tutor_utils import (
@@ -473,20 +475,25 @@ def create_session():
             conn.close()
             return jsonify({"error": "brain_session_id not found"}), 404
 
+    scholar_strategy = build_tutor_strategy_snapshot(conn, user_id="default")
+    brain_profile_snapshot_id = scholar_strategy.get("profileSnapshotId")
+
     cur.execute(
         """INSERT INTO tutor_sessions
-           (session_id, brain_session_id, course_id, phase, topic, content_filter_json,
-            status, turn_count, method_chain_id, current_block_index, started_at,
+           (session_id, brain_session_id, brain_profile_snapshot_id, course_id, phase, topic, content_filter_json,
+            scholar_strategy_json, status, turn_count, method_chain_id, current_block_index, started_at,
             selector_chain_id, selector_score_json, selector_policy_version,
             selector_dependency_fix)
-           VALUES (?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, 0, ?, ?, ?, ?, ?)""",
         (
             session_id,
             linked_brain_session_id,
+            brain_profile_snapshot_id,
             course_id,
             phase,
             topic,
             json.dumps(content_filter) if content_filter else None,
+            json.dumps(scholar_strategy),
             method_chain_id,
             now,
             selector_meta.get("selector_chain_id"),
@@ -596,6 +603,17 @@ def create_session():
                 "Failed to populate session_chains", exc_info=True
             )
 
+    log_product_event(
+        conn,
+        event_type="tutor_session_created",
+        source="tutor.session.create",
+        metadata={
+            "sessionId": session_id,
+            "methodChainId": method_chain_id,
+            "brainProfileSnapshotId": brain_profile_snapshot_id,
+        },
+        workspace_id=DEFAULT_WORKSPACE_ID,
+    )
     conn.commit()
     conn.close()
 
@@ -606,6 +624,7 @@ def create_session():
         "topic": topic,
         "status": "active",
         "brain_session_id": linked_brain_session_id,
+        "brain_profile_snapshot_id": brain_profile_snapshot_id,
         "codex_thread_id": None,
         "last_response_id": None,
         "method_chain_id": method_chain_id,
@@ -613,6 +632,7 @@ def create_session():
         "current_block_name": first_block_name,
         "greeting": greeting,
         "started_at": now,
+        "scholar_strategy": scholar_strategy,
     }
     if selector_meta:
         response["selector"] = selector_meta
@@ -683,7 +703,12 @@ def get_session(session_id: str):
 
     # Parse JSON fields and restore rich structured data for session restore
     for turn in turns:
-        for field in ("citations_json", "artifacts_json", "evaluation_json"):
+        for field in (
+            "citations_json",
+            "artifacts_json",
+            "evaluation_json",
+            "strategy_snapshot_json",
+        ):
             if turn.get(field):
                 try:
                     turn[field] = json.loads(turn[field])
@@ -712,6 +737,20 @@ def get_session(session_id: str):
             session["content_filter"] = json.loads(session["content_filter_json"])
         except (json.JSONDecodeError, TypeError):
             session["content_filter"] = None
+    if session.get("scholar_strategy_json"):
+        try:
+            session["scholar_strategy"] = json.loads(session["scholar_strategy_json"])
+        except (json.JSONDecodeError, TypeError):
+            session["scholar_strategy"] = None
+    else:
+        session["scholar_strategy"] = None
+    if session.get("strategy_feedback_json"):
+        try:
+            session["strategy_feedback"] = json.loads(session["strategy_feedback_json"])
+        except (json.JSONDecodeError, TypeError):
+            session["strategy_feedback"] = None
+    else:
+        session["strategy_feedback"] = None
 
     # Include chain block info if chain is active
     if session.get("method_chain_id"):
@@ -729,6 +768,54 @@ def get_session(session_id: str):
     conn.close()
 
     return jsonify(session)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tutor/session/<id>/strategy-feedback — Persist learner response to adaptation
+# ---------------------------------------------------------------------------
+
+
+@tutor_bp.route("/session/<session_id>/strategy-feedback", methods=["POST"])
+def save_strategy_feedback(session_id: str):
+    from dashboard.api_tutor import _ensure_selector_columns
+    from dashboard.api_tutor_turns import _get_tutor_session
+
+    data = request.get_json(silent=True) or {}
+    feedback = {
+        "pacing": str(data.get("pacing") or "").strip().lower() or None,
+        "scaffolds": str(data.get("scaffolds") or "").strip().lower() or None,
+        "retrievalPressure": str(data.get("retrievalPressure") or "").strip().lower()
+        or None,
+        "explanationDensity": str(data.get("explanationDensity") or "").strip().lower()
+        or None,
+        "notes": str(data.get("notes") or "").strip() or None,
+        "updatedAt": datetime.now().isoformat(),
+    }
+
+    conn = get_connection()
+    _ensure_selector_columns(conn)
+    session = _get_tutor_session(conn, session_id)
+    if not session:
+        conn.close()
+        return jsonify({"error": "Session not found"}), 404
+
+    conn.execute(
+        "UPDATE tutor_sessions SET strategy_feedback_json = ? WHERE session_id = ?",
+        (json.dumps(feedback), session_id),
+    )
+    log_product_event(
+        conn,
+        event_type="tutor_strategy_feedback_saved",
+        source="tutor.strategy_feedback",
+        metadata={
+            "sessionId": session_id,
+            "fields": [key for key, value in feedback.items() if value],
+        },
+        workspace_id=DEFAULT_WORKSPACE_ID,
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"session_id": session_id, "strategy_feedback": feedback})
 
 
 # ---------------------------------------------------------------------------
@@ -813,6 +900,16 @@ def end_session(session_id: str):
             (str(brain_session_id), session_id),
         )
 
+    log_product_event(
+        conn,
+        event_type="tutor_session_completed",
+        source="tutor.session.end",
+        metadata={
+            "sessionId": session_id,
+            "brainSessionId": brain_session_id,
+        },
+        workspace_id=DEFAULT_WORKSPACE_ID,
+    )
     conn.commit()
 
     # --- Compute summary data ---

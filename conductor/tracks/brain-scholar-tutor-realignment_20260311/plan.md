@@ -3,7 +3,7 @@
 **Track ID:** brain-scholar-tutor-realignment_20260311  
 **Spec:** [./spec.md](./spec.md)  
 **Created:** 2026-03-11  
-**Status:** [ ] In Progress
+**Status:** [x] Complete
 
 ## Pre-Step
 
@@ -113,30 +113,30 @@ Turn Scholar into a real learner-facing research system without letting it teach
 
 ### Tasks
 
-- [ ] T-200: Freeze Scholar MVP scope.
-- [ ] T-200a: Include investigations, learner questions, cited findings, answer ingestion, visible uncertainty.
-- [ ] T-200b: Exclude broader proposal/admin workspace sprawl from MVP.
-- [ ] T-201: Rewrite Scholar contract and UI framing.
-- [ ] T-201a: Remove advisory-only/read-only framing from active docs and UI copy.
-- [ ] T-201b: Preserve the hard non-goal that Scholar does not teach course content.
-- [ ] T-202: Freeze one backend-owned runtime path for Scholar research.
-- [ ] T-202a: Decide where investigations and findings persist.
-- [ ] T-202b: Normalize citations and source metadata.
-- [ ] T-202c: Keep `scholar/outputs/` as audit mirrors rather than primary app state.
-- [ ] T-203: Add real web-research capability.
-- [ ] T-203a: Implement search/fetch path.
-- [ ] T-203b: Enforce trusted-source policy and uncertainty marking.
-- [ ] T-203c: Add timeout, no-source, conflict, and partial-run handling.
-- [ ] T-204: Extend the question lifecycle.
-- [ ] T-204a: Add audience types.
-- [ ] T-204b: Add rationale and blocking/non-blocking state.
-- [ ] T-204c: Add linked investigation and answer-incorporation state.
-- [ ] T-205: Build Scholar research workspace UI.
-- [ ] T-205a: investigations list
-- [ ] T-205b: learner questions inbox
-- [ ] T-205c: findings lane with citations
-- [ ] T-205d: visible “what Scholar is researching and why”
-- [ ] T-205e: uncertainty states
+- [x] T-200: Freeze Scholar MVP scope.
+- [x] T-200a: Include investigations, learner questions, cited findings, answer ingestion, visible uncertainty.
+- [x] T-200b: Exclude broader proposal/admin workspace sprawl from MVP.
+- [x] T-201: Rewrite Scholar contract and UI framing.
+- [x] T-201a: Remove advisory-only/read-only framing from active docs and UI copy.
+- [x] T-201b: Preserve the hard non-goal that Scholar does not teach course content.
+- [x] T-202: Freeze one backend-owned runtime path for Scholar research.
+- [x] T-202a: Decide where investigations and findings persist.
+- [x] T-202b: Normalize citations and source metadata.
+- [x] T-202c: Keep `scholar/outputs/` as audit mirrors rather than primary app state.
+- [x] T-203: Add real web-research capability.
+- [x] T-203a: Implement search/fetch path.
+- [x] T-203b: Enforce trusted-source policy and uncertainty marking.
+- [x] T-203c: Add timeout, no-source, conflict, and partial-run handling.
+- [x] T-204: Extend the question lifecycle.
+- [x] T-204a: Add audience types.
+- [x] T-204b: Add rationale and blocking/non-blocking state.
+- [x] T-204c: Add linked investigation and answer-incorporation state.
+- [x] T-205: Build Scholar research workspace UI.
+- [x] T-205a: investigations list
+- [x] T-205b: learner questions inbox
+- [x] T-205c: findings lane with citations
+- [x] T-205d: visible “what Scholar is researching and why”
+- [x] T-205e: uncertainty states
 
 ### Parallel-Safe Batches
 
@@ -146,11 +146,11 @@ Turn Scholar into a real learner-facing research system without letting it teach
 
 ### Verification
 
-- [ ] T-206a: API tests for investigations, questions, and findings
-- [ ] T-206b: citation persistence tests
-- [ ] T-206c: runtime tests for failed/noisy/partial research runs
-- [ ] T-206d: frontend tests for question answering and citation display
-- [ ] T-206e: manual QA proving Scholar can ask, research, cite, and stay non-teaching
+- [x] T-206a: API tests for investigations, questions, and findings
+- [x] T-206b: citation persistence tests
+- [x] T-206c: runtime tests for failed/noisy/partial research runs
+- [x] T-206d: frontend tests for question answering and citation display
+- [x] T-206e: manual QA proving Scholar can ask, research, cite, and stay non-teaching
 
 ## Wave 3: Bounded Scholar-To-Tutor Mediation
 
@@ -160,21 +160,21 @@ Allow Scholar to shape Tutor only within an explicit, testable envelope that nev
 
 ### Tasks
 
-- [ ] T-300: Freeze the adaptation envelope.
-- [ ] T-300a: Lock allowed adaptive fields.
-- [ ] T-300b: Lock forbidden adaptive fields.
-- [ ] T-300c: Require provenance on every adaptive field.
-- [ ] T-301: Define session-start contract.
-- [ ] T-301a: Brain evidence snapshot input.
-- [ ] T-301b: Scholar strategy snapshot input.
-- [ ] T-301c: learner-facing rationale surface.
-- [ ] T-302: Implement bounded mediation in Tutor startup and resume.
-- [ ] T-302a: add strategy snapshot handling
-- [ ] T-302b: keep Tutor chain-bound
-- [ ] T-302c: log active strategy fields to prevent hidden drift
-- [ ] T-303: Add Tutor telemetry for evaluating adaptation quality.
-- [ ] T-303a: record helpful/harmful outcomes
-- [ ] T-303b: record learner response to pacing/scaffolds/retrieval pressure
+- [x] T-300: Freeze the adaptation envelope.
+- [x] T-300a: Lock allowed adaptive fields.
+- [x] T-300b: Lock forbidden adaptive fields.
+- [x] T-300c: Require provenance on every adaptive field.
+- [x] T-301: Define session-start contract.
+- [x] T-301a: Brain evidence snapshot input.
+- [x] T-301b: Scholar strategy snapshot input.
+- [x] T-301c: learner-facing rationale surface.
+- [x] T-302: Implement bounded mediation in Tutor startup and resume.
+- [x] T-302a: add strategy snapshot handling
+- [x] T-302b: keep Tutor chain-bound
+- [x] T-302c: log active strategy fields to prevent hidden drift
+- [x] T-303: Add Tutor telemetry for evaluating adaptation quality.
+- [x] T-303a: record helpful/harmful outcomes
+- [x] T-303b: record learner response to pacing/scaffolds/retrieval pressure
 
 ### Dependencies
 
@@ -182,9 +182,9 @@ Allow Scholar to shape Tutor only within an explicit, testable envelope that nev
 
 ### Verification
 
-- [ ] T-304a: Tutor regression tests proving SOP and chain authority still win
-- [ ] T-304b: integration tests proving Brain cannot bypass Scholar
-- [ ] T-304c: manual QA proving the learner can see why the session changed
+- [x] T-304a: Tutor regression tests proving SOP and chain authority still win
+- [x] T-304b: integration tests proving Brain cannot bypass Scholar
+- [x] T-304c: manual QA proving the learner can see why the session changed
 
 ## Wave 4: Premium Individual Product Shell
 
@@ -194,27 +194,27 @@ Make the system feel like one premium product rather than a set of loosely relat
 
 ### Tasks
 
-- [ ] T-400: Redesign primary navigation/story around Brain / Scholar / Tutor.
-- [ ] T-400a: demote secondary pages to supporting roles
-- [ ] T-401: Build premium onboarding.
-- [ ] T-401a: capture learner goals, friction, current workflow, and tools
-- [ ] T-401b: seed a provisional low-confidence Brain profile
-- [ ] T-401c: introduce Brain / Scholar / Tutor roles during onboarding
-- [ ] T-402: Redesign the dashboard/home experience.
-- [ ] T-402a: show Brain state, Scholar activity, Tutor next action first
-- [ ] T-402b: remove page-first confusion
-- [ ] T-403: Add trust and explainability surfaces.
-- [ ] T-403a: explanation + evidence + confidence + challenge path on recommendations
-- [ ] T-403b: history/audit for system-written changes
-- [ ] T-403c: safe preview before high-impact actions
-- [ ] T-404: Add retention loop surfaces.
-- [ ] T-404a: next-best-action recommendations
-- [ ] T-404b: review/follow-through states
-- [ ] T-404c: durable-learning progress surfaces
-- [ ] T-405: Premium polish pass.
-- [ ] T-405a: product-language/copy audit
-- [ ] T-405b: responsive/mobile pass
-- [ ] T-405c: performance budgets and monitoring
+- [x] T-400: Redesign primary navigation/story around Brain / Scholar / Tutor.
+- [x] T-400a: demote secondary pages to supporting roles
+- [x] T-401: Build premium onboarding.
+- [x] T-401a: capture learner goals, friction, current workflow, and tools
+- [x] T-401b: seed a provisional low-confidence Brain profile
+- [x] T-401c: introduce Brain / Scholar / Tutor roles during onboarding
+- [x] T-402: Redesign the dashboard/home experience.
+- [x] T-402a: show Brain state, Scholar activity, Tutor next action first
+- [x] T-402b: remove page-first confusion
+- [x] T-403: Add trust and explainability surfaces.
+- [x] T-403a: explanation + evidence + confidence + challenge path on recommendations
+- [x] T-403b: history/audit for system-written changes
+- [x] T-403c: safe preview before high-impact actions
+- [x] T-404: Add retention loop surfaces.
+- [x] T-404a: next-best-action recommendations
+- [x] T-404b: review/follow-through states
+- [x] T-404c: durable-learning progress surfaces
+- [x] T-405: Premium polish pass.
+- [x] T-405a: product-language/copy audit
+- [x] T-405b: responsive/mobile pass
+- [x] T-405c: performance budgets and monitoring
 
 ### Verification
 
@@ -229,37 +229,38 @@ Make the premium individual product credible enough to sell and durable enough t
 
 ### Tasks
 
-- [ ] T-500: Define value proof.
-- [ ] T-500a: pick measurable promises
-- [ ] T-500b: instrument those promises
-- [ ] T-501: Add data-rights and trust surfaces.
-- [ ] T-501a: export learner profile, findings, history, and artifact metadata
-- [ ] T-501b: privacy, deletion, and retention controls
-- [ ] T-501c: disclosure of personalization inputs
-- [ ] T-502: Add analytics and experiment framework.
-- [ ] T-502a: activation, trust, response-rate, completion, and retention metrics
-- [ ] T-502b: feature flags / experiment toggles
-- [ ] T-503: Build saleable proof assets.
-- [ ] T-503a: polished end-to-end demo path
-- [ ] T-503b: learner-facing outcome report
-- [ ] T-504: Add future-ready seams.
-- [ ] T-504a: explicit user/workspace boundaries
-- [ ] T-504b: billing/account/policy seams
-- [ ] T-504c: no institution-only admin complexity yet
-- [ ] T-505: Build acquisition-grade diligence materials.
-- [ ] T-505a: keep canon/architecture current
-- [ ] T-505b: keep outcome evidence measurable
-- [ ] T-505c: keep explainability and auditability defensible
+- [x] T-500: Define value proof.
+- [x] T-500a: pick measurable promises
+- [x] T-500b: instrument those promises
+- [x] T-501: Add data-rights and trust surfaces.
+- [x] T-501a: export learner profile, findings, history, and artifact metadata
+- [x] T-501b: privacy, deletion, and retention controls
+- [x] T-501c: disclosure of personalization inputs
+- [x] T-502: Add analytics and experiment framework.
+- [x] T-502a: activation, trust, response-rate, completion, and retention metrics
+- [x] T-502b: feature flags / experiment toggles
+- [x] T-503: Build saleable proof assets.
+- [x] T-503a: polished end-to-end demo path
+- [x] T-503b: learner-facing outcome report
+- [x] T-504: Add future-ready seams.
+- [x] T-504a: explicit user/workspace boundaries
+- [x] T-504b: billing/account/policy seams
+- [x] T-504c: no institution-only admin complexity yet
+- [x] T-505: Build acquisition-grade diligence materials.
+- [x] T-505a: keep canon/architecture current
+- [x] T-505b: keep outcome evidence measurable
+- [x] T-505c: keep explainability and auditability defensible
 
-## Supporting Alignment (Not Core Launch Blockers)
+## Supporting Alignment (Deferred Follow-On Backlog)
 
-- [ ] T-600: reframe `Mastery` as Brain evidence once Brain MVP is stable
-- [ ] T-601: reframe `Vault` as knowledge evidence once Brain + Scholar MVPs are stable
-- [ ] T-602: reframe `Library` as content/evidence support once Scholar MVP is stable
-- [ ] T-603: reframe `Calendar` as follow-through signal once Brain reliability tiers are stable
+- Future follow-on track should:
+  - reframe `Mastery` as Brain evidence
+  - reframe `Vault` as knowledge evidence + artifact quality
+  - reframe `Library` as content/evidence support
+  - reframe `Calendar` as follow-through signal
 
 ## Current Execution Focus
 
-- finish Wave 0 contract freeze
-- publish the frozen Brain / Scholar / Tutor contract into active canon
-- keep later waves blocked until the contract and gates are explicit
+- Track complete.
+- Core Waves 0-5 shipped and validated.
+- Any remaining page-level reframing work belongs in follow-on tracks, not in this roadmap closure.

@@ -4,11 +4,11 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
 
-Active status: `brain-scholar-tutor-realignment_20260311` is active on 2026-03-11.
+Active status: `tutor-10-certification_20260307`, `topdown-tutor-hardening_20260307`, and `neuroscience-exam-intake_20260307` remain active on 2026-03-11.
 
-Latest update: 2026-03-11 completed Wave 1 for `Brain / Scholar / Tutor Realignment`, shipping the first Brain learner-profile MVP with persisted snapshots, `/api/brain/profile*` endpoints, and the `/brain` PROFILE tab.
+Latest update: 2026-03-11 completed Waves 0-5 for `Brain / Scholar / Tutor Realignment`, shipping the Brain learner-profile MVP, Scholar research runtime, bounded Tutor mediation, premium shell, product analytics, privacy controls, and outcome-report surfaces.
 
-- [ ] **Track: Brain / Scholar / Tutor Realignment** (active — created 2026-03-11; scope: contract freeze, Brain learner model, Scholar research partner, bounded Tutor mediation, premium-individual shell)
+- [x] **Track: Brain / Scholar / Tutor Realignment** (complete — created 2026-03-11; closed 2026-03-11; scope: contract freeze, Brain learner model, Scholar research partner, bounded Tutor mediation, premium-individual shell)
   *Link: [./tracks/brain-scholar-tutor-realignment_20260311/](./tracks/brain-scholar-tutor-realignment_20260311/)*
 
 ---

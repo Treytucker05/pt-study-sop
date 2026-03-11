@@ -1,152 +1,141 @@
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  Brain,
+  CheckCircle2,
+  FileSearch,
+  HelpCircle,
+  Link2,
+  RefreshCw,
+  Search,
+  Send,
+} from "lucide-react";
+
 import Layout from "@/components/layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { ScholarRunStatus } from "@/components/ScholarRunStatus";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ScholarRunStatus } from "@/components/ScholarRunStatus";
-import {
-  Brain,
-  Search,
-  AlertCircle,
-  HelpCircle,
-  BookOpen,
-  Lightbulb,
-  History,
-  TrendingUp,
-  TrendingDown,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  MessageSquare,
-  ChevronRight,
-  FileText,
-  Send,
-  RefreshCw,
-  Layers,
-} from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type ScholarQuestion, type ScholarFinding, type TutorAuditItem, type ScholarClustersResponse } from "@/lib/api";
-import { useState, useRef, useEffect, useMemo } from "react";
-import { useLocation } from "wouter";
-import { cn } from "@/lib/utils";
+import { api, type ScholarInvestigation, type ScholarQuestion } from "@/lib/api";
 import { useToast } from "@/use-toast";
-import type { Proposal } from "@shared/schema";
-import {
-  TEXT_PANEL_TITLE,
-  TEXT_SECTION_LABEL,
-  TEXT_MUTED,
-  TEXT_BADGE,
-  TEXT_BUTTON,
-  PANEL_PADDING,
-  CARD_BORDER,
-  CARD_BORDER_SECONDARY,
-  ICON_SM,
-  ICON_MD,
-  ICON_LG,
-  STATUS_SUCCESS,
-  STATUS_ERROR,
-} from "@/lib/theme";
 
-/**
- * SCHOLAR PAGE - Advisory & Analytical Layer
- * 
- * DATA FLOW:
- * Brain (sessions, metrics) → Scholar (read-only analysis)
- * Tutor (transcripts, WRAP) → Scholar (post-session audit only)
- * 
- * BOUNDARIES:
- * - Read-only access to Brain data
- * - Post-session Tutor audit only (no live access)
- * - No direct database writes (proposals managed via API)
- * - No auto-implementation of proposals
- */
-
-interface ScholarMessage {
-  role: 'user' | 'assistant';
-  content: string;
+function statusTone(status?: string) {
+  switch (status) {
+    case "running":
+      return "border-primary/60 text-primary";
+    case "blocked":
+      return "border-yellow-500/60 text-yellow-400";
+    case "completed":
+      return "border-emerald-500/60 text-emerald-400";
+    case "failed":
+      return "border-destructive/60 text-destructive";
+    default:
+      return "border-muted-foreground/40 text-muted-foreground";
+  }
 }
 
-export default function Scholar() {
+function confidenceTone(confidence?: string) {
+  switch (confidence) {
+    case "high":
+      return "border-emerald-500/60 text-emerald-400";
+    case "medium":
+      return "border-primary/60 text-primary";
+    default:
+      return "border-yellow-500/60 text-yellow-400";
+  }
+}
+
+export default function ScholarPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState("summary");
-  const [chatMessages, setChatMessages] = useState<ScholarMessage[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [activeTab, setActiveTab] = useState("workspace");
+  const [selectedInvestigationId, setSelectedInvestigationId] = useState<string>("");
+  const [queryText, setQueryText] = useState("");
+  const [rationale, setRationale] = useState("");
+  const [audienceType, setAudienceType] = useState<"learner" | "operator" | "system">("learner");
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
-  const pendingAnswerSubmissionsRef = useRef<Set<string>>(new Set());
   const [submittingQuestionIds, setSubmittingQuestionIds] = useState<Record<string, boolean>>({});
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch Brain data for analysis (read-only)
-  const { data: sessions = [] } = useQuery({
-    queryKey: ["sessions"],
-    queryFn: api.sessions.getAll,
-  });
-
-  const { data: courses = [] } = useQuery({
-    queryKey: ["courses"],
-    queryFn: api.courses.getAll,
-  });
-
-  const { data: proposals = [] } = useQuery({
-    queryKey: ["proposals"],
-    queryFn: api.proposals.getAll,
-  });
-
-  // Fetch Scholar-specific data
-  const { data: scholarQuestions = [] } = useQuery({
-    queryKey: ["scholar-questions"],
-    queryFn: api.scholar.getQuestions,
-  });
-
-  const { data: scholarFindings = [] } = useQuery({
-    queryKey: ["scholar-findings"],
-    queryFn: api.scholar.getFindings,
-  });
-
-  const { data: tutorAuditData = [] } = useQuery({
-    queryKey: ["scholar-tutor-audit"],
-    queryFn: api.scholar.getTutorAudit,
-  });
-
-  // Scholar clusters
-  const { data: clustersData } = useQuery({
-    queryKey: ["scholar-clusters"],
-    queryFn: api.scholar.getClusters,
-  });
-
-  const runClusteringMutation = useMutation({
-    mutationFn: api.scholar.runClustering,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scholar-clusters"] });
-      toast({ title: "Clustering Complete", description: "Topic clusters updated." });
+  const investigationsQuery = useQuery({
+    queryKey: ["scholar-investigations"],
+    queryFn: () => api.scholar.getInvestigations(30),
+    refetchInterval: (query) => {
+      const rows = (query.state.data as ScholarInvestigation[] | undefined) ?? [];
+      return rows.some((row) => row.status === "queued" || row.status === "running") ? 2500 : false;
     },
   });
 
-  // Scholar orchestrator run
-  const runScholarMutation = useMutation({
-    mutationFn: api.scholar.run,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scholarStatus"] });
-      toast({ title: "Scholar Run Started", description: "Analysis is running in the background." });
+  const investigations = investigationsQuery.data ?? [];
+  const selectedInvestigation = useMemo(
+    () => investigations.find((row) => row.investigation_id === selectedInvestigationId) ?? investigations[0] ?? null,
+    [investigations, selectedInvestigationId],
+  );
+
+  useEffect(() => {
+    if (selectedInvestigation && selectedInvestigation.investigation_id !== selectedInvestigationId) {
+      setSelectedInvestigationId(selectedInvestigation.investigation_id);
+    }
+  }, [selectedInvestigation, selectedInvestigationId]);
+
+  const detailQuery = useQuery({
+    queryKey: ["scholar-investigation", selectedInvestigation?.investigation_id],
+    queryFn: () => api.scholar.getInvestigation(selectedInvestigation!.investigation_id),
+    enabled: Boolean(selectedInvestigation?.investigation_id),
+    refetchInterval: selectedInvestigation?.status === "queued" || selectedInvestigation?.status === "running" ? 2500 : false,
+  });
+
+  const questionsQuery = useQuery({
+    queryKey: ["scholar-research-questions"],
+    queryFn: () => api.scholar.getQuestions("all", 100),
+    refetchInterval: 2500,
+  });
+
+  const findingsQuery = useQuery({
+    queryKey: ["scholar-research-findings", selectedInvestigation?.investigation_id ?? "all"],
+    queryFn: () => api.scholar.getFindings(selectedInvestigation?.investigation_id, 60),
+    enabled: true,
+    refetchInterval: selectedInvestigation?.status === "queued" || selectedInvestigation?.status === "running" ? 2500 : false,
+  });
+
+  const brainProfileQuery = useQuery({
+    queryKey: ["brain", "profile", "scholar-bridge"],
+    queryFn: () => api.brain.getProfileSummary(false),
+  });
+
+  const createInvestigationMutation = useMutation({
+    mutationFn: () =>
+      api.scholar.createInvestigation({
+        title: queryText,
+        query_text: queryText,
+        rationale,
+        audience_type: audienceType,
+        mode: "brain",
+        requested_by: "ui",
+      }),
+    onSuccess: (created) => {
+      setQueryText("");
+      setRationale("");
+      setSelectedInvestigationId(created.investigation_id);
+      queryClient.invalidateQueries({ queryKey: ["scholar-investigations"] });
+      queryClient.invalidateQueries({ queryKey: ["scholar-research-findings"] });
+      queryClient.invalidateQueries({ queryKey: ["scholar-research-questions"] });
+      setActiveTab("workspace");
+      toast({
+        title: "Investigation started",
+        description: "Scholar is collecting sources, citations, and learner-facing findings.",
+      });
     },
     onError: (error: Error) => {
-      toast({ title: "Scholar Run Failed", description: error.message || "Could not start Scholar run.", variant: "destructive" });
-    },
-  });
-
-  // Proposal status updates (the only write operation - managed via API)
-  const updateProposalMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Proposal> }) =>
-      api.proposals.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["proposals"] });
-      toast({ title: "Proposal Updated", description: "Status changed." });
+      toast({
+        title: "Could not start investigation",
+        description: error.message || "Scholar could not start the research run.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -154,958 +143,618 @@ export default function Scholar() {
     mutationFn: ({ questionId, answer }: { questionId: string; answer: string }) =>
       api.scholar.answerQuestion(questionId, answer, "ui"),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["scholar-questions"] });
-      setQuestionAnswers(prev => ({ ...prev, [variables.questionId]: "" }));
-      toast({ title: "Question Answered", description: "Scholar question updated." });
+      setQuestionAnswers((prev) => ({ ...prev, [variables.questionId]: "" }));
+      queryClient.invalidateQueries({ queryKey: ["scholar-research-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["scholar-investigation"] });
+      toast({
+        title: "Answer saved",
+        description: "Scholar stored the learner answer and flagged it for refresh on the linked investigation.",
+      });
     },
     onError: (error: Error) => {
       toast({
-        title: "Answer Failed",
-        description: error.message || "Could not submit answer.",
+        title: "Answer failed",
+        description: error.message || "Scholar could not save the answer.",
         variant: "destructive",
       });
     },
   });
 
-  const submitQuestionAnswer = async (questionId: string) => {
+  const submitAnswer = async (question: ScholarQuestion) => {
+    const questionId = question.question_id || String(question.id);
     const answer = (questionAnswers[questionId] || "").trim();
-    if (!answer) return;
-    if (pendingAnswerSubmissionsRef.current.has(questionId)) return;
-
-    pendingAnswerSubmissionsRef.current.add(questionId);
+    if (!answer || submittingQuestionIds[questionId]) {
+      return;
+    }
     setSubmittingQuestionIds((prev) => ({ ...prev, [questionId]: true }));
     try {
       await answerQuestionMutation.mutateAsync({ questionId, answer });
     } finally {
-      pendingAnswerSubmissionsRef.current.delete(questionId);
       setSubmittingQuestionIds((prev) => ({ ...prev, [questionId]: false }));
     }
   };
 
-  // Auto-scroll chat
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
-
-  // Derived metrics from Brain data (read-only calculations)
-  const recentSessions = useMemo(() => sessions.slice(0, 20), [sessions]);
-  const totalMinutes = useMemo(() => sessions.reduce((sum, s) => sum + (s.minutes || 0), 0), [sessions]);
-  const avgMinutesPerSession = sessions.length > 0 ? Math.round(totalMinutes / sessions.length) : 0;
-  const sessionsThisWeek = useMemo(() => sessions.filter(s => {
-    const sessionDate = new Date(s.date);
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return sessionDate >= weekAgo;
-  }).length, [sessions]);
-
-  // Identify potential issues from Brain data
-  const coursesWithLowActivity = useMemo(() => courses.filter(c => (c.totalSessions || 0) < 3), [courses]);
-  const confusionTopics = useMemo(() => sessions
-    .filter(s => s.confusions && s.confusions.length > 0)
-    .flatMap(s => s.confusions || []), [sessions]);
-  const unresolvedIssues = useMemo(() => sessions
-    .filter(s => s.issues && s.issues.length > 0)
-    .flatMap(s => s.issues || []), [sessions]);
-
-  const hasConcerns =
-    coursesWithLowActivity.length > 0 ||
-    confusionTopics.length > 0 ||
-    unresolvedIssues.length > 0;
-
-  // Handle chat submission - uses real Scholar API
-  const handleChatSubmit = async () => {
-    if (!chatInput.trim()) return;
-
-    const userMessage = chatInput.trim();
-    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setChatInput("");
-    setIsAnalyzing(true);
-
-    try {
-      const response = await api.scholar.chat(userMessage);
-      setChatMessages(prev => [...prev, {
-        role: 'assistant',
-        content: response.response
-      }]);
-    } catch (error) {
-      setChatMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `Error processing your question. Please try again.`
-      }]);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  // Use real data from Scholar API (openQuestions, tutorAuditItems, researchFindings)
-  const openQuestions: ScholarQuestion[] = useMemo(() => {
-    return scholarQuestions.filter((q) => {
-      const text = (q.question_text ?? q.question ?? "").trim().toLowerCase();
-      return text.length > 0 && text !== "none yet.";
-    });
-  }, [scholarQuestions]);
-  const tutorAuditItems: TutorAuditItem[] = tutorAuditData;
-  const researchFindings: ScholarFinding[] = scholarFindings;
-  const latestArtifacts = useMemo(() => {
-    const findingItems = researchFindings.slice(0, 3).map((finding, index) => ({
-      id: `finding-${index}`,
-      kind: "Finding",
-      title: finding.title || finding.topic || "Scholar finding",
-      meta: finding.source || "scholar/outputs/review",
-    }));
-    const proposalItems = proposals.slice(0, 3).map((proposal) => ({
-      id: `proposal-${proposal.id}`,
-      kind: "Proposal",
-      title: proposal.summary,
-      meta: proposal.proposalId || proposal.status || "proposal",
-    }));
-    const questionItems = openQuestions.slice(0, 2).map((question) => ({
-      id: `question-${question.question_id ?? question.id}`,
-      kind: "Question",
-      title: question.question_text ?? question.question ?? "Open question",
-      meta: question.context || question.source || "question pipeline",
-    }));
-    return [...findingItems, ...proposalItems, ...questionItems].slice(0, 6);
-  }, [openQuestions, proposals, researchFindings]);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'APPROVED': return 'bg-primary/20 text-primary border-primary';
-      case 'REJECTED': return 'bg-destructive/20 text-destructive border-destructive';
-      case 'IMPLEMENTED': return 'bg-success/20 text-success border-success';
-      default: return 'bg-muted/20 text-muted-foreground border-muted-foreground';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'HIGH': return 'text-primary border-primary';
-      case 'MED': return 'text-white border-white';
-      default: return 'text-muted-foreground border-muted-foreground';
-    }
-  };
+  const questions = questionsQuery.data ?? [];
+  const openQuestions = questions.filter((question) => question.status !== "answered");
+  const findings = findingsQuery.data ?? [];
+  const profile = brainProfileQuery.data;
+  const detail = detailQuery.data;
 
   return (
     <Layout>
       <div className="min-h-[calc(100vh-140px)] flex flex-col gap-6">
+        <div className="space-y-4 shrink-0">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <Search className="w-6 h-6 text-primary" />
+              <div>
+                <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
+                <p className="font-terminal text-xs text-muted-foreground">
+                  Scholar researches learner-fit questions, cites the web, and asks focused follow-up questions without turning into Tutor.
+                </p>
+              </div>
+              <Badge variant="outline" className="rounded-none text-xs font-terminal border-primary/50">
+                INTERACTIVE RESEARCH PARTNER
+              </Badge>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-none font-arcade text-xs border-primary/40"
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ["scholar-investigations"] });
+                queryClient.invalidateQueries({ queryKey: ["scholar-investigation"] });
+                queryClient.invalidateQueries({ queryKey: ["scholar-research-findings"] });
+                queryClient.invalidateQueries({ queryKey: ["scholar-research-questions"] });
+                queryClient.invalidateQueries({ queryKey: ["brain", "profile", "scholar-bridge"] });
+              }}
+            >
+              <RefreshCw className="w-3 h-3 mr-2" /> REFRESH
+            </Button>
+          </div>
 
-         {/* Header */}
-         <div className="space-y-4 shrink-0">
-           <div className="flex items-center justify-between">
-             <div className="flex items-center gap-3">
-               <Brain className={`${ICON_LG} text-primary`} />
-               <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
-               <Badge variant="outline" className="rounded-none text-xs font-terminal border-primary/50">
-                 READ ONLY ADVISORY
-               </Badge>
-             </div>
-             <Button
-               variant="outline"
-               size="sm"
-               className="rounded-none font-arcade text-xs border-primary/40"
-                onClick={() => {
-                  queryClient.invalidateQueries({ queryKey: ["sessions"] });
-                  queryClient.invalidateQueries({ queryKey: ["courses"] });
-                  queryClient.invalidateQueries({ queryKey: ["proposals"] });
-                  queryClient.invalidateQueries({ queryKey: ["scholar-questions"] });
-                  queryClient.invalidateQueries({ queryKey: ["scholar-findings"] });
-                  queryClient.invalidateQueries({ queryKey: ["scholar-tutor-audit"] });
-                  queryClient.invalidateQueries({ queryKey: ["scholar-clusters"] });
-                }}
-               data-testid="button-refresh-data"
-             >
-               <RefreshCw className={`${ICON_SM} mr-2`} /> REFRESH DATA
-             </Button>
-           </div>
-           
-           {/* Run Status Component */}
-           <ScholarRunStatus />
-         </div>
-
-        {/* Main Content */}
-        <div className="flex-1">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col">
-            <TabsList className="bg-black/60 border-2 border-primary/40 rounded-none p-1 shrink-0 w-full justify-start overflow-x-auto">
-              {[
-                { id: 'summary', label: 'SUMMARY', icon: TrendingUp },
-                { id: 'analysis', label: 'ANALYSIS', icon: Search },
-                { id: 'proposals', label: 'PROPOSALS', icon: Lightbulb },
-                { id: 'history', label: 'HISTORY', icon: History },
-              ].map(tab => (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black px-3"
-                  data-testid={`tab-${tab.id}`}
-                >
-                  <tab.icon className={`${ICON_SM} mr-1`} />
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {/* SCHOLAR SUMMARY TAB */}
-            <TabsContent value="summary" className="flex-1 mt-6">
-              {/* Scholar run flow strip */}
-              <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY} mb-4`}>
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-arcade text-xs text-secondary">
-                      SCHOLAR RUN: HIGH-LEVEL → ANALYSIS → DECISIONS
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_380px]">
+            <Card className="bg-black/40 border border-primary/30">
+              <CardHeader className="border-b border-primary/20">
+                <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                  <Brain className="w-4 h-4" /> BRAIN CONTEXT
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-4">
+                {profile ? (
+                  <>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(profile.hybridArchetype?.confidence)}`}>
+                        {profile.hybridArchetype?.confidence?.toUpperCase() || "LOW"} CONFIDENCE
+                      </Badge>
+                      <span className="font-terminal text-sm text-foreground">
+                        {profile.hybridArchetype?.label || "No active Brain archetype yet"}
+                      </span>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-none font-arcade text-xs border-primary text-primary h-7 px-3 gap-1"
-                      onClick={() => runScholarMutation.mutate()}
-                      disabled={runScholarMutation.isPending}
-                    >
-                      <RefreshCw className={`w-3 h-3 ${runScholarMutation.isPending ? "animate-spin" : ""}`} />
-                      {runScholarMutation.isPending ? "STARTING..." : "RUN FULL AUDIT"}
-                    </Button>
-                  </div>
-                  <div className="grid md:grid-cols-3 gap-3 font-terminal text-sm text-muted-foreground">
-                    <div>
-                      <span className="text-primary font-semibold">1. Review study health</span>
-                      <p>Scan totals and recent activity for obvious gaps.</p>
-                    </div>
-                    <div>
-                      <span className="text-primary font-semibold">2. Dive into analysis</span>
-                      <p>Use Tutor audit, questions, and evidence to understand why.</p>
-                    </div>
-                    <div>
-                      <span className="text-primary font-semibold">3. Approve/track proposals</span>
-                      <p>Decide which changes to adopt and track over time.</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY} mb-4`}>
-                <CardHeader className="border-b border-primary/30">
-                  <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                    <FileText className="w-4 h-4" /> LATEST ARTIFACTS
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  {latestArtifacts.length === 0 ? (
                     <p className="font-terminal text-xs text-muted-foreground">
-                      No recent Scholar artifacts surfaced yet. Run a full audit to refresh findings, questions, and proposals.
+                      {profile.hybridArchetype?.summary || "Brain has not derived a stable learner-pattern summary yet."}
                     </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {latestArtifacts.map((artifact) => (
-                        <div key={artifact.id} className="flex items-start gap-3 border border-secondary/40 bg-black/30 px-3 py-2">
-                          <Badge variant="outline" className="rounded-none text-[10px] border-primary/40 shrink-0">
-                            {artifact.kind.toUpperCase()}
-                          </Badge>
-                          <div className="min-w-0">
-                            <div className="font-terminal text-sm text-foreground truncate">{artifact.title}</div>
-                            <div className="font-terminal text-[11px] text-muted-foreground truncate">{artifact.meta}</div>
+                    <div className="grid gap-2 md:grid-cols-3">
+                      {profile.summaryCards?.slice(0, 3).map((card) => (
+                        <div key={card.key} className="border border-primary/20 bg-black/30 p-3">
+                          <div className="font-terminal text-[11px] uppercase tracking-wide text-primary">
+                            {card.label}
                           </div>
+                          <div className="font-terminal text-sm text-foreground">{card.value}</div>
+                          <div className="font-terminal text-[11px] text-muted-foreground">{card.helper}</div>
                         </div>
                       ))}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </>
+                ) : (
+                  <p className="font-terminal text-xs text-muted-foreground">
+                    Brain context is still loading.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
-              {/* Proposals banner when work is waiting */}
-              {proposals.length > 0 && (
-                <Card className={`bg-black/60 ${CARD_BORDER} mb-4`}>
-                  <CardContent className="p-3 flex flex-col md:flex-row md:items-center gap-3 justify-between">
-                    <div className="flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4 text-primary" />
-                      <p className="font-terminal text-xs text-muted-foreground">
-                        You have{" "}
-                        <span className="text-primary">
-                          {proposals.filter(p => p.status !== "REJECTED").length} active Scholar proposal
-                          {proposals.filter(p => p.status !== "REJECTED").length === 1 ? "" : "s"}
-                        </span>{" "}
-                        waiting for a decision.
+            <Card className="bg-black/40 border border-primary/30">
+              <CardHeader className="border-b border-primary/20">
+                <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                  <FileSearch className="w-4 h-4" /> WHAT SCHOLAR IS RESEARCHING
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-4">
+                {detail ? (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className={`rounded-none text-[10px] ${statusTone(detail.status)}`}>
+                        {detail.status.toUpperCase()}
+                      </Badge>
+                      <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(detail.confidence)}`}>
+                        {(detail.confidence || "low").toUpperCase()} CONFIDENCE
+                      </Badge>
+                    </div>
+                    <div>
+                      <div className="font-terminal text-sm text-foreground">{detail.title}</div>
+                      <p className="font-terminal text-xs text-muted-foreground mt-1">
+                        {detail.rationale}
                       </p>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-none font-arcade text-xs border-primary text-primary"
-                      onClick={() => setActiveTab("proposals")}
-                      data-testid="cta-review-proposals-from-summary"
-                    >
-                      GO TO PROPOSALS
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
-              <div className="grid lg:grid-cols-3 gap-6">
-                {/* Left: Summary Cards */}
-                <div className="lg:col-span-2 space-y-4 pr-2 card-stagger">
-                  {/* Study Health Overview */}
-                  <Card className={`bg-black/40 ${CARD_BORDER}`}>
-                    <CardHeader className="p-4 border-b border-primary/30">
-                      <CardTitle className="font-arcade text-sm text-primary flex items-center gap-3">
-                        <TrendingUp className="w-4 h-4" /> STUDY HEALTH OVERVIEW
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-6">
-                      <div className="grid grid-cols-3 gap-6 text-center">
-                        <div>
-                          <div className="font-arcade text-2xl text-primary">{sessions.length}</div>
-                          <div className="font-terminal text-xs text-muted-foreground">TOTAL SESSIONS</div>
-                        </div>
-                        <div>
-                          <div className="font-arcade text-2xl text-white">{sessionsThisWeek}</div>
-                          <div className="font-terminal text-xs text-muted-foreground">THIS WEEK</div>
-                        </div>
-                        <div>
-                          <div className="font-arcade text-2xl text-secondary">{avgMinutesPerSession}m</div>
-                          <div className="font-terminal text-xs text-muted-foreground">AVG/SESSION</div>
-                        </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="border border-primary/20 bg-black/30 p-2">
+                        <div className="font-terminal text-[11px] text-primary">FINDINGS</div>
+                        <div className="font-terminal text-sm text-foreground">{detail.findings_count ?? 0}</div>
                       </div>
-                    </CardContent>
-                  </Card>
+                      <div className="border border-primary/20 bg-black/30 p-2">
+                        <div className="font-terminal text-[11px] text-primary">OPEN QS</div>
+                        <div className="font-terminal text-sm text-foreground">{detail.open_question_count ?? 0}</div>
+                      </div>
+                      <div className="border border-primary/20 bg-black/30 p-2">
+                        <div className="font-terminal text-[11px] text-primary">SOURCES</div>
+                        <div className="font-terminal text-sm text-foreground">{detail.sources?.length ?? 0}</div>
+                      </div>
+                    </div>
+                    <div className="border border-yellow-500/20 bg-yellow-500/5 p-3">
+                      <div className="font-terminal text-[11px] uppercase tracking-wide text-yellow-300">Uncertainty</div>
+                      <p className="font-terminal text-xs text-muted-foreground mt-1">
+                        {detail.uncertainty_summary || "Scholar has not posted an uncertainty summary yet."}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="font-terminal text-xs text-muted-foreground">
+                    Start an investigation to make the research goal, rationale, and uncertainty visible.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
-                  {/* What's Working */}
-                  <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                    <CardHeader className="border-b border-primary/30">
-                      <CardTitle className="font-arcade text-xs text-white flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4" /> WHAT APPEARS TO BE WORKING
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                      <ul className="space-y-3 font-terminal text-sm">
-                        {courses.filter(c => (c.totalSessions || 0) >= 3).length > 0 ? (
-                          <>
-                            <li className="flex items-start gap-2">
-                              <ChevronRight className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                              <span>{courses.filter(c => (c.totalSessions || 0) >= 3).length} courses have consistent study activity</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <ChevronRight className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                              <span>Round-robin rotation ensuring balanced coverage</span>
-                            </li>
-                          </>
+            <ScholarRunStatus />
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+          <TabsList className="bg-black/60 border-2 border-primary/40 rounded-none p-1 w-full justify-start overflow-x-auto">
+            <TabsTrigger value="workspace" className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black">
+              WORKSPACE
+            </TabsTrigger>
+            <TabsTrigger value="questions" className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black">
+              QUESTIONS
+            </TabsTrigger>
+            <TabsTrigger value="findings" className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black">
+              FINDINGS
+            </TabsTrigger>
+            <TabsTrigger value="history" className="rounded-none font-arcade text-xs data-[state=active]:bg-primary data-[state=active]:text-black">
+              HISTORY
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="workspace" className="mt-6">
+            <div className="grid gap-4 xl:grid-cols-[430px_minmax(0,1fr)]">
+              <Card className="bg-black/40 border border-primary/30">
+                <CardHeader className="border-b border-primary/20">
+                  <CardTitle className="font-arcade text-xs">START INVESTIGATION</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4">
+                  <div className="space-y-2">
+                    <div className="font-terminal text-xs text-muted-foreground">Research question</div>
+                    <Textarea
+                      value={queryText}
+                      onChange={(event) => setQueryText(event.target.value)}
+                      placeholder="Example: Why does Brain keep classifying me as scaffold-dependent during retrieval-heavy sessions?"
+                      className="min-h-[96px] rounded-none font-terminal text-xs border-primary/40"
+                      data-testid="scholar-investigation-query"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="font-terminal text-xs text-muted-foreground">Why this matters</div>
+                    <Textarea
+                      value={rationale}
+                      onChange={(event) => setRationale(event.target.value)}
+                      placeholder="Explain what Scholar should improve, validate, or challenge."
+                      className="min-h-[96px] rounded-none font-terminal text-xs border-primary/40"
+                      data-testid="scholar-investigation-rationale"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="font-terminal text-xs text-muted-foreground">Audience</div>
+                    <Select value={audienceType} onValueChange={(value) => setAudienceType(value as "learner" | "operator" | "system")}>
+                      <SelectTrigger className="rounded-none font-terminal text-xs border-primary/40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-none bg-black border-primary">
+                        <SelectItem value="learner" className="font-terminal text-xs rounded-none">Learner</SelectItem>
+                        <SelectItem value="operator" className="font-terminal text-xs rounded-none">Operator</SelectItem>
+                        <SelectItem value="system" className="font-terminal text-xs rounded-none">System</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button
+                    className="w-full rounded-none font-terminal text-xs"
+                    onClick={() => createInvestigationMutation.mutate()}
+                    disabled={createInvestigationMutation.isPending || !queryText.trim() || !rationale.trim()}
+                    data-testid="button-start-investigation"
+                  >
+                    <Search className="w-3 h-3 mr-2" />
+                    {createInvestigationMutation.isPending ? "STARTING..." : "START INVESTIGATION"}
+                  </Button>
+
+                  <div className="border border-primary/20 bg-black/30 p-3">
+                    <div className="font-terminal text-[11px] uppercase tracking-wide text-primary">MVP behavior</div>
+                    <ul className="mt-2 space-y-1 font-terminal text-xs text-muted-foreground">
+                      <li>1. Scholar searches the web with trusted-source prioritization.</li>
+                      <li>2. Scholar fetches citations and source snippets into the database.</li>
+                      <li>3. Scholar synthesizes findings, uncertainty, and learner questions.</li>
+                      <li>4. Scholar stays research-only and does not teach course content.</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-black/40 border border-primary/30">
+                <CardHeader className="border-b border-primary/20">
+                  <CardTitle className="font-arcade text-xs">ACTIVE INVESTIGATIONS</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[620px]">
+                    <div className="space-y-3 p-4">
+                      {investigations.length === 0 ? (
+                        <p className="font-terminal text-xs text-muted-foreground">
+                          No investigations yet. Start one from the panel on the left.
+                        </p>
+                      ) : (
+                        investigations.map((investigation) => {
+                          const isSelected =
+                            investigation.investigation_id === selectedInvestigation?.investigation_id;
+                          return (
+                            <button
+                              key={investigation.investigation_id}
+                              type="button"
+                              className={`w-full text-left border p-4 bg-black/30 transition ${
+                                isSelected ? "border-primary" : "border-primary/20 hover:border-primary/60"
+                              }`}
+                              onClick={() => setSelectedInvestigationId(investigation.investigation_id)}
+                              data-testid={`investigation-card-${investigation.investigation_id}`}
+                            >
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <Badge variant="outline" className={`rounded-none text-[10px] ${statusTone(investigation.status)}`}>
+                                  {investigation.status.toUpperCase()}
+                                </Badge>
+                                <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(investigation.confidence)}`}>
+                                  {(investigation.confidence || "low").toUpperCase()}
+                                </Badge>
+                                <Badge variant="outline" className="rounded-none text-[10px] border-primary/20">
+                                  {(investigation.audience_type || "learner").toUpperCase()}
+                                </Badge>
+                              </div>
+                              <div className="font-terminal text-sm text-foreground">{investigation.title}</div>
+                              <div className="font-terminal text-xs text-muted-foreground mt-1">
+                                {investigation.rationale}
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 mt-3">
+                                <div className="border border-primary/20 bg-black/20 p-2">
+                                  <div className="font-terminal text-[10px] text-primary">FINDINGS</div>
+                                  <div className="font-terminal text-xs text-foreground">{investigation.findings_count ?? 0}</div>
+                                </div>
+                                <div className="border border-primary/20 bg-black/20 p-2">
+                                  <div className="font-terminal text-[10px] text-primary">OPEN QS</div>
+                                  <div className="font-terminal text-xs text-foreground">{investigation.open_question_count ?? 0}</div>
+                                </div>
+                                <div className="border border-primary/20 bg-black/20 p-2">
+                                  <div className="font-terminal text-[10px] text-primary">UPDATED</div>
+                                  <div className="font-terminal text-[11px] text-foreground">
+                                    {investigation.updated_at
+                                      ? new Date(investigation.updated_at).toLocaleDateString()
+                                      : "n/a"}
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="questions" className="mt-6">
+            <Card className="bg-black/40 border border-primary/30">
+              <CardHeader className="border-b border-primary/20">
+                <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4" /> LEARNER QUESTION INBOX
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4">
+                {questions.length === 0 ? (
+                  <p className="font-terminal text-xs text-muted-foreground">
+                    Scholar has not produced any learner questions yet.
+                  </p>
+                ) : (
+                  questions.map((question) => {
+                    const questionId = question.question_id || String(question.id);
+                    const answered = question.status === "answered";
+                    return (
+                      <div
+                        key={questionId}
+                        className="border border-primary/20 bg-black/30 p-4"
+                        data-testid={`question-card-${questionId}`}
+                      >
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <Badge
+                            variant="outline"
+                            className={`rounded-none text-[10px] ${
+                              answered
+                                ? "border-emerald-500/60 text-emerald-400"
+                                : "border-primary/60 text-primary"
+                            }`}
+                          >
+                            {answered ? "ANSWERED" : "OPEN"}
+                          </Badge>
+                          {question.is_blocking ? (
+                            <Badge
+                              variant="outline"
+                              className="rounded-none text-[10px] border-yellow-500/60 text-yellow-400"
+                            >
+                              BLOCKING
+                            </Badge>
+                          ) : null}
+                          {question.linked_investigation_id ? (
+                            <Badge
+                              variant="outline"
+                              className="rounded-none text-[10px] border-primary/20"
+                            >
+                              {question.linked_investigation_id}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <div className="font-terminal text-sm text-foreground">
+                          {question.question_text || question.question}
+                        </div>
+                        {question.rationale ? (
+                          <p className="font-terminal text-xs text-muted-foreground mt-2">
+                            {question.rationale}
+                          </p>
+                        ) : null}
+                        {question.evidence_needed ? (
+                          <div className="mt-2 border border-primary/10 bg-black/20 p-2">
+                            <div className="font-terminal text-[10px] uppercase tracking-wide text-primary">
+                              Evidence Needed
+                            </div>
+                            <div className="font-terminal text-xs text-muted-foreground mt-1">
+                              {question.evidence_needed}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {answered ? (
+                          <div
+                            className="mt-3 border border-emerald-500/20 bg-emerald-500/5 p-3"
+                            data-testid={`saved-answer-${questionId}`}
+                          >
+                            <div className="font-terminal text-[10px] uppercase tracking-wide text-emerald-400">
+                              Saved Answer
+                            </div>
+                            <div className="font-terminal text-xs text-muted-foreground mt-1">
+                              {question.answer_text}
+                            </div>
+                          </div>
                         ) : (
-                          <li className="text-muted-foreground">
-                            Insufficient data for strong conclusions. Aim for at least ~10 logged sessions
-                            (via the Dashboard Study Wheel) before trusting these patterns.
-                          </li>
+                          <div className="mt-3 flex flex-col gap-3">
+                            <Textarea
+                              value={questionAnswers[questionId] || ""}
+                              onChange={(event) =>
+                                setQuestionAnswers((prev) => ({
+                                  ...prev,
+                                  [questionId]: event.target.value,
+                                }))
+                              }
+                              placeholder="Write the learner answer Scholar should incorporate..."
+                              className="min-h-[88px] rounded-none font-terminal text-xs border-primary/30"
+                            />
+                            <div className="flex justify-end">
+                              <Button
+                                size="sm"
+                                className="rounded-none font-terminal text-xs"
+                                onClick={() => submitAnswer(question)}
+                                disabled={
+                                  !((questionAnswers[questionId] || "").trim()) ||
+                                  submittingQuestionIds[questionId]
+                                }
+                                data-testid={`button-submit-answer-${questionId}`}
+                              >
+                                <Send className="w-3 h-3 mr-2" />
+                                {submittingQuestionIds[questionId] ? "SAVING..." : "SAVE ANSWER"}
+                              </Button>
+                            </div>
+                          </div>
                         )}
-                      </ul>
-                      <div className="mt-3 pt-3 border-t border-primary/30">
-                        <Badge variant="outline" className="rounded-none text-xs border-primary/40">
-                          CONFIDENCE: {sessions.length > 10 ? 'MEDIUM' : 'LOW'} (based on {sessions.length} sessions)
+                      </div>
+                    );
+                  })
+                )}
+
+                {openQuestions.length > 0 ? (
+                  <div className="border border-yellow-500/20 bg-yellow-500/5 p-3">
+                    <div className="font-terminal text-[11px] uppercase tracking-wide text-yellow-300">
+                      Why these questions matter
+                    </div>
+                    <p className="font-terminal text-xs text-muted-foreground mt-1">
+                      Scholar only asks when the current evidence is weak, conflicting, or still needs learner-specific context.
+                    </p>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="findings" className="mt-6">
+            <Card className="bg-black/40 border border-primary/30">
+              <CardHeader className="border-b border-primary/20">
+                <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                  <Link2 className="w-4 h-4" /> CITED FINDINGS
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4">
+                {findings.length === 0 ? (
+                  <p className="font-terminal text-xs text-muted-foreground">
+                    No research findings yet. Start an investigation and Scholar will populate this lane with cited findings.
+                  </p>
+                ) : (
+                  findings.map((finding, index) => (
+                    <div
+                      key={finding.finding_id || `${finding.title}-${index}`}
+                      className="border border-primary/20 bg-black/30 p-4"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <Badge
+                          variant="outline"
+                          className={`rounded-none text-[10px] ${confidenceTone(finding.confidence)}`}
+                        >
+                          {(finding.confidence || "low").toUpperCase()} CONFIDENCE
+                        </Badge>
+                        {finding.investigation_id ? (
+                          <Badge
+                            variant="outline"
+                            className="rounded-none text-[10px] border-primary/20"
+                          >
+                            {finding.investigation_id}
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <div className="font-terminal text-sm text-foreground">{finding.title}</div>
+                      <p className="font-terminal text-xs text-muted-foreground mt-2">
+                        {finding.summary ||
+                          finding.content ||
+                          "Scholar recorded this finding without a summary yet."}
+                      </p>
+                      {finding.relevance ? (
+                        <div className="mt-2 text-xs font-terminal text-primary">
+                          Why it matters: {finding.relevance}
+                        </div>
+                      ) : null}
+                      {finding.uncertainty ? (
+                        <div className="mt-2 border border-yellow-500/20 bg-yellow-500/5 p-2">
+                          <div className="font-terminal text-[10px] uppercase tracking-wide text-yellow-300">
+                            Uncertainty
+                          </div>
+                          <div className="font-terminal text-xs text-muted-foreground mt-1">
+                            {finding.uncertainty}
+                          </div>
+                        </div>
+                      ) : null}
+                      <div className="mt-3 space-y-2">
+                        {(finding.sources || []).length > 0 ? (
+                          (finding.sources || []).map((source) => (
+                            <a
+                              key={source.source_id}
+                              href={source.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block border border-primary/15 bg-black/20 p-3 hover:border-primary/40"
+                            >
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge
+                                  variant="outline"
+                                  className={`rounded-none text-[10px] ${confidenceTone(source.trust_tier)}`}
+                                >
+                                  {(source.trust_tier || "general").toUpperCase()}
+                                </Badge>
+                                <span className="font-terminal text-xs text-foreground">
+                                  {source.title || source.url}
+                                </span>
+                              </div>
+                              <div className="font-terminal text-[11px] text-muted-foreground mt-1">
+                                {(source.publisher || source.domain) || source.url}
+                                {source.published_at ? ` • ${source.published_at}` : ""}
+                              </div>
+                              {source.snippet ? (
+                                <p className="font-terminal text-[11px] text-muted-foreground mt-2">
+                                  {source.snippet}
+                                </p>
+                              ) : null}
+                            </a>
+                          ))
+                        ) : (
+                          <div className="font-terminal text-[11px] text-muted-foreground">
+                            No citations attached to this finding yet.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-6">
+            <Card className="bg-black/40 border border-primary/30">
+              <CardHeader className="border-b border-primary/20">
+                <CardTitle className="font-arcade text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" /> INVESTIGATION HISTORY
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 p-4">
+                {investigations.length === 0 ? (
+                  <p className="font-terminal text-xs text-muted-foreground">
+                    No Scholar history yet.
+                  </p>
+                ) : (
+                  investigations.map((investigation) => (
+                    <div
+                      key={investigation.investigation_id}
+                      className="border border-primary/20 bg-black/30 p-4"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <Badge
+                          variant="outline"
+                          className={`rounded-none text-[10px] ${statusTone(investigation.status)}`}
+                        >
+                          {investigation.status.toUpperCase()}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={`rounded-none text-[10px] ${confidenceTone(investigation.confidence)}`}
+                        >
+                          {(investigation.confidence || "low").toUpperCase()}
                         </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* What's Failing */}
-                  <Card className="bg-black/40 border-2 border-destructive/50 rounded-none">
-                    <CardHeader className="border-b border-destructive/30">
-                      <CardTitle className="font-arcade text-xs text-destructive flex items-center gap-2">
-                        <XCircle className="w-4 h-4" /> POTENTIAL CONCERNS
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                      <ul className="space-y-3 font-terminal text-sm">
-                        {coursesWithLowActivity.length > 0 && (
-                          <li className="flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                            <span>{coursesWithLowActivity.length} courses with low activity: {coursesWithLowActivity.map(c => c.name).join(', ')}</span>
-                          </li>
-                        )}
-                        {confusionTopics.length > 0 && (
-                          <li className="flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                            <span>{confusionTopics.length} unresolved confusions logged</span>
-                          </li>
-                        )}
-                        {unresolvedIssues.length > 0 && (
-                          <li className="flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                            <span>{unresolvedIssues.length} session issues flagged</span>
-                          </li>
-                        )}
-                        {coursesWithLowActivity.length === 0 && confusionTopics.length === 0 && unresolvedIssues.length === 0 && (
-                          <li className="text-muted-foreground">
-                            No significant concerns identified yet. Keep logging sessions; Scholar will surface issues
-                            here once patterns emerge.
-                          </li>
-                        )}
-                      </ul>
-                      {hasConcerns && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-none font-arcade text-xs border-primary text-primary"
-                            onClick={() => setActiveTab("analysis")}
-                            data-testid="cta-open-analysis-from-summary"
-                          >
-                            OPEN DETAILED ANALYSIS
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="rounded-none font-arcade text-xs"
-                            onClick={() => navigate("/brain")}
-                            data-testid="cta-open-brain-from-summary"
-                          >
-                            REVIEW SESSIONS IN BRAIN
-                          </Button>
+                      <div className="font-terminal text-sm text-foreground">
+                        {investigation.title}
+                      </div>
+                      <p className="font-terminal text-xs text-muted-foreground mt-1">
+                        {investigation.rationale}
+                      </p>
+                      {investigation.error_message ? (
+                        <div className="mt-3 border border-destructive/20 bg-destructive/5 p-2">
+                          <div className="font-terminal text-[10px] uppercase tracking-wide text-destructive flex items-center gap-2">
+                            <AlertCircle className="w-3 h-3" /> Failure
+                          </div>
+                          <div className="font-terminal text-xs text-muted-foreground mt-1">
+                            {investigation.error_message}
+                          </div>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Right: Chat Interface */}
-                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY} flex flex-col`}>
-                  <CardHeader className="border-b border-primary/30 shrink-0 sticky top-0 bg-black/95 z-10">
-                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4" /> ASK SCHOLAR
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0 flex-1 flex flex-col">
-                    <ScrollArea className="flex-1 p-3 min-h-[400px]">
-                      <div className="space-y-3">
-                        {chatMessages.length === 0 && (
-                          <div className="text-center py-8">
-                            <Brain className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                            <p className="font-terminal text-xs text-muted-foreground">
-                              Ask questions about your study data, patterns, or get recommendations.
-                            </p>
+                      ) : null}
+                      {investigation.run_notes ? (
+                        <div className="mt-3 border border-primary/10 bg-black/20 p-2">
+                          <div className="font-terminal text-[10px] uppercase tracking-wide text-primary">
+                            Run Notes
                           </div>
-                        )}
-                        {chatMessages.map((msg, i) => (
-                          <div
-                            key={i}
-                            className={cn(
-                              "p-2 rounded-none font-terminal text-xs",
-                              msg.role === 'user'
-                                ? "bg-primary/20 text-primary ml-8"
-                                : "bg-secondary/20 text-white mr-8"
-                            )}
-                          >
-                            {msg.content}
+                          <div className="font-terminal text-xs text-muted-foreground mt-1">
+                            {investigation.run_notes}
                           </div>
-                        ))}
-                        {isAnalyzing && (
-                          <div className="flex items-center gap-2 text-muted-foreground font-terminal text-xs">
-                            <RefreshCw className={`${ICON_SM} animate-spin`} />
-                            Analyzing Brain data...
-                          </div>
-                        )}
-                        <div ref={chatEndRef} />
-                      </div>
-                    </ScrollArea>
-                    <div className="p-2 border-t border-primary/30 shrink-0">
-                      <div className="flex gap-2">
-                        <Textarea
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleChatSubmit();
-                            }
-                          }}
-                          placeholder="Ask about your study patterns..."
-                          className="rounded-none bg-black border-primary/40 text-xs min-h-[60px] resize-none"
-                          data-testid="input-scholar-chat"
-                        />
-                        <Button
-                          size="icon"
-                          className="rounded-none bg-primary text-black h-[60px] w-10"
-                          onClick={handleChatSubmit}
-                          disabled={isAnalyzing}
-                          data-testid="button-send-chat"
-                        >
-                          <Send className="w-4 h-4" />
-                        </Button>
-                      </div>
+                        </div>
+                      ) : null}
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* ANALYSIS TAB - Consolidated from Audit, Questions, Evidence, Clusters */}
-            <TabsContent value="analysis" className="flex-1 overflow-auto mt-4">
-              <div className="space-y-4">
-                <p className="font-terminal text-sm text-muted-foreground">
-                  Scholar analysis walks from how Tutor behaved, to where issues cluster, to concrete questions and
-                  evidence. If something looks important here, expect or create a matching proposal on the next tab.
-                </p>
-                {/* Tutor Audit Section */}
-                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                  <CardHeader className="border-b border-primary/30">
-                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <Search className="w-4 h-4" /> TUTOR AUDIT
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="grid lg:grid-cols-2 gap-4">
-                      {/* Tutor Behavior Audit */}
-                      <Card className={`bg-black/40 ${CARD_BORDER}`}>
-                        <CardHeader className="border-b border-primary/30">
-                          <CardTitle className="font-arcade text-xs text-primary flex items-center gap-2">
-                            <Brain className="w-4 h-4" /> TUTOR BEHAVIOR AUDIT
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                              {tutorAuditData.length === 0 ? (
-                                <p className="font-terminal text-xs text-muted-foreground">No audit data available</p>
-                              ) : (
-                                tutorAuditData.map((item, i) => (
-                                  <div key={i} className="p-3 bg-primary/5 border border-primary/30">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="font-terminal text-sm">{item.date}</span>
-                                      <Badge variant="outline" className="rounded-none text-xs border-primary">
-                                        {item.status}
-                                      </Badge>
-                                    </div>
-                                    <p className="font-terminal text-xs mb-2">
-                                      {item.userMessages} user / {item.assistantMessages} assistant messages
-                                    </p>
-                                    <div className="flex gap-2">
-                                      <Badge variant="secondary" className="rounded-none text-[8px]">
-                                        Session {item.sessionId}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Recurrent Issues */}
-                      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                        <CardHeader className="border-b border-primary/30">
-                          <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4" /> RECURRENT ISSUES
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            {tutorAuditItems.length === 0 ? (
-                              <p className="font-terminal text-xs text-muted-foreground">No recurrent issues detected yet. Run Scholar to analyze Tutor sessions.</p>
-                            ) : (
-                              tutorAuditItems.map((item, i) => (
-                                <div key={i} className="p-3 bg-black/40 border border-secondary/50">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="font-terminal text-sm">{item.issue ?? "Unknown issue"}</span>
-                                    <Badge variant="outline" className="rounded-none text-xs border-primary text-primary">
-                                      x{item.frequency ?? 0}
-                                    </Badge>
-                                  </div>
-                                  <div className="flex gap-1 flex-wrap">
-                                    {(item.courses || []).map((course: string, j: number) => (
-                                      <Badge key={j} variant="secondary" className="rounded-none text-[8px]">
-                                        {course}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Question Pipeline Section */}
-                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                  <CardHeader className="border-b border-primary/30">
-                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <HelpCircle className="w-4 h-4" /> QUESTION PIPELINE
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <p className="font-terminal text-sm text-muted-foreground mb-3">
-                      Scholar turns messy issues into tractable questions. Use this section to see what is still
-                      unanswered and where more Brain data or external research is needed.
-                    </p>
-                    <div className="grid lg:grid-cols-2 gap-4">
-                      {/* Pipeline Stages */}
-                      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                        <CardHeader className="border-b border-primary/30">
-                          <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                            <HelpCircle className="w-4 h-4" /> QUESTION RESOLUTION PIPELINE
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                          <div className="space-y-2 font-terminal text-xs text-muted-foreground mb-4">
-                            <p>1. Generate question from identified issue</p>
-                            <p>2. Attempt answer using Brain data</p>
-                            <p>3. If insufficient, research learning science</p>
-                            <p>4. If still unresolved, escalate to user</p>
-                          </div>
-                          <div className="space-y-3">
-                            {[
-                              { stage: "Open Questions", count: openQuestions.length },
-                              { stage: "Research Findings", count: scholarFindings.length },
-                              { stage: "Tutor Sessions Audited", count: tutorAuditItems.length },
-                              { stage: "Active Proposals", count: proposals.filter(p => p.status !== "REJECTED").length },
-                            ].map((item, i) => (
-                              <div key={i} className="flex items-center gap-3">
-                                <div className="w-3 h-3 bg-primary/60" />
-                                <span className="font-terminal text-sm flex-1">{item.stage}</span>
-                                <Badge variant="outline" className="rounded-none">{item.count}</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Open Questions */}
-                      <Card className={`bg-black/40 ${CARD_BORDER}`}>
-                        <CardHeader className="border-b border-primary/30">
-                          <CardTitle className="font-arcade text-xs text-primary flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4" /> OPEN QUESTIONS
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                          <div className="space-y-4">
-                            {openQuestions.map((q) => (
-                              <div key={q.question_id ?? q.id} className="p-3 bg-primary/5 border border-primary/30">
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                  <p className="font-terminal text-sm">{q.question_text ?? q.question}</p>
-                                  <Badge
-                                    variant="outline"
-                                    className={cn(
-                                      "rounded-none text-[10px]",
-                                      (q.status || "pending").toLowerCase() === "answered"
-                                        ? "border-success text-success"
-                                        : "border-primary text-primary"
-                                    )}
-                                  >
-                                    {(q.status || "pending").toUpperCase()}
-                                  </Badge>
-                                </div>
-                                <div className="space-y-2 text-xs">
-                                  <div className="flex gap-2">
-                                    <span className="text-muted-foreground shrink-0">Context:</span>
-                                    <span>{q.context}</span>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <span className="text-muted-foreground shrink-0">Data Gap:</span>
-                                    <span>{q.dataInsufficient}</span>
-                                  </div>
-                                </div>
-                                {(q.status || "pending").toLowerCase() !== "answered" ? (
-                                  <div className="mt-3 space-y-2">
-                                    <Textarea
-                                      value={questionAnswers[q.question_id ?? String(q.id)] || ""}
-                                      onChange={(e) =>
-                                        setQuestionAnswers(prev => ({
-                                          ...prev,
-                                          [q.question_id ?? String(q.id)]: e.target.value,
-                                        }))
-                                      }
-                                      placeholder="Write answer for this question..."
-                                      className="rounded-none border-primary font-terminal text-xs bg-black h-24"
-                                    />
-                                    <Button
-                                      className="rounded-none font-terminal text-xs"
-                                      onClick={() => submitQuestionAnswer(q.question_id ?? String(q.id))}
-                                      disabled={
-                                        answerQuestionMutation.isPending ||
-                                        !!submittingQuestionIds[q.question_id ?? String(q.id)] ||
-                                        !(questionAnswers[q.question_id ?? String(q.id)] || "").trim()
-                                      }
-                                      data-testid={`button-submit-answer-${q.question_id ?? String(q.id)}`}
-                                    >
-                                      {submittingQuestionIds[q.question_id ?? String(q.id)] ? "SUBMITTING..." : "SUBMIT ANSWER"}
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="mt-3 p-2 bg-black/40 border border-primary/20">
-                                    <div className="text-[10px] text-muted-foreground mb-1">Saved Answer</div>
-                                    <p className="font-terminal text-xs" data-testid={`saved-answer-${q.question_id ?? String(q.id)}`}>
-                                      {q.answer_text || "Answered."}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Evidence Review Section */}
-                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                  <CardHeader className="border-b border-primary/30">
-                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <BookOpen className="w-4 h-4" /> EVIDENCE REVIEW
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="grid lg:grid-cols-2 gap-4">
-                      {/* Observed Data */}
-                      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                        <CardHeader className="border-b border-primary/30">
-                          <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                            <BookOpen className="w-4 h-4" /> OBSERVED DATA
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                          <div className="space-y-4">
-                            {scholarFindings.length === 0 ? (
-                              <p className="font-terminal text-xs text-muted-foreground">No findings yet. Run Scholar to generate research findings.</p>
-                            ) : (
-                              scholarFindings.map((finding, i) => (
-                                <div key={i} className="p-3 bg-black/40 border border-secondary/50">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Badge variant="outline" className="rounded-none text-xs border-secondary">
-                                      {finding.source}
-                                    </Badge>
-                                    {finding.topic && (
-                                      <span className="font-terminal text-xs text-muted-foreground">
-                                        {finding.topic}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="font-terminal text-sm font-semibold mb-1">{finding.title}</p>
-                                  <p className="font-terminal text-xs text-muted-foreground">{finding.content}</p>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Research Interpretation */}
-                      <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                        <CardHeader className="border-b border-primary/30">
-                          <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                            <BookOpen className="w-4 h-4" /> RESEARCH INTERPRETATION
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                          <div className="space-y-4">
-                            {researchFindings.map((finding, i) => (
-                                <div key={i} className="p-3 bg-black/40 border border-secondary/50">
-                                  <div className="font-arcade text-xs text-primary mb-2">{finding.topic ?? finding.title}</div>
-                                  <p className="font-terminal text-xs mb-2">{finding.summary ?? finding.content}</p>
-                                  <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span>Source: {finding.source}</span>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Topic Clusters Section */}
-                <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                  <CardHeader className="border-b border-primary/30 flex flex-row items-center justify-between">
-                    <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                      <Layers className="w-4 h-4" /> TOPIC CLUSTERS
-                    </CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-none font-arcade text-xs border-secondary h-7 px-3"
-                      onClick={() => runClusteringMutation.mutate()}
-                      disabled={runClusteringMutation.isPending}
-                    >
-                      {runClusteringMutation.isPending ? "CLUSTERING..." : "RUN CLUSTERING"}
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <p className="font-terminal text-sm text-muted-foreground mb-3">
-                      Clustering works best after you have a healthy volume of sessions and findings. Use it to spot
-                      recurring themes that might deserve their own proposals.
-                    </p>
-                    <div className="grid md:grid-cols-2 gap-4">
-                        {clustersData?.clusters?.length === 0 ? (
-                          <p className="font-terminal text-xs text-muted-foreground col-span-2">No clusters yet. Run clustering to analyze.</p>
-                        ) : (
-                          clustersData?.clusters?.map((cluster) => (
-                            <div key={cluster.cluster_id} className="p-3 bg-black/40 border border-secondary/50">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-arcade text-xs text-primary">Cluster {cluster.cluster_id}</span>
-                                <Badge variant="outline" className="rounded-none text-xs border-secondary">
-                                  {cluster.count} items
-                                </Badge>
-                              </div>
-                              <div className="space-y-2">
-                                {cluster.items.map((item, i) => (
-                                  <div key={i} className="flex items-center gap-2 font-terminal text-xs">
-                                    <Badge variant="secondary" className="rounded-none text-[8px] shrink-0">
-                                      {item.source === "digest" ? "DIG" : "PROP"}
-                                    </Badge>
-                                    <span className="truncate">{item.title || "Untitled"}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                  </CardContent>
-                </Card>
-
-                {proposals.length > 0 && (
-                  <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-none font-arcade text-xs mt-2"
-                      onClick={() => setActiveTab("proposals")}
-                      data-testid="cta-next-proposals-from-analysis"
-                    >
-                      NEXT: REVIEW PROPOSALS
-                    </Button>
-                  </div>
+                  ))
                 )}
-              </div>
-            </TabsContent>
-
-            {/* PROPOSALS TAB */}
-            <TabsContent value="proposals" className="flex-1 overflow-auto mt-4">
-              <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                <CardHeader className="border-b border-primary/30">
-                  <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4" /> IMPROVEMENT PROPOSALS
-                  </CardTitle>
-                  <p className="font-terminal text-xs text-muted-foreground mt-1">
-                    No auto-implementation. All changes require user approval.
-                  </p>
-                  <p className="font-terminal text-xs text-muted-foreground mt-1">
-                    <span className="font-semibold text-primary">Status legend:</span>{" "}
-                    DRAFT = idea only, APPROVED = you intend to implement, IMPLEMENTED = change applied,
-                    REJECTED = explicitly declined.
-                  </p>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-4">
-                      {proposals.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="font-arcade text-xs text-primary mb-2">NO PROPOSALS YET</p>
-                          <p className="font-terminal text-xs text-muted-foreground">
-                            Proposals are generated by the Scholar workflow after analyzing Brain session data.
-                            Run a Scholar analysis from the dashboard or via the Scholar CLI to create proposals.
-                          </p>
-                        </div>
-                      ) : (
-                        proposals.filter(p => p.status !== 'REJECTED').map((proposal) => (
-                          <div key={proposal.id} className="p-4 bg-black/40 border border-secondary/50">
-                            <div className="flex items-start justify-between mb-3">
-                              <div>
-                                <span className="font-terminal text-xs text-muted-foreground">{proposal.proposalId}</span>
-                                <h4 className="font-terminal text-sm mt-1">{proposal.summary}</h4>
-                              </div>
-                              <div className="flex gap-2">
-                                <Badge variant="outline" className={cn("rounded-none text-xs", getPriorityColor(proposal.priority || 'MED'))}>
-                                  {proposal.priority || 'MED'}
-                                </Badge>
-                              </div>
-                            </div>
-
-                            {proposal.targetSystem && (
-                              <div className="mb-3">
-                                <span className="text-xs text-muted-foreground">Target system: </span>
-                                <Badge variant="secondary" className="rounded-none text-xs">
-                                  {proposal.targetSystem}
-                                </Badge>
-                              </div>
-                            )}
-
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-primary/30">
-                              <div className="flex gap-2">
-                                <Badge variant="outline" className="rounded-none text-xs border-primary/40">
-                                  Confidence: MED
-                                </Badge>
-                                <Badge variant="outline" className="rounded-none text-xs border-primary/40">
-                                  Risk: LOW
-                                </Badge>
-                              </div>
-                              <Select
-                                value={proposal.status || 'DRAFT'}
-                                onValueChange={(value) => updateProposalMutation.mutate({ id: proposal.id, data: { status: value } })}
-                              >
-                                <SelectTrigger className={cn("rounded-none w-28 h-7 text-xs", getStatusColor(proposal.status || 'DRAFT'))} data-testid={`select-proposal-status-${proposal.id}`}>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-none bg-black border-primary">
-                                  <SelectItem value="DRAFT">PROPOSED</SelectItem>
-                                  <SelectItem value="APPROVED">APPROVED</SelectItem>
-                                  <SelectItem value="REJECTED">REJECTED</SelectItem>
-                                  <SelectItem value="IMPLEMENTED">IMPLEMENTED</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* HISTORY TAB */}
-            <TabsContent value="history" className="flex-1 overflow-auto mt-4">
-              <Card className={`bg-black/40 ${CARD_BORDER_SECONDARY}`}>
-                <CardHeader className="border-b border-primary/30">
-                  <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                    <History className="w-4 h-4" /> PROPOSAL HISTORY (READ ONLY)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <p className="font-terminal text-xs text-muted-foreground mb-2">
-                    Read-only log of every Scholar proposal and its final status. Use this to see what has already
-                    been tried and decided before creating new changes.
-                  </p>
-                  <div className="space-y-2">
-                      {proposals.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="font-arcade text-xs text-primary mb-2">NO HISTORY YET</p>
-                          <p className="font-terminal text-xs text-muted-foreground">
-                            Proposal history will appear here once Scholar generates its first analysis.
-                          </p>
-                        </div>
-                      ) : (
-                        proposals.map((proposal) => (
-                          <div
-                            key={proposal.id}
-                            className="flex items-center p-3 bg-black/40 border border-secondary/50 font-terminal text-sm"
-                            data-testid={`history-proposal-${proposal.id}`}
-                          >
-                            <div className="w-20 font-terminal text-xs text-muted-foreground">{proposal.proposalId}</div>
-                            <div className="flex-1 truncate">{proposal.summary}</div>
-                            <div className="flex gap-2 items-center shrink-0">
-                              <Badge variant="outline" className={cn("rounded-none text-xs", getStatusColor(proposal.status || 'DRAFT'))}>
-                                {proposal.status || 'DRAFT'}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                <Clock className={`${ICON_SM} inline mr-1`} />
-                                {proposal.createdAt ? new Date(proposal.createdAt).toLocaleDateString() : 'N/A'}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-          </Tabs>
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

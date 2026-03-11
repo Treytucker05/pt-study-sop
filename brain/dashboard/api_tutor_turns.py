@@ -43,6 +43,7 @@ from tutor_teach_back import (
 from tutor_accuracy_profiles import (
     normalize_accuracy_profile,
 )
+from scholar_strategy import render_strategy_prompt
 
 from dashboard.api_tutor_utils import (
     _safe_json_dict,
@@ -548,6 +549,12 @@ def send_turn(session_id: str):
             pass
     if not isinstance(content_filter, dict):
         content_filter = {}
+    scholar_strategy = None
+    if session.get("scholar_strategy_json"):
+        try:
+            scholar_strategy = json.loads(session["scholar_strategy_json"])
+        except (json.JSONDecodeError, TypeError):
+            scholar_strategy = None
     if active_method_id:
         snapshot = content_filter.get("knob_snapshot")
         if not isinstance(snapshot, dict) or not snapshot:
@@ -816,6 +823,9 @@ def send_turn(session_id: str):
                 system_prompt += (
                     f"\n\n## Session Rules (Current Session Only)\n{session_rules}"
                 )
+            strategy_prompt = render_strategy_prompt(scholar_strategy)
+            if strategy_prompt:
+                system_prompt += f"\n\n{strategy_prompt}"
             system_prompt += (
                 "\n\n## Retrieval Tuning\n"
                 f"{_accuracy_profile_prompt_guidance(effective_accuracy_profile)}"
@@ -1662,8 +1672,8 @@ def send_turn(session_id: str):
                    (session_id, tutor_session_id, course_id, turn_number,
                     question, answer, citations_json, response_id, model_id,
                     phase, artifacts_json, behavior_override, evaluation_json,
-                    created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    strategy_snapshot_json, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     session_id,
                     session_id,
@@ -1678,6 +1688,7 @@ def send_turn(session_id: str):
                     json.dumps(_rich_artifacts) if _rich_artifacts else None,
                     behavior_override,
                     json.dumps(parsed_verdict) if parsed_verdict else None,
+                    json.dumps(scholar_strategy) if scholar_strategy else None,
                     now,
                 ),
             )

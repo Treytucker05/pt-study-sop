@@ -23,6 +23,7 @@ import type {
   JanitorIssue, JanitorOptions, JanitorHealthResponse, JanitorScanResponse,
   AiResolveResponse, AiApplyResponse, BatchEnrichResponse,
   ScholarQuestion, ScholarChatResponse, ScholarFinding,
+  ScholarInvestigation, ScholarInvestigationDetail, ScholarInvestigationCreatePayload,
   TutorAuditItem, ScholarClustersResponse, ScholarRunResult, ScholarRunStatus,
   ScholarRunHistoryItem,
   AcademicDeadline, InsertAcademicDeadline,
@@ -45,12 +46,14 @@ import type {
   TutorVideoEnrichmentStatus, TutorVideoEnrichResult,
   Material, MaterialContent, AutoLinkResult, MaterialUploadResponse,
   TutorTemplateChain, TutorBlockProgress, TutorConfigCheck, TutorEmbedStatus,
-  TutorSessionWrapSummary, TutorChainStatusResponse,
+  TutorSessionWrapSummary, TutorChainStatusResponse, TutorStrategyFeedback,
   MasteryDashboardResponse, MasteryDetailResponse, WhyLockedResponse,
   DataTableSchema, DataRowsResponse,
   BrainChatPayload, BrainOrganizePreviewResponse,
   BrainProfileOverview, BrainProfileClaimsResponse, BrainProfileQuestionsResponse,
   BrainProfileHistoryResponse, BrainProfileFeedbackPayload, BrainProfileFeedbackResponse,
+  ProductAnalyticsResponse, ProductEventPayload, ProductFeatureFlag,
+  ProductOutcomeReport, ProductPrivacySettings,
   CourseMapResponse,
 } from "./api.types";
 
@@ -460,11 +463,39 @@ export const api = {
       request<BrainProfileQuestionsResponse>(`/brain/profile/questions${forceRefresh ? "?force=1" : ""}`),
     getProfileHistory: (limit: number = 12) =>
       request<BrainProfileHistoryResponse>(`/brain/profile/history?limit=${encodeURIComponent(String(limit))}`),
+    exportProfile: () =>
+      request<Record<string, unknown>>("/brain/profile/export"),
     submitProfileFeedback: (payload: BrainProfileFeedbackPayload) =>
       request<BrainProfileFeedbackResponse>("/brain/profile/feedback", {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+  },
+
+  product: {
+    logEvent: (payload: ProductEventPayload) =>
+      request<Record<string, unknown>>("/product/events", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    getAnalytics: () =>
+      request<ProductAnalyticsResponse>("/product/analytics"),
+    getPrivacySettings: () =>
+      request<ProductPrivacySettings>("/product/privacy"),
+    updatePrivacySettings: (payload: Partial<ProductPrivacySettings>) =>
+      request<ProductPrivacySettings>("/product/privacy", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    resetPersonalization: () =>
+      request<Record<string, unknown>>("/product/privacy/reset-personalization", {
+        method: "POST",
+        body: JSON.stringify({}),
+      }),
+    getOutcomeReport: () =>
+      request<ProductOutcomeReport>("/product/outcome-report"),
+    getFeatureFlags: () =>
+      request<{ userId: string; workspaceId: string; flags: ProductFeatureFlag[] }>("/product/feature-flags"),
   },
 
   academicDeadlines: {
@@ -486,9 +517,21 @@ export const api = {
   },
 
   scholar: {
-    getQuestions: () => request<ScholarQuestion[]>("/scholar/questions"),
+    getInvestigations: (limit = 20) =>
+      request<ScholarInvestigation[]>(`/scholar/investigations?limit=${encodeURIComponent(String(limit))}`),
+    createInvestigation: (payload: ScholarInvestigationCreatePayload) =>
+      request<ScholarInvestigation>("/scholar/investigations", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    getInvestigation: (investigationId: string) =>
+      request<ScholarInvestigationDetail>(`/scholar/investigations/${encodeURIComponent(investigationId)}`),
+    getQuestions: (status: string = "all", limit = 100) =>
+      request<ScholarQuestion[]>(
+        `/scholar/research/questions?status=${encodeURIComponent(status)}&limit=${encodeURIComponent(String(limit))}`,
+      ),
     answerQuestion: (questionId: string, answer: string, source = "ui") =>
-      request<ScholarQuestion>(`/scholar/questions/${encodeURIComponent(questionId)}/answer`, {
+      request<ScholarQuestion>(`/scholar/research/questions/${encodeURIComponent(questionId)}/answer`, {
         method: "POST",
         body: JSON.stringify({ answer, source }),
       }),
@@ -496,7 +539,12 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ message }),
     }),
-    getFindings: () => request<ScholarFinding[]>("/scholar/findings"),
+    getFindings: (investigationId?: string, limit = 50) =>
+      request<ScholarFinding[]>(
+        `/scholar/research/findings?limit=${encodeURIComponent(String(limit))}${investigationId ? `&investigation_id=${encodeURIComponent(investigationId)}` : ""}`,
+      ),
+    exportResearch: () =>
+      request<Record<string, unknown>>("/scholar/export"),
     getTutorAudit: () => request<TutorAuditItem[]>("/scholar/tutor-audit"),
     getClusters: () => request<ScholarClustersResponse>("/scholar/clusters"),
     runClustering: () => request<ScholarClustersResponse>("/scholar/clusters", { method: "POST" }),
@@ -650,6 +698,17 @@ export const api = {
       }),
     getSession: (sessionId: string) =>
       request<TutorSessionWithTurns>(`/tutor/session/${sessionId}`),
+    saveStrategyFeedback: (
+      sessionId: string,
+      data: Omit<TutorStrategyFeedback, "updatedAt">,
+    ) =>
+      request<{ session_id: string; strategy_feedback: TutorStrategyFeedback }>(
+        `/tutor/session/${sessionId}/strategy-feedback`,
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        },
+      ),
     endSession: (sessionId: string) =>
       request<TutorSessionEndResult>(`/tutor/session/${sessionId}/end`, {
         method: "POST",

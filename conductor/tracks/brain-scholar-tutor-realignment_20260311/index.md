@@ -1,7 +1,7 @@
 # Track: Brain / Scholar / Tutor Realignment
 
 **ID:** brain-scholar-tutor-realignment_20260311  
-**Status:** Active
+**Status:** Complete
 
 ## Documents
 
@@ -11,6 +11,8 @@
 - [Vision Gap Matrix](./vision-gap-matrix.md)
 - [Brain Ontology](./brain-ontology.md)
 - [Brain Evidence Map](./brain-evidence-map.md)
+- [Commercial Readiness](./commercial-readiness.md)
+- [Demo Flow](./demo-flow.md)
 
 ## Scope
 
@@ -29,7 +31,23 @@
   - shipped `/api/brain/profile*` endpoints for summary, claims, history, questions, and learner feedback
   - added a live `PROFILE` tab inside `/brain` with explanation, evidence, challenge, and calibration flows
   - validated with backend tests, frontend tests, full `pytest brain/tests/`, `npm run build`, and a live dashboard run
-- Next required move: begin Wave 2 by making Scholar investigations, findings, citations, and learner questions first-class product data.
+- Wave 2 Scholar research MVP completed:
+  - added persisted Scholar investigations, learner questions, source normalization, findings, uncertainty handling, and cited web-research runtime
+  - shipped `/api/scholar/research/*` endpoints and the learner-facing Scholar investigation workspace
+  - validated with dedicated API/runtime tests, frontend tests, and live export/API smokes
+- Wave 3 bounded Scholar-to-Tutor mediation completed:
+  - added persisted strategy snapshots, bounded adaptation fields, provenance-aware Tutor session wiring, and strategy feedback capture
+  - validated with Tutor mediation tests plus full backend regression coverage
+- Wave 4 premium shell completed:
+  - promoted Brain / Scholar / Tutor as the primary product shell
+  - added premium onboarding, dashboard value-proof cards, trust/explainability affordances, and retention/next-action surfaces
+  - fixed a live dashboard runtime defect (`useMemo` import) discovered during browser smoke validation
+- Wave 5 commercial hardening completed:
+  - added product analytics, feature flags, privacy/retention controls, export surfaces, learner-facing outcome reports, and a workspace-aware product API
+  - documented the sellable end-to-end demo path and commercial-readiness posture in this track
+- Track closure:
+  - all core Waves 0-5 are complete
+  - follow-on reframing of supporting pages (`Mastery`, `Vault`, `Library`, `Calendar`) stays as normal backlog, not a blocker for this roadmap’s closure
 
 ## Quick Links
 

@@ -13,6 +13,8 @@ import type {
   TutorSessionWithTurns,
   TutorConfigCheck,
   TutorSessionPreflightResponse,
+  TutorScholarStrategy,
+  TutorStrategyFeedback,
 } from "@/lib/api";
 import { fetchCourseMap } from "@/lib/api";
 import {
@@ -282,6 +284,10 @@ export default function Tutor() {
   const [customInstructions, setCustomInstructions] = useState("");
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const [scholarStrategy, setScholarStrategy] = useState<TutorScholarStrategy | null>(null);
+  const [strategyFeedback, setStrategyFeedback] = useState<TutorStrategyFeedback | null>(null);
+  const [strategyNotes, setStrategyNotes] = useState("");
+  const [savingStrategyFeedback, setSavingStrategyFeedback] = useState(false);
 
   useEffect(() => {
     writeTutorSelectedMaterialIds(selectedMaterials);
@@ -589,6 +595,9 @@ export default function Tutor() {
     if (typeof session.content_filter?.vault_folder === "string") {
       setVaultFolder(session.content_filter.vault_folder);
     }
+    setScholarStrategy(session.scholar_strategy || null);
+    setStrategyFeedback(session.strategy_feedback || null);
+    setStrategyNotes(session.strategy_feedback?.notes || "");
     if (session.artifacts_json) {
       try {
         const parsed = JSON.parse(session.artifacts_json);
@@ -669,6 +678,46 @@ export default function Tutor() {
     }
   }, []);
 
+  const saveScholarStrategyFeedback = useCallback(async (
+    field: "pacing" | "scaffolds" | "retrievalPressure" | "explanationDensity",
+    value: string,
+  ) => {
+    if (!activeSessionId) return;
+    const nextFeedback: TutorStrategyFeedback = {
+      ...(strategyFeedback || {}),
+      [field]: value,
+      notes: strategyNotes || null,
+    };
+    setSavingStrategyFeedback(true);
+    try {
+      const result = await api.tutor.saveStrategyFeedback(activeSessionId, nextFeedback);
+      setStrategyFeedback(result.strategy_feedback);
+      setStrategyNotes(result.strategy_feedback.notes || "");
+    } catch {
+      toast.error("Failed to save Scholar strategy feedback");
+    } finally {
+      setSavingStrategyFeedback(false);
+    }
+  }, [activeSessionId, strategyFeedback, strategyNotes]);
+
+  const saveScholarStrategyNotes = useCallback(async () => {
+    if (!activeSessionId) return;
+    const nextFeedback: TutorStrategyFeedback = {
+      ...(strategyFeedback || {}),
+      notes: strategyNotes || null,
+    };
+    setSavingStrategyFeedback(true);
+    try {
+      const result = await api.tutor.saveStrategyFeedback(activeSessionId, nextFeedback);
+      setStrategyFeedback(result.strategy_feedback);
+      toast.success("Scholar strategy feedback saved");
+    } catch {
+      toast.error("Failed to save Scholar strategy notes");
+    } finally {
+      setSavingStrategyFeedback(false);
+    }
+  }, [activeSessionId, strategyFeedback, strategyNotes]);
+
   const startSession = useCallback(async () => {
     setIsStarting(true);
     try {
@@ -700,36 +749,11 @@ export default function Tutor() {
         mode: "Core",
         method_chain_id: resolvedChainId,
       });
-      setActiveSessionId(session.session_id);
-      try {
-        localStorage.setItem(tutorActiveSessionKey, session.session_id);
-      } catch {
-        /* localStorage write failed — ignore */
-      }
-      setStartedAt(session.started_at);
-      setRestoredTurns(undefined);
-      setArtifacts([]);
-      setTurnCount(0);
+      const full = await api.tutor.getSession(session.session_id);
+      applySessionState(full);
       // Force-refresh materials list so chat sidebar is up-to-date
       queryClient.invalidateQueries({ queryKey: ["tutor-chat-materials-all-enabled"] });
-      setCurrentBlockIndex(session.current_block_index ?? 0);
       setShowSetup(false);
-
-      if (resolvedChainId) {
-        const full = await api.tutor.getSession(session.session_id);
-        if (full.chain_blocks) {
-          setChainBlocks(full.chain_blocks.map((b) => ({
-            id: b.id,
-            name: b.name,
-            category: b.category,
-            description: b.description || "",
-            duration: b.default_duration_min,
-            facilitation_prompt: b.facilitation_prompt || "",
-          })));
-        }
-      } else {
-        setChainBlocks([]);
-      }
 
       toast.success("Tutor session started");
       queryClient.invalidateQueries({ queryKey: ["tutor-sessions"] });
@@ -738,7 +762,7 @@ export default function Tutor() {
     } finally {
       setIsStarting(false);
     }
-  }, [preflightPayload, objectiveScope, selectedObjectiveId, chainId, customBlockIds, topic, preflight, queryClient]);
+  }, [preflightPayload, objectiveScope, selectedObjectiveId, chainId, customBlockIds, topic, preflight, queryClient, applySessionState]);
 
   const clearActiveSessionState = useCallback(() => {
     setActiveSessionId(null);
@@ -748,6 +772,9 @@ export default function Tutor() {
     setStartedAt(null);
     setCurrentBlockIndex(0);
     setChainBlocks([]);
+    setScholarStrategy(null);
+    setStrategyFeedback(null);
+    setStrategyNotes("");
     setShowSetup(true);
     setShowArtifacts(false);
     setShowEndConfirm(false);
@@ -1185,7 +1212,7 @@ export default function Tutor() {
             )}
 
             {/* ─── Row 2: Navigation Actions ─── */}
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
@@ -1266,6 +1293,134 @@ export default function Tutor() {
               )}
             </div>
           </div>
+
+          {activeSessionId && scholarStrategy && (
+            <Card className={`mx-4 mt-3 rounded-none ${CARD_BORDER} bg-black/55 border-primary/30`}>
+              <div className="p-3 space-y-3">
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-1">
+                    <div className={TEXT_BADGE}>SCHOLAR STRATEGY</div>
+                    <div className="font-terminal text-xs text-muted-foreground max-w-3xl">
+                      {scholarStrategy.summary}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="rounded-none text-[10px] border-primary/40">
+                        BRAIN SNAPSHOT {scholarStrategy.profileSnapshotId ?? "N/A"}
+                      </Badge>
+                      <Badge variant="outline" className="rounded-none text-[10px] border-primary/40">
+                        {scholarStrategy.hybridArchetype?.label || "EMERGING PATTERN"}
+                      </Badge>
+                      {scholarStrategy.activeInvestigation?.title && (
+                        <Badge variant="outline" className="rounded-none text-[10px] border-secondary/40">
+                          RESEARCH: {scholarStrategy.activeInvestigation.title}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="font-terminal text-[11px] text-muted-foreground max-w-sm">
+                    {scholarStrategy.boundedBy?.note}
+                  </div>
+                </div>
+
+                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                  {Object.entries(scholarStrategy.fields || {}).map(([fieldKey, field]) => (
+                    <div key={fieldKey} className="border border-primary/20 bg-black/40 p-2 rounded-none space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-arcade text-[10px] text-primary/80">{fieldKey}</span>
+                        <Badge variant="outline" className="rounded-none text-[10px] border-primary/30">
+                          {field.value}
+                        </Badge>
+                      </div>
+                      <div className="font-terminal text-[11px] text-muted-foreground">
+                        {field.rationale}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-3 xl:grid-cols-[1.2fr_0.8fr]">
+                  <div className="space-y-2">
+                    <div className={TEXT_BADGE}>LEARNER FIT FEEDBACK</div>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {[
+                        { key: "pacing", label: "PACING", options: ["slower", "good", "faster"] },
+                        { key: "scaffolds", label: "SCAFFOLDS", options: ["less", "good", "more"] },
+                        { key: "retrievalPressure", label: "RETRIEVAL", options: ["lighter", "good", "harder"] },
+                        { key: "explanationDensity", label: "EXPLANATIONS", options: ["leaner", "good", "denser"] },
+                      ].map((control) => (
+                        <div key={control.key} className="border border-primary/20 bg-black/40 p-2 rounded-none space-y-2">
+                          <div className="font-arcade text-[10px] text-primary/80">{control.label}</div>
+                          <div className="flex flex-wrap gap-1">
+                            {control.options.map((option) => {
+                              const active = (strategyFeedback?.[control.key as keyof TutorStrategyFeedback] || "") === option;
+                              return (
+                                <Button
+                                  key={option}
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={savingStrategyFeedback}
+                                  onClick={() => {
+                                    void saveScholarStrategyFeedback(
+                                      control.key as "pacing" | "scaffolds" | "retrievalPressure" | "explanationDensity",
+                                      option,
+                                    );
+                                  }}
+                                  className={active ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+                                >
+                                  {option.toUpperCase()}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <Textarea
+                        value={strategyNotes}
+                        onChange={(event) => setStrategyNotes(event.target.value)}
+                        placeholder="What about the strategy is helping or hurting right now?"
+                        className="rounded-none bg-black/40 border-primary/20 min-h-[90px]"
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-terminal text-[11px] text-muted-foreground">
+                          Feedback is stored on the Tutor session so Brain and Scholar can inspect it later.
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={savingStrategyFeedback}
+                          onClick={() => {
+                            void saveScholarStrategyNotes();
+                          }}
+                          className={BTN_TOOLBAR}
+                        >
+                          SAVE FEEDBACK
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 border border-secondary/20 bg-black/40 p-3 rounded-none">
+                    <div className={TEXT_BADGE}>BOUNDARIES</div>
+                    <div className="font-terminal text-[11px] text-muted-foreground space-y-2">
+                      <div>
+                        Allowed: {scholarStrategy.boundedBy?.allowedFields?.join(", ")}
+                      </div>
+                      <div>
+                        Fixed: {scholarStrategy.boundedBy?.forbiddenFields?.join(", ")}
+                      </div>
+                      {scholarStrategy.activeInvestigation?.topFinding && (
+                        <div>
+                          Latest finding: {scholarStrategy.activeInvestigation.topFinding}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
 
           <div className="flex-1 flex min-h-0 relative">
             <div className="flex-1 bg-black/40 flex flex-col min-w-0">

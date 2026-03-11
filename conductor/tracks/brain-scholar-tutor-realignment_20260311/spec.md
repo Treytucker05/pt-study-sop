@@ -3,7 +3,7 @@
 **Track ID:** brain-scholar-tutor-realignment_20260311  
 **Type:** roadmap  
 **Created:** 2026-03-11  
-**Status:** Active
+**Status:** Complete
 
 ## Summary
 
@@ -54,6 +54,9 @@ This track exists because the repo currently contains the right system in fragme
 - conductor track plan with wave-by-wave tasks, dependencies, and gates
 - workboard wiring in `docs/root/TUTOR_TODO.md`
 - registry wiring in `conductor/tracks.md`
+- Brain ontology and evidence map
+- Scholar research + bounded Tutor strategy runtime
+- premium shell, privacy/export controls, product analytics, and outcome-report surfaces
 
 ## Non-Goals For The First Wave
 

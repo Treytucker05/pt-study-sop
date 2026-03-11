@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Flame, Clock, BookOpen, AlertTriangle, Play, Check, Plus, Pencil, Trash2, Calendar, CheckCircle2, Circle, GraduationCap, ChevronLeft, ChevronRight, ListTodo } from "lucide-react";
@@ -10,12 +12,13 @@ import type { GoogleTask } from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type AcademicDeadline, type InsertAcademicDeadline } from "@/lib/api";
 import { PlannerKanban } from "@/components/PlannerKanban";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/use-toast";
 import { format, isPast, isToday, isTomorrow, differenceInDays, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -49,6 +52,20 @@ export default function Dashboard() {
     type: "assignment",
     dueDate: "",
     notes: "",
+  });
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingGoal, setOnboardingGoal] = useState("");
+  const [onboardingFriction, setOnboardingFriction] = useState("");
+  const [onboardingTools, setOnboardingTools] = useState("");
+  const [onboardingBusy, setOnboardingBusy] = useState(false);
+  const [showDataRights, setShowDataRights] = useState(false);
+  const [privacyDraft, setPrivacyDraft] = useState({
+    retentionDays: 180,
+    allowTier2Signals: true,
+    allowVaultSignals: true,
+    allowCalendarSignals: true,
+    allowScholarPersonalization: true,
+    allowOutcomeReports: true,
   });
 
   const { data: currentCourseData } = useQuery({
@@ -86,6 +103,42 @@ export default function Dashboard() {
     queryFn: api.planner.getQueue,
   });
 
+  const { data: brainProfile } = useQuery({
+    queryKey: ["brain-profile-summary", "dashboard"],
+    queryFn: () => api.brain.getProfileSummary(false),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: scholarInvestigations = [] } = useQuery({
+    queryKey: ["scholar-investigations", "dashboard"],
+    queryFn: () => api.scholar.getInvestigations(5),
+    staleTime: 60 * 1000,
+  });
+
+  const { data: scholarQuestions = [] } = useQuery({
+    queryKey: ["scholar-questions", "dashboard"],
+    queryFn: () => api.scholar.getQuestions("pending", 5),
+    staleTime: 60 * 1000,
+  });
+
+  const { data: productAnalytics } = useQuery({
+    queryKey: ["product-analytics", "dashboard"],
+    queryFn: () => api.product.getAnalytics(),
+    staleTime: 60 * 1000,
+  });
+
+  const { data: privacySettings } = useQuery({
+    queryKey: ["product-privacy", "dashboard"],
+    queryFn: () => api.product.getPrivacySettings(),
+    staleTime: 60 * 1000,
+  });
+
+  const { data: featureFlagsPayload } = useQuery({
+    queryKey: ["product-flags", "dashboard"],
+    queryFn: () => api.product.getFeatureFlags(),
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Google Tasks
   const { data: googleTaskLists = [] } = useQuery({
     queryKey: ["google-task-lists"],
@@ -111,6 +164,34 @@ export default function Dashboard() {
 
     setTaskListInitialized(true);
   }, [googleTaskLists, taskListInitialized]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("tss.onboarding.v1");
+      if (!raw) {
+        setShowOnboarding(true);
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      setOnboardingGoal(parsed.goal || "");
+      setOnboardingFriction(parsed.friction || "");
+      setOnboardingTools(parsed.tools || "");
+    } catch {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!privacySettings) return;
+    setPrivacyDraft({
+      retentionDays: privacySettings.retentionDays,
+      allowTier2Signals: privacySettings.allowTier2Signals,
+      allowVaultSignals: privacySettings.allowVaultSignals,
+      allowCalendarSignals: privacySettings.allowCalendarSignals,
+      allowScholarPersonalization: privacySettings.allowScholarPersonalization,
+      allowOutcomeReports: privacySettings.allowOutcomeReports,
+    });
+  }, [privacySettings]);
 
   const completeSessionMutation = useMutation({
     mutationFn: ({ courseId, mins }: { courseId: number; mins: number }) =>
@@ -248,10 +329,104 @@ export default function Dashboard() {
     },
   });
 
+  const updatePrivacyMutation = useMutation({
+    mutationFn: () => api.product.updatePrivacySettings(privacyDraft),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-privacy", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["product-analytics", "dashboard"] });
+      toast({ title: "Privacy settings saved", description: "Data-rights preferences updated for this workspace." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Could not save privacy settings", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resetPersonalizationMutation = useMutation({
+    mutationFn: () => api.product.resetPersonalization(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["brain-profile-summary", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["scholar-investigations", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["scholar-questions", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["product-analytics", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["product-privacy", "dashboard"] });
+      toast({
+        title: "Personalization reset",
+        description: "Brain profile snapshots and Scholar research workspace data were cleared for a fresh rebuild.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Reset failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const completeOnboarding = async () => {
+    if (!onboardingGoal.trim() || !onboardingFriction.trim()) {
+      toast({ title: "Finish the setup", description: "Add your goal and biggest friction first.", variant: "destructive" });
+      return;
+    }
+    setOnboardingBusy(true);
+    try {
+      const payload = {
+        goal: onboardingGoal.trim(),
+        friction: onboardingFriction.trim(),
+        tools: onboardingTools.trim(),
+        completedAt: new Date().toISOString(),
+      };
+      localStorage.setItem("tss.onboarding.v1", JSON.stringify(payload));
+      await api.product.logEvent({
+        eventType: "onboarding_completed",
+        source: "dashboard.onboarding",
+        metadata: payload,
+      });
+      await api.scholar.createInvestigation({
+        query_text: `Research a study strategy for a learner whose main goal is "${payload.goal}" and whose biggest friction is "${payload.friction}". Current tools/workflow: ${payload.tools || "not specified"}.`,
+        rationale: "First-run onboarding should give Scholar a grounded starting investigation for this learner.",
+        audience_type: "learner",
+        mode: "brain",
+        requested_by: "onboarding",
+      });
+      queryClient.invalidateQueries({ queryKey: ["scholar-investigations", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["product-analytics", "dashboard"] });
+      setShowOnboarding(false);
+      toast({ title: "System initialized", description: "Scholar started a first-pass investigation from your onboarding answers." });
+    } catch (error) {
+      toast({
+        title: "Onboarding saved locally",
+        description: error instanceof Error ? error.message : "Scholar could not start the first investigation yet.",
+      });
+      setShowOnboarding(false);
+    } finally {
+      setOnboardingBusy(false);
+    }
+  };
+
+  const downloadJson = async (filename: string, fetcher: () => Promise<Record<string, unknown>>) => {
+    const payload = await fetcher();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  };
+
   const currentCourse = currentCourseData?.currentCourse;
   const todayMinutes = todaySessions.reduce((sum, s) => sum + (s.minutes || 0), 0);
   const todaySessionCount = todaySessions.length;
   const hasStudiedToday = todaySessionCount > 0;
+  const featureFlags = useMemo(
+    () =>
+      new Map(
+        (featureFlagsPayload?.flags || []).map((flag) => [flag.flagKey, flag])
+      ),
+    [featureFlagsPayload],
+  );
+  const outcomeReportsEnabled =
+    (featureFlags.get("premium_outcome_report")?.enabled ?? true) &&
+    privacyDraft.allowOutcomeReports;
 
   const handleCompleteSession = () => {
     if (!currentCourse || !minutes || parseInt(minutes) < 1) return;
@@ -415,6 +590,151 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="space-y-6 max-w-5xl mx-auto">
+        <Card className="bg-black/45 border-2 border-primary rounded-none overflow-hidden">
+          <CardHeader className="border-b border-primary/40 p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-2">
+                <div className="font-arcade text-xs text-primary/80">PREMIUM LEARNER LOOP</div>
+                <CardTitle className="font-arcade text-lg text-white">
+                  BRAIN IDENTIFIES. SCHOLAR RESEARCHES. TUTOR TEACHES.
+                </CardTitle>
+                <div className="font-terminal text-sm text-muted-foreground max-w-3xl">
+                  This dashboard is now the control surface for the three-part system. Brain models how you learn best,
+                  Scholar investigates what should change, and Tutor executes the live study session.
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" className="rounded-none border-primary/40 font-arcade text-xs" onClick={() => setShowOnboarding(true)}>
+                  FIRST-RUN SETUP
+                </Button>
+                <Button variant="outline" className="rounded-none border-primary/40 font-arcade text-xs" onClick={() => setShowDataRights(true)}>
+                  DATA RIGHTS
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 grid gap-4 lg:grid-cols-3">
+            <div className="border border-primary/30 bg-black/35 p-4 space-y-3 rounded-none">
+              <div className="flex items-center justify-between">
+                <div className="font-arcade text-xs text-primary">BRAIN</div>
+                <Badge variant="outline" className="rounded-none text-[10px] border-primary/40">
+                  {brainProfile?.hybridArchetype?.confidence?.toUpperCase() || "LOW"} CONFIDENCE
+                </Badge>
+              </div>
+              <div className="font-terminal text-sm text-white">
+                {brainProfile?.hybridArchetype?.label || "Emerging learner pattern"}
+              </div>
+              <div className="font-terminal text-xs text-muted-foreground">
+                {brainProfile?.profileSummary?.headline || "Brain is still building a stable learner-model summary from study telemetry."}
+              </div>
+              <div className="font-terminal text-[11px] text-muted-foreground">
+                Next: {brainProfile?.profileSummary?.nextBestActions?.[0] || "Collect more clean telemetry and calibration answers."}
+              </div>
+              <Link href="/brain">
+                <Button variant="ghost" size="sm" className="rounded-none font-arcade text-xs">
+                  OPEN BRAIN
+                </Button>
+              </Link>
+            </div>
+
+            <div className="border border-secondary/30 bg-black/35 p-4 space-y-3 rounded-none">
+              <div className="flex items-center justify-between">
+                <div className="font-arcade text-xs text-primary">SCHOLAR</div>
+                <Badge variant="outline" className="rounded-none text-[10px] border-secondary/40">
+                  {scholarQuestions.length} OPEN QUESTION{scholarQuestions.length === 1 ? "" : "S"}
+                </Badge>
+              </div>
+              <div className="font-terminal text-sm text-white">
+                {scholarInvestigations[0]?.title || "No active investigation"}
+              </div>
+              <div className="font-terminal text-xs text-muted-foreground">
+                {scholarInvestigations[0]?.rationale || "Scholar has not been given a new investigation yet."}
+              </div>
+              <div className="font-terminal text-[11px] text-muted-foreground">
+                Pending learner input: {scholarQuestions[0]?.question || "None right now."}
+              </div>
+              <Link href="/scholar">
+                <Button variant="ghost" size="sm" className="rounded-none font-arcade text-xs">
+                  OPEN SCHOLAR
+                </Button>
+              </Link>
+            </div>
+
+            <div className="border border-primary/30 bg-black/35 p-4 space-y-3 rounded-none">
+              <div className="flex items-center justify-between">
+                <div className="font-arcade text-xs text-primary">TUTOR</div>
+                <Badge variant="outline" className="rounded-none text-[10px] border-primary/40">
+                  {hasStudiedToday ? "ACTIVE TODAY" : "READY"}
+                </Badge>
+              </div>
+              <div className="font-terminal text-sm text-white">
+                {currentCourse?.name || "Pick the next study target"}
+              </div>
+              <div className="font-terminal text-xs text-muted-foreground">
+                {hasStudiedToday
+                  ? `${todaySessionCount} session${todaySessionCount === 1 ? "" : "s"} today • ${todayMinutes} minutes logged`
+                  : "No study sessions logged today yet."}
+              </div>
+              <div className="font-terminal text-[11px] text-muted-foreground">
+                Next action: {duePlannerTasks[0]?.title || "Launch Tutor from the current course and run the next focused block."}
+              </div>
+              <Link href="/tutor">
+                <Button variant="ghost" size="sm" className="rounded-none font-arcade text-xs">
+                  OPEN TUTOR
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-black/35 border border-secondary/40 rounded-none">
+          <CardHeader className="border-b border-secondary/20 p-4">
+            <CardTitle className="font-arcade text-sm text-primary flex items-center justify-between">
+              <span>VALUE PROOF</span>
+              <span className="font-terminal text-[11px] text-muted-foreground">
+                Track the signals that make this product worth trusting and selling.
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 p-4 md:grid-cols-4">
+            <div className="border border-primary/20 bg-black/30 p-3 space-y-1">
+              <div className="font-arcade text-[11px] text-primary">DIAGNOSIS</div>
+              <div className="font-terminal text-lg text-white">
+                {productAnalytics?.activation?.brainProfileReady ? "READY" : "BUILDING"}
+              </div>
+              <div className="font-terminal text-[11px] text-muted-foreground">
+                {brainProfile?.hybridArchetype?.label || "No stable archetype yet"}
+              </div>
+            </div>
+            <div className="border border-primary/20 bg-black/30 p-3 space-y-1">
+              <div className="font-arcade text-[11px] text-primary">SCHOLAR RESPONSE</div>
+              <div className="font-terminal text-lg text-white">
+                {Math.round((productAnalytics?.engagement?.scholarQuestionResponseRate || 0) * 100)}%
+              </div>
+              <div className="font-terminal text-[11px] text-muted-foreground">
+                Learner-question response rate
+              </div>
+            </div>
+            <div className="border border-primary/20 bg-black/30 p-3 space-y-1">
+              <div className="font-arcade text-[11px] text-primary">TUTOR FOLLOW-THROUGH</div>
+              <div className="font-terminal text-lg text-white">
+                {Math.round((productAnalytics?.engagement?.tutorCompletionRate30d || 0) * 100)}%
+              </div>
+              <div className="font-terminal text-[11px] text-muted-foreground">
+                Session completion rate in the last 30 days
+              </div>
+            </div>
+            <div className="border border-primary/20 bg-black/30 p-3 space-y-1">
+              <div className="font-arcade text-[11px] text-primary">SELF-UNDERSTANDING</div>
+              <div className="font-terminal text-lg text-white">
+                {productAnalytics?.valueProof?.betterSelfUnderstanding || 0}
+              </div>
+              <div className="font-terminal text-[11px] text-muted-foreground">
+                Calibration + Scholar answer actions captured
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* ═══ Zone 1 — Action ═══ */}
 
@@ -1146,6 +1466,258 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        <Dialog open={showOnboarding} onOpenChange={setShowOnboarding}>
+          <DialogContent className="bg-black border-2 border-primary rounded-none max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="font-arcade">FIRST_RUN_SETUP</DialogTitle>
+              <DialogDescription className="font-terminal text-xs text-muted-foreground">
+                Give Brain and Scholar enough context to start from your real goal instead of guessing.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div>
+                <label className="font-terminal text-xs text-muted-foreground block mb-1">Main goal</label>
+                <Input
+                  value={onboardingGoal}
+                  onChange={(event) => setOnboardingGoal(event.target.value)}
+                  placeholder="What are you trying to get better at right now?"
+                  className="rounded-none border-secondary bg-black font-terminal"
+                />
+              </div>
+              <div>
+                <label className="font-terminal text-xs text-muted-foreground block mb-1">Biggest friction</label>
+                <Textarea
+                  value={onboardingFriction}
+                  onChange={(event) => setOnboardingFriction(event.target.value)}
+                  placeholder="What usually breaks your learning loop: time, confusion, confidence drift, weak notes, bad pacing?"
+                  className="rounded-none border-secondary bg-black font-terminal min-h-[96px]"
+                />
+              </div>
+              <div>
+                <label className="font-terminal text-xs text-muted-foreground block mb-1">Current tools / workflow</label>
+                <Input
+                  value={onboardingTools}
+                  onChange={(event) => setOnboardingTools(event.target.value)}
+                  placeholder="Obsidian, Anki, lecture PDFs, Blackboard, handwritten notes, etc."
+                  className="rounded-none border-secondary bg-black font-terminal"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-terminal text-[11px] text-muted-foreground max-w-lg">
+                  Completing setup saves these answers locally and starts a Scholar investigation so the system has a grounded first hypothesis.
+                </div>
+                <Button
+                  onClick={() => {
+                    void completeOnboarding();
+                  }}
+                  disabled={onboardingBusy}
+                  className="rounded-none font-arcade"
+                >
+                  {onboardingBusy ? "INITIALIZING..." : "INITIALIZE SYSTEM"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showDataRights} onOpenChange={setShowDataRights}>
+          <DialogContent className="bg-black border-2 border-primary rounded-none max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="font-arcade">DATA_RIGHTS</DialogTitle>
+              <DialogDescription className="font-terminal text-xs text-muted-foreground">
+                Export what Brain and Scholar know, and see how personalization works before you trust it.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="border border-primary/20 bg-black/40 p-3 rounded-none space-y-2">
+                  <div className="font-arcade text-xs text-primary">BRAIN EXPORT</div>
+                  <div className="font-terminal text-xs text-muted-foreground">
+                    Profile summary, claims, open calibration questions, and profile history.
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="rounded-none font-arcade text-xs border-primary/40"
+                    onClick={() => {
+                      void downloadJson("brain-profile-export.json", api.brain.exportProfile);
+                    }}
+                  >
+                    EXPORT BRAIN JSON
+                  </Button>
+                </div>
+                <div className="border border-primary/20 bg-black/40 p-3 rounded-none space-y-2">
+                  <div className="font-arcade text-xs text-primary">SCHOLAR EXPORT</div>
+                  <div className="font-terminal text-xs text-muted-foreground">
+                    Investigations, learner questions, findings, and citation-backed research history.
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="rounded-none font-arcade text-xs border-primary/40"
+                    onClick={() => {
+                      void downloadJson("scholar-research-export.json", api.scholar.exportResearch);
+                    }}
+                  >
+                    EXPORT SCHOLAR JSON
+                  </Button>
+                </div>
+                <div className="border border-primary/20 bg-black/40 p-3 rounded-none space-y-2">
+                  <div className="font-arcade text-xs text-primary">OUTCOME REPORT</div>
+                  <div className="font-terminal text-xs text-muted-foreground">
+                    Learner-facing Brain / Scholar / Tutor proof report with engagement and trust metrics.
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="rounded-none font-arcade text-xs border-primary/40"
+                    disabled={!outcomeReportsEnabled}
+                    onClick={() => {
+                      void downloadJson("brain-scholar-tutor-outcome-report.json", api.product.getOutcomeReport);
+                    }}
+                  >
+                    EXPORT OUTCOME JSON
+                  </Button>
+                </div>
+              </div>
+              <div className="border border-primary/20 bg-black/40 p-3 rounded-none space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-arcade text-xs text-primary">PRIVACY + RETENTION</div>
+                    <div className="font-terminal text-xs text-muted-foreground">
+                      Configure how much secondary evidence can shape Brain and Scholar in this workspace.
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="rounded-none font-arcade text-xs border-primary/40"
+                    onClick={() => updatePrivacyMutation.mutate()}
+                    disabled={updatePrivacyMutation.isPending}
+                  >
+                    {updatePrivacyMutation.isPending ? "SAVING..." : "SAVE SETTINGS"}
+                  </Button>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <label className="border border-primary/10 bg-black/30 p-3 rounded-none flex items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="font-terminal text-xs text-white">Tier 2 personalization</div>
+                      <div className="font-terminal text-[11px] text-muted-foreground">
+                        Allow Brain to use supporting vault, library, and calendar signals.
+                      </div>
+                    </div>
+                    <Switch
+                      checked={privacyDraft.allowTier2Signals}
+                      onCheckedChange={(checked) =>
+                        setPrivacyDraft((prev) => ({ ...prev, allowTier2Signals: checked }))
+                      }
+                    />
+                  </label>
+                  <label className="border border-primary/10 bg-black/30 p-3 rounded-none flex items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="font-terminal text-xs text-white">Vault signals</div>
+                      <div className="font-terminal text-[11px] text-muted-foreground">
+                        Let Brain use note-quality and vault evidence as a secondary signal.
+                      </div>
+                    </div>
+                    <Switch
+                      checked={privacyDraft.allowVaultSignals}
+                      onCheckedChange={(checked) =>
+                        setPrivacyDraft((prev) => ({ ...prev, allowVaultSignals: checked }))
+                      }
+                    />
+                  </label>
+                  <label className="border border-primary/10 bg-black/30 p-3 rounded-none flex items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="font-terminal text-xs text-white">Calendar signals</div>
+                      <div className="font-terminal text-[11px] text-muted-foreground">
+                        Let Brain use follow-through timing and schedule adherence as context.
+                      </div>
+                    </div>
+                    <Switch
+                      checked={privacyDraft.allowCalendarSignals}
+                      onCheckedChange={(checked) =>
+                        setPrivacyDraft((prev) => ({ ...prev, allowCalendarSignals: checked }))
+                      }
+                    />
+                  </label>
+                  <label className="border border-primary/10 bg-black/30 p-3 rounded-none flex items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="font-terminal text-xs text-white">Scholar personalization</div>
+                      <div className="font-terminal text-[11px] text-muted-foreground">
+                        Let Scholar use Brain evidence and learner answers for research strategy.
+                      </div>
+                    </div>
+                    <Switch
+                      checked={privacyDraft.allowScholarPersonalization}
+                      onCheckedChange={(checked) =>
+                        setPrivacyDraft((prev) => ({ ...prev, allowScholarPersonalization: checked }))
+                      }
+                    />
+                  </label>
+                  <label className="border border-primary/10 bg-black/30 p-3 rounded-none flex items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="font-terminal text-xs text-white">Outcome reports</div>
+                      <div className="font-terminal text-[11px] text-muted-foreground">
+                        Allow export of learner-facing Brain / Scholar / Tutor proof reports.
+                      </div>
+                    </div>
+                    <Switch
+                      checked={privacyDraft.allowOutcomeReports}
+                      onCheckedChange={(checked) =>
+                        setPrivacyDraft((prev) => ({ ...prev, allowOutcomeReports: checked }))
+                      }
+                    />
+                  </label>
+                </div>
+                <div className="grid gap-3 md:grid-cols-[220px_1fr] md:items-center">
+                  <div className="space-y-1">
+                    <div className="font-terminal text-xs text-white">Retention window (days)</div>
+                    <div className="font-terminal text-[11px] text-muted-foreground">
+                      Sets how long this workspace should keep premium personalization settings before review.
+                    </div>
+                  </div>
+                  <Input
+                    type="number"
+                    min={30}
+                    max={3650}
+                    value={privacyDraft.retentionDays}
+                    onChange={(e) =>
+                      setPrivacyDraft((prev) => ({
+                        ...prev,
+                        retentionDays: Math.max(30, Number(e.target.value || 180)),
+                      }))
+                    }
+                    className="rounded-none border-secondary bg-black font-terminal"
+                  />
+                </div>
+              </div>
+              <div className="border border-secondary/20 bg-black/40 p-3 rounded-none space-y-2">
+                <div className="font-arcade text-xs text-primary">WHAT PERSONALIZATION USES</div>
+                <ul className="font-terminal text-xs text-muted-foreground space-y-1">
+                  <li>- Brain uses study telemetry, mastery evidence, and calibration feedback to build claims about how you learn.</li>
+                  <li>- Scholar uses Brain evidence plus cited research and your answers to design better study strategies.</li>
+                  <li>- Tutor only consumes a bounded Scholar strategy envelope. It does not rewrite chain rules or truth policy.</li>
+                </ul>
+              </div>
+              <div className="border border-destructive/20 bg-black/40 p-3 rounded-none space-y-2">
+                <div className="font-arcade text-xs text-primary">RESET PERSONALIZATION</div>
+                <div className="font-terminal text-xs text-muted-foreground">
+                  Clear Brain profile snapshots, Scholar research workspace history, and stored Tutor strategy feedback so the learner model can rebuild from raw study evidence.
+                </div>
+                <Button
+                  variant="outline"
+                  className="rounded-none font-arcade text-xs border-destructive/40 text-destructive"
+                  disabled={resetPersonalizationMutation.isPending}
+                  onClick={() => {
+                    if (window.confirm("Reset Brain + Scholar personalization data for this workspace?")) {
+                      resetPersonalizationMutation.mutate();
+                    }
+                  }}
+                >
+                  {resetPersonalizationMutation.isPending ? "RESETTING..." : "RESET PERSONALIZATION"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Edit Task Dialog */}
         <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>

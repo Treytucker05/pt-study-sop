@@ -44,9 +44,22 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - `pytest brain/tests/ -q`
     - `cmd /c Start_Dashboard.bat`
     - `GET /api/brain/profile`
-- [ ] Phase 4: ship Scholar learner-facing research MVP with cited web research.
-- [ ] Phase 5: define and validate the bounded Scholar-to-Tutor strategy envelope.
-- [ ] Phase 6: redesign the premium shell, onboarding, trust surfaces, and commercial hardening artifacts.
+- [x] Phase 4: ship Scholar learner-facing research MVP with cited web research.
+  - Added persisted Scholar investigations, learner questions, normalized source metadata, cited findings, and visible uncertainty handling.
+  - Shipped `/api/scholar/research/*` plus the learner-facing Scholar workspace with investigation, questions, and findings lanes.
+- [x] Phase 5: define and validate the bounded Scholar-to-Tutor strategy envelope.
+  - Added Scholar strategy snapshots, bounded adaptive fields, Tutor provenance logging, and strategy feedback capture.
+  - Verified that Brain cannot bypass Scholar and Tutor remains SOP/chain-bound.
+- [x] Phase 6: redesign the premium shell, onboarding, trust surfaces, and commercial hardening artifacts.
+  - Promoted Brain / Scholar / Tutor as the primary product shell, added premium onboarding, value-proof dashboard cards, privacy/retention controls, export surfaces, feature flags, and learner-facing outcome reports.
+  - Published commercial readiness + demo artifacts in `conductor/tracks/brain-scholar-tutor-realignment_20260311/`.
+  - Validation:
+    - `pytest brain/tests/test_product_api.py brain/tests/test_brain_profile_api.py brain/tests/test_scholar_research_api.py brain/tests/test_tutor_strategy_mediation.py -q`
+    - `npm run test -- scholar.test.tsx api.test.ts`
+    - `npm run build`
+    - `pytest brain/tests/ -q`
+    - `cmd /c Start_Dashboard.bat`
+    - live API smokes for `/api/brain/profile`, `/api/product/analytics`, `/api/product/privacy`, and `/api/product/outcome-report`
 
 ### Sprint 20: Vault Stabilization + Health Truthfulness (2026-03-10)
 - [x] Claim scope: live Obsidian vault contract + truthful Vault Health diagnostics

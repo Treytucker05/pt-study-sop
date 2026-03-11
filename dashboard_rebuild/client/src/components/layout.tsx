@@ -15,15 +15,18 @@ import { api } from "@/lib/api";
 import { useToast } from "@/use-toast";
 import type { Note } from "@shared/schema";
 
-const NAV_ITEMS = [
-  { path: "/", label: "DASHBOARD", icon: LayoutDashboard },
+const PRIMARY_NAV_ITEMS = [
   { path: "/brain", label: "BRAIN", icon: Brain },
-  { path: "/calendar", label: "CALENDAR", icon: Calendar },
   { path: "/scholar", label: "SCHOLAR", icon: GraduationCap },
   { path: "/tutor", label: "TUTOR", icon: Bot },
-  { path: "/methods", label: "METHODS", icon: Blocks },
-  { path: "/mastery", label: "MASTERY", icon: TrendingUp },
+];
+
+const SUPPORT_NAV_ITEMS = [
+  { path: "/", label: "DASHBOARD", icon: LayoutDashboard },
   { path: "/library", label: "LIBRARY", icon: BookOpen },
+  { path: "/mastery", label: "MASTERY", icon: TrendingUp },
+  { path: "/calendar", label: "CALENDAR", icon: Calendar },
+  { path: "/methods", label: "METHODS", icon: Blocks },
   { path: "/vault-health", label: "VAULT", icon: Shield },
 ];
 
@@ -335,22 +338,45 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </Link>
 
-            <nav className="hidden md:flex gap-1">
-              {NAV_ITEMS.map((item) => {
-                const isActive = currentPath === item.path;
-                return (
-                  <Link key={item.path} href={item.path}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={cn("nav-btn font-arcade", isActive && "active")}
-                    >
-                      <item.icon className="w-3 h-3 lg:mr-1" />
-                      <span className="hidden lg:inline">{item.label}</span>
-                    </Button>
-                  </Link>
-                );
-              })}
+            <nav className="hidden md:flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                {PRIMARY_NAV_ITEMS.map((item) => {
+                  const isActive = currentPath === item.path;
+                  return (
+                    <Link key={item.path} href={item.path}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn("nav-btn font-arcade", isActive && "active")}
+                      >
+                        <item.icon className="w-3 h-3 lg:mr-1" />
+                        <span className="hidden lg:inline">{item.label}</span>
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="hidden lg:flex items-center gap-2 text-[10px] font-arcade text-primary/60">
+                <span>CORE LOOP</span>
+                <span className="text-primary/30">|</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {SUPPORT_NAV_ITEMS.map((item) => {
+                  const isActive = currentPath === item.path;
+                  return (
+                    <Link key={item.path} href={item.path}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn("nav-btn font-arcade", isActive && "active")}
+                      >
+                        <item.icon className="w-3 h-3 lg:mr-1" />
+                        <span className="hidden lg:inline">{item.label}</span>
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </div>
             </nav>
           </div>
 
@@ -555,23 +581,45 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile nav dropdown */}
         {mobileNavOpen && (
-          <nav className="md:hidden border-t border-primary/30 bg-black/95 px-3 py-2 flex flex-wrap gap-1">
-            {NAV_ITEMS.map((item) => {
-              const isActive = currentPath === item.path;
-              return (
-                <Link key={item.path} href={item.path}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn("nav-btn font-arcade", isActive && "active")}
-                    onClick={() => setMobileNavOpen(false)}
-                  >
-                    <item.icon className="w-3 h-3 mr-1" />
-                    <span className="text-xs">{item.label}</span>
-                  </Button>
-                </Link>
-              );
-            })}
+          <nav className="md:hidden border-t border-primary/30 bg-black/95 px-3 py-2 space-y-2">
+            <div className="text-[10px] font-arcade text-primary/70">CORE LOOP</div>
+            <div className="flex flex-wrap gap-1">
+              {PRIMARY_NAV_ITEMS.map((item) => {
+                const isActive = currentPath === item.path;
+                return (
+                  <Link key={item.path} href={item.path}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn("nav-btn font-arcade", isActive && "active")}
+                      onClick={() => setMobileNavOpen(false)}
+                    >
+                      <item.icon className="w-3 h-3 mr-1" />
+                      <span className="text-xs">{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="text-[10px] font-arcade text-primary/50">SUPPORT</div>
+            <div className="flex flex-wrap gap-1">
+              {SUPPORT_NAV_ITEMS.map((item) => {
+                const isActive = currentPath === item.path;
+                return (
+                  <Link key={item.path} href={item.path}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn("nav-btn font-arcade", isActive && "active")}
+                      onClick={() => setMobileNavOpen(false)}
+                    >
+                      <item.icon className="w-3 h-3 mr-1" />
+                      <span className="text-xs">{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
         )}
       </header>
