@@ -55,41 +55,41 @@ Define Brain’s ontology and storage model, then ship the first learner-profile
 
 ### Tasks
 
-- [ ] T-100: Define the Brain learner-model ontology.
-- [ ] T-100a: Define `profile claim`.
-- [ ] T-100b: Define `hybrid archetype`.
-- [ ] T-100c: Define `calibration question`.
-- [ ] T-100d: Define contradiction, freshness, and confidence semantics.
-- [ ] T-101: Define evidence ownership and reliability tiers.
-- [ ] T-101a: Lock Tier 1 trusted evidence.
-- [ ] T-101b: Lock Tier 2 conditional evidence.
-- [ ] T-101c: Lock Tier 3 advisory evidence.
-- [ ] T-101d: Create a field-by-field evidence map with cadence and backfill rules.
-- [ ] T-102: Design the Brain profile persistence layer.
-- [ ] T-102a: Add profile snapshot persistence.
-- [ ] T-102b: Add claim-level persistence.
-- [ ] T-102c: Add challenge/calibration event persistence.
-- [ ] T-102d: Add profile history persistence.
-- [ ] T-102e: Decide persisted vs derived-on-read fields.
-- [ ] T-103: Define and implement historical backfill strategy.
-- [ ] T-103a: Backfill where confidence is acceptable.
-- [ ] T-103b: Mark weak or missing history honestly.
-- [ ] T-103c: Add migration rollback rules.
-- [ ] T-104: Build Brain profile APIs.
-- [ ] T-104a: `GET` profile summary.
-- [ ] T-104b: `GET` claims + evidence + confidence.
-- [ ] T-104c: `GET` history/timeline.
-- [ ] T-104d: `GET` pending calibration questions.
-- [ ] T-104e: `POST` learner challenge/calibration answer.
-- [ ] T-105: Build Brain UI learner-profile console.
-- [ ] T-105a: Add profile summary and hybrid archetype overview.
-- [ ] T-105b: Add claim cards with evidence drawers.
-- [ ] T-105c: Add “why Brain thinks this” explanations.
-- [ ] T-105d: Add learner challenge/calibration actions.
-- [ ] T-105e: Add profile timeline/history.
-- [ ] T-106: Expand telemetry only where ontology proves it is missing.
-- [ ] T-106a: Fill Tutor-side missing signals.
-- [ ] T-106b: Join supporting signals only after tier rules are enforced.
+- [x] T-100: Define the Brain learner-model ontology.
+- [x] T-100a: Define `profile claim`.
+- [x] T-100b: Define `hybrid archetype`.
+- [x] T-100c: Define `calibration question`.
+- [x] T-100d: Define contradiction, freshness, and confidence semantics.
+- [x] T-101: Define evidence ownership and reliability tiers.
+- [x] T-101a: Lock Tier 1 trusted evidence.
+- [x] T-101b: Lock Tier 2 conditional evidence.
+- [x] T-101c: Lock Tier 3 advisory evidence.
+- [x] T-101d: Create a field-by-field evidence map with cadence and backfill rules.
+- [x] T-102: Design the Brain profile persistence layer.
+- [x] T-102a: Add profile snapshot persistence.
+- [x] T-102b: Add claim-level persistence.
+- [x] T-102c: Add challenge/calibration event persistence.
+- [x] T-102d: Add profile history persistence.
+- [x] T-102e: Decide persisted vs derived-on-read fields.
+- [x] T-103: Define and implement historical backfill strategy.
+- [x] T-103a: Backfill where confidence is acceptable.
+- [x] T-103b: Mark weak or missing history honestly.
+- [x] T-103c: Add migration rollback rules.
+- [x] T-104: Build Brain profile APIs.
+- [x] T-104a: `GET` profile summary.
+- [x] T-104b: `GET` claims + evidence + confidence.
+- [x] T-104c: `GET` history/timeline.
+- [x] T-104d: `GET` pending calibration questions.
+- [x] T-104e: `POST` learner challenge/calibration answer.
+- [x] T-105: Build Brain UI learner-profile console.
+- [x] T-105a: Add profile summary and hybrid archetype overview.
+- [x] T-105b: Add claim cards with evidence drawers.
+- [x] T-105c: Add “why Brain thinks this” explanations.
+- [x] T-105d: Add learner challenge/calibration actions.
+- [x] T-105e: Add profile timeline/history.
+- [x] T-106: Expand telemetry only where ontology proves it is missing.
+- [x] T-106a: Fill Tutor-side missing signals.
+- [x] T-106b: Join supporting signals only after tier rules are enforced.
 
 ### Parallel-Safe Batches
 
@@ -99,11 +99,11 @@ Define Brain’s ontology and storage model, then ship the first learner-profile
 
 ### Verification
 
-- [ ] T-107a: unit tests for claim derivation, contradiction handling, and freshness
-- [ ] T-107b: migration/backfill tests
-- [ ] T-107c: API contract tests
-- [ ] T-107d: frontend tests for confidence/explanation/challenge flows
-- [ ] T-107e: manual QA proving Brain can explain a hybrid archetype without fake certainty
+- [x] T-107a: unit tests for claim derivation, contradiction handling, and freshness
+- [x] T-107b: migration/backfill tests
+- [x] T-107c: API contract tests
+- [x] T-107d: frontend tests for confidence/explanation/challenge flows
+- [x] T-107e: manual QA proving Brain can explain a hybrid archetype without fake certainty
 
 ## Wave 2: Scholar Learner-Facing Research MVP
 

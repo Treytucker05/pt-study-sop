@@ -33,8 +33,17 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 - [x] Phase 0: clean the worktree, open the conductor track, publish the decision record, and freeze the roadmap/gap matrix.
 - [x] Phase 1: align active canon and product docs to the frozen Brain / Scholar / Tutor contract.
   - Updated the master canon, owner intent, project architecture, conductor product definition, Scholar charter/quickstart, and user guide so they now describe the same Brain / Scholar / Tutor contract.
-- [ ] Phase 2: freeze Brain learner-model ontology, evidence ownership, and migration rules.
-- [ ] Phase 3: ship Brain learner-profile MVP.
+- [x] Phase 2: freeze Brain learner-model ontology, evidence ownership, and migration rules.
+  - Published `brain-ontology.md` and `brain-evidence-map.md` in the active conductor track to freeze claim/archetype/question semantics, evidence tiers, and backfill rules.
+- [x] Phase 3: ship Brain learner-profile MVP.
+  - Added persisted Brain learner-profile snapshots/claims/questions/feedback events, the `/api/brain/profile*` API surface, and the new `PROFILE` tab inside `/brain`.
+  - Validation:
+    - `pytest brain/tests/test_brain_profile_api.py -q`
+    - `npm run test -- LearnerProfilePanel.test.tsx`
+    - `npm run build`
+    - `pytest brain/tests/ -q`
+    - `cmd /c Start_Dashboard.bat`
+    - `GET /api/brain/profile`
 - [ ] Phase 4: ship Scholar learner-facing research MVP with cited web research.
 - [ ] Phase 5: define and validate the bounded Scholar-to-Tutor strategy envelope.
 - [ ] Phase 6: redesign the premium shell, onboarding, trust surfaces, and commercial hardening artifacts.

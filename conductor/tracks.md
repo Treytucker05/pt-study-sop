@@ -6,7 +6,7 @@ Update policy: after every significant change, update this file (and the active 
 
 Active status: `brain-scholar-tutor-realignment_20260311` is active on 2026-03-11.
 
-Latest update: 2026-03-11 completed Wave 0 contract freeze for `Brain / Scholar / Tutor Realignment`, aligned the active canon/docs, and moved the track to Brain ontology work.
+Latest update: 2026-03-11 completed Wave 1 for `Brain / Scholar / Tutor Realignment`, shipping the first Brain learner-profile MVP with persisted snapshots, `/api/brain/profile*` endpoints, and the `/brain` PROFILE tab.
 
 - [ ] **Track: Brain / Scholar / Tutor Realignment** (active — created 2026-03-11; scope: contract freeze, Brain learner model, Scholar research partner, bounded Tutor mediation, premium-individual shell)
   *Link: [./tracks/brain-scholar-tutor-realignment_20260311/](./tracks/brain-scholar-tutor-realignment_20260311/)*

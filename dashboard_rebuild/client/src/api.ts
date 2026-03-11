@@ -49,6 +49,8 @@ import type {
   MasteryDashboardResponse, MasteryDetailResponse, WhyLockedResponse,
   DataTableSchema, DataRowsResponse,
   BrainChatPayload, BrainOrganizePreviewResponse,
+  BrainProfileOverview, BrainProfileClaimsResponse, BrainProfileQuestionsResponse,
+  BrainProfileHistoryResponse, BrainProfileFeedbackPayload, BrainProfileFeedbackResponse,
   CourseMapResponse,
 } from "./api.types";
 
@@ -449,6 +451,19 @@ export const api = {
       request<{ session_id: number; fields_updated: number }>("/brain/session-json", {
         method: "POST",
         body: JSON.stringify({ session_id: sessionId, tracker_json: trackerJson, enhanced_json: enhancedJson }),
+      }),
+    getProfileSummary: (forceRefresh = false) =>
+      request<BrainProfileOverview>(`/brain/profile${forceRefresh ? "?force=1" : ""}`),
+    getProfileClaims: (forceRefresh = false) =>
+      request<BrainProfileClaimsResponse>(`/brain/profile/claims${forceRefresh ? "?force=1" : ""}`),
+    getProfileQuestions: (forceRefresh = false) =>
+      request<BrainProfileQuestionsResponse>(`/brain/profile/questions${forceRefresh ? "?force=1" : ""}`),
+    getProfileHistory: (limit: number = 12) =>
+      request<BrainProfileHistoryResponse>(`/brain/profile/history?limit=${encodeURIComponent(String(limit))}`),
+    submitProfileFeedback: (payload: BrainProfileFeedbackPayload) =>
+      request<BrainProfileFeedbackResponse>("/brain/profile/feedback", {
+        method: "POST",
+        body: JSON.stringify(payload),
       }),
   },
 

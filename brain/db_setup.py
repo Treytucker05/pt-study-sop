@@ -15,6 +15,119 @@ from pathlib import Path
 from config import DB_PATH
 
 
+def _create_learner_profile_tables(cursor) -> None:
+    """Create Wave 1 Brain learner-profile tables."""
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS learner_profile_snapshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            archetype_slug TEXT NOT NULL,
+            archetype_label TEXT NOT NULL,
+            archetype_summary TEXT NOT NULL,
+            supporting_traits_json TEXT,
+            profile_summary_json TEXT,
+            evidence_summary_json TEXT,
+            model_version TEXT NOT NULL,
+            source_window_start TEXT,
+            source_window_end TEXT,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_learner_profile_snapshots_user_created
+        ON learner_profile_snapshots(user_id, created_at DESC)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS learner_profile_claims (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_id INTEGER NOT NULL,
+            user_id TEXT NOT NULL,
+            claim_key TEXT NOT NULL,
+            claim_label TEXT NOT NULL,
+            score REAL NOT NULL,
+            value_band TEXT NOT NULL,
+            confidence REAL NOT NULL,
+            freshness_days REAL,
+            contradiction_state TEXT NOT NULL DEFAULT 'stable',
+            evidence_tier INTEGER NOT NULL,
+            evidence_label TEXT,
+            signal_direction TEXT NOT NULL DEFAULT 'strength',
+            observed_count INTEGER NOT NULL DEFAULT 0,
+            explanation TEXT,
+            recommended_strategy TEXT,
+            evidence_json TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(snapshot_id) REFERENCES learner_profile_snapshots(id),
+            UNIQUE(snapshot_id, claim_key)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_learner_profile_claims_snapshot
+        ON learner_profile_claims(snapshot_id)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS learner_profile_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            snapshot_id INTEGER,
+            question_key TEXT NOT NULL,
+            question_text TEXT NOT NULL,
+            claim_key TEXT,
+            rationale TEXT,
+            question_type TEXT NOT NULL DEFAULT 'calibration',
+            status TEXT NOT NULL DEFAULT 'pending',
+            blocking INTEGER NOT NULL DEFAULT 0,
+            evidence_needed TEXT,
+            answer_text TEXT,
+            answer_source TEXT,
+            answered_at TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(snapshot_id) REFERENCES learner_profile_snapshots(id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_learner_profile_questions_user_status
+        ON learner_profile_questions(user_id, status, question_key)
+        """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS learner_profile_feedback_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            snapshot_id INTEGER,
+            claim_key TEXT,
+            question_id INTEGER,
+            feedback_type TEXT NOT NULL,
+            response_text TEXT,
+            source TEXT NOT NULL DEFAULT 'ui',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(snapshot_id) REFERENCES learner_profile_snapshots(id),
+            FOREIGN KEY(question_id) REFERENCES learner_profile_questions(id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_learner_profile_feedback_user_created
+        ON learner_profile_feedback_events(user_id, created_at DESC)
+        """
+    )
+
+
 def _migrate_academic_deadlines(cursor) -> None:
     """Merge academic_deadlines into course_events, then drop the table.
 
@@ -1131,6 +1244,11 @@ def init_database():
             print("[INFO] Added 'end_time' column to course_events table")
         except sqlite3.OperationalError:
             pass
+
+    # ------------------------------------------------------------------
+    # Brain learner-profile tables
+    # ------------------------------------------------------------------
+    _create_learner_profile_tables(cursor)
 
     # ------------------------------------------------------------------
     # Scholar Digests table (strategic analysis documents)

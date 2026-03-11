@@ -480,6 +480,140 @@ export interface BrainOrganizePreviewResponse {
   courseFolder?: string | null;
 }
 
+export interface BrainProfileReliabilityTier {
+  tier: number;
+  label: string;
+  description: string;
+}
+
+export interface BrainHybridArchetype {
+  slug: string;
+  label: string;
+  summary: string;
+  supportingTraits: string[];
+}
+
+export interface BrainProfileSummaryCard {
+  headline: string;
+  strengths: string[];
+  watchouts: string[];
+  nextBestActions: string[];
+  backfillMode: string;
+}
+
+export interface BrainProfileOverview {
+  userId: string;
+  snapshotId: number;
+  generatedAt: string;
+  modelVersion: string;
+  hybridArchetype: BrainHybridArchetype;
+  profileSummary: BrainProfileSummaryCard;
+  claimsOverview: {
+    count: number;
+    highConfidence: number;
+    needsCalibration: number;
+    watchouts: number;
+  };
+  sourceWindow: {
+    start: string | null;
+    end: string | null;
+  };
+  backfillMode: string;
+  reliabilityTiers: BrainProfileReliabilityTier[];
+  evidenceSummary: Record<string, unknown>;
+}
+
+export interface BrainProfileClaim {
+  claimKey: string;
+  label: string;
+  score: number;
+  valueBand: string;
+  confidence: number;
+  confidenceBand: string;
+  freshnessDays: number | null;
+  contradictionState: string;
+  evidenceTier: number;
+  evidenceLabel: string;
+  signalDirection: "strength" | "watchout";
+  observedCount: number;
+  explanation: string;
+  recommendedStrategy: string;
+  evidence: Record<string, unknown>;
+}
+
+export interface BrainProfileClaimsResponse {
+  userId: string;
+  snapshotId: number;
+  generatedAt: string;
+  claims: BrainProfileClaim[];
+  count: number;
+}
+
+export interface BrainProfileQuestion {
+  id: number;
+  snapshotId: number;
+  questionKey: string;
+  questionText: string;
+  claimKey: string;
+  rationale: string;
+  questionType: string;
+  status: string;
+  blocking: boolean;
+  evidenceNeeded: string;
+  answerText?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BrainProfileQuestionsResponse {
+  userId: string;
+  snapshotId: number;
+  questions: BrainProfileQuestion[];
+  count: number;
+}
+
+export interface BrainProfileHistoryItem {
+  snapshotId: number;
+  generatedAt: string;
+  modelVersion: string;
+  archetypeLabel: string;
+  archetypeSummary: string;
+  topSignals: Array<{
+    claimKey: string;
+    score: number;
+    confidence: number;
+    contradictionState: string;
+  }>;
+  sourceWindow: {
+    start: string | null;
+    end: string | null;
+  };
+}
+
+export interface BrainProfileHistoryResponse {
+  userId: string;
+  history: BrainProfileHistoryItem[];
+  count: number;
+}
+
+export interface BrainProfileFeedbackPayload {
+  questionId?: number;
+  claimKey?: string;
+  responseType: "answer" | "challenge" | "confirm";
+  responseText: string;
+  source?: string;
+  userId?: string;
+}
+
+export interface BrainProfileFeedbackResponse {
+  ok: boolean;
+  feedbackId: number;
+  snapshotId: number | null;
+  claimKey: string | null;
+  responseType: string;
+  question?: BrainProfileQuestion | null;
+}
+
 // ── Method Library ──────────────────────────────────────────────────────────
 
 export type MethodCategory =

@@ -1,11 +1,11 @@
 import { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getCoursePaths } from "@/config/courses";
 
-export type MainMode = "canvas" | "edit" | "graph" | "table" | "data";
+export type MainMode = "canvas" | "edit" | "graph" | "table" | "data" | "profile";
 
-const VALID_MAIN_MODES: MainMode[] = ["canvas", "edit", "graph", "table", "data"];
+const VALID_MAIN_MODES: MainMode[] = ["canvas", "edit", "graph", "table", "data", "profile"];
 
 function loadState<T>(key: string, fallback: T): T {
   try {
@@ -27,6 +27,7 @@ function saveState(key: string, value: unknown) {
 }
 
 export function useBrainWorkspace() {
+  const queryClient = useQueryClient();
   const [mainMode, setMainModeRaw] = useState<MainMode>(
     () => loadBrainMainMode("canvas")
   );
@@ -109,6 +110,26 @@ export function useBrainWorkspace() {
     queryFn: api.brain.getMetrics,
   });
 
+  const { data: learnerProfile, isLoading: learnerProfileLoading } = useQuery({
+    queryKey: ["brain", "profile"],
+    queryFn: () => api.brain.getProfileSummary(),
+  });
+
+  const { data: learnerProfileClaimsData, isLoading: learnerProfileClaimsLoading } = useQuery({
+    queryKey: ["brain", "profile", "claims"],
+    queryFn: () => api.brain.getProfileClaims(),
+  });
+
+  const { data: learnerProfileQuestionsData, isLoading: learnerProfileQuestionsLoading } = useQuery({
+    queryKey: ["brain", "profile", "questions"],
+    queryFn: () => api.brain.getProfileQuestions(),
+  });
+
+  const { data: learnerProfileHistoryData, isLoading: learnerProfileHistoryLoading } = useQuery({
+    queryKey: ["brain", "profile", "history"],
+    queryFn: () => api.brain.getProfileHistory(),
+  });
+
   const { data: ankiDrafts = [] } = useQuery({
     queryKey: ["anki", "drafts"],
     queryFn: api.anki.getDrafts,
@@ -183,6 +204,41 @@ export function useBrainWorkspace() {
     console.warn(`Note not found: ${noteName}`);
   }, [obsidianConfig, vaultIndex, openFile]);
 
+  const refreshLearnerProfile = useCallback(async () => {
+    await Promise.all([
+      queryClient.fetchQuery({
+        queryKey: ["brain", "profile"],
+        queryFn: () => api.brain.getProfileSummary(true),
+      }),
+      queryClient.fetchQuery({
+        queryKey: ["brain", "profile", "claims"],
+        queryFn: () => api.brain.getProfileClaims(true),
+      }),
+      queryClient.fetchQuery({
+        queryKey: ["brain", "profile", "questions"],
+        queryFn: () => api.brain.getProfileQuestions(true),
+      }),
+      queryClient.fetchQuery({
+        queryKey: ["brain", "profile", "history"],
+        queryFn: () => api.brain.getProfileHistory(),
+      }),
+    ]);
+  }, [queryClient]);
+
+  const submitProfileFeedback = useCallback(
+    async (payload: Parameters<typeof api.brain.submitProfileFeedback>[0]) => {
+      const result = await api.brain.submitProfileFeedback(payload);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["brain", "profile"] }),
+        queryClient.invalidateQueries({ queryKey: ["brain", "profile", "claims"] }),
+        queryClient.invalidateQueries({ queryKey: ["brain", "profile", "questions"] }),
+        queryClient.invalidateQueries({ queryKey: ["brain", "profile", "history"] }),
+      ]);
+      return result;
+    },
+    [queryClient]
+  );
+
   return {
     // Main mode
     mainMode, setMainMode,
@@ -212,6 +268,17 @@ export function useBrainWorkspace() {
     metrics,
     ankiDrafts,
     pendingDrafts,
+    learnerProfile,
+    learnerProfileClaims: learnerProfileClaimsData?.claims ?? [],
+    learnerProfileQuestions: learnerProfileQuestionsData?.questions ?? [],
+    learnerProfileHistory: learnerProfileHistoryData?.history ?? [],
+    learnerProfileLoading:
+      learnerProfileLoading ||
+      learnerProfileClaimsLoading ||
+      learnerProfileQuestionsLoading ||
+      learnerProfileHistoryLoading,
+    refreshLearnerProfile,
+    submitProfileFeedback,
   };
 }
 

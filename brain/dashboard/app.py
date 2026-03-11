@@ -28,6 +28,7 @@ def create_app():
     from dashboard.api_data import data_bp
     from dashboard.api_mastery import mastery_bp
     from dashboard.api_janitor import janitor_bp
+    from dashboard.api_brain_profile import brain_profile_bp
 
     app.register_blueprint(adapter_bp)  # /api/* routes - must be first
     app.register_blueprint(methods_bp)  # /api/methods, /api/chains
@@ -36,6 +37,7 @@ def create_app():
     app.register_blueprint(data_bp)  # /api/data/*
     app.register_blueprint(mastery_bp)  # /api/mastery/*
     app.register_blueprint(janitor_bp)  # /api/janitor/*
+    app.register_blueprint(brain_profile_bp)  # /api/brain/profile/*
     app.register_blueprint(dashboard_bp)
 
     # DEBUG: Print all registered routes
