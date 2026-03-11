@@ -1,460 +1,479 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shield, AlertTriangle, Link2, Copy, FolderOpen, FileWarning, Wrench, Sparkles, ChevronDown, ChevronRight, Loader2, X, Zap } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  FileWarning,
+  FolderOpen,
+  Info,
+  Link2,
+  Loader2,
+  Shield,
+  Sparkles,
+  Wrench,
+  Zap,
+} from "lucide-react";
 import Layout from "@/components/layout";
 import { api } from "@/lib/api";
-import type { JanitorIssue, JanitorHealthResponse, JanitorScanResponse, JanitorOptions, AiFieldSuggestion, AiResolveResponse } from "@/api";
+import type {
+  AiFieldSuggestion,
+  AiResolveResponse,
+  BatchEnrichResponse,
+  JanitorIssue,
+  JanitorNoteSummary,
+  JanitorOptions,
+  JanitorScanResponse,
+} from "@/api";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/use-toast";
 
-const ISSUE_CONFIG: Record<string, { label: string; color: string; Icon: typeof AlertTriangle }> = {
-  missing_frontmatter: { label: "MISSING FRONTMATTER", color: "text-yellow-400", Icon: FileWarning },
-  orphan: { label: "ORPHAN NOTES", color: "text-blue-400", Icon: FolderOpen },
-  broken_link: { label: "BROKEN LINKS", color: "text-red-400", Icon: Link2 },
-  casing_mismatch: { label: "CASING CONFLICTS", color: "text-orange-400", Icon: AlertTriangle },
-  duplicate: { label: "DUPLICATES", color: "text-purple-400", Icon: Copy },
+const ISSUE_CONFIG: Record<string, { label: string; Icon: typeof AlertTriangle; color: string }> = {
+  missing_frontmatter: { label: "Metadata", Icon: FileWarning, color: "text-yellow-300" },
+  broken_link: { label: "Missing Link Target", Icon: Link2, color: "text-red-300" },
+  orphan: { label: "Unlinked Note", Icon: FolderOpen, color: "text-sky-300" },
+  routing_drift: { label: "Routing Drift", Icon: AlertTriangle, color: "text-orange-300" },
+  casing_mismatch: { label: "Casing Drift", Icon: AlertTriangle, color: "text-orange-300" },
+  duplicate: { label: "Duplicate Content", Icon: AlertTriangle, color: "text-fuchsia-300" },
 };
 
-/** Map frontmatter field names to the options key they draw from. */
+const ISSUE_CLASS_COPY: Record<string, { label: string; className: string }> = {
+  real_breakage: { label: "Real breakage", className: "border-red-400/40 text-red-300" },
+  content_gap: { label: "Content gap", className: "border-cyan-400/40 text-cyan-300" },
+  routing_drift: { label: "Routing drift", className: "border-orange-400/40 text-orange-300" },
+  "advisory/system": { label: "Advisory / system", className: "border-primary/30 text-primary/80" },
+};
+
+const SEVERITY_CLASS: Record<string, string> = {
+  high: "border-red-400/40 text-red-300",
+  medium: "border-yellow-400/40 text-yellow-300",
+  low: "border-primary/30 text-primary/70",
+};
+
+const CONFIDENCE_CLASS: Record<string, string> = {
+  high: "border-green-400/40 text-green-300",
+  medium: "border-yellow-400/40 text-yellow-300",
+  low: "border-red-400/40 text-red-300",
+};
+
 const FIELD_OPTIONS_KEY: Record<string, keyof JanitorOptions> = {
   course: "course",
+  course_name: "course_name",
   course_code: "course_code",
+  module_name: "module_name",
   unit_type: "unit_type",
   note_type: "note_type",
-};
-
-const CONFIDENCE_STYLE: Record<string, { border: string; text: string; label: string }> = {
-  high: { border: "border-green-400", text: "text-green-400", label: "HIGH" },
-  medium: { border: "border-yellow-400", text: "text-yellow-400", label: "MED" },
-  low: { border: "border-red-400", text: "text-red-400", label: "LOW" },
 };
 
 function getOptionsForField(field: string, options: JanitorOptions | undefined): { label: string; value: string }[] {
   if (!options) return [];
   if (field === "course_code") {
-    return Object.entries(options.course_code).map(([course, code]) => ({
-      label: `${course} (${code})`,
+    return Object.entries(options.course_code).map(([courseName, code]) => ({
+      label: `${courseName} (${code})`,
       value: code,
     }));
   }
   const key = FIELD_OPTIONS_KEY[field];
   if (!key) return [];
-  const val = options[key];
-  if (Array.isArray(val)) return val.map((v) => ({ label: v, value: v }));
-  return [];
+  const value = options[key];
+  return Array.isArray(value) ? value.map((item) => ({ label: item, value: item })) : [];
 }
 
-// ---------------------------------------------------------------------------
-// ManualFixModal
-// ---------------------------------------------------------------------------
+function StatCard({ label, value, tone = "default" }: { label: string; value: number | string; tone?: "default" | "warn" | "danger" | "info" }) {
+  const toneClass =
+    tone === "danger"
+      ? "border-red-400/30 text-red-300"
+      : tone === "warn"
+        ? "border-yellow-400/30 text-yellow-300"
+        : tone === "info"
+          ? "border-cyan-400/30 text-cyan-300"
+          : "border-primary/30 text-primary";
 
-function ManualFixModal({
+  return (
+    <div className={cn("border-2 bg-black/30 p-3 font-terminal", toneClass)}>
+      <div className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">{label}</div>
+      <div className="mt-2 font-arcade text-lg">{value}</div>
+    </div>
+  );
+}
+
+function ManualFixPanel({
   issue,
   options,
+  applying,
   onApply,
   onCancel,
-  applying,
 }: {
   issue: JanitorIssue;
   options: JanitorOptions | undefined;
+  applying: boolean;
   onApply: (issue: JanitorIssue) => void;
   onCancel: () => void;
-  applying: boolean;
 }) {
-  const [value, setValue] = useState("");
   const choices = getOptionsForField(issue.field, options);
+  const [value, setValue] = useState("");
 
   function handleApply() {
-    if (!value) return;
-    const fixData: Record<string, string> = { ...issue.fix_data, [issue.field]: value };
-
-    if (issue.field === "course" && options?.course_code[value]) {
-      fixData.course_code = options.course_code[value];
-    }
-
-    onApply({ ...issue, fixable: true, fix_data: fixData });
+    if (!value.trim()) return;
+    onApply({
+      ...issue,
+      fixable: true,
+      fix_data: {
+        ...issue.fix_data,
+        [issue.field]: value.trim(),
+      },
+    });
   }
 
   return (
-    <div className="border-2 border-primary bg-background p-3 mt-1 space-y-3 font-terminal text-xs">
-      <div className="flex items-center justify-between">
-        <span className="text-primary">
-          Set <span className="font-arcade">{issue.field}</span>
-        </span>
-        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-primary">
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      <select
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        className="w-full border-2 border-primary bg-background px-2 py-1.5 font-terminal text-xs text-foreground"
-      >
-        <option value="">-- select --</option>
-        {choices.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-
-      <div className="flex gap-2 justify-end">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="border border-muted-foreground/40 px-3 py-1 text-muted-foreground hover:bg-muted-foreground/10"
+    <div className="mt-3 border border-primary/20 bg-black/40 p-3 font-terminal text-xs">
+      <div className="mb-2 text-primary">Manual fix for `{issue.field}`</div>
+      {choices.length > 0 ? (
+        <select
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          className="w-full border border-primary/30 bg-background px-2 py-2 text-foreground"
         >
-          CANCEL
-        </button>
+          <option value="">Select a value</option>
+          {choices.map((choice) => (
+            <option key={choice.value} value={choice.value}>
+              {choice.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          placeholder="Enter a replacement value"
+          className="w-full border border-primary/30 bg-background px-2 py-2 text-foreground"
+        />
+      )}
+      <div className="mt-3 flex gap-2">
         <button
           type="button"
           onClick={handleApply}
-          disabled={!value || applying}
-          className="border-2 border-green-400 px-3 py-1 text-green-400 hover:bg-green-400/10 disabled:opacity-50"
+          disabled={applying || !value.trim()}
+          className="border border-green-400/40 px-3 py-1 text-green-300 hover:bg-green-400/10 disabled:opacity-50"
         >
-          {applying ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
-          APPLY
+          {applying ? <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> : <Wrench className="mr-1 inline h-3 w-3" />}
+          Apply
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="border border-primary/20 px-3 py-1 text-muted-foreground hover:bg-primary/5"
+        >
+          Cancel
         </button>
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// AiSuggestionModal
-// ---------------------------------------------------------------------------
-
-function AiSuggestionModal({
+function AiSuggestionPanel({
   path,
   data,
   options,
+  applying,
   onApply,
   onCancel,
-  applying,
 }: {
   path: string;
   data: AiResolveResponse;
   options: JanitorOptions | undefined;
+  applying: boolean;
   onApply: (path: string, applyAction: string, suggestion: Record<string, AiFieldSuggestion>) => void;
   onCancel: () => void;
-  applying: boolean;
 }) {
-  const [edits, setEdits] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    for (const [field, s] of Object.entries(data.suggestion)) {
-      init[field] = s.value;
-    }
-    return init;
-  });
-
-  const uncertain = new Set(data.uncertain_fields || []);
+  const [draft, setDraft] = useState<Record<string, string>>(() =>
+    Object.fromEntries(Object.entries(data.suggestion).map(([field, suggestion]) => [field, suggestion.value])),
+  );
 
   function handleApply() {
     const suggestion: Record<string, AiFieldSuggestion> = {};
-    for (const [field, s] of Object.entries(data.suggestion)) {
-      suggestion[field] = { value: edits[field] ?? s.value, confidence: s.confidence };
+    for (const [field, fieldData] of Object.entries(data.suggestion)) {
+      suggestion[field] = {
+        value: draft[field] ?? fieldData.value,
+        confidence: fieldData.confidence,
+      };
     }
     onApply(path, data.apply_action, suggestion);
   }
 
   return (
-    <div className="border-2 border-violet-400 bg-background p-4 space-y-4 font-terminal text-xs">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-violet-400" />
-          <span className="font-arcade text-violet-400 text-xs">AI SUGGESTION</span>
-        </div>
+    <div className="border-2 border-violet-400/40 bg-black/40 p-4 font-terminal text-xs">
+      <div className="flex items-center justify-between gap-3">
+        <div className="font-arcade text-violet-300">AI fix proposal</div>
         <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-primary">
-          <X className="w-3.5 h-3.5" />
+          Close
         </button>
       </div>
-
-      {data.reasoning && (
-        <div className="text-muted-foreground italic">{data.reasoning}</div>
-      )}
-
-      <div className="space-y-2">
-        {Object.entries(data.suggestion).map(([field, s]) => {
-          const conf = CONFIDENCE_STYLE[s.confidence] || CONFIDENCE_STYLE.low;
+      <div className="mt-2 text-muted-foreground">{data.reasoning}</div>
+      <div className="mt-4 space-y-3">
+        {Object.entries(data.suggestion).map(([field, suggestion]) => {
           const choices = getOptionsForField(field, options);
           return (
-            <div key={field} className="flex items-center gap-2">
-              <span className="w-24 text-muted-foreground">{field}</span>
-              <select
-                value={edits[field] ?? s.value}
-                onChange={(e) => setEdits((prev) => ({ ...prev, [field]: e.target.value }))}
-                className="flex-1 border border-primary/30 bg-background px-2 py-1 font-terminal text-xs text-foreground"
-              >
-                <option value={edits[field] ?? s.value}>{edits[field] ?? s.value}</option>
-                {choices
-                  .filter((c) => c.value !== (edits[field] ?? s.value))
-                  .map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-              </select>
-              <span className={cn("border px-1.5 py-0.5 text-[10px] font-arcade", conf.border, conf.text)}>
-                {conf.label}
-              </span>
-              {uncertain.has(field) && <span className="text-red-400">*</span>}
+            <div key={field} className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-primary">{field}</span>
+                <span className={cn("border px-2 py-0.5 text-[10px] uppercase", CONFIDENCE_CLASS[suggestion.confidence] ?? CONFIDENCE_CLASS.low)}>
+                  {suggestion.confidence}
+                </span>
+              </div>
+              {choices.length > 0 ? (
+                <select
+                  value={draft[field] ?? suggestion.value}
+                  onChange={(event) => setDraft((current) => ({ ...current, [field]: event.target.value }))}
+                  className="w-full border border-primary/30 bg-background px-2 py-2 text-foreground"
+                >
+                  {[draft[field] ?? suggestion.value, ...choices.map((choice) => choice.value)]
+                    .filter((value, index, items) => items.indexOf(value) === index)
+                    .map((value) => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                <input
+                  value={draft[field] ?? suggestion.value}
+                  onChange={(event) => setDraft((current) => ({ ...current, [field]: event.target.value }))}
+                  className="w-full border border-primary/30 bg-background px-2 py-2 text-foreground"
+                />
+              )}
             </div>
           );
         })}
       </div>
-
-      {uncertain.size > 0 && (
-        <div className="text-red-400 text-[10px]">* LOW confidence — please verify</div>
-      )}
-
-      <div className="flex gap-2 justify-end">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="border border-muted-foreground/40 px-3 py-1 text-muted-foreground hover:bg-muted-foreground/10"
-        >
-          REJECT
-        </button>
+      <div className="mt-4 flex gap-2">
         <button
           type="button"
           onClick={handleApply}
           disabled={applying}
-          className="border-2 border-violet-400 px-3 py-1 text-violet-400 hover:bg-violet-400/10 disabled:opacity-50"
+          className="border border-violet-400/40 px-3 py-1 text-violet-300 hover:bg-violet-400/10 disabled:opacity-50"
         >
-          {applying ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
-          APPLY ALL
+          {applying ? <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 inline h-3 w-3" />}
+          Apply AI fix
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="border border-primary/20 px-3 py-1 text-muted-foreground hover:bg-primary/5"
+        >
+          Reject
         </button>
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Components
-// ---------------------------------------------------------------------------
-
-function HealthBadge({ type, count }: { type: string; count: number }) {
-  const cfg = ISSUE_CONFIG[type] || { label: type.toUpperCase(), color: "text-muted-foreground", Icon: AlertTriangle };
-  const Icon = cfg.Icon;
-  return (
-    <div className={cn("flex items-center gap-2 border-2 border-primary/20 px-3 py-1.5 font-terminal text-xs", cfg.color)}>
-      <Icon className="w-3.5 h-3.5" />
-      <span>{cfg.label}</span>
-      <span className="font-arcade text-sm">{count}</span>
-    </div>
-  );
-}
-
-function HealthSummaryBar({ data }: { data: JanitorHealthResponse }) {
-  if (!data.available) {
-    return (
-      <div className="border-2 border-red-400/30 bg-red-400/5 p-4 font-terminal text-xs text-red-400">
-        Obsidian API unavailable — start Obsidian with Local REST API plugin enabled.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between font-terminal text-xs text-muted-foreground">
-        <span>{data.notes_scanned} notes scanned</span>
-        <span>{data.scan_time_ms}ms</span>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {Object.entries(data.counts).map(([type, count]) => (
-          <HealthBadge key={type} type={type} count={count} />
-        ))}
-        {data.total_issues === 0 && (
-          <div className="font-terminal text-xs text-green-400">All clear — no issues found.</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function IssueRow({
+function IssueLine({
   issue,
+  options,
   onFix,
   onManualFix,
-  onEnrich,
   onAiFix,
+  onEnrich,
   fixing,
   enriching,
   aiFixing,
   manualFixOpen,
-  options,
   onApplyManual,
   onCancelManual,
 }: {
   issue: JanitorIssue;
-  onFix: () => void;
-  onManualFix: () => void;
-  onEnrich: () => void;
-  onAiFix: () => void;
+  options: JanitorOptions | undefined;
+  onFix: (issue: JanitorIssue) => void;
+  onManualFix: (issue: JanitorIssue) => void;
+  onAiFix: (issue: JanitorIssue) => void;
+  onEnrich: (path: string) => void;
   fixing: boolean;
   enriching: boolean;
   aiFixing: boolean;
   manualFixOpen: boolean;
-  options: JanitorOptions | undefined;
   onApplyManual: (issue: JanitorIssue) => void;
   onCancelManual: () => void;
 }) {
-  const cfg = ISSUE_CONFIG[issue.issue_type] || { color: "text-muted-foreground" };
-  const isFrontmatter = issue.issue_type === "missing_frontmatter";
-  const isOrphan = issue.issue_type === "orphan";
-  const isBrokenLink = issue.issue_type === "broken_link";
-  const showAiFix = isFrontmatter || isOrphan || isBrokenLink;
+  const issueConfig = ISSUE_CONFIG[issue.issue_type] ?? ISSUE_CONFIG.routing_drift;
+  const canDeterministicallyFix = issue.issue_type === "missing_frontmatter";
+  const canAiFix = issue.issue_type === "missing_frontmatter" || issue.issue_type === "broken_link" || issue.issue_type === "orphan";
 
   return (
-    <div>
-      <div className="flex items-center justify-between gap-2 border border-primary/10 px-3 py-2 font-terminal text-xs">
-        <div className="flex-1 min-w-0">
-          <div className={cn("truncate", cfg.color)}>{issue.path}</div>
-          <div className="text-muted-foreground truncate">{issue.detail}</div>
+    <div className="border border-primary/10 bg-black/20 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <issueConfig.Icon className={cn("h-3.5 w-3.5", issueConfig.color)} />
+            <span className={cn("font-arcade text-[11px] uppercase", issueConfig.color)}>{issueConfig.label}</span>
+            <span className={cn("border px-2 py-0.5 text-[10px] uppercase", ISSUE_CLASS_COPY[issue.issue_class]?.className ?? ISSUE_CLASS_COPY["advisory/system"].className)}>
+              {ISSUE_CLASS_COPY[issue.issue_class]?.label ?? issue.issue_class}
+            </span>
+            <span className={cn("border px-2 py-0.5 text-[10px] uppercase", SEVERITY_CLASS[issue.severity] ?? SEVERITY_CLASS.low)}>
+              {issue.severity}
+            </span>
+            <span className={cn("border px-2 py-0.5 text-[10px] uppercase", CONFIDENCE_CLASS[issue.confidence] ?? CONFIDENCE_CLASS.low)}>
+              confidence {issue.confidence}
+            </span>
+          </div>
+          <div className="font-terminal text-xs text-foreground">{issue.detail}</div>
+          <div className="text-xs text-muted-foreground">{issue.explanation}</div>
+          {issue.fix_preview ? (
+            <div className="border border-green-400/20 bg-green-400/5 px-2 py-1 text-xs text-green-300">
+              Deterministic fix preview: {issue.fix_preview}
+            </div>
+          ) : null}
         </div>
-        <div className="flex gap-1.5 shrink-0">
-          {isFrontmatter && (
+        <div className="flex flex-wrap gap-2">
+          {canDeterministicallyFix ? (
             <button
               type="button"
-              onClick={issue.fixable ? onFix : onManualFix}
+              onClick={() => (issue.fixable ? onFix(issue) : onManualFix(issue))}
               disabled={fixing}
-              className="flex items-center gap-1 border border-green-400/40 px-2 py-1 text-green-400 hover:bg-green-400/10 disabled:opacity-50"
+              className="border border-green-400/40 px-3 py-1 font-arcade text-[11px] text-green-300 hover:bg-green-400/10 disabled:opacity-50"
             >
-              {fixing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wrench className="w-3 h-3" />}
-              FIX
+              {fixing ? <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> : <Wrench className="mr-1 inline h-3 w-3" />}
+              Fix
             </button>
-          )}
-          {isOrphan && !showAiFix && (
+          ) : null}
+          {issue.issue_type === "orphan" ? (
             <button
               type="button"
-              onClick={onEnrich}
+              onClick={() => onEnrich(issue.path)}
               disabled={enriching}
-              className="flex items-center gap-1 border border-cyan-400/40 px-2 py-1 text-cyan-400 hover:bg-cyan-400/10 disabled:opacity-50"
+              className="border border-cyan-400/40 px-3 py-1 font-arcade text-[11px] text-cyan-300 hover:bg-cyan-400/10 disabled:opacity-50"
             >
-              {enriching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-              ENRICH
+              {enriching ? <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> : <Zap className="mr-1 inline h-3 w-3" />}
+              Enrich
             </button>
-          )}
-          {showAiFix && (
+          ) : null}
+          {canAiFix ? (
             <button
               type="button"
-              onClick={onAiFix}
+              onClick={() => onAiFix(issue)}
               disabled={aiFixing}
-              className="flex items-center gap-1 border border-violet-400/40 px-2 py-1 text-violet-400 hover:bg-violet-400/10 disabled:opacity-50"
+              className="border border-violet-400/40 px-3 py-1 font-arcade text-[11px] text-violet-300 hover:bg-violet-400/10 disabled:opacity-50"
             >
-              {aiFixing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-              AI FIX
+              {aiFixing ? <Loader2 className="mr-1 inline h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 inline h-3 w-3" />}
+              AI Fix
             </button>
-          )}
+          ) : null}
         </div>
       </div>
-      {manualFixOpen && (
-        <ManualFixModal
+      {manualFixOpen ? (
+        <ManualFixPanel
           issue={issue}
           options={options}
+          applying={fixing}
           onApply={onApplyManual}
           onCancel={onCancelManual}
-          applying={fixing}
         />
-      )}
+      ) : null}
     </div>
   );
 }
 
-function IssueGroup({
-  type,
+function NoteGroup({
+  note,
   issues,
+  options,
   onFix,
   onManualFix,
-  onEnrich,
   onAiFix,
-  fixingPaths,
+  onEnrich,
+  fixingKeys,
   enrichingPaths,
   aiFixingPaths,
   manualFixKey,
-  options,
   onApplyManual,
   onCancelManual,
 }: {
-  type: string;
+  note: JanitorNoteSummary;
   issues: JanitorIssue[];
+  options: JanitorOptions | undefined;
   onFix: (issue: JanitorIssue) => void;
   onManualFix: (issue: JanitorIssue) => void;
-  onEnrich: (path: string) => void;
   onAiFix: (issue: JanitorIssue) => void;
-  fixingPaths: Set<string>;
+  onEnrich: (path: string) => void;
+  fixingKeys: Set<string>;
   enrichingPaths: Set<string>;
   aiFixingPaths: Set<string>;
   manualFixKey: string | null;
-  options: JanitorOptions | undefined;
   onApplyManual: (issue: JanitorIssue) => void;
   onCancelManual: () => void;
 }) {
   const [open, setOpen] = useState(true);
-  const cfg = ISSUE_CONFIG[type] || { label: type.toUpperCase(), color: "text-muted-foreground", Icon: AlertTriangle };
-  const Icon = cfg.Icon;
+  const noteTone = note.counts_toward_health ? "border-primary/20" : "border-primary/10 opacity-90";
 
   return (
-    <div className="border-2 border-primary/20">
+    <div className={cn("border-2 bg-black/25", noteTone)}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
-        className={cn(
-          "flex w-full items-center gap-2 px-3 py-2 font-arcade text-xs hover:bg-primary/5",
-          cfg.color,
-        )}
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
       >
-        {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-        <Icon className="w-3.5 h-3.5" />
-        <span>{cfg.label}</span>
-        <span className="ml-auto font-terminal text-muted-foreground">{issues.length}</span>
+        <div className="min-w-0 space-y-1">
+          <div className="truncate font-arcade text-xs text-primary">{note.path}</div>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+            <span>{note.family.replaceAll("_", " ")}</span>
+            <span className={cn("border px-2 py-0.5 uppercase", SEVERITY_CLASS[note.severity] ?? SEVERITY_CLASS.low)}>
+              {note.severity}
+            </span>
+            {note.issue_classes.map((issueClass) => (
+              <span
+                key={issueClass}
+                className={cn("border px-2 py-0.5 uppercase", ISSUE_CLASS_COPY[issueClass]?.className ?? ISSUE_CLASS_COPY["advisory/system"].className)}
+              >
+                {ISSUE_CLASS_COPY[issueClass]?.label ?? issueClass}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="text-right">
+            <div className="font-arcade text-sm text-primary">{note.issue_count}</div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">issues</div>
+          </div>
+          {open ? <ChevronDown className="h-4 w-4 text-primary" /> : <ChevronRight className="h-4 w-4 text-primary" />}
+        </div>
       </button>
-      {open && (
-        <div className="space-y-px border-t border-primary/10">
-          {issues.map((issue, i) => {
-            const key = `${issue.path}:${issue.field}`;
+      {open ? (
+        <div className="space-y-3 border-t border-primary/10 px-4 py-4">
+          {issues.map((issue, index) => {
+            const issueKey = `${issue.path}:${issue.field || issue.issue_type}:${index}`;
             return (
-              <IssueRow
-                key={`${key}-${i}`}
+              <IssueLine
+                key={issueKey}
                 issue={issue}
-                onFix={() => onFix(issue)}
-                onManualFix={() => onManualFix(issue)}
-                onEnrich={() => onEnrich(issue.path)}
-                onAiFix={() => onAiFix(issue)}
-                fixing={fixingPaths.has(key)}
+                options={options}
+                onFix={onFix}
+                onManualFix={onManualFix}
+                onAiFix={onAiFix}
+                onEnrich={onEnrich}
+                fixing={fixingKeys.has(issueKey)}
                 enriching={enrichingPaths.has(issue.path)}
                 aiFixing={aiFixingPaths.has(issue.path)}
-                manualFixOpen={manualFixKey === key}
-                options={options}
+                manualFixOpen={manualFixKey === issueKey}
                 onApplyManual={onApplyManual}
                 onCancelManual={onCancelManual}
               />
             );
           })}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
 export default function VaultHealth() {
   const { toast } = useToast();
-  const qc = useQueryClient();
-  const [scanData, setScanData] = useState<JanitorScanResponse | null>(null);
-  const [fixingPaths, setFixingPaths] = useState<Set<string>>(new Set());
+  const [manualFixKey, setManualFixKey] = useState<string | null>(null);
+  const [fixingKeys, setFixingKeys] = useState<Set<string>>(new Set());
   const [enrichingPaths, setEnrichingPaths] = useState<Set<string>>(new Set());
   const [aiFixingPaths, setAiFixingPaths] = useState<Set<string>>(new Set());
-  const [manualFixKey, setManualFixKey] = useState<string | null>(null);
+  const [batchResult, setBatchResult] = useState<BatchEnrichResponse | null>(null);
   const [aiModal, setAiModal] = useState<{ path: string; data: AiResolveResponse } | null>(null);
   const [aiApplying, setAiApplying] = useState(false);
-  const [batchProgress, setBatchProgress] = useState<{ running: boolean; processed: number; total: number; linksAdded: number } | null>(null);
-
-  const healthQuery = useQuery({
-    queryKey: ["janitor-health"],
-    queryFn: api.janitor.getHealth,
-    refetchInterval: 60_000,
-  });
 
   const optionsQuery = useQuery({
     queryKey: ["janitor-options"],
@@ -462,286 +481,330 @@ export default function VaultHealth() {
     staleTime: 5 * 60_000,
   });
 
-  const scanMutation = useMutation({
-    mutationFn: () => api.janitor.scan(),
-    onSuccess: (data) => {
-      setScanData(data);
-      qc.invalidateQueries({ queryKey: ["janitor-health"] });
-      toast({ title: "Scan complete", description: `${data.issues.length} issues found` });
-    },
-    onError: (err: Error) => {
-      toast({ title: "Scan failed", description: err.message, variant: "destructive" });
-    },
+  const obsidianConfigQuery = useQuery({
+    queryKey: ["obsidian-config"],
+    queryFn: api.obsidian.getConfig,
+    staleTime: 5 * 60_000,
   });
 
-  const fixMutation = useMutation({
-    mutationFn: (issue: JanitorIssue) => api.janitor.fix([issue]),
-    onMutate: (issue) => {
-      setFixingPaths((prev) => new Set([...prev, `${issue.path}:${issue.field}`]));
-    },
-    onSuccess: (data, issue) => {
-      setFixingPaths((prev) => {
-        const next = new Set(prev);
-        next.delete(`${issue.path}:${issue.field}`);
-        return next;
-      });
-      setManualFixKey(null);
-      const r = data.results[0];
-      if (r?.success) {
-        toast({ title: "Fixed", description: r.detail });
-        setScanData((prev) =>
-          prev
-            ? { ...prev, issues: prev.issues.filter((i) => !(i.path === issue.path && i.field === issue.field)) }
-            : prev,
-        );
-        qc.invalidateQueries({ queryKey: ["janitor-health"] });
-      } else {
-        toast({ title: "Fix failed", description: r?.detail || "Unknown error", variant: "destructive" });
-      }
-    },
-    onError: (err: Error, issue) => {
-      setFixingPaths((prev) => {
-        const next = new Set(prev);
-        next.delete(`${issue.path}:${issue.field}`);
-        return next;
-      });
-      toast({ title: "Fix failed", description: err.message, variant: "destructive" });
-    },
+  const scanQuery = useQuery({
+    queryKey: ["janitor-scan"],
+    queryFn: () => api.janitor.scan(),
+    refetchOnWindowFocus: false,
   });
 
-  const enrichMutation = useMutation({
-    mutationFn: (path: string) => api.janitor.enrich(path),
-    onMutate: (path) => {
-      setEnrichingPaths((prev) => new Set([...prev, path]));
-    },
-    onSuccess: (data, path) => {
-      setEnrichingPaths((prev) => {
-        const next = new Set(prev);
-        next.delete(path);
-        return next;
-      });
-      if (data.success) {
-        toast({ title: "Enriched", description: `${data.links_added} links added to ${path.split("/").pop()}` });
-      }
-    },
-    onError: (err: Error, path) => {
-      setEnrichingPaths((prev) => {
-        const next = new Set(prev);
-        next.delete(path);
-        return next;
-      });
-      toast({ title: "Enrich failed", description: err.message, variant: "destructive" });
-    },
-  });
-
-  function handleFix(issue: JanitorIssue) {
-    if (issue.fixable) {
-      fixMutation.mutate(issue);
-    } else {
-      setManualFixKey(`${issue.path}:${issue.field}`);
+  const issuesByPath = useMemo(() => {
+    const grouped = new Map<string, JanitorIssue[]>();
+    for (const issue of scanQuery.data?.issues ?? []) {
+      const bucket = grouped.get(issue.path) ?? [];
+      bucket.push(issue);
+      grouped.set(issue.path, bucket);
     }
-  }
+    return grouped;
+  }, [scanQuery.data?.issues]);
 
-  function handleManualFix(issue: JanitorIssue) {
-    setManualFixKey(`${issue.path}:${issue.field}`);
+  async function handleFix(issue: JanitorIssue, issueKey: string) {
+    setFixingKeys((current) => new Set(current).add(issueKey));
+    try {
+      const result = await api.janitor.fix([issue]);
+      const fixResult = result.results[0];
+      if (!fixResult?.success) throw new Error(fixResult?.detail || "Fix failed");
+      toast({ title: "Fix applied", description: fixResult.detail });
+      setManualFixKey(null);
+      await scanQuery.refetch();
+    } catch (error) {
+      toast({ title: "Fix failed", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setFixingKeys((current) => {
+        const next = new Set(current);
+        next.delete(issueKey);
+        return next;
+      });
+    }
   }
 
   async function handleAiFix(issue: JanitorIssue) {
-    const path = issue.path;
-    setAiFixingPaths((prev) => new Set([...prev, path]));
+    setAiFixingPaths((current) => new Set(current).add(issue.path));
     try {
       const context = issue.issue_type === "broken_link" ? { broken_target: issue.field } : undefined;
-      const result = await api.janitor.aiResolve(path, issue.issue_type, context);
-      setAiFixingPaths((prev) => {
-        const next = new Set(prev);
-        next.delete(path);
-        return next;
-      });
-
-      if (!result.success) {
-        toast({ title: "AI Fix failed", description: result.error || "Unknown error", variant: "destructive" });
-        return;
-      }
-
-      // Orphan → apply immediately (enrich links)
+      const result = await api.janitor.aiResolve(issue.path, issue.issue_type, context);
+      if (!result.success) throw new Error(result.error || "AI fix failed");
       if (result.apply_action === "add_links") {
-        enrichMutation.mutate(path);
+        await handleEnrich(issue.path);
         return;
       }
-
-      setAiModal({ path, data: result });
-    } catch (err) {
-      setAiFixingPaths((prev) => {
-        const next = new Set(prev);
-        next.delete(path);
+      setAiModal({ path: issue.path, data: result });
+    } catch (error) {
+      toast({ title: "AI fix failed", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setAiFixingPaths((current) => {
+        const next = new Set(current);
+        next.delete(issue.path);
         return next;
       });
-      toast({ title: "AI Fix failed", description: (err as Error).message, variant: "destructive" });
     }
   }
 
-  async function handleAiApply(path: string, applyAction: string, suggestion: Record<string, AiFieldSuggestion>) {
-    setAiApplying(true);
+  async function handleEnrich(path: string) {
+    setEnrichingPaths((current) => new Set(current).add(path));
     try {
-      const result = await api.janitor.aiApply(path, applyAction, suggestion);
-      if (result.success) {
-        toast({ title: "Applied", description: result.detail });
-        // Remove all issues for this path from scan data
-        setScanData((prev) =>
-          prev ? { ...prev, issues: prev.issues.filter((i) => i.path !== path) } : prev,
-        );
-        qc.invalidateQueries({ queryKey: ["janitor-health"] });
-      } else {
-        toast({ title: "Apply failed", description: result.detail, variant: "destructive" });
-      }
-    } catch (err) {
-      toast({ title: "Apply failed", description: (err as Error).message, variant: "destructive" });
+      const result = await api.janitor.enrich(path);
+      if (!result.success) throw new Error("Enrich failed");
+      toast({ title: "Links added", description: `${result.links_added} links added to ${path.split("/").pop()}` });
+      await scanQuery.refetch();
+    } catch (error) {
+      toast({ title: "Enrich failed", description: (error as Error).message, variant: "destructive" });
     } finally {
-      setAiApplying(false);
-      setAiModal(null);
+      setEnrichingPaths((current) => {
+        const next = new Set(current);
+        next.delete(path);
+        return next;
+      });
     }
   }
 
   async function handleBatchEnrich() {
-    setBatchProgress({ running: true, processed: 0, total: 0, linksAdded: 0 });
     try {
       const result = await api.janitor.batchEnrich({ max_batch: 20 });
-      setBatchProgress({
-        running: false,
-        processed: result.total_processed,
-        total: result.total_processed,
-        linksAdded: result.total_links_added,
-      });
-      toast({
-        title: "Batch enrich complete",
-        description: `${result.total_processed} notes processed, ${result.total_links_added} links added`,
-      });
-      qc.invalidateQueries({ queryKey: ["janitor-health"] });
-    } catch (err) {
-      setBatchProgress(null);
-      toast({ title: "Batch enrich failed", description: (err as Error).message, variant: "destructive" });
+      setBatchResult(result);
+      toast({ title: "Batch enrich complete", description: `${result.total_processed} notes processed, ${result.total_links_added} links added` });
+      await scanQuery.refetch();
+    } catch (error) {
+      toast({ title: "Batch enrich failed", description: (error as Error).message, variant: "destructive" });
     }
   }
 
-  // Group issues by type
-  const grouped: Record<string, JanitorIssue[]> = {};
-  if (scanData?.issues) {
-    for (const issue of scanData.issues) {
-      if (!grouped[issue.issue_type]) grouped[issue.issue_type] = [];
-      grouped[issue.issue_type].push(issue);
+  async function handleApplyAi(path: string, applyAction: string, suggestion: Record<string, AiFieldSuggestion>) {
+    setAiApplying(true);
+    try {
+      const result = await api.janitor.aiApply(path, applyAction, suggestion);
+      if (!result.success) throw new Error(result.detail || "AI apply failed");
+      toast({ title: "AI fix applied", description: result.detail });
+      setAiModal(null);
+      await scanQuery.refetch();
+    } catch (error) {
+      toast({ title: "AI fix failed", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setAiApplying(false);
     }
   }
+
+  const scanData: JanitorScanResponse | undefined = scanQuery.data;
+  const issueTypeCounts = Object.entries(scanData?.counts ?? {});
+  const issueClassCounts = Object.entries(scanData?.issueClassCounts ?? {});
+  const familyCounts = Object.entries(scanData?.familyCounts ?? {});
 
   return (
     <Layout>
-      <div className="p-4 md:p-6 space-y-6 max-w-5xl">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Shield className="w-6 h-6 text-primary" />
-            <h1 className="font-arcade text-lg text-primary tracking-wider">VAULT HEALTH</h1>
+      <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
+        <div className="flex flex-col gap-4 border-2 border-primary/20 bg-black/30 p-5 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Shield className="h-6 w-6 text-primary" />
+              <h1 className="font-arcade text-lg tracking-[0.18em] text-primary">VAULT HEALTH</h1>
+            </div>
+            <p className="max-w-3xl font-terminal text-xs leading-6 text-muted-foreground">
+              Full Scan checks routing, metadata, backlinks, and unresolved wikilinks against the live vault contract.
+              Batch Enrich only targets underlinked notes. Fix applies deterministic patches. AI Fix proposes a change
+              before anything is written.
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={handleBatchEnrich}
-              disabled={batchProgress?.running}
-              className="flex items-center gap-2 border-2 border-violet-400 px-4 py-2 font-arcade text-xs text-violet-400 hover:bg-violet-400/10 disabled:opacity-50"
+              onClick={() => scanQuery.refetch()}
+              disabled={scanQuery.isFetching}
+              className="border-2 border-primary/40 px-4 py-2 font-arcade text-xs text-primary hover:bg-primary/10 disabled:opacity-50"
             >
-              {batchProgress?.running ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Zap className="w-4 h-4" />
-              )}
-              BATCH ENRICH
+              {scanQuery.isFetching ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Shield className="mr-2 inline h-4 w-4" />}
+              FULL SCAN
             </button>
             <button
               type="button"
-              onClick={() => scanMutation.mutate()}
-              disabled={scanMutation.isPending}
-              className="flex items-center gap-2 border-2 border-primary px-4 py-2 font-arcade text-xs text-primary hover:bg-primary/10 disabled:opacity-50"
+              onClick={handleBatchEnrich}
+              className="border-2 border-violet-400/50 px-4 py-2 font-arcade text-xs text-violet-300 hover:bg-violet-400/10"
             >
-              {scanMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Shield className="w-4 h-4" />
-              )}
-              FULL SCAN
+              <Zap className="mr-2 inline h-4 w-4" />
+              BATCH ENRICH
             </button>
           </div>
         </div>
 
-        {/* Batch progress */}
-        {batchProgress && !batchProgress.running && (
-          <div className="border-2 border-violet-400/20 bg-violet-400/5 p-3 font-terminal text-xs text-violet-400 flex items-center justify-between">
-            <span>{batchProgress.processed} notes processed</span>
-            <span>{batchProgress.linksAdded} links added</span>
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <StatCard label="Markdown files" value={scanData?.total_markdown_files ?? 0} />
+          <StatCard label="Health-scanned notes" value={scanData?.notes_scanned ?? 0} />
+          <StatCard label="Excluded system files" value={scanData?.excluded_system_files ?? 0} tone="info" />
+          <StatCard label="Advisory-only notes" value={scanData?.advisory_only_files ?? 0} tone="info" />
+          <StatCard label="Affected notes" value={scanData?.affected_notes ?? 0} tone="warn" />
+          <StatCard label="Issue instances" value={scanData?.issue_instances ?? 0} tone="danger" />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="border-2 border-primary/20 bg-black/25 p-4">
+            <div className="mb-3 flex items-center gap-2 font-arcade text-xs text-primary">
+              <Info className="h-4 w-4" />
+              How this works
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 font-terminal text-xs text-muted-foreground">
+              <div className="border border-primary/10 bg-black/20 p-3"><div className="font-arcade text-[11px] text-primary">Full Scan</div>Checks live note files against metadata, routing, duplicate body content, and unresolved wikilinks.</div>
+              <div className="border border-primary/10 bg-black/20 p-3"><div className="font-arcade text-[11px] text-violet-300">Batch Enrich</div>Adds links only to low-link notes. It does not rewrite the whole vault or fix routing.</div>
+              <div className="border border-primary/10 bg-black/20 p-3"><div className="font-arcade text-[11px] text-green-300">Fix</div>Applies a deterministic change when the backend already knows the exact patch.</div>
+              <div className="border border-primary/10 bg-black/20 p-3"><div className="font-arcade text-[11px] text-violet-300">AI Fix</div>Produces a proposed repair for review. Nothing is applied until you accept it.</div>
+            </div>
+          </div>
+
+          <div className="border-2 border-primary/20 bg-black/25 p-4">
+            <div className="mb-3 font-arcade text-xs text-primary">Scan breakdown</div>
+            <div className="space-y-2">
+              {issueTypeCounts.length === 0 ? (
+                <div className="font-terminal text-xs text-muted-foreground">No issue counts available yet.</div>
+              ) : (
+                issueTypeCounts.map(([type, count]) => {
+                  const config = ISSUE_CONFIG[type] ?? ISSUE_CONFIG.routing_drift;
+                  return (
+                    <div key={type} className="flex items-center justify-between border border-primary/10 px-3 py-2 font-terminal text-xs">
+                      <div className="flex items-center gap-2">
+                        <config.Icon className={cn("h-3.5 w-3.5", config.color)} />
+                        <span>{config.label}</span>
+                      </div>
+                      <span className="font-arcade text-primary">{count}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {issueClassCounts.map(([issueClass, count]) => (
+                <span key={issueClass} className={cn("border px-2 py-1 font-terminal text-[11px] uppercase", ISSUE_CLASS_COPY[issueClass]?.className ?? ISSUE_CLASS_COPY["advisory/system"].className)}>
+                  {ISSUE_CLASS_COPY[issueClass]?.label ?? issueClass}: {count}
+                </span>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {familyCounts.map(([family, count]) => (
+                <span key={family} className="border border-primary/15 px-2 py-1 font-terminal text-[11px] uppercase text-primary/80">
+                  {family.replaceAll("_", " ")}: {count}
+                </span>
+              ))}
+            </div>
+            <div className="mt-4 font-terminal text-[11px] text-muted-foreground">Scan time: {scanData?.scan_time_ms ?? 0} ms</div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="border-2 border-primary/20 bg-black/25 p-4">
+            <div className="mb-3 font-arcade text-xs text-primary">Vault contract</div>
+            <div className="grid gap-3 md:grid-cols-2 font-terminal text-xs text-muted-foreground">
+              <div className="border border-primary/10 bg-black/20 p-3">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Canonical root</div>
+                <div className="mt-2 font-arcade text-sm text-primary">
+                  {obsidianConfigQuery.data?.canonicalRoot ?? "Not reported"}
+                </div>
+              </div>
+              <div className="border border-primary/10 bg-black/20 p-3">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Deprecated roots</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(obsidianConfigQuery.data?.deprecatedRoots ?? []).length > 0 ? (
+                    (obsidianConfigQuery.data?.deprecatedRoots ?? []).map((root) => (
+                      <span key={root} className="border border-yellow-400/30 px-2 py-1 text-[11px] text-yellow-300">
+                        {root}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground">None reported</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-2 border-primary/20 bg-black/25 p-4">
+            <div className="mb-3 font-arcade text-xs text-primary">Reading the results</div>
+            <div className="space-y-2 font-terminal text-xs text-muted-foreground">
+              <div className="border border-red-400/15 bg-red-400/5 p-3">
+                <span className="font-arcade text-[11px] text-red-300">Real breakage</span>
+                <div className="mt-1">Counts toward health and should be fixed because a note, route, or link target is actually broken.</div>
+              </div>
+              <div className="border border-cyan-400/15 bg-cyan-400/5 p-3">
+                <span className="font-arcade text-[11px] text-cyan-300">Content gap</span>
+                <div className="mt-1">The vault structure is valid, but a reusable concept or target note is still missing.</div>
+              </div>
+              <div className="border border-primary/10 bg-black/20 p-3">
+                <span className="font-arcade text-[11px] text-primary/80">Advisory / system</span>
+                <div className="mt-1">These are templates, system docs, or warnings that do not count against the main health score.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {batchResult ? (
+          <div className="border-2 border-violet-400/30 bg-violet-400/5 p-4">
+            <div className="font-arcade text-xs text-violet-300">Last batch enrich run</div>
+            <div className="mt-2 font-terminal text-xs text-muted-foreground">
+              {batchResult.total_processed} notes processed, {batchResult.total_links_added} links added.
+            </div>
+            <div className="mt-3 space-y-2">
+              {batchResult.results.map((result) => (
+                <div key={result.path} className="border border-violet-400/15 px-3 py-2 font-terminal text-xs">
+                  <div className="text-violet-200">{result.path}</div>
+                  <div className="text-muted-foreground">{result.selection_reason}</div>
+                  {result.error ? <div className="text-red-300">{result.error}</div> : <div className="text-green-300">{result.links_added} links added</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {scanQuery.isLoading ? (
+          <div className="border-2 border-primary/20 bg-black/25 p-6 text-center font-terminal text-sm text-muted-foreground">
+            <Loader2 className="mr-2 inline h-4 w-4 animate-spin text-primary" />
+            Running vault scan...
+          </div>
+        ) : scanQuery.error ? (
+          <div className="border-2 border-red-400/30 bg-red-400/5 p-4 font-terminal text-xs text-red-300">
+            Failed to load Vault Health: {(scanQuery.error as Error).message}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {(scanData?.note_summaries ?? []).map((note) => {
+              const noteIssues = issuesByPath.get(note.path) ?? [];
+              return (
+                <NoteGroup
+                  key={note.path}
+                  note={note}
+                  issues={noteIssues}
+                  options={optionsQuery.data}
+                  onFix={(issue) => handleFix(issue, `${issue.path}:${issue.field || issue.issue_type}:${noteIssues.indexOf(issue)}`)}
+                  onManualFix={(issue) => setManualFixKey(`${issue.path}:${issue.field || issue.issue_type}:${noteIssues.indexOf(issue)}`)}
+                  onAiFix={handleAiFix}
+                  onEnrich={handleEnrich}
+                  fixingKeys={fixingKeys}
+                  enrichingPaths={enrichingPaths}
+                  aiFixingPaths={aiFixingPaths}
+                  manualFixKey={manualFixKey}
+                  onApplyManual={(issue) => handleFix(issue, manualFixKey ?? `${issue.path}:${issue.field}`)}
+                  onCancelManual={() => setManualFixKey(null)}
+                />
+              );
+            })}
+            {(scanData?.note_summaries?.length ?? 0) === 0 ? (
+              <div className="border-2 border-green-400/20 bg-green-400/5 p-5 font-terminal text-sm text-green-300">
+                No note-level issues are currently being reported by the janitor.
+              </div>
+            ) : null}
           </div>
         )}
 
-        {/* Health summary */}
-        {healthQuery.data && <HealthSummaryBar data={healthQuery.data} />}
-        {healthQuery.isLoading && (
-          <div className="flex items-center gap-2 font-terminal text-xs text-muted-foreground">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Loading health status...
-          </div>
-        )}
-
-        {/* AI Suggestion Modal */}
-        {aiModal && (
-          <AiSuggestionModal
+        {aiModal ? (
+          <AiSuggestionPanel
             path={aiModal.path}
             data={aiModal.data}
             options={optionsQuery.data}
-            onApply={handleAiApply}
-            onCancel={() => setAiModal(null)}
             applying={aiApplying}
+            onApply={handleApplyAi}
+            onCancel={() => setAiModal(null)}
           />
-        )}
-
-        {/* Scan results */}
-        {scanData && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between font-terminal text-xs text-muted-foreground">
-              <span>Scan: {scanData.notes_scanned} notes, {scanData.issues.length} issues</span>
-              <span>{scanData.scan_time_ms}ms</span>
-            </div>
-            {Object.entries(grouped).map(([type, issues]) => (
-              <IssueGroup
-                key={type}
-                type={type}
-                issues={issues}
-                onFix={handleFix}
-                onManualFix={handleManualFix}
-                onEnrich={(path) => enrichMutation.mutate(path)}
-                onAiFix={handleAiFix}
-                fixingPaths={fixingPaths}
-                enrichingPaths={enrichingPaths}
-                aiFixingPaths={aiFixingPaths}
-                manualFixKey={manualFixKey}
-                options={optionsQuery.data}
-                onApplyManual={(patched) => fixMutation.mutate(patched)}
-                onCancelManual={() => setManualFixKey(null)}
-              />
-            ))}
-            {scanData.issues.length === 0 && (
-              <div className="border-2 border-green-400/20 bg-green-400/5 p-6 text-center font-terminal text-xs text-green-400">
-                Vault is clean — no issues detected.
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!scanData && !healthQuery.isLoading && healthQuery.data?.available && (
-          <div className="border-2 border-primary/10 p-8 text-center space-y-2">
-            <Shield className="w-8 h-8 text-primary/30 mx-auto" />
-            <div className="font-terminal text-xs text-muted-foreground">
-              Click "FULL SCAN" to check your vault for issues.
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
     </Layout>
   );

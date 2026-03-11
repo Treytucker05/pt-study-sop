@@ -29,15 +29,17 @@ def janitor_health():
         _LOG.warning("janitor health scan failed: %s", exc)
         return jsonify({"available": False, "error": str(exc)}), 500
 
-    counts: dict[str, int] = {}
-    for issue in result.issues:
-        counts[issue.issue_type] = counts.get(issue.issue_type, 0) + 1
-
     return jsonify({
         "available": result.api_available,
         "notes_scanned": result.notes_scanned,
-        "total_issues": len(result.issues),
-        "counts": counts,
+        "total_markdown_files": result.total_markdown_files,
+        "affected_notes": result.affected_notes,
+        "issue_instances": result.issue_instances,
+        "excluded_system_files": result.excluded_system_files,
+        "advisory_only_files": result.advisory_only_files,
+        "counts": result.counts,
+        "issueClassCounts": result.issue_class_counts,
+        "familyCounts": result.family_counts,
         "scan_time_ms": result.scan_time_ms,
     })
 
@@ -58,7 +60,26 @@ def janitor_scan():
     return jsonify({
         "available": result.api_available,
         "notes_scanned": result.notes_scanned,
+        "total_markdown_files": result.total_markdown_files,
+        "affected_notes": result.affected_notes,
+        "issue_instances": result.issue_instances,
+        "excluded_system_files": result.excluded_system_files,
+        "advisory_only_files": result.advisory_only_files,
+        "counts": result.counts,
+        "issueClassCounts": result.issue_class_counts,
+        "familyCounts": result.family_counts,
         "scan_time_ms": result.scan_time_ms,
+        "note_summaries": [
+            {
+                "path": s.path,
+                "family": s.family,
+                "issue_count": s.issue_count,
+                "issue_classes": s.issue_classes,
+                "severity": s.severity,
+                "counts_toward_health": s.counts_toward_health,
+            }
+            for s in result.note_summaries
+        ],
         "issues": [
             {
                 "issue_type": i.issue_type,
@@ -67,6 +88,13 @@ def janitor_scan():
                 "detail": i.detail,
                 "fixable": i.fixable,
                 "fix_data": i.fix_data,
+                "family": i.family,
+                "issue_class": i.issue_class,
+                "severity": i.severity,
+                "confidence": i.confidence,
+                "explanation": i.explanation,
+                "fix_preview": i.fix_preview,
+                "counts_toward_health": i.counts_toward_health,
             }
             for i in result.issues
         ],
@@ -87,6 +115,13 @@ def janitor_fix():
             detail=item.get("detail", ""),
             fixable=item.get("fixable", False),
             fix_data=item.get("fix_data") or {},
+            family=item.get("family", "other"),
+            issue_class=item.get("issue_class", "real_breakage"),
+            severity=item.get("severity", "medium"),
+            confidence=item.get("confidence", "medium"),
+            explanation=item.get("explanation", ""),
+            fix_preview=item.get("fix_preview", ""),
+            counts_toward_health=item.get("counts_toward_health", True),
         )
         for item in raw_issues
         if isinstance(item, dict)
@@ -116,7 +151,9 @@ def janitor_options():
 
     return jsonify({
         "course": course_list,
+        "course_name": course_list,
         "course_code": course_code_map,
+        "module_name": [],
         "unit_type": sorted(unit_types),
         "note_type": note_types,
     })
@@ -209,20 +246,22 @@ def janitor_batch_enrich():
     max_batch = min(body.get("max_batch", 20), 50)
 
     # If no explicit paths, resolve from folder or full vault
+    selection_reasons: dict[str, str] = {}
     if not paths:
         from obsidian_index import get_vault_index, _get_note_content, _parse_wikilinks
 
         index = get_vault_index()
-        all_paths = index.get("paths") or {}
+        all_files = index.get("files") or []
 
         if folder:
             folder_norm = folder.replace("\\", "/").rstrip("/")
             candidates = [
-                p for p in all_paths.values()
-                if p.replace("\\", "/").startswith(folder_norm)
+                str(item.get("path") or "")
+                for item in all_files
+                if str(item.get("path") or "").replace("\\", "/").startswith(folder_norm)
             ]
         else:
-            candidates = list(all_paths.values())
+            candidates = [str(item.get("path") or "") for item in all_files]
 
         # Skip notes with 5+ existing wikilinks
         for cpath in candidates:
@@ -234,6 +273,7 @@ def janitor_batch_enrich():
             links = _parse_wikilinks(content)
             if len(links) < 5:
                 paths.append(cpath)
+                selection_reasons[cpath] = f"Selected automatically because it has {len(links)} existing wikilinks."
 
     paths = paths[:max_batch]
     results: list[dict] = []
@@ -244,10 +284,19 @@ def janitor_batch_enrich():
             r = enrich_links(note_path)
             added = r.get("links_added", 0)
             total_added += added
-            results.append({"path": note_path, "links_added": added})
+            results.append({
+                "path": note_path,
+                "links_added": added,
+                "selection_reason": selection_reasons.get(note_path, "Selected explicitly by request."),
+            })
         except Exception as exc:
             _LOG.warning("batch-enrich failed for %s: %s", note_path, exc)
-            results.append({"path": note_path, "links_added": 0, "error": str(exc)})
+            results.append({
+                "path": note_path,
+                "links_added": 0,
+                "selection_reason": selection_reasons.get(note_path, "Selected explicitly by request."),
+                "error": str(exc),
+            })
 
     return jsonify({
         "total_processed": len(results),

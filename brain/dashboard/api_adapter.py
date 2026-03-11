@@ -9574,11 +9574,16 @@ def get_obsidian_graph():
 @adapter_bp.route("/obsidian/config", methods=["GET"])
 def get_obsidian_config():
     """Get Obsidian configuration for frontend."""
-    vault_name = os.environ.get("OBSIDIAN_VAULT_NAME", "PT School Semester 2")
+    from course_map import load_course_map
+
+    course_map = load_course_map()
+    vault_name = os.environ.get("OBSIDIAN_VAULT_NAME", "Treys School")
     return jsonify(
         {
             "vaultName": vault_name,
             "apiUrl": OBSIDIAN_API_URL,
+            "canonicalRoot": course_map.vault_root,
+            "deprecatedRoots": course_map.deprecated_roots,
         }
     )
 

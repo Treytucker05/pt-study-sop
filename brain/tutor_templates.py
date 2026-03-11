@@ -31,6 +31,24 @@ def _wikilink(value: str) -> str:
     return f"[[{text}]]"
 
 
+def _objective_anchor_link(
+    objective_id: Any,
+    *,
+    learning_objectives_page_name: str = "Learning Objectives & To Do",
+) -> str:
+    raw = str(objective_id or "").strip()
+    if not raw:
+        return ""
+    if raw.startswith("[[") and raw.endswith("]]"):
+        raw = raw[2:-2].strip()
+    if "|" in raw:
+        raw = raw.split("|", 1)[0].strip()
+    anchor = raw.split("#", 1)[1].strip() if "#" in raw else raw
+    if not anchor:
+        return ""
+    return f"[[{learning_objectives_page_name}#{anchor}|{anchor}]]"
+
+
 def _bullets(values: list[Any]) -> str:
     clean = [str(v).strip() for v in values if str(v or "").strip()]
     if not clean:
@@ -579,10 +597,11 @@ def render_learning_objectives_todo_sections(
     parent_lines: list[str] = []
     for item in parents:
         child_count = len(children_by_parent.get(item["objective_id"]) or [])
-        parent_lines.append(f"- [ ] **{item['objective_id']} -- {item['title']}**")
+        parent_lines.append(f"### {item['objective_id']} — {item['title']}")
+        parent_lines.append("- [ ] Master this parent objective")
         if child_count:
             parent_lines.append(
-                f"      Parent objective for {child_count} atomic target{'s' if child_count != 1 else ''}."
+                f"- Covers {child_count} atomic target{'s' if child_count != 1 else ''}."
             )
         parent_lines.append("")
     parent_objectives = (
@@ -591,7 +610,12 @@ def render_learning_objectives_todo_sections(
 
     child_objectives = (
         "\n".join(
-            f"- [ ] **{child['objective_id']} -- {child['title']}**"
+            "\n".join(
+                [
+                    f"#### {child['objective_id']} — {child['title']}",
+                    "- [ ] Master this atomic target",
+                ]
+            )
             for child in all_children
         )
         or "- (no child objectives inferred yet)"
@@ -684,23 +708,27 @@ def render_map_of_contents_sections(payload: dict[str, Any]) -> dict[str, str]:
     ]
     if focus_candidates:
         module_spine_lines.append(
-            f"- Tutor First Objective: [[{focus_candidates[0]['objective_id']}]]"
+            f"- Tutor First Objective: {_objective_anchor_link(focus_candidates[0]['objective_id'], learning_objectives_page_name=lo_page_name)}"
         )
 
     objective_index_lines: list[str] = []
     for index, parent in enumerate(parents, start=1):
         objective_index_lines.append(
-            f"{index}. [[{parent['objective_id']}]] {parent['title']}"
+            f"{index}. {_objective_anchor_link(parent['objective_id'], learning_objectives_page_name=lo_page_name)} {parent['title']}"
         )
         for child in children_by_parent.get(parent["objective_id"]) or []:
             objective_index_lines.append(
-                f"   - [[{child['objective_id']}]] {child['title']}"
+                f"   - {_objective_anchor_link(child['objective_id'], learning_objectives_page_name=lo_page_name)} {child['title']}"
             )
     if not objective_index_lines:
         objective_index_lines.append("- (no approved objectives yet)")
 
     follow_up_links = ", ".join(
-        f"[[{item['objective_id']}]]" for item in focus_candidates[:5]
+        _objective_anchor_link(
+            item["objective_id"],
+            learning_objectives_page_name=lo_page_name,
+        )
+        for item in focus_candidates[:5]
     ) if focus_candidates else "(none yet)"
     session_notes_lines = [
         f"- Sessions folder: `{_safe_literal(payload.get('sessions_folder') or 'Sessions/')}`",
@@ -732,6 +760,7 @@ def render_map_of_contents_sections(payload: dict[str, Any]) -> dict[str, str]:
 def _render_moc_markdown(payload: dict[str, Any]) -> str:
     module_name = str(payload.get("module_name") or "Module")
     course_name = str(payload.get("course_name") or "")
+    lo_page_name = str(payload.get("learning_objectives_page_name") or "Learning Objectives & To Do")
 
     groups: list[dict[str, Any]] = list(payload.get("objective_groups") or [])
     if not groups:
@@ -797,14 +826,19 @@ def _render_moc_markdown(payload: dict[str, Any]) -> str:
         for i, obj in enumerate(objs, 1):
             obj_id = str(obj.get("id") or obj.get("objective_id") or f"OBJ-{i}")
             desc = str(obj.get("description") or obj.get("title") or obj_id)
-            lines.append(f"{i}. [[{obj_id}]] {desc}")
+            lines.append(
+                f"{i}. {_objective_anchor_link(obj_id, learning_objectives_page_name=lo_page_name)} {desc}"
+            )
         sections.append("\n".join(lines))
 
     objective_sections = "\n\n".join(sections) if sections else "(no objectives yet)"
 
     follow_up_items = list(payload.get("follow_up_targets") or [])
     follow_up_targets = (
-        "\n".join(f"- {t}" for t in follow_up_items)
+        "\n".join(
+            f"- {_objective_anchor_link(t, learning_objectives_page_name=lo_page_name)}"
+            for t in follow_up_items
+        )
         if follow_up_items
         else "- (auto-filled after tutor sessions)"
     )

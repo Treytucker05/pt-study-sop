@@ -1,12 +1,17 @@
-"""Live integration tests for Vault Janitor — runs against real Obsidian vault.
+"""Manual live integration checks for Vault Janitor against the real vault.
 
 Requires:
   - Obsidian running with Local REST API plugin enabled
   - OBSIDIAN_API_KEY set in brain/.env
-  - Network access to 127.0.0.1:27124
+  - Network access to the configured Obsidian Local REST endpoint
 
 Creates fixtures under `_janitor_test/` folder and cleans them up afterward.
-Run with: python brain/tests/test_vault_janitor_live.py
+Run manually with:
+  python brain/tests/test_vault_janitor_live.py
+
+This file is intentionally excluded from the default automated `pytest brain/tests/`
+suite because it mutates the live vault and depends on a user-specific Obsidian
+runtime.
 """
 from __future__ import annotations
 
@@ -14,6 +19,8 @@ import json
 import sys
 import os
 import time
+
+import pytest
 
 # Force UTF-8 output on Windows to avoid cp1252 encoding errors
 if sys.platform == "win32":
@@ -32,7 +39,6 @@ from dashboard.api_adapter import (
 from vault_janitor import (
     JanitorIssue,
     ScanResult,
-    REQUIRED_FM_FIELDS,
     _parse_frontmatter_fields,
     _resolve_frontmatter_from_path,
     _check_frontmatter,
@@ -50,6 +56,12 @@ from vault_janitor import (
     ai_apply,
     enrich_links,
 )
+
+pytestmark = pytest.mark.skip(
+    reason="Manual live integration harness; run directly against the live vault."
+)
+
+CURRENT_CONCEPT_REQUIRED_FIELDS = ("note_type", "tags", "courses")
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -214,19 +226,19 @@ def task_03_resolve_from_path() -> None:
     print("\n=== Task 3: _resolve_frontmatter_from_path() ===")
 
     # Path inside a known course folder
-    r = _resolve_frontmatter_from_path("Study Notes/Neuroscience/Week 5/concept_motor.md")
-    _assert("T03", r.get("course") == "Neuroscience", "Course resolved from path")
-    _assert("T03", bool(r.get("course_code")), "course_code resolved from path")
-    _assert("T03", bool(r.get("unit_type")), "unit_type resolved from path")
-    _assert("T03", r.get("note_type") == "concept", "note_type from filename pattern")
+    r = _resolve_frontmatter_from_path("Courses/Neuroscience/Week 5/Learning Objectives & To Do.md")
+    _assert("T03", r.get("course_name") == "Neuroscience", "Course resolved from path")
+    _assert("T03", bool(r.get("module_name")), "module_name resolved from path")
+    _assert("T03", bool(r.get("updated_at")), "updated_at resolved from path")
+    _assert("T03", r.get("note_type") == "learning_objectives_todo", "note_type from family pattern")
 
     # Path outside any course
     r2 = _resolve_frontmatter_from_path(f"{FIXTURE_PREFIX}/Orphan Island.md")
     _assert("T03", not r2.get("course"), "Non-course path: no course resolved")
 
     # session pattern
-    r3 = _resolve_frontmatter_from_path("Study Notes/Neuroscience/session_review.md")
-    _assert("T03", r3.get("note_type") == "session", "session pattern matched")
+    r3 = _resolve_frontmatter_from_path("Study Sessions/Neuroscience/session_review.md")
+    _assert("T03", r3.get("note_type") == "study_session", "session pattern matched")
 
 
 # ---------------------------------------------------------------------------
@@ -571,10 +583,8 @@ def task_11b_batch_fix() -> None:
 def task_12_build_ai_prompt() -> None:
     print("\n=== Task 12: _build_ai_system_prompt() ===")
 
-    prompt = _build_ai_system_prompt()
-    _assert("T12", "course" in prompt, "Prompt mentions 'course'")
-    _assert("T12", "course_code" in prompt, "Prompt mentions 'course_code'")
-    _assert("T12", "unit_type" in prompt, "Prompt mentions 'unit_type'")
+    prompt = _build_ai_system_prompt(f"{FIXTURE_PREFIX}/Neuro Concepts.md")
+    _assert("T12", "course" in prompt, "Prompt mentions courses")
     _assert("T12", "note_type" in prompt, "Prompt mentions 'note_type'")
 
     # Verify JSON-parseable lists are embedded
@@ -616,10 +626,10 @@ def task_13_ai_infer_frontmatter() -> None:
         _assert("T13", False, f"No suggestions: {result.get('reasoning', result.get('error'))}")
 
     # All fields present -> skip LLM
-    all_present = {f: "value" for f in REQUIRED_FM_FIELDS}
+    all_present = {f: "value" for f in CURRENT_CONCEPT_REQUIRED_FIELDS}
     skip_result = ai_infer_frontmatter("x.md", "content", all_present)
     _assert("T13", skip_result["suggestions"] == {}, "All fields present: empty suggestions")
-    _assert("T13", skip_result["reasoning"] == "All fields present", "All fields present: correct reasoning")
+    _assert("T13", skip_result["reasoning"] == "All required fields are present", "All fields present: correct reasoning")
 
 
 # ---------------------------------------------------------------------------

@@ -114,12 +114,30 @@ export interface JanitorIssue {
   field: string;
   detail: string;
   fixable: boolean;
-  fix_data: Record<string, string>;
+  fix_data: Record<string, unknown>;
+  family: string;
+  issue_class: string;
+  severity: "low" | "medium" | "high" | string;
+  confidence: "low" | "medium" | "high" | string;
+  explanation: string;
+  fix_preview: string;
+  counts_toward_health: boolean;
+}
+
+export interface JanitorNoteSummary {
+  path: string;
+  family: string;
+  issue_count: number;
+  issue_classes: string[];
+  severity: "low" | "medium" | "high" | string;
+  counts_toward_health: boolean;
 }
 
 export interface JanitorOptions {
   course: string[];
+  course_name: string[];
   course_code: Record<string, string>;
+  module_name: string[];
   unit_type: string[];
   note_type: string[];
 }
@@ -147,21 +165,36 @@ export interface AiApplyResponse {
 export interface BatchEnrichResponse {
   total_processed: number;
   total_links_added: number;
-  results: { path: string; links_added: number; error?: string }[];
+  results: { path: string; links_added: number; selection_reason?: string; error?: string }[];
 }
 
 export interface JanitorHealthResponse {
   available: boolean;
   notes_scanned: number;
-  total_issues: number;
+  total_markdown_files: number;
+  affected_notes: number;
+  issue_instances: number;
+  excluded_system_files: number;
+  advisory_only_files: number;
   counts: Record<string, number>;
+  issueClassCounts: Record<string, number>;
+  familyCounts: Record<string, number>;
   scan_time_ms: number;
 }
 
 export interface JanitorScanResponse {
   available: boolean;
   notes_scanned: number;
+  total_markdown_files: number;
+  affected_notes: number;
+  issue_instances: number;
+  excluded_system_files: number;
+  advisory_only_files: number;
+  counts: Record<string, number>;
+  issueClassCounts: Record<string, number>;
+  familyCounts: Record<string, number>;
   scan_time_ms: number;
+  note_summaries: JanitorNoteSummary[];
   issues: JanitorIssue[];
 }
 
@@ -325,6 +358,8 @@ export interface ObsidianStatus {
 export interface ObsidianConfig {
   vaultName: string;
   apiUrl: string;
+  canonicalRoot?: string;
+  deprecatedRoots?: string[];
 }
 
 export interface ObsidianAppendResult {

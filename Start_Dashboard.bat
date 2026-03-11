@@ -1,47 +1,38 @@
 @echo off
 setlocal EnableDelayedExpansion
-rem One-click: sync logs -> regenerate resume -> start dashboard -> open browser (with health check).
+rem One-click: initialize DB -> build dashboard when stale -> start Flask -> wait for readiness -> open browser.
 
 cd /d "%~dp0"
+set "ROOT_DIR=%~dp0"
+set "SERVER_DIR=%ROOT_DIR%brain"
+set "REBUILD_DIR=%ROOT_DIR%dashboard_rebuild"
+set "DIST_DIR=%SERVER_DIR%\static\dist"
+set "DIST_INDEX=%DIST_DIR%\index.html"
+set "DASHBOARD_URL=http://127.0.0.1:5000/brain"
+set "HEALTH_URL=http://127.0.0.1:5000/api/brain/status"
+set "READINESS_TIMEOUT=30"
 
 rem Stop any existing dashboard server processes so code changes take effect.
 rem This prevents multiple dashboard_web.py instances (stale routes, port conflicts).
-echo [0/6] Closing any existing dashboard server processes...
+echo [0/5] Closing any existing dashboard server processes...
 rem Close prior dashboard cmd window (if any) without blocking startup.
 taskkill /FI "WINDOWTITLE eq PT Study Brain Dashboard*" /T /F >nul 2>nul
 
-rem Kill any process still bound to port 5000 (locale-safe: no LISTENING text match).
-set "PORT5000_PID="
-for /f "tokens=5" %%P in ('netstat -ano -p tcp ^| findstr /R /C:":5000 "') do (
-    echo %%P | findstr /R "^[0-9][0-9]*$" >nul
-    if not errorlevel 1 (
-        set "PORT5000_PID=%%P"
-        echo [INFO] Hard-stopping PID %%P bound to port 5000
-        taskkill /PID %%P /F >nul 2>nul
-    )
-)
-
-rem Quick post-cleanup signal for stale port ownership.
-if defined PORT5000_PID (
-    timeout /t 1 /nobreak >nul
-    for /f "tokens=5" %%P in ('netstat -ano -p tcp ^| findstr /R /C:":5000 "') do (
-        echo %%P | findstr /R "^[0-9][0-9]*$" >nul
-        if not errorlevel 1 (
-            echo [WARN] Port 5000 still reports PID %%P after cleanup; startup will continue.
-        )
-    )
-)
+rem Kill any process still bound to port 5000.
+for /f "usebackq delims=" %%L in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$connections = @(Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue); $pids = @(); foreach ($conn in $connections) { if ($conn.OwningProcess -and -not ($pids -contains $conn.OwningProcess)) { $pids += $conn.OwningProcess } }; if ($pids.Count -eq 0) { Write-Output '[INFO] No process was using port 5000.' } else { foreach ($portPid in $pids) { Write-Output ('[INFO] Hard-stopping PID {0} bound to port 5000' -f $portPid); Stop-Process -Id $portPid -Force -ErrorAction SilentlyContinue }; Write-Output ('[INFO] Requested termination for port 5000 PID(s): {0}' -f ($pids -join ', ')) }; Start-Sleep -Seconds 1; $remainingConnections = @(Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue); $remaining = @(); foreach ($conn in $remainingConnections) { if ($conn.OwningProcess -and -not ($remaining -contains $conn.OwningProcess)) { $remaining += $conn.OwningProcess } }; if ($remaining.Count -gt 0) { Write-Output ('[WARN] Port 5000 still reports PID(s): {0}' -f ($remaining -join ', ')) } else { Write-Output '[INFO] Port 5000 is clear.' }"`) do echo %%L
 
 rem Configure Study RAG drop-folder (used by Tutor -> Study sync)
 set "ONEDRIVE_RAG=C:\Users\treyt\OneDrive\Desktop\PT School"
 set "LOCAL_RAG=%~dp0PT School"
 if exist "%ONEDRIVE_RAG%" (
     set "PT_STUDY_RAG_DIR=%ONEDRIVE_RAG%"
-) else if exist "%LOCAL_RAG%" (
-    set "PT_STUDY_RAG_DIR=%LOCAL_RAG%"
 ) else (
-    set "PT_STUDY_RAG_DIR=%ONEDRIVE_RAG%"
-    echo [WARN] PT Study RAG folder not found at %ONEDRIVE_RAG% or %LOCAL_RAG%.
+    if exist "%LOCAL_RAG%" (
+        set "PT_STUDY_RAG_DIR=%LOCAL_RAG%"
+    ) else (
+        set "PT_STUDY_RAG_DIR=%ONEDRIVE_RAG%"
+        echo [WARN] PT Study RAG folder not found at %ONEDRIVE_RAG% or %LOCAL_RAG%.
+    )
 )
 
 rem Configure API Keys via brain\.env (loaded by brain\config.py)
@@ -54,91 +45,113 @@ for %%I in (python py) do (
 )
 echo [ERROR] Python was not found on PATH. Install Python 3 or add it to PATH.
 echo         If you use the Python Launcher, install it so `py -3` works.
-goto END
+goto END_FAIL
 
 :PYFOUND
 if /I "%PYEXE%"=="py" set "PYEXE_ARGS=-3"
 
-set "SERVER_DIR=%~dp0brain"
-echo [1/6] Ensuring Brain database is initialized...
+echo [1/5] Ensuring Brain database is initialized...
 cd /d "%SERVER_DIR%"
 if not exist "db_setup.py" (
     echo [ERROR] Could not find brain\db_setup.py from %~dp0.
-    goto END
+    goto END_FAIL
 )
 "%PYEXE%" %PYEXE_ARGS% db_setup.py
 if %errorlevel% NEQ 0 (
     echo [ERROR] Failed to initialize database. Check Python installation and brain\db_setup.py.
-    goto END
+    goto END_FAIL
 )
 
 cd /d "%~dp0"
-echo [2/6] Syncing logs and regenerating resume...
-if not exist "brain\sync_all.ps1" (
-    echo [ERROR] Could not find brain\sync_all.ps1 from %~dp0.
-    goto END
-)
-powershell -ExecutionPolicy Bypass -File brain\sync_all.ps1
-
-if %errorlevel% NEQ 0 (
-    echo [ERROR] Failed to sync logs or regenerate resume.
-    goto END
-)
-
-
-echo [3/6] Building dashboard UI (if available)...
-set "REBUILD_DIR=%~dp0dashboard_rebuild"
-set "DIST_DIR=%SERVER_DIR%\static\dist"
+echo [2/5] Checking dashboard UI build...
 
 rem Allow skipping UI build (useful when you just want the server up fast)
 if /I "%SKIP_UI_BUILD%"=="1" (
     echo [INFO] SKIP_UI_BUILD=1 - skipping UI build.
-) else if exist "%REBUILD_DIR%\package.json" (
-    rem Always run the PowerShell build path; npm can be exposed as npm.ps1 even when cmd cannot resolve it.
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%REBUILD_DIR%\build-and-sync.ps1"
-    if errorlevel 1 (
-        echo [ERROR] UI build failed.
-        goto END
-    )
-    if not exist "%DIST_DIR%\index.html" (
-        echo [ERROR] UI build finished but %DIST_DIR%\index.html is missing.
-        goto END
-    )
-    echo [INFO] UI build completed.
 ) else (
-    echo [WARN] dashboard_rebuild not found at %REBUILD_DIR% - skipping UI build.
+    set "UI_BUILD_STATE="
+    if /I "%FORCE_UI_BUILD%"=="1" (
+        set "UI_BUILD_STATE=forced"
+    ) else (
+        for /f %%R in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$dist = [System.IO.Path]::GetFullPath('%DIST_INDEX%'); $root = [System.IO.Path]::GetFullPath('%REBUILD_DIR%'); $files = @(); if (Test-Path $root) { $clientDir = Join-Path $root 'client'; if (Test-Path $clientDir) { $files += Get-ChildItem $clientDir -Recurse -File -ErrorAction SilentlyContinue }; foreach ($name in 'package.json','package-lock.json','vite.config.ts','build.ts','build-and-sync.ps1') { $candidate = Join-Path $root $name; if (Test-Path $candidate) { $files += Get-Item $candidate } } }; if (-not (Test-Path $dist)) { 'missing' } elseif (-not $files -or $files.Count -eq 0) { 'current' } else { $distTime = (Get-Item $dist).LastWriteTimeUtc; $newest = $files | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1; if ($newest.LastWriteTimeUtc -gt $distTime) { 'stale' } else { 'current' } }"') do (
+            set "UI_BUILD_STATE=%%R"
+        )
+    )
+
+    if /I "!UI_BUILD_STATE!"=="forced" (
+        echo [INFO] FORCE_UI_BUILD=1 - rebuilding dashboard UI.
+    ) else if /I "!UI_BUILD_STATE!"=="missing" (
+        echo [INFO] Dashboard UI build output is missing - rebuilding.
+    ) else if /I "!UI_BUILD_STATE!"=="stale" (
+        echo [INFO] Dashboard UI source is newer than the build output - rebuilding.
+    ) else (
+        echo [INFO] Dashboard UI build is current - skipping rebuild.
+    )
+
+    if /I "!UI_BUILD_STATE!"=="forced" (
+        call :BUILD_UI
+        if errorlevel 1 goto END_FAIL
+    ) else if /I "!UI_BUILD_STATE!"=="missing" (
+        call :BUILD_UI
+        if errorlevel 1 goto END_FAIL
+    ) else if /I "!UI_BUILD_STATE!"=="stale" (
+        call :BUILD_UI
+        if errorlevel 1 goto END_FAIL
+    )
 )
 
-echo [4/6] Starting dashboard server (window titled 'PT Study Brain Dashboard')...
+if not exist "%DIST_INDEX%" (
+    echo [WARN] Frontend build output is missing at %DIST_INDEX%.
+    echo        Flask will still start, but the dashboard UI will not render until you build it.
+)
+
+echo [3/5] Starting dashboard server (window titled 'PT Study Brain Dashboard')...
 if not exist "%SERVER_DIR%\dashboard_web.py" (
     echo [ERROR] Could not find brain\dashboard_web.py from %~dp0.
-    goto END
-)
-
-rem Check if Frontend Build exists (expects /static/dist/assets/index-*.js)
-set "HAS_DASH_UI=0"
-for /f %%F in ('dir /b "%DIST_DIR%\assets\index-*.js" 2^>nul') do (
-    set "HAS_DASH_UI=1"
-)
-if "%HAS_DASH_UI%"=="0" (
-    echo [WARN] Frontend build missing in %DIST_DIR%.
-    echo         Dashboard will still start; build the UI when convenient:
-    echo         npm run build in dashboard_rebuild\ (outputs directly to brain\static\dist)
+    goto END_FAIL
 )
 
 start "PT Study Brain Dashboard" cmd /k "cd /d "%SERVER_DIR%" && "%PYEXE%" %PYEXE_ARGS% dashboard_web.py"
 if errorlevel 1 (
     echo [ERROR] Failed to launch dashboard server.
-    goto END
+    goto END_FAIL
 )
 
-echo [5/6] Giving the server a few seconds to start...
-timeout /t 5 /nobreak >nul
+echo [4/5] Waiting for dashboard readiness...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$deadline = (Get-Date).AddSeconds(%READINESS_TIMEOUT%); while ((Get-Date) -lt $deadline) { try { $resp = Invoke-WebRequest -UseBasicParsing -Uri '%HEALTH_URL%' -TimeoutSec 2; if ($resp.StatusCode -eq 200) { exit 0 } } catch { } Start-Sleep -Seconds 1 }; exit 1"
+if errorlevel 1 (
+    echo [ERROR] Dashboard did not become ready within %READINESS_TIMEOUT% seconds.
+    echo         Check the 'PT Study Brain Dashboard' window for startup errors.
+    goto END_FAIL
+)
 
-:OPEN_BROWSER
-echo Opening dashboard in browser...
-start "" http://127.0.0.1:5000/brain
+echo [5/5] Opening dashboard in browser...
+start "" "%DASHBOARD_URL%"
 
-:END
+:END_SUCCESS
 echo Done. Leave the 'PT Study Brain Dashboard' window open while you use the site.
 endlocal
+goto :EOF
+
+:END_FAIL
+echo Startup failed.
+endlocal
+goto :EOF
+
+:BUILD_UI
+if not exist "%REBUILD_DIR%\package.json" (
+    echo [ERROR] Could not find dashboard_rebuild\package.json from %~dp0.
+    exit /b 1
+)
+rem Always run the PowerShell build path; npm can be exposed as npm.ps1 even when cmd cannot resolve it.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REBUILD_DIR%\build-and-sync.ps1"
+if errorlevel 1 (
+    echo [ERROR] UI build failed.
+    exit /b 1
+)
+if not exist "%DIST_INDEX%" (
+    echo [ERROR] UI build finished but %DIST_INDEX% is missing.
+    exit /b 1
+)
+echo [INFO] UI build completed.
+exit /b 0

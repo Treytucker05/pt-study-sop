@@ -55,6 +55,7 @@ from dashboard.api_tutor_utils import (
     _strip_wikilink,
     _wikilink,
     _resolve_class_label,
+    _study_notes_base_path,
     _PRIME_DISALLOWED_ASSESSMENT_KEYS,
 )
 
@@ -825,12 +826,12 @@ def send_turn(session_id: str):
             if map_of_contents:
                 objective_ids = map_of_contents.get("objective_ids") or []
                 objective_lines = "\n".join(
-                    f"- {_wikilink(str(oid))}"
+                    f"- [[Learning Objectives & To Do#{str(oid).strip()}|{str(oid).strip()}]]"
                     for oid in objective_ids
                     if str(oid or "").strip()
                 )
                 if not objective_lines:
-                    objective_lines = "- [[OBJ-UNMAPPED]]"
+                    objective_lines = "- (no mapped objectives yet)"
                 system_prompt += (
                     "\n\n## Map of Contents Context\n"
                     f"- Module: {map_of_contents.get('module_name') or 'General Module'}\n"
@@ -860,7 +861,7 @@ def send_turn(session_id: str):
                         "where to re-save the Map of Contents.\n"
                         '1. Ask: "Your Map of Contents file was removed. '
                         "Where should I save your learning objectives? "
-                        'Example: Study Notes/Movement Science/Construct 2/Hip and Pelvis"\n'
+                        'Example: Courses/Neuroscience/Week 9"\n'
                         "2. Once the student provides a folder, call `save_learning_objectives` "
                         "with the existing objectives and the new `save_folder`.\n"
                         "3. If the student says skip or default, call `save_learning_objectives` "
@@ -881,7 +882,7 @@ def send_turn(session_id: str):
                         '5. Ask for confirmation: "Are these objectives correct? [Approve / Edit / Skip]"\n'
                         "6. After approval, ask where to save in Obsidian: "
                         '"What folder should I save these to? Example: '
-                        'Study Notes/Movement Science/Construct 2/Hip and Pelvis"\n'
+                        'Courses/Neuroscience/Week 9"\n'
                         "7. **IMPORTANT**: Once approved AND folder confirmed, call `save_learning_objectives`. "
                         'Pass `objectives` (array with `id` like "OBJ-1" and `description`) '
                         "and `save_folder` (the vault path the student provided). "
@@ -928,14 +929,15 @@ def send_turn(session_id: str):
             if objective_scope == "module_all":
                 system_prompt += "- Use module-level big-picture orientation first, then ask learner to choose one focus objective.\n"
             else:
+                focus_code = _strip_wikilink(focus_objective_id)
                 focus_link = (
-                    _wikilink(_strip_wikilink(focus_objective_id))
-                    if focus_objective_id
+                    f"[[Learning Objectives & To Do#{focus_code}|{focus_code}]]"
+                    if focus_code
                     else ""
                 )
                 system_prompt += (
                     "- Stay on one focus objective for this turn.\n"
-                    f"- Focus objective: {focus_link or '[[OBJ-UNMAPPED]]'}\n"
+                    f"- Focus objective: {focus_link or 'None selected'}\n"
                 )
             if selected_material_count > 0:
                 selected_list = "\n".join(
@@ -1966,7 +1968,12 @@ def advance_block(session_id: str):
             from brain.vault_artifact_router import execute_vault_artifact
 
             vault = ObsidianVault()
-            course_folder = f"Study Notes/{course_label}/{module_name}"
+            course_folder = _study_notes_base_path(
+                course_label=course_label,
+                module_or_week=module_name,
+                subtopic=module_name,
+                strict=True,
+            )
             result = execute_vault_artifact(
                 vault,
                 {

@@ -180,6 +180,86 @@ def _resolve_learning_objectives_for_scope(
 _VAULT_OBJ_BOLD_RE = re.compile(
     r"^\s*[-*]\s+\*\*\s*(OBJ-\S+)\s*(?:--|—|-)\s*(.+?)\*\*\s*$"
 )
+_VAULT_OBJ_HEADING_RE = re.compile(
+    r"^\s{0,3}#{3,6}\s+(OBJ-\S+)\s*(?:--|—|-)\s+(.+?)\s*$"
+)
+
+
+def _normalize_objective_group_name(value: Optional[str]) -> Optional[str]:
+    clean = str(value or "").strip()
+    return clean or None
+
+
+def _find_existing_learning_objective_row(
+    cur: sqlite3.Cursor,
+    *,
+    course_id: int,
+    lo_code: str,
+    module_id: Optional[int] = None,
+    group_name: Optional[str] = None,
+):
+    normalized_group = _normalize_objective_group_name(group_name)
+    if module_id is not None:
+        cur.execute(
+            """
+            SELECT id, module_id, group_name, managed_by_tutor
+            FROM learning_objectives
+            WHERE course_id = ? AND lo_code = ? AND module_id = ?
+            ORDER BY id ASC
+            LIMIT 1
+            """,
+            (course_id, lo_code, module_id),
+        )
+        row = cur.fetchone()
+        if row:
+            return row
+
+    if normalized_group:
+        if module_id is not None:
+            cur.execute(
+                """
+                SELECT id, module_id, group_name, managed_by_tutor
+                FROM learning_objectives
+                WHERE course_id = ?
+                  AND lo_code = ?
+                  AND module_id IS NULL
+                  AND COALESCE(group_name, '') = ?
+                ORDER BY id ASC
+                LIMIT 1
+                """,
+                (course_id, lo_code, normalized_group),
+            )
+        else:
+            cur.execute(
+                """
+                SELECT id, module_id, group_name, managed_by_tutor
+                FROM learning_objectives
+                WHERE course_id = ?
+                  AND lo_code = ?
+                  AND COALESCE(group_name, '') = ?
+                ORDER BY id ASC
+                LIMIT 1
+                """,
+                (course_id, lo_code, normalized_group),
+            )
+        row = cur.fetchone()
+        if row:
+            return row
+
+    cur.execute(
+        """
+        SELECT id, module_id, group_name, managed_by_tutor
+        FROM learning_objectives
+        WHERE course_id = ?
+          AND lo_code = ?
+          AND module_id IS NULL
+          AND COALESCE(group_name, '') = ''
+        ORDER BY id ASC
+        LIMIT 1
+        """,
+        (course_id, lo_code),
+    )
+    return cur.fetchone()
 
 
 def _try_import_objectives_from_vault(
@@ -217,7 +297,7 @@ def _try_import_objectives_from_vault(
         return []
     content: str = result["content"]
 
-    # --- 3. Parse objectives from two formats ---
+    # --- 3. Parse objectives from supported vault formats ---
     parsed: list[tuple[str, str]] = []  # (lo_code, title)
 
     for line in content.splitlines():
@@ -226,7 +306,17 @@ def _try_import_objectives_from_vault(
         if m:
             parsed.append((m.group(1).strip(), m.group(2).strip().rstrip(".")))
             continue
-        # Format B: 1. [[OBJ-1]] Description text (TUTOR_PAGE_SYNC block)
+        # Format B: ### OBJ-1 — Description text
+        m_heading = _VAULT_OBJ_HEADING_RE.match(line)
+        if m_heading:
+            parsed.append(
+                (
+                    m_heading.group(1).strip(),
+                    m_heading.group(2).strip().rstrip("."),
+                )
+            )
+            continue
+        # Format C: 1. [[OBJ-1]] Description text (legacy TUTOR_PAGE_SYNC block)
         m2 = _MAP_OF_CONTENTS_OBJECTIVE_PATTERN_NEW.match(line)
         if m2:
             parsed.append((m2.group(1).strip(), m2.group(2).strip()))
@@ -235,7 +325,7 @@ def _try_import_objectives_from_vault(
         return []
 
     # --- 4. Upsert into learning_objectives table ---
-    group_name = str(module_name or "").strip() or None
+    group_name = _normalize_objective_group_name(module_name)
     now = datetime.now().isoformat()
     conn = get_connection()
     imported: list[dict[str, str]] = []
@@ -246,16 +336,26 @@ def _try_import_objectives_from_vault(
             if not title:
                 title = lo_code
 
-            cur.execute(
-                "SELECT id FROM learning_objectives WHERE course_id = ? AND lo_code = ?",
-                (course_id, lo_code),
+            existing = _find_existing_learning_objective_row(
+                cur,
+                course_id=course_id,
+                lo_code=lo_code,
+                module_id=module_id,
+                group_name=group_name,
             )
-            existing = cur.fetchone()
             if existing:
                 lo_id = int(existing[0] if isinstance(existing, (tuple, list)) else existing["id"])
                 cur.execute(
-                    "UPDATE learning_objectives SET title = ?, group_name = COALESCE(?, group_name), managed_by_tutor = 1, updated_at = ? WHERE id = ?",
-                    (title, group_name, now, lo_id),
+                    """
+                    UPDATE learning_objectives
+                    SET title = ?,
+                        module_id = COALESCE(module_id, ?),
+                        group_name = COALESCE(?, group_name),
+                        managed_by_tutor = 1,
+                        updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (title, module_id, group_name, now, lo_id),
                 )
             else:
                 cur.execute(
@@ -925,16 +1025,21 @@ def _ensure_moc_context(
         map_of_contents_path = f"{clean}/_Map of Contents.md"
         learning_objectives_path = f"{clean}/Learning Objectives & To Do.md"
     else:
-        map_of_contents_path = _canonical_moc_path(
-            course_label=derived_course,
-            module_or_week=derived_module_name,
-            subtopic=derived_subtopic,
-        )
-        learning_objectives_path = _canonical_learning_objectives_page_path(
-            course_label=derived_course,
-            module_or_week=derived_module_name,
-            subtopic=derived_subtopic,
-        )
+        try:
+            map_of_contents_path = _canonical_moc_path(
+                course_label=derived_course,
+                module_or_week=derived_module_name,
+                subtopic=derived_subtopic,
+                strict=True,
+            )
+            learning_objectives_path = _canonical_learning_objectives_page_path(
+                course_label=derived_course,
+                module_or_week=derived_module_name,
+                subtopic=derived_subtopic,
+                strict=True,
+            )
+        except ValueError as exc:
+            return None, str(exc)
 
     objectives = _resolve_learning_objectives_for_scope(
         course_id=course_id,
@@ -944,14 +1049,13 @@ def _ensure_moc_context(
     )
 
     if not objectives:
-        fallback_title = derived_module_name or topic.strip()
-        objectives = [
-            {
-                "objective_id": "OBJ-UNMAPPED",
-                "title": fallback_title,
-                "status": "active",
-            }
-        ]
+        return (
+            None,
+            (
+                f"No mapped learning objectives were found for course '{derived_course}' "
+                f"and unit '{derived_module_name}'."
+            ),
+        )
 
     existing_lo = _mp("_vault_read_note")(learning_objectives_path)
     existing_lo_frontmatter = _parse_frontmatter_dict(
@@ -1010,8 +1114,6 @@ def _ensure_moc_context(
         objective_links + title_links + material_links,
         max_items=80,
     )
-    if not reference_targets:
-        reference_targets = ["[[OBJ-UNMAPPED]]"]
     follow_up_targets = _derive_follow_up_targets_from_objectives(
         objectives,
         focus_objective_id=focus_objective_id,
@@ -1521,7 +1623,7 @@ def save_learning_objectives_from_tool(
 
     Called by the ``save_learning_objectives`` tutor tool.  Steps:
       1. Read the tutor session to get ``course_id`` and ``content_filter_json``.
-      2. INSERT each objective into ``learning_objectives`` (upsert on lo_code+course_id).
+      2. INSERT each objective into ``learning_objectives`` for the mapped unit scope.
       3. Rebuild the Map of Contents note via ``_ensure_moc_context(force_refresh=True)``.
       4. Update ``content_filter_json`` so ``_session_has_real_objectives()`` returns True.
 
@@ -1560,9 +1662,8 @@ def save_learning_objectives_from_tool(
         topic = session_row.get("topic") or module_name or ""
         source_ids = content_filter.get("source_ids") or []
 
-        # --- 2. INSERT into learning_objectives (upsert by course_id+lo_code) ---
-        # group_name = session topic so objectives are grouped by topic in Map of Contents
-        group_name = str(topic or "").strip() or None
+        # --- 2. INSERT into learning_objectives for the mapped study unit ---
+        group_name = _normalize_objective_group_name(module_name or topic)
         now = datetime.now().isoformat()
         inserted_codes: list[str] = []
         cur = conn.cursor()
@@ -1572,21 +1673,27 @@ def save_learning_objectives_from_tool(
             if not title:
                 title = lo_code
 
-            cur.execute(
-                """
-                SELECT id, managed_by_tutor
-                FROM learning_objectives
-                WHERE course_id = ? AND lo_code = ?
-                """,
-                (course_id, lo_code),
+            existing = _find_existing_learning_objective_row(
+                cur,
+                course_id=course_id,
+                lo_code=lo_code,
+                module_id=module_id,
+                group_name=group_name,
             )
-            existing = cur.fetchone()
             if existing:
                 lo_id = int(_row_value(existing, "id", 0))
                 cur.execute(
-                    "UPDATE learning_objectives SET title = ?, group_name = COALESCE(?, group_name), updated_at = ? WHERE id = ?",
+                    """
+                    UPDATE learning_objectives
+                    SET title = ?,
+                        module_id = COALESCE(module_id, ?),
+                        group_name = COALESCE(?, group_name),
+                        updated_at = ?
+                    WHERE id = ?
+                    """,
                     (
                         title,
+                        module_id,
                         group_name,
                         now,
                         lo_id,
@@ -1730,14 +1837,25 @@ def _finalize_structured_notes_for_session(
     _course_code = _mapped_course.code.replace("_", " ") if _mapped_course else ""
     _unit_type = _mapped_course.unit_type if _mapped_course else ""
 
-    study_base = _study_notes_base_path(
-        course_label=course_label,
-        module_or_week=module_name,
-        subtopic=subtopic,
-    )
     now = datetime.now()
     date_key = now.strftime("%Y-%m-%d")
     topic_fragment = _sanitize_note_fragment(topic, fallback="Tutor_Session")
+    try:
+        study_base = _study_notes_base_path(
+            course_label=course_label,
+            module_or_week=module_name,
+            subtopic=subtopic,
+            strict=True,
+        )
+    except ValueError as exc:
+        has_explicit_unit_scope = bool(
+            session_row.get("course_id")
+            or content_filter.get("vault_folder")
+            or content_filter.get("module_name")
+        )
+        if has_explicit_unit_scope:
+            return None, [str(exc)]
+        study_base = f"Study Sessions/Structured/{date_key}_{topic_fragment}"
     session_path = f"{study_base}/Sessions/{date_key}_Session_{topic_fragment}.md"
 
     rendered_notes: dict[str, str] = {}

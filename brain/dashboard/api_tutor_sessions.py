@@ -321,8 +321,17 @@ def create_session():
             )
 
     vault_folder = str((content_filter or {}).get("vault_folder") or "").strip() or None
+    should_sync_map_of_contents = bool(
+        preflight_bundle is not None
+        or vault_folder
+        or module_name
+        or learning_objectives
+    )
     if preflight_bundle is not None:
         map_of_contents_ctx = preflight_bundle.get("map_of_contents")
+        map_of_contents_error = None
+    elif not should_sync_map_of_contents:
+        map_of_contents_ctx = None
         map_of_contents_error = None
     else:
         map_of_contents_ctx, map_of_contents_error = _mp("_ensure_moc_context")(
@@ -1188,7 +1197,7 @@ def get_session_summary(session_id: str):
                     )
                 else:
                     wrap_path = (
-                        f"Study Notes/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
+                        f"Study Sessions/Wraps/_Session_Wrap_{now.strftime('%Y-%m-%d')}.md"
                     )
 
                 save_res = _mp("_vault_save_note")(wrap_path, wrap_result["content"])

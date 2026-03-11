@@ -2058,3 +2058,62 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
   - `codex mcp list` -> config loaded successfully after removing global `developer_instructions`
   - `git diff --check -- AGENTS.md docs/root/AGENT_SETUP.md docs/root/TUTOR_TODO.md docs/root/AGENT_BOARD.md conductor/tracks/GENERAL/log.md` -> no whitespace errors; only CRLF normalization warnings on existing markdown files
+
+## 2026-03-10 — Codex Playwright MCP startup timeout
+
+- Added `startup_timeout_sec = 90` to `[mcp_servers.playwright]` in `C:\Users\treyt\.codex\config.toml` so the Playwright MCP client no longer uses the default 10-second startup window.
+- Confirmed no other active Playwright MCP runtime definition is shadowing that global Codex config entry.
+- Validation:
+  - `pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_agent_config.ps1 -Mode Check` -> `RESULT PASS`
+
+## 2026-03-10 — User-directed collaboration rule
+
+- Updated repo `AGENTS.md` to make user intent the default collaboration stance for this project.
+- Added an explicit rule to start from the user's stated objective and preferred operating model, surface tradeoffs without substituting agent preference, and avoid assuming the user does not understand the tradeoffs they are choosing.
+
+## 2026-03-10 — User-intent fallback reinforcement
+
+- Tightened the repo `AGENTS.md` rule to explicitly say "default to user intent first" and added a concrete first-response example block.
+- Mirrored the same fallback stance into `C:\Users\treyt\.codex\AGENTS.md` and `C:\Users\treyt\.claude\CLAUDE.md` without turning those files into second policy surfaces.
+- Updated `docs/root/AGENT_SETUP.md` so the precedence doc now states that global fallbacks should still start from user intent first when they apply.
+
+## 2026-03-10 — User-intent inheritance cleanup
+
+- Updated all repo-local Claude agent headers under `.claude/agents/` to explicitly inherit the root `AGENTS.md` user-directed collaboration rule and first-response pattern.
+- Added the collaboration default to `C:\Users\treyt\.claude\rules\agents.md` as the shared home-directory inheritance source.
+- Trimmed duplicate fallback wording from `C:\Users\treyt\.claude\CLAUDE.md` and kept repo compatibility shims pointing back to root `AGENTS.md`.
+
+## 2026-03-10 — Dashboard startup refresh
+
+- Removed the outdated `brain\sync_all.ps1` step from `Start_Dashboard.bat` so normal dashboard launch no longer runs legacy log-ingest and resume-generation work.
+- Kept the canonical Flask startup path on port `5000`, preserved the force-kill behavior for any existing `5000` listener, and improved console output to show killed and remaining PIDs.
+- Changed frontend startup behavior to rebuild only when `brain\static\dist\index.html` is missing or the `dashboard_rebuild` source/config files are newer than the current build output.
+- Replaced the fixed startup sleep with readiness polling against `http://127.0.0.1:5000/api/brain/status` before opening `/brain`.
+
+## 2026-03-10 â€” Vault stabilization + health truthfulness
+
+- Rebuilt the Obsidian course-map contract around the live `Treys School` vault: canonical root `Courses`, deprecated root `Study Notes`, live course aliases, and special-unit support for current exam/quiz folders.
+- Updated the Obsidian config/API surfaces so the frontend now receives `vaultName: Treys School`, `canonicalRoot`, and `deprecatedRoots` instead of stale defaults.
+- Reworked `brain/obsidian_index.py` and `brain/vault_janitor.py` so scan accounting is file-based, wikilinks resolve through aliases and strip heading/block anchors before note resolution, and duplicate note names no longer collapse the scan count.
+- Replaced the janitor's one-size-fits-all frontmatter policy with family-aware rules for course command-center notes, concept notes, and session notes while excluding system/template files from the main health score.
+- Hardened Tutor routing to fail clearly on unmapped course/unit writes and removed the `OBJ-UNMAPPED` fallback behavior from week-page sync and follow-up target generation.
+- Rebuilt the Vault Health frontend to explain `Full Scan`, `Batch Enrich`, `Fix`, and `AI Fix`, show scan accounting and vault-contract context, group issues by note, and distinguish real breakage from advisory/system noise.
+- Added focused regression coverage for the new course-map, path-generation, and janitor contracts.
+- Validation:
+  - `pytest brain/tests/test_course_map.py brain/tests/test_path_generation.py brain/tests/test_vault_janitor.py -q`
+  - `python -c "import sys; sys.path.insert(0, 'brain'); from vault_janitor import scan_vault; ..."` -> live scan returned `74` markdown files, `55` health-scanned notes, `19` excluded system files, and reconciled counts
+  - `npm run build` in `dashboard_rebuild/`
+
+## 2026-03-11 — Vault remediation completion pass
+
+- Moved the fake `Courses/General Class/Test Module/Reconcile One` and `Reconcile Two` artifacts into `Study System/Sandbox/Reconcile/` so `Courses/` now contains only real active units.
+- Resynced the live `Courses/*/<unit>` command-center pages so active units now have canonical `Learning Objectives & To Do.md` and `_Map of Contents.md` pairs without `General Class`, `OBJ-UNMAPPED`, or raw `[[OBJ-*]]` placeholders.
+- Added the missing embryology, anatomy, and pathology concept notes needed by the active neuroscience week pages and normalized concept-note aliases so the remaining concept warnings are advisory-only.
+- Hardened Tutor vault objective persistence so shared `OBJ-*` codes are reconciled by mapped module scope instead of colliding across units, restored generic Tutor session finalization without weakening strict course routing, and added regression coverage in `brain/tests/test_tutor_audit_remediation.py`.
+- Updated `brain/tests/test_vault_janitor_live.py` into a manual-only live harness so the default `pytest brain/tests/` suite reflects the supported automated checks instead of trying to collect a vault-mutating script.
+- Validation:
+  - `pytest brain/tests/ -q` -> `1066 passed`
+  - `cmd /c Start_Dashboard.bat` -> readiness succeeded on `http://127.0.0.1:5000`
+  - `GET /api/brain/status` -> `{"ok": true, ...}`
+  - `GET /api/janitor/health` -> `102` markdown files, `78` health-scanned notes, `24` excluded system files, `31` advisory-only files, `33` affected notes, `46` issue instances, `0` routing-drift issues
+  - Playwright verification of `http://127.0.0.1:5000/vault-health` confirmed the new explanation panel, scan accounting, canonical/deprecated root display, and note-grouped issue list render in the app

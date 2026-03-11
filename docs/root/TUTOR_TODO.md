@@ -18,6 +18,55 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
 
 ## Active Sprint 2026-03-06
 
+### Sprint 20: Vault Stabilization + Health Truthfulness (2026-03-10)
+- [x] Claim scope: live Obsidian vault contract + truthful Vault Health diagnostics
+  - `docs/root/TUTOR_TODO.md`
+  - `brain/course_map.py`
+  - `brain/data/vault_courses.yaml`
+  - `brain/obsidian_index.py`
+  - `brain/vault_janitor.py`
+  - `brain/dashboard/api_janitor.py`
+  - `brain/dashboard/api_adapter.py`
+  - `brain/dashboard/api_tutor_sessions.py`
+  - `brain/dashboard/api_tutor_utils.py`
+  - `brain/dashboard/api_tutor_vault.py`
+  - `dashboard_rebuild/client/src/api.types.ts`
+  - `dashboard_rebuild/client/src/pages/vault-health.tsx`
+  - `brain/tests/test_course_map.py`
+  - `brain/tests/test_path_generation.py`
+  - `brain/tests/test_tutor_audit_remediation.py`
+  - `brain/tests/test_vault_janitor.py`
+  - `brain/tests/test_vault_janitor_live.py`
+  - `conductor/tracks/GENERAL/log.md`
+- [x] Phase 0: align the live vault contract, plugin assumptions, and course-map naming with the audited `Treys School` structure.
+- [x] Phase 1: make wikilink resolution truthful across aliases, heading/block-style targets, and scan accounting.
+- [x] Phase 2: replace one-size-fits-all janitor rules with family-aware validation and issue-class summaries.
+- [x] Phase 3: harden Tutor routing so unmapped vault writes fail clearly instead of producing `OBJ-UNMAPPED` drift.
+- [x] Phase 4: rebuild the Vault Health UI so it explains actions, shows where issues live, and separates real breakage from advisory/system noise.
+- [x] Phase 5: validate backend/frontend behavior, update the log, and record follow-up content gaps separately from system drift.
+  - Follow-up remediation completed on 2026-03-11:
+    - moved fake `Courses/General Class/Test Module/*` reconcile artifacts into `Study System/Sandbox/Reconcile/`
+    - resynced active `Courses/*/<unit>` command-center pages so live units no longer carry `General Class`, `OBJ-UNMAPPED`, or raw `[[OBJ-*]]` drift
+    - seeded the missing embryology, anatomy, and pathology concept notes required by the live week pages
+    - fixed Tutor objective import/save scoping so shared `OBJ-*` codes reconcile by mapped module instead of colliding across course units
+    - updated the manual janitor live harness so it stays out of the automated `pytest brain/tests/` suite
+  - Validation:
+    - `pytest brain/tests/test_course_map.py brain/tests/test_path_generation.py brain/tests/test_vault_janitor.py -q`
+    - `python -c "import sys; sys.path.insert(0, 'brain'); from vault_janitor import scan_vault; ..."`
+    - `npm run build`
+    - `pytest brain/tests/ -q` -> `1066 passed`
+    - `cmd /c Start_Dashboard.bat`
+    - `GET /api/janitor/health` -> `102` markdown files, `78` health-scanned notes, `24` excluded system files, `31` advisory-only files, `33` affected notes, `46` issue instances, `0` routing-drift issues
+
+### Sprint 19: Dashboard Startup Refresh (2026-03-10)
+- [x] Claim scope: canonical dashboard startup cleanup
+  - `Start_Dashboard.bat`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks/GENERAL/log.md`
+- [x] Phase 0: audit the current startup path against the live backend/frontend runtime.
+- [x] Phase 1: remove outdated sync/resume startup work and switch the frontend build step to stale-aware behavior.
+- [x] Phase 2: replace the fake startup sleep with readiness polling, validate the launch flow, and document the change.
+
 ### Sprint 18: Agent Instruction Hierarchy Cleanup (2026-03-09)
 - [x] Claim scope: instruction authority simplification
   - `AGENTS.md`

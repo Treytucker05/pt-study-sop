@@ -253,6 +253,7 @@ def _create_tutor_session(
     session_id: str,
     course_id: int,
     topic: str,
+    content_filter: dict[str, object] | None = None,
 ) -> None:
     conn.execute(
         """
@@ -260,7 +261,13 @@ def _create_tutor_session(
             (session_id, course_id, topic, content_filter_json, status, turn_count, started_at)
         VALUES (?, ?, ?, ?, 'active', 0, ?)
         """,
-        (session_id, course_id, topic, json.dumps({}), datetime.now().isoformat()),
+        (
+            session_id,
+            course_id,
+            topic,
+            json.dumps(content_filter or {}),
+            datetime.now().isoformat(),
+        ),
     )
     conn.commit()
 
@@ -268,7 +275,7 @@ def _create_tutor_session(
 def _moc_stub(objective_ids: list[str], *, topic: str):
     return (
         {
-            "path": f"Study Notes/Test/{topic}/_Map of Contents.md",
+            "path": f"Courses/Test/{topic}/_Map of Contents.md",
             "status": "saved",
             "module_name": "Test Module",
             "course_name": "Test Course",
@@ -303,6 +310,129 @@ def _save_objectives(
     )
 
 
+def test_save_learning_objectives_scopes_same_lo_code_by_module(client, monkeypatch):
+    conn = _open_db()
+    try:
+        course_id = _create_course(conn, "Tutor Scoped Objectives")
+        _create_tutor_session(
+            conn,
+            session_id="scoped-week-7",
+            course_id=course_id,
+            topic="Week 7 Topic",
+            content_filter={"module_name": "Week 7 - Development of Nervous System"},
+        )
+        _create_tutor_session(
+            conn,
+            session_id="scoped-week-8",
+            course_id=course_id,
+            topic="Week 8 Topic",
+            content_filter={"module_name": "Week 8 - Brain Structure"},
+        )
+
+        objectives = [{"id": "OBJ-1", "description": "Explain the scoped objective"}]
+        first = _save_objectives(
+            monkeypatch,
+            session_id="scoped-week-7",
+            topic="Week 7 Topic",
+            objectives=objectives,
+        )
+        second = _save_objectives(
+            monkeypatch,
+            session_id="scoped-week-8",
+            topic="Week 8 Topic",
+            objectives=objectives,
+        )
+
+        assert first["success"] is True
+        assert second["success"] is True
+
+        rows = conn.execute(
+            """
+            SELECT lo_code, group_name
+            FROM learning_objectives
+            WHERE course_id = ? AND lo_code = ?
+            ORDER BY id ASC
+            """,
+            (course_id, "OBJ-1"),
+        ).fetchall()
+
+        assert [row["group_name"] for row in rows] == [
+            "Week 7 - Development of Nervous System",
+            "Week 8 - Brain Structure",
+        ]
+    finally:
+        conn.close()
+
+
+def test_vault_import_accepts_heading_objectives_and_preserves_other_groups(monkeypatch):
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    conn = _open_db()
+    try:
+        course_id = _create_course(conn, "Tutor Vault Import Scope")
+        conn.execute(
+            """
+            INSERT INTO learning_objectives
+                (course_id, module_id, lo_code, title, status, group_name, managed_by_tutor, created_at, updated_at)
+            VALUES (?, ?, ?, ?, 'active', ?, 1, ?, ?)
+            """,
+            (
+                course_id,
+                None,
+                "OBJ-1",
+                "Legacy week 7 objective",
+                "Week 7 - Development of Nervous System",
+                datetime.now().isoformat(),
+                datetime.now().isoformat(),
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    monkeypatch.setattr(
+        _api_tutor_mod,
+        "_vault_read_note",
+        lambda _path: {
+            "success": True,
+            "content": "\n".join(
+                [
+                    "### OBJ-1 — Describe basal ganglia direct pathway",
+                    "#### OBJ-2A — Differentiate direct vs indirect pathway",
+                ]
+            ),
+        },
+    )
+
+    imported = _api_tutor_mod._try_import_objectives_from_vault(
+        course_id=course_id,
+        module_id=None,
+        module_name="Week 9 - Basal Ganglia",
+        vault_folder="Courses/Neuroscience/Week 9",
+    )
+
+    assert [item["objective_id"] for item in imported] == ["OBJ-1", "OBJ-2A"]
+
+    conn = _open_db()
+    try:
+        rows = conn.execute(
+            """
+            SELECT lo_code, title, group_name
+            FROM learning_objectives
+            WHERE course_id = ?
+            ORDER BY id ASC
+            """,
+            (course_id,),
+        ).fetchall()
+        assert [(row["lo_code"], row["group_name"]) for row in rows] == [
+            ("OBJ-1", "Week 7 - Development of Nervous System"),
+            ("OBJ-1", "Week 9 - Basal Ganglia"),
+            ("OBJ-2A", "Week 9 - Basal Ganglia"),
+        ]
+        assert rows[1]["title"] == "Describe basal ganglia direct pathway"
+    finally:
+        conn.close()
+
+
 def test_delete_session_preserves_shared_learning_objective(client, monkeypatch):
     conn = _open_db()
     try:
@@ -312,12 +442,14 @@ def test_delete_session_preserves_shared_learning_objective(client, monkeypatch)
             session_id="shared-session-1",
             course_id=course_id,
             topic="Hip Shared One",
+            content_filter={"module_name": "Hip Shared Module"},
         )
         _create_tutor_session(
             conn,
             session_id="shared-session-2",
             course_id=course_id,
             topic="Hip Shared Two",
+            content_filter={"module_name": "Hip Shared Module"},
         )
 
         objectives = [{"id": "OBJ-HIP", "description": "Explain hip stabilizers"}]
@@ -426,12 +558,14 @@ def test_delete_session_removes_tutor_managed_objective_after_last_link(
             session_id="last-link-session-1",
             course_id=course_id,
             topic="Last Link One",
+            content_filter={"module_name": "Last Link Module"},
         )
         _create_tutor_session(
             conn,
             session_id="last-link-session-2",
             course_id=course_id,
             topic="Last Link Two",
+            content_filter={"module_name": "Last Link Module"},
         )
 
         objectives = [{"id": "OBJ-LAST", "description": "Explain talocrural arthrokinematics"}]
@@ -530,12 +664,14 @@ def test_reconcile_obsidian_state_unlinks_without_deleting_shared_objective(
             session_id="reconcile-session-1",
             course_id=course_id,
             topic="Reconcile One",
+            content_filter={"module_name": "Reconcile Module"},
         )
         _create_tutor_session(
             conn,
             session_id="reconcile-session-2",
             course_id=course_id,
             topic="Reconcile Two",
+            content_filter={"module_name": "Reconcile Module"},
         )
 
         objectives = [{"id": "OBJ-RECON", "description": "Explain lumbar opening patterns"}]

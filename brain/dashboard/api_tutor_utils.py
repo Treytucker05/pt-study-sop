@@ -50,7 +50,7 @@ _MAP_OF_CONTENTS_OBJECTIVE_PATTERN_OLD = re.compile(
     re.IGNORECASE,
 )
 _MAP_OF_CONTENTS_OBJECTIVE_PATTERN_NEW = re.compile(
-    r"^\s*\d+\.\s+\[\[(OBJ-[^\]]+)\]\]\s+(.+)$",
+    r"^\s*\d+\.\s+\[\[(?:Learning Objectives & To Do#)?(OBJ-[^|\]#]+)(?:\|[^\]]+)?\]\]\s+(.+)$",
 )
 _TUTOR_NOTE_SCHEMA_PATH = (
     Path(__file__).resolve().parents[2]
@@ -322,7 +322,16 @@ def _resolve_class_label(course_id: Optional[int]) -> str:
                 raw_name = row["name"]  # sqlite3.Row path
             except Exception:
                 raw_name = row[0] if isinstance(row, tuple) and row else None
-            return _sanitize_path_segment(raw_name, fallback=f"Class {course_id}")
+            clean_name = _sanitize_path_segment(raw_name, fallback=f"Class {course_id}")
+            try:
+                from course_map import load_course_map
+
+                course = load_course_map().resolve_course(clean_name)
+                if course is not None:
+                    return course.label
+            except Exception:
+                pass
+            return clean_name
     except Exception:
         pass
     finally:
@@ -333,14 +342,25 @@ def _resolve_class_label(course_id: Optional[int]) -> str:
 
 
 def _study_notes_base_path(
-    *, course_label: str, module_or_week: str, subtopic: str
+    *,
+    course_label: str = "",
+    module_or_week: str = "",
+    subtopic: str = "",
+    strict: bool = False,
 ) -> str:
     from course_map import load_course_map
 
     course_map = load_course_map()
+    if not any([course_label, module_or_week, subtopic]):
+        return course_map.vault_root
+
     course = course_map.resolve_course(course_label)
 
     if course is None:
+        if strict:
+            raise ValueError(
+                f"Unmapped vault course '{course_label}' for module '{module_or_week}'."
+            )
         safe_course = _sanitize_path_segment(course_label, fallback="General Class")
         safe_module = _sanitize_path_segment(module_or_week, fallback="General Module")
         safe_subtopic = _sanitize_path_segment(subtopic, fallback="General Topic")
@@ -350,6 +370,10 @@ def _study_notes_base_path(
         return f"{course_map.vault_root}/{safe_course}/{safe_module}/{safe_subtopic}"
 
     unit = course.resolve_unit(module_or_week)
+    if strict and unit is None and module_or_week:
+        raise ValueError(
+            f"Unmapped vault unit '{module_or_week}' for course '{course.label}'."
+        )
     unit_folder = (
         unit.name
         if unit
@@ -365,16 +389,27 @@ def _study_notes_base_path(
 
 
 def _canonical_moc_path(
-    *, course_label: str, module_or_week: str, subtopic: str
+    *,
+    course_label: str,
+    module_or_week: str,
+    subtopic: str,
+    strict: bool = False,
 ) -> str:
-    return f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/_Map of Contents.md"
+    return (
+        f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic, strict=strict)}/"
+        "_Map of Contents.md"
+    )
 
 
 def _canonical_learning_objectives_page_path(
-    *, course_label: str, module_or_week: str, subtopic: str
+    *,
+    course_label: str,
+    module_or_week: str,
+    subtopic: str,
+    strict: bool = False,
 ) -> str:
     return (
-        f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic)}/"
+        f"{_study_notes_base_path(course_label=course_label, module_or_week=module_or_week, subtopic=subtopic, strict=strict)}/"
         "Learning Objectives & To Do.md"
     )
 
@@ -511,7 +546,7 @@ def _derive_follow_up_targets_from_objectives(
             add(obj_id)
 
     if not ordered_ids:
-        return ["[[OBJ-UNMAPPED]]"]
+        return []
     return [f"[[{obj_id}]]" for obj_id in ordered_ids[:max_items]]
 
 
