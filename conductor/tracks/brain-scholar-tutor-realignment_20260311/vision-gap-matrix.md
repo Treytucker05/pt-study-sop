@@ -1,5 +1,7 @@
 # Vision Gap Matrix
 
+> Historical track note: this file is execution history only. Current product/page ownership lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+
 **Track:** `brain-scholar-tutor-realignment_20260311`
 
 | Capability | Intended capability | Evidence in archive / legacy docs | Current active docs | Current runtime / UI state | Disposition | Severity | Notes |

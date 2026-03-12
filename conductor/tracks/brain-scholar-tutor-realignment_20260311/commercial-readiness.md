@@ -1,5 +1,7 @@
 # Commercial Readiness: Brain / Scholar / Tutor Realignment
 
+> Historical track note: this file is execution history only. Current product/page ownership lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+
 **Track:** `brain-scholar-tutor-realignment_20260311`  
 **Date:** 2026-03-11  
 **Status:** Implemented MVP commercial foundation

@@ -3,21 +3,30 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getCoursePaths } from "@/config/courses";
 
-export type MainMode = "canvas" | "edit" | "graph" | "table" | "data" | "profile";
+export type MainMode = "home" | "profile";
 
-const VALID_MAIN_MODES: MainMode[] = ["canvas", "edit", "graph", "table", "data", "profile"];
+const VALID_MAIN_MODES: MainMode[] = ["home", "profile"];
 
-function loadState<T>(key: string, fallback: T): T {
+function loadState<T>(key: string, fallback: T, validate: (value: unknown) => value is T): T {
   try {
     const saved = localStorage.getItem(key);
-    if (saved !== null) return JSON.parse(saved) as T;
+    if (saved === null) return fallback;
+    const parsed = JSON.parse(saved);
+    return validate(parsed) ? parsed : fallback;
   } catch { /* corrupted — fall through */ }
   return fallback;
 }
 
-function loadBrainMainMode(fallback: MainMode = "canvas"): MainMode {
-  const raw = loadState<MainMode>("brain-main-mode", fallback);
-  return VALID_MAIN_MODES.includes(raw) ? raw : fallback;
+function isValidMainMode(value: unknown): value is MainMode {
+  return typeof value === "string" && VALID_MAIN_MODES.includes(value as MainMode);
+}
+
+function loadBooleanState(key: string, fallback: boolean): boolean {
+  return loadState<boolean>(key, fallback, (value): value is boolean => typeof value === "boolean");
+}
+
+function loadBrainMainMode(fallback: MainMode = "home"): MainMode {
+  return loadState("brain-main-mode", fallback, isValidMainMode);
 }
 
 function saveState(key: string, value: unknown) {
@@ -29,7 +38,7 @@ function saveState(key: string, value: unknown) {
 export function useBrainWorkspace() {
   const queryClient = useQueryClient();
   const [mainMode, setMainModeRaw] = useState<MainMode>(
-    () => loadBrainMainMode("canvas")
+    () => loadBrainMainMode("home")
   );
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState("");
@@ -38,11 +47,11 @@ export function useBrainWorkspace() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [sidebarExpanded, setSidebarExpandedRaw] = useState<boolean>(
-    () => loadState<boolean>("brain-sidebar-expanded", true)
+    () => loadBooleanState("brain-sidebar-expanded", true)
   );
 
   const [chatExpanded, setChatExpandedRaw] = useState<boolean>(
-    () => loadState<boolean>("brain-chat-expanded", true)
+    () => loadBooleanState("brain-chat-expanded", true)
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
 

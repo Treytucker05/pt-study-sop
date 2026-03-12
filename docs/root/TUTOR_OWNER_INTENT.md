@@ -6,11 +6,12 @@ Purpose: keep owner-specific Tutor lock-ins in one place so sessions do not drif
 
 Overall system canon now lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
 This file is a supporting owner-intent reference, not the top-level Study Buddy truth path.
+If this file conflicts with the canon on subsystem roles or ownership, the canon wins.
 
 ## Core Intent
 - Keep Trey’s Study System visibly organized around **Brain / Scholar / Tutor** rather than around a pile of pages.
 - Make **Brain** identify how the learner learns best using evidence-backed profile claims and visible hybrid learner archetypes.
-- Make **Scholar** a direct research partner that can ask the learner focused questions, research the web, and improve the system without becoming the teaching engine.
+- Make **Scholar** a system-facing research partner that can ask the learner focused questions when needed, research the web, and improve the system without becoming the teaching engine.
 - Build a tutor that teaches any learner at any level and makes learning stick long-term.
 - Prioritize durable learning and transfer, not short-term performance optics.
 
@@ -51,7 +52,7 @@ This file is a supporting owner-intent reference, not the top-level Study Buddy 
 - 2026-03-11:
   - Locked the 3-part system identity: Brain = learner-model engine, Scholar = research partner, Tutor = live teacher.
   - Locked Brain learner archetypes as visible, challengeable, evidence-backed summaries rather than hidden labels.
-  - Locked Scholar as learner-facing first with focused questions + cited web research, while keeping Tutor as the only live teaching engine.
+  - Locked Scholar as system-facing first with focused questions + cited web research when blocked, while keeping Tutor as the only live teaching engine.
   - Locked the no-direct-Brain-to-Tutor rule; live adaptation must pass through Scholar.
 - 2026-03-06:
   - Clarified that Library controls content scope while SOP controls teaching behavior.

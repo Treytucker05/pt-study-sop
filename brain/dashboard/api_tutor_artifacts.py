@@ -61,6 +61,19 @@ def _mp(name: str):
             return fn
     return globals()[name]
 
+
+def _session_not_active_response(session: dict):
+    return (
+        jsonify(
+            {
+                "error": "Tutor session is not active",
+                "code": "SESSION_NOT_ACTIVE",
+                "status": session.get("status"),
+            }
+        ),
+        400,
+    )
+
 # ---------------------------------------------------------------------------
 # Route handlers -- registered on tutor_bp from the main api_tutor module.
 # ---------------------------------------------------------------------------
@@ -102,6 +115,9 @@ def create_artifact(session_id: str):
     if not session:
         conn.close()
         return jsonify({"error": "Session not found"}), 404
+    if str(session.get("status") or "").lower() != "active":
+        conn.close()
+        return _session_not_active_response(session)
 
     active_stage = _active_control_stage_for_session(conn, session)
     if active_stage == "PRIME":
@@ -236,6 +252,9 @@ def finalize_session_artifacts(session_id: str):
     if not session:
         conn.close()
         return jsonify({"error": "Session not found"}), 404
+    if str(session.get("status") or "").lower() != "active":
+        conn.close()
+        return _session_not_active_response(session)
 
     result, errors = _mp("_finalize_structured_notes_for_session")(
         conn=conn,
@@ -266,6 +285,9 @@ def sync_session_graph(session_id: str):
     if not session:
         conn.close()
         return jsonify({"error": "Session not found"}), 404
+    if str(session.get("status") or "").lower() != "active":
+        conn.close()
+        return _session_not_active_response(session)
 
     paths: list[str] = []
     if isinstance(raw_paths, list):
@@ -374,6 +396,21 @@ def delete_artifacts(session_id: str):
             details={"reason": "session_not_found"},
         )
         return jsonify({"error": "Session not found"}), 404
+    if str(session.get("status") or "").lower() != "active":
+        conn.close()
+        requested_count = len(indexes)
+        _record_tutor_delete_telemetry(
+            request_id=request_id,
+            route=route_name,
+            session_id=session_id,
+            status="session_not_active",
+            requested_count=requested_count,
+            deleted_count=0,
+            skipped_count=requested_count,
+            failed_count=1,
+            details={"reason": "session_not_active", "session_status": session.get("status")},
+        )
+        return _session_not_active_response(session)
 
     existing = session.get("artifacts_json")
     artifacts = []

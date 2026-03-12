@@ -469,6 +469,22 @@ def test_create_session_requires_preflight_for_objective_scoped_setup(client):
     assert body["code"] == "PREFLIGHT_REQUIRED"
 
 
+def test_create_session_rejects_non_integer_course_id(client):
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Bad course id",
+            "course_id": "abc",
+        },
+    )
+
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["error"] == "course_id must be an integer"
+    assert body["code"] == "INVALID_COURSE_ID"
+
+
 def test_preflight_requires_study_unit(client):
     conn = sqlite3.connect(config.DB_PATH)
     conn.execute(
@@ -629,6 +645,22 @@ def test_create_session_uses_preflight_bundle(client):
     assert saved_filter["page_sync_result"]["ok"] is True
     assert saved_filter["follow_up_targets"][0] == "[[OBJ-6]]"
     assert "[[OBJ-UNMAPPED]]" not in saved_filter["follow_up_targets"]
+
+
+def test_create_session_rejects_non_object_content_filter(client):
+    resp = client.post(
+        "/api/tutor/session",
+        json={
+            "mode": "Core",
+            "topic": "Bad content filter",
+            "content_filter": "strict",
+        },
+    )
+
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert body["error"] == "content_filter must be an object"
+    assert body["code"] == "INVALID_CONTENT_FILTER"
 
 
 def test_send_turn_scales_material_retrieval_to_selected_materials(client, monkeypatch):

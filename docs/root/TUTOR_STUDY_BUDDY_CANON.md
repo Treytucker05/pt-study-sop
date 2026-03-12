@@ -1,143 +1,129 @@
-# Trey’s Study System / Study Buddy Canon
+# Trey's Study System Canon
 
-Date: 2026-03-11
+Date: 2026-03-12
 Status: Canonical product contract
-Purpose: define one durable source of truth for what Trey’s Study System is, what each subsystem does, and which documents win when the repo tells overlapping stories.
+Authority: this is the only file allowed to define product/page ownership, route hierarchy, subsystem roles, and source-of-truth order for this repo. If another active doc disagrees, that other doc is wrong and must be corrected or archived.
 
 ## 1. Core Identity
 
-Trey’s Study System is a 3-part learning system:
+Trey's Study System is a personal 3-part study program for one student:
 
-- **Brain** = learner-model engine
-- **Scholar** = direct research partner
-- **Tutor** = live protocol-led teacher
+- **Brain** is the home/dashboard and learner-model engine.
+- **Scholar** is the system-facing investigation and improvement console.
+- **Tutor** is the live study workspace and protocol executor.
 
-It is not a generic chatbot. It is a learning system built to:
+The system is not a generic chatbot, not an institution platform, and not a set of equal peer pages fighting for center stage. Brain is where the learner lands. Tutor is where the learner does the work. Scholar is where the system investigates friction and proposes improvements. Support pages exist to feed those three roles rather than compete with them.
 
-- identify how the learner learns best
-- teach from the learner's selected class materials
-- follow explicit teaching rules and chain contracts
-- create and route outputs into the right systems
-- preserve session continuity across Library, Brain, Obsidian, and Dashboard
-- improve over time through the Brain -> Scholar -> Tutor loop
+## 2. Ownership Matrix
 
-The implementation surface for live teaching is the native Tutor runtime in the PT Study OS. Brain and Scholar are separate systems with separate responsibilities.
+| Surface | Owns | Must not own |
+|---|---|---|
+| **Brain** | Home/dashboard, learner profile, telemetry view, mastery view, next-action framing, support-system launch points | Public notes/canvas/graph/table/data workspace sprawl, direct pedagogy control |
+| **Tutor** | Session launch, active study workspace, notes, canvas, graph, table, artifacts, restore/resume, structured teaching flow | Generic dashboard behavior, unbounded off-protocol teaching |
+| **Scholar** | Investigations, focused learner questions when blocked, findings, bounded strategy proposals, system research | Live course teaching, direct Tutor control, replacing Brain home |
+| **Library** | What Tutor can teach through material scope and content readiness | How Tutor teaches |
+| **SOP library** | How Tutor teaches through methods, chains, stages, and rules | Course-content truth |
+| **Calendar** | Time pressure, obligations, study timing support | Tutor pedagogy or learner-model authority |
+| **Mastery** | Detailed skill-state support view fed by Brain/Tutor evidence | Independent teaching flow |
+| **Methods** | Support view into Tutor's method and chain configuration | Product ownership or learner home |
+| **Vault Health** | Support diagnostics for the Obsidian knowledge base | Tutor teaching behavior |
+| **Operator-only tools** | Raw data/admin/debug surfaces | Public shell ownership |
 
-## 2. System Role Map
+Locked rule: Brain public modes are `home` and `profile`. Tutor owns the public study-workspace tools previously scattered across Brain.
 
-| System | Primary role | Controls | Must not control |
-|---|---|---|---|
-| **Library** | Content source | What Tutor teaches by scoping the learner's loaded class materials | How Tutor teaches |
-| **SOP library** | Pedagogy source | Rules, methods, chains, control-plane stages, and teaching contracts | Course-content truth |
-| **Brain** | Learner-model engine | Telemetry, learner-profile claims, mastery/fit signals, evidence snapshots, visible archetypes | Direct pedagogy policy for Tutor |
-| **Scholar** | Research and strategy layer | Learner questions, cited research, investigations, bounded strategy recommendations, improvement proposals | Live course-content teaching or unbounded Tutor control |
-| **Tutor** | Live study operator | Executes the selected chain against the active learner scope and active strategy envelope | Freeform teaching outside chain/rule boundaries |
-| **Obsidian** | Primary note home | The learner's durable notes and linked study artifacts | Tutor pedagogy decisions |
-| **Anki** | Reinforcement channel | Spaced-repetition execution for approved/drafted cards | Mandatory output for every session |
-| **Dashboard / Shell** | Control surface | Setup, monitoring, review, and operational access to the system | Canonical pedagogy or product vision |
+## 3. Route Matrix
 
-## 3. Locked Operating Laws
+| Route | Public meaning | Notes |
+|---|---|---|
+| `/` | Brain home | Canonical landing route |
+| `/brain` | Brain home alias | Compatibility alias; same home surface as `/` |
+| `/tutor` | Tutor live workspace | Primary execution surface |
+| `/scholar` | Scholar investigation console | System-facing research surface |
+| `/calendar` | Calendar support system | Support page |
+| `/library` | Library support system | Support page |
+| `/mastery` | Mastery support system | Support page |
+| `/methods` | Methods support system | Support page |
+| `/vault-health` | Vault Health support system | Support page |
 
-These statements are non-negotiable unless the owner changes this document directly.
+There is no separate peer Dashboard route in the product. Dashboard behavior lives inside Brain.
 
-1. **Library controls what Tutor teaches.**
-   Tutor teaches from the class material the learner loads and selects in the Library/Tutor flow.
+## 4. Locked Operating Laws
 
-2. **Rules and chains control how Tutor teaches.**
-   Tutor does not teach in a generic style. The active chain, its methods, and the global rule layer determine manner, pacing, and allowed moves.
+1. **Tutor is the bread-and-butter product value.** When priorities conflict, optimize the live study experience first.
+2. **Brain is the canonical home surface.** The learner starts there and sees what needs attention there.
+3. **Brain-owned Library controls what Tutor teaches.** Tutor teaches from the learner's selected class materials.
+4. **SOP controls how Tutor teaches.** Tutor is protocol-led, not generic-chat-led.
+5. **Tutor owns the active study workspace.** Notes, canvas, graph, table, and session artifacts belong under Tutor's public workflow.
+6. **Brain stays evidence-first.** Learner-model claims must be grounded in telemetry, evidence, confidence, freshness, and contradiction handling.
+7. **Scholar is system-facing.** Scholar investigates, questions, researches, and proposes; it does not become the course-content teacher.
+8. **Brain does not directly steer Tutor.** Any live adaptation must pass through bounded Scholar mediation with provenance.
+9. **Obsidian is the durable notes home.** Tutor outputs must remain compatible with Obsidian behavior.
+10. **Archive is evidence, not authority.** Historical docs may explain how the system evolved, but they do not override this file.
 
-3. **Tutor is protocol-led, not chat-led.**
-   Conversation serves the method. Method does not disappear just because the interaction is natural.
-
-4. **Brain is the learner-model engine.**
-   Brain stores telemetry, outcomes, artifact metadata, retrieval indexes, and fit signals. Brain also builds learner-profile claims and visible hybrid archetypes that explain how the learner appears to learn best.
-
-5. **Brain must stay evidence-first.**
-   Brain claims must be grounded in telemetry, evidence, confidence, freshness, and contradiction handling. Brain is not allowed to invent certainty.
-
-6. **Scholar is a direct research partner.**
-   Scholar interprets Brain evidence, asks the learner focused questions when needed, performs cited research, and produces findings, strategy proposals, and approved-change recommendations.
-
-7. **Scholar does not teach course content.**
-   Scholar may explain what it is researching and why, but Tutor remains the only live teaching engine for course content.
-
-8. **Brain does not directly steer Tutor.**
-   Any adaptation to Tutor must pass through a bounded Scholar strategy envelope with explicit provenance.
-
-9. **Obsidian is the primary notes home.**
-   Tutor-created notes belong in Obsidian as the learner's durable note system. Tutor note rules must stay compatible with Obsidian graph behavior.
-
-10. **Anki generation is chain-conditional.**
-    Tutor only generates flashcards when the active chain or method contract calls for it, such as `M-OVR-002`. Anki is not a mandatory default output.
-
-11. **Archive is evidence, not authority.**
-    Historical docs, stale docs, and completed tracks can explain how the system evolved, but they do not override this canon or the SOP canon.
-
-## 4. Session Contract
+## 5. Session Contract
 
 ### Startup
 
-- The learner selects course/material scope in Tutor, synced with Library state.
-- The learner selects or accepts a chain.
-- The learner selects supporting settings like vault save target and mode.
-- Tutor receives the relevant learner evidence snapshot from Brain and any bounded active strategy snapshot from Scholar.
-- Tutor preserves this setup cleanly across launch, resume, and Library -> Tutor handoff.
+- The learner selects course/material scope in Tutor, synchronized with Library state.
+- Tutor carries the active scope, chain/method context, and any bounded Scholar strategy snapshot into the session.
+- Launch, resume, and Brain/Library handoff must preserve that context intentionally.
 
 ### Teaching Loop
 
 - Tutor executes the selected chain block-by-block.
-- The active SOP method and control-plane stage define what Tutor is allowed to do next.
+- The active SOP method and control-plane stage define what Tutor may do next.
 - Tutor uses selected class materials first and supporting Obsidian context second.
-- Tutor does not improvise outside the rule/chain contract just to feel conversational.
-- Brain observes what happens. Scholar does not replace Tutor inside the teaching loop.
+- Brain observes and records. Scholar does not replace Tutor inside the teaching loop.
 
 ### Artifacts And Writes
 
-- Obsidian note artifacts follow the canonical note rules and should include wiki links at generation time.
-- Anki card drafts are produced only when the chain/method requires them.
-- Brain stores session telemetry, artifact metadata, and system-facing outputs needed for analysis and continuation.
+- Tutor owns live notes, canvas/graph/table work surfaces, and session artifacts.
+- Durable note artifacts land in Obsidian using the note rules.
+- Brain stores telemetry, evidence, mastery effects, and continuation data.
+- Anki output is chain-conditional, not mandatory.
 
 ### Improvement Loop
 
-- Brain accumulates evidence about what happened and updates the learner model.
-- Scholar reads that evidence, asks the learner clarifying questions when needed, researches patterns, and drafts bounded findings or proposals.
-- Approved changes then flow back into SOP, product docs, or implementation work.
-- Tutor does not receive direct pedagogy policy from Brain outside the approved Brain -> Scholar -> Tutor contract.
+- Brain accumulates evidence.
+- Scholar interprets that evidence, asks focused questions when needed, performs cited research, and drafts bounded findings or proposals.
+- Approved improvements flow back into SOP, product docs, or implementation work.
 
-## 5. Precedence Order
+## 6. Document Authority Matrix
 
-When two sources disagree, use this order:
+| Class | Meaning | Allowed examples |
+|---|---|---|
+| **Canonical** | May define product/page ownership and precedence | `docs/root/TUTOR_STUDY_BUDDY_CANON.md` |
+| **Execution-only** | May track tasks, status, and implementation sequencing, but may not redefine the product | `docs/root/TUTOR_TODO.md`, `conductor/tracks.md`, `conductor/workflow.md`, track plans/logs |
+| **Reference-only** | May explain architecture, runtime, runbooks, or UX, but must defer to the canon for ownership and product meaning | `docs/root/PROJECT_ARCHITECTURE.md`, `docs/root/GUIDE_ARCHITECTURE.md`, `docs/root/GUIDE_DEV.md`, frontend READMEs |
+| **Historical** | Preserved evidence of prior states; never authority | `docs/archive/**`, superseded track artifacts, stale audits |
+
+## 7. Precedence Order
+
+When sources disagree, use this order:
 
 1. **Master product canon**
    `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
-
 2. **SOP pedagogy canon**
-   `sop/library/17-control-plane.md`
-   `sop/library/01-core-rules.md`
-   `sop/library/05-session-flow.md`  
-   plus active method and chain YAML
-
-3. **Supporting active docs**
-   architecture guides, runtime wiring docs, owner intent notes, README files, conductor product docs
-
+   `sop/library/17-control-plane.md`, `sop/library/01-core-rules.md`, `sop/library/05-session-flow.md`, and active method/chain YAML
+3. **Execution-only and reference docs**
+   `docs/root/TUTOR_TODO.md`, architecture guides, runbooks, READMEs, conductor execution docs
 4. **Tracks and archive**
    historical evidence only
 
-## 6. What This System Is Not
+## 8. What This System Is Not
 
-- Not a generic study chatbot that can freely change teaching style mid-session.
-- Not a system where Brain directly rewrites Tutor behavior on its own.
-- Not a system where Scholar is only a passive auditor with no learner-facing research role.
-- Not a system where Obsidian is just an export target; it is the primary note home.
-- Not a system where Anki is always produced; Anki is conditional on chain design.
-- Not a system where `sop/library/` and the `/library` page mean the same thing.
+- Not a generic study chatbot that freely changes teaching style mid-session.
+- Not a product where Brain directly rewrites Tutor behavior.
+- Not a product where Scholar is the live course-content teacher.
+- Not a public shell where raw data/admin tools compete with learner-facing surfaces.
+- Not a product with a separate peer Dashboard page.
+- Not an institution/admin platform pretending to be the core product.
 
-## 7. Canonical Reference Map
+## 9. Canonical Reference Map
 
-- **Overall product contract:** this file
+- **Product and ownership authority:** this file
 - **Pedagogy and control plane:** `sop/library/`
-- **Owner-specific lock-ins:** `docs/root/TUTOR_OWNER_INTENT.md`
+- **Execution queue:** `docs/root/TUTOR_TODO.md`
 - **Technical architecture:** `docs/root/PROJECT_ARCHITECTURE.md`
-- **Tutor runtime wiring:** `docs/root/GUIDE_TUTOR_FLOW.md`
-- **Current roadmap of record:** `conductor/tracks/brain-scholar-tutor-realignment_20260311/`
-- **Evidence and historical audit:** `docs/root/TUTOR_STUDY_BUDDY_AUDIT_2026-03-06.md`
+- **Run/build/test workflow:** `docs/root/GUIDE_DEV.md`
+- **Historical evidence:** `docs/archive/` and completed track artifacts

@@ -2136,7 +2136,11 @@ def _delete_artifact_obsidian_files(artifact: dict) -> list[str]:
 
 
 def _cascade_delete_obsidian_files(session: dict) -> list[str]:
-    """Delete all Obsidian files owned by a session (Map of Contents + artifacts).
+    """Delete only session-owned Obsidian artifacts for a session.
+
+    Canonical course-unit hub pages such as ``_Map of Contents.md`` and
+    ``Learning Objectives & To Do.md`` are shared study infrastructure, not
+    disposable session artifacts, so they must survive session cleanup.
 
     Called from ``delete_session`` using a pre-delete session snapshot.
     Returns a list of vault-relative paths that were successfully deleted.
@@ -2144,26 +2148,7 @@ def _cascade_delete_obsidian_files(session: dict) -> list[str]:
     log = logging.getLogger(__name__)
     deleted: list[str] = []
 
-    # 1. Map of Contents file
-    cf_raw = session.get("content_filter_json")
-    if cf_raw:
-        try:
-            cf = json.loads(cf_raw) if isinstance(cf_raw, str) else cf_raw
-        except (json.JSONDecodeError, TypeError):
-            cf = None
-        if isinstance(cf, dict):
-            ns = cf.get("map_of_contents") or {}
-            ns_path = ns.get("path")
-            if ns_path:
-                res = _mp("_vault_delete_note")(ns_path)
-                if res.get("success"):
-                    deleted.append(ns_path)
-                else:
-                    log.debug(
-                        "cascade_delete: Map of Contents not found at %s", ns_path
-                    )
-
-    # 2. Artifact files (session notes + concept notes)
+    # Artifact files (session notes + concept notes)
     art_raw = session.get("artifacts_json")
     if art_raw:
         try:
@@ -2188,18 +2173,6 @@ def _cascade_delete_obsidian_files(session: dict) -> list[str]:
 def _expected_obsidian_paths_for_session(session: dict) -> list[str]:
     """Return the set of Obsidian note paths we expect to own for this session."""
     expected: set[str] = set()
-
-    cf_raw = session.get("content_filter_json")
-    if cf_raw:
-        try:
-            cf = json.loads(cf_raw) if isinstance(cf_raw, str) else cf_raw
-        except (json.JSONDecodeError, TypeError):
-            cf = None
-        if isinstance(cf, dict):
-            ns = cf.get("map_of_contents") or {}
-            ns_path = str(ns.get("path") or "").strip()
-            if ns_path:
-                expected.add(ns_path)
 
     art_raw = session.get("artifacts_json")
     if art_raw:

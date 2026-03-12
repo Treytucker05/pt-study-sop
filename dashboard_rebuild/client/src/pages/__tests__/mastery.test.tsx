@@ -60,6 +60,11 @@ describe("MasteryPage", () => {
     const { default: MasteryPage } = await import("@/pages/mastery");
     renderWithClient(<MasteryPage />);
 
+    expect(
+      await screen.findByText(
+        "Support system for Brain's mastery map, locked-skill diagnostics, and intervention signals.",
+      ),
+    ).toBeInTheDocument();
     expect(await screen.findByText("Anatomy Basics")).toBeInTheDocument();
     expect(screen.getByText("Neuroanatomy")).toBeInTheDocument();
     expect(screen.getByText("Cardiac Rehab")).toBeInTheDocument();

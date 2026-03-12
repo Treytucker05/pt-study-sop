@@ -181,7 +181,19 @@ def create_session():
         else data.get("course_id")
     )
     if course_id is not None:
-        ensure_course_in_wheel(int(course_id), active=True)
+        try:
+            course_id = int(course_id)
+        except (TypeError, ValueError):
+            return (
+                jsonify(
+                    {
+                        "error": "course_id must be an integer",
+                        "code": "INVALID_COURSE_ID",
+                    }
+                ),
+                400,
+            )
+        ensure_course_in_wheel(course_id, active=True)
     phase = data.get("phase", "first_pass")
     topic = (
         str(preflight_bundle.get("topic") or "")
@@ -194,6 +206,16 @@ def create_session():
         if preflight_bundle is not None
         else data.get("content_filter")
     )
+    if content_filter is not None and not isinstance(content_filter, dict):
+        return (
+            jsonify(
+                {
+                    "error": "content_filter must be an object",
+                    "code": "INVALID_CONTENT_FILTER",
+                }
+            ),
+            400,
+        )
     if isinstance(content_filter, dict):
         normalized_filter = dict(content_filter)
         normalized_filter["accuracy_profile"] = normalize_accuracy_profile(

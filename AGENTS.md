@@ -128,6 +128,12 @@ Rule: when someone says "library" in this repo, determine which of those two the
 7. For multi-step work, keep a task list and complete one step at a time.
 8. Use subagents for exploration, testing, and review when that reduces drift or keeps write scopes separate.
 9. After completing any task, recommend 2-3 concrete next steps as actionable options, not obligations.
+10. When there is a clear highest-leverage follow-up, explicitly label it as `Recommended next step` before listing other options.
+11. Do not make the user infer priority from an unordered option list when the agent can reasonably rank the choices.
+12. Treat a new user question, file path, or topic as a hard task-boundary reset unless the user explicitly says to continue the previous task too.
+13. When a hard task-boundary reset happens, cancel or ignore stale background work, pending subagent threads, queued waits, and previously suggested follow-ups from the old task.
+14. Do not resume an earlier recommendation or side quest after a topic switch unless the user explicitly re-requests it.
+15. For direct file/function/script questions, answer the question first and stay scoped to that artifact unless the user asks for broader cleanup or follow-on action.
 
 ## Critical Guardrails
 

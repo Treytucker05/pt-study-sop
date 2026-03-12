@@ -1370,6 +1370,11 @@ export interface TutorEmbedResult {
   embedded: number;
   skipped: number;
   total_chunks: number;
+  timed_out?: number;
+  provider?: string;
+  model?: string;
+  collection?: string;
+  auto_selected_provider?: boolean;
 }
 
 export interface TutorSyncPreviewPayload {
@@ -1670,10 +1675,23 @@ export interface TutorConfigCheck {
 }
 
 export interface TutorEmbedStatus {
-  materials: { id: number; title: string; source_path: string; chunk_count: number; embedded: number }[];
+  materials: {
+    id: number;
+    title: string;
+    source_path: string;
+    chunk_count: number;
+    embedded: number;
+    stale_chunk_count: number;
+    needs_reembed: boolean;
+  }[];
   total: number;
   embedded: number;
   pending: number;
+  stale: number;
+  provider?: string;
+  model?: string;
+  collection?: string;
+  auto_selected_provider?: boolean;
 }
 
 // ── Mastery Dashboard ───────────────────────────────────────────────────────

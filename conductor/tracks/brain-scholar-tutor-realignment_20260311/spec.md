@@ -1,5 +1,8 @@
 # Specification: Brain / Scholar / Tutor Realignment
 
+> Historical track artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+> This spec is preserved as implementation history and may contain superseded framing.
+
 **Track ID:** brain-scholar-tutor-realignment_20260311  
 **Type:** roadmap  
 **Created:** 2026-03-11  

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 const {
   getSessionMock,
@@ -13,6 +13,12 @@ const {
   getLearningObjectivesByCourseMock,
   getCurrentCourseMock,
   fetchCourseMapMock,
+  getObsidianConfigMock,
+  getObsidianVaultIndexMock,
+  getObsidianFileMock,
+  saveObsidianFileMock,
+  getObsidianFilesMock,
+  workspaceSurfaceMode,
 } = vi.hoisted(() => ({
   getSessionMock: vi.fn(),
   getMaterialsMock: vi.fn(),
@@ -23,6 +29,12 @@ const {
   getLearningObjectivesByCourseMock: vi.fn(),
   getCurrentCourseMock: vi.fn(),
   fetchCourseMapMock: vi.fn(),
+  getObsidianConfigMock: vi.fn(),
+  getObsidianVaultIndexMock: vi.fn(),
+  getObsidianFileMock: vi.fn(),
+  saveObsidianFileMock: vi.fn(),
+  getObsidianFilesMock: vi.fn(),
+  workspaceSurfaceMode: { useReal: false },
 }));
 
 vi.mock("@/components/layout", () => ({
@@ -53,6 +65,25 @@ vi.mock("@/components/TutorArtifacts", () => ({
   ),
 }));
 
+vi.mock("@excalidraw/excalidraw", () => ({
+  Excalidraw: () => <div data-testid="mock-excalidraw-canvas">mock excalidraw canvas</div>,
+  exportToBlob: vi.fn().mockResolvedValue(new Blob(["png"])),
+  convertToExcalidrawElements: (elements: unknown) => elements,
+}));
+
+vi.mock("@/components/TutorWorkspaceSurface", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/components/TutorWorkspaceSurface")>();
+  return {
+    TutorWorkspaceSurface: (props: ComponentProps<typeof actual.TutorWorkspaceSurface>) => {
+      if (workspaceSurfaceMode.useReal) {
+        const ActualSurface = actual.TutorWorkspaceSurface;
+        return <ActualSurface {...props} />;
+      }
+      return <div data-testid="tutor-workspace-surface">workspace tools</div>;
+    },
+  };
+});
+
 vi.mock("@/lib/api", () => ({
   api: {
     tutor: {
@@ -79,6 +110,11 @@ vi.mock("@/lib/api", () => ({
     },
     obsidian: {
       append: vi.fn(),
+      getConfig: getObsidianConfigMock,
+      getVaultIndex: getObsidianVaultIndexMock,
+      getFile: getObsidianFileMock,
+      saveFile: saveObsidianFileMock,
+      getFiles: getObsidianFilesMock,
     },
   },
   fetchCourseMap: fetchCourseMapMock,
@@ -126,6 +162,16 @@ describe("Tutor page restore", () => {
     getLearningObjectivesByCourseMock.mockResolvedValue([]);
     getCurrentCourseMock.mockResolvedValue({ currentCourse: null });
     fetchCourseMapMock.mockResolvedValue({ courses: [] });
+    getObsidianConfigMock.mockResolvedValue({ vaultName: "Treys School" });
+    getObsidianVaultIndexMock.mockResolvedValue({
+      paths: {
+        "Tutor Note": "Tutor Workspace/Tutor Note.md",
+      },
+    });
+    getObsidianFileMock.mockResolvedValue({ success: true, content: "# Tutor Note" });
+    saveObsidianFileMock.mockResolvedValue({ success: true, path: "Tutor Workspace/Tutor Note.md" });
+    getObsidianFilesMock.mockResolvedValue({ files: [] });
+    workspaceSurfaceMode.useReal = false;
   });
 
   it("preserves structured_notes artifacts when restoring an active session", async () => {
@@ -164,6 +210,66 @@ describe("Tutor page restore", () => {
         "structured_notes",
       );
     });
+  });
+
+  it("shows Brain-to-Tutor framing when no session is active", async () => {
+    renderTutor();
+
+    expect(await screen.findByText("BRAIN TO TUTOR LIVE SURFACE")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Brain's default live study surface for guided sessions, artifacts, and next-step handoff.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps Tutor as the live default and exposes workspace tools as a separate public surface", async () => {
+    renderTutor();
+
+    await screen.findByTestId("tutor-wizard");
+    fireEvent.click(screen.getByRole("button", { name: /chat/i }));
+    expect(await screen.findByText("READY TO RUN A STUDY SESSION")).toBeInTheDocument();
+    expect(screen.queryByTestId("tutor-workspace-surface")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /workspace/i }));
+    expect(await screen.findByTestId("tutor-workspace-surface")).toBeInTheDocument();
+    expect(screen.queryByText("READY TO RUN A STUDY SESSION")).not.toBeInTheDocument();
+  });
+
+  it("can host the real rehomed workspace surface without leaking Brain chrome", async () => {
+    workspaceSurfaceMode.useReal = true;
+
+    renderTutor();
+
+    await screen.findByTestId("tutor-wizard");
+    fireEvent.click(screen.getByRole("button", { name: /workspace/i }));
+
+    expect(await screen.findByTestId("tutor-workspace-surface")).toBeInTheDocument();
+    expect(screen.getByText("Quick vault picks")).toBeInTheDocument();
+    expect(screen.getByTestId("tutor-workspace-tab-canvas")).toBeInTheDocument();
+    expect(screen.queryByTestId("brain-home")).not.toBeInTheDocument();
+  });
+
+  it("shows the Brain handoff banner when launched from Brain", async () => {
+    sessionStorage.setItem(
+      "tutor.open_from_brain.v1",
+      JSON.stringify({
+        source: "brain-home",
+        itemId: "study-today",
+        title: "Keep your 5-day streak alive",
+        reason: "Reason: no study session has been logged today.",
+      }),
+    );
+
+    renderTutor();
+
+    expect(await screen.findByTestId("tutor-brain-handoff")).toHaveTextContent(
+      "Keep your 5-day streak alive",
+    );
+    expect(screen.getByTestId("tutor-brain-handoff")).toHaveTextContent(
+      "Reason: no study session has been logged today.",
+    );
+    expect(sessionStorage.getItem("tutor.open_from_brain.v1")).toBeNull();
   });
 
   it("uses library handoff state instead of stale wizard restore", async () => {

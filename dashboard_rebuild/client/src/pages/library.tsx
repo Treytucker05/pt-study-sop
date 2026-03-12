@@ -1,5 +1,5 @@
 import Layout from "@/components/layout";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactElement } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
@@ -9,6 +9,7 @@ import {
 import type {
   Material,
   MaterialContent,
+  TutorEmbedStatus,
   TutorSyncJobStatus,
   TutorContentSources,
   TutorSyncPreviewNode,
@@ -512,6 +513,10 @@ export default function Library() {
     queryFn: () => api.tutor.getMaterialContent(viewingMaterialId!),
     enabled: viewingMaterialId !== null,
   });
+  const { data: embedStatus } = useQuery<TutorEmbedStatus>({
+    queryKey: ["tutor-embed-status"],
+    queryFn: () => api.tutor.embedStatus(),
+  });
 
   const folderTree = useMemo(() => buildFolderTree(materials), [materials]);
   const folderItems = useMemo(() => flattenFolders(folderTree), [folderTree]);
@@ -1001,7 +1006,7 @@ export default function Library() {
   const renderSyncPreviewNode = (
     node: TutorSyncPreviewNode,
     depth = 0,
-  ): JSX.Element | null => {
+  ): ReactElement | null => {
     if (node.type === "file") {
       const isChecked = selectedSyncFiles.has(node.path);
       return (
@@ -1151,9 +1156,39 @@ export default function Library() {
     <Layout>
       <div className="space-y-3 h-full min-h-[72vh] flex flex-col">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className={ICON_MD} />
-            <h1 className={TEXT_PAGE_TITLE}>MATERIALS LIBRARY</h1>
+          <div className="flex items-start gap-2">
+            <BookOpen className={`${ICON_MD} mt-1`} />
+            <div>
+              <h1 className={TEXT_PAGE_TITLE}>MATERIALS LIBRARY</h1>
+              <p className="font-terminal text-xs text-muted-foreground">
+                Support system for Brain-owned study materials, Tutor scope, and clean handoff into live study.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Badge
+                  variant="outline"
+                  className={`${TEXT_BADGE} h-5 px-2`}
+                  data-testid="library-embed-provider"
+                >
+                  Tutor embeddings: {(embedStatus?.provider || "unknown").toUpperCase()} · {embedStatus?.model || "unknown"}
+                </Badge>
+                <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>
+                  {embedStatus?.embedded ?? 0}/{embedStatus?.total ?? 0} materials live
+                </Badge>
+                {(embedStatus?.stale ?? 0) > 0 ? (
+                  <Badge
+                    variant="outline"
+                    className={`${TEXT_BADGE} h-5 px-2 border-yellow-500/40 text-yellow-300`}
+                    data-testid="library-embed-stale"
+                  >
+                    {embedStatus?.stale} material{embedStatus?.stale === 1 ? "" : "s"} need re-embed
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>
+                    No stale embeddings
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className={`${TEXT_BADGE} h-5 px-2`}>

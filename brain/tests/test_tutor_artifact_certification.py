@@ -230,3 +230,31 @@ def test_note_card_and_structured_notes_persist_across_end_session(client, app, 
     store = app.config["TEST_OBSIDIAN_STORE"]
     assert finalize_data["session_path"] in store
     assert finalize_data["concept_paths"][0] in store
+
+
+def test_artifact_mutations_are_blocked_after_session_end(client):
+    tutor_sid = _create_tutor_session(client, topic="Ended Session Guardrail")
+
+    end_resp = client.post(f"/api/tutor/session/{tutor_sid}/end")
+    assert end_resp.status_code == 200
+
+    artifact_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/artifact",
+        json={"type": "note", "title": "Late Note", "content": "should fail"},
+    )
+    assert artifact_resp.status_code == 400
+    artifact_body = artifact_resp.get_json()
+    assert artifact_body["code"] == "SESSION_NOT_ACTIVE"
+
+    finalize_resp = client.post(
+        f"/api/tutor/session/{tutor_sid}/finalize",
+        json={"artifact": {"metadata": {}, "session": {}, "concepts": []}},
+    )
+    assert finalize_resp.status_code == 400
+    finalize_body = finalize_resp.get_json()
+    assert finalize_body["code"] == "SESSION_NOT_ACTIVE"
+
+    sync_resp = client.post(f"/api/tutor/session/{tutor_sid}/sync-graph", json={})
+    assert sync_resp.status_code == 400
+    sync_body = sync_resp.get_json()
+    assert sync_body["code"] == "SESSION_NOT_ACTIVE"

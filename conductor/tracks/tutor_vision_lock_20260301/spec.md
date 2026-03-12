@@ -11,7 +11,7 @@ Lock Tutor behavior to product vision by auditing startup, instructions, chains,
 
 ## Context
 
-The system has evolved quickly and behavior drift has accumulated. The immediate goal is to establish a single source of truth for intended Tutor behavior, then verify runtime alignment.
+The system has evolved quickly and behavior drift has accumulated. The immediate goal is to establish one intended-behavior baseline for Tutor, then verify runtime alignment.
 
 ## User Story
 

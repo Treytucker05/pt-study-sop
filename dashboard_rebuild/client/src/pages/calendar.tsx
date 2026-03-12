@@ -51,6 +51,15 @@ import { cn } from "@/lib/utils";
 
 type ViewMode = "month" | "week" | "day" | "tasks";
 
+type CalendarBrainLaunchContext = {
+  source?: string;
+  itemId?: string;
+  title?: string;
+  reason?: string;
+  dueDate?: string;
+  courseName?: string;
+};
+
 interface GoogleCalendarEvent {
   id: string;
   summary?: string;
@@ -383,6 +392,7 @@ export default function CalendarPage() {
   const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [brainLaunchContext, setBrainLaunchContext] = useState<CalendarBrainLaunchContext | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<LocalCalendarEvent | null>(null);
@@ -420,6 +430,24 @@ export default function CalendarPage() {
   const debugModals =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).has("debugModals");
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("calendar.open_from_brain.v1");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        setBrainLaunchContext(parsed as CalendarBrainLaunchContext);
+        if (typeof parsed.dueDate === "string" && parsed.dueDate.trim()) {
+          setCurrentDate(parseDateOnly(parsed.dueDate));
+          setViewMode("day");
+        }
+      }
+      sessionStorage.removeItem("calendar.open_from_brain.v1");
+    } catch {
+      // ignore sessionStorage failures
+    }
+  }, []);
 
   // Calendar Organization State
   const [pinnedCalendars, setPinnedCalendars] = useState<string[]>(() => {
@@ -1448,6 +1476,21 @@ export default function CalendarPage() {
             {/* Header */}
             <CardHeader className="border-b border-primary/30 p-4 flex flex-row justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
+                <div className="hidden xl:block pr-2 border-r border-primary/20">
+                  <div className="font-arcade text-xs text-primary">CALENDAR</div>
+                  <div className="font-terminal text-[11px] text-muted-foreground">
+                    Support system for schedule truth, deadlines, and Tutor-adjacent planning.
+                  </div>
+                  {brainLaunchContext?.title ? (
+                    <div
+                      data-testid="calendar-brain-handoff"
+                      className="mt-2 border border-primary/20 bg-primary/10 px-2 py-1.5"
+                    >
+                      <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
+                      <div className="font-terminal text-[11px] text-white">{brainLaunchContext.title}</div>
+                    </div>
+                  ) : null}
+                </div>
                 <Button size="sm" variant="outline" className="rounded-none border-primary text-primary hover:bg-primary hover:text-black font-arcade text-xs" onClick={goToToday} data-testid="button-today">TODAY</Button>
                 <div className="flex items-center gap-1">
                   <Button size="icon" variant="ghost" className="h-8 w-8 rounded-none hover:bg-primary/20" onClick={() => navigate('prev')} data-testid="button-prev"><ChevronLeft className="h-4 w-4" /></Button>

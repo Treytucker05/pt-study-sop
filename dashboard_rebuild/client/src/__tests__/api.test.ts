@@ -600,12 +600,22 @@ describe("api.tutor", () => {
   });
 
   it("triggerEmbed sends POST", async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({}));
-    await api.tutor.triggerEmbed({ course_id: 1 });
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        embedded: 1,
+        skipped: 0,
+        total_chunks: 1,
+        provider: "gemini",
+        model: "text-embedding-004",
+        auto_selected_provider: true,
+      })
+    );
+    const result = await api.tutor.triggerEmbed({ course_id: 1 });
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/tutor/embed",
       expect.objectContaining({ method: "POST" })
     );
+    expect(result.provider).toBe("gemini");
   });
 
   it("getMaterials builds query string", async () => {
@@ -1063,9 +1073,22 @@ describe("api.tutor extended", () => {
   });
 
   it("embedStatus fetches", async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({}));
-    await api.tutor.embedStatus();
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        materials: [],
+        total: 0,
+        embedded: 0,
+        pending: 0,
+        stale: 0,
+        provider: "gemini",
+        model: "gemini-embedding-2-preview",
+        collection: "tutor_materials_gemini_gemini-embedding-2-preview",
+        auto_selected_provider: true,
+      })
+    );
+    const response = await api.tutor.embedStatus();
     expect(mockFetch).toHaveBeenCalledWith("/api/tutor/embed/status", expect.anything());
+    expect(response.provider).toBe("gemini");
   });
 
   it("createCustomChain sends POST", async () => {

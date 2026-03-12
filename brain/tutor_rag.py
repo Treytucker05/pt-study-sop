@@ -14,6 +14,7 @@ import os
 import re
 import sqlite3
 import threading
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -33,6 +34,11 @@ COLLECTION_MATERIALS = "tutor_materials"
 DEFAULT_CHROMA_BATCH_SIZE = 1000
 DEFAULT_MAX_CHUNKS_PER_DOC = 4
 DEFAULT_MMR_LAMBDA_MULT = 0.2
+DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
+DEFAULT_GEMINI_EMBEDDING_MODEL = "gemini-embedding-2-preview"
+DEFAULT_EMBEDDING_PROVIDER = "auto"
+GEMINI_PROVIDER = "gemini"
+OPENAI_PROVIDER = "openai"
 SCOPED_CANDIDATE_MULTIPLIER = 12
 SCOPED_CANDIDATE_MIN = 120
 SCOPED_CANDIDATE_MAX = 800
@@ -49,46 +55,448 @@ def strip_image_refs_for_rag(content: str) -> str:
     return content
 
 
+def _normalize_embedding_provider(raw: Optional[str]) -> str:
+    provider = (raw or "").strip().lower()
+    if provider in {"", "auto"}:
+        return DEFAULT_EMBEDDING_PROVIDER
+    if provider in {OPENAI_PROVIDER, GEMINI_PROVIDER}:
+        return provider
+    logger.warning("Unknown embedding provider %s, falling back to auto", provider)
+    return DEFAULT_EMBEDDING_PROVIDER
+
+
 def _get_openai_api_key() -> str:
     """Resolve OpenAI API key from env."""
     return os.environ.get("OPENAI_API_KEY") or ""
 
 
+def _has_gemini_key() -> bool:
+    ordered_sources = ("GEMINI_API_KEY", "GEMINI_API_KEY_BUSINESS", "GOOGLE_API_KEY")
+    for source in ordered_sources:
+        if (os.environ.get(source) or "").strip():
+            return True
+    return False
+
+
+def _get_openai_embedding_model(requested_model: Optional[str] = None) -> str:
+    return (
+        (requested_model or "").strip()
+        or os.environ.get("TUTOR_RAG_OPENAI_EMBEDDING_MODEL", "").strip()
+        or os.environ.get("OPENAI_EMBEDDING_MODEL", "").strip()
+        or DEFAULT_OPENAI_EMBEDDING_MODEL
+    )
+
+
+def _get_gemini_embedding_model(requested_model: Optional[str] = None) -> str:
+    return (
+        (requested_model or "").strip()
+        or os.environ.get("TUTOR_RAG_GEMINI_EMBEDDING_MODEL", "").strip()
+        or os.environ.get("GEMINI_EMBEDDING_MODEL", "").strip()
+        or DEFAULT_GEMINI_EMBEDDING_MODEL
+    )
+
+
+def _parse_embedding_dimension(value: Any) -> int | None:
+    try:
+        parsed = int(str(value).strip())
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _get_embedding_dimension_override(provider: str) -> int | None:
+    provider_prefix = provider.strip().upper()
+    for env_name in (
+        f"TUTOR_RAG_{provider_prefix}_EMBEDDING_DIMENSION",
+        "TUTOR_RAG_EMBEDDING_DIMENSION",
+        "EMBEDDING_DIMENSION",
+    ):
+        parsed = _parse_embedding_dimension(os.environ.get(env_name))
+        if parsed:
+            return parsed
+    return None
+
+
+def _resolve_embedding_provider(
+    requested_provider: Optional[str] = None,
+) -> dict[str, str | bool]:
+    provider = _normalize_embedding_provider(
+        requested_provider or os.environ.get("TUTOR_RAG_EMBEDDING_PROVIDER")
+    )
+    requested_model = (os.environ.get("TUTOR_RAG_EMBEDDING_MODEL") or "").strip()
+
+    if provider == GEMINI_PROVIDER and not _has_gemini_key():
+        raise RuntimeError(
+            "Gemini embeddings requested via TUTOR_RAG_EMBEDDING_PROVIDER, but no key is set."
+            " Set GEMINI_API_KEY (or GEMINI_API_KEY_BUSINESS/GOOGLE_API_KEY) or set provider to openai."
+        )
+
+    openai_model = _get_openai_embedding_model(requested_model)
+    gemini_model = _get_gemini_embedding_model(requested_model)
+
+    if provider == DEFAULT_EMBEDDING_PROVIDER:
+        if _has_gemini_key():
+            return {
+                "provider": GEMINI_PROVIDER,
+                "model": gemini_model,
+                "auto_selected": True,
+            }
+        return {
+            "provider": OPENAI_PROVIDER,
+            "model": openai_model,
+            "auto_selected": True,
+        }
+
+    if provider == GEMINI_PROVIDER:
+        return {"provider": GEMINI_PROVIDER, "model": gemini_model, "auto_selected": False}
+
+    return {"provider": OPENAI_PROVIDER, "model": openai_model, "auto_selected": False}
+
+
+def _normalize_collection_component(value: str) -> str:
+    value = (value or "").strip().lower()
+    if not value:
+        return "default"
+    return re.sub(r"[^a-z0-9._-]+", "-", value)
+
+
+def _collection_for_embeddings(collection_name: str, provider: str, model: str) -> str:
+    model_slug = _normalize_collection_component(model)
+    provider_slug = _normalize_collection_component(provider)
+    if collection_name == COLLECTION_MATERIALS:
+        return f"{collection_name}_{provider_slug}_{model_slug}"
+    return collection_name
+
+
+def _build_gemini_embedding_function(model: str):
+    from google import genai  # type: ignore[import-not-found]
+    from google.genai import types  # type: ignore[import-not-found]
+    from video_enrich_providers.gemini_provider import _run_with_key_failover
+
+    output_dimensionality = _get_embedding_dimension_override(GEMINI_PROVIDER)
+
+    class _GeminiEmbeddingFunction:
+        def __init__(self) -> None:
+            self.last_dimension: int | None = output_dimensionality
+
+        def _extract_embedding(self, response: Any) -> list[float]:
+            if response is None:
+                return []
+
+            if isinstance(response, dict):
+                value = response.get("embedding")
+                if isinstance(value, dict):
+                    values = value.get("values")
+                    if isinstance(values, Iterable):
+                        return [float(v) for v in values]
+                embedding_list = response.get("embeddings")
+                if isinstance(embedding_list, list) and embedding_list:
+                    entry = embedding_list[0]
+                    values = None
+                    if isinstance(entry, dict):
+                        values = entry.get("values")
+                    if values is not None:
+                        return [float(v) for v in values]
+
+            if hasattr(response, "embedding"):
+                values = getattr(response.embedding, "values", None)
+                if values is not None:
+                    return [float(v) for v in values]
+
+            if hasattr(response, "embeddings"):
+                embeddings = getattr(response, "embeddings")
+                if embeddings:
+                    values = getattr(embeddings[0], "values", None)
+                    if values is not None:
+                        return [float(v) for v in values]
+
+            if hasattr(response, "candidates") and response.candidates:
+                first = response.candidates[0]
+                if hasattr(first, "embedding"):
+                    values = getattr(first.embedding, "values", None)
+                    if values is not None:
+                        return [float(v) for v in values]
+
+            raise RuntimeError("No embedding vector in Gemini response")
+
+        def _embed_one(self, client: Any, text: str, *, task_type: str) -> list[float]:
+            config_kwargs: dict[str, Any] = {"task_type": task_type}
+            if output_dimensionality is not None:
+                config_kwargs["output_dimensionality"] = output_dimensionality
+            response = client.models.embed_content(
+                model=model,
+                contents=text,
+                config=types.EmbedContentConfig(**config_kwargs),
+            )
+            vector = self._extract_embedding(response)
+            self.last_dimension = len(vector) or self.last_dimension
+            return vector
+
+        def _embed_documents(
+            self,
+            texts: list[str],
+            *,
+            task_type: str,
+        ) -> list[list[float]]:
+            if not texts:
+                return []
+
+            def _runner(client, key_source):  # noqa: ARG001
+                del key_source  # compatibility with failover helpers
+                vectors: list[list[float]] = []
+                for chunk in texts:
+                    vectors.append(self._embed_one(client, chunk, task_type=task_type))
+                return vectors
+
+            result: list[list[float]] = _run_with_key_failover(
+                "embed_content", _runner
+            )
+            if not result:
+                raise RuntimeError("Gemini returned empty embedding list")
+            return result
+
+        def embed_documents(self, texts: list[str]) -> list[list[float]]:
+            return self._embed_documents(texts, task_type="RETRIEVAL_DOCUMENT")
+
+        def embed_query(self, text: str) -> list[float]:
+            def _runner(client, key_source):  # noqa: ARG001
+                return self._embed_one(client, text, task_type="RETRIEVAL_QUERY")
+
+            return _run_with_key_failover("embed_query", _runner)
+
+    return _GeminiEmbeddingFunction()
+
+
 def init_vectorstore(
-    collection_name: str = COLLECTION_MATERIALS, persist_dir: Optional[str] = None
+    collection_name: str = COLLECTION_MATERIALS,
+    persist_dir: Optional[str] = None,
+    *,
+    provider_override: Optional[str] = None,
+    model_override: Optional[str] = None,
 ):
     """Initialize or return cached ChromaDB vectorstore for a named collection."""
     with _chroma_lock:
-        if collection_name in _vectorstores:
-            return _vectorstores[collection_name]
+        if provider_override or model_override:
+            runtime_cfg = _resolve_embedding_provider(provider_override)
+            provider = str(provider_override or runtime_cfg["provider"])
+            model = str(model_override or runtime_cfg["model"])
+        else:
+            runtime_cfg = _resolve_embedding_provider()
+            provider = str(runtime_cfg["provider"])
+            model = str(runtime_cfg["model"])
+        provider_collection = _collection_for_embeddings(
+            collection_name, provider, model
+        )
 
-        from langchain_openai import OpenAIEmbeddings
-        from langchain_community.vectorstores import Chroma
+        cache_key = f"{provider_collection}::{provider}::{model}"
+        if cache_key in _vectorstores:
+            return _vectorstores[cache_key]
 
         persist = persist_dir or str(
-            _CHROMA_BASE / collection_name.replace("tutor_", "")
+            _CHROMA_BASE / provider_collection.replace("tutor_", "")
         )
         os.makedirs(persist, exist_ok=True)
 
-        api_key = _get_openai_api_key()
-        base_url = os.environ.get("OPENAI_BASE_URL")
+        if provider == OPENAI_PROVIDER:
+            from langchain_openai import OpenAIEmbeddings
+            from langchain_chroma import Chroma
 
-        embed_kwargs: dict = {
-            "model": "text-embedding-3-small",
-            "api_key": api_key,
-        }
-        if base_url:
-            embed_kwargs["base_url"] = base_url
+            api_key = _get_openai_api_key()
+            base_url = os.environ.get("OPENAI_BASE_URL")
+            embed_kwargs: dict = {
+                "model": model,
+                "api_key": api_key,
+            }
+            dimensions = _get_embedding_dimension_override(OPENAI_PROVIDER)
+            if dimensions is not None:
+                embed_kwargs["dimensions"] = dimensions
+            if base_url:
+                embed_kwargs["base_url"] = base_url
+            embeddings = OpenAIEmbeddings(**embed_kwargs)
+        else:
+            from langchain_chroma import Chroma
 
-        embeddings = OpenAIEmbeddings(**embed_kwargs)
+            embeddings = _build_gemini_embedding_function(str(model))
 
         vs = Chroma(
-            collection_name=collection_name,
+            collection_name=provider_collection,
             embedding_function=embeddings,
             persist_directory=persist,
         )
-        _vectorstores[collection_name] = vs
+        _vectorstores[cache_key] = vs
+        logger.info(
+            "Initialized embedding collection %s using provider=%s model=%s",
+            provider_collection,
+            provider,
+            model,
+        )
         return vs
+
+
+def _stored_embedding_matches(row: sqlite3.Row, provider: str, model: str) -> bool:
+    row_provider = str(row["provider"] or "").strip().lower() if "provider" in row.keys() else ""
+    row_model = str(row["embedding_model"] or "").strip() if "embedding_model" in row.keys() else ""
+    return row_provider == provider and row_model == model
+
+
+def _stored_embedding_dimension_matches(
+    row: sqlite3.Row, configured_dimension: int | None
+) -> bool:
+    if configured_dimension is None or "embedding_dimension" not in row.keys():
+        return True
+    stored_dimension = _parse_embedding_dimension(row["embedding_dimension"])
+    return stored_dimension == configured_dimension
+
+
+def _stored_embedding_source(row: sqlite3.Row) -> tuple[str, str] | None:
+    if "provider" not in row.keys() or "embedding_model" not in row.keys():
+        return None
+    provider = str(row["provider"] or "").strip().lower()
+    model = str(row["embedding_model"] or "").strip()
+    if not provider or not model:
+        return None
+    return provider, model
+
+
+def _load_doc_embedding_rows(
+    cur: sqlite3.Cursor,
+    rag_doc_id: int,
+    columns: set[str],
+) -> list[sqlite3.Row]:
+    selected_columns = ["chroma_id"]
+    if "provider" in columns:
+        selected_columns.append("provider")
+    if "embedding_model" in columns:
+        selected_columns.append("embedding_model")
+    if "embedding_dimension" in columns:
+        selected_columns.append("embedding_dimension")
+
+    cur.execute(
+        f"SELECT {', '.join(selected_columns)} FROM rag_embeddings WHERE rag_doc_id = ?",
+        (rag_doc_id,),
+    )
+    return cur.fetchall()
+
+
+def _delete_vector_ids(vectorstore: object, chroma_ids: list[str]) -> None:
+    if not chroma_ids:
+        return
+    try:
+        delete_fn = getattr(vectorstore, "delete", None)
+        if callable(delete_fn):
+            delete_fn(ids=chroma_ids)
+    except Exception as exc:
+        logger.warning("Could not delete stale Chroma ids %s: %s", chroma_ids, exc)
+
+
+def _clear_stale_doc_embeddings(
+    cur: sqlite3.Cursor,
+    rag_doc_id: int,
+    rows: list[sqlite3.Row],
+) -> None:
+    stale_by_source: dict[tuple[str, str], list[str]] = {}
+    for row in rows:
+        source = _stored_embedding_source(row)
+        chroma_id = str(row["chroma_id"] or "").strip() if "chroma_id" in row.keys() else ""
+        if source and chroma_id:
+            stale_by_source.setdefault(source, []).append(chroma_id)
+
+    for (provider, model), chroma_ids in stale_by_source.items():
+        try:
+            vectorstore = init_vectorstore(
+                COLLECTION_MATERIALS,
+                provider_override=provider,
+                model_override=model,
+            )
+            _delete_vector_ids(vectorstore, chroma_ids)
+        except Exception as exc:
+            logger.warning(
+                "Failed clearing stale collection entries for provider=%s model=%s: %s",
+                provider,
+                model,
+                exc,
+            )
+
+    cur.execute("DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (rag_doc_id,))
+
+
+def _extract_collection_ids(raw_ids: Any) -> set[str]:
+    if raw_ids is None:
+        return set()
+    if isinstance(raw_ids, str):
+        return {raw_ids}
+    if isinstance(raw_ids, Iterable):
+        collected: set[str] = set()
+        for entry in raw_ids:
+            collected.update(_extract_collection_ids(entry))
+        return collected
+    return set()
+
+
+def _lookup_existing_index_ids(vectorstore: object, chroma_ids: list[str]) -> set[str] | None:
+    if not chroma_ids:
+        return set()
+    collection = getattr(vectorstore, "_collection", None)
+    getter = getattr(collection, "get", None)
+    if not callable(getter):
+        return None
+    try:
+        result = getter(ids=chroma_ids)
+    except TypeError:
+        result = getter(chroma_ids)
+    except Exception as exc:
+        logger.warning("Could not probe Chroma ids %s: %s", chroma_ids, exc)
+        return None
+    if isinstance(result, dict):
+        return _extract_collection_ids(result.get("ids"))
+    return None
+
+
+def _record_embedding_failure(
+    cur: sqlite3.Cursor,
+    *,
+    rag_doc_id: int,
+    provider: str,
+    embedding_model: str,
+    collection_name: str,
+    failure_stage: str,
+    error_type: str,
+    error_message: str,
+) -> None:
+    try:
+        cur.execute(
+            """
+            INSERT INTO rag_embedding_failures
+                (rag_doc_id, provider, embedding_model, collection_name, failure_stage, error_type, error_message, failed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            """,
+            (
+                rag_doc_id,
+                provider,
+                embedding_model,
+                collection_name,
+                failure_stage,
+                error_type,
+                error_message[:4000],
+            ),
+        )
+    except sqlite3.OperationalError:
+        logger.debug("rag_embedding_failures table not available; skipping failure telemetry")
+
+
+def _clear_embedding_failures(
+    cur: sqlite3.Cursor, *, rag_doc_id: int, provider: str, embedding_model: str
+) -> None:
+    try:
+        cur.execute(
+            """
+            DELETE FROM rag_embedding_failures
+            WHERE rag_doc_id = ? AND provider = ? AND embedding_model = ?
+            """,
+            (rag_doc_id, provider, embedding_model),
+        )
+    except sqlite3.OperationalError:
+        logger.debug("rag_embedding_failures table not available; skipping failure clear")
 
 
 SMALL_DOC_CHAR_LIMIT = (
@@ -267,6 +675,51 @@ def _add_documents_batched(vs: object, chunks: list, ids: list[str]) -> None:
             raise
 
 
+def _get_rag_embedding_columns(cur: sqlite3.Cursor) -> set[str]:
+    """Return existing rag_embeddings columns for compatibility with older schemas."""
+    cur.execute("PRAGMA table_info(rag_embeddings)")
+    return {row["name"] if isinstance(row, sqlite3.Row) else row[1] for row in cur.fetchall()}
+
+
+def _build_rag_embedding_insert_sql(columns: set[str]) -> tuple[str, list[str]]:
+    base_columns = [
+        "rag_doc_id",
+        "chunk_index",
+        "chunk_text",
+        "chroma_id",
+        "token_count",
+    ]
+    if "provider" in columns:
+        base_columns.append("provider")
+    if "embedding_model" in columns:
+        base_columns.append("embedding_model")
+    if "embedding_dimension" in columns:
+        base_columns.append("embedding_dimension")
+
+    base_columns.append("created_at")
+
+    placeholders = ", ".join("?" for _ in base_columns[:-1]) + ", datetime('now')"
+    columns_clause = ", ".join(base_columns)
+    return (
+        f"INSERT OR IGNORE INTO rag_embeddings ({columns_clause}) VALUES ({placeholders})",
+        base_columns,
+    )
+
+
+def _count_tokens_for_embedding(text: str, model: str) -> int:
+    if model.lower().startswith("text-embedding-3-"):
+        try:
+            import tiktoken
+
+            enc = tiktoken.encoding_for_model(model)
+            return len(enc.encode(text))
+        except Exception:
+            return max(1, len(text) // 4)
+
+    # Fallback for non-OpenAI models.
+    return max(1, len(text) // 4)
+
+
 def embed_rag_docs(
     course_id: Optional[int] = None,
     folder_path: Optional[str] = None,
@@ -278,127 +731,237 @@ def embed_rag_docs(
     Routes to correct collection based on corpus.
     Returns {embedded: int, skipped: int, total_chunks: int, timed_out: int}.
     """
-    with _chroma_lock:
-        conn = sqlite3.connect(DB_PATH, timeout=30)
-        conn.row_factory = sqlite3.Row
-        cur = conn.cursor()
+    conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
 
-        conditions = ["COALESCE(enabled, 1) = 1"]
-        params: list = []
+    embedding_cfg = _resolve_embedding_provider()
+    embedding_provider = str(embedding_cfg["provider"])
+    embedding_model = str(embedding_cfg["model"])
+    configured_dimension = _get_embedding_dimension_override(embedding_provider)
+    active_collection = _collection_for_embeddings(
+        COLLECTION_MATERIALS, embedding_provider, embedding_model
+    )
 
-        if corpus:
-            conditions.append("corpus = ?")
-            params.append(corpus)
-        if course_id is not None:
-            conditions.append("(course_id = ? OR course_id IS NULL)")
-            params.append(course_id)
-        if folder_path:
-            conditions.append("folder_path LIKE ?")
-            params.append(f"%{folder_path}%")
+    conditions = ["COALESCE(enabled, 1) = 1"]
+    params: list = []
 
-        where = " AND ".join(conditions)
-        cur.execute(
-            f"SELECT id, source_path, content, course_id, folder_path, corpus FROM rag_docs WHERE {where}",
-            params,
-        )
-        docs = cur.fetchall()
+    if corpus:
+        conditions.append("corpus = ?")
+        params.append(corpus)
+    if course_id is not None:
+        conditions.append("(course_id = ? OR course_id IS NULL)")
+        params.append(course_id)
+    if folder_path:
+        conditions.append("folder_path LIKE ?")
+        params.append(f"%{folder_path}%")
 
-        embedded = 0
-        skipped = 0
-        timed_out = 0
-        total_chunks = 0
+    where = " AND ".join(conditions)
+    cur.execute(
+        f"SELECT id, source_path, content, course_id, folder_path, corpus FROM rag_docs WHERE {where}",
+        params,
+    )
+    docs = cur.fetchall()
 
-        for idx, doc in enumerate(docs):
-            if progress_callback:
-                progress_callback(idx, len(docs), doc["source_path"] or "unknown")
+    embed_counts = {
+        "embedded": 0,
+        "skipped": 0,
+        "timed_out": 0,
+        "total_chunks": 0,
+    }
+    failures: list[dict[str, Any]] = []
 
-            cur.execute(
-                "SELECT COUNT(*) FROM rag_embeddings WHERE rag_doc_id = ?",
-                (doc["id"],),
-            )
-            if cur.fetchone()[0] > 0:
-                skipped += 1
-                continue
+    embedding_columns = _get_rag_embedding_columns(cur)
+    insert_sql, insert_columns = _build_rag_embedding_insert_sql(embedding_columns)
 
-            content = doc["content"] or ""
-            if not content.strip():
-                skipped += 1
-                continue
+    for idx, doc in enumerate(docs):
+        if progress_callback:
+            progress_callback(idx, len(docs), doc["source_path"] or "unknown")
 
-            doc_corpus = doc["corpus"] or "materials"
-            collection = COLLECTION_MATERIALS
-            doc_id = doc["id"]
-            doc_source = doc["source_path"] or ""
-            doc_course_id = doc["course_id"]
-            doc_folder_path = doc["folder_path"]
-
-            def _embed_one(doc_row: object) -> int:
-                _chunks = chunk_document(
-                    content,
-                    doc_source,
-                    course_id=doc_course_id,
-                    folder_path=doc_folder_path,
-                    rag_doc_id=doc_id,
-                    corpus=doc_corpus,
-                )
-                if not _chunks:
-                    return 0
-                _vs = init_vectorstore(collection)
-                _ids = [f"rag-{doc_id}-{i}" for i in range(len(_chunks))]
-                _add_documents_batched(_vs, _chunks, _ids)
-                for i, chunk in enumerate(_chunks):
-                    try:
-                        import tiktoken
-
-                        enc = tiktoken.encoding_for_model("text-embedding-3-small")
-                        token_count = len(enc.encode(chunk.page_content))
-                    except Exception:
-                        token_count = len(chunk.page_content) // 4
-                    cur.execute(
-                        """INSERT OR IGNORE INTO rag_embeddings
-                           (rag_doc_id, chunk_index, chunk_text, chroma_id, token_count, created_at)
-                           VALUES (?, ?, ?, ?, ?, datetime('now'))""",
-                        (doc_id, i, chunk.page_content, _ids[i], token_count),
+        existing_rows = _load_doc_embedding_rows(cur, doc["id"], embedding_columns)
+        matching_rows = [
+            row
+            for row in existing_rows
+            if _stored_embedding_matches(row, embedding_provider, embedding_model)
+            and _stored_embedding_dimension_matches(row, configured_dimension)
+        ]
+        if matching_rows:
+            matching_ids = [
+                str(row["chroma_id"] or "").strip()
+                for row in matching_rows
+                if "chroma_id" in row.keys() and str(row["chroma_id"] or "").strip()
+            ]
+            index_matches = None
+            if matching_ids:
+                try:
+                    current_vs = init_vectorstore(
+                        COLLECTION_MATERIALS,
+                        provider_override=embedding_provider,
+                        model_override=embedding_model,
                     )
-                return len(_chunks)
+                    index_matches = _lookup_existing_index_ids(current_vs, matching_ids)
+                except Exception as exc:
+                    logger.warning(
+                        "Failed probing active Chroma collection for doc %s: %s",
+                        doc["id"],
+                        exc,
+                    )
+            if index_matches is None or set(matching_ids).issubset(index_matches):
+                embed_counts["skipped"] += 1
+                continue
+        if existing_rows:
+            _clear_stale_doc_embeddings(cur, doc["id"], existing_rows)
 
-            try:
-                with ThreadPoolExecutor(max_workers=1) as _executor:
-                    _future = _executor.submit(_embed_one, doc)
-                    chunk_count = _future.result(timeout=DOC_EMBED_TIMEOUT_SEC)
-                if chunk_count == 0:
-                    skipped += 1
-                else:
-                    total_chunks += chunk_count
-                    embedded += 1
-            except FuturesTimeout:
-                logger.error(
-                    "Embedding timed out after %ds for doc %d: %s",
-                    DOC_EMBED_TIMEOUT_SEC,
-                    doc_id,
-                    doc_source,
-                )
-                cur.execute(
-                    "DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,)
-                )
-                conn.commit()
-                timed_out += 1
-            except Exception as exc:
-                logger.error("Embedding failed for doc %d: %s", doc_id, str(exc))
-                cur.execute(
-                    "DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,)
-                )
-                conn.commit()
-                skipped += 1
+        content = doc["content"] or ""
+        if not content.strip():
+            embed_counts["skipped"] += 1
+            continue
 
-        conn.commit()
-        conn.close()
-        return {
-            "embedded": embedded,
-            "skipped": skipped,
-            "total_chunks": total_chunks,
-            "timed_out": timed_out,
-        }
+        doc_corpus = doc["corpus"] or "materials"
+        collection = COLLECTION_MATERIALS
+        doc_id = doc["id"]
+        doc_source = doc["source_path"] or ""
+        doc_course_id = doc["course_id"]
+        doc_folder_path = doc["folder_path"]
+
+        def _embed_one(doc_row: object) -> int:
+            _chunks = chunk_document(
+                content,
+                doc_source,
+                course_id=doc_course_id,
+                folder_path=doc_folder_path,
+                rag_doc_id=doc_id,
+                corpus=doc_corpus,
+            )
+            if not _chunks:
+                return 0
+            _vs = init_vectorstore(
+                collection,
+                provider_override=embedding_provider,
+                model_override=embedding_model,
+            )
+            _ids = [f"rag-{doc_id}-{i}" for i in range(len(_chunks))]
+            _add_documents_batched(_vs, _chunks, _ids)
+            embedding_dimension = None
+            embeddings_fn = getattr(_vs, "_embedding_function", None)
+            if embeddings_fn is not None:
+                embedding_dimension = _parse_embedding_dimension(
+                    getattr(embeddings_fn, "last_dimension", None)
+                )
+            if embedding_dimension is None:
+                embedding_dimension = configured_dimension
+            for i, chunk in enumerate(_chunks):
+                token_count = _count_tokens_for_embedding(
+                    chunk.page_content, embedding_model
+                )
+                value_map = {
+                    "rag_doc_id": doc_id,
+                    "chunk_index": i,
+                    "chunk_text": chunk.page_content,
+                    "chroma_id": _ids[i],
+                    "token_count": token_count,
+                }
+                if "provider" in embedding_columns:
+                    value_map["provider"] = embedding_provider
+                if "embedding_model" in embedding_columns:
+                    value_map["embedding_model"] = embedding_model
+                if "embedding_dimension" in embedding_columns:
+                    value_map["embedding_dimension"] = embedding_dimension
+
+                cur.execute(
+                    insert_sql,
+                    [value_map[column] for column in insert_columns[:-1]]
+                )
+            return len(_chunks)
+
+        try:
+            with ThreadPoolExecutor(max_workers=1) as _executor:
+                _future = _executor.submit(_embed_one, doc)
+                chunk_count = _future.result(timeout=DOC_EMBED_TIMEOUT_SEC)
+            if chunk_count == 0:
+                embed_counts["skipped"] += 1
+            else:
+                embed_counts["total_chunks"] += chunk_count
+                embed_counts["embedded"] += 1
+                _clear_embedding_failures(
+                    cur,
+                    rag_doc_id=doc_id,
+                    provider=embedding_provider,
+                    embedding_model=embedding_model,
+                )
+        except FuturesTimeout:
+            logger.error(
+                "Embedding timed out after %ds for doc %d: %s",
+                DOC_EMBED_TIMEOUT_SEC,
+                doc_id,
+                doc_source,
+            )
+            cur.execute(
+                "DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,)
+            )
+            failure = {
+                "rag_doc_id": doc_id,
+                "source_path": doc_source,
+                "provider": embedding_provider,
+                "embedding_model": embedding_model,
+                "collection_name": active_collection,
+                "failure_stage": "embed_document",
+                "error_type": "TimeoutError",
+                "error_message": f"Embedding timed out after {DOC_EMBED_TIMEOUT_SEC}s",
+            }
+            _record_embedding_failure(
+                cur,
+                rag_doc_id=doc_id,
+                provider=embedding_provider,
+                embedding_model=embedding_model,
+                collection_name=active_collection,
+                failure_stage="embed_document",
+                error_type="TimeoutError",
+                error_message=f"Embedding timed out after {DOC_EMBED_TIMEOUT_SEC}s",
+            )
+            conn.commit()
+            embed_counts["timed_out"] += 1
+            failures.append(failure)
+        except Exception as exc:
+            logger.error("Embedding failed for doc %d: %s", doc_id, str(exc))
+            cur.execute(
+                "DELETE FROM rag_embeddings WHERE rag_doc_id = ?", (doc_id,)
+            )
+            failure = {
+                "rag_doc_id": doc_id,
+                "source_path": doc_source,
+                "provider": embedding_provider,
+                "embedding_model": embedding_model,
+                "collection_name": active_collection,
+                "failure_stage": "embed_document",
+                "error_type": exc.__class__.__name__,
+                "error_message": str(exc) or repr(exc),
+            }
+            _record_embedding_failure(
+                cur,
+                rag_doc_id=doc_id,
+                provider=embedding_provider,
+                embedding_model=embedding_model,
+                collection_name=active_collection,
+                failure_stage="embed_document",
+                error_type=exc.__class__.__name__,
+                error_message=str(exc) or repr(exc),
+            )
+            conn.commit()
+            embed_counts["skipped"] += 1
+            failures.append(failure)
+
+    conn.commit()
+    conn.close()
+
+    return {
+        **embed_counts,
+        "failures": failures,
+        "provider": embedding_provider,
+        "model": embedding_model,
+        "collection": active_collection,
+        "auto_selected_provider": bool(embedding_cfg.get("auto_selected", False)),
+    }
 
 
 def _doc_identity(doc: object, fallback_index: int) -> str:

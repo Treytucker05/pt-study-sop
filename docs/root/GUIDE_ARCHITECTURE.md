@@ -1,17 +1,20 @@
-# PT Study System — Architecture Spec
+# PT Study System — Architecture Guide
 
-> Canonical runtime architecture: CP-MSS v1.0 in `sop/library/17-control-plane.md`.
-> This guide focuses on technical/system architecture (subsystems, integrations, data flow).
+Reference-only architecture guide.
+
+- Product/page ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Canonical runtime architecture: `sop/library/17-control-plane.md`
 
 ## Purpose
-A high-level architecture guide describing subsystems, integrations, and data flow.
 
-## Core Pages
-- **Tutor:** Native Flask tutor with RAG retrieval, SSE streaming, and block-chain progression.
-- **Brain:** Source of truth DB + ingestion + metrics + Obsidian updates.
-- **Dashboard:** UI surfaces metrics, issues, tasks, and trends.
-- **Calendar:** Syncs Google Calendar/Tasks into Brain.
-- **Scholar:** Audits logs, detects friction, proposes improvements.
+Describe subsystems, integrations, and data flow without redefining product ownership.
+
+## Core Public Surfaces
+
+- **Brain:** home/dashboard and learner-model engine
+- **Tutor:** live study workspace and protocol executor
+- **Scholar:** system-facing investigation console
+- **Support pages:** Calendar, Library, Mastery, Methods, Vault Health
 
 ## System Flow (Canonical)
 See `docs/TUTOR_ARCHITECTURE.md` for the diagram and loop definitions.
@@ -23,7 +26,7 @@ See `docs/TUTOR_ARCHITECTURE.md` for the diagram and loop definitions.
 - **Obsidian Vault:** `C:\Users\treyt\Desktop\Treys School` (notes under `projects/pt-study-sop/`)
 
 ## Key Data Stores
-- `brain/data/pt_study.db` (source of truth)
+- `brain/data/pt_study.db` (operational data store)
 - `brain/session_logs/` (WRAP logs)
 - `scholar/outputs/` (research + proposals)
 

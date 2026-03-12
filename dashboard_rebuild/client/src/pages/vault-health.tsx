@@ -415,7 +415,7 @@ function NoteGroup({
         <div className="min-w-0 space-y-1">
           <div className="truncate font-arcade text-xs text-primary">{note.path}</div>
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-            <span>{note.family.replaceAll("_", " ")}</span>
+            <span>{note.family.replace(/_/g, " ")}</span>
             <span className={cn("border px-2 py-0.5 uppercase", SEVERITY_CLASS[note.severity] ?? SEVERITY_CLASS.low)}>
               {note.severity}
             </span>
@@ -604,9 +604,9 @@ export default function VaultHealth() {
               <h1 className="font-arcade text-lg tracking-[0.18em] text-primary">VAULT HEALTH</h1>
             </div>
             <p className="max-w-3xl font-terminal text-xs leading-6 text-muted-foreground">
-              Full Scan checks routing, metadata, backlinks, and unresolved wikilinks against the live vault contract.
-              Batch Enrich only targets underlinked notes. Fix applies deterministic patches. AI Fix proposes a change
-              before anything is written.
+              Support system for Brain's Obsidian knowledge base. Full Scan checks routing, metadata, backlinks, and
+              unresolved wikilinks against the live vault contract. Batch Enrich only targets underlinked notes. Fix
+              applies deterministic patches. AI Fix proposes a change before anything is written to the support system.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -683,7 +683,7 @@ export default function VaultHealth() {
             <div className="mt-4 flex flex-wrap gap-2">
               {familyCounts.map(([family, count]) => (
                 <span key={family} className="border border-primary/15 px-2 py-1 font-terminal text-[11px] uppercase text-primary/80">
-                  {family.replaceAll("_", " ")}: {count}
+                  {family.replace(/_/g, " ")}: {count}
                 </span>
               ))}
             </div>

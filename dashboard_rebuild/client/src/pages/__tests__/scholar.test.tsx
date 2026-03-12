@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockScholarGetInvestigations = vi.fn();
 const mockScholarCreateInvestigation = vi.fn();
@@ -45,6 +45,7 @@ function renderWithClient(ui: React.ReactElement) {
 describe("ScholarPage research workspace", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.history.pushState({}, "", "/scholar");
     Object.defineProperty(window.HTMLElement.prototype, "scrollIntoView", {
       configurable: true,
       value: vi.fn(),
@@ -67,7 +68,7 @@ describe("ScholarPage research workspace", () => {
         title: "Scaffold dependence investigation",
         query_text: "Why do I rely on scaffolds during retrieval?",
         rationale: "Scholar should verify whether the current learner fit is still accurate.",
-        audience_type: "learner",
+        audience_type: "system",
         mode: "brain",
         status: "completed",
         confidence: "medium",
@@ -147,23 +148,51 @@ describe("ScholarPage research workspace", () => {
       title: "New investigation",
       query_text: "New investigation",
       rationale: "New rationale",
-      audience_type: "learner",
+      audience_type: "system",
       mode: "brain",
       status: "queued",
       confidence: "low",
     });
   });
 
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
   it("renders the new research-first Scholar workspace", async () => {
     const { default: ScholarPage } = await import("@/pages/scholar");
     renderWithClient(<ScholarPage />);
 
-    expect(await screen.findByText("INTERACTIVE RESEARCH PARTNER")).toBeInTheDocument();
-    expect(await screen.findByText("Calibration Builder")).toBeInTheDocument();
-    expect((await screen.findAllByText("Scaffold dependence investigation")).length).toBeGreaterThan(0);
-    expect(await screen.findByText("WHAT SCHOLAR IS RESEARCHING")).toBeInTheDocument();
+    expect(await screen.findByText("SYSTEM INVESTIGATION CONSOLE")).toBeInTheDocument();
+    expect(screen.getByText(/behind Brain and Tutor/i)).toBeInTheDocument();
+    expect(screen.getByText("Calibration Builder")).toBeInTheDocument();
+    expect(screen.getAllByText("Scaffold dependence investigation").length).toBeGreaterThan(0);
+    expect(screen.getByText("WHAT SCHOLAR IS INVESTIGATING")).toBeInTheDocument();
     expect(screen.getByTestId("scholar-run-status")).toBeInTheDocument();
-  });
+  }, 10000);
+
+  it("shows the Brain handoff banner when Scholar is opened from Brain", async () => {
+    sessionStorage.setItem(
+      "scholar.open_from_brain.v1",
+      JSON.stringify({
+        source: "brain-home",
+        itemId: "scholar-question-q-1",
+        title: "Did the last Tutor block feel too guided?",
+        reason: "Reason: Scholar is blocked on learner input.",
+        investigationId: "scholar-inv-1",
+        questionId: "q-1",
+      }),
+    );
+
+    const { default: ScholarPage } = await import("@/pages/scholar");
+    renderWithClient(<ScholarPage />);
+
+    const handoff = await screen.findByTestId("scholar-brain-handoff");
+    expect(handoff).toHaveTextContent("Did the last Tutor block feel too guided?");
+    expect(handoff).toHaveTextContent("Reason: Scholar is blocked on learner input.");
+    expect(sessionStorage.getItem("scholar.open_from_brain.v1")).toBeNull();
+  }, 10000);
 
   it("creates investigations and saves learner answers", async () => {
     const user = userEvent.setup();
@@ -186,7 +215,7 @@ describe("ScholarPage research workspace", () => {
       expect.objectContaining({
         query_text: "Why does Brain keep overestimating my retention?",
         rationale: "I want Scholar to research whether the current calibration is wrong.",
-        audience_type: "learner",
+        audience_type: "system",
       }),
     );
 
@@ -207,4 +236,25 @@ describe("ScholarPage research workspace", () => {
       "ui",
     );
   });
+
+  it("stops Scholar polling when the route is no longer active", async () => {
+    const { default: ScholarPage } = await import("@/pages/scholar");
+    renderWithClient(<ScholarPage />);
+
+    expect(await screen.findByText("SYSTEM INVESTIGATION CONSOLE")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockScholarGetQuestions).toHaveBeenCalledTimes(1);
+    });
+
+    mockScholarGetQuestions.mockClear();
+
+    await act(async () => {
+      window.history.pushState({}, "", "/");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 2800));
+
+    expect(mockScholarGetQuestions).not.toHaveBeenCalled();
+  }, 10000);
 });

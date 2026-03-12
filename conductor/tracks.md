@@ -2,11 +2,22 @@
 
 This file tracks all major tracks for the project. Each track has its own detailed plan in its respective folder.
 
-Update policy: after every significant change, update this file (and the active track plan file) with current status before closing the work session.
+Execution registry only. Product or subsystem truth does not live here.
 
-Active status: `tutor-10-certification_20260307`, `topdown-tutor-hardening_20260307`, and `neuroscience-exam-intake_20260307` remain active on 2026-03-11.
+- Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Active execution board lives in `docs/root/TUTOR_TODO.md`.
+- Track documents are implementation evidence and status history; if they conflict with the canon, the canon wins.
 
-Latest update: 2026-03-11 completed Waves 0-5 for `Brain / Scholar / Tutor Realignment`, shipping the Brain learner-profile MVP, Scholar research runtime, bounded Tutor mediation, premium shell, product analytics, privacy controls, and outcome-report surfaces.
+Update policy: after every significant change, update this file with status changes and point active execution back to `docs/root/TUTOR_TODO.md`.
+
+Active execution priority is tracked in `docs/root/TUTOR_TODO.md` under Sprint 25 (`Canon Collapse + Pre-Tutor Hardening Program`).
+
+Latest update: 2026-03-12 opened a repo-wide canon-collapse and pre-Tutor hardening execution wave; closed-track summaries below remain historical and may not describe the latest active queue.
+
+- [x] **Track: Brain-Centered Triad Reframe** (complete — created 2026-03-12; closed 2026-03-12; scope: corrected one-student Brain / Scholar / Tutor end-state, Tutor-centered value framing, PRD, route/shell recenter, mastery/API follow-up, Gemini embedding migration hardening, and closeout verification)
+  *Link: [./tracks/brain-centered-triad_20260312/](./tracks/brain-centered-triad_20260312/)*
+
+---
 
 - [x] **Track: Brain / Scholar / Tutor Realignment** (complete — created 2026-03-11; closed 2026-03-11; scope: contract freeze, Brain learner model, Scholar research partner, bounded Tutor mediation, premium-individual shell)
   *Link: [./tracks/brain-scholar-tutor-realignment_20260311/](./tracks/brain-scholar-tutor-realignment_20260311/)*

@@ -2,6 +2,18 @@
 
 Changes not tied to a specific conductor track. Append dated entries below.
 
+## 2026-03-12 - Docs governance lane Wave A canon collapse
+
+- Reclassified `docs/root/TUTOR_TODO.md` as execution-only and removed product-truth wording.
+- Rewrote `conductor/product.md`, `conductor/workflow.md`, and `conductor/index.md` to act as execution context only and point back to `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+- Tightened `conductor/tracks.md`, `docs/README.md`, `dashboard_rebuild/README.md`, and `dashboard_rebuild/client/src/pages/README.md` so they explicitly defer to the master canon for product and ownership truth.
+- Hard-marked closed triad/realignment track docs as historical artifacts instead of live authority:
+  - `conductor/tracks/brain-centered-triad_20260312/{index.md,spec.md,decision-record.md}`
+  - `conductor/tracks/brain-scholar-tutor-realignment_20260311/spec.md`
+- Strengthened `scripts/check_docs_sync.py` to enforce canon pointers and execution-only wording across the approved secondary surfaces.
+
+---
+
 ## 2026-03-09 - Tutor Gaps Swarm Closeout
 
 26-task swarm completed. All 12 audit gaps (except Gap 6), Queues C/D/E, and Sprints 15/17 closed.
@@ -812,7 +824,7 @@ Changes not tied to a specific conductor track. Append dated entries below.
   - strict in-repo evidence anchors from method YAML citation fields
   - hard-rule section (dependency law + control-stage requirement)
   - runtime drift register for current known mismatches across YAML/DB/API/UI
-- Purpose: establish a single source of truth for category semantics before method-by-method vetting and knob governance.
+- Purpose: establish a shared reference baseline for category semantics before method-by-method vetting and knob governance.
 
 ## 2026-02-20 - CP-MSS-first README normalization + guardrail
 
@@ -2117,3 +2129,76 @@ on-assessment) and corrected RETRIEVE prompt behavior in M-INT-005.
   - `GET /api/brain/status` -> `{"ok": true, ...}`
   - `GET /api/janitor/health` -> `102` markdown files, `78` health-scanned notes, `24` excluded system files, `31` advisory-only files, `33` affected notes, `46` issue instances, `0` routing-drift issues
   - Playwright verification of `http://127.0.0.1:5000/vault-health` confirmed the new explanation panel, scan accounting, canonical/deprecated root display, and note-grouped issue list render in the app
+
+## 2026-03-11 — Movement Science Construct 2 live preflight recovery
+
+- Recovered the interrupted Sprint 22 work from the saved diff and kept the live scope anchored to `Movement Science -> Construct 2 - Lower Quarter`.
+- Confirmed the canonical vault path `Courses/Movement Science/Construct 2 - Lower Quarter/` already contains the shared hub notes `_Map of Contents.md` and `Learning Objectives & To Do.md`.
+- Hardened Tutor session cleanup so deleting a session only removes session-owned artifacts and no longer deletes the shared `_Map of Contents.md` study infrastructure note.
+- Confirmed the live `PHYT 6314` DB rows contain approved objectives `OBJ-001` through `OBJ-028` plus the imported Construct 2 material corpus, with the baseline preflight payload using material ids `535`, `536`, and `537`.
+- Ran a real Tutor preflight against `http://127.0.0.1:5000/api/tutor/session/preflight` for course `4` / `Construct 2 - Lower Quarter`; it returned `ok=true`, `vault_ready=true`, no blockers, and both canonical pages in `reviewed` status.
+- Validation:
+  - `pytest brain/tests/test_tutor_audit_remediation.py -q` -> `18 passed`
+  - `npm run build` in `dashboard_rebuild/` -> PASS
+  - `cmd /c Start_Dashboard.bat` -> readiness succeeded on `http://127.0.0.1:5000`
+  - live `POST /api/tutor/session/preflight` for course `4` with material ids `535,536,537` -> `ok=true`, `vault_ready=true`, `blockers=[]`
+
+## 2026-03-12 — Tutor dive readiness audit
+
+- Audited the next Tutor wave across frontend flow, backend/session lifecycle, retrieval/runtime truthfulness, and shell/docs/test hygiene.
+- Kept `gemini-embedding-2-preview` as the intended embedding default per owner direction and did not reopen any task to switch back to OpenAI embeddings.
+- Converted the follow-on improvements plus new confirmed blockers into a concrete pre-Tutor hardening backlog in:
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/TUTOR_DIVE_READINESS_AUDIT_2026-03-12.md`
+- Highest-priority blockers before new Tutor feature work:
+  - preflight/start contract mismatch
+  - Brain handoff versus stale active-session restore precedence
+  - underdeclared Tutor retrieval runtime and deprecated Chroma adapter usage
+  - SQLite-only embed skip logic that can lie about Chroma readiness
+  - replayable preflight bundles and missing session-create numeric validation
+  - post-end artifact mutation still allowed
+  - missing direct-load Flask routes for live support pages
+- The pre-Tutor hardening backlog now carries explicit task gates for each item, including targeted `pytest`, targeted `vitest`, `npm run check`, `npm run build`, `git diff --check`, route smoke, and a final live Tutor lifecycle sweep before the next Tutor sprint opens.
+
+## 2026-03-12 — Canon collapse + pre-Tutor hardening closeout
+
+- Closed the canon-collapse wave by making `docs/root/TUTOR_STUDY_BUDDY_CANON.md` the enforced product/page-ownership source and reducing the live execution board to status/reporting instead of parallel truth.
+- Finished the Brain/Tutor shell recenter so Brain is the public home + profile surface, Tutor owns the live workspace tools, and Scholar remains the system-facing investigation console.
+- Cleaned the remaining live docs drift in `docs/root/GUIDE_TUTOR_FLOW.md`, `docs/root/GUIDE_USER.md`, and `docs/root/PROJECT_ARCHITECTURE.md`, then hard-marked the older `brain-scholar-tutor-realignment_20260311` track docs as historical so they stop competing in repo search.
+- Ran the final live Tutor lifecycle smoke on the fresh `Start_Dashboard.bat` server using the real Movement Science Construct 2 scope (`course_id=4`, `study_unit=Construct 2 - Lower Quarter`, material ids `535,536,537`): preflight -> create -> restore -> end -> rejected post-end artifact mutation -> delete.
+- Validation:
+  - `python scripts/check_docs_sync.py` -> PASS
+  - `cd dashboard_rebuild && npm run check` -> PASS
+  - `cd dashboard_rebuild && npm run test` -> `457 passed`
+  - `cd dashboard_rebuild && npm run build` -> PASS
+  - `pytest brain/tests/ -q` -> `978 passed`
+  - live `GET /api/tutor/embed/status` -> `provider=gemini`, `model=gemini-embedding-2-preview`
+  - live Tutor lifecycle smoke -> `preflight=200`, `create=201`, `restore=200`, `end=200`, post-end artifact mutation blocked with `SESSION_NOT_ACTIVE`, `delete=200`
+- Non-blocking follow-up notes captured during closeout:
+  - dormant Brain-only workspace components still exist under `dashboard_rebuild/client/src/components/brain/**`, but they are no longer mounted by the public Brain route
+  - Tutor still needs tighter direct regression coverage around bounded Scholar strategy behavior before the next deeper Tutor feature wave
+
+## 2026-03-12 — Agent canon next-step priority rule
+
+- Tightened the root agent canon in `AGENTS.md` so end-of-task replies must name one explicit `Recommended next step` when there is a clear highest-leverage follow-up.
+- Kept the existing requirement to offer 2-3 actionable next-step options, but removed ambiguity about priority ordering so the user does not have to infer the best move from an unordered list.
+- Scope: instruction-only change; no code/runtime behavior changed.
+
+## 2026-03-12 — Local Windows AI-tool stability cleanup
+
+- Audited the Windows baseline behind repeated Claude/Codex slowdowns and confirmed the primary issue was memory/process pressure rather than disk health or Defender malfunction.
+- Reclaimed stale local agent data earlier in the session, then disabled persistent Lenovo Now scheduled tasks plus Intel Driver & Support Assistant services with admin access.
+- Verified Windows Search was not the main active bottleneck for `.claude` / `.codex` because those hidden tool folders were already excluded from the indexer on this machine.
+- Verified Defender stayed healthy and enabled, captured a short Defender performance trace, and found no meaningful active scan hotspot during the sample window.
+- Removed the current-user `AppUp.IntelConnectivityPerformanceSuite` package after reboot because `ICPS.exe` was still being relaunched by Intel connectivity services and consuming substantial memory.
+- Post-cleanup baseline improved to roughly `59%` RAM used with about `6.45 GB` free immediately after the `ICPS` removal check.
+- Followed with removal of the current-user `Microsoft.YourPhone` and `MicrosoftWindows.CrossDevice` packages after their background COM processes (`PhoneExperienceHost.exe`, `CrossDeviceService.exe`) continued respawning despite disabled startup-task state.
+- Verified both packages were no longer present for the current user and both background processes stayed down after termination.
+- Disabled four remaining low-risk startup items: removed `LenovoVantageToolbar` and `Microsoft.Lists` from `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, moved `AVG Secure VPN.lnk` and `Send to OneNote.lnk` out of the active startup folders into `C:\Users\treyt\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\Disabled_PT_Tune\`, and saved a small registry restore file there for the removed `Run` values.
+- Verified a separate `OpenAI.ChatGPT-Desktop` app instance was auto-starting alongside Codex, then disabled its packaged startup task via `HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData\OpenAI.ChatGPT-Desktop_2p2nqsd0c76g0\ChatGPT` (`State=1`) and stopped the live `ChatGPT.exe` processes.
+
+## 2026-03-12 — Anti-drift topic reset guardrail
+
+- Diagnosed a conversation drift failure where a stale queued task resumed after the user had already switched to a different question (`BirdAuth.bat`), causing the assistant to answer the wrong thread.
+- Root cause was not a conflicting repo-vs-global instruction file; the stronger contributors were aggressive persistence/runtime pressure plus repo closeout rules that encouraged momentum toward prior "next steps" unless a hard reset rule existed.
+- Added explicit repo-canon guardrails in `AGENTS.md` requiring new user questions/topics to act as hard task-boundary resets, stale background work to be canceled or ignored after such a reset, old recommendations not to be resumed without re-request, and direct file/script questions to stay scoped unless the user asks to broaden the task.

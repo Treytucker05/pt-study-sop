@@ -653,6 +653,57 @@ def test_delete_session_preserves_manual_learning_objective(client, monkeypatch)
         conn.close()
 
 
+def test_delete_session_does_not_delete_canonical_map_of_contents(client, monkeypatch):
+    conn = _open_db()
+    deleted_paths: list[str] = []
+    try:
+        course_id = _create_course(conn, "Tutor Canonical Notes")
+        map_path = "Courses/Test/Construct 2 - Lower Quarter/_Map of Contents.md"
+        session_note_path = "Sessions/tutor-delete-smoke.md"
+        _create_tutor_session(
+            conn,
+            session_id="canonical-moc-session",
+            course_id=course_id,
+            topic="Construct 2 - Lower Quarter",
+            content_filter={
+                "module_name": "Construct 2 - Lower Quarter",
+                "map_of_contents": {"path": map_path},
+            },
+        )
+        conn.execute(
+            "UPDATE tutor_sessions SET artifacts_json = ? WHERE session_id = ?",
+            (
+                json.dumps(
+                    [
+                        {
+                            "type": "note",
+                            "session_path": session_note_path,
+                            "concept_paths": [],
+                        }
+                    ]
+                ),
+                "canonical-moc-session",
+            ),
+        )
+        conn.commit()
+
+        monkeypatch.setattr(
+            _api_tutor_mod,
+            "_vault_delete_note",
+            lambda path: deleted_paths.append(path) or {"success": True, "path": path},
+        )
+
+        resp = client.delete("/api/tutor/session/canonical-moc-session")
+        assert resp.status_code == 200
+        body = resp.get_json()
+        assert body["deleted"] is True
+        assert body["obsidian_deleted"] == [session_note_path]
+        assert map_path not in deleted_paths
+        assert session_note_path in deleted_paths
+    finally:
+        conn.close()
+
+
 def test_reconcile_obsidian_state_unlinks_without_deleting_shared_objective(
     monkeypatch,
 ):

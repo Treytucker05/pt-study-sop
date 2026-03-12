@@ -1,5 +1,7 @@
 # Implementation Plan: Brain / Scholar / Tutor Realignment
 
+> Historical track note: this file is execution history only. Current product/page ownership lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+
 **Track ID:** brain-scholar-tutor-realignment_20260311  
 **Spec:** [./spec.md](./spec.md)  
 **Created:** 2026-03-11  

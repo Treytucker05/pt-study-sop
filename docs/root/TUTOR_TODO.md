@@ -1,8 +1,13 @@
 # Tutor TODO (Execution Tracker)
 
-Date: 2026-03-06
-Owner: Trey  
-Purpose: keep implementation work ordered, visible, and tied to canonical tutor rules.
+Date: 2026-03-12
+Owner: Trey
+Authority: execution-only sprint and backlog tracker. Product/page ownership lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+Purpose: keep implementation work ordered, visible, and tied to tests and verification gates without redefining the product.
+
+- Product/ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Supporting technical/runtime docs: `docs/root/PROJECT_ARCHITECTURE.md`, `docs/root/GUIDE_DEV.md`
+- Conductor execution registry: `conductor/tracks.md`
 
 ## Current Board (In-Progress)
 
@@ -11,12 +16,189 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
   - Added deterministic Scholar question lifecycle persistence + answer endpoint.
   - Added explicit Scholar proposal approve/reject endpoints.
   - Aligned Scholar status/history API compatibility and frontend API usage.
-- Source-of-truth order: 
+- Execution references:
   - `docs/root/TUTOR_STUDY_BUDDY_CANON.md` (master product canon)
-  - `docs/root/TUTOR_TODO.md` (active workboard)
+  - `docs/root/TUTOR_TODO.md` (active execution board)
   - `conductor/tracks.md` (track registry / archival)
+- Historical note: completed sprint entries below remain as execution history. If any older wording conflicts with the canon, the canon wins.
 
-## Active Sprint 2026-03-11
+## Active Sprint 2026-03-12
+
+### Sprint 26: Gap Hardening Before Tutor Deep Dive (2026-03-12)
+- [ ] Claim scope: tighten shell/workspace proof, Methods/chains page-level proof, and one true full-circle Tutor session proof before deeper Tutor feature work
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/GUIDE_DEV.md`
+  - `dashboard_rebuild/client/src/pages/__tests__/brain.test.tsx`
+  - `dashboard_rebuild/client/src/pages/__tests__/tutor.test.tsx`
+  - `dashboard_rebuild/client/src/components/__tests__/TutorWorkspaceSurface.test.tsx`
+  - `dashboard_rebuild/client/src/pages/methods.tsx`
+  - `brain/dashboard/api_tutor_turns.py`
+  - `brain/tests/`
+  - `scripts/live_tutor_smoke.py`
+- [ ] Wave A: frontend proof hardening
+  - Add route-ready shell assertions and isolate full-App test state.
+  - Add non-mocked Tutor workspace integration proof for notes/canvas/graph/table.
+  - Add page-level `/methods` regression coverage plus Tutor/Methods chain consistency proof.
+- [ ] Wave B: backend streaming proof hardening
+  - Add explicit turn-stream contract coverage.
+  - Add first-chunk / retrieval / tool-round timing visibility.
+  - Add SSE heartbeat support without changing the JSON `data:` frame contract.
+- [ ] Wave C: live readiness check
+  - Add `scripts/live_tutor_smoke.py` for `preflight -> create -> turn -> restore/summary -> end -> delete`.
+  - Document the thin browser smoke checklist for `/tutor` workspace and `/methods`.
+- [ ] Validation
+  - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/brain.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.test.tsx client/src/components/__tests__/TutorWorkspaceSurface.integration.test.tsx client/src/pages/__tests__/methods.test.tsx`
+  - `pytest brain/tests/test_tutor_turn_stream_contract.py brain/tests/test_e2e_study_session.py brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_artifact_certification.py -q`
+  - `Start_Dashboard.bat`
+  - `python scripts/live_tutor_smoke.py`
+  - live browser smoke on `/tutor` workspace and `/methods`
+
+### Sprint 25: Canon Collapse + Pre-Tutor Hardening Program (2026-03-12)
+- [x] Claim scope: collapse repo truth into one canon, remove active drift between Brain / Scholar / Tutor docs and shell behavior, then finish the remaining pre-Tutor hardening work before new Tutor feature development
+  - Master canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+  - Execution board: `docs/root/TUTOR_TODO.md`
+  - Conductor execution surfaces: `conductor/`
+  - Frontend shell: `dashboard_rebuild/client/src/`
+  - Tutor backend/runtime: `brain/`
+- [x] Wave A: canon collapse and drift enforcement
+  - Completed tasks: `A1-A13`
+  - Validation:
+    - `python scripts/check_docs_sync.py`
+    - `git diff --check`
+- [x] Wave B: Brain / Tutor / Scholar ownership cleanup
+  - Completed tasks: `B1-B8`
+  - Validation:
+    - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/brain.test.tsx`
+    - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/tutor.test.tsx`
+    - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWorkspaceSurface.test.tsx`
+    - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/scholar.test.tsx`
+- [x] Wave C: support routes and shell integrity
+  - Completed tasks: `C1-C4`
+  - Validation:
+    - `pytest brain/tests/test_dashboard_routes.py -q`
+    - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/library.test.tsx client/src/pages/__tests__/mastery.test.tsx client/src/pages/__tests__/brain.test.tsx`
+    - live `Start_Dashboard.bat` shell smoke for Brain, Tutor, Scholar, Calendar, Library, Mastery, Methods, and Vault Health
+- [x] Wave D: Tutor dive readiness hardening
+  - Completed tasks: `D1-D10`
+  - Validation:
+    - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/TutorWizard.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/library.test.tsx`
+    - `pytest brain/tests/test_tutor_session_linking.py brain/tests/test_tutor_artifact_certification.py brain/tests/test_tutor_audit_remediation.py brain/tests/test_tutor_rag_embedding_provider.py brain/tests/test_tutor_embed_status_api.py -q`
+- [x] Wave E: final verification and closeout
+  - Completed tasks: `E1-E5`
+  - Validation:
+    - `python scripts/check_docs_sync.py`
+    - `cd dashboard_rebuild && npm run check`
+    - `cd dashboard_rebuild && npm run test`
+    - `cd dashboard_rebuild && npm run build`
+    - `pytest brain/tests/ -q`
+    - live `Start_Dashboard.bat` smoke for `/`, `/brain`, `/tutor`, `/scholar`, `/calendar`, `/library`, `/mastery`, `/methods`, `/vault-health`, plus `preflight -> create -> restore -> end -> post-end artifact mutation attempt -> delete` and `GET /api/tutor/embed/status`
+
+### Sprint 24: Tutor Dive Readiness Audit + Pre-Tutor Hardening (2026-03-12)
+- Historical note: Sprint 25 is now the live execution queue. Sprint 24 remains here as the audit trail that fed the new wave.
+- [x] Claim scope: capture post-triad follow-on improvements and run a deep audit for the next Tutor-focused implementation wave
+  - `docs/root/TUTOR_TODO.md`
+  - `docs/root/TUTOR_DIVE_READINESS_AUDIT_2026-03-12.md`
+  - `conductor/tracks/GENERAL/log.md`
+  - Tutor frontend surfaces under `dashboard_rebuild/client/src/pages/tutor.tsx` and related components/tests
+  - Tutor backend/runtime surfaces under `brain/dashboard/api_tutor*.py`, `brain/tutor_rag.py`, and related tests
+- [x] Phase 0: record the already-known follow-on improvements from Sprint 23 closeout.
+  - [x] T-1200: confirm deprecated LangChain `Chroma` usage still needs a migration task and keep it in the live pre-Tutor backlog
+  - [x] T-1201: confirm per-document embed failure telemetry is still missing and keep it in the live pre-Tutor backlog
+  - [x] T-1202: confirm the shell-route `act(...)` warnings still need a cleanup pass before the next Tutor wave
+- [x] Phase 1: audit Tutor readiness across frontend flow, backend/session contracts, retrieval/materials, and test coverage before any new Tutor feature wave starts.
+  - [x] T-1210: audit Tutor frontend flow, restore/handoff behavior, and page-level hierarchy
+  - [x] T-1211: audit Tutor backend/session contract, preflight, artifact, and delete/restore safety
+  - [x] T-1212: audit retrieval/materials/embed/runtime dependencies and operational failure visibility
+  - [x] T-1213: audit Tutor test coverage, smoke coverage, and missing acceptance gates
+- [x] Phase 2: convert the audit into a concrete pre-Tutor task list with dependencies and pass gates.
+  - [x] T-1220: publish the prioritized pre-Tutor task list in this workboard before starting the next Tutor build
+- [x] Phase 3: execute the confirmed pre-Tutor hardening backlog before any new Tutor feature wave starts.
+  - Audit reference: `docs/root/TUTOR_DIVE_READINESS_AUDIT_2026-03-12.md`
+  - Delivery note: Sprint 25 executed and closed the viable Phase 3 hardening items before opening new Tutor feature work.
+  - Completed items:
+    - `T-1230-T-1234`: Gemini/Chroma runtime contract, provider truth, failure visibility, and config/status hardening
+    - `T-1240-T-1243`: preflight-first Tutor start, Brain handoff precedence, resume-state consistency, and scoped restore coverage
+    - `T-1250-T-1253`: stable session-create validation, preflight lifecycle hardening, post-end lifecycle enforcement, and delete-warning coverage
+    - `T-1260-T-1263`: support-route regression proof, docs/runbook cleanup, shell-route warning cleanup, and final readiness sweep
+
+### Sprint 23: Brain-Centered Triad Reframe (2026-03-12)
+- [x] Claim scope: corrected one-student Brain / Scholar / Tutor end-state with Tutor as the bread-and-butter live engine + reverse-built implementation roadmap
+  - `conductor/tracks/brain-centered-triad_20260312/`
+  - `tasks/prd-brain-centered-triad.md`
+  - `docs/root/TUTOR_TODO.md`
+  - `conductor/tracks.md`
+  - `conductor/index.md`
+- [x] Phase 0: open the track, capture locked learnings and open questions, and document the end-goal-first planning rule.
+- [x] Phase 1: freeze the corrected end-state contract for Brain home ownership, Tutor work-surface ownership, and Scholar system-facing investigation authority.
+- [x] Phase 2: work backward into small, feasible implementation slices with required tests that must pass before any new slice starts.
+- [x] Phase 3: publish the PRD and freeze the tonight cut line for the first executable implementation wave.
+  - Tonight cut line:
+    - Shell/route collapse so Brain becomes home, Dashboard stops being a peer page, and Tutor is the clearest next action.
+    - Brain home top section with the Tutor-first attention queue and split stats bands.
+    - Product framing cleanup for Tutor, Scholar, and the support pages so the app reads as one personal study program.
+- [x] Phase 4: implement Slice 1 (`Shell + Route Collapse`) and verify it before starting Slice 2.
+- [x] Phase 5: implement Slice 2 (`Brain Home Composition`) with the attention queue, split stats, and Brain-owned support launches.
+- [x] Phase 6: implement Slice 3 (`Tutor-Centered Framing Cleanup`) and retire Dashboard as a live peer page.
+  - Validation:
+    - `cd dashboard_rebuild && npm run check`
+    - `cd dashboard_rebuild && npm run test`
+    - `cd dashboard_rebuild && npm run build`
+    - `cmd /c Start_Dashboard.bat`
+  - Live smoke:
+    - Clean-state `/` loads Brain Home with Brain highlighted in nav and support pages grouped under `SUPPORT SYSTEMS`.
+    - Tutor and Scholar both show the corrected triad framing in the live app.
+  - Follow-up fixed in the same sprint:
+    - `/api/mastery/dashboard` now returns `200` against the live local data set.
+    - Brain home now renders live mastery counts instead of relying on the fallback state.
+- [x] Phase 7: stabilize the shell/header and remove the post-cut regression before more product polish.
+  - [x] T-700: repair the broken desktop header/nav layout in `dashboard_rebuild/client/src/components/layout.tsx`
+  - [x] T-701: add resilient responsive behavior for the shell header so desktop/tablet/mobile widths stop clipping or crowding
+  - [x] T-702: add regression tests for shell routing + grouped triad/support nav framing
+  - [x] T-703: harden Brain home persistence and bad `localStorage` recovery so `home` stays the safe default
+  - [x] T-704: remove remaining live Dashboard-era labels, route assumptions, and stale references from the frontend shell
+- [x] Phase 8: finish the Brain home data and action layer after the shell is stable.
+  - [x] T-800: diagnose and fix the live `/api/mastery/dashboard` `500`
+  - [x] T-801: replace Brain home mastery fallback with real mastery state rendering
+  - [x] T-802: harden Brain attention queue ordering and dedupe rules
+  - [x] T-803: make Brain queue actions carry the correct destination context into Tutor / Calendar / Scholar
+  - [x] T-804: refine Brain home section hierarchy and spacing so the top queue stays dominant
+  - [x] T-805: tighten the course breakdown and study-rotation sections into real next-action surfaces
+  - [x] T-806: demote onboarding/data-rights controls into a quieter `System / Setup` block
+  - Validation:
+    - `pytest brain/tests/test_mastery_api.py -q`
+    - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/brain.test.tsx`
+    - live `GET http://127.0.0.1:5000/api/mastery/dashboard` -> `200`
+- [x] Phase 9: finish the hierarchy cleanup around Brain / Scholar / Tutor.
+  - [x] T-900: make Brain-to-Tutor handoff feel intentional everywhere
+  - [x] T-901: clean up Tutor copy and top-of-page framing without breaking session restore or structured notes
+  - [x] T-902: finish the Scholar investigation-console recenter
+  - [x] T-903: add mirrored-reference treatment for Scholar items shown in Brain/Tutor
+  - [x] T-904: reframe Library, Mastery, Calendar, Methods, and Vault Health as support systems instead of peer products
+  - Validation:
+    - `cd dashboard_rebuild && npm run test -- client/src/pages/__tests__/brain.test.tsx client/src/pages/__tests__/scholar.test.tsx client/src/pages/__tests__/tutor.test.tsx client/src/pages/__tests__/library.test.tsx client/src/pages/__tests__/mastery.test.tsx`
+    - live route smoke on `/`, `/brain`, `/tutor`, `/scholar`, `/library`, `/mastery`, `/calendar`, `/methods`, `/vault-health`
+- [x] Phase 10: run the stabilization regression wave and close the docs loop.
+  - [x] T-1000: run full frontend verification after the stabilization wave
+  - [x] T-1001: rerun live app smoke on Brain / Scholar / Tutor + support routes
+  - [x] T-1002: sync canon/docs to the shipped interface architecture once the UI is stable
+  - Validation:
+    - `cd dashboard_rebuild && npm run check`
+    - `cd dashboard_rebuild && npm run test`
+    - `cd dashboard_rebuild && npm run build`
+    - `git diff --check`
+- [x] Phase 11: finish the Gemini embedding migration and rollout hardening.
+  - [x] T-1100: lock Tutor RAG to the Gemini-first embedding provider contract with OpenAI fallback preserved
+  - [x] T-1101: verify provider-scoped collection behavior and safe re-embed behavior for existing material corpora
+  - [x] T-1102: surface the active embedding provider/model clearly in the Tutor or Library workflow where users can actually see it
+  - [x] T-1103: update runbook/docs from OpenAI-only embedding assumptions to the real Gemini-first configuration
+  - [x] T-1104: run a live embed smoke against the local app and confirm Gemini is selected, status is truthful, and failures degrade cleanly
+  - Validation:
+    - `pytest brain/tests/test_tutor_rag_embedding_provider.py brain/tests/test_tutor_embed_status_api.py -q`
+    - live `GET http://127.0.0.1:5000/api/tutor/embed/status`
+    - live `POST http://127.0.0.1:5000/api/tutor/embed`
+  - Notes captured for later:
+    - migrate off the deprecated LangChain `Chroma` adapter to `langchain_chroma`
+    - add per-document embed failure telemetry so the UI can show why a file was skipped
 
 ### Sprint 21: Brain / Scholar / Tutor Realignment + Premium Individual Foundation (2026-03-11)
 - [ ] Claim scope: product contract freeze + conductor roadmap
@@ -44,9 +226,9 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - `pytest brain/tests/ -q`
     - `cmd /c Start_Dashboard.bat`
     - `GET /api/brain/profile`
-- [x] Phase 4: ship Scholar learner-facing research MVP with cited web research.
+- [x] Phase 4: ship the first Scholar investigation MVP with cited web research.
   - Added persisted Scholar investigations, learner questions, normalized source metadata, cited findings, and visible uncertainty handling.
-  - Shipped `/api/scholar/research/*` plus the learner-facing Scholar workspace with investigation, questions, and findings lanes.
+  - Shipped `/api/scholar/research/*` plus the Scholar investigation workspace with investigation, questions, and findings lanes.
 - [x] Phase 5: define and validate the bounded Scholar-to-Tutor strategy envelope.
   - Added Scholar strategy snapshots, bounded adaptive fields, Tutor provenance logging, and strategy feedback capture.
   - Verified that Brain cannot bypass Scholar and Tutor remains SOP/chain-bound.
@@ -60,6 +242,31 @@ Purpose: keep implementation work ordered, visible, and tied to canonical tutor 
     - `pytest brain/tests/ -q`
     - `cmd /c Start_Dashboard.bat`
     - live API smokes for `/api/brain/profile`, `/api/product/analytics`, `/api/product/privacy`, and `/api/product/outcome-report`
+
+### Sprint 22: Movement Science 1 Construct 2 Study Flow Verification (2026-03-11)
+- [x] Claim scope: Movement Science 1 live study-unit setup + Tutor preflight verification
+  - `docs/root/TUTOR_TODO.md`
+  - `C:\Users\treyt\Desktop\Treys School\Courses\Movement Science\`
+  - `brain/data/pt_study.db`
+  - `brain/dashboard/api_tutor_sessions.py`
+  - `brain/dashboard/api_tutor_vault.py`
+  - `brain/data/vault_courses.yaml`
+- [x] Phase 0: locate the live Construct 2 source files on this PC and confirm the exact study-unit scope.
+  - Confirmed the live unit is `Construct 2 - Lower Quarter` for `PHYT 6314 / Movement Science`, with the source corpus still living under `C:\Users\treyt\OneDrive\Desktop\PT School\Movement Science 1\Construct 2 Lower Quarter\`.
+- [x] Phase 1: seed the canonical Obsidian unit folder and hub notes for Movement Science Construct 2 without creating vault drift.
+  - Confirmed the canonical vault path `C:\Users\treyt\Desktop\Treys School\Courses\Movement Science\Construct 2 - Lower Quarter\` contains the shared hub notes `Learning Objectives & To Do.md` and `_Map of Contents.md`.
+  - Hardened Tutor session cleanup so shared hub notes are not deleted when a session is removed.
+- [x] Phase 2: attach/import the Construct 2 materials and approved objectives so Tutor preflight has valid scope data.
+  - Confirmed course `id=4` contains approved objectives `OBJ-001` through `OBJ-028` for `Construct 2 - Lower Quarter`.
+  - Confirmed the live material corpus is attached in `rag_docs`, including the baseline preflight set `#535-#537` plus deeper Hip/Knee/Foot-and-Ankle source files.
+- [x] Phase 3: run a real preflight verification, confirm `vault_ready`, and document the study-start path for the live session.
+  - Live `POST /api/tutor/session/preflight` against `http://127.0.0.1:5000` returned `ok=true`, `vault_ready=true`, no blockers, and both canonical pages in `reviewed` status.
+  - Study-start path: select course `Movement Science`, choose study unit `Construct 2 - Lower Quarter`, keep `module_all` scope (or pick a single objective), select the desired Construct 2 materials, then create the session from the returned `preflight_id`.
+  - Validation:
+    - `pytest brain/tests/test_tutor_audit_remediation.py -q`
+    - `npm run build`
+    - `cmd /c Start_Dashboard.bat`
+    - live `POST /api/tutor/session/preflight` for course `4` with material ids `535,536,537`
 
 ### Sprint 20: Vault Stabilization + Health Truthfulness (2026-03-10)
 - [x] Claim scope: live Obsidian vault contract + truthful Vault Health diagnostics

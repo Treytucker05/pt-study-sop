@@ -1,5 +1,9 @@
 # PT Study System — User Guide
 
+Reference-only usage guide.
+
+- Product/page ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+
 ## Who This Is For
 
 Learners using the system to run study sessions, track progress, and improve performance across DPT coursework.
@@ -19,7 +23,7 @@ The study lifecycle is:
 4. At wrap: Exit Ticket + Session Ledger → saved to DB + Obsidian vault.
 5. **Brain** stores telemetry, updates learner evidence, and tracks progress patterns.
 6. **Scholar** audits that evidence, asks focused research questions when needed, and produces findings/proposals.
-7. Dashboard/Calendar surface priorities → next Tutor targets.
+7. Brain/Calendar support signals → next Tutor targets.
 
 ```
 Library (upload materials)
@@ -44,11 +48,14 @@ Brain (telemetry + learner evidence) -> Scholar (research + findings) -> next Tu
 ### Prerequisites
 - Python 3.10+ installed
 - Node.js 18+ installed
-- OpenAI API key set as `OPENAI_API_KEY` environment variable (used for embeddings)
+- Gemini API key set as `GEMINI_API_KEY`
+- Tutor embedding config set to `TUTOR_RAG_EMBEDDING_PROVIDER=gemini`
+- Tutor embedding model set to `TUTOR_RAG_GEMINI_EMBEDDING_MODEL=gemini-embedding-2-preview`
+- Optional fallback only: `OPENAI_API_KEY` if you intentionally switch embeddings back to OpenAI
 - Codex CLI authenticated (`codex login`) — used for tutor LLM
 
 ### Minimum to start studying
-1. Launch the dashboard: double-click `Start_Dashboard.bat` → opens `http://127.0.0.1:5000`.
+1. Launch the app: double-click `Start_Dashboard.bat` → opens Brain home at `http://127.0.0.1:5000`.
 2. Go to **Library** (`/library`) and upload at least one study file (PDF, DOCX, PPTX, or slides).
 3. Go to **Tutor** (`/tutor`) and start a session.
 
@@ -59,7 +66,7 @@ What the system does automatically:
 - Stores study telemetry in Brain so the system can learn what helps you most over time.
 
 ### Optional later
-- Add assessments (date optional) via the Dashboard.
+- Add assessments and planning pressure through Brain + Calendar support workflows.
 - Connect Google Calendar/Tasks for scheduling (OAuth setup in `/calendar`).
 - Connect Anki Desktop (AnkiConnect on port 8765) for card sync.
 - Sync materials from OneDrive folder (`C:\Users\treyt\OneDrive\Desktop\PT School`).
@@ -195,7 +202,7 @@ Fewer toggles = faster responses (~1-2s). All toggles on = full pipeline (~5-8s)
 | Data | Location |
 |------|----------|
 | Study materials (raw files) | `brain/data/uploads/` |
-| Study materials (vectors) | `brain/data/chroma_tutor/materials/` (ChromaDB) |
+| Study materials (vectors) | `brain/data/chroma_tutor/` with provider/model-scoped collections such as `tutor_materials_gemini_gemini-embedding-2-preview/` |
 | Database | `brain/data/pt_study.db` (SQLite) |
 | Session logs | `brain/session_logs/*.md` |
 | Obsidian vault | `C:\Users\treyt\Desktop\Treys School` |
@@ -206,29 +213,30 @@ Fewer toggles = faster responses (~1-2s). All toggles on = full pipeline (~5-8s)
 
 ---
 
-## Dashboard Pages
+## App Pages
 
 | Page | Route | Purpose |
 |------|-------|---------|
-| Dashboard | `/` | Overview, quick stats |
-| Brain | `/brain` | Learner evidence, telemetry, mastery signals, vault-linked study artifacts |
-| Calendar | `/calendar` | Google Calendar/Tasks, local events |
-| Scholar | `/scholar` | Investigations, questions, findings, proposals, research status |
-| **Tutor** | `/tutor` | **Chat, sources drawer, Map of Contents, vault authoring** |
-| **Library** | `/library` | **Study material upload, course organization, source selection** |
-| Methods | `/methods` | Block library, chains, analytics |
+| Brain | `/` and `/brain` | Home surface for learner state, attention queue, mastery snapshot, and support-system handoff |
+| Tutor | `/tutor` | Live study workspace for certified setup, session execution, notes/canvas/graph/table workspace tools, and artifact output |
+| Scholar | `/scholar` | System-facing investigation console for questions, findings, and research status |
+| Library | `/library` | Support system for study material upload, course organization, Tutor source scope, and embedding status |
+| Mastery | `/mastery` | Support system for objective progress, mastery snapshots, and weakness follow-up |
+| Calendar | `/calendar` | Support system for deadlines, planning pressure, and schedule truth |
+| Methods | `/methods` | Support system for block library, chains, and analytics |
+| Vault Health | `/vault-health` | Support system for vault-quality checks, repairs, and trust visibility |
 
 ---
 
 ## Troubleshooting
 
-### Dashboard issues
+### App shell issues
 - **Nothing shows:** Confirm you launched via `Start_Dashboard.bat`. Never use `npm run dev`.
 - **Brain page goes black:** Stale frontend build. Run `cd dashboard_rebuild && npm run build`, restart `Start_Dashboard.bat`, hard refresh (Ctrl+F5).
 - **Calendar sync fails:** Verify OAuth credentials in `brain/data/api_config.json`.
 
 ### Tutor issues
-- **Black screen with `Cannot access 'ze' before initialization`:** Stale JS chunks. Rebuild UI (`cd dashboard_rebuild && npm run build`), restart dashboard, hard refresh (Ctrl+F5).
+- **Black screen with `Cannot access 'ze' before initialization`:** Stale JS chunks. Rebuild UI (`cd dashboard_rebuild && npm run build`), restart the app, hard refresh (Ctrl+F5).
 - **Translucent overlay stuck after bulk delete:** Reload the Tutor tab, rebuild UI, restart. Retry — should show themed in-panel confirm.
 - **Bulk delete reports partial results:** Tutor now shows `Requested / Deleted / Already gone / Failed` and a short failure details panel when any session delete fails.
 - **Session delete returns warning instead of full failure:** `status: deleted_with_warnings` means the Tutor session row was deleted, but one or more Obsidian files were missing/unremovable. Inspect `obsidian_cleanup.missing_paths` and `request_id`.

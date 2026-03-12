@@ -2,16 +2,21 @@
 
 Source for the PT Study dashboard UI (frontend only). The API is served by Flask in `brain/dashboard/api_adapter.py` against `brain/data/pt_study.db`.
 Canonical system context: tutor/session behavior is governed by CP-MSS v1.0 (`PRIME -> CALIBRATE -> ENCODE -> REFERENCE -> RETRIEVE -> OVERLEARN`).
+This README is implementation context only, not product authority.
+
+- Product/ownership authority: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
+- Build/run/test authority: `docs/root/GUIDE_DEV.md`
 
 ## Entry points
 - `schema.ts` - shared types for client data contracts.
 - `client/src/App.tsx` - UI router.
-- `client/src/pages/brain.tsx` - Brain page (includes Ingestion tab).
+- `client/src/pages/brain.tsx` - Brain home/profile shell.
+- `client/src/pages/tutor.tsx` - Tutor live workspace shell.
 - Build output: `brain/static/dist` (written directly by the build pipeline).
 
 ## Common commands
 - `npm run dev` - start Vite dev server (DO NOT use in this repo; use `Start_Dashboard.bat`).
-- `npm run check` - typecheck (not required for builds; there are known failures).
+- `npm run check` - typecheck gate for frontend changes.
 - `npm run build` - production build (writes directly to `brain/static/dist`).
 
 ## Notes

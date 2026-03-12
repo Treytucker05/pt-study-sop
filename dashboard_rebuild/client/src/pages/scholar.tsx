@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   AlertCircle,
   Brain,
@@ -23,6 +24,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api, type ScholarInvestigation, type ScholarQuestion } from "@/lib/api";
 import { useToast } from "@/use-toast";
+
+type ScholarBrainProfile = Awaited<ReturnType<typeof api.brain.getProfileSummary>> & {
+  hybridArchetype?: {
+    confidence?: string;
+    label?: string;
+    summary?: string;
+  } | null;
+};
+
+type ScholarBrainLaunchContext = {
+  source?: string;
+  itemId?: string;
+  title?: string;
+  reason?: string;
+  investigationId?: string;
+  questionId?: string;
+};
 
 function statusTone(status?: string) {
   switch (status) {
@@ -51,20 +69,44 @@ function confidenceTone(confidence?: string) {
 }
 
 export default function ScholarPage() {
+  const [location] = useLocation();
+  const isScholarRoute = location === "/scholar";
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("workspace");
   const [selectedInvestigationId, setSelectedInvestigationId] = useState<string>("");
+  const [brainLaunchContext, setBrainLaunchContext] = useState<ScholarBrainLaunchContext | null>(null);
   const [queryText, setQueryText] = useState("");
   const [rationale, setRationale] = useState("");
-  const [audienceType, setAudienceType] = useState<"learner" | "operator" | "system">("learner");
+  const [audienceType, setAudienceType] = useState<"learner" | "operator" | "system">("system");
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, string>>({});
   const [submittingQuestionIds, setSubmittingQuestionIds] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("scholar.open_from_brain.v1");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        setBrainLaunchContext(parsed as ScholarBrainLaunchContext);
+        if (typeof parsed.investigationId === "string") {
+          setSelectedInvestigationId(parsed.investigationId);
+        }
+      }
+      sessionStorage.removeItem("scholar.open_from_brain.v1");
+    } catch {
+      // ignore sessionStorage failures
+    }
+  }, []);
 
   const investigationsQuery = useQuery({
     queryKey: ["scholar-investigations"],
     queryFn: () => api.scholar.getInvestigations(30),
+    enabled: isScholarRoute,
     refetchInterval: (query) => {
+      if (!isScholarRoute) {
+        return false;
+      }
       const rows = (query.state.data as ScholarInvestigation[] | undefined) ?? [];
       return rows.some((row) => row.status === "queued" || row.status === "running") ? 2500 : false;
     },
@@ -85,21 +127,30 @@ export default function ScholarPage() {
   const detailQuery = useQuery({
     queryKey: ["scholar-investigation", selectedInvestigation?.investigation_id],
     queryFn: () => api.scholar.getInvestigation(selectedInvestigation!.investigation_id),
-    enabled: Boolean(selectedInvestigation?.investigation_id),
-    refetchInterval: selectedInvestigation?.status === "queued" || selectedInvestigation?.status === "running" ? 2500 : false,
+    enabled: isScholarRoute && Boolean(selectedInvestigation?.investigation_id),
+    refetchInterval:
+      isScholarRoute &&
+      (selectedInvestigation?.status === "queued" || selectedInvestigation?.status === "running")
+        ? 2500
+        : false,
   });
 
   const questionsQuery = useQuery({
     queryKey: ["scholar-research-questions"],
     queryFn: () => api.scholar.getQuestions("all", 100),
-    refetchInterval: 2500,
+    enabled: isScholarRoute,
+    refetchInterval: isScholarRoute ? 2500 : false,
   });
 
   const findingsQuery = useQuery({
     queryKey: ["scholar-research-findings", selectedInvestigation?.investigation_id ?? "all"],
     queryFn: () => api.scholar.getFindings(selectedInvestigation?.investigation_id, 60),
-    enabled: true,
-    refetchInterval: selectedInvestigation?.status === "queued" || selectedInvestigation?.status === "running" ? 2500 : false,
+    enabled: isScholarRoute,
+    refetchInterval:
+      isScholarRoute &&
+      (selectedInvestigation?.status === "queued" || selectedInvestigation?.status === "running")
+        ? 2500
+        : false,
   });
 
   const brainProfileQuery = useQuery({
@@ -127,7 +178,7 @@ export default function ScholarPage() {
       setActiveTab("workspace");
       toast({
         title: "Investigation started",
-        description: "Scholar is collecting sources, citations, and learner-facing findings.",
+        description: "Scholar is collecting sources, citations, and system-facing findings.",
       });
     },
     onError: (error: Error) => {
@@ -148,7 +199,7 @@ export default function ScholarPage() {
       queryClient.invalidateQueries({ queryKey: ["scholar-investigation"] });
       toast({
         title: "Answer saved",
-        description: "Scholar stored the learner answer and flagged it for refresh on the linked investigation.",
+        description: "Scholar stored the answer and queued a refresh on the linked investigation.",
       });
     },
     onError: (error: Error) => {
@@ -177,8 +228,31 @@ export default function ScholarPage() {
   const questions = questionsQuery.data ?? [];
   const openQuestions = questions.filter((question) => question.status !== "answered");
   const findings = findingsQuery.data ?? [];
-  const profile = brainProfileQuery.data;
+  const profile = brainProfileQuery.data as ScholarBrainProfile | undefined;
   const detail = detailQuery.data;
+  const profileConfidence = profile?.hybridArchetype?.confidence;
+  const profileCards = profile
+    ? [
+        {
+          key: "headline",
+          label: "Headline",
+          value: profile.profileSummary?.headline || "No active Brain headline yet.",
+          helper: "Current top-level Brain interpretation.",
+        },
+        {
+          key: "strength",
+          label: "Strength",
+          value: profile.profileSummary?.strengths?.[0] || "No stable strength identified yet.",
+          helper: "Strongest recurring pattern Brain sees.",
+        },
+        {
+          key: "watchout",
+          label: "Watchout",
+          value: profile.profileSummary?.watchouts?.[0] || "No major watchout identified yet.",
+          helper: "Highest-risk drift Brain sees right now.",
+        },
+      ]
+    : [];
 
   return (
     <Layout>
@@ -190,11 +264,13 @@ export default function ScholarPage() {
               <div>
                 <h1 className="font-arcade text-lg text-primary">SCHOLAR</h1>
                 <p className="font-terminal text-xs text-muted-foreground">
-                  Scholar researches learner-fit questions, cites the web, and asks focused follow-up questions without turning into Tutor.
+                  Scholar is the system-facing investigation console behind Brain and Tutor. It challenges assumptions,
+                  researches external evidence, and records questions, findings, and uncertainty without turning into a
+                  teaching surface.
                 </p>
               </div>
               <Badge variant="outline" className="rounded-none text-xs font-terminal border-primary/50">
-                INTERACTIVE RESEARCH PARTNER
+                SYSTEM INVESTIGATION CONSOLE
               </Badge>
             </div>
             <Button
@@ -213,6 +289,21 @@ export default function ScholarPage() {
             </Button>
           </div>
 
+          {brainLaunchContext?.title ? (
+            <div
+              data-testid="scholar-brain-handoff"
+              className="border border-primary/20 bg-primary/10 px-3 py-2"
+            >
+              <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
+              <div className="font-terminal text-sm text-white">{brainLaunchContext.title}</div>
+              {brainLaunchContext.reason ? (
+                <div className="font-terminal text-[11px] text-muted-foreground">
+                  {brainLaunchContext.reason}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_380px]">
             <Card className="bg-black/40 border border-primary/30">
               <CardHeader className="border-b border-primary/20">
@@ -224,8 +315,8 @@ export default function ScholarPage() {
                 {profile ? (
                   <>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(profile.hybridArchetype?.confidence)}`}>
-                        {profile.hybridArchetype?.confidence?.toUpperCase() || "LOW"} CONFIDENCE
+                      <Badge variant="outline" className={`rounded-none text-[10px] ${confidenceTone(profileConfidence)}`}>
+                        {profileConfidence?.toUpperCase() || "LOW"} CONFIDENCE
                       </Badge>
                       <span className="font-terminal text-sm text-foreground">
                         {profile.hybridArchetype?.label || "No active Brain archetype yet"}
@@ -235,7 +326,7 @@ export default function ScholarPage() {
                       {profile.hybridArchetype?.summary || "Brain has not derived a stable learner-pattern summary yet."}
                     </p>
                     <div className="grid gap-2 md:grid-cols-3">
-                      {profile.summaryCards?.slice(0, 3).map((card) => (
+                      {profileCards.map((card) => (
                         <div key={card.key} className="border border-primary/20 bg-black/30 p-3">
                           <div className="font-terminal text-[11px] uppercase tracking-wide text-primary">
                             {card.label}
@@ -257,7 +348,7 @@ export default function ScholarPage() {
             <Card className="bg-black/40 border border-primary/30">
               <CardHeader className="border-b border-primary/20">
                 <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                  <FileSearch className="w-4 h-4" /> WHAT SCHOLAR IS RESEARCHING
+                  <FileSearch className="w-4 h-4" /> WHAT SCHOLAR IS INVESTIGATING
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 p-4">
@@ -334,7 +425,7 @@ export default function ScholarPage() {
                 </CardHeader>
                 <CardContent className="space-y-4 p-4">
                   <div className="space-y-2">
-                    <div className="font-terminal text-xs text-muted-foreground">Research question</div>
+                    <div className="font-terminal text-xs text-muted-foreground">Investigation question</div>
                     <Textarea
                       value={queryText}
                       onChange={(event) => setQueryText(event.target.value)}
@@ -356,7 +447,7 @@ export default function ScholarPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="font-terminal text-xs text-muted-foreground">Audience</div>
+                    <div className="font-terminal text-xs text-muted-foreground">Primary target</div>
                     <Select value={audienceType} onValueChange={(value) => setAudienceType(value as "learner" | "operator" | "system")}>
                       <SelectTrigger className="rounded-none font-terminal text-xs border-primary/40">
                         <SelectValue />
@@ -380,12 +471,12 @@ export default function ScholarPage() {
                   </Button>
 
                   <div className="border border-primary/20 bg-black/30 p-3">
-                    <div className="font-terminal text-[11px] uppercase tracking-wide text-primary">MVP behavior</div>
+                    <div className="font-terminal text-[11px] uppercase tracking-wide text-primary">Current contract</div>
                     <ul className="mt-2 space-y-1 font-terminal text-xs text-muted-foreground">
-                      <li>1. Scholar searches the web with trusted-source prioritization.</li>
-                      <li>2. Scholar fetches citations and source snippets into the database.</li>
-                      <li>3. Scholar synthesizes findings, uncertainty, and learner questions.</li>
-                      <li>4. Scholar stays research-only and does not teach course content.</li>
+                      <li>1. Scholar investigates Brain, Tutor, and support-system questions with source-backed research.</li>
+                      <li>2. Scholar keeps findings, uncertainty, and blocked questions visible instead of hidden.</li>
+                      <li>3. Scholar can challenge the current Brain read without becoming the long-term evidence home.</li>
+                      <li>4. Scholar stays non-teaching and does not replace Tutor's live execution role.</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -464,7 +555,7 @@ export default function ScholarPage() {
             <Card className="bg-black/40 border border-primary/30">
               <CardHeader className="border-b border-primary/20">
                 <CardTitle className="font-arcade text-xs flex items-center gap-2">
-                  <HelpCircle className="w-4 h-4" /> LEARNER QUESTION INBOX
+                  <HelpCircle className="w-4 h-4" /> QUESTION INBOX
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 p-4">

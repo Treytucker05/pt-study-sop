@@ -2193,6 +2193,34 @@ def init_database():
     """)
 
     # ------------------------------------------------------------------
+    # Adaptive Tutor: rag_embedding_failures (per-document embed telemetry)
+    # ------------------------------------------------------------------
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS rag_embedding_failures (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            rag_doc_id INTEGER NOT NULL,
+            provider TEXT,
+            embedding_model TEXT,
+            collection_name TEXT,
+            failure_stage TEXT,
+            error_type TEXT,
+            error_message TEXT,
+            failed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(rag_doc_id) REFERENCES rag_docs(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_rag_embedding_failures_doc
+        ON rag_embedding_failures(rag_doc_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_rag_embedding_failures_failed_at
+        ON rag_embedding_failures(failed_at)
+    """)
+
+    # ------------------------------------------------------------------
     # Adaptive Tutor: rag_embeddings (vector chunks for ChromaDB)
     # ------------------------------------------------------------------
     cursor.execute("""
@@ -2202,6 +2230,7 @@ def init_database():
             chunk_index INTEGER NOT NULL DEFAULT 0,
             chunk_text TEXT NOT NULL,
             embedding_model TEXT DEFAULT 'text-embedding-3-small',
+            provider TEXT,
             chroma_id TEXT,
             token_count INTEGER,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2214,6 +2243,32 @@ def init_database():
         CREATE INDEX IF NOT EXISTS idx_rag_embeddings_doc
         ON rag_embeddings(rag_doc_id)
     """)
+
+    # Add metadata columns for existing installations
+    cursor.execute("PRAGMA table_info(rag_embeddings)")
+    rag_cols = {row[1] for row in cursor.fetchall()}
+    if "provider" not in rag_cols:
+        try:
+            cursor.execute("ALTER TABLE rag_embeddings ADD COLUMN provider TEXT")
+            print("[INFO] Added 'provider' column to rag_embeddings table")
+        except sqlite3.OperationalError:
+            pass
+    if "embedding_model" not in rag_cols:
+        try:
+            cursor.execute(
+                "ALTER TABLE rag_embeddings ADD COLUMN embedding_model TEXT"
+            )
+            print("[INFO] Added 'embedding_model' column to rag_embeddings table")
+        except sqlite3.OperationalError:
+            pass
+    if "embedding_dimension" not in rag_cols:
+        try:
+            cursor.execute(
+                "ALTER TABLE rag_embeddings ADD COLUMN embedding_dimension INTEGER"
+            )
+            print("[INFO] Added 'embedding_dimension' column to rag_embeddings table")
+        except sqlite3.OperationalError:
+            pass
 
     # ------------------------------------------------------------------
     # Adaptive Tutor: column migrations

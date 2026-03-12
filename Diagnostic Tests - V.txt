@@ -1,0 +1,121 @@
+Okay, diagnostic tests, receiver operating characteristics occurs.
+So as we ended in that last section, these are used when the test produces a continuous
+result like a timed up and go score or a bird balance test, and we want to identify
+a threshold on that continuum of scores that best differentiates patients, usually by some
+condition, and often that's thing for us, that's things like increased risk of some outcome
+like falls or readmission, but it could be anything.
+So receiver operating characteristics curve produce a plot of the false positive rate on
+the x-axis versus the true positive rate on the y-axis.
+So it's one minus specificity on the x-axis and sensitivity on the y-axis, essentially,
+for a number of different candidate threshold values between 0 and 1.
+They also produced this number called an area under the curve, or the AUC, and it just basically
+measures the total area underneath the ROC curve, and it tells us how much the model
+is capable of distinguishing between classes, and so a higher AUC means it's a better model.
+We'll look at some examples here.
+So these are kind of characteristic example, receiver operating characteristics curves with
+some different potential scenarios.
+So this one here on the upper left, it shows, you know, there's a straight line coming up
+from 0, gets close to 1, then it takes a hard right, and so that's a perfect classification.
+In the one, in the figure on the right side of the page, you know, it would be more kind
+of realistically what it would look like, so basically these curves are created from all
+the scores on the continuous measures from all the subjects in the study, just kind
+of connected together and made to look like a smooth line.
+So if you have a scenario like in this left-hand figure where you have this, you know, the
+peak of the curve comes way up and to the left, you have so, so this is a, this is a
+value on the curve, let's say, you know, this top left point.
+Here you have a scenario with high sensitivity and very low false positive rate, which is
+good.
+So you have basically a high sensitivity, high specificity test.
+That's the ideal scenario.
+You know, high true positive rate, very low false positive rate.
+Fortunately, that's not usually the way it goes, but then you see, so still on this kind
+of straight curve here, it goes all the way up and to the left, it has the most area,
+you know, underneath its outline that's going to have the highest AUC.
+This, this curve here, it has much less area underneath the, its, you know, kind of outline.
+And so it's going to have a lower AUC and it suggests that this measure isn't as good as
+the measure reflected in that one that went to the upper left corner.
+And so here we have a scenario.
+If we tried to pick a number pretty similar, we would see a low sensitivity, a low true
+positive rate and still a relatively high, relatively low false positive rate, but our
+sensitivity is much lower.
+So this is, this is just kind of the breakdown of, you know, what you'll see in these
+curves.
+Well, let's look at a specific example and kind of dig in a little bit deeper.
+So this is a study we did a long time ago now up on the ACE unit here in the hospital.
+And it was the type that was published in PT journal, it was the walking speed threshold
+for classifying walking independence and hospitalized older adults.
+And we went out to determine if the in hospital walking speed threshold that bests differentiate
+walking independence from walking dependence in older adults.
+So basically we measured the gate speed of about 160 something older hospitalized adults.
+And then we wanted to, then we also asked them if they were walking independent or
+walking dependent, if they need to help to walk or not.
+And so we had a gate speed, a continuous gate speed measure for all these people.
+And then this dichotomous classification, walking independent, walking dependent, that we also
+had from each one of these patients.
+And so we wanted to determine what walking speed best differentiates between those who
+are walking, who report walking independence versus walking dependence.
+And to do that, you use this receiver operating characteristics curves method.
+And this is the curve that's in the paper.
+And so we can see here that this line, this represents all the gate speeds from all 160
+something people, but it's just kind of smoothed out, their speeds are connected.
+So someone down here on the far left end of the curve, these are the fastest walkers.
+So this might be, you know, 1.0 meters per second.
+This person here at this point on the curve.
+Way down here on the right end of this curve, these are the slowest.
+This might be 0.1 meters per second gate speed.
+And so what this analysis method does is that it calculates what point on this curve
+is closest to this upper left-hand corner, which you remember is suggestive of kind of
+the best possible scenario.
+In the attempt of identifying a threshold that seems to be best at differentiating people
+on their self-reported walking independence based on their gate speed, what's kind of
+going on under the hood here is that it's calculating a sensitivity and specificity.
+It's creating a two by two table for every one of these scores.
+Every one of these 160 something people scores.
+And when you kind of start looking at that threshold value, so this is a breakdown of
+just sort of a range around that 0.36 that the computer identified.
+This is called the closest to one method.
+It'll actually just do that for you.
+So here we see, so our goal is to identify a threshold.
+What's the best threshold?
+And this kind of gets into the investigators just kind of judgment and kind of expertise
+in the area, too.
+It's not all math.
+So what this is saying is, so this is the, we picked a threshold of about 0.35, 0.36
+meters per second as the gate speed that best differentiates people based on their self-reported
+independence, walking independence status.
+So what this is saying, 0.36 meters per second that has a sensitivity of about 0.7 and a one
+minus specificity of about 0.24 or something like that, or yeah.
+And so, and then we look down here, and so remember one minus specificity, so we subtract,
+this is the false positive rate, so the actual specificity would be 70 something, 70%.
+So we picked this value because it just is the first study like this that was done.
+It's kind of a trade-off between sensitivity and specificity.
+But if we were to choose a much slower gate speed as our threshold, say 0.25 meters per
+second, like down here, that's going to give us a much higher sensitivity, sensitivity of
+like 90%, but the trade-off is we're going to have a also quite a bit higher false positive
+rate.
+So we're going to correct, we're going to more, we're going to identify more people who
+are walking independent by using a slower gate speed, but the price is that we're going
+to be misclassifying some people as walking independent when they're really not.
+Okay, and so that is the trade-off often on these ROC curves is that when you increase
+sensitivity, you increase the true positive rate, you're also going to increase the false
+positive rate.
+So it's a trade-off, and sometimes you just kind of have to decide what's more
+important, correctly identifying someone with the condition or, you know, is it more
+important to identify everyone with the condition than it is to potentially misclassify
+somebody as having it when they don't.
+And that's the trade-off that these, that we have to come to terms with.
+And sometimes it's based on, you know, clinical factors like importance of misclassification,
+things like that.
+So that's kind of the tricky part on understanding these ROC curves and identifying a
+threshold is that it's, you know, normally as you increase, if you choose a score that
+increases your true positive rate, you're also probably increasing your false positive
+rate as well.
+So it's that trade-off that you kind of have to come to terms with.
+And so, you know, for this study, you know, we, you know, the kind of clinical goals that
+now that there's a, there's a threshold for creating a discharge goal per se.
+So the patient will ambulate at greater than 0.35 meters per second with or without
+an assisted device by discharge.
+And you can kind of put in parentheses that the cut point for walking independence in
+hospital.
+And so lastly, we're going to talk just about some important kind of design features for
+assessing the credibility of a diagnostic test.

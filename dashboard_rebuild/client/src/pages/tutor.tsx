@@ -27,6 +27,7 @@ import { COURSE_FOLDERS } from "@/config/courses";
 import { TutorWizard } from "@/components/TutorWizard";
 import { TutorChat } from "@/components/TutorChat";
 import { TutorArtifacts, type TutorArtifact } from "@/components/TutorArtifacts";
+import { TutorWorkspaceSurface } from "@/components/TutorWorkspaceSurface";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import {
   PanelRightOpen,
   Clock,
   MessageSquare,
+  PenTool,
   Eye,
   EyeOff,
   Settings2,
@@ -72,6 +74,17 @@ import {
   CARD_BORDER,
 } from "@/lib/theme";
 import { CONTROL_PLANE_COLORS } from "@/lib/colors";
+
+type TutorBrainLaunchContext = {
+  source?: string;
+  itemId?: string;
+  title?: string;
+  reason?: string;
+  courseName?: string;
+  dueDate?: string;
+  investigationId?: string;
+  questionId?: string;
+};
 
 function parseFacilitationSteps(prompt: string | undefined | null): string[] {
   if (!prompt) return [];
@@ -108,30 +121,29 @@ function sanitizeVaultSegment(value: string): string {
   return value.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function deriveVaultFolder(courseName: string, objectiveGroup: string): string {
-  const safeCourse = sanitizeVaultSegment(courseName || "General");
-  const safeGroup = sanitizeVaultSegment(objectiveGroup || "");
-  const weekMatch = safeGroup.match(/^Week\s+0*([0-9]+)/i);
-  if (weekMatch) {
-    return `Courses/${safeCourse}/Week ${Number(weekMatch[1])}`;
-  }
-  const moduleMatch = safeGroup.match(/^(Module|Construct|Topic)\s+0*([0-9]+)/i);
-  if (moduleMatch) {
-    return `Courses/${safeCourse}/${moduleMatch[1]} ${Number(moduleMatch[2])}`;
-  }
-  if (!safeGroup) return `Courses/${safeCourse}`;
-  return `Courses/${safeCourse}/${safeGroup}`;
-}
-
 function normalizeStudyUnitLabel(value: string): string {
   const clean = sanitizeVaultSegment(value)
     .replace(/\s*-\s*/g, " - ")
     .replace(/\s+/g, " ")
     .trim();
-  return clean.replace(
-    /^(Week|Module|Construct|Topic)\s+0*([0-9]+)\b/i,
-    (_match, prefix: string, num: string) => `${prefix} ${Number(num)}`,
+  const numbered = clean.match(
+    /^(Week|Module|Construct|Topic)\s+0*([0-9]+)(?:\s*-\s*|\s+)?(.+)?$/i,
   );
+  if (!numbered) {
+    return clean;
+  }
+  const [, prefix, num, suffix] = numbered;
+  const tail = String(suffix || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return tail ? `${prefix} ${Number(num)} - ${tail}` : `${prefix} ${Number(num)}`;
+}
+
+function deriveVaultFolder(courseName: string, objectiveGroup: string): string {
+  const safeCourse = sanitizeVaultSegment(courseName || "General");
+  const normalizedGroup = normalizeStudyUnitLabel(objectiveGroup || "");
+  if (!normalizedGroup) return `Courses/${safeCourse}`;
+  return `Courses/${safeCourse}/${normalizedGroup}`;
 }
 
 function scoreStudyUnitCandidate(rawSegment: string): number {
@@ -203,6 +215,7 @@ export default function Tutor() {
   const tutorWizardStorageKey = "tutor.wizard.state.v1";
   const tutorActiveSessionKey = "tutor.active_session.v1";
   const tutorLibraryHandoffKey = "tutor.open_from_library.v1";
+  const tutorBrainHandoffKey = "tutor.open_from_brain.v1";
 
   // Session state
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -255,6 +268,7 @@ export default function Tutor() {
   const [turnCount, setTurnCount] = useState(0);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [showArtifacts, setShowArtifacts] = useState(false);
+  const [showWorkspace, setShowWorkspace] = useState(false);
   const [showSetup, setShowSetup] = useState<boolean>(() => {
     try {
       return !Boolean(localStorage.getItem(tutorActiveSessionKey));
@@ -262,6 +276,7 @@ export default function Tutor() {
       return true;
     }
   });
+  const [brainLaunchContext, setBrainLaunchContext] = useState<TutorBrainLaunchContext | null>(null);
   const [objectiveScope, setObjectiveScope] = useState<TutorObjectiveScope>(() => {
     try {
       return normalizeObjectiveScope(localStorage.getItem(tutorObjectiveScopeKey));
@@ -467,7 +482,7 @@ export default function Tutor() {
       learning_objectives:
         scopedObjectives.length > 0
           ? scopedObjectives.map((objective) => ({
-              lo_code: objective.loCode,
+              ...(objective.loCode ? { lo_code: objective.loCode } : {}),
               title: objective.title,
               status: objective.status,
               group: objective.groupName || undefined,
@@ -984,10 +999,20 @@ export default function Tutor() {
       let resumed = false;
       let restoredCourseId = false;
       let fromLibraryHandoff = false;
+      let fromBrainHandoff = false;
       try {
         fromLibraryHandoff = sessionStorage.getItem(tutorLibraryHandoffKey) === "1";
         if (fromLibraryHandoff) {
           sessionStorage.removeItem(tutorLibraryHandoffKey);
+        }
+        const rawBrainHandoff = sessionStorage.getItem(tutorBrainHandoffKey);
+        if (rawBrainHandoff) {
+          const parsed = JSON.parse(rawBrainHandoff);
+          if (parsed && typeof parsed === "object") {
+            setBrainLaunchContext(parsed as TutorBrainLaunchContext);
+            fromBrainHandoff = true;
+          }
+          sessionStorage.removeItem(tutorBrainHandoffKey);
         }
       } catch {
         /* sessionStorage unavailable — ignore */
@@ -1022,6 +1047,22 @@ export default function Tutor() {
         const canonicalMaterialSelection = readTutorSelectedMaterialIds();
         if (canonicalMaterialSelection.length > 0) {
           setSelectedMaterials(canonicalMaterialSelection);
+        }
+        return;
+      }
+
+      if (fromBrainHandoff) {
+        const canonicalMaterialSelection = readTutorSelectedMaterialIds();
+        if (canonicalMaterialSelection.length > 0) {
+          setSelectedMaterials(canonicalMaterialSelection);
+        }
+        try {
+          const { currentCourse } = await api.studyWheel.getCurrentCourse();
+          if (typeof currentCourse?.id === "number") {
+            setCourseId((prev) => (typeof prev === "number" ? prev : currentCourse.id));
+          }
+        } catch {
+          /* current course fetch failed — ignore */
         }
         return;
       }
@@ -1085,6 +1126,7 @@ export default function Tutor() {
     tutorAccuracyProfileKey,
     tutorObjectiveScopeKey,
     tutorActiveSessionKey,
+    tutorBrainHandoffKey,
     tutorLibraryHandoffKey,
     tutorWizardStorageKey,
   ]);
@@ -1133,6 +1175,33 @@ export default function Tutor() {
         {/* ─── Main Content Area ─── */}
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-none bg-black/40 border-b-2 border-primary/20 px-2 py-1.5">
+            <div className="mb-1.5 flex items-center justify-between gap-3 border-b border-primary/10 pb-1.5">
+              <div>
+                <div className="font-arcade text-xs text-primary">TUTOR</div>
+                <div className="font-terminal text-[11px] text-muted-foreground">
+                  Brain's default live study surface for guided sessions, artifacts, and next-step handoff.
+                </div>
+              </div>
+              {!activeSessionId ? (
+                <Badge variant="outline" className={`${TEXT_BADGE} h-6 px-2 shrink-0 border-primary/30`}>
+                  BRAIN TO TUTOR LIVE SURFACE
+                </Badge>
+              ) : null}
+            </div>
+            {!activeSessionId && brainLaunchContext?.title ? (
+              <div
+                data-testid="tutor-brain-handoff"
+                className="mb-1.5 border border-primary/20 bg-primary/10 px-2 py-1.5"
+              >
+                <div className="font-arcade text-[10px] text-primary">OPENED FROM BRAIN</div>
+                <div className="font-terminal text-xs text-white">{brainLaunchContext.title}</div>
+                {brainLaunchContext.reason ? (
+                  <div className="font-terminal text-[11px] text-muted-foreground">
+                    {brainLaunchContext.reason}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             {/* ─── Row 1: Session Context ─── */}
             {activeSessionId && (
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar mb-1.5">
@@ -1234,11 +1303,26 @@ export default function Tutor() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowSetup(false)}
-                className={!showSetup ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+                onClick={() => {
+                  setShowSetup(false);
+                  setShowWorkspace(false);
+                }}
+                className={!showSetup && !showWorkspace ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
               >
                 <MessageSquare className={`${ICON_MD} mr-1`} />
                 CHAT
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowSetup(false);
+                  setShowWorkspace(true);
+                }}
+                className={!showSetup && showWorkspace ? BTN_TOOLBAR_ACTIVE : BTN_TOOLBAR}
+              >
+                <PenTool className={`${ICON_MD} mr-1`} />
+                WORKSPACE
               </Button>
 
               {activeSessionId && (
@@ -1468,7 +1552,9 @@ export default function Tutor() {
                 </div>
               ) : (
                 <div key="chat" className="flex-1 flex flex-col min-h-0 animate-fade-slide-in">
-                  {activeSessionId ? (
+                  {showWorkspace ? (
+                    <TutorWorkspaceSurface />
+                  ) : activeSessionId ? (
                     <TutorChat
                       sessionId={activeSessionId}
                       courseId={courseId}
@@ -1491,10 +1577,10 @@ export default function Tutor() {
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center space-y-3">
                         <div className="font-arcade text-sm text-primary">
-                          READY TO LEARN
+                          READY TO RUN A STUDY SESSION
                         </div>
                         <div className="font-terminal text-sm text-muted-foreground max-w-sm">
-                          Click WIZARD to configure your session, or select a recent session to resume.
+                          Tutor is the live workspace. Click WIZARD to scope a session, or open WORKSPACE for notes, canvas, graph, and table tools.
                         </div>
                       </div>
                     </div>
@@ -1704,7 +1790,7 @@ function RecentSessionCard({
           lines.push("");
         }
       }
-      const filename = `Tutor - ${(s.topic || s.mode).replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
+      const filename = `Tutor - ${(s.topic || s.mode || "Session").replace(/[^a-zA-Z0-9 ]/g, "").trim()}`;
       await api.obsidian.append(`Study Sessions/${filename}.md`, lines.join("\n"));
       toast.success("Saved to Obsidian");
     } catch (err) {

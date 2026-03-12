@@ -3,7 +3,7 @@
  *
  * All pages MUST use these instead of ad-hoc Tailwind classes.
  * This keeps font sizes, spacing, and borders consistent
- * across Dashboard, Brain, Calendar, Methods, Scholar, and Tutor.
+ * across Brain home, Calendar, Methods, Scholar, and Tutor.
  *
  * Font families:
  *   font-arcade  — Press Start 2P (headers, labels, buttons)

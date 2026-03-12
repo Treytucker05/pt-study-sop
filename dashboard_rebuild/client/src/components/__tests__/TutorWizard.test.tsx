@@ -93,6 +93,7 @@ function renderWizard(overrides?: Partial<ComponentProps<typeof TutorWizard>>) {
     selectedObjectiveGroup: "",
     setSelectedObjectiveGroup: vi.fn(),
     availableObjectives: [],
+    studyUnitOptions: [],
     vaultFolderPreview: "",
     preflight: undefined,
     preflightLoading: false,

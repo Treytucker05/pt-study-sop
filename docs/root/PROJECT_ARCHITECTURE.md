@@ -3,7 +3,7 @@
 **Version:** 4.2
 **Last Updated:** 2026-03-11
 **Scope:** Entire repository (SOP, Brain, Scholar, Scripts)
-**Purpose:** Canonical technical documentation for system architecture, dependencies, and integration. This is a technical architecture document, not the top-level product vision source of truth.
+**Purpose:** Reference-only technical documentation for system architecture, dependencies, and integration. Product/page ownership authority lives in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
 
 > Master product canon: `docs/root/TUTOR_STUDY_BUDDY_CANON.md`
 > Canonical domain primitives + CP-MSS v1.0 architecture: `sop/library/17-control-plane.md`.
@@ -13,12 +13,12 @@
 
 ## 1. Executive Summary
 
-The **PT Study System** is a personal AI operating system for DPT coursework organized around three product systems and several supporting systems. Canonical dashboard behavior and flows are documented in `docs/dashboard/DASHBOARD_WINDOW_INVENTORY.md`.
+The **PT Study System** is a personal AI study operating system for one DPT student. It is organized around three core systems, with Tutor as the main live value surface, Brain as the home and learner-model engine, and Scholar as the investigation layer. Legacy dashboard inventories remain historical reference only.
 
 Core product systems:
-1.  **Brain System (`brain/`)**: The learner-model engine and operational source of truth for telemetry, evidence, mastery, and profile claims.
-2.  **Scholar System (`scholar/`)**: The direct research partner that interprets Brain evidence, asks focused questions, and proposes bounded improvements.
-3.  **Tutor System (`brain/dashboard/api_tutor.py` + `dashboard_rebuild/`)**: The live protocol-led teaching engine.
+1.  **Brain System (`brain/`)**: The home surface and learner-model engine; operational system for telemetry, evidence, mastery, and profile claims.
+2.  **Scholar System (`scholar/`)**: The system-facing research and investigation layer that interprets Brain evidence, asks focused questions, and proposes bounded improvements.
+3.  **Tutor System (`brain/dashboard/api_tutor.py` + `dashboard_rebuild/`)**: The bread-and-butter live protocol-led teaching engine and active workspace.
 
 Supporting systems:
 1.  **SOP System (`sop/`)**: The rigorous learning methodology (CP-MSS v1.0) consumed by the Tutor runtime.
@@ -28,11 +28,11 @@ This document serves as the "Project Map," superseding previous architecture doc
 
 The Study Buddy contract is:
 
-- Library determines what Tutor teaches.
+- Brain-owned Library determines what Tutor teaches.
 - SOP determines how Tutor teaches.
-- Brain captures telemetry, builds learner evidence, and maintains visible learner-model outputs.
+- Brain is the home surface and captures telemetry, builds learner evidence, and maintains visible learner-model outputs.
 - Scholar interprets Brain outputs, can ask focused questions, and proposes approved changes through cited research and bounded findings.
-- Tutor is the only live course-content teaching engine.
+- Tutor is the only live course-content teaching and live workspace engine.
 - Brain does not directly steer Tutor; any live adaptation must pass through Scholar in a bounded envelope.
 - Obsidian is the primary notes home.
 - Anki output is chain-conditional.
@@ -221,7 +221,7 @@ Scholar organizes its artifacts into strict folders ("lanes"):
 
 ## 4. Brain System (brain/)
 
-The **Brain** is the learner-model engine and single source of truth for operational study data. It contains the database, ingestion pipelines, helper engines, telemetry, mastery evidence, and learner-profile signals needed by Dashboard, Scholar, and Tutor.
+The **Brain** is the learner-model engine and operational data system for telemetry, mastery evidence, and learner-profile signals. It powers Brain home and coordinates support signals for Scholar and Tutor.
 
 ### 4.1 Database Schema (`data/pt_study.db`)
 
@@ -292,7 +292,7 @@ These scripts populate the database:
 - Handles duplicate detection and tagging.
 
 **Tutor Engine (`tutor_engine.py`):**
-- Powers the "Tutor" tab in the dashboard.
+- Powers the Tutor workspace in the app shell.
 - Uses RAG to answer queries grounded in `rag_docs`.
 - Respects Source-Lock (only answers from approved docs).
 - LLM backend can be **Codex CLI (ChatGPT login; no API key)** or API-backed models (OpenRouter/OpenAI) depending on Tutor settings.
@@ -303,9 +303,9 @@ These scripts populate the database:
 
 ---
 
-## 5. Dashboard (`dashboard_rebuild/` + `brain/dashboard/`)
+## 5. App Shell (`dashboard_rebuild/` + `brain/dashboard/`)
 
-The Dashboard is the current React/Vite frontend served by Flask. It is no longer the legacy vanilla-JS SPA described in older documents.
+The app shell is the current React/Vite frontend served by Flask. Public-surface ownership and route meaning are defined in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`; this section only describes the runtime shell that serves those surfaces.
 
 **Frontend source:** `dashboard_rebuild/client/src/`
 **Build output:** `brain/static/dist/`
@@ -315,20 +315,23 @@ The Dashboard is the current React/Vite frontend served by Flask. It is no longe
 
 Primary routes served by Flask:
 
-- `/brain` for study metrics and session management
-- `/calendar` for Google Calendar / Tasks workflows
-- `/scholar` for Scholar questions, proposals, and run history
-- `/tutor` for the native Tutor session flow
-- `/library` for uploaded study-material management and Tutor source selection
-- `/methods` for method blocks, chains, and analytics
+- `/` and `/brain` for Brain home, learner state, and operational handoff
+- `/tutor` for the native Tutor session flow, live study execution, and workspace tools
+- `/calendar` for deadline truth and planning support
+- `/scholar` for Scholar questions, investigations, findings, and run history
+- `/library` for uploaded study-material management, Tutor source selection, and embedding status
+- `/mastery` for objective progress, weakness follow-up, and mastery support views
+- `/methods` for method blocks, chains, and analytics support
+- `/vault-health` for vault-quality diagnostics, repair, and trust visibility
 
 ### 5.2 Runtime Boundaries
 
 - React owns the browser UI and stateful interaction.
 - Flask blueprints own API orchestration and persistence.
-- `brain/dashboard/api_tutor.py` owns Tutor sessions, streaming turns, artifacts, materials sync, chain execution, and settings.
+- `brain/dashboard/api_tutor.py` is the Tutor registration/config hub; split Tutor route ownership lives in `api_tutor_sessions.py`, `api_tutor_turns.py`, `api_tutor_artifacts.py`, and `api_tutor_materials.py`.
 - `brain/dashboard/api_adapter.py` owns sessions, notes, courses, modules, Obsidian endpoints, Anki endpoints, calendar endpoints, and related Brain APIs.
 - `brain/dashboard/api_methods.py` owns composable method and chain CRUD plus analytics endpoints.
+- Embedding provider selection is separate from chat-provider selection. Tutor RAG defaults to Gemini Embedding 2 preview and keeps OpenAI as an explicit fallback path.
 
 ### 5.3 Key API Surfaces
 
@@ -381,7 +384,7 @@ The current Study Buddy loop is:
            |                  [Brain Database]
            |                         |
            v                         v
-      [Dashboard UI] --------> [Obsidian Vault]
+      [Brain App Shell] -----> [Obsidian Vault]
                                        |
                                        v
                                [Optional Anki Sync]
@@ -434,27 +437,20 @@ Use the docs in this order:
 
 ### 4. UI Component Reference
 
-**Navigation Bar**
-- **Container:** `.top-nav-menu` (Flex container in `dashboard.html`)
-- **Buttons (Circles):** `.top-nav-item`
-  - Active state: `.active` class added.
-  - Icon wrapper: `.terminal-badge`
-  - Label: `.terminal-badge-label`
-- **Context:** `brain/static/css/dashboard.css` lines 50-80.
+**Navigation Shell**
+- Primary shell component: `dashboard_rebuild/client/src/components/layout.tsx`
+- Brain workspace container: `dashboard_rebuild/client/src/pages/brain.tsx`
+- Brain home composition: `dashboard_rebuild/client/src/components/brain/BrainHome.tsx`
 
-**Layout Structure**
-- **Main Wrapper:** `.main-wrapper` (Holds the swipeable/tabbed content)
-- **Tab Panels:** `.tab-panel`
-  - ID Convention: `#tab-overview`, `#tab-sessions`, `#tab-scholar`, etc.
-  - Active State: `.active` (display: block).
-- **Collapsibles:** `.collapsible`
-  - Header: `.collapsible-header` (Click target for toggle).
-  - State: Has `.collapsed` class when hidden.
+**Main Surfaces**
+- Brain home: attention queue, learner state, stats bands, support-system launches
+- Tutor: live study workspace, wizard, chat, artifacts, bounded Scholar strategy context
+- Scholar: investigation console, questions, findings, run status
+- Support pages: Library, Mastery, Calendar, Methods, Vault Health
 
-**Theme Tokens (`variables.css`)**
-- **Surfaces:** `--surface-0` (Darkest) through `--surface-5` (Lighter).
-- **Accents:** `--primary` (Red/Retro), `--success` (Green), `--warn` (Gold).
-- **Modes:** `.mode-core` (#DC2626), `.mode-sprint` (#F59E0B), `.mode-drill` (#6B7280).
+**Theme Tokens**
+- Shared token source: `dashboard_rebuild/client/src/lib/theme.ts`
+- Runtime shell styling is owned by the React frontend, not the legacy `dashboard.html` / `dashboard.css` stack.
 
 
 

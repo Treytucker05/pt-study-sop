@@ -1,5 +1,7 @@
 # Demo Flow: Brain / Scholar / Tutor Premium Loop
 
+> Historical track note: this file is execution history only. Current product/page ownership lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+
 **Track:** `brain-scholar-tutor-realignment_20260311`  
 **Date:** 2026-03-11  
 **Status:** Current sellable demo path
@@ -42,7 +44,7 @@ What to point out:
 
 - open Scholar
 - show the active investigation seeded from onboarding or Brain uncertainty
-- answer one learner-facing Scholar question
+- answer one historical Scholar investigation question
 - show cited findings, source metadata, and visible uncertainty
 
 What to point out:

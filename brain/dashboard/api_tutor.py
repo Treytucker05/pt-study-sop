@@ -74,6 +74,11 @@ from tutor_accuracy_profiles import (
     normalize_accuracy_profile,
     resolve_material_retrieval_k as _resolve_material_k_for_profile,
 )
+from tutor_rag import (
+    _collection_for_embeddings,
+    _resolve_embedding_provider,
+    init_vectorstore,
+)
 from tutor_prompt_builder import DEFAULT_RULES as _PROMPT_BUILDER_DEFAULT_RULES
 import llm_provider as _llm_provider
 
@@ -329,22 +334,209 @@ def embed_status():
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
+    try:
+        embedding_cfg = _resolve_embedding_provider()
+    except Exception:
+        embedding_cfg = {
+            "provider": "openai",
+            "model": "text-embedding-3-small",
+            "auto_selected": False,
+        }
+    active_provider = str(embedding_cfg["provider"]).strip().lower()
+    active_model = str(embedding_cfg["model"]).strip()
+
     cur.execute(
-        """SELECT r.id, r.title, r.source_path,
-                  COUNT(e.id) AS chunk_count,
-                  CASE WHEN COUNT(e.id) > 0 THEN 1 ELSE 0 END AS embedded
-           FROM rag_docs r
-           LEFT JOIN rag_embeddings e ON e.rag_doc_id = r.id
-           WHERE COALESCE(r.corpus, 'materials') = 'materials'
-             AND COALESCE(r.enabled, 1) = 1
-           GROUP BY r.id
-           ORDER BY r.title"""
+        """SELECT id, title, source_path
+           FROM rag_docs
+           WHERE COALESCE(corpus, 'materials') = 'materials'
+             AND COALESCE(enabled, 1) = 1
+           ORDER BY title"""
     )
-    materials = [dict(r) for r in cur.fetchall()]
+    materials = []
+    material_index: dict[int, dict[str, Any]] = {}
+    for row in cur.fetchall():
+        item = {
+            "id": int(row["id"]),
+            "title": row["title"],
+            "source_path": row["source_path"],
+            "chunk_count": 0,
+            "embedded": 0,
+            "stale_chunk_count": 0,
+            "missing_index_chunk_count": 0,
+            "needs_reembed": False,
+            "provider": None,
+            "embedding_model": None,
+            "embedding_dimension": None,
+            "index_state": "pending",
+            "last_failure": None,
+        }
+        materials.append(item)
+        material_index[item["id"]] = item
+
+    cur.execute("PRAGMA table_info(rag_embeddings)")
+    embedding_columns = {
+        row["name"] if isinstance(row, sqlite3.Row) else row[1]
+        for row in cur.fetchall()
+    }
+
+    active_chroma_ids: dict[int, list[str]] = {}
+
+    if {"provider", "embedding_model"}.issubset(embedding_columns):
+        dimension_select = (
+            "MAX(embedding_dimension) AS embedding_dimension,"
+            if "embedding_dimension" in embedding_columns
+            else "NULL AS embedding_dimension,"
+        )
+        cur.execute(
+            f"""SELECT rag_doc_id,
+                      provider,
+                      embedding_model,
+                      {dimension_select}
+                      COUNT(*) AS chunk_count
+               FROM rag_embeddings
+               GROUP BY rag_doc_id, provider, embedding_model"""
+        )
+        for row in cur.fetchall():
+            rag_doc_id = int(row["rag_doc_id"])
+            item = material_index.get(rag_doc_id)
+            if item is None:
+                continue
+            row_provider = str(row["provider"] or "").strip().lower()
+            row_model = str(row["embedding_model"] or "").strip()
+            chunk_count = int(row["chunk_count"] or 0)
+            if row_provider == active_provider and row_model == active_model:
+                item["chunk_count"] += chunk_count
+                item["embedded"] = 1
+                item["provider"] = row_provider
+                item["embedding_model"] = row_model
+                item["embedding_dimension"] = row["embedding_dimension"]
+            else:
+                item["stale_chunk_count"] += chunk_count
+    else:
+        cur.execute(
+            """SELECT rag_doc_id, COUNT(*) AS chunk_count
+               FROM rag_embeddings
+               GROUP BY rag_doc_id"""
+        )
+        for row in cur.fetchall():
+            rag_doc_id = int(row["rag_doc_id"])
+            item = material_index.get(rag_doc_id)
+            if item is None:
+                continue
+            item["stale_chunk_count"] = int(row["chunk_count"] or 0)
+
+    if {"provider", "embedding_model", "chroma_id"}.issubset(embedding_columns):
+        cur.execute(
+            """
+            SELECT rag_doc_id, chroma_id
+            FROM rag_embeddings
+            WHERE provider = ? AND embedding_model = ?
+            """,
+            (active_provider, active_model),
+        )
+        for row in cur.fetchall():
+            rag_doc_id = int(row["rag_doc_id"])
+            chroma_id = str(row["chroma_id"] or "").strip()
+            if not chroma_id or rag_doc_id not in material_index:
+                continue
+            active_chroma_ids.setdefault(rag_doc_id, []).append(chroma_id)
+
+    live_ids: set[str] | None = None
+    active_ids = [doc_id for ids in active_chroma_ids.values() for doc_id in ids]
+    if active_ids:
+        try:
+            vectorstore = init_vectorstore(
+                "tutor_materials",
+                provider_override=active_provider,
+                model_override=active_model,
+            )
+            collection = getattr(vectorstore, "_collection", None)
+            getter = getattr(collection, "get", None)
+            if callable(getter):
+                try:
+                    probe = getter(ids=active_ids)
+                except TypeError:
+                    probe = getter(active_ids)
+                live_ids = set()
+                if isinstance(probe, dict):
+                    raw_ids = probe.get("ids")
+                    if isinstance(raw_ids, list):
+                        for entry in raw_ids:
+                            if isinstance(entry, list):
+                                live_ids.update(str(v) for v in entry if v)
+                            elif entry:
+                                live_ids.add(str(entry))
+            else:
+                live_ids = None
+        except Exception:
+            live_ids = None
+
+    if "rag_embedding_failures" in {
+        row["name"] if isinstance(row, sqlite3.Row) else row[1]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }:
+        cur.execute(
+            """
+            SELECT f.rag_doc_id, f.provider, f.embedding_model, f.failure_stage, f.error_type, f.error_message, f.failed_at
+            FROM rag_embedding_failures f
+            INNER JOIN (
+                SELECT rag_doc_id, MAX(failed_at) AS failed_at
+                FROM rag_embedding_failures
+                GROUP BY rag_doc_id
+            ) latest
+                ON latest.rag_doc_id = f.rag_doc_id
+               AND latest.failed_at = f.failed_at
+            """
+        )
+        for row in cur.fetchall():
+            item = material_index.get(int(row["rag_doc_id"]))
+            if item is None:
+                continue
+            item["last_failure"] = {
+                "provider": row["provider"],
+                "embedding_model": row["embedding_model"],
+                "failure_stage": row["failure_stage"],
+                "error_type": row["error_type"],
+                "error_message": row["error_message"],
+                "failed_at": row["failed_at"],
+            }
+
+    for item in materials:
+        if live_ids is not None and item["id"] in active_chroma_ids:
+            doc_ids = active_chroma_ids[item["id"]]
+            item["missing_index_chunk_count"] = len(
+                [doc_id for doc_id in doc_ids if doc_id not in live_ids]
+            )
+
+        item["needs_reembed"] = bool(
+            item["stale_chunk_count"] > 0
+            or item["missing_index_chunk_count"] > 0
+        ) and item["chunk_count"] >= 0
+        if item["chunk_count"] > 0 and item["missing_index_chunk_count"] == 0:
+            item["index_state"] = "ready"
+            item["needs_reembed"] = bool(item["stale_chunk_count"] > 0)
+        elif item["missing_index_chunk_count"] > 0:
+            item["index_state"] = "index_missing"
+            item["needs_reembed"] = True
+        elif item["stale_chunk_count"] > 0:
+            item["index_state"] = "stale"
+            item["needs_reembed"] = True
+        else:
+            item["index_state"] = "pending"
+
     conn.close()
 
     total = len(materials)
     embedded_count = sum(1 for m in materials if m["embedded"])
+    stale_count = sum(1 for m in materials if m["needs_reembed"])
+
+    collection = _collection_for_embeddings(
+        "tutor_materials",
+        active_provider,
+        active_model,
+    )
 
     return jsonify(
         {
@@ -352,6 +544,11 @@ def embed_status():
             "total": total,
             "embedded": embedded_count,
             "pending": total - embedded_count,
+            "stale": stale_count,
+            "provider": active_provider,
+            "model": active_model,
+            "collection": collection,
+            "auto_selected_provider": bool(embedding_cfg.get("auto_selected", False)),
         }
     )
 

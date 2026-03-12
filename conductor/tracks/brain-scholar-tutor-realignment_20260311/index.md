@@ -1,5 +1,7 @@
 # Track: Brain / Scholar / Tutor Realignment
 
+> Historical track note: this file is execution history only. Current product/page ownership lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+
 **ID:** brain-scholar-tutor-realignment_20260311  
 **Status:** Complete
 
@@ -33,7 +35,7 @@
   - validated with backend tests, frontend tests, full `pytest brain/tests/`, `npm run build`, and a live dashboard run
 - Wave 2 Scholar research MVP completed:
   - added persisted Scholar investigations, learner questions, source normalization, findings, uncertainty handling, and cited web-research runtime
-  - shipped `/api/scholar/research/*` endpoints and the learner-facing Scholar investigation workspace
+  - shipped `/api/scholar/research/*` endpoints and the then-current Scholar investigation workspace
   - validated with dedicated API/runtime tests, frontend tests, and live export/API smokes
 - Wave 3 bounded Scholar-to-Tutor mediation completed:
   - added persisted strategy snapshots, bounded adaptation fields, provenance-aware Tutor session wiring, and strategy feedback capture

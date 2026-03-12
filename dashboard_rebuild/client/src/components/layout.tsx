@@ -1,12 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Brain, Calendar, GraduationCap, Bot, Blocks, TrendingUp, BookOpen, Shield, Save, Trash2, GripVertical, Pencil, X, Check, Menu } from "lucide-react";
+import { Brain, Calendar, GraduationCap, Bot, Blocks, TrendingUp, BookOpen, Shield, Save, Trash2, GripVertical, Pencil, X, Check, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import arcadeBg from "@assets/generated_images/arcade_tutor_chat_interface.png";
 import logoImg from "@assets/StudyBrainIMAGE_1768640444498.jpg";
 import { cn } from "@/lib/utils";
@@ -16,18 +15,17 @@ import { useToast } from "@/use-toast";
 import type { Note } from "@shared/schema";
 
 const PRIMARY_NAV_ITEMS = [
-  { path: "/brain", label: "BRAIN", icon: Brain },
-  { path: "/scholar", label: "SCHOLAR", icon: GraduationCap },
-  { path: "/tutor", label: "TUTOR", icon: Bot },
+  { path: "/", label: "BRAIN", icon: Brain, testId: "brain" },
+  { path: "/scholar", label: "SCHOLAR", icon: GraduationCap, testId: "scholar" },
+  { path: "/tutor", label: "TUTOR", icon: Bot, testId: "tutor" },
 ];
 
 const SUPPORT_NAV_ITEMS = [
-  { path: "/", label: "DASHBOARD", icon: LayoutDashboard },
-  { path: "/library", label: "LIBRARY", icon: BookOpen },
-  { path: "/mastery", label: "MASTERY", icon: TrendingUp },
-  { path: "/calendar", label: "CALENDAR", icon: Calendar },
-  { path: "/methods", label: "METHODS", icon: Blocks },
-  { path: "/vault-health", label: "VAULT", icon: Shield },
+  { path: "/library", label: "LIBRARY", icon: BookOpen, testId: "library" },
+  { path: "/mastery", label: "MASTERY", icon: TrendingUp, testId: "mastery" },
+  { path: "/calendar", label: "CALENDAR", icon: Calendar, testId: "calendar" },
+  { path: "/methods", label: "METHODS", icon: Blocks, testId: "methods" },
+  { path: "/vault-health", label: "VAULT", icon: Shield, testId: "vault" },
 ];
 
 type NoteCategory = "notes" | "planned" | "ideas";
@@ -47,10 +45,13 @@ const resolveNoteType = (note: Note): NoteCategory => {
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  const currentPath = location === "/" ? "/" : "/" + location.split("/")[1];
-  const isBrainPage = currentPath === "/brain";
+  const currentPath =
+    location === "/" || location.startsWith("/brain")
+      ? "/"
+      : "/" + location.split("/")[1];
+  const isBrainPage = currentPath === "/";
   const isTutorPage = currentPath === "/tutor";
   const [newNote, setNewNote] = useState("");
   const [newNoteType, setNewNoteType] = useState<NoteCategory>("notes");
@@ -60,7 +61,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [draggedNote, setDraggedNote] = useState<{ id: number; type: NoteCategory } | null>(null);
   const [dragOverNote, setDragOverNote] = useState<{ id: number; type: NoteCategory } | null>(null);
   const [dragOverCategory, setDragOverCategory] = useState<NoteCategory | null>(null);
-  const [showTutor, setShowTutor] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
 
@@ -78,8 +78,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const queryClient = useQueryClient();
 
-  // Expose tutor toggle to window for integration
-  (window as any).openTutor = () => setShowTutor(true);
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location]);
+
+  useEffect(() => {
+    (window as typeof window & { openTutor?: () => void }).openTutor = () => setLocation("/tutor");
+    return () => {
+      delete (window as typeof window & { openTutor?: () => void }).openTutor;
+    };
+  }, [setLocation]);
 
   const { data: notes = [], isLoading: notesLoading } = useQuery({
     queryKey: ["notes"],
@@ -319,8 +327,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Top Nav */}
       <header className="relative z-20 bg-black/80 backdrop-blur-sm sticky top-0" style={{ borderBottom: '4px double hsl(350 63% 49%)' }}>
-        <div className="w-full px-3 h-12 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="w-full px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-4">
             <Button
               variant="ghost"
               size="sm"
@@ -338,46 +346,63 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                {PRIMARY_NAV_ITEMS.map((item) => {
-                  const isActive = currentPath === item.path;
-                  return (
-                    <Link key={item.path} href={item.path}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn("nav-btn font-arcade", isActive && "active")}
-                      >
-                        <item.icon className="w-3 h-3 lg:mr-1" />
-                        <span className="hidden lg:inline">{item.label}</span>
-                      </Button>
-                    </Link>
-                  );
-                })}
-              </div>
-              <div className="hidden lg:flex items-center gap-2 text-[10px] font-arcade text-primary/60">
-                <span>CORE LOOP</span>
-                <span className="text-primary/30">|</span>
-              </div>
-              <div className="flex items-center gap-1">
-                {SUPPORT_NAV_ITEMS.map((item) => {
-                  const isActive = currentPath === item.path;
-                  return (
-                    <Link key={item.path} href={item.path}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn("nav-btn font-arcade", isActive && "active")}
-                      >
-                        <item.icon className="w-3 h-3 lg:mr-1" />
-                        <span className="hidden lg:inline">{item.label}</span>
-                      </Button>
-                    </Link>
-                  );
-                })}
-              </div>
-            </nav>
+          <nav
+            className="hidden md:flex min-w-0 flex-1 items-center gap-2 overflow-x-auto overflow-y-hidden"
+            data-testid="nav-desktop-groups"
+          >
+            <div
+              className="flex min-w-0 flex-wrap items-center gap-1"
+              data-testid="nav-core-group"
+              aria-label="Core triad navigation"
+            >
+              {PRIMARY_NAV_ITEMS.map((item) => {
+                const isActive = currentPath === item.path;
+                return (
+                  <Link key={item.path} href={item.path}>
+                    <Button
+                      data-testid={`nav-${item.testId}`}
+                      variant="ghost"
+                      size="sm"
+                      className={cn("nav-btn font-arcade whitespace-nowrap", isActive && "active")}
+                    >
+                      <item.icon className="w-3 h-3 lg:mr-1" />
+                      <span className="hidden lg:inline">{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="hidden lg:flex flex-shrink-0 items-center gap-2 px-1 text-[10px] font-arcade text-primary/60" data-testid="nav-core-label">
+              <span>STUDY TRIAD</span>
+              <span className="text-primary/30">|</span>
+            </div>
+            <div
+              className="flex min-w-0 flex-wrap items-center gap-1"
+              data-testid="nav-support-group"
+              aria-label="Support systems navigation"
+            >
+              {SUPPORT_NAV_ITEMS.map((item) => {
+                const isActive = currentPath === item.path;
+                return (
+                  <Link key={item.path} href={item.path}>
+                    <Button
+                      data-testid={`nav-${item.testId}`}
+                      variant="ghost"
+                      size="sm"
+                      className={cn("nav-btn font-arcade whitespace-nowrap", isActive && "active")}
+                    >
+                      <item.icon className="w-3 h-3 lg:mr-1" />
+                      <span className="hidden lg:inline">{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="hidden lg:flex flex-shrink-0 items-center gap-2 px-1 text-[10px] font-arcade text-primary/50" data-testid="nav-support-label">
+              <span>SUPPORT SYSTEMS</span>
+              <span className="text-primary/30">|</span>
+            </div>
+          </nav>
           </div>
 
           <div className="flex items-center gap-2">
@@ -582,16 +607,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Mobile nav dropdown */}
         {mobileNavOpen && (
           <nav className="md:hidden border-t border-primary/30 bg-black/95 px-3 py-2 space-y-2">
-            <div className="text-[10px] font-arcade text-primary/70">CORE LOOP</div>
+            <div className="text-[10px] font-arcade text-primary/70">STUDY TRIAD</div>
             <div className="flex flex-wrap gap-1">
               {PRIMARY_NAV_ITEMS.map((item) => {
                 const isActive = currentPath === item.path;
                 return (
                   <Link key={item.path} href={item.path}>
                     <Button
+                      data-testid={`nav-${item.testId}`}
                       variant="ghost"
                       size="sm"
-                      className={cn("nav-btn font-arcade", isActive && "active")}
+                      className={cn("nav-btn font-arcade whitespace-nowrap", isActive && "active")}
                       onClick={() => setMobileNavOpen(false)}
                     >
                       <item.icon className="w-3 h-3 mr-1" />
@@ -608,9 +634,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 return (
                   <Link key={item.path} href={item.path}>
                     <Button
+                      data-testid={`nav-${item.testId}`}
                       variant="ghost"
                       size="sm"
-                      className={cn("nav-btn font-arcade", isActive && "active")}
+                      className={cn("nav-btn font-arcade whitespace-nowrap", isActive && "active")}
                       onClick={() => setMobileNavOpen(false)}
                     >
                       <item.icon className="w-3 h-3 mr-1" />
@@ -634,25 +661,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       >
         <div className={cn("page-enter", (isBrainPage || isTutorPage) && "h-full")}>{children}</div>
       </main>
-
-      {/* Tutor Modal Integration */}
-      <Dialog open={showTutor} onOpenChange={setShowTutor}>
-        <DialogContent className="bg-black border-2 border-primary rounded-none max-w-2xl h-[80vh] flex flex-col p-0">
-          <div className="flex justify-between items-center p-4 border-b border-primary">
-            <DialogTitle className="font-arcade text-primary flex items-center gap-2">
-              <Bot className="h-5 w-5" />
-              AI_STUDY_ASSISTANT
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              AI study assistant powered by your course materials
-            </DialogDescription>
-            <Button variant="ghost" size="icon" onClick={() => setShowTutor(false)} className="rounded-none">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <iframe src="/tutor" className="flex-1 w-full border-0" />
-        </DialogContent>
-      </Dialog>
 
       {/* Footer */}
       <footer className="z-20 border-t border-secondary bg-black/95 py-2">

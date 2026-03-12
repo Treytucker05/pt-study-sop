@@ -8,6 +8,7 @@ const {
   getActiveCoursesMock,
   getContentSourcesMock,
   getMaterialContentMock,
+  getEmbedStatusMock,
   updateMaterialMock,
   deleteMaterialMock,
   previewSyncMaterialsFolderMock,
@@ -21,6 +22,7 @@ const {
   getActiveCoursesMock: vi.fn(),
   getContentSourcesMock: vi.fn(),
   getMaterialContentMock: vi.fn(),
+  getEmbedStatusMock: vi.fn(),
   updateMaterialMock: vi.fn(),
   deleteMaterialMock: vi.fn(),
   previewSyncMaterialsFolderMock: vi.fn(),
@@ -50,6 +52,7 @@ vi.mock("@/lib/api", () => ({
       getMaterials: getMaterialsMock,
       getContentSources: getContentSourcesMock,
       getMaterialContent: getMaterialContentMock,
+      embedStatus: getEmbedStatusMock,
       updateMaterial: updateMaterialMock,
       deleteMaterial: deleteMaterialMock,
       previewSyncMaterialsFolder: previewSyncMaterialsFolderMock,
@@ -110,6 +113,27 @@ describe("Library tutor handoff", () => {
       content: "notes",
       assets: [],
     });
+    getEmbedStatusMock.mockResolvedValue({
+      materials: [
+        {
+          id: 1,
+          title: "Intro Notes",
+          source_path: "Uploaded Files/intro-notes.pdf",
+          chunk_count: 2,
+          embedded: 1,
+          stale_chunk_count: 0,
+          needs_reembed: false,
+        },
+      ],
+      total: 1,
+      embedded: 1,
+      pending: 0,
+      stale: 0,
+      provider: "gemini",
+      model: "gemini-embedding-2-preview",
+      collection: "tutor_materials_gemini_gemini-embedding-2-preview",
+      auto_selected_provider: false,
+    });
   });
 
   it("writes selected tutor materials and clears stale wizard progress on open", async () => {
@@ -121,6 +145,16 @@ describe("Library tutor handoff", () => {
     renderLibrary();
 
     await screen.findByText("Intro Notes");
+    expect(
+      screen.getByText(
+        "Support system for Brain-owned study materials, Tutor scope, and clean handoff into live study.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("library-embed-provider")).toHaveTextContent(
+      "Tutor embeddings: GEMINI · gemini-embedding-2-preview",
+    );
+    expect(screen.getByText("1/1 materials live")).toBeInTheDocument();
+    expect(screen.getByText("No stale embeddings")).toBeInTheDocument();
     const checkboxes = screen.getAllByRole("checkbox");
     fireEvent.click(checkboxes[1]);
 

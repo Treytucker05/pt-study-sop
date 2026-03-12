@@ -236,7 +236,7 @@ export default function MethodsPage() {
           <div>
             <h1 className="font-arcade text-xl text-primary">METHOD_LIBRARY</h1>
             <p className="font-terminal text-base text-muted-foreground">
-              Composable study methods — build, chain, rate, optimize
+              Support system for Tutor's method library, chains, ratings, and control-plane optimization.
             </p>
           </div>
         </div>
@@ -846,7 +846,7 @@ function EditBlockDialog({
     "RETRIEVE",
     "OVERLEARN",
   ];
-  const categoryLabel: Record<MethodCategory, string> = {
+  const categoryLabel: Record<string, string> = {
     PRIME: "PRIMING",
     CALIBRATE: "CALIBRATE",
     ENCODE: "ENCODING",

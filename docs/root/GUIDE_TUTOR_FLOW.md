@@ -15,8 +15,16 @@ Backend:
 - `brain/dashboard/app.py`
   - Registers Tutor blueprint (`tutor_bp`) on `/api/tutor/*`.
 - `brain/dashboard/api_tutor.py`
-  - Main Tutor API surface and orchestration runtime.
-  - Owns session lifecycle routes, turn streaming, artifacts, chain status, settings, materials, and sync.
+  - Thin Tutor blueprint registration hub plus config/embed/settings endpoints.
+  - Imports the split Tutor route modules so they register on `tutor_bp`.
+- `brain/dashboard/api_tutor_sessions.py`
+  - Session preflight, create/get/end/delete, summary/export, and archive-link routes.
+- `brain/dashboard/api_tutor_turns.py`
+  - Turn streaming, chain/block progression, and resume-time turn/runtime helpers.
+- `brain/dashboard/api_tutor_artifacts.py`
+  - Mid-session artifacts, structured finalize, graph sync, and artifact deletion routes.
+- `brain/dashboard/api_tutor_materials.py`
+  - Materials library, upload, embed, video processing, and source sync routes.
 - `brain/tutor_context.py`
   - Builds retrieval context per turn (materials + Obsidian notes).
 - `brain/tutor_prompt_builder.py`
@@ -47,7 +55,7 @@ Frontend:
 ## 2) Core Runtime Path: POST /api/tutor/session/<id>/turn
 
 Route:
-- `brain/dashboard/api_tutor.py` -> `send_turn` (`/session/<session_id>/turn`)
+- `brain/dashboard/api_tutor_turns.py` -> `send_turn` (`/session/<session_id>/turn`)
 
 Execution flow:
 1. Validate active session and request payload (`message`, `content_filter`, behavior/mode flags).

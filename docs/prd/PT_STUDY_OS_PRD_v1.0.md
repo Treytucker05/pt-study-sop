@@ -1,5 +1,8 @@
 # PT Study OS — Product Requirements Document (PRD) v1.0
 
+> Historical product artifact. Product/ownership authority lives only in `docs/root/TUTOR_STUDY_BUDDY_CANON.md`.
+> Use this PRD for background and historical framing, not as the live subsystem contract.
+
 **Repo:** `pt-study-sop`  
 **Status:** Draft (ready to implement)  
 **Last updated:** 2026-01-25 (America/Chicago)  
