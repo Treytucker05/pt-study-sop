@@ -22,9 +22,9 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - `conductor/tracks.md` (track registry / archival)
 - Historical note: completed sprint entries below remain as execution history. If any older wording conflicts with the canon, the canon wins.
 
-## Active Sprint 2026-03-12
+## Active Sprint 2026-03-13
 
-### Sprint 28: Course-Keyed Tutor Shell + Studio Foundation (2026-03-13)
+### Sprint 28: Course-Keyed Tutor Shell + Studio Foundation (2026-03-13) — COMPLETE
 - [x] Claim scope: open the durable track for the course-keyed Tutor shell plan and land the first backend foundation slice for course-keyed shell state and summary APIs
   - `conductor/tracks/course-keyed-tutor-shell_20260313/`
   - `docs/root/TUTOR_TODO.md`
@@ -60,6 +60,14 @@ Purpose: keep implementation work ordered, visible, and tied to tests and verifi
   - Validation:
     - `cd dashboard_rebuild && npm run test -- client/src/components/__tests__/SyllabusViewTab.test.tsx client/src/components/__tests__/TutorScheduleMode.test.tsx client/src/components/__tests__/TutorPublishMode.test.tsx`
     - `cd dashboard_rebuild && npm run build`
+- [x] Wave E: Studio boards and capture flows integration
+  - Implement studio board state machine, capture and promotion paths, and component-level coverage.
+- [x] Wave F: Viewer and dictation integration
+  - Deliver browser-based PDF/DOCX/MP4 viewer support plus Chromium-first dictation and test coverage.
+- [x] Wave G: Schedule, publish, and sync hardening
+  - Finalize schedule/publish surfaces, popout sync, failure-path hardening, and release-proof smoke path.
+- [x] Track verification and closeout
+  - All phase milestones (0 through 6) are complete in `conductor/tracks/course-keyed-tutor-shell_20260313/plan.md`.
 
 ### Sprint 27: Trey’s Swarm Planner Skill (2026-03-13)
 - [x] Claim scope: package the planning method used in this repo into a reusable `treys-swarm-planner` skill with a portable personal core and a PT Study System repo adapter

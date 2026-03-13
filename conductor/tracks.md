@@ -10,11 +10,11 @@ Execution registry only. Product or subsystem truth does not live here.
 
 Update policy: after every significant change, update this file with status changes and point active execution back to `docs/root/TUTOR_TODO.md`.
 
-Active execution priority is tracked in `docs/root/TUTOR_TODO.md` under Sprint 25 (`Canon Collapse + Pre-Tutor Hardening Program`).
+Active execution priority is tracked in `docs/root/TUTOR_TODO.md` under Sprint 26 (`Gap Hardening Before Tutor Deep Dive`).
 
-Latest update: 2026-03-12 opened a repo-wide canon-collapse and pre-Tutor hardening execution wave; closed-track summaries below remain historical and may not describe the latest active queue.
+Latest update: 2026-03-13, closed the `Course-Keyed Tutor Shell + Studio Foundation` track after all 17 tasks completed.
 
-- [ ] **Track: Course-Keyed Tutor Shell + Studio Foundation** (active — created 2026-03-13; scope: course-keyed Tutor shell contract, durable track bootstrap, project workspace state, normalized Studio foundation tables, Tutor shell summary/state APIs)
+- [x] **Track: Course-Keyed Tutor Shell + Studio Foundation** (complete — created 2026-03-13; closed 2026-03-13; scope: course-keyed Tutor shell contract, durable track bootstrap, project workspace state, normalized Studio foundation tables, Tutor shell summary/state APIs)
   *Link: [./tracks/course-keyed-tutor-shell_20260313/](./tracks/course-keyed-tutor-shell_20260313/)*
 
 ---
